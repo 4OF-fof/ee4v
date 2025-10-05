@@ -1,17 +1,17 @@
-﻿using UnityEngine.UIElements;
-
+﻿using System.IO;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.ProjectExtension.Data;
+using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
     public static class Tab {
         public enum State {
             Default,
-            Selected,
+            Selected
         }
-        
+
         public static VisualElement Element(string path, string name = null, State state = State.Default) {
-            if (string.IsNullOrEmpty(name)) name = System.IO.Path.GetFileName(path);
+            if (string.IsNullOrEmpty(name)) name = Path.GetFileName(path);
             var tabLabel = TabLabel.Draw(name, path);
             var closeButton = CloseButton.Element();
             var tab = new VisualElement {
@@ -25,31 +25,34 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                     backgroundColor = ColorPreset.TabBackground,
                     borderRightWidth = 1,
                     borderTopRightRadius = 4, borderTopLeftRadius = 4,
-                    borderRightColor = ColorPreset.TabBorder,
+                    borderRightColor = ColorPreset.TabBorder
                 },
                 userData = state
             };
             SetState(tab, state);
-            tab.RegisterCallback<MouseEnterEvent>(_ => {
+            tab.RegisterCallback<MouseEnterEvent>(_ =>
+            {
                 var current = GetState(tab);
-                tab.style.backgroundColor = current == State.Selected ? ColorPreset.TabSelectedBackground : ColorPreset.TabHoveredBackground;
+                tab.style.backgroundColor = current == State.Selected
+                    ? ColorPreset.TabSelectedBackground
+                    : ColorPreset.TabHoveredBackground;
                 closeButton.style.opacity = 1f;
             });
-            tab.RegisterCallback<MouseLeaveEvent>(_ => {
+            tab.RegisterCallback<MouseLeaveEvent>(_ =>
+            {
                 var current = GetState(tab);
-                tab.style.backgroundColor = current == State.Selected ? ColorPreset.TabSelectedBackground : ColorPreset.TabBackground;
+                tab.style.backgroundColor = current == State.Selected
+                    ? ColorPreset.TabSelectedBackground
+                    : ColorPreset.TabBackground;
                 closeButton.style.opacity = 0.7f;
             });
-            
+
             tab.Add(tabLabel);
             tab.Add(closeButton);
 
-            closeButton.clicked += () => {
-                TabListController.Remove(tab);
-            };
-            
+            closeButton.clicked += () => { TabListController.Remove(tab); };
+
             return tab;
-            
         }
 
         private static State GetState(VisualElement tab) {

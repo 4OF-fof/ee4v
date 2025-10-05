@@ -1,7 +1,6 @@
-﻿using UnityEngine;
+﻿using _4OF.ee4v.Core.UI;
+using UnityEngine;
 using UnityEngine.UIElements;
-
-using _4OF.ee4v.Core.UI;
 
 namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
     public static class TabLabel {
@@ -20,7 +19,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                     borderRightColor = new StyleColor(Color.clear)
                 }
             };
-            
+
             return openButton;
         }
     }

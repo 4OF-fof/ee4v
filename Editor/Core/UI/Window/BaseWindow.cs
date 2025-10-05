@@ -1,13 +1,25 @@
-﻿using UnityEditor;
+﻿using System;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.Core.UI.Window {
     public abstract class BaseWindow : EditorWindow {
-        protected Color? HeaderBackgroundColor { get; set; }
+        private const float MinWidth = 340;
+        private const float MinHeight = 100;
+
+        private static bool _isDragging;
+        private static Vector2 _dragStartMouseScreen;
+        private static Rect _dragStartWindowPosition;
         private VisualElement _headerElement;
         private bool _isLocked;
+        private bool _isResizing;
         private Image _lockIcon;
+        private int _resizeControlID;
+        private ResizeEdgeEnum _resizeEdge = ResizeEdgeEnum.None;
+        private Vector2 _resizeStartMouseScreen;
+        private Rect _resizeStartWindowPosition;
+        protected Color? HeaderBackgroundColor { get; set; }
 
         protected bool IsLocked {
             get => _isLocked;
@@ -20,47 +32,13 @@ namespace _4OF.ee4v.Core.UI.Window {
             }
         }
 
-        private static bool _isDragging;
-        private static Vector2 _dragStartMouseScreen;
-        private static Rect _dragStartWindowPosition;
-
-        [System.Flags]
-        private enum ResizeEdgeEnum { None = 0, Left = 1, Right = 2, Bottom = 4 }
-        private ResizeEdgeEnum _resizeEdge = ResizeEdgeEnum.None;
-        private bool _isResizing;
-        private Vector2 _resizeStartMouseScreen;
-        private Rect _resizeStartWindowPosition;
-        private int _resizeControlID;
-        
-        private const float MinWidth = 340;
-        private const float MinHeight = 100;
-        
-        protected static T OpenSetup<T>(Vector2 anchorScreen, object reuseKey = null) where T : BaseWindow {
-            var existing = Resources.FindObjectsOfTypeAll<T>();
-            if (existing is { Length: > 0 }) {
-                foreach (var win in existing) {
-                    if (win == null || !win.CanReuseFor(reuseKey)) continue;
-                    win.Focus();
-                    return win;
-                }
-            }
-
-            var window = CreateInstance<T>();
-            window.position = new Rect(anchorScreen.x, anchorScreen.y, 340, 250);
-            return window;
-        }
-        
-        protected virtual bool CanReuseFor(object reuseKey) {
-            return true;
-        }
-
-        protected virtual void OnLostFocus() {
-            if (!IsLocked) Close();
-        }
-
         protected virtual void OnDestroy() {
             if (GUIUtility.hotControl == _resizeControlID) GUIUtility.hotControl = 0;
             _resizeControlID = 0;
+        }
+
+        private void OnGUI() {
+            HandleResize(Event.current);
         }
 
         public void CreateGUI() {
@@ -80,7 +58,28 @@ namespace _4OF.ee4v.Core.UI.Window {
 
             var content = Content();
             if (content != null) rootVisualElement.Add(content);
+        }
 
+        protected virtual void OnLostFocus() {
+            if (!IsLocked) Close();
+        }
+
+        protected static T OpenSetup<T>(Vector2 anchorScreen, object reuseKey = null) where T : BaseWindow {
+            var existing = Resources.FindObjectsOfTypeAll<T>();
+            if (existing is { Length: > 0 })
+                foreach (var win in existing) {
+                    if (win == null || !win.CanReuseFor(reuseKey)) continue;
+                    win.Focus();
+                    return win;
+                }
+
+            var window = CreateInstance<T>();
+            window.position = new Rect(anchorScreen.x, anchorScreen.y, 340, 250);
+            return window;
+        }
+
+        protected virtual bool CanReuseFor(object reuseKey) {
+            return true;
         }
 
         private VisualElement Header() {
@@ -92,7 +91,9 @@ namespace _4OF.ee4v.Core.UI.Window {
                     flexDirection = FlexDirection.Row,
                     height = 24,
                     flexShrink = 0,
-                    backgroundColor = (HeaderBackgroundColor == Color.clear || HeaderBackgroundColor == null) ? ColorPreset.WindowHeader : HeaderBackgroundColor.Value,
+                    backgroundColor = HeaderBackgroundColor == Color.clear || HeaderBackgroundColor == null
+                        ? ColorPreset.WindowHeader
+                        : HeaderBackgroundColor.Value,
                     justifyContent = Justify.Center
                 }
             };
@@ -110,7 +111,9 @@ namespace _4OF.ee4v.Core.UI.Window {
         protected void UpdateHeaderBackground(Color? color) {
             HeaderBackgroundColor = color;
             if (_headerElement == null) return;
-            _headerElement.style.backgroundColor = (HeaderBackgroundColor == Color.clear || HeaderBackgroundColor == null) ? ColorPreset.WindowHeader : HeaderBackgroundColor.Value;
+            _headerElement.style.backgroundColor = HeaderBackgroundColor == Color.clear || HeaderBackgroundColor == null
+                ? ColorPreset.WindowHeader
+                : HeaderBackgroundColor.Value;
             _headerElement.MarkDirtyRepaint();
         }
 
@@ -122,8 +125,9 @@ namespace _4OF.ee4v.Core.UI.Window {
                 }
             };
         }
+
         protected abstract VisualElement HeaderContent();
-        
+
         private Button LockButton() {
             var button = new Button {
                 style = {
@@ -136,16 +140,12 @@ namespace _4OF.ee4v.Core.UI.Window {
                     justifyContent = Justify.Center
                 }
             };
-            
+
             var hoverColor = ColorPreset.MouseOverBackground;
             hoverColor.a = 0.3f;
-            button.RegisterCallback<MouseEnterEvent>(_ => {
-                button.style.backgroundColor = hoverColor;
-            });
-            button.RegisterCallback<MouseLeaveEvent>(_ => {
-                button.style.backgroundColor = Color.clear;
-            });
-            
+            button.RegisterCallback<MouseEnterEvent>(_ => { button.style.backgroundColor = hoverColor; });
+            button.RegisterCallback<MouseLeaveEvent>(_ => { button.style.backgroundColor = Color.clear; });
+
             _lockIcon = new Image {
                 image = EditorGUIUtility.IconContent(IsLocked ? "IN LockButton on" : "IN LockButton").image,
                 scaleMode = ScaleMode.ScaleToFit,
@@ -155,12 +155,12 @@ namespace _4OF.ee4v.Core.UI.Window {
                 tintColor = ColorPreset.TextColor
             };
             button.Add(_lockIcon);
-            
+
             button.clicked += () => { IsLocked = !IsLocked; };
-            
+
             return button;
         }
-        
+
         private Button CloseButton() {
             var button = new Button(Close) {
                 style = {
@@ -173,16 +173,12 @@ namespace _4OF.ee4v.Core.UI.Window {
                     justifyContent = Justify.Center
                 }
             };
-            
+
             var hoverColor = ColorPreset.MouseOverBackground;
             hoverColor.a = 0.3f;
-            button.RegisterCallback<MouseEnterEvent>(_ => {
-                button.style.backgroundColor = hoverColor;
-            });
-            button.RegisterCallback<MouseLeaveEvent>(_ => {
-                button.style.backgroundColor = Color.clear;
-            });
-            
+            button.RegisterCallback<MouseEnterEvent>(_ => { button.style.backgroundColor = hoverColor; });
+            button.RegisterCallback<MouseLeaveEvent>(_ => { button.style.backgroundColor = Color.clear; });
+
             var icon = new Image {
                 image = EditorGUIUtility.IconContent("winbtn_win_close").image,
                 scaleMode = ScaleMode.ScaleToFit,
@@ -191,12 +187,13 @@ namespace _4OF.ee4v.Core.UI.Window {
                 }
             };
             button.Add(icon);
-            
+
             return button;
         }
 
         private void WindowMover(VisualElement header) {
-            header.RegisterCallback<MouseDownEvent>(evt => {
+            header.RegisterCallback<MouseDownEvent>(evt =>
+            {
                 if (evt.button != 0) return;
                 _isDragging = true;
                 header.CaptureMouse();
@@ -205,22 +202,21 @@ namespace _4OF.ee4v.Core.UI.Window {
                 evt.StopPropagation();
             });
 
-            header.RegisterCallback<MouseMoveEvent>(evt => {
+            header.RegisterCallback<MouseMoveEvent>(evt =>
+            {
                 if (!_isDragging) return;
                 var mouseScreen = GUIUtility.GUIToScreenPoint(evt.mousePosition);
                 var delta = mouseScreen - _dragStartMouseScreen;
-                position = new Rect(_dragStartWindowPosition.x + delta.x, _dragStartWindowPosition.y + delta.y, position.width, position.height);
+                position = new Rect(_dragStartWindowPosition.x + delta.x, _dragStartWindowPosition.y + delta.y,
+                    position.width, position.height);
             });
 
-            header.RegisterCallback<MouseUpEvent>(evt => {
+            header.RegisterCallback<MouseUpEvent>(evt =>
+            {
                 _isDragging = false;
                 header.ReleaseMouse();
                 evt.StopPropagation();
             });
-        }
-
-        private void OnGUI() {
-            HandleResize(Event.current);
         }
 
         private void HandleResize(Event e) {
@@ -228,13 +224,15 @@ namespace _4OF.ee4v.Core.UI.Window {
             const float cornerSize = 6;
 
             var leftRect = new Rect(0, 24, margin, Mathf.Max(0, position.height - 24 - cornerSize));
-            var rightRect = new Rect(position.width - margin, 24, margin, Mathf.Max(0, position.height - 24 - cornerSize));
+            var rightRect = new Rect(position.width - margin, 24, margin,
+                Mathf.Max(0, position.height - 24 - cornerSize));
 
             var innerBottomWidth = Mathf.Max(0, position.width - cornerSize * 2);
             var bottomRect = new Rect(cornerSize, Mathf.Max(0, position.height - margin), innerBottomWidth, margin);
 
             var bottomLeftRect = new Rect(0, Mathf.Max(0, position.height - cornerSize), cornerSize, cornerSize);
-            var bottomRightRect = new Rect(Mathf.Max(0, position.width - cornerSize), Mathf.Max(0, position.height - cornerSize), cornerSize, cornerSize);
+            var bottomRightRect = new Rect(Mathf.Max(0, position.width - cornerSize),
+                Mathf.Max(0, position.height                           - cornerSize), cornerSize, cornerSize);
 
             EditorGUIUtility.AddCursorRect(leftRect, MouseCursor.ResizeHorizontal);
             EditorGUIUtility.AddCursorRect(rightRect, MouseCursor.ResizeHorizontal);
@@ -245,7 +243,8 @@ namespace _4OF.ee4v.Core.UI.Window {
             if (e.type == EventType.MouseDown && e.button == 0 && !_isDragging) {
                 var detected = ResizeEdgeEnum.None;
                 if (bottomLeftRect.Contains(e.mousePosition)) detected = ResizeEdgeEnum.Left | ResizeEdgeEnum.Bottom;
-                else if (bottomRightRect.Contains(e.mousePosition)) detected = ResizeEdgeEnum.Right | ResizeEdgeEnum.Bottom;
+                else if (bottomRightRect.Contains(e.mousePosition))
+                    detected = ResizeEdgeEnum.Right | ResizeEdgeEnum.Bottom;
                 else if (leftRect.Contains(e.mousePosition)) detected = ResizeEdgeEnum.Left;
                 else if (rightRect.Contains(e.mousePosition)) detected = ResizeEdgeEnum.Right;
                 else if (bottomRect.Contains(e.mousePosition)) detected = ResizeEdgeEnum.Bottom;
@@ -268,11 +267,12 @@ namespace _4OF.ee4v.Core.UI.Window {
 
                 if ((_resizeEdge & ResizeEdgeEnum.Left) != 0) {
                     var newWidth = _resizeStartWindowPosition.width - delta.x;
-                    var newX = _resizeStartWindowPosition.x + delta.x;
+                    var newX = _resizeStartWindowPosition.x         + delta.x;
                     if (newWidth < MinWidth) {
                         newWidth = MinWidth;
                         newX = _resizeStartWindowPosition.x + (_resizeStartWindowPosition.width - newWidth);
                     }
+
                     newPos.x = newX;
                     newPos.width = newWidth;
                 }
@@ -300,7 +300,17 @@ namespace _4OF.ee4v.Core.UI.Window {
             _resizeControlID = 0;
             e.Use();
         }
-        
-        protected static VisualElement Spacer(int height = 0, int width = 0) => new() { style = { height = height, width = width } };
+
+        protected static VisualElement Spacer(int height = 0, int width = 0) {
+            return new VisualElement { style = { height = height, width = width } };
+        }
+
+        [Flags]
+        private enum ResizeEdgeEnum {
+            None = 0,
+            Left = 1,
+            Right = 2,
+            Bottom = 4
+        }
     }
 }

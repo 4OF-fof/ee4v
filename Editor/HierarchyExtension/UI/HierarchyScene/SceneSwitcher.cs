@@ -1,30 +1,18 @@
-﻿using UnityEngine;
-using UnityEditor;
-using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-using UnityEngine.SceneManagement;
-using UnityEditor.SceneManagement;
-
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Collections.Generic;
-
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.HierarchyExtension.Data;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEditor.UIElements;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene {
-    public class SceneSwitcher: EditorWindow {
+    public class SceneSwitcher : EditorWindow {
         private readonly Dictionary<VisualElement, ItemState> _itemStates = new();
-        
-        private class ItemState {
-            public Vector2 Start;
-            public bool IsDragging;
-        }
-        
-        public static void Open(Rect sceneRect) {
-            var window = CreateInstance<SceneSwitcher>();
-            window.ShowAsDropDown(sceneRect, new Vector2(200, 300));
-        }
 
         public void CreateGUI() {
             var borderColor = ColorPreset.WindowBorder;
@@ -53,21 +41,26 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene {
                 itemsSource = displayedPaths,
                 selectionType = SelectionType.Single,
                 reorderable = true,
-                makeItem = () => {
-                    var container = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center } };
+                makeItem = () =>
+                {
+                    var container = new VisualElement
+                        { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center } };
                     var icon = new Image { style = { width = 16, height = 16, marginRight = 6, marginLeft = 6 } };
                     var label = new Label();
                     container.Add(icon);
                     container.Add(label);
 
-                    container.RegisterCallback<PointerDownEvent>(evt => {
+                    container.RegisterCallback<PointerDownEvent>(evt =>
+                    {
                         _itemStates[container] = new ItemState { Start = evt.position, IsDragging = false };
                     });
-                    container.RegisterCallback<PointerMoveEvent>(evt => {
+                    container.RegisterCallback<PointerMoveEvent>(evt =>
+                    {
                         if (!_itemStates.TryGetValue(container, out var st) || st.IsDragging) return;
                         if (Vector2.Distance(st.Start, evt.position) > 4f) st.IsDragging = true;
                     });
-                    container.RegisterCallback<PointerUpEvent>(evt => {
+                    container.RegisterCallback<PointerUpEvent>(evt =>
+                    {
                         if (!_itemStates.TryGetValue(container, out var st)) return;
                         var pos = evt.position;
                         if (float.IsNegativeInfinity(pos.x)) return;
@@ -75,14 +68,14 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene {
                             var path = container.userData as string;
                             if (!string.IsNullOrEmpty(path)) {
                                 var openScenePathsNow = GetOpenScenePaths();
-                                if (!openScenePathsNow.Contains(path)) {
+                                if (!openScenePathsNow.Contains(path))
                                     if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) {
                                         EditorSceneManager.OpenScene(path);
                                         Close();
                                     }
-                                }
                             }
                         }
+
                         _itemStates.Remove(container);
                     });
 
@@ -90,19 +83,24 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene {
                 }
             };
 
-            searchBar.RegisterValueChangedCallback(evt => {
+            searchBar.RegisterValueChangedCallback(evt =>
+            {
                 var query = evt.newValue ?? string.Empty;
                 if (string.IsNullOrEmpty(query)) {
                     displayedPaths = allScenePaths;
-                } else {
-                    var lower = query.ToLowerInvariant();
-                    displayedPaths = allScenePaths.Where(p => Path.GetFileNameWithoutExtension(p).ToLowerInvariant().Contains(lower)).ToList();
                 }
+                else {
+                    var lower = query.ToLowerInvariant();
+                    displayedPaths = allScenePaths
+                        .Where(p => Path.GetFileNameWithoutExtension(p).ToLowerInvariant().Contains(lower)).ToList();
+                }
+
                 sceneListView.itemsSource = displayedPaths;
                 sceneListView.RefreshItems();
             });
 
-            sceneListView.bindItem = (element, i) => {
+            sceneListView.bindItem = (element, i) =>
+            {
                 var icon = element.Q<Image>();
                 var label = element.Q<Label>();
                 var path = (string)sceneListView.itemsSource[i];
@@ -112,26 +110,35 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene {
                 if (asset != null) {
                     var content = EditorGUIUtility.ObjectContent(asset, asset.GetType());
                     icon.image = content.image;
-                } else {
+                }
+                else {
                     icon.image = null;
                 }
+
                 var openScenePathsNow = GetOpenScenePaths();
                 element.SetEnabled(!openScenePathsNow.Contains(path));
                 element.userData = path;
             };
 
-            sceneListView.RegisterCallback<DragPerformEvent>(evt => {
+            sceneListView.RegisterCallback<DragPerformEvent>(evt =>
+            {
                 var dev = evt.GetType().Name;
                 if (string.IsNullOrEmpty(dev)) return;
                 ApplyReordered(displayedPaths);
             });
-            sceneListView.RegisterCallback<DragExitedEvent>(evt => {
+            sceneListView.RegisterCallback<DragExitedEvent>(evt =>
+            {
                 var dev = evt.GetType().Name;
                 if (string.IsNullOrEmpty(dev)) return;
                 ApplyReordered(displayedPaths);
             });
 
             rootVisualElement.Add(sceneListView);
+        }
+
+        public static void Open(Rect sceneRect) {
+            var window = CreateInstance<SceneSwitcher>();
+            window.ShowAsDropDown(sceneRect, new Vector2(200, 300));
         }
 
         private static void ApplyReordered(List<string> newOrder) {
@@ -150,14 +157,20 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene {
                 working.Insert(to, item);
             }
         }
-        
+
         private static HashSet<string> GetOpenScenePaths() {
             var set = new HashSet<string>();
             for (var i = 0; i < SceneManager.sceneCount; ++i) {
                 var s = SceneManager.GetSceneAt(i);
                 if (!string.IsNullOrEmpty(s.path)) set.Add(s.path);
             }
+
             return set;
+        }
+
+        private class ItemState {
+            public bool IsDragging;
+            public Vector2 Start;
         }
     }
 }

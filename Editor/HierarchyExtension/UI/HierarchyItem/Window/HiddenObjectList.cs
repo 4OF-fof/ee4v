@@ -1,19 +1,18 @@
-﻿using UnityEditor;
-using UnityEngine;
-using UnityEngine.UIElements;
-
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Collections.Generic;
-
+using _4OF.ee4v.Core.Data;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
-using _4OF.ee4v.Core.Data;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
-    public class HiddenObjectList: BaseWindow {
+    public class HiddenObjectList : BaseWindow {
         private List<GameObject> _hiddenObjects = new();
         private VisualElement _listContainer;
-        
+
         public static void Open(Vector2 screenPosition) {
             var window = OpenSetup<HiddenObjectList>(screenPosition);
             window.position = new Rect(window.position.x, window.position.y, 600, 400);
@@ -28,20 +27,20 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                     flexDirection = FlexDirection.Row,
                     alignItems = Align.Center,
                     height = 24,
-                    flexGrow = 1,
+                    flexGrow = 1
                 }
             };
-            
+
             var titleLabel = new Label("Hidden Objects") {
                 style = {
                     unityFontStyleAndWeight = FontStyle.Bold,
                     unityTextAlign = TextAnchor.MiddleLeft,
                     flexGrow = 1,
-                    marginRight = 4, marginLeft = 16,
+                    marginRight = 4, marginLeft = 16
                 }
             };
             header.Add(titleLabel);
-            
+
             return header;
         }
 
@@ -67,10 +66,10 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                     position = Position.Absolute,
                     flexDirection = FlexDirection.Row,
                     left = 0, right = 0, bottom = 8,
-                    marginRight = 4, marginLeft = 4,
+                    marginRight = 4, marginLeft = 4
                 }
             };
-            
+
             var refreshButton = new Button(RefreshList) {
                 text = "Refresh",
                 style = {
@@ -78,11 +77,11 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                     height = 24,
                     marginRight = 4,
                     borderTopRightRadius = 10, borderTopLeftRadius = 10,
-                    borderBottomRightRadius = 10, borderBottomLeftRadius = 10,
+                    borderBottomRightRadius = 10, borderBottomLeftRadius = 10
                 }
             };
             buttonRow.Add(refreshButton);
-            
+
             var restoreAllButton = new Button(RestoreAll) {
                 text = "Restore All",
                 style = {
@@ -90,16 +89,16 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                     height = 24,
                     backgroundColor = ColorPreset.WarningButton,
                     borderTopRightRadius = 10, borderTopLeftRadius = 10,
-                    borderBottomRightRadius = 10, borderBottomLeftRadius = 10,
+                    borderBottomRightRadius = 10, borderBottomLeftRadius = 10
                 }
             };
             buttonRow.Add(restoreAllButton);
-            
+
             root.Add(scrollArea);
             root.Add(buttonRow);
-            
+
             UpdateList();
-            
+
             return root;
         }
 
@@ -107,44 +106,41 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
             RefreshHiddenObjects();
             UpdateList();
         }
-        
+
         private void RefreshHiddenObjects() {
             _hiddenObjects.Clear();
             var allObjects = new List<GameObject>();
-            
-            for (var i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++) {
-                var scene = UnityEngine.SceneManagement.SceneManager.GetSceneAt(i);
+
+            for (var i = 0; i < SceneManager.sceneCount; i++) {
+                var scene = SceneManager.GetSceneAt(i);
                 if (!scene.isLoaded) continue;
-                
+
                 var rootObjects = scene.GetRootGameObjects();
-                
-                foreach (var rootObj in rootObjects) {
-                    CollectHiddenObjects(rootObj, allObjects);
-                }
+
+                foreach (var rootObj in rootObjects) CollectHiddenObjects(rootObj, allObjects);
             }
-            
+
             _hiddenObjects = allObjects;
         }
-        
+
         private static void CollectHiddenObjects(GameObject obj, List<GameObject> collection) {
             if (obj == null) return;
-            
+
             if ((obj.hideFlags & HideFlags.HideInHierarchy) != 0) {
                 if (EditorPrefsManager.HiddenItemList.Contains(obj.name)) return;
                 collection.Add(obj);
             }
-            
+
             var transform = obj.transform;
-            for (var i = 0; i < transform.childCount; i++) {
+            for (var i = 0; i < transform.childCount; i++)
                 CollectHiddenObjects(transform.GetChild(i).gameObject, collection);
-            }
         }
 
         private void UpdateList() {
             if (_listContainer == null) return;
-            
+
             _listContainer.Clear();
-            
+
             if (_hiddenObjects == null || _hiddenObjects.Count == 0) {
                 var emptyLabel = new Label("No hidden objects found") {
                     style = {
@@ -159,7 +155,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
 
             foreach (var obj in _hiddenObjects) {
                 if (obj == null) continue;
-                
+
                 var row = new VisualElement {
                     style = {
                         flexDirection = FlexDirection.Row,
@@ -169,10 +165,10 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                         paddingLeft = 4, paddingRight = 4,
                         backgroundColor = new Color(0.3f, 0.3f, 0.3f, 0.3f),
                         borderTopRightRadius = 4, borderTopLeftRadius = 4,
-                        borderBottomRightRadius = 4, borderBottomLeftRadius = 4,
+                        borderBottomRightRadius = 4, borderBottomLeftRadius = 4
                     }
                 };
-                
+
                 var icon = new Image {
                     image = AssetPreview.GetMiniThumbnail(obj),
                     scaleMode = ScaleMode.ScaleToFit,
@@ -182,12 +178,10 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                     }
                 };
                 row.Add(icon);
-                
+
                 var path = GetHierarchyPath(obj);
                 var displayName = obj.name;
-                if (!string.IsNullOrEmpty(path) && path != obj.name) {
-                    displayName = $"{obj.name} ({path})";
-                }
+                if (!string.IsNullOrEmpty(path) && path != obj.name) displayName = $"{obj.name} ({path})";
 
                 var nameLabel = new Label(displayName) {
                     style = {
@@ -200,7 +194,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                     }
                 };
                 row.Add(nameLabel);
-                
+
                 var restoreButton = new Button(() => RestoreObject(obj)) {
                     text = "Restore",
                     style = {
@@ -208,15 +202,15 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                         flexShrink = 0,
                         fontSize = 10,
                         borderTopRightRadius = 4, borderTopLeftRadius = 4,
-                        borderBottomRightRadius = 4, borderBottomLeftRadius = 4,
+                        borderBottomRightRadius = 4, borderBottomLeftRadius = 4
                     }
                 };
                 row.Add(restoreButton);
-                
+
                 _listContainer.Add(row);
             }
         }
-        
+
         private static string GetHierarchyPath(GameObject obj) {
             if (obj == null) return string.Empty;
 
@@ -226,44 +220,42 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                 parts.Add(t.name);
                 t = t.parent;
             }
+
             parts.Reverse();
             return string.Join("/", parts);
         }
 
         private void RestoreObject(GameObject obj) {
             if (obj == null) return;
-            
+
             Undo.RecordObject(obj, "Restore Hidden GameObject");
             obj.hideFlags &= ~HideFlags.HideInHierarchy;
             obj.SetActive(true);
-            if (obj.CompareTag("EditorOnly")) {
-                obj.tag = "Untagged";
-            }
-            
+            if (obj.CompareTag("EditorOnly")) obj.tag = "Untagged";
+
             EditorUtility.SetDirty(obj);
             EditorApplication.RepaintHierarchyWindow();
-            
+
             RefreshList();
         }
 
         private void RestoreAll() {
             if (_hiddenObjects == null || _hiddenObjects.Count == 0) return;
-            
+
             var objectsToRestore = _hiddenObjects.Where(obj => obj != null).ToList();
             if (objectsToRestore.Count == 0) return;
-            
-            Undo.RecordObjects(objectsToRestore.Select(obj => obj as Object).ToArray(), "Restore All Hidden GameObjects");
-            
+
+            Undo.RecordObjects(objectsToRestore.Select(obj => obj as Object).ToArray(),
+                "Restore All Hidden GameObjects");
+
             foreach (var obj in objectsToRestore) {
                 obj.hideFlags &= ~HideFlags.HideInHierarchy;
                 obj.SetActive(true);
-                if (obj.CompareTag("EditorOnly")) {
-                    obj.tag = "Untagged";
-                }
-                
+                if (obj.CompareTag("EditorOnly")) obj.tag = "Untagged";
+
                 EditorUtility.SetDirty(obj);
             }
-            
+
             EditorApplication.RepaintHierarchyWindow();
             RefreshList();
         }

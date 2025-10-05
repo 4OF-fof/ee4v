@@ -1,58 +1,23 @@
-﻿using UnityEditor;
-using UnityEngine;
-using UnityEngine.UIElements;
-
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Collections.Generic;
-
-using _4OF.ee4v.Runtime;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
 using _4OF.ee4v.Core.UI.Window._Component;
 using _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window._Component;
+using _4OF.ee4v.Runtime;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
-    public class GameObjectInfo: BaseWindow {
-        
-        private List<GameObject> _gameObjectList = new();
+    public class GameObjectInfo : BaseWindow {
         private readonly List<ObjectStyleComponent> _objectStylComponentList = new();
+
+        private List<GameObject> _gameObjectList = new();
+        private Color? _headerColor;
         private Image _headerIconImage;
         private bool _isSubscribed;
-        private Color? _headerColor;
-        public static void Open(GameObject obj, Vector2 screenPosition) {
-            var window = OpenSetup<GameObjectInfo>(screenPosition, obj);
-            window._gameObjectList.Add(obj);
-            window._objectStylComponentList.Add(obj.GetComponent<ObjectStyleComponent>());
-            if (window._objectStylComponentList[0] == null) {
-                window._objectStylComponentList[0] = obj.AddComponent<ObjectStyleComponent>();
-            }
-            if (window._gameObjectList.Count == 1) {
-                var comp = window._objectStylComponentList[0];
-                if (comp != null) window._headerColor = comp.color;
-                window.HeaderBackgroundColor = window._headerColor;
-                window.UpdateHeaderBackground(window._headerColor);
-            }
-            window.ShowPopup();
-        }
-        
-        public static void Open(GameObject[] objList, Vector2 screenPosition) {
-            var window = OpenSetup<GameObjectInfo>(screenPosition, objList);
-            window._gameObjectList = objList.ToList();
-            foreach (var obj in objList) {
-                window._objectStylComponentList.Add(obj.GetComponent<ObjectStyleComponent>());
-                if (window._objectStylComponentList.Last() == null) {
-                    window._objectStylComponentList[^1] = obj.AddComponent<ObjectStyleComponent>();
-                }
-            }
-            if (window._gameObjectList.Count == 1) {
-                var comp = window._objectStylComponentList[0];
-                if (comp != null) window._headerColor = comp.color;
-                window.HeaderBackgroundColor = window._headerColor;
-                window.UpdateHeaderBackground(window._headerColor);
-            }
-            window.ShowPopup();
-        }
-        
+
         protected override void OnDestroy() {
             base.OnDestroy();
             if (!_isSubscribed) return;
@@ -60,7 +25,42 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
             ColorSelector.OnColorChangedComponent -= OnColorChangedHandler;
             _isSubscribed = false;
         }
-        
+
+        public static void Open(GameObject obj, Vector2 screenPosition) {
+            var window = OpenSetup<GameObjectInfo>(screenPosition, obj);
+            window._gameObjectList.Add(obj);
+            window._objectStylComponentList.Add(obj.GetComponent<ObjectStyleComponent>());
+            if (window._objectStylComponentList[0] == null)
+                window._objectStylComponentList[0] = obj.AddComponent<ObjectStyleComponent>();
+            if (window._gameObjectList.Count == 1) {
+                var comp = window._objectStylComponentList[0];
+                if (comp != null) window._headerColor = comp.color;
+                window.HeaderBackgroundColor = window._headerColor;
+                window.UpdateHeaderBackground(window._headerColor);
+            }
+
+            window.ShowPopup();
+        }
+
+        public static void Open(GameObject[] objList, Vector2 screenPosition) {
+            var window = OpenSetup<GameObjectInfo>(screenPosition, objList);
+            window._gameObjectList = objList.ToList();
+            foreach (var obj in objList) {
+                window._objectStylComponentList.Add(obj.GetComponent<ObjectStyleComponent>());
+                if (window._objectStylComponentList.Last() == null)
+                    window._objectStylComponentList[^1] = obj.AddComponent<ObjectStyleComponent>();
+            }
+
+            if (window._gameObjectList.Count == 1) {
+                var comp = window._objectStylComponentList[0];
+                if (comp != null) window._headerColor = comp.color;
+                window.HeaderBackgroundColor = window._headerColor;
+                window.UpdateHeaderBackground(window._headerColor);
+            }
+
+            window.ShowPopup();
+        }
+
         protected override bool CanReuseFor(object reuseKey) {
             if (reuseKey is GameObject go) return _gameObjectList.Contains(go);
             return false;
@@ -72,16 +72,14 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                     flexDirection = FlexDirection.Row,
                     alignItems = Align.Center,
                     height = 24,
-                    flexGrow = 1,
+                    flexGrow = 1
                 }
             };
             if (_gameObjectList == null) return root;
-            
+
             var styleIcon = _objectStylComponentList?[0].icon;
             var icon = styleIcon != null ? styleIcon : AssetPreview.GetMiniThumbnail(_gameObjectList[0]);
-            if (_gameObjectList.Count != 1) {
-                icon = EditorGUIUtility.IconContent("d_UnityEditor.InspectorWindow").image;
-            }
+            if (_gameObjectList.Count != 1) icon = EditorGUIUtility.IconContent("d_UnityEditor.InspectorWindow").image;
             var iconImage = new Image {
                 image = icon,
                 scaleMode = ScaleMode.ScaleToFit,
@@ -96,6 +94,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                 ColorSelector.OnColorChangedComponent += OnColorChangedHandler;
                 _isSubscribed = true;
             }
+
             root.Add(iconImage);
 
             var firstState = _gameObjectList[0].activeSelf;
@@ -105,6 +104,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                 isMixed = true;
                 break;
             }
+
             var activeToggle = new Toggle {
                 style = {
                     width = 16,
@@ -115,8 +115,9 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
             };
             if (isMixed) activeToggle.showMixedValue = true;
             else activeToggle.value = firstState;
-                
-            activeToggle.RegisterValueChangedCallback(evt => {
+
+            activeToggle.RegisterValueChangedCallback(evt =>
+            {
                 var objectsToChange = _gameObjectList.Where(go => go != null && go.activeSelf != evt.newValue).ToList();
 
                 if (objectsToChange.Count <= 0) return;
@@ -128,7 +129,9 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
             });
             root.Add(activeToggle);
 
-            var titleText = _gameObjectList.Count == 1 ? _gameObjectList[0].name : $"Selected {_gameObjectList.Count} Objects";
+            var titleText = _gameObjectList.Count == 1
+                ? _gameObjectList[0].name
+                : $"Selected {_gameObjectList.Count} Objects";
             var titleLabel = new Label(titleText) {
                 style = {
                     flexShrink = 1,
@@ -168,11 +171,10 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
             var intersects = components.Any(c => _objectStylComponentList.Contains(c));
             if (!intersects) return;
 
-            if (_gameObjectList.Count == 1) {
+            if (_gameObjectList.Count == 1)
                 _headerColor = newColor;
-            } else {
+            else
                 _headerColor = null;
-            }
             UpdateHeaderBackground(_headerColor);
         }
 
@@ -189,6 +191,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                 var componentList = ComponentList.Element(_gameObjectList[0], locked => IsLocked = locked);
                 scrollArea.Add(componentList);
             }
+
             var hideObjectButton = new Button(() =>
             {
                 foreach (var obj in _gameObjectList.Where(obj => obj != null)) {
@@ -208,7 +211,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                     marginTop = 8, marginBottom = 4,
                     height = 24,
                     borderTopRightRadius = 10, borderTopLeftRadius = 10,
-                    borderBottomRightRadius = 10, borderBottomLeftRadius = 10,
+                    borderBottomRightRadius = 10, borderBottomLeftRadius = 10
                 }
             };
             scrollArea.Add(hideObjectButton);

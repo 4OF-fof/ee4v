@@ -1,21 +1,22 @@
-﻿using UnityEditor;
-using UnityEngine;
-
-using System;
+﻿using System;
 using System.Reflection;
+using UnityEditor;
+using UnityEngine;
 
 namespace _4OF.ee4v.ProjectExtension.Service {
     public static class ReflectionWrapper {
-        public static readonly Type ProjectBrowserType = typeof(EditorWindow).Assembly.GetType("UnityEditor.ProjectBrowser");
-        
+        public static readonly Type ProjectBrowserType =
+            typeof(EditorWindow).Assembly.GetType("UnityEditor.ProjectBrowser");
+
         private static readonly EditorWindow ProjectBrowserWindow;
         private static readonly MethodInfo ShowFolderContentsMethod;
-        
+
         static ReflectionWrapper() {
             ProjectBrowserWindow = EditorWindow.GetWindow(Type.GetType("UnityEditor.ProjectBrowser,UnityEditor.dll"));
-            
+
             if (ProjectBrowserType == null) return;
-            ShowFolderContentsMethod = ProjectBrowserType.GetMethod("ShowFolderContents", BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(int), typeof(bool) }, null);
+            ShowFolderContentsMethod = ProjectBrowserType.GetMethod("ShowFolderContents",
+                BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(int), typeof(bool) }, null);
         }
 
         public static EditorWindow GetProjectBrowserWindow() {
@@ -23,7 +24,7 @@ namespace _4OF.ee4v.ProjectExtension.Service {
             Debug.LogError("ProjectBrowserWindow is null");
             return null;
         }
-        
+
         public static void ShowFolderContents(int instanceId) {
             try {
                 if (ShowFolderContentsMethod == null || ProjectBrowserWindow == null) return;

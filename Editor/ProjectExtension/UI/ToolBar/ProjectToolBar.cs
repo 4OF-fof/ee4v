@@ -4,7 +4,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
     public static class ProjectToolBar {
         public static VisualElement Element() {
             var tabContainer = TabContainer.Element();
-            
+
             var projectToolBar = new VisualElement {
                 name = "ee4v-project-toolbar",
                 style = {
@@ -15,9 +15,9 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                     overflow = Overflow.Hidden
                 }
             };
-            
+
             projectToolBar.Add(tabContainer);
-            
+
             return projectToolBar;
         }
     }

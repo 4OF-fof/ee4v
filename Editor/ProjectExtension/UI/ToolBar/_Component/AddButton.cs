@@ -1,13 +1,12 @@
-﻿using UnityEditor;
+﻿using _4OF.ee4v.Core.UI;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-
-using _4OF.ee4v.Core.UI;
 
 namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component {
     public static class AddButton {
         public static Button Element() {
-            var addButton = new Button() {
+            var addButton = new Button {
                 name = "ee4v-project-toolbar-tabContainer-addButton",
                 tooltip = "Add New Tab",
                 style = {
@@ -29,8 +28,10 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component {
             };
             addButton.Add(icon);
 
-            addButton.RegisterCallback<MouseEnterEvent>(_ => addButton.style.backgroundColor = ColorPreset.AddButtonHover);
-            addButton.RegisterCallback<MouseLeaveEvent>(_ => addButton.style.backgroundColor = new StyleColor(StyleKeyword.None));
+            addButton.RegisterCallback<MouseEnterEvent>(_ =>
+                addButton.style.backgroundColor = ColorPreset.AddButtonHover);
+            addButton.RegisterCallback<MouseLeaveEvent>(_ =>
+                addButton.style.backgroundColor = new StyleColor(StyleKeyword.None));
 
             return addButton;
         }

@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.Core.UI {
     public abstract class ColorPreset {
-        
         public static Color DefaultBackground = FromHex(EditorGUIUtility.isProSkin ? "#383838" : "#c8c8c8");
         public static Color ProjectBackground = FromHex(EditorGUIUtility.isProSkin ? "#333333" : "#bdbdbd");
         public static Color MouseOverBackground = FromHex(EditorGUIUtility.isProSkin ? "#444444" : "#b2b2b2");
@@ -16,29 +16,31 @@ namespace _4OF.ee4v.Core.UI {
         public static Color InActiveItem = FromHex("#7f7f7f", EditorGUIUtility.isProSkin ? 1f : 0.3f);
         public static Color WarningButton = FromHex(EditorGUIUtility.isProSkin ? "#b71c1c" : "#ff5252");
         public static Color IconBorder = Color.black;
-        
+
         public static Color WindowHeader = FromHex(EditorGUIUtility.isProSkin ? "#282828" : "#a5a5a5");
-        public static Color WindowBorder = FromHex(EditorGUIUtility.isProSkin ? "#191919": "#8a8a8a");
-        
+        public static Color WindowBorder = FromHex(EditorGUIUtility.isProSkin ? "#191919" : "#8a8a8a");
+
         public static Color ItemSelectedBorder = FromHex("#3f7fff");
         public static Color ItemSelectedBackGround = FromHex("#3f7fff", 0.3f);
-        
-        public static StyleColor TabBackground = new (DefaultBackground);
-        public static StyleColor AddButtonHover = new (MouseOverBackground);
-        public static StyleColor TabHoveredBackground = new (MouseOverBackground);
-        public static StyleColor TabSelectedBackground = new (ActiveBackground);
-        public static StyleColor TabBorder = new (WindowBorder);
+
+        public static StyleColor TabBackground = new(DefaultBackground);
+        public static StyleColor AddButtonHover = new(MouseOverBackground);
+        public static StyleColor TabHoveredBackground = new(MouseOverBackground);
+        public static StyleColor TabSelectedBackground = new(ActiveBackground);
+        public static StyleColor TabBorder = new(WindowBorder);
         public static StyleColor TabText = new(TextColor);
-        public static StyleColor DropFolderArea = new (FromHex("#334c7f", 0.3f));
-        public static StyleColor TabCloseButtonHover = new (FromHex("#e53333", 0.8f));
-        
+        public static StyleColor DropFolderArea = new(FromHex("#334c7f", 0.3f));
+        public static StyleColor TabCloseButtonHover = new(FromHex("#e53333", 0.8f));
+
+        private static readonly Dictionary<int, Texture2D> AlphaGradientCache = new();
+
         private static Color FromHex(string hex, float alpha = 1f) {
             if (string.IsNullOrEmpty(hex)) return Color.white;
 
             if (hex[0] == '#') hex = hex[1..];
 
             switch (hex.Length) {
-                case 6 when uint.TryParse(hex, System.Globalization.NumberStyles.HexNumber, null, out var hexVal): {
+                case 6 when uint.TryParse(hex, NumberStyles.HexNumber, null, out var hexVal): {
                     var r = ((hexVal >> 16) & 0xFF) / 255f;
                     var g = ((hexVal >> 8)  & 0xFF) / 255f;
                     var b = (hexVal         & 0xFF) / 255f;
@@ -52,12 +54,13 @@ namespace _4OF.ee4v.Core.UI {
                     var gg = new string(gC, 2);
                     var bb = new string(bC, 2);
                     var expanded = rr + gg + bb;
-                    if (uint.TryParse(expanded, System.Globalization.NumberStyles.HexNumber, null, out var hexVal)) {
+                    if (uint.TryParse(expanded, NumberStyles.HexNumber, null, out var hexVal)) {
                         var r = ((hexVal >> 16) & 0xFF) / 255f;
                         var g = ((hexVal >> 8)  & 0xFF) / 255f;
                         var b = (hexVal         & 0xFF) / 255f;
                         return new Color(r, g, b, Mathf.Clamp01(alpha));
                     }
+
                     break;
                 }
             }
@@ -65,9 +68,7 @@ namespace _4OF.ee4v.Core.UI {
             Debug.LogError($"Invalid hex color format: {hex}. Expected #RRGGBB or #RGB.");
             return Color.white;
         }
-        
-        private static readonly Dictionary<int, Texture2D> AlphaGradientCache = new();
-        
+
         public static void DrawGradient(Rect rect, Color leftColor, Color rightColor) {
             if (rect.width <= 0 || rect.height <= 0) return;
 
@@ -103,9 +104,7 @@ namespace _4OF.ee4v.Core.UI {
                 var a = Mathf.Lerp(leftColor.a, rightColor.a, t);
                 var col = Color.Lerp(leftColor, rightColor, t);
                 col.a = a;
-                for (var y = 0; y < height; y++) {
-                    pixels[y * width + x] = col;
-                }
+                for (var y = 0; y < height; y++) pixels[y * width + x] = col;
             }
 
             tex.SetPixels(pixels);

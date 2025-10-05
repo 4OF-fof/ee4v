@@ -1,10 +1,11 @@
-﻿using UnityEditor;
+﻿using System;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window._Component {
     public static class ComponentList {
-        public static VisualElement Element(GameObject gameObject, System.Action<bool> onLockChanged) {
+        public static VisualElement Element(GameObject gameObject, Action<bool> onLockChanged) {
             var root = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
@@ -24,12 +25,13 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window._Component {
                         borderBottomRightRadius = 10, borderBottomLeftRadius = 10,
                         flexDirection = FlexDirection.Row,
                         alignItems = Align.Center,
-                        justifyContent = Justify.Center,
+                        justifyContent = Justify.Center
                     },
                     focusable = false
                 };
 
-                componentButton.clicked += () => {
+                componentButton.clicked += () =>
+                {
                     var anchor = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
                     onLockChanged?.Invoke(true);
                     ComponentInspector.Open(component, gameObject, anchor);
@@ -48,6 +50,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window._Component {
 
                 root.Add(componentButton);
             }
+
             return root;
         }
     }

@@ -1,8 +1,7 @@
-﻿using UnityEditor;
+﻿using _4OF.ee4v.Core.UI;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-
-using _4OF.ee4v.Core.UI;
 
 namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
     public static class CloseButton {
@@ -21,9 +20,11 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                     opacity = 0.7f
                 }
             };
-            
-            closeButton.RegisterCallback<MouseEnterEvent>(_ => closeButton.style.backgroundColor = ColorPreset.TabCloseButtonHover);
-            closeButton.RegisterCallback<MouseLeaveEvent>(_ => closeButton.style.backgroundColor = new StyleColor(StyleKeyword.None));
+
+            closeButton.RegisterCallback<MouseEnterEvent>(_ =>
+                closeButton.style.backgroundColor = ColorPreset.TabCloseButtonHover);
+            closeButton.RegisterCallback<MouseLeaveEvent>(_ =>
+                closeButton.style.backgroundColor = new StyleColor(StyleKeyword.None));
             return closeButton;
         }
     }

@@ -1,14 +1,12 @@
-﻿using UnityEditor;
-using UnityEngine;
-using UnityEngine.UIElements;
-
-using System.IO;
+﻿using System.IO;
 using System.Linq;
-
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.ProjectExtension.Data;
 using _4OF.ee4v.ProjectExtension.UI.ToolBar._Component;
 using _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
     public static class TabContainer {
@@ -28,12 +26,14 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
             tabContainer.style.alignItems = Align.Center;
             tabContainer.style.height = Length.Percent(100);
             tabContainer.style.flexDirection = FlexDirection.Row;
-            
+
             tabContainer.Add(addButton);
 
             #region Tab Management
+
             //Add Tab
-            addButton.clicked += () => {
+            addButton.clicked += () =>
+            {
                 var tab = Tab.Element("Assets");
                 TabListController.Insert(tabContainer.childCount - 1, tab);
                 TabListController.SelectTab(tab);
@@ -41,11 +41,12 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
 
             TabControl(tabContainer);
             RegisterDropEvents(tabContainer);
+
             #endregion Tab Management
 
             return scrollView;
         }
-        
+
         // Click to Select, Drag to Reorder
         private static void TabControl(VisualElement tabContainer) {
             VisualElement dragging = null;
@@ -56,19 +57,19 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
             var pointerDownPos = Vector2.zero;
             const float dragThreshold = 15f;
 
-            tabContainer.RegisterCallback<PointerDownEvent>(evt => {
+            tabContainer.RegisterCallback<PointerDownEvent>(evt =>
+            {
                 if (evt.button != 0) return;
                 if (evt.target is not VisualElement target) return;
                 var t = target;
                 while (t != null) {
-                    if (t.name == "ee4v-project-toolbar-tabContainer-tab-close") {
-                        return;
-                    }
+                    if (t.name == "ee4v-project-toolbar-tabContainer-tab-close") return;
                     t = t.parent;
                 }
 
                 var tabElement = target;
-                while (tabElement != null && tabElement.name != "ee4v-project-toolbar-tabContainer-tab") tabElement = tabElement.parent;
+                while (tabElement != null && tabElement.name != "ee4v-project-toolbar-tabContainer-tab")
+                    tabElement = tabElement.parent;
                 if (tabElement == null || !tabContainer.Contains(tabElement)) return;
 
                 potentialDrag = tabElement;
@@ -77,18 +78,18 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                 evt.StopPropagation();
             }, TrickleDown.TrickleDown);
 
-            tabContainer.RegisterCallback<PointerMoveEvent>(evt => {
+            tabContainer.RegisterCallback<PointerMoveEvent>(evt =>
+            {
                 if (potentialDrag == null && dragging == null) return;
 
-                if (potentialDrag != null && !tabContainer.Contains(potentialDrag)) {
-                    potentialDrag = null;
-                }
+                if (potentialDrag != null && !tabContainer.Contains(potentialDrag)) potentialDrag = null;
                 if (dragging != null && !tabContainer.Contains(dragging)) {
                     if (placeholder != null && tabContainer.Contains(placeholder)) {
                         tabContainer.Remove(placeholder);
                         placeholderInserted = false;
                         placeholder = null;
                     }
+
                     dragging.style.opacity = 1f;
                     dragging = null;
                     potentialDrag = null;
@@ -123,7 +124,8 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
 
                 var pointerX = localPos.x;
                 var desiredIndex = 0;
-                var children = tabContainer.Children().Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab" || e == placeholder).ToList();
+                var children = tabContainer.Children()
+                    .Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab" || e == placeholder).ToList();
                 if (children.Count == 0) return;
 
                 foreach (var child in children) {
@@ -133,6 +135,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                         desiredIndex = tabContainer.IndexOf(child);
                         break;
                     }
+
                     desiredIndex = tabContainer.IndexOf(child) + 1;
                 }
 
@@ -144,14 +147,17 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                     if (!placeholderInserted || placeholder == null || !tabContainer.Contains(placeholder)) return;
                     tabContainer.Remove(placeholder);
                     placeholderInserted = false;
-                } else {
-                    var addButton = tabContainer.Children().FirstOrDefault(c => c.name == "ee4v-project-toolbar-tabContainer-addButton");
+                }
+                else {
+                    var addButton = tabContainer.Children()
+                        .FirstOrDefault(c => c.name == "ee4v-project-toolbar-tabContainer-addButton");
                     var addIndex = addButton != null ? tabContainer.IndexOf(addButton) : tabContainer.childCount - 1;
                     var insertPos = Mathf.Min(desiredIndex, addIndex);
                     if (!placeholderInserted) {
                         tabContainer.Insert(insertPos, placeholder);
                         placeholderInserted = true;
-                    } else if (tabContainer.IndexOf(placeholder) != insertPos) {
+                    }
+                    else if (tabContainer.IndexOf(placeholder) != insertPos) {
                         tabContainer.Remove(placeholder);
                         tabContainer.Insert(insertPos, placeholder);
                     }
@@ -163,10 +169,10 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                     tabContainer.Remove(placeholder);
                     tabContainer.Insert(addIdxNow, placeholder);
                 }
-
             }, TrickleDown.TrickleDown);
 
-            tabContainer.RegisterCallback<PointerUpEvent>(evt => {
+            tabContainer.RegisterCallback<PointerUpEvent>(evt =>
+            {
                 tabContainer.ReleasePointer(evt.pointerId);
 
                 if (dragging != null && !tabContainer.Contains(dragging)) {
@@ -175,6 +181,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                         placeholderInserted = false;
                         placeholder = null;
                     }
+
                     dragging.style.opacity = 1f;
                     dragging = null;
                     potentialDrag = null;
@@ -191,11 +198,10 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                 }
 
                 var placeholderIndex = -1;
-                if (placeholder != null && tabContainer.Contains(placeholder)) {
+                if (placeholder != null && tabContainer.Contains(placeholder))
                     placeholderIndex = tabContainer.IndexOf(placeholder);
-                } else if (dragging != null && tabContainer.Contains(dragging)) {
+                else if (dragging != null && tabContainer.Contains(dragging))
                     placeholderIndex = tabContainer.IndexOf(dragging);
-                }
 
                 var path = dragging.tooltip;
 
@@ -203,7 +209,8 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                 if (dragging != null) dragging.style.opacity = 1f;
 
                 if (placeholderIndex >= 0 && originalIndex != placeholderIndex && !string.IsNullOrEmpty(path)) {
-                    var addButton = tabContainer.Children().FirstOrDefault(c => c.name == "ee4v-project-toolbar-tabContainer-addButton");
+                    var addButton = tabContainer.Children()
+                        .FirstOrDefault(c => c.name == "ee4v-project-toolbar-tabContainer-addButton");
                     var addIndex = addButton != null ? tabContainer.IndexOf(addButton) : tabContainer.childCount - 1;
                     var finalTarget = Mathf.Clamp(placeholderIndex, 0, addIndex);
                     TabListController.Move(originalIndex, finalTarget);
@@ -212,37 +219,43 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                 potentialDrag = null;
                 dragging = null;
                 placeholder = null;
-
             }, TrickleDown.TrickleDown);
         }
-        
+
         private static void RegisterDropEvents(VisualElement tabContainer) {
             // ドロップ可能領域の視覚化
-            tabContainer.RegisterCallback<DragEnterEvent>(evt => {
+            tabContainer.RegisterCallback<DragEnterEvent>(evt =>
+            {
                 if (evt.currentTarget != tabContainer) return;
-                if (DragAndDrop.paths.Any(AssetDatabase.IsValidFolder)) {
+                if (DragAndDrop.paths.Any(AssetDatabase.IsValidFolder))
                     tabContainer.style.backgroundColor = ColorPreset.DropFolderArea;
-                }
             }, TrickleDown.TrickleDown);
-            tabContainer.RegisterCallback<DragLeaveEvent>(evt => {
+            tabContainer.RegisterCallback<DragLeaveEvent>(evt =>
+            {
                 if (evt.currentTarget != tabContainer) return;
                 tabContainer.style.backgroundColor = StyleKeyword.Null;
             }, TrickleDown.TrickleDown);
-            tabContainer.RegisterCallback<DragUpdatedEvent>(evt => {
+            tabContainer.RegisterCallback<DragUpdatedEvent>(evt =>
+            {
                 if (evt.currentTarget != tabContainer) return;
-                DragAndDrop.visualMode = DragAndDrop.paths.Any(AssetDatabase.IsValidFolder) ? DragAndDropVisualMode.Link : DragAndDropVisualMode.Rejected;
+                DragAndDrop.visualMode = DragAndDrop.paths.Any(AssetDatabase.IsValidFolder)
+                    ? DragAndDropVisualMode.Link
+                    : DragAndDropVisualMode.Rejected;
             }, TrickleDown.TrickleDown);
 
             // ドロップ処理
-            tabContainer.RegisterCallback<DragPerformEvent>(evt => {
+            tabContainer.RegisterCallback<DragPerformEvent>(evt =>
+            {
                 if (evt.currentTarget != tabContainer) return;
                 var folderPathList = DragAndDrop.paths.Where(AssetDatabase.IsValidFolder).ToList();
                 if (folderPathList.Count == 0) return;
 
                 DragAndDrop.AcceptDrag();
                 var insertIndex = tabContainer.childCount - 1;
-                var createdEntries = folderPathList.Select(path => new { path, name = Path.GetFileName(path) }).ToList();
-                foreach (var newTab in createdEntries.Select(entry => Tab.Element(entry.path, entry.name)).Where(newTab => newTab != null)) {
+                var createdEntries =
+                    folderPathList.Select(path => new { path, name = Path.GetFileName(path) }).ToList();
+                foreach (var newTab in createdEntries.Select(entry => Tab.Element(entry.path, entry.name))
+                             .Where(newTab => newTab != null)) {
                     TabListController.Insert(insertIndex, newTab);
                     insertIndex++;
                 }

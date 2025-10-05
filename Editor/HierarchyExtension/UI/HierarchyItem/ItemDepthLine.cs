@@ -1,27 +1,21 @@
-﻿using UnityEditor;
+﻿using _4OF.ee4v.Core.UI;
+using UnityEditor;
 using UnityEngine;
-
-using _4OF.ee4v.Core.UI;
 
 namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem {
     public static class ItemDepthLine {
-
         public static void Draw(GameObject obj, Rect depthLineRect) {
             var parent = obj.transform.parent;
             var position = depthLineRect;
             position.x -= 16;
             position.width = 16;
-            if (obj.transform.childCount == 0 && parent != null) {
-                DrawXLine(position);
-            }
+            if (obj.transform.childCount == 0 && parent != null) DrawXLine(position);
             if (parent == null) return;
             position.x -= 14;
-            if (parent.childCount == 1 || parent.GetChild(parent.childCount - 1) == obj.transform ) {
+            if (parent.childCount == 1 || parent.GetChild(parent.childCount - 1) == obj.transform)
                 DrawBranchEnd(position);
-            }
-            else {
+            else
                 DrawBranch(position);
-            }
 
             while (parent != null) {
                 var parentParent = parent.parent;
@@ -39,7 +33,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem {
                 parent = parentParent;
             }
         }
-        
+
         private static void DrawXLine(Rect rect) {
             var xLineRect = rect;
             xLineRect.width -= 4;
@@ -47,14 +41,14 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem {
             xLineRect.height = 2;
             EditorGUI.DrawRect(xLineRect, ColorPreset.DepthLine);
         }
-        
+
         private static void DrawYLine(Rect rect) {
             var yLineRect = rect;
             yLineRect.x += rect.width / 2 - 1;
             yLineRect.width = 2;
             EditorGUI.DrawRect(yLineRect, ColorPreset.DepthLine);
         }
-        
+
         private static void DrawBranch(Rect rect) {
             var xLineRect = rect;
             xLineRect.x += 8;
@@ -67,7 +61,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem {
             yLineRect.width = 2;
             EditorGUI.DrawRect(yLineRect, ColorPreset.DepthLine);
         }
-        
+
         private static void DrawBranchEnd(Rect rect) {
             var xLineRect = rect;
             xLineRect.x += 8;

@@ -1,17 +1,17 @@
-﻿using UnityEditor;
+﻿using System;
+using System.Collections.Generic;
+using _4OF.ee4v.ProjectExtension.Data;
+using _4OF.ee4v.Runtime;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-using System.Collections.Generic;
-
-using _4OF.ee4v.Runtime;
-using _4OF.ee4v.ProjectExtension.Data;
-
 namespace _4OF.ee4v.Core.UI.Window._Component {
     public static class ColorSelector {
-        public static System.Action<Color, List<ObjectStyleComponent>> OnColorChangedComponent;
-        public static System.Action<Color, List<string>> OnColorChangedPath;
         private const float Alpha = 0.7f;
+        public static Action<Color, List<ObjectStyleComponent>> OnColorChangedComponent;
+        public static Action<Color, List<string>> OnColorChangedPath;
+
         private static readonly List<Color> DarkColorList = new() {
             new Color(0.7f, 0f, 0f, Alpha),
             new Color(0.7f, 0.35f, 0f, Alpha),
@@ -24,8 +24,9 @@ namespace _4OF.ee4v.Core.UI.Window._Component {
             new Color(0f, 0f, 0.7f, Alpha),
             new Color(0.35f, 0f, 0.7f, Alpha),
             new Color(0.7f, 0f, 0.7f, Alpha),
-            new Color(0.7f, 0f, 0.35f, Alpha),
+            new Color(0.7f, 0f, 0.35f, Alpha)
         };
+
         private static readonly List<Color> LightColorList = new() {
             new Color(1f, 0.2f, 0.2f, Alpha),
             new Color(1f, 0.55f, 0.2f, Alpha),
@@ -38,27 +39,23 @@ namespace _4OF.ee4v.Core.UI.Window._Component {
             new Color(0.2f, 0.2f, 1f, Alpha),
             new Color(0.55f, 0.2f, 1f, Alpha),
             new Color(1f, 0.2f, 1f, Alpha),
-            new Color(1f, 0.2f, 0.55f, Alpha),
+            new Color(1f, 0.2f, 0.55f, Alpha)
         };
-        
-        private static List<Color> ColorList => EditorGUIUtility.isProSkin ? DarkColorList : LightColorList;
 
         private static Color _selectedColor = Color.clear;
-        
+
+        private static List<Color> ColorList => EditorGUIUtility.isProSkin ? DarkColorList : LightColorList;
+
         public static VisualElement Element(List<ObjectStyleComponent> componentList) {
             ColorList.RemoveAll(c => c == Color.clear);
             ColorList.Insert(0, Color.clear);
-            if (componentList is { Count: 1 }) {
+            if (componentList is { Count: 1 })
                 _selectedColor = componentList[0].color != Color.clear ? componentList[0].color : ColorList[0];
-            }
-            else {
+            else
                 _selectedColor = Color.clear;
-            }
-            return CreateColorSelectorElement(
-                onColorSelected: (color) => {
-                    foreach (var component in componentList) {
-                        component.color = color;
-                    }
+            return CreateColorSelectorElement(color =>
+                {
+                    foreach (var component in componentList) component.color = color;
                     OnColorChangedComponent?.Invoke(color, componentList);
                 }
             );
@@ -74,34 +71,32 @@ namespace _4OF.ee4v.Core.UI.Window._Component {
             else {
                 _selectedColor = Color.clear;
             }
-            return CreateColorSelectorElement(
-                onColorSelected: (color) => {
-                    if (folderPaths != null) {
-                        foreach (var folderPath in folderPaths) {
+
+            return CreateColorSelectorElement(color =>
+                {
+                    if (folderPaths != null)
+                        foreach (var folderPath in folderPaths)
                             if (color == Color.clear) {
                                 FolderStyleController.Remove(folderPath);
                             }
                             else {
                                 var existingColor = FolderStyleController.GetColor(folderPath);
-                                if (existingColor == Color.clear) {
+                                if (existingColor == Color.clear)
                                     FolderStyleController.UpdateOrAddColor(folderPath, color);
-                                }
-                                else {
+                                else
                                     FolderStyleController.UpdateOrAddColor(folderPath, color);
-                                }
                             }
-                        }
-                    }
+
                     OnColorChangedPath?.Invoke(color, folderPaths);
                 }
             );
         }
 
-        private static VisualElement CreateColorSelectorElement(System.Action<Color> onColorSelected) {
+        private static VisualElement CreateColorSelectorElement(Action<Color> onColorSelected) {
             var root = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
-                    flexWrap = Wrap.Wrap,
+                    flexWrap = Wrap.Wrap
                 }
             };
 
@@ -109,14 +104,13 @@ namespace _4OF.ee4v.Core.UI.Window._Component {
 
             foreach (var color in ColorList) {
                 var item = color == Color.clear ? NotSelectedItem() : ColorPreview(color);
-                if (color == _selectedColor) {
-                    item = SelectedStyle(item);
-                }
-                
+                if (color == _selectedColor) item = SelectedStyle(item);
+
                 items.Add(item);
                 root.Add(item);
 
-                item.RegisterCallback<ClickEvent>(_ => {
+                item.RegisterCallback<ClickEvent>(_ =>
+                {
                     foreach (var it in items) {
                         it.name = "color-selector-item";
                         it.style.borderTopWidth = 0;
@@ -125,13 +119,15 @@ namespace _4OF.ee4v.Core.UI.Window._Component {
                         it.style.borderLeftWidth = 0;
                         it.style.backgroundColor = Color.clear;
                     }
+
                     _selectedColor = color;
                     item = SelectedStyle(item);
-                    
+
                     onColorSelected?.Invoke(_selectedColor);
                     EditorApplication.RepaintHierarchyWindow();
                 });
             }
+
             return root;
         }
 
@@ -157,60 +153,58 @@ namespace _4OF.ee4v.Core.UI.Window._Component {
                 style = {
                     width = 24, height = 24,
                     alignItems = Align.Center,
-                    justifyContent = Justify.Center,
+                    justifyContent = Justify.Center
                 }
             };
 
             var hoverColor = ColorPreset.MouseOverBackground;
-            item.RegisterCallback<MouseEnterEvent>(_ => {
-                if (item.name != "color-selector-selected") {
-                    item.style.backgroundColor = hoverColor;
-                }
+            item.RegisterCallback<MouseEnterEvent>(_ =>
+            {
+                if (item.name != "color-selector-selected") item.style.backgroundColor = hoverColor;
             });
-            item.RegisterCallback<MouseLeaveEvent>(_ => {
-                if (item.name != "color-selector-selected") {
-                    item.style.backgroundColor = Color.clear;
-                }
+            item.RegisterCallback<MouseLeaveEvent>(_ =>
+            {
+                if (item.name != "color-selector-selected") item.style.backgroundColor = Color.clear;
             });
-            
+
             var colorArea = new VisualElement {
                 style = {
                     width = 16, height = 16,
                     backgroundColor = color,
                     marginRight = 4, marginLeft = 4,
                     borderTopRightRadius = 50, borderTopLeftRadius = 50,
-                    borderBottomRightRadius = 50, borderBottomLeftRadius = 50,
+                    borderBottomRightRadius = 50, borderBottomLeftRadius = 50
                 }
             };
             item.Add(colorArea);
             return item;
         }
-        
+
         private static VisualElement NotSelectedItem() {
             var notSelectedItem = new VisualElement {
                 name = "color-selector-item",
                 style = {
                     width = 24, height = 24,
                     alignItems = Align.Center,
-                    justifyContent = Justify.Center,
+                    justifyContent = Justify.Center
                 }
             };
             var hoverColor = ColorPreset.MouseOverBackground;
-            notSelectedItem.RegisterCallback<MouseEnterEvent>(_ => {
-                if (notSelectedItem.name != "color-selector-selected") {
+            notSelectedItem.RegisterCallback<MouseEnterEvent>(_ =>
+            {
+                if (notSelectedItem.name != "color-selector-selected")
                     notSelectedItem.style.backgroundColor = hoverColor;
-                }
             });
-            notSelectedItem.RegisterCallback<MouseLeaveEvent>(_ => {
-                if (notSelectedItem.name != "color-selector-selected") {
+            notSelectedItem.RegisterCallback<MouseLeaveEvent>(_ =>
+            {
+                if (notSelectedItem.name != "color-selector-selected")
                     notSelectedItem.style.backgroundColor = Color.clear;
-                }
             });
-            var notSelectedIcon= new Image {
+            var notSelectedIcon = new Image {
                 image = EditorGUIUtility.IconContent("winbtn_win_close").image,
                 scaleMode = ScaleMode.ScaleToFit,
                 style = {
-                    width = 16, height = 16,
+                    width = 16, height = 16
                 }
             };
             notSelectedItem.Add(notSelectedIcon);

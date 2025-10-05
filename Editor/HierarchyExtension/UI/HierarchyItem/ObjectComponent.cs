@@ -1,9 +1,8 @@
-﻿using UnityEditor;
-using UnityEngine;
-
+﻿using _4OF.ee4v.Core.Data;
 using _4OF.ee4v.Core.UI;
-using _4OF.ee4v.Core.Data;
 using _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window;
+using UnityEditor;
+using UnityEngine;
 
 namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem {
     public static class ObjectComponent {
@@ -27,9 +26,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem {
 
                 var behaviourComponent = component as Behaviour;
                 var prevColor = GUI.color;
-                if (behaviourComponent != null && !behaviourComponent.enabled) {
-                    GUI.color = ColorPreset.InActiveItem;
-                }
+                if (behaviourComponent != null && !behaviourComponent.enabled) GUI.color = ColorPreset.InActiveItem;
 
                 var tooltipContent = new GUIContent(string.Empty, null, componentType.Name);
                 GUI.DrawTexture(iconRect, image);
@@ -39,7 +36,8 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem {
 
                 var e = Event.current;
                 if (e.type == EventType.MouseDown && e.button == 0 && iconRect.Contains(e.mousePosition)) {
-                    var anchorScreen = GUIUtility.GUIToScreenPoint(new Vector2(componentRect.xMax + 2 * (componentRect.xMax - e.mousePosition.x), componentRect.y));
+                    var anchorScreen = GUIUtility.GUIToScreenPoint(new Vector2(
+                        componentRect.xMax + 2 * (componentRect.xMax - e.mousePosition.x), componentRect.y));
                     ComponentInspector.Open(component, obj, anchorScreen);
                     e.Use();
                 }

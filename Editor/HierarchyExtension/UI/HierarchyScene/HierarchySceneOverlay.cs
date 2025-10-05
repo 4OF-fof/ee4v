@@ -1,8 +1,7 @@
-﻿using UnityEditor;
-using UnityEngine;
-
-using _4OF.ee4v.Core.Data;
+﻿using _4OF.ee4v.Core.Data;
 using _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window;
+using UnityEditor;
+using UnityEngine;
 
 namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene {
     public static class HierarchySceneOverlay {
@@ -11,10 +10,10 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene {
             var sceneRect = new Rect(48, 0, windowWidth - 94, 16);
             var hiddenRect = new Rect(sceneRect.xMax, 0, 24, 16);
             var hiddenIconRect = new Rect(hiddenRect.x + 4, 0, 16, 16);
-            
+
             var hiddenIcon = EditorGUIUtility.IconContent("scenevis_hidden_hover").image;
             GUI.DrawTexture(hiddenIconRect, hiddenIcon);
-            
+
             var e = Event.current;
             switch (e.type) {
                 case EventType.MouseDown when sceneRect.Contains(e.mousePosition): {
@@ -28,7 +27,6 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene {
                     e.Use();
                     break;
             }
-            
         }
     }
 }
