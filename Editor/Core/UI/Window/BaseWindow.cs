@@ -32,7 +32,12 @@ namespace _4OF.ee4v.Core.UI.Window {
             }
         }
 
+        protected virtual void OnEnable() {
+            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+        }
+
         protected virtual void OnDestroy() {
+            AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
             if (GUIUtility.hotControl == _resizeControlID) GUIUtility.hotControl = 0;
             _resizeControlID = 0;
         }
@@ -62,6 +67,10 @@ namespace _4OF.ee4v.Core.UI.Window {
 
         protected virtual void OnLostFocus() {
             if (!IsLocked) Close();
+        }
+
+        private void OnBeforeAssemblyReload() {
+            Close();
         }
 
         protected static T OpenSetup<T>(Vector2 anchorScreen, object reuseKey = null) where T : BaseWindow {
