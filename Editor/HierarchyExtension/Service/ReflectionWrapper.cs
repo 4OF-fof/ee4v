@@ -2,11 +2,15 @@
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.HierarchyExtension.Service {
     public static class ReflectionWrapper {
+        private static readonly Type SceneHierarchyWindowType =
+            typeof(Editor).Assembly.GetType("UnityEditor.SceneHierarchyWindow");
+
         private static readonly PropertyInfo LastInteractedHierarchyWindow =
-            Type.GetType("UnityEditor.SceneHierarchyWindow,UnityEditor")?.GetProperty("lastInteractedHierarchyWindow",
+            SceneHierarchyWindowType?.GetProperty("lastInteractedHierarchyWindow",
                 BindingFlags.Public | BindingFlags.Static);
 
         private static object _treeView;
@@ -14,8 +18,11 @@ namespace _4OF.ee4v.HierarchyExtension.Service {
 
         public static bool IsHierarchyScrollbarVisible() {
             const BindingFlags instanceFlags = BindingFlags.NonPublic | BindingFlags.Instance;
+            const BindingFlags staticFlags = BindingFlags.Public      | BindingFlags.Static;
 
-            var lastWindow = LastInteractedHierarchyWindow
+            var lastWindow = typeof(Editor).Assembly
+                .GetType("UnityEditor.SceneHierarchyWindow")
+                ?.GetProperty("lastInteractedHierarchyWindow", staticFlags)
                 ?.GetValue(null);
 
             var sceneHierarchy = lastWindow?.GetType()
@@ -31,6 +38,38 @@ namespace _4OF.ee4v.HierarchyExtension.Service {
                     ?.GetValue(finalTreeView) is bool isVisible) return isVisible;
 
             return false;
+        }
+
+        public static void DrawMaterialInspector(MaterialEditor materialEditor, Material material) {
+            var customShaderGUIField = typeof(MaterialEditor).GetField("m_CustomShaderGUI",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+
+            if (customShaderGUIField != null) {
+                var customShaderGUI = customShaderGUIField.GetValue(materialEditor);
+                var props = MaterialEditor.GetMaterialProperties(new Object[] { material });
+
+                if (customShaderGUI != null) {
+                    var onGUIMethod = customShaderGUI.GetType().GetMethod("OnGUI",
+                        BindingFlags.Public | BindingFlags.Instance);
+                    if (onGUIMethod != null)
+                        using (new GUILayout.HorizontalScope()) {
+                            GUILayout.Space(8);
+                            using (new GUILayout.VerticalScope()) {
+                                onGUIMethod.Invoke(customShaderGUI, new object[] { materialEditor, props });
+                            }
+
+                            GUILayout.Space(4);
+                        }
+                    else
+                        Debug.LogError("Could not find OnGUI method in custom ShaderGUI.");
+                }
+                else {
+                    Debug.LogError("No custom ShaderGUI.");
+                }
+            }
+            else {
+                Debug.LogError("Could not find m_CustomShaderGUI field via reflection.");
+            }
         }
 
         public static void SetItemIcon(int instanceId, Texture2D icon) {

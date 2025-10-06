@@ -1,4 +1,5 @@
 ﻿using _4OF.ee4v.Core.UI.Window;
+using _4OF.ee4v.HierarchyExtension.Service;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -11,16 +12,17 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
         private int _autoSizeAttempts;
         private bool _autoSizeCompleted;
         private Component _component;
-        private Editor _componentEditor;
+        private Editor _editor;
         private GameObject _gameObject;
+        private Material _material;
 
         private ScrollView _scrollView;
 
         protected override void OnDestroy() {
             base.OnDestroy();
-            if (_componentEditor == null) return;
-            DestroyImmediate(_componentEditor);
-            _componentEditor = null;
+            if (_editor == null) return;
+            DestroyImmediate(_editor);
+            _editor = null;
         }
 
         public static void Open(Component component, GameObject obj, Vector2 anchorScreen) {
@@ -28,14 +30,27 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
             window.IsLocked = true;
             window._component = component;
             window._gameObject = obj;
-            if (component) window._componentEditor = Editor.CreateEditor(component);
+            window._editor = Editor.CreateEditor(component);
             window.ShowPopup();
             window.ScheduleAutoSize();
         }
 
+        public static void Open(Material material, GameObject obj, Vector2 anchorScreen) {
+            var window = OpenSetup<ComponentInspector>(anchorScreen, material);
+            window.position = new Rect(anchorScreen.x, anchorScreen.y, 380, 600);
+            window.IsLocked = true;
+            window._material = material;
+            window._gameObject = obj;
+            window._editor = Editor.CreateEditor(material);
+            window.ShowPopup();
+        }
+
         protected override bool CanReuseFor(object reuseKey) {
-            if (reuseKey is Component c) return c == _component;
-            return false;
+            return reuseKey switch {
+                Component c => c == _component,
+                Material m  => m == _material,
+                _           => false
+            };
         }
 
         protected override VisualElement HeaderContent() {
@@ -47,9 +62,9 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                     flexGrow = 1
                 }
             };
-            if (_component == null) return root;
+            if (_component == null && _material == null) return root;
 
-            var icon = AssetPreview.GetMiniThumbnail(_component);
+            var icon = AssetPreview.GetMiniThumbnail(_component == null ? _material : _component);
             var iconImage = new Image {
                 image = icon,
                 scaleMode = ScaleMode.ScaleToFit,
@@ -60,28 +75,30 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
             };
             root.Add(iconImage);
 
-            var behaviour = _component as Behaviour;
-            if (behaviour != null) {
-                var activeToggle = new Toggle {
-                    value = behaviour.enabled,
-                    style = {
-                        width = 16,
-                        height = 16,
-                        marginRight = 4,
-                        unityTextAlign = TextAnchor.MiddleCenter
-                    }
-                };
-                activeToggle.RegisterValueChangedCallback(evt =>
-                {
-                    if (evt.newValue == behaviour.enabled) return;
-                    Undo.RecordObject(behaviour, "Toggle GameObject Active");
-                    behaviour.enabled = evt.newValue;
-                    EditorUtility.SetDirty(behaviour);
-                });
-                root.Add(activeToggle);
+            if (_component != null) {
+                var behaviour = _component as Behaviour;
+                if (behaviour != null) {
+                    var activeToggle = new Toggle {
+                        value = behaviour.enabled,
+                        style = {
+                            width = 16,
+                            height = 16,
+                            marginRight = 4,
+                            unityTextAlign = TextAnchor.MiddleCenter
+                        }
+                    };
+                    activeToggle.RegisterValueChangedCallback(evt =>
+                    {
+                        if (evt.newValue == behaviour.enabled) return;
+                        Undo.RecordObject(behaviour, "Toggle GameObject Active");
+                        behaviour.enabled = evt.newValue;
+                        EditorUtility.SetDirty(behaviour);
+                    });
+                    root.Add(activeToggle);
+                }
             }
 
-            var labelText = $"{_component.GetType().Name} ({_gameObject.name})";
+            var labelText = _component == null ? _material.name : $"{_component.GetType().Name} ({_gameObject.name})";
             var titleLabel = new Label(labelText) {
                 tooltip = labelText,
                 style = {
@@ -102,18 +119,31 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
         protected override VisualElement Content() {
             var root = base.Content();
             _scrollView = new ScrollView();
-            if (_componentEditor == null) return new VisualElement();
+            if (_editor == null) return new VisualElement();
             var editorContainer = new IMGUIContainer(() =>
             {
-                if (_componentEditor == null) return;
-                var usable = Mathf.Max(0f, position.width - 32f);
+                if (_editor == null) return;
 
+                var usable = Mathf.Max(0f, position.width - 32f);
                 var prevWide = EditorGUIUtility.wideMode;
                 var prevLabel = EditorGUIUtility.labelWidth;
                 try {
                     EditorGUIUtility.wideMode = usable > 330f;
                     EditorGUIUtility.labelWidth = Mathf.Clamp(usable * 0.45f, 120f, 220f);
-                    _componentEditor.OnInspectorGUI();
+
+                    if (_material != null) {
+                        var materialEditor = _editor as MaterialEditor;
+                        if (materialEditor != null) {
+                            materialEditor.DrawHeader();
+                            ReflectionWrapper.DrawMaterialInspector(materialEditor, _material);
+                        }
+                        else {
+                            Debug.LogError("Could not cast editor to MaterialEditor.");
+                        }
+                    }
+                    else {
+                        _editor.OnInspectorGUI();
+                    }
                 }
                 finally {
                     EditorGUIUtility.wideMode = prevWide;

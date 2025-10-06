@@ -51,6 +51,51 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window._Component {
                 root.Add(componentButton);
             }
 
+            var renderer = gameObject.GetComponent<Renderer>();
+            Material[] materialList = null;
+            if (renderer != null) materialList = renderer.sharedMaterials;
+
+            if (materialList == null) return root;
+
+            foreach (var material in materialList) {
+                if (material == null) continue;
+                var materialButton = new Button {
+                    style = {
+                        height = 24,
+                        marginRight = 4, marginBottom = 4,
+                        paddingRight = 8, paddingLeft = 8, paddingTop = 2, paddingBottom = 2,
+                        fontSize = 12,
+                        backgroundColor = Color.clear,
+                        borderTopRightRadius = 10, borderTopLeftRadius = 10,
+                        borderBottomRightRadius = 10, borderBottomLeftRadius = 10,
+                        flexDirection = FlexDirection.Row,
+                        alignItems = Align.Center,
+                        justifyContent = Justify.Center
+                    },
+                    focusable = false
+                };
+
+                materialButton.clicked += () =>
+                {
+                    var anchor = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+                    onLockChanged?.Invoke(true);
+                    ComponentInspector.Open(material, gameObject, anchor);
+                };
+
+                var buttonIcon = new Image {
+                    image = AssetPreview.GetMiniThumbnail(material),
+                    style = {
+                        width = 16, height = 16,
+                        paddingRight = 4
+                    }
+                };
+                materialButton.Add(buttonIcon);
+                var buttonLabel = new Label(material.name);
+                materialButton.Add(buttonLabel);
+
+                root.Add(materialButton);
+            }
+
             return root;
         }
     }
