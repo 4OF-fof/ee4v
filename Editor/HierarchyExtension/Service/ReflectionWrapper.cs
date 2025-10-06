@@ -6,7 +6,7 @@ using UnityEngine;
 namespace _4OF.ee4v.HierarchyExtension.Service {
     public static class ReflectionWrapper {
         private static readonly Type SceneHierarchyWindowType =
-            typeof(Editor).Assembly.GetType("UnityEditor.SceneHierarchyWindow");
+            Type.GetType("UnityEditor.SceneHierarchyWindow,UnityEditor");
 
         private static readonly PropertyInfo LastInteractedHierarchyWindow =
             SceneHierarchyWindowType?.GetProperty("lastInteractedHierarchyWindow",

@@ -5,8 +5,7 @@ using UnityEngine;
 
 namespace _4OF.ee4v.ProjectExtension.Service {
     public static class ReflectionWrapper {
-        public static readonly Type ProjectBrowserType =
-            typeof(EditorWindow).Assembly.GetType("UnityEditor.ProjectBrowser");
+        public static readonly Type ProjectBrowserType = Type.GetType("UnityEditor.ProjectBrowser,UnityEditor");
 
         private static readonly EditorWindow ProjectBrowserWindow;
         private static readonly MethodInfo ShowFolderContentsMethod;
@@ -14,7 +13,6 @@ namespace _4OF.ee4v.ProjectExtension.Service {
         static ReflectionWrapper() {
             ProjectBrowserWindow = EditorWindow.GetWindow(Type.GetType("UnityEditor.ProjectBrowser,UnityEditor.dll"));
 
-            if (ProjectBrowserType == null) return;
             ShowFolderContentsMethod = ProjectBrowserType.GetMethod("ShowFolderContents",
                 BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(int), typeof(bool) }, null);
         }
