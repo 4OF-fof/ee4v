@@ -5,11 +5,8 @@ using UnityEngine;
 
 namespace _4OF.ee4v.HierarchyExtension.Service {
     public static class ReflectionWrapper {
-        private static readonly Type SceneHierarchyWindowType =
-            Type.GetType("UnityEditor.SceneHierarchyWindow,UnityEditor");
-
         private static readonly PropertyInfo LastInteractedHierarchyWindow =
-            SceneHierarchyWindowType?.GetProperty("lastInteractedHierarchyWindow",
+            Type.GetType("UnityEditor.SceneHierarchyWindow,UnityEditor")?.GetProperty("lastInteractedHierarchyWindow",
                 BindingFlags.Public | BindingFlags.Static);
 
         private static object _treeView;
@@ -17,11 +14,8 @@ namespace _4OF.ee4v.HierarchyExtension.Service {
 
         public static bool IsHierarchyScrollbarVisible() {
             const BindingFlags instanceFlags = BindingFlags.NonPublic | BindingFlags.Instance;
-            const BindingFlags staticFlags = BindingFlags.Public      | BindingFlags.Static;
 
-            var lastWindow = typeof(Editor).Assembly
-                .GetType("UnityEditor.SceneHierarchyWindow")
-                ?.GetProperty("lastInteractedHierarchyWindow", staticFlags)
+            var lastWindow = LastInteractedHierarchyWindow
                 ?.GetValue(null);
 
             var sceneHierarchy = lastWindow?.GetType()

@@ -27,7 +27,7 @@ namespace _4OF.ee4v.ProjectExtension {
 
         private static void InitializeContent() {
             _isInitialized = true;
-            _projectWindow = ReflectionWrapper.GetProjectBrowserWindow();
+            _projectWindow = ReflectionWrapper.ProjectBrowserWindow;
             if (EditorPrefsManager.EnableProjectTab) {
                 var projectToolBar = ProjectToolBar.Element();
                 _projectWindow.rootVisualElement.Add(projectToolBar);
@@ -43,7 +43,7 @@ namespace _4OF.ee4v.ProjectExtension {
         }
 
         private static void CompatInjector() {
-            _projectWindow = ReflectionWrapper.GetProjectBrowserWindow();
+            _projectWindow = ReflectionWrapper.ProjectBrowserWindow;
             if (_projectWindow.rootVisualElement.childCount <= 0) return;
             _isInitialized = true;
             var tabContainer = TabContainer.Element();

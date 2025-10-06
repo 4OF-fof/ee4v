@@ -21,7 +21,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             if (_asset == null) _asset = TabListObject.LoadOrCreate();
 
             if (_tabContainer != null) return;
-            var projectWindow = ReflectionWrapper.GetProjectBrowserWindow();
+            var projectWindow = ReflectionWrapper.ProjectBrowserWindow;
             if (projectWindow != null)
                 _tabContainer = projectWindow.rootVisualElement?.Q<VisualElement>("ee4v-project-toolbar-tabContainer");
             Sync();
