@@ -51,14 +51,14 @@
   "UI.HierarchyExtension.ToggleGameObjectsActive": "Toggle GameObjects Active",
   "UI.ProjectExtension.AddNewTab": "Add New Tab",
   "UI.ProjectExtension.Icon": "icon",
-  "Debug.Core.InvalidHex": "Invalid hex color format: {hex}. Expected #RRGGBB or #RGB.",
-  "Debug.HierarchyExtension.NotFoundSceneListObject": "SceneListObject not found at {path}. Creating new one.",
+  "Debug.Core.InvalidHex": "Invalid hex color format: {0}. Expected #RRGGBB or #RGB.",
+  "Debug.HierarchyExtension.NotFoundSceneListObject": "SceneListObject not found at {0}. Creating new one.",
   "Debug.HierarchyExtension.NotFoundShaderGUI": "Could not find OnGUI method in custom ShaderGUI.",
   "Debug.HierarchyExtension.NoCustomShaderGUI": "No custom ShaderGUI.",
   "Debug.HierarchyExtension.CouldNotFindCustomShaderGUIField": "Could not find m_CustomShaderGUI field via reflection.",
   "Debug.HierarchyExtension.CouldNotCastToMaterialEditor": "Could not cast editor to MaterialEditor.",
   "Debug.HierarchyExtension.ReflectionWarning": "{0}",
-  "Debug.ProjectExtension.NotFoundTabListObject": "TabListObject not found at {path}. Creating new one.",
-  "Debug.ProjectExtension.NotFoundFolderStyleObject": "FolderStyleObject not found at {path}. Creating new one.",
+  "Debug.ProjectExtension.NotFoundTabListObject": "TabListObject not found at {0}. Creating new one.",
+  "Debug.ProjectExtension.NotFoundFolderStyleObject": "FolderStyleObject not found at {0}. Creating new one.",
   "Debug.ProjectExtension.ReflectionWarning": "{0}"
 }

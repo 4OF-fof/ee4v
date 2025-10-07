@@ -51,14 +51,14 @@
   "UI.HierarchyExtension.ToggleGameObjectsActive": "GameObjectsのアクティブを切替",
   "UI.ProjectExtension.AddNewTab": "新しいタブを追加",
   "UI.ProjectExtension.Icon": "アイコン",
-  "Debug.Core.InvalidHex": "無効な16進数カラー形式: {hex}。#RRGGBBまたは#RGBが必要です。",
-  "Debug.HierarchyExtension.NotFoundSceneListObject": "SceneListObjectが{path}に見つかりません。新しいものを作成します。",
+  "Debug.Core.InvalidHex": "無効な16進数カラー形式: {0}。#RRGGBBまたは#RGBが必要です。",
+  "Debug.HierarchyExtension.NotFoundSceneListObject": "SceneListObjectが{0}に見つかりません。新しいものを作成します。",
   "Debug.HierarchyExtension.NotFoundShaderGUI": "カスタムShaderGUIのOnGUIメソッドが見つかりません。",
   "Debug.HierarchyExtension.NoCustomShaderGUI": "カスタムShaderGUIがありません。",
   "Debug.HierarchyExtension.CouldNotFindCustomShaderGUIField": "リフレクションでm_CustomShaderGUIフィールドが見つかりません。",
   "Debug.HierarchyExtension.CouldNotCastToMaterialEditor": "エディタをMaterialEditorにキャストできません。",
   "Debug.HierarchyExtension.ReflectionWarning": "{0}",
-  "Debug.ProjectExtension.NotFoundTabListObject": "TabListObjectが{path}に見つかりません。新しいものを作成します。",
-  "Debug.ProjectExtension.NotFoundFolderStyleObject": "FolderStyleObjectが{path}に見つかりません。新しいものを作成します。",
+  "Debug.ProjectExtension.NotFoundTabListObject": "TabListObjectが{0}に見つかりません。新しいものを作成します。",
+  "Debug.ProjectExtension.NotFoundFolderStyleObject": "FolderStyleObjectが{0}に見つかりません。新しいものを作成します。",
   "Debug.ProjectExtension.ReflectionWarning": "{0}"
 }
