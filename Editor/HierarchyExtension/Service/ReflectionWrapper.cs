@@ -100,6 +100,16 @@ namespace _4OF.ee4v.HierarchyExtension.Service {
                     var iconFieldInfo = item.GetType().GetField("icon", BindingFlags.Public | BindingFlags.Instance);
                     if (iconFieldInfo != null) iconFieldInfo.SetValue(item, icon);
                 }
+
+                var selectedIconProp = item.GetType().GetProperty("selectedIcon");
+                if (selectedIconProp != null && selectedIconProp.CanWrite) {
+                    selectedIconProp.SetValue(item, icon);
+                }
+                else {
+                    var selectedIconFieldInfo =
+                        item.GetType().GetField("selectedIcon", BindingFlags.Public | BindingFlags.Instance);
+                    if (selectedIconFieldInfo != null) selectedIconFieldInfo.SetValue(item, icon);
+                }
             }
             catch (Exception ex) {
                 Debug.LogWarning(I18N.Get("Debug.HierarchyExtension.ReflectionWarning", ex.Message));
