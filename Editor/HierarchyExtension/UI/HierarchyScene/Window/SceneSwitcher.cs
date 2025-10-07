@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene {
+namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
     public class SceneSwitcher : EditorWindow {
         private readonly Dictionary<VisualElement, ItemState> _itemStates = new();
 

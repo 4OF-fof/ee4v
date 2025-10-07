@@ -42,10 +42,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         }
 
         public static TabListObject LoadOrCreate() {
-            var temp = CreateInstance<TabListObject>();
-            var scriptPath = AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(temp));
-            DestroyImmediate(temp);
-            var path = scriptPath.Replace("ProjectExtension/Data/TabListObject.cs", "UserData/TabList.asset");
+            const string path = "Assets/4OF/ee4v/UserData/TabList.asset";;
             var tabListObject = AssetDatabase.LoadAssetAtPath<TabListObject>(path);
             if (tabListObject != null) {
                 _instance = tabListObject;

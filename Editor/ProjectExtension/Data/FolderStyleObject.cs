@@ -54,11 +54,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         }
 
         public static FolderStyleObject LoadOrCreate() {
-            var temp = CreateInstance<FolderStyleObject>();
-            var scriptPath = AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(temp));
-            DestroyImmediate(temp);
-            var path = scriptPath.Replace("ProjectExtension/Data/FolderStyleObject.cs",
-                "UserData/FolderStyleObject.asset");
+            const string path = "Assets/4OF/ee4v/UserData/FolderStyleObject.asset";;
             var folderStyleObject = AssetDatabase.LoadAssetAtPath<FolderStyleObject>(path);
             if (folderStyleObject != null) {
                 _instance = folderStyleObject;

@@ -41,10 +41,7 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
         }
 
         public static SceneListObject LoadOrCreate() {
-            var temp = CreateInstance<SceneListObject>();
-            var scriptPath = AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(temp));
-            DestroyImmediate(temp);
-            var path = scriptPath.Replace("HierarchyExtension/Data/SceneListObject.cs", "UserData/SceneList.asset");
+            const string path = "Assets/4OF/ee4v/UserData/SceneList.asset";
             var sceneListObject = AssetDatabase.LoadAssetAtPath<SceneListObject>(path);
             if (sceneListObject != null) {
                 _instance = sceneListObject;
