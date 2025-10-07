@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.Core.Data;
+using _4OF.ee4v.Core.i18n;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -39,7 +41,15 @@ namespace _4OF.ee4v.Core.UI {
             EditorPrefsManager.EnableProjectTab = EditorGUILayout.Toggle(
                 new GUIContent("Enable Project Tab", "Show or hide the Project Tab in the Project window."),
                 EditorPrefsManager.EnableProjectTab);
-
+            
+            var languages = I18N.GetAvailableLanguages();
+            EditorPrefsManager.Language = languages[
+                EditorGUILayout.Popup(
+                    "Language",
+                    Array.IndexOf(languages, EditorPrefsManager.Language),
+                    languages.ToArray()
+                    )
+            ];
 
             EditorGUILayout.Space(10);
             EditorGUI.BeginChangeCheck();

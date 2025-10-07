@@ -5,9 +5,13 @@ using UnityEditor;
 namespace _4OF.ee4v.Core.Data {
     public static class EditorPrefsManager {
         #region Core
-
+        private const string LanguageKey = "4OF.ee4v.Language";
+        public static string Language {
+            get => EditorPrefs.GetString(LanguageKey, "ja-JP");
+            set => EditorPrefs.SetString(LanguageKey, value ?? "ja-JP");
+        }
+        
         private const string EnableHierarchyExtensionKey = "4OF.ee4v.EnableHierarchyExtension";
-
         public static bool EnableHierarchyExtension {
             get => EditorPrefs.GetBool(EnableHierarchyExtensionKey, true);
             set => EditorPrefs.SetBool(EnableHierarchyExtensionKey, value);
@@ -19,7 +23,6 @@ namespace _4OF.ee4v.Core.Data {
             get => EditorPrefs.GetBool(EnableProjectExtensionKey, true);
             set => EditorPrefs.SetBool(EnableProjectExtensionKey, value);
         }
-
         #endregion
 
         #region HierarchyExtension
