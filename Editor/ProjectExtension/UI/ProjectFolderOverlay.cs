@@ -41,7 +41,9 @@ namespace _4OF.ee4v.ProjectExtension.UI {
             var isDrawIcon = false;
             if (EditorPrefsManager.EnableStyledFolder) isDrawIcon = DrawStyledFolder(path, imageRect, backgroundColor);
 
-            if (EditorPrefsManager.ShowFolderOverlayIcon && !isDrawIcon) DrawOverlayIcon(path, imageRect);
+            if (!EditorPrefsManager.ShowFolderOverlayIcon || isDrawIcon) return;
+            imageRect.height -= imageRect.height * 0.05f;
+            DrawOverlayIcon(path, imageRect);
         }
 
         private static bool DrawStyledFolder(string path, Rect imageRect, Color backgroundColor) {
