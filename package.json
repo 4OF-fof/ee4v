@@ -1,7 +1,7 @@
 {
-	"name" : "dev.4of.ee4v",
-	"displayName" : "ee4v",
-	"version" : "0.2.2",
-	"unity" : "2022.3",
-	"description" : "EditorExtensions for VRChat"
+  "name": "dev.4of.ee4v",
+  "displayName": "ee4v",
+  "version": "0.2.2",
+  "unity": "2022.3",
+  "description": "EditorExtensions for VRChat"
 }

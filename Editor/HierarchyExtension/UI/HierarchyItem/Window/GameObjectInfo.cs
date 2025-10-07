@@ -122,7 +122,8 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                 var objectsToChange = _gameObjectList.Where(go => go != null && go.activeSelf != evt.newValue).ToList();
 
                 if (objectsToChange.Count <= 0) return;
-                Undo.RecordObjects(objectsToChange.Select(go => go as Object).ToArray(), I18N.Get("UI.HierarchyExtension.ToggleGameObjectsActive"));
+                Undo.RecordObjects(objectsToChange.Select(go => go as Object).ToArray(),
+                    I18N.Get("UI.HierarchyExtension.ToggleGameObjectsActive"));
                 foreach (var go in objectsToChange) {
                     go.SetActive(evt.newValue);
                     EditorUtility.SetDirty(go);

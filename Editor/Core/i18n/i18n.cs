@@ -67,7 +67,8 @@ namespace _4OF.ee4v.Core.i18n {
                 return string.Format(value, args);
             }
             catch (FormatException fe) {
-                Debug.LogError($"[ee4v:i18n] FormatException for key='{key}' with format='{value}' and args=[{string.Join(", ", args.Select(a => a?.ToString() ?? "null"))}]: {fe.Message}");
+                Debug.LogError(
+                    $"[ee4v:i18n] FormatException for key='{key}' with format='{value}' and args=[{string.Join(", ", args.Select(a => a?.ToString() ?? "null"))}]: {fe.Message}");
                 try {
                     return key + " " + string.Join(" ", args.Select(a => a?.ToString() ?? "null"));
                 }

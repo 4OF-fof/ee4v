@@ -37,7 +37,6 @@
   "UI.Core.ToggleInputToAsset": "에셋으로 전환",
   "UI.Core.Icon": "아이콘",
   "UI.Core.Texture": "텍스처",
-  
   "UI.HierarchyExtension.HiddenObjectWindowTitle": "숨김 오브젝트",
   "UI.HierarchyExtension.Refresh": "새로 고침",
   "UI.HierarchyExtension.RestoreAll": "모두 복원",
@@ -48,19 +47,15 @@
   "UI.HierarchyExtension.HideGameObject": "GameObject 숨기기",
   "UI.HierarchyExtension.HideInHierarchy": "계층 구조에서 숨기기",
   "UI.HierarchyExtension.ToggleGameObjectsActive": "GameObject 활성화 전환",
-  
   "UI.ProjectExtension.AddNewTab": "새 탭 추가",
   "UI.ProjectExtension.Icon": "아이콘",
-
   "Debug.Core.InvalidHex": "잘못된 16진수 색상 형식: {hex}. #RRGGBB 또는 #RGB가 필요합니다.",
-  
   "Debug.HierarchyExtension.NotFoundSceneListObject": "SceneListObject를 {path}에서 찾을 수 없습니다. 새로 만듭니다.",
   "Debug.HierarchyExtension.NotFoundShaderGUI": "커스텀 ShaderGUI에서 OnGUI 메서드를 찾을 수 없습니다.",
   "Debug.HierarchyExtension.NoCustomShaderGUI": "커스텀 ShaderGUI가 없습니다.",
   "Debug.HierarchyExtension.CouldNotFindCustomShaderGUIField": "리플렉션을 통해 m_CustomShaderGUI 필드를 찾을 수 없습니다.",
   "Debug.HierarchyExtension.CouldNotCastToMaterialEditor": "에디터를 MaterialEditor로 캐스트할 수 없습니다.",
   "Debug.HierarchyExtension.ReflectionWarning": "{0}",
-
   "Debug.ProjectExtension.NotFoundTabListObject": "TabListObject를 {path}에서 찾을 수 없습니다. 새로 만듭니다.",
   "Debug.ProjectExtension.NotFoundFolderStyleObject": "FolderStyleObject를 {path}에서 찾을 수 없습니다. 새로 만듭니다.",
   "Debug.ProjectExtension.ReflectionWarning": "{0}"

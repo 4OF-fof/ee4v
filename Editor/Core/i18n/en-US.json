@@ -37,7 +37,6 @@
   "UI.Core.ToggleInputToAsset": "Toggle input to Asset",
   "UI.Core.Icon": "Icon",
   "UI.Core.Texture": "Texture",
-  
   "UI.HierarchyExtension.HiddenObjectWindowTitle": "Hidden Objects",
   "UI.HierarchyExtension.Refresh": "Refresh",
   "UI.HierarchyExtension.RestoreAll": "Restore All",
@@ -48,19 +47,15 @@
   "UI.HierarchyExtension.HideGameObject": "Hide GameObject",
   "UI.HierarchyExtension.HideInHierarchy": "Hide in Hierarchy",
   "UI.HierarchyExtension.ToggleGameObjectsActive": "Toggle GameObjects Active",
-  
   "UI.ProjectExtension.AddNewTab": "Add New Tab",
   "UI.ProjectExtension.Icon": "icon",
-
   "Debug.Core.InvalidHex": "Invalid hex color format: {hex}. Expected #RRGGBB or #RGB.",
-  
   "Debug.HierarchyExtension.NotFoundSceneListObject": "SceneListObject not found at {path}. Creating new one.",
   "Debug.HierarchyExtension.NotFoundShaderGUI": "Could not find OnGUI method in custom ShaderGUI.",
   "Debug.HierarchyExtension.NoCustomShaderGUI": "No custom ShaderGUI.",
   "Debug.HierarchyExtension.CouldNotFindCustomShaderGUIField": "Could not find m_CustomShaderGUI field via reflection.",
   "Debug.HierarchyExtension.CouldNotCastToMaterialEditor": "Could not cast editor to MaterialEditor.",
   "Debug.HierarchyExtension.ReflectionWarning": "{0}",
-
   "Debug.ProjectExtension.NotFoundTabListObject": "TabListObject not found at {path}. Creating new one.",
   "Debug.ProjectExtension.NotFoundFolderStyleObject": "FolderStyleObject not found at {path}. Creating new one.",
   "Debug.ProjectExtension.ReflectionWarning": "{0}"

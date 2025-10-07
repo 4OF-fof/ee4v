@@ -37,7 +37,6 @@
   "UI.Core.ToggleInputToAsset": "アセットに切替",
   "UI.Core.Icon": "アイコン",
   "UI.Core.Texture": "テクスチャ",
-  
   "UI.HierarchyExtension.HiddenObjectWindowTitle": "非表示オブジェクト",
   "UI.HierarchyExtension.Refresh": "更新",
   "UI.HierarchyExtension.RestoreAll": "すべて復元",
@@ -48,19 +47,15 @@
   "UI.HierarchyExtension.HideGameObject": "GameObjectを非表示",
   "UI.HierarchyExtension.HideInHierarchy": "ヒエラルキーで非表示",
   "UI.HierarchyExtension.ToggleGameObjectsActive": "GameObjectsのアクティブを切替",
-  
   "UI.ProjectExtension.AddNewTab": "新しいタブを追加",
   "UI.ProjectExtension.Icon": "アイコン",
-
   "Debug.Core.InvalidHex": "無効な16進数カラー形式: {hex}。#RRGGBBまたは#RGBが必要です。",
-  
   "Debug.HierarchyExtension.NotFoundSceneListObject": "SceneListObjectが{path}に見つかりません。新しいものを作成します。",
   "Debug.HierarchyExtension.NotFoundShaderGUI": "カスタムShaderGUIのOnGUIメソッドが見つかりません。",
   "Debug.HierarchyExtension.NoCustomShaderGUI": "カスタムShaderGUIがありません。",
   "Debug.HierarchyExtension.CouldNotFindCustomShaderGUIField": "リフレクションでm_CustomShaderGUIフィールドが見つかりません。",
   "Debug.HierarchyExtension.CouldNotCastToMaterialEditor": "エディタをMaterialEditorにキャストできません。",
   "Debug.HierarchyExtension.ReflectionWarning": "{0}",
-
   "Debug.ProjectExtension.NotFoundTabListObject": "TabListObjectが{path}に見つかりません。新しいものを作成します。",
   "Debug.ProjectExtension.NotFoundFolderStyleObject": "FolderStyleObjectが{path}に見つかりません。新しいものを作成します。",
   "Debug.ProjectExtension.ReflectionWarning": "{0}"

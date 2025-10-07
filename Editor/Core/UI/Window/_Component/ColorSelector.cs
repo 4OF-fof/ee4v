@@ -75,12 +75,10 @@ namespace _4OF.ee4v.Core.UI.Window._Component {
                 {
                     if (folderPaths != null)
                         foreach (var folderPath in folderPaths)
-                            if (color == Color.clear) {
+                            if (color == Color.clear)
                                 FolderStyleController.Remove(folderPath);
-                            }
-                            else {
+                            else
                                 FolderStyleController.UpdateOrAddColor(folderPath, color);
-                            }
 
                     EditorApplication.RepaintProjectWindow();
                 }
