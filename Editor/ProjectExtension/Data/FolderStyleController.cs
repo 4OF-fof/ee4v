@@ -4,7 +4,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
     public static class FolderStyleController {
         private static FolderStyleObject _asset;
 
-        public static void Initialize() {
+        private static void Initialize() {
             if (_asset == null) _asset = FolderStyleObject.LoadOrCreate();
         }
 

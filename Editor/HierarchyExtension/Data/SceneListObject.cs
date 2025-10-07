@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using _4OF.ee4v.Core.i18n;
 using UnityEditor;
 using UnityEngine;
 
@@ -57,7 +58,7 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             AssetDatabase.CreateAsset(sceneListObject, path);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.LogWarning($"SceneListObject not found at {path}. Creating new one.");
+            Debug.LogWarning(I18N.Get("Debug.HierarchyExtension.ScheneListObject.NotFound", path));
             _instance = sceneListObject;
             return sceneListObject;
         }

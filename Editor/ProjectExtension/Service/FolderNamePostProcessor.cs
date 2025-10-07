@@ -11,15 +11,15 @@ namespace _4OF.ee4v.ProjectExtension.Service {
                     FolderStyleController.Remove(deletedPath);
                 }
 
-            if (movedAssets is { Length: > 0 })
-                for (var i = 0; i < movedAssets.Length; i++) {
-                    var newPath = movedAssets[i];
-                    var oldPath = movedFromAssetPaths != null && movedFromAssetPaths.Length > i
-                        ? movedFromAssetPaths[i]
-                        : null;
-                    if (string.IsNullOrEmpty(newPath) || string.IsNullOrEmpty(oldPath)) continue;
-                    FolderStyleController.UpdatePath(oldPath, newPath);
-                }
+            if (movedAssets is not { Length: > 0 }) return;
+            for (var i = 0; i < movedAssets.Length; i++) {
+                var newPath = movedAssets[i];
+                var oldPath = movedFromAssetPaths != null && movedFromAssetPaths.Length > i
+                    ? movedFromAssetPaths[i]
+                    : null;
+                if (string.IsNullOrEmpty(newPath) || string.IsNullOrEmpty(oldPath)) continue;
+                FolderStyleController.UpdatePath(oldPath, newPath);
+            }
         }
     }
 }

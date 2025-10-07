@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI.Window;
 using _4OF.ee4v.Core.UI.Window._Component;
 using _4OF.ee4v.ProjectExtension.Data;
@@ -86,7 +87,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.Window {
             root.Add(colorSelector);
             root.Add(Spacer(12));
 
-            var iconFiled = new ObjectField("icon") {
+            var iconFiled = new ObjectField(I18N.Get("UI.ProjectExtension.Icon")) {
                 objectType = typeof(Texture)
             };
             if (_pathList is { Count: 1 }) {

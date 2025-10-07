@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using _4OF.ee4v.Core.i18n;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -61,14 +62,14 @@ namespace _4OF.ee4v.HierarchyExtension.Service {
                             GUILayout.Space(4);
                         }
                     else
-                        Debug.LogError("Could not find OnGUI method in custom ShaderGUI.");
+                        Debug.LogError(I18N.Get("Debug.HierarchyExtension.NotFoundShaderGUI"));
                 }
                 else {
-                    Debug.LogError("No custom ShaderGUI.");
+                    Debug.LogError(I18N.Get("Debug.HierarchyExtension.NoCustomShaderGUI"));
                 }
             }
             else {
-                Debug.LogError("Could not find m_CustomShaderGUI field via reflection.");
+                Debug.LogError(I18N.Get("Debug.HierarchyExtension.CouldNotFindCustomShaderGUIField"));
             }
         }
 
@@ -101,7 +102,7 @@ namespace _4OF.ee4v.HierarchyExtension.Service {
                 }
             }
             catch (Exception ex) {
-                Debug.LogWarning($"{ex.Message}");
+                Debug.LogWarning(I18N.Get("Debug.HierarchyExtension.ReflectionWarning", ex.Message));
             }
         }
 

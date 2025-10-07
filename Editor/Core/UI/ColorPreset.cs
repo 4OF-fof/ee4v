@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
+using _4OF.ee4v.Core.i18n;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -65,7 +66,7 @@ namespace _4OF.ee4v.Core.UI {
                 }
             }
 
-            Debug.LogError($"Invalid hex color format: {hex}. Expected #RRGGBB or #RGB.");
+            Debug.LogError(I18N.Get("Debug.Core.InvalidHex", hex));
             return Color.white;
         }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using _4OF.ee4v.Core.i18n;
 using UnityEditor;
 using UnityEngine;
 
@@ -58,7 +59,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             AssetDatabase.CreateAsset(tabListObject, path);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.LogWarning($"TabListObject not found at {path}. Creating new one.");
+            Debug.LogWarning(I18N.Get("Debug.ProjectExtension.NotFoundTabListObject", path));
             _instance = tabListObject;
             return tabListObject;
         }

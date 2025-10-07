@@ -28,11 +28,10 @@ namespace _4OF.ee4v.ProjectExtension {
         private static void InitializeContent() {
             _isInitialized = true;
             _projectWindow = ReflectionWrapper.ProjectBrowserWindow;
-            if (EditorPrefsManager.EnableProjectTab) {
-                var projectToolBar = ProjectToolBar.Element();
-                _projectWindow.rootVisualElement.Add(projectToolBar);
-                TabListController.Initialize();
-            }
+            if (!EditorPrefsManager.EnableProjectTab) return;
+            var projectToolBar = ProjectToolBar.Element();
+            _projectWindow.rootVisualElement.Add(projectToolBar);
+            TabListController.Initialize();
         }
 
         private static void ProjectToolbarWatcher() {

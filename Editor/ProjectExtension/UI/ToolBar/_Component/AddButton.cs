@@ -1,4 +1,5 @@
-﻿using _4OF.ee4v.Core.UI;
+﻿using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.UI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -8,7 +9,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component {
         public static Button Element() {
             var addButton = new Button {
                 name = "ee4v-project-toolbar-tabContainer-addButton",
-                tooltip = "Add New Tab",
+                tooltip = I18N.Get("UI.ProjectExtension.AddNewTab"),
                 style = {
                     width = 20, height = 20,
                     backgroundColor = new StyleColor(StyleKeyword.None),

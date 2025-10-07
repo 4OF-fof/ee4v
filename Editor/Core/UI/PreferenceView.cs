@@ -31,21 +31,21 @@ namespace _4OF.ee4v.Core.UI {
         public override void OnGUI(string searchContext) {
             //TODO: need restart
             EditorPrefsManager.EnableHierarchyExtension = EditorGUILayout.Toggle(
-                new GUIContent("Enable Hierarchy Extension", "Enable or disable the Hierarchy Extension features."),
+                new GUIContent(I18N.Get("UI.Core.EnableHierarchyExtensionLabel"), I18N.Get("UI.Core.EnableHierarchyExtensionTooltip")),
                 EditorPrefsManager.EnableHierarchyExtension);
 
             EditorPrefsManager.EnableProjectExtension = EditorGUILayout.Toggle(
-                new GUIContent("Enable Project Extension", "Enable or disable the Project Extension features."),
+                new GUIContent(I18N.Get("UI.Core.EnableProjectExtensionLabel"), I18N.Get("UI.Core.EnableProjectExtensionTooltip")),
                 EditorPrefsManager.EnableProjectExtension);
 
             EditorPrefsManager.EnableProjectTab = EditorGUILayout.Toggle(
-                new GUIContent("Enable Project Tab", "Show or hide the Project Tab in the Project window."),
+                new GUIContent(I18N.Get("UI.Core.EnableProjectTabLabel"), I18N.Get("UI.Core.EnableProjectTabTooltip")),
                 EditorPrefsManager.EnableProjectTab);
             
             var languages = I18N.GetAvailableLanguages();
             EditorPrefsManager.Language = languages[
                 EditorGUILayout.Popup(
-                    "Language",
+                    I18N.Get("UI.Core.LanguageLabel"),
                     Array.IndexOf(languages, EditorPrefsManager.Language),
                     languages.ToArray()
                     )
@@ -54,69 +54,69 @@ namespace _4OF.ee4v.Core.UI {
             EditorGUILayout.Space(10);
             EditorGUI.BeginChangeCheck();
             EditorPrefsManager.ShowComponentIcons = EditorGUILayout.Toggle(
-                new GUIContent("Show Component Icons", "Show or hide component icons in the hierarchy."),
+                new GUIContent(I18N.Get("UI.Core.ShowComponentIconsLabel"), I18N.Get("UI.Core.ShowComponentIconsTooltip")),
                 EditorPrefsManager.ShowComponentIcons);
             if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
 
             EditorGUI.BeginChangeCheck();
             EditorPrefsManager.ShowMenuIcon = EditorGUILayout.Toggle(
-                new GUIContent("Show Menu Icon", "Show or hide the menu icon in the hierarchy."),
+                new GUIContent(I18N.Get("UI.Core.ShowMenuIconLabel"), I18N.Get("UI.Core.ShowMenuIconTooltip")),
                 EditorPrefsManager.ShowMenuIcon);
             if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
 
             EditorGUI.BeginChangeCheck();
             EditorPrefsManager.ShowDepthLine = EditorGUILayout.Toggle(
-                new GUIContent("Show Depth Line", "Show or hide depth lines in the hierarchy."),
+                new GUIContent(I18N.Get("UI.Core.ShowDepthLineLabel"), I18N.Get("UI.Core.ShowDepthLineTooltip")),
                 EditorPrefsManager.ShowDepthLine);
             if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
 
             EditorGUI.BeginChangeCheck();
             EditorPrefsManager.EnableCustomStyleItem = EditorGUILayout.Toggle(
-                new GUIContent("Enable Custom Style Item", "Enable or disable custom styled items in the hierarchy."),
+                new GUIContent(I18N.Get("UI.Core.EnableCustomStyleItemLabel"), I18N.Get("UI.Core.EnableCustomStyleItemTooltip")),
                 EditorPrefsManager.EnableCustomStyleItem);
             if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
 
             EditorGUI.BeginChangeCheck();
             EditorPrefsManager.HeadingPrefix = EditorGUILayout.TextField(
-                new GUIContent("Heading Prefix", "Set the prefix string to identify heading items in the hierarchy."),
+                new GUIContent(I18N.Get("UI.Core.HeadingPrefixLabel"), I18N.Get("UI.Core.HeadingPrefixTooltip")),
                 EditorPrefsManager.HeadingPrefix);
             if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
 
             EditorGUI.BeginChangeCheck();
             EditorPrefsManager.EnableStyledFolder = EditorGUILayout.Toggle(
-                new GUIContent("Enable Styled Folder", "Enable or disable styled folders in the Project window."),
+                new GUIContent(I18N.Get("UI.Core.EnableStyledFolderLabel"), I18N.Get("UI.Core.EnableStyledFolderTooltip")),
                 EditorPrefsManager.EnableStyledFolder);
             if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintProjectWindow();
 
             EditorGUI.BeginChangeCheck();
             EditorPrefsManager.ShowFolderOverlayIcon = EditorGUILayout.Toggle(
-                new GUIContent("Show Folder Overlay Icon",
-                    "Show or hide the folder overlay icon in the Project window."),
+                new GUIContent(I18N.Get("UI.Core.ShowFolderOverlayIconLabel"),
+                    I18N.Get("UI.Core.ShowFolderOverlayIconTooltip")),
                 EditorPrefsManager.ShowFolderOverlayIcon);
             if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintProjectWindow();
 
             EditorPrefsManager.EnableSceneSwitcher = EditorGUILayout.Toggle(
-                new GUIContent("Enable Scene Switcher", "Enable or disable the Scene Switcher feature."),
+                new GUIContent(I18N.Get("UI.Core.EnableSceneSwitcherLabel"), I18N.Get("UI.Core.EnableSceneSwitcherTooltip")),
                 EditorPrefsManager.EnableSceneSwitcher);
 
             EditorPrefsManager.CompatLilEditorToolbox = EditorGUILayout.Toggle(
-                new GUIContent("Compatibility lilEditorToolbox",
-                    "Enable this option if you are using lilEditorToolbox to avoid UI conflicts."),
+                new GUIContent(I18N.Get("UI.Core.CompatLilEditorToolboxLabel"),
+                    I18N.Get("UI.Core.CompatLilEditorToolboxTooltip")),
                 EditorPrefsManager.CompatLilEditorToolbox);
 
             EditorGUI.BeginChangeCheck();
             EditorPrefsManager.CompatFaceEmo = EditorGUILayout.Toggle(
-                new GUIContent("Compatibility FaceEmo",
-                    "Hide component icons when a VRChat Avatar Descriptor is present to avoid UI conflicts with FaceEmo."),
+                new GUIContent(I18N.Get("UI.Core.CompatFaceEmoLabel"),
+                    I18N.Get("UI.Core.CompatFaceEmoTooltip")),
                 EditorPrefsManager.CompatFaceEmo);
             if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
 
             EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField(new GUIContent("Hidden Item List",
-                "Comma-separated list of component type names to hide in the 'Add Component' menu (e.g. Transform, RectTransform)."));
+            EditorGUILayout.LabelField(new GUIContent(I18N.Get("UI.Core.HiddenItemListLabel"),
+                I18N.Get("UI.Core.HiddenItemListTooltip")));
             HiddenItemList();
             var hiddenResetStyle = new GUIStyle(GUI.skin.button) { fixedWidth = 120 };
-            if (GUILayout.Button("Reset to Default", hiddenResetStyle)) {
+            if (GUILayout.Button(I18N.Get("UI.Core.ResetToDefault"), hiddenResetStyle)) {
                 _hiddenItemListCache = new List<string>(EditorPrefsManager.HiddenItemList);
                 EditorPrefsManager.ResetHiddenItemList();
                 _hiddenItemListCache = new List<string>(EditorPrefsManager.HiddenItemList);
@@ -125,12 +125,12 @@ namespace _4OF.ee4v.Core.UI {
             }
 
             EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField(new GUIContent("Ignore Component Name List",
-                "Comma-separated list of component type names to ignore when gathering component icons (e.g. Transform, RectTransform)."));
+            EditorGUILayout.LabelField(new GUIContent(I18N.Get("UI.Core.IgnoreComponentNameListLabel"),
+                I18N.Get("UI.Core.IgnoreComponentNameListTooltip")));
             EditorGUI.BeginChangeCheck();
             IgnoreComponentName();
             var ignoreResetStyle = new GUIStyle(GUI.skin.button) { fixedWidth = 120 };
-            if (GUILayout.Button("Reset to Default", ignoreResetStyle)) {
+            if (GUILayout.Button(I18N.Get("UI.Core.ResetToDefault"), ignoreResetStyle)) {
                 _ignoreComponentListCache = new List<string>(EditorPrefsManager.IgnoreComponentNameList);
                 EditorPrefsManager.ResetIgnoreComponentNameList();
                 _ignoreComponentListCache = new List<string>(EditorPrefsManager.IgnoreComponentNameList);
@@ -142,11 +142,11 @@ namespace _4OF.ee4v.Core.UI {
             if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
 
             EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField(new GUIContent("Icon List",
-                "List of icon keys used by the icon selector. Use '<SEP>' (without quotes) to insert a separator. Examples: d_Folder Icon, d_UnityEditor.SceneView."));
+            EditorGUILayout.LabelField(new GUIContent(I18N.Get("UI.Core.IconListLabel"),
+                I18N.Get("UI.Core.IconListTooltip")));
             IconListUi();
             var iconResetStyle = new GUIStyle(GUI.skin.button) { fixedWidth = 120 };
-            if (GUILayout.Button("Reset to Default", iconResetStyle)) {
+            if (GUILayout.Button(I18N.Get("UI.Core.ResetToDefault"), iconResetStyle)) {
                 _iconListCache = new List<string>(EditorPrefsManager.IconList);
                 EditorPrefsManager.ResetIconList();
                 _iconListCache = new List<string>(EditorPrefsManager.IconList);
@@ -308,10 +308,10 @@ namespace _4OF.ee4v.Core.UI {
                     }
 
                     var toggleIcon = EditorGUIUtility.IconContent(isAsset ? "RawImage Icon" : "UnityLogo").image;
-                    var tooltip = isAsset ? "Toggle input to Builtin Icon" : "Toggle input to Asset";
+                    var tooltip = isAsset ? I18N.Get("UI.Core.ToggleInputToBuiltinIcon") : I18N.Get("UI.Core.ToggleInputToAsset");
                     var btnContent = toggleIcon != null
                         ? new GUIContent(toggleIcon, tooltip)
-                        : new GUIContent(isAsset ? "Icon" : "Texture", tooltip);
+                        : new GUIContent(isAsset ? I18N.Get("UI.Core.Icon") : I18N.Get("UI.Core.Texture"), tooltip);
                     if (GUI.Button(toggleRect, btnContent)) {
                         isAsset = !isAsset;
                         _iconUseAssetFlags[index] = isAsset;

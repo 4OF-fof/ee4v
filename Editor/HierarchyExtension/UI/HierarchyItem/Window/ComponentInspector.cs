@@ -1,4 +1,5 @@
-﻿using _4OF.ee4v.Core.UI.Window;
+﻿using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.UI.Window;
 using _4OF.ee4v.HierarchyExtension.Service;
 using UnityEditor;
 using UnityEngine;
@@ -138,7 +139,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                             ReflectionWrapper.DrawMaterialInspector(materialEditor, _material);
                         }
                         else {
-                            Debug.LogError("Could not cast editor to MaterialEditor.");
+                            Debug.LogError(I18N.Get("Debug.HierarchyExtension.CouldNotCastToMaterialEditor"));
                         }
                     }
                     else {

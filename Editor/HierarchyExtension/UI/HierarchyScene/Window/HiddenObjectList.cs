@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.Core.Data;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
 using UnityEditor;
@@ -31,7 +32,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                 }
             };
 
-            var titleLabel = new Label("Hidden Objects") {
+            var titleLabel = new Label(I18N.Get("UI.HierarchyExtension.HiddenObjectWindowTitle")) {
                 style = {
                     unityFontStyleAndWeight = FontStyle.Bold,
                     unityTextAlign = TextAnchor.MiddleLeft,
@@ -71,7 +72,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
             };
 
             var refreshButton = new Button(RefreshList) {
-                text = "Refresh",
+                text = I18N.Get("UI.HierarchyExtension.Refresh"),
                 style = {
                     flexGrow = 1,
                     height = 24,
@@ -83,7 +84,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
             buttonRow.Add(refreshButton);
 
             var restoreAllButton = new Button(RestoreAll) {
-                text = "Restore All",
+                text = I18N.Get("UI.HierarchyExtension.RestoreAll"),
                 style = {
                     flexGrow = 1,
                     height = 24,
@@ -142,7 +143,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
             _listContainer.Clear();
 
             if (_hiddenObjects == null || _hiddenObjects.Count == 0) {
-                var emptyLabel = new Label("No hidden objects found") {
+                var emptyLabel = new Label(I18N.Get("UI.HierarchyExtension.NoHiddenObjectsFound")) {
                     style = {
                         unityTextAlign = TextAnchor.MiddleCenter,
                         marginTop = 20, marginBottom = 20,
@@ -196,7 +197,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                 row.Add(nameLabel);
 
                 var restoreButton = new Button(() => RestoreObject(obj)) {
-                    text = "Restore",
+                    text = I18N.Get("UI.HierarchyExtension.Restore"),
                     style = {
                         width = 60, height = 20,
                         flexShrink = 0,
@@ -228,7 +229,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
         private void RestoreObject(GameObject obj) {
             if (obj == null) return;
 
-            Undo.RecordObject(obj, "Restore Hidden GameObject");
+            Undo.RecordObject(obj, I18N.Get("UI.HierarchyExtension.RestoreHiddenGameObject"));
             obj.hideFlags &= ~HideFlags.HideInHierarchy;
             obj.SetActive(true);
             if (obj.CompareTag("EditorOnly")) obj.tag = "Untagged";
@@ -246,7 +247,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
             if (objectsToRestore.Count == 0) return;
 
             Undo.RecordObjects(objectsToRestore.Select(obj => obj as Object).ToArray(),
-                "Restore All Hidden GameObjects");
+                I18N.Get("UI.HierarchyExtension.RestoreAllHiddenGameObjects"));
 
             foreach (var obj in objectsToRestore) {
                 obj.hideFlags &= ~HideFlags.HideInHierarchy;

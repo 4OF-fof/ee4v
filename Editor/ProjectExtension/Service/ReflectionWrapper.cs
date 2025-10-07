@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using _4OF.ee4v.Core.i18n;
 using UnityEditor;
 using UnityEngine;
 
@@ -17,7 +18,7 @@ namespace _4OF.ee4v.ProjectExtension.Service {
                 ShowFolderContentsMethod.Invoke(ProjectBrowserWindow, new object[] { instanceId, false });
             }
             catch (Exception ex) {
-                Debug.LogWarning($"{ex.Message}");
+                Debug.LogWarning(I18N.Get("Debug.ProjectExtension.ReflectionWarning", ex.Message));
             }
         }
     }

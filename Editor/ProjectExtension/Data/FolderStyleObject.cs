@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using _4OF.ee4v.Core.i18n;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,8 +12,6 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         private static FolderStyleObject _instance;
 
         [SerializeField] private List<FolderStyle> styledFolderList = new();
-
-        public IReadOnlyList<FolderStyle> StyledFolderList => styledFolderList;
 
         public void Add(string path, Color? color = null, Texture icon = null) {
             if (styledFolderList.Any(style => style.path == path)) return;
@@ -73,7 +72,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             AssetDatabase.CreateAsset(folderStyleObject, path);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.LogWarning($"FolderStyleObject not found at {path}. Creating new one.");
+            Debug.LogWarning(I18N.Get("Debug.ProjectExtension.NotFoundFolderStyleObject", path));
             _instance = folderStyleObject;
             return folderStyleObject;
         }

@@ -13,16 +13,16 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             }
         }
 
-        public static void Initialize() {
+        private static void Initialize() {
             if (_asset == null) _asset = SceneListObject.LoadOrCreate();
         }
 
-        public static void Add(string path, bool isIgnored = false) {
+        private static void Add(string path, bool isIgnored = false) {
             Initialize();
             _asset.Add(path, isIgnored);
         }
 
-        public static void Remove(int index) {
+        private static void Remove(int index) {
             Initialize();
             _asset.Remove(index);
         }

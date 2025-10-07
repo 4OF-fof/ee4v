@@ -60,7 +60,25 @@ namespace _4OF.ee4v.Core.i18n {
 
         public static string Get(string key, params object[] args) {
             if (!_translations.TryGetValue(key, out var value)) return key;
-            return args is { Length: > 0 } ? string.Format(value, args) : value;
+
+            if (args is null || args.Length == 0) return value;
+
+            try {
+                return string.Format(value, args);
+            }
+            catch (FormatException fe) {
+                Debug.LogError($"[ee4v:i18n] FormatException for key='{key}' with format='{value}' and args=[{string.Join(", ", args.Select(a => a?.ToString() ?? "null"))}]: {fe.Message}");
+                try {
+                    return key + " " + string.Join(" ", args.Select(a => a?.ToString() ?? "null"));
+                }
+                catch {
+                    return key;
+                }
+            }
+            catch (Exception e) {
+                Debug.LogError($"[ee4v:i18n] Unexpected exception formatting key='{key}': {e}");
+                return key;
+            }
         }
 
         public static void SetLanguage(string languageCode) {

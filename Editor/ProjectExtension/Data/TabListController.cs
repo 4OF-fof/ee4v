@@ -27,7 +27,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             KeepOneTab();
         }
 
-        public static void Add(VisualElement tab) {
+        private static void Add(VisualElement tab) {
             Initialize();
             var path = tab.tooltip;
             var name = tab.Q<Label>().text;

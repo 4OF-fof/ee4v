@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
 using _4OF.ee4v.Core.UI.Window._Component;
@@ -121,7 +122,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
                 var objectsToChange = _gameObjectList.Where(go => go != null && go.activeSelf != evt.newValue).ToList();
 
                 if (objectsToChange.Count <= 0) return;
-                Undo.RecordObjects(objectsToChange.Select(go => go as Object).ToArray(), "Toggle GameObjects Active");
+                Undo.RecordObjects(objectsToChange.Select(go => go as Object).ToArray(), I18N.Get("UI.HierarchyExtension.ToggleGameObjectsActive"));
                 foreach (var go in objectsToChange) {
                     go.SetActive(evt.newValue);
                     EditorUtility.SetDirty(go);
@@ -195,7 +196,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
             var hideObjectButton = new Button(() =>
             {
                 foreach (var obj in _gameObjectList.Where(obj => obj != null)) {
-                    Undo.RecordObject(obj, "Hide GameObject");
+                    Undo.RecordObject(obj, I18N.Get("UI.HierarchyExtension.HideGameObject"));
                     obj.hideFlags |= HideFlags.HideInHierarchy;
                     obj.SetActive(false);
                     obj.tag = "EditorOnly";
@@ -205,7 +206,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
 
                 EditorApplication.RepaintHierarchyWindow();
             }) {
-                text = "Hide in Hierarchy",
+                text = I18N.Get("UI.HierarchyExtension.HideInHierarchy"),
                 style = {
                     backgroundColor = ColorPreset.WarningButton,
                     marginTop = 8, marginBottom = 4,
