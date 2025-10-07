@@ -14,20 +14,17 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
         }
 
         public static void Initialize() {
-            if (_asset != null) return;
-            _asset = SceneListObject.LoadOrCreate();
+            if (_asset == null) _asset = SceneListObject.LoadOrCreate();
         }
 
         public static void Add(string path, bool isIgnored = false) {
             Initialize();
             _asset.Add(path, isIgnored);
-            Save();
         }
 
         public static void Remove(int index) {
             Initialize();
             _asset.Remove(index);
-            Save();
         }
 
         public static void Move(int fromIndex, int toIndex) {
@@ -38,13 +35,11 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             var item = _asset.SceneList[fromIndex];
             _asset.Remove(fromIndex);
             _asset.Insert(toIndex, item.path, item.isIgnored);
-            Save();
         }
 
         public static void UpdateScene(int index, string path, bool isIgnored) {
             Initialize();
             _asset.UpdateScene(index, path, isIgnored);
-            Save();
         }
 
         public static void SceneListRegister() {
@@ -59,13 +54,6 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             }
 
             foreach (var path in currentPathList.Where(path => sceneList.SceneList.All(s => s.path != path))) Add(path);
-        }
-
-
-        private static void Save() {
-            if (_asset == null) return;
-            EditorUtility.SetDirty(_asset);
-            AssetDatabase.SaveAssets();
         }
     }
 }

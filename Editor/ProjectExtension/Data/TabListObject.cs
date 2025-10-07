@@ -7,6 +7,8 @@ using UnityEngine;
 namespace _4OF.ee4v.ProjectExtension.Data {
     [CreateAssetMenu(fileName = "TabList")]
     public class TabListObject : ScriptableObject {
+        private static TabListObject _instance;
+
         [SerializeField] private List<Tab> tabList = new();
 
         public IReadOnlyList<Tab> TabList => tabList;
@@ -33,13 +35,21 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             tabList[index].tabName = tabName;
         }
 
+        public static TabListObject GetInstance() {
+            if (_instance == null) _instance = LoadOrCreate();
+            return _instance;
+        }
+
         public static TabListObject LoadOrCreate() {
             var temp = CreateInstance<TabListObject>();
             var scriptPath = AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(temp));
             DestroyImmediate(temp);
             var path = scriptPath.Replace("ProjectExtension/Data/TabListObject.cs", "UserData/TabList.asset");
             var tabListObject = AssetDatabase.LoadAssetAtPath<TabListObject>(path);
-            if (tabListObject != null) return tabListObject;
+            if (tabListObject != null) {
+                _instance = tabListObject;
+                return tabListObject;
+            }
 
             var dir = Path.GetDirectoryName(path);
             if (!Directory.Exists(dir) && !string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
@@ -49,6 +59,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.LogWarning($"TabListObject not found at {path}. Creating new one.");
+            _instance = tabListObject;
             return tabListObject;
         }
 

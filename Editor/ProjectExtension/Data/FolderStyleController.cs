@@ -1,5 +1,4 @@
-﻿using UnityEditor;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace _4OF.ee4v.ProjectExtension.Data {
     public static class FolderStyleController {
@@ -12,13 +11,11 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         public static void Remove(string path) {
             Initialize();
             _asset.Remove(NormalizePath(path));
-            Save();
         }
 
         public static void UpdatePath(string oldPath, string newPath) {
             Initialize();
             _asset.UpdatePath(NormalizePath(oldPath), NormalizePath(newPath));
-            Save();
         }
 
         public static void UpdateOrAddColor(string path, Color color) {
@@ -28,7 +25,6 @@ namespace _4OF.ee4v.ProjectExtension.Data {
                 _asset.Add(p, color);
             else
                 _asset.UpdateColor(p, color);
-            Save();
         }
 
         public static void UpdateOrAddIcon(string path, Texture icon) {
@@ -38,7 +34,6 @@ namespace _4OF.ee4v.ProjectExtension.Data {
                 _asset.Add(p, icon: icon);
             else
                 _asset.UpdateIcon(p, icon);
-            Save();
         }
 
         public static Color GetColor(string path) {
@@ -51,13 +46,6 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             Initialize();
             var style = _asset.GetStyle(NormalizePath(path));
             return style?.icon;
-        }
-
-        private static void Save() {
-            if (_asset == null) return;
-            EditorUtility.SetDirty(_asset);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
         }
 
         private static string NormalizePath(string path) {

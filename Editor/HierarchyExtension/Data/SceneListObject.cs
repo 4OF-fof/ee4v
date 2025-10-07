@@ -6,6 +6,8 @@ using UnityEngine;
 
 namespace _4OF.ee4v.HierarchyExtension.Data {
     public class SceneListObject : ScriptableObject {
+        private static SceneListObject _instance;
+
         [SerializeField] private List<SceneContent> sceneList = new();
 
         public IReadOnlyList<SceneContent> SceneList => sceneList;
@@ -32,13 +34,21 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             sceneList[index].isIgnored = isIgnored;
         }
 
+        public static SceneListObject GetInstance() {
+            if (_instance == null) _instance = LoadOrCreate();
+            return _instance;
+        }
+
         public static SceneListObject LoadOrCreate() {
             var temp = CreateInstance<SceneListObject>();
             var scriptPath = AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(temp));
             DestroyImmediate(temp);
             var path = scriptPath.Replace("HierarchyExtension/Data/SceneListObject.cs", "UserData/SceneList.asset");
             var sceneListObject = AssetDatabase.LoadAssetAtPath<SceneListObject>(path);
-            if (sceneListObject != null) return sceneListObject;
+            if (sceneListObject != null) {
+                _instance = sceneListObject;
+                return sceneListObject;
+            }
 
             var dir = Path.GetDirectoryName(path);
             if (!Directory.Exists(dir) && !string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
@@ -48,6 +58,7 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.LogWarning($"SceneListObject not found at {path}. Creating new one.");
+            _instance = sceneListObject;
             return sceneListObject;
         }
 

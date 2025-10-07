@@ -8,6 +8,8 @@ using UnityEngine;
 namespace _4OF.ee4v.ProjectExtension.Data {
     [CreateAssetMenu(fileName = "FolderStyle")]
     public class FolderStyleObject : ScriptableObject {
+        private static FolderStyleObject _instance;
+
         [SerializeField] private List<FolderStyle> styledFolderList = new();
 
         public IReadOnlyList<FolderStyle> StyledFolderList => styledFolderList;
@@ -47,6 +49,11 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             return styledFolderList.FirstOrDefault(style => style.path == path);
         }
 
+        public static FolderStyleObject GetInstance() {
+            if (_instance == null) _instance = LoadOrCreate();
+            return _instance;
+        }
+
         public static FolderStyleObject LoadOrCreate() {
             var temp = CreateInstance<FolderStyleObject>();
             var scriptPath = AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(temp));
@@ -54,7 +61,10 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             var path = scriptPath.Replace("ProjectExtension/Data/FolderStyleObject.cs",
                 "UserData/FolderStyleObject.asset");
             var folderStyleObject = AssetDatabase.LoadAssetAtPath<FolderStyleObject>(path);
-            if (folderStyleObject != null) return folderStyleObject;
+            if (folderStyleObject != null) {
+                _instance = folderStyleObject;
+                return folderStyleObject;
+            }
 
             var dir = Path.GetDirectoryName(path);
             if (!Directory.Exists(dir) && !string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
@@ -64,6 +74,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.LogWarning($"FolderStyleObject not found at {path}. Creating new one.");
+            _instance = folderStyleObject;
             return folderStyleObject;
         }
 
