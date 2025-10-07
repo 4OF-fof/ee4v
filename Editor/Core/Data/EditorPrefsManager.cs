@@ -168,6 +168,10 @@ namespace _4OF.ee4v.Core.Data {
             set => EditorPrefs.SetString(IgnoreComponentNameListKey, value ?? string.Empty);
         }
 
+        private static readonly List<string> DefaultIgnoreComponentNameList = new() {
+            "Transform"
+        };
+
         public static List<string> IgnoreComponentNameList {
             get {
                 var csv = IgnoreComponentNameListCsv;
@@ -176,7 +180,8 @@ namespace _4OF.ee4v.Core.Data {
                         ? new List<string> { string.Empty }
                         : new List<string>();
                 var parts = csv.Split(',');
-                return parts.Select(p => p.Trim()).ToList();
+                var list = parts.Select(p => p.Trim()).ToList();
+                return list.Count == 0 ? DefaultIgnoreComponentNameList : list;
             }
             set {
                 if (value == null) {
@@ -189,7 +194,7 @@ namespace _4OF.ee4v.Core.Data {
         }
 
         public static void ResetIgnoreComponentNameList() {
-            EditorPrefs.DeleteKey(IgnoreComponentNameListKey);
+            IgnoreComponentNameList = DefaultIgnoreComponentNameList;
         }
 
         #endregion

@@ -5,6 +5,8 @@
   "UI.Core.EnableProjectExtensionTooltip": "Enable or disable the Project Extension features.",
   "UI.Core.EnableProjectTabLabel": "Enable Project Tab",
   "UI.Core.EnableProjectTabTooltip": "Show or hide the Project Tab in the Project window.",
+  "UI.Core.NeedRestartToApplyChanges": "Unity restart is required to apply changes.",
+  "UI.Core.RestartUnity": "Restart",
   "UI.Core.LanguageLabel": "Language",
   "UI.Core.ShowComponentIconsLabel": "Show Component Icons",
   "UI.Core.ShowComponentIconsTooltip": "Show or hide component icons in the hierarchy.",

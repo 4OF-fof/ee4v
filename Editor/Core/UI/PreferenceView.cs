@@ -18,6 +18,8 @@ namespace _4OF.ee4v.Core.UI {
         private static ReorderableList _hiddenItemReorderableList;
         private static ReorderableList _iconReorderableList;
         private static ReorderableList _ignoreComponentReorderableList;
+        private static bool _needRestart;
+        private static Vector2 _scrollPosition;
 
         private PreferencesProvider(string path, SettingsScope scopes, IEnumerable<string> keywords) : base(path,
             scopes, keywords) {
@@ -29,22 +31,17 @@ namespace _4OF.ee4v.Core.UI {
         }
 
         public override void OnGUI(string searchContext) {
-            //TODO: need restart
-            EditorPrefsManager.EnableHierarchyExtension = EditorGUILayout.Toggle(
-                new GUIContent(I18N.Get("UI.Core.EnableHierarchyExtensionLabel"),
-                    I18N.Get("UI.Core.EnableHierarchyExtensionTooltip")),
-                EditorPrefsManager.EnableHierarchyExtension);
+            if (_needRestart)
+                using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox)) {
+                    EditorGUILayout.HelpBox(I18N.Get("UI.Core.NeedRestartToApplyChanges"), MessageType.Warning);
+                    if (GUILayout.Button(I18N.Get("UI.Core.RestartUnity"), GUILayout.Width(120), GUILayout.Height(38)))
+                        EditorApplication.OpenProject(Environment.CurrentDirectory);
+                }
 
-            EditorPrefsManager.EnableProjectExtension = EditorGUILayout.Toggle(
-                new GUIContent(I18N.Get("UI.Core.EnableProjectExtensionLabel"),
-                    I18N.Get("UI.Core.EnableProjectExtensionTooltip")),
-                EditorPrefsManager.EnableProjectExtension);
-
-            EditorPrefsManager.EnableProjectTab = EditorGUILayout.Toggle(
-                new GUIContent(I18N.Get("UI.Core.EnableProjectTabLabel"), I18N.Get("UI.Core.EnableProjectTabTooltip")),
-                EditorPrefsManager.EnableProjectTab);
+            _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
 
             var languages = I18N.GetAvailableLanguages();
+            EditorGUI.BeginChangeCheck();
             EditorPrefsManager.Language = languages[
                 EditorGUILayout.Popup(
                     I18N.Get("UI.Core.LanguageLabel"),
@@ -52,114 +49,200 @@ namespace _4OF.ee4v.Core.UI {
                     languages.ToArray()
                 )
             ];
+            if (EditorGUI.EndChangeCheck()) _needRestart = true;
 
-            EditorGUILayout.Space(10);
-            EditorGUI.BeginChangeCheck();
-            EditorPrefsManager.ShowComponentIcons = EditorGUILayout.Toggle(
-                new GUIContent(I18N.Get("UI.Core.ShowComponentIconsLabel"),
-                    I18N.Get("UI.Core.ShowComponentIconsTooltip")),
-                EditorPrefsManager.ShowComponentIcons);
-            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
+            #region HierarchyExtension
 
-            EditorGUI.BeginChangeCheck();
-            EditorPrefsManager.ShowMenuIcon = EditorGUILayout.Toggle(
-                new GUIContent(I18N.Get("UI.Core.ShowMenuIconLabel"), I18N.Get("UI.Core.ShowMenuIconTooltip")),
-                EditorPrefsManager.ShowMenuIcon);
-            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
+            EditorGUILayout.LabelField("Hierarchy Extension", EditorStyles.boldLabel);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox)) {
+                EditorGUI.BeginChangeCheck();
+                EditorPrefsManager.EnableHierarchyExtension = EditorGUILayout.Toggle(
+                    new GUIContent(I18N.Get("UI.Core.EnableHierarchyExtensionLabel"),
+                        I18N.Get("UI.Core.EnableHierarchyExtensionTooltip")),
+                    EditorPrefsManager.EnableHierarchyExtension);
+                if (EditorGUI.EndChangeCheck()) _needRestart = true;
 
-            EditorGUI.BeginChangeCheck();
-            EditorPrefsManager.ShowDepthLine = EditorGUILayout.Toggle(
-                new GUIContent(I18N.Get("UI.Core.ShowDepthLineLabel"), I18N.Get("UI.Core.ShowDepthLineTooltip")),
-                EditorPrefsManager.ShowDepthLine);
-            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
+                using (new EditorGUI.DisabledScope(!EditorPrefsManager.EnableHierarchyExtension)) {
+                    EditorGUILayout.Space(3);
+                    using (new EditorGUILayout.HorizontalScope()) {
+                        GUILayout.Space(15);
+                        using (new EditorGUILayout.VerticalScope()) {
+                            EditorPrefsManager.EnableSceneSwitcher = EditorGUILayout.ToggleLeft(
+                                new GUIContent(I18N.Get("UI.Core.EnableSceneSwitcherLabel"),
+                                    I18N.Get("UI.Core.EnableSceneSwitcherTooltip")),
+                                EditorPrefsManager.EnableSceneSwitcher);
 
-            EditorGUI.BeginChangeCheck();
-            EditorPrefsManager.EnableCustomStyleItem = EditorGUILayout.Toggle(
-                new GUIContent(I18N.Get("UI.Core.EnableCustomStyleItemLabel"),
-                    I18N.Get("UI.Core.EnableCustomStyleItemTooltip")),
-                EditorPrefsManager.EnableCustomStyleItem);
-            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
+                            EditorGUI.BeginChangeCheck();
+                            EditorPrefsManager.EnableCustomStyleItem = EditorGUILayout.ToggleLeft(
+                                new GUIContent(I18N.Get("UI.Core.EnableCustomStyleItemLabel"),
+                                    I18N.Get("UI.Core.EnableCustomStyleItemTooltip")),
+                                EditorPrefsManager.EnableCustomStyleItem);
+                            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
 
-            EditorGUI.BeginChangeCheck();
-            EditorPrefsManager.HeadingPrefix = EditorGUILayout.TextField(
-                new GUIContent(I18N.Get("UI.Core.HeadingPrefixLabel"), I18N.Get("UI.Core.HeadingPrefixTooltip")),
-                EditorPrefsManager.HeadingPrefix);
-            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
+                            EditorGUI.BeginChangeCheck();
+                            EditorPrefsManager.ShowComponentIcons = EditorGUILayout.ToggleLeft(
+                                new GUIContent(I18N.Get("UI.Core.ShowComponentIconsLabel"),
+                                    I18N.Get("UI.Core.ShowComponentIconsTooltip")),
+                                EditorPrefsManager.ShowComponentIcons);
+                            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
 
-            EditorGUI.BeginChangeCheck();
-            EditorPrefsManager.EnableStyledFolder = EditorGUILayout.Toggle(
-                new GUIContent(I18N.Get("UI.Core.EnableStyledFolderLabel"),
-                    I18N.Get("UI.Core.EnableStyledFolderTooltip")),
-                EditorPrefsManager.EnableStyledFolder);
-            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintProjectWindow();
+                            EditorGUI.BeginChangeCheck();
+                            EditorPrefsManager.ShowMenuIcon = EditorGUILayout.ToggleLeft(
+                                new GUIContent(I18N.Get("UI.Core.ShowMenuIconLabel"),
+                                    I18N.Get("UI.Core.ShowMenuIconTooltip")),
+                                EditorPrefsManager.ShowMenuIcon);
+                            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
 
-            EditorGUI.BeginChangeCheck();
-            EditorPrefsManager.ShowFolderOverlayIcon = EditorGUILayout.Toggle(
-                new GUIContent(I18N.Get("UI.Core.ShowFolderOverlayIconLabel"),
-                    I18N.Get("UI.Core.ShowFolderOverlayIconTooltip")),
-                EditorPrefsManager.ShowFolderOverlayIcon);
-            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintProjectWindow();
+                            EditorGUI.BeginChangeCheck();
+                            using (new EditorGUILayout.HorizontalScope()) {
+                                EditorGUILayout.PrefixLabel(new GUIContent(I18N.Get("UI.Core.HeadingPrefixLabel"),
+                                    I18N.Get("UI.Core.HeadingPrefixTooltip")));
+                                EditorPrefsManager.HeadingPrefix =
+                                    EditorGUILayout.TextField(EditorPrefsManager.HeadingPrefix);
+                            }
 
-            EditorPrefsManager.EnableSceneSwitcher = EditorGUILayout.Toggle(
-                new GUIContent(I18N.Get("UI.Core.EnableSceneSwitcherLabel"),
-                    I18N.Get("UI.Core.EnableSceneSwitcherTooltip")),
-                EditorPrefsManager.EnableSceneSwitcher);
+                            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
 
-            EditorPrefsManager.CompatLilEditorToolbox = EditorGUILayout.Toggle(
-                new GUIContent(I18N.Get("UI.Core.CompatLilEditorToolboxLabel"),
-                    I18N.Get("UI.Core.CompatLilEditorToolboxTooltip")),
-                EditorPrefsManager.CompatLilEditorToolbox);
+                            EditorGUI.BeginChangeCheck();
+                            EditorPrefsManager.ShowDepthLine = EditorGUILayout.ToggleLeft(
+                                new GUIContent(I18N.Get("UI.Core.ShowDepthLineLabel"),
+                                    I18N.Get("UI.Core.ShowDepthLineTooltip")),
+                                EditorPrefsManager.ShowDepthLine);
+                            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
 
-            EditorGUI.BeginChangeCheck();
-            EditorPrefsManager.CompatFaceEmo = EditorGUILayout.Toggle(
-                new GUIContent(I18N.Get("UI.Core.CompatFaceEmoLabel"),
-                    I18N.Get("UI.Core.CompatFaceEmoTooltip")),
-                EditorPrefsManager.CompatFaceEmo);
-            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
+                            EditorGUILayout.Space(5);
+                            using (new EditorGUILayout.HorizontalScope()) {
+                                EditorGUILayout.LabelField(new GUIContent(I18N.Get("UI.Core.HiddenItemListLabel"),
+                                    I18N.Get("UI.Core.HiddenItemListTooltip")), EditorStyles.boldLabel);
+                                GUILayout.FlexibleSpace();
+                                if (GUILayout.Button(I18N.Get("UI.Core.ResetToDefault"), GUILayout.Width(120))) {
+                                    _hiddenItemListCache = new List<string>(EditorPrefsManager.HiddenItemList);
+                                    EditorPrefsManager.ResetHiddenItemList();
+                                    _hiddenItemListCache = new List<string>(EditorPrefsManager.HiddenItemList);
+                                    if (_hiddenItemReorderableList != null)
+                                        _hiddenItemReorderableList.list = _hiddenItemListCache;
+                                    EditorApplication.RepaintHierarchyWindow();
+                                }
+                            }
 
-            EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField(new GUIContent(I18N.Get("UI.Core.HiddenItemListLabel"),
-                I18N.Get("UI.Core.HiddenItemListTooltip")));
-            HiddenItemList();
-            var hiddenResetStyle = new GUIStyle(GUI.skin.button) { fixedWidth = 120 };
-            if (GUILayout.Button(I18N.Get("UI.Core.ResetToDefault"), hiddenResetStyle)) {
-                _hiddenItemListCache = new List<string>(EditorPrefsManager.HiddenItemList);
-                EditorPrefsManager.ResetHiddenItemList();
-                _hiddenItemListCache = new List<string>(EditorPrefsManager.HiddenItemList);
-                if (_hiddenItemReorderableList != null) _hiddenItemReorderableList.list = _hiddenItemListCache;
-                EditorApplication.RepaintHierarchyWindow();
+                            HiddenItemList();
+
+                            EditorGUILayout.Space(5);
+                            using (new EditorGUILayout.HorizontalScope()) {
+                                EditorGUILayout.LabelField(new GUIContent(
+                                    I18N.Get("UI.Core.IgnoreComponentNameListLabel"),
+                                    I18N.Get("UI.Core.IgnoreComponentNameListTooltip")), EditorStyles.boldLabel);
+                                GUILayout.FlexibleSpace();
+                                if (GUILayout.Button(I18N.Get("UI.Core.ResetToDefault"), GUILayout.Width(120))) {
+                                    _ignoreComponentListCache =
+                                        new List<string>(EditorPrefsManager.IgnoreComponentNameList);
+                                    EditorPrefsManager.ResetIgnoreComponentNameList();
+                                    _ignoreComponentListCache =
+                                        new List<string>(EditorPrefsManager.IgnoreComponentNameList);
+                                    if (_ignoreComponentReorderableList != null)
+                                        _ignoreComponentReorderableList.list = _ignoreComponentListCache;
+                                    EditorApplication.RepaintHierarchyWindow();
+                                }
+                            }
+
+                            EditorGUI.BeginChangeCheck();
+                            IgnoreComponentName();
+                            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
+
+                            EditorGUILayout.Space(5);
+                            using (new EditorGUILayout.HorizontalScope()) {
+                                EditorGUILayout.LabelField(new GUIContent(I18N.Get("UI.Core.IconListLabel"),
+                                    I18N.Get("UI.Core.IconListTooltip")), EditorStyles.boldLabel);
+                                GUILayout.FlexibleSpace();
+                                if (GUILayout.Button(I18N.Get("UI.Core.ResetToDefault"), GUILayout.Width(120))) {
+                                    _iconListCache = new List<string>(EditorPrefsManager.IconList);
+                                    EditorPrefsManager.ResetIconList();
+                                    _iconListCache = new List<string>(EditorPrefsManager.IconList);
+                                    _iconUseAssetFlags =
+                                        new List<bool>(_iconListCache.Select(s => s != null && s.StartsWith("asset:")));
+                                    while (_iconUseAssetFlags.Count < _iconListCache.Count)
+                                        _iconUseAssetFlags.Add(false);
+                                    if (_iconReorderableList != null) _iconReorderableList.list = _iconListCache;
+                                }
+                            }
+
+                            IconListUi();
+                        }
+                    }
+                }
             }
 
             EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField(new GUIContent(I18N.Get("UI.Core.IgnoreComponentNameListLabel"),
-                I18N.Get("UI.Core.IgnoreComponentNameListTooltip")));
-            EditorGUI.BeginChangeCheck();
-            IgnoreComponentName();
-            var ignoreResetStyle = new GUIStyle(GUI.skin.button) { fixedWidth = 120 };
-            if (GUILayout.Button(I18N.Get("UI.Core.ResetToDefault"), ignoreResetStyle)) {
-                _ignoreComponentListCache = new List<string>(EditorPrefsManager.IgnoreComponentNameList);
-                EditorPrefsManager.ResetIgnoreComponentNameList();
-                _ignoreComponentListCache = new List<string>(EditorPrefsManager.IgnoreComponentNameList);
-                if (_ignoreComponentReorderableList != null)
-                    _ignoreComponentReorderableList.list = _ignoreComponentListCache;
-                EditorApplication.RepaintHierarchyWindow();
-            }
 
-            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
+            #endregion
+
+            #region ProjectExtension
+
+            EditorGUILayout.LabelField("Project Extension", EditorStyles.boldLabel);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox)) {
+                EditorGUI.BeginChangeCheck();
+                EditorPrefsManager.EnableProjectExtension = EditorGUILayout.Toggle(
+                    new GUIContent(I18N.Get("UI.Core.EnableProjectExtensionLabel"),
+                        I18N.Get("UI.Core.EnableProjectExtensionTooltip")),
+                    EditorPrefsManager.EnableProjectExtension);
+                if (EditorGUI.EndChangeCheck()) _needRestart = true;
+
+                using (new EditorGUI.DisabledScope(!EditorPrefsManager.EnableProjectExtension)) {
+                    EditorGUILayout.Space(3);
+                    using (new EditorGUILayout.HorizontalScope()) {
+                        GUILayout.Space(15);
+                        using (new EditorGUILayout.VerticalScope()) {
+                            EditorGUI.BeginChangeCheck();
+                            EditorPrefsManager.EnableProjectTab = EditorGUILayout.ToggleLeft(
+                                new GUIContent(I18N.Get("UI.Core.EnableProjectTabLabel"),
+                                    I18N.Get("UI.Core.EnableProjectTabTooltip")),
+                                EditorPrefsManager.EnableProjectTab);
+                            if (EditorGUI.EndChangeCheck()) _needRestart = true;
+
+                            EditorGUI.BeginChangeCheck();
+                            EditorPrefsManager.EnableStyledFolder = EditorGUILayout.ToggleLeft(
+                                new GUIContent(I18N.Get("UI.Core.EnableStyledFolderLabel"),
+                                    I18N.Get("UI.Core.EnableStyledFolderTooltip")),
+                                EditorPrefsManager.EnableStyledFolder);
+                            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintProjectWindow();
+
+                            EditorGUI.BeginChangeCheck();
+                            EditorPrefsManager.ShowFolderOverlayIcon = EditorGUILayout.ToggleLeft(
+                                new GUIContent(I18N.Get("UI.Core.ShowFolderOverlayIconLabel"),
+                                    I18N.Get("UI.Core.ShowFolderOverlayIconTooltip")),
+                                EditorPrefsManager.ShowFolderOverlayIcon);
+                            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintProjectWindow();
+                        }
+                    }
+                }
+            }
 
             EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField(new GUIContent(I18N.Get("UI.Core.IconListLabel"),
-                I18N.Get("UI.Core.IconListTooltip")));
-            IconListUi();
-            var iconResetStyle = new GUIStyle(GUI.skin.button) { fixedWidth = 120 };
-            if (GUILayout.Button(I18N.Get("UI.Core.ResetToDefault"), iconResetStyle)) {
-                _iconListCache = new List<string>(EditorPrefsManager.IconList);
-                EditorPrefsManager.ResetIconList();
-                _iconListCache = new List<string>(EditorPrefsManager.IconList);
-                _iconUseAssetFlags = new List<bool>(_iconListCache.Select(s => s != null && s.StartsWith("asset:")));
-                while (_iconUseAssetFlags.Count < _iconListCache.Count) _iconUseAssetFlags.Add(false);
-                if (_iconReorderableList        != null) _iconReorderableList.list = _iconListCache;
+
+            #endregion
+
+            #region Compatibility
+
+            EditorGUILayout.LabelField("Compatibility", EditorStyles.boldLabel);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox)) {
+                EditorGUI.BeginChangeCheck();
+                EditorPrefsManager.CompatLilEditorToolbox = EditorGUILayout.ToggleLeft(
+                    new GUIContent(I18N.Get("UI.Core.CompatLilEditorToolboxLabel"),
+                        I18N.Get("UI.Core.CompatLilEditorToolboxTooltip")),
+                    EditorPrefsManager.CompatLilEditorToolbox);
+                if (EditorGUI.EndChangeCheck()) _needRestart = true;
+
+                EditorGUI.BeginChangeCheck();
+                EditorPrefsManager.CompatFaceEmo = EditorGUILayout.ToggleLeft(
+                    new GUIContent(I18N.Get("UI.Core.CompatFaceEmoLabel"),
+                        I18N.Get("UI.Core.CompatFaceEmoTooltip")),
+                    EditorPrefsManager.CompatFaceEmo);
+                if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
             }
+
+            #endregion
+
+            EditorGUILayout.EndScrollView();
         }
 
         private static void HiddenItemList() {

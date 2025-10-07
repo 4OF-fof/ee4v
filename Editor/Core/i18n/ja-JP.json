@@ -5,6 +5,8 @@
   "UI.Core.EnableProjectExtensionTooltip": "プロジェクト拡張機能を有効または無効にします。",
   "UI.Core.EnableProjectTabLabel": "プロジェクトタブを有効化",
   "UI.Core.EnableProjectTabTooltip": "プロジェクトウィンドウでプロジェクトタブを表示または非表示にします。",
+  "UI.Core.NeedRestartToApplyChanges": "変更を適用するにはUnityの再起動が必要です。",
+  "UI.Core.RestartUnity": "再起動",
   "UI.Core.LanguageLabel": "言語",
   "UI.Core.ShowComponentIconsLabel": "コンポーネントアイコンを表示",
   "UI.Core.ShowComponentIconsTooltip": "ヒエラルキーでコンポーネントアイコンを表示または非表示にします。",
