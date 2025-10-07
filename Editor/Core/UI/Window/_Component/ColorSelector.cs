@@ -10,7 +10,6 @@ namespace _4OF.ee4v.Core.UI.Window._Component {
     public static class ColorSelector {
         private const float Alpha = 0.7f;
         public static Action<Color, List<ObjectStyleComponent>> OnColorChangedComponent;
-        public static Action<Color, List<string>> OnColorChangedPath;
 
         private static readonly List<Color> DarkColorList = new() {
             new Color(0.7f, 0f, 0f, Alpha),
@@ -80,14 +79,10 @@ namespace _4OF.ee4v.Core.UI.Window._Component {
                                 FolderStyleController.Remove(folderPath);
                             }
                             else {
-                                var existingColor = FolderStyleController.GetColor(folderPath);
-                                if (existingColor == Color.clear)
-                                    FolderStyleController.UpdateOrAddColor(folderPath, color);
-                                else
-                                    FolderStyleController.UpdateOrAddColor(folderPath, color);
+                                FolderStyleController.UpdateOrAddColor(folderPath, color);
                             }
 
-                    OnColorChangedPath?.Invoke(color, folderPaths);
+                    EditorApplication.RepaintProjectWindow();
                 }
             );
         }
