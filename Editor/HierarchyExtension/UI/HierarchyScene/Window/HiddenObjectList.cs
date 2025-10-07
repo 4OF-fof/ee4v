@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
+namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
     public class HiddenObjectList : BaseWindow {
         private List<GameObject> _hiddenObjects = new();
         private VisualElement _listContainer;
