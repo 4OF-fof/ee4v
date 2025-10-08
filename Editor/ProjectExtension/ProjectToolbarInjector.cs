@@ -52,6 +52,7 @@ namespace _4OF.ee4v.ProjectExtension {
         }
 
         private static string GetCurrentPath() {
+            if (_projectWindow == null) return null;
             var so = new SerializedObject(_projectWindow);
 
             var folders = so.FindProperty("m_SearchFilter.m_Folders");

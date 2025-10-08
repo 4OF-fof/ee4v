@@ -1,5 +1,4 @@
-﻿using UnityEditor;
-using UnityEngine;
+﻿using UnityEngine;
 using VRC.SDKBase;
 
 namespace _4OF.ee4v.Runtime {
