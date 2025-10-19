@@ -15,7 +15,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem {
 
             foreach (var component in obj.GetComponents<Component>()) {
                 if (iconPosition.x <= componentRect.x) break;
-                if (component == null) continue;
+                if (component      == null) continue;
                 var componentType = component.GetType();
                 if (componentType.Name == "ObjectStyleComponent") continue;
                 if (EditorPrefsManager.IgnoreComponentNameList.Contains(componentType.Name)) continue;

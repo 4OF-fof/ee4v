@@ -54,7 +54,8 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         }
 
         public static FolderStyleObject LoadOrCreate() {
-            const string path = "Assets/4OF/ee4v/UserData/FolderStyleObject.asset";;
+            const string path = "Assets/4OF/ee4v/UserData/FolderStyleObject.asset";
+            ;
             var folderStyleObject = AssetDatabase.LoadAssetAtPath<FolderStyleObject>(path);
             if (folderStyleObject != null) {
                 _instance = folderStyleObject;
