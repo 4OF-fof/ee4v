@@ -20,11 +20,13 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
         private static void Add(string path, bool isIgnored = false) {
             Initialize();
             _asset.Add(path, isIgnored);
+            EditorUtility.SetDirty(_asset);
         }
 
         private static void Remove(int index) {
             Initialize();
             _asset.Remove(index);
+            EditorUtility.SetDirty(_asset);
         }
 
         public static void Move(int fromIndex, int toIndex) {
@@ -35,11 +37,7 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             var item = _asset.SceneList[fromIndex];
             _asset.Remove(fromIndex);
             _asset.Insert(toIndex, item.path, item.isIgnored);
-        }
-
-        public static void UpdateScene(int index, string path, bool isIgnored) {
-            Initialize();
-            _asset.UpdateScene(index, path, isIgnored);
+            EditorUtility.SetDirty(_asset);
         }
 
         public static void SceneListRegister() {

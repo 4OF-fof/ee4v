@@ -1,8 +1,8 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using _4OF.ee4v.ProjectExtension.Service;
 using _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -33,13 +33,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             var name = tab.Q<Label>().text;
             _asset.Add(path, name);
             _tabContainer.Insert(_tabContainer.childCount - 1, tab);
-        }
-
-        public static void Add(string path, string name = null) {
-            Initialize();
-            name ??= Path.GetFileName(path);
-            _asset.Add(path, name);
-            _tabContainer.Insert(_tabContainer.childCount - 1, Tab.Element(path, name));
+            EditorUtility.SetDirty(_asset);
         }
 
         public static void Insert(int index, VisualElement tab) {
@@ -48,13 +42,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             var name = tab.Q<Label>().text;
             _asset.Insert(index, path, name);
             _tabContainer.Insert(index, tab);
-        }
-
-        public static void Insert(int index, string path, string name = null) {
-            Initialize();
-            name ??= Path.GetFileName(path);
-            _asset.Insert(index, path, name);
-            _tabContainer.Insert(index, Tab.Element(path, name));
+            EditorUtility.SetDirty(_asset);
         }
 
         public static void Remove(VisualElement tab) {
@@ -65,16 +53,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             if (tab == _currentTab)
                 SelectTab(index == 0 ? _tabContainer.ElementAt(0) : _tabContainer.ElementAt(index - 1));
             KeepOneTab();
-        }
-
-        public static void Remove(int index) {
-            Initialize();
-            var tab = _tabContainer.ElementAt(index);
-            _asset.Remove(index);
-            _tabContainer.RemoveAt(index);
-            if (tab == _currentTab)
-                SelectTab(index == 0 ? _tabContainer.ElementAt(0) : _tabContainer.ElementAt(index - 1));
-            KeepOneTab();
+            EditorUtility.SetDirty(_asset);
         }
 
         public static void Move(int fromIndex, int toIndex) {
@@ -99,6 +78,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             _tabContainer.Insert(Mathf.Clamp(toIndex, 0, _tabContainer.childCount - 1), tab);
 
             if (_currentTab == tab) Tab.SetState(tab, Tab.State.Selected);
+            EditorUtility.SetDirty(_asset);
         }
 
         public static void UpdateTab(VisualElement tab, string path, string name) {
@@ -107,14 +87,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             _asset.UpdateTab(index, path, name);
             tab.tooltip = path;
             tab.Q<Label>().text = name;
-        }
-
-        public static void UpdateTab(int index, string path, string name) {
-            Initialize();
-            _asset.UpdateTab(index, path, name);
-            var tab = _tabContainer.ElementAt(index);
-            tab.tooltip = path;
-            tab.Q<Label>().text = name;
+            EditorUtility.SetDirty(_asset);
         }
 
         public static void SelectTab(VisualElement tabElement) {
@@ -123,6 +96,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             if (_currentTab != null) Tab.SetState(_currentTab, Tab.State.Default);
             _currentTab = tabElement;
             ProjectWindowOpener.OpenFolderInProject(_currentTab.tooltip);
+            EditorUtility.SetDirty(_asset);
         }
 
         private static void KeepOneTab() {
