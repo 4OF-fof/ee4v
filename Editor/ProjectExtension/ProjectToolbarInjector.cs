@@ -35,7 +35,7 @@ namespace _4OF.ee4v.ProjectExtension {
         }
 
         private static void ProjectToolbarWatcher() {
-            var newPath = GetCurrentPath();
+            var newPath = ReflectionWrapper.GetProjectWindowCurrentPath(_projectWindow);
             if (string.IsNullOrEmpty(newPath) || _currentFolderPath == newPath) return;
             UpdateCurrentPath(newPath);
             _currentFolderPath = newPath;
@@ -49,17 +49,6 @@ namespace _4OF.ee4v.ProjectExtension {
             var target = _projectWindow.rootVisualElement[_projectWindow.rootVisualElement.childCount - 1];
             target.Insert(target.childCount, tabContainer);
             TabListController.Initialize();
-        }
-
-        private static string GetCurrentPath() {
-            if (_projectWindow == null) return null;
-            var so = new SerializedObject(_projectWindow);
-
-            var folders = so.FindProperty("m_SearchFilter.m_Folders");
-            if (folders is not { arraySize: > 0 }) folders = so.FindProperty("m_LastFolders");
-            if (folders is not { arraySize: > 0 }) return null;
-            var folderPath = folders.GetArrayElementAtIndex(0).stringValue;
-            return AssetDatabase.IsValidFolder(folderPath) ? folderPath : null;
         }
 
         private static void UpdateCurrentPath(string path) {

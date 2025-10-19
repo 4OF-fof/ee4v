@@ -21,5 +21,22 @@ namespace _4OF.ee4v.ProjectExtension.Service {
                 Debug.LogWarning(I18N.Get("Debug.ProjectExtension.ReflectionWarning", ex.Message));
             }
         }
+
+        public static string GetProjectWindowCurrentPath(EditorWindow projectWindow) {
+            try {
+                if (ProjectBrowserType == null || projectWindow == null) return null;
+                var so = new SerializedObject(projectWindow);
+
+                var folders = so.FindProperty("m_SearchFilter.m_Folders");
+                if (folders is not { arraySize: > 0 }) folders = so.FindProperty("m_LastFolders");
+                if (folders is not { arraySize: > 0 }) return null;
+                var folderPath = folders.GetArrayElementAtIndex(0).stringValue;
+                return AssetDatabase.IsValidFolder(folderPath) ? folderPath : null;
+            }
+            catch (Exception ex) {
+                Debug.LogWarning(I18N.Get("Debug.ProjectExtension.ReflectionWarning", ex.Message));
+                return null;
+            }
+        }
     }
 }
