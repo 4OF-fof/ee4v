@@ -241,7 +241,7 @@ namespace _4OF.ee4v.Core.UI.Window {
 
             var bottomLeftRect = new Rect(0, Mathf.Max(0, position.height - cornerSize), cornerSize, cornerSize);
             var bottomRightRect = new Rect(Mathf.Max(0, position.width - cornerSize),
-                Mathf.Max(0, position.height                           - cornerSize), cornerSize, cornerSize);
+                Mathf.Max(0, position.height - cornerSize), cornerSize, cornerSize);
 
             EditorGUIUtility.AddCursorRect(leftRect, MouseCursor.ResizeHorizontal);
             EditorGUIUtility.AddCursorRect(rightRect, MouseCursor.ResizeHorizontal);
@@ -276,7 +276,7 @@ namespace _4OF.ee4v.Core.UI.Window {
 
                 if ((_resizeEdge & ResizeEdgeEnum.Left) != 0) {
                     var newWidth = _resizeStartWindowPosition.width - delta.x;
-                    var newX = _resizeStartWindowPosition.x         + delta.x;
+                    var newX = _resizeStartWindowPosition.x + delta.x;
                     if (newWidth < MinWidth) {
                         newWidth = MinWidth;
                         newX = _resizeStartWindowPosition.x + (_resizeStartWindowPosition.width - newWidth);

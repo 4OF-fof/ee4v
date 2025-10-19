@@ -62,7 +62,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             if (fromIndex == toIndex) return;
 
             fromIndex = Mathf.Clamp(fromIndex, 0, _tabContainer.childCount - 1);
-            toIndex = Mathf.Clamp(toIndex, 0, _tabContainer.childCount     - 1);
+            toIndex = Mathf.Clamp(toIndex, 0, _tabContainer.childCount - 1);
 
             var tab = _tabContainer.ElementAt(fromIndex);
             if (tab == null) return;

@@ -32,7 +32,7 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
         public static void Move(int fromIndex, int toIndex) {
             Initialize();
             if (fromIndex < 0 || fromIndex >= _asset.SceneList.Count) return;
-            if (toIndex   < 0 || toIndex   >= _asset.SceneList.Count) return;
+            if (toIndex < 0 || toIndex >= _asset.SceneList.Count) return;
             if (fromIndex == toIndex) return;
             var item = _asset.SceneList[fromIndex];
             _asset.Remove(fromIndex);

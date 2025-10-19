@@ -43,8 +43,8 @@ namespace _4OF.ee4v.Core.UI {
             switch (hex.Length) {
                 case 6 when uint.TryParse(hex, NumberStyles.HexNumber, null, out var hexVal): {
                     var r = ((hexVal >> 16) & 0xFF) / 255f;
-                    var g = ((hexVal >> 8)  & 0xFF) / 255f;
-                    var b = (hexVal         & 0xFF) / 255f;
+                    var g = ((hexVal >> 8) & 0xFF) / 255f;
+                    var b = (hexVal & 0xFF) / 255f;
                     return new Color(r, g, b, Mathf.Clamp01(alpha));
                 }
                 case 3: {
@@ -57,8 +57,8 @@ namespace _4OF.ee4v.Core.UI {
                     var expanded = rr + gg + bb;
                     if (uint.TryParse(expanded, NumberStyles.HexNumber, null, out var hexVal)) {
                         var r = ((hexVal >> 16) & 0xFF) / 255f;
-                        var g = ((hexVal >> 8)  & 0xFF) / 255f;
-                        var b = (hexVal         & 0xFF) / 255f;
+                        var g = ((hexVal >> 8) & 0xFF) / 255f;
+                        var b = (hexVal & 0xFF) / 255f;
                         return new Color(r, g, b, Mathf.Clamp01(alpha));
                     }
 

@@ -91,7 +91,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window._Component {
 
             foreach (var icon in mergedIconList) {
                 VisualElement item;
-                if (icon      == null) item = NotSelectedItem();
+                if (icon == null) item = NotSelectedItem();
                 else if (icon == Separator) item = SpacerItem();
                 else item = IconPreview(icon);
 

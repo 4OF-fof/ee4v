@@ -26,16 +26,16 @@ namespace _4OF.ee4v.ProjectExtension.UI {
             Rect imageRect;
             if (selectionRect.height > 20) {
                 imageRect = new Rect(selectionRect.x - 1, selectionRect.y - 1, selectionRect.width + 2,
-                    selectionRect.width              + 2);
+                    selectionRect.width + 2);
             }
             else if (selectionRect.x > 20) {
                 imageRect = new Rect(selectionRect.x - 1, selectionRect.y - 1, selectionRect.height + 2,
-                    selectionRect.height             + 2);
+                    selectionRect.height + 2);
                 backgroundColor = ColorPreset.DefaultBackground;
             }
             else {
                 imageRect = new Rect(selectionRect.x + 2, selectionRect.y - 1, selectionRect.height + 2,
-                    selectionRect.height             + 2);
+                    selectionRect.height + 2);
             }
 
             var isDrawIcon = false;
@@ -70,7 +70,7 @@ namespace _4OF.ee4v.ProjectExtension.UI {
 
         private static void DrawOverlayIcon(string path, Rect imageRect) {
             var overlayRect = new Rect((imageRect.x + imageRect.xMax) / 2, (imageRect.y + imageRect.yMax) / 2,
-                imageRect.width                                       / 2, imageRect.height               / 2);
+                imageRect.width / 2, imageRect.height / 2);
             var overlayIcon = GetMostIconInFolder(path);
             if (overlayIcon == null) return;
             var outlineOffsetsOuter = new[]

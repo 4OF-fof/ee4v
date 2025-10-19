@@ -19,7 +19,7 @@ namespace _4OF.ee4v.HierarchyExtension.Service {
 
         public static bool IsHierarchyScrollbarVisible() {
             const BindingFlags instanceFlags = BindingFlags.NonPublic | BindingFlags.Instance;
-            const BindingFlags staticFlags = BindingFlags.Public      | BindingFlags.Static;
+            const BindingFlags staticFlags = BindingFlags.Public | BindingFlags.Static;
 
             var lastWindow = typeof(Editor).Assembly
                 .GetType("UnityEditor.SceneHierarchyWindow")
