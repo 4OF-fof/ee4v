@@ -9,7 +9,6 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
     public class ComponentInspector : BaseWindow {
         private const int KMaxAutoSizeAttempts = 6;
         private const float KHeaderHeight = 28f;
-        private const float KDynamicResizeThreshold = 40f;
         private int _autoSizeAttempts;
         private bool _autoSizeCompleted;
         private Component _component;
@@ -155,7 +154,6 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
             };
             editorContainer.style.width = new StyleLength(Length.Percent(100));
             _scrollView.Add(editorContainer);
-            _scrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(OnContentGeometryChanged);
             root.Add(_scrollView);
             return root;
         }
@@ -202,17 +200,6 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
             _autoSizeAttempts++;
             if (_autoSizeAttempts >= KMaxAutoSizeAttempts) return;
             rootVisualElement.schedule.Execute(TryAutoSize).ExecuteLater(40);
-        }
-
-        private void OnContentGeometryChanged(GeometryChangedEvent evt) {
-            if (!_autoSizeCompleted) return;
-            if (_scrollView == null) return;
-            var newHeight = _scrollView.contentContainer.layout.height;
-            if (newHeight is <= 0f or float.NaN) return;
-            var desired = Mathf.Clamp(KHeaderHeight + newHeight + 8, 10, 600);
-            if (Mathf.Abs(position.height - desired) < KDynamicResizeThreshold) return;
-            var contentWidth = _scrollView.contentContainer.layout.width;
-            ApplyResize(contentWidth, newHeight, false);
         }
     }
 }
