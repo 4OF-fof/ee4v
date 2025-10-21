@@ -93,7 +93,6 @@ namespace _4OF.ee4v.Core.UI.Window {
 
         private VisualElement Header() {
             var closeButton = CloseButton();
-            var lockButton = LockButton();
             var header = new VisualElement {
                 name = "ee4v-baseWindow-header",
                 style = {
@@ -110,7 +109,6 @@ namespace _4OF.ee4v.Core.UI.Window {
             var headerContent = HeaderContent();
             headerContent.style.flexGrow = 1;
             header.Add(headerContent);
-            header.Add(lockButton);
             header.Add(closeButton);
 
             WindowMover(header);
@@ -136,39 +134,6 @@ namespace _4OF.ee4v.Core.UI.Window {
         }
 
         protected abstract VisualElement HeaderContent();
-
-        private Button LockButton() {
-            var button = new Button {
-                style = {
-                    width = 24, height = 24,
-                    paddingRight = 0, paddingLeft = 0, paddingTop = 0, paddingBottom = 0,
-                    backgroundColor = Color.clear,
-                    borderRightWidth = 0, borderLeftWidth = 0, borderTopWidth = 0, borderBottomWidth = 0,
-                    marginRight = 0, marginLeft = 0, marginTop = 0, marginBottom = 0,
-                    alignItems = Align.Center,
-                    justifyContent = Justify.Center
-                }
-            };
-
-            var hoverColor = ColorPreset.MouseOverBackground;
-            hoverColor.a = 0.3f;
-            button.RegisterCallback<MouseEnterEvent>(_ => { button.style.backgroundColor = hoverColor; });
-            button.RegisterCallback<MouseLeaveEvent>(_ => { button.style.backgroundColor = Color.clear; });
-
-            _lockIcon = new Image {
-                image = EditorGUIUtility.IconContent(IsLocked ? "IN LockButton on" : "IN LockButton").image,
-                scaleMode = ScaleMode.ScaleToFit,
-                style = {
-                    width = 16, height = 16
-                },
-                tintColor = ColorPreset.TextColor
-            };
-            button.Add(_lockIcon);
-
-            button.clicked += () => { IsLocked = !IsLocked; };
-
-            return button;
-        }
 
         private Button CloseButton() {
             var button = new Button(Close) {
