@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using _4OF.ee4v.Core.Data;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.ProjectExtension.Data;
+using _4OF.ee4v.ProjectExtension.Service;
 using _4OF.ee4v.ProjectExtension.UI.Window;
 using UnityEditor;
 using UnityEngine;
@@ -71,7 +71,7 @@ namespace _4OF.ee4v.ProjectExtension.UI {
         private static void DrawOverlayIcon(string path, Rect imageRect) {
             var overlayRect = new Rect((imageRect.x + imageRect.xMax) / 2, (imageRect.y + imageRect.yMax) / 2,
                 imageRect.width / 2, imageRect.height / 2);
-            var overlayIcon = GetMostIconInFolder(path);
+            var overlayIcon = GetFolderContent.GetMostIconInFolder(path);
             if (overlayIcon == null) return;
             var outlineOffsetsOuter = new[]
                 { new Vector2(-1f, 0), new Vector2(1f, 0), new Vector2(0, -1f), new Vector2(0, 1f) };
@@ -85,24 +85,6 @@ namespace _4OF.ee4v.ProjectExtension.UI {
 
             GUI.color = prevColor;
             GUI.DrawTexture(overlayRect, overlayIcon, ScaleMode.ScaleToFit);
-        }
-
-        private static Texture GetMostIconInFolder(string path) {
-            var childAssetPaths = Directory.GetFileSystemEntries(path);
-            var iconCounts = new Dictionary<Texture, int>();
-
-            foreach (var assetPath in childAssetPaths) {
-                if (AssetDatabase.IsValidFolder(assetPath) || Path.GetExtension(assetPath) == ".meta") continue;
-
-                var asset = AssetDatabase.LoadMainAssetAtPath(assetPath);
-                var icon = asset is Texture
-                    ? EditorGUIUtility.IconContent("Texture Icon").image
-                    : AssetPreview.GetMiniThumbnail(asset);
-                if (icon == null) continue;
-                if (!iconCounts.TryAdd(icon, 1)) iconCounts[icon]++;
-            }
-
-            return iconCounts.Count == 0 ? null : iconCounts.OrderByDescending(kv => kv.Value).FirstOrDefault().Key;
         }
     }
 }
