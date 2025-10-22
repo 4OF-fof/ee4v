@@ -50,6 +50,25 @@ namespace _4OF.ee4v.Core.UI {
                 )
             ];
             if (EditorGUI.EndChangeCheck()) _needRestart = true;
+            
+            using (new EditorGUILayout.HorizontalScope()) {
+                EditorPrefsManager.ContentFolderPath = EditorGUILayout.TextField(
+                    new GUIContent(I18N.Get("UI.Core.ContentFolderPathLabel"), 
+                        I18N.Get("UI.Core.ContentFolderPathTooltip")),
+                    EditorPrefsManager.ContentFolderPath);
+                if (GUILayout.Button("...", GUILayout.Width(30))) {
+                    var path = EditorUtility.OpenFolderPanel(
+                        I18N.Get("UI.Core.ContentFolderPathWindow"),
+                        EditorPrefsManager.ContentFolderPath,
+                        ""
+                    );
+                    if (!string.IsNullOrEmpty(path)) {
+                        EditorPrefsManager.ContentFolderPath = path;
+                        GUIUtility.keyboardControl = 0;
+                        EditorGUI.FocusTextInControl(null);
+                    }
+                }
+            }
 
             #region HierarchyExtension
 

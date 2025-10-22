@@ -8,6 +8,9 @@
   "UI.Core.NeedRestartToApplyChanges": "Unity restart is required to apply changes.",
   "UI.Core.RestartUnity": "Restart",
   "UI.Core.LanguageLabel": "Language",
+  "UI.Core.ContentFolderPathLabel": "Content Folder",
+  "UI.Core.ContentFolderPathTooltip": "Set a custom path for the content folder. If left blank, the default path will be used.",
+  "UI.Core.ContentFolderPathWindow": "Select Folder",
   "UI.Core.ShowComponentIconsLabel": "Show Component Icons",
   "UI.Core.ShowComponentIconsTooltip": "Show or hide component icons in the hierarchy.",
   "UI.Core.ShowMenuIconLabel": "Show Menu Icon",
@@ -39,6 +42,11 @@
   "UI.Core.ToggleInputToAsset": "Toggle input to Asset",
   "UI.Core.Icon": "Icon",
   "UI.Core.Texture": "Texture",
+  "Debug.Core.PrefabPathNotFound": "Could not get prefab path.",
+  "Debug.Core.CreatedBackupFolder": "Created backup folder: {0}",
+  "Debug.Core.FailedToCreateBackupFolder": "Failed to create backup folder: {0}",
+  "Debug.Core.ExportedUnityPackage": "Exported UnityPackage: {0} (asset count: {1})",
+  "Debug.Core.FailedToExportUnityPackage": "Failed to export UnityPackage: {0}",
   "UI.HierarchyExtension.HiddenObjectWindowTitle": "Hidden Objects",
   "UI.HierarchyExtension.Refresh": "Refresh",
   "UI.HierarchyExtension.RestoreAll": "Restore All",
@@ -60,5 +68,8 @@
   "Debug.HierarchyExtension.ReflectionWarning": "{0}",
   "Debug.ProjectExtension.NotFoundTabListObject": "TabListObject not found at {0}. Creating new one.",
   "Debug.ProjectExtension.NotFoundFolderStyleObject": "FolderStyleObject not found at {0}. Creating new one.",
-  "Debug.ProjectExtension.ReflectionWarning": "{0}"
+  "Debug.ProjectExtension.ReflectionWarning": "{0}",
+  "Debug.AutoBackup.UploadSuccess": "Upload success. Avatar ID: {0}",
+  "Debug.AutoBackup.TargetPrefab": "Target prefab name: {0}",
+  "Debug.AutoBackup.BackupFailed": "Backup failed"
 }

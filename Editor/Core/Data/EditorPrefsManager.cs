@@ -26,6 +26,19 @@ namespace _4OF.ee4v.Core.Data {
             get => EditorPrefs.GetBool(EnableProjectExtensionKey, true);
             set => EditorPrefs.SetBool(EnableProjectExtensionKey, value);
         }
+        
+        private const string ContentFolderPathKey = "4OF.ee4v.ee4vContentFolderPath";
+        
+        public static string ContentFolderPath {
+            get {
+                var defaultPath = System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments),
+                    "ee4v"
+                );
+                return EditorPrefs.GetString(ContentFolderPathKey, defaultPath);
+            }
+            set => EditorPrefs.SetString(ContentFolderPathKey, value ?? "");
+        }
 
         #endregion
 

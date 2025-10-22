@@ -8,6 +8,9 @@
   "UI.Core.NeedRestartToApplyChanges": "変更を適用するにはUnityの再起動が必要です。",
   "UI.Core.RestartUnity": "再起動",
   "UI.Core.LanguageLabel": "言語",
+  "UI.Core.ContentFolderPathLabel": "フォルダ",
+  "UI.Core.ContentFolderPathTooltip": "フォルダのカスタムパスを設定します。",
+  "UI.Core.ContentFolderPathWindow": "フォルダを選択",
   "UI.Core.ShowComponentIconsLabel": "コンポーネントアイコンを表示",
   "UI.Core.ShowComponentIconsTooltip": "ヒエラルキーでコンポーネントアイコンを表示または非表示にします。",
   "UI.Core.ShowMenuIconLabel": "メニューアイコンを表示",
@@ -39,6 +42,11 @@
   "UI.Core.ToggleInputToAsset": "アセットに切替",
   "UI.Core.Icon": "アイコン",
   "UI.Core.Texture": "テクスチャ",
+  "Debug.Core.PrefabPathNotFound": "プレハブのパスが取得できませんでした。",
+  "Debug.Core.CreatedBackupFolder": "バックアップフォルダを作成しました: {0}",
+  "Debug.Core.FailedToCreateBackupFolder": "バックアップフォルダの作成に失敗しました: {0}",
+  "Debug.Core.ExportedUnityPackage": "UnityPackageを出力しました: {0} (含まれるアセット数: {1})",
+  "Debug.Core.FailedToExportUnityPackage": "UnityPackageの出力に失敗しました: {0}",
   "UI.HierarchyExtension.HiddenObjectWindowTitle": "非表示オブジェクト",
   "UI.HierarchyExtension.Refresh": "更新",
   "UI.HierarchyExtension.RestoreAll": "すべて復元",
@@ -60,5 +68,8 @@
   "Debug.HierarchyExtension.ReflectionWarning": "{0}",
   "Debug.ProjectExtension.NotFoundTabListObject": "TabListObjectが{0}に見つかりません。新しいものを作成します。",
   "Debug.ProjectExtension.NotFoundFolderStyleObject": "FolderStyleObjectが{0}に見つかりません。新しいものを作成します。",
-  "Debug.ProjectExtension.ReflectionWarning": "{0}"
+  "Debug.ProjectExtension.ReflectionWarning": "{0}",
+  "Debug.AutoBackup.UploadSuccess": "アップロード成功。アバターID: {0}",
+  "Debug.AutoBackup.TargetPrefab": "対象のプレハブ名: {0}",
+  "Debug.AutoBackup.BackupFailed": "バックアップ失敗"
 }
