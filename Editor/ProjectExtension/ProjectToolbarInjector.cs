@@ -11,23 +11,54 @@ namespace _4OF.ee4v.ProjectExtension {
         private static bool _isInitialized;
         private static EditorWindow _projectWindow;
         private static string _currentFolderPath;
+        private static bool _watcherEnabled;
 
         [InitializeOnLoadMethod]
         private static void Initialize() {
             if (!EditorPrefsManager.EnableProjectExtension) return;
-            EditorApplication.update -= Injector;
-            EditorApplication.update += Injector;
+            
+            EditorApplication.update -= InitializationCheck;
+            EditorApplication.update += InitializationCheck;
         }
 
-        private static void Injector() {
-            if (!_isInitialized && !EditorPrefsManager.CompatLilEditorToolbox) InitializeContent();
-            if (!_isInitialized && EditorPrefsManager.CompatLilEditorToolbox) CompatInjector();
-            ProjectToolbarWatcher();
+        private static void InitializationCheck() {
+            var projectWindow = ReflectionWrapper.ProjectBrowserWindow;
+            if (projectWindow == null) return;
+
+            if (!EditorPrefsManager.CompatLilEditorToolbox) {
+                InitializeContent();
+            } else {
+                CompatInjector();
+            }
+
+            EditorApplication.update -= InitializationCheck;
+            
+            if (_isInitialized && EditorPrefsManager.EnableProjectTab) {
+                EnableWatcher();
+            }
+        }
+
+        private static void EnableWatcher() {
+            if (_watcherEnabled) return;
+            _watcherEnabled = true;
+            EditorApplication.update -= ProjectToolbarWatcher;
+            EditorApplication.update += ProjectToolbarWatcher;
+        }
+
+        private static void DisableWatcher() {
+            if (!_watcherEnabled) return;
+            _watcherEnabled = false;
+            EditorApplication.update -= ProjectToolbarWatcher;
         }
 
         private static void InitializeContent() {
-            _isInitialized = true;
+            if (_isInitialized) return;
+            
             _projectWindow = ReflectionWrapper.ProjectBrowserWindow;
+            if (_projectWindow == null) return;
+            
+            _isInitialized = true;
+            
             if (!EditorPrefsManager.EnableProjectTab) return;
             var projectToolBar = ProjectToolBar.Element();
             _projectWindow.rootVisualElement.Add(projectToolBar);
@@ -35,6 +66,11 @@ namespace _4OF.ee4v.ProjectExtension {
         }
 
         private static void ProjectToolbarWatcher() {
+            if (_projectWindow == null) {
+                DisableWatcher();
+                return;
+            }
+            
             var newPath = ReflectionWrapper.GetProjectWindowCurrentPath(_projectWindow);
             if (string.IsNullOrEmpty(newPath) || _currentFolderPath == newPath) return;
             UpdateCurrentPath(newPath);
@@ -42,8 +78,11 @@ namespace _4OF.ee4v.ProjectExtension {
         }
 
         private static void CompatInjector() {
+            if (_isInitialized) return;
+            
             _projectWindow = ReflectionWrapper.ProjectBrowserWindow;
-            if (_projectWindow.rootVisualElement.childCount <= 0) return;
+            if (_projectWindow == null || _projectWindow.rootVisualElement.childCount <= 0) return;
+            
             _isInitialized = true;
             var tabContainer = TabContainer.Element();
             var target = _projectWindow.rootVisualElement[_projectWindow.rootVisualElement.childCount - 1];
