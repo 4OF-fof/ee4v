@@ -35,19 +35,19 @@ namespace _4OF.ee4v.VRCUtility {
 
         private static void OnUploadSuccess(object sender, object target) {
             var avatarId = target as string ?? "";
-            Debug.Log(I18N.Get("Debug.AutoBackup.UploadSuccess", avatarId));
+            Debug.Log(I18N.Get("Debug.VRCUtility.UploadSuccess", avatarId));
 
             if (_currentlyBuildingAvatar != null) {
                 var prefabAsset = PrefabUtility.GetCorrespondingObjectFromSource(_currentlyBuildingAvatar);
 
                 if (prefabAsset != null) {
-                    Debug.Log(I18N.Get("Debug.AutoBackup.TargetPrefab", prefabAsset.name));
+                    Debug.Log(I18N.Get("Debug.VRCUtility.TargetPrefab", prefabAsset.name));
                     FileIO.ExportUnityPackage(prefabAsset, avatarId);
                 }
 
                 _currentlyBuildingAvatar = null;
             } else {
-                Debug.LogWarning(I18N.Get("Debug.AutoBackup.BackupFailed"));
+                Debug.LogWarning(I18N.Get("Debug.VRCUtility.BackupFailed"));
             }
         }
         

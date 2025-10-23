@@ -69,7 +69,7 @@
   "Debug.ProjectExtension.NotFoundTabListObject": "TabListObjectが{0}に見つかりません。新しいものを作成します。",
   "Debug.ProjectExtension.NotFoundFolderStyleObject": "FolderStyleObjectが{0}に見つかりません。新しいものを作成します。",
   "Debug.ProjectExtension.ReflectionWarning": "{0}",
-  "Debug.AutoBackup.UploadSuccess": "アップロード成功。アバターID: {0}",
-  "Debug.AutoBackup.TargetPrefab": "対象のプレハブ名: {0}",
-  "Debug.AutoBackup.BackupFailed": "バックアップ失敗"
+  "Debug.VRCUtility.UploadSuccess": "アップロード成功。アバターID: {0}",
+  "Debug.VRCUtility.TargetPrefab": "対象のプレハブ名: {0}",
+  "Debug.VRCUtility.BackupFailed": "バックアップ失敗"
 }

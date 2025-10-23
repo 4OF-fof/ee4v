@@ -69,7 +69,7 @@
   "Debug.ProjectExtension.NotFoundTabListObject": "TabListObject not found at {0}. Creating new one.",
   "Debug.ProjectExtension.NotFoundFolderStyleObject": "FolderStyleObject not found at {0}. Creating new one.",
   "Debug.ProjectExtension.ReflectionWarning": "{0}",
-  "Debug.AutoBackup.UploadSuccess": "Upload success. Avatar ID: {0}",
-  "Debug.AutoBackup.TargetPrefab": "Target prefab name: {0}",
-  "Debug.AutoBackup.BackupFailed": "Backup failed"
+  "Debug.VRCUtility.UploadSuccess": "Upload success. Avatar ID: {0}",
+  "Debug.VRCUtility.TargetPrefab": "Target prefab name: {0}",
+  "Debug.VRCUtility.BackupFailed": "Backup failed"
 }
