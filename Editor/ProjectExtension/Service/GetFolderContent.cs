@@ -46,26 +46,35 @@ namespace _4OF.ee4v.ProjectExtension.Service {
             string[] deletedAssets,
             string[] movedAssets,
             string[] movedFromAssetPaths) {
-            InvalidateCacheForAssets(importedAssets);
-            InvalidateCacheForAssets(deletedAssets);
+            var foldersToInvalidate = new HashSet<string>();
 
-            InvalidateCacheForAssets(movedFromAssetPaths);
-            InvalidateCacheForAssets(movedAssets);
+            CollectFoldersToInvalidate(importedAssets, foldersToInvalidate);
+            CollectFoldersToInvalidate(deletedAssets, foldersToInvalidate);
+            CollectFoldersToInvalidate(movedFromAssetPaths, foldersToInvalidate);
+            CollectFoldersToInvalidate(movedAssets, foldersToInvalidate);
+
+            foreach (var folderPath in foldersToInvalidate) {
+                GetFolderContent.InvalidateCache(folderPath);
+            }
         }
 
-        private static void InvalidateCacheForAssets(string[] assetPaths) {
+        private static void CollectFoldersToInvalidate(string[] assetPaths, HashSet<string> foldersToInvalidate) {
             if (assetPaths == null || assetPaths.Length == 0) return;
 
             foreach (var assetPath in assetPaths) {
                 if (string.IsNullOrEmpty(assetPath)) continue;
 
+                if (assetPath.EndsWith(".meta")) continue;
+
                 if (AssetDatabase.IsValidFolder(assetPath)) {
-                    GetFolderContent.InvalidateCache(assetPath);
+                    foldersToInvalidate.Add(assetPath);
                     continue;
                 }
 
                 var parentFolder = Path.GetDirectoryName(assetPath)?.Replace('\\', '/');
-                if (!string.IsNullOrEmpty(parentFolder)) GetFolderContent.InvalidateCache(parentFolder);
+                if (!string.IsNullOrEmpty(parentFolder)) {
+                    foldersToInvalidate.Add(parentFolder);
+                }
             }
         }
     }
