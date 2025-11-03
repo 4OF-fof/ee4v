@@ -14,6 +14,12 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
         private List<GameObject> _hiddenObjects = new();
         private VisualElement _listContainer;
 
+        [MenuItem("ee4v/Hidden Object")]
+        private static void OpenFromMenu() {
+            var pos = new Vector2(300, 100);
+            Open(pos);
+        }
+
         public static void Open(Vector2 screenPosition) {
             var window = OpenSetup<HiddenObjectList>(screenPosition);
             window.position = new Rect(window.position.x, window.position.y, 600, 400);
