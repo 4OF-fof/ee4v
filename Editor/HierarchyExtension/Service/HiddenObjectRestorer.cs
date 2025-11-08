@@ -8,7 +8,12 @@ namespace _4OF.ee4v.HierarchyExtension.Service {
     public static class HiddenObjectRestorer {
         static HiddenObjectRestorer() {
             EditorSceneManager.sceneOpened += OnSceneOpened;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.delayCall += RestoreHiddenObjectsInCurrentScenes;
+        }
+
+        private static void OnPlayModeStateChanged(PlayModeStateChange state) {
+            if (state == PlayModeStateChange.EnteredEditMode) RestoreHiddenObjectsInCurrentScenes();
         }
 
         private static void OnSceneOpened(Scene scene, OpenSceneMode mode) {
