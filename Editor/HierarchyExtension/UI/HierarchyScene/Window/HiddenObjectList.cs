@@ -11,8 +11,10 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
     public class HiddenObjectList : BaseWindow {
-        private List<GameObject> _hiddenObjects = new();
-        private VisualElement _listContainer;
+        private readonly HashSet<GameObject> _expandedObjects = new();
+        private readonly HashSet<GameObject> _selectedObjects = new();
+        private VisualElement _treeContainer;
+        private readonly List<TreeNode> _treeNodes = new();
 
         [MenuItem("ee4v/Hidden Object")]
         private static void OpenFromMenu() {
@@ -22,9 +24,9 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
 
         public static void Open(Vector2 screenPosition) {
             var window = OpenSetup<HiddenObjectList>(screenPosition);
-            window.position = new Rect(window.position.x, window.position.y, 600, 400);
+            window.position = new Rect(window.position.x, window.position.y, 340, 500);
             window.IsLocked = false;
-            window.RefreshHiddenObjects();
+            window.BuildTree();
             window.ShowPopup();
         }
 
@@ -43,7 +45,8 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                     unityFontStyleAndWeight = FontStyle.Bold,
                     unityTextAlign = TextAnchor.MiddleLeft,
                     flexGrow = 1,
-                    marginRight = 4, marginLeft = 16
+                    marginRight = 4,
+                    marginLeft = 16
                 }
             };
             header.Add(titleLabel);
@@ -53,218 +56,318 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
 
         protected override VisualElement Content() {
             var root = base.Content();
-
             root.style.position = Position.Relative;
 
             var scrollArea = new ScrollView {
                 style = {
                     flexGrow = 1,
-                    paddingBottom = 45
+                    paddingBottom = 40
                 }
             };
 
-            _listContainer = new VisualElement {
+            _treeContainer = new VisualElement {
                 style = { flexGrow = 1 }
             };
-            scrollArea.Add(_listContainer);
+            scrollArea.Add(_treeContainer);
 
             var buttonRow = new VisualElement {
                 style = {
                     position = Position.Absolute,
                     flexDirection = FlexDirection.Row,
-                    left = 0, right = 0, bottom = 8,
-                    marginRight = 4, marginLeft = 4
+                    left = 0,
+                    right = 0,
+                    bottom = 8,
+                    marginRight = 8,
+                    marginLeft = 8
                 }
             };
 
-            var refreshButton = new Button(RefreshList) {
-                text = I18N.Get("UI.HierarchyExtension.Refresh"),
+            var restoreSelectedButton = new Button(RestoreSelected) {
+                text = I18N.Get("UI.HierarchyExtension.RestoreSelected"),
                 style = {
                     flexGrow = 1,
-                    height = 24,
-                    marginRight = 4,
-                    borderTopRightRadius = 10, borderTopLeftRadius = 10,
-                    borderBottomRightRadius = 10, borderBottomLeftRadius = 10
-                }
-            };
-            buttonRow.Add(refreshButton);
-
-            var restoreAllButton = new Button(RestoreAll) {
-                text = I18N.Get("UI.HierarchyExtension.RestoreAll"),
-                style = {
-                    flexGrow = 1,
-                    height = 24,
+                    height = 28,
                     backgroundColor = ColorPreset.WarningButton,
-                    borderTopRightRadius = 10, borderTopLeftRadius = 10,
-                    borderBottomRightRadius = 10, borderBottomLeftRadius = 10
+                    borderTopRightRadius = 10,
+                    borderTopLeftRadius = 10,
+                    borderBottomRightRadius = 10,
+                    borderBottomLeftRadius = 10
                 }
             };
-            buttonRow.Add(restoreAllButton);
+            buttonRow.Add(restoreSelectedButton);
 
             root.Add(scrollArea);
             root.Add(buttonRow);
 
-            UpdateList();
+            RenderTree();
 
             return root;
         }
 
-        private void RefreshList() {
-            RefreshHiddenObjects();
-            UpdateList();
-        }
-
-        private void RefreshHiddenObjects() {
-            _hiddenObjects.Clear();
-            var allObjects = new List<GameObject>();
+        private void BuildTree() {
+            _treeNodes.Clear();
+            _expandedObjects.Clear();
+            var hiddenObjects = new HashSet<GameObject>();
 
             for (var i = 0; i < SceneManager.sceneCount; i++) {
                 var scene = SceneManager.GetSceneAt(i);
                 if (!scene.isLoaded) continue;
 
                 var rootObjects = scene.GetRootGameObjects();
-
-                foreach (var rootObj in rootObjects) CollectHiddenObjects(rootObj, allObjects);
+                foreach (var rootObj in rootObjects)
+                    CollectHiddenObjects(rootObj, hiddenObjects);
             }
 
-            _hiddenObjects = allObjects;
+            var processedObjects = new HashSet<GameObject>();
+            foreach (var hiddenObj in hiddenObjects.Where(hiddenObj => hiddenObj != null && !processedObjects.Contains(hiddenObj))) {
+                BuildNodeHierarchy(hiddenObj, hiddenObjects, processedObjects);
+            }
+
+            ExpandAllNodes(_treeNodes);
         }
 
-        private static void CollectHiddenObjects(GameObject obj, List<GameObject> collection) {
+        private void ExpandAllNodes(List<TreeNode> nodes) {
+            foreach (var node in nodes)
+                if (node?.GameObject != null && node.Children.Count > 0) {
+                    _expandedObjects.Add(node.GameObject);
+                    ExpandAllNodes(node.Children);
+                }
+        }
+
+        private static void CollectHiddenObjects(GameObject obj, HashSet<GameObject> collection) {
             if (obj == null) return;
 
-            if ((obj.hideFlags & HideFlags.HideInHierarchy) != 0) {
-                if (EditorPrefsManager.HiddenItemList.Contains(obj.name)) return;
-                collection.Add(obj);
-            }
+            if ((obj.hideFlags & HideFlags.HideInHierarchy) != 0)
+                if (!EditorPrefsManager.HiddenItemList.Contains(obj.name))
+                    collection.Add(obj);
 
             var transform = obj.transform;
             for (var i = 0; i < transform.childCount; i++)
                 CollectHiddenObjects(transform.GetChild(i).gameObject, collection);
         }
 
-        private void UpdateList() {
-            if (_listContainer == null) return;
+        private void BuildNodeHierarchy(GameObject hiddenObj, HashSet<GameObject> hiddenObjects,
+            HashSet<GameObject> processedObjects) {
+            if (hiddenObj == null || processedObjects.Contains(hiddenObj)) return;
 
-            _listContainer.Clear();
+            var hierarchy = new List<GameObject>();
+            var current = hiddenObj;
+            while (current != null) {
+                hierarchy.Add(current);
+                current = current.transform.parent?.gameObject;
+            }
 
-            if (_hiddenObjects == null || _hiddenObjects.Count == 0) {
+            hierarchy.Reverse();
+
+            TreeNode parentNode = null;
+            foreach (var obj in hierarchy) {
+                var existingNode = FindNode(obj, parentNode);
+                if (existingNode != null) {
+                    parentNode = existingNode;
+                    continue;
+                }
+
+                var isHidden = hiddenObjects.Contains(obj);
+                var node = new TreeNode {
+                    GameObject = obj,
+                    IsHidden = isHidden,
+                    Children = new List<TreeNode>()
+                };
+
+                if (parentNode == null)
+                    _treeNodes.Add(node);
+                else
+                    parentNode.Children.Add(node);
+
+                parentNode = node;
+                processedObjects.Add(obj);
+            }
+        }
+
+        private TreeNode FindNode(GameObject obj, TreeNode parent) {
+            var searchList = parent == null ? _treeNodes : parent.Children;
+            return searchList.FirstOrDefault(n => n.GameObject == obj);
+        }
+
+        private void RenderTree() {
+            if (_treeContainer == null) return;
+
+            _treeContainer.Clear();
+
+            if (_treeNodes.Count == 0) {
                 var emptyLabel = new Label(I18N.Get("UI.HierarchyExtension.NoHiddenObjectsFound")) {
                     style = {
                         unityTextAlign = TextAnchor.MiddleCenter,
-                        marginTop = 20, marginBottom = 20,
+                        marginTop = 20,
+                        marginBottom = 20,
                         opacity = 0.5f
                     }
                 };
-                _listContainer.Add(emptyLabel);
+                _treeContainer.Add(emptyLabel);
                 return;
             }
 
-            foreach (var obj in _hiddenObjects) {
-                if (obj == null) continue;
-
-                var row = new VisualElement {
-                    style = {
-                        flexDirection = FlexDirection.Row,
-                        alignItems = Align.Center,
-                        marginBottom = 2,
-                        paddingTop = 4, paddingBottom = 4,
-                        paddingLeft = 4, paddingRight = 4,
-                        backgroundColor = new Color(0.3f, 0.3f, 0.3f, 0.3f),
-                        borderTopRightRadius = 4, borderTopLeftRadius = 4,
-                        borderBottomRightRadius = 4, borderBottomLeftRadius = 4
-                    }
-                };
-
-                var icon = new Image {
-                    image = AssetPreview.GetMiniThumbnail(obj),
-                    scaleMode = ScaleMode.ScaleToFit,
-                    style = {
-                        width = 16, height = 16,
-                        marginRight = 4
-                    }
-                };
-                row.Add(icon);
-
-                var path = GetHierarchyPath(obj);
-                var displayName = obj.name;
-                if (!string.IsNullOrEmpty(path) && path != obj.name) displayName = $"{obj.name} ({path})";
-
-                var nameLabel = new Label(displayName) {
-                    style = {
-                        flexGrow = 1, flexShrink = 1,
-                        minWidth = 0,
-                        unityTextAlign = TextAnchor.MiddleLeft,
-                        overflow = Overflow.Hidden,
-                        textOverflow = TextOverflow.Ellipsis,
-                        marginRight = 4
-                    }
-                };
-                row.Add(nameLabel);
-
-                var restoreButton = new Button(() => RestoreObject(obj)) {
-                    text = I18N.Get("UI.HierarchyExtension.Restore"),
-                    style = {
-                        width = 60, height = 20,
-                        flexShrink = 0,
-                        fontSize = 10,
-                        borderTopRightRadius = 4, borderTopLeftRadius = 4,
-                        borderBottomRightRadius = 4, borderBottomLeftRadius = 4
-                    }
-                };
-                row.Add(restoreButton);
-
-                _listContainer.Add(row);
-            }
+            foreach (var node in _treeNodes)
+                RenderNode(node, 0);
         }
 
-        private static string GetHierarchyPath(GameObject obj) {
-            if (obj == null) return string.Empty;
+        private void RenderNode(TreeNode node, int depth) {
+            if (node?.GameObject == null) return;
 
-            var parts = new List<string>();
-            var t = obj.transform;
-            while (t != null) {
-                parts.Add(t.name);
-                t = t.parent;
+            var obj = node.GameObject;
+            var isExpanded = _expandedObjects.Contains(obj);
+            var hasChildren = node.Children.Count > 0;
+
+            var row = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    alignItems = Align.Center,
+                    height = 18,
+                    paddingLeft = depth * 14 + 2,
+                    paddingRight = 2,
+                    backgroundColor = node.IsHidden
+                        ? new Color(0.3f, 0.3f, 0.3f, 0.2f)
+                        : new Color(0.2f, 0.2f, 0.2f, 0.1f)
+                }
+            };
+
+            if (hasChildren) {
+                var foldoutButton = new Button(() => ToggleExpand(obj)) {
+                    text = isExpanded ? "▼" : "▶",
+                    style = {
+                        width = 12,
+                        height = 12,
+                        marginRight = 1,
+                        paddingLeft = 0,
+                        paddingRight = 0,
+                        paddingTop = 0,
+                        paddingBottom = 0,
+                        fontSize = 8,
+                        unityTextAlign = TextAnchor.MiddleCenter,
+                        backgroundColor = Color.clear,
+                        borderLeftWidth = 0,
+                        borderRightWidth = 0,
+                        borderTopWidth = 0,
+                        borderBottomWidth = 0
+                    }
+                };
+                row.Add(foldoutButton);
+            }
+            else {
+                var spacer = new VisualElement {
+                    style = { width = 13, height = 12 }
+                };
+                row.Add(spacer);
             }
 
-            parts.Reverse();
-            return string.Join("/", parts);
+            Toggle checkbox = null;
+            if (node.IsHidden) {
+                checkbox = new Toggle {
+                    value = _selectedObjects.Contains(obj),
+                    style = {
+                        width = 14,
+                        height = 14,
+                        marginRight = 4,
+                        marginLeft = 2
+                    }
+                };
+                checkbox.RegisterValueChangedCallback(evt =>
+                {
+                    if (evt.newValue)
+                        _selectedObjects.Add(obj);
+                    else
+                        _selectedObjects.Remove(obj);
+                });
+                row.Add(checkbox);
+            }
+            else {
+                var spacer = new VisualElement {
+                    style = { width = 18, height = 14 }
+                };
+                row.Add(spacer);
+            }
+
+            var icon = new Image {
+                image = AssetPreview.GetMiniThumbnail(obj),
+                scaleMode = ScaleMode.ScaleToFit,
+                style = {
+                    width = 14,
+                    height = 14,
+                    marginRight = 3
+                }
+            };
+            row.Add(icon);
+
+            var nameLabel = new Label(obj.name) {
+                style = {
+                    flexGrow = 1,
+                    unityTextAlign = TextAnchor.MiddleLeft,
+                    fontSize = 11,
+                    opacity = node.IsHidden ? 1.0f : 0.5f,
+                    unityFontStyleAndWeight = node.IsHidden ? FontStyle.Normal : FontStyle.Italic,
+                    paddingTop = 0,
+                    paddingBottom = 0
+                }
+            };
+            row.Add(nameLabel);
+
+            if (node.IsHidden)
+                row.RegisterCallback<ClickEvent>(evt =>
+                {
+                    if (checkbox != null && evt.target != checkbox) {
+                        var currentValue = _selectedObjects.Contains(obj);
+                        if (currentValue)
+                            _selectedObjects.Remove(obj);
+                        else
+                            _selectedObjects.Add(obj);
+                        checkbox.value = !currentValue;
+                    }
+
+                    Selection.activeGameObject = obj;
+                    EditorGUIUtility.PingObject(obj);
+                });
+
+            _treeContainer.Add(row);
+
+            if (!isExpanded || !hasChildren) return;
+            foreach (var child in node.Children)
+                RenderNode(child, depth + 1);
         }
 
-        private void RestoreObject(GameObject obj) {
-            if (obj == null) return;
+        private void ToggleExpand(GameObject obj) {
+            if (!_expandedObjects.Add(obj))
+                _expandedObjects.Remove(obj);
 
-            Undo.RecordObject(obj, I18N.Get("UI.HierarchyExtension.RestoreHiddenGameObject"));
-            obj.hideFlags &= ~HideFlags.HideInHierarchy;
-            obj.SetActive(true);
-            if (obj.CompareTag("EditorOnly")) obj.tag = "Untagged";
-
-            EditorUtility.SetDirty(obj);
-            EditorApplication.RepaintHierarchyWindow();
-
-            RefreshList();
+            RenderTree();
         }
 
-        private void RestoreAll() {
-            if (_hiddenObjects == null || _hiddenObjects.Count == 0) return;
+        private void RestoreSelected() {
+            if (_selectedObjects.Count == 0) return;
 
-            var objectsToRestore = _hiddenObjects.Where(obj => obj != null).ToList();
+            var objectsToRestore = _selectedObjects.Where(obj => obj != null).ToList();
             if (objectsToRestore.Count == 0) return;
 
             Undo.RecordObjects(objectsToRestore.Select(obj => obj as Object).ToArray(),
-                I18N.Get("UI.HierarchyExtension.RestoreAllHiddenGameObjects"));
+                I18N.Get("UI.HierarchyExtension.RestoreSelectedHiddenGameObjects"));
 
             foreach (var obj in objectsToRestore) {
                 obj.hideFlags &= ~HideFlags.HideInHierarchy;
                 obj.SetActive(true);
                 if (obj.CompareTag("EditorOnly")) obj.tag = "Untagged";
-
                 EditorUtility.SetDirty(obj);
             }
 
             EditorApplication.RepaintHierarchyWindow();
-            RefreshList();
+
+            _selectedObjects.Clear();
+            BuildTree();
+            RenderTree();
+        }
+
+        private class TreeNode {
+            public List<TreeNode> Children;
+            public GameObject GameObject;
+            public bool IsHidden;
         }
     }
 }
