@@ -30,9 +30,9 @@ jobs:
       - name: Get previous version
         id: previous_version
         run: |
-          git checkout HEAD^
+          git switch HEAD^
           PREV_VERSION=$(jq -r '.version' package.json 2>/dev/null || echo "")
-          git checkout -
+          git switch -
           echo "prev_version=$PREV_VERSION" >> $GITHUB_OUTPUT
           echo "Previous version: $PREV_VERSION"
       
