@@ -31,7 +31,6 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
 
             #region Tab Management
 
-            //Add Tab
             addButton.clicked += () =>
             {
                 var tab = Tab.Element("Assets");
@@ -47,7 +46,6 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
             return scrollView;
         }
 
-        // Click to Select, Drag to Reorder
         private static void TabControl(VisualElement tabContainer) {
             VisualElement dragging = null;
             VisualElement placeholder = null;
@@ -223,7 +221,6 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
         }
 
         private static void RegisterDropEvents(VisualElement tabContainer) {
-            // ドロップ可能領域の視覚化
             tabContainer.RegisterCallback<DragEnterEvent>(evt =>
             {
                 if (evt.currentTarget != tabContainer) return;
@@ -243,7 +240,6 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                     : DragAndDropVisualMode.Rejected;
             }, TrickleDown.TrickleDown);
 
-            // ドロップ処理
             tabContainer.RegisterCallback<DragPerformEvent>(evt =>
             {
                 if (evt.currentTarget != tabContainer) return;
