@@ -29,8 +29,6 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
 
             tabContainer.Add(addButton);
 
-            #region Tab Management
-
             addButton.clicked += () =>
             {
                 var tab = Tab.Element("Assets");
@@ -40,8 +38,6 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
 
             TabControl(tabContainer);
             RegisterDropEvents(tabContainer);
-
-            #endregion Tab Management
 
             return scrollView;
         }
