@@ -13,7 +13,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window._Component {
                 }
             };
             foreach (var component in gameObject.GetComponents<Component>()) {
-                if (component.GetType().Name == "ObjectStyleComponent") continue;
+                if (component == null || component.GetType().Name == "ObjectStyleComponent") continue;
                 var componentButton = new Button {
                     style = {
                         height = 24,
