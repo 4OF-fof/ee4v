@@ -13,10 +13,13 @@ namespace _4OF.ee4v.HierarchyExtension {
         }
 
         private static void HierarchyOverlayContent(int instanceId, Rect selectionRect) {
-            if (EditorUtility.InstanceIDToObject(instanceId) is GameObject obj)
+            if (EditorUtility.InstanceIDToObject(instanceId) is GameObject obj) {
+                if (obj.CompareTag("EditorOnly") && !obj.activeSelf) obj.hideFlags |= HideFlags.HideInHierarchy;
                 HierarchyItemOverlay.Draw(instanceId, obj, selectionRect);
-            else
+            }
+            else {
                 HierarchySceneOverlay.Draw();
+            }
         }
     }
 }
