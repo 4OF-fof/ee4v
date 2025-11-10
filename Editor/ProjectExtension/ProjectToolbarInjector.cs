@@ -108,6 +108,8 @@ namespace _4OF.ee4v.ProjectExtension {
             var currentTab = TabListController.CurrentTab();
             if (currentTab == null || currentTab.parent != tabContainer) return;
 
+            if (currentTab.name == "ee4v-project-toolbar-workspaceContainer-tab") return;
+
             TabListController.UpdateTab(currentTab, path, Path.GetFileName(path));
         }
     }

@@ -168,7 +168,14 @@ namespace _4OF.ee4v.ProjectExtension.Data {
                 Tab.SetState(tabElement, Tab.State.Selected);
 
             _currentTab = tabElement;
-            ProjectWindowOpener.OpenFolderInProject(tabElement.tooltip);
+            
+            if (isWorkspaceTab) {
+                Debug.Log($"Workspace tab selected: {tabElement.Q<Label>()?.text}");
+            }
+            else {
+                ProjectWindowOpener.OpenFolderInProject(tabElement.tooltip);
+            }
+            
             EditorUtility.SetDirty(_asset);
         }
 
