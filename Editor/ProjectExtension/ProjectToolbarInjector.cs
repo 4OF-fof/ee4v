@@ -84,9 +84,23 @@ namespace _4OF.ee4v.ProjectExtension {
             if (_projectWindow == null || _projectWindow.rootVisualElement.childCount <= 0) return;
             
             _isInitialized = true;
+            
+            var containerWrapper = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    flexGrow = 1,
+                    alignItems = Align.Center
+                }
+            };
+            
+            var workspaceContainer = WorkspaceContainer.Element();
             var tabContainer = TabContainer.Element();
+            
+            containerWrapper.Add(workspaceContainer);
+            containerWrapper.Add(tabContainer);
+            
             var target = _projectWindow.rootVisualElement[_projectWindow.rootVisualElement.childCount - 1];
-            target.Insert(target.childCount, tabContainer);
+            target.Insert(target.childCount, containerWrapper);
             TabListController.Initialize();
         }
 

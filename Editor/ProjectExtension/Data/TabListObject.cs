@@ -14,13 +14,13 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
         public IReadOnlyList<Tab> TabList => tabList;
 
-        public void Add(string path, string tabName) {
-            var entry = new Tab { path = path, tabName = tabName };
+        public void Add(string path, string tabName, bool isWorkspace = false) {
+            var entry = new Tab { path = path, tabName = tabName, isWorkspace = isWorkspace };
             tabList.Add(entry);
         }
 
-        public void Insert(int index, string path, string tabName) {
-            var entry = new Tab { path = path, tabName = tabName };
+        public void Insert(int index, string path, string tabName, bool isWorkspace = false) {
+            var entry = new Tab { path = path, tabName = tabName, isWorkspace = isWorkspace };
             index = Mathf.Clamp(index, 0, tabList.Count);
             tabList.Insert(index, entry);
         }
@@ -66,6 +66,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         public class Tab {
             public string path;
             public string tabName;
+            public bool isWorkspace;
         }
     }
 }

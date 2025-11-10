@@ -3,6 +3,7 @@
 namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
     public static class ProjectToolBar {
         public static VisualElement Element() {
+            var workspaceContainer = WorkspaceContainer.Element();
             var tabContainer = TabContainer.Element();
 
             var projectToolBar = new VisualElement {
@@ -16,6 +17,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                 }
             };
 
+            projectToolBar.Add(workspaceContainer);
             projectToolBar.Add(tabContainer);
 
             return projectToolBar;
