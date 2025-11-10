@@ -56,6 +56,7 @@
   "UI.HierarchyExtension.ToggleGameObjectsActive": "Toggle GameObjects Active",
   "UI.ProjectExtension.AddNewTab": "Add New Tab",
   "UI.ProjectExtension.Icon": "icon",
+  "UI.ProjectExtension.CloseTab": "Close",
   "Debug.Core.InvalidHex": "Invalid hex color format: {0}. Expected #RRGGBB or #RGB.",
   "Debug.HierarchyExtension.NotFoundSceneListObject": "SceneListObject not found at {0}. Creating new one.",
   "Debug.HierarchyExtension.NotFoundShaderGUI": "Could not find OnGUI method in custom ShaderGUI.",

@@ -1,4 +1,5 @@
 using System.IO;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.ProjectExtension.Data;
 using UnityEditor;
@@ -16,7 +17,6 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
             if (string.IsNullOrEmpty(name)) name = Path.GetFileName(path);
 
             var tabLabel = TabLabel.Draw(name, path);
-            var closeButton = CloseButton.Element();
 
             var folderIcon = new Image {
                 image = EditorGUIUtility.IconContent("Folder Icon").image as Texture2D,
@@ -28,7 +28,6 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
 
             var tab = new VisualElement {
                 name = "ee4v-project-toolbar-workspaceContainer-tab",
-                tooltip = path,
                 style = {
                     alignItems = Align.Center,
                     flexDirection = FlexDirection.Row,
@@ -50,7 +49,6 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                 tab.style.backgroundColor = current == State.Selected
                     ? ColorPreset.TabSelectedBackground
                     : ColorPreset.TabHoveredBackground;
-                closeButton.style.opacity = 1f;
             });
 
             tab.RegisterCallback<MouseLeaveEvent>(_ =>
@@ -59,14 +57,21 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                 tab.style.backgroundColor = current == State.Selected
                     ? ColorPreset.TabSelectedBackground
                     : ColorPreset.TabBackground;
-                closeButton.style.opacity = 0.7f;
+            });
+
+            tab.RegisterCallback<MouseDownEvent>(evt =>
+            {
+                if (evt.button == 1) {
+                    evt.StopPropagation();
+                    var menu = new GenericMenu();
+                    menu.AddItem(new GUIContent(I18N.Get("UI.ProjectExtension.CloseTab")), false,
+                        () => { TabListController.Remove(tab); });
+                    menu.ShowAsContext();
+                }
             });
 
             tab.Add(folderIcon);
             tab.Add(tabLabel);
-            tab.Add(closeButton);
-
-            closeButton.clicked += () => { TabListController.Remove(tab); };
 
             return tab;
         }
@@ -77,16 +82,13 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
 
         public static void SetState(VisualElement tab, State state) {
             tab.userData = state;
-            var closeButton = tab.Q<VisualElement>("ee4v-project-toolbar-tabContainer-tab-close");
             switch (state) {
                 case State.Selected:
                     tab.style.backgroundColor = ColorPreset.TabSelectedBackground;
-                    if (closeButton != null) closeButton.style.opacity = 1f;
                     break;
                 case State.Default:
                 default:
                     tab.style.backgroundColor = ColorPreset.TabBackground;
-                    if (closeButton != null) closeButton.style.opacity = 0.7f;
                     break;
             }
         }
