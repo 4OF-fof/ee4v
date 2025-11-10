@@ -22,10 +22,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                 image = EditorGUIUtility.IconContent("Folder Icon").image as Texture2D,
                 style = {
                     width = 16,
-                    height = 16,
-                    marginLeft = 4,
-                    marginRight = 2,
-                    alignSelf = Align.Center
+                    height = 16
                 }
             };
 
@@ -37,6 +34,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                     flexDirection = FlexDirection.Row,
                     height = Length.Percent(95),
                     marginTop = 1,
+                    paddingLeft = 4,
                     backgroundColor = ColorPreset.TabBackground,
                     borderRightWidth = 1,
                     borderTopRightRadius = 4, borderTopLeftRadius = 4,

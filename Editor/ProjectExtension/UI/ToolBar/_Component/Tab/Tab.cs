@@ -22,6 +22,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                     flexDirection = FlexDirection.Row,
                     height = Length.Percent(95),
                     marginTop = 1,
+                    paddingLeft = 4,
                     backgroundColor = ColorPreset.TabBackground,
                     borderRightWidth = 1,
                     borderTopRightRadius = 4, borderTopLeftRadius = 4,

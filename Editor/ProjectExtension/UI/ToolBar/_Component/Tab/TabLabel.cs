@@ -11,7 +11,6 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                 style = {
                     backgroundColor = new StyleColor(StyleKeyword.None),
                     borderTopWidth = 0, borderBottomWidth = 0,
-                    paddingRight = 4, paddingLeft = 8,
                     color = ColorPreset.TabText,
                     unityBackgroundImageTintColor = new StyleColor(Color.clear),
                     borderRightWidth = 4, borderLeftWidth = 4,
