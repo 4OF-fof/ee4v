@@ -176,7 +176,10 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             _currentTab = tabElement;
             
             if (isWorkspaceTab) {
-                Debug.Log($"Workspace tab selected: {tabElement.Q<Label>()?.text}");
+                var labelName = tabElement.Q<Label>()?.text;
+                if (!string.IsNullOrEmpty(labelName)) {
+                    ReflectionWrapper.SetSearchFilter($"l={labelName}");
+                }
             }
             else {
                 ProjectWindowOpener.OpenFolderInProject(tabElement.tooltip);
@@ -229,7 +232,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
                     var newTab = Tab.Element(objectTab.path, objectTab.tabName);
                     if (newTab == null) continue;
                     _tabContainer.Insert(Math.Min(tabInsertIndex, _tabContainer.childCount - 1), newTab);
-                    if (firstRegularTab == null) firstRegularTab = newTab;
+                    firstRegularTab ??= newTab;
                     tabInsertIndex++;
                 }
 

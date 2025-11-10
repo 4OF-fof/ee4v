@@ -38,5 +38,28 @@ namespace _4OF.ee4v.ProjectExtension.Service {
                 return null;
             }
         }
+
+        public static void SetSearchFilter(string searchText) {
+            try {
+                if (ProjectBrowserType == null || ProjectBrowserWindow == null) return;
+                
+                var setSearchMethod = ProjectBrowserType.GetMethod("SetSearch",
+                    BindingFlags.Instance | BindingFlags.Public,
+                    null,
+                    new[] { typeof(string) },
+                    null);
+                
+                if (setSearchMethod != null) {
+                    setSearchMethod.Invoke(ProjectBrowserWindow, new object[] { searchText });
+                    ProjectBrowserWindow.Repaint();
+                }
+                else {
+                    Debug.LogWarning(I18N.Get("Debug.ProjectExtension.ReflectionWarning", "SetSearch method not found"));
+                }
+            }
+            catch (Exception ex) {
+                Debug.LogWarning(I18N.Get("Debug.ProjectExtension.ReflectionWarning", ex.Message));
+            }
+        }
     }
 }
