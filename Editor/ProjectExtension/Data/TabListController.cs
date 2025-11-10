@@ -77,7 +77,12 @@ namespace _4OF.ee4v.ProjectExtension.Data {
                     _currentTab = null;
                     var lastTab = _tabContainer?.Children()
                         .LastOrDefault(e => e.name == "ee4v-project-toolbar-tabContainer-tab");
-                    if (lastTab != null) SelectTab(lastTab);
+                    if (lastTab != null) {
+                        SelectTab(lastTab);
+                    }
+                    else {
+                        KeepOneTab();
+                    }
                 }
             }
             else {
@@ -86,23 +91,26 @@ namespace _4OF.ee4v.ProjectExtension.Data {
                 _tabContainer.Remove(tab);
 
                 if (isCurrentTab) {
+                    _currentTab = null;
+                    
                     var regularTabs = _tabContainer.Children()
                         .Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab").ToList();
+                    var workspaceTabs = _workspaceContainer?.Children()
+                        .Where(e => e.name == "ee4v-project-toolbar-workspaceContainer-tab").ToList();
 
-                    if (regularTabs.Count == 0) {
-                        _currentTab = null;
-                        var currentIsWorkspace = _currentTab is { name: "ee4v-project-toolbar-workspaceContainer-tab" };
-                        if (!currentIsWorkspace) KeepOneTab();
-                    }
-                    else {
+                    if (regularTabs.Count > 0) {
                         SelectTab(index == 0 ? regularTabs[0] : regularTabs[Math.Max(0, index - 1)]);
                     }
-                }
-                else {
-                    KeepOneTab();
+                    else if (workspaceTabs is { Count: > 0 }) {
+                        SelectTab(workspaceTabs.Last());
+                    }
+                    else {
+                        KeepOneTab();
+                    }
                 }
             }
 
+            KeepOneTab();
             EditorUtility.SetDirty(_asset);
         }
 
@@ -165,7 +173,16 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         }
 
         private static void KeepOneTab() {
-            if (_tabContainer is not { childCount: <= 1 }) return;
+            if (_tabContainer == null) return;
+
+            var regularTabCount = _tabContainer.Children()
+                .Count(e => e.name == "ee4v-project-toolbar-tabContainer-tab");
+            var workspaceTabCount = _workspaceContainer?.Children()
+                .Count(e => e.name == "ee4v-project-toolbar-workspaceContainer-tab") ?? 0;
+            var totalTabCount = regularTabCount + workspaceTabCount;
+
+            if (totalTabCount > 0) return;
+
             var newTab = Tab.Element("Assets", "Assets");
             Add(newTab);
             SelectTab(newTab);
