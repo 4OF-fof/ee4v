@@ -182,6 +182,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
                 }
             }
             else {
+                ReflectionWrapper.ClearSearchFilter();
                 ProjectWindowOpener.OpenFolderInProject(tabElement.tooltip);
             }
             
