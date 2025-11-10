@@ -1,5 +1,4 @@
 using _4OF.ee4v.ProjectExtension.Data;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
@@ -30,13 +29,12 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
 
         private static void WorkspaceTabControl(VisualElement workspaceContainer) {
             VisualElement potentialDrag = null;
-            var pointerDownPos = Vector2.zero;
 
             workspaceContainer.RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (evt.button != 0) return;
                 if (evt.target is not VisualElement target) return;
-                
+
                 var t = target;
                 while (t != null) {
                     if (t.name == "ee4v-project-toolbar-tabContainer-tab-close") return;
@@ -50,15 +48,14 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                 if (tabElement == null || !workspaceContainer.Contains(tabElement)) return;
 
                 potentialDrag = tabElement;
-                pointerDownPos = evt.localPosition;
+                _ = evt.localPosition;
                 evt.StopPropagation();
             }, TrickleDown.TrickleDown);
 
-            workspaceContainer.RegisterCallback<PointerUpEvent>(evt =>
+            workspaceContainer.RegisterCallback<PointerUpEvent>(_ =>
             {
-                if (potentialDrag != null && workspaceContainer.Contains(potentialDrag)) {
+                if (potentialDrag != null && workspaceContainer.Contains(potentialDrag))
                     TabListController.SelectTab(potentialDrag);
-                }
                 potentialDrag = null;
             }, TrickleDown.TrickleDown);
         }

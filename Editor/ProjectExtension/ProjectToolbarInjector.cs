@@ -16,7 +16,7 @@ namespace _4OF.ee4v.ProjectExtension {
         [InitializeOnLoadMethod]
         private static void Initialize() {
             if (!EditorPrefsManager.EnableProjectExtension) return;
-            
+
             EditorApplication.update -= InitializationCheck;
             EditorApplication.update += InitializationCheck;
         }
@@ -25,17 +25,14 @@ namespace _4OF.ee4v.ProjectExtension {
             var projectWindow = ReflectionWrapper.ProjectBrowserWindow;
             if (projectWindow == null) return;
 
-            if (!EditorPrefsManager.CompatLilEditorToolbox) {
+            if (!EditorPrefsManager.CompatLilEditorToolbox)
                 InitializeContent();
-            } else {
+            else
                 CompatInjector();
-            }
 
             EditorApplication.update -= InitializationCheck;
-            
-            if (_isInitialized && EditorPrefsManager.EnableProjectTab) {
-                EnableWatcher();
-            }
+
+            if (_isInitialized && EditorPrefsManager.EnableProjectTab) EnableWatcher();
         }
 
         private static void EnableWatcher() {
@@ -53,12 +50,12 @@ namespace _4OF.ee4v.ProjectExtension {
 
         private static void InitializeContent() {
             if (_isInitialized) return;
-            
+
             _projectWindow = ReflectionWrapper.ProjectBrowserWindow;
             if (_projectWindow == null) return;
-            
+
             _isInitialized = true;
-            
+
             if (!EditorPrefsManager.EnableProjectTab) return;
             var projectToolBar = ProjectToolBar.Element();
             _projectWindow.rootVisualElement.Add(projectToolBar);
@@ -70,7 +67,7 @@ namespace _4OF.ee4v.ProjectExtension {
                 DisableWatcher();
                 return;
             }
-            
+
             var newPath = ReflectionWrapper.GetProjectWindowCurrentPath(_projectWindow);
             if (string.IsNullOrEmpty(newPath) || _currentFolderPath == newPath) return;
             UpdateCurrentPath(newPath);
@@ -79,12 +76,12 @@ namespace _4OF.ee4v.ProjectExtension {
 
         private static void CompatInjector() {
             if (_isInitialized) return;
-            
+
             _projectWindow = ReflectionWrapper.ProjectBrowserWindow;
             if (_projectWindow == null || _projectWindow.rootVisualElement.childCount <= 0) return;
-            
+
             _isInitialized = true;
-            
+
             var containerWrapper = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
@@ -92,13 +89,13 @@ namespace _4OF.ee4v.ProjectExtension {
                     alignItems = Align.Center
                 }
             };
-            
+
             var workspaceContainer = WorkspaceContainer.Element();
             var tabContainer = TabContainer.Element();
-            
+
             containerWrapper.Add(workspaceContainer);
             containerWrapper.Add(tabContainer);
-            
+
             var target = _projectWindow.rootVisualElement[_projectWindow.rootVisualElement.childCount - 1];
             target.Insert(target.childCount, containerWrapper);
             TabListController.Initialize();

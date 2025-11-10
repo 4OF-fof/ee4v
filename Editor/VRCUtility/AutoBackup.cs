@@ -1,13 +1,12 @@
 ﻿using System;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Service;
 using UnityEditor;
 using UnityEngine;
-using _4OF.ee4v.Core.i18n;
 using VRC.SDK3A.Editor;
 
 namespace _4OF.ee4v.VRCUtility {
     public static class AutoBackup {
-        
         private static GameObject _currentlyBuildingAvatar;
 
         [InitializeOnLoadMethod]
@@ -21,16 +20,14 @@ namespace _4OF.ee4v.VRCUtility {
             avatarBuilder.OnSdkBuildStart -= OnBuildStart;
             avatarBuilder.OnSdkUploadSuccess -= OnUploadSuccess;
             avatarBuilder.OnSdkUploadError -= OnUploadError;
-            
+
             avatarBuilder.OnSdkBuildStart += OnBuildStart;
             avatarBuilder.OnSdkUploadSuccess += OnUploadSuccess;
             avatarBuilder.OnSdkUploadError += OnUploadError;
         }
-        
+
         private static void OnBuildStart(object sender, object target) {
-            if (target is GameObject avatarGo) {
-                _currentlyBuildingAvatar = avatarGo;
-            }
+            if (target is GameObject avatarGo) _currentlyBuildingAvatar = avatarGo;
         }
 
         private static void OnUploadSuccess(object sender, object target) {
@@ -46,11 +43,12 @@ namespace _4OF.ee4v.VRCUtility {
                 }
 
                 _currentlyBuildingAvatar = null;
-            } else {
+            }
+            else {
                 Debug.LogWarning(I18N.Get("Debug.VRCUtility.BackupFailed"));
             }
         }
-        
+
         private static void OnUploadError(object sender, object target) {
             _currentlyBuildingAvatar = null;
         }

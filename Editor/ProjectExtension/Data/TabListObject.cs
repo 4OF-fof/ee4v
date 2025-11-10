@@ -43,7 +43,6 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
         public static TabListObject LoadOrCreate() {
             const string path = "Assets/4OF/ee4v/UserData/TabList.asset";
-            ;
             var tabListObject = AssetDatabase.LoadAssetAtPath<TabListObject>(path);
             if (tabListObject != null) {
                 _instance = tabListObject;

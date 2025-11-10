@@ -14,10 +14,10 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
 
         public static VisualElement Element(string path, string name = null, State state = State.Default) {
             if (string.IsNullOrEmpty(name)) name = Path.GetFileName(path);
-            
+
             var tabLabel = TabLabel.Draw(name, path);
             var closeButton = CloseButton.Element();
-            
+
             var folderIcon = new Image {
                 image = EditorGUIUtility.IconContent("Folder Icon").image as Texture2D,
                 style = {
@@ -28,7 +28,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                     alignSelf = Align.Center
                 }
             };
-            
+
             var tab = new VisualElement {
                 name = "ee4v-project-toolbar-workspaceContainer-tab",
                 tooltip = path,
@@ -45,7 +45,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                 userData = state
             };
             SetState(tab, state);
-            
+
             tab.RegisterCallback<MouseEnterEvent>(_ =>
             {
                 var current = GetState(tab);
@@ -54,7 +54,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                     : ColorPreset.TabHoveredBackground;
                 closeButton.style.opacity = 1f;
             });
-            
+
             tab.RegisterCallback<MouseLeaveEvent>(_ =>
             {
                 var current = GetState(tab);

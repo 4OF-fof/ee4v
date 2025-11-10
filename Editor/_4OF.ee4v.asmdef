@@ -1,20 +1,20 @@
 {
-    "name": "_4OF.ee4v",
-    "rootNamespace": "",
-    "references": [
-        "GUID:a8ecade354e794e42842591b4ea9e1d1",
-        "GUID:6e9c6119ac4eb334284fb7b4bc6d1f05",
-        "GUID:b906909fcc54f634db50f2cad0f988d9"
-    ],
-    "includePlatforms": [
-        "Editor"
-    ],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": false,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "_4OF.ee4v",
+  "rootNamespace": "",
+  "references": [
+    "GUID:a8ecade354e794e42842591b4ea9e1d1",
+    "GUID:6e9c6119ac4eb334284fb7b4bc6d1f05",
+    "GUID:b906909fcc54f634db50f2cad0f988d9"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

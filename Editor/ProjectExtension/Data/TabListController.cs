@@ -24,8 +24,10 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             var projectWindow = ReflectionWrapper.ProjectBrowserWindow;
             if (projectWindow != null) {
                 _tabContainer = projectWindow.rootVisualElement?.Q<VisualElement>("ee4v-project-toolbar-tabContainer");
-                _workspaceContainer = projectWindow.rootVisualElement?.Q<VisualElement>("ee4v-project-toolbar-workspaceContainer");
+                _workspaceContainer =
+                    projectWindow.rootVisualElement?.Q<VisualElement>("ee4v-project-toolbar-workspaceContainer");
             }
+
             Sync();
             KeepOneTab();
         }
@@ -42,7 +44,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         public static void AddWorkspaceTab(VisualElement workspaceTab) {
             Initialize();
             if (_workspaceContainer == null) return;
-            
+
             var path = workspaceTab.tooltip;
             var name = workspaceTab.Q<Label>().text;
             _asset.Add(path, name, true);
@@ -61,47 +63,46 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
         public static void Remove(VisualElement tab) {
             Initialize();
-            
+
             var isWorkspaceTab = tab.name == "ee4v-project-toolbar-workspaceContainer-tab";
             var isCurrentTab = tab == _currentTab;
-            
+
             if (isWorkspaceTab) {
                 if (_workspaceContainer == null) return;
                 var index = _workspaceContainer.IndexOf(tab);
                 _asset.Remove(index);
                 _workspaceContainer.Remove(tab);
-                
+
                 if (isCurrentTab) {
                     _currentTab = null;
                     var lastTab = _tabContainer?.Children()
                         .LastOrDefault(e => e.name == "ee4v-project-toolbar-tabContainer-tab");
-                    if (lastTab != null) {
-                        SelectTab(lastTab);
-                    }
+                    if (lastTab != null) SelectTab(lastTab);
                 }
-            } else {
+            }
+            else {
                 var index = _tabContainer.IndexOf(tab);
                 _asset.Remove(index);
                 _tabContainer.Remove(tab);
-                
+
                 if (isCurrentTab) {
                     var regularTabs = _tabContainer.Children()
                         .Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab").ToList();
-                    
+
                     if (regularTabs.Count == 0) {
                         _currentTab = null;
-                        var currentIsWorkspace = _currentTab != null && _currentTab.name == "ee4v-project-toolbar-workspaceContainer-tab";
-                        if (!currentIsWorkspace) {
-                            KeepOneTab();
-                        }
-                    } else {
+                        var currentIsWorkspace = _currentTab is { name: "ee4v-project-toolbar-workspaceContainer-tab" };
+                        if (!currentIsWorkspace) KeepOneTab();
+                    }
+                    else {
                         SelectTab(index == 0 ? regularTabs[0] : regularTabs[Math.Max(0, index - 1)]);
                     }
-                } else {
+                }
+                else {
                     KeepOneTab();
                 }
             }
-            
+
             EditorUtility.SetDirty(_asset);
         }
 
@@ -142,24 +143,22 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         public static void SelectTab(VisualElement tabElement) {
             if (tabElement == null) return;
             if (tabElement == _currentTab) return;
-            
+
             var isWorkspaceTab = tabElement.name == "ee4v-project-toolbar-workspaceContainer-tab";
-            var currentIsWorkspaceTab = _currentTab != null && _currentTab.name == "ee4v-project-toolbar-workspaceContainer-tab";
-            
+            var currentIsWorkspaceTab = _currentTab is { name: "ee4v-project-toolbar-workspaceContainer-tab" };
+
             if (_currentTab != null) {
-                if (currentIsWorkspaceTab) {
+                if (currentIsWorkspaceTab)
                     WorkspaceTab.SetState(_currentTab, WorkspaceTab.State.Default);
-                } else {
+                else
                     Tab.SetState(_currentTab, Tab.State.Default);
-                }
             }
-            
-            if (isWorkspaceTab) {
+
+            if (isWorkspaceTab)
                 WorkspaceTab.SetState(tabElement, WorkspaceTab.State.Selected);
-            } else {
+            else
                 Tab.SetState(tabElement, Tab.State.Selected);
-            }
-            
+
             _currentTab = tabElement;
             ProjectWindowOpener.OpenFolderInProject(tabElement.tooltip);
             EditorUtility.SetDirty(_asset);
@@ -178,7 +177,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             var existingTabs = _tabContainer.Children().Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab")
                 .ToList();
             foreach (var t in existingTabs) _tabContainer.Remove(t);
-            
+
             if (_workspaceContainer != null) {
                 var existingWorkspaceTabs = _workspaceContainer.Children()
                     .Where(e => e.name == "ee4v-project-toolbar-workspaceContainer-tab").ToList();
@@ -188,29 +187,28 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             var objectTabList = _asset.TabList;
             var tabInsertIndex = 0;
             VisualElement firstRegularTab = null;
-            
-            foreach (var objectTab in objectTabList) {
+
+            foreach (var objectTab in objectTabList)
                 if (objectTab.isWorkspace) {
                     if (_workspaceContainer == null) continue;
                     var newWorkspaceTab = WorkspaceTab.Element(objectTab.path, objectTab.tabName);
                     if (newWorkspaceTab == null) continue;
                     _workspaceContainer.Add(newWorkspaceTab);
-                } else {
+                }
+                else {
                     var newTab = Tab.Element(objectTab.path, objectTab.tabName);
                     if (newTab == null) continue;
                     _tabContainer.Insert(Math.Min(tabInsertIndex, _tabContainer.childCount - 1), newTab);
                     if (firstRegularTab == null) firstRegularTab = newTab;
                     tabInsertIndex++;
                 }
-            }
 
-            if (firstRegularTab != null) {
-                Tab.SetState(firstRegularTab, Tab.State.Selected);
-                SelectTab(firstRegularTab);
-                var others = _tabContainer.Children()
-                    .Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab" && e != firstRegularTab).ToList();
-                foreach (var o in others) Tab.SetState(o, Tab.State.Default);
-            }
+            if (firstRegularTab == null) return;
+            Tab.SetState(firstRegularTab, Tab.State.Selected);
+            SelectTab(firstRegularTab);
+            var others = _tabContainer.Children()
+                .Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab" && e != firstRegularTab).ToList();
+            foreach (var o in others) Tab.SetState(o, Tab.State.Default);
         }
     }
 }

@@ -13,8 +13,8 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
     public class HiddenObjectList : BaseWindow {
         private readonly HashSet<GameObject> _expandedObjects = new();
         private readonly HashSet<GameObject> _selectedObjects = new();
-        private VisualElement _treeContainer;
         private readonly List<TreeNode> _treeNodes = new();
+        private VisualElement _treeContainer;
 
         [MenuItem("ee4v/Hidden Object")]
         private static void OpenFromMenu() {
@@ -119,9 +119,9 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
             }
 
             var processedObjects = new HashSet<GameObject>();
-            foreach (var hiddenObj in hiddenObjects.Where(hiddenObj => hiddenObj != null && !processedObjects.Contains(hiddenObj))) {
+            foreach (var hiddenObj in hiddenObjects.Where(hiddenObj =>
+                         hiddenObj != null && !processedObjects.Contains(hiddenObj)))
                 BuildNodeHierarchy(hiddenObj, hiddenObjects, processedObjects);
-            }
 
             ExpandAllNodes(_treeNodes);
         }

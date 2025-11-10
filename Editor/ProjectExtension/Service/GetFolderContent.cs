@@ -53,9 +53,7 @@ namespace _4OF.ee4v.ProjectExtension.Service {
             CollectFoldersToInvalidate(movedFromAssetPaths, foldersToInvalidate);
             CollectFoldersToInvalidate(movedAssets, foldersToInvalidate);
 
-            foreach (var folderPath in foldersToInvalidate) {
-                GetFolderContent.InvalidateCache(folderPath);
-            }
+            foreach (var folderPath in foldersToInvalidate) GetFolderContent.InvalidateCache(folderPath);
         }
 
         private static void CollectFoldersToInvalidate(string[] assetPaths, HashSet<string> foldersToInvalidate) {
@@ -72,9 +70,7 @@ namespace _4OF.ee4v.ProjectExtension.Service {
                 }
 
                 var parentFolder = Path.GetDirectoryName(assetPath)?.Replace('\\', '/');
-                if (!string.IsNullOrEmpty(parentFolder)) {
-                    foldersToInvalidate.Add(parentFolder);
-                }
+                if (!string.IsNullOrEmpty(parentFolder)) foldersToInvalidate.Add(parentFolder);
             }
         }
     }
