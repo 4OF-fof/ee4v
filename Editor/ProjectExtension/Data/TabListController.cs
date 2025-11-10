@@ -69,8 +69,14 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
             if (isWorkspaceTab) {
                 if (_workspaceContainer == null) return;
-                var index = _workspaceContainer.IndexOf(tab);
-                _asset.Remove(index);
+                
+                var path = tab.tooltip;
+                var name = tab.Q<Label>()?.text;
+                var assetIndex = _asset.TabList.ToList().FindIndex(t => t.isWorkspace && t.path == path && t.tabName == name);
+                
+                if (assetIndex >= 0) {
+                    _asset.Remove(assetIndex);
+                }
                 _workspaceContainer.Remove(tab);
 
                 if (isCurrentTab) {
