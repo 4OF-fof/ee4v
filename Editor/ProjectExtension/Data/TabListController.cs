@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using _4OF.ee4v.ProjectExtension.Service;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab;
 using UnityEditor;
 using UnityEngine;
@@ -18,11 +19,11 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         }
 
         public static void Initialize() {
-            if (_asset == null) _asset = TabListObject.LoadOrCreate();
+            if (!_asset) _asset = TabListObject.LoadOrCreate();
 
             if (_tabContainer != null) return;
             var projectWindow = ReflectionWrapper.ProjectBrowserWindow;
-            if (projectWindow != null) {
+            if (projectWindow) {
                 _tabContainer = projectWindow.rootVisualElement?.Q<VisualElement>("ee4v-project-toolbar-tabContainer");
                 _workspaceContainer =
                     projectWindow.rootVisualElement?.Q<VisualElement>("ee4v-project-toolbar-workspaceContainer");
@@ -77,6 +78,8 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
                 if (assetIndex >= 0) _asset.Remove(assetIndex);
                 _workspaceContainer.Remove(tab);
+
+                RemoveWorkspaceLabels(name);
 
                 if (isCurrentTab) {
                     _currentTab = null;
@@ -199,7 +202,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         }
 
         private static void Sync() {
-            if (_tabContainer == null || _asset == null) return;
+            if (_tabContainer == null || !_asset) return;
 
             var existingTabs = _tabContainer.Children().Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab")
                 .ToList();
@@ -236,6 +239,32 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             var others = _tabContainer.Children()
                 .Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab" && e != firstRegularTab).ToList();
             foreach (var o in others) Tab.SetState(o, Tab.State.Default);
+        }
+
+        private static void RemoveWorkspaceLabels(string workspaceName) {
+            if (string.IsNullOrEmpty(workspaceName)) return;
+
+            var labelName = $"Ee4v.ws.{workspaceName}";
+            
+            var allAssetPaths = AssetDatabase.GetAllAssetPaths();
+            var removedCount = 0;
+
+            foreach (var path in allAssetPaths) {
+                if (!path.StartsWith("Assets/")) continue;
+
+                var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+                if (asset == null) continue;
+
+                var labels = AssetDatabase.GetLabels(asset).ToList();
+                if (!labels.Contains(labelName)) continue;
+                labels.Remove(labelName);
+                AssetDatabase.SetLabels(asset, labels.ToArray());
+                removedCount++;
+            }
+
+            if (removedCount <= 0) return;
+            AssetDatabase.SaveAssets();
+            Debug.Log(I18N.Get("Debug.ProjectExtension.RemovedWorkspaceLabels", labelName, removedCount));
         }
     }
 }

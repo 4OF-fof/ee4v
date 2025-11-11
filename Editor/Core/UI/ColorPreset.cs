@@ -16,6 +16,7 @@ namespace _4OF.ee4v.Core.UI {
 
         public static Color InActiveItem = FromHex("#7f7f7f", EditorGUIUtility.isProSkin ? 1f : 0.3f);
         public static Color WarningButton = FromHex(EditorGUIUtility.isProSkin ? "#b71c1c" : "#ff5252");
+        public static Color WarningText = FromHex(EditorGUIUtility.isProSkin ? "#ff8a80" : "#b71c1c");
         public static Color IconBorder = Color.black;
 
         public static Color WindowHeader = FromHex(EditorGUIUtility.isProSkin ? "#282828" : "#a5a5a5");

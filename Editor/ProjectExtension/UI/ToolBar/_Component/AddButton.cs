@@ -1,5 +1,6 @@
 ﻿using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.ProjectExtension.UI.Window;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -33,6 +34,14 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component {
                 addButton.style.backgroundColor = ColorPreset.AddButtonHover);
             addButton.RegisterCallback<MouseLeaveEvent>(_ =>
                 addButton.style.backgroundColor = new StyleColor(StyleKeyword.None));
+
+            addButton.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 1) return;
+                evt.StopPropagation();
+                var screenPosition = GUIUtility.GUIToScreenPoint(evt.position);
+                CreateWorkspaceWindow.Show(screenPosition);
+            });
 
             return addButton;
         }
