@@ -64,6 +64,8 @@
   "UI.ProjectExtension.CreateWorkspace": "ワークスペースを作成",
   "UI.ProjectExtension.WorkspaceName": "ワークスペース名:",
   "Debug.ProjectExtension.RemovedWorkspaceLabels": "ワークスペースラベル '{0}' を {1} 個のアセットから削除しました。",
+  "Debug.ProjectExtension.RemovedWorkspaceLabelSingle": "ワークスペースラベル '{0}' を削除しました。",
+  "Debug.ProjectExtension.RemovedWorkspaceLabelsMultiple": "ワークスペースラベル '{0}' を {1} 個のアセットから削除しました。",
   "Debug.Core.InvalidHex": "無効な16進数カラー形式: {0}。#RRGGBBまたは#RGBが必要です。",
   "Debug.HierarchyExtension.NotFoundSceneListObject": "SceneListObjectが{0}に見つかりません。新しいものを作成します。",
   "Debug.HierarchyExtension.NotFoundShaderGUI": "カスタムShaderGUIのOnGUIメソッドが見つかりません。",

@@ -266,5 +266,15 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             AssetDatabase.SaveAssets();
             Debug.Log(I18N.Get("Debug.ProjectExtension.RemovedWorkspaceLabels", labelName, removedCount));
         }
+
+        public static string GetCurrentWorkspace() {
+            Initialize();
+            
+            if (_currentTab == null) return null;
+            if (_currentTab.name != "ee4v-project-toolbar-workspaceContainer-tab") return null;
+            
+            var label = _currentTab.Q<Label>();
+            return label?.text;
+        }
     }
 }
