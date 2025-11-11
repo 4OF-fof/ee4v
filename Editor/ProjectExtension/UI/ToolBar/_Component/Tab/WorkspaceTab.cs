@@ -110,6 +110,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
 
                 DragAndDrop.AcceptDrag();
                 AssetDatabase.SaveAssets();
+                TabListController.SelectTab(tab);
                 evt.StopPropagation();
             });
 
