@@ -246,18 +246,19 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
             var labelName = $"Ee4v.ws.{workspaceName}";
             
-            var allAssetPaths = AssetDatabase.GetAllAssetPaths();
-            var removedCount = 0;
+            var guids = AssetDatabase.FindAssets($"l:{labelName}");
+            if (guids.Length == 0) return;
 
-            foreach (var path in allAssetPaths) {
-                if (!path.StartsWith("Assets/")) continue;
+            var removedCount = 0;
+            foreach (var guid in guids) {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (string.IsNullOrEmpty(path)) continue;
 
                 var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
                 if (asset == null) continue;
 
                 var labels = AssetDatabase.GetLabels(asset).ToList();
-                if (!labels.Contains(labelName)) continue;
-                labels.Remove(labelName);
+                if (!labels.Remove(labelName)) continue;
                 AssetDatabase.SetLabels(asset, labels.ToArray());
                 removedCount++;
             }
