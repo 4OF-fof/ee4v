@@ -90,7 +90,9 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
             {
                 if (DragAndDrop.objectReferences == null || DragAndDrop.objectReferences.Length == 0)
                     return;
-                var labelName = $"ee4v.ws.{name}";
+
+                // 加工するとlabel編集が壊れる(追加は正常に行えるが手動での削除が行えなくなる)
+                var labelName = $"{name}";
                 
                 foreach (var obj in DragAndDrop.objectReferences) {
                     if (obj == null) continue;

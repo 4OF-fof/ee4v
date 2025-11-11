@@ -172,7 +172,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
             if (isWorkspaceTab) {
                 var labelName = tabElement.Q<Label>()?.text;
-                if (!string.IsNullOrEmpty(labelName)) ReflectionWrapper.SetSearchFilter($"l=ee4v.ws.{labelName}");
+                if (!string.IsNullOrEmpty(labelName)) ReflectionWrapper.SetSearchFilter($"l={labelName}");
             }
             else {
                 ReflectionWrapper.ClearSearchFilter();
