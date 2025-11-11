@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.ProjectExtension.Data;
@@ -73,9 +74,52 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
             tab.Add(folderIcon);
             tab.Add(tabLabel);
 
+            tab.RegisterCallback<DragEnterEvent>(evt =>
+            {
+                DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+                evt.StopPropagation();
+            });
+
+            tab.RegisterCallback<DragUpdatedEvent>(evt =>
+            {
+                DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+                evt.StopPropagation();
+            });
+
+            tab.RegisterCallback<DragPerformEvent>(evt =>
+            {
+                if (DragAndDrop.objectReferences == null || DragAndDrop.objectReferences.Length == 0)
+                    return;
+
+                // 加工するとlabel編集が壊れる(追加は正常に行えるが手動での削除が行えなくなる)
+                var labelName = $"{name}";
+                
+                foreach (var obj in DragAndDrop.objectReferences) {
+                    if (obj == null) continue;
+                    
+                    var assetPath = AssetDatabase.GetAssetPath(obj);
+                    if (string.IsNullOrEmpty(assetPath)) continue;
+
+                    var labels = AssetDatabase.GetLabels(obj).ToList();
+
+                    if (labels.Contains(labelName)) continue;
+                    
+                    labels.Add(labelName);
+                    AssetDatabase.SetLabels(obj, labels.ToArray());
+                }
+
+                DragAndDrop.AcceptDrag();
+                AssetDatabase.SaveAssets();
+                evt.StopPropagation();
+            });
+
+            tab.RegisterCallback<DragLeaveEvent>(evt =>
+            {
+                evt.StopPropagation();
+            });
+
             return tab;
         }
-
         private static State GetState(VisualElement tab) {
             return tab.userData is State s ? s : State.Default;
         }
