@@ -139,10 +139,11 @@ namespace _4OF.ee4v.ProjectExtension.UI.Window {
         }
 
         private static bool IsWorkspaceNameExists(string workspaceName) {
-            var labelName = $"Ee4v.ws.{workspaceName}";
+            if (string.IsNullOrEmpty(workspaceName)) return false;
 
-            var allAssetPaths = AssetDatabase.GetAllAssetPaths();
-            return (from path in allAssetPaths where path.StartsWith("Assets/") select AssetDatabase.LoadAssetAtPath<Object>(path) into asset where asset != null select AssetDatabase.GetLabels(asset)).Any(labels => labels.Contains(labelName));
+            var tabAsset = TabListObject.GetInstance();
+            if (tabAsset == null || tabAsset.TabList == null) return false;
+            return tabAsset.TabList.Any(t => t.isWorkspace && t.tabName == workspaceName);
         }
 
         private static void CreateWorkspace(string workspaceName) {
