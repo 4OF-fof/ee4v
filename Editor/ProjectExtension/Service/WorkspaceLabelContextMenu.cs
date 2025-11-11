@@ -4,7 +4,7 @@ using _4OF.ee4v.ProjectExtension.Data;
 using UnityEditor;
 using UnityEngine;
 
-namespace _4OF.ee4v.ProjectExtension {
+namespace _4OF.ee4v.ProjectExtension.Service {
     public static class WorkspaceLabelContextMenu {
         private const int MenuPriority = 2000;
 
@@ -20,7 +20,7 @@ namespace _4OF.ee4v.ProjectExtension {
             RemoveLabel(selectedObjects, labelName);
         }
 
-        [MenuItem("Assets/Remove from Workspace", true)]
+        [MenuItem("Assets/Remove Workspace Label", true)]
         private static bool ValidateRemoveWorkspaceLabel() {
             var selectedObjects = Selection.objects;
             if (selectedObjects == null || selectedObjects.Length == 0) return false;
