@@ -91,6 +91,38 @@ namespace _4OF.ee4v.Core.UI {
                                     I18N.Get("UI.Core.EnableSceneSwitcherTooltip")),
                                 EditorPrefsManager.EnableSceneSwitcher);
 
+                            using (new EditorGUILayout.HorizontalScope()) {
+                                EditorPrefsManager.SceneCreateFolderPath = EditorGUILayout.TextField(
+                                    new GUIContent(I18N.Get("UI.Core.SceneCreateFolderPathLabel"),
+                                        I18N.Get("UI.Core.SceneCreateFolderPathTooltip")),
+                                    EditorPrefsManager.SceneCreateFolderPath);
+                                if (GUILayout.Button("...", GUILayout.Width(30))) {
+                                    var path = EditorUtility.OpenFolderPanel(
+                                        I18N.Get("UI.Core.SceneCreateFolderPathWindow"),
+                                        EditorPrefsManager.SceneCreateFolderPath,
+                                        ""
+                                    );
+                                    if (!string.IsNullOrEmpty(path)) {
+                                        var dataPath = Application.dataPath.Replace('\\', '/');
+                                        var normalized = path.Replace('\\', '/');
+
+                                        if (normalized.StartsWith(dataPath)) {
+                                            normalized = "Assets" + normalized.Substring(dataPath.Length);
+                                            EditorPrefsManager.SceneCreateFolderPath = normalized;
+                                            GUIUtility.keyboardControl = 0;
+                                            EditorGUI.FocusTextInControl(null);
+                                        }
+                                        else {
+                                            EditorUtility.DisplayDialog(
+                                                "Invalid Path",
+                                                I18N.Get("UI.Core.SceneCreateFolderPathError"),
+                                                "OK"
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+
                             EditorGUI.BeginChangeCheck();
                             EditorPrefsManager.EnableCustomStyleItem = EditorGUILayout.ToggleLeft(
                                 new GUIContent(I18N.Get("UI.Core.EnableCustomStyleItemLabel"),

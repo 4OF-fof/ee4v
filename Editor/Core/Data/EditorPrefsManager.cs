@@ -42,6 +42,16 @@ namespace _4OF.ee4v.Core.Data {
             set => EditorPrefs.SetString(ContentFolderPathKey, value ?? "");
         }
 
+        private const string SceneCreateFolderPathKey = "4OF.ee4v.SceneCreateFolderPath";
+
+        public static string SceneCreateFolderPath {
+            get {
+                const string defaultPath = "Assets/";
+                return EditorPrefs.GetString(SceneCreateFolderPathKey, defaultPath);
+            }
+            set => EditorPrefs.SetString(SceneCreateFolderPathKey, value ?? "Assets/");
+        }
+
         #endregion
 
         #region HierarchyExtension

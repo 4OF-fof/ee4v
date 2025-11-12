@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using _4OF.ee4v.Core.Data;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.HierarchyExtension.Data;
@@ -205,7 +206,11 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
         private static void CreateAndOpenNewScene(string sceneName) {
             var newScene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
-            var scenePath = $"Assets/{sceneName}.unity";
+            var baseFolder = EditorPrefsManager.SceneCreateFolderPath;
+            baseFolder = baseFolder.Replace('\\', '/').Trim();
+            if (!baseFolder.EndsWith("/")) baseFolder += "/";
+
+            var scenePath = $"{baseFolder}{sceneName}.unity";
 
             if (File.Exists(scenePath)) {
                 Debug.LogError(I18N.Get("Debug.HierarchyExtension.SceneAlreadyExists", scenePath));
