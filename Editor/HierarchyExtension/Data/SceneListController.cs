@@ -9,7 +9,11 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
         public static List<string> ScenePathList {
             get {
                 Initialize();
-                return _asset?.SceneList.Where(s => !s.isIgnored).Select(s => s.path).ToList() ?? new List<string>();
+                var scenes = _asset?.SceneList.Where(s => !s.isIgnored).ToList() ??
+                    new List<SceneListObject.SceneContent>();
+                var favorites = scenes.Where(s => s.isFavorite).OrderBy(s => scenes.IndexOf(s));
+                var others = scenes.Where(s => !s.isFavorite).OrderBy(s => scenes.IndexOf(s));
+                return favorites.Concat(others).Select(s => s.path).ToList();
             }
         }
 
@@ -36,7 +40,28 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             if (fromIndex == toIndex) return;
             var item = _asset.SceneList[fromIndex];
             _asset.Remove(fromIndex);
-            _asset.Insert(toIndex, item.path, item.isIgnored);
+            _asset.Insert(toIndex, item.path, item.isIgnored, item.isFavorite);
+            EditorUtility.SetDirty(_asset);
+        }
+
+        public static bool IsFavorite(string path) {
+            Initialize();
+            var scene = _asset?.SceneList.FirstOrDefault(s => s.path == path);
+            return scene?.isFavorite ?? false;
+        }
+
+        public static void ToggleFavorite(string path) {
+            Initialize();
+            var index = -1;
+            for (var i = 0; i < _asset.SceneList.Count; i++)
+                if (_asset.SceneList[i].path == path) {
+                    index = i;
+                    break;
+                }
+
+            if (index < 0) return;
+            var currentValue = _asset.SceneList[index].isFavorite;
+            _asset.UpdateScene(index, isFavorite: !currentValue);
             EditorUtility.SetDirty(_asset);
         }
 

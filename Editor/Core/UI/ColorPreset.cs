@@ -25,6 +25,8 @@ namespace _4OF.ee4v.Core.UI {
         public static Color ItemSelectedBorder = FromHex("#3f7fff");
         public static Color ItemSelectedBackGround = FromHex("#3f7fff", 0.3f);
 
+        public static Color FavoriteStar = FromHex("#ffc107");
+
         public static StyleColor TabBackground = new(DefaultBackground);
         public static StyleColor AddButtonHover = new(MouseOverBackground);
         public static StyleColor TabHoveredBackground = new(MouseOverBackground);

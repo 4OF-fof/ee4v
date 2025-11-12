@@ -58,9 +58,31 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                     var container = new VisualElement
                         { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center } };
                     var icon = new Image { style = { width = 16, height = 16, marginRight = 6, marginLeft = 6 } };
-                    var label = new Label();
+                    var label = new Label { style = { flexGrow = 1 } };
+                    var starButton = new Image {
+                        style = {
+                            width = 16,
+                            height = 16,
+                            marginRight = 4
+                        },
+                        name = "star-button"
+                    };
                     container.Add(icon);
                     container.Add(label);
+                    container.Add(starButton);
+
+                    starButton.RegisterCallback<PointerDownEvent>(evt => { evt.StopPropagation(); });
+                    starButton.RegisterCallback<PointerUpEvent>(evt =>
+                    {
+                        evt.StopPropagation();
+                        var path = container.userData as string;
+                        if (string.IsNullOrEmpty(path) || path.StartsWith("EE4V_CREATE_NEW:")) return;
+                        SceneListController.ToggleFavorite(path);
+                        var isFav = SceneListController.IsFavorite(path);
+                        starButton.tintColor = isFav ? ColorPreset.FavoriteStar : Color.gray;
+
+                        searchBar.value = searchBar.value;
+                    });
 
                     container.RegisterCallback<PointerDownEvent>(evt =>
                     {
@@ -112,8 +134,12 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                 }
                 else {
                     var lower = query.ToLowerInvariant();
-                    displayedPaths = allScenePaths
+                    var filtered = allScenePaths
                         .Where(p => Path.GetFileNameWithoutExtension(p).ToLowerInvariant().Contains(lower)).ToList();
+
+                    var favorites = filtered.Where(p => SceneListController.IsFavorite(p)).ToList();
+                    var others = filtered.Where(p => !SceneListController.IsFavorite(p)).ToList();
+                    displayedPaths = favorites.Concat(others).ToList();
 
                     var exactMatch = allScenePaths.Any(p =>
                         Path.GetFileNameWithoutExtension(p).Equals(query, StringComparison.OrdinalIgnoreCase));
@@ -128,12 +154,14 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
             {
                 var icon = element.Q<Image>();
                 var label = element.Q<Label>();
+                var starButton = element.Q<Image>("star-button");
                 var path = (string)sceneListView.itemsSource[i];
 
                 if (path.StartsWith("EE4V_CREATE_NEW:")) {
                     var sceneName = path["EE4V_CREATE_NEW:".Length..];
                     label.text = I18N.Get("UI.HierarchyScene.CreateSceneItem", sceneName);
                     icon.image = null;
+                    starButton.image = null;
                     element.SetEnabled(true);
                     element.userData = path;
                     return;
@@ -149,6 +177,10 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                 else {
                     icon.image = null;
                 }
+
+                var isFavorite = SceneListController.IsFavorite(path);
+                starButton.image = EditorGUIUtility.IconContent("d_Favorite Icon").image;
+                starButton.tintColor = isFavorite ? ColorPreset.FavoriteStar : Color.gray;
 
                 var openScenePathsNow = GetOpenScenePaths();
                 element.SetEnabled(!openScenePathsNow.Contains(path));

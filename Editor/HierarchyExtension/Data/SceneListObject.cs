@@ -13,13 +13,13 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
 
         public IReadOnlyList<SceneContent> SceneList => sceneList;
 
-        public void Add(string path, bool isIgnored = false) {
-            var entry = new SceneContent { path = path, isIgnored = isIgnored };
+        public void Add(string path, bool isIgnored = false, bool isFavorite = false) {
+            var entry = new SceneContent { path = path, isIgnored = isIgnored, isFavorite = isFavorite };
             sceneList.Add(entry);
         }
 
-        public void Insert(int index, string path, bool isIgnored = false) {
-            var entry = new SceneContent { path = path, isIgnored = isIgnored };
+        public void Insert(int index, string path, bool isIgnored = false, bool isFavorite = false) {
+            var entry = new SceneContent { path = path, isIgnored = isIgnored, isFavorite = isFavorite };
             index = Mathf.Clamp(index, 0, sceneList.Count);
             sceneList.Insert(index, entry);
         }
@@ -29,10 +29,11 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             sceneList.RemoveAt(index);
         }
 
-        public void UpdateScene(int index, string path, bool isIgnored) {
+        public void UpdateScene(int index, string path = null, bool? isIgnored = null, bool? isFavorite = null) {
             if (index < 0 || index >= sceneList.Count) return;
-            sceneList[index].path = path;
-            sceneList[index].isIgnored = isIgnored;
+            if (path != null) sceneList[index].path = path;
+            if (isIgnored.HasValue) sceneList[index].isIgnored = isIgnored.Value;
+            if (isFavorite.HasValue) sceneList[index].isFavorite = isFavorite.Value;
         }
 
         public static SceneListObject GetInstance() {
@@ -64,6 +65,7 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
         public class SceneContent {
             public string path;
             public bool isIgnored;
+            public bool isFavorite;
         }
     }
 }
