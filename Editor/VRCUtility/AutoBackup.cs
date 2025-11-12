@@ -1,4 +1,5 @@
-﻿using System;
+﻿/*
+using System;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Service;
 using UnityEditor;
@@ -54,3 +55,4 @@ namespace _4OF.ee4v.VRCUtility {
         }
     }
 }
+*/
