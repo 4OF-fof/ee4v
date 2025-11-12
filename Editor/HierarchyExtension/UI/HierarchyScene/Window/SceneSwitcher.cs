@@ -114,6 +114,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                                     if (!openScenePathsNow.Contains(path))
                                         if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) {
                                             EditorSceneManager.OpenScene(path);
+                                            SceneListController.MoveToTop(path);
                                             Close();
                                         }
                                 }
@@ -138,7 +139,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                     var filtered = allScenePaths
                         .Where(p => Path.GetFileNameWithoutExtension(p).ToLowerInvariant().Contains(lower)).ToList();
 
-                    var favorites = filtered.Where(p => SceneListController.IsFavorite(p)).ToList();
+                    var favorites = filtered.Where(SceneListController.IsFavorite).ToList();
                     var others = filtered.Where(p => !SceneListController.IsFavorite(p)).ToList();
                     displayedPaths = favorites.Concat(others).ToList();
 
@@ -253,6 +254,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
             }
 
             EditorSceneManager.SaveScene(newScene, scenePath);
+            SceneListController.MoveToTop(scenePath);
         }
 
         private class ItemState {

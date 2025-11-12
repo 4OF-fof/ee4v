@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEngine.SceneManagement;
 
 namespace _4OF.ee4v.HierarchyExtension.Data {
     public static class SceneListController {
@@ -11,9 +12,19 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
                 Initialize();
                 var scenes = _asset?.SceneList.Where(s => !s.isIgnored).ToList() ??
                     new List<SceneListObject.SceneContent>();
-                var favorites = scenes.Where(s => s.isFavorite).OrderBy(s => scenes.IndexOf(s));
-                var others = scenes.Where(s => !s.isFavorite).OrderBy(s => scenes.IndexOf(s));
-                return favorites.Concat(others).Select(s => s.path).ToList();
+
+                var openScenePaths = new HashSet<string>();
+                for (var i = 0; i < SceneManager.sceneCount; ++i) {
+                    var s = SceneManager.GetSceneAt(i);
+                    if (!string.IsNullOrEmpty(s.path)) openScenePaths.Add(s.path);
+                }
+
+                var openScenes = scenes.Where(s => openScenePaths.Contains(s.path)).OrderBy(s => scenes.IndexOf(s));
+                var favorites = scenes.Where(s => !openScenePaths.Contains(s.path) && s.isFavorite)
+                    .OrderBy(s => scenes.IndexOf(s));
+                var others = scenes.Where(s => !openScenePaths.Contains(s.path) && !s.isFavorite)
+                    .OrderBy(s => scenes.IndexOf(s));
+                return openScenes.Concat(favorites).Concat(others).Select(s => s.path).ToList();
             }
         }
 
@@ -62,6 +73,23 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             if (index < 0) return;
             var currentValue = _asset.SceneList[index].isFavorite;
             _asset.UpdateScene(index, isFavorite: !currentValue);
+            EditorUtility.SetDirty(_asset);
+        }
+
+        public static void MoveToTop(string path) {
+            Initialize();
+            var index = -1;
+            for (var i = 0; i < _asset.SceneList.Count; i++)
+                if (_asset.SceneList[i].path == path) {
+                    index = i;
+                    break;
+                }
+
+            if (index is < 0 or 0) return;
+
+            var item = _asset.SceneList[index];
+            _asset.Remove(index);
+            _asset.Insert(0, item.path, item.isIgnored, item.isFavorite);
             EditorUtility.SetDirty(_asset);
         }
 
