@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.HierarchyExtension.Data;
 using UnityEditor;
@@ -9,6 +11,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
     public class SceneSwitcher : EditorWindow {
@@ -35,6 +38,14 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
             var allScenePaths = scenePaths.ToList();
 
             var displayedPaths = allScenePaths;
+
+            EventCallback<GeometryChangedEvent> focusCallback = null;
+            focusCallback = _ =>
+            {
+                searchBar.Q<TextField>()?.Focus();
+                searchBar.UnregisterCallback(focusCallback);
+            };
+            searchBar.RegisterCallback(focusCallback);
 
             var sceneListView = new ListView {
                 style = { flexGrow = 1 },
@@ -67,12 +78,21 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                         if (!st.IsDragging) {
                             var path = container.userData as string;
                             if (!string.IsNullOrEmpty(path)) {
-                                var openScenePathsNow = GetOpenScenePaths();
-                                if (!openScenePathsNow.Contains(path))
+                                if (path.StartsWith("EE4V_CREATE_NEW:")) {
+                                    var sceneName = path["EE4V_CREATE_NEW:".Length..];
                                     if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) {
-                                        EditorSceneManager.OpenScene(path);
+                                        CreateAndOpenNewScene(sceneName);
                                         Close();
                                     }
+                                }
+                                else {
+                                    var openScenePathsNow = GetOpenScenePaths();
+                                    if (!openScenePathsNow.Contains(path))
+                                        if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) {
+                                            EditorSceneManager.OpenScene(path);
+                                            Close();
+                                        }
+                                }
                             }
                         }
 
@@ -93,6 +113,10 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                     var lower = query.ToLowerInvariant();
                     displayedPaths = allScenePaths
                         .Where(p => Path.GetFileNameWithoutExtension(p).ToLowerInvariant().Contains(lower)).ToList();
+
+                    var exactMatch = allScenePaths.Any(p =>
+                        Path.GetFileNameWithoutExtension(p).Equals(query, StringComparison.OrdinalIgnoreCase));
+                    if (!exactMatch) displayedPaths.Add($"EE4V_CREATE_NEW:{query}");
                 }
 
                 sceneListView.itemsSource = displayedPaths;
@@ -104,6 +128,16 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                 var icon = element.Q<Image>();
                 var label = element.Q<Label>();
                 var path = (string)sceneListView.itemsSource[i];
+
+                if (path.StartsWith("EE4V_CREATE_NEW:")) {
+                    var sceneName = path["EE4V_CREATE_NEW:".Length..];
+                    label.text = I18N.Get("UI.HierarchyScene.CreateSceneItem", sceneName);
+                    icon.image = null;
+                    element.SetEnabled(true);
+                    element.userData = path;
+                    return;
+                }
+
                 label.text = Path.GetFileNameWithoutExtension(path);
 
                 var asset = AssetDatabase.LoadAssetAtPath<Object>(path);
@@ -166,6 +200,19 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
             }
 
             return set;
+        }
+
+        private static void CreateAndOpenNewScene(string sceneName) {
+            var newScene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+
+            var scenePath = $"Assets/{sceneName}.unity";
+
+            if (File.Exists(scenePath)) {
+                Debug.LogError(I18N.Get("Debug.HierarchyExtension.SceneAlreadyExists", scenePath));
+                return;
+            }
+
+            EditorSceneManager.SaveScene(newScene, scenePath);
         }
 
         private class ItemState {
