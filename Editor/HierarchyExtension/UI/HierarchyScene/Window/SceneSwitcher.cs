@@ -183,7 +183,9 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                 starButton.tintColor = isFavorite ? ColorPreset.FavoriteStar : Color.gray;
 
                 var openScenePathsNow = GetOpenScenePaths();
-                element.SetEnabled(!openScenePathsNow.Contains(path));
+                var isOpen = openScenePathsNow.Contains(path);
+                element.style.opacity = isOpen ? 0.5f : 1f;
+                starButton.style.opacity = 1f;
                 element.userData = path;
             };
 
