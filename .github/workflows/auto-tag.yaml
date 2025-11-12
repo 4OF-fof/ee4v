@@ -18,53 +18,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2  # 前のコミットも取得
+          fetch-depth: 1
       
-      - name: Get current version
-        id: current_version
+      - name: Fetch all tags
+        run: git fetch --tags --force
+      
+      - name: Get version and check tag
+        id: version
         run: |
           VERSION=$(jq -r '.version' package.json)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Current version: $VERSION"
-      
-      - name: Get previous version
-        id: previous_version
-        run: |
-          PREV_VERSION=$(git show HEAD^:package.json 2>/dev/null | jq -r '.version' 2>/dev/null || echo "")
-          echo "prev_version=$PREV_VERSION" >> $GITHUB_OUTPUT
-          echo "Previous version: $PREV_VERSION"
-      
-      - name: Check if version changed
-        id: check_version
-        run: |
-          CURRENT="${{ steps.current_version.outputs.version }}"
-          PREVIOUS="${{ steps.previous_version.outputs.version }}"
           
-          if [ "$CURRENT" != "$PREVIOUS" ] && [ -n "$CURRENT" ]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "Version changed from $PREVIOUS to $CURRENT"
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "Version unchanged"
-          fi
-      
-      - name: Check if tag exists
-        if: steps.check_version.outputs.changed == 'true'
-        id: check_tag
-        run: |
-          VERSION="${{ steps.current_version.outputs.version }}"
           if git rev-parse "v$VERSION" >/dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag v$VERSION already exists"
+            echo "Tag v$VERSION already exists - skipping"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Tag v$VERSION does not exist"
+            echo "Tag v$VERSION does not exist - will create"
           fi
       
       - name: Create and push tag
-        if: steps.check_version.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
+        if: steps.version.outputs.exists == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          VERSION="${{ steps.current_version.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -a "v$VERSION" -m "Release version $VERSION"
