@@ -35,9 +35,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
             };
             rootVisualElement.Add(searchBar);
 
-            var scenePaths = SceneListController.ScenePathList;
-            var allScenePaths = scenePaths.ToList();
-
+            var allScenePaths = SceneListController.ScenePathList.ToList();
             var displayedPaths = allScenePaths;
 
             EventCallback<GeometryChangedEvent> focusCallback = null;
@@ -81,7 +79,10 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                         var isFav = SceneListController.IsFavorite(path);
                         starButton.tintColor = isFav ? ColorPreset.FavoriteStar : Color.gray;
 
-                        searchBar.value = searchBar.value;
+                        allScenePaths = SceneListController.ScenePathList.ToList();
+                        var current = searchBar.value;
+                        searchBar.value = null;
+                        searchBar.value = current;
                     });
 
                     container.RegisterCallback<PointerDownEvent>(evt =>
