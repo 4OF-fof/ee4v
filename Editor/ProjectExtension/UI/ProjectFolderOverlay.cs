@@ -2,6 +2,7 @@
 using System.Linq;
 using _4OF.ee4v.Core.Data;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.Core.Utility;
 using _4OF.ee4v.ProjectExtension.Data;
 using _4OF.ee4v.ProjectExtension.Service;
 using _4OF.ee4v.ProjectExtension.UI.Window;
@@ -48,7 +49,7 @@ namespace _4OF.ee4v.ProjectExtension.UI {
 
         private static bool DrawStyledFolder(string path, Rect imageRect, Color backgroundColor) {
             var style = FolderStyleList.instance.Contents.FirstOrDefault(s =>
-                s.path == FolderStyleService.NormalizePath(path));
+                s.path == FileUtility.NormalizePath(path));
             var color = style?.color ?? Color.clear;
             var icon = style?.icon;
             if (color == Color.clear && icon == null) return false;

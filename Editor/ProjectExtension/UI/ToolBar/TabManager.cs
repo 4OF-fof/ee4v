@@ -174,7 +174,12 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
             }
             else {
                 ReflectionWrapper.ClearSearchFilter();
-                ProjectWindowOpener.OpenFolderInProject(tabElement.tooltip);
+                var folderObject = AssetDatabase.LoadAssetAtPath<DefaultAsset>(tabElement.tooltip);
+                if (folderObject == null) return;
+
+                ReflectionWrapper.ShowFolderContents(folderObject.GetInstanceID());
+                Selection.activeObject = null;
+                GUI.FocusControl(null);
                 TabListService.SetCurrentWorkspace(null);
             }
 

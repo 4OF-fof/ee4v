@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using _4OF.ee4v.Core.Utility;
 using _4OF.ee4v.ProjectExtension.Data;
 using _4OF.ee4v.ProjectExtension.Service;
 using _4OF.ee4v.Runtime;
@@ -67,7 +68,7 @@ namespace _4OF.ee4v.Core.UI.Window._Component {
             ColorList.Insert(0, Color.clear);
             if (folderPaths is { Count: 1 }) {
                 var style = FolderStyleList.instance.Contents.FirstOrDefault(s =>
-                    s.path == FolderStyleService.NormalizePath(folderPaths[0]));
+                    s.path == FileUtility.NormalizePath(folderPaths[0]));
                 var existingColor = style?.color ?? Color.clear;
                 _selectedColor = existingColor != Color.clear ? existingColor : ColorList[0];
             }
@@ -79,7 +80,7 @@ namespace _4OF.ee4v.Core.UI.Window._Component {
                 {
                     if (folderPaths != null)
                         foreach (var folderPath in folderPaths) {
-                            var p = FolderStyleService.NormalizePath(folderPath);
+                            var p = FileUtility.NormalizePath(folderPath);
                             var idx = FolderStyleService.IndexOfPath(p);
                             if (color == Color.clear) {
                                 if (idx >= 0) FolderStyleList.instance.Remove(idx);

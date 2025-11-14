@@ -4,6 +4,7 @@ using System.Linq;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI.Window;
 using _4OF.ee4v.Core.UI.Window._Component;
+using _4OF.ee4v.Core.Utility;
 using _4OF.ee4v.ProjectExtension.Data;
 using _4OF.ee4v.ProjectExtension.Service;
 using UnityEditor;
@@ -83,7 +84,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.Window {
                 if (_pathList.Any(p =>
                     {
                         var s = FolderStyleList.instance.Contents.FirstOrDefault(x =>
-                            x.path == FolderStyleService.NormalizePath(p));
+                            x.path == FileUtility.NormalizePath(p));
                         return s?.icon != null;
                     }))
                     anyHasIcon = true;
@@ -97,7 +98,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.Window {
             };
             if (_pathList is { Count: 1 }) {
                 var existing = FolderStyleList.instance.Contents
-                    .FirstOrDefault(s => s.path == FolderStyleService.NormalizePath(_pathList[0]))?.icon;
+                    .FirstOrDefault(s => s.path == FileUtility.NormalizePath(_pathList[0]))?.icon;
                 if (existing != null) iconFiled.value = existing;
             }
 
@@ -105,7 +106,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.Window {
             {
                 var newIcon = evt.newValue as Texture;
                 foreach (var p in _pathList) {
-                    var np = FolderStyleService.NormalizePath(p);
+                    var np = FileUtility.NormalizePath(p);
                     var idx = FolderStyleService.IndexOfPath(np);
                     if (idx == -1)
                         FolderStyleList.instance.Add(np, Color.clear, newIcon);

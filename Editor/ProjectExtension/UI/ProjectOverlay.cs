@@ -1,9 +1,8 @@
 ﻿using _4OF.ee4v.Core.Data;
-using _4OF.ee4v.ProjectExtension.UI;
 using UnityEditor;
 using UnityEngine;
 
-namespace _4OF.ee4v.ProjectExtension {
+namespace _4OF.ee4v.ProjectExtension.UI {
     public static class ProjectOverlay {
         [InitializeOnLoadMethod]
         private static void Initialize() {

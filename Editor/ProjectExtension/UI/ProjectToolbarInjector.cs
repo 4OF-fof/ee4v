@@ -5,7 +5,7 @@ using _4OF.ee4v.ProjectExtension.UI.ToolBar;
 using UnityEditor;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.ProjectExtension {
+namespace _4OF.ee4v.ProjectExtension.UI {
     public static class ProjectToolbarInjector {
         private static bool _isInitialized;
         private static EditorWindow _projectWindow;

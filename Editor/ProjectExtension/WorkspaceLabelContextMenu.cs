@@ -1,9 +1,10 @@
 using System.Linq;
 using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.ProjectExtension.Service;
 using UnityEditor;
 using UnityEngine;
 
-namespace _4OF.ee4v.ProjectExtension.Service {
+namespace _4OF.ee4v.ProjectExtension {
     public static class WorkspaceLabelContextMenu {
         private const int MenuPriority = 2000;
 
