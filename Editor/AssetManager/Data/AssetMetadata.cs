@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using _4OF.ee4v.Core.Utility;
-using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Data {
     public class AssetMetadata {
