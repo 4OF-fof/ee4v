@@ -4,11 +4,10 @@ using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Data {
-    [Serializable]
     public class LibraryMetadata {
-        [SerializeField] private List<FolderInfo> folderInfo = new();
-        [SerializeField] private long modificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        [SerializeField] private string libraryVersion = "1";
+        private List<FolderInfo> folderInfo = new();
+        private long modificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        private string libraryVersion = "1";
 
         public IReadOnlyList<FolderInfo> FolderInfo => folderInfo;
         public long ModificationTime => modificationTime;
@@ -37,14 +36,13 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
     }
 
-    [Serializable]
     public class FolderInfo {
-        [SerializeField] private string id = Ulid.Generate().ToString();
-        [SerializeField] private string name = "";
-        [SerializeField] private string description = "";
-        [SerializeField] private List<string> children = new();
-        [SerializeField] private long modificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        [SerializeField] private List<string> tags = new();
+        private string id = Ulid.Generate().ToString();
+        private string name = "";
+        private string description = "";
+        private List<string> children = new();
+        private long modificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        private List<string> tags = new();
 
         public Ulid ID => Ulid.Parse(id);
         public string Name => name;

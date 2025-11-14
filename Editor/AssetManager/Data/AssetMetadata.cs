@@ -2,20 +2,18 @@
 using System.Collections.Generic;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace _4OF.ee4v.AssetManager.Data {
-    [Serializable]
     public class AssetMetadata {
-        [SerializeField] private string id = Ulid.Generate().ToString();
-        [SerializeField] private string name = "";
-        [SerializeField] private string description = "";
-        [SerializeField] private long size;
-        [SerializeField] private string ext = "";
-        [SerializeField] private string folder = "";
-        [SerializeField] private List<string> tags = new();
-        [SerializeField] private bool isDeleted;
-        [SerializeField] private long modificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        private string name = "";
+        private string id = Ulid.Generate().ToString();
+        private string description = "";
+        private long size;
+        private string ext = "";
+        private string folder = "";
+        private List<string> tags = new();
+        private bool isDeleted;
+        private long modificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         public Ulid ID => Ulid.Parse(id);
         public string Name => name;
