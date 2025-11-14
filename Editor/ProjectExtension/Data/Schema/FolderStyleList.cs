@@ -4,10 +4,10 @@ using UnityEngine;
 
 namespace _4OF.ee4v.ProjectExtension.Data.Schema {
     [CreateAssetMenu(fileName = "FolderStyle")]
-    public class FolderStyleObject : ScriptableObject {
-        [SerializeField] internal List<FolderStyle> styledFolderList = new();
+    public class FolderStyleList : ScriptableObject {
+        [SerializeField] internal List<FolderStyle> contents = new();
 
-        public IReadOnlyList<FolderStyle> StyledFolderList => styledFolderList;
+        public IReadOnlyList<FolderStyle> Contents => contents;
 
         [Serializable]
         public class FolderStyle {

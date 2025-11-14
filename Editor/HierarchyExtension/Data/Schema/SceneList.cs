@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace _4OF.ee4v.HierarchyExtension.Data.Schema {
-    public class SceneListObject : ScriptableObject {
-        [SerializeField] internal List<SceneContent> sceneList = new();
+    public class SceneList : ScriptableObject {
+        [SerializeField] internal List<SceneContent> contents = new();
 
-        public IReadOnlyList<SceneContent> SceneList => sceneList;
+        public IReadOnlyList<SceneContent> Contents => contents;
 
         [Serializable]
         public class SceneContent {

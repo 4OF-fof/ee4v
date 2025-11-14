@@ -8,10 +8,10 @@ using UnityEngine;
 
 namespace _4OF.ee4v.ProjectExtension.Data {
     public static class FolderStyleController {
-        private static FolderStyleObject _asset;
+        private static FolderStyleList _asset;
         private const string AssetPath = "Assets/4OF/ee4v/UserData/FolderStyleObject.asset";
 
-        public static FolderStyleObject GetInstance() {
+        public static FolderStyleList GetInstance() {
             if (_asset == null) _asset = LoadOrCreate();
             return _asset;
         }
@@ -20,8 +20,8 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             if (_asset == null) _asset = LoadOrCreate();
         }
 
-        private static FolderStyleObject LoadOrCreate() {
-            var folderStyleObject = AssetDatabase.LoadAssetAtPath<FolderStyleObject>(AssetPath);
+        private static FolderStyleList LoadOrCreate() {
+            var folderStyleObject = AssetDatabase.LoadAssetAtPath<FolderStyleList>(AssetPath);
             if (folderStyleObject != null) {
                 _asset = folderStyleObject;
                 return folderStyleObject;
@@ -29,8 +29,8 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
             var dir = Path.GetDirectoryName(AssetPath);
             if (!Directory.Exists(dir) && !string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-            folderStyleObject = ScriptableObject.CreateInstance<FolderStyleObject>();
-            folderStyleObject.styledFolderList = new List<FolderStyleObject.FolderStyle>();
+            folderStyleObject = ScriptableObject.CreateInstance<FolderStyleList>();
+            folderStyleObject.contents = new List<FolderStyleList.FolderStyle>();
             AssetDatabase.CreateAsset(folderStyleObject, AssetPath);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -41,19 +41,19 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
         private static void Add(string path, Color? color = null, Texture icon = null) {
             Initialize();
-            if (_asset.styledFolderList.Any(style => style.path == path)) return;
+            if (_asset.contents.Any(style => style.path == path)) return;
             color ??= Color.clear;
-            var entry = new FolderStyleObject.FolderStyle { path = path, color = color.Value, icon = icon };
-            _asset.styledFolderList.Add(entry);
+            var entry = new FolderStyleList.FolderStyle { path = path, color = color.Value, icon = icon };
+            _asset.contents.Add(entry);
             EditorUtility.SetDirty(_asset);
         }
 
         public static void Remove(string path) {
             Initialize();
             path = NormalizePath(path);
-            var index = _asset.styledFolderList.FindIndex(style => style.path == path);
-            if (index < 0 || index >= _asset.styledFolderList.Count) return;
-            _asset.styledFolderList.RemoveAt(index);
+            var index = _asset.contents.FindIndex(style => style.path == path);
+            if (index < 0 || index >= _asset.contents.Count) return;
+            _asset.contents.RemoveAt(index);
             EditorUtility.SetDirty(_asset);
         }
 
@@ -61,31 +61,31 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             Initialize();
             oldPath = NormalizePath(oldPath);
             newPath = NormalizePath(newPath);
-            var index = _asset.styledFolderList.FindIndex(style => style.path == oldPath);
-            if (index < 0 || index >= _asset.styledFolderList.Count) return;
-            _asset.styledFolderList[index].path = newPath;
+            var index = _asset.contents.FindIndex(style => style.path == oldPath);
+            if (index < 0 || index >= _asset.contents.Count) return;
+            _asset.contents[index].path = newPath;
             EditorUtility.SetDirty(_asset);
         }
 
         private static void UpdateColor(string path, Color color) {
             Initialize();
-            var index = _asset.styledFolderList.FindIndex(style => style.path == path);
-            if (index < 0 || index >= _asset.styledFolderList.Count) return;
-            _asset.styledFolderList[index].color = color;
+            var index = _asset.contents.FindIndex(style => style.path == path);
+            if (index < 0 || index >= _asset.contents.Count) return;
+            _asset.contents[index].color = color;
             EditorUtility.SetDirty(_asset);
         }
 
         private static void UpdateIcon(string path, Texture icon) {
             Initialize();
-            var index = _asset.styledFolderList.FindIndex(style => style.path == path);
-            if (index < 0 || index >= _asset.styledFolderList.Count) return;
-            _asset.styledFolderList[index].icon = icon;
+            var index = _asset.contents.FindIndex(style => style.path == path);
+            if (index < 0 || index >= _asset.contents.Count) return;
+            _asset.contents[index].icon = icon;
             EditorUtility.SetDirty(_asset);
         }
 
-        private static FolderStyleObject.FolderStyle GetStyle(string path) {
+        private static FolderStyleList.FolderStyle GetStyle(string path) {
             Initialize();
-            return _asset.styledFolderList.FirstOrDefault(style => style.path == path);
+            return _asset.contents.FirstOrDefault(style => style.path == path);
         }
 
         public static void UpdateOrAddColor(string path, Color color) {

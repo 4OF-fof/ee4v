@@ -12,7 +12,7 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.ProjectExtension.Data {
     public static class TabListController {
-        private static TabListObject _asset;
+        private static TabList _asset;
         private static VisualElement _tabContainer;
         private static VisualElement _workspaceContainer;
         private static VisualElement _currentTab;
@@ -22,13 +22,13 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             return _currentTab;
         }
 
-        public static TabListObject GetInstance() {
+        public static TabList GetInstance() {
             if (_asset == null) _asset = LoadOrCreate();
             return _asset;
         }
 
-        private static TabListObject LoadOrCreate() {
-            var tabListObject = AssetDatabase.LoadAssetAtPath<TabListObject>(AssetPath);
+        private static TabList LoadOrCreate() {
+            var tabListObject = AssetDatabase.LoadAssetAtPath<TabList>(AssetPath);
             if (tabListObject != null) {
                 _asset = tabListObject;
                 return tabListObject;
@@ -36,8 +36,8 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
             var dir = Path.GetDirectoryName(AssetPath);
             if (!Directory.Exists(dir) && !string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-            tabListObject = ScriptableObject.CreateInstance<TabListObject>();
-            tabListObject.tabList = new List<TabListObject.Tab>();
+            tabListObject = ScriptableObject.CreateInstance<TabList>();
+            tabListObject.contents = new List<TabList.Tab>();
             AssetDatabase.CreateAsset(tabListObject, AssetPath);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -62,25 +62,25 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         }
 
         private static void AddToAsset(string path, string tabName, bool isWorkspace = false) {
-            var entry = new TabListObject.Tab { path = path, tabName = tabName, isWorkspace = isWorkspace };
-            _asset.tabList.Add(entry);
+            var entry = new TabList.Tab { path = path, tabName = tabName, isWorkspace = isWorkspace };
+            _asset.contents.Add(entry);
         }
 
         private static void InsertToAsset(int index, string path, string tabName, bool isWorkspace = false) {
-            var entry = new TabListObject.Tab { path = path, tabName = tabName, isWorkspace = isWorkspace };
-            index = Mathf.Clamp(index, 0, _asset.tabList.Count);
-            _asset.tabList.Insert(index, entry);
+            var entry = new TabList.Tab { path = path, tabName = tabName, isWorkspace = isWorkspace };
+            index = Mathf.Clamp(index, 0, _asset.contents.Count);
+            _asset.contents.Insert(index, entry);
         }
 
         private static void RemoveFromAsset(int index) {
-            if (index < 0 || index >= _asset.tabList.Count) return;
-            _asset.tabList.RemoveAt(index);
+            if (index < 0 || index >= _asset.contents.Count) return;
+            _asset.contents.RemoveAt(index);
         }
 
         private static void UpdateTabInAsset(int index, string path, string tabName) {
-            if (index < 0 || index >= _asset.tabList.Count) return;
-            _asset.tabList[index].path = path;
-            _asset.tabList[index].tabName = tabName;
+            if (index < 0 || index >= _asset.contents.Count) return;
+            _asset.contents[index].path = path;
+            _asset.contents[index].tabName = tabName;
         }
 
         private static void Add(VisualElement tab) {
@@ -123,7 +123,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
                 var path = tab.tooltip;
                 var name = tab.Q<Label>()?.text;
-                var assetIndex = _asset.TabList.ToList()
+                var assetIndex = _asset.Contents.ToList()
                     .FindIndex(t => t.isWorkspace && t.path == path && t.tabName == name);
 
                 if (assetIndex >= 0) RemoveFromAsset(assetIndex);
@@ -264,7 +264,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
                 foreach (var t in existingWorkspaceTabs) _workspaceContainer.Remove(t);
             }
 
-            var objectTabList = _asset.TabList;
+            var objectTabList = _asset.Contents;
             var tabInsertIndex = 0;
             VisualElement firstRegularTab = null;
 

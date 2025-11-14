@@ -4,10 +4,10 @@ using UnityEngine;
 
 namespace _4OF.ee4v.ProjectExtension.Data.Schema {
     [CreateAssetMenu(fileName = "TabList")]
-    public class TabListObject : ScriptableObject {
-        [SerializeField] internal List<Tab> tabList = new();
+    public class TabList : ScriptableObject {
+        [SerializeField] internal List<Tab> contents = new();
 
-        public IReadOnlyList<Tab> TabList => tabList;
+        public IReadOnlyList<Tab> Contents => contents;
 
         [Serializable]
         public class Tab {
