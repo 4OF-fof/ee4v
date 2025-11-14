@@ -39,39 +39,4 @@ namespace _4OF.ee4v.ProjectExtension.Service {
             return iconCounts.Count == 0 ? null : iconCounts.OrderByDescending(kv => kv.Value).FirstOrDefault().Key;
         }
     }
-
-    internal class FolderIconCacheUpdater : AssetPostprocessor {
-        private static void OnPostprocessAllAssets(
-            string[] importedAssets,
-            string[] deletedAssets,
-            string[] movedAssets,
-            string[] movedFromAssetPaths) {
-            var foldersToInvalidate = new HashSet<string>();
-
-            CollectFoldersToInvalidate(importedAssets, foldersToInvalidate);
-            CollectFoldersToInvalidate(deletedAssets, foldersToInvalidate);
-            CollectFoldersToInvalidate(movedFromAssetPaths, foldersToInvalidate);
-            CollectFoldersToInvalidate(movedAssets, foldersToInvalidate);
-
-            foreach (var folderPath in foldersToInvalidate) GetFolderContent.InvalidateCache(folderPath);
-        }
-
-        private static void CollectFoldersToInvalidate(string[] assetPaths, HashSet<string> foldersToInvalidate) {
-            if (assetPaths == null || assetPaths.Length == 0) return;
-
-            foreach (var assetPath in assetPaths) {
-                if (string.IsNullOrEmpty(assetPath)) continue;
-
-                if (assetPath.EndsWith(".meta")) continue;
-
-                if (AssetDatabase.IsValidFolder(assetPath)) {
-                    foldersToInvalidate.Add(assetPath);
-                    continue;
-                }
-
-                var parentFolder = Path.GetDirectoryName(assetPath)?.Replace('\\', '/');
-                if (!string.IsNullOrEmpty(parentFolder)) foldersToInvalidate.Add(parentFolder);
-            }
-        }
-    }
 }
