@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 
 namespace _4OF.ee4v.ProjectExtension.Data {
     [FilePath("ee4v/UserData/TabList.asset", FilePathAttribute.Location.ProjectFolder)]
@@ -9,13 +9,6 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         [SerializeField] private List<Tab> contents = new();
         public IReadOnlyList<Tab> Contents => contents;
 
-        [Serializable]
-        public class Tab {
-            public string path;
-            public string tabName;
-            public bool isWorkspace;
-        }
-        
         public void Add(string path, string tabName, bool isWorkspace) {
             contents.Add(new Tab {
                 path = path,
@@ -34,7 +27,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             });
             Save(true);
         }
-        
+
         public void Move(int fromIndex, int toIndex) {
             if (fromIndex < 0 || fromIndex >= contents.Count) return;
             if (toIndex < 0 || toIndex >= contents.Count) return;
@@ -45,13 +38,13 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             contents.Insert(toIndex, item);
             Save(true);
         }
-        
+
         public void Remove(int index) {
             if (index < 0 || index >= contents.Count) return;
             contents.RemoveAt(index);
             Save(true);
         }
-        
+
         public void Update(int index, string path = null, string tabName = null, bool? isWorkspace = null) {
             if (index < 0 || index >= contents.Count) return;
             if (path != null) contents[index].path = path;
@@ -59,7 +52,12 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             if (isWorkspace.HasValue) contents[index].isWorkspace = isWorkspace.Value;
             Save(true);
         }
-        
-        
+
+        [Serializable]
+        public class Tab {
+            public string path;
+            public string tabName;
+            public bool isWorkspace;
+        }
     }
 }

@@ -82,7 +82,8 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                         var isFavorite = SceneList.instance.Contents[idx].isFavorite;
                         SceneList.instance.Update(idx, isFavorite: !isFavorite);
 
-                        var isFav = SceneList.instance.Contents.FirstOrDefault(s => s.path == path)?.isFavorite ?? false;
+                        var isFav = SceneList.instance.Contents.FirstOrDefault(s => s.path == path)?.isFavorite ??
+                            false;
                         starButton.tintColor = isFav ? ColorPreset.FavoriteStar : Color.gray;
 
                         allScenePaths = SceneListService.SortedSceneList.ToList();
@@ -145,8 +146,10 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                     var filtered = allScenePaths
                         .Where(p => Path.GetFileNameWithoutExtension(p).ToLowerInvariant().Contains(lower)).ToList();
 
-                    var favorites = filtered.Where(p => SceneList.instance.Contents.Any(s => s.path == p && s.isFavorite)).ToList();
-                    var others = filtered.Where(p => !SceneList.instance.Contents.Any(s => s.path == p && s.isFavorite)).ToList();
+                    var favorites = filtered
+                        .Where(p => SceneList.instance.Contents.Any(s => s.path == p && s.isFavorite)).ToList();
+                    var others = filtered.Where(p => !SceneList.instance.Contents.Any(s => s.path == p && s.isFavorite))
+                        .ToList();
                     displayedPaths = favorites.Concat(others).ToList();
 
                     var exactMatch = allScenePaths.Any(p =>

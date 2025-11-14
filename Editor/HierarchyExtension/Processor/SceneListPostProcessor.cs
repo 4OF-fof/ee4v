@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Linq;
+using _4OF.ee4v.HierarchyExtension.Service;
 using UnityEditor;
 
-namespace _4OF.ee4v.HierarchyExtension.Service {
+namespace _4OF.ee4v.HierarchyExtension.Processor {
     public class SceneListPostProcessor : AssetPostprocessor {
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
             string[] movedAssets, string[] movedFromAssetPaths) {

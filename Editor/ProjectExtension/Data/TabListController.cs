@@ -10,7 +10,6 @@ using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.ProjectExtension.Data {
     public static class TabListController {
-        
         private static VisualElement _tabContainer;
         private static VisualElement _workspaceContainer;
         private static VisualElement _currentTab;
@@ -19,8 +18,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             return _currentTab;
         }
 
-        public static TabList GetInstance()
-        {
+        public static TabList GetInstance() {
             return TabList.instance;
         }
 
@@ -50,7 +48,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         }
 
         private static void UpdateTabInAsset(int index, string path, string tabName) {
-            TabList.instance.Update(index, path: path, tabName: tabName);
+            TabList.instance.Update(index, path, tabName);
         }
 
         private static void Add(VisualElement tab) {

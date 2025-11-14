@@ -5,7 +5,7 @@ using _4OF.ee4v.Core.i18n;
 using UnityEditor;
 using UnityEngine;
 
-namespace _4OF.ee4v.Core.Service {
+namespace _4OF.ee4v.Core.Utility {
     public static class FileIO {
         public static void ExportUnityPackage(GameObject prefabAsset, string avatarId) {
             var prefabPath = AssetDatabase.GetAssetPath(prefabAsset);

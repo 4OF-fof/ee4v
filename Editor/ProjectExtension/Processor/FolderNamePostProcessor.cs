@@ -1,7 +1,7 @@
 ﻿using _4OF.ee4v.ProjectExtension.Data;
 using UnityEditor;
 
-namespace _4OF.ee4v.ProjectExtension.Service {
+namespace _4OF.ee4v.ProjectExtension.Processor {
     public class FolderNamePostProcessor : AssetPostprocessor {
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
             string[] movedAssets, string[] movedFromAssetPaths) {

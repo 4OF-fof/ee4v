@@ -1,21 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 
 namespace _4OF.ee4v.HierarchyExtension.Data {
     [FilePath("ee4v/UserData/SceneList.asset", FilePathAttribute.Location.ProjectFolder)]
     public class SceneList : ScriptableSingleton<SceneList> {
         [SerializeField] private List<SceneContent> contents = new();
         public IReadOnlyList<SceneContent> Contents => contents;
-        
-        [Serializable]
-        public class SceneContent {
-            public string path;
-            public bool isIgnored;
-            public bool isFavorite;
-        }
-        
+
         public void Add(string scenePath, bool isIgnored, bool isFavorite) {
             contents.Add(new SceneContent {
                 path = scenePath,
@@ -24,7 +17,7 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             });
             Save(true);
         }
-        
+
         public void Insert(int index, string scenePath, bool isIgnored, bool isFavorite) {
             contents.Insert(index, new SceneContent {
                 path = scenePath,
@@ -44,7 +37,7 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             contents.Insert(toIndex, item);
             Save(true);
         }
-        
+
         public void Remove(int index) {
             if (index < 0 || index >= contents.Count) return;
             contents.RemoveAt(index);
@@ -57,6 +50,13 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             if (isIgnored.HasValue) contents[index].isIgnored = isIgnored.Value;
             if (isFavorite.HasValue) contents[index].isFavorite = isFavorite.Value;
             Save(true);
+        }
+
+        [Serializable]
+        public class SceneContent {
+            public string path;
+            public bool isIgnored;
+            public bool isFavorite;
         }
     }
 }

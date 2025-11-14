@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
+using _4OF.ee4v.HierarchyExtension.Data;
 using UnityEditor;
 using UnityEngine.SceneManagement;
-using _4OF.ee4v.HierarchyExtension.Data;
 
 namespace _4OF.ee4v.HierarchyExtension.Service {
     public static class SceneListService {
@@ -28,7 +28,8 @@ namespace _4OF.ee4v.HierarchyExtension.Service {
         public static int IndexOfPath(string path) {
             if (string.IsNullOrEmpty(path)) return -1;
             for (var i = 0; i < SceneList.instance.Contents.Count; i++)
-                if (SceneList.instance.Contents[i].path == path) return i;
+                if (SceneList.instance.Contents[i].path == path)
+                    return i;
             return -1;
         }
 
