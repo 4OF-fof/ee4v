@@ -65,7 +65,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                     evt.StopPropagation();
                     var menu = new GenericMenu();
                     menu.AddItem(new GUIContent(I18N.Get("UI.ProjectExtension.CloseTab")), false,
-                        () => { TabUIManager.Remove(tab); });
+                        () => { TabManager.Remove(tab); });
                     menu.ShowAsContext();
                 }
             });
@@ -109,7 +109,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
 
                 DragAndDrop.AcceptDrag();
                 AssetDatabase.SaveAssets();
-                TabUIManager.SelectTab(tab);
+                TabManager.SelectTab(tab);
                 evt.StopPropagation();
             });
 

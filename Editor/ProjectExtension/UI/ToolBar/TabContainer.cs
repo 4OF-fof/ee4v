@@ -31,8 +31,8 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
             addButton.clicked += () =>
             {
                 var tab = Tab.Element("Assets");
-                TabUIManager.Insert(tabContainer.childCount - 1, tab);
-                TabUIManager.SelectTab(tab);
+                TabManager.Insert(tabContainer.childCount - 1, tab);
+                TabManager.SelectTab(tab);
             };
 
             TabControl(tabContainer);
@@ -183,7 +183,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
 
                 switch (dragging) {
                     case null when potentialDrag != null:
-                        TabUIManager.SelectTab(potentialDrag);
+                        TabManager.SelectTab(potentialDrag);
                         potentialDrag = null;
                         return;
                     case null:
@@ -206,7 +206,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                         .FirstOrDefault(c => c.name == "ee4v-project-toolbar-tabContainer-addButton");
                     var addIndex = addButton != null ? tabContainer.IndexOf(addButton) : tabContainer.childCount - 1;
                     var finalTarget = Mathf.Clamp(placeholderIndex, 0, addIndex);
-                    TabUIManager.Move(originalIndex, finalTarget);
+                    TabManager.Move(originalIndex, finalTarget);
                 }
 
                 potentialDrag = null;
@@ -247,7 +247,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                     folderPathList.Select(path => new { path, name = Path.GetFileName(path) }).ToList();
                 foreach (var newTab in createdEntries.Select(entry => Tab.Element(entry.path, entry.name))
                              .Where(newTab => newTab != null)) {
-                    TabUIManager.Insert(insertIndex, newTab);
+                    TabManager.Insert(insertIndex, newTab);
                     insertIndex++;
                 }
 

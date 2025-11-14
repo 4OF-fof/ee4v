@@ -58,7 +58,7 @@ namespace _4OF.ee4v.ProjectExtension {
             if (!EditorPrefsManager.EnableProjectTab) return;
             var projectToolBar = ProjectToolBar.Element();
             _projectWindow.rootVisualElement.Add(projectToolBar);
-            TabUIManager.Initialize();
+            TabManager.Initialize();
         }
 
         private static void ProjectToolbarWatcher() {
@@ -97,19 +97,19 @@ namespace _4OF.ee4v.ProjectExtension {
 
             var target = _projectWindow.rootVisualElement[_projectWindow.rootVisualElement.childCount - 1];
             target.Insert(target.childCount, containerWrapper);
-            TabUIManager.Initialize();
+            TabManager.Initialize();
         }
 
         private static void UpdateCurrentPath(string path) {
             var tabContainer = _projectWindow.rootVisualElement?.Q<VisualElement>("ee4v-project-toolbar-tabContainer");
             if (tabContainer == null) return;
 
-            var currentTab = TabUIManager.CurrentTab();
+            var currentTab = TabManager.CurrentTab;
             if (currentTab == null || currentTab.parent != tabContainer) return;
 
             if (currentTab.name == "ee4v-project-toolbar-workspaceContainer-tab") return;
 
-            TabUIManager.UpdateTab(currentTab, path, Path.GetFileName(path));
+            TabManager.UpdateTab(currentTab, path, Path.GetFileName(path));
         }
     }
 }

@@ -8,14 +8,11 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
-    public static class TabUIManager {
+    public static class TabManager {
         private static VisualElement _tabContainer;
         private static VisualElement _workspaceContainer;
-        private static VisualElement _currentTab;
 
-        public static VisualElement CurrentTab() {
-            return _currentTab;
-        }
+        public static VisualElement CurrentTab { get; private set; }
 
         public static void Initialize() {
             if (_tabContainer != null) return;
@@ -63,7 +60,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
             Initialize();
 
             var isWorkspaceTab = tab.name == "ee4v-project-toolbar-workspaceContainer-tab";
-            var isCurrentTab = tab == _currentTab;
+            var isCurrentTab = tab == CurrentTab;
 
             if (isWorkspaceTab) {
                 if (_workspaceContainer == null) return;
@@ -80,7 +77,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                 TabListService.SetCurrentWorkspace(null);
 
                 if (isCurrentTab) {
-                    _currentTab = null;
+                    CurrentTab = null;
                     var lastTab = _tabContainer?.Children()
                         .LastOrDefault(e => e.name == "ee4v-project-toolbar-tabContainer-tab");
                     if (lastTab != null)
@@ -95,7 +92,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                 _tabContainer.Remove(tab);
 
                 if (isCurrentTab) {
-                    _currentTab = null;
+                    CurrentTab = null;
 
                     var regularTabs = _tabContainer.Children()
                         .Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab").ToList();
@@ -133,7 +130,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
             _tabContainer.Remove(tab);
             _tabContainer.Insert(Mathf.Clamp(toIndex, 0, _tabContainer.childCount - 1), tab);
 
-            if (_currentTab == tab) Tab.SetState(tab, Tab.State.Selected);
+            if (CurrentTab == tab) Tab.SetState(tab, Tab.State.Selected);
             EditorUtility.SetDirty(TabList.instance);
         }
 
@@ -150,15 +147,15 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
             if (tabElement == null) return;
 
             var isWorkspaceTab = tabElement.name == "ee4v-project-toolbar-workspaceContainer-tab";
-            if (tabElement == _currentTab && !isWorkspaceTab) return;
+            if (tabElement == CurrentTab && !isWorkspaceTab) return;
 
-            var currentIsWorkspaceTab = _currentTab is { name: "ee4v-project-toolbar-workspaceContainer-tab" };
+            var currentIsWorkspaceTab = CurrentTab is { name: "ee4v-project-toolbar-workspaceContainer-tab" };
 
-            if (_currentTab != null) {
+            if (CurrentTab != null) {
                 if (currentIsWorkspaceTab)
-                    WorkspaceTab.SetState(_currentTab, WorkspaceTab.State.Default);
+                    WorkspaceTab.SetState(CurrentTab, WorkspaceTab.State.Default);
                 else
-                    Tab.SetState(_currentTab, Tab.State.Default);
+                    Tab.SetState(CurrentTab, Tab.State.Default);
             }
 
             if (isWorkspaceTab)
@@ -166,7 +163,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
             else
                 Tab.SetState(tabElement, Tab.State.Selected);
 
-            _currentTab = tabElement;
+            CurrentTab = tabElement;
 
             if (isWorkspaceTab) {
                 var labelName = tabElement.Q<Label>()?.text;

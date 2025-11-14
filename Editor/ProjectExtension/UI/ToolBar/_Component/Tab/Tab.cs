@@ -50,7 +50,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
             tab.Add(tabLabel);
             tab.Add(closeButton);
 
-            closeButton.clicked += () => { TabUIManager.Remove(tab); };
+            closeButton.clicked += () => { TabManager.Remove(tab); };
 
             return tab;
         }

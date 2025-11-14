@@ -148,8 +148,8 @@ namespace _4OF.ee4v.ProjectExtension.UI.Window {
 
         private static void CreateWorkspace(string workspaceName) {
             var workspaceTab = WorkspaceTab.Element(workspaceName, workspaceName);
-            TabUIManager.AddWorkspaceTab(workspaceTab);
-            TabUIManager.SelectTab(workspaceTab);
+            TabManager.AddWorkspaceTab(workspaceTab);
+            TabManager.SelectTab(workspaceTab);
         }
     }
 }
