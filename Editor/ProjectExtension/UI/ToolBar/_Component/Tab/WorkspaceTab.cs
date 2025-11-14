@@ -2,7 +2,6 @@ using System.IO;
 using System.Linq;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
-using _4OF.ee4v.ProjectExtension.Data;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -66,7 +65,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                     evt.StopPropagation();
                     var menu = new GenericMenu();
                     menu.AddItem(new GUIContent(I18N.Get("UI.ProjectExtension.CloseTab")), false,
-                        () => { TabListController.Remove(tab); });
+                        () => { TabManager.Remove(tab); });
                     menu.ShowAsContext();
                 }
             });
@@ -93,34 +92,32 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
 
                 // 先頭大文字じゃないと壊れるので注意
                 var labelName = $"Ee4v.ws.{name}";
-                
+
                 foreach (var obj in DragAndDrop.objectReferences) {
                     if (obj == null) continue;
-                    
+
                     var assetPath = AssetDatabase.GetAssetPath(obj);
                     if (string.IsNullOrEmpty(assetPath)) continue;
 
                     var labels = AssetDatabase.GetLabels(obj).ToList();
 
                     if (labels.Contains(labelName)) continue;
-                    
+
                     labels.Add(labelName);
                     AssetDatabase.SetLabels(obj, labels.ToArray());
                 }
 
                 DragAndDrop.AcceptDrag();
                 AssetDatabase.SaveAssets();
-                TabListController.SelectTab(tab);
+                TabManager.SelectTab(tab);
                 evt.StopPropagation();
             });
 
-            tab.RegisterCallback<DragLeaveEvent>(evt =>
-            {
-                evt.StopPropagation();
-            });
+            tab.RegisterCallback<DragLeaveEvent>(evt => { evt.StopPropagation(); });
 
             return tab;
         }
+
         private static State GetState(VisualElement tab) {
             return tab.userData is State s ? s : State.Default;
         }

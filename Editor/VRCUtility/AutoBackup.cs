@@ -1,7 +1,7 @@
 ﻿/*
 using System;
 using _4OF.ee4v.Core.i18n;
-using _4OF.ee4v.Core.Service;
+using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
 using VRC.SDK3A.Editor;
@@ -40,7 +40,7 @@ namespace _4OF.ee4v.VRCUtility {
 
                 if (prefabAsset != null) {
                     Debug.Log(I18N.Get("Debug.VRCUtility.TargetPrefab", prefabAsset.name));
-                    FileIO.ExportUnityPackage(prefabAsset, avatarId);
+                    FileUtility.ExportUnityPackage(prefabAsset, avatarId);
                 }
 
                 _currentlyBuildingAvatar = null;

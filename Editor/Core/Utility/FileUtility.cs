@@ -6,8 +6,15 @@ using _4OF.ee4v.Core.i18n;
 using UnityEditor;
 using UnityEngine;
 
-namespace _4OF.ee4v.Core.Service {
-    public static class FileIO {
+namespace _4OF.ee4v.Core.Utility {
+    public static class FileUtility {
+        public static string NormalizePath(string path) {
+            if (string.IsNullOrEmpty(path)) return path;
+            var p = path.Trim().Replace('\\', '/');
+            while (p.Length > 1 && p.EndsWith("/")) p = p[..^1];
+            return p.ToLowerInvariant();
+        }
+
         public static void ExportUnityPackage(GameObject prefabAsset, string avatarId) {
             var prefabPath = AssetDatabase.GetAssetPath(prefabAsset);
 

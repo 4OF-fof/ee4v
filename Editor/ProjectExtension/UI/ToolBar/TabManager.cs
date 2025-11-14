@@ -1,26 +1,20 @@
-﻿using System;
+using System;
 using System.Linq;
+using _4OF.ee4v.ProjectExtension.Data;
 using _4OF.ee4v.ProjectExtension.Service;
-using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.ProjectExtension.Data {
-    public static class TabListController {
-        private static TabListObject _asset;
+namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
+    public static class TabManager {
         private static VisualElement _tabContainer;
         private static VisualElement _workspaceContainer;
-        private static VisualElement _currentTab;
 
-        public static VisualElement CurrentTab() {
-            return _currentTab;
-        }
+        public static VisualElement CurrentTab { get; private set; }
 
         public static void Initialize() {
-            if (!_asset) _asset = TabListObject.LoadOrCreate();
-
             if (_tabContainer != null) return;
             var projectWindow = ReflectionWrapper.ProjectBrowserWindow;
             if (projectWindow) {
@@ -37,9 +31,9 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             Initialize();
             var path = tab.tooltip;
             var name = tab.Q<Label>().text;
-            _asset.Add(path, name);
+            TabList.instance.Add(path, name, false);
             _tabContainer.Insert(_tabContainer.childCount - 1, tab);
-            EditorUtility.SetDirty(_asset);
+            EditorUtility.SetDirty(TabList.instance);
         }
 
         public static void AddWorkspaceTab(VisualElement workspaceTab) {
@@ -48,41 +42,42 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
             var path = workspaceTab.tooltip;
             var name = workspaceTab.Q<Label>().text;
-            _asset.Add(path, name, true);
+            TabList.instance.Add(path, name, true);
             _workspaceContainer.Add(workspaceTab);
-            EditorUtility.SetDirty(_asset);
+            EditorUtility.SetDirty(TabList.instance);
         }
 
         public static void Insert(int index, VisualElement tab) {
             Initialize();
             var path = tab.tooltip;
             var name = tab.Q<Label>().text;
-            _asset.Insert(index, path, name);
+            TabList.instance.Insert(index, path, name, false);
             _tabContainer.Insert(index, tab);
-            EditorUtility.SetDirty(_asset);
+            EditorUtility.SetDirty(TabList.instance);
         }
 
         public static void Remove(VisualElement tab) {
             Initialize();
 
             var isWorkspaceTab = tab.name == "ee4v-project-toolbar-workspaceContainer-tab";
-            var isCurrentTab = tab == _currentTab;
+            var isCurrentTab = tab == CurrentTab;
 
             if (isWorkspaceTab) {
                 if (_workspaceContainer == null) return;
 
                 var path = tab.tooltip;
                 var name = tab.Q<Label>()?.text;
-                var assetIndex = _asset.TabList.ToList()
+                var assetIndex = TabList.instance.Contents.ToList()
                     .FindIndex(t => t.isWorkspace && t.path == path && t.tabName == name);
 
-                if (assetIndex >= 0) _asset.Remove(assetIndex);
+                if (assetIndex >= 0) TabList.instance.Remove(assetIndex);
                 _workspaceContainer.Remove(tab);
 
-                RemoveWorkspaceLabels(name);
+                TabListService.RemoveWorkspaceLabels(name);
+                TabListService.SetCurrentWorkspace(null);
 
                 if (isCurrentTab) {
-                    _currentTab = null;
+                    CurrentTab = null;
                     var lastTab = _tabContainer?.Children()
                         .LastOrDefault(e => e.name == "ee4v-project-toolbar-tabContainer-tab");
                     if (lastTab != null)
@@ -93,11 +88,11 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             }
             else {
                 var index = _tabContainer.IndexOf(tab);
-                _asset.Remove(index);
+                TabList.instance.Remove(index);
                 _tabContainer.Remove(tab);
 
                 if (isCurrentTab) {
-                    _currentTab = null;
+                    CurrentTab = null;
 
                     var regularTabs = _tabContainer.Children()
                         .Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab").ToList();
@@ -114,12 +109,12 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             }
 
             KeepOneTab();
-            EditorUtility.SetDirty(_asset);
+            EditorUtility.SetDirty(TabList.instance);
         }
 
         public static void Move(int fromIndex, int toIndex) {
             Initialize();
-            if (_tabContainer == null || _asset == null) return;
+            if (_tabContainer == null) return;
             if (fromIndex == toIndex) return;
 
             fromIndex = Mathf.Clamp(fromIndex, 0, _tabContainer.childCount - 1);
@@ -130,40 +125,37 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
             if (toIndex > fromIndex) toIndex--;
 
-            var path = tab.tooltip;
-            var name = tab.Q<Label>()?.text;
+            TabList.instance.Move(fromIndex, toIndex);
 
-            _asset.Remove(fromIndex);
-            _asset.Insert(toIndex, path, name);
             _tabContainer.Remove(tab);
             _tabContainer.Insert(Mathf.Clamp(toIndex, 0, _tabContainer.childCount - 1), tab);
 
-            if (_currentTab == tab) Tab.SetState(tab, Tab.State.Selected);
-            EditorUtility.SetDirty(_asset);
+            if (CurrentTab == tab) Tab.SetState(tab, Tab.State.Selected);
+            EditorUtility.SetDirty(TabList.instance);
         }
 
         public static void UpdateTab(VisualElement tab, string path, string name) {
             Initialize();
             var index = _tabContainer.IndexOf(tab);
-            _asset.UpdateTab(index, path, name);
+            TabList.instance.Update(index, path, name);
             tab.tooltip = path;
             tab.Q<Label>().text = name;
-            EditorUtility.SetDirty(_asset);
+            EditorUtility.SetDirty(TabList.instance);
         }
 
         public static void SelectTab(VisualElement tabElement) {
             if (tabElement == null) return;
 
             var isWorkspaceTab = tabElement.name == "ee4v-project-toolbar-workspaceContainer-tab";
-            if (tabElement == _currentTab && !isWorkspaceTab) return;
+            if (tabElement == CurrentTab && !isWorkspaceTab) return;
 
-            var currentIsWorkspaceTab = _currentTab is { name: "ee4v-project-toolbar-workspaceContainer-tab" };
+            var currentIsWorkspaceTab = CurrentTab is { name: "ee4v-project-toolbar-workspaceContainer-tab" };
 
-            if (_currentTab != null) {
+            if (CurrentTab != null) {
                 if (currentIsWorkspaceTab)
-                    WorkspaceTab.SetState(_currentTab, WorkspaceTab.State.Default);
+                    WorkspaceTab.SetState(CurrentTab, WorkspaceTab.State.Default);
                 else
-                    Tab.SetState(_currentTab, Tab.State.Default);
+                    Tab.SetState(CurrentTab, Tab.State.Default);
             }
 
             if (isWorkspaceTab)
@@ -171,18 +163,27 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             else
                 Tab.SetState(tabElement, Tab.State.Selected);
 
-            _currentTab = tabElement;
+            CurrentTab = tabElement;
 
             if (isWorkspaceTab) {
                 var labelName = tabElement.Q<Label>()?.text;
-                if (!string.IsNullOrEmpty(labelName)) ReflectionWrapper.SetSearchFilter($"l=Ee4v.ws.{labelName}");
+                if (!string.IsNullOrEmpty(labelName)) {
+                    ReflectionWrapper.SetSearchFilter($"l=Ee4v.ws.{labelName}");
+                    TabListService.SetCurrentWorkspace(labelName);
+                }
             }
             else {
                 ReflectionWrapper.ClearSearchFilter();
-                ProjectWindowOpener.OpenFolderInProject(tabElement.tooltip);
+                var folderObject = AssetDatabase.LoadAssetAtPath<DefaultAsset>(tabElement.tooltip);
+                if (folderObject == null) return;
+
+                ReflectionWrapper.ShowFolderContents(folderObject.GetInstanceID());
+                Selection.activeObject = null;
+                GUI.FocusControl(null);
+                TabListService.SetCurrentWorkspace(null);
             }
 
-            EditorUtility.SetDirty(_asset);
+            EditorUtility.SetDirty(TabList.instance);
         }
 
         private static void KeepOneTab() {
@@ -202,7 +203,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         }
 
         private static void Sync() {
-            if (_tabContainer == null || !_asset) return;
+            if (_tabContainer == null) return;
 
             var existingTabs = _tabContainer.Children().Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab")
                 .ToList();
@@ -214,7 +215,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
                 foreach (var t in existingWorkspaceTabs) _workspaceContainer.Remove(t);
             }
 
-            var objectTabList = _asset.TabList;
+            var objectTabList = TabList.instance.Contents;
             var tabInsertIndex = 0;
             VisualElement firstRegularTab = null;
 
@@ -239,43 +240,6 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             var others = _tabContainer.Children()
                 .Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab" && e != firstRegularTab).ToList();
             foreach (var o in others) Tab.SetState(o, Tab.State.Default);
-        }
-
-        private static void RemoveWorkspaceLabels(string workspaceName) {
-            if (string.IsNullOrEmpty(workspaceName)) return;
-
-            var labelName = $"Ee4v.ws.{workspaceName}";
-            
-            var guids = AssetDatabase.FindAssets($"l:{labelName}");
-            if (guids.Length == 0) return;
-
-            var removedCount = 0;
-            foreach (var guid in guids) {
-                var path = AssetDatabase.GUIDToAssetPath(guid);
-                if (string.IsNullOrEmpty(path)) continue;
-
-                var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
-                if (asset == null) continue;
-
-                var labels = AssetDatabase.GetLabels(asset).ToList();
-                if (!labels.Remove(labelName)) continue;
-                AssetDatabase.SetLabels(asset, labels.ToArray());
-                removedCount++;
-            }
-
-            if (removedCount <= 0) return;
-            AssetDatabase.SaveAssets();
-            Debug.Log(I18N.Get("Debug.ProjectExtension.RemovedWorkspaceLabels", labelName, removedCount));
-        }
-
-        public static string GetCurrentWorkspace() {
-            Initialize();
-            
-            if (_currentTab == null) return null;
-            if (_currentTab.name != "ee4v-project-toolbar-workspaceContainer-tab") return null;
-            
-            var label = _currentTab.Q<Label>();
-            return label?.text;
         }
     }
 }

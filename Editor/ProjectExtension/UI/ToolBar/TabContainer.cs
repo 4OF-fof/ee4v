@@ -1,7 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
 using _4OF.ee4v.Core.UI;
-using _4OF.ee4v.ProjectExtension.Data;
 using _4OF.ee4v.ProjectExtension.UI.ToolBar._Component;
 using _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab;
 using UnityEditor;
@@ -32,8 +31,8 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
             addButton.clicked += () =>
             {
                 var tab = Tab.Element("Assets");
-                TabListController.Insert(tabContainer.childCount - 1, tab);
-                TabListController.SelectTab(tab);
+                TabManager.Insert(tabContainer.childCount - 1, tab);
+                TabManager.SelectTab(tab);
             };
 
             TabControl(tabContainer);
@@ -184,7 +183,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
 
                 switch (dragging) {
                     case null when potentialDrag != null:
-                        TabListController.SelectTab(potentialDrag);
+                        TabManager.SelectTab(potentialDrag);
                         potentialDrag = null;
                         return;
                     case null:
@@ -207,7 +206,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                         .FirstOrDefault(c => c.name == "ee4v-project-toolbar-tabContainer-addButton");
                     var addIndex = addButton != null ? tabContainer.IndexOf(addButton) : tabContainer.childCount - 1;
                     var finalTarget = Mathf.Clamp(placeholderIndex, 0, addIndex);
-                    TabListController.Move(originalIndex, finalTarget);
+                    TabManager.Move(originalIndex, finalTarget);
                 }
 
                 potentialDrag = null;
@@ -248,7 +247,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                     folderPathList.Select(path => new { path, name = Path.GetFileName(path) }).ToList();
                 foreach (var newTab in createdEntries.Select(entry => Tab.Element(entry.path, entry.name))
                              .Where(newTab => newTab != null)) {
-                    TabListController.Insert(insertIndex, newTab);
+                    TabManager.Insert(insertIndex, newTab);
                     insertIndex++;
                 }
 

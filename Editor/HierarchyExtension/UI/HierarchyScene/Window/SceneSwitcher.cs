@@ -6,6 +6,7 @@ using _4OF.ee4v.Core.Data;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.HierarchyExtension.Data;
+using _4OF.ee4v.HierarchyExtension.Service;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
@@ -35,7 +36,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
             };
             rootVisualElement.Add(searchBar);
 
-            var allScenePaths = SceneListController.ScenePathList.ToList();
+            var allScenePaths = SceneListService.SortedSceneList.ToList();
             var displayedPaths = allScenePaths;
 
             EventCallback<GeometryChangedEvent> focusCallback = null;
@@ -75,11 +76,17 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                         evt.StopPropagation();
                         var path = container.userData as string;
                         if (string.IsNullOrEmpty(path) || path.StartsWith("EE4V_CREATE_NEW:")) return;
-                        SceneListController.ToggleFavorite(path);
-                        var isFav = SceneListController.IsFavorite(path);
+
+                        var idx = SceneListService.IndexOfPath(path);
+                        if (idx < 0) return;
+                        var isFavorite = SceneList.instance.Contents[idx].isFavorite;
+                        SceneList.instance.Update(idx, isFavorite: !isFavorite);
+
+                        var isFav = SceneList.instance.Contents.FirstOrDefault(s => s.path == path)?.isFavorite ??
+                            false;
                         starButton.tintColor = isFav ? ColorPreset.FavoriteStar : Color.gray;
 
-                        allScenePaths = SceneListController.ScenePathList.ToList();
+                        allScenePaths = SceneListService.SortedSceneList.ToList();
                         var current = searchBar.value;
                         searchBar.value = null;
                         searchBar.value = current;
@@ -114,7 +121,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                                     if (!openScenePathsNow.Contains(path))
                                         if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) {
                                             EditorSceneManager.OpenScene(path);
-                                            SceneListController.MoveToTop(path);
+                                            SceneListService.MoveToTop(path);
                                             Close();
                                         }
                                 }
@@ -139,8 +146,10 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                     var filtered = allScenePaths
                         .Where(p => Path.GetFileNameWithoutExtension(p).ToLowerInvariant().Contains(lower)).ToList();
 
-                    var favorites = filtered.Where(SceneListController.IsFavorite).ToList();
-                    var others = filtered.Where(p => !SceneListController.IsFavorite(p)).ToList();
+                    var favorites = filtered
+                        .Where(p => SceneList.instance.Contents.Any(s => s.path == p && s.isFavorite)).ToList();
+                    var others = filtered.Where(p => !SceneList.instance.Contents.Any(s => s.path == p && s.isFavorite))
+                        .ToList();
                     displayedPaths = favorites.Concat(others).ToList();
 
                     var exactMatch = allScenePaths.Any(p =>
@@ -180,7 +189,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                     icon.image = null;
                 }
 
-                var isFavorite = SceneListController.IsFavorite(path);
+                var isFavorite = SceneList.instance.Contents.Any(s => s.path == path && s.isFavorite);
                 starButton.image = EditorGUIUtility.IconContent("d_Favorite Icon").image;
                 starButton.tintColor = isFavorite ? ColorPreset.FavoriteStar : Color.gray;
 
@@ -213,7 +222,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
         }
 
         private static void ApplyReordered(List<string> newOrder) {
-            var current = SceneListController.ScenePathList;
+            var current = SceneListService.SortedSceneList;
             if (current == null || newOrder == null) return;
             var working = new List<string>(current);
             for (var to = 0; to < newOrder.Count; to++) {
@@ -222,7 +231,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
                 if (working[to] == path) continue;
                 var from = working.IndexOf(path);
                 if (from < 0) continue;
-                SceneListController.Move(from, to);
+                SceneList.instance.Move(from, to);
                 var item = working[from];
                 working.RemoveAt(from);
                 working.Insert(to, item);
@@ -254,7 +263,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
             }
 
             EditorSceneManager.SaveScene(newScene, scenePath);
-            SceneListController.MoveToTop(scenePath);
+            SceneListService.MoveToTop(scenePath);
         }
 
         private class ItemState {

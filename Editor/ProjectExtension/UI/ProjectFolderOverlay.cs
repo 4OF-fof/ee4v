@@ -2,6 +2,7 @@
 using System.Linq;
 using _4OF.ee4v.Core.Data;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.Core.Utility;
 using _4OF.ee4v.ProjectExtension.Data;
 using _4OF.ee4v.ProjectExtension.Service;
 using _4OF.ee4v.ProjectExtension.UI.Window;
@@ -47,8 +48,10 @@ namespace _4OF.ee4v.ProjectExtension.UI {
         }
 
         private static bool DrawStyledFolder(string path, Rect imageRect, Color backgroundColor) {
-            var color = FolderStyleController.GetColor(path);
-            var icon = FolderStyleController.GetIcon(path);
+            var style = FolderStyleList.instance.Contents.FirstOrDefault(s =>
+                s.path == FileUtility.NormalizePath(path));
+            var color = style?.color ?? Color.clear;
+            var icon = style?.icon;
             if (color == Color.clear && icon == null) return false;
             EditorGUI.DrawRect(imageRect, backgroundColor);
             if (icon != null) {
@@ -71,7 +74,7 @@ namespace _4OF.ee4v.ProjectExtension.UI {
         private static void DrawOverlayIcon(string path, Rect imageRect) {
             var overlayRect = new Rect((imageRect.x + imageRect.xMax) / 2, (imageRect.y + imageRect.yMax) / 2,
                 imageRect.width / 2, imageRect.height / 2);
-            var overlayIcon = GetFolderContent.GetMostIconInFolder(path);
+            var overlayIcon = FolderContentService.GetMostIconInFolder(path);
             if (overlayIcon == null) return;
             var outlineOffsetsOuter = new[]
                 { new Vector2(-1f, 0), new Vector2(1f, 0), new Vector2(0, -1f), new Vector2(0, 1f) };

@@ -4,6 +4,7 @@ using System.Linq;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI.Window;
 using _4OF.ee4v.Core.UI.Window._Component;
+using _4OF.ee4v.Core.Utility;
 using _4OF.ee4v.ProjectExtension.Data;
 using _4OF.ee4v.ProjectExtension.Service;
 using UnityEditor;
@@ -80,7 +81,12 @@ namespace _4OF.ee4v.ProjectExtension.UI.Window {
             var colorSelector = ColorSelector.Element(_pathList);
             var anyHasIcon = false;
             if (_pathList != null)
-                if (_pathList.Any(p => FolderStyleController.GetIcon(p) != null))
+                if (_pathList.Any(p =>
+                    {
+                        var s = FolderStyleList.instance.Contents.FirstOrDefault(x =>
+                            x.path == FileUtility.NormalizePath(p));
+                        return s?.icon != null;
+                    }))
                     anyHasIcon = true;
 
             if (anyHasIcon) colorSelector.SetEnabled(false);
@@ -91,14 +97,23 @@ namespace _4OF.ee4v.ProjectExtension.UI.Window {
                 objectType = typeof(Texture)
             };
             if (_pathList is { Count: 1 }) {
-                var existing = FolderStyleController.GetIcon(_pathList[0]);
+                var existing = FolderStyleList.instance.Contents
+                    .FirstOrDefault(s => s.path == FileUtility.NormalizePath(_pathList[0]))?.icon;
                 if (existing != null) iconFiled.value = existing;
             }
 
             iconFiled.RegisterValueChangedCallback(evt =>
             {
                 var newIcon = evt.newValue as Texture;
-                foreach (var p in _pathList) FolderStyleController.UpdateOrAddIcon(p, newIcon);
+                foreach (var p in _pathList) {
+                    var np = FileUtility.NormalizePath(p);
+                    var idx = FolderStyleService.IndexOfPath(np);
+                    if (idx == -1)
+                        FolderStyleList.instance.Add(np, Color.clear, newIcon);
+                    else
+                        FolderStyleList.instance.Update(idx, icon: newIcon, setIcon: true);
+                }
+
                 var hasIcon = newIcon != null;
                 colorSelector.SetEnabled(!hasIcon);
             });

@@ -1,12 +1,11 @@
 ﻿using System.IO;
 using _4OF.ee4v.Core.Data;
-using _4OF.ee4v.ProjectExtension.Data;
 using _4OF.ee4v.ProjectExtension.Service;
 using _4OF.ee4v.ProjectExtension.UI.ToolBar;
 using UnityEditor;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.ProjectExtension {
+namespace _4OF.ee4v.ProjectExtension.UI {
     public static class ProjectToolbarInjector {
         private static bool _isInitialized;
         private static EditorWindow _projectWindow;
@@ -59,7 +58,7 @@ namespace _4OF.ee4v.ProjectExtension {
             if (!EditorPrefsManager.EnableProjectTab) return;
             var projectToolBar = ProjectToolBar.Element();
             _projectWindow.rootVisualElement.Add(projectToolBar);
-            TabListController.Initialize();
+            TabManager.Initialize();
         }
 
         private static void ProjectToolbarWatcher() {
@@ -98,19 +97,19 @@ namespace _4OF.ee4v.ProjectExtension {
 
             var target = _projectWindow.rootVisualElement[_projectWindow.rootVisualElement.childCount - 1];
             target.Insert(target.childCount, containerWrapper);
-            TabListController.Initialize();
+            TabManager.Initialize();
         }
 
         private static void UpdateCurrentPath(string path) {
             var tabContainer = _projectWindow.rootVisualElement?.Q<VisualElement>("ee4v-project-toolbar-tabContainer");
             if (tabContainer == null) return;
 
-            var currentTab = TabListController.CurrentTab();
+            var currentTab = TabManager.CurrentTab;
             if (currentTab == null || currentTab.parent != tabContainer) return;
 
             if (currentTab.name == "ee4v-project-toolbar-workspaceContainer-tab") return;
 
-            TabListController.UpdateTab(currentTab, path, Path.GetFileName(path));
+            TabManager.UpdateTab(currentTab, path, Path.GetFileName(path));
         }
     }
 }

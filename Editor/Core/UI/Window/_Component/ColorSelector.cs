@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using _4OF.ee4v.Core.Utility;
 using _4OF.ee4v.ProjectExtension.Data;
+using _4OF.ee4v.ProjectExtension.Service;
 using _4OF.ee4v.Runtime;
 using UnityEditor;
 using UnityEngine;
@@ -64,7 +67,9 @@ namespace _4OF.ee4v.Core.UI.Window._Component {
             ColorList.RemoveAll(c => c == Color.clear);
             ColorList.Insert(0, Color.clear);
             if (folderPaths is { Count: 1 }) {
-                var existingColor = FolderStyleController.GetColor(folderPaths[0]);
+                var style = FolderStyleList.instance.Contents.FirstOrDefault(s =>
+                    s.path == FileUtility.NormalizePath(folderPaths[0]));
+                var existingColor = style?.color ?? Color.clear;
                 _selectedColor = existingColor != Color.clear ? existingColor : ColorList[0];
             }
             else {
@@ -74,11 +79,19 @@ namespace _4OF.ee4v.Core.UI.Window._Component {
             return CreateColorSelectorElement(color =>
                 {
                     if (folderPaths != null)
-                        foreach (var folderPath in folderPaths)
-                            if (color == Color.clear)
-                                FolderStyleController.Remove(folderPath);
-                            else
-                                FolderStyleController.UpdateOrAddColor(folderPath, color);
+                        foreach (var folderPath in folderPaths) {
+                            var p = FileUtility.NormalizePath(folderPath);
+                            var idx = FolderStyleService.IndexOfPath(p);
+                            if (color == Color.clear) {
+                                if (idx >= 0) FolderStyleList.instance.Remove(idx);
+                            }
+                            else {
+                                if (idx == -1)
+                                    FolderStyleList.instance.Add(p, color, null);
+                                else
+                                    FolderStyleList.instance.Update(idx, color: color);
+                            }
+                        }
 
                     EditorApplication.RepaintProjectWindow();
                 }

@@ -1,7 +1,7 @@
 ﻿using _4OF.ee4v.Core.Data;
-using _4OF.ee4v.HierarchyExtension.Data;
 using _4OF.ee4v.HierarchyExtension.Service;
 using _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window;
+using _4OF.ee4v.HierarchyExtension.Utility;
 using UnityEditor;
 using UnityEngine;
 
@@ -21,7 +21,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene {
             switch (e.type) {
                 case EventType.MouseDown when sceneRect.Contains(e.mousePosition): {
                     var screenSceneRect = new Rect(GUIUtility.GUIToScreenPoint(sceneRect.position), sceneRect.size);
-                    SceneListController.SceneListRegister();
+                    SceneListService.SceneListRegister();
                     if (EditorPrefsManager.EnableSceneSwitcher) SceneSwitcher.Open(screenSceneRect);
                     e.Use();
                     break;

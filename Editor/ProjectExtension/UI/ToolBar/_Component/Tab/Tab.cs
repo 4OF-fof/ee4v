@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using _4OF.ee4v.Core.UI;
-using _4OF.ee4v.ProjectExtension.Data;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
@@ -51,7 +50,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
             tab.Add(tabLabel);
             tab.Add(closeButton);
 
-            closeButton.clicked += () => { TabListController.Remove(tab); };
+            closeButton.clicked += () => { TabManager.Remove(tab); };
 
             return tab;
         }
