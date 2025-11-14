@@ -1,4 +1,5 @@
 ﻿using _4OF.ee4v.ProjectExtension.Data;
+using _4OF.ee4v.ProjectExtension.Service;
 using UnityEditor;
 
 namespace _4OF.ee4v.ProjectExtension.Processor {
@@ -8,7 +9,11 @@ namespace _4OF.ee4v.ProjectExtension.Processor {
             if (deletedAssets is { Length: > 0 })
                 foreach (var deletedPath in deletedAssets) {
                     if (string.IsNullOrEmpty(deletedPath)) continue;
-                    FolderStyleController.Remove(deletedPath);
+                    var p = FolderStyleService.NormalizePath(deletedPath);
+                    var index = FolderStyleService.IndexOfPath(p);
+                    if (index >= 0) {
+                        FolderStyleList.instance.Remove(index);
+                    }
                 }
 
             if (movedAssets is not { Length: > 0 }) return;
@@ -18,7 +23,12 @@ namespace _4OF.ee4v.ProjectExtension.Processor {
                     ? movedFromAssetPaths[i]
                     : null;
                 if (string.IsNullOrEmpty(newPath) || string.IsNullOrEmpty(oldPath)) continue;
-                FolderStyleController.UpdatePath(oldPath, newPath);
+                var oldP = FolderStyleService.NormalizePath(oldPath);
+                var newP = FolderStyleService.NormalizePath(newPath);
+                var idx = FolderStyleService.IndexOfPath(oldP);
+                if (idx >= 0) {
+                    FolderStyleList.instance.Update(idx, path: newP);
+                }
             }
         }
     }

@@ -80,7 +80,10 @@ namespace _4OF.ee4v.ProjectExtension.UI.Window {
             var colorSelector = ColorSelector.Element(_pathList);
             var anyHasIcon = false;
             if (_pathList != null)
-                if (_pathList.Any(p => FolderStyleController.GetIcon(p) != null))
+                if (_pathList.Any(p => {
+                    var s = FolderStyleList.instance.Contents.FirstOrDefault(x => x.path == FolderStyleService.NormalizePath(p));
+                    return s?.icon != null;
+                }))
                     anyHasIcon = true;
 
             if (anyHasIcon) colorSelector.SetEnabled(false);
@@ -91,14 +94,21 @@ namespace _4OF.ee4v.ProjectExtension.UI.Window {
                 objectType = typeof(Texture)
             };
             if (_pathList is { Count: 1 }) {
-                var existing = FolderStyleController.GetIcon(_pathList[0]);
+                var existing = FolderStyleList.instance.Contents.FirstOrDefault(s => s.path == FolderStyleService.NormalizePath(_pathList[0]))?.icon;
                 if (existing != null) iconFiled.value = existing;
             }
 
             iconFiled.RegisterValueChangedCallback(evt =>
             {
                 var newIcon = evt.newValue as Texture;
-                foreach (var p in _pathList) FolderStyleController.UpdateOrAddIcon(p, newIcon);
+                foreach (var p in _pathList) {
+                    var np = FolderStyleService.NormalizePath(p);
+                    var idx = FolderStyleService.IndexOfPath(np);
+                    if (idx == -1)
+                        FolderStyleList.instance.Add(np, Color.clear, newIcon);
+                    else
+                        FolderStyleList.instance.Update(idx, icon: newIcon, setIcon: true);
+                }
                 var hasIcon = newIcon != null;
                 colorSelector.SetEnabled(!hasIcon);
             });
