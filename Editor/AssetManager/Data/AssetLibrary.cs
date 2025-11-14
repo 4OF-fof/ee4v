@@ -4,14 +4,14 @@ using _4OF.ee4v.Core.Utility;
 
 namespace _4OF.ee4v.AssetManager.Data {
     public sealed class AssetLibrary {
-        private static readonly Lazy<AssetLibrary> Singleton = new(() => new AssetLibrary());
-        public static AssetLibrary Instance => Singleton.Value;
+        public static readonly AssetLibrary Instance = new();
         private AssetLibrary() { }
         
         private readonly List<AssetMetadata> _assetMetadataList = new();
+        private LibraryMetadata _libraryMetadata;
 
         public IReadOnlyList<AssetMetadata> Assets => _assetMetadataList;
-        public IReadOnlyList<LibraryMetadata> Libraries { get; } = new List<LibraryMetadata>();
+        public LibraryMetadata Libraries => _libraryMetadata;
 
         public void AddAsset(AssetMetadata assetMetadata) {
             if (assetMetadata == null) return;
@@ -31,6 +31,20 @@ namespace _4OF.ee4v.AssetManager.Data {
         
         public AssetMetadata GetAsset(Ulid assetId) {
             return _assetMetadataList.Find(a => a.ID == assetId);
+        }
+
+        public void LoadAsset(AssetMetadata assetMetadata) {
+            if (assetMetadata == null) return;
+            var existingAsset = GetAsset(assetMetadata.ID);
+            if (existingAsset != null) {
+                UpdateAsset(assetMetadata);
+            } else {
+                AddAsset(assetMetadata);
+            }
+        }
+        
+        public void LoadLibrary(LibraryMetadata libraryMetadata) {
+            _libraryMetadata = libraryMetadata;
         }
     }
 }
