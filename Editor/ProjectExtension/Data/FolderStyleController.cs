@@ -8,8 +8,8 @@ using UnityEngine;
 
 namespace _4OF.ee4v.ProjectExtension.Data {
     public static class FolderStyleController {
-        private static FolderStyleList _asset;
         private const string AssetPath = "Assets/4OF/ee4v/UserData/FolderStyleObject.asset";
+        private static FolderStyleList _asset;
 
         public static FolderStyleList GetInstance() {
             if (_asset == null) _asset = LoadOrCreate();

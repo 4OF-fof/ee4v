@@ -9,8 +9,8 @@ using UnityEngine.SceneManagement;
 
 namespace _4OF.ee4v.HierarchyExtension.Data {
     public static class SceneListController {
-        private static SceneList _asset;
         private const string AssetPath = "Assets/4OF/ee4v/UserData/SceneList.asset";
+        private static SceneList _asset;
 
         public static List<string> ScenePathList {
             get {
@@ -83,7 +83,8 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             EditorUtility.SetDirty(_asset);
         }
 
-        private static void UpdateScene(int index, string path = null, bool? isIgnored = null, bool? isFavorite = null) {
+        private static void UpdateScene(int index, string path = null, bool? isIgnored = null,
+            bool? isFavorite = null) {
             Initialize();
             if (index < 0 || index >= _asset.contents.Count) return;
             if (path != null) _asset.contents[index].path = path;

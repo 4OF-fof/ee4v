@@ -93,17 +93,17 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
 
                 // 先頭大文字じゃないと壊れるので注意
                 var labelName = $"Ee4v.ws.{name}";
-                
+
                 foreach (var obj in DragAndDrop.objectReferences) {
                     if (obj == null) continue;
-                    
+
                     var assetPath = AssetDatabase.GetAssetPath(obj);
                     if (string.IsNullOrEmpty(assetPath)) continue;
 
                     var labels = AssetDatabase.GetLabels(obj).ToList();
 
                     if (labels.Contains(labelName)) continue;
-                    
+
                     labels.Add(labelName);
                     AssetDatabase.SetLabels(obj, labels.ToArray());
                 }
@@ -114,13 +114,11 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                 evt.StopPropagation();
             });
 
-            tab.RegisterCallback<DragLeaveEvent>(evt =>
-            {
-                evt.StopPropagation();
-            });
+            tab.RegisterCallback<DragLeaveEvent>(evt => { evt.StopPropagation(); });
 
             return tab;
         }
+
         private static State GetState(VisualElement tab) {
             return tab.userData is State s ? s : State.Default;
         }

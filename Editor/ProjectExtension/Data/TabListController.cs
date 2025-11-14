@@ -9,14 +9,15 @@ using _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.ProjectExtension.Data {
     public static class TabListController {
+        private const string AssetPath = "Assets/4OF/ee4v/UserData/TabList.asset";
         private static TabList _asset;
         private static VisualElement _tabContainer;
         private static VisualElement _workspaceContainer;
         private static VisualElement _currentTab;
-        private const string AssetPath = "Assets/4OF/ee4v/UserData/TabList.asset";
 
         public static VisualElement CurrentTab() {
             return _currentTab;
@@ -295,7 +296,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             if (string.IsNullOrEmpty(workspaceName)) return;
 
             var labelName = $"Ee4v.ws.{workspaceName}";
-            
+
             var guids = AssetDatabase.FindAssets($"l:{labelName}");
             if (guids.Length == 0) return;
 
@@ -304,7 +305,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
                 if (string.IsNullOrEmpty(path)) continue;
 
-                var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+                var asset = AssetDatabase.LoadAssetAtPath<Object>(path);
                 if (asset == null) continue;
 
                 var labels = AssetDatabase.GetLabels(asset).ToList();
@@ -320,10 +321,10 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
         public static string GetCurrentWorkspace() {
             Initialize();
-            
+
             if (_currentTab == null) return null;
             if (_currentTab.name != "ee4v-project-toolbar-workspaceContainer-tab") return null;
-            
+
             var label = _currentTab.Q<Label>();
             return label?.text;
         }
