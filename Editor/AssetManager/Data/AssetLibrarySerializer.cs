@@ -1,9 +1,10 @@
 ﻿using System.IO;
 using Newtonsoft.Json;
 using _4OF.ee4v.Core.Data;
+using _4OF.ee4v.Core.Utility;
 
 namespace _4OF.ee4v.AssetManager.Data {
-    public static class AssetController {
+    public static class AssetLibrarySerializer {
         private static readonly string RootDir = Path.Combine(EditorPrefsManager.ContentFolderPath, "AssetManager");
         
         public static void Initialize() {
