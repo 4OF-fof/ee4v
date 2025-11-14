@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using _4OF.ee4v.Core.Utility;
+using Newtonsoft.Json;
 
 namespace _4OF.ee4v.AssetManager.Data {
     public class AssetMetadata {
@@ -13,6 +14,21 @@ namespace _4OF.ee4v.AssetManager.Data {
         private readonly List<string> _tags = new();
         private bool _isDeleted;
         private long _modificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        
+        public AssetMetadata() { }
+        
+        [JsonConstructor]
+        public AssetMetadata(string name, string id, string description, long size, string ext, string folder, List<string> tags, bool isDeleted, long modificationTime) {
+            _name = name;
+            _id = id;
+            _description = description;
+            _size = size;
+            _ext = ext;
+            _folder = folder;
+            _tags = tags ?? new List<string>();
+            _isDeleted = isDeleted;
+            _modificationTime = modificationTime;
+        }
 
         public Ulid ID => Ulid.Parse(_id);
         public string Name => _name;

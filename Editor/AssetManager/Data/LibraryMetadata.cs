@@ -1,12 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using _4OF.ee4v.Core.Utility;
+using Newtonsoft.Json;
 
 namespace _4OF.ee4v.AssetManager.Data {
     public class LibraryMetadata {
         private readonly List<FolderInfo> _folderInfo = new();
         private long _modificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         private string _libraryVersion = "1";
+        
+        public LibraryMetadata() { }
+
+        [JsonConstructor]
+        public LibraryMetadata(List<FolderInfo> folderInfo, long modificationTime, string libraryVersion) {
+            _folderInfo = folderInfo ?? new List<FolderInfo>();
+            _modificationTime = modificationTime;
+            _libraryVersion = libraryVersion;
+        }
 
         public IReadOnlyList<FolderInfo> FolderInfo => _folderInfo.AsReadOnly();
         public long ModificationTime => _modificationTime;
@@ -42,6 +52,18 @@ namespace _4OF.ee4v.AssetManager.Data {
         private readonly List<FolderInfo> _children = new();
         private long _modificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         private readonly List<string> _tags = new();
+        
+        public FolderInfo() { }
+        
+        [JsonConstructor]
+        public FolderInfo(string id, string name, string description, List<FolderInfo> children, long modificationTime, List<string> tags) {
+            _id = id;
+            _name = name;
+            _description = description;
+            _children = children ?? new List<FolderInfo>();
+            _modificationTime = modificationTime;
+            _tags = tags ?? new List<string>();
+        }
 
         public Ulid ID => Ulid.Parse(_id);
         public string Name => _name;

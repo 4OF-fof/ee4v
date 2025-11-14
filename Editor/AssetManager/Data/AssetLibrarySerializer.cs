@@ -60,6 +60,21 @@ namespace _4OF.ee4v.AssetManager.Data {
             AssetLibrary.Instance.LoadAsset(assetMetadata);
         }
         
+        public static void LoadAllAssets() {
+            var assetRootDir = Path.Combine(RootDir, "Assets");
+            if (!Directory.Exists(assetRootDir)) return;
+
+            var assetDirs = Directory.GetDirectories(assetRootDir);
+            foreach (var assetDir in assetDirs) {
+                var metadataPath = Path.Combine(assetDir, "metadata.json");
+                if (!File.Exists(metadataPath)) continue;
+
+                var json = File.ReadAllText(metadataPath);
+                var assetMetadata = JsonConvert.DeserializeObject<AssetMetadata>(json);
+                AssetLibrary.Instance.LoadAsset(assetMetadata);
+            }
+        }
+        
         public static void SaveAsset(AssetMetadata assetMetadata) {
             var assetDir = Path.Combine(RootDir, "Assets", assetMetadata.ID.ToString());
             Directory.CreateDirectory(assetDir);
