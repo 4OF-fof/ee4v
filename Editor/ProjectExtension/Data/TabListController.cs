@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using _4OF.ee4v.Core.i18n;
-using _4OF.ee4v.ProjectExtension.Data.Schema;
 using _4OF.ee4v.ProjectExtension.Service;
 using _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab;
 using UnityEditor;
@@ -13,8 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.ProjectExtension.Data {
     public static class TabListController {
-        private const string AssetPath = "Assets/4OF/ee4v/UserData/TabList.asset";
-        private static TabList _asset;
+        
         private static VisualElement _tabContainer;
         private static VisualElement _workspaceContainer;
         private static VisualElement _currentTab;
@@ -23,33 +19,12 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             return _currentTab;
         }
 
-        public static TabList GetInstance() {
-            if (_asset == null) _asset = LoadOrCreate();
-            return _asset;
-        }
-
-        private static TabList LoadOrCreate() {
-            var tabListObject = AssetDatabase.LoadAssetAtPath<TabList>(AssetPath);
-            if (tabListObject != null) {
-                _asset = tabListObject;
-                return tabListObject;
-            }
-
-            var dir = Path.GetDirectoryName(AssetPath);
-            if (!Directory.Exists(dir) && !string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-            tabListObject = ScriptableObject.CreateInstance<TabList>();
-            tabListObject.contents = new List<TabList.Tab>();
-            AssetDatabase.CreateAsset(tabListObject, AssetPath);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-            Debug.LogWarning(I18N.Get("Debug.ProjectExtension.NotFoundTabListObject", AssetPath));
-            _asset = tabListObject;
-            return tabListObject;
+        public static TabList GetInstance()
+        {
+            return TabList.instance;
         }
 
         public static void Initialize() {
-            if (!_asset) _asset = LoadOrCreate();
-
             if (_tabContainer != null) return;
             var projectWindow = ReflectionWrapper.ProjectBrowserWindow;
             if (projectWindow) {
@@ -63,25 +38,19 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         }
 
         private static void AddToAsset(string path, string tabName, bool isWorkspace = false) {
-            var entry = new TabList.Tab { path = path, tabName = tabName, isWorkspace = isWorkspace };
-            _asset.contents.Add(entry);
+            TabList.instance.Add(path, tabName, isWorkspace);
         }
 
         private static void InsertToAsset(int index, string path, string tabName, bool isWorkspace = false) {
-            var entry = new TabList.Tab { path = path, tabName = tabName, isWorkspace = isWorkspace };
-            index = Mathf.Clamp(index, 0, _asset.contents.Count);
-            _asset.contents.Insert(index, entry);
+            TabList.instance.Insert(index, path, tabName, isWorkspace);
         }
 
         private static void RemoveFromAsset(int index) {
-            if (index < 0 || index >= _asset.contents.Count) return;
-            _asset.contents.RemoveAt(index);
+            TabList.instance.Remove(index);
         }
 
         private static void UpdateTabInAsset(int index, string path, string tabName) {
-            if (index < 0 || index >= _asset.contents.Count) return;
-            _asset.contents[index].path = path;
-            _asset.contents[index].tabName = tabName;
+            TabList.instance.Update(index, path: path, tabName: tabName);
         }
 
         private static void Add(VisualElement tab) {
@@ -90,7 +59,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             var name = tab.Q<Label>().text;
             AddToAsset(path, name);
             _tabContainer.Insert(_tabContainer.childCount - 1, tab);
-            EditorUtility.SetDirty(_asset);
+            EditorUtility.SetDirty(TabList.instance);
         }
 
         public static void AddWorkspaceTab(VisualElement workspaceTab) {
@@ -101,7 +70,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             var name = workspaceTab.Q<Label>().text;
             AddToAsset(path, name, true);
             _workspaceContainer.Add(workspaceTab);
-            EditorUtility.SetDirty(_asset);
+            EditorUtility.SetDirty(TabList.instance);
         }
 
         public static void Insert(int index, VisualElement tab) {
@@ -110,7 +79,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             var name = tab.Q<Label>().text;
             InsertToAsset(index, path, name);
             _tabContainer.Insert(index, tab);
-            EditorUtility.SetDirty(_asset);
+            EditorUtility.SetDirty(TabList.instance);
         }
 
         public static void Remove(VisualElement tab) {
@@ -124,7 +93,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
                 var path = tab.tooltip;
                 var name = tab.Q<Label>()?.text;
-                var assetIndex = _asset.Contents.ToList()
+                var assetIndex = TabList.instance.Contents.ToList()
                     .FindIndex(t => t.isWorkspace && t.path == path && t.tabName == name);
 
                 if (assetIndex >= 0) RemoveFromAsset(assetIndex);
@@ -165,12 +134,12 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             }
 
             KeepOneTab();
-            EditorUtility.SetDirty(_asset);
+            EditorUtility.SetDirty(TabList.instance);
         }
 
         public static void Move(int fromIndex, int toIndex) {
             Initialize();
-            if (_tabContainer == null || _asset == null) return;
+            if (_tabContainer == null) return;
             if (fromIndex == toIndex) return;
 
             fromIndex = Mathf.Clamp(fromIndex, 0, _tabContainer.childCount - 1);
@@ -181,16 +150,15 @@ namespace _4OF.ee4v.ProjectExtension.Data {
 
             if (toIndex > fromIndex) toIndex--;
 
-            var path = tab.tooltip;
-            var name = tab.Q<Label>()?.text;
+            // update asset ordering
+            TabList.instance.Move(fromIndex, toIndex);
 
-            RemoveFromAsset(fromIndex);
-            InsertToAsset(toIndex, path, name);
+            // update UI ordering
             _tabContainer.Remove(tab);
             _tabContainer.Insert(Mathf.Clamp(toIndex, 0, _tabContainer.childCount - 1), tab);
 
             if (_currentTab == tab) Tab.SetState(tab, Tab.State.Selected);
-            EditorUtility.SetDirty(_asset);
+            EditorUtility.SetDirty(TabList.instance);
         }
 
         public static void UpdateTab(VisualElement tab, string path, string name) {
@@ -199,7 +167,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             UpdateTabInAsset(index, path, name);
             tab.tooltip = path;
             tab.Q<Label>().text = name;
-            EditorUtility.SetDirty(_asset);
+            EditorUtility.SetDirty(TabList.instance);
         }
 
         public static void SelectTab(VisualElement tabElement) {
@@ -233,7 +201,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
                 ProjectWindowOpener.OpenFolderInProject(tabElement.tooltip);
             }
 
-            EditorUtility.SetDirty(_asset);
+            EditorUtility.SetDirty(TabList.instance);
         }
 
         private static void KeepOneTab() {
@@ -253,7 +221,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         }
 
         private static void Sync() {
-            if (_tabContainer == null || !_asset) return;
+            if (_tabContainer == null) return;
 
             var existingTabs = _tabContainer.Children().Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab")
                 .ToList();
@@ -265,7 +233,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
                 foreach (var t in existingWorkspaceTabs) _workspaceContainer.Remove(t);
             }
 
-            var objectTabList = _asset.Contents;
+            var objectTabList = TabList.instance.Contents;
             var tabInsertIndex = 0;
             VisualElement firstRegularTab = null;
 
