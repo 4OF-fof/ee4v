@@ -47,7 +47,8 @@ namespace _4OF.ee4v.ProjectExtension.UI {
         }
 
         private static bool DrawStyledFolder(string path, Rect imageRect, Color backgroundColor) {
-            var style = FolderStyleList.instance.Contents.FirstOrDefault(s => s.path == FolderStyleService.NormalizePath(path));
+            var style = FolderStyleList.instance.Contents.FirstOrDefault(s =>
+                s.path == FolderStyleService.NormalizePath(path));
             var color = style?.color ?? Color.clear;
             var icon = style?.icon;
             if (color == Color.clear && icon == null) return false;

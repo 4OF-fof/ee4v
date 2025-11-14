@@ -1,4 +1,3 @@
-using _4OF.ee4v.ProjectExtension.Data;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {

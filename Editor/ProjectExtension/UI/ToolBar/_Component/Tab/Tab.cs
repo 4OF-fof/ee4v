@@ -1,7 +1,5 @@
 ﻿using System.IO;
 using _4OF.ee4v.Core.UI;
-using _4OF.ee4v.ProjectExtension.Data;
-using _4OF.ee4v.ProjectExtension.UI.ToolBar;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {

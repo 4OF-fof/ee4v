@@ -24,7 +24,8 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             Save(true);
         }
 
-        public void Update(int index, string path = null, Color? color = null, Texture icon = null, bool setIcon = false) {
+        public void Update(int index, string path = null, Color? color = null, Texture icon = null,
+            bool setIcon = false) {
             if (index < 0 || index >= contents.Count) return;
             if (path != null) contents[index].path = path;
             if (color.HasValue) contents[index].color = color.Value;

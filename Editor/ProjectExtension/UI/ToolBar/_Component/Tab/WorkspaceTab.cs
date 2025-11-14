@@ -2,8 +2,6 @@ using System.IO;
 using System.Linq;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
-using _4OF.ee4v.ProjectExtension.Data;
-using _4OF.ee4v.ProjectExtension.UI.ToolBar;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;

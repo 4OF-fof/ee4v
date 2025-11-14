@@ -11,9 +11,7 @@ namespace _4OF.ee4v.ProjectExtension.Processor {
                     if (string.IsNullOrEmpty(deletedPath)) continue;
                     var p = FolderStyleService.NormalizePath(deletedPath);
                     var index = FolderStyleService.IndexOfPath(p);
-                    if (index >= 0) {
-                        FolderStyleList.instance.Remove(index);
-                    }
+                    if (index >= 0) FolderStyleList.instance.Remove(index);
                 }
 
             if (movedAssets is not { Length: > 0 }) return;
@@ -26,9 +24,7 @@ namespace _4OF.ee4v.ProjectExtension.Processor {
                 var oldP = FolderStyleService.NormalizePath(oldPath);
                 var newP = FolderStyleService.NormalizePath(newPath);
                 var idx = FolderStyleService.IndexOfPath(oldP);
-                if (idx >= 0) {
-                    FolderStyleList.instance.Update(idx, path: newP);
-                }
+                if (idx >= 0) FolderStyleList.instance.Update(idx, newP);
             }
         }
     }

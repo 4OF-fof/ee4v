@@ -1,13 +1,11 @@
 using System;
 using System.Linq;
-using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.ProjectExtension.Data;
 using _4OF.ee4v.ProjectExtension.Service;
 using _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
     public static class TabUIManager {
@@ -172,7 +170,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
 
             if (isWorkspaceTab) {
                 var labelName = tabElement.Q<Label>()?.text;
-                    if (!string.IsNullOrEmpty(labelName)) {
+                if (!string.IsNullOrEmpty(labelName)) {
                     ReflectionWrapper.SetSearchFilter($"l=Ee4v.ws.{labelName}");
                     TabListService.SetCurrentWorkspace(labelName);
                 }
@@ -229,7 +227,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                 else {
                     var newTab = Tab.Element(objectTab.path, objectTab.tabName);
                     if (newTab == null) continue;
-                    _tabContainer.Insert(System.Math.Min(tabInsertIndex, _tabContainer.childCount - 1), newTab);
+                    _tabContainer.Insert(Math.Min(tabInsertIndex, _tabContainer.childCount - 1), newTab);
                     firstRegularTab ??= newTab;
                     tabInsertIndex++;
                 }

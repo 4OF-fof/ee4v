@@ -9,7 +9,7 @@ namespace _4OF.ee4v.ProjectExtension.Service {
                     return i;
             return -1;
         }
-        
+
         public static string NormalizePath(string path) {
             if (string.IsNullOrEmpty(path)) return path;
             var p = path.Trim().Replace('\\', '/');

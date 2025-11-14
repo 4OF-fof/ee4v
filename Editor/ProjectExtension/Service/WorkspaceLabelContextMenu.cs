@@ -1,6 +1,5 @@
 using System.Linq;
 using _4OF.ee4v.Core.i18n;
-using _4OF.ee4v.ProjectExtension.Data;
 using UnityEditor;
 using UnityEngine;
 

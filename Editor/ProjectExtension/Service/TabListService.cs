@@ -1,4 +1,5 @@
 using System.Linq;
+using _4OF.ee4v.Core.i18n;
 using UnityEditor;
 using UnityEngine;
 
@@ -37,7 +38,7 @@ namespace _4OF.ee4v.ProjectExtension.Service {
 
             if (removedCount <= 0) return;
             AssetDatabase.SaveAssets();
-            Debug.Log(Core.i18n.I18N.Get("Debug.ProjectExtension.RemovedWorkspaceLabels", labelName, removedCount));
+            Debug.Log(I18N.Get("Debug.ProjectExtension.RemovedWorkspaceLabels", labelName, removedCount));
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using _4OF.ee4v.Core.Data;
-using _4OF.ee4v.ProjectExtension.Data;
 using _4OF.ee4v.ProjectExtension.Service;
 using _4OF.ee4v.ProjectExtension.UI.ToolBar;
 using UnityEditor;
