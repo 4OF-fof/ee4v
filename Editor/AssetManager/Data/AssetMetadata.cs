@@ -22,7 +22,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         public string Description => description;
         public long Size => size;
         public string Ext => ext;
-        public Ulid Folder => Ulid.Parse(folder);
+        public Ulid? Folder => Ulid.TryParse(folder, out var ulid) ? ulid : null;
         public IReadOnlyList<string> Tags => tags.AsReadOnly();
         public bool IsDeleted => isDeleted;
         public long ModificationTime => modificationTime;
