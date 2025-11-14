@@ -11,9 +11,9 @@ namespace _4OF.ee4v.Core.Data {
         }
 
         private static void OnEditorQuitting() {
-            SaveAsset(SceneListObject.GetInstance());
-            SaveAsset(FolderStyleObject.GetInstance());
-            SaveAsset(TabListObject.GetInstance());
+            SaveAsset(SceneListController.GetInstance());
+            SaveAsset(FolderStyleController.GetInstance());
+            SaveAsset(TabListController.GetInstance());
         }
 
         private static void SaveAsset(ScriptableObject asset) {
