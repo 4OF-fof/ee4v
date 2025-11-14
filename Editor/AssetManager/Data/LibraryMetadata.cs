@@ -8,7 +8,7 @@ namespace _4OF.ee4v.AssetManager.Data {
     public class LibraryMetadata {
         [SerializeField] private List<FolderInfo> folderInfo = new();
         [SerializeField] private long modificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        [SerializeField] private string libraryVersion = "1.0.0";
+        [SerializeField] private string libraryVersion = "1";
 
         public IReadOnlyList<FolderInfo> FolderInfo => folderInfo;
         public long ModificationTime => modificationTime;
