@@ -4,7 +4,7 @@ using _4OF.ee4v.HierarchyExtension.UI.HierarchyScene;
 using UnityEditor;
 using UnityEngine;
 
-namespace _4OF.ee4v.HierarchyExtension {
+namespace _4OF.ee4v.HierarchyExtension.UI {
     public static class HierarchyOverlay {
         [InitializeOnLoadMethod]
         private static void Initialize() {

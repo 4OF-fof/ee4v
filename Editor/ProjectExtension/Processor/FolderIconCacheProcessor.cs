@@ -17,7 +17,7 @@ namespace _4OF.ee4v.ProjectExtension.Processor {
             CollectFoldersToInvalidate(movedFromAssetPaths, foldersToInvalidate);
             CollectFoldersToInvalidate(movedAssets, foldersToInvalidate);
 
-            foreach (var folderPath in foldersToInvalidate) GetFolderContent.InvalidateCache(folderPath);
+            foreach (var folderPath in foldersToInvalidate) FolderContentService.InvalidateCache(folderPath);
         }
 
         private static void CollectFoldersToInvalidate(string[] assetPaths, HashSet<string> foldersToInvalidate) {

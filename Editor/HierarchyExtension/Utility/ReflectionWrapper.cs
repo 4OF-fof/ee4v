@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace _4OF.ee4v.HierarchyExtension.Service {
+namespace _4OF.ee4v.HierarchyExtension.Utility {
     public static class ReflectionWrapper {
         private static readonly Type SceneHierarchyWindowType =
             typeof(Editor).Assembly.GetType("UnityEditor.SceneHierarchyWindow");

@@ -74,7 +74,7 @@ namespace _4OF.ee4v.ProjectExtension.UI {
         private static void DrawOverlayIcon(string path, Rect imageRect) {
             var overlayRect = new Rect((imageRect.x + imageRect.xMax) / 2, (imageRect.y + imageRect.yMax) / 2,
                 imageRect.width / 2, imageRect.height / 2);
-            var overlayIcon = GetFolderContent.GetMostIconInFolder(path);
+            var overlayIcon = FolderContentService.GetMostIconInFolder(path);
             if (overlayIcon == null) return;
             var outlineOffsetsOuter = new[]
                 { new Vector2(-1f, 0), new Vector2(1f, 0), new Vector2(0, -1f), new Vector2(0, 1f) };
