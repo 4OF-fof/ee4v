@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using _4OF.ee4v.HierarchyExtension.Data;
 using UnityEditor;
 
 namespace _4OF.ee4v.HierarchyExtension.Service {
@@ -15,7 +14,7 @@ namespace _4OF.ee4v.HierarchyExtension.Service {
                     || movedFromAssetPaths.Any(p => p.EndsWith(".unity", StringComparison.OrdinalIgnoreCase)))
                     shouldUpdate = true;
 
-            if (shouldUpdate) SceneListController.SceneListRegister();
+            if (shouldUpdate) SceneListService.SceneListRegister();
         }
     }
 }
