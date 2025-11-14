@@ -18,10 +18,6 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             return _currentTab;
         }
 
-        public static TabList GetInstance() {
-            return TabList.instance;
-        }
-
         public static void Initialize() {
             if (_tabContainer != null) return;
             var projectWindow = ReflectionWrapper.ProjectBrowserWindow;

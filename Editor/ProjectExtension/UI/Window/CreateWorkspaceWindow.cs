@@ -140,7 +140,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.Window {
         private static bool IsWorkspaceNameExists(string workspaceName) {
             if (string.IsNullOrEmpty(workspaceName)) return false;
 
-            var tabAsset = TabListController.GetInstance();
+            var tabAsset = TabList.instance;
             if (tabAsset == null || tabAsset.Contents == null) return false;
             return tabAsset.Contents.Any(t => t.isWorkspace && t.tabName == workspaceName);
         }
