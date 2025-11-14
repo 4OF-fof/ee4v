@@ -3,6 +3,7 @@ using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
 using _4OF.ee4v.ProjectExtension.Data;
+using _4OF.ee4v.ProjectExtension.UI.ToolBar;
 using _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -147,8 +148,8 @@ namespace _4OF.ee4v.ProjectExtension.UI.Window {
 
         private static void CreateWorkspace(string workspaceName) {
             var workspaceTab = WorkspaceTab.Element(workspaceName, workspaceName);
-            TabListController.AddWorkspaceTab(workspaceTab);
-            TabListController.SelectTab(workspaceTab);
+            TabUIManager.AddWorkspaceTab(workspaceTab);
+            TabUIManager.SelectTab(workspaceTab);
         }
     }
 }

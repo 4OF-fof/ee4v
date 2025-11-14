@@ -55,7 +55,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
             workspaceContainer.RegisterCallback<PointerUpEvent>(_ =>
             {
                 if (potentialDrag != null && workspaceContainer.Contains(potentialDrag))
-                    TabListController.SelectTab(potentialDrag);
+                    TabUIManager.SelectTab(potentialDrag);
                 potentialDrag = null;
             }, TrickleDown.TrickleDown);
         }

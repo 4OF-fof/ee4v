@@ -3,6 +3,7 @@ using System.Linq;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.ProjectExtension.Data;
+using _4OF.ee4v.ProjectExtension.UI.ToolBar;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -66,7 +67,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
                     evt.StopPropagation();
                     var menu = new GenericMenu();
                     menu.AddItem(new GUIContent(I18N.Get("UI.ProjectExtension.CloseTab")), false,
-                        () => { TabListController.Remove(tab); });
+                        () => { TabUIManager.Remove(tab); });
                     menu.ShowAsContext();
                 }
             });
@@ -110,7 +111,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar._Component.Tab {
 
                 DragAndDrop.AcceptDrag();
                 AssetDatabase.SaveAssets();
-                TabListController.SelectTab(tab);
+                TabUIManager.SelectTab(tab);
                 evt.StopPropagation();
             });
 

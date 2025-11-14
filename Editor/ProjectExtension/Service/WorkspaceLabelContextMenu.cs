@@ -13,7 +13,7 @@ namespace _4OF.ee4v.ProjectExtension.Service {
             var selectedObjects = Selection.objects;
             if (selectedObjects == null || selectedObjects.Length == 0) return;
 
-            var currentWorkspace = TabListController.GetCurrentWorkspace();
+            var currentWorkspace = TabListService.GetCurrentWorkspace();
             if (string.IsNullOrEmpty(currentWorkspace)) return;
 
             var labelName = $"Ee4v.ws.{currentWorkspace}";
@@ -25,7 +25,7 @@ namespace _4OF.ee4v.ProjectExtension.Service {
             var selectedObjects = Selection.objects;
             if (selectedObjects == null || selectedObjects.Length == 0) return false;
 
-            var currentWorkspace = TabListController.GetCurrentWorkspace();
+            var currentWorkspace = TabListService.GetCurrentWorkspace();
             if (string.IsNullOrEmpty(currentWorkspace)) return false;
 
             var labelName = $"Ee4v.ws.{currentWorkspace}";
