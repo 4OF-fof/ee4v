@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using _4OF.ee4v.Core.Data;
 using _4OF.ee4v.Core.Utility;
+using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Data {
     public static class AssetLibrarySerializer {
@@ -9,14 +10,24 @@ namespace _4OF.ee4v.AssetManager.Data {
         
         public static void Initialize() {
             Directory.CreateDirectory(RootDir);
+            var assetDir = Path.Combine(RootDir, "Assets");
+            Directory.CreateDirectory(assetDir);
+            var filePath = Path.Combine(RootDir, "metadata.json");
+            if (File.Exists(filePath)) {
+                Debug.LogWarning("Metadata file already exists. Initialization skipped.");
+                LoadLibrary();
+                return;
+            }
 
             var metadata = new LibraryMetadata();
             var json = JsonConvert.SerializeObject(metadata, Formatting.Indented);
-            var filePath = Path.Combine(RootDir, "metadata.json");
             File.WriteAllText(filePath, json);
-            
-            var assetDir = Path.Combine(RootDir, "Assets");
-            Directory.CreateDirectory(assetDir);
+            LoadLibrary();
+        }
+        
+        public static void LoadAssetLibrary() {
+            LoadLibrary();
+            LoadAllAssets();
         }
         
         public static void LoadLibrary() {
@@ -49,6 +60,14 @@ namespace _4OF.ee4v.AssetManager.Data {
             var destPath = Path.Combine(assetDir, fileInfo.Name);
             File.Copy(path, destPath, true);
             AssetLibrary.Instance.LoadAsset(assetMetadata);
+        }
+        
+        public static void RemoveAsset(Ulid assetId) {
+            var assetDir = Path.Combine(RootDir, "Assets", assetId.ToString());
+            if (Directory.Exists(assetDir)) {
+                Directory.Delete(assetDir, true);
+            }
+            AssetLibrary.Instance.RemoveAsset(assetId);
         }
         
         public static void LoadAsset(Ulid assetId) {

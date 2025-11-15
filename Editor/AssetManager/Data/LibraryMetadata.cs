@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using _4OF.ee4v.Core.Utility;
 using Newtonsoft.Json;
 
@@ -29,11 +30,23 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public void RemoveFolder(Ulid folderId) {
-            _folderInfo.RemoveAll(f => f.ID == folderId);
-            Touch();
+            if (folderId == default) return;
+
+            for (var i = 0; i < _folderInfo.Count; i++) {
+                if (_folderInfo[i].ID == folderId) {
+                    _folderInfo.RemoveAt(i);
+                    Touch();
+                    return;
+                }
+
+                if (!_folderInfo[i].RemoveChild(folderId)) continue;
+                return;
+            }
         }
 
-        public FolderInfo GetFolder(Ulid folderId) => _folderInfo.Find(f => f.ID == folderId);
+        public FolderInfo GetFolder(Ulid folderId) {
+            return folderId == default ? null : _folderInfo.Select(f => f.GetChild(folderId)).FirstOrDefault(found => found != null);
+        }
 
         public void SetLibraryVersion(string newLibraryVersion) {
             _libraryVersion = newLibraryVersion;
@@ -88,10 +101,23 @@ namespace _4OF.ee4v.AssetManager.Data {
             Touch();
         }
 
-        public void RemoveChild(FolderInfo folderInfo) {
-            if (_children.Remove(folderInfo)) {
+        public bool RemoveChild(Ulid folderId) {
+            for (var i = 0; i < _children.Count; i++) {
+                if (_children[i].ID == folderId) {
+                    _children.RemoveAt(i);
+                    Touch();
+                    return true;
+                }
+
+                if (!_children[i].RemoveChild(folderId)) continue;
                 Touch();
+                return true;
             }
+            return false;
+        }
+
+        public FolderInfo GetChild(Ulid folderId) {
+            return ID == folderId ? this : _children.Select(c => c.GetChild(folderId)).FirstOrDefault(found => found != null);
         }
         
         public void AddTag(string tag) {

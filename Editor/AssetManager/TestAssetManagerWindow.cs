@@ -1,174 +1,183 @@
 using System;
-using System.Collections.Generic;
+using System.IO;
+using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.Core.Data;
 using UnityEditor;
 using UnityEngine;
-using _4OF.ee4v.AssetManager.Data;
 
-namespace _4OF.ee4v.AssetManager.Editor {
-    public class TestAssetManagerWindow : EditorWindow {
-        private Vector2 scrollPos;
-        private readonly Dictionary<string, string> newTagInputs = new();
-        private readonly Dictionary<string, string> editTagInputs = new();
-        private string libraryVersionInput = "";
+namespace _4OF.ee4v.AssetManager {
+	public class TestAssetManagerWindow : EditorWindow {
+		private Vector2 _scroll;
 
-        [MenuItem("Debug/Test Window")]
-        public static void ShowWindow() {
-            var wnd = GetWindow<TestAssetManagerWindow>("AssetManager Test");
-            wnd.minSize = new Vector2(400, 300);
-        }
+		// Inputs
+		private string _assetIdInput = "";
+		private string _newFolderName = "New Folder";
+		private string _newAssetName = "New Asset";
 
-        private void OnEnable() {
-            try {
-                AssetLibrarySerializer.LoadLibrary();
-                libraryVersionInput = AssetLibrary.Instance.Libraries?.LibraryVersion ?? "";
-            } catch (Exception) {
-                // Load が失敗してもウィンドウは表示させる
-            }
-        }
+		[MenuItem("Window/ee4v/Asset Manager Test")]
+		public static void OpenWindow() {
+			var w = GetWindow<TestAssetManagerWindow>("AssetManager Test");
+			w.minSize = new Vector2(600, 300);
+		}
 
-        private void OnGUI() {
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            if (GUILayout.Button("Initialize", EditorStyles.toolbarButton)) {
-                AssetLibrarySerializer.Initialize();
-                AssetLibrarySerializer.LoadLibrary();
-            }
-            if (GUILayout.Button("Load", EditorStyles.toolbarButton)) {
-                AssetLibrarySerializer.LoadLibrary();
-            }
-            if (GUILayout.Button("Save", EditorStyles.toolbarButton)) {
-                AssetLibrarySerializer.SaveLibrary();
-            }
-            if (GUILayout.Button("Add Dummy Asset", EditorStyles.toolbarButton)) {
-                AddDummyAsset();
-            }
-            if (GUILayout.Button("Refresh", EditorStyles.toolbarButton)) {
-                Repaint();
-            }
-            EditorGUILayout.EndHorizontal();
+		private void OnGUI() {
+			EditorGUILayout.LabelField("Asset Manager - Data Operation Tests", EditorStyles.boldLabel);
 
-            EditorGUILayout.Space();
+			using (new EditorGUILayout.HorizontalScope()) {
+				if (GUILayout.Button("Initialize (create dirs & metadata)")) AssetLibrarySerializer.Initialize();
+				if (GUILayout.Button("Load AssetLibrary")) AssetLibrarySerializer.LoadAssetLibrary();
+				if (GUILayout.Button("Load Library")) AssetLibrarySerializer.LoadLibrary();
+				if (GUILayout.Button("Load All Assets")) AssetLibrarySerializer.LoadAllAssets();
+			}
 
-            var lib = AssetLibrary.Instance.Libraries;
-            EditorGUILayout.BeginVertical("box");
-            EditorGUILayout.LabelField("Library", EditorStyles.boldLabel);
-            if (lib != null) {
-                EditorGUILayout.LabelField("Version:", lib.LibraryVersion);
-                EditorGUILayout.LabelField("Modified:", DateTimeOffset.FromUnixTimeMilliseconds(lib.ModificationTime).ToLocalTime().ToString());
-                EditorGUILayout.LabelField("Folders:", lib.FolderInfo.Count.ToString());
-            } else {
-                EditorGUILayout.LabelField("Library metadata not loaded.");
-            }
-            EditorGUILayout.EndVertical();
+			EditorGUILayout.Space();
 
-            var assets = AssetLibrary.Instance.Assets;
-            EditorGUILayout.LabelField($"Assets: {assets.Count}", EditorStyles.boldLabel);
+			using (new EditorGUILayout.HorizontalScope()) {
+				if (GUILayout.Button("Add Asset (pick file)")) AddAssetFromFile();
+				if (GUILayout.Button("Unload Library")) AssetLibrary.Instance.UnloadLibrary();
+				if (GUILayout.Button("Clear Library (delete on-disk)")) ClearLibraryOnDisk();
+			}
 
-            scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
-            for (int i = 0; i < assets.Count; i++) {
-                var a = assets[i];
-                EditorGUILayout.BeginVertical("box");
-                EditorGUILayout.LabelField("Name:", a.Name);
-                EditorGUILayout.LabelField("ID:", a.ID.ToString());
-                EditorGUILayout.LabelField("Ext:", a.Ext);
-                EditorGUILayout.LabelField("Size:", a.Size.ToString());
-                EditorGUILayout.LabelField("Modified:", DateTimeOffset.FromUnixTimeMilliseconds(a.ModificationTime).ToLocalTime().ToString());
-                EditorGUILayout.Space();
-                // Tags
-                EditorGUILayout.LabelField("Tags:");
-                EditorGUILayout.BeginHorizontal();
-                var tags = a.Tags;
-                for (int t = 0; t < tags.Count; t++) {
-                    var tag = tags[t];
-                    EditorGUILayout.BeginVertical(GUILayout.Width(160));
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField(tag, GUILayout.Width(110));
-                    if (GUILayout.Button("X", GUILayout.Width(20))) {
-                        if (EditorUtility.DisplayDialog("Confirm", $"Remove tag '{tag}' from {a.Name}?", "Yes", "No")) {
-                            a.RemoveTag(tag);
-                            AssetLibrary.Instance.UpdateAsset(a);
-                            AssetLibrarySerializer.SaveAsset(a);
-                            Repaint();
-                            break;
-                        }
-                    }
-                    if (GUILayout.Button("Edit", GUILayout.Width(30))) {
-                        var key = a.ID + ":" + tag;
-                        editTagInputs[key] = tag;
-                    }
-                    EditorGUILayout.EndHorizontal();
-                    // edit field if present
-                    var editKey = a.ID + ":" + tag;
-                    if (editTagInputs.TryGetValue(editKey, out var editVal)) {
-                        EditorGUILayout.BeginHorizontal();
-                        editVal = EditorGUILayout.TextField(editVal);
-                        if (GUILayout.Button("Save", GUILayout.Width(50))) {
-                            if (!string.IsNullOrEmpty(editVal) && editVal != tag) {
-                                a.RemoveTag(tag);
-                                a.AddTag(editVal);
-                                AssetLibrary.Instance.UpdateAsset(a);
-                                AssetLibrarySerializer.SaveAsset(a);
-                            }
-                            editTagInputs.Remove(editKey);
-                            Repaint();
-                        }
-                        if (GUILayout.Button("Cancel", GUILayout.Width(60))) {
-                            editTagInputs.Remove(editKey);
-                        }
-                        EditorGUILayout.EndHorizontal();
-                        editTagInputs[editKey] = editVal;
-                    }
-                    EditorGUILayout.EndVertical();
-                }
-                EditorGUILayout.EndHorizontal();
+			EditorGUILayout.Space();
 
-                // Add new tag
-                var idKey = a.ID.ToString();
-                if (!newTagInputs.ContainsKey(idKey)) newTagInputs[idKey] = "";
-                EditorGUILayout.BeginHorizontal();
-                newTagInputs[idKey] = EditorGUILayout.TextField(newTagInputs[idKey]);
-                if (GUILayout.Button("Add Tag", GUILayout.Width(80))) {
-                    var newTag = newTagInputs[idKey]?.Trim();
-                    if (!string.IsNullOrEmpty(newTag)) {
-                        a.AddTag(newTag);
-                        AssetLibrary.Instance.UpdateAsset(a);
-                        AssetLibrarySerializer.SaveAsset(a);
-                        newTagInputs[idKey] = "";
-                        Repaint();
-                    }
-                }
-                EditorGUILayout.EndHorizontal();
-                EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("Delete", GUILayout.Width(80))) {
-                    if (EditorUtility.DisplayDialog("Confirm", $"Remove asset {a.Name}?", "Yes", "No")) {
-                        AssetLibrary.Instance.RemoveAsset(a.ID);
-                        AssetLibrarySerializer.SaveLibrary();
-                        Repaint();
-                        break;
-                    }
-                }
-                EditorGUILayout.EndHorizontal();
-                EditorGUILayout.EndVertical();
-                EditorGUILayout.Space();
-            }
-            EditorGUILayout.EndScrollView();
+			using (new EditorGUILayout.VerticalScope("box")) {
+				EditorGUILayout.LabelField("Library Info", EditorStyles.boldLabel);
+				DrawLibraryInfo();
+			}
 
-            EditorGUILayout.Space();
-            EditorGUILayout.HelpBox("このウィンドウはテスト用です。Unity エディタ上で操作してください。", MessageType.Info);
-        }
+			EditorGUILayout.Space();
 
-        private void AddDummyAsset() {
-            var path = EditorUtility.OpenFilePanel("Select Asset File", "", "");
-            if (string.IsNullOrEmpty(path)) {
-                return;
-            }
+			using (new EditorGUILayout.VerticalScope("box")) {
+				EditorGUILayout.LabelField("Assets", EditorStyles.boldLabel);
+				_scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.Height(300));
+				DrawAssets();
+				EditorGUILayout.EndScrollView();
+			}
+		}
 
-            try {
-                AssetLibrarySerializer.AddAsset(path);
-            } catch (Exception ex) {
-                Debug.LogError($"Failed to add asset: {ex}");
-                EditorUtility.DisplayDialog("Error", $"Failed to add asset:\n{ex.Message}", "OK");
-            }
-            Repaint();
-        }
-    }
+		private void AddAssetFromFile() {
+			var path = EditorUtility.OpenFilePanel("Select asset file", Application.dataPath, "*");
+			if (string.IsNullOrEmpty(path)) return;
+			try {
+				AssetLibrarySerializer.AddAsset(path);
+				AssetLibrarySerializer.SaveLibrary();
+				AssetDatabase.Refresh();
+			}
+			catch (Exception e) {
+				Debug.LogError(e);
+			}
+		}
+
+		private void ClearLibraryOnDisk() {
+			if (!EditorUtility.DisplayDialog("Confirm", "Delete AssetManager data folder on disk? This will remove all saved metadata and asset copies.", "Delete", "Cancel")) return;
+			var root = Path.Combine(EditorPrefsManager.ContentFolderPath, "AssetManager");
+			try {
+				if (Directory.Exists(root)) Directory.Delete(root, true);
+				AssetLibrary.Instance.UnloadLibrary();
+				AssetDatabase.Refresh();
+			}
+			catch (Exception e) {
+				Debug.LogError(e);
+			}
+		}
+
+		private void DrawLibraryInfo() {
+			var lib = AssetLibrary.Instance.Libraries;
+			if (lib == null) {
+				EditorGUILayout.HelpBox("Library is null. Call Initialize or Load Library.", MessageType.Info);
+				return;
+			}
+
+			EditorGUILayout.LabelField("Library Version:", lib.LibraryVersion);
+			EditorGUILayout.LabelField("Modification Time:", lib.ModificationTime.ToString());
+
+			using (new EditorGUILayout.HorizontalScope()) {
+				_newFolderName = EditorGUILayout.TextField("New Folder Name", _newFolderName);
+				if (GUILayout.Button("Add Folder", GUILayout.Width(120))) {
+					var f = new FolderInfo();
+					f.UpdateName(_newFolderName);
+					lib.AddFolder(f);
+					AssetLibrarySerializer.SaveLibrary();
+				}
+			}
+
+			EditorGUILayout.Space();
+			EditorGUILayout.LabelField("Folders:");
+			var folders = lib.FolderInfo;
+			if (folders.Count == 0) EditorGUILayout.LabelField("(no folders)");
+			else {
+				foreach (var f in folders) {
+					DrawFolderInfo(f, lib);
+				}
+			}
+		}
+
+		private void DrawFolderInfo(FolderInfo f, LibraryMetadata lib) {
+			using (new EditorGUILayout.VerticalScope("box")) {
+				EditorGUILayout.LabelField($"{f.Name} ({f.ID})");
+				EditorGUILayout.LabelField("Description:", f.Description);
+				EditorGUILayout.LabelField("Modified:", f.ModificationTime.ToString());
+				using (new EditorGUILayout.HorizontalScope()) {
+					if (GUILayout.Button("Remove Folder")) {
+						lib.RemoveFolder(f.ID);
+						AssetLibrarySerializer.SaveLibrary();
+						return;
+					}
+					if (GUILayout.Button("Add Child Folder")) {
+						var child = new FolderInfo();
+						child.UpdateName(f.Name + "_child");
+						f.AddChild(child);
+						AssetLibrarySerializer.SaveLibrary();
+					}
+				}
+
+				if (f.Children.Count > 0) {
+					EditorGUILayout.LabelField("Children:");
+					foreach (var c in f.Children) DrawFolderInfo(c, lib);
+				}
+			}
+		}
+
+		private void DrawAssets() {
+			var assets = AssetLibrary.Instance.Assets;
+			if (assets == null || assets.Count == 0) {
+				EditorGUILayout.LabelField("(no assets)");
+				return;
+			}
+
+			foreach (var a in assets) {
+				using (new EditorGUILayout.VerticalScope("box")) {
+					EditorGUILayout.LabelField($"Name: {a.Name}");
+					EditorGUILayout.LabelField($"ID: {a.ID}");
+					EditorGUILayout.LabelField($"Desc: {a.Description}");
+					EditorGUILayout.LabelField($"Size: {a.Size}");
+					EditorGUILayout.LabelField($"Ext: {a.Ext}");
+					EditorGUILayout.LabelField($"Folder: {(a.Folder.HasValue ? a.Folder.Value.ToString() : "(none)")}");
+					EditorGUILayout.LabelField($"Tags: {string.Join(",", a.Tags)}");
+					EditorGUILayout.LabelField($"Deleted: {a.IsDeleted}");
+					EditorGUILayout.LabelField($"Modified: {a.ModificationTime}");
+
+					using (new EditorGUILayout.HorizontalScope()) {
+						if (GUILayout.Button("Load From Disk")) {
+							AssetLibrarySerializer.LoadAsset(a.ID);
+						}
+						if (GUILayout.Button("Remove Asset")) {
+							if (EditorUtility.DisplayDialog("Confirm", $"Remove metadata for asset '{a.Name}' ({a.ID})? This will not delete files on disk.", "Remove", "Cancel")) {
+								AssetLibrary.Instance.RemoveAsset(a.ID);
+								AssetLibrarySerializer.SaveLibrary();
+							}
+						}
+						if (GUILayout.Button("Delete Asset (on-disk)")) {
+							if (EditorUtility.DisplayDialog("Confirm", $"Permanently delete asset '{a.Name}' ({a.ID}) and its on-disk files?", "Delete", "Cancel")) {
+								AssetLibrarySerializer.RemoveAsset(a.ID);
+								AssetLibrarySerializer.SaveLibrary();
+								AssetDatabase.Refresh();
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
+

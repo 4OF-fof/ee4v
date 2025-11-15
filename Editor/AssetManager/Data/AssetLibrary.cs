@@ -45,5 +45,10 @@ namespace _4OF.ee4v.AssetManager.Data {
         public void LoadLibrary(LibraryMetadata libraryMetadata) {
             _libraryMetadata = libraryMetadata;
         }
+        
+        public void UnloadLibrary() {
+            _assetMetadataList.Clear();
+            _libraryMetadata = null;
+        }
     }
 }
