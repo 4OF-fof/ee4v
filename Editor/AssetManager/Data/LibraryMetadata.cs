@@ -46,7 +46,7 @@ namespace _4OF.ee4v.AssetManager.Data {
     }
 
     public class FolderInfo {
-        private readonly string _id = Ulid.Generate().ToString();
+        private readonly Ulid _id = Ulid.Generate();
         private string _name = "";
         private string _description = "";
         private readonly List<FolderInfo> _children = new();
@@ -56,7 +56,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         public FolderInfo() { }
         
         [JsonConstructor]
-        public FolderInfo(string id, string name, string description, List<FolderInfo> children, long modificationTime, List<string> tags) {
+        public FolderInfo(Ulid id, string name, string description, List<FolderInfo> children, long modificationTime, List<string> tags) {
             _id = id;
             _name = name;
             _description = description;
@@ -65,7 +65,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             _tags = tags ?? new List<string>();
         }
 
-        public Ulid ID => Ulid.Parse(_id);
+        public Ulid ID => _id;
         public string Name => _name;
         public string Description => _description;
         public IReadOnlyList<FolderInfo> Children => _children.AsReadOnly();

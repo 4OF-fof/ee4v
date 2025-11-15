@@ -5,8 +5,8 @@ using Newtonsoft.Json;
 
 namespace _4OF.ee4v.AssetManager.Data {
     public class AssetMetadata {
+        private readonly Ulid _id = Ulid.Generate();
         private string _name = "";
-        private readonly string _id = Ulid.Generate().ToString();
         private string _description = "";
         private long _size;
         private string _ext = "";
@@ -18,7 +18,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         public AssetMetadata() { }
         
         [JsonConstructor]
-        public AssetMetadata(string name, string id, string description, long size, string ext, string folder, List<string> tags, bool isDeleted, long modificationTime) {
+        public AssetMetadata(Ulid id, string name, string description, long size, string ext, string folder, List<string> tags, bool isDeleted, long modificationTime) {
             _name = name;
             _id = id;
             _description = description;
@@ -30,7 +30,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             _modificationTime = modificationTime;
         }
 
-        public Ulid ID => Ulid.Parse(_id);
+        public Ulid ID => _id;
         public string Name => _name;
         public string Description => _description;
         public long Size => _size;

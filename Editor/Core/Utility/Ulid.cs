@@ -1,9 +1,11 @@
 ﻿using System;
+using Newtonsoft.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace _4OF.ee4v.Core.Utility {
+    [JsonConverter(typeof(UlidJsonConverter))]
     public readonly struct Ulid : IComparable<Ulid>, IEquatable<Ulid>, IFormattable {
         private static readonly char[] Base32Alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".ToCharArray();
         private static readonly sbyte[] Base32DecodeMap = CreateDecodeMap();
