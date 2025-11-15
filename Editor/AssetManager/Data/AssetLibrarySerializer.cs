@@ -101,7 +101,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             AssetLibrary.Instance.RemoveAsset(assetId);
         }
         
-        public static void AddThumbnail(Ulid assetId, string imagePath) {
+        public static void SetThumbnail(Ulid assetId, string imagePath) {
             var assetDir = Path.Combine(RootDir, "Assets", assetId.ToString());
             if (!Directory.Exists(assetDir)) {
                 Debug.LogError($"Asset directory does not exist: {assetId}");

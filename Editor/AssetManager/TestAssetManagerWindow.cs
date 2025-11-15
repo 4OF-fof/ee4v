@@ -305,6 +305,14 @@ namespace _4OF.ee4v.AssetManager {
                     EditorGUILayout.LabelField($"Modified: {a.ModificationTime}");
 
                     using (new EditorGUILayout.HorizontalScope()) {
+                        if (GUILayout.Button("Set Thumbnail")) {
+                            var thumbPath = EditorUtility.OpenFilePanel("Select thumbnail image", Application.dataPath,
+                                "png,jpg,jpeg");
+                            if (!string.IsNullOrEmpty(thumbPath)) {
+                                AssetLibrarySerializer.SetThumbnail(a.ID, thumbPath);
+                            }
+                        }
+                        if (GUILayout.Button("Remove Thumbnail")) AssetLibrarySerializer.RemoveThumbnail(a.ID);
                         if (GUILayout.Button("Load From Disk")) AssetLibrarySerializer.LoadAsset(a.ID);
                         if (GUILayout.Button("Remove Asset"))
                             if (EditorUtility.DisplayDialog("Confirm",
