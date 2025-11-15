@@ -1,27 +1,30 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using _4OF.ee4v.Core.Utility;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.Data;
+using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager {
     public class TestAssetManagerWindow : EditorWindow {
+        // rename inputs for folders
+        private readonly Dictionary<string, string> _folderRenameInputs = new();
+
+        // tag input per-asset
+        private readonly Dictionary<string, string> _tagInputs = new();
+
+        // rename inputs for library tags
+        private readonly Dictionary<string, string> _tagRenameInputs = new();
+
         // Inputs
         private string _assetIdInput = "";
         private string _newAssetName = "New Asset";
         private string _newFolderName = "New Folder";
         private Vector2 _scroll;
-        // tag input per-asset
-        private readonly Dictionary<string, string> _tagInputs = new Dictionary<string, string>();
-        // rename inputs for library tags
-        private readonly Dictionary<string, string> _tagRenameInputs = new Dictionary<string, string>();
-        // rename inputs for folders
-        private readonly Dictionary<string, string> _folderRenameInputs = new Dictionary<string, string>();
 
         private void OnGUI() {
             EditorGUILayout.LabelField("Asset Manager - Data Operation Tests", EditorStyles.boldLabel);
@@ -57,6 +60,7 @@ namespace _4OF.ee4v.AssetManager {
                 EditorGUILayout.LabelField("Assets", EditorStyles.boldLabel);
                 DrawAssets();
             }
+
             EditorGUILayout.EndScrollView();
         }
 
@@ -126,8 +130,8 @@ namespace _4OF.ee4v.AssetManager {
             EditorGUILayout.LabelField("All Tags:", EditorStyles.boldLabel);
             var allTags = AssetLibrary.Instance.GetAllTags();
             if (allTags == null || allTags.Count == 0) EditorGUILayout.LabelField("(no tags)");
-            else {
-                foreach (var tag in allTags) {
+            else
+                foreach (var tag in allTags)
                     using (new EditorGUILayout.HorizontalScope()) {
                         EditorGUILayout.LabelField(tag, GUILayout.Width(200));
                         if (!_tagRenameInputs.ContainsKey(tag)) _tagRenameInputs[tag] = "";
@@ -137,17 +141,14 @@ namespace _4OF.ee4v.AssetManager {
                             if (!string.IsNullOrEmpty(newTag) && newTag != tag) {
                                 AssetLibrary.Instance.RenameTag(tag, newTag);
                                 // save any assets that were affected
-                                foreach (var asset in AssetLibrary.Instance.Assets) {
-                                    if (asset.Tags.Contains(newTag) || asset.Tags.Contains(tag)) {
+                                foreach (var asset in AssetLibrary.Instance.Assets)
+                                    if (asset.Tags.Contains(newTag) || asset.Tags.Contains(tag))
                                         AssetLibrarySerializer.SaveAsset(asset);
-                                    }
-                                }
+
                                 AssetLibrarySerializer.SaveLibrary();
                             }
                         }
                     }
-                }
-            }
         }
 
         private void DrawFolderInfo(FolderInfo f, LibraryMetadata lib) {
@@ -166,6 +167,7 @@ namespace _4OF.ee4v.AssetManager {
                         }
                     }
                 }
+
                 EditorGUILayout.LabelField("Description:", f.Description);
                 EditorGUILayout.LabelField("Modified:", f.ModificationTime.ToString());
                 using (new EditorGUILayout.HorizontalScope()) {
@@ -199,7 +201,7 @@ namespace _4OF.ee4v.AssetManager {
 
             // build folder options (flat list) from library
             var lib = AssetLibrary.Instance.Libraries;
-            var folderNames = new List<string> {"(none)"};
+            var folderNames = new List<string> { "(none)" };
             var folderIds = new List<Ulid?> { null };
             if (lib != null) {
                 void WalkFolders(IEnumerable<FolderInfo> cols) {
@@ -213,7 +215,7 @@ namespace _4OF.ee4v.AssetManager {
                 WalkFolders(lib.FolderInfo);
             }
 
-            foreach (var a in assets) {
+            foreach (var a in assets)
                 using (new EditorGUILayout.VerticalScope("box")) {
                     EditorGUILayout.LabelField($"ID: {a.ID}");
 
@@ -242,12 +244,12 @@ namespace _4OF.ee4v.AssetManager {
                     if (folderNames.Count > 0) {
                         var currentFolderId = a.Folder.HasValue ? a.Folder.Value : (Ulid?)null;
                         var selectedIndex = 0;
-                        for (var i = 0; i < folderIds.Count; i++) {
-                            if (folderIds[i].HasValue && currentFolderId.HasValue && folderIds[i].Value == currentFolderId.Value) {
+                        for (var i = 0; i < folderIds.Count; i++)
+                            if (folderIds[i].HasValue && currentFolderId.HasValue &&
+                                folderIds[i].Value == currentFolderId.Value) {
                                 selectedIndex = i;
                                 break;
                             }
-                        }
 
                         var newIndex = EditorGUILayout.Popup("Folder", selectedIndex, folderNames.ToArray());
                         if (newIndex != selectedIndex) {
@@ -288,18 +290,16 @@ namespace _4OF.ee4v.AssetManager {
                         }
                     }
 
-                    if (a.Tags != null && a.Tags.Count > 0) {
+                    if (a.Tags != null && a.Tags.Count > 0)
                         using (new EditorGUILayout.HorizontalScope()) {
-                            foreach (var tag in a.Tags.ToList()) {
+                            foreach (var tag in a.Tags.ToList())
                                 if (GUILayout.Button($"Remove: {tag}", GUILayout.Width(120))) {
                                     a.RemoveTag(tag);
                                     AssetLibrary.Instance.UpdateAsset(a);
                                     AssetLibrarySerializer.SaveAsset(a);
                                     AssetLibrarySerializer.SaveLibrary();
                                 }
-                            }
                         }
-                    }
 
                     EditorGUILayout.LabelField($"Deleted: {a.IsDeleted}");
                     EditorGUILayout.LabelField($"Modified: {a.ModificationTime}");
@@ -308,10 +308,9 @@ namespace _4OF.ee4v.AssetManager {
                         if (GUILayout.Button("Set Thumbnail")) {
                             var thumbPath = EditorUtility.OpenFilePanel("Select thumbnail image", Application.dataPath,
                                 "png,jpg,jpeg");
-                            if (!string.IsNullOrEmpty(thumbPath)) {
-                                AssetLibrarySerializer.SetThumbnail(a.ID, thumbPath);
-                            }
+                            if (!string.IsNullOrEmpty(thumbPath)) AssetLibrarySerializer.SetThumbnail(a.ID, thumbPath);
                         }
+
                         if (GUILayout.Button("Remove Thumbnail")) AssetLibrarySerializer.RemoveThumbnail(a.ID);
                         if (GUILayout.Button("Load From Disk")) AssetLibrarySerializer.LoadAsset(a.ID);
                         if (GUILayout.Button("Remove Asset"))
@@ -332,7 +331,6 @@ namespace _4OF.ee4v.AssetManager {
                             }
                     }
                 }
-            }
         }
     }
 }

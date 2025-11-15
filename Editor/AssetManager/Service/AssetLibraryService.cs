@@ -6,7 +6,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             AssetLibrarySerializer.LoadLibrary();
             AssetLibrarySerializer.LoadAllAssets();
         }
-        
+
         public static void RefreshAssetLibrary() {
             AssetLibrary.Instance.UnloadLibrary();
             LoadAssetLibrary();

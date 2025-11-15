@@ -11,7 +11,8 @@ namespace _4OF.ee4v.Core.Utility {
             var newW = Mathf.Max(1, Mathf.RoundToInt(source.width * scale));
             var newH = Mathf.Max(1, Mathf.RoundToInt(source.height * scale));
 
-            var rt = RenderTexture.GetTemporary(newW, newH, 0, RenderTextureFormat.Default, RenderTextureReadWrite.sRGB);
+            var rt = RenderTexture.GetTemporary(newW, newH, 0, RenderTextureFormat.Default,
+                RenderTextureReadWrite.sRGB);
             var prevActive = RenderTexture.active;
             Graphics.Blit(source, rt);
             RenderTexture.active = rt;

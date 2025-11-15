@@ -44,10 +44,8 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public List<string> GetAllTags() {
             var tags = new HashSet<string>();
-            foreach (var tag in _assetMetadataList.SelectMany(asset => asset.Tags)) {
-                tags.Add(tag);
-            }
-            
+            foreach (var tag in _assetMetadataList.SelectMany(asset => asset.Tags)) tags.Add(tag);
+
             return tags.ToList();
         }
 
