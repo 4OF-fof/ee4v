@@ -100,5 +100,31 @@ namespace _4OF.ee4v.AssetManager.Data {
             if (Directory.Exists(assetDir)) Directory.Delete(assetDir, true);
             AssetLibrary.Instance.RemoveAsset(assetId);
         }
+        
+        public static void AddThumbnail(Ulid assetId, string imagePath) {
+            var assetDir = Path.Combine(RootDir, "Assets", assetId.ToString());
+            if (!Directory.Exists(assetDir)) {
+                Debug.LogError($"Asset directory does not exist: {assetId}");
+                return;
+            }
+
+            var fileData = File.ReadAllBytes(imagePath);
+            var tex = new Texture2D(2, 2);
+            if (tex.LoadImage(fileData)) {
+                var pngBytes = tex.EncodeToPNG();
+                var destPath = Path.Combine(assetDir, "thumbnail.png");
+                File.WriteAllBytes(destPath, pngBytes);
+                Object.DestroyImmediate(tex);
+            } else {
+                Debug.LogError($"Failed to load image data from: {imagePath}");
+                Object.DestroyImmediate(tex);
+            }
+        }
+
+        public static void RemoveThumbnail(Ulid assetId) {
+            var assetDir = Path.Combine(RootDir, "Assets", assetId.ToString());
+            var thumbPath = Path.Combine(assetDir, "thumbnail.png");
+            File.Delete(thumbPath);
+        }
     }
 }
