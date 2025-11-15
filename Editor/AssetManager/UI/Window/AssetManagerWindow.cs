@@ -1,11 +1,11 @@
 ﻿using _4OF.ee4v.AssetManager.Service;
-using _4OF.ee4v.AssetManager.Data;
 using UnityEditor;
 using _4OF.ee4v.AssetManager.UI.Window._Component;
 
 namespace _4OF.ee4v.AssetManager.UI.Window {
     public class AssetManagerWindow: EditorWindow {
         private MainContent _mainContent;
+        private MainContentController _mainContentController;
         [MenuItem("ee4v/Asset Manager")]
         public static void ShowWindow() {
             var window = GetWindow<AssetManagerWindow>("Asset Manager");
@@ -15,24 +15,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private void CreateGUI() {
             rootVisualElement.Clear();
-            var toolbar = new Toolbar {
-                requestRefresh = RefreshLibrary
-            };
+            var toolbar = new Toolbar();
             rootVisualElement.Add(toolbar);
 
             _mainContent = new MainContent();
             rootVisualElement.Add(_mainContent);
 
-            RefreshContents();
+            _mainContentController = new MainContentController(_mainContent);
+            toolbar.requestRefresh = _mainContentController.RefreshLibrary;
+            toolbar.requestFilter = _mainContentController.SetTextFilter;
+
+            _mainContentController.Refresh();
         }
 
-        private void RefreshContents() {
-            _mainContent.RefreshContents(AssetLibrary.Instance.Assets);
-        }
-
-        private void RefreshLibrary() {
-            AssetLibraryService.RefreshAssetLibrary();
-            RefreshContents();
-        }
+        
     }
 }

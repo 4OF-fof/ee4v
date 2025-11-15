@@ -12,8 +12,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             style.flexDirection = FlexDirection.Column;
             style.alignItems = Align.Center;
 
-            
-
             var nameLabel = new Label(metadata?.Name ?? "(unnamed)") {
                 style = {
                     unityTextAlign = TextAnchor.MiddleCenter,
