@@ -84,7 +84,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         public static void AddAsset(string path) {
             var fileInfo = new FileInfo(path);
             var assetMetadata = new AssetMetadata();
-            assetMetadata.UpdateName(fileInfo.Name);
+            assetMetadata.UpdateName(Path.GetFileNameWithoutExtension(fileInfo.Name));
             assetMetadata.UpdateSize(fileInfo.Length);
             assetMetadata.UpdateExt(fileInfo.Extension);
             var assetDir = Path.Combine(RootDir, "Assets", assetMetadata.ID.ToString());

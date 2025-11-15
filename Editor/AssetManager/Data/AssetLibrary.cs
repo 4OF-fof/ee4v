@@ -20,7 +20,8 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public void RemoveAsset(Ulid assetId) {
-            _assetMetadataList.RemoveAll(a => a.ID == assetId);
+            var asset = _assetMetadataList.Find(a => a.ID == assetId);
+            asset?.SetDeleted(true);
         }
 
         public void UpdateAsset(AssetMetadata assetMetadata) {

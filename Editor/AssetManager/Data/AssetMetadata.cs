@@ -61,8 +61,8 @@ namespace _4OF.ee4v.AssetManager.Data {
             Touch();
         }
 
-        public void UpdateFolder(Ulid newFolder) {
-            _folder = newFolder.ToString();
+        public void UpdateFolder(Ulid? newFolder) {
+            _folder = newFolder.HasValue ? newFolder.Value.ToString() : "";
             Touch();
         }
 

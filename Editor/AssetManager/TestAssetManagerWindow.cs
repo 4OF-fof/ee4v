@@ -20,6 +20,8 @@ namespace _4OF.ee4v.AssetManager {
         private readonly Dictionary<string, string> _tagInputs = new Dictionary<string, string>();
         // rename inputs for library tags
         private readonly Dictionary<string, string> _tagRenameInputs = new Dictionary<string, string>();
+        // rename inputs for folders
+        private readonly Dictionary<string, string> _folderRenameInputs = new Dictionary<string, string>();
 
         private void OnGUI() {
             EditorGUILayout.LabelField("Asset Manager - Data Operation Tests", EditorStyles.boldLabel);
@@ -41,6 +43,9 @@ namespace _4OF.ee4v.AssetManager {
 
             EditorGUILayout.Space();
 
+            EditorGUILayout.Space();
+            // Combine the library info and assets into a single scroll view
+            _scroll = EditorGUILayout.BeginScrollView(_scroll);
             using (new EditorGUILayout.VerticalScope("box")) {
                 EditorGUILayout.LabelField("Library Info", EditorStyles.boldLabel);
                 DrawLibraryInfo();
@@ -50,10 +55,9 @@ namespace _4OF.ee4v.AssetManager {
 
             using (new EditorGUILayout.VerticalScope("box")) {
                 EditorGUILayout.LabelField("Assets", EditorStyles.boldLabel);
-                _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.Height(300));
                 DrawAssets();
-                EditorGUILayout.EndScrollView();
             }
+            EditorGUILayout.EndScrollView();
         }
 
         [MenuItem("Debug/Asset Manager Test")]
@@ -149,6 +153,19 @@ namespace _4OF.ee4v.AssetManager {
         private void DrawFolderInfo(FolderInfo f, LibraryMetadata lib) {
             using (new EditorGUILayout.VerticalScope("box")) {
                 EditorGUILayout.LabelField($"{f.Name} ({f.ID})");
+                // Rename UI for folder
+                var folderKey = f.ID.ToString();
+                if (!_folderRenameInputs.ContainsKey(folderKey)) _folderRenameInputs[folderKey] = f.Name;
+                using (new EditorGUILayout.HorizontalScope()) {
+                    _folderRenameInputs[folderKey] = EditorGUILayout.TextField(_folderRenameInputs[folderKey]);
+                    if (GUILayout.Button("Rename Folder", GUILayout.Width(120))) {
+                        var newName = _folderRenameInputs[folderKey]?.Trim();
+                        if (!string.IsNullOrEmpty(newName) && newName != f.Name) {
+                            f.UpdateName(newName);
+                            AssetLibrarySerializer.SaveLibrary();
+                        }
+                    }
+                }
                 EditorGUILayout.LabelField("Description:", f.Description);
                 EditorGUILayout.LabelField("Modified:", f.ModificationTime.ToString());
                 using (new EditorGUILayout.HorizontalScope()) {
@@ -235,7 +252,11 @@ namespace _4OF.ee4v.AssetManager {
                         var newIndex = EditorGUILayout.Popup("Folder", selectedIndex, folderNames.ToArray());
                         if (newIndex != selectedIndex) {
                             if (newIndex == 0) {
-                                // clear folder - not implemented in API; skipping for now
+                                // clear folder
+                                a.UpdateFolder(null);
+                                AssetLibrary.Instance.UpdateAsset(a);
+                                AssetLibrarySerializer.SaveAsset(a);
+                                AssetLibrarySerializer.SaveLibrary();
                             }
                             else {
                                 var selectedFolder = folderIds[newIndex];
