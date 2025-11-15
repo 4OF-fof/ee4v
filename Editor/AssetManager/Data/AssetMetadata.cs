@@ -76,13 +76,6 @@ namespace _4OF.ee4v.AssetManager.Data {
             if (_tags.Remove(tag)) Touch();
         }
 
-        public void UpdateTag(string oldTag, string newTag) {
-            if (string.IsNullOrEmpty(newTag) || _tags.Contains(newTag)) return;
-            if (!_tags.Remove(oldTag)) return;
-            _tags.Add(newTag);
-            Touch();
-        }
-
         public void SetDeleted(bool deleted) {
             IsDeleted = deleted;
             Touch();

@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using _4OF.ee4v.Core.Utility;
 
 namespace _4OF.ee4v.AssetManager.Data {
-    public sealed class AssetLibrary {
+    public class AssetLibrary {
         public static readonly AssetLibrary Instance = new();
 
         private readonly List<AssetMetadata> _assetMetadataList = new();
@@ -38,6 +39,25 @@ namespace _4OF.ee4v.AssetManager.Data {
                 UpdateAsset(assetMetadata);
             else
                 AddAsset(assetMetadata);
+        }
+
+        public List<string> GetAllTags() {
+            var tags = new HashSet<string>();
+            foreach (var tag in _assetMetadataList.SelectMany(asset => asset.Tags)) {
+                tags.Add(tag);
+            }
+            
+            return tags.ToList();
+        }
+
+        public void RenameTag(string tag, string newTag) {
+            if (string.IsNullOrEmpty(tag) || string.IsNullOrEmpty(newTag) || tag == newTag) return;
+            var allTags = GetAllTags();
+            if (!allTags.Contains(tag) || allTags.Contains(newTag)) return;
+            foreach (var asset in _assetMetadataList.Where(asset => asset.Tags.Contains(tag))) {
+                asset.AddTag(newTag);
+                asset.RemoveTag(tag);
+            }
         }
 
         public void LoadLibrary(LibraryMetadata libraryMetadata) {
