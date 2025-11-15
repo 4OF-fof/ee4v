@@ -1,5 +1,8 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
+using _4OF.ee4v.Core.Utility;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.Data;
@@ -13,6 +16,10 @@ namespace _4OF.ee4v.AssetManager {
         private string _newAssetName = "New Asset";
         private string _newFolderName = "New Folder";
         private Vector2 _scroll;
+        // tag input per-asset
+        private readonly Dictionary<string, string> _tagInputs = new Dictionary<string, string>();
+        // rename inputs for library tags
+        private readonly Dictionary<string, string> _tagRenameInputs = new Dictionary<string, string>();
 
         private void OnGUI() {
             EditorGUILayout.LabelField("Asset Manager - Data Operation Tests", EditorStyles.boldLabel);
@@ -110,6 +117,33 @@ namespace _4OF.ee4v.AssetManager {
             else
                 foreach (var f in folders)
                     DrawFolderInfo(f, lib);
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("All Tags:", EditorStyles.boldLabel);
+            var allTags = AssetLibrary.Instance.GetAllTags();
+            if (allTags == null || allTags.Count == 0) EditorGUILayout.LabelField("(no tags)");
+            else {
+                foreach (var tag in allTags) {
+                    using (new EditorGUILayout.HorizontalScope()) {
+                        EditorGUILayout.LabelField(tag, GUILayout.Width(200));
+                        if (!_tagRenameInputs.ContainsKey(tag)) _tagRenameInputs[tag] = "";
+                        _tagRenameInputs[tag] = EditorGUILayout.TextField(_tagRenameInputs[tag]);
+                        if (GUILayout.Button("Rename", GUILayout.Width(80))) {
+                            var newTag = _tagRenameInputs[tag]?.Trim();
+                            if (!string.IsNullOrEmpty(newTag) && newTag != tag) {
+                                AssetLibrary.Instance.RenameTag(tag, newTag);
+                                // save any assets that were affected
+                                foreach (var asset in AssetLibrary.Instance.Assets) {
+                                    if (asset.Tags.Contains(newTag) || asset.Tags.Contains(tag)) {
+                                        AssetLibrarySerializer.SaveAsset(asset);
+                                    }
+                                }
+                                AssetLibrarySerializer.SaveLibrary();
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private void DrawFolderInfo(FolderInfo f, LibraryMetadata lib) {
@@ -146,15 +180,106 @@ namespace _4OF.ee4v.AssetManager {
                 return;
             }
 
-            foreach (var a in assets)
+            // build folder options (flat list) from library
+            var lib = AssetLibrary.Instance.Libraries;
+            var folderNames = new List<string> {"(none)"};
+            var folderIds = new List<Ulid?> { null };
+            if (lib != null) {
+                void WalkFolders(IEnumerable<FolderInfo> cols) {
+                    foreach (var f in cols) {
+                        folderNames.Add(f.Name);
+                        folderIds.Add(f.ID);
+                        if (f.Children.Count > 0) WalkFolders(f.Children);
+                    }
+                }
+
+                WalkFolders(lib.FolderInfo);
+            }
+
+            foreach (var a in assets) {
                 using (new EditorGUILayout.VerticalScope("box")) {
-                    EditorGUILayout.LabelField($"Name: {a.Name}");
                     EditorGUILayout.LabelField($"ID: {a.ID}");
-                    EditorGUILayout.LabelField($"Desc: {a.Description}");
+
+                    // Editable name
+                    var newName = EditorGUILayout.TextField("Name", a.Name);
+                    if (newName != a.Name) {
+                        a.UpdateName(newName);
+                        AssetLibrary.Instance.UpdateAsset(a);
+                        AssetLibrarySerializer.SaveAsset(a);
+                        AssetLibrarySerializer.SaveLibrary();
+                    }
+
+                    // Editable description
+                    var newDesc = EditorGUILayout.TextField("Description", a.Description);
+                    if (newDesc != a.Description) {
+                        a.UpdateDescription(newDesc);
+                        AssetLibrary.Instance.UpdateAsset(a);
+                        AssetLibrarySerializer.SaveAsset(a);
+                        AssetLibrarySerializer.SaveLibrary();
+                    }
+
                     EditorGUILayout.LabelField($"Size: {a.Size}");
                     EditorGUILayout.LabelField($"Ext: {a.Ext}");
-                    EditorGUILayout.LabelField($"Folder: {(a.Folder.HasValue ? a.Folder.Value.ToString() : "(none)")}");
+
+                    // Folder popup
+                    if (folderNames.Count > 0) {
+                        var currentFolderId = a.Folder.HasValue ? a.Folder.Value : (Ulid?)null;
+                        var selectedIndex = 0;
+                        for (var i = 0; i < folderIds.Count; i++) {
+                            if (folderIds[i].HasValue && currentFolderId.HasValue && folderIds[i].Value == currentFolderId.Value) {
+                                selectedIndex = i;
+                                break;
+                            }
+                        }
+
+                        var newIndex = EditorGUILayout.Popup("Folder", selectedIndex, folderNames.ToArray());
+                        if (newIndex != selectedIndex) {
+                            if (newIndex == 0) {
+                                // clear folder - not implemented in API; skipping for now
+                            }
+                            else {
+                                var selectedFolder = folderIds[newIndex];
+                                if (selectedFolder.HasValue) {
+                                    a.UpdateFolder(selectedFolder.Value);
+                                    AssetLibrary.Instance.UpdateAsset(a);
+                                    AssetLibrarySerializer.SaveAsset(a);
+                                    AssetLibrarySerializer.SaveLibrary();
+                                }
+                            }
+                        }
+                    }
+
+                    // Tags: list + remove
                     EditorGUILayout.LabelField($"Tags: {string.Join(",", a.Tags)}");
+                    using (new EditorGUILayout.HorizontalScope()) {
+                        var key = a.ID.ToString();
+                        if (!_tagInputs.ContainsKey(key)) _tagInputs[key] = "";
+                        _tagInputs[key] = EditorGUILayout.TextField(_tagInputs[key]);
+                        if (GUILayout.Button("Add Tag", GUILayout.Width(80))) {
+                            var t = _tagInputs[key]?.Trim();
+                            if (!string.IsNullOrEmpty(t)) {
+                                a.AddTag(t);
+                                _tagInputs[key] = "";
+                                AssetLibrary.Instance.UpdateAsset(a);
+                                AssetLibrarySerializer.SaveAsset(a);
+                                AssetLibrarySerializer.SaveLibrary();
+                            }
+                        }
+                    }
+
+                    if (a.Tags != null && a.Tags.Count > 0) {
+                        using (new EditorGUILayout.HorizontalScope()) {
+                            foreach (var tag in a.Tags.ToList()) {
+                                if (GUILayout.Button($"Remove: {tag}", GUILayout.Width(120))) {
+                                    a.RemoveTag(tag);
+                                    AssetLibrary.Instance.UpdateAsset(a);
+                                    AssetLibrarySerializer.SaveAsset(a);
+                                    AssetLibrarySerializer.SaveLibrary();
+                                }
+                            }
+                        }
+                    }
+
                     EditorGUILayout.LabelField($"Deleted: {a.IsDeleted}");
                     EditorGUILayout.LabelField($"Modified: {a.ModificationTime}");
 
@@ -178,6 +303,7 @@ namespace _4OF.ee4v.AssetManager {
                             }
                     }
                 }
+            }
         }
     }
 }
