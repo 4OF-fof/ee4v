@@ -7,21 +7,21 @@ using Newtonsoft.Json;
 namespace _4OF.ee4v.AssetManager.Data {
     public class LibraryMetadata {
         private readonly List<FolderInfo> _folderInfo = new();
-        private long _modificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        private string _libraryVersion = "1";
-        
-        public LibraryMetadata() { }
+
+        public LibraryMetadata() {
+        }
 
         [JsonConstructor]
         public LibraryMetadata(List<FolderInfo> folderInfo, long modificationTime, string libraryVersion) {
             _folderInfo = folderInfo ?? new List<FolderInfo>();
-            _modificationTime = modificationTime;
-            _libraryVersion = libraryVersion;
+            ModificationTime = modificationTime;
+            LibraryVersion = libraryVersion;
         }
 
         public IReadOnlyList<FolderInfo> FolderInfo => _folderInfo.AsReadOnly();
-        public long ModificationTime => _modificationTime;
-        public string LibraryVersion => _libraryVersion;
+        public long ModificationTime { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        public string LibraryVersion { get; private set; } = "1";
 
         public void AddFolder(FolderInfo folder) {
             if (folder == null) return;
@@ -45,53 +45,57 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public FolderInfo GetFolder(Ulid folderId) {
-            return folderId == default ? null : _folderInfo.Select(f => f.GetChild(folderId)).FirstOrDefault(found => found != null);
+            return folderId == default
+                ? null
+                : _folderInfo.Select(f => f.GetChild(folderId)).FirstOrDefault(found => found != null);
         }
 
         public void SetLibraryVersion(string newLibraryVersion) {
-            _libraryVersion = newLibraryVersion;
+            LibraryVersion = newLibraryVersion;
             Touch();
         }
 
         public void Touch() {
-            _modificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            ModificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }
     }
 
     public class FolderInfo {
-        private readonly Ulid _id = Ulid.Generate();
-        private string _name = "";
-        private string _description = "";
         private readonly List<FolderInfo> _children = new();
-        private long _modificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         private readonly List<string> _tags = new();
-        
-        public FolderInfo() { }
-        
+
+        public FolderInfo() {
+        }
+
         [JsonConstructor]
-        public FolderInfo(Ulid id, string name, string description, List<FolderInfo> children, long modificationTime, List<string> tags) {
-            _id = id;
-            _name = name;
-            _description = description;
+        public FolderInfo(Ulid id, string name, string description, List<FolderInfo> children, long modificationTime,
+            List<string> tags) {
+            ID = id;
+            Name = name;
+            Description = description;
             _children = children ?? new List<FolderInfo>();
-            _modificationTime = modificationTime;
+            ModificationTime = modificationTime;
             _tags = tags ?? new List<string>();
         }
 
-        public Ulid ID => _id;
-        public string Name => _name;
-        public string Description => _description;
+        public Ulid ID { get; } = Ulid.Generate();
+
+        public string Name { get; private set; } = "";
+
+        public string Description { get; private set; } = "";
+
         public IReadOnlyList<FolderInfo> Children => _children.AsReadOnly();
-        public long ModificationTime => _modificationTime;
+        public long ModificationTime { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
         public IReadOnlyList<string> Tags => _tags.AsReadOnly();
 
         public void UpdateName(string newName) {
-            _name = newName;
+            Name = newName;
             Touch();
         }
 
         public void UpdateDescription(string newDescription) {
-            _description = newDescription;
+            Description = newDescription;
             Touch();
         }
 
@@ -113,23 +117,24 @@ namespace _4OF.ee4v.AssetManager.Data {
                 Touch();
                 return true;
             }
+
             return false;
         }
 
         public FolderInfo GetChild(Ulid folderId) {
-            return ID == folderId ? this : _children.Select(c => c.GetChild(folderId)).FirstOrDefault(found => found != null);
+            return ID == folderId
+                ? this
+                : _children.Select(c => c.GetChild(folderId)).FirstOrDefault(found => found != null);
         }
-        
+
         public void AddTag(string tag) {
             if (string.IsNullOrEmpty(tag) || _tags.Contains(tag)) return;
             _tags.Add(tag);
             Touch();
         }
-        
+
         public void RemoveTag(string tag) {
-            if (_tags.Remove(tag)) {
-                Touch();
-            }
+            if (_tags.Remove(tag)) Touch();
         }
 
         public void UpdateTag(string oldTag, string newTag) {
@@ -140,7 +145,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public void Touch() {
-            _modificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            ModificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }
     }
 }

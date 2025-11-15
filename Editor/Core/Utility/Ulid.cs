@@ -1,8 +1,8 @@
 ﻿using System;
-using Newtonsoft.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json;
 
 namespace _4OF.ee4v.Core.Utility {
     [JsonConverter(typeof(UlidJsonConverter))]
@@ -62,13 +62,23 @@ namespace _4OF.ee4v.Core.Utility {
         public byte[] ToByteArray() {
             var b = new byte[16];
             var v = _most;
-            for (var i = 7; i >= 0; i--) { b[i] = (byte)(v & 0xFF); v >>= 8; }
+            for (var i = 7; i >= 0; i--) {
+                b[i] = (byte)(v & 0xFF);
+                v >>= 8;
+            }
+
             v = _least;
-            for (var i = 15; i >= 8; i--) { b[i] = (byte)(v & 0xFF); v >>= 8; }
+            for (var i = 15; i >= 8; i--) {
+                b[i] = (byte)(v & 0xFF);
+                v >>= 8;
+            }
+
             return b;
         }
 
-        public override string ToString() => ToString(null, null);
+        public override string ToString() {
+            return ToString(null, null);
+        }
 
         public string ToString(string format, IFormatProvider formatProvider) {
             return EncodeBase32(ToByteArray());
@@ -79,14 +89,25 @@ namespace _4OF.ee4v.Core.Utility {
             return cmp != 0 ? cmp : _least.CompareTo(other._least);
         }
 
-        public bool Equals(Ulid other) => _most == other._most && _least == other._least;
+        public bool Equals(Ulid other) {
+            return _most == other._most && _least == other._least;
+        }
 
-        public override bool Equals(object obj) => obj is Ulid u && Equals(u);
+        public override bool Equals(object obj) {
+            return obj is Ulid u && Equals(u);
+        }
 
-        public override int GetHashCode() => HashCode.Combine(_most, _least);
+        public override int GetHashCode() {
+            return HashCode.Combine(_most, _least);
+        }
 
-        public static bool operator ==(Ulid left, Ulid right) => left.Equals(right);
-        public static bool operator !=(Ulid left, Ulid right) => !left.Equals(right);
+        public static bool operator ==(Ulid left, Ulid right) {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Ulid left, Ulid right) {
+            return !left.Equals(right);
+        }
 
         private static string EncodeBase32(byte[] data) {
             var sb = new StringBuilder(26);
@@ -100,11 +121,13 @@ namespace _4OF.ee4v.Core.Utility {
                     if (index < data.Length) {
                         buffer = (buffer << 8) | data[index];
                         bitsLeft += 8;
-                    } else {
-                        buffer <<= (5 - bitsLeft);
+                    }
+                    else {
+                        buffer <<= 5 - bitsLeft;
                         bitsLeft = 5;
                     }
                 }
+
                 var val = (buffer >> (bitsLeft - 5)) & 0x1F;
                 bitsLeft -= 5;
                 sb.Append(Base32Alphabet[val]);
@@ -142,10 +165,12 @@ namespace _4OF.ee4v.Core.Utility {
                 var ch = Base32Alphabet[i];
                 map[ch] = (sbyte)i;
             }
+
             for (var i = 0; i < Base32Alphabet.Length; i++) {
                 var ch = char.ToLowerInvariant(Base32Alphabet[i]);
                 map[ch] = (sbyte)i;
             }
+
             map['O'] = map['0'];
             map['o'] = map['0'];
             map['I'] = map['1'];
