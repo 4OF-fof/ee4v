@@ -9,7 +9,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
+namespace _4OF.ee4v.HierarchyExtension.UI.Window {
     public class HiddenObjectList : BaseWindow {
         private readonly HashSet<GameObject> _expandedObjects = new();
         private readonly HashSet<GameObject> _selectedObjects = new();

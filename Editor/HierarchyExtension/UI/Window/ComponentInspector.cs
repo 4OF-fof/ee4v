@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
+namespace _4OF.ee4v.HierarchyExtension.UI.Window {
     public class ComponentInspector : BaseWindow {
         private const int KMaxAutoSizeAttempts = 6;
         private const float KHeaderHeight = 28f;

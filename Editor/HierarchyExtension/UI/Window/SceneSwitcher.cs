@@ -15,7 +15,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
-namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyScene.Window {
+namespace _4OF.ee4v.HierarchyExtension.UI.Window {
     public class SceneSwitcher : EditorWindow {
         private readonly Dictionary<VisualElement, ItemState> _itemStates = new();
 

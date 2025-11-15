@@ -10,7 +10,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem.Window {
+namespace _4OF.ee4v.HierarchyExtension.UI.Window {
     public class GameObjectInfo : BaseWindow {
         private readonly List<ObjectStyleComponent> _objectStylComponentList = new();
 
