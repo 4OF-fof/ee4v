@@ -107,18 +107,22 @@ namespace _4OF.ee4v.AssetManager.Data {
                 Debug.LogError($"Asset directory does not exist: {assetId}");
                 return;
             }
-
             var fileData = File.ReadAllBytes(imagePath);
-            var tex = new Texture2D(2, 2);
-            if (tex.LoadImage(fileData)) {
-                var pngBytes = tex.EncodeToPNG();
-                var destPath = Path.Combine(assetDir, "thumbnail.png");
-                File.WriteAllBytes(destPath, pngBytes);
-                Object.DestroyImmediate(tex);
-            } else {
+            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false, false);
+            if (!tex.LoadImage(fileData)) {
                 Debug.LogError($"Failed to load image data from: {imagePath}");
                 Object.DestroyImmediate(tex);
+                return;
             }
+
+            var maybeResized = TextureUtility.FitImage(tex, 1024);
+            var finalTex = maybeResized ?? tex;
+            if (!ReferenceEquals(finalTex, tex) && tex) Object.DestroyImmediate(tex);
+
+            var pngBytes = finalTex.EncodeToPNG();
+            var destPath = Path.Combine(assetDir, "thumbnail.png");
+            File.WriteAllBytes(destPath, pngBytes);
+            Object.DestroyImmediate(finalTex);
         }
 
         public static void RemoveThumbnail(Ulid assetId) {
