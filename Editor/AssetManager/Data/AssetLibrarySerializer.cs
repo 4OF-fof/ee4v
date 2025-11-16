@@ -12,7 +12,9 @@ using Object = UnityEngine.Object;
 namespace _4OF.ee4v.AssetManager.Data {
     public static class AssetLibrarySerializer {
         private static readonly string RootDir = Path.Combine(EditorPrefsManager.ContentFolderPath, "AssetManager");
-        private static readonly string CacheFilePath = Path.Combine(EditorPrefsManager.ContentFolderPath,"assetManager_cache.json");
+
+        private static readonly string CacheFilePath =
+            Path.Combine(EditorPrefsManager.ContentFolderPath, "assetManager_cache.json");
 
         public static void Initialize() {
             Directory.CreateDirectory(RootDir);
@@ -168,6 +170,8 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public static void SaveCache() {
+            var directory = Path.GetDirectoryName(CacheFilePath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) Directory.CreateDirectory(directory);
             var cache = new LibraryCache {
                 Metadata = AssetLibrary.Instance.Libraries,
                 Assets = AssetLibrary.Instance.Assets.ToList()
