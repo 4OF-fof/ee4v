@@ -136,13 +136,8 @@ namespace _4OF.ee4v.AssetManager.Service {
             AssetLibrarySerializer.SaveLibrary();
         }
 
-        public static void RenameFolder(Ulid folderId, string newName) {
+        public static void MoveFolder(Ulid folderId, Ulid parentFolderId) {
             if (folderId == default) return;
-            if (string.IsNullOrWhiteSpace(newName)) {
-                Debug.LogError("Folder name cannot be empty");
-                return;
-            }
-
             var libraries = AssetLibrary.Instance.Libraries;
             if (libraries == null) {
                 Debug.LogError("Library metadata is not loaded.");
@@ -155,26 +150,58 @@ namespace _4OF.ee4v.AssetManager.Service {
                 return;
             }
 
-            folder.SetName(newName);
+            libraries.RemoveFolder(folderId);
+
+            if (parentFolderId == default || parentFolderId == Ulid.Empty) {
+                libraries.AddFolder(folder);
+            }
+            else {
+                var parent = libraries.GetFolder(parentFolderId);
+                if (parent == null) {
+                    Debug.LogError($"Parent folder {parentFolderId} not found.");
+                    return;
+                }
+                parent.AddChild(folder);
+            }
+
+            AssetLibrarySerializer.SaveLibrary();
+        }
+        
+        public static void UpdateFolder(FolderInfo newFolder) {
+            if (newFolder == null) return;
+            if (!IsValidAssetName(newFolder.Name)) return;
+
+            var libraries = AssetLibrary.Instance.Libraries;
+            if (libraries == null) {
+                Debug.LogError("Library metadata is not loaded.");
+                return;
+            }
+
+            var folder = libraries.GetFolder(newFolder.ID);
+            if (folder == null) {
+                Debug.LogError($"Folder {newFolder.ID} not found.");
+                return;
+            }
+
+            if (folder.Name != newFolder.Name) folder.SetName(newFolder.Name);
+            if (folder.Description != newFolder.Description) folder.SetDescription(newFolder.Description);
             AssetLibrarySerializer.SaveLibrary();
         }
 
+        public static void RenameFolder(Ulid folderId, string newName) {
+            var existing = AssetLibrary.Instance.Libraries?.GetFolder(folderId);
+            if (existing == null) return;
+            var folder = new FolderInfo(existing);
+            folder.SetName(newName);
+            UpdateFolder(folder);
+        }
+
         public static void SetFolderDescription(Ulid folderId, string description) {
-            if (folderId == default) return;
-            var libraries = AssetLibrary.Instance.Libraries;
-            if (libraries == null) {
-                Debug.LogError("Library metadata is not loaded.");
-                return;
-            }
-
-            var folder = libraries.GetFolder(folderId);
-            if (folder == null) {
-                Debug.LogError($"Folder {folderId} not found.");
-                return;
-            }
-
+            var existing = AssetLibrary.Instance.Libraries?.GetFolder(folderId);
+            if (existing == null) return;
+            var folder = new FolderInfo(existing);
             folder.SetDescription(description);
-            AssetLibrarySerializer.SaveLibrary();
+            UpdateFolder(folder);
         }
 
         public static void DeleteFolder(Ulid folderId) {
