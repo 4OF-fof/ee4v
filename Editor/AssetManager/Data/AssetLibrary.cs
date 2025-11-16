@@ -128,7 +128,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         private void RegisterFolder(AssetMetadata asset) {
-            if (asset == null || asset.Folder == Ulid.Empty) return;
+            if (asset == null) return;
             var folderId = asset.Folder;
             if (!_folderIndex.TryGetValue(folderId, out var set)) {
                 set = new HashSet<Ulid>();
@@ -139,7 +139,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         private void UnregisterFolder(AssetMetadata asset) {
-            if (asset == null || asset.Folder == Ulid.Empty) return;
+            if (asset == null) return;
             var folderId = asset.Folder;
             if (!_folderIndex.TryGetValue(folderId, out var set)) return;
             set.Remove(asset.ID);
