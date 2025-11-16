@@ -10,6 +10,8 @@ using UnityEngine;
 namespace Assets._4OF.ee4v.AssetManager {
 	public class TestAssetManagerWindow : EditorWindow {
 		private Vector2 _scrollPos;
+		private Vector2 _windowScrollPos;
+		private Vector2 _logScrollPos;
 		private string _filterName = "";
 		private string _filterTag = "";
 		private List<AssetMetadata> _assetList = new();
@@ -21,7 +23,14 @@ namespace Assets._4OF.ee4v.AssetManager {
 		private string _editFolder = "";
 		private int _selectedFolderIndex = 0;
 		private List<(Ulid id, string path)> _folderOptions = new();
+		private string _newFolderName = "";
+		private string _newFolderDescription = "";
+		private int _newFolderParentIndex = 0;
+		private int _renameFolderIndex = 0;
+		private string _renameFolderName = "";
+		private int _removeFolderIndex = 0;
 		private string _tagInput = "";
+        private string _newAssetFilePath = "";
 
 		private readonly List<string> _logs = new();
 
@@ -64,6 +73,8 @@ namespace Assets._4OF.ee4v.AssetManager {
 
 		private void OnGUI() {
 			EditorGUILayout.Space();
+			// Wrap the whole window in a scroll view so long forms can scroll
+			_windowScrollPos = EditorGUILayout.BeginScrollView(_windowScrollPos);
 			EditorGUILayout.BeginHorizontal();
 			if (GUILayout.Button("Reload library")) {
 				AssetLibraryService.LoadAssetLibrary();
@@ -118,18 +129,19 @@ namespace Assets._4OF.ee4v.AssetManager {
 			}
 			else {
 				var selected = _assetList[_selectedIndex];
-				EditorGUILayout.LabelField("Name: ", selected.Name);
 				EditorGUILayout.LabelField("ID: ", selected.ID.ToString());
+				EditorGUILayout.LabelField("Name: ", selected.Name);
+				EditorGUILayout.LabelField("Name: ", selected.Description);
 				EditorGUILayout.LabelField("Folder: ", selected.Folder.ToString());
 				EditorGUILayout.BeginHorizontal();
 				// Folder selection dropdown
 				var folderNames = _folderOptions.Select(x => x.path).ToArray();
 				if (folderNames.Length == 0) RefreshFolderOptions();
+				// Ensure selected index is within bounds
 				_selectedFolderIndex = Mathf.Clamp(_selectedFolderIndex, 0, Math.Max(0, _folderOptions.Count - 1));
-				var currentFolderIndex = _folderOptions.FindIndex(x => x.id == selected.Folder);
-				if (currentFolderIndex < 0) currentFolderIndex = 0;
-				var newIndex = EditorGUILayout.Popup("Select folder", currentFolderIndex, folderNames);
-				if (newIndex != currentFolderIndex) {
+				// Show the popup using the persisted _selectedFolderIndex so the selection stays while the user picks
+				var newIndex = EditorGUILayout.Popup("Select folder", _selectedFolderIndex, folderNames);
+				if (newIndex != _selectedFolderIndex) {
 					_selectedFolderIndex = newIndex;
 					_editFolder = _folderOptions[newIndex].id.ToString();
 				}
@@ -201,11 +213,20 @@ namespace Assets._4OF.ee4v.AssetManager {
 				EditorGUILayout.Space();
 				EditorGUILayout.BeginHorizontal();
 				if (!selected.IsDeleted) {
-					if (GUILayout.Button("Delete Asset")) {
-						AssetLibraryService.DeleteAsset(selected.ID);
-						AddLog($"Request: DeleteAsset {selected.ID}");
+					EditorGUILayout.BeginHorizontal();
+					if (GUILayout.Button("Mark Deleted")) {
+						AssetLibraryService.RemoveAsset(selected.ID);
+						AddLog($"Request: RemoveAsset {selected.ID}");
 						RefreshAssets();
 					}
+					if (GUILayout.Button("Delete Physically")) {
+						if (EditorUtility.DisplayDialog("Confirm Delete", $"Are you sure you want to permanently delete asset {selected.Name}?", "Delete", "Cancel")) {
+							AssetLibraryService.DeleteAsset(selected.ID);
+							AddLog($"Request: DeleteAsset {selected.ID}");
+							RefreshAssets();
+						}
+					}
+					EditorGUILayout.EndHorizontal();
 				}
 				else {
 					if (GUILayout.Button("Restore Asset")) {
@@ -219,29 +240,97 @@ namespace Assets._4OF.ee4v.AssetManager {
 				// Folder operations (create/rename/remove) are not available via AssetLibraryService.
 				EditorGUILayout.Space();
 				EditorGUILayout.LabelField("Folder operations", EditorStyles.boldLabel);
-				EditorGUILayout.BeginHorizontal();
-				EditorGUILayout.LabelField("Create/rename/remove folders not supported via service.", EditorStyles.wordWrappedLabel);
-				GUILayout.FlexibleSpace();
-				GUI.enabled = false;
-				if (GUILayout.Button("Create Folder")) { }
-				if (GUILayout.Button("Rename Folder")) { }
-				if (GUILayout.Button("Remove Folder")) { }
-				GUI.enabled = true;
-				EditorGUILayout.EndHorizontal();
+					EditorGUILayout.BeginVertical(GUILayout.Width(600));
+
+					// Create folder UI
+					EditorGUILayout.LabelField("Create Folder", EditorStyles.boldLabel);
+					_newFolderName = EditorGUILayout.TextField("Name", _newFolderName);
+					_newFolderDescription = EditorGUILayout.TextField("Description", _newFolderDescription);
+					if (_folderOptions.Count == 0) RefreshFolderOptions();
+					var parentNames = _folderOptions.Select(x => x.path).ToArray();
+					_newFolderParentIndex = Mathf.Clamp(_newFolderParentIndex, 0, Math.Max(0, _folderOptions.Count - 1));
+					_newFolderParentIndex = EditorGUILayout.Popup("Parent folder", _newFolderParentIndex, parentNames);
+					if (GUILayout.Button("Create Folder")) {
+						var parentId = _folderOptions.ElementAtOrDefault(_newFolderParentIndex).id;
+						AssetLibraryService.CreateFolder(parentId, _newFolderName, _newFolderDescription);
+						AddLog($"Request: AddFolder '{_newFolderName}' parent {parentId}");
+						RefreshAssets();
+						_newFolderName = "";
+						_newFolderDescription = "";
+					}
+
+					EditorGUILayout.Space();
+					EditorGUILayout.LabelField("Rename Folder", EditorStyles.boldLabel);
+					var renameNames = _folderOptions.Select(x => x.path).ToArray();
+					_renameFolderIndex = Mathf.Clamp(_renameFolderIndex, 0, Math.Max(0, _folderOptions.Count - 1));
+					_renameFolderIndex = EditorGUILayout.Popup("Folder", _renameFolderIndex, renameNames);
+					_renameFolderName = EditorGUILayout.TextField("New name", _renameFolderName);
+					if (GUILayout.Button("Rename Folder")) {
+						var folderId = _folderOptions.ElementAtOrDefault(_renameFolderIndex).id;
+						AssetLibraryService.RenameFolder(folderId, _renameFolderName);
+						AddLog($"Request: RenameFolder {folderId} -> {_renameFolderName}");
+						RefreshAssets();
+						_renameFolderName = "";
+					}
+
+					EditorGUILayout.Space();
+					EditorGUILayout.LabelField("Remove Folder", EditorStyles.boldLabel);
+					var removeNames = _folderOptions.Select(x => x.path).ToArray();
+					_removeFolderIndex = Mathf.Clamp(_removeFolderIndex, 0, Math.Max(0, _folderOptions.Count - 1));
+					_removeFolderIndex = EditorGUILayout.Popup("Folder", _removeFolderIndex, removeNames);
+					if (GUILayout.Button("Remove Folder")) {
+						var folderId = _folderOptions.ElementAtOrDefault(_removeFolderIndex).id;
+						// skip removing root
+						if (folderId == Ulid.Empty) {
+							AddLog($"Cannot remove root folder");
+						}
+						else {
+							AssetLibraryService.DeleteFolder(folderId);
+							AddLog($"Request: RemoveFolder {folderId}");
+							RefreshAssets();
+							_removeFolderIndex = 0;
+						}
+					}
+
+					EditorGUILayout.EndVertical();
 			}
+
+				EditorGUILayout.Space();
+				EditorGUILayout.LabelField("Asset operations", EditorStyles.boldLabel);
+				EditorGUILayout.BeginHorizontal();
+				_newAssetFilePath = EditorGUILayout.TextField("Asset file", _newAssetFilePath);
+				if (GUILayout.Button("Pick", GUILayout.Width(60))) {
+					var path = EditorUtility.OpenFilePanel("Select asset file", Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "*");
+					if (!string.IsNullOrEmpty(path)) _newAssetFilePath = path;
+				}
+				if (GUILayout.Button("Add Asset", GUILayout.Width(100))) {
+					if (string.IsNullOrEmpty(_newAssetFilePath) || !System.IO.File.Exists(_newAssetFilePath)) {
+						AddLog($"Invalid file path: {_newAssetFilePath}");
+					}
+					else {
+						AssetLibraryService.CreateAsset(_newAssetFilePath);
+						AddLog($"Request: CreateAsset {_newAssetFilePath}");
+						RefreshAssets();
+					}
+				}
+				EditorGUILayout.EndHorizontal();
 
 			EditorGUILayout.Space();
 			EditorGUILayout.LabelField("Logs", EditorStyles.boldLabel);
+			// Make logs scrollable so long histories don't overflow the window
 			EditorGUILayout.BeginVertical(GUI.skin.box);
+			_logScrollPos = EditorGUILayout.BeginScrollView(_logScrollPos, GUILayout.Height(160));
 			var start = Math.Max(0, _logs.Count - 200);
 			for (var i = start; i < _logs.Count; i++) {
 				var log = _logs[i];
 				EditorGUILayout.LabelField(log);
 			}
+			EditorGUILayout.EndScrollView();
 			EditorGUILayout.EndVertical();
 
 			EditorGUILayout.Space();
 			if (GUILayout.Button("Clear logs")) _logs.Clear();
+			EditorGUILayout.EndScrollView();
 		}
 
 		private void LoadSelectedAssetIntoEdit() {
@@ -254,6 +343,9 @@ namespace Assets._4OF.ee4v.AssetManager {
 			_editName = asset.Name;
 			_editDescription = asset.Description;
 			_editFolder = asset.Folder.ToString();
+			// Initialize the popup selection index to match the asset's current folder
+			var idx = _folderOptions.FindIndex(x => x.id == asset.Folder);
+			_selectedFolderIndex = idx < 0 ? 0 : idx;
 			_tagInput = "";
 		}
 
