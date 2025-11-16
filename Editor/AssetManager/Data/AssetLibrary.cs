@@ -6,45 +6,40 @@ namespace _4OF.ee4v.AssetManager.Data {
     public class AssetLibrary {
         public static readonly AssetLibrary Instance = new();
 
-        private readonly List<AssetMetadata> _assetMetadataList = new();
+        private readonly Dictionary<Ulid, AssetMetadata> _assetMetadataDict = new();
 
         private AssetLibrary() {
         }
 
-        public IReadOnlyList<AssetMetadata> Assets => _assetMetadataList;
+        public IReadOnlyCollection<AssetMetadata> Assets => _assetMetadataDict.Values;
         public LibraryMetadata Libraries { get; private set; }
 
         public void AddAsset(AssetMetadata assetMetadata) {
             if (assetMetadata == null) return;
-            _assetMetadataList.Add(assetMetadata);
+            _assetMetadataDict[assetMetadata.ID] = assetMetadata;
         }
 
         public void RemoveAsset(Ulid assetId) {
-            var asset = _assetMetadataList.Find(a => a.ID == assetId);
-            asset?.SetDeleted(true);
+            if (_assetMetadataDict.TryGetValue(assetId, out var asset)) asset?.SetDeleted(true);
         }
 
         public void UpdateAsset(AssetMetadata assetMetadata) {
-            var index = _assetMetadataList.FindIndex(a => a.ID == assetMetadata.ID);
-            if (index != -1) _assetMetadataList[index] = assetMetadata;
+            if (assetMetadata == null) return;
+            if (_assetMetadataDict.ContainsKey(assetMetadata.ID)) _assetMetadataDict[assetMetadata.ID] = assetMetadata;
         }
 
         public AssetMetadata GetAsset(Ulid assetId) {
-            return _assetMetadataList.Find(a => a.ID == assetId);
+            return _assetMetadataDict.TryGetValue(assetId, out var asset) ? asset : null;
         }
 
         public void UpsertAsset(AssetMetadata assetMetadata) {
             if (assetMetadata == null) return;
-            var existingAsset = GetAsset(assetMetadata.ID);
-            if (existingAsset != null)
-                UpdateAsset(assetMetadata);
-            else
-                AddAsset(assetMetadata);
+            _assetMetadataDict[assetMetadata.ID] = assetMetadata;
         }
 
         public List<string> GetAllTags() {
             var tags = new HashSet<string>();
-            foreach (var tag in _assetMetadataList.SelectMany(asset => asset.Tags)) tags.Add(tag);
+            foreach (var tag in _assetMetadataDict.Values.SelectMany(asset => asset.Tags)) tags.Add(tag);
 
             return tags.ToList();
         }
@@ -53,7 +48,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             if (string.IsNullOrEmpty(tag) || string.IsNullOrEmpty(newTag) || tag == newTag) return;
             var allTags = GetAllTags();
             if (!allTags.Contains(tag) || allTags.Contains(newTag)) return;
-            foreach (var asset in _assetMetadataList.Where(asset => asset.Tags.Contains(tag))) {
+            foreach (var asset in _assetMetadataDict.Values.Where(asset => asset.Tags.Contains(tag))) {
                 asset.AddTag(newTag);
                 asset.RemoveTag(tag);
             }
@@ -64,7 +59,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public void UnloadAssetLibrary() {
-            _assetMetadataList.Clear();
+            _assetMetadataDict.Clear();
             Libraries = null;
         }
     }
