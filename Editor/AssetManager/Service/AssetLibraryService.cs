@@ -40,7 +40,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             UpdateAsset(asset);
         }
 
-        public static void SetFolder(Ulid assetId, Ulid? newFolder) {
+        public static void SetFolder(Ulid assetId, Ulid newFolder) {
             var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
             asset.SetFolder(newFolder);
             UpdateAsset(asset);

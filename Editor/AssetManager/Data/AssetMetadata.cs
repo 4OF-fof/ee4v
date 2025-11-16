@@ -23,7 +23,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         [JsonConstructor]
-        public AssetMetadata(Ulid id, string name, string description, long size, string ext, Ulid? folder,
+        public AssetMetadata(Ulid id, string name, string description, long size, string ext, Ulid folder,
             List<string> tags, bool isDeleted, long modificationTime) {
             ID = id;
             Name = name;
@@ -46,7 +46,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public string Ext { get; private set; } = "";
 
-        public Ulid? Folder { get; private set; }
+        public Ulid Folder { get; private set; } = Ulid.Empty;
         public IReadOnlyList<string> Tags => _tags.AsReadOnly();
         public bool IsDeleted { get; private set; }
 
@@ -72,7 +72,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             Touch();
         }
 
-        public void SetFolder(Ulid? newFolder) {
+        public void SetFolder(Ulid newFolder) {
             Folder = newFolder;
             Touch();
         }

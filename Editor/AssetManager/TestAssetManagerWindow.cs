@@ -232,7 +232,7 @@ namespace _4OF.ee4v.AssetManager {
 
                     // Folder popup
                     if (folderNames.Count > 0) {
-                        var currentFolderId = a.Folder.HasValue ? a.Folder.Value : (Ulid?)null;
+                        var currentFolderId = a.Folder == Ulid.Empty ? (Ulid?)null : a.Folder;
                         var selectedIndex = 0;
                         for (var i = 0; i < folderIds.Count; i++)
                             if (folderIds[i].HasValue && currentFolderId.HasValue &&
@@ -244,7 +244,7 @@ namespace _4OF.ee4v.AssetManager {
                         var newIndex = EditorGUILayout.Popup("Folder", selectedIndex, folderNames.ToArray());
                         if (newIndex != selectedIndex) {
                             if (newIndex == 0) {
-                                AssetLibraryService.SetFolder(a.ID, null);
+                                AssetLibraryService.SetFolder(a.ID, Ulid.Empty);
                             }
                             else {
                                 var selectedFolder = folderIds[newIndex];
