@@ -33,7 +33,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             return _assetMetadataList.Find(a => a.ID == assetId);
         }
 
-        public void LoadAsset(AssetMetadata assetMetadata) {
+        public void UpsertAsset(AssetMetadata assetMetadata) {
             if (assetMetadata == null) return;
             var existingAsset = GetAsset(assetMetadata.ID);
             if (existingAsset != null)
@@ -59,11 +59,11 @@ namespace _4OF.ee4v.AssetManager.Data {
             }
         }
 
-        public void LoadLibrary(LibraryMetadata libraryMetadata) {
+        public void SetLibrary(LibraryMetadata libraryMetadata) {
             Libraries = libraryMetadata;
         }
 
-        public void UnloadLibrary() {
+        public void UnloadAssetLibrary() {
             _assetMetadataList.Clear();
             Libraries = null;
         }

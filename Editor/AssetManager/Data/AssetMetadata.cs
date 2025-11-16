@@ -9,12 +9,24 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public AssetMetadata() {
         }
+        
+        public AssetMetadata(AssetMetadata metadata) {
+            ID = metadata.ID;
+            Name = metadata.Name;
+            Description = metadata.Description;
+            Size = metadata.Size;
+            Ext = metadata.Ext;
+            Folder = metadata.Folder;
+            _tags = new List<string>(metadata.Tags);
+            IsDeleted = metadata.IsDeleted;
+            ModificationTime = metadata.ModificationTime;
+        }
 
         [JsonConstructor]
         public AssetMetadata(Ulid id, string name, string description, long size, string ext, Ulid? folder,
             List<string> tags, bool isDeleted, long modificationTime) {
-            Name = name;
             ID = id;
+            Name = name;
             Description = description;
             Size = size;
             Ext = ext;
@@ -40,27 +52,27 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public long ModificationTime { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-        public void UpdateName(string newName) {
+        public void SetName(string newName) {
             Name = newName;
             Touch();
         }
 
-        public void UpdateDescription(string newDescription) {
+        public void SetDescription(string newDescription) {
             Description = newDescription;
             Touch();
         }
 
-        public void UpdateSize(long newSize) {
+        public void SetSize(long newSize) {
             Size = newSize;
             Touch();
         }
 
-        public void UpdateExt(string newExt) {
+        public void SetExt(string newExt) {
             Ext = newExt;
             Touch();
         }
 
-        public void UpdateFolder(Ulid? newFolder) {
+        public void SetFolder(Ulid? newFolder) {
             Folder = newFolder;
             Touch();
         }
@@ -80,7 +92,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             Touch();
         }
 
-        public void Touch() {
+        private void Touch() {
             ModificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }
     }

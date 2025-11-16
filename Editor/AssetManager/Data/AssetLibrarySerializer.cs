@@ -32,7 +32,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
             var json = File.ReadAllText(filePath);
             var metadata = JsonConvert.DeserializeObject<LibraryMetadata>(json);
-            AssetLibrary.Instance.LoadLibrary(metadata);
+            AssetLibrary.Instance.SetLibrary(metadata);
         }
 
         public static void SaveLibrary() {
@@ -51,7 +51,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
             var json = File.ReadAllText(filePath);
             var assetMetadata = JsonConvert.DeserializeObject<AssetMetadata>(json);
-            AssetLibrary.Instance.LoadAsset(assetMetadata);
+            AssetLibrary.Instance.UpsertAsset(assetMetadata);
         }
 
         public static void LoadAllAssets() {
@@ -68,7 +68,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
                 var json = File.ReadAllText(metadataPath);
                 var assetMetadata = JsonConvert.DeserializeObject<AssetMetadata>(json);
-                AssetLibrary.Instance.LoadAsset(assetMetadata);
+                AssetLibrary.Instance.UpsertAsset(assetMetadata);
             }
         }
 
@@ -84,9 +84,9 @@ namespace _4OF.ee4v.AssetManager.Data {
         public static void AddAsset(string path) {
             var fileInfo = new FileInfo(path);
             var assetMetadata = new AssetMetadata();
-            assetMetadata.UpdateName(Path.GetFileNameWithoutExtension(fileInfo.Name));
-            assetMetadata.UpdateSize(fileInfo.Length);
-            assetMetadata.UpdateExt(fileInfo.Extension);
+            assetMetadata.SetName(Path.GetFileNameWithoutExtension(fileInfo.Name));
+            assetMetadata.SetSize(fileInfo.Length);
+            assetMetadata.SetExt(fileInfo.Extension);
             var assetDir = Path.Combine(RootDir, "Assets", assetMetadata.ID.ToString());
             Directory.CreateDirectory(assetDir);
             var destPath = Path.Combine(assetDir, fileInfo.Name);

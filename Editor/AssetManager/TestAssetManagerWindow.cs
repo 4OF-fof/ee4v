@@ -40,7 +40,7 @@ namespace _4OF.ee4v.AssetManager {
 
             using (new EditorGUILayout.HorizontalScope()) {
                 if (GUILayout.Button("Add Asset (pick file)")) AddAssetFromFile();
-                if (GUILayout.Button("Unload Library")) AssetLibrary.Instance.UnloadLibrary();
+                if (GUILayout.Button("Unload Library")) AssetLibrary.Instance.UnloadAssetLibrary();
                 if (GUILayout.Button("Clear Library (delete on-disk)")) ClearLibraryOnDisk();
             }
 
@@ -90,7 +90,7 @@ namespace _4OF.ee4v.AssetManager {
             var root = Path.Combine(EditorPrefsManager.ContentFolderPath, "AssetManager");
             try {
                 if (Directory.Exists(root)) Directory.Delete(root, true);
-                AssetLibrary.Instance.UnloadLibrary();
+                AssetLibrary.Instance.UnloadAssetLibrary();
                 AssetDatabase.Refresh();
             }
             catch (Exception e) {
@@ -112,7 +112,7 @@ namespace _4OF.ee4v.AssetManager {
                 _newFolderName = EditorGUILayout.TextField("New Folder Name", _newFolderName);
                 if (GUILayout.Button("Add Folder", GUILayout.Width(120))) {
                     var f = new FolderInfo();
-                    f.UpdateName(_newFolderName);
+                    f.SetName(_newFolderName);
                     lib.AddFolder(f);
                     AssetLibrarySerializer.SaveLibrary();
                 }
@@ -162,7 +162,7 @@ namespace _4OF.ee4v.AssetManager {
                     if (GUILayout.Button("Rename Folder", GUILayout.Width(120))) {
                         var newName = _folderRenameInputs[folderKey]?.Trim();
                         if (!string.IsNullOrEmpty(newName) && newName != f.Name) {
-                            f.UpdateName(newName);
+                            f.SetName(newName);
                             AssetLibrarySerializer.SaveLibrary();
                         }
                     }
@@ -179,7 +179,7 @@ namespace _4OF.ee4v.AssetManager {
 
                     if (GUILayout.Button("Add Child Folder")) {
                         var child = new FolderInfo();
-                        child.UpdateName(f.Name + "_child");
+                        child.SetName(f.Name + "_child");
                         f.AddChild(child);
                         AssetLibrarySerializer.SaveLibrary();
                     }
@@ -228,8 +228,7 @@ namespace _4OF.ee4v.AssetManager {
                     // Editable description
                     var newDesc = EditorGUILayout.TextField("Description", a.Description);
                     if (newDesc != a.Description) {
-                        a.UpdateDescription(newDesc);
-                        AssetLibraryService.UpdateAsset(a);
+                        AssetLibraryService.SetDescription(a.ID, newDesc);
                     }
 
                     EditorGUILayout.LabelField($"Size: {a.Size}");
@@ -249,15 +248,12 @@ namespace _4OF.ee4v.AssetManager {
                         var newIndex = EditorGUILayout.Popup("Folder", selectedIndex, folderNames.ToArray());
                         if (newIndex != selectedIndex) {
                             if (newIndex == 0) {
-                                // clear folder
-                                a.UpdateFolder(null);
-                                AssetLibraryService.UpdateAsset(a);
+                                AssetLibraryService.SetFolder(a.ID, null);
                             }
                             else {
                                 var selectedFolder = folderIds[newIndex];
                                 if (selectedFolder.HasValue) {
-                                    a.UpdateFolder(selectedFolder.Value);
-                                    AssetLibraryService.UpdateAsset(a);
+                                    AssetLibraryService.SetFolder(a.ID, selectedFolder.Value);
                                 }
                             }
                         }
@@ -272,9 +268,8 @@ namespace _4OF.ee4v.AssetManager {
                         if (GUILayout.Button("Add Tag", GUILayout.Width(80))) {
                             var t = _tagInputs[key]?.Trim();
                             if (!string.IsNullOrEmpty(t)) {
-                                a.AddTag(t);
                                 _tagInputs[key] = "";
-                                AssetLibraryService.UpdateAsset(a);
+                                AssetLibraryService.AddTag(a.ID, t);
                             }
                         }
                     }
@@ -283,8 +278,7 @@ namespace _4OF.ee4v.AssetManager {
                         using (new EditorGUILayout.HorizontalScope()) {
                             foreach (var tag in a.Tags.ToList())
                                 if (GUILayout.Button($"Remove: {tag}", GUILayout.Width(120))) {
-                                    a.RemoveTag(tag);
-                                    AssetLibraryService.UpdateAsset(a);
+                                    AssetLibraryService.RemoveTag(a.ID, tag);
                                 }
                         }
 

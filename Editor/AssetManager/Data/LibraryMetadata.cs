@@ -11,6 +11,12 @@ namespace _4OF.ee4v.AssetManager.Data {
         public LibraryMetadata() {
         }
 
+        public LibraryMetadata(LibraryMetadata metadata) {
+            _folderInfo = metadata.FolderInfo.ToList();
+            ModificationTime = metadata.ModificationTime;
+            LibraryVersion = metadata.LibraryVersion;
+        }
+
         [JsonConstructor]
         public LibraryMetadata(List<FolderInfo> folderInfo, long modificationTime, string libraryVersion) {
             _folderInfo = folderInfo ?? new List<FolderInfo>();
@@ -55,7 +61,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             Touch();
         }
 
-        public void Touch() {
+        private void Touch() {
             ModificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }
     }
@@ -65,6 +71,15 @@ namespace _4OF.ee4v.AssetManager.Data {
         private readonly List<string> _tags = new();
 
         public FolderInfo() {
+        }
+
+        public FolderInfo(FolderInfo folderInfo) {
+            ID = folderInfo.ID;
+            Name = folderInfo.Name;
+            Description = folderInfo.Description;
+            _children = folderInfo.Children.ToList();
+            ModificationTime = folderInfo.ModificationTime;
+            _tags = folderInfo.Tags.ToList();
         }
 
         [JsonConstructor]
@@ -89,12 +104,12 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public IReadOnlyList<string> Tags => _tags.AsReadOnly();
 
-        public void UpdateName(string newName) {
+        public void SetName(string newName) {
             Name = newName;
             Touch();
         }
 
-        public void UpdateDescription(string newDescription) {
+        public void SetDescription(string newDescription) {
             Description = newDescription;
             Touch();
         }
@@ -137,14 +152,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             if (_tags.Remove(tag)) Touch();
         }
 
-        public void UpdateTag(string oldTag, string newTag) {
-            if (string.IsNullOrEmpty(newTag) || _tags.Contains(newTag)) return;
-            if (!_tags.Remove(oldTag)) return;
-            _tags.Add(newTag);
-            Touch();
-        }
-
-        public void Touch() {
+        private void Touch() {
             ModificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }
     }

@@ -1,6 +1,8 @@
 ﻿using System.Linq;
+using System.Runtime.CompilerServices;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
+using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Service {
     public static class AssetLibraryService {
@@ -10,35 +12,63 @@ namespace _4OF.ee4v.AssetManager.Service {
         }
 
         public static void RefreshAssetLibrary() {
-            AssetLibrary.Instance.UnloadLibrary();
+            AssetLibrary.Instance.UnloadAssetLibrary();
             LoadAssetLibrary();
         }
 
-        public static void UpdateAsset(AssetMetadata asset) {
-            var oldAsset = AssetLibrary.Instance.GetAsset(asset.ID);
-            if (oldAsset.Name != asset.Name) {
-                AssetLibrarySerializer.RenameAsset(asset.ID, asset.Name);
-                asset.UpdateName(asset.Name);
+        public static void UpdateAsset(AssetMetadata newAsset) {
+            if (AssetLibrary.Instance.GetAsset(newAsset.ID) == null) {
+                Debug.LogError($"Asset with ID {newAsset.ID} does not exist.");
+                return;
             }
-            AssetLibrary.Instance.UpdateAsset(asset);
-            AssetLibrarySerializer.SaveAsset(asset);
-            AssetLibrarySerializer.LoadAsset(asset.ID);
+            var oldAsset = AssetLibrary.Instance.GetAsset(newAsset.ID);
+            if (oldAsset.Name != newAsset.Name) {
+                AssetLibrarySerializer.RenameAsset(newAsset.ID, newAsset.Name);
+            }
+            AssetLibrary.Instance.UpdateAsset(newAsset);
+            AssetLibrarySerializer.SaveAsset(newAsset);
         }
         
         public static void RenameAsset(Ulid assetId, string newName) {
-            var oldAsset = AssetLibrary.Instance.GetAsset(assetId);
-            var newAsset = new AssetMetadata(
-                oldAsset.ID,
-                newName,
-                oldAsset.Description,
-                oldAsset.Size,
-                oldAsset.Ext,
-                oldAsset.Folder,
-                oldAsset.Tags.ToList(),
-                oldAsset.IsDeleted,
-                oldAsset.ModificationTime
-            );
-            UpdateAsset(newAsset);
+            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
+            asset.SetName(newName);
+            UpdateAsset(asset);
+        }
+        
+        public static void SetDescription(Ulid assetId, string newDescription) {
+            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
+            asset.SetDescription(newDescription);
+            UpdateAsset(asset);
+        }
+        
+        public static void SetFolder(Ulid assetId, Ulid? newFolder) {
+            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
+            asset.SetFolder(newFolder);
+            UpdateAsset(asset);
+        }
+        
+        public static void AddTag(Ulid assetId, string tag) {
+            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
+            asset.AddTag(tag);
+            UpdateAsset(asset);
+        }
+        
+        public static void RemoveTag(Ulid assetId, string tag) {
+            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
+            asset.RemoveTag(tag);
+            UpdateAsset(asset);
+        }
+        
+        public static void DeleteAsset(Ulid assetId) {
+            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
+            asset.SetDeleted(true);
+            UpdateAsset(asset);
+        }
+        
+        public static void RestoreAsset(Ulid assetId) {
+            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
+            asset.SetDeleted(false);
+            UpdateAsset(asset);
         }
     }
 }
