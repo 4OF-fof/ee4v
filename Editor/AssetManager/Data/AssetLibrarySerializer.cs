@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using _4OF.ee4v.Core.Data;
 using _4OF.ee4v.Core.Utility;
 using Newtonsoft.Json;
@@ -9,6 +12,7 @@ using Object = UnityEngine.Object;
 namespace _4OF.ee4v.AssetManager.Data {
     public static class AssetLibrarySerializer {
         private static readonly string RootDir = Path.Combine(EditorPrefsManager.ContentFolderPath, "AssetManager");
+        private static readonly string CacheFilePath = Path.Combine(EditorPrefsManager.ContentFolderPath,"assetManager_cache.json");
 
         public static void Initialize() {
             Directory.CreateDirectory(RootDir);
@@ -42,6 +46,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             var json = JsonConvert.SerializeObject(metadata, Formatting.Indented);
             var filePath = Path.Combine(RootDir, "metadata.json");
             File.WriteAllText(filePath, json);
+            SaveCache();
         }
 
         public static void LoadAsset(Ulid assetId) {
@@ -81,6 +86,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             var json = JsonConvert.SerializeObject(assetMetadata, Formatting.Indented);
             var filePath = Path.Combine(assetDir, "metadata.json");
             File.WriteAllText(filePath, json);
+            SaveCache();
         }
 
         public static void AddAsset(string path) {
@@ -159,6 +165,143 @@ namespace _4OF.ee4v.AssetManager.Data {
             var assetDir = Path.Combine(RootDir, "Assets", assetId.ToString());
             var thumbPath = Path.Combine(assetDir, "thumbnail.png");
             File.Delete(thumbPath);
+        }
+
+        public static void SaveCache() {
+            var cache = new LibraryCache {
+                Metadata = AssetLibrary.Instance.Libraries,
+                Assets = AssetLibrary.Instance.Assets.ToList()
+            };
+            var json = JsonConvert.SerializeObject(cache, Formatting.Indented);
+            var tempPath = CacheFilePath + ".tmp";
+            File.WriteAllText(tempPath, json);
+            if (File.Exists(CacheFilePath)) File.Delete(CacheFilePath);
+            File.Move(tempPath, CacheFilePath);
+        }
+
+        public static bool LoadCache() {
+            if (!File.Exists(CacheFilePath)) {
+                Debug.Log("Cache file does not exist. Skipping cache load.");
+                return false;
+            }
+
+            try {
+                var json = File.ReadAllText(CacheFilePath);
+                var cache = JsonConvert.DeserializeObject<LibraryCache>(json);
+                if (cache?.Metadata == null) {
+                    Debug.LogWarning("Cache file is invalid or empty.");
+                    return false;
+                }
+
+                AssetLibrary.Instance.SetLibrary(cache.Metadata);
+                if (cache.Assets != null)
+                    foreach (var asset in cache.Assets)
+                        AssetLibrary.Instance.UpsertAsset(asset);
+
+                Debug.Log($"Cache loaded: {cache.Assets?.Count ?? 0} assets.");
+                return true;
+            }
+            catch (Exception e) {
+                Debug.LogError($"Failed to load cache: {e.Message}");
+                return false;
+            }
+        }
+
+        public static async Task LoadAndVerifyAsync() {
+            var cachedAssets = AssetLibrary.Instance.Assets.ToDictionary(a => a.ID);
+            var result = await Task.Run(() =>
+            {
+                var assetRootDir = Path.Combine(RootDir, "Assets");
+                if (!Directory.Exists(assetRootDir))
+                    return new VerificationResult {
+                        Error = "Assets directory does not exist. Cannot verify assets."
+                    };
+
+                var onDiskAssets = new Dictionary<Ulid, AssetMetadata>();
+                var assetDirs = Directory.GetDirectories(assetRootDir);
+                foreach (var assetDir in assetDirs) {
+                    var metadataPath = Path.Combine(assetDir, "metadata.json");
+                    if (!File.Exists(metadataPath)) continue;
+
+                    try {
+                        var json = File.ReadAllText(metadataPath);
+                        var assetMetadata = JsonConvert.DeserializeObject<AssetMetadata>(json);
+                        if (assetMetadata != null) onDiskAssets[assetMetadata.ID] = assetMetadata;
+                    }
+                    catch (Exception e) {
+                        Debug.LogError($"Failed to load asset metadata from {metadataPath}: {e.Message}");
+                    }
+                }
+
+                var missingInCache = onDiskAssets.Keys.Except(cachedAssets.Keys).ToList();
+                var missingOnDisk = cachedAssets.Keys.Except(onDiskAssets.Keys).ToList();
+                var modified = new List<AssetMetadata>();
+
+                foreach (var (key, onDiskAsset) in onDiskAssets) {
+                    if (!cachedAssets.TryGetValue(key, out var cachedAsset)) continue;
+                    if (!AreAssetsEqual(cachedAsset, onDiskAsset)) modified.Add(onDiskAsset);
+                }
+
+                return new VerificationResult {
+                    OnDiskAssets = onDiskAssets,
+                    MissingInCache = missingInCache,
+                    MissingOnDisk = missingOnDisk,
+                    ModifiedAssets = modified
+                };
+            });
+
+            if (!string.IsNullOrEmpty(result.Error)) {
+                Debug.LogError(result.Error);
+                return;
+            }
+
+            if (result.MissingInCache.Count > 0) {
+                Debug.Log($"Found {result.MissingInCache.Count} assets on disk that were not in cache. Adding them.");
+                foreach (var id in result.MissingInCache) AssetLibrary.Instance.UpsertAsset(result.OnDiskAssets[id]);
+            }
+
+            if (result.MissingOnDisk.Count > 0) {
+                Debug.Log(
+                    $"Found {result.MissingOnDisk.Count} assets in cache that were deleted from disk. Removing them.");
+                foreach (var id in result.MissingOnDisk) AssetLibrary.Instance.RemoveAsset(id);
+            }
+
+            if (result.ModifiedAssets.Count > 0) {
+                Debug.Log($"Updated {result.ModifiedAssets.Count} modified assets.");
+                foreach (var asset in result.ModifiedAssets) AssetLibrary.Instance.UpdateAsset(asset);
+            }
+
+            if (result.MissingInCache.Count > 0 || result.MissingOnDisk.Count > 0 || result.ModifiedAssets.Count > 0) {
+                SaveCache();
+                Debug.Log("Cache updated with verified data.");
+            }
+            else {
+                Debug.Log("Cache is up to date. No changes detected.");
+            }
+        }
+
+        private static bool AreAssetsEqual(AssetMetadata a, AssetMetadata b) {
+            if (a == null || b == null) return false;
+            var tagsHashSet = new HashSet<string>(a.Tags);
+            return a.Name == b.Name &&
+                a.Size == b.Size &&
+                a.Ext == b.Ext &&
+                a.Folder == b.Folder &&
+                tagsHashSet.SetEquals(b.Tags);
+        }
+
+        [Serializable]
+        private class LibraryCache {
+            public LibraryMetadata Metadata { get; set; }
+            public List<AssetMetadata> Assets { get; set; }
+        }
+
+        private class VerificationResult {
+            public string Error { get; set; }
+            public Dictionary<Ulid, AssetMetadata> OnDiskAssets { get; set; }
+            public List<Ulid> MissingInCache { get; set; }
+            public List<Ulid> MissingOnDisk { get; set; }
+            public List<AssetMetadata> ModifiedAssets { get; set; }
         }
     }
 }
