@@ -22,13 +22,21 @@ namespace Assets._4OF.ee4v.AssetManager {
 		private string _editDescription = "";
 		private string _editFolder = "";
 		private int _selectedFolderIndex = 0;
-		private List<(Ulid id, string path)> _folderOptions = new();
+		// id - actual folder ulid, path - full path (for internal use), displayName - shown in UI (should be unique if duplicates exist)
+		private List<(Ulid id, string path, string displayName)> _folderOptions = new();
 		private string _newFolderName = "";
 		private string _newFolderDescription = "";
 		private int _newFolderParentIndex = 0;
 		private int _renameFolderIndex = 0;
+		private int _moveSourceIndex = 0;
+		private int _moveDestIndex = 0;
 		private string _renameFolderName = "";
 		private int _removeFolderIndex = 0;
+		private int _setDescriptionIndex = 0;
+		private string _setDescriptionText = "";
+		private int _updateFolderIndex = 0;
+		private string _updateFolderName = "";
+		private string _updateFolderDescription = "";
 		private string _tagInput = "";
         private string _newAssetFilePath = "";
 
@@ -59,15 +67,38 @@ namespace Assets._4OF.ee4v.AssetManager {
 		}
 
 		private void RefreshFolderOptions() {
-			_folderOptions = new List<(Ulid, string)> { (Ulid.Empty, "Root") };
+			// Build options with both path and displayName. We'll post-process displayName to ensure uniqueness.
+			_folderOptions = new List<(Ulid, string, string)> { (Ulid.Empty, "Root", "Root") };
 			var libraries = AssetLibrary.Instance.Libraries;
 			if (libraries == null) return;
 			foreach (var f in libraries.FolderInfo) AddFolderOptionsRecursive(f, "");
+
+			// Post-process display names to handle duplicates (append a counter when a path appears multiple times)
+			var pathCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+			foreach (var o in _folderOptions) {
+				pathCounts.TryGetValue(o.path, out var ct);
+				pathCounts[o.path] = ct + 1;
+			}
+
+			var seen = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+			for (var i = 0; i < _folderOptions.Count; i++) {
+				var (id, path, _) = _folderOptions[i];
+				if (pathCounts.TryGetValue(path, out var total) && total > 1) {
+					seen.TryGetValue(path, out var idx);
+					idx++;
+					seen[path] = idx;
+					var display = $"{path} ({idx})";
+					_folderOptions[i] = (id, path, display);
+				}
+				else {
+					_folderOptions[i] = (id, path, path);
+				}
+			}
 		}
 
 		private void AddFolderOptionsRecursive(FolderInfo folder, string prefix) {
 			var path = string.IsNullOrEmpty(prefix) ? folder.Name : $"{prefix}/{folder.Name}";
-			_folderOptions.Add((folder.ID, path));
+			_folderOptions.Add((folder.ID, path, path));
 			foreach (var child in folder.Children) AddFolderOptionsRecursive(child, path);
 		}
 
@@ -131,11 +162,14 @@ namespace Assets._4OF.ee4v.AssetManager {
 				var selected = _assetList[_selectedIndex];
 				EditorGUILayout.LabelField("ID: ", selected.ID.ToString());
 				EditorGUILayout.LabelField("Name: ", selected.Name);
-				EditorGUILayout.LabelField("Name: ", selected.Description);
-				EditorGUILayout.LabelField("Folder: ", selected.Folder.ToString());
+				EditorGUILayout.LabelField("Description: ", selected.Description);
+				// Show friendly folder path if known, otherwise show the ULID
+				var folderOpt = _folderOptions.Find(x => x.id == selected.Folder);
+				var folderDisplay = folderOpt.path ?? selected.Folder.ToString();
+				EditorGUILayout.LabelField("Folder: ", folderDisplay);
 				EditorGUILayout.BeginHorizontal();
 				// Folder selection dropdown
-				var folderNames = _folderOptions.Select(x => x.path).ToArray();
+				var folderNames = _folderOptions.Select(x => x.displayName).ToArray();
 				if (folderNames.Length == 0) RefreshFolderOptions();
 				// Ensure selected index is within bounds
 				_selectedFolderIndex = Mathf.Clamp(_selectedFolderIndex, 0, Math.Max(0, _folderOptions.Count - 1));
@@ -237,7 +271,7 @@ namespace Assets._4OF.ee4v.AssetManager {
 				}
 				EditorGUILayout.EndHorizontal();
 
-				// Folder operations (create/rename/remove) are not available via AssetLibraryService.
+				// Folder operations via AssetLibraryService are available (create / rename / move / remove / set description).
 				EditorGUILayout.Space();
 				EditorGUILayout.LabelField("Folder operations", EditorStyles.boldLabel);
 					EditorGUILayout.BeginVertical(GUILayout.Width(600));
@@ -247,35 +281,45 @@ namespace Assets._4OF.ee4v.AssetManager {
 					_newFolderName = EditorGUILayout.TextField("Name", _newFolderName);
 					_newFolderDescription = EditorGUILayout.TextField("Description", _newFolderDescription);
 					if (_folderOptions.Count == 0) RefreshFolderOptions();
-					var parentNames = _folderOptions.Select(x => x.path).ToArray();
+					var parentNames = _folderOptions.Select(x => x.displayName).ToArray();
 					_newFolderParentIndex = Mathf.Clamp(_newFolderParentIndex, 0, Math.Max(0, _folderOptions.Count - 1));
 					_newFolderParentIndex = EditorGUILayout.Popup("Parent folder", _newFolderParentIndex, parentNames);
 					if (GUILayout.Button("Create Folder")) {
 						var parentId = _folderOptions.ElementAtOrDefault(_newFolderParentIndex).id;
-						AssetLibraryService.CreateFolder(parentId, _newFolderName, _newFolderDescription);
-						AddLog($"Request: AddFolder '{_newFolderName}' parent {parentId}");
-						RefreshAssets();
-						_newFolderName = "";
-						_newFolderDescription = "";
+						if (string.IsNullOrWhiteSpace(_newFolderName)) {
+							AddLog("Create folder aborted: name is empty");
+						}
+						else {
+							AssetLibraryService.CreateFolder(parentId, _newFolderName, _newFolderDescription);
+							AddLog($"Request: AddFolder '{_newFolderName}' parent {parentId}");
+							RefreshAssets();
+							_newFolderName = "";
+							_newFolderDescription = "";
+						}
 					}
 
 					EditorGUILayout.Space();
 					EditorGUILayout.LabelField("Rename Folder", EditorStyles.boldLabel);
-					var renameNames = _folderOptions.Select(x => x.path).ToArray();
+					var renameNames = _folderOptions.Select(x => x.displayName).ToArray();
 					_renameFolderIndex = Mathf.Clamp(_renameFolderIndex, 0, Math.Max(0, _folderOptions.Count - 1));
 					_renameFolderIndex = EditorGUILayout.Popup("Folder", _renameFolderIndex, renameNames);
 					_renameFolderName = EditorGUILayout.TextField("New name", _renameFolderName);
 					if (GUILayout.Button("Rename Folder")) {
 						var folderId = _folderOptions.ElementAtOrDefault(_renameFolderIndex).id;
-						AssetLibraryService.RenameFolder(folderId, _renameFolderName);
-						AddLog($"Request: RenameFolder {folderId} -> {_renameFolderName}");
-						RefreshAssets();
-						_renameFolderName = "";
+						if (folderId == Ulid.Empty) {
+							AddLog("Cannot rename root folder");
+						}
+						else {
+							AssetLibraryService.RenameFolder(folderId, _renameFolderName);
+							AddLog($"Request: RenameFolder {folderId} -> {_renameFolderName}");
+							RefreshAssets();
+							_renameFolderName = "";
+						}
 					}
 
 					EditorGUILayout.Space();
 					EditorGUILayout.LabelField("Remove Folder", EditorStyles.boldLabel);
-					var removeNames = _folderOptions.Select(x => x.path).ToArray();
+					var removeNames = _folderOptions.Select(x => x.displayName).ToArray();
 					_removeFolderIndex = Mathf.Clamp(_removeFolderIndex, 0, Math.Max(0, _folderOptions.Count - 1));
 					_removeFolderIndex = EditorGUILayout.Popup("Folder", _removeFolderIndex, removeNames);
 					if (GUILayout.Button("Remove Folder")) {
@@ -291,7 +335,77 @@ namespace Assets._4OF.ee4v.AssetManager {
 							_removeFolderIndex = 0;
 						}
 					}
+					EditorGUILayout.EndVertical();
 
+					// Move folder UI
+					EditorGUILayout.Space();
+					EditorGUILayout.BeginVertical(GUILayout.Width(600));
+					EditorGUILayout.LabelField("Move Folder", EditorStyles.boldLabel);
+					var moveNames = _folderOptions.Select(x => x.displayName).ToArray();
+					_moveSourceIndex = Mathf.Clamp(_moveSourceIndex, 0, Math.Max(0, _folderOptions.Count - 1));
+					_moveSourceIndex = EditorGUILayout.Popup("Folder to move", _moveSourceIndex, moveNames);
+					_moveDestIndex = Mathf.Clamp(_moveDestIndex, 0, Math.Max(0, _folderOptions.Count - 1));
+					_moveDestIndex = EditorGUILayout.Popup("Destination parent", _moveDestIndex, moveNames);
+					if (GUILayout.Button("Move Folder")) {
+						var folderId = _folderOptions.ElementAtOrDefault(_moveSourceIndex).id;
+						var parentId = _folderOptions.ElementAtOrDefault(_moveDestIndex).id;
+						if (folderId == Ulid.Empty) {
+							AddLog("Cannot move root folder");
+						}
+						else {
+							AssetLibraryService.MoveFolder(folderId, parentId);
+							AddLog($"Request: MoveFolder {folderId} -> {parentId}");
+							RefreshAssets();
+						}
+					}
+					EditorGUILayout.EndVertical();
+
+					// Set folder description UI
+					EditorGUILayout.Space();
+					EditorGUILayout.BeginVertical(GUILayout.Width(600));
+					EditorGUILayout.LabelField("Set Folder Description", EditorStyles.boldLabel);
+					var setDescNames = _folderOptions.Select(x => x.displayName).ToArray();
+					_setDescriptionIndex = Mathf.Clamp(_setDescriptionIndex, 0, Math.Max(0, _folderOptions.Count - 1));
+					_setDescriptionIndex = EditorGUILayout.Popup("Folder", _setDescriptionIndex, setDescNames);
+					_setDescriptionText = EditorGUILayout.TextField("New description", _setDescriptionText);
+					if (GUILayout.Button("Set Description")) {
+						var folderId = _folderOptions.ElementAtOrDefault(_setDescriptionIndex).id;
+						AssetLibraryService.SetFolderDescription(folderId, _setDescriptionText);
+						AddLog($"Request: SetFolderDescription {folderId} -> {_setDescriptionText}");
+						_setDescriptionText = "";
+						RefreshAssets();
+					}
+					EditorGUILayout.EndVertical();
+
+					// Update folder (rename + description) - bulk operation
+					EditorGUILayout.Space();
+					EditorGUILayout.BeginVertical(GUILayout.Width(600));
+					EditorGUILayout.LabelField("Update Folder (rename + description)", EditorStyles.boldLabel);
+					var updateNames = _folderOptions.Select(x => x.displayName).ToArray();
+					_updateFolderIndex = Mathf.Clamp(_updateFolderIndex, 0, Math.Max(0, _folderOptions.Count - 1));
+					_updateFolderIndex = EditorGUILayout.Popup("Folder", _updateFolderIndex, updateNames);
+					_updateFolderName = EditorGUILayout.TextField("New name", _updateFolderName);
+					_updateFolderDescription = EditorGUILayout.TextField("New description", _updateFolderDescription);
+					if (GUILayout.Button("Update Folder")) {
+						var folderId = _folderOptions.ElementAtOrDefault(_updateFolderIndex).id;
+						if (folderId == Ulid.Empty) {
+							AddLog("Cannot update root folder");
+						}
+						else {
+							var existing = AssetLibrary.Instance.Libraries?.GetFolder(folderId);
+							if (existing == null) AddLog($"Folder {folderId} not found");
+							else {
+								var folder = new FolderInfo(existing);
+								if (!string.IsNullOrWhiteSpace(_updateFolderName) && folder.Name != _updateFolderName) folder.SetName(_updateFolderName);
+								if (_updateFolderDescription != folder.Description) folder.SetDescription(_updateFolderDescription ?? string.Empty);
+								AssetLibraryService.UpdateFolder(folder);
+								AddLog($"Request: UpdateFolder {folderId} -> Name: {_updateFolderName}, Desc: {_updateFolderDescription}");
+								_updateFolderName = "";
+								_updateFolderDescription = "";
+								RefreshAssets();
+							}
+						}
+					}
 					EditorGUILayout.EndVertical();
 			}
 
