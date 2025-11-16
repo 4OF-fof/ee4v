@@ -101,6 +101,20 @@ namespace _4OF.ee4v.AssetManager.Data {
             AssetLibrary.Instance.RemoveAsset(assetId);
         }
 
+        public static void RenameAsset(Ulid assetId, string newName) {
+            var assetDir = Path.Combine(RootDir, "Assets", assetId.ToString());
+            var assetMetadata = AssetLibrary.Instance.GetAsset(assetId);
+            
+            var oldFileName = assetMetadata.Name + assetMetadata.Ext;
+            var newFileName = newName + assetMetadata.Ext;
+            var oldPath = Path.Combine(assetDir, oldFileName);
+            var newPath = Path.Combine(assetDir, newFileName);
+
+            if (File.Exists(oldPath)) {
+                File.Move(oldPath, newPath);
+            }
+        }
+
         public static void SetThumbnail(Ulid assetId, string imagePath) {
             var assetDir = Path.Combine(RootDir, "Assets", assetId.ToString());
             if (!Directory.Exists(assetDir)) {

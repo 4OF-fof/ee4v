@@ -6,20 +6,19 @@ using Newtonsoft.Json;
 namespace _4OF.ee4v.AssetManager.Data {
     public class AssetMetadata {
         private readonly List<string> _tags = new();
-        private string _folder = "";
 
         public AssetMetadata() {
         }
 
         [JsonConstructor]
-        public AssetMetadata(Ulid id, string name, string description, long size, string ext, string folder,
+        public AssetMetadata(Ulid id, string name, string description, long size, string ext, Ulid? folder,
             List<string> tags, bool isDeleted, long modificationTime) {
             Name = name;
             ID = id;
             Description = description;
             Size = size;
             Ext = ext;
-            _folder = folder;
+            Folder = folder;
             _tags = tags ?? new List<string>();
             IsDeleted = isDeleted;
             ModificationTime = modificationTime;
@@ -35,7 +34,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public string Ext { get; private set; } = "";
 
-        public Ulid? Folder => Ulid.TryParse(_folder, out var ulid) ? ulid : null;
+        public Ulid? Folder { get; private set; }
         public IReadOnlyList<string> Tags => _tags.AsReadOnly();
         public bool IsDeleted { get; private set; }
 
@@ -62,7 +61,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public void UpdateFolder(Ulid? newFolder) {
-            _folder = newFolder.HasValue ? newFolder.Value.ToString() : "";
+            Folder = newFolder;
             Touch();
         }
 

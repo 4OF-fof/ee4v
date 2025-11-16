@@ -222,19 +222,14 @@ namespace _4OF.ee4v.AssetManager {
                     // Editable name
                     var newName = EditorGUILayout.TextField("Name", a.Name);
                     if (newName != a.Name) {
-                        a.UpdateName(newName);
-                        AssetLibrary.Instance.UpdateAsset(a);
-                        AssetLibrarySerializer.SaveAsset(a);
-                        AssetLibrarySerializer.SaveLibrary();
+                        AssetLibraryService.RenameAsset(a.ID, newName);
                     }
 
                     // Editable description
                     var newDesc = EditorGUILayout.TextField("Description", a.Description);
                     if (newDesc != a.Description) {
                         a.UpdateDescription(newDesc);
-                        AssetLibrary.Instance.UpdateAsset(a);
-                        AssetLibrarySerializer.SaveAsset(a);
-                        AssetLibrarySerializer.SaveLibrary();
+                        AssetLibraryService.UpdateAsset(a);
                     }
 
                     EditorGUILayout.LabelField($"Size: {a.Size}");
@@ -256,17 +251,13 @@ namespace _4OF.ee4v.AssetManager {
                             if (newIndex == 0) {
                                 // clear folder
                                 a.UpdateFolder(null);
-                                AssetLibrary.Instance.UpdateAsset(a);
-                                AssetLibrarySerializer.SaveAsset(a);
-                                AssetLibrarySerializer.SaveLibrary();
+                                AssetLibraryService.UpdateAsset(a);
                             }
                             else {
                                 var selectedFolder = folderIds[newIndex];
                                 if (selectedFolder.HasValue) {
                                     a.UpdateFolder(selectedFolder.Value);
-                                    AssetLibrary.Instance.UpdateAsset(a);
-                                    AssetLibrarySerializer.SaveAsset(a);
-                                    AssetLibrarySerializer.SaveLibrary();
+                                    AssetLibraryService.UpdateAsset(a);
                                 }
                             }
                         }
@@ -283,9 +274,7 @@ namespace _4OF.ee4v.AssetManager {
                             if (!string.IsNullOrEmpty(t)) {
                                 a.AddTag(t);
                                 _tagInputs[key] = "";
-                                AssetLibrary.Instance.UpdateAsset(a);
-                                AssetLibrarySerializer.SaveAsset(a);
-                                AssetLibrarySerializer.SaveLibrary();
+                                AssetLibraryService.UpdateAsset(a);
                             }
                         }
                     }
@@ -295,9 +284,7 @@ namespace _4OF.ee4v.AssetManager {
                             foreach (var tag in a.Tags.ToList())
                                 if (GUILayout.Button($"Remove: {tag}", GUILayout.Width(120))) {
                                     a.RemoveTag(tag);
-                                    AssetLibrary.Instance.UpdateAsset(a);
-                                    AssetLibrarySerializer.SaveAsset(a);
-                                    AssetLibrarySerializer.SaveLibrary();
+                                    AssetLibraryService.UpdateAsset(a);
                                 }
                         }
 
