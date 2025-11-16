@@ -22,6 +22,10 @@ namespace _4OF.ee4v.AssetManager.Data {
         public void RemoveAsset(Ulid assetId) {
             if (_assetMetadataDict.TryGetValue(assetId, out var asset)) asset?.SetDeleted(true);
         }
+        
+        public void UnloadAsset(Ulid assetId) {
+            _assetMetadataDict.Remove(assetId);
+        }
 
         public void UpdateAsset(AssetMetadata assetMetadata) {
             if (assetMetadata == null) return;
@@ -29,7 +33,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public AssetMetadata GetAsset(Ulid assetId) {
-            return _assetMetadataDict.TryGetValue(assetId, out var asset) ? asset : null;
+            return _assetMetadataDict.GetValueOrDefault(assetId);
         }
 
         public void UpsertAsset(AssetMetadata assetMetadata) {

@@ -1,8 +1,10 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using _4OF.ee4v.Core.Data;
 using _4OF.ee4v.Core.Utility;
 using Newtonsoft.Json;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.AssetManager.Data {
     public static class AssetLibrarySerializer {
@@ -88,17 +90,33 @@ namespace _4OF.ee4v.AssetManager.Data {
             assetMetadata.SetSize(fileInfo.Length);
             assetMetadata.SetExt(fileInfo.Extension);
             var assetDir = Path.Combine(RootDir, "Assets", assetMetadata.ID.ToString());
-            Directory.CreateDirectory(assetDir);
-            var destPath = Path.Combine(assetDir, fileInfo.Name);
-            File.Copy(path, destPath, true);
-            SaveAsset(assetMetadata);
-            AssetLibrary.Instance.AddAsset(assetMetadata);
+
+            try {
+                Directory.CreateDirectory(assetDir);
+                var destPath = Path.Combine(assetDir, fileInfo.Name);
+                File.Copy(path, destPath, true);
+                SaveAsset(assetMetadata);
+                AssetLibrary.Instance.AddAsset(assetMetadata);
+            }
+            catch (Exception e) {
+                Debug.LogError($"Failed to add asset. Rolling back... Error: {e.Message}");
+                try {
+                    if (Directory.Exists(assetDir)) {
+                        Directory.Delete(assetDir, true);
+                    }
+                }
+                catch (Exception deleteEx) {
+                    Debug.LogError($"Critical: Failed to rollback directory {assetDir}. Manual cleanup required. Error: {deleteEx.Message}");
+                }
+
+                throw;
+            }
         }
 
-        public static void RemoveAsset(Ulid assetId) {
+        public static void DeleteAsset(Ulid assetId) {
             var assetDir = Path.Combine(RootDir, "Assets", assetId.ToString());
             if (Directory.Exists(assetDir)) Directory.Delete(assetDir, true);
-            AssetLibrary.Instance.RemoveAsset(assetId);
+            AssetLibrary.Instance.UnloadAsset(assetId);
         }
 
         public static void RenameAsset(Ulid assetId, string newName) {

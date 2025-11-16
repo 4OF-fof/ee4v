@@ -306,7 +306,7 @@ namespace _4OF.ee4v.AssetManager {
                             if (EditorUtility.DisplayDialog("Confirm",
                                     $"Permanently delete asset '{a.Name}' ({a.ID}) and its on-disk files?", "Delete",
                                     "Cancel")) {
-                                AssetLibrarySerializer.RemoveAsset(a.ID);
+                                AssetLibrarySerializer.DeleteAsset(a.ID);
                                 AssetLibrarySerializer.SaveLibrary();
                                 AssetDatabase.Refresh();
                             }
