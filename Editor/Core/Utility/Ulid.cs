@@ -35,6 +35,8 @@ namespace _4OF.ee4v.Core.Utility {
             return FromBytes(bytes);
         }
 
+        public static Ulid Empty => new Ulid(0, 0);
+
         public static Ulid Parse(string value) {
             return TryParse(value, out var ulid) ? ulid : throw new FormatException("Invalid ULID string.");
         }

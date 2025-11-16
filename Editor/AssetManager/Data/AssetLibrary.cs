@@ -8,6 +8,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         private readonly Dictionary<Ulid, AssetMetadata> _assetMetadataDict = new();
         private readonly Dictionary<string, HashSet<Ulid>> _tagIndex = new();
+        private readonly Dictionary<Ulid, HashSet<Ulid>> _folderIndex = new();
 
         private AssetLibrary() {
         }
@@ -17,20 +18,22 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public void AddAsset(AssetMetadata assetMetadata) {
             if (!_assetMetadataDict.TryAdd(assetMetadata.ID, assetMetadata)) return;
-            IndexTags(assetMetadata);
+            RegisterIndex(assetMetadata);
         }
 
         public void RemoveAsset(Ulid assetId) {
-            if (_assetMetadataDict.TryGetValue(assetId, out var asset)) UnindexTags(asset);
+            if (_assetMetadataDict.TryGetValue(assetId, out var asset)) {
+                UnregisterIndex(asset);
+            }
             _assetMetadataDict.Remove(assetId);
         }
 
         public void UpdateAsset(AssetMetadata assetMetadata) {
             if (assetMetadata == null) return;
             if (!_assetMetadataDict.TryGetValue(assetMetadata.ID, out var oldAssetMetadata)) return;
-            UnindexTags(oldAssetMetadata);
+            UnregisterIndex(oldAssetMetadata);
             _assetMetadataDict[assetMetadata.ID] = assetMetadata;
-            IndexTags(assetMetadata);
+            RegisterIndex(assetMetadata);
         }
 
         public AssetMetadata GetAsset(Ulid assetId) {
@@ -39,14 +42,19 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public void UpsertAsset(AssetMetadata assetMetadata) {
             if (assetMetadata == null) return;
-            if (_assetMetadataDict.TryGetValue(assetMetadata.ID, out var oldAssetMetadata))
-                UnindexTags(oldAssetMetadata);
+            if (_assetMetadataDict.TryGetValue(assetMetadata.ID, out var oldAssetMetadata)) {
+                UnregisterIndex(oldAssetMetadata);
+            }
             _assetMetadataDict[assetMetadata.ID] = assetMetadata;
-            IndexTags(assetMetadata);
+            RegisterIndex(assetMetadata);
         }
 
         public List<string> GetAllTags() {
             return _tagIndex.Keys.ToList();
+        }
+
+        public List<Ulid> GetAllFolders() {
+            return _folderIndex.Keys.ToList();
         }
 
         public void RenameTag(string tag, string newTag) {
@@ -77,11 +85,26 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public void UnloadAssetLibrary() {
             _assetMetadataDict.Clear();
-            _tagIndex.Clear();
+            ClearIndex();
             Libraries = null;
         }
 
-        private void IndexTags(AssetMetadata asset) {
+        private void RegisterIndex(AssetMetadata asset) {
+            RegisterTags(asset);
+            RegisterFolder(asset);
+        }
+
+        private void UnregisterIndex(AssetMetadata asset) {
+            UnregisterTags(asset);
+            UnregisterFolder(asset);
+        }
+        
+        private void ClearIndex() {
+            _tagIndex.Clear();
+            _folderIndex.Clear();
+        }
+        
+        private void RegisterTags(AssetMetadata asset) {
             if (asset == null) return;
             foreach (var tag in asset.Tags) {
                 if (string.IsNullOrEmpty(tag)) continue;
@@ -94,7 +117,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             }
         }
 
-        private void UnindexTags(AssetMetadata asset) {
+        private void UnregisterTags(AssetMetadata asset) {
             if (asset == null) return;
             foreach (var tag in asset.Tags) {
                 if (string.IsNullOrEmpty(tag)) continue;
@@ -102,6 +125,25 @@ namespace _4OF.ee4v.AssetManager.Data {
                 set.Remove(asset.ID);
                 if (set.Count == 0) _tagIndex.Remove(tag);
             }
+        }
+
+        private void RegisterFolder(AssetMetadata asset) {
+            if (asset?.Folder == null) return;
+            var folderId = asset.Folder.Value;
+            if (!_folderIndex.TryGetValue(folderId, out var set)) {
+                set = new HashSet<Ulid>();
+                _folderIndex[folderId] = set;
+            }
+
+            set.Add(asset.ID);
+        }
+
+        private void UnregisterFolder(AssetMetadata asset) {
+            if (asset?.Folder == null) return;
+            var folderId = asset.Folder.Value;
+            if (!_folderIndex.TryGetValue(folderId, out var set)) return;
+            set.Remove(asset.ID);
+            if (set.Count == 0) _folderIndex.Remove(folderId);
         }
     }
 }
