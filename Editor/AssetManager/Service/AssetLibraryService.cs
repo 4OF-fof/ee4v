@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Runtime.CompilerServices;
+using System.IO;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
@@ -17,6 +18,7 @@ namespace _4OF.ee4v.AssetManager.Service {
         }
 
         public static void UpdateAsset(AssetMetadata newAsset) {
+            if (!IsValidAssetName(newAsset.Name)) return;
             if (AssetLibrary.Instance.GetAsset(newAsset.ID) == null) {
                 Debug.LogError($"Asset with ID {newAsset.ID} does not exist.");
                 return;
@@ -69,6 +71,18 @@ namespace _4OF.ee4v.AssetManager.Service {
             var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
             asset.SetDeleted(false);
             UpdateAsset(asset);
+        }
+        
+        private static bool IsValidAssetName(string name) {
+            if (string.IsNullOrWhiteSpace(name)) {
+                Debug.LogError("Asset name cannot be empty or whitespace.");
+                return false;
+            }
+            var invalidChars = Path.GetInvalidFileNameChars();
+            var found = name.IndexOfAny(invalidChars);
+            if (found < 0) return true;
+            Debug.LogError($"Asset name '{name}' contains invalid filename character '{name[found]}'.");
+            return false;
         }
     }
 }
