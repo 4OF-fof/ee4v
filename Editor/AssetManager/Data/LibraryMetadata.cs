@@ -68,7 +68,6 @@ namespace _4OF.ee4v.AssetManager.Data {
 
     public class FolderInfo {
         private readonly List<FolderInfo> _children = new();
-        private readonly List<string> _tags = new();
 
         public FolderInfo() {
         }
@@ -79,18 +78,15 @@ namespace _4OF.ee4v.AssetManager.Data {
             Description = folderInfo.Description;
             _children = folderInfo.Children.ToList();
             ModificationTime = folderInfo.ModificationTime;
-            _tags = folderInfo.Tags.ToList();
         }
 
         [JsonConstructor]
-        public FolderInfo(Ulid id, string name, string description, List<FolderInfo> children, long modificationTime,
-            List<string> tags) {
+        public FolderInfo(Ulid id, string name, string description, List<FolderInfo> children, long modificationTime) {
             ID = id;
             Name = name;
             Description = description;
             _children = children ?? new List<FolderInfo>();
             ModificationTime = modificationTime;
-            _tags = tags ?? new List<string>();
         }
 
         public Ulid ID { get; } = Ulid.Generate();
@@ -101,8 +97,6 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public IReadOnlyList<FolderInfo> Children => _children.AsReadOnly();
         public long ModificationTime { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-        public IReadOnlyList<string> Tags => _tags.AsReadOnly();
 
         public void SetName(string newName) {
             Name = newName;
@@ -140,16 +134,6 @@ namespace _4OF.ee4v.AssetManager.Data {
             return ID == folderId
                 ? this
                 : _children.Select(c => c.GetChild(folderId)).FirstOrDefault(found => found != null);
-        }
-
-        public void AddTag(string tag) {
-            if (string.IsNullOrEmpty(tag) || _tags.Contains(tag)) return;
-            _tags.Add(tag);
-            Touch();
-        }
-
-        public void RemoveTag(string tag) {
-            if (_tags.Remove(tag)) Touch();
         }
 
         private void Touch() {
