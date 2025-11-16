@@ -48,6 +48,15 @@ namespace _4OF.ee4v.AssetManager.Data {
             _assetMetadataDict[assetMetadata.ID] = assetMetadata;
             RegisterIndex(assetMetadata);
         }
+        
+        public List<AssetMetadata> GetAssetsByTag(string tag) {
+            if (string.IsNullOrEmpty(tag) || !_tagIndex.TryGetValue(tag, out var idSet)) return new List<AssetMetadata>();
+            return idSet.Select(GetAsset).Where(asset => asset != null).ToList();
+        }
+        
+        public List<AssetMetadata> GetAssetsByFolder(Ulid folderId) {
+            return !_folderIndex.TryGetValue(folderId, out var idSet) ? new List<AssetMetadata>() : idSet.Select(GetAsset).Where(asset => asset != null).ToList();
+        }
 
         public List<string> GetAllTags() {
             return _tagIndex.Keys.ToList();
@@ -60,7 +69,6 @@ namespace _4OF.ee4v.AssetManager.Data {
         public void RenameTag(string tag, string newTag) {
             if (string.IsNullOrEmpty(tag) || string.IsNullOrEmpty(newTag) || tag == newTag) return;
             if (!_tagIndex.TryGetValue(tag, out var idSet)) return;
-            if (_tagIndex.ContainsKey(newTag)) return;
 
             var ids = idSet.ToList();
             foreach (var id in ids) {
