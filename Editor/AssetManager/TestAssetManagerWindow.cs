@@ -298,8 +298,9 @@ namespace _4OF.ee4v.AssetManager {
                             if (EditorUtility.DisplayDialog("Confirm",
                                     $"Remove metadata for asset '{a.Name}' ({a.ID})? This will not delete files on disk.",
                                     "Remove", "Cancel")) {
-                                AssetLibrary.Instance.RemoveAsset(a.ID);
-                                AssetLibrarySerializer.SaveLibrary();
+                                var asset = AssetLibrary.Instance.GetAsset(a.ID);
+                                asset.SetDeleted(true);
+                                AssetLibrarySerializer.SaveAsset(asset);
                             }
 
                         if (GUILayout.Button("Delete Asset (on-disk)"))

@@ -116,7 +116,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         public static void DeleteAsset(Ulid assetId) {
             var assetDir = Path.Combine(RootDir, "Assets", assetId.ToString());
             if (Directory.Exists(assetDir)) Directory.Delete(assetDir, true);
-            AssetLibrary.Instance.UnloadAsset(assetId);
+            AssetLibrary.Instance.RemoveAsset(assetId);
         }
 
         public static void RenameAsset(Ulid assetId, string newName) {
