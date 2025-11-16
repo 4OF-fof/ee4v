@@ -221,15 +221,11 @@ namespace _4OF.ee4v.AssetManager {
 
                     // Editable name
                     var newName = EditorGUILayout.TextField("Name", a.Name);
-                    if (newName != a.Name) {
-                        AssetLibraryService.RenameAsset(a.ID, newName);
-                    }
+                    if (newName != a.Name) AssetLibraryService.RenameAsset(a.ID, newName);
 
                     // Editable description
                     var newDesc = EditorGUILayout.TextField("Description", a.Description);
-                    if (newDesc != a.Description) {
-                        AssetLibraryService.SetDescription(a.ID, newDesc);
-                    }
+                    if (newDesc != a.Description) AssetLibraryService.SetDescription(a.ID, newDesc);
 
                     EditorGUILayout.LabelField($"Size: {a.Size}");
                     EditorGUILayout.LabelField($"Ext: {a.Ext}");
@@ -252,9 +248,7 @@ namespace _4OF.ee4v.AssetManager {
                             }
                             else {
                                 var selectedFolder = folderIds[newIndex];
-                                if (selectedFolder.HasValue) {
-                                    AssetLibraryService.SetFolder(a.ID, selectedFolder.Value);
-                                }
+                                if (selectedFolder.HasValue) AssetLibraryService.SetFolder(a.ID, selectedFolder.Value);
                             }
                         }
                     }
@@ -277,9 +271,8 @@ namespace _4OF.ee4v.AssetManager {
                     if (a.Tags != null && a.Tags.Count > 0)
                         using (new EditorGUILayout.HorizontalScope()) {
                             foreach (var tag in a.Tags.ToList())
-                                if (GUILayout.Button($"Remove: {tag}", GUILayout.Width(120))) {
+                                if (GUILayout.Button($"Remove: {tag}", GUILayout.Width(120)))
                                     AssetLibraryService.RemoveTag(a.ID, tag);
-                                }
                         }
 
                     EditorGUILayout.LabelField($"Deleted: {a.IsDeleted}");

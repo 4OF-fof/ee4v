@@ -9,7 +9,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public AssetMetadata() {
         }
-        
+
         public AssetMetadata(AssetMetadata metadata) {
             ID = metadata.ID;
             Name = metadata.Name;

@@ -19,11 +19,9 @@ namespace _4OF.ee4v.AssetManager.Data {
             if (!_assetMetadataDict.TryAdd(assetMetadata.ID, assetMetadata)) return;
             IndexTags(assetMetadata);
         }
-        
+
         public void RemoveAsset(Ulid assetId) {
-            if (_assetMetadataDict.TryGetValue(assetId, out var asset)) {
-                UnindexTags(asset);
-            }
+            if (_assetMetadataDict.TryGetValue(assetId, out var asset)) UnindexTags(asset);
             _assetMetadataDict.Remove(assetId);
         }
 
@@ -41,9 +39,8 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public void UpsertAsset(AssetMetadata assetMetadata) {
             if (assetMetadata == null) return;
-            if (_assetMetadataDict.TryGetValue(assetMetadata.ID, out var oldAssetMetadata)) {
+            if (_assetMetadataDict.TryGetValue(assetMetadata.ID, out var oldAssetMetadata))
                 UnindexTags(oldAssetMetadata);
-            }
             _assetMetadataDict[assetMetadata.ID] = assetMetadata;
             IndexTags(assetMetadata);
         }
@@ -67,6 +64,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                     newSet = new HashSet<Ulid>();
                     _tagIndex[newTag] = newSet;
                 }
+
                 newSet.Add(id);
             }
 
@@ -91,6 +89,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                     set = new HashSet<Ulid>();
                     _tagIndex[tag] = set;
                 }
+
                 set.Add(asset.ID);
             }
         }

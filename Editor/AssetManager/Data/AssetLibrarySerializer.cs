@@ -101,12 +101,11 @@ namespace _4OF.ee4v.AssetManager.Data {
             catch (Exception e) {
                 Debug.LogError($"Failed to add asset. Rolling back... Error: {e.Message}");
                 try {
-                    if (Directory.Exists(assetDir)) {
-                        Directory.Delete(assetDir, true);
-                    }
+                    if (Directory.Exists(assetDir)) Directory.Delete(assetDir, true);
                 }
                 catch (Exception deleteEx) {
-                    Debug.LogError($"Critical: Failed to rollback directory {assetDir}. Manual cleanup required. Error: {deleteEx.Message}");
+                    Debug.LogError(
+                        $"Critical: Failed to rollback directory {assetDir}. Manual cleanup required. Error: {deleteEx.Message}");
                 }
 
                 throw;
@@ -122,15 +121,13 @@ namespace _4OF.ee4v.AssetManager.Data {
         public static void RenameAsset(Ulid assetId, string newName) {
             var assetDir = Path.Combine(RootDir, "Assets", assetId.ToString());
             var assetMetadata = AssetLibrary.Instance.GetAsset(assetId);
-            
+
             var oldFileName = assetMetadata.Name + assetMetadata.Ext;
             var newFileName = newName + assetMetadata.Ext;
             var oldPath = Path.Combine(assetDir, oldFileName);
             var newPath = Path.Combine(assetDir, newFileName);
 
-            if (File.Exists(oldPath)) {
-                File.Move(oldPath, newPath);
-            }
+            if (File.Exists(oldPath)) File.Move(oldPath, newPath);
         }
 
         public static void SetThumbnail(Ulid assetId, string imagePath) {
