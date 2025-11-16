@@ -7,8 +7,8 @@ namespace _4OF.ee4v.AssetManager.Data {
         public static readonly AssetLibrary Instance = new();
 
         private readonly Dictionary<Ulid, AssetMetadata> _assetMetadataDict = new();
-        private readonly Dictionary<string, HashSet<Ulid>> _tagIndex = new();
         private readonly Dictionary<Ulid, HashSet<Ulid>> _folderIndex = new();
+        private readonly Dictionary<string, HashSet<Ulid>> _tagIndex = new();
 
         private AssetLibrary() {
         }
@@ -22,9 +22,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public void RemoveAsset(Ulid assetId) {
-            if (_assetMetadataDict.TryGetValue(assetId, out var asset)) {
-                UnregisterIndex(asset);
-            }
+            if (_assetMetadataDict.TryGetValue(assetId, out var asset)) UnregisterIndex(asset);
             _assetMetadataDict.Remove(assetId);
         }
 
@@ -42,20 +40,22 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public void UpsertAsset(AssetMetadata assetMetadata) {
             if (assetMetadata == null) return;
-            if (_assetMetadataDict.TryGetValue(assetMetadata.ID, out var oldAssetMetadata)) {
+            if (_assetMetadataDict.TryGetValue(assetMetadata.ID, out var oldAssetMetadata))
                 UnregisterIndex(oldAssetMetadata);
-            }
             _assetMetadataDict[assetMetadata.ID] = assetMetadata;
             RegisterIndex(assetMetadata);
         }
-        
+
         public List<AssetMetadata> GetAssetsByTag(string tag) {
-            if (string.IsNullOrEmpty(tag) || !_tagIndex.TryGetValue(tag, out var idSet)) return new List<AssetMetadata>();
+            if (string.IsNullOrEmpty(tag) || !_tagIndex.TryGetValue(tag, out var idSet))
+                return new List<AssetMetadata>();
             return idSet.Select(GetAsset).Where(asset => asset != null).ToList();
         }
-        
+
         public List<AssetMetadata> GetAssetsByFolder(Ulid folderId) {
-            return !_folderIndex.TryGetValue(folderId, out var idSet) ? new List<AssetMetadata>() : idSet.Select(GetAsset).Where(asset => asset != null).ToList();
+            return !_folderIndex.TryGetValue(folderId, out var idSet)
+                ? new List<AssetMetadata>()
+                : idSet.Select(GetAsset).Where(asset => asset != null).ToList();
         }
 
         public List<string> GetAllTags() {
@@ -106,12 +106,12 @@ namespace _4OF.ee4v.AssetManager.Data {
             UnregisterTags(asset);
             UnregisterFolder(asset);
         }
-        
+
         private void ClearIndex() {
             _tagIndex.Clear();
             _folderIndex.Clear();
         }
-        
+
         private void RegisterTags(AssetMetadata asset) {
             if (asset == null) return;
             foreach (var tag in asset.Tags) {
