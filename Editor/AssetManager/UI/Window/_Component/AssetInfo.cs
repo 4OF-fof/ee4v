@@ -1,12 +1,12 @@
-﻿using UnityEngine.UIElements;
-using _4OF.ee4v.AssetManager.Data;
+﻿using _4OF.ee4v.AssetManager.Data;
+using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetInfo : VisualElement {
-        private readonly Label _nameLabel;
         private readonly Label _descLabel;
-        private readonly Label _sizeLabel;
         private readonly Label _extLabel;
+        private readonly Label _nameLabel;
+        private readonly Label _sizeLabel;
         private readonly Label _tagsLabel;
 
         public AssetInfo() {
@@ -44,7 +44,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _descLabel.text = $"Description: {asset.Description}";
             _sizeLabel.text = $"Size: {asset.Size}";
             _extLabel.text = $"Ext: {asset.Ext}";
-            _tagsLabel.text = $"Tags: {(asset.Tags != null && asset.Tags.Count > 0 ? string.Join(", ", asset.Tags) : "-")}";
+            _tagsLabel.text =
+                $"Tags: {(asset.Tags != null && asset.Tags.Count > 0 ? string.Join(", ", asset.Tags) : "-")}";
         }
     }
 }

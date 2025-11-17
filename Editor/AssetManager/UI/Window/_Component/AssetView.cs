@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using UnityEngine.UIElements;
 using _4OF.ee4v.AssetManager.Data;
+using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetView : VisualElement {
@@ -35,16 +36,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         private void OnControllerAssetSelected(AssetMetadata asset) {
-            // Optionally highlight the UI element; for now we just ensure the AssetInfo will update via AssetManagerWindow wiring.
+            Debug.Log($"Selected asset: {asset.Name}");
         }
 
         private void RefreshView() {
             _container.Clear();
             foreach (var button in _lastAssets.Select(asset => new Button(() => _controller?.SelectAsset(asset)) {
                          text = asset.Name
-                     })) {
+                     }))
                 _container.Add(button);
-            }
         }
     }
 }

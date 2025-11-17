@@ -1,14 +1,14 @@
 ﻿using _4OF.ee4v.AssetManager.Service;
+using _4OF.ee4v.AssetManager.UI.Window._Component;
 using UnityEditor;
 using UnityEngine.UIElements;
-using _4OF.ee4v.AssetManager.UI.Window._Component;
 
 namespace _4OF.ee4v.AssetManager.UI.Window {
     public class AssetManagerWindow : EditorWindow {
-        private Navigation _navigation;
-        private AssetView _assetView;
-        private AssetInfo _assetInfo;
         private AssetViewController _assetController;
+        private AssetInfo _assetInfo;
+        private AssetView _assetView;
+        private Navigation _navigation;
 
         private void CreateGUI() {
             var root = rootVisualElement;
@@ -39,7 +39,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             _assetController = new AssetViewController();
             _assetView.SetController(_assetController);
-            _navigation.ModeChanged += mode => { _assetController.SetMode(mode); };
+            _navigation.FilterChanged += predicate => { _assetController.SetFilter(predicate); };
             _assetController.AssetSelected += asset => { _assetInfo.SetAsset(asset); };
 
             _navigation.SelectAll();
