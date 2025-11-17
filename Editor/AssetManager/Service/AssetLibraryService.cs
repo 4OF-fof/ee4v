@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.AssetManager.Utility;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 
@@ -25,7 +27,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             AssetLibrary.Instance.UnloadAssetLibrary();
             LoadAssetLibrary();
         }
-        
+
         public static void CreateAsset(string path) {
             if (string.IsNullOrEmpty(path) || !File.Exists(path)) {
                 Debug.LogError($"Invalid path: {path}");
@@ -73,6 +75,53 @@ namespace _4OF.ee4v.AssetManager.Service {
         public static void SetDescription(Ulid assetId, string newDescription) {
             var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
             asset.SetDescription(newDescription);
+            UpdateAsset(asset);
+        }
+
+        public static void SetBoothShopName(Ulid assetId, string shopURL) {
+            if (BoothUtility.ClassifyBoothUrl(shopURL) != BoothUtility.BoothUrlType.ShopUrl) {
+                Debug.LogError("Invalid Booth shop URL.");
+                return;
+            }
+
+            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
+            var regex = new Regex(@"https?://([^\.]+)\.booth\.pm", RegexOptions.IgnoreCase);
+            var match = regex.Match(shopURL);
+            if (!match.Success) return;
+            var shopName = match.Groups[1].Value;
+            asset.BoothData.SetShopName(shopName);
+            UpdateAsset(asset);
+        }
+
+        public static void SetBoothItemId(Ulid assetId, string itemURL) {
+            if (BoothUtility.ClassifyBoothUrl(itemURL) != BoothUtility.BoothUrlType.ItemUrl) {
+                Debug.LogError("Invalid Booth item URL.");
+                return;
+            }
+
+            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
+            var regex = new Regex(@"items/(\d+)");
+            var match = regex.Match(itemURL);
+
+            if (!match.Success) return;
+            var itemId = match.Groups[1].Value;
+            asset.BoothData.SetItemID(itemId);
+            UpdateAsset(asset);
+        }
+
+        public static void SetBoothDownloadId(Ulid assetId, string downloadURL) {
+            if (BoothUtility.ClassifyBoothUrl(downloadURL) != BoothUtility.BoothUrlType.DownloadUrl) {
+                Debug.LogError("Invalid Booth download URL.");
+                return;
+            }
+
+            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
+            var regex = new Regex(@"downloadables/(\d+)", RegexOptions.IgnoreCase);
+            var match = regex.Match(downloadURL);
+
+            if (!match.Success) return;
+            var downloadId = match.Groups[1].Value;
+            asset.BoothData.SetDownloadID(downloadId);
             UpdateAsset(asset);
         }
 
@@ -163,12 +212,13 @@ namespace _4OF.ee4v.AssetManager.Service {
                     Debug.LogError($"Parent folder {parentFolderId} not found.");
                     return;
                 }
+
                 parent.AddChild(folder);
             }
 
             AssetLibrarySerializer.SaveLibrary();
         }
-        
+
         public static void UpdateFolder(FolderInfo newFolder) {
             if (newFolder == null) return;
             if (!IsValidAssetName(newFolder.Name)) return;
@@ -213,6 +263,7 @@ namespace _4OF.ee4v.AssetManager.Service {
                 Debug.LogError("Library metadata is not loaded.");
                 return;
             }
+
             var folder = libraries.GetFolder(folderId);
             if (folder == null) {
                 Debug.LogError($"Folder {folderId} not found.");
@@ -220,7 +271,12 @@ namespace _4OF.ee4v.AssetManager.Service {
             }
 
             var folderIds = GetRelatedFolder(folder);
-            foreach (var updatedAsset in from target in folderIds select AssetLibrary.Instance.GetAssetsByFolder(target) into assetsInFolder where assetsInFolder != null && assetsInFolder.Count != 0 from asset in assetsInFolder select new AssetMetadata(asset)) {
+            foreach (var updatedAsset in from target in folderIds
+                     select AssetLibrary.Instance.GetAssetsByFolder(target)
+                     into assetsInFolder
+                     where assetsInFolder != null && assetsInFolder.Count != 0
+                     from asset in assetsInFolder
+                     select new AssetMetadata(asset)) {
                 updatedAsset.SetFolder(Ulid.Empty);
                 UpdateAsset(updatedAsset);
             }
@@ -233,9 +289,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             var result = new List<Ulid>();
             if (root == null) return result;
             result.Add(root.ID);
-            foreach (var child in root.Children) {
-                result.AddRange(GetRelatedFolder(child));
-            }
+            foreach (var child in root.Children) result.AddRange(GetRelatedFolder(child));
 
             return result;
         }
