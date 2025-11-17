@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
@@ -211,9 +213,31 @@ namespace _4OF.ee4v.AssetManager.Service {
                 Debug.LogError("Library metadata is not loaded.");
                 return;
             }
+            var folder = libraries.GetFolder(folderId);
+            if (folder == null) {
+                Debug.LogError($"Folder {folderId} not found.");
+                return;
+            }
+
+            var folderIds = GetRelatedFolder(folder);
+            foreach (var updatedAsset in from target in folderIds select AssetLibrary.Instance.GetAssetsByFolder(target) into assetsInFolder where assetsInFolder != null && assetsInFolder.Count != 0 from asset in assetsInFolder select new AssetMetadata(asset)) {
+                updatedAsset.SetFolder(Ulid.Empty);
+                UpdateAsset(updatedAsset);
+            }
 
             libraries.RemoveFolder(folderId);
             AssetLibrarySerializer.SaveLibrary();
+        }
+
+        private static List<Ulid> GetRelatedFolder(FolderInfo root) {
+            var result = new List<Ulid>();
+            if (root == null) return result;
+            result.Add(root.ID);
+            foreach (var child in root.Children) {
+                result.AddRange(GetRelatedFolder(child));
+            }
+
+            return result;
         }
 
         private static bool IsValidAssetName(string name) {
