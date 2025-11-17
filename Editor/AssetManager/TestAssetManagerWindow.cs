@@ -7,7 +7,7 @@ using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
 
-namespace Assets._4OF.ee4v.AssetManager {
+namespace _4OF.ee4v.AssetManager {
     public class TestAssetManagerWindow : EditorWindow {
         private readonly List<string> _logs = new();
         private string _boothUrlValue = string.Empty;
@@ -52,7 +52,7 @@ namespace Assets._4OF.ee4v.AssetManager {
             EditorGUILayout.EndScrollView();
         }
 
-        [MenuItem("ee4v/Asset Manager/Test Window")]
+        [MenuItem("Debug/Test Window")]
         public static void ShowWindow() {
             var window = GetWindow<TestAssetManagerWindow>("Asset Manager Test");
             window.Show();
