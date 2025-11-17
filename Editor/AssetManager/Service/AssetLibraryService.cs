@@ -35,7 +35,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             }
 
             try {
-                AssetLibrarySerializer.AddAsset(path);
+                AssetLibrarySerializer.CreateAsset(path);
             }
             catch (Exception e) {
                 Debug.LogError($"Failed to add asset from path: {e.Message}");

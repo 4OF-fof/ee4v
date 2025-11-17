@@ -91,7 +91,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             SaveCache();
         }
 
-        public static void AddAsset(string path) {
+        public static void CreateAsset(string path) {
             var fileInfo = new FileInfo(path);
             var assetMetadata = new AssetMetadata();
             assetMetadata.SetName(Path.GetFileNameWithoutExtension(fileInfo.Name));
