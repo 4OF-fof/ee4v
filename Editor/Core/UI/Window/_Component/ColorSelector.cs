@@ -83,13 +83,13 @@ namespace _4OF.ee4v.Core.UI.Window._Component {
                             var p = FileUtility.NormalizePath(folderPath);
                             var idx = FolderStyleService.IndexOfPath(p);
                             if (color == Color.clear) {
-                                if (idx >= 0) FolderStyleList.instance.Remove(idx);
+                                if (idx >= 0) FolderStyleList.instance.RemoveFolderStyle(idx);
                             }
                             else {
                                 if (idx == -1)
-                                    FolderStyleList.instance.Add(p, color, null);
+                                    FolderStyleList.instance.AddFolderStyle(p, color, null);
                                 else
-                                    FolderStyleList.instance.Update(idx, color: color);
+                                    FolderStyleList.instance.UpdateFolderStyle(idx, color: color);
                             }
                         }
 

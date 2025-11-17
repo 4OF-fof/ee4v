@@ -109,9 +109,9 @@ namespace _4OF.ee4v.ProjectExtension.UI.Window {
                     var np = FileUtility.NormalizePath(p);
                     var idx = FolderStyleService.IndexOfPath(np);
                     if (idx == -1)
-                        FolderStyleList.instance.Add(np, Color.clear, newIcon);
+                        FolderStyleList.instance.AddFolderStyle(np, Color.clear, newIcon);
                     else
-                        FolderStyleList.instance.Update(idx, icon: newIcon, setIcon: true);
+                        FolderStyleList.instance.UpdateFolderStyle(idx, icon: newIcon, setIcon: true);
                 }
 
                 var hasIcon = newIcon != null;

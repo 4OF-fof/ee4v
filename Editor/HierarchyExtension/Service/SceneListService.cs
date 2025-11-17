@@ -37,12 +37,12 @@ namespace _4OF.ee4v.HierarchyExtension.Service {
             var idx = IndexOfPath(path);
             switch (idx) {
                 case > 0:
-                    SceneList.instance.Move(idx, 0);
+                    SceneList.instance.MoveScene(idx, 0);
                     return;
                 case 0:
                     return;
                 default:
-                    SceneList.instance.Insert(0, path, false, false);
+                    SceneList.instance.InsertScene(0, path, false, false);
                     break;
             }
         }
@@ -54,7 +54,7 @@ namespace _4OF.ee4v.HierarchyExtension.Service {
 
             for (var i = SceneList.instance.Contents.Count - 1; i >= 0; i--) {
                 var path = SceneList.instance.Contents[i].path;
-                if (currentPathList.All(p => p != path)) SceneList.instance.Remove(i);
+                if (currentPathList.All(p => p != path)) SceneList.instance.RemoveScene(i);
             }
 
             foreach (var path in currentPathList.Where(path => SceneList.instance.Contents.All(s => s.path != path)))

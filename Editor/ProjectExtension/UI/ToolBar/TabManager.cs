@@ -31,7 +31,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
             Initialize();
             var path = tab.tooltip;
             var name = tab.Q<Label>().text;
-            TabList.instance.Add(path, name, false);
+            TabList.instance.AddTab(path, name, false);
             _tabContainer.Insert(_tabContainer.childCount - 1, tab);
             EditorUtility.SetDirty(TabList.instance);
         }
@@ -42,7 +42,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
 
             var path = workspaceTab.tooltip;
             var name = workspaceTab.Q<Label>().text;
-            TabList.instance.Add(path, name, true);
+            TabList.instance.AddTab(path, name, true);
             _workspaceContainer.Add(workspaceTab);
             EditorUtility.SetDirty(TabList.instance);
         }
@@ -51,7 +51,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
             Initialize();
             var path = tab.tooltip;
             var name = tab.Q<Label>().text;
-            TabList.instance.Insert(index, path, name, false);
+            TabList.instance.InsertTab(index, path, name, false);
             _tabContainer.Insert(index, tab);
             EditorUtility.SetDirty(TabList.instance);
         }
@@ -70,7 +70,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
                 var assetIndex = TabList.instance.Contents.ToList()
                     .FindIndex(t => t.isWorkspace && t.path == path && t.tabName == name);
 
-                if (assetIndex >= 0) TabList.instance.Remove(assetIndex);
+                if (assetIndex >= 0) TabList.instance.RemoveTab(assetIndex);
                 _workspaceContainer.Remove(tab);
 
                 TabListService.RemoveWorkspaceLabels(name);
@@ -88,7 +88,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
             }
             else {
                 var index = _tabContainer.IndexOf(tab);
-                TabList.instance.Remove(index);
+                TabList.instance.RemoveTab(index);
                 _tabContainer.Remove(tab);
 
                 if (isCurrentTab) {
@@ -125,7 +125,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
 
             if (toIndex > fromIndex) toIndex--;
 
-            TabList.instance.Move(fromIndex, toIndex);
+            TabList.instance.MoveTab(fromIndex, toIndex);
 
             _tabContainer.Remove(tab);
             _tabContainer.Insert(Mathf.Clamp(toIndex, 0, _tabContainer.childCount - 1), tab);
@@ -137,7 +137,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.ToolBar {
         public static void UpdateTab(VisualElement tab, string path, string name) {
             Initialize();
             var index = _tabContainer.IndexOf(tab);
-            TabList.instance.Update(index, path, name);
+            TabList.instance.UpdateTab(index, path, name);
             tab.tooltip = path;
             tab.Q<Label>().text = name;
             EditorUtility.SetDirty(TabList.instance);

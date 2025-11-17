@@ -18,7 +18,7 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             Save(true);
         }
 
-        public void Insert(int index, string scenePath, bool isIgnored, bool isFavorite) {
+        public void InsertScene(int index, string scenePath, bool isIgnored, bool isFavorite) {
             contents.Insert(index, new SceneContent {
                 path = scenePath,
                 isIgnored = isIgnored,
@@ -27,7 +27,7 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             Save(true);
         }
 
-        public void Move(int fromIndex, int toIndex) {
+        public void MoveScene(int fromIndex, int toIndex) {
             if (fromIndex < 0 || fromIndex >= contents.Count) return;
             if (toIndex < 0 || toIndex >= contents.Count) return;
             if (fromIndex == toIndex) return;
@@ -38,13 +38,13 @@ namespace _4OF.ee4v.HierarchyExtension.Data {
             Save(true);
         }
 
-        public void Remove(int index) {
+        public void RemoveScene(int index) {
             if (index < 0 || index >= contents.Count) return;
             contents.RemoveAt(index);
             Save(true);
         }
 
-        public void Update(int index, string path = null, bool? isIgnored = null, bool? isFavorite = null) {
+        public void UpdateScene(int index, string path = null, bool? isIgnored = null, bool? isFavorite = null) {
             if (index < 0 || index >= contents.Count) return;
             if (path != null) contents[index].path = path;
             if (isIgnored.HasValue) contents[index].isIgnored = isIgnored.Value;

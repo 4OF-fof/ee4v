@@ -9,7 +9,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
         [SerializeField] private List<Tab> contents = new();
         public IReadOnlyList<Tab> Contents => contents;
 
-        public void Add(string path, string tabName, bool isWorkspace) {
+        public void AddTab(string path, string tabName, bool isWorkspace) {
             contents.Add(new Tab {
                 path = path,
                 tabName = tabName,
@@ -18,7 +18,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             Save(true);
         }
 
-        public void Insert(int index, string path, string tabName, bool isWorkspace) {
+        public void InsertTab(int index, string path, string tabName, bool isWorkspace) {
             index = Mathf.Clamp(index, 0, contents.Count);
             contents.Insert(index, new Tab {
                 path = path,
@@ -28,7 +28,7 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             Save(true);
         }
 
-        public void Move(int fromIndex, int toIndex) {
+        public void MoveTab(int fromIndex, int toIndex) {
             if (fromIndex < 0 || fromIndex >= contents.Count) return;
             if (toIndex < 0 || toIndex >= contents.Count) return;
             if (fromIndex == toIndex) return;
@@ -39,13 +39,13 @@ namespace _4OF.ee4v.ProjectExtension.Data {
             Save(true);
         }
 
-        public void Remove(int index) {
+        public void RemoveTab(int index) {
             if (index < 0 || index >= contents.Count) return;
             contents.RemoveAt(index);
             Save(true);
         }
 
-        public void Update(int index, string path = null, string tabName = null, bool? isWorkspace = null) {
+        public void UpdateTab(int index, string path = null, string tabName = null, bool? isWorkspace = null) {
             if (index < 0 || index >= contents.Count) return;
             if (path != null) contents[index].path = path;
             if (tabName != null) contents[index].tabName = tabName;

@@ -80,7 +80,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.Window {
                         var idx = SceneListService.IndexOfPath(path);
                         if (idx < 0) return;
                         var isFavorite = SceneList.instance.Contents[idx].isFavorite;
-                        SceneList.instance.Update(idx, isFavorite: !isFavorite);
+                        SceneList.instance.UpdateScene(idx, isFavorite: !isFavorite);
 
                         var isFav = SceneList.instance.Contents.FirstOrDefault(s => s.path == path)?.isFavorite ??
                             false;
@@ -231,7 +231,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.Window {
                 if (working[to] == path) continue;
                 var from = working.IndexOf(path);
                 if (from < 0) continue;
-                SceneList.instance.Move(from, to);
+                SceneList.instance.MoveScene(from, to);
                 var item = working[from];
                 working.RemoveAt(from);
                 working.Insert(to, item);
