@@ -16,7 +16,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             Description = metadata.Description;
             Size = metadata.Size;
             Ext = metadata.Ext;
-            BoothData = metadata.BoothData;
+            BoothData = new BoothMetadata(metadata.BoothData);
             Folder = metadata.Folder;
             _tags = new List<string>(metadata.Tags);
             IsDeleted = metadata.IsDeleted;
@@ -48,7 +48,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public string Ext { get; private set; } = "";
 
-        public BoothMetadata BoothData { get; set; }
+        public BoothMetadata BoothData { get; set; } = new();
 
         public Ulid Folder { get; private set; } = Ulid.Empty;
         public IReadOnlyList<string> Tags => _tags.AsReadOnly();
