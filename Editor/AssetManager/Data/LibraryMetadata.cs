@@ -6,30 +6,30 @@ using Newtonsoft.Json;
 
 namespace _4OF.ee4v.AssetManager.Data {
     public class LibraryMetadata {
-        private readonly List<FolderInfo> _folderInfo = new();
+        private readonly List<BaseFolder> _folderInfo = new();
 
         public LibraryMetadata() {
         }
 
         public LibraryMetadata(LibraryMetadata metadata) {
-            _folderInfo = metadata.FolderInfo.ToList();
+            _folderInfo = metadata.FolderList.ToList();
             ModificationTime = metadata.ModificationTime;
             LibraryVersion = metadata.LibraryVersion;
         }
 
         [JsonConstructor]
-        public LibraryMetadata(List<FolderInfo> folderInfo, long modificationTime, string libraryVersion) {
-            _folderInfo = folderInfo ?? new List<FolderInfo>();
+        public LibraryMetadata(List<BaseFolder> folderInfo, long modificationTime, string libraryVersion) {
+            _folderInfo = folderInfo ?? new List<BaseFolder>();
             ModificationTime = modificationTime;
             LibraryVersion = libraryVersion;
         }
 
-        public IReadOnlyList<FolderInfo> FolderInfo => _folderInfo.AsReadOnly();
+        public IReadOnlyList<BaseFolder> FolderList => _folderInfo.AsReadOnly();
         public long ModificationTime { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         public string LibraryVersion { get; private set; } = "1";
 
-        public void AddFolder(FolderInfo folder) {
+        public void AddFolder(BaseFolder folder) {
             if (folder == null) return;
             _folderInfo.Add(folder);
             Touch();
@@ -45,16 +45,29 @@ namespace _4OF.ee4v.AssetManager.Data {
                     return;
                 }
 
-                if (!_folderInfo[i].RemoveChild(folderId)) continue;
+                if (_folderInfo[i] is not Folder folderWithChildren) continue;
+                if (!folderWithChildren.RemoveChild(folderId)) continue;
                 return;
             }
         }
 
-        public FolderInfo GetFolder(Ulid folderId) {
-            return folderId == default
-                ? null
-                : _folderInfo.Select(f => f.GetChild(folderId)).FirstOrDefault(found => found != null);
+        public BaseFolder GetFolder(Ulid folderId) {
+            if (folderId == default) return null;
+
+            foreach (var current in _folderInfo) {
+                if (current.ID == folderId) {
+                    return current;
+                }
+
+                if (current is not Folder folderWithChildren) continue;
+                var found = folderWithChildren.GetChild(folderId);
+                if (found != null) {
+                    return found;
+                }
+            }
+            return null;
         }
+
 
         public void SetLibraryVersion(string newLibraryVersion) {
             LibraryVersion = newLibraryVersion;
@@ -65,37 +78,29 @@ namespace _4OF.ee4v.AssetManager.Data {
             ModificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }
     }
-
-    public class FolderInfo {
-        private readonly List<FolderInfo> _children = new();
-
-        public FolderInfo() {
+    
+    public class BaseFolder {
+        public BaseFolder() {
         }
 
-        public FolderInfo(FolderInfo folderInfo) {
-            ID = folderInfo.ID;
-            Name = folderInfo.Name;
-            Description = folderInfo.Description;
-            _children = folderInfo.Children.ToList();
-            ModificationTime = folderInfo.ModificationTime;
+        public BaseFolder(BaseFolder baseFolder) {
+            ID = baseFolder.ID;
+            Name = baseFolder.Name;
+            Description = baseFolder.Description;
+            ModificationTime = baseFolder.ModificationTime;
         }
 
         [JsonConstructor]
-        public FolderInfo(Ulid id, string name, string description, List<FolderInfo> children, long modificationTime) {
+        public BaseFolder(Ulid id, string name, string description, long modificationTime) {
             ID = id;
             Name = name;
             Description = description;
-            _children = children ?? new List<FolderInfo>();
             ModificationTime = modificationTime;
         }
 
         public Ulid ID { get; } = Ulid.Generate();
-
         public string Name { get; private set; } = "";
-
         public string Description { get; private set; } = "";
-
-        public IReadOnlyList<FolderInfo> Children => _children.AsReadOnly();
         public long ModificationTime { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         public void SetName(string newName) {
@@ -108,7 +113,38 @@ namespace _4OF.ee4v.AssetManager.Data {
             Touch();
         }
 
-        public void AddChild(FolderInfo folderInfo) {
+        protected void Touch() {
+            ModificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        }
+    }
+    
+    public class Folder : BaseFolder {
+        private readonly List<BaseFolder> _children = new();
+        
+        public Folder() {
+        }
+        
+        public Folder(Folder folderInfo) : base(folderInfo)
+        {
+            _children = folderInfo.Children
+                .Select(child => child switch {
+                    Folder f => new Folder(f),
+                    BoothItemFolder b => new BoothItemFolder(b),
+                    _ => new BaseFolder(child)
+                })
+                .ToList();
+        }
+        
+        [JsonConstructor]
+        public Folder(Ulid id, string name, string description, long modificationTime, List<BaseFolder> children)
+            : base(id, name, description, modificationTime)
+        {
+            _children = children ?? new List<BaseFolder>();
+        }
+        
+        public IReadOnlyList<BaseFolder> Children => _children.AsReadOnly();
+        
+        public void AddChild(BaseFolder folderInfo) {
             if (folderInfo == null) return;
             _children.Add(folderInfo);
             Touch();
@@ -122,22 +158,43 @@ namespace _4OF.ee4v.AssetManager.Data {
                     return true;
                 }
 
-                if (!_children[i].RemoveChild(folderId)) continue;
-                Touch();
-                return true;
+                if (_children[i] is Folder childFolder && childFolder.RemoveChild(folderId)) {
+                    Touch();
+                    return true;
+                }
             }
 
             return false;
         }
 
-        public FolderInfo GetChild(Ulid folderId) {
-            return ID == folderId
-                ? this
-                : _children.Select(c => c.GetChild(folderId)).FirstOrDefault(found => found != null);
+        public BaseFolder GetChild(Ulid folderId) {
+            if (ID == folderId) return this;
+            foreach (var c in _children) {
+                if (c.ID == folderId) return c;
+                if (c is not Folder childFolder) continue;
+                var found = childFolder.GetChild(folderId);
+                if (found != null) return found;
+            }
+            return null;
         }
-
-        private void Touch() {
-            ModificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+    }
+    
+    public class BoothItemFolder : BaseFolder {
+        public  BoothItemFolder() {}
+        public BoothItemFolder(BoothItemFolder boothItemFolder) : base(boothItemFolder) {
+            ItemId = boothItemFolder.ItemId;
+            ShopDomain = boothItemFolder.ShopDomain;
+            ShopName = boothItemFolder.ShopName;
         }
+        [JsonConstructor]
+        public BoothItemFolder(Ulid id, string name, string description, long modificationTime, string itemId, string shopDomain, string shopName) : base(id, name, description, modificationTime) {
+            ItemId = itemId ?? "";
+            ShopDomain = shopDomain ?? "";
+            ShopName = shopName ?? "";
+        }
+        
+        public string ItemId { get; private set; } = "";
+        public string ShopDomain { get; private set; } = "";
+        public string ShopName { get; private set; } = "";
     }
 }

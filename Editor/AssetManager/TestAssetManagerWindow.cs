@@ -223,7 +223,7 @@ namespace _4OF.ee4v.AssetManager {
             if (libs == null)
                 EditorGUILayout.LabelField("Library metadata is not loaded.");
             else
-                foreach (var rootf in libs.FolderInfo)
+                foreach (var rootf in libs.FolderList)
                     DrawFolderInfo(rootf, 0);
 
             EditorGUILayout.BeginHorizontal();
@@ -285,11 +285,16 @@ namespace _4OF.ee4v.AssetManager {
                         _logs.Add("Selected folder not found.");
                     }
                     else {
-                        var updated = new FolderInfo(existing);
-                        if (!string.IsNullOrWhiteSpace(_folderRenameValue)) updated.SetName(_folderRenameValue);
-                        updated.SetDescription(descTmp);
-                        AssetLibraryService.UpdateFolder(updated);
-                        _logs.Add($"UpdateFolder invoked: {_selectedFolder}");
+                        if (existing is Folder existingFolder) {
+                            var updated = new Folder(existingFolder);
+                            if (!string.IsNullOrWhiteSpace(_folderRenameValue)) updated.SetName(_folderRenameValue);
+                            updated.SetDescription(descTmp);
+                            AssetLibraryService.UpdateFolder(updated);
+                            _logs.Add($"UpdateFolder invoked: {_selectedFolder}");
+                        }
+                        else {
+                            _logs.Add("Selected folder is not a Folder and cannot be updated via UpdateFolder.");
+                        }
                     }
                 }
             }
@@ -491,7 +496,7 @@ namespace _4OF.ee4v.AssetManager {
             EditorGUILayout.EndHorizontal();
         }
 
-        private void DrawFolderInfo(FolderInfo folder, int indent) {
+        private void DrawFolderInfo(BaseFolder folder, int indent) {
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(indent * 12);
             EditorGUILayout.LabelField(folder.Name, GUILayout.Width(220));
@@ -512,8 +517,8 @@ namespace _4OF.ee4v.AssetManager {
 
             EditorGUILayout.EndHorizontal();
 
-            if (folder.Children != null)
-                foreach (var child in folder.Children)
+            if (folder is Folder f && f.Children != null)
+                foreach (var child in f.Children)
                     DrawFolderInfo(child, indent + 1);
         }
 
@@ -535,14 +540,16 @@ namespace _4OF.ee4v.AssetManager {
         private int CountMetadataFolders(LibraryMetadata libraries) {
             if (libraries == null) return 0;
             var count = 0;
-            foreach (var f in libraries.FolderInfo) count += 1 + CountFolderChildren(f);
+            foreach (var f in libraries.FolderList) count += 1 + (f is Folder folder ? CountFolderChildren(folder) : 0);
             return count;
         }
 
-        private int CountFolderChildren(FolderInfo folder) {
+        private int CountFolderChildren(Folder folder) {
             if (folder == null || folder.Children == null) return 0;
             var c = 0;
-            foreach (var child in folder.Children) c += 1 + CountFolderChildren(child);
+            foreach (var child in folder.Children) {
+                if (child is Folder childFolder) c += 1 + CountFolderChildren(childFolder);
+            }
             return c;
         }
     }
