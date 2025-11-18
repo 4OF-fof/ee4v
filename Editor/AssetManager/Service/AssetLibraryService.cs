@@ -276,9 +276,8 @@ namespace _4OF.ee4v.AssetManager.Service {
                      into assetsInFolder
                      where assetsInFolder != null && assetsInFolder.Count != 0
                      from asset in assetsInFolder
-                     select new AssetMetadata(asset)) {
-                updatedAsset.SetFolder(Ulid.Empty);
-                UpdateAsset(updatedAsset);
+                     select new AssetMetadata(asset)) { 
+                RemoveAsset(updatedAsset.ID);
             }
 
             libraries.RemoveFolder(folderId);
