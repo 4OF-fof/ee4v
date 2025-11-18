@@ -379,7 +379,7 @@ namespace _4OF.ee4v.AssetManager {
             _descriptionValue = EditorGUILayout.TextField(_descriptionValue);
             if (GUILayout.Button("Set Description"))
                 try {
-                    AssetLibraryService.SetAssetDescription(_selectedAssetId, _descriptionValue);
+                    AssetLibraryService.SetDescription(_selectedAssetId, _descriptionValue);
                     _logs.Add("SetDescription invoked.");
                 }
                 catch (Exception e) {
