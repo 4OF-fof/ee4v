@@ -18,8 +18,8 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         [JsonConstructor]
-        public LibraryMetadata(List<BaseFolder> folderInfo, long modificationTime, string libraryVersion) {
-            _folderInfo = folderInfo ?? new List<BaseFolder>();
+        public LibraryMetadata(List<BaseFolder> folderList, long modificationTime, string libraryVersion) {
+            _folderInfo = folderList ?? new List<BaseFolder>();
             ModificationTime = modificationTime;
             LibraryVersion = libraryVersion;
         }
