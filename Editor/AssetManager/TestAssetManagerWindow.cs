@@ -547,9 +547,10 @@ namespace _4OF.ee4v.AssetManager {
         private int CountFolderChildren(Folder folder) {
             if (folder == null || folder.Children == null) return 0;
             var c = 0;
-            foreach (var child in folder.Children)
-                if (child is Folder childFolder)
-                    c += 1 + CountFolderChildren(childFolder);
+            foreach (var child in folder.Children) {
+                c += 1;
+                if (child is Folder childFolder) c += CountFolderChildren(childFolder);
+            }
             return c;
         }
     }
