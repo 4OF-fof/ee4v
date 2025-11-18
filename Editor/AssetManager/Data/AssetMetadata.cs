@@ -114,23 +114,20 @@ namespace _4OF.ee4v.AssetManager.Data {
             ShopDomain = data?.ShopDomain ?? "";
             ItemID = data?.ItemID ?? "";
             DownloadID = data?.DownloadID ?? "";
-            ShopName = data?.ShopName ?? "";
             FileName = data?.FileName ?? "";
         }
 
         [JsonConstructor]
-        public BoothMetadata(string shopDomain, string itemID, string downloadID, string shopName, string fileName) {
+        public BoothMetadata(string shopDomain, string itemID, string downloadID, string fileName) {
             ShopDomain = shopDomain;
             ItemID = itemID;
             DownloadID = downloadID;
-            ShopName = shopName;
             FileName = fileName;
         }
 
         public string ShopDomain { get; private set; } = "";
         public string ItemID { get; private set; } = "";
         public string DownloadID { get; private set; } = "";
-        public string ShopName { get; private set; } = "";
         public string FileName { get; private set; } = "";
 
         [JsonIgnore] public string ShopURL => string.IsNullOrEmpty(ShopDomain) ? "" : $"https://{ShopDomain}.booth.pm";
@@ -154,10 +151,6 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public void SetDownloadID(string newDownloadID) {
             DownloadID = newDownloadID;
-        }
-        
-        public void SetShopName(string newShopName) {
-            ShopName = newShopName;
         }
 
         public void SetFileName(string newFileName) {

@@ -189,7 +189,6 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                                 var matchShop = regexShop.Match(shopUrl);
                                 if (matchShop.Success) {
                                     booth.SetShopDomain(matchShop.Groups[1].Value);
-                                    booth.SetShopName(shop.shopName ?? matchShop.Groups[1].Value);
                                 }
                             }
                             if (!string.IsNullOrEmpty(itemId)) booth.SetItemID(itemId);
