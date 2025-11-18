@@ -143,6 +143,12 @@ namespace _4OF.ee4v.AssetManager.Service {
             UpdateAsset(asset);
         }
 
+        public static void RenameTag(string oldTag, string newTag) {
+            if (string.IsNullOrEmpty(oldTag) || string.IsNullOrEmpty(newTag) || oldTag == newTag) return;
+            AssetLibrary.Instance.RenameTag(oldTag, newTag);
+            AssetLibrarySerializer.SaveLibrary();
+        }
+
         public static void RemoveAsset(Ulid assetId) {
             var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
             asset.SetDeleted(true);

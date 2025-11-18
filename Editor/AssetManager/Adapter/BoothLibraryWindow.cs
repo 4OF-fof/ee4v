@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using _4OF.ee4v.AssetManager.Data;
 using UnityEditor;
 using _4OF.ee4v.AssetManager.Service;
+using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Adapter {
@@ -169,7 +170,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
                             // Duplicate check by downloadId primarily, then fallback to itemId+filename
                             if (!string.IsNullOrEmpty(downloadId) && AssetLibrary.Instance.Assets.Any(a => a.BoothData?.DownloadID == downloadId)) continue;
-                            var filename = f.filename ?? string.Empty;
+                            var filename = string.IsNullOrEmpty(f.filename) ? null : f.filename;
                             if (!string.IsNullOrEmpty(itemId) && !string.IsNullOrEmpty(filename) &&
                                 AssetLibrary.Instance.Assets.Any(a => a.BoothData?.ItemID == itemId && a.BoothData?.FileName == filename)) continue;
 
@@ -196,6 +197,10 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                             booth.SetFileName(filename);
 
                             asset.SetBoothData(booth);
+                            // Ensure folder exists for this booth item and place the asset inside
+                            var folderIdentifier = !string.IsNullOrEmpty(itemId) ? itemId : !string.IsNullOrEmpty(downloadId) ? downloadId : !string.IsNullOrEmpty(filename) ? filename : item.itemURL;
+                            var folderId = EnsureBoothItemFolder(booth.ShopDomain, shop.shopName, folderIdentifier, item.name ?? item.itemURL ?? folderIdentifier);
+                            if (folderId != Ulid.Empty) asset.SetFolder(folderId);
                             AssetLibraryService.UpdateAsset(asset);
                             created++;
                         }
@@ -207,6 +212,78 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             }
             Debug.Log($"Imported {created} Booth items into AssetLibrary");
             return created;
+        }
+        
+                private static BoothItemFolder FindBoothItemFolderRecursive(BaseFolder root, string shopDomain, string identifier) {
+            if (root == null) return null;
+            if (root is BoothItemFolder bf) {
+                // If shop domain is provided, require matching shops
+                if (!string.IsNullOrEmpty(shopDomain) && !string.IsNullOrEmpty(bf.ShopDomain) && bf.ShopDomain != shopDomain) {
+                    // skip
+                } else {
+                    // match by numeric item id, or by folder/name equality
+                    if (!string.IsNullOrEmpty(identifier)) {
+                        if ((!string.IsNullOrEmpty(bf.ItemId) && bf.ItemId == identifier) || bf.Name == identifier) return bf;
+                    }
+                }
+            }
+            if (root is Folder f && f.Children != null) {
+                foreach (var c in f.Children) {
+                    var found = FindBoothItemFolderRecursive(c, shopDomain, identifier);
+                    if (found != null) return found;
+                }
+            }
+            return null;
+        }
+
+        public static Ulid EnsureBoothItemFolder(string shopDomain, string shopName, string identifier, string folderName, Ulid parentFolderId = default) {
+            // identifier may be itemId or downloadId or filename, or null.
+            var libraries = AssetLibrary.Instance.Libraries;
+            if (libraries == null) {
+                // Attempt to load library metadata automatically
+                AssetLibrarySerializer.LoadLibrary();
+                libraries = AssetLibrary.Instance.Libraries;
+                if (libraries == null) {
+                    Debug.LogError("Library metadata is not loaded.");
+                    return Ulid.Empty;
+                }
+            }
+
+            // Search existing
+            foreach (var root in libraries.FolderList) {
+                var found = FindBoothItemFolderRecursive(root, shopDomain ?? string.Empty, identifier);
+                if (found != null) return found.ID;
+            }
+
+            // Create new BoothItemFolder
+            var newFolder = new BoothItemFolder();
+            newFolder.SetName(folderName ?? identifier ?? "Booth Item");
+            newFolder.SetDescription(shopName ?? string.Empty);
+            newFolder.SetShopDomain(shopDomain);
+            if (!string.IsNullOrEmpty(identifier) && identifier.All(char.IsDigit)) newFolder.SetItemId(identifier);
+
+            if (parentFolderId == default || parentFolderId == Ulid.Empty) {
+                libraries.AddFolder(newFolder);
+                Debug.Log($"Created BoothItemFolder '{newFolder.Name}' (Id: {newFolder.ID}) at root for shop {shopDomain}");
+            }
+            else {
+                var parentBase = libraries.GetFolder(parentFolderId);
+                if (parentBase is BoothItemFolder) {
+                    Debug.LogError("Cannot create a BoothItemFolder under another BoothItemFolder.");
+                    return Ulid.Empty;
+                }
+
+                if (parentBase is not Folder parentFolder) {
+                    Debug.LogError($"Parent folder {parentFolderId} not found.");
+                    return Ulid.Empty;
+                }
+
+                parentFolder.AddChild(newFolder);
+                Debug.Log($"Created BoothItemFolder '{newFolder.Name}' (Id: {newFolder.ID}) under parent {parentFolder.ID}");
+            }
+
+            AssetLibrarySerializer.SaveLibrary();
+            return newFolder.ID;
         }
     }
 }

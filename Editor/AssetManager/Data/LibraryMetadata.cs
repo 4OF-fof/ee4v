@@ -196,5 +196,20 @@ namespace _4OF.ee4v.AssetManager.Data {
         public string ItemId { get; private set; } = "";
         public string ShopDomain { get; private set; } = "";
         public string ShopName { get; private set; } = "";
+
+        public void SetItemId(string itemId) {
+            ItemId = itemId ?? "";
+            Touch();
+        }
+
+        public void SetShopDomain(string domain) {
+            ShopDomain = domain ?? "";
+            Touch();
+        }
+
+        public void SetShopName(string name) {
+            ShopName = name ?? "";
+            Touch();
+        }
     }
 }
