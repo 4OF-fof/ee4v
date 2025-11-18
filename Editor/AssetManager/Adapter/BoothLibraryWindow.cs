@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using _4OF.ee4v.AssetManager.Data;
 using UnityEditor;
+using _4OF.ee4v.AssetManager.Service;
 using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Adapter {
@@ -77,6 +81,15 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                 _shops = new List<ShopDto>(BoothLibraryServerState.LastContents ?? new List<ShopDto>());
             }
 
+            if (_shops.Count > 0) {
+                if (GUILayout.Button("Import into Asset Manager")) {
+                    var created = ImportBoothShops(_shops);
+                    AssetLibraryService.RefreshAssetLibrary();
+                    EditorUtility.DisplayDialog("Import Complete",
+                        created > 0 ? $"Imported {created} items into Asset Manager" : "No items were imported.", "OK");
+                }
+            }
+
             _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.Height(300));
             for (var si = 0; si < _shops.Count; si++) {
                 var s = _shops[si];
@@ -127,6 +140,74 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             if (!BoothLibraryServerState.TryTakePending(out var shops)) return;
             _shops = shops ?? new List<ShopDto>();
             Repaint();
+        }
+
+        private static int ImportBoothShops(List<ShopDto> shops) {
+            if (shops == null) return 0;
+            var created = 0;
+            foreach (var shop in shops) {
+                if (shop.items == null) continue;
+                foreach (var item in shop.items) {
+                    if (item.files == null || item.files.Count == 0) continue; // Only import actual downloadable files
+                    foreach (var f in item.files) {
+                        try {
+                            // Extract download ID if present
+                            string downloadId = null;
+                            if (!string.IsNullOrEmpty(f.url)) {
+                                var regexDownload = new Regex(@"downloadables/(\d+)", RegexOptions.IgnoreCase);
+                                var matchDownload = regexDownload.Match(f.url);
+                                if (matchDownload.Success) downloadId = matchDownload.Groups[1].Value;
+                            }
+
+                            // Extract item id if present
+                            string itemId = null;
+                            if (!string.IsNullOrEmpty(item.itemURL)) {
+                                var regexItem = new Regex(@"items/(\d+)");
+                                var matchItem = regexItem.Match(item.itemURL);
+                                if (matchItem.Success) itemId = matchItem.Groups[1].Value;
+                            }
+
+                            // Duplicate check by downloadId primarily, then fallback to itemId+filename
+                            if (!string.IsNullOrEmpty(downloadId) && AssetLibrary.Instance.Assets.Any(a => a.BoothData?.DownloadID == downloadId)) continue;
+                            var filename = f.filename ?? string.Empty;
+                            if (!string.IsNullOrEmpty(itemId) && !string.IsNullOrEmpty(filename) &&
+                                AssetLibrary.Instance.Assets.Any(a => a.BoothData?.ItemID == itemId && a.BoothData?.FileName == filename)) continue;
+
+                            var asset = AssetLibrarySerializer.CreateAssetWithoutFile();
+                            // Name fallback priorities: filename -> item name -> item URL
+                            var name = !string.IsNullOrEmpty(f.filename) ? f.filename : (!string.IsNullOrEmpty(item.name) ? item.name : (!string.IsNullOrEmpty(item.itemURL) ? item.itemURL : "Unnamed Booth Item"));
+                            asset.SetName(name);
+                            if (!string.IsNullOrEmpty(item.description)) asset.SetDescription(item.description);
+                            if (!string.IsNullOrEmpty(shop.shopName)) asset.AddTag(shop.shopName);
+                            asset.AddTag("booth");
+
+                            var booth = new BoothMetadata();
+                            // shop domain from shop.shopURL or item.itemURL
+                            var shopUrl = shop.shopURL ?? item.itemURL;
+                            if (!string.IsNullOrEmpty(shopUrl)) {
+                                var regexShop = new Regex(@"https?://([^\.]+)\.booth\.pm", RegexOptions.IgnoreCase);
+                                var matchShop = regexShop.Match(shopUrl);
+                                if (matchShop.Success) {
+                                    booth.SetShopDomain(matchShop.Groups[1].Value);
+                                    booth.SetShopName(shop.shopName ?? matchShop.Groups[1].Value);
+                                }
+                            }
+                            if (!string.IsNullOrEmpty(itemId)) booth.SetItemID(itemId);
+                            if (!string.IsNullOrEmpty(downloadId)) booth.SetDownloadID(downloadId);
+                            booth.SetFileName(filename);
+
+                            asset.SetBoothData(booth);
+                            AssetLibraryService.UpdateAsset(asset);
+                            created++;
+                        }
+                        catch (Exception e) {
+                            Debug.LogError($"Failed import booth downloadable: {e.Message}");
+                        }
+                    }
+                }
+            }
+            Debug.Log($"Imported {created} Booth items into AssetLibrary");
+            return created;
         }
     }
 }
