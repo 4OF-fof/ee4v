@@ -16,6 +16,12 @@ namespace _4OF.ee4v.AssetManager.Data {
         private static readonly string CacheFilePath =
             Path.Combine(EditorPrefsManager.ContentFolderPath, "assetManager_cache.json");
 
+        private static readonly JsonSerializerSettings SerializerSettings = new() {
+            Formatting = Formatting.Indented,
+            TypeNameHandling = TypeNameHandling.Auto,
+            SerializationBinder = new AllowedTypesBinder()
+        };
+
         public static void Initialize() {
             Directory.CreateDirectory(RootDir);
             var assetDir = Path.Combine(RootDir, "Assets");
@@ -27,7 +33,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             }
 
             var metadata = new LibraryMetadata();
-            var json = JsonConvert.SerializeObject(metadata, Formatting.Indented);
+            var json = JsonConvert.SerializeObject(metadata, SerializerSettings);
             File.WriteAllText(filePath, json);
         }
 
@@ -39,13 +45,13 @@ namespace _4OF.ee4v.AssetManager.Data {
             }
 
             var json = File.ReadAllText(filePath);
-            var metadata = JsonConvert.DeserializeObject<LibraryMetadata>(json);
+            var metadata = JsonConvert.DeserializeObject<LibraryMetadata>(json, SerializerSettings);
             AssetLibrary.Instance.SetLibrary(metadata);
         }
 
         public static void SaveLibrary() {
             var metadata = AssetLibrary.Instance.Libraries;
-            var json = JsonConvert.SerializeObject(metadata, Formatting.Indented);
+            var json = JsonConvert.SerializeObject(metadata, SerializerSettings);
             var filePath = Path.Combine(RootDir, "metadata.json");
             File.WriteAllText(filePath, json);
             SaveCache();
@@ -59,7 +65,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             }
 
             var json = File.ReadAllText(filePath);
-            var assetMetadata = JsonConvert.DeserializeObject<AssetMetadata>(json);
+            var assetMetadata = JsonConvert.DeserializeObject<AssetMetadata>(json, SerializerSettings);
             AssetLibrary.Instance.UpsertAsset(assetMetadata);
         }
 
@@ -76,7 +82,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 if (!File.Exists(metadataPath)) continue;
 
                 var json = File.ReadAllText(metadataPath);
-                var assetMetadata = JsonConvert.DeserializeObject<AssetMetadata>(json);
+                var assetMetadata = JsonConvert.DeserializeObject<AssetMetadata>(json, SerializerSettings);
                 AssetLibrary.Instance.UpsertAsset(assetMetadata);
             }
         }
@@ -85,7 +91,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             var assetDir = Path.Combine(RootDir, "Assets", assetMetadata.ID.ToString());
             Directory.CreateDirectory(assetDir);
 
-            var json = JsonConvert.SerializeObject(assetMetadata, Formatting.Indented);
+            var json = JsonConvert.SerializeObject(assetMetadata, SerializerSettings);
             var filePath = Path.Combine(assetDir, "metadata.json");
             File.WriteAllText(filePath, json);
             SaveCache();
@@ -185,7 +191,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 Metadata = AssetLibrary.Instance.Libraries,
                 Assets = AssetLibrary.Instance.Assets.ToList()
             };
-            var json = JsonConvert.SerializeObject(cache, Formatting.Indented);
+            var json = JsonConvert.SerializeObject(cache, SerializerSettings);
             var tempPath = CacheFilePath + ".tmp";
             File.WriteAllText(tempPath, json);
             if (File.Exists(CacheFilePath)) File.Delete(CacheFilePath);
@@ -200,7 +206,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
             try {
                 var json = File.ReadAllText(CacheFilePath);
-                var cache = JsonConvert.DeserializeObject<LibraryCache>(json);
+                var cache = JsonConvert.DeserializeObject<LibraryCache>(json, SerializerSettings);
                 if (cache?.Metadata == null) {
                     Debug.LogWarning("Cache file is invalid or empty.");
                     return false;
@@ -238,7 +244,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
                     try {
                         var json = File.ReadAllText(metadataPath);
-                        var assetMetadata = JsonConvert.DeserializeObject<AssetMetadata>(json);
+                        var assetMetadata = JsonConvert.DeserializeObject<AssetMetadata>(json, SerializerSettings);
                         if (assetMetadata != null) onDiskAssets[assetMetadata.ID] = assetMetadata;
                     }
                     catch (Exception e) {
