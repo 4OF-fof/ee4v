@@ -95,7 +95,5 @@ namespace _4OF.ee4v.AssetManager.Service {
         public static void DeleteFolder(Ulid folderId) {
             FolderService.DeleteFolder(folderId);
         }
-
-        // Note: Internal helper methods were moved to specialized services (FolderService, AssetValidationService).
     }
 }

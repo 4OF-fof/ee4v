@@ -55,16 +55,13 @@ namespace _4OF.ee4v.AssetManager.Data {
             if (folderId == default) return null;
 
             foreach (var current in _folderInfo) {
-                if (current.ID == folderId) {
-                    return current;
-                }
+                if (current.ID == folderId) return current;
 
                 if (current is not Folder folderWithChildren) continue;
                 var found = folderWithChildren.GetChild(folderId);
-                if (found != null) {
-                    return found;
-                }
+                if (found != null) return found;
             }
+
             return null;
         }
 
@@ -78,7 +75,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             ModificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }
     }
-    
+
     public class BaseFolder {
         public BaseFolder() {
         }
@@ -117,33 +114,31 @@ namespace _4OF.ee4v.AssetManager.Data {
             ModificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }
     }
-    
+
     public class Folder : BaseFolder {
         private readonly List<BaseFolder> _children = new();
-        
+
         public Folder() {
         }
-        
-        public Folder(Folder folderInfo) : base(folderInfo)
-        {
+
+        public Folder(Folder folderInfo) : base(folderInfo) {
             _children = folderInfo.Children
                 .Select(child => child switch {
-                    Folder f => new Folder(f),
+                    Folder f          => new Folder(f),
                     BoothItemFolder b => new BoothItemFolder(b),
-                    _ => new BaseFolder(child)
+                    _                 => new BaseFolder(child)
                 })
                 .ToList();
         }
-        
+
         [JsonConstructor]
         public Folder(Ulid id, string name, string description, long modificationTime, List<BaseFolder> children)
-            : base(id, name, description, modificationTime)
-        {
+            : base(id, name, description, modificationTime) {
             _children = children ?? new List<BaseFolder>();
         }
-        
+
         public IReadOnlyList<BaseFolder> Children => _children.AsReadOnly();
-        
+
         public void AddChild(BaseFolder folderInfo) {
             if (folderInfo == null) return;
             _children.Add(folderInfo);
@@ -158,10 +153,9 @@ namespace _4OF.ee4v.AssetManager.Data {
                     return true;
                 }
 
-                if (_children[i] is Folder childFolder && childFolder.RemoveChild(folderId)) {
-                    Touch();
-                    return true;
-                }
+                if (_children[i] is not Folder childFolder || !childFolder.RemoveChild(folderId)) continue;
+                Touch();
+                return true;
             }
 
             return false;
@@ -175,24 +169,29 @@ namespace _4OF.ee4v.AssetManager.Data {
                 var found = childFolder.GetChild(folderId);
                 if (found != null) return found;
             }
+
             return null;
         }
     }
-    
+
     public class BoothItemFolder : BaseFolder {
-        public  BoothItemFolder() {}
+        public BoothItemFolder() {
+        }
+
         public BoothItemFolder(BoothItemFolder boothItemFolder) : base(boothItemFolder) {
             ItemId = boothItemFolder.ItemId;
             ShopDomain = boothItemFolder.ShopDomain;
             ShopName = boothItemFolder.ShopName;
         }
+
         [JsonConstructor]
-        public BoothItemFolder(Ulid id, string name, string description, long modificationTime, string itemId, string shopDomain, string shopName) : base(id, name, description, modificationTime) {
+        public BoothItemFolder(Ulid id, string name, string description, long modificationTime, string itemId,
+            string shopDomain, string shopName) : base(id, name, description, modificationTime) {
             ItemId = itemId ?? "";
             ShopDomain = shopDomain ?? "";
             ShopName = shopName ?? "";
         }
-        
+
         public string ItemId { get; private set; } = "";
         public string ShopDomain { get; private set; } = "";
         public string ShopName { get; private set; } = "";

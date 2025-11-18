@@ -29,9 +29,10 @@ namespace _4OF.ee4v.AssetManager.Adapter {
     public class ShopsWrapper {
         public List<ShopDto> Shops;
     }
+
     public static class BoothLibraryServerState {
         private static readonly ConcurrentQueue<List<ShopDto>> Pending = new();
-        private static List<ShopDto> _lastContents = new List<ShopDto>();
+        private static List<ShopDto> _lastContents = new();
         public static IReadOnlyList<ShopDto> LastContents => _lastContents;
 
         public static void SetContents(List<ShopDto> shops) {
@@ -44,6 +45,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                 _lastContents = shops ?? new List<ShopDto>();
                 return true;
             }
+
             shops = null;
             return false;
         }
