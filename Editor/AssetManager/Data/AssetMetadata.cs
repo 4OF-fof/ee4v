@@ -27,12 +27,12 @@ namespace _4OF.ee4v.AssetManager.Data {
         public AssetMetadata(Ulid id, string name, string description, long size, string ext, BoothMetadata boothData,
             Ulid folder, List<string> tags, bool isDeleted, long modificationTime) {
             ID = id;
-            Name = name;
-            Description = description;
+            Name = name ?? "";
+            Description = description ?? "";
             Size = size;
-            Ext = ext;
-            BoothData = boothData;
-            Folder = folder;
+            Ext = ext ?? "";
+            BoothData = boothData ?? new BoothMetadata();
+            Folder = folder == default ? Ulid.Empty : folder;
             _tags = tags ?? new List<string>();
             IsDeleted = isDeleted;
             ModificationTime = modificationTime;
@@ -119,10 +119,10 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         [JsonConstructor]
         public BoothMetadata(string shopDomain, string itemID, string downloadID, string fileName) {
-            ShopDomain = shopDomain;
-            ItemID = itemID;
-            DownloadID = downloadID;
-            FileName = fileName;
+            ShopDomain = shopDomain ?? "";
+            ItemID = itemID ?? "";
+            DownloadID = downloadID ?? "";
+            FileName = fileName ?? "";
         }
 
         public string ShopDomain { get; private set; } = "";

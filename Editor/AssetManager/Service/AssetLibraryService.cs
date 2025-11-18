@@ -72,7 +72,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             UpdateAsset(asset);
         }
 
-        public static void SetDescription(Ulid assetId, string newDescription) {
+        public static void SetAssetDescription(Ulid assetId, string newDescription) {
             var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
             asset.SetDescription(newDescription);
             UpdateAsset(asset);
@@ -281,6 +281,45 @@ namespace _4OF.ee4v.AssetManager.Service {
             }
 
             libraries.RemoveFolder(folderId);
+            AssetLibrarySerializer.SaveLibrary();
+        }
+        
+        public static void AddBoothItem(BoothItem boothItem) {
+            if (boothItem == null) return;
+            var libraries = AssetLibrary.Instance.Libraries;
+            if (libraries == null) {
+                Debug.LogError("Library metadata is not loaded.");
+                return;
+            }
+
+            libraries.AddBoothItem(boothItem);
+            AssetLibrarySerializer.SaveLibrary();
+        }
+        
+        public static void DeleteBoothItem(Ulid boothItemId) {
+            if (boothItemId == default) return;
+            var libraries = AssetLibrary.Instance.Libraries;
+            if (libraries == null) {
+                Debug.LogError("Library metadata is not loaded.");
+                return;
+            }
+
+            var boothItem = libraries.GetBoothItem(boothItemId);
+            if (boothItem == null) {
+                Debug.LogError($"BoothItem {boothItemId} not found.");
+                return;
+            }
+
+            foreach (var updatedAsset in AssetLibrary.Instance
+                         .GetAssetsByBoothItem(boothItem.ID)?
+                         .Select(asset => new AssetMetadata(asset)) 
+                     ?? Enumerable.Empty<AssetMetadata>())
+            {
+                RemoveAsset(updatedAsset.ID);
+            }
+
+
+            libraries.RemoveBoothItem(boothItemId);
             AssetLibrarySerializer.SaveLibrary();
         }
 

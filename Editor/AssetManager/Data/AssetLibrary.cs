@@ -57,6 +57,12 @@ namespace _4OF.ee4v.AssetManager.Data {
                 ? new List<AssetMetadata>()
                 : idSet.Select(GetAsset).Where(asset => asset != null).ToList();
         }
+        
+        public List<AssetMetadata> GetAssetsByBoothItem(Ulid boothItemId) {
+            return _assetMetadataDict.Values
+                .Where(asset => asset.BoothData != null && asset.Folder == boothItemId)
+                .ToList();
+        }
 
         public List<string> GetAllTags() {
             return _tagIndex.Keys.ToList();
