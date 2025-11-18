@@ -160,6 +160,11 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
         private static int ImportBoothShops(List<ShopDto> shops) {
             if (shops == null) return 0;
+            // Ensure library metadata and assets are loaded so duplicate checks are accurate
+            if (AssetLibrary.Instance.Libraries == null) AssetLibrarySerializer.LoadLibrary();
+            // Try to load cache and/or all assets from disk to populate AssetLibrary.Instance.Assets
+            AssetLibrarySerializer.LoadCache();
+            AssetLibrarySerializer.LoadAllAssets();
             var created = 0;
             foreach (var shop in shops) {
                 if (shop.items == null) continue;
@@ -184,8 +189,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                             }
 
                             // Duplicate check by downloadId primarily, then fallback to itemId+filename
-                            if (!string.IsNullOrEmpty(downloadId) &&
-                                AssetLibrary.Instance.Assets.Any(a => a.BoothData?.DownloadID == downloadId)) continue;
+                            if (AlreadyImportedDownloadable(downloadId)) continue;
                             var filename = string.IsNullOrEmpty(f.filename) ? null : f.filename;
                             if (!string.IsNullOrEmpty(itemId) && !string.IsNullOrEmpty(filename) &&
                                 AssetLibrary.Instance.Assets.Any(a =>
@@ -278,23 +282,20 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             foreach (var root in libraries.FolderList) {
                 var found = FindBoothItemFolderRecursive(root, shopDomain ?? string.Empty, identifier);
                 if (found != null) {
-                    // If it's a BoothItemFolder, update shop name/description if provided and changed
-                    if (found is BoothItemFolder bf) {
-                        var needsUpdate = false;
-                        var updated = new BoothItemFolder(bf);
-                        if (!string.IsNullOrEmpty(shopName) && updated.ShopName != shopName) {
-                            updated.SetShopName(shopName);
-                            needsUpdate = true;
-                        }
-
-                        if (!string.IsNullOrEmpty(folderDescription) && updated.Description != folderDescription) {
-                            updated.SetDescription(folderDescription);
-                            needsUpdate = true;
-                        }
-
-                        if (needsUpdate) AssetLibraryService.UpdateBoothItemFolder(updated);
+                    // Update shop name/description on the found BoothItemFolder if provided and they differ
+                    var needsUpdate = false;
+                    var updated = new BoothItemFolder(found);
+                    if (!string.IsNullOrEmpty(shopName) && updated.ShopName != shopName) {
+                        updated.SetShopName(shopName);
+                        needsUpdate = true;
                     }
 
+                    if (!string.IsNullOrEmpty(folderDescription) && updated.Description != folderDescription) {
+                        updated.SetDescription(folderDescription);
+                        needsUpdate = true;
+                    }
+
+                    if (needsUpdate) AssetLibraryService.UpdateBoothItemFolder(updated);
                     return found.ID;
                 }
             }
@@ -331,6 +332,10 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
             AssetLibrarySerializer.SaveLibrary();
             return newFolder.ID;
+        }
+        
+        private static bool AlreadyImportedDownloadable(string downloadId) {
+            return !string.IsNullOrEmpty(downloadId) && AssetLibrary.Instance.Assets.Any(a => a.BoothData?.DownloadID == downloadId);
         }
     }
 }
