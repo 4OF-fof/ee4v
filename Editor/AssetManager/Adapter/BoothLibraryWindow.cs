@@ -197,9 +197,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                                 !string.IsNullOrEmpty(item.name) ? item.name :
                                 !string.IsNullOrEmpty(item.itemURL) ? item.itemURL : "Unnamed Booth Item";
                             asset.SetName(name);
-                            if (!string.IsNullOrEmpty(item.description)) asset.SetDescription(item.description);
-                            if (!string.IsNullOrEmpty(shop.shopName)) asset.AddTag(shop.shopName);
-                            asset.AddTag("booth");
+                            // Note: store description and shop name on the BoothItemFolder instead of the asset
 
                             var booth = new BoothMetadata();
                             // shop domain from shop.shopURL or item.itemURL
@@ -219,8 +217,9 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                             var folderIdentifier = !string.IsNullOrEmpty(itemId) ? itemId :
                                 !string.IsNullOrEmpty(downloadId) ? downloadId :
                                 !string.IsNullOrEmpty(filename) ? filename : item.itemURL;
+                            // Ensure the folder exists and store the shopName and description on the folder
                             var folderId = EnsureBoothItemFolder(booth.ShopDomain, shop.shopName, folderIdentifier,
-                                item.name ?? item.itemURL ?? folderIdentifier);
+                                item.name ?? item.itemURL ?? folderIdentifier, item.description);
                             if (folderId != Ulid.Empty) asset.SetFolder(folderId);
                             AssetLibraryService.UpdateAsset(asset);
                             created++;
@@ -262,7 +261,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
         }
 
         public static Ulid EnsureBoothItemFolder(string shopDomain, string shopName, string identifier,
-            string folderName, Ulid parentFolderId = default) {
+            string folderName, string folderDescription = null, Ulid parentFolderId = default) {
             // identifier may be itemId or downloadId or filename, or null.
             var libraries = AssetLibrary.Instance.Libraries;
             if (libraries == null) {
@@ -278,14 +277,34 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             // Search existing
             foreach (var root in libraries.FolderList) {
                 var found = FindBoothItemFolderRecursive(root, shopDomain ?? string.Empty, identifier);
-                if (found != null) return found.ID;
+                if (found != null) {
+                    // If it's a BoothItemFolder, update shop name/description if provided and changed
+                    if (found is BoothItemFolder bf) {
+                        var needsUpdate = false;
+                        var updated = new BoothItemFolder(bf);
+                        if (!string.IsNullOrEmpty(shopName) && updated.ShopName != shopName) {
+                            updated.SetShopName(shopName);
+                            needsUpdate = true;
+                        }
+
+                        if (!string.IsNullOrEmpty(folderDescription) && updated.Description != folderDescription) {
+                            updated.SetDescription(folderDescription);
+                            needsUpdate = true;
+                        }
+
+                        if (needsUpdate) AssetLibraryService.UpdateBoothItemFolder(updated);
+                    }
+
+                    return found.ID;
+                }
             }
 
             // Create new BoothItemFolder
             var newFolder = new BoothItemFolder();
             newFolder.SetName(folderName ?? identifier ?? "Booth Item");
-            newFolder.SetDescription(shopName ?? string.Empty);
+            newFolder.SetDescription(folderDescription ?? shopName ?? string.Empty);
             newFolder.SetShopDomain(shopDomain);
+            newFolder.SetShopName(shopName);
             if (!string.IsNullOrEmpty(identifier) && identifier.All(char.IsDigit)) newFolder.SetItemId(identifier);
 
             if (parentFolderId == default || parentFolderId == Ulid.Empty) {
