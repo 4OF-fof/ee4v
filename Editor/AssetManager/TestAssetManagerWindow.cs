@@ -407,7 +407,7 @@ namespace _4OF.ee4v.AssetManager {
             }
 
             if (GUILayout.Button("Shop")) {
-                AssetLibraryService.SetBoothShopName(_selectedAssetId, _boothUrlValue);
+                AssetLibraryService.SetBoothShopDomain(_selectedAssetId, _boothUrlValue);
                 _logs.Add("SetBoothShopName invoked.");
             }
 

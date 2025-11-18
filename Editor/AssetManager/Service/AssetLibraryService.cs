@@ -78,7 +78,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             UpdateAsset(asset);
         }
 
-        public static void SetBoothShopName(Ulid assetId, string shopURL) {
+        public static void SetBoothShopDomain(Ulid assetId, string shopURL) {
             if (BoothUtility.ClassifyBoothUrl(shopURL) != BoothUtility.BoothUrlType.ShopUrl) {
                 Debug.LogError("Invalid Booth shop URL.");
                 return;
@@ -89,7 +89,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             var match = regex.Match(shopURL);
             if (!match.Success) return;
             var shopName = match.Groups[1].Value;
-            asset.BoothData.SetShopName(shopName);
+            asset.BoothData.SetShopDomain(shopName);
             UpdateAsset(asset);
         }
 

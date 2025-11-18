@@ -120,6 +120,15 @@ namespace _4OF.ee4v.AssetManager.Data {
             }
         }
 
+        public static AssetMetadata CreateAssetWithoutFile() {
+            var assetMetadata = new AssetMetadata();
+            var assetDir = Path.Combine(RootDir, "Assets", assetMetadata.ID.ToString());
+            Directory.CreateDirectory(assetDir);
+            SaveAsset(assetMetadata);
+            AssetLibrary.Instance.AddAsset(assetMetadata);
+            return assetMetadata;
+        }
+
         public static void DeleteAsset(Ulid assetId) {
             var assetDir = Path.Combine(RootDir, "Assets", assetId.ToString());
             if (Directory.Exists(assetDir)) Directory.Delete(assetDir, true);

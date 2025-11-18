@@ -111,35 +111,41 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public BoothMetadata(BoothMetadata data) {
-            ShopName = data?.ShopName ?? "";
+            ShopDomain = data?.ShopDomain ?? "";
             ItemID = data?.ItemID ?? "";
             DownloadID = data?.DownloadID ?? "";
+            ShopName = data?.ShopName ?? "";
+            FileName = data?.FileName ?? "";
         }
 
         [JsonConstructor]
-        public BoothMetadata(string shopName, string itemID, string downloadID) {
-            ShopName = shopName;
+        public BoothMetadata(string shopDomain, string itemID, string downloadID, string shopName, string fileName) {
+            ShopDomain = shopDomain;
             ItemID = itemID;
             DownloadID = downloadID;
+            ShopName = shopName;
+            FileName = fileName;
         }
 
-        public string ShopName { get; private set; } = "";
+        public string ShopDomain { get; private set; } = "";
         public string ItemID { get; private set; } = "";
         public string DownloadID { get; private set; } = "";
+        public string ShopName { get; private set; } = "";
+        public string FileName { get; private set; } = "";
 
-        [JsonIgnore] public string ShopURL => string.IsNullOrEmpty(ShopName) ? "" : $"https://{ShopName}.booth.pm";
+        [JsonIgnore] public string ShopURL => string.IsNullOrEmpty(ShopDomain) ? "" : $"https://{ShopDomain}.booth.pm";
 
         [JsonIgnore]
-        public string ItemURL => string.IsNullOrEmpty(ShopName) || string.IsNullOrEmpty(ItemID)
+        public string ItemURL => string.IsNullOrEmpty(ShopDomain) || string.IsNullOrEmpty(ItemID)
             ? ""
-            : $"https://{ShopName}.booth.pm/items/{ItemID}";
+            : $"https://{ShopDomain}.booth.pm/items/{ItemID}";
 
         [JsonIgnore]
         public string DownloadURL =>
             string.IsNullOrEmpty(DownloadID) ? "" : $"https://booth.pm/downloadables/{DownloadID}";
 
-        public void SetShopName(string newShopName) {
-            ShopName = newShopName;
+        public void SetShopDomain(string newShopName) {
+            ShopDomain = newShopName;
         }
 
         public void SetItemID(string newItemID) {
@@ -148,6 +154,14 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public void SetDownloadID(string newDownloadID) {
             DownloadID = newDownloadID;
+        }
+        
+        public void SetShopName(string newShopName) {
+            ShopName = newShopName;
+        }
+
+        public void SetFileName(string newFileName) {
+            FileName = newFileName;
         }
     }
 }
