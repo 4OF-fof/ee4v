@@ -231,7 +231,7 @@ namespace _4OF.ee4v.AssetManager {
             _folderRenameValue = EditorGUILayout.TextField(_folderRenameValue);
             if (GUILayout.Button("Rename Folder", GUILayout.Width(120))) {
                 if (_selectedFolder != Ulid.Empty) {
-                    AssetLibraryService.RenameFolder(_selectedFolder, _folderRenameValue);
+                    AssetLibraryService.SetFolderName(_selectedFolder, _folderRenameValue);
                     _logs.Add($"RenameFolder invoked: {_selectedFolder} -> {_folderRenameValue}");
                 }
                 else {
@@ -372,7 +372,7 @@ namespace _4OF.ee4v.AssetManager {
             _renameValue = EditorGUILayout.TextField(_renameValue);
             if (GUILayout.Button("Rename"))
                 try {
-                    AssetLibraryService.RenameAsset(_selectedAssetId, _renameValue);
+                    AssetLibraryService.SetAssetName(_selectedAssetId, _renameValue);
                     _logs.Add($"Rename invoked to: {_renameValue}");
                 }
                 catch (Exception e) {

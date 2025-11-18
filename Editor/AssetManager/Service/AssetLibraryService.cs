@@ -66,7 +66,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             AssetLibrarySerializer.SaveAsset(newAsset);
         }
 
-        public static void RenameAsset(Ulid assetId, string newName) {
+        public static void SetAssetName(Ulid assetId, string newName) {
             var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
             asset.SetName(newName);
             UpdateAsset(asset);
@@ -335,7 +335,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             AssetLibrarySerializer.SaveLibrary();
         }
 
-        public static void RenameFolder(Ulid folderId, string newName) {
+        public static void SetFolderName(Ulid folderId, string newName) {
             var existing = AssetLibrary.Instance.Libraries?.GetFolder(folderId);
             if (existing == null) return;
             if (!IsValidAssetName(newName)) return;
