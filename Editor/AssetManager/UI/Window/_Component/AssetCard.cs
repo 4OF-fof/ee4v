@@ -52,14 +52,5 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _thumbnail.style.backgroundImage = new StyleBackground(texture);
             _thumbnail.style.backgroundColor = new StyleColor(Color.clear);
         }
-
-        public void SetBackgroundColor(Color color) {
-            style.backgroundColor = new StyleColor(color);
-            RegisterCallback<MouseEnterEvent>(evt => style.backgroundColor = new StyleColor(color * 1.2f));
-            RegisterCallback<MouseLeaveEvent>(evt => style.backgroundColor = new StyleColor(color));
-        }
-
-        public new class UxmlFactory : UxmlFactory<AssetCard, UxmlTraits> {
-        }
     }
 }
