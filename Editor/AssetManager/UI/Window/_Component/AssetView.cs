@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using _4OF.ee4v.AssetManager.Data;
-using _4OF.ee4v.Core.Data;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -35,13 +34,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             toolbar.Add(slider);
             Add(toolbar);
 
-            _listView = new ListView();
-            _listView.style.flexGrow = 1;
-            _listView.makeItem = MakeRow;
-            _listView.bindItem = BindRow;
-            _listView.itemsSource = GetRows();
-            _listView.fixedItemHeight = 220;
-            _listView.selectionType = SelectionType.None;
+            _listView = new ListView {
+                style = {
+                    flexGrow = 1
+                },
+                makeItem = MakeRow,
+                bindItem = BindRow,
+                itemsSource = GetRows(),
+                fixedItemHeight = 220,
+                selectionType = SelectionType.None
+            };
             _listView.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             Add(_listView);
         }
@@ -82,18 +84,20 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             return rows;
         }
 
-        private VisualElement MakeRow() {
-            var row = new VisualElement();
-            row.style.flexDirection = FlexDirection.Row;
-            row.style.flexWrap = Wrap.NoWrap;
+        private static VisualElement MakeRow() {
+            var row = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    flexWrap = Wrap.NoWrap
+                }
+            };
             return row;
         }
 
         private void BindRow(VisualElement element, int index) {
             element.Clear();
-            var rows = GetRows(); // 注意: パフォーマンスのために本来はitemsSourceをキャストして使うべきですが、ここでは簡易実装
 
-            if (index < 0 || index >= rows.Count) return;
+            if (_listView.itemsSource is not List<List<object>> rows || index < 0 || index >= rows.Count) return;
 
             var row = rows[index];
             var containerWidth = _listView.resolvedStyle.width;
@@ -124,10 +128,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     case AssetMetadata asset: {
                         card.SetData(asset.Name);
 
-                        // ※本来はRepository経由でサムネイルパスを取得するのが望ましいですが、
-                        // ここでは既存ロジックを踏襲して直接パスを解決します。
-                        var thumbnailPath = Path.Combine(EditorPrefsManager.ContentFolderPath, "AssetManager", "Assets",
-                            asset.ID.ToString(), "thumbnail.png");
+                        var thumbnailPath = AssetManagerContainer.Repository.GetThumbnailPath(asset.ID);
+
                         if (File.Exists(thumbnailPath)) {
                             var fileData = File.ReadAllBytes(thumbnailPath);
                             var tex = new Texture2D(2, 2);

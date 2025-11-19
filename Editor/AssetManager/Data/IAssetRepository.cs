@@ -31,5 +31,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         void SetThumbnail(Ulid assetId, string imagePath);
 
         void RemoveThumbnail(Ulid assetId);
+        
+        string GetThumbnailPath(Ulid assetId);
     }
 }

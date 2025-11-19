@@ -256,6 +256,10 @@ namespace _4OF.ee4v.AssetManager.Data {
             var thumbPath = Path.Combine(assetDir, "thumbnail.png");
             if (File.Exists(thumbPath)) File.Delete(thumbPath);
         }
+        
+        public string GetThumbnailPath(Ulid assetId) {
+            return Path.Combine(_assetRootDir, assetId.ToString(), "thumbnail.png");
+        }
 
         private void LoadAllAssetsFromDisk() {
             if (!Directory.Exists(_assetRootDir)) return;
