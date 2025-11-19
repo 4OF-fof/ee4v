@@ -1,13 +1,12 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
-using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace _4OF.ee4v.AssetManager.OldData {
+namespace _4OF.ee4v.AssetManager.Data {
     public class AllowedTypesBinder : SerializationBinder, ISerializationBinder {
         private readonly HashSet<Type> _allowedBaseTypes = new();
 
@@ -30,9 +29,7 @@ namespace _4OF.ee4v.AssetManager.OldData {
                 try {
                     resolved = Type.GetType($"{typeName}, {assemblyName}");
                 }
-                catch {
-                    /* ignore */
-                }
+                catch { /* ignore */ }
 
             if (resolved == null)
                 foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
@@ -42,9 +39,7 @@ namespace _4OF.ee4v.AssetManager.OldData {
                         resolved = t;
                         break;
                     }
-                    catch {
-                        /* ignore */
-                    }
+                    catch { /* ignore */ }
 
             if (resolved == null)
                 throw new JsonSerializationException($"Type not found: {typeName} (assembly: {assemblyName})");

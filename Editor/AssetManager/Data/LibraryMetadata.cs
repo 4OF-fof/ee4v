@@ -4,7 +4,7 @@ using System.Linq;
 using _4OF.ee4v.Core.Utility;
 using Newtonsoft.Json;
 
-namespace _4OF.ee4v.AssetManager.OldData {
+namespace _4OF.ee4v.AssetManager.Data {
     public class LibraryMetadata {
         private readonly List<BaseFolder> _folderInfo = new();
 
@@ -26,7 +26,6 @@ namespace _4OF.ee4v.AssetManager.OldData {
 
         public IReadOnlyList<BaseFolder> FolderList => _folderInfo.AsReadOnly();
         public long ModificationTime { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
         public string LibraryVersion { get; private set; } = "1";
 
         public void AddFolder(BaseFolder folder) {
@@ -37,14 +36,12 @@ namespace _4OF.ee4v.AssetManager.OldData {
 
         public void RemoveFolder(Ulid folderId) {
             if (folderId == default) return;
-
             for (var i = 0; i < _folderInfo.Count; i++) {
                 if (_folderInfo[i].ID == folderId) {
                     _folderInfo.RemoveAt(i);
                     Touch();
                     return;
                 }
-
                 if (_folderInfo[i] is not Folder folderWithChildren) continue;
                 if (!folderWithChildren.RemoveChild(folderId)) continue;
                 return;
@@ -53,18 +50,14 @@ namespace _4OF.ee4v.AssetManager.OldData {
 
         public BaseFolder GetFolder(Ulid folderId) {
             if (folderId == default) return null;
-
             foreach (var current in _folderInfo) {
                 if (current.ID == folderId) return current;
-
                 if (current is not Folder folderWithChildren) continue;
                 var found = folderWithChildren.GetChild(folderId);
                 if (found != null) return found;
             }
-
             return null;
         }
-
 
         public void SetLibraryVersion(string newLibraryVersion) {
             LibraryVersion = newLibraryVersion;
@@ -77,8 +70,7 @@ namespace _4OF.ee4v.AssetManager.OldData {
     }
 
     public class BaseFolder {
-        public BaseFolder() {
-        }
+        public BaseFolder() { }
 
         public BaseFolder(BaseFolder baseFolder) {
             ID = baseFolder.ID;
@@ -100,15 +92,8 @@ namespace _4OF.ee4v.AssetManager.OldData {
         public string Description { get; private set; } = "";
         public long ModificationTime { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-        public void SetName(string newName) {
-            Name = newName;
-            Touch();
-        }
-
-        public void SetDescription(string newDescription) {
-            Description = newDescription;
-            Touch();
-        }
+        public void SetName(string newName) { Name = newName; Touch(); }
+        public void SetDescription(string newDescription) { Description = newDescription; Touch(); }
 
         protected void Touch() {
             ModificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -118,15 +103,14 @@ namespace _4OF.ee4v.AssetManager.OldData {
     public class Folder : BaseFolder {
         private readonly List<BaseFolder> _children = new();
 
-        public Folder() {
-        }
+        public Folder() { }
 
         public Folder(Folder folderInfo) : base(folderInfo) {
             _children = folderInfo.Children
                 .Select(child => child switch {
-                    Folder f          => new Folder(f),
+                    Folder f => new Folder(f),
                     BoothItemFolder b => new BoothItemFolder(b),
-                    _                 => new BaseFolder(child)
+                    _ => new BaseFolder(child)
                 })
                 .ToList();
         }
@@ -152,12 +136,10 @@ namespace _4OF.ee4v.AssetManager.OldData {
                     Touch();
                     return true;
                 }
-
                 if (_children[i] is not Folder childFolder || !childFolder.RemoveChild(folderId)) continue;
                 Touch();
                 return true;
             }
-
             return false;
         }
 
@@ -169,14 +151,12 @@ namespace _4OF.ee4v.AssetManager.OldData {
                 var found = childFolder.GetChild(folderId);
                 if (found != null) return found;
             }
-
             return null;
         }
     }
 
     public class BoothItemFolder : BaseFolder {
-        public BoothItemFolder() {
-        }
+        public BoothItemFolder() { }
 
         public BoothItemFolder(BoothItemFolder boothItemFolder) : base(boothItemFolder) {
             ItemId = boothItemFolder.ItemId;
@@ -196,19 +176,8 @@ namespace _4OF.ee4v.AssetManager.OldData {
         public string ShopDomain { get; private set; } = "";
         public string ShopName { get; private set; } = "";
 
-        public void SetItemId(string itemId) {
-            ItemId = itemId ?? "";
-            Touch();
-        }
-
-        public void SetShopDomain(string domain) {
-            ShopDomain = domain ?? "";
-            Touch();
-        }
-
-        public void SetShopName(string name) {
-            ShopName = name ?? "";
-            Touch();
-        }
+        public void SetItemId(string itemId) { ItemId = itemId ?? ""; Touch(); }
+        public void SetShopDomain(string domain) { ShopDomain = domain ?? ""; Touch(); }
+        public void SetShopName(string name) { ShopName = name ?? ""; Touch(); }
     }
 }
