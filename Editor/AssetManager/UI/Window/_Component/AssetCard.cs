@@ -27,7 +27,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _thumbnail = new VisualElement {
                 style = {
-                    flexShrink = 0, // 縮小を防ぐ
+                    flexShrink = 0,                              // 縮小を防ぐ
                     backgroundColor = new StyleColor(Color.gray) // Placeholder color
                 }
             };

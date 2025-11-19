@@ -29,7 +29,9 @@ namespace _4OF.ee4v.AssetManager.Data {
                 try {
                     resolved = Type.GetType($"{typeName}, {assemblyName}");
                 }
-                catch { /* ignore */ }
+                catch {
+                    /* ignore */
+                }
 
             if (resolved == null)
                 foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
@@ -39,12 +41,16 @@ namespace _4OF.ee4v.AssetManager.Data {
                         resolved = t;
                         break;
                     }
-                    catch { /* ignore */ }
+                    catch {
+                        /* ignore */
+                    }
 
             if (resolved == null)
                 throw new JsonSerializationException($"Type not found: {typeName} (assembly: {assemblyName})");
 
-            return !IsAllowed(resolved) ? throw new JsonSerializationException($"Deserializing type {resolved.FullName} is not allowed.") : resolved;
+            return !IsAllowed(resolved)
+                ? throw new JsonSerializationException($"Deserializing type {resolved.FullName} is not allowed.")
+                : resolved;
         }
 
         public override void BindToName(Type serializedType, out string assemblyName, out string typeName) {

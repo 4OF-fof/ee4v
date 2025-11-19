@@ -49,13 +49,36 @@ namespace _4OF.ee4v.AssetManager.Data {
         public bool IsDeleted { get; private set; }
         public long ModificationTime { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-        public void SetName(string newName) { Name = newName; Touch(); }
-        public void SetDescription(string newDescription) { Description = newDescription; Touch(); }
-        public void SetSize(long newSize) { Size = newSize; Touch(); }
-        public void SetExt(string newExt) { Ext = newExt; Touch(); }
-        public void SetBoothData(BoothMetadata newBoothData) { BoothData = newBoothData; Touch(); }
-        public void SetFolder(Ulid newFolder) { Folder = newFolder; Touch(); }
-        
+        public void SetName(string newName) {
+            Name = newName;
+            Touch();
+        }
+
+        public void SetDescription(string newDescription) {
+            Description = newDescription;
+            Touch();
+        }
+
+        public void SetSize(long newSize) {
+            Size = newSize;
+            Touch();
+        }
+
+        public void SetExt(string newExt) {
+            Ext = newExt;
+            Touch();
+        }
+
+        public void SetBoothData(BoothMetadata newBoothData) {
+            BoothData = newBoothData;
+            Touch();
+        }
+
+        public void SetFolder(Ulid newFolder) {
+            Folder = newFolder;
+            Touch();
+        }
+
         public void AddTag(string tag) {
             if (string.IsNullOrEmpty(tag) || _tags.Contains(tag)) return;
             _tags.Add(tag);
@@ -66,7 +89,10 @@ namespace _4OF.ee4v.AssetManager.Data {
             if (_tags.Remove(tag)) Touch();
         }
 
-        public void SetDeleted(bool deleted) { IsDeleted = deleted; Touch(); }
+        public void SetDeleted(bool deleted) {
+            IsDeleted = deleted;
+            Touch();
+        }
 
         private void Touch() {
             ModificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -74,7 +100,8 @@ namespace _4OF.ee4v.AssetManager.Data {
     }
 
     public class BoothMetadata {
-        public BoothMetadata() { }
+        public BoothMetadata() {
+        }
 
         public BoothMetadata(BoothMetadata data) {
             ShopDomain = data?.ShopDomain ?? "";
@@ -97,7 +124,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         public string FileName { get; private set; } = "";
 
         [JsonIgnore] public string ShopURL => string.IsNullOrEmpty(ShopDomain) ? "" : $"https://{ShopDomain}.booth.pm";
-        
+
         [JsonIgnore]
         public string ItemURL => string.IsNullOrEmpty(ShopDomain) || string.IsNullOrEmpty(ItemID)
             ? ""
@@ -107,9 +134,20 @@ namespace _4OF.ee4v.AssetManager.Data {
         public string DownloadURL =>
             string.IsNullOrEmpty(DownloadID) ? "" : $"https://booth.pm/downloadables/{DownloadID}";
 
-        public void SetShopDomain(string newShopName) { ShopDomain = newShopName; }
-        public void SetItemID(string newItemID) { ItemID = newItemID; }
-        public void SetDownloadID(string newDownloadID) { DownloadID = newDownloadID; }
-        public void SetFileName(string newFileName) { FileName = newFileName; }
+        public void SetShopDomain(string newShopName) {
+            ShopDomain = newShopName;
+        }
+
+        public void SetItemID(string newItemID) {
+            ItemID = newItemID;
+        }
+
+        public void SetDownloadID(string newDownloadID) {
+            DownloadID = newDownloadID;
+        }
+
+        public void SetFileName(string newFileName) {
+            FileName = newFileName;
+        }
     }
 }

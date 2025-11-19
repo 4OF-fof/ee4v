@@ -4,13 +4,9 @@ using _4OF.ee4v.Core.Utility;
 
 namespace _4OF.ee4v.AssetManager.Data {
     public class AssetLibrary {
-
         private readonly Dictionary<Ulid, AssetMetadata> _assetMetadataDict = new();
         private readonly Dictionary<Ulid, HashSet<Ulid>> _folderIndex = new();
         private readonly Dictionary<string, HashSet<Ulid>> _tagIndex = new();
-
-        public AssetLibrary() {
-        }
 
         public IReadOnlyCollection<AssetMetadata> Assets => _assetMetadataDict.Values;
         public LibraryMetadata Libraries { get; private set; }
@@ -79,8 +75,10 @@ namespace _4OF.ee4v.AssetManager.Data {
                     newSet = new HashSet<Ulid>();
                     _tagIndex[newTag] = newSet;
                 }
+
                 newSet.Add(id);
             }
+
             _tagIndex.Remove(tag);
         }
 
@@ -117,6 +115,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                     set = new HashSet<Ulid>();
                     _tagIndex[tag] = set;
                 }
+
                 set.Add(asset.ID);
             }
         }
@@ -138,6 +137,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 set = new HashSet<Ulid>();
                 _folderIndex[folderId] = set;
             }
+
             set.Add(asset.ID);
         }
 

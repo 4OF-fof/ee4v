@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.AssetManager.UI.Window._Component;
@@ -10,14 +9,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
     public class AssetManagerWindow : EditorWindow {
         private AssetViewController _assetController;
         private AssetInfo _assetInfo;
-        private AssetView _assetView;
-        private Navigation _navigation;
-        private TagListView _tagListView;
 
         // 依存するサービスとリポジトリ
         private AssetService _assetService;
+        private AssetView _assetView;
         private FolderService _folderService;
+        private Navigation _navigation;
         private IAssetRepository _repository;
+        private TagListView _tagListView;
 
         private void OnEnable() {
             // コンテナからシングルトンインスタンスを取得
@@ -47,10 +46,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             // Controllerに依存性を注入して初期化
             _assetController = new AssetViewController(_repository);
-            
+
             // 各ViewにControllerやServiceをセット
             _assetView.SetController(_assetController);
-            _navigation.Initialize(_repository); // フォルダ一覧取得用
+            _navigation.Initialize(_repository);  // フォルダ一覧取得用
             _tagListView.Initialize(_repository); // タグ一覧取得用
 
             // イベント購読

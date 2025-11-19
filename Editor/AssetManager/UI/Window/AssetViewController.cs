@@ -44,7 +44,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void CollectBoothItemFolders(IEnumerable<BaseFolder> folders, List<BoothItemFolder> result) {
-            foreach (var folder in folders) {
+            foreach (var folder in folders)
                 switch (folder) {
                     case BoothItemFolder boothItemFolder:
                         result.Add(boothItemFolder);
@@ -53,25 +53,24 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                         CollectBoothItemFolders(parentFolder.Children, result);
                         break;
                 }
-            }
         }
 
         public void Refresh() {
             var allAssets = _repository.GetAllAssets();
             IEnumerable<AssetMetadata> assets;
 
-            if (_selectedFolderId == Ulid.Empty) {
+            if (_selectedFolderId == Ulid.Empty)
                 assets = allAssets;
-            } else {
+            else
                 // RepositoryにGetAssetsByFolderがない場合はここでフィルタリング
                 assets = allAssets.Where(a => a.Folder == _selectedFolderId);
-            }
 
             var filtered = assets.Where(a => _filter(a)).ToList();
             AssetsChanged?.Invoke(filtered);
 
             var libMetadata = _repository.GetLibraryMetadata();
-            var folders = libMetadata?.FolderList.Where(f => !(f is BoothItemFolder)).ToList() ?? new List<BaseFolder>();
+            var folders = libMetadata?.FolderList.Where(f => !(f is BoothItemFolder)).ToList() ??
+                new List<BaseFolder>();
             FoldersChanged?.Invoke(folders);
         }
     }

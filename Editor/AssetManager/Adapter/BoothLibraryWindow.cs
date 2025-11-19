@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using _4OF.ee4v.AssetManager.Data;
-using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
@@ -169,7 +168,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
             // 念のためロード
             repository.Load();
-            
+
             // 重複チェック用に全アセット取得
             var allAssets = repository.GetAllAssets();
 
@@ -198,7 +197,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
                             // Duplicate check
                             if (AlreadyImportedDownloadable(allAssets, downloadId)) continue;
-                            
+
                             var filename = string.IsNullOrEmpty(f.filename) ? null : f.filename;
                             if (!string.IsNullOrEmpty(itemId) && !string.IsNullOrEmpty(filename) &&
                                 allAssets.Any(a =>
@@ -206,13 +205,13 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
                             // Create Asset via Repository
                             var asset = repository.CreateEmptyAsset();
-                            
+
                             // Name fallback priorities: filename -> item name -> item URL
                             var name = !string.IsNullOrEmpty(f.filename) ? f.filename :
                                 !string.IsNullOrEmpty(item.name) ? item.name :
                                 !string.IsNullOrEmpty(item.itemURL) ? item.itemURL : "Unnamed Booth Item";
                             asset.SetName(name);
-                            
+
                             var booth = new BoothMetadata();
                             // shop domain from shop.shopURL or item.itemURL
                             var shopUrl = shop.shopURL ?? item.itemURL;
@@ -233,11 +232,12 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                                 !string.IsNullOrEmpty(downloadId) ? downloadId :
                                 !string.IsNullOrEmpty(filename) ? filename : item.itemURL;
 
-                            var folderId = EnsureBoothItemFolder(repository, booth.ShopDomain, shop.shopName, folderIdentifier,
+                            var folderId = EnsureBoothItemFolder(repository, booth.ShopDomain, shop.shopName,
+                                folderIdentifier,
                                 item.name ?? item.itemURL ?? folderIdentifier, item.description);
-                            
+
                             if (folderId != Ulid.Empty) asset.SetFolder(folderId);
-                            
+
                             // Save changes
                             repository.SaveAsset(asset);
                             created++;
@@ -256,9 +256,9 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             return !string.IsNullOrEmpty(downloadId) && assets.Any(a => a.BoothData?.DownloadID == downloadId);
         }
 
-        private Ulid EnsureBoothItemFolder(IAssetRepository repository, string shopDomain, string shopName, string identifier,
+        private Ulid EnsureBoothItemFolder(IAssetRepository repository, string shopDomain, string shopName,
+            string identifier,
             string folderName, string folderDescription = null, Ulid parentFolderId = default) {
-            
             var libraries = repository.GetLibraryMetadata();
             if (libraries == null) {
                 Debug.LogError("Library metadata is not loaded.");
@@ -282,7 +282,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                         needsUpdate = true;
                     }
 
-                    if (needsUpdate) {
+                    if (needsUpdate)
                         // Repository経由でメタデータを保存しなおす
                         // FolderServiceを使っても良いが、ここは直接的なMetadata操作で完結させる
                         // （既存のFolderオブジェクトを書き換えているわけではないので、LibraryMetadata全体を保存する必要がある）
@@ -291,7 +291,6 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                         // 実際は Metadata 構造内の該当オブジェクトを見つけて差し替える等の処理が必要になる。
                         // ここでは簡易的に、Service経由で更新をかけるのが安全。
                         AssetManagerContainer.FolderService.UpdateBoothItemFolder(updated);
-                    }
                     return found.ID;
                 }
             }
@@ -306,7 +305,8 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
             if (parentFolderId == default || parentFolderId == Ulid.Empty) {
                 libraries.AddFolder(newFolder);
-                Debug.Log($"Created BoothItemFolder '{newFolder.Name}' (Id: {newFolder.ID}) at root for shop {shopDomain}");
+                Debug.Log(
+                    $"Created BoothItemFolder '{newFolder.Name}' (Id: {newFolder.ID}) at root for shop {shopDomain}");
             }
             else {
                 var parentBase = libraries.GetFolder(parentFolderId);
@@ -321,7 +321,8 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                 }
 
                 parentFolder.AddChild(newFolder);
-                Debug.Log($"Created BoothItemFolder '{newFolder.Name}' (Id: {newFolder.ID}) under parent {parentFolder.ID}");
+                Debug.Log(
+                    $"Created BoothItemFolder '{newFolder.Name}' (Id: {newFolder.ID}) under parent {parentFolder.ID}");
             }
 
             repository.SaveLibraryMetadata(libraries);

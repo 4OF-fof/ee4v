@@ -42,6 +42,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                     Touch();
                     return;
                 }
+
                 if (_folderInfo[i] is not Folder folderWithChildren) continue;
                 if (!folderWithChildren.RemoveChild(folderId)) continue;
                 return;
@@ -56,6 +57,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 var found = folderWithChildren.GetChild(folderId);
                 if (found != null) return found;
             }
+
             return null;
         }
 
@@ -70,7 +72,8 @@ namespace _4OF.ee4v.AssetManager.Data {
     }
 
     public class BaseFolder {
-        public BaseFolder() { }
+        public BaseFolder() {
+        }
 
         public BaseFolder(BaseFolder baseFolder) {
             ID = baseFolder.ID;
@@ -92,8 +95,15 @@ namespace _4OF.ee4v.AssetManager.Data {
         public string Description { get; private set; } = "";
         public long ModificationTime { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-        public void SetName(string newName) { Name = newName; Touch(); }
-        public void SetDescription(string newDescription) { Description = newDescription; Touch(); }
+        public void SetName(string newName) {
+            Name = newName;
+            Touch();
+        }
+
+        public void SetDescription(string newDescription) {
+            Description = newDescription;
+            Touch();
+        }
 
         protected void Touch() {
             ModificationTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -103,14 +113,15 @@ namespace _4OF.ee4v.AssetManager.Data {
     public class Folder : BaseFolder {
         private readonly List<BaseFolder> _children = new();
 
-        public Folder() { }
+        public Folder() {
+        }
 
         public Folder(Folder folderInfo) : base(folderInfo) {
             _children = folderInfo.Children
                 .Select(child => child switch {
-                    Folder f => new Folder(f),
+                    Folder f          => new Folder(f),
                     BoothItemFolder b => new BoothItemFolder(b),
-                    _ => new BaseFolder(child)
+                    _                 => new BaseFolder(child)
                 })
                 .ToList();
         }
@@ -136,10 +147,12 @@ namespace _4OF.ee4v.AssetManager.Data {
                     Touch();
                     return true;
                 }
+
                 if (_children[i] is not Folder childFolder || !childFolder.RemoveChild(folderId)) continue;
                 Touch();
                 return true;
             }
+
             return false;
         }
 
@@ -151,12 +164,14 @@ namespace _4OF.ee4v.AssetManager.Data {
                 var found = childFolder.GetChild(folderId);
                 if (found != null) return found;
             }
+
             return null;
         }
     }
 
     public class BoothItemFolder : BaseFolder {
-        public BoothItemFolder() { }
+        public BoothItemFolder() {
+        }
 
         public BoothItemFolder(BoothItemFolder boothItemFolder) : base(boothItemFolder) {
             ItemId = boothItemFolder.ItemId;
@@ -176,8 +191,19 @@ namespace _4OF.ee4v.AssetManager.Data {
         public string ShopDomain { get; private set; } = "";
         public string ShopName { get; private set; } = "";
 
-        public void SetItemId(string itemId) { ItemId = itemId ?? ""; Touch(); }
-        public void SetShopDomain(string domain) { ShopDomain = domain ?? ""; Touch(); }
-        public void SetShopName(string name) { ShopName = name ?? ""; Touch(); }
+        public void SetItemId(string itemId) {
+            ItemId = itemId ?? "";
+            Touch();
+        }
+
+        public void SetShopDomain(string domain) {
+            ShopDomain = domain ?? "";
+            Touch();
+        }
+
+        public void SetShopName(string name) {
+            ShopName = name ?? "";
+            Touch();
+        }
     }
 }

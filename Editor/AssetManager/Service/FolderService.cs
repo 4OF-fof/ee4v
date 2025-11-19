@@ -1,13 +1,12 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Service {
     public class FolderService {
-        private readonly IAssetRepository _repository;
         private readonly AssetService _assetService;
+        private readonly IAssetRepository _repository;
 
         public FolderService(IAssetRepository repository, AssetService assetService) {
             _repository = repository;
@@ -36,6 +35,7 @@ namespace _4OF.ee4v.AssetManager.Service {
                     Debug.LogError("Cannot create folder: Parent is not a standard folder.");
                     return;
                 }
+
                 parentFolder.AddChild(folder);
             }
 
@@ -60,6 +60,7 @@ namespace _4OF.ee4v.AssetManager.Service {
                         libraries.AddFolder(f);
                         break;
                 }
+
                 _repository.SaveLibraryMetadata(libraries);
                 return;
             }
@@ -82,7 +83,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         public void UpdateFolder(Folder newFolder) {
             if (newFolder == null || !AssetValidationService.IsValidAssetName(newFolder.Name)) return;
-            
+
             var libraries = _repository.GetLibraryMetadata();
             var folder = libraries?.GetFolder(newFolder.ID) as Folder;
             if (folder == null) return;
@@ -91,7 +92,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             folder.SetDescription(newFolder.Description);
             _repository.SaveLibraryMetadata(libraries);
         }
-        
+
         public void UpdateBoothItemFolder(BoothItemFolder newFolder) {
             if (newFolder == null || !AssetValidationService.IsValidAssetName(newFolder.Name)) return;
 
@@ -102,7 +103,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             folder.SetName(newFolder.Name);
             folder.SetDescription(newFolder.Description);
             folder.SetShopName(newFolder.ShopName);
-            
+
             _repository.SaveLibraryMetadata(libraries);
         }
 
@@ -133,11 +134,9 @@ namespace _4OF.ee4v.AssetManager.Service {
             var allDescendantIds = GetSelfAndDescendants(targetFolder);
             var allAssets = _repository.GetAllAssets();
 
-            foreach (var asset in allAssets) {
-                if (allDescendantIds.Contains(asset.Folder)) {
+            foreach (var asset in allAssets)
+                if (allDescendantIds.Contains(asset.Folder))
                     _assetService.RemoveAsset(asset.ID);
-                }
-            }
 
             libraries.RemoveFolder(folderId);
             _repository.SaveLibraryMetadata(libraries);
@@ -149,15 +148,14 @@ namespace _4OF.ee4v.AssetManager.Service {
                 if (child.ID == targetId) return true;
                 if (child is Folder childFolder && IsDescendant(childFolder, targetId)) return true;
             }
+
             return false;
         }
 
         private HashSet<Ulid> GetSelfAndDescendants(BaseFolder root) {
             var set = new HashSet<Ulid> { root.ID };
             if (root is not Folder f) return set;
-            foreach (var child in f.Children) {
-                set.UnionWith(GetSelfAndDescendants(child));
-            }
+            foreach (var child in f.Children) set.UnionWith(GetSelfAndDescendants(child));
             return set;
         }
     }

@@ -2,16 +2,17 @@
 using System.Collections.Generic;
 using System.IO;
 using _4OF.ee4v.AssetManager.Data;
-using _4OF.ee4v.Core.Data; // EditorPrefsManagerのために必要
+using _4OF.ee4v.Core.Data;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+// EditorPrefsManagerのために必要
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetView : VisualElement {
         private readonly ListView _listView;
         private AssetViewController _controller;
-        
+
         // AssetMetadata と BoothItemFolder を混在させるため object 型のリストを使用
         private List<object> _items = new();
         private int _itemsPerRow = 5;
@@ -64,7 +65,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             containerWidth -= 20; // スクロールバーの余白などを考慮
             var itemWidth = containerWidth / _itemsPerRow;
             // 幅に基づいて高さを決定（正方形サムネイル + ラベル高さ）
-            var itemHeight = itemWidth + 50; 
+            var itemHeight = itemWidth + 50;
 
             _listView.fixedItemHeight = itemHeight;
         }

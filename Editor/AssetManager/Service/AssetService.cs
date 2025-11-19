@@ -39,9 +39,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             var oldAsset = _repository.GetAsset(newAsset.ID);
             if (oldAsset == null) return;
 
-            if (oldAsset.Name != newAsset.Name) {
-                _repository.RenameAssetFile(newAsset.ID, newAsset.Name);
-            }
+            if (oldAsset.Name != newAsset.Name) _repository.RenameAssetFile(newAsset.ID, newAsset.Name);
             _repository.SaveAsset(newAsset);
         }
 
@@ -88,7 +86,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             foreach (var asset in _repository.GetAllAssets()) {
                 if (!asset.Tags.Contains(oldTag)) continue;
-                
+
                 asset.RemoveTag(oldTag);
                 asset.AddTag(newTag);
                 _repository.SaveAsset(asset);

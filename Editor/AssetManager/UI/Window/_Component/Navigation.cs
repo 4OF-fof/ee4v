@@ -13,7 +13,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly Button _tagListButton;
         private readonly Button _trashButton;
         private readonly Button _uncategorizedButton;
-        
+
         private IAssetRepository _repository;
 
         public Navigation() {
