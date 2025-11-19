@@ -1,115 +1,311 @@
-﻿using _4OF.ee4v.AssetManager.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.Core.Utility;
+using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetInfo : VisualElement {
-        private readonly Label _boothDownloadUrlLabel;
-        private readonly Label _boothItemUrlLabel;
-        private readonly Label _boothShopUrlLabel;
-        private readonly Label _descLabel;
-        private readonly Label _extLabel;
-        private readonly Label _nameLabel;
-        private readonly Label _sizeLabel;
-        private readonly Label _tagsLabel;
+        private readonly TextField _descriptionField;
+        private readonly Label _folderNameLabel;
+        private readonly VisualElement _infoContainer;
+        private readonly TextField _nameField;
+        private readonly TextField _newTagField;
+        private readonly VisualElement _tagsContainer;
+        private readonly VisualElement _thumbnailContainer;
+
+        private AssetMetadata _currentAsset;
+        private BaseFolder _currentFolder;
 
         public AssetInfo() {
             style.flexDirection = FlexDirection.Column;
-            style.paddingLeft = 8;
-            style.paddingTop = 8;
+            style.paddingLeft = 10;
+            style.paddingRight = 10;
+            style.paddingTop = 10;
+            style.paddingBottom = 10;
+            style.backgroundColor = ColorPreset.DefaultBackground;
 
-            _nameLabel = new Label("Name: -");
-            Add(_nameLabel);
-
-            _descLabel = new Label("Description: -") {
+            _thumbnailContainer = new VisualElement {
                 style = {
-                    whiteSpace = WhiteSpace.Normal
+                    alignSelf = Align.Center,
+                    width = 100,
+                    height = 100,
+                    marginBottom = 10,
+                    backgroundColor = new StyleColor(new Color(0, 0, 0, 0.2f)),
+                    borderTopLeftRadius = 4, borderTopRightRadius = 4,
+                    borderBottomLeftRadius = 4, borderBottomRightRadius = 4,
+                    overflow = Overflow.Hidden
                 }
             };
-            Add(_descLabel);
+            Add(_thumbnailContainer);
 
-            _sizeLabel = new Label("Size: -");
-            Add(_sizeLabel);
+            _nameField = CreateTextField("Name", true);
+            _nameField.style.marginBottom = 4;
+            _nameField.RegisterCallback<FocusOutEvent>(_ =>
+            {
+                if (_currentAsset != null && _nameField.value != _currentAsset.Name)
+                    OnNameChanged?.Invoke(_nameField.value);
+            });
+            Add(_nameField);
 
-            _extLabel = new Label("Ext: -");
-            Add(_extLabel);
+            _descriptionField = CreateTextField("Description", false);
+            _descriptionField.multiline = true;
+            _descriptionField.style.minHeight = 40;
+            _descriptionField.style.marginBottom = 4;
+            _descriptionField.RegisterCallback<FocusOutEvent>(_ =>
+            {
+                if (_currentAsset != null && _descriptionField.value != _currentAsset.Description)
+                    OnDescriptionChanged?.Invoke(_descriptionField.value);
+            });
+            Add(_descriptionField);
 
-            _tagsLabel = new Label("Tags: -") {
+            var tagLabel = new Label("Tags")
+                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
+            Add(tagLabel);
+
+            _tagsContainer = new VisualElement {
                 style = {
-                    whiteSpace = WhiteSpace.Normal
+                    flexDirection = FlexDirection.Row,
+                    flexWrap = Wrap.Wrap,
+                    marginBottom = 4
                 }
             };
-            Add(_tagsLabel);
+            Add(_tagsContainer);
 
-            _boothShopUrlLabel = new Label("Booth Shop URL: -");
-            Add(_boothShopUrlLabel);
-            _boothItemUrlLabel = new Label("Booth Item URL: -");
-            Add(_boothItemUrlLabel);
-            _boothDownloadUrlLabel = new Label("Booth Download URL: -");
-            Add(_boothDownloadUrlLabel);
+            var tagInputContainer = new VisualElement
+                { style = { flexDirection = FlexDirection.Row, marginBottom = 10 } };
+            _newTagField = new TextField { style = { flexGrow = 1, marginRight = 4 } };
+            _newTagField.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode == KeyCode.Return) AddNewTag();
+            });
+
+            var addTagButton = new Button(AddNewTag) { text = "+", style = { width = 24 } };
+            tagInputContainer.Add(_newTagField);
+            tagInputContainer.Add(addTagButton);
+            Add(tagInputContainer);
+
+            var folderHeader = new Label("Folder")
+                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
+            Add(folderHeader);
+
+            var folderRow = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    alignItems = Align.Center,
+                    marginBottom = 10,
+                    backgroundColor = new StyleColor(new Color(0, 0, 0, 0.1f)),
+                    paddingLeft = 4, paddingTop = 4, paddingBottom = 4,
+                    borderTopLeftRadius = 4,
+                    borderTopRightRadius = 4,
+                    borderBottomLeftRadius = 4,
+                    borderBottomRightRadius = 4
+                }
+            };
+            var folderIcon = new Image {
+                image = EditorGUIUtility.IconContent("Folder Icon").image,
+                style = { width = 16, height = 16, marginRight = 4 }
+            };
+            _folderNameLabel = new Label("-") { style = { flexGrow = 1 } };
+
+            folderRow.Add(folderIcon);
+            folderRow.Add(_folderNameLabel);
+            Add(folderRow);
+
+            var infoHeader = new Label("Information")
+                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
+            Add(infoHeader);
+
+            _infoContainer = new VisualElement { style = { paddingLeft = 4 } };
+            Add(_infoContainer);
+        }
+
+        public event Action<string> OnNameChanged;
+        public event Action<string> OnDescriptionChanged;
+        public event Action<string> OnTagAdded;
+        public event Action<string> OnTagRemoved;
+        public event Action OnFolderChangeRequested;
+
+        private TextField CreateTextField(string placeholder, bool isBold) {
+            var field = new TextField {
+                isDelayed = true
+            };
+            if (isBold) field.style.unityFontStyleAndWeight = FontStyle.Bold;
+            return field;
+        }
+
+        private void AddNewTag() {
+            var tag = _newTagField.value?.Trim();
+            if (!string.IsNullOrEmpty(tag)) {
+                OnTagAdded?.Invoke(tag);
+                _newTagField.value = "";
+            }
         }
 
         public void SetAsset(AssetMetadata asset) {
+            _currentAsset = asset;
+            _currentFolder = null;
+
             if (asset == null) {
-                ClearInfo();
+                SetEnabled(false);
+                ClearFields();
                 return;
             }
 
-            _nameLabel.text = $"Name: {asset.Name}";
-            _descLabel.text = $"Description: {asset.Description}";
-            _sizeLabel.text = $"Size: {asset.Size}";
-            _extLabel.text = $"Ext: {asset.Ext}";
-            _tagsLabel.text =
-                $"Tags: {(asset.Tags != null && asset.Tags.Count > 0 ? string.Join(", ", asset.Tags) : "-")}";
+            SetEnabled(true);
 
-            _boothShopUrlLabel.text =
-                $"Booth Shop URL: {(asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.ShopURL) ? asset.BoothData.ShopURL : "-")}";
-            _boothItemUrlLabel.text =
-                $"Booth Item URL: {(asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.ItemURL) ? asset.BoothData.ItemURL : "-")}";
-            _boothDownloadUrlLabel.text =
-                $"Booth Download URL: {(asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.DownloadURL) ? asset.BoothData.DownloadURL : "-")}";
+            _nameField.SetValueWithoutNotify(asset.Name);
+            _descriptionField.SetValueWithoutNotify(asset.Description);
+
+            LoadThumbnail(asset.ID);
+            RefreshTags(asset.Tags);
+
+            var folderId = asset.Folder;
+            var repo = AssetManagerContainer.Repository;
+            var folder = repo.GetLibraryMetadata()?.GetFolder(folderId);
+            _folderNameLabel.text = folder != null ? folder.Name : "Uncategorized";
+
+            _infoContainer.Clear();
+            AddInfoRow("Size", FormatSize(asset.Size));
+            AddInfoRow("Type", asset.Ext.TrimStart('.').ToUpper());
+            var date = DateTimeOffset.FromUnixTimeMilliseconds(asset.ModificationTime).ToLocalTime();
+            AddInfoRow("Modified", date.ToString("yyyy/MM/dd HH:mm"));
         }
 
         public void SetFolder(BaseFolder folder) {
-            if (folder == null) {
-                ClearInfo();
-                return;
+            _currentAsset = null;
+            _currentFolder = folder;
+            SetEnabled(true);
+
+            ClearFields();
+            if (folder == null) return;
+
+            _nameField.value = folder.Name;
+            _descriptionField.value = folder.Description;
+            _folderNameLabel.text = "This is a Folder";
+
+            LoadFolderThumbnail(folder.ID);
+        }
+
+        private void ClearFields() {
+            _nameField.value = "";
+            _descriptionField.value = "";
+            _tagsContainer.Clear();
+            _folderNameLabel.text = "-";
+            _infoContainer.Clear();
+            _thumbnailContainer.style.backgroundImage = null;
+        }
+
+        private async void LoadThumbnail(Ulid assetId) {
+            _thumbnailContainer.style.backgroundImage = null;
+            var path = AssetManagerContainer.Repository.GetThumbnailPath(assetId);
+            if (!File.Exists(path)) return;
+
+            try {
+                var bytes = await Task.Run(() => File.ReadAllBytes(path));
+                if (_currentAsset?.ID != assetId) return;
+
+                var tex = new Texture2D(2, 2);
+                if (tex.LoadImage(bytes))
+                    _thumbnailContainer.style.backgroundImage = new StyleBackground(tex);
+                else
+                    Object.DestroyImmediate(tex);
             }
-
-            _nameLabel.text = $"Name: {folder.Name}";
-            _descLabel.text = $"Description: {folder.Description}";
-            _sizeLabel.text = "Size: -";
-            _extLabel.text = "Ext: Folder";
-            _tagsLabel.text = "Tags: -";
-
-            if (folder is BoothItemFolder boothFolder) {
-                var shopUrl = !string.IsNullOrEmpty(boothFolder.ShopDomain)
-                    ? $"https://{boothFolder.ShopDomain}.booth.pm"
-                    : "-";
-
-                var itemUrl = !string.IsNullOrEmpty(boothFolder.ShopDomain) && !string.IsNullOrEmpty(boothFolder.ItemId)
-                    ? $"https://{boothFolder.ShopDomain}.booth.pm/items/{boothFolder.ItemId}"
-                    : "-";
-
-                _boothShopUrlLabel.text = $"Booth Shop URL: {shopUrl}";
-                _boothItemUrlLabel.text = $"Booth Item URL: {itemUrl}";
-                _boothDownloadUrlLabel.text = "Booth Download URL: -";
-            }
-            else {
-                _boothShopUrlLabel.text = "Booth Shop URL: -";
-                _boothItemUrlLabel.text = "Booth Item URL: -";
-                _boothDownloadUrlLabel.text = "Booth Download URL: -";
+            catch {
+                // ignore
             }
         }
 
-        private void ClearInfo() {
-            _nameLabel.text = "Name: -";
-            _descLabel.text = "Description: -";
-            _sizeLabel.text = "Size: -";
-            _extLabel.text = "Ext: -";
-            _tagsLabel.text = "Tags: -";
-            _boothShopUrlLabel.text = "Booth Shop URL: -";
-            _boothItemUrlLabel.text = "Booth Item URL: -";
-            _boothDownloadUrlLabel.text = "Booth Download URL: -";
+        private async void LoadFolderThumbnail(Ulid folderId) {
+            _thumbnailContainer.style.backgroundImage = null;
+            var path = AssetManagerContainer.Repository.GetFolderThumbnailPath(folderId);
+            if (!File.Exists(path)) {
+                _thumbnailContainer.style.backgroundImage =
+                    new StyleBackground(EditorGUIUtility.IconContent("Folder Icon").image as Texture2D);
+                return;
+            }
+
+            try {
+                var bytes = await Task.Run(() => File.ReadAllBytes(path));
+                if (_currentFolder?.ID != folderId) return;
+
+                var tex = new Texture2D(2, 2);
+                if (tex.LoadImage(bytes))
+                    _thumbnailContainer.style.backgroundImage = new StyleBackground(tex);
+                else
+                    Object.DestroyImmediate(tex);
+            }
+            catch {
+                // ignore
+            }
+        }
+
+        private void RefreshTags(IReadOnlyList<string> tags) {
+            _tagsContainer.Clear();
+            if (tags == null) return;
+
+            foreach (var tag in tags) {
+                var pill = new VisualElement {
+                    style = {
+                        flexDirection = FlexDirection.Row,
+                        backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f)),
+                        borderTopLeftRadius = 10,
+                        borderTopRightRadius = 10,
+                        borderBottomLeftRadius = 10,
+                        borderBottomRightRadius = 10,
+                        paddingLeft = 8, paddingRight = 4, paddingTop = 2, paddingBottom = 2,
+                        marginRight = 4, marginBottom = 4,
+                        alignItems = Align.Center
+                    }
+                };
+
+                var label = new Label(tag) { style = { marginRight = 4 } };
+                var removeBtn = new Button(() => OnTagRemoved?.Invoke(tag)) {
+                    text = "×",
+                    style = {
+                        width = 16, height = 16,
+                        fontSize = 10,
+                        backgroundColor = Color.clear,
+                        borderTopWidth = 0, borderBottomWidth = 0, borderLeftWidth = 0, borderRightWidth = 0,
+                        paddingLeft = 0, paddingRight = 0
+                    }
+                };
+
+                pill.Add(label);
+                pill.Add(removeBtn);
+                _tagsContainer.Add(pill);
+            }
+        }
+
+        private void AddInfoRow(string label, string value) {
+            var row = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    justifyContent = Justify.SpaceBetween,
+                    marginBottom = 2
+                }
+            };
+            row.Add(new Label(label) { style = { color = Color.gray, width = 80 } });
+            row.Add(new Label(value) { style = { flexGrow = 1, unityTextAlign = TextAnchor.MiddleRight } });
+            _infoContainer.Add(row);
+        }
+
+        private static string FormatSize(long bytes) {
+            string[] suffixes = { "B", "KB", "MB", "GB" };
+            var counter = 0;
+            decimal number = bytes;
+            while (Math.Round(number / 1024) >= 1) {
+                number /= 1024;
+                counter++;
+            }
+
+            return string.Format("{0:n2} {1}", number, suffixes[counter]);
         }
     }
 }

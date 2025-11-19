@@ -17,6 +17,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private FolderService _folderService;
         private Navigation _navigation;
         private IAssetRepository _repository;
+
+        private AssetMetadata _selectedAsset;
         private TagListView _tagListView;
 
         private void OnEnable() {
@@ -50,8 +52,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             _assetInfo = new AssetInfo {
                 style = {
-                    width = 280,
-                    minWidth = 200,
+                    width = 300,
+                    minWidth = 250,
                     flexShrink = 0,
                     borderLeftWidth = 1,
                     borderLeftColor = ColorPreset.WindowBorder
@@ -92,15 +94,53 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 ShowAssetView();
             };
 
-            _assetController.AssetSelected += asset => { _assetInfo.SetAsset(asset); };
+            _assetController.AssetSelected += asset =>
+            {
+                _selectedAsset = asset;
+                _assetInfo.SetAsset(asset);
+            };
             _assetController.FolderPreviewSelected += folder => { _assetInfo.SetFolder(folder); };
             _assetController.FoldersChanged += folders => { _navigation.SetFolders(folders); };
             _assetController.BoothItemFoldersChanged += folders => { _assetView.ShowBoothItemFolders(folders); };
+
+            _assetInfo.OnNameChanged += newName =>
+            {
+                if (_selectedAsset == null) return;
+                _assetService.SetAssetName(_selectedAsset.ID, newName);
+                RefreshUI();
+            };
+            _assetInfo.OnDescriptionChanged += newDesc =>
+            {
+                if (_selectedAsset == null) return;
+                _assetService.SetDescription(_selectedAsset.ID, newDesc);
+                RefreshUI(false);
+            };
+            _assetInfo.OnTagAdded += newTag =>
+            {
+                if (_selectedAsset == null) return;
+                _assetService.AddTag(_selectedAsset.ID, newTag);
+                RefreshUI(false);
+            };
+            _assetInfo.OnTagRemoved += tagToRemove =>
+            {
+                if (_selectedAsset == null) return;
+                _assetService.RemoveTag(_selectedAsset.ID, tagToRemove);
+                RefreshUI(false);
+            };
 
             _navigation.SelectAll();
             _assetController.Refresh();
 
             ShowAssetView();
+        }
+
+        private void RefreshUI(bool fullRefresh = true) {
+            if (fullRefresh) _assetController.Refresh();
+
+            if (_selectedAsset == null) return;
+            var freshAsset = _repository.GetAsset(_selectedAsset.ID);
+            _selectedAsset = freshAsset;
+            _assetInfo.SetAsset(freshAsset);
         }
 
         private void ShowAssetView() {
