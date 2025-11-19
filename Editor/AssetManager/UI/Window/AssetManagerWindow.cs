@@ -10,7 +10,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private AssetViewController _assetController;
         private AssetInfo _assetInfo;
 
-        // 依存するサービスとリポジトリ
         private AssetService _assetService;
         private AssetView _assetView;
         private FolderService _folderService;
@@ -19,14 +18,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private TagListView _tagListView;
 
         private void OnEnable() {
-            // コンテナからシングルトンインスタンスを取得
             _repository = AssetManagerContainer.Repository;
             _assetService = AssetManagerContainer.AssetService;
             _folderService = AssetManagerContainer.FolderService;
         }
 
         private void CreateGUI() {
-            // 初期化がまだならロード（コンパイル直後など）
             if (_repository == null) OnEnable();
 
             var root = rootVisualElement;
@@ -44,15 +41,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetInfo = new AssetInfo();
             root.Add(_assetInfo);
 
-            // Controllerに依存性を注入して初期化
             _assetController = new AssetViewController(_repository);
 
-            // 各ViewにControllerやServiceをセット
             _assetView.SetController(_assetController);
-            _navigation.Initialize(_repository);  // フォルダ一覧取得用
-            _tagListView.Initialize(_repository); // タグ一覧取得用
+            _navigation.Initialize(_repository);
+            _tagListView.Initialize(_repository);
 
-            // イベント購読
             _navigation.FilterChanged += predicate =>
             {
                 _assetController.SetFilter(predicate);
@@ -84,7 +78,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetController.FoldersChanged += folders => { _navigation.SetFolders(folders); };
             _assetController.BoothItemFoldersChanged += folders => { _assetView.ShowBoothItemFolders(folders); };
 
-            // 初期表示
             _navigation.SelectAll();
             _assetController.Refresh();
         }
@@ -102,7 +95,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         [MenuItem("ee4v/Asset Manager")]
         public static void ShowWindow() {
             var window = GetWindow<AssetManagerWindow>("Asset Manager");
-            // データのロードをトリガー
             AssetManagerContainer.Repository.Load();
             window.Show();
         }

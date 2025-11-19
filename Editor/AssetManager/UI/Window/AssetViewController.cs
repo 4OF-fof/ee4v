@@ -10,7 +10,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private Func<AssetMetadata, bool> _filter = asset => !asset.IsDeleted;
         private Ulid _selectedFolderId = Ulid.Empty;
 
-        // コンストラクタでリポジトリを受け取る (DI)
         public AssetViewController(IAssetRepository repository) {
             _repository = repository;
         }
@@ -43,7 +42,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             BoothItemFoldersChanged?.Invoke(boothItemFolders);
         }
 
-        private void CollectBoothItemFolders(IEnumerable<BaseFolder> folders, List<BoothItemFolder> result) {
+        private static void CollectBoothItemFolders(IEnumerable<BaseFolder> folders, List<BoothItemFolder> result) {
             foreach (var folder in folders)
                 switch (folder) {
                     case BoothItemFolder boothItemFolder:
@@ -57,13 +56,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         public void Refresh() {
             var allAssets = _repository.GetAllAssets();
-            IEnumerable<AssetMetadata> assets;
 
-            if (_selectedFolderId == Ulid.Empty)
-                assets = allAssets;
-            else
-                // RepositoryにGetAssetsByFolderがない場合はここでフィルタリング
-                assets = allAssets.Where(a => a.Folder == _selectedFolderId);
+            var assets = _selectedFolderId == Ulid.Empty
+                ? allAssets
+                : allAssets.Where(a => a.Folder == _selectedFolderId);
 
             var filtered = assets.Where(a => _filter(a)).ToList();
             AssetsChanged?.Invoke(filtered);

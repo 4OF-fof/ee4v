@@ -27,7 +27,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _thumbnail = new VisualElement {
                 style = {
-                    flexShrink = 0,                              // 縮小を防ぐ
+                    flexShrink = 0,
                     backgroundColor = new StyleColor(Color.gray) // Placeholder color
                 }
             };
@@ -51,7 +51,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             innerContainer.RegisterCallback<MouseLeaveEvent>(_ =>
                 innerContainer.style.backgroundColor = new StyleColor(new Color(0.2f, 0.2f, 0.2f, 1f)));
 
-            // リサイズ検知を追加
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
@@ -59,7 +58,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var width = evt.newRect.width;
             if (float.IsNaN(width) || width <= 0) return;
 
-            // パディング分を引いて正方形にする
             var actualWidth = width - 10;
 
             _thumbnail.style.width = actualWidth;
