@@ -17,6 +17,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         public event Action<List<AssetMetadata>> AssetsChanged;
         public event Action<List<BoothItemFolder>> BoothItemFoldersChanged;
         public event Action<AssetMetadata> AssetSelected;
+        public event Action<BaseFolder> FolderPreviewSelected;
         public event Action<List<BaseFolder>> FoldersChanged;
 
         public void SetFilter(Func<AssetMetadata, bool> filter) {
@@ -27,6 +28,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         public void SelectAsset(AssetMetadata asset) {
             AssetSelected?.Invoke(asset);
+        }
+
+        public void PreviewFolder(BaseFolder folder) {
+            FolderPreviewSelected?.Invoke(folder);
         }
 
         public void SelectFolder(Ulid folderId) {

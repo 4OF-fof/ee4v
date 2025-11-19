@@ -133,7 +133,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     case BoothItemFolder folder: {
                         card.SetData(folder.Name);
                         card.userData = folder;
-                        card.RegisterCallback<ClickEvent>(OnCardClick);
+
+                        card.RegisterCallback<PointerDownEvent>(OnCardPointerDown);
 
                         LoadFolderThumbnailAsync(card, folder.ID);
                         break;
@@ -141,7 +142,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     case AssetMetadata asset: {
                         card.SetData(asset.Name);
                         card.userData = asset;
-                        card.RegisterCallback<ClickEvent>(OnCardClick);
+
+                        card.RegisterCallback<PointerDownEvent>(OnCardPointerDown);
 
                         LoadThumbnailAsync(card, asset.ID);
                         break;
@@ -211,18 +213,25 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
         }
 
-        private void OnCardClick(ClickEvent evt) {
+        private void OnCardPointerDown(PointerDownEvent evt) {
+            if (evt.button != 0) return;
+
             var card = evt.currentTarget as AssetCard;
-            switch (card?.userData) {
-                case null:
-                    return;
+            if (card == null) return;
+
+            switch (card.userData) {
                 case BoothItemFolder folder:
-                    _controller?.SelectFolder(folder.ID);
+                    if (evt.clickCount == 2)
+                        _controller?.SelectFolder(folder.ID);
+                    else
+                        _controller?.PreviewFolder(folder);
                     break;
                 case AssetMetadata asset:
                     _controller?.SelectAsset(asset);
                     break;
             }
+
+            evt.StopPropagation();
         }
 
         public void SetController(AssetViewController controller) {

@@ -4,6 +4,7 @@ using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.AssetManager.UI.Window._Component;
 using _4OF.ee4v.Core.UI;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window {
@@ -92,12 +93,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             };
 
             _assetController.AssetSelected += asset => { _assetInfo.SetAsset(asset); };
+            _assetController.FolderPreviewSelected += folder => { _assetInfo.SetFolder(folder); };
             _assetController.FoldersChanged += folders => { _navigation.SetFolders(folders); };
             _assetController.BoothItemFoldersChanged += folders => { _assetView.ShowBoothItemFolders(folders); };
 
             _navigation.SelectAll();
             _assetController.Refresh();
-            
+
             ShowAssetView();
         }
 
@@ -114,7 +116,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         [MenuItem("ee4v/Asset Manager")]
         public static void ShowWindow() {
             var window = GetWindow<AssetManagerWindow>("Asset Manager");
-            window.minSize = new UnityEngine.Vector2(800, 400);
+            window.minSize = new Vector2(800, 400);
             AssetManagerContainer.Repository.Load();
             window.Show();
         }

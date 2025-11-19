@@ -20,7 +20,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _nameLabel = new Label("Name: -");
             Add(_nameLabel);
 
-            _descLabel = new Label("Description: -");
+            _descLabel = new Label("Description: -") {
+                style = {
+                    whiteSpace = WhiteSpace.Normal
+                }
+            };
             Add(_descLabel);
 
             _sizeLabel = new Label("Size: -");
@@ -29,7 +33,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _extLabel = new Label("Ext: -");
             Add(_extLabel);
 
-            _tagsLabel = new Label("Tags: -");
+            _tagsLabel = new Label("Tags: -") {
+                style = {
+                    whiteSpace = WhiteSpace.Normal
+                }
+            };
             Add(_tagsLabel);
 
             _boothShopUrlLabel = new Label("Booth Shop URL: -");
@@ -42,14 +50,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public void SetAsset(AssetMetadata asset) {
             if (asset == null) {
-                _nameLabel.text = "Name: -";
-                _descLabel.text = "Description: -";
-                _sizeLabel.text = "Size: -";
-                _extLabel.text = "Ext: -";
-                _tagsLabel.text = "Tags: -";
-                _boothShopUrlLabel.text = "Booth Shop URL: -";
-                _boothItemUrlLabel.text = "Booth Item URL: -";
-                _boothDownloadUrlLabel.text = "Booth Download URL: -";
+                ClearInfo();
                 return;
             }
 
@@ -66,6 +67,49 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 $"Booth Item URL: {(asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.ItemURL) ? asset.BoothData.ItemURL : "-")}";
             _boothDownloadUrlLabel.text =
                 $"Booth Download URL: {(asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.DownloadURL) ? asset.BoothData.DownloadURL : "-")}";
+        }
+
+        public void SetFolder(BaseFolder folder) {
+            if (folder == null) {
+                ClearInfo();
+                return;
+            }
+
+            _nameLabel.text = $"Name: {folder.Name}";
+            _descLabel.text = $"Description: {folder.Description}";
+            _sizeLabel.text = "Size: -";
+            _extLabel.text = "Ext: Folder";
+            _tagsLabel.text = "Tags: -";
+
+            if (folder is BoothItemFolder boothFolder) {
+                var shopUrl = !string.IsNullOrEmpty(boothFolder.ShopDomain)
+                    ? $"https://{boothFolder.ShopDomain}.booth.pm"
+                    : "-";
+
+                var itemUrl = !string.IsNullOrEmpty(boothFolder.ShopDomain) && !string.IsNullOrEmpty(boothFolder.ItemId)
+                    ? $"https://{boothFolder.ShopDomain}.booth.pm/items/{boothFolder.ItemId}"
+                    : "-";
+
+                _boothShopUrlLabel.text = $"Booth Shop URL: {shopUrl}";
+                _boothItemUrlLabel.text = $"Booth Item URL: {itemUrl}";
+                _boothDownloadUrlLabel.text = "Booth Download URL: -";
+            }
+            else {
+                _boothShopUrlLabel.text = "Booth Shop URL: -";
+                _boothItemUrlLabel.text = "Booth Item URL: -";
+                _boothDownloadUrlLabel.text = "Booth Download URL: -";
+            }
+        }
+
+        private void ClearInfo() {
+            _nameLabel.text = "Name: -";
+            _descLabel.text = "Description: -";
+            _sizeLabel.text = "Size: -";
+            _extLabel.text = "Ext: -";
+            _tagsLabel.text = "Tags: -";
+            _boothShopUrlLabel.text = "Booth Shop URL: -";
+            _boothItemUrlLabel.text = "Booth Item URL: -";
+            _boothDownloadUrlLabel.text = "Booth Download URL: -";
         }
     }
 }
