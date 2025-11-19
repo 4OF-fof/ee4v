@@ -27,7 +27,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _thumbnail = new VisualElement {
                 style = {
-                    flexGrow = 1,
+                    flexShrink = 0,
                     backgroundColor = new StyleColor(Color.gray) // Placeholder color
                 }
             };
@@ -50,6 +50,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 innerContainer.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f, 1f)));
             innerContainer.RegisterCallback<MouseLeaveEvent>(_ =>
                 innerContainer.style.backgroundColor = new StyleColor(new Color(0.2f, 0.2f, 0.2f, 1f)));
+
+            RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+        }
+
+        private void OnGeometryChanged(GeometryChangedEvent evt) {
+            var width = evt.newRect.width;
+            if (float.IsNaN(width) || width <= 0) return;
+
+            var actualWidth = width - 10;
+
+            _thumbnail.style.width = actualWidth;
+            _thumbnail.style.height = actualWidth;
         }
 
         public void SetData(string itemName) {
