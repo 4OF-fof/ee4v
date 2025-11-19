@@ -1,14 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.Core.Utility;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetView : VisualElement {
         private readonly ListView _listView;
+
+        private readonly Dictionary<string, Texture2D> _thumbnailCache = new();
         private AssetViewController _controller;
 
         private List<object> _items = new();
@@ -19,7 +25,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             style.flexGrow = 1;
 
             var toolbar = new Toolbar();
-            var slider = new SliderInt("Items Per Row", 1) {
+            var slider = new SliderInt("Items Per Row", 2) {
                 value = _itemsPerRow,
                 style = { minWidth = 200 }
             };
@@ -46,6 +52,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
             _listView.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             Add(_listView);
+
+            RegisterCallback<DetachFromPanelEvent>(OnDetach);
+        }
+
+        private void OnDetach(DetachFromPanelEvent evt) {
+            foreach (var tex in _thumbnailCache.Values.Where(tex => tex != null)) Object.DestroyImmediate(tex);
+
+            _thumbnailCache.Clear();
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt) {
@@ -97,7 +111,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private void BindRow(VisualElement element, int index) {
             element.Clear();
 
-            if (_listView.itemsSource is not List<List<object>> rows || index < 0 || index >= rows.Count) return;
+            var rows = _listView.itemsSource as List<List<object>>;
+
+            if (rows == null || index < 0 || index >= rows.Count) return;
 
             var row = rows[index];
             var containerWidth = _listView.resolvedStyle.width;
@@ -116,6 +132,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 switch (item) {
                     case BoothItemFolder folder: {
                         card.SetData(folder.Name);
+
                         var tex = new Texture2D(2, 2);
                         tex.SetPixels(new[] { Color.red, Color.red, Color.red, Color.red });
                         tex.Apply();
@@ -127,22 +144,44 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     }
                     case AssetMetadata asset: {
                         card.SetData(asset.Name);
-
-                        var thumbnailPath = AssetManagerContainer.Repository.GetThumbnailPath(asset.ID);
-
-                        if (File.Exists(thumbnailPath)) {
-                            var fileData = File.ReadAllBytes(thumbnailPath);
-                            var tex = new Texture2D(2, 2);
-                            if (tex.LoadImage(fileData)) card.SetThumbnail(tex);
-                        }
-
                         card.userData = asset;
                         card.RegisterCallback<ClickEvent>(OnCardClick);
+
+                        LoadThumbnailAsync(card, asset.ID);
                         break;
                     }
                 }
 
                 element.Add(card);
+            }
+        }
+
+        private async void LoadThumbnailAsync(AssetCard card, Ulid assetId) {
+            var idStr = assetId.ToString();
+
+            if (_thumbnailCache.TryGetValue(idStr, out var cachedTex)) {
+                if (cachedTex != null) card.SetThumbnail(cachedTex);
+                return;
+            }
+
+            var thumbnailPath = AssetManagerContainer.Repository.GetThumbnailPath(assetId);
+            if (!File.Exists(thumbnailPath)) return;
+
+            try {
+                var fileData = await Task.Run(() => File.ReadAllBytes(thumbnailPath));
+
+                if (card.userData is not AssetMetadata currentMeta || currentMeta.ID != assetId) return;
+                var tex = new Texture2D(2, 2);
+                if (tex.LoadImage(fileData)) {
+                    _thumbnailCache[idStr] = tex;
+                    card.SetThumbnail(tex);
+                }
+                else {
+                    Object.DestroyImmediate(tex);
+                }
+            }
+            catch (Exception e) {
+                Debug.LogWarning($"Failed to load thumbnail: {e.Message}");
             }
         }
 
