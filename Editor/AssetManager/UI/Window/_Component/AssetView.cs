@@ -132,14 +132,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 switch (item) {
                     case BoothItemFolder folder: {
                         card.SetData(folder.Name);
-
-                        var tex = new Texture2D(2, 2);
-                        tex.SetPixels(new[] { Color.red, Color.red, Color.red, Color.red });
-                        tex.Apply();
-                        card.SetThumbnail(tex);
-
                         card.userData = folder;
                         card.RegisterCallback<ClickEvent>(OnCardClick);
+
+                        LoadFolderThumbnailAsync(card, folder.ID);
                         break;
                     }
                     case AssetMetadata asset: {
@@ -182,6 +178,36 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
             catch (Exception e) {
                 Debug.LogWarning($"Failed to load thumbnail: {e.Message}");
+            }
+        }
+
+        private async void LoadFolderThumbnailAsync(AssetCard card, Ulid folderId) {
+            var idStr = "folder_" + folderId;
+
+            if (_thumbnailCache.TryGetValue(idStr, out var cachedTex)) {
+                if (cachedTex != null) card.SetThumbnail(cachedTex);
+                return;
+            }
+
+            var thumbnailPath = AssetManagerContainer.Repository.GetFolderThumbnailPath(folderId);
+            if (!File.Exists(thumbnailPath)) return;
+
+            try {
+                var fileData = await Task.Run(() => File.ReadAllBytes(thumbnailPath));
+
+                if (card.userData is not BoothItemFolder currentFolder || currentFolder.ID != folderId) return;
+
+                var tex = new Texture2D(2, 2);
+                if (tex.LoadImage(fileData)) {
+                    _thumbnailCache[idStr] = tex;
+                    card.SetThumbnail(tex);
+                }
+                else {
+                    Object.DestroyImmediate(tex);
+                }
+            }
+            catch (Exception e) {
+                Debug.LogWarning($"Failed to load folder thumbnail: {e.Message}");
             }
         }
 

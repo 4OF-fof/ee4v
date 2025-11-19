@@ -142,6 +142,16 @@ namespace _4OF.ee4v.AssetManager.Service {
             _repository.SaveLibraryMetadata(libraries);
         }
 
+        public void SetFolderThumbnail(Ulid folderId, string path) {
+            if (string.IsNullOrEmpty(path)) return;
+            _repository.SetFolderThumbnail(folderId, path);
+        }
+
+        public void RemoveFolderThumbnail(Ulid folderId) {
+            if (folderId == Ulid.Empty) return;
+            _repository.RemoveFolderThumbnail(folderId);
+        }
+
         private static bool IsDescendant(Folder folder, Ulid targetId) {
             if (folder.ID == targetId) return true;
             foreach (var child in folder.Children) {

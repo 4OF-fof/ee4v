@@ -12,6 +12,7 @@ namespace _4OF.ee4v.AssetManager.Data {
     public class JsonAssetRepository : IAssetRepository {
         private readonly string _assetRootDir;
         private readonly string _cacheFilePath;
+        private readonly string _folderIconDir;
 
         private readonly AssetLibrary _libraryCache;
         private readonly string _libraryMetadataPath;
@@ -24,6 +25,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             _assetRootDir = Path.Combine(_rootDir, "Assets");
             _libraryMetadataPath = Path.Combine(_rootDir, "metadata.json");
             _cacheFilePath = Path.Combine(contentFolderPath, "assetManager_cache.json");
+            _folderIconDir = Path.Combine(contentFolderPath, "FolderIcon");
 
             _serializerSettings = new JsonSerializerSettings {
                 Formatting = Formatting.Indented,
@@ -37,6 +39,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         public void Initialize() {
             Directory.CreateDirectory(_rootDir);
             Directory.CreateDirectory(_assetRootDir);
+            Directory.CreateDirectory(_folderIconDir);
 
             if (File.Exists(_libraryMetadataPath)) return;
 
@@ -256,9 +259,48 @@ namespace _4OF.ee4v.AssetManager.Data {
             var thumbPath = Path.Combine(assetDir, "thumbnail.png");
             if (File.Exists(thumbPath)) File.Delete(thumbPath);
         }
-        
+
         public string GetThumbnailPath(Ulid assetId) {
             return Path.Combine(_assetRootDir, assetId.ToString(), "thumbnail.png");
+        }
+
+        public void SetFolderThumbnail(Ulid folderId, string imagePath) {
+            if (!Directory.Exists(_folderIconDir)) Directory.CreateDirectory(_folderIconDir);
+
+            try {
+                var fileData = File.ReadAllBytes(imagePath);
+                var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false, false);
+                if (tex.LoadImage(fileData)) {
+                    var finalTex = TextureUtility.FitImage(tex, 512) ?? tex;
+                    var pngBytes = finalTex.EncodeToPNG();
+                    var destPath = Path.Combine(_folderIconDir, $"{folderId}.png");
+                    File.WriteAllBytes(destPath, pngBytes);
+
+                    if (finalTex != tex) Object.DestroyImmediate(finalTex);
+                    Object.DestroyImmediate(tex);
+                }
+                else {
+                    Object.DestroyImmediate(tex);
+                }
+            }
+            catch (Exception e) {
+                Debug.LogError($"[JsonAssetRepository] Failed to set folder thumbnail: {e.Message}");
+            }
+        }
+
+        public void RemoveFolderThumbnail(Ulid folderId) {
+            var path = GetFolderThumbnailPath(folderId);
+            if (!File.Exists(path)) return;
+            try {
+                File.Delete(path);
+            }
+            catch (Exception e) {
+                Debug.LogError($"[JsonAssetRepository] Failed to delete folder thumbnail: {e.Message}");
+            }
+        }
+
+        public string GetFolderThumbnailPath(Ulid folderId) {
+            return Path.Combine(_folderIconDir, $"{folderId}.png");
         }
 
         private void LoadAllAssetsFromDisk() {
