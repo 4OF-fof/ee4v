@@ -1,11 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class Navigation : VisualElement {
         private readonly Button _allButton;
+        private readonly FolderView _folderView;
         private readonly Button _trashButton;
         private readonly Button _uncategorizedButton;
 
@@ -19,6 +22,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             {
                 SetFilter(a => !a.IsDeleted);
                 SetSelected(_allButton);
+                OnFolderSelected(Ulid.Empty);
+                _folderView?.ClearSelection();
             }) { text = "All items" };
             Add(_allButton);
 
@@ -26,6 +31,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             {
                 SetFilter(a => !a.IsDeleted && a.Folder == Ulid.Empty && (a.Tags == null || a.Tags.Count == 0));
                 SetSelected(_uncategorizedButton);
+                OnFolderSelected(Ulid.Empty);
+                _folderView?.ClearSelection();
             }) { text = "Uncategorized" };
             Add(_uncategorizedButton);
 
@@ -33,11 +40,27 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             {
                 SetFilter(a => a.IsDeleted);
                 SetSelected(_trashButton);
+                OnFolderSelected(Ulid.Empty);
+                _folderView?.ClearSelection();
             }) { text = "Trash" };
             Add(_trashButton);
+
+            var spacer = new VisualElement { style = { height = 10 } };
+            Add(spacer);
+
+            Add(new Label("Folders") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 4 } });
+
+            _folderView = new FolderView();
+            _folderView.OnFolderSelected += OnFolderViewSelected;
+            Add(_folderView);
         }
 
         public event Action<Func<AssetMetadata, bool>> FilterChanged;
+        public event Action<Ulid> FolderSelected;
+
+        public void SetFolders(List<BaseFolder> folders) {
+            _folderView.SetFolders(folders);
+        }
 
         private void SetFilter(Func<AssetMetadata, bool> predicate) {
             FilterChanged?.Invoke(predicate);
@@ -47,12 +70,23 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _allButton.RemoveFromClassList("selected");
             _uncategorizedButton.RemoveFromClassList("selected");
             _trashButton.RemoveFromClassList("selected");
-            selected.AddToClassList("selected");
+            selected?.AddToClassList("selected");
         }
 
         public void SelectAll() {
             SetFilter(a => !a.IsDeleted);
             SetSelected(_allButton);
+            _folderView.ClearSelection();
+        }
+
+        private void OnFolderViewSelected(Ulid folderId) {
+            SetSelected(null);
+            SetFilter(a => !a.IsDeleted);
+            OnFolderSelected(folderId);
+        }
+
+        private void OnFolderSelected(Ulid folderId) {
+            FolderSelected?.Invoke(folderId);
         }
     }
 }

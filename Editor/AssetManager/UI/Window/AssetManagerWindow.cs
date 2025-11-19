@@ -39,8 +39,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             _assetController = new AssetViewController();
             _assetView.SetController(_assetController);
+
             _navigation.FilterChanged += predicate => { _assetController.SetFilter(predicate); };
+            _navigation.FolderSelected += folderId => { _assetController.SelectFolder(folderId); };
+
             _assetController.AssetSelected += asset => { _assetInfo.SetAsset(asset); };
+            _assetController.FoldersChanged += folders => { _navigation.SetFolders(folders); };
 
             _navigation.SelectAll();
         }

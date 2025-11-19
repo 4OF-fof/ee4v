@@ -6,14 +6,14 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetView : VisualElement {
-        private readonly ScrollView _container;
+        private readonly ScrollView _assetContainer;
         private AssetViewController _controller;
         private List<AssetMetadata> _lastAssets = new();
 
         public AssetView() {
-            style.flexDirection = FlexDirection.Column;
-            _container = new ScrollView();
-            Add(_container);
+            style.flexGrow = 1;
+            _assetContainer = new ScrollView();
+            Add(_assetContainer);
         }
 
         public void SetController(AssetViewController controller) {
@@ -32,19 +32,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void OnAssetsChanged(List<AssetMetadata> assets) {
             _lastAssets = assets ?? new List<AssetMetadata>();
-            RefreshView();
+            RefreshAssetView();
         }
 
         private void OnControllerAssetSelected(AssetMetadata asset) {
             Debug.Log($"Selected asset: {asset.Name}");
         }
 
-        private void RefreshView() {
-            _container.Clear();
+        private void RefreshAssetView() {
+            _assetContainer.Clear();
             foreach (var button in _lastAssets.Select(asset => new Button(() => _controller?.SelectAsset(asset)) {
                          text = asset.Name
                      }))
-                _container.Add(button);
+                _assetContainer.Add(button);
         }
     }
 }
