@@ -9,9 +9,6 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.AssetManager.Data {
-    /// <summary>
-    /// JSONファイルシステムを使用したアセットリポジトリの実装
-    /// </summary>
     public class JsonAssetRepository : IAssetRepository {
         private readonly string _rootDir;
         private readonly string _assetRootDir;
@@ -118,7 +115,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                         var assetMetadata = JsonConvert.DeserializeObject<AssetMetadata>(json, _serializerSettings);
                         if (assetMetadata != null) onDiskAssets[assetMetadata.ID] = assetMetadata;
                     }
-                    catch { /* ignore specific errors during scan */ }
+                    catch { /* ignore */ }
                 }
 
                 var missingInCache = onDiskAssets.Keys.Except(cachedAssets.Keys).ToList();
@@ -142,25 +139,24 @@ namespace _4OF.ee4v.AssetManager.Data {
                 );
             });
 
-            // resultが正しく推論されるようになったため、各プロパティへアクセス可能になります
             if (result.Error != null) {
                 Debug.LogError($"[JsonAssetRepository] Verification failed: {result.Error}");
                 return;
             }
 
-            if (result.MissingInCache != null && result.MissingInCache.Count > 0) {
+            if (result.MissingInCache is { Count: > 0 }) {
                 foreach (var id in result.MissingInCache) _libraryCache.UpsertAsset(result.OnDisk[id]);
             }
-            if (result.MissingOnDisk != null && result.MissingOnDisk.Count > 0) {
+            if (result.MissingOnDisk is { Count: > 0 }) {
                 foreach (var id in result.MissingOnDisk) _libraryCache.RemoveAsset(id);
             }
-            if (result.Modified != null && result.Modified.Count > 0) {
+            if (result.Modified is { Count: > 0 }) {
                 foreach (var asset in result.Modified) _libraryCache.UpdateAsset(asset);
             }
 
-            if ((result.MissingInCache != null && result.MissingInCache.Count > 0) || 
-                (result.MissingOnDisk != null && result.MissingOnDisk.Count > 0) || 
-                (result.Modified != null && result.Modified.Count > 0)) {
+            if (result.MissingInCache is { Count: > 0 } || 
+                result.MissingOnDisk is { Count: > 0 } || 
+                result.Modified is { Count: > 0 }) {
                 SaveCache();
                 Debug.Log("[JsonAssetRepository] Cache updated and verified.");
             }
@@ -196,9 +192,8 @@ namespace _4OF.ee4v.AssetManager.Data {
             }
             catch (Exception e) {
                 Debug.LogError($"[JsonAssetRepository] Failed to create asset: {e.Message}");
-                if (Directory.Exists(assetDir)) {
-                    try { Directory.Delete(assetDir, true); } catch { /* ignore rollback error */ }
-                }
+                if (!Directory.Exists(assetDir)) throw;
+                try { Directory.Delete(assetDir, true); } catch { /* ignore */ }
                 throw;
             }
         }

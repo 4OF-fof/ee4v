@@ -3,18 +3,12 @@ using System.Linq;
 using _4OF.ee4v.Core.Utility;
 
 namespace _4OF.ee4v.AssetManager.Data {
-    /// <summary>
-    /// メモリ上でアセットデータのキャッシュとインデックス（タグ・フォルダ検索）を管理するクラス。
-    /// シングルトンではなく、リポジトリが内部で保持するインスタンスとして使用します。
-    /// </summary>
     public class AssetLibrary {
-        // 元の Singleton 実装 (Instance) は削除しました。
 
         private readonly Dictionary<Ulid, AssetMetadata> _assetMetadataDict = new();
         private readonly Dictionary<Ulid, HashSet<Ulid>> _folderIndex = new();
         private readonly Dictionary<string, HashSet<Ulid>> _tagIndex = new();
 
-        // コンストラクタを public に変更
         public AssetLibrary() {
         }
 
@@ -81,7 +75,6 @@ namespace _4OF.ee4v.AssetManager.Data {
                 if (asset == null) continue;
                 asset.AddTag(newTag);
                 asset.RemoveTag(tag);
-                // インデックスの再構築は AddTag/RemoveTag 内ではなくここで行う（メモリ操作のみ）
                 if (!_tagIndex.TryGetValue(newTag, out var newSet)) {
                     newSet = new HashSet<Ulid>();
                     _tagIndex[newTag] = newSet;

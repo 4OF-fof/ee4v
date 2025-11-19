@@ -10,12 +10,10 @@ namespace _4OF.ee4v.AssetManager.Service {
             }
 
             var invalidChars = Path.GetInvalidFileNameChars();
-            if (name.IndexOfAny(invalidChars) >= 0) {
-                Debug.LogError($"Name '{name}' contains invalid characters.");
-                return false;
-            }
+            if (name.IndexOfAny(invalidChars) < 0) return true;
+            Debug.LogError($"Name '{name}' contains invalid characters.");
+            return false;
 
-            return true;
         }
     }
 }

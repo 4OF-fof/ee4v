@@ -12,8 +12,6 @@ namespace _4OF.ee4v.AssetManager.Service {
             _repository = repository;
         }
 
-        // --- 基本操作 ---
-
         public void CreateAsset(string path) {
             _repository.CreateAssetFromFile(path);
         }
@@ -71,8 +69,6 @@ namespace _4OF.ee4v.AssetManager.Service {
             _repository.SaveAsset(asset);
         }
 
-        // --- タグ操作 (旧 TagService 統合) ---
-
         public void AddTag(Ulid assetId, string tag) {
             var asset = _repository.GetAsset(assetId);
             if (asset == null) return;
@@ -90,8 +86,6 @@ namespace _4OF.ee4v.AssetManager.Service {
         public void RenameTag(string oldTag, string newTag) {
             if (string.IsNullOrEmpty(oldTag) || string.IsNullOrEmpty(newTag) || oldTag == newTag) return;
 
-            // リポジトリから全アセットを取得してタグを書き換える
-            // (インメモリキャッシュが効いているので低コスト)
             foreach (var asset in _repository.GetAllAssets()) {
                 if (!asset.Tags.Contains(oldTag)) continue;
                 
@@ -100,8 +94,6 @@ namespace _4OF.ee4v.AssetManager.Service {
                 _repository.SaveAsset(asset);
             }
         }
-
-        // --- Booth情報操作 (旧 AssetBoothService 統合) ---
 
         public void SetBoothShopDomain(Ulid assetId, string shopURL) {
             if (BoothUtility.ClassifyBoothUrl(shopURL) != BoothUtility.BoothUrlType.ShopUrl) return;

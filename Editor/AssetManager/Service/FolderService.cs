@@ -9,7 +9,6 @@ namespace _4OF.ee4v.AssetManager.Service {
         private readonly IAssetRepository _repository;
         private readonly AssetService _assetService;
 
-        // AssetServiceを依存注入して、アセット削除ロジックを再利用する
         public FolderService(IAssetRepository repository, AssetService assetService) {
             _repository = repository;
             _assetService = assetService;
@@ -46,33 +45,31 @@ namespace _4OF.ee4v.AssetManager.Service {
         public void MoveFolder(Ulid folderId, Ulid parentFolderId) {
             if (folderId == default) return;
             var libraries = _repository.GetLibraryMetadata();
-            if (libraries == null) return;
 
-            var folderBase = libraries.GetFolder(folderId);
+            var folderBase = libraries?.GetFolder(folderId);
             if (folderBase == null) return;
 
-            // ルートへの移動
             if (parentFolderId == default || parentFolderId == Ulid.Empty) {
-                if (folderBase is BoothItemFolder boothItem) {
-                    libraries.RemoveFolder(folderId);
-                    libraries.AddFolder(boothItem);
-                }
-                else if (folderBase is Folder f) {
-                    libraries.RemoveFolder(folderId);
-                    libraries.AddFolder(f);
+                switch (folderBase) {
+                    case BoothItemFolder boothItem:
+                        libraries.RemoveFolder(folderId);
+                        libraries.AddFolder(boothItem);
+                        break;
+                    case Folder f:
+                        libraries.RemoveFolder(folderId);
+                        libraries.AddFolder(f);
+                        break;
                 }
                 _repository.SaveLibraryMetadata(libraries);
                 return;
             }
 
-            // 他のフォルダへの移動
             var newParentBase = libraries.GetFolder(parentFolderId);
             if (newParentBase is not Folder newParentFolder) {
                 Debug.LogError("Cannot move: Target parent is not a valid folder.");
                 return;
             }
 
-            // 親子関係チェック（自分の子孫には移動できない）
             if (folderBase is Folder movingFolder && IsDescendant(movingFolder, parentFolderId)) {
                 Debug.LogError("Cannot move a folder into its own descendant.");
                 return;
@@ -113,21 +110,19 @@ namespace _4OF.ee4v.AssetManager.Service {
             if (!AssetValidationService.IsValidAssetName(newName)) return;
             var libraries = _repository.GetLibraryMetadata();
             var folder = libraries?.GetFolder(folderId);
-            
-            if (folder != null) {
-                folder.SetName(newName);
-                _repository.SaveLibraryMetadata(libraries);
-            }
+
+            if (folder == null) return;
+            folder.SetName(newName);
+            _repository.SaveLibraryMetadata(libraries);
         }
 
         public void SetFolderDescription(Ulid folderId, string description) {
             var libraries = _repository.GetLibraryMetadata();
             var folder = libraries?.GetFolder(folderId);
-            
-            if (folder != null) {
-                folder.SetDescription(description);
-                _repository.SaveLibraryMetadata(libraries);
-            }
+
+            if (folder == null) return;
+            folder.SetDescription(description);
+            _repository.SaveLibraryMetadata(libraries);
         }
 
         public void DeleteFolder(Ulid folderId) {
@@ -135,9 +130,8 @@ namespace _4OF.ee4v.AssetManager.Service {
             var targetFolder = libraries?.GetFolder(folderId);
             if (targetFolder == null) return;
 
-            // フォルダ内（およびサブフォルダ内）の全アセットを論理削除
             var allDescendantIds = GetSelfAndDescendants(targetFolder);
-            var allAssets = _repository.GetAllAssets(); // キャッシュから全取得
+            var allAssets = _repository.GetAllAssets();
 
             foreach (var asset in allAssets) {
                 if (allDescendantIds.Contains(asset.Folder)) {
@@ -149,7 +143,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             _repository.SaveLibraryMetadata(libraries);
         }
 
-        private bool IsDescendant(Folder folder, Ulid targetId) {
+        private static bool IsDescendant(Folder folder, Ulid targetId) {
             if (folder.ID == targetId) return true;
             foreach (var child in folder.Children) {
                 if (child.ID == targetId) return true;
@@ -160,10 +154,9 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         private HashSet<Ulid> GetSelfAndDescendants(BaseFolder root) {
             var set = new HashSet<Ulid> { root.ID };
-            if (root is Folder f) {
-                foreach (var child in f.Children) {
-                    set.UnionWith(GetSelfAndDescendants(child));
-                }
+            if (root is not Folder f) return set;
+            foreach (var child in f.Children) {
+                set.UnionWith(GetSelfAndDescendants(child));
             }
             return set;
         }
