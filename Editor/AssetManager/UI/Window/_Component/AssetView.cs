@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -13,6 +12,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public AssetView() {
             style.flexGrow = 1;
             _container = new ScrollView();
+            _container.contentContainer.style.flexDirection = FlexDirection.Row;
+            _container.contentContainer.style.flexWrap = Wrap.Wrap;
             Add(_container);
         }
 
@@ -20,6 +21,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             if (_controller != null) {
                 _controller.AssetsChanged -= OnAssetsChanged;
                 _controller.AssetSelected -= OnControllerAssetSelected;
+                _controller.BoothItemFoldersChanged -= OnBoothItemFoldersChanged;
             }
 
             _controller = controller;
@@ -27,6 +29,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             if (_controller == null) return;
             _controller.AssetsChanged += OnAssetsChanged;
             _controller.AssetSelected += OnControllerAssetSelected;
+            _controller.BoothItemFoldersChanged += OnBoothItemFoldersChanged;
             _controller.Refresh();
         }
 
@@ -35,12 +38,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             RefreshView();
         }
 
+        private void OnBoothItemFoldersChanged(List<BoothItemFolder> folders) {
+            ShowBoothItemFolders(folders);
+        }
+
         public void ShowBoothItemFolders(List<BoothItemFolder> folders) {
             _container.Clear();
-            foreach (var button in folders.Select(folder => new Button(() => _controller?.SelectFolder(folder.ID)) {
-                         text = folder.Name
-                     }))
-                _container.Add(button);
+            foreach (var folder in folders) {
+                var card = new AssetCard();
+                card.SetData(folder.Name);
+                card.RegisterCallback<ClickEvent>(_ => _controller?.SelectFolder(folder.ID));
+                _container.Add(card);
+            }
         }
 
         private void OnControllerAssetSelected(AssetMetadata asset) {
@@ -49,10 +58,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void RefreshView() {
             _container.Clear();
-            foreach (var button in _lastAssets.Select(asset => new Button(() => _controller?.SelectAsset(asset)) {
-                         text = asset.Name
-                     }))
-                _container.Add(button);
+            foreach (var asset in _lastAssets) {
+                var card = new AssetCard();
+                card.SetData(asset.Name);
+                card.RegisterCallback<ClickEvent>(_ => _controller?.SelectAsset(asset));
+                _container.Add(card);
+            }
         }
     }
 }
