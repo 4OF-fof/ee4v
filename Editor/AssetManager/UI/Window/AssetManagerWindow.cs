@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
-using _4OF.ee4v.AssetManager.OldData;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.AssetManager.UI.Window._Component;
 using UnityEditor;
@@ -13,52 +12,48 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private AssetInfo _assetInfo;
         private AssetView _assetView;
         private Navigation _navigation;
-        private Action _onAssetLibraryLoadedHandler;
         private TagListView _tagListView;
 
-        private void OnDisable() {
-            if (_onAssetLibraryLoadedHandler != null)
-                AssetLibraryService.AssetLibraryLoaded -= _onAssetLibraryLoadedHandler;
+        // 依存するサービスとリポジトリ
+        private AssetService _assetService;
+        private FolderService _folderService;
+        private IAssetRepository _repository;
+
+        private void OnEnable() {
+            // コンテナからシングルトンインスタンスを取得
+            _repository = AssetManagerContainer.Repository;
+            _assetService = AssetManagerContainer.AssetService;
+            _folderService = AssetManagerContainer.FolderService;
         }
 
         private void CreateGUI() {
+            // 初期化がまだならロード（コンパイル直後など）
+            if (_repository == null) OnEnable();
+
             var root = rootVisualElement;
             root.style.flexDirection = FlexDirection.Row;
 
-            _navigation = new Navigation {
-                style = {
-                    width = 220,
-                    flexShrink = 0
-                }
-            };
+            _navigation = new Navigation();
             root.Add(_navigation);
 
-            _assetView = new AssetView {
-                style = {
-                    flexGrow = 1
-                }
-            };
+            _assetView = new AssetView();
             root.Add(_assetView);
 
-            _tagListView = new TagListView {
-                style = {
-                    flexGrow = 1,
-                    display = DisplayStyle.None
-                }
-            };
+            _tagListView = new TagListView();
             root.Add(_tagListView);
 
-            _assetInfo = new AssetInfo {
-                style = {
-                    width = 260,
-                    flexShrink = 0
-                }
-            };
+            _assetInfo = new AssetInfo();
             root.Add(_assetInfo);
 
-            _assetController = new AssetViewController();
+            // Controllerに依存性を注入して初期化
+            _assetController = new AssetViewController(_repository);
+            
+            // 各ViewにControllerやServiceをセット
             _assetView.SetController(_assetController);
+            _navigation.Initialize(_repository); // フォルダ一覧取得用
+            _tagListView.Initialize(_repository); // タグ一覧取得用
 
+            // イベント購読
             _navigation.FilterChanged += predicate =>
             {
                 _assetController.SetFilter(predicate);
@@ -90,11 +85,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetController.FoldersChanged += folders => { _navigation.SetFolders(folders); };
             _assetController.BoothItemFoldersChanged += folders => { _assetView.ShowBoothItemFolders(folders); };
 
+            // 初期表示
             _navigation.SelectAll();
-
-            _onAssetLibraryLoadedHandler = () => _assetController.Refresh();
-            AssetLibraryService.AssetLibraryLoaded += _onAssetLibraryLoadedHandler;
-            if (AssetLibrary.Instance?.Libraries != null) _assetController.Refresh();
+            _assetController.Refresh();
         }
 
         private void ShowAssetView() {
@@ -110,7 +103,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         [MenuItem("ee4v/Asset Manager")]
         public static void ShowWindow() {
             var window = GetWindow<AssetManagerWindow>("Asset Manager");
-            AssetLibraryService.LoadAssetLibrary();
+            // データのロードをトリガー
+            AssetManagerContainer.Repository.Load();
             window.Show();
         }
     }

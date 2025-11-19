@@ -1,90 +1,148 @@
-using System;
-using System.IO;
+﻿using System.Linq;
+using System.Text.RegularExpressions;
 using _4OF.ee4v.AssetManager.Data;
-using _4OF.ee4v.AssetManager.OldData;
+using _4OF.ee4v.AssetManager.Utility;
 using _4OF.ee4v.Core.Utility;
-using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Service {
-    internal static class AssetService {
-        public static void CreateAsset(string path) {
-            if (string.IsNullOrEmpty(path) || !File.Exists(path)) {
-                Debug.LogError($"Invalid path: {path}");
-                return;
-            }
+    public class AssetService {
+        private readonly IAssetRepository _repository;
 
-            try {
-                AssetLibrarySerializer.CreateAsset(path);
-            }
-            catch (Exception e) {
-                Debug.LogError($"Failed to add asset from path: {e.Message}");
-            }
+        public AssetService(IAssetRepository repository) {
+            _repository = repository;
         }
 
-        public static void DeleteAsset(Ulid assetId) {
-            var asset = AssetLibrary.Instance.GetAsset(assetId);
-            if (asset == null) {
-                Debug.LogError($"Asset with ID {assetId} does not exist.");
-                return;
-            }
+        // --- 基本操作 ---
 
-            AssetLibrary.Instance.RemoveAsset(assetId);
-            AssetLibrarySerializer.DeleteAsset(assetId);
+        public void CreateAsset(string path) {
+            _repository.CreateAssetFromFile(path);
         }
 
-        public static void UpdateAsset(AssetMetadata newAsset) {
-            if (!AssetValidationService.IsValidAssetName(newAsset.Name)) return;
-            if (AssetLibrary.Instance.GetAsset(newAsset.ID) == null) {
-                Debug.LogError($"Asset with ID {newAsset.ID} does not exist.");
-                return;
-            }
-
-            var oldAsset = AssetLibrary.Instance.GetAsset(newAsset.ID);
-            if (oldAsset.Name != newAsset.Name) AssetLibrarySerializer.RenameAsset(newAsset.ID, newAsset.Name);
-            AssetLibrary.Instance.UpdateAsset(newAsset);
-            AssetLibrarySerializer.SaveAsset(newAsset);
+        public void DeleteAsset(Ulid assetId) {
+            _repository.DeleteAsset(assetId);
         }
 
-        public static void SetAssetName(Ulid assetId, string newName) {
-            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
-            asset.SetName(newName);
-            UpdateAsset(asset);
-        }
-
-        public static void SetDescription(Ulid assetId, string newDescription) {
-            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
-            asset.SetDescription(newDescription);
-            UpdateAsset(asset);
-        }
-
-        public static void SetFolder(Ulid assetId, Ulid newFolder) {
-            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
-            asset.SetFolder(newFolder);
-            UpdateAsset(asset);
-        }
-
-        public static void AddTag(Ulid assetId, string tag) {
-            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
-            asset.AddTag(tag);
-            UpdateAsset(asset);
-        }
-
-        public static void RemoveTag(Ulid assetId, string tag) {
-            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
-            asset.RemoveTag(tag);
-            UpdateAsset(asset);
-        }
-
-        public static void RemoveAsset(Ulid assetId) {
-            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
+        public void RemoveAsset(Ulid assetId) {
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
             asset.SetDeleted(true);
-            UpdateAsset(asset);
+            _repository.SaveAsset(asset);
         }
 
-        public static void RestoreAsset(Ulid assetId) {
-            var asset = new AssetMetadata(AssetLibrary.Instance.GetAsset(assetId));
+        public void RestoreAsset(Ulid assetId) {
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
             asset.SetDeleted(false);
-            UpdateAsset(asset);
+            _repository.SaveAsset(asset);
+        }
+
+        public void UpdateAsset(AssetMetadata newAsset) {
+            if (!AssetValidationService.IsValidAssetName(newAsset.Name)) return;
+            var oldAsset = _repository.GetAsset(newAsset.ID);
+            if (oldAsset == null) return;
+
+            if (oldAsset.Name != newAsset.Name) {
+                _repository.RenameAssetFile(newAsset.ID, newAsset.Name);
+            }
+            _repository.SaveAsset(newAsset);
+        }
+
+        public void SetAssetName(Ulid assetId, string newName) {
+            if (!AssetValidationService.IsValidAssetName(newName)) return;
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
+
+            _repository.RenameAssetFile(assetId, newName);
+            asset.SetName(newName);
+            _repository.SaveAsset(asset);
+        }
+
+        public void SetDescription(Ulid assetId, string newDescription) {
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
+            asset.SetDescription(newDescription);
+            _repository.SaveAsset(asset);
+        }
+
+        public void SetFolder(Ulid assetId, Ulid newFolder) {
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
+            asset.SetFolder(newFolder);
+            _repository.SaveAsset(asset);
+        }
+
+        // --- タグ操作 (旧 TagService 統合) ---
+
+        public void AddTag(Ulid assetId, string tag) {
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
+            asset.AddTag(tag);
+            _repository.SaveAsset(asset);
+        }
+
+        public void RemoveTag(Ulid assetId, string tag) {
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
+            asset.RemoveTag(tag);
+            _repository.SaveAsset(asset);
+        }
+
+        public void RenameTag(string oldTag, string newTag) {
+            if (string.IsNullOrEmpty(oldTag) || string.IsNullOrEmpty(newTag) || oldTag == newTag) return;
+
+            // リポジトリから全アセットを取得してタグを書き換える
+            // (インメモリキャッシュが効いているので低コスト)
+            foreach (var asset in _repository.GetAllAssets()) {
+                if (!asset.Tags.Contains(oldTag)) continue;
+                
+                asset.RemoveTag(oldTag);
+                asset.AddTag(newTag);
+                _repository.SaveAsset(asset);
+            }
+        }
+
+        // --- Booth情報操作 (旧 AssetBoothService 統合) ---
+
+        public void SetBoothShopDomain(Ulid assetId, string shopURL) {
+            if (BoothUtility.ClassifyBoothUrl(shopURL) != BoothUtility.BoothUrlType.ShopUrl) return;
+
+            var regex = new Regex(@"https?://([^\.]+)\.booth\.pm", RegexOptions.IgnoreCase);
+            var match = regex.Match(shopURL);
+            if (!match.Success) return;
+
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
+
+            asset.BoothData.SetShopDomain(match.Groups[1].Value);
+            _repository.SaveAsset(asset);
+        }
+
+        public void SetBoothItemId(Ulid assetId, string itemURL) {
+            if (BoothUtility.ClassifyBoothUrl(itemURL) != BoothUtility.BoothUrlType.ItemUrl) return;
+
+            var regex = new Regex(@"items/(\d+)");
+            var match = regex.Match(itemURL);
+            if (!match.Success) return;
+
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
+
+            asset.BoothData.SetItemID(match.Groups[1].Value);
+            _repository.SaveAsset(asset);
+        }
+
+        public void SetBoothDownloadId(Ulid assetId, string downloadURL) {
+            if (BoothUtility.ClassifyBoothUrl(downloadURL) != BoothUtility.BoothUrlType.DownloadUrl) return;
+
+            var regex = new Regex(@"downloadables/(\d+)", RegexOptions.IgnoreCase);
+            var match = regex.Match(downloadURL);
+            if (!match.Success) return;
+
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
+
+            asset.BoothData.SetDownloadID(match.Groups[1].Value);
+            _repository.SaveAsset(asset);
         }
     }
 }

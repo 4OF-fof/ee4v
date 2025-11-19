@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using _4OF.ee4v.AssetManager.Data;
-using _4OF.ee4v.AssetManager.OldData;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
@@ -87,7 +86,9 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             if (_shops.Count > 0)
                 if (GUILayout.Button("Import into Asset Manager")) {
                     var created = ImportBoothShops(_shops);
-                    AssetLibraryService.RefreshAssetLibrary();
+                    // UI更新のためにイベントを飛ばす等はRepository/Service内で行われるか、
+                    // AssetManagerWindowが自発的にリフレッシュする必要があるかもしれません。
+                    // ここでは単純にインポート完了だけ通知します。
                     EditorUtility.DisplayDialog("Import Complete",
                         created > 0 ? $"Imported {created} items into Asset Manager" : "No items were imported.", "OK");
                 }
@@ -159,13 +160,19 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             Repaint();
         }
 
-        private static int ImportBoothShops(List<ShopDto> shops) {
+        private int ImportBoothShops(List<ShopDto> shops) {
             if (shops == null) return 0;
-            // Ensure library metadata and assets are loaded so duplicate checks are accurate
-            if (AssetLibrary.Instance.Libraries == null) AssetLibrarySerializer.LoadLibrary();
-            // Try to load cache and/or all assets from disk to populate AssetLibrary.Instance.Assets
-            AssetLibrarySerializer.LoadCache();
-            AssetLibrarySerializer.LoadAllAssets();
+
+            // コンテナから依存を取得
+            var repository = AssetManagerContainer.Repository;
+            var assetService = AssetManagerContainer.AssetService;
+
+            // 念のためロード
+            repository.Load();
+            
+            // 重複チェック用に全アセット取得
+            var allAssets = repository.GetAllAssets();
+
             var created = 0;
             foreach (var shop in shops) {
                 if (shop.items == null) continue;
@@ -189,21 +196,23 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                                 if (matchItem.Success) itemId = matchItem.Groups[1].Value;
                             }
 
-                            // Duplicate check by downloadId primarily, then fallback to itemId+filename
-                            if (AlreadyImportedDownloadable(downloadId)) continue;
+                            // Duplicate check
+                            if (AlreadyImportedDownloadable(allAssets, downloadId)) continue;
+                            
                             var filename = string.IsNullOrEmpty(f.filename) ? null : f.filename;
                             if (!string.IsNullOrEmpty(itemId) && !string.IsNullOrEmpty(filename) &&
-                                AssetLibrary.Instance.Assets.Any(a =>
+                                allAssets.Any(a =>
                                     a.BoothData?.ItemID == itemId && a.BoothData?.FileName == filename)) continue;
 
-                            var asset = AssetLibrarySerializer.CreateAssetWithoutFile();
+                            // Create Asset via Repository
+                            var asset = repository.CreateEmptyAsset();
+                            
                             // Name fallback priorities: filename -> item name -> item URL
                             var name = !string.IsNullOrEmpty(f.filename) ? f.filename :
                                 !string.IsNullOrEmpty(item.name) ? item.name :
                                 !string.IsNullOrEmpty(item.itemURL) ? item.itemURL : "Unnamed Booth Item";
                             asset.SetName(name);
-                            // Note: store description and shop name on the BoothItemFolder instead of the asset
-
+                            
                             var booth = new BoothMetadata();
                             // shop domain from shop.shopURL or item.itemURL
                             var shopUrl = shop.shopURL ?? item.itemURL;
@@ -218,15 +227,19 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                             booth.SetFileName(filename);
 
                             asset.SetBoothData(booth);
-                            // Ensure folder exists for this booth item and place the asset inside
+
+                            // Folder handling
                             var folderIdentifier = !string.IsNullOrEmpty(itemId) ? itemId :
                                 !string.IsNullOrEmpty(downloadId) ? downloadId :
                                 !string.IsNullOrEmpty(filename) ? filename : item.itemURL;
-                            // Ensure the folder exists and store the shopName and description on the folder
-                            var folderId = EnsureBoothItemFolder(booth.ShopDomain, shop.shopName, folderIdentifier,
+
+                            var folderId = EnsureBoothItemFolder(repository, booth.ShopDomain, shop.shopName, folderIdentifier,
                                 item.name ?? item.itemURL ?? folderIdentifier, item.description);
+                            
                             if (folderId != Ulid.Empty) asset.SetFolder(folderId);
-                            AssetLibraryService.UpdateAsset(asset);
+                            
+                            // Save changes
+                            repository.SaveAsset(asset);
                             created++;
                         }
                         catch (Exception e) {
@@ -239,8 +252,83 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             return created;
         }
 
-        private static BoothItemFolder FindBoothItemFolderRecursive(BaseFolder root, string shopDomain,
-            string identifier) {
+        private bool AlreadyImportedDownloadable(IEnumerable<AssetMetadata> assets, string downloadId) {
+            return !string.IsNullOrEmpty(downloadId) && assets.Any(a => a.BoothData?.DownloadID == downloadId);
+        }
+
+        private Ulid EnsureBoothItemFolder(IAssetRepository repository, string shopDomain, string shopName, string identifier,
+            string folderName, string folderDescription = null, Ulid parentFolderId = default) {
+            
+            var libraries = repository.GetLibraryMetadata();
+            if (libraries == null) {
+                Debug.LogError("Library metadata is not loaded.");
+                return Ulid.Empty;
+            }
+
+            // Search existing
+            foreach (var root in libraries.FolderList) {
+                var found = FindBoothItemFolderRecursive(root, shopDomain ?? string.Empty, identifier);
+                if (found != null) {
+                    // Update shop name/description on the found BoothItemFolder if provided and they differ
+                    var needsUpdate = false;
+                    var updated = new BoothItemFolder(found);
+                    if (!string.IsNullOrEmpty(shopName) && updated.ShopName != shopName) {
+                        updated.SetShopName(shopName);
+                        needsUpdate = true;
+                    }
+
+                    if (!string.IsNullOrEmpty(folderDescription) && updated.Description != folderDescription) {
+                        updated.SetDescription(folderDescription);
+                        needsUpdate = true;
+                    }
+
+                    if (needsUpdate) {
+                        // Repository経由でメタデータを保存しなおす
+                        // FolderServiceを使っても良いが、ここは直接的なMetadata操作で完結させる
+                        // （既存のFolderオブジェクトを書き換えているわけではないので、LibraryMetadata全体を保存する必要がある）
+                        // ただしGetLibraryMetadataで取得したオブジェクトは参照なので、
+                        // Libraries.FolderList内のオブジェクトそのものを書き換えるには、
+                        // 実際は Metadata 構造内の該当オブジェクトを見つけて差し替える等の処理が必要になる。
+                        // ここでは簡易的に、Service経由で更新をかけるのが安全。
+                        AssetManagerContainer.FolderService.UpdateBoothItemFolder(updated);
+                    }
+                    return found.ID;
+                }
+            }
+
+            // Create new BoothItemFolder
+            var newFolder = new BoothItemFolder();
+            newFolder.SetName(folderName ?? identifier ?? "Booth Item");
+            newFolder.SetDescription(folderDescription ?? shopName ?? string.Empty);
+            newFolder.SetShopDomain(shopDomain);
+            newFolder.SetShopName(shopName);
+            if (!string.IsNullOrEmpty(identifier) && identifier.All(char.IsDigit)) newFolder.SetItemId(identifier);
+
+            if (parentFolderId == default || parentFolderId == Ulid.Empty) {
+                libraries.AddFolder(newFolder);
+                Debug.Log($"Created BoothItemFolder '{newFolder.Name}' (Id: {newFolder.ID}) at root for shop {shopDomain}");
+            }
+            else {
+                var parentBase = libraries.GetFolder(parentFolderId);
+                if (parentBase is BoothItemFolder) {
+                    Debug.LogError("Cannot create a BoothItemFolder under another BoothItemFolder.");
+                    return Ulid.Empty;
+                }
+
+                if (parentBase is not Folder parentFolder) {
+                    Debug.LogError($"Parent folder {parentFolderId} not found.");
+                    return Ulid.Empty;
+                }
+
+                parentFolder.AddChild(newFolder);
+                Debug.Log($"Created BoothItemFolder '{newFolder.Name}' (Id: {newFolder.ID}) under parent {parentFolder.ID}");
+            }
+
+            repository.SaveLibraryMetadata(libraries);
+            return newFolder.ID;
+        }
+
+        private BoothItemFolder FindBoothItemFolderRecursive(BaseFolder root, string shopDomain, string identifier) {
             if (root == null) return null;
             if (root is BoothItemFolder bf) {
                 // If shop domain is provided, require matching shops
@@ -263,80 +351,6 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                 }
 
             return null;
-        }
-
-        public static Ulid EnsureBoothItemFolder(string shopDomain, string shopName, string identifier,
-            string folderName, string folderDescription = null, Ulid parentFolderId = default) {
-            // identifier may be itemId or downloadId or filename, or null.
-            var libraries = AssetLibrary.Instance.Libraries;
-            if (libraries == null) {
-                // Attempt to load library metadata automatically
-                AssetLibrarySerializer.LoadLibrary();
-                libraries = AssetLibrary.Instance.Libraries;
-                if (libraries == null) {
-                    Debug.LogError("Library metadata is not loaded.");
-                    return Ulid.Empty;
-                }
-            }
-
-            // Search existing
-            foreach (var root in libraries.FolderList) {
-                var found = FindBoothItemFolderRecursive(root, shopDomain ?? string.Empty, identifier);
-                if (found != null) {
-                    // Update shop name/description on the found BoothItemFolder if provided and they differ
-                    var needsUpdate = false;
-                    var updated = new BoothItemFolder(found);
-                    if (!string.IsNullOrEmpty(shopName) && updated.ShopName != shopName) {
-                        updated.SetShopName(shopName);
-                        needsUpdate = true;
-                    }
-
-                    if (!string.IsNullOrEmpty(folderDescription) && updated.Description != folderDescription) {
-                        updated.SetDescription(folderDescription);
-                        needsUpdate = true;
-                    }
-
-                    if (needsUpdate) AssetLibraryService.UpdateBoothItemFolder(updated);
-                    return found.ID;
-                }
-            }
-
-            // Create new BoothItemFolder
-            var newFolder = new BoothItemFolder();
-            newFolder.SetName(folderName ?? identifier ?? "Booth Item");
-            newFolder.SetDescription(folderDescription ?? shopName ?? string.Empty);
-            newFolder.SetShopDomain(shopDomain);
-            newFolder.SetShopName(shopName);
-            if (!string.IsNullOrEmpty(identifier) && identifier.All(char.IsDigit)) newFolder.SetItemId(identifier);
-
-            if (parentFolderId == default || parentFolderId == Ulid.Empty) {
-                libraries.AddFolder(newFolder);
-                Debug.Log(
-                    $"Created BoothItemFolder '{newFolder.Name}' (Id: {newFolder.ID}) at root for shop {shopDomain}");
-            }
-            else {
-                var parentBase = libraries.GetFolder(parentFolderId);
-                if (parentBase is BoothItemFolder) {
-                    Debug.LogError("Cannot create a BoothItemFolder under another BoothItemFolder.");
-                    return Ulid.Empty;
-                }
-
-                if (parentBase is not Folder parentFolder) {
-                    Debug.LogError($"Parent folder {parentFolderId} not found.");
-                    return Ulid.Empty;
-                }
-
-                parentFolder.AddChild(newFolder);
-                Debug.Log(
-                    $"Created BoothItemFolder '{newFolder.Name}' (Id: {newFolder.ID}) under parent {parentFolder.ID}");
-            }
-
-            AssetLibrarySerializer.SaveLibrary();
-            return newFolder.ID;
-        }
-        
-        private static bool AlreadyImportedDownloadable(string downloadId) {
-            return !string.IsNullOrEmpty(downloadId) && AssetLibrary.Instance.Assets.Any(a => a.BoothData?.DownloadID == downloadId);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using _4OF.ee4v.AssetManager.OldData;
+﻿using _4OF.ee4v.AssetManager.Data;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
@@ -57,15 +57,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _descLabel.text = $"Description: {asset.Description}";
             _sizeLabel.text = $"Size: {asset.Size}";
             _extLabel.text = $"Ext: {asset.Ext}";
-            _tagsLabel.text =
-                $"Tags: {(asset.Tags != null && asset.Tags.Count > 0 ? string.Join(", ", asset.Tags) : "-")}";
+            _tagsLabel.text = $"Tags: {(asset.Tags != null && asset.Tags.Count > 0 ? string.Join(", ", asset.Tags) : "-")}";
 
-            _boothShopUrlLabel.text =
-                $"Booth Shop URL: {(asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.ShopURL) ? asset.BoothData.ShopURL : "-")}";
-            _boothItemUrlLabel.text =
-                $"Booth Item URL: {(asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.ItemURL) ? asset.BoothData.ItemURL : "-")}";
-            _boothDownloadUrlLabel.text =
-                $"Booth Download URL: {(asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.DownloadURL) ? asset.BoothData.DownloadURL : "-")}";
+            _boothShopUrlLabel.text = $"Booth Shop URL: {(asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.ShopURL) ? asset.BoothData.ShopURL : "-")}";
+            _boothItemUrlLabel.text = $"Booth Item URL: {(asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.ItemURL) ? asset.BoothData.ItemURL : "-")}";
+            _boothDownloadUrlLabel.text = $"Booth Download URL: {(asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.DownloadURL) ? asset.BoothData.DownloadURL : "-")}";
         }
     }
 }

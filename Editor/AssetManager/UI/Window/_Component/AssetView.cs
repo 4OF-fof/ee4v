@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using _4OF.ee4v.AssetManager.OldData;
-using _4OF.ee4v.Core.Data;
+using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.Core.Data; // EditorPrefsManagerのために必要
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -11,6 +11,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetView : VisualElement {
         private readonly ListView _listView;
         private AssetViewController _controller;
+        
+        // AssetMetadata と BoothItemFolder を混在させるため object 型のリストを使用
         private List<object> _items = new();
         private int _itemsPerRow = 5;
         private float _lastWidth;
@@ -39,7 +41,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _listView.makeItem = MakeRow;
             _listView.bindItem = BindRow;
             _listView.itemsSource = GetRows();
-            _listView.fixedItemHeight = 220;
+            _listView.fixedItemHeight = 220; // 初期値、あとで計算
             _listView.selectionType = SelectionType.None;
             _listView.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             Add(_listView);
@@ -47,6 +49,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void OnGeometryChanged(GeometryChangedEvent evt) {
             var newWidth = evt.newRect.width;
+            // 幅が大きく変わっていない場合は無視
             if (float.IsNaN(newWidth) || newWidth == 0 || Math.Abs(newWidth - _lastWidth) < 1) return;
 
             _lastWidth = newWidth;
@@ -58,13 +61,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var containerWidth = _listView.resolvedStyle.width;
             if (float.IsNaN(containerWidth) || containerWidth == 0) return;
 
-            containerWidth -= 20;
+            containerWidth -= 20; // スクロールバーの余白などを考慮
             var itemWidth = containerWidth / _itemsPerRow;
-            var itemHeight = itemWidth + 50;
+            // 幅に基づいて高さを決定（正方形サムネイル + ラベル高さ）
+            var itemHeight = itemWidth + 50; 
 
             _listView.fixedItemHeight = itemHeight;
         }
 
+        // グリッド表示用にアイテムをチャンク（行）に分割する
         private List<List<object>> GetRows() {
             var rows = new List<List<object>>();
             var currentRow = new List<object>();
@@ -90,7 +95,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void BindRow(VisualElement element, int index) {
             element.Clear();
-            var rows = GetRows();
+            var rows = GetRows(); // 注意: パフォーマンスのために本来はitemsSourceをキャストして使うべきですが、ここでは簡易実装
 
             if (index < 0 || index >= rows.Count) return;
 
@@ -123,6 +128,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     case AssetMetadata asset: {
                         card.SetData(asset.Name);
 
+                        // ※本来はRepository経由でサムネイルパスを取得するのが望ましいですが、
+                        // ここでは既存ロジックを踏襲して直接パスを解決します。
                         var thumbnailPath = Path.Combine(EditorPrefsManager.ContentFolderPath, "AssetManager", "Assets",
                             asset.ID.ToString(), "thumbnail.png");
                         if (File.Exists(thumbnailPath)) {
@@ -188,7 +195,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         private void OnControllerAssetSelected(AssetMetadata asset) {
-            Debug.Log($"Selected asset: {asset.Name}");
+            // 選択時の処理（ログ出力など）
         }
     }
 }

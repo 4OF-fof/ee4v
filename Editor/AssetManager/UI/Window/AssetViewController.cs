@@ -1,17 +1,18 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
-using _4OF.ee4v.AssetManager.OldData;
 using _4OF.ee4v.Core.Utility;
 
 namespace _4OF.ee4v.AssetManager.UI.Window {
     public class AssetViewController {
+        private readonly IAssetRepository _repository;
         private Func<AssetMetadata, bool> _filter = asset => !asset.IsDeleted;
         private Ulid _selectedFolderId = Ulid.Empty;
 
-        public AssetViewController() {
-            Refresh();
+        // コンストラクタでリポジトリを受け取る (DI)
+        public AssetViewController(IAssetRepository repository) {
+            _repository = repository;
         }
 
         public event Action<List<AssetMetadata>> AssetsChanged;
@@ -36,7 +37,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         public void ShowBoothItemFolders() {
             var boothItemFolders = new List<BoothItemFolder>();
-            var rootFolders = AssetLibrary.Instance?.Libraries?.FolderList ?? new List<BaseFolder>();
+            var libMetadata = _repository.GetLibraryMetadata();
+            var rootFolders = libMetadata?.FolderList ?? new List<BaseFolder>();
             CollectBoothItemFolders(rootFolders, boothItemFolders);
             BoothItemFoldersChanged?.Invoke(boothItemFolders);
         }
@@ -55,15 +57,21 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         public void Refresh() {
-            var assets = _selectedFolderId == Ulid.Empty
-                ? AssetLibrary.Instance?.Assets ?? new List<AssetMetadata>()
-                : AssetLibrary.Instance?.GetAssetsByFolder(_selectedFolderId) ?? new List<AssetMetadata>();
+            var allAssets = _repository.GetAllAssets();
+            IEnumerable<AssetMetadata> assets;
+
+            if (_selectedFolderId == Ulid.Empty) {
+                assets = allAssets;
+            } else {
+                // RepositoryにGetAssetsByFolderがない場合はここでフィルタリング
+                assets = allAssets.Where(a => a.Folder == _selectedFolderId);
+            }
 
             var filtered = assets.Where(a => _filter(a)).ToList();
             AssetsChanged?.Invoke(filtered);
 
-            var folders = AssetLibrary.Instance?.Libraries?.FolderList.Where(f => !(f is BoothItemFolder)).ToList() ??
-                new List<BaseFolder>();
+            var libMetadata = _repository.GetLibraryMetadata();
+            var folders = libMetadata?.FolderList.Where(f => !(f is BoothItemFolder)).ToList() ?? new List<BaseFolder>();
             FoldersChanged?.Invoke(folders);
         }
     }

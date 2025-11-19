@@ -1,23 +1,28 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
-using _4OF.ee4v.AssetManager.OldData;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Service {
-    internal static class FolderService {
-        public static void CreateFolder(Ulid parentFolderId, string name, string description = null) {
+    public class FolderService {
+        private readonly IAssetRepository _repository;
+        private readonly AssetService _assetService;
+
+        // AssetServiceを依存注入して、アセット削除ロジックを再利用する
+        public FolderService(IAssetRepository repository, AssetService assetService) {
+            _repository = repository;
+            _assetService = assetService;
+        }
+
+        public void CreateFolder(Ulid parentFolderId, string name, string description = null) {
             if (string.IsNullOrWhiteSpace(name)) {
                 Debug.LogError("Folder name cannot be empty");
                 return;
             }
 
-            var libraries = AssetLibrary.Instance.Libraries;
-            if (libraries == null) {
-                Debug.LogError("Library metadata is not loaded.");
-                return;
-            }
+            var libraries = _repository.GetLibraryMetadata();
+            if (libraries == null) return;
 
             var folder = new Folder();
             folder.SetName(name);
@@ -25,245 +30,142 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             if (parentFolderId == default || parentFolderId == Ulid.Empty) {
                 libraries.AddFolder(folder);
-                AssetLibrarySerializer.SaveLibrary();
-                return;
-            }
-
-            var parent = libraries.GetFolder(parentFolderId);
-            if (parent is BoothItemFolder) {
-                Debug.LogError("Cannot create folder under Booth Item Folder.");
-                return;
-            }
-
-            if (parent is not Folder parentFolder) {
-                Debug.LogError($"Parent folder {parentFolderId} not found.");
-                return;
-            }
-
-            parentFolder.AddChild(folder);
-
-            AssetLibrarySerializer.SaveLibrary();
-        }
-
-        public static void MoveFolder(Ulid folderId, Ulid parentFolderId) {
-            if (folderId == default) return;
-            var libraries = AssetLibrary.Instance.Libraries;
-            if (libraries == null) {
-                Debug.LogError("Library metadata is not loaded.");
-                return;
-            }
-
-            var folderBase = libraries.GetFolder(folderId);
-            switch (folderBase) {
-                case null:
-                    Debug.LogError($"Folder {folderId} not found.");
-                    return;
-                case BoothItemFolder boothItemFolder when parentFolderId == default || parentFolderId == Ulid.Empty:
-                    libraries.RemoveFolder(folderId);
-                    libraries.AddFolder(boothItemFolder);
-                    AssetLibrarySerializer.SaveLibrary();
-                    return;
-                case BoothItemFolder boothItemFolder: {
-                    var parentBaseForBooth = libraries.GetFolder(parentFolderId);
-                    switch (parentBaseForBooth) {
-                        case null:
-                            Debug.LogError($"Parent folder {parentFolderId} not found.");
-                            return;
-                        case BoothItemFolder:
-                            Debug.LogError("Cannot move under another BoothItemFolder.");
-                            return;
-                    }
-
-                    if (parentBaseForBooth is not Folder parentFolderForBooth) {
-                        Debug.LogError($"Parent folder {parentFolderId} not found.");
-                        return;
-                    }
-
-                    if (parentFolderId == folderId) {
-                        Debug.LogError("Cannot move folder into itself.");
-                        return;
-                    }
-
-                    libraries.RemoveFolder(folderId);
-                    parentFolderForBooth.AddChild(boothItemFolder);
-                    AssetLibrarySerializer.SaveLibrary();
-                    return;
-                }
-            }
-
-            if (folderBase is not Folder folder) {
-                Debug.LogError("Unknown folder type, cannot move.");
-                return;
-            }
-
-            if (parentFolderId == default || parentFolderId == Ulid.Empty) {
-            }
-            else {
-                var parentBase = libraries.GetFolder(parentFolderId);
-                if (parentBase is BoothItemFolder) {
-                    Debug.LogError("Cannot move folder under Booth Item Folder.");
-                    return;
-                }
-
-                if (parentBase is not Folder) {
-                    Debug.LogError($"Parent folder {parentFolderId} not found.");
-                    return;
-                }
-
-                if (parentFolderId == folderId) {
-                    Debug.LogError("Cannot move folder into itself.");
-                    return;
-                }
-
-                var related = GetRelatedFolder(folder);
-                if (related.Contains(parentFolderId)) {
-                    Debug.LogError("Cannot move a folder into one of its own descendants.");
-                    return;
-                }
-            }
-
-            libraries.RemoveFolder(folderId);
-
-            if (parentFolderId == default || parentFolderId == Ulid.Empty) {
-                libraries.AddFolder(folder);
             }
             else {
                 var parent = libraries.GetFolder(parentFolderId);
-                if (parent is Folder parentFolder) parentFolder.AddChild(folder);
-            }
-
-            AssetLibrarySerializer.SaveLibrary();
-        }
-
-        public static void UpdateFolder(Folder newFolder) {
-            if (newFolder == null) return;
-            if (!AssetValidationService.IsValidAssetName(newFolder.Name)) return;
-
-            var libraries = AssetLibrary.Instance.Libraries;
-            if (libraries == null) {
-                Debug.LogError("Library metadata is not loaded.");
-                return;
-            }
-
-            var folder = libraries.GetFolder(newFolder.ID);
-            switch (folder) {
-                case null:
-                    Debug.LogError($"Folder {newFolder.ID} not found.");
+                if (parent is not Folder parentFolder) {
+                    Debug.LogError("Cannot create folder: Parent is not a standard folder.");
                     return;
-                case BoothItemFolder:
-                    Debug.LogError("Cannot update Booth Item Folder via this method.");
-                    return;
+                }
+                parentFolder.AddChild(folder);
             }
 
-            if (folder.Name != newFolder.Name) folder.SetName(newFolder.Name);
-            if (folder.Description != newFolder.Description) folder.SetDescription(newFolder.Description);
-            AssetLibrarySerializer.SaveLibrary();
+            _repository.SaveLibraryMetadata(libraries);
         }
 
-        public static void UpdateBoothItemFolder(BoothItemFolder newFolder) {
-            if (newFolder == null) return;
-            if (!AssetValidationService.IsValidAssetName(newFolder.Name)) return;
-
-            var libraries = AssetLibrary.Instance.Libraries;
-            if (libraries == null) {
-                Debug.LogError("Library metadata is not loaded.");
-                return;
-            }
-
-            var folder = libraries.GetFolder(newFolder.ID);
-            if (folder == null) {
-                Debug.LogError($"Folder {newFolder.ID} not found.");
-                return;
-            }
-
-            if (folder is not BoothItemFolder) {
-                Debug.LogError("Target is not a Booth Item Folder.");
-                return;
-            }
-
-            if (folder.Name != newFolder.Name) folder.SetName(newFolder.Name);
-            if (folder.Description != newFolder.Description) folder.SetDescription(newFolder.Description);
-            AssetLibrarySerializer.SaveLibrary();
-        }
-
-        public static void SetFolderName(Ulid folderId, string newName) {
-            var existing = AssetLibrary.Instance.Libraries?.GetFolder(folderId);
-            if (existing == null) return;
-            if (!AssetValidationService.IsValidAssetName(newName)) return;
-            switch (existing) {
-                case Folder existingFolder: {
-                    var folder = new Folder(existingFolder);
-                    folder.SetName(newName);
-                    UpdateFolder(folder);
-                    break;
-                }
-                case BoothItemFolder existingBooth: {
-                    var updated = new BoothItemFolder(existingBooth);
-                    updated.SetName(newName);
-                    UpdateBoothItemFolder(updated);
-                    break;
-                }
-            }
-        }
-
-        public static void SetFolderDescription(Ulid folderId, string description) {
-            var existing = AssetLibrary.Instance.Libraries?.GetFolder(folderId);
-            switch (existing) {
-                case null:
-                    return;
-                case Folder existingFolder: {
-                    var folder = new Folder(existingFolder);
-                    folder.SetDescription(description);
-                    UpdateFolder(folder);
-                    break;
-                }
-                case BoothItemFolder existingBooth: {
-                    var updated = new BoothItemFolder(existingBooth);
-                    updated.SetDescription(description);
-                    UpdateBoothItemFolder(updated);
-                    break;
-                }
-            }
-        }
-
-        public static void DeleteFolder(Ulid folderId) {
+        public void MoveFolder(Ulid folderId, Ulid parentFolderId) {
             if (folderId == default) return;
-            var libraries = AssetLibrary.Instance.Libraries;
-            if (libraries == null) {
-                Debug.LogError("Library metadata is not loaded.");
+            var libraries = _repository.GetLibraryMetadata();
+            if (libraries == null) return;
+
+            var folderBase = libraries.GetFolder(folderId);
+            if (folderBase == null) return;
+
+            // ルートへの移動
+            if (parentFolderId == default || parentFolderId == Ulid.Empty) {
+                if (folderBase is BoothItemFolder boothItem) {
+                    libraries.RemoveFolder(folderId);
+                    libraries.AddFolder(boothItem);
+                }
+                else if (folderBase is Folder f) {
+                    libraries.RemoveFolder(folderId);
+                    libraries.AddFolder(f);
+                }
+                _repository.SaveLibraryMetadata(libraries);
                 return;
             }
 
-            var folder = libraries.GetFolder(folderId);
-            if (folder == null) {
-                Debug.LogError($"Folder {folderId} not found.");
+            // 他のフォルダへの移動
+            var newParentBase = libraries.GetFolder(parentFolderId);
+            if (newParentBase is not Folder newParentFolder) {
+                Debug.LogError("Cannot move: Target parent is not a valid folder.");
                 return;
             }
 
-            List<Ulid> folderIds;
-            if (folder is Folder folderWithChildren)
-                folderIds = GetRelatedFolder(folderWithChildren);
-            else
-                folderIds = new List<Ulid> { folder.ID };
-            foreach (var updatedAsset in from target in folderIds
-                     select AssetLibrary.Instance.GetAssetsByFolder(target)
-                     into assetsInFolder
-                     where assetsInFolder != null && assetsInFolder.Count != 0
-                     from asset in assetsInFolder
-                     select new AssetMetadata(asset))
-                AssetService.RemoveAsset(updatedAsset.ID);
+            // 親子関係チェック（自分の子孫には移動できない）
+            if (folderBase is Folder movingFolder && IsDescendant(movingFolder, parentFolderId)) {
+                Debug.LogError("Cannot move a folder into its own descendant.");
+                return;
+            }
 
             libraries.RemoveFolder(folderId);
-            AssetLibrarySerializer.SaveLibrary();
+            newParentFolder.AddChild(folderBase);
+            _repository.SaveLibraryMetadata(libraries);
         }
 
-        private static List<Ulid> GetRelatedFolder(BaseFolder root) {
-            var result = new List<Ulid>();
-            if (root == null) return result;
-            result.Add(root.ID);
-            if (root is not Folder f || f.Children == null) return result;
-            foreach (var child in f.Children) result.AddRange(GetRelatedFolder(child));
-            return result;
+        public void UpdateFolder(Folder newFolder) {
+            if (newFolder == null || !AssetValidationService.IsValidAssetName(newFolder.Name)) return;
+            
+            var libraries = _repository.GetLibraryMetadata();
+            var folder = libraries?.GetFolder(newFolder.ID) as Folder;
+            if (folder == null) return;
+
+            folder.SetName(newFolder.Name);
+            folder.SetDescription(newFolder.Description);
+            _repository.SaveLibraryMetadata(libraries);
+        }
+        
+        public void UpdateBoothItemFolder(BoothItemFolder newFolder) {
+            if (newFolder == null || !AssetValidationService.IsValidAssetName(newFolder.Name)) return;
+
+            var libraries = _repository.GetLibraryMetadata();
+            var folder = libraries?.GetFolder(newFolder.ID) as BoothItemFolder;
+            if (folder == null) return;
+
+            folder.SetName(newFolder.Name);
+            folder.SetDescription(newFolder.Description);
+            folder.SetShopName(newFolder.ShopName);
+            
+            _repository.SaveLibraryMetadata(libraries);
+        }
+
+        public void SetFolderName(Ulid folderId, string newName) {
+            if (!AssetValidationService.IsValidAssetName(newName)) return;
+            var libraries = _repository.GetLibraryMetadata();
+            var folder = libraries?.GetFolder(folderId);
+            
+            if (folder != null) {
+                folder.SetName(newName);
+                _repository.SaveLibraryMetadata(libraries);
+            }
+        }
+
+        public void SetFolderDescription(Ulid folderId, string description) {
+            var libraries = _repository.GetLibraryMetadata();
+            var folder = libraries?.GetFolder(folderId);
+            
+            if (folder != null) {
+                folder.SetDescription(description);
+                _repository.SaveLibraryMetadata(libraries);
+            }
+        }
+
+        public void DeleteFolder(Ulid folderId) {
+            var libraries = _repository.GetLibraryMetadata();
+            var targetFolder = libraries?.GetFolder(folderId);
+            if (targetFolder == null) return;
+
+            // フォルダ内（およびサブフォルダ内）の全アセットを論理削除
+            var allDescendantIds = GetSelfAndDescendants(targetFolder);
+            var allAssets = _repository.GetAllAssets(); // キャッシュから全取得
+
+            foreach (var asset in allAssets) {
+                if (allDescendantIds.Contains(asset.Folder)) {
+                    _assetService.RemoveAsset(asset.ID);
+                }
+            }
+
+            libraries.RemoveFolder(folderId);
+            _repository.SaveLibraryMetadata(libraries);
+        }
+
+        private bool IsDescendant(Folder folder, Ulid targetId) {
+            if (folder.ID == targetId) return true;
+            foreach (var child in folder.Children) {
+                if (child.ID == targetId) return true;
+                if (child is Folder childFolder && IsDescendant(childFolder, targetId)) return true;
+            }
+            return false;
+        }
+
+        private HashSet<Ulid> GetSelfAndDescendants(BaseFolder root) {
+            var set = new HashSet<Ulid> { root.ID };
+            if (root is Folder f) {
+                foreach (var child in f.Children) {
+                    set.UnionWith(GetSelfAndDescendants(child));
+                }
+            }
+            return set;
         }
     }
 }

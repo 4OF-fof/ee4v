@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using _4OF.ee4v.AssetManager.Data;
-using _4OF.ee4v.AssetManager.OldData;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -14,6 +13,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly Button _tagListButton;
         private readonly Button _trashButton;
         private readonly Button _uncategorizedButton;
+        
+        private IAssetRepository _repository;
 
         public Navigation() {
             style.flexDirection = FlexDirection.Column;
@@ -73,6 +74,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _folderView = new FolderView();
             _folderView.OnFolderSelected += OnFolderViewSelected;
             Add(_folderView);
+        }
+
+        public void Initialize(IAssetRepository repository) {
+            _repository = repository;
         }
 
         public event Action<Func<AssetMetadata, bool>> FilterChanged;
