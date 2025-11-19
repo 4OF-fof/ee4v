@@ -1,8 +1,16 @@
-﻿using _4OF.ee4v.AssetManager.Data;
+﻿using System;
+using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
+using UnityEditor;
 
 namespace _4OF.ee4v.AssetManager.Service {
     public static class AssetLibraryService {
+        public static event Action AssetLibraryLoaded;
+
+        internal static void NotifyAssetLibraryLoaded() {
+            EditorApplication.delayCall += () => { AssetLibraryLoaded?.Invoke(); };
+        }
+
         public static async void LoadAssetLibrary() {
             await AssetLoadingService.LoadAssetLibraryAsync();
         }

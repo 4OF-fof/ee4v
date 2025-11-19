@@ -12,8 +12,11 @@ namespace _4OF.ee4v.AssetManager.Service {
                 AssetLibrarySerializer.SaveCache();
             }
             else {
+                AssetLibraryService.NotifyAssetLibraryLoaded();
                 await AssetLibrarySerializer.LoadAndVerifyAsync();
             }
+
+            AssetLibraryService.NotifyAssetLibraryLoaded();
         }
 
         public static void RefreshAssetLibrary() {

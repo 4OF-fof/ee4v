@@ -1,4 +1,6 @@
-﻿using _4OF.ee4v.AssetManager.Service;
+﻿using System;
+using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.AssetManager.UI.Window._Component;
 using UnityEditor;
 using UnityEngine.UIElements;
@@ -9,6 +11,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private AssetInfo _assetInfo;
         private AssetView _assetView;
         private Navigation _navigation;
+        private Action _onAssetLibraryLoadedHandler;
+
+        private void OnDisable() {
+            if (_onAssetLibraryLoadedHandler != null)
+                AssetLibraryService.AssetLibraryLoaded -= _onAssetLibraryLoadedHandler;
+        }
 
         private void CreateGUI() {
             var root = rootVisualElement;
@@ -49,6 +57,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetController.BoothItemFoldersChanged += folders => { _assetView.ShowBoothItemFolders(folders); };
 
             _navigation.SelectAll();
+
+            _onAssetLibraryLoadedHandler = () => _assetController.Refresh();
+            AssetLibraryService.AssetLibraryLoaded += _onAssetLibraryLoadedHandler;
+            if (AssetLibrary.Instance?.Libraries != null) _assetController.Refresh();
         }
 
         [MenuItem("ee4v/Asset Manager")]
