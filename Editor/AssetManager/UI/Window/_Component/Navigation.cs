@@ -10,6 +10,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly Button _allButton;
         private readonly Button _boothItemButton;
         private readonly FolderView _folderView;
+        private readonly Button _tagListButton;
         private readonly Button _trashButton;
         private readonly Button _uncategorizedButton;
 
@@ -30,11 +31,20 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _boothItemButton = new Button(() =>
             {
+                SetFilter(a => !a.IsDeleted);
                 SetSelected(_boothItemButton);
                 OnBoothItemClicked();
                 _folderView?.ClearSelection();
             }) { text = "Booth Items" };
             Add(_boothItemButton);
+
+            _tagListButton = new Button(() =>
+            {
+                SetSelected(_tagListButton);
+                OnTagListClicked();
+                _folderView?.ClearSelection();
+            }) { text = "Tag List" };
+            Add(_tagListButton);
 
             _uncategorizedButton = new Button(() =>
             {
@@ -67,6 +77,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<Func<AssetMetadata, bool>> FilterChanged;
         public event Action<Ulid> FolderSelected;
         public event Action BoothItemClicked;
+        public event Action TagListClicked;
 
         public void SetFolders(List<BaseFolder> folders) {
             _folderView.SetFolders(folders);
@@ -79,6 +90,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private void SetSelected(Button selected) {
             _allButton.RemoveFromClassList("selected");
             _boothItemButton.RemoveFromClassList("selected");
+            _tagListButton.RemoveFromClassList("selected");
             _uncategorizedButton.RemoveFromClassList("selected");
             _trashButton.RemoveFromClassList("selected");
             selected?.AddToClassList("selected");
@@ -102,6 +114,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void OnBoothItemClicked() {
             BoothItemClicked?.Invoke();
+        }
+
+        private void OnTagListClicked() {
+            TagListClicked?.Invoke();
         }
     }
 }
