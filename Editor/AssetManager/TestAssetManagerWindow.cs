@@ -16,6 +16,7 @@ namespace _4OF.ee4v.AssetManager {
         private string _descriptionValue = string.Empty;
         private string _folderMoveParentValue = "";
         private string _folderRenameValue = "";
+        private Vector2 _foldersScroll;
         private string _folderValue = string.Empty;
         private Vector2 _leftScroll;
         private Vector2 _logScroll;
@@ -219,6 +220,8 @@ namespace _4OF.ee4v.AssetManager {
             // list existing folders
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Folders listing", EditorStyles.boldLabel);
+            // Make the folder list scrollable so the UI remains usable with many folders
+            _foldersScroll = EditorGUILayout.BeginScrollView(_foldersScroll, GUILayout.Height(200));
             var libs = AssetLibrary.Instance.Libraries;
             if (libs == null)
                 EditorGUILayout.LabelField("Library metadata is not loaded.");
@@ -226,6 +229,7 @@ namespace _4OF.ee4v.AssetManager {
                 foreach (var rootf in libs.FolderList)
                     DrawFolderInfo(rootf, 0);
 
+            EditorGUILayout.EndScrollView();
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Rename to:", GUILayout.Width(80));
             _folderRenameValue = EditorGUILayout.TextField(_folderRenameValue);
