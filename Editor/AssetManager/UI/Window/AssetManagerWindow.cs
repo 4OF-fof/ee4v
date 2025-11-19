@@ -42,9 +42,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             _navigation.FilterChanged += predicate => { _assetController.SetFilter(predicate); };
             _navigation.FolderSelected += folderId => { _assetController.SelectFolder(folderId); };
+            _navigation.BoothItemClicked += () => { _assetController.ShowBoothItemFolders(); };
 
             _assetController.AssetSelected += asset => { _assetInfo.SetAsset(asset); };
             _assetController.FoldersChanged += folders => { _navigation.SetFolders(folders); };
+            _assetController.BoothItemFoldersChanged += folders => { _assetView.ShowBoothItemFolders(folders); };
 
             _navigation.SelectAll();
         }

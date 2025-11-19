@@ -8,6 +8,7 @@ using UnityEngine.UIElements;
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class Navigation : VisualElement {
         private readonly Button _allButton;
+        private readonly Button _boothItemButton;
         private readonly FolderView _folderView;
         private readonly Button _trashButton;
         private readonly Button _uncategorizedButton;
@@ -26,6 +27,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _folderView?.ClearSelection();
             }) { text = "All items" };
             Add(_allButton);
+
+            _boothItemButton = new Button(() =>
+            {
+                SetSelected(_boothItemButton);
+                OnBoothItemClicked();
+                _folderView?.ClearSelection();
+            }) { text = "Booth Items" };
+            Add(_boothItemButton);
 
             _uncategorizedButton = new Button(() =>
             {
@@ -57,6 +66,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public event Action<Func<AssetMetadata, bool>> FilterChanged;
         public event Action<Ulid> FolderSelected;
+        public event Action BoothItemClicked;
 
         public void SetFolders(List<BaseFolder> folders) {
             _folderView.SetFolders(folders);
@@ -68,6 +78,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void SetSelected(Button selected) {
             _allButton.RemoveFromClassList("selected");
+            _boothItemButton.RemoveFromClassList("selected");
             _uncategorizedButton.RemoveFromClassList("selected");
             _trashButton.RemoveFromClassList("selected");
             selected?.AddToClassList("selected");
@@ -87,6 +98,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void OnFolderSelected(Ulid folderId) {
             FolderSelected?.Invoke(folderId);
+        }
+
+        private void OnBoothItemClicked() {
+            BoothItemClicked?.Invoke();
         }
     }
 }
