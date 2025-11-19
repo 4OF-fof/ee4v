@@ -4,7 +4,6 @@ using UnityEngine.UIElements;
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetCard : VisualElement {
         private readonly Label _nameLabel;
-
         private readonly VisualElement _thumbnail;
 
         public AssetCard() {
@@ -46,6 +45,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public void SetData(string itemName) {
             _nameLabel.text = itemName;
+        }
+
+        public void SetThumbnail(Texture2D texture) {
+            if (texture == null) return;
+            _thumbnail.style.backgroundImage = new StyleBackground(texture);
+            _thumbnail.style.backgroundColor = new StyleColor(Color.clear);
+        }
+
+        public void SetBackgroundColor(Color color) {
+            style.backgroundColor = new StyleColor(color);
+            RegisterCallback<MouseEnterEvent>(evt => style.backgroundColor = new StyleColor(color * 1.2f));
+            RegisterCallback<MouseLeaveEvent>(evt => style.backgroundColor = new StyleColor(color));
         }
 
         public new class UxmlFactory : UxmlFactory<AssetCard, UxmlTraits> {
