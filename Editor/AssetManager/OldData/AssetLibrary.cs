@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
 
-namespace _4OF.ee4v.AssetManager.Data {
+namespace _4OF.ee4v.AssetManager.OldData {
     public class AssetLibrary {
         public static readonly AssetLibrary Instance = new();
 

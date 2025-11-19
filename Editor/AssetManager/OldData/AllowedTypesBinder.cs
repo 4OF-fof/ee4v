@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace _4OF.ee4v.AssetManager.Data {
+namespace _4OF.ee4v.AssetManager.OldData {
     public class AllowedTypesBinder : SerializationBinder, ISerializationBinder {
         private readonly HashSet<Type> _allowedBaseTypes = new();
 

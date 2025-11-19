@@ -4,7 +4,7 @@ using System.Linq;
 using _4OF.ee4v.Core.Utility;
 using Newtonsoft.Json;
 
-namespace _4OF.ee4v.AssetManager.Data {
+namespace _4OF.ee4v.AssetManager.OldData {
     public class LibraryMetadata {
         private readonly List<BaseFolder> _folderInfo = new();
 

@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Data;
 using _4OF.ee4v.Core.Utility;
 using Newtonsoft.Json;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace _4OF.ee4v.AssetManager.Data {
+namespace _4OF.ee4v.AssetManager.OldData {
     public static class AssetLibrarySerializer {
         private static readonly string RootDir = Path.Combine(EditorPrefsManager.ContentFolderPath, "AssetManager");
 

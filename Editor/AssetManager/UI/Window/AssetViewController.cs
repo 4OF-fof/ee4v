@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.AssetManager.OldData;
 using _4OF.ee4v.Core.Utility;
 
 namespace _4OF.ee4v.AssetManager.UI.Window {
