@@ -159,7 +159,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 var libMetadata = _repository.GetLibraryMetadata();
 
                 if (_selectedFolderId == Ulid.Empty) {
-                    if (libMetadata != null)
+                    if (_rootPathName == "Folders" && libMetadata != null)
                         displayItems.AddRange(libMetadata.FolderList.Where(f => !(f is BoothItemFolder)));
                 }
                 else {
