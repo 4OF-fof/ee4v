@@ -6,7 +6,6 @@ namespace _4OF.ee4v.AssetManager.Data {
     public class AssetLibrary {
         private readonly Dictionary<Ulid, AssetMetadata> _assetMetadataDict = new();
         private readonly Dictionary<Ulid, HashSet<Ulid>> _folderIndex = new();
-        private readonly Dictionary<string, HashSet<Ulid>> _folderTagIndex = new();
         private readonly Dictionary<string, HashSet<Ulid>> _tagIndex = new();
 
         public IReadOnlyCollection<AssetMetadata> Assets => _assetMetadataDict.Values;
@@ -45,18 +44,24 @@ namespace _4OF.ee4v.AssetManager.Data {
         public List<AssetMetadata> GetAssetsByTag(string tag) {
             if (string.IsNullOrEmpty(tag) || !_tagIndex.TryGetValue(tag, out var idSet))
                 return new List<AssetMetadata>();
-            return idSet.Select(GetAsset).Where(asset => asset != null).ToList();
+
+            return idSet
+                .Where(id => _assetMetadataDict.ContainsKey(id))
+                .Select(GetAsset)
+                .Where(asset => asset != null)
+                .ToList();
         }
 
         public List<BaseFolder> GetFoldersByTag(string tag) {
-            if (string.IsNullOrEmpty(tag) || !_folderTagIndex.TryGetValue(tag, out var idSet))
+            if (string.IsNullOrEmpty(tag) || !_tagIndex.TryGetValue(tag, out var idSet))
                 return new List<BaseFolder>();
 
-            var result = new List<BaseFolder>();
-            if (Libraries == null) return result;
+            if (Libraries == null) return new List<BaseFolder>();
 
-            result.AddRange(idSet.Select(id => Libraries.GetFolder(id)).Where(folder => folder != null));
-            return result;
+            return idSet
+                .Select(id => Libraries.GetFolder(id))
+                .Where(f => f != null)
+                .ToList();
         }
 
         public List<AssetMetadata> GetAssetsByFolder(Ulid folderId) {
@@ -66,7 +71,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public List<string> GetAllTags() {
-            return _tagIndex.Keys.Union(_folderTagIndex.Keys).Distinct().ToList();
+            return _tagIndex.Keys.ToList();
         }
 
         public List<Ulid> GetAllFolders() {
@@ -75,49 +80,43 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public void RenameTag(string tag, string newTag) {
             if (string.IsNullOrEmpty(tag) || string.IsNullOrEmpty(newTag) || tag == newTag) return;
+            if (!_tagIndex.TryGetValue(tag, out var idSet)) return;
 
-            if (_tagIndex.TryGetValue(tag, out var idSet)) {
-                var ids = idSet.ToList();
-                foreach (var id in ids) {
-                    var asset = GetAsset(id);
-                    if (asset == null) continue;
+            var ids = idSet.ToList();
+            foreach (var id in ids) {
+                var asset = GetAsset(id);
+                if (asset != null) {
                     asset.AddTag(newTag);
                     asset.RemoveTag(tag);
-                    if (!_tagIndex.TryGetValue(newTag, out var newSet)) {
-                        newSet = new HashSet<Ulid>();
-                        _tagIndex[newTag] = newSet;
-                    }
-
-                    newSet.Add(id);
                 }
-
-                _tagIndex.Remove(tag);
-            }
-
-            if (!_folderTagIndex.TryGetValue(tag, out var folderIdSet)) return;
-            {
-                var ids = folderIdSet.ToList();
-                foreach (var id in ids) {
+                else {
                     var folder = Libraries?.GetFolder(id);
-                    if (folder == null) continue;
-                    folder.AddTag(newTag);
-                    folder.RemoveTag(tag);
-
-                    if (!_folderTagIndex.TryGetValue(newTag, out var newSet)) {
-                        newSet = new HashSet<Ulid>();
-                        _folderTagIndex[newTag] = newSet;
+                    if (folder != null) {
+                        folder.AddTag(newTag);
+                        folder.RemoveTag(tag);
                     }
-
-                    newSet.Add(id);
                 }
 
-                _folderTagIndex.Remove(tag);
+                if (!_tagIndex.TryGetValue(newTag, out var newSet)) {
+                    newSet = new HashSet<Ulid>();
+                    _tagIndex[newTag] = newSet;
+                }
+
+                newSet.Add(id);
             }
+
+            _tagIndex.Remove(tag);
         }
 
         public void SetLibrary(LibraryMetadata libraryMetadata) {
+            if (Libraries != null)
+                foreach (var folder in Libraries.FolderList)
+                    UnregisterFolderIndexRecursively(folder);
+
             Libraries = libraryMetadata;
-            RebuildFolderIndex();
+
+            if (Libraries == null) return;
+            foreach (var folder in Libraries.FolderList) RegisterFolderIndexRecursively(folder);
         }
 
         public void UnloadAssetLibrary() {
@@ -126,63 +125,40 @@ namespace _4OF.ee4v.AssetManager.Data {
             Libraries = null;
         }
 
-        private void RebuildFolderIndex() {
-            _folderTagIndex.Clear();
-            if (Libraries == null) return;
-            foreach (var folder in Libraries.FolderList) RegisterFolderRecursively(folder);
-        }
-
-        private void RegisterFolderRecursively(BaseFolder folder) {
-            foreach (var tag in folder.Tags) {
-                if (string.IsNullOrEmpty(tag)) continue;
-                if (!_folderTagIndex.TryGetValue(tag, out var set)) {
-                    set = new HashSet<Ulid>();
-                    _folderTagIndex[tag] = set;
-                }
-
-                set.Add(folder.ID);
-            }
-
-            if (folder is not Folder f) return;
-            foreach (var child in f.Children)
-                RegisterFolderRecursively(child);
-        }
-
         private void RegisterIndex(AssetMetadata asset) {
-            RegisterTags(asset);
+            RegisterTags(asset.Tags, asset.ID);
             RegisterFolder(asset);
         }
 
         private void UnregisterIndex(AssetMetadata asset) {
-            UnregisterTags(asset);
+            UnregisterTags(asset.Tags, asset.ID);
             UnregisterFolder(asset);
         }
 
         private void ClearIndex() {
             _tagIndex.Clear();
             _folderIndex.Clear();
-            _folderTagIndex.Clear();
         }
 
-        private void RegisterTags(AssetMetadata asset) {
-            if (asset == null) return;
-            foreach (var tag in asset.Tags) {
+        private void RegisterTags(IReadOnlyList<string> tags, Ulid id) {
+            if (tags == null) return;
+            foreach (var tag in tags) {
                 if (string.IsNullOrEmpty(tag)) continue;
                 if (!_tagIndex.TryGetValue(tag, out var set)) {
                     set = new HashSet<Ulid>();
                     _tagIndex[tag] = set;
                 }
 
-                set.Add(asset.ID);
+                set.Add(id);
             }
         }
 
-        private void UnregisterTags(AssetMetadata asset) {
-            if (asset == null) return;
-            foreach (var tag in asset.Tags) {
+        private void UnregisterTags(IReadOnlyList<string> tags, Ulid id) {
+            if (tags == null) return;
+            foreach (var tag in tags) {
                 if (string.IsNullOrEmpty(tag)) continue;
                 if (!_tagIndex.TryGetValue(tag, out var set)) continue;
-                set.Remove(asset.ID);
+                set.Remove(id);
                 if (set.Count == 0) _tagIndex.Remove(tag);
             }
         }
@@ -204,6 +180,18 @@ namespace _4OF.ee4v.AssetManager.Data {
             if (!_folderIndex.TryGetValue(folderId, out var set)) return;
             set.Remove(asset.ID);
             if (set.Count == 0) _folderIndex.Remove(folderId);
+        }
+
+        private void RegisterFolderIndexRecursively(BaseFolder folder) {
+            RegisterTags(folder.Tags, folder.ID);
+            if (folder is not Folder f) return;
+            foreach (var child in f.Children) RegisterFolderIndexRecursively(child);
+        }
+
+        private void UnregisterFolderIndexRecursively(BaseFolder folder) {
+            UnregisterTags(folder.Tags, folder.ID);
+            if (folder is not Folder f) return;
+            foreach (var child in f.Children) UnregisterFolderIndexRecursively(child);
         }
     }
 }
