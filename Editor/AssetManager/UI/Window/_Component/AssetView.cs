@@ -6,6 +6,7 @@ using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
+using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -22,6 +23,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private AssetViewController _controller;
         private CancellationTokenSource _cts;
+
+        private SortType _currentSortType = SortType.NameAsc;
         private List<object> _items = new();
 
         private int _itemsPerRow = 5;
@@ -31,39 +34,23 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public AssetView() {
             style.flexGrow = 1;
 
-            var toolbar = new Toolbar();
-
-            _backLabel = new Label("<") {
-                tooltip = "Back",
+            var toolbar = new Toolbar {
                 style = {
-                    width = 24,
-                    unityTextAlign = TextAnchor.MiddleCenter,
-                    paddingLeft = 0, paddingRight = 0,
-                    fontSize = 14,
-                    unityFontStyleAndWeight = FontStyle.Bold
+                    alignItems = Align.Center
                 }
             };
-            _backLabel.RegisterCallback<PointerDownEvent>(_ =>
+
+            _backLabel = CreateNavigationLabel("<", "Back");
+            _backLabel.RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (_controller is { CanGoBack: true }) _controller.GoBack();
             });
-            RegisterHoverEvents(_backLabel);
 
-            _forwardLabel = new Label(">") {
-                tooltip = "Forward",
-                style = {
-                    width = 24,
-                    unityTextAlign = TextAnchor.MiddleCenter,
-                    paddingLeft = 0, paddingRight = 0,
-                    fontSize = 14,
-                    unityFontStyleAndWeight = FontStyle.Bold
-                }
-            };
-            _forwardLabel.RegisterCallback<PointerDownEvent>(_ =>
+            _forwardLabel = CreateNavigationLabel(">", "Forward");
+            _forwardLabel.RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (_controller is { CanGoForward: true }) _controller.GoForward();
             });
-            RegisterHoverEvents(_forwardLabel);
 
             toolbar.Add(_backLabel);
             toolbar.Add(_forwardLabel);
@@ -82,7 +69,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             var slider = new SliderInt(2, 10) {
                 value = _itemsPerRow,
-                style = { minWidth = 100, maxWidth = 200 }
+                style = { minWidth = 80, maxWidth = 150, marginRight = 4 }
             };
             slider.RegisterValueChangedCallback(evt =>
             {
@@ -93,6 +80,31 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _listView.Rebuild();
             });
             toolbar.Add(slider);
+
+            var sortLabel = new Label {
+                tooltip = "Sort Items",
+                style = {
+                    height = 20,
+                    width = 24,
+                    paddingLeft = 2, paddingRight = 2,
+                    unityTextAlign = TextAnchor.MiddleCenter,
+                    alignSelf = Align.Center,
+                    justifyContent = Justify.Center,
+                    alignItems = Align.Center
+                }
+            };
+            var sortIcon = EditorGUIUtility.IconContent("d_AlphabeticalSorting").image;
+            if (sortIcon != null)
+                sortLabel.Add(new Image {
+                    image = sortIcon,
+                    style = { width = 16, height = 16 }
+                });
+            else
+                sortLabel.text = "Sort";
+
+            RegisterHoverEvents(sortLabel);
+            sortLabel.RegisterCallback<PointerDownEvent>(_ => ShowSortMenu());
+            toolbar.Add(sortLabel);
 
             _searchField = new ToolbarSearchField {
                 style = {
@@ -121,6 +133,23 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             RegisterCallback<DetachFromPanelEvent>(OnDetach);
 
             UpdateNavigationState();
+        }
+
+        private Label CreateNavigationLabel(string text, string labelTooltip) {
+            var label = new Label(text) {
+                tooltip = labelTooltip,
+                style = {
+                    width = 24,
+                    height = 24,
+                    unityTextAlign = TextAnchor.MiddleCenter,
+                    paddingLeft = 0, paddingRight = 0,
+                    fontSize = 14,
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    alignSelf = Align.Center
+                }
+            };
+            RegisterHoverEvents(label);
+            return label;
         }
 
         private void RegisterHoverEvents(VisualElement element) {
@@ -165,12 +194,43 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _listView.fixedItemHeight = itemHeight;
         }
 
+        private void ShowSortMenu() {
+            var menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Name (A-Z)"), _currentSortType == SortType.NameAsc,
+                () => SetSort(SortType.NameAsc));
+            menu.AddItem(new GUIContent("Name (Z-A)"), _currentSortType == SortType.NameDesc,
+                () => SetSort(SortType.NameDesc));
+            menu.AddSeparator("");
+            menu.AddItem(new GUIContent("Last Edit (Newest)"), _currentSortType == SortType.DateNewest,
+                () => SetSort(SortType.DateNewest));
+            menu.AddItem(new GUIContent("Last Edit (Oldest)"), _currentSortType == SortType.DateOldest,
+                () => SetSort(SortType.DateOldest));
+            menu.AddSeparator("");
+            menu.AddItem(new GUIContent("Size (Smallest)"), _currentSortType == SortType.SizeSmallest,
+                () => SetSort(SortType.SizeSmallest));
+            menu.AddItem(new GUIContent("Size (Largest)"), _currentSortType == SortType.SizeLargest,
+                () => SetSort(SortType.SizeLargest));
+            menu.AddSeparator("");
+            menu.AddItem(new GUIContent("Filetype (A-Z)"), _currentSortType == SortType.ExtAsc,
+                () => SetSort(SortType.ExtAsc));
+            menu.AddItem(new GUIContent("Filetype (Z-A)"), _currentSortType == SortType.ExtDesc,
+                () => SetSort(SortType.ExtDesc));
+            menu.ShowAsContext();
+        }
+
+        private void SetSort(SortType sortType) {
+            _currentSortType = sortType;
+            ApplyFilter();
+        }
+
         private void ApplyFilter() {
             var searchText = _searchField.value;
+            IEnumerable<object> filtered;
+
             if (string.IsNullOrWhiteSpace(searchText))
-                _items = new List<object>(_allItems);
+                filtered = _allItems;
             else
-                _items = _allItems.Where(item =>
+                filtered = _allItems.Where(item =>
                 {
                     var targetName = "";
                     var desc = "";
@@ -189,10 +249,67 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     return (targetName != null &&
                             targetName.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
                         (desc != null && desc.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0);
-                }).ToList();
+                });
+
+            _items = filtered.ToList();
+            ApplySort();
 
             _listView.itemsSource = GetRows();
             _listView.Rebuild();
+        }
+
+        private void ApplySort() {
+            if (_items == null || _items.Count == 0) return;
+
+            _items.Sort((a, b) =>
+            {
+                var nameA = "";
+                var nameB = "";
+                long dateA = 0;
+                long dateB = 0;
+                long sizeA = 0;
+                long sizeB = 0;
+                var extA = "";
+                var extB = "";
+
+                switch (a) {
+                    case AssetMetadata asset:
+                        nameA = asset.Name ?? "";
+                        dateA = asset.ModificationTime;
+                        sizeA = asset.Size;
+                        extA = asset.Ext ?? "";
+                        break;
+                    case BaseFolder folder:
+                        nameA = folder.Name ?? "";
+                        dateA = folder.ModificationTime;
+                        break;
+                }
+
+                switch (b) {
+                    case AssetMetadata asset:
+                        nameB = asset.Name ?? "";
+                        dateB = asset.ModificationTime;
+                        sizeB = asset.Size;
+                        extB = asset.Ext ?? "";
+                        break;
+                    case BaseFolder folder:
+                        nameB = folder.Name ?? "";
+                        dateB = folder.ModificationTime;
+                        break;
+                }
+
+                return _currentSortType switch {
+                    SortType.NameAsc      => string.Compare(nameA, nameB, StringComparison.OrdinalIgnoreCase),
+                    SortType.NameDesc     => string.Compare(nameB, nameA, StringComparison.OrdinalIgnoreCase),
+                    SortType.DateNewest   => dateB.CompareTo(dateA),
+                    SortType.DateOldest   => dateA.CompareTo(dateB),
+                    SortType.SizeSmallest => sizeA.CompareTo(sizeB),
+                    SortType.SizeLargest  => sizeB.CompareTo(sizeA),
+                    SortType.ExtAsc       => string.Compare(extA, extB, StringComparison.OrdinalIgnoreCase),
+                    SortType.ExtDesc      => string.Compare(extB, extA, StringComparison.OrdinalIgnoreCase),
+                    _                     => 0
+                };
+            });
         }
 
         private List<List<object>> GetRows() {
@@ -409,6 +526,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         private void OnControllerAssetSelected(AssetMetadata asset) {
+        }
+
+        private enum SortType {
+            NameAsc,
+            NameDesc,
+            DateNewest,
+            DateOldest,
+            SizeSmallest,
+            SizeLargest,
+            ExtAsc,
+            ExtDesc
         }
     }
 }
