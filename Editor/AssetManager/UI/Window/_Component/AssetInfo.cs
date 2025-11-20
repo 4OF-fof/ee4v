@@ -193,11 +193,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             AddInfoRow("Total Assets", allAssets.Count.ToString());
             AddInfoRow("Total Size", FormatSize(totalSize));
             AddInfoRow("Total Tags", _repository.GetAllTags().Count.ToString());
-
-            var meta = _repository.GetLibraryMetadata();
-            if (meta == null) return;
-            var date = DateTimeOffset.FromUnixTimeMilliseconds(meta.ModificationTime).ToLocalTime();
-            AddInfoRow("Last Update", date.ToString("yyyy/MM/dd HH:mm"));
         }
 
         private void ShowMultiSelectionInfo(int count) {
