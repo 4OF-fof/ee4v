@@ -265,7 +265,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             var folderId = asset.Folder;
             var folder = _repository?.GetLibraryMetadata()?.GetFolder(folderId);
-            _folderNameLabel.text = folder != null ? folder.Name : "Uncategorized";
+            _folderNameLabel.text = folder != null ? folder.Name : "Root";
 
             _infoContainer.Clear();
             AddInfoRow("Size", FormatSize(asset.Size));
@@ -288,10 +288,23 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             ClearFields();
             _nameField.value = folder.Name;
             _descriptionField.value = folder.Description;
-            _folderNameLabel.text = "This is a Folder";
+
+            var parentFolder = GetParentFolder(folder.ID);
+            _folderNameLabel.text = parentFolder != null ? parentFolder.Name : "Root";
 
             LoadThumbnailAsync(folder.ID, true);
             _infoContainer.Clear();
+
+            var subFolderCount = 0;
+            if (folder is Folder f) subFolderCount = f.Children?.Count ?? 0;
+
+            var assetCount = 0;
+            if (_repository != null)
+                assetCount = _repository.GetAllAssets()
+                    .Count(a => a.Folder == folder.ID && !a.IsDeleted);
+
+            if (folder is Folder) AddInfoRow("Sub Folders", subFolderCount.ToString());
+            AddInfoRow("Assets", assetCount.ToString());
 
             var date = DateTimeOffset.FromUnixTimeMilliseconds(folder.ModificationTime).ToLocalTime();
             AddInfoRow("Modified", date.ToString("yyyy/MM/dd HH:mm"));
@@ -392,6 +405,31 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             return $"{number:n2} {suffixes[counter]}";
+        }
+
+        private BaseFolder GetParentFolder(Ulid childId) {
+            var lib = _repository?.GetLibraryMetadata();
+            if (lib == null) return null;
+
+            foreach (var root in lib.FolderList) {
+                if (root.ID == childId) return null;
+                var parentFolder = FindParentRecursive(root, childId);
+                if (parentFolder != null) return parentFolder;
+            }
+
+            return null;
+        }
+
+        private static BaseFolder FindParentRecursive(BaseFolder current, Ulid childId) {
+            if (current is not Folder f || f.Children == null) return null;
+
+            foreach (var child in f.Children) {
+                if (child.ID == childId) return f;
+                var res = FindParentRecursive(child, childId);
+                if (res != null) return res;
+            }
+
+            return null;
         }
     }
 }
