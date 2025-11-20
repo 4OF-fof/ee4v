@@ -14,6 +14,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly TextField _descriptionField;
         private readonly Label _folderNameLabel;
         private readonly VisualElement _infoContainer;
+        private readonly Label _infoHeader;
         private readonly VisualElement _multiSelectionContainer;
         private readonly Label _multiSelectionLabel;
         private readonly TextField _nameField;
@@ -125,16 +126,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             folderRow.Add(folderIcon);
             folderRow.Add(_folderNameLabel);
             _singleSelectionContainer.Add(folderRow);
-
-            var infoHeader = new Label("Information")
-                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
-            Add(infoHeader);
-
-            _infoContainer = new VisualElement { style = { paddingLeft = 4 } };
-            Add(_infoContainer);
-
             _multiSelectionContainer = new VisualElement {
-                style = { display = DisplayStyle.None, alignItems = Align.Center, marginTop = 20 }
+                style = { display = DisplayStyle.None, alignItems = Align.Center, marginTop = 20, marginBottom = 40 }
             };
             _multiSelectionLabel = new Label {
                 style = {
@@ -144,6 +137,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
             _multiSelectionContainer.Add(_multiSelectionLabel);
             Add(_multiSelectionContainer);
+
+            _infoHeader = new Label("Information")
+                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
+            Add(_infoHeader);
+
+            _infoContainer = new VisualElement { style = { paddingLeft = 4 } };
+            Add(_infoContainer);
         }
 
         public event Action<string> OnNameChanged;
@@ -164,8 +164,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             else if (selectedItems.Count == 1) {
                 ShowSingleSelection();
                 var item = selectedItems[0];
-                if (item is AssetMetadata asset) SetAsset(asset);
-                else if (item is BaseFolder folder) SetFolder(folder);
+                switch (item) {
+                    case AssetMetadata asset:
+                        SetAsset(asset);
+                        break;
+                    case BaseFolder folder:
+                        SetFolder(folder);
+                        break;
+                }
             }
             else {
                 ShowMultiSelectionInfo(selectedItems.Count);
@@ -175,6 +181,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private void ShowLibraryInfo() {
             _singleSelectionContainer.style.display = DisplayStyle.None;
             _multiSelectionContainer.style.display = DisplayStyle.Flex;
+            _infoHeader.style.display = DisplayStyle.None;
             _multiSelectionLabel.text = "Library Overview";
 
             _infoContainer.Clear();
@@ -196,6 +203,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private void ShowMultiSelectionInfo(int count) {
             _singleSelectionContainer.style.display = DisplayStyle.None;
             _multiSelectionContainer.style.display = DisplayStyle.Flex;
+            _infoHeader.style.display = DisplayStyle.None;
             _multiSelectionLabel.text = $"{count} items selected";
             _infoContainer.Clear();
         }
@@ -203,6 +211,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private void ShowSingleSelection() {
             _singleSelectionContainer.style.display = DisplayStyle.Flex;
             _multiSelectionContainer.style.display = DisplayStyle.None;
+            _infoHeader.style.display = DisplayStyle.Flex;
         }
 
         private static TextField CreateTextField(bool isBold) {
