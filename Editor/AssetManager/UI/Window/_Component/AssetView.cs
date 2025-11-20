@@ -33,6 +33,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public AssetView() {
             style.flexGrow = 1;
+            style.backgroundColor = ColorPreset.DefaultBackground;
 
             var toolbar = new Toolbar {
                 style = {
@@ -41,13 +42,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
 
             _backLabel = CreateNavigationLabel("<", "Back");
-            _backLabel.RegisterCallback<PointerDownEvent>(evt =>
+            _backLabel.RegisterCallback<PointerDownEvent>(_ =>
             {
                 if (_controller is { CanGoBack: true }) _controller.GoBack();
             });
 
             _forwardLabel = CreateNavigationLabel(">", "Forward");
-            _forwardLabel.RegisterCallback<PointerDownEvent>(evt =>
+            _forwardLabel.RegisterCallback<PointerDownEvent>(_ =>
             {
                 if (_controller is { CanGoForward: true }) _controller.GoForward();
             });
@@ -332,7 +333,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var row = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
-                    flexWrap = Wrap.NoWrap
+                    flexWrap = Wrap.NoWrap,
+                    flexGrow = 1,
+                    backgroundColor = ColorPreset.DefaultBackground
                 }
             };
 
