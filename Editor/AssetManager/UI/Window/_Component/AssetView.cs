@@ -1,25 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
-using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetView : VisualElement {
-        private readonly Button _backButton;
+        private readonly Label _backLabel;
         private readonly ScrollView _breadcrumbContainer;
-        private readonly Button _forwardButton;
+        private readonly Label _forwardLabel;
         private readonly ListView _listView;
+        private readonly ToolbarSearchField _searchField;
+
+        private List<object> _allItems = new();
 
         private AssetViewController _controller;
         private CancellationTokenSource _cts;
         private List<object> _items = new();
+
         private int _itemsPerRow = 5;
         private float _lastWidth;
         private TextureService _textureService;
@@ -29,26 +33,40 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             var toolbar = new Toolbar();
 
-            _backButton = new Button(() => _controller?.GoBack()) {
+            _backLabel = new Label("<") {
                 tooltip = "Back",
-                style = { width = 24, paddingLeft = 0, paddingRight = 0 }
+                style = {
+                    width = 24,
+                    unityTextAlign = TextAnchor.MiddleCenter,
+                    paddingLeft = 0, paddingRight = 0,
+                    fontSize = 14,
+                    unityFontStyleAndWeight = FontStyle.Bold
+                }
             };
-            _backButton.Add(new Image {
-                image = EditorGUIUtility.IconContent("d_Animation.PrevKey").image,
-                scaleMode = ScaleMode.ScaleToFit
+            _backLabel.RegisterCallback<PointerDownEvent>(_ =>
+            {
+                if (_controller is { CanGoBack: true }) _controller.GoBack();
             });
+            RegisterHoverEvents(_backLabel);
 
-            _forwardButton = new Button(() => _controller?.GoForward()) {
+            _forwardLabel = new Label(">") {
                 tooltip = "Forward",
-                style = { width = 24, paddingLeft = 0, paddingRight = 0 }
+                style = {
+                    width = 24,
+                    unityTextAlign = TextAnchor.MiddleCenter,
+                    paddingLeft = 0, paddingRight = 0,
+                    fontSize = 14,
+                    unityFontStyleAndWeight = FontStyle.Bold
+                }
             };
-            _forwardButton.Add(new Image {
-                image = EditorGUIUtility.IconContent("d_Animation.NextKey").image,
-                scaleMode = ScaleMode.ScaleToFit
+            _forwardLabel.RegisterCallback<PointerDownEvent>(_ =>
+            {
+                if (_controller is { CanGoForward: true }) _controller.GoForward();
             });
+            RegisterHoverEvents(_forwardLabel);
 
-            toolbar.Add(_backButton);
-            toolbar.Add(_forwardButton);
+            toolbar.Add(_backLabel);
+            toolbar.Add(_forwardLabel);
 
             _breadcrumbContainer = new ScrollView(ScrollViewMode.Horizontal) {
                 style = {
@@ -76,6 +94,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             });
             toolbar.Add(slider);
 
+            _searchField = new ToolbarSearchField {
+                style = {
+                    width = 200,
+                    marginLeft = 4,
+                    marginRight = 4,
+                    alignSelf = Align.Center
+                }
+            };
+            _searchField.RegisterValueChangedCallback(_ => ApplyFilter());
+            toolbar.Add(_searchField);
+
             Add(toolbar);
 
             _listView = new ListView {
@@ -92,6 +121,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             RegisterCallback<DetachFromPanelEvent>(OnDetach);
 
             UpdateNavigationState();
+        }
+
+        private void RegisterHoverEvents(VisualElement element) {
+            element.RegisterCallback<MouseEnterEvent>(_ =>
+            {
+                if (element.enabledSelf) element.style.backgroundColor = ColorPreset.MouseOverBackground;
+            });
+            element.RegisterCallback<MouseLeaveEvent>(_ => { element.style.backgroundColor = Color.clear; });
         }
 
         public void Initialize(TextureService textureService) {
@@ -126,6 +163,36 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var itemHeight = itemWidth + 50;
 
             _listView.fixedItemHeight = itemHeight;
+        }
+
+        private void ApplyFilter() {
+            var searchText = _searchField.value;
+            if (string.IsNullOrWhiteSpace(searchText))
+                _items = new List<object>(_allItems);
+            else
+                _items = _allItems.Where(item =>
+                {
+                    var targetName = "";
+                    var desc = "";
+
+                    switch (item) {
+                        case AssetMetadata asset:
+                            targetName = asset.Name;
+                            desc = asset.Description;
+                            break;
+                        case BaseFolder folder:
+                            targetName = folder.Name;
+                            desc = folder.Description;
+                            break;
+                    }
+
+                    return (targetName != null &&
+                            targetName.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                        (desc != null && desc.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0);
+                }).ToList();
+
+            _listView.itemsSource = GetRows();
+            _listView.Rebuild();
         }
 
         private List<List<object>> GetRows() {
@@ -283,13 +350,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void UpdateNavigationState() {
             if (_controller == null) {
-                _backButton.SetEnabled(false);
-                _forwardButton.SetEnabled(false);
+                _backLabel.SetEnabled(false);
+                _forwardLabel.SetEnabled(false);
                 return;
             }
 
-            _backButton.SetEnabled(_controller.CanGoBack);
-            _forwardButton.SetEnabled(_controller.CanGoForward);
+            _backLabel.SetEnabled(_controller.CanGoBack);
+            _forwardLabel.SetEnabled(_controller.CanGoForward);
+
+            _backLabel.style.color = _controller.CanGoBack ? ColorPreset.TextColor : Color.gray;
+            _forwardLabel.style.color = _controller.CanGoForward ? ColorPreset.TextColor : Color.gray;
         }
 
         private void UpdateBreadcrumbs(List<(string Name, Ulid Id)> path) {
@@ -329,15 +399,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         private void OnItemsChanged(List<object> items) {
-            _items = items ?? new List<object>();
-            _listView.itemsSource = GetRows();
-            _listView.Rebuild();
+            _allItems = items ?? new List<object>();
+            ApplyFilter();
         }
 
         public void ShowBoothItemFolders(List<BoothItemFolder> folders) {
-            _items = new List<object>(folders ?? new List<BoothItemFolder>());
-            _listView.itemsSource = GetRows();
-            _listView.Rebuild();
+            _allItems = new List<object>(folders ?? new List<BoothItemFolder>());
+            ApplyFilter();
         }
 
         private void OnControllerAssetSelected(AssetMetadata asset) {
