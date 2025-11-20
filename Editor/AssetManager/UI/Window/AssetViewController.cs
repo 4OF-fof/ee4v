@@ -21,6 +21,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private string _contextName = "All Items";
         private NavigationMode _currentMode = NavigationMode.AllItems;
 
+        private string _currentTagFilter;
+
         private Func<AssetMetadata, bool> _filter = asset => !asset.IsDeleted;
         private Ulid _selectedFolderId = Ulid.Empty;
 
@@ -54,6 +56,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _contextName = contextName;
             _filter = filter ?? (asset => !asset.IsDeleted);
             _selectedFolderId = Ulid.Empty;
+            _currentTagFilter = null;
+            if (mode == NavigationMode.Tag && contextName.StartsWith("Tag: "))
+                _currentTagFilter = contextName.Substring("Tag: ".Length);
 
             OnHistoryChanged?.Invoke();
             Refresh();
@@ -69,6 +74,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _contextName = "Folders";
             _selectedFolderId = folderId;
             _filter = asset => !asset.IsDeleted;
+            _currentTagFilter = null;
 
             OnHistoryChanged?.Invoke();
             Refresh();
@@ -110,7 +116,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 Mode = _currentMode,
                 ContextName = _contextName,
                 SelectedFolderId = _selectedFolderId,
-                Filter = _filter
+                Filter = _filter,
+                TagFilter = _currentTagFilter
             };
         }
 
@@ -125,6 +132,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _contextName = state.ContextName;
             _selectedFolderId = state.SelectedFolderId;
             _filter = state.Filter;
+            _currentTagFilter = state.TagFilter;
 
             Refresh();
             OnHistoryChanged?.Invoke();
@@ -163,6 +171,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 if (_selectedFolderId == Ulid.Empty) {
                     if (_currentMode == NavigationMode.Folders && libMetadata != null)
                         displayItems.AddRange(libMetadata.FolderList.Where(f => f is not BoothItemFolder));
+                    else if (_currentMode == NavigationMode.Tag && !string.IsNullOrEmpty(_currentTagFilter))
+                        if (libMetadata != null) {
+                            var matchingFolders = new List<BaseFolder>();
+                            CollectFoldersByTag(libMetadata.FolderList, _currentTagFilter, matchingFolders);
+                            displayItems.AddRange(matchingFolders);
+                        }
                 }
                 else {
                     var currentFolder = libMetadata?.GetFolder(_selectedFolderId);
@@ -191,6 +205,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             FoldersChanged?.Invoke(folders);
 
             UpdateBreadcrumbs();
+        }
+
+        private static void CollectFoldersByTag(IEnumerable<BaseFolder> folders, string tag, List<BaseFolder> result) {
+            foreach (var folder in folders) {
+                if (folder.Tags.Contains(tag)) result.Add(folder);
+                if (folder is Folder f) CollectFoldersByTag(f.Children, tag, result);
+            }
         }
 
         private void UpdateBreadcrumbs() {
@@ -235,6 +256,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             public string ContextName;
             public Ulid SelectedFolderId;
             public Func<AssetMetadata, bool> Filter;
+            public string TagFilter;
         }
     }
 }

@@ -72,6 +72,8 @@ namespace _4OF.ee4v.AssetManager.Data {
     }
 
     public class BaseFolder {
+        private readonly List<string> _tags = new();
+
         public BaseFolder() {
         }
 
@@ -80,20 +82,23 @@ namespace _4OF.ee4v.AssetManager.Data {
             Name = baseFolder.Name;
             Description = baseFolder.Description;
             ModificationTime = baseFolder.ModificationTime;
+            _tags = new List<string>(baseFolder.Tags);
         }
 
         [JsonConstructor]
-        public BaseFolder(Ulid id, string name, string description, long modificationTime) {
+        public BaseFolder(Ulid id, string name, string description, long modificationTime, List<string> tags) {
             ID = id;
             Name = name;
             Description = description;
             ModificationTime = modificationTime;
+            _tags = tags ?? new List<string>();
         }
 
         public Ulid ID { get; } = Ulid.Generate();
         public string Name { get; private set; } = "";
         public string Description { get; private set; } = "";
         public long ModificationTime { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        public IReadOnlyList<string> Tags => _tags.AsReadOnly();
 
         public void SetName(string newName) {
             Name = newName;
@@ -103,6 +108,16 @@ namespace _4OF.ee4v.AssetManager.Data {
         public void SetDescription(string newDescription) {
             Description = newDescription;
             Touch();
+        }
+
+        public void AddTag(string tag) {
+            if (string.IsNullOrEmpty(tag) || _tags.Contains(tag)) return;
+            _tags.Add(tag);
+            Touch();
+        }
+
+        public void RemoveTag(string tag) {
+            if (_tags.Remove(tag)) Touch();
         }
 
         protected void Touch() {
@@ -127,8 +142,9 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         [JsonConstructor]
-        public Folder(Ulid id, string name, string description, long modificationTime, List<BaseFolder> children)
-            : base(id, name, description, modificationTime) {
+        public Folder(Ulid id, string name, string description, long modificationTime, List<string> tags,
+            List<BaseFolder> children)
+            : base(id, name, description, modificationTime, tags) {
             _children = children ?? new List<BaseFolder>();
         }
 
@@ -180,8 +196,9 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         [JsonConstructor]
-        public BoothItemFolder(Ulid id, string name, string description, long modificationTime, string itemId,
-            string shopDomain, string shopName) : base(id, name, description, modificationTime) {
+        public BoothItemFolder(Ulid id, string name, string description, long modificationTime, List<string> tags,
+            string itemId,
+            string shopDomain, string shopName) : base(id, name, description, modificationTime, tags) {
             ItemId = itemId ?? "";
             ShopDomain = shopDomain ?? "";
             ShopName = shopName ?? "";

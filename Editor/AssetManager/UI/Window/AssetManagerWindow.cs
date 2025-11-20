@@ -103,7 +103,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             _navigation.Initialize(_repository);
             _tagListView.Initialize(_repository);
-            _assetInfo.Initialize(_repository, _textureService);
+            _assetInfo.Initialize(_repository, _textureService, _folderService);
 
             _navigation.NavigationChanged += OnNavigationChanged;
             _navigation.FolderSelected += OnFolderSelected;

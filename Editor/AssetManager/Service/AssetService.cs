@@ -106,6 +106,29 @@ namespace _4OF.ee4v.AssetManager.Service {
                 newAsset.AddTag(newTag);
                 _repository.SaveAsset(newAsset);
             }
+
+            var lib = _repository.GetLibraryMetadata();
+            if (lib == null) return;
+            var modified = false;
+            foreach (var folder in lib.FolderList)
+                if (ProcessFolderTagRename(folder, oldTag, newTag))
+                    modified = true;
+            if (modified) _repository.SaveLibraryMetadata(lib);
+        }
+
+        private static bool ProcessFolderTagRename(BaseFolder folder, string oldTag, string newTag) {
+            var modified = false;
+            if (folder.Tags.Contains(oldTag)) {
+                folder.RemoveTag(oldTag);
+                folder.AddTag(newTag);
+                modified = true;
+            }
+
+            if (folder is not Folder f || f.Children == null) return modified;
+            foreach (var child in f.Children)
+                if (ProcessFolderTagRename(child, oldTag, newTag))
+                    modified = true;
+            return modified;
         }
 
         public void SetBoothShopDomain(Ulid assetId, string shopURL) {

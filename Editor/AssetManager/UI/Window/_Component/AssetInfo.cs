@@ -11,6 +11,7 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetInfo : VisualElement {
+        // ... existing fields ...
         private readonly TextField _descriptionField;
         private readonly Label _folderNameLabel;
         private readonly VisualElement _infoContainer;
@@ -26,10 +27,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private AssetMetadata _currentAsset;
         private BaseFolder _currentFolder;
+        private FolderService _folderService; // Added
         private IAssetRepository _repository;
         private TextureService _textureService;
 
         public AssetInfo() {
+            // ... existing constructor code ...
+            // No changes needed in constructor layout
             style.flexDirection = FlexDirection.Column;
             style.backgroundColor = ColorPreset.DefaultBackground;
 
@@ -174,10 +178,28 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<string> OnTagAdded;
         public event Action<string> OnTagRemoved;
 
-        public void Initialize(IAssetRepository repository, TextureService textureService) {
+        public void Initialize(IAssetRepository repository, TextureService textureService,
+            FolderService folderService) {
             _repository = repository;
             _textureService = textureService;
+            _folderService = folderService;
             UpdateSelection(null);
+        }
+
+        private void AddNewTag() {
+            var tag = _newTagField.value?.Trim();
+            if (string.IsNullOrEmpty(tag)) return;
+
+            if (_currentFolder != null && _folderService != null) {
+                _folderService.AddTag(_currentFolder.ID, tag);
+                var freshFolder = _repository.GetLibraryMetadata().GetFolder(_currentFolder.ID);
+                if (freshFolder != null) SetFolder(freshFolder);
+            }
+            else {
+                OnTagAdded?.Invoke(tag);
+            }
+
+            _newTagField.value = "";
         }
 
         public void UpdateSelection(IReadOnlyList<object> selectedItems) {
@@ -240,13 +262,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             return field;
         }
 
-        private void AddNewTag() {
-            var tag = _newTagField.value?.Trim();
-            if (string.IsNullOrEmpty(tag)) return;
-            OnTagAdded?.Invoke(tag);
-            _newTagField.value = "";
-        }
-
         public void SetAsset(AssetMetadata asset) {
             _currentAsset = asset;
             _currentFolder = null;
@@ -291,6 +306,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             var parentFolder = GetParentFolder(folder.ID);
             _folderNameLabel.text = parentFolder != null ? parentFolder.Name : "Root";
+
+            RefreshTags(folder.Tags);
 
             LoadThumbnailAsync(folder.ID, true);
             _infoContainer.Clear();
@@ -365,7 +382,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 };
 
                 var label = new Label(tag) { style = { marginRight = 4 } };
-                var removeBtn = new Button(() => OnTagRemoved?.Invoke(tag)) {
+                var removeBtn = new Button(() =>
+                {
+                    if (_currentFolder != null && _folderService != null) {
+                        _folderService.RemoveTag(_currentFolder.ID, tag);
+                        var fresh = _repository.GetLibraryMetadata().GetFolder(_currentFolder.ID);
+                        if (fresh != null) SetFolder(fresh);
+                    }
+                    else {
+                        OnTagRemoved?.Invoke(tag);
+                    }
+                }) {
                     text = "×",
                     style = {
                         width = 16, height = 16,

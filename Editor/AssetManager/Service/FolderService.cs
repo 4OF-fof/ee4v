@@ -126,6 +126,24 @@ namespace _4OF.ee4v.AssetManager.Service {
             _repository.SaveLibraryMetadata(libraries);
         }
 
+        public void AddTag(Ulid folderId, string tag) {
+            var libraries = _repository.GetLibraryMetadata();
+            var folder = libraries?.GetFolder(folderId);
+            if (folder == null) return;
+
+            folder.AddTag(tag);
+            _repository.SaveLibraryMetadata(libraries);
+        }
+
+        public void RemoveTag(Ulid folderId, string tag) {
+            var libraries = _repository.GetLibraryMetadata();
+            var folder = libraries?.GetFolder(folderId);
+            if (folder == null) return;
+
+            folder.RemoveTag(tag);
+            _repository.SaveLibraryMetadata(libraries);
+        }
+
         public void DeleteFolder(Ulid folderId) {
             var libraries = _repository.GetLibraryMetadata();
             var targetFolder = libraries?.GetFolder(folderId);
