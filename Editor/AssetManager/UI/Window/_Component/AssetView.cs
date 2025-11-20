@@ -91,6 +91,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             Add(_listView);
 
             RegisterCallback<DetachFromPanelEvent>(OnDetach);
+            
+            RegisterCallback<DragEnterEvent>(OnDragEnter, TrickleDown.TrickleDown);
+            RegisterCallback<DragUpdatedEvent>(OnDragUpdated, TrickleDown.TrickleDown);
+            RegisterCallback<DragPerformEvent>(OnDragPerform, TrickleDown.TrickleDown);
+            RegisterCallback<DragLeaveEvent>(OnDragLeave, TrickleDown.TrickleDown);
 
             UpdateNavigationState();
         }
@@ -343,6 +348,35 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         private void OnControllerAssetSelected(AssetMetadata asset) {
+        }
+
+        private void OnDragEnter(DragEnterEvent evt) {
+            if (DragAndDrop.paths.Length <= 0 || !DragAndDrop.paths.Any(File.Exists)) return;
+            DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+            style.backgroundColor = new StyleColor(new Color(0.3f, 0.5f, 0.7f, 0.2f));
+            evt.StopPropagation();
+        }
+
+        private static void OnDragUpdated(DragUpdatedEvent evt) {
+            if (DragAndDrop.paths.Length <= 0) return;
+            DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+            evt.StopPropagation();
+        }
+
+        private void OnDragPerform(DragPerformEvent evt) {
+            DragAndDrop.AcceptDrag();
+            style.backgroundColor = StyleKeyword.Null;
+
+            foreach (var path in DragAndDrop.paths) {
+                if (File.Exists(path)) {
+                    _controller?.AddAsset(path);
+                }
+            }
+            evt.StopPropagation();
+        }
+
+        private void OnDragLeave(DragLeaveEvent evt) {
+            style.backgroundColor = StyleKeyword.Null;
         }
     }
 }

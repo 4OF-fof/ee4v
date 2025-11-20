@@ -148,6 +148,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                         break;
                 }
         }
+        
+        public void AddAsset(string path) {
+            if (string.IsNullOrEmpty(path)) return;
+            _repository.CreateAssetFromFile(path);
+            Refresh();
+        }
 
         public void Refresh() {
             var displayItems = new List<object>();
@@ -182,7 +188,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 ItemsChanged?.Invoke(displayItems);
             }
 
-            var folders = _repository.GetLibraryMetadata()?.FolderList.Where(f => !(f is BoothItemFolder)).ToList() ??
+            var folders = _repository.GetLibraryMetadata()?.FolderList.Where(f => f is not BoothItemFolder).ToList() ??
                 new List<BaseFolder>();
             FoldersChanged?.Invoke(folders);
 
@@ -190,8 +196,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void UpdateBreadcrumbs() {
-            var breadcrumbs = new List<(string Name, Ulid Id)>();
-            breadcrumbs.Add((_rootPathName, Ulid.Empty));
+            var breadcrumbs = new List<(string Name, Ulid Id)> { (_rootPathName, Ulid.Empty) };
 
             if (_selectedFolderId != Ulid.Empty) {
                 var libMetadata = _repository.GetLibraryMetadata();
