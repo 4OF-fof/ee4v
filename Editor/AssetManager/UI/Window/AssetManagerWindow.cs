@@ -22,11 +22,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private IAssetRepository _repository;
         private AssetMetadata _selectedAsset;
         private TagListView _tagListView;
+        private TextureService _textureService;
 
         private void OnEnable() {
             _repository = AssetManagerContainer.Repository;
             _assetService = AssetManagerContainer.AssetService;
             _folderService = AssetManagerContainer.FolderService;
+            _textureService = AssetManagerContainer.TextureService;
         }
 
         private void OnDisable() {
@@ -51,6 +53,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _assetInfo.OnTagAdded -= OnAssetTagAdded;
                 _assetInfo.OnTagRemoved -= OnAssetTagRemoved;
             }
+
+            _textureService?.ClearCache();
         }
 
         private void CreateGUI() {
@@ -93,9 +97,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetController = new AssetViewController(_repository);
 
             _assetView.SetController(_assetController);
+            _assetView.Initialize(_textureService);
+
             _navigation.Initialize(_repository);
             _tagListView.Initialize(_repository);
-            _assetInfo.Initialize(_repository);
+            _assetInfo.Initialize(_repository, _textureService);
 
             _navigation.NavigationChanged += OnNavigationChanged;
             _navigation.FolderSelected += OnFolderSelected;

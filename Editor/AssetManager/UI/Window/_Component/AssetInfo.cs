@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetInfo : VisualElement {
@@ -22,6 +21,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private AssetMetadata _currentAsset;
         private BaseFolder _currentFolder;
         private IAssetRepository _repository;
+        private TextureService _textureService;
 
         public AssetInfo() {
             style.flexDirection = FlexDirection.Column;
@@ -131,8 +131,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<string> OnTagAdded;
         public event Action<string> OnTagRemoved;
 
-        public void Initialize(IAssetRepository repository) {
+        public void Initialize(IAssetRepository repository, TextureService textureService) {
             _repository = repository;
+            _textureService = textureService;
         }
 
         private static TextField CreateTextField(bool isBold) {
@@ -165,7 +166,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _nameField.SetValueWithoutNotify(asset.Name);
             _descriptionField.SetValueWithoutNotify(asset.Description);
 
-            LoadThumbnailAsync(asset.ID, _repository.GetThumbnailDataAsync);
+            LoadThumbnailAsync(asset.ID, false);
             RefreshTags(asset.Tags);
 
             var folderId = asset.Folder;
@@ -191,7 +192,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _descriptionField.value = folder.Description;
             _folderNameLabel.text = "This is a Folder";
 
-            LoadThumbnailAsync(folder.ID, _repository.GetFolderThumbnailDataAsync, true);
+            LoadThumbnailAsync(folder.ID, true);
         }
 
         private void ClearFields() {
@@ -203,32 +204,26 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _thumbnailContainer.style.backgroundImage = null;
         }
 
-        private async void LoadThumbnailAsync(Ulid id, Func<Ulid, Task<byte[]>> dataProvider, bool isFolder = false) {
+        private async void LoadThumbnailAsync(Ulid id, bool isFolder) {
             _thumbnailContainer.style.backgroundImage = null;
-            if (_repository == null) return;
+            if (_textureService == null) return;
 
             try {
-                var bytes = await dataProvider(id);
-
+                Texture2D tex;
                 if (isFolder) {
+                    tex = await _textureService.GetFolderThumbnailAsync(id);
                     if (_currentFolder?.ID != id) return;
                 }
                 else {
+                    tex = await _textureService.GetAssetThumbnailAsync(id);
                     if (_currentAsset?.ID != id) return;
                 }
 
-                if (bytes == null) {
-                    if (isFolder)
-                        _thumbnailContainer.style.backgroundImage =
-                            new StyleBackground(EditorGUIUtility.IconContent("Folder Icon").image as Texture2D);
-                    return;
-                }
-
-                var tex = new Texture2D(2, 2);
-                if (tex.LoadImage(bytes))
+                if (tex != null)
                     _thumbnailContainer.style.backgroundImage = new StyleBackground(tex);
-                else
-                    Object.DestroyImmediate(tex);
+                else if (isFolder)
+                    _thumbnailContainer.style.backgroundImage =
+                        new StyleBackground(EditorGUIUtility.IconContent("Folder Icon").image as Texture2D);
             }
             catch {
                 // ignore

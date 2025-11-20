@@ -1,32 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetView : VisualElement {
-        private const int MaxCacheSize = 200;
         private readonly Button _backButton;
         private readonly ScrollView _breadcrumbContainer;
         private readonly Button _forwardButton;
         private readonly ListView _listView;
-        private readonly List<string> _thumbnailAccessOrder = new();
-        private readonly Dictionary<string, Texture2D> _thumbnailCache = new();
 
         private AssetViewController _controller;
         private CancellationTokenSource _cts;
         private List<object> _items = new();
         private int _itemsPerRow = 5;
         private float _lastWidth;
+        private TextureService _textureService;
 
         public AssetView() {
             style.flexGrow = 1;
@@ -98,41 +94,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             UpdateNavigationState();
         }
 
+        public void Initialize(TextureService textureService) {
+            _textureService = textureService;
+        }
+
         private void OnDetach(DetachFromPanelEvent evt) {
             CancelCurrentTasks();
-            ClearThumbnailCache();
         }
 
         private void CancelCurrentTasks() {
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = new CancellationTokenSource();
-        }
-
-        private void ClearThumbnailCache() {
-            foreach (var tex in _thumbnailCache.Values.Where(tex => tex != null)) Object.DestroyImmediate(tex);
-            _thumbnailCache.Clear();
-            _thumbnailAccessOrder.Clear();
-        }
-
-        private void AddToCache(string key, Texture2D texture) {
-            if (_thumbnailCache.ContainsKey(key)) {
-                _thumbnailAccessOrder.Remove(key);
-                _thumbnailAccessOrder.Add(key);
-                return;
-            }
-
-            if (_thumbnailCache.Count >= MaxCacheSize) {
-                var oldestKey = _thumbnailAccessOrder[0];
-                _thumbnailAccessOrder.RemoveAt(0);
-                if (_thumbnailCache.TryGetValue(oldestKey, out var oldTex)) {
-                    if (oldTex != null) Object.DestroyImmediate(oldTex);
-                    _thumbnailCache.Remove(oldestKey);
-                }
-            }
-
-            _thumbnailCache[key] = texture;
-            _thumbnailAccessOrder.Add(key);
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt) {
@@ -225,15 +198,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                             card.SetData(folder.Name);
                             card.userData = folder;
                             card.SetThumbnail(null);
-                            LoadImageAsync(card, folder.ID, "folder_" + folder.ID,
-                                AssetManagerContainer.Repository.GetFolderThumbnailDataAsync);
+                            LoadImageAsync(card, folder.ID, true);
                             break;
                         case AssetMetadata asset:
                             card.SetData(asset.Name);
                             card.userData = asset;
                             card.SetThumbnail(null);
-                            LoadImageAsync(card, asset.ID, asset.ID.ToString(),
-                                AssetManagerContainer.Repository.GetThumbnailDataAsync);
+                            LoadImageAsync(card, asset.ID, false);
                             break;
                     }
                 }
@@ -243,24 +214,20 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
         }
 
-        private async void LoadImageAsync(AssetCard card, Ulid id, string cacheKey,
-            Func<Ulid, Task<byte[]>> dataProvider) {
+        private async void LoadImageAsync(AssetCard card, Ulid id, bool isFolder) {
+            if (_textureService == null) return;
+
             _cts ??= new CancellationTokenSource();
             var token = _cts.Token;
 
-            if (_thumbnailCache.TryGetValue(cacheKey, out var cachedTex)) {
-                if (cachedTex == null) return;
-                card.SetThumbnail(cachedTex);
-                _thumbnailAccessOrder.Remove(cacheKey);
-                _thumbnailAccessOrder.Add(cacheKey);
-
-                return;
-            }
-
             try {
-                var fileData = await dataProvider(id);
+                Texture2D tex;
+                if (isFolder)
+                    tex = await _textureService.GetFolderThumbnailAsync(id);
+                else
+                    tex = await _textureService.GetAssetThumbnailAsync(id);
+
                 if (token.IsCancellationRequested) return;
-                if (fileData == null) return;
 
                 switch (card.userData) {
                     case AssetMetadata meta when meta.ID != id:
@@ -268,18 +235,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         return;
                 }
 
-                var tex = new Texture2D(2, 2);
-                if (tex.LoadImage(fileData)) {
-                    AddToCache(cacheKey, tex);
+                if (tex != null)
                     card.SetThumbnail(tex);
-                }
-                else {
-                    Object.DestroyImmediate(tex);
-                }
             }
-            catch (Exception e) {
-                if (e is not OperationCanceledException)
-                    Debug.LogWarning($"Failed to load thumbnail for {cacheKey}: {e.Message}");
+            catch {
+                // ignore
             }
         }
 

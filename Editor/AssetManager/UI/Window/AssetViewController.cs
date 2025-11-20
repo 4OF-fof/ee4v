@@ -18,10 +18,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private readonly Stack<NavigationState> _backHistory = new();
         private readonly Stack<NavigationState> _forwardHistory = new();
         private readonly IAssetRepository _repository;
+        private string _contextName = "All Items";
+        private NavigationMode _currentMode = NavigationMode.AllItems;
 
         private Func<AssetMetadata, bool> _filter = asset => !asset.IsDeleted;
-        private NavigationMode _currentMode = NavigationMode.AllItems;
-        private string _contextName = "All Items";
         private Ulid _selectedFolderId = Ulid.Empty;
 
         public AssetViewController(IAssetRepository repository) {
@@ -42,7 +42,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         public event Action OnHistoryChanged;
         public event Action<List<(string Name, Ulid Id)>> BreadcrumbsChanged;
 
-        public void SetMode(NavigationMode mode, string contextName, Func<AssetMetadata, bool> filter, bool pushHistory = true) {
+        public void SetMode(NavigationMode mode, string contextName, Func<AssetMetadata, bool> filter,
+            bool pushHistory = true) {
             if (pushHistory) PushCurrentStateToBackHistory();
             _forwardHistory.Clear();
 
@@ -91,7 +92,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void PushCurrentStateToBackHistory() {
-            _backHistory.Push(CreateCurrentState());
+            var currentState = CreateCurrentState();
+
+            if (_backHistory.Count > 0) {
+                var prevState = _backHistory.Peek();
+                if (AreStatesEqual(prevState, currentState)) return;
+            }
+
+            _backHistory.Push(currentState);
         }
 
         private NavigationState CreateCurrentState() {
@@ -101,6 +109,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 SelectedFolderId = _selectedFolderId,
                 Filter = _filter
             };
+        }
+
+        private static bool AreStatesEqual(NavigationState a, NavigationState b) {
+            return a.Mode == b.Mode &&
+                a.SelectedFolderId == b.SelectedFolderId &&
+                a.ContextName == b.ContextName;
         }
 
         private void RestoreState(NavigationState state) {
@@ -156,7 +170,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 IEnumerable<AssetMetadata> assetsSource;
 
                 if (_selectedFolderId == Ulid.Empty)
-                    assetsSource = _currentMode == NavigationMode.Folders ? Enumerable.Empty<AssetMetadata>() : allAssets;
+                    assetsSource = _currentMode == NavigationMode.Folders
+                        ? Enumerable.Empty<AssetMetadata>()
+                        : allAssets;
                 else
                     assetsSource = allAssets.Where(a => a.Folder == _selectedFolderId);
 
