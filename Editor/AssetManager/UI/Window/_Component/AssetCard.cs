@@ -21,7 +21,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     borderBottomRightRadius = 5,
                     overflow = Overflow.Hidden,
                     flexGrow = 1,
-                    flexDirection = FlexDirection.Column 
+                    flexDirection = FlexDirection.Column
                 }
             };
             Add(innerContainer);
@@ -42,12 +42,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _nameLabel = new Label {
                 style = {
                     whiteSpace = WhiteSpace.Normal,
+                    overflow = Overflow.Hidden,
+                    textOverflow = TextOverflow.Ellipsis,
                     unityTextAlign = TextAnchor.MiddleCenter,
                     paddingTop = 2,
                     paddingBottom = 2,
                     paddingLeft = 2,
                     paddingRight = 2,
-                    height = 40,
+                    height = 38,
                     flexShrink = 0,
                     fontSize = 11,
                     color = new StyleColor(new Color(0.9f, 0.9f, 0.9f))
@@ -63,6 +65,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public void SetData(string itemName) {
             _nameLabel.text = itemName;
+            tooltip = itemName;
         }
 
         public void SetThumbnail(Texture2D texture) {
@@ -71,6 +74,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _thumbnail.style.backgroundColor = new StyleColor(Color.gray);
                 return;
             }
+
             _thumbnail.style.backgroundImage = new StyleBackground(texture);
             _thumbnail.style.backgroundColor = new StyleColor(Color.clear);
         }
