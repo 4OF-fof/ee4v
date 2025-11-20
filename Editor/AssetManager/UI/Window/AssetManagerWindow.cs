@@ -183,14 +183,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private void OnAssetTagAdded(string newTag) {
             if (_selectedAsset == null) return;
             _assetService.AddTag(_selectedAsset.ID, newTag);
+            _tagListView.Refresh();
             RefreshUI(false);
         }
 
         private void OnAssetTagRemoved(string tagToRemove) {
             if (_selectedAsset == null) return;
             _assetService.RemoveTag(_selectedAsset.ID, tagToRemove);
+            _tagListView.Refresh();
             RefreshUI(false);
         }
+
 
         private void RefreshUI(bool fullRefresh = true) {
             if (fullRefresh) _assetController.Refresh();

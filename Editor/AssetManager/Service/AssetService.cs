@@ -23,15 +23,19 @@ namespace _4OF.ee4v.AssetManager.Service {
         public void RemoveAsset(Ulid assetId) {
             var asset = _repository.GetAsset(assetId);
             if (asset == null) return;
-            asset.SetDeleted(true);
-            _repository.SaveAsset(asset);
+
+            var newAsset = new AssetMetadata(asset);
+            newAsset.SetDeleted(true);
+            _repository.SaveAsset(newAsset);
         }
 
         public void RestoreAsset(Ulid assetId) {
             var asset = _repository.GetAsset(assetId);
             if (asset == null) return;
-            asset.SetDeleted(false);
-            _repository.SaveAsset(asset);
+
+            var newAsset = new AssetMetadata(asset);
+            newAsset.SetDeleted(false);
+            _repository.SaveAsset(newAsset);
         }
 
         public void UpdateAsset(AssetMetadata newAsset) {
@@ -49,36 +53,46 @@ namespace _4OF.ee4v.AssetManager.Service {
             if (asset == null) return;
 
             _repository.RenameAssetFile(assetId, newName);
-            asset.SetName(newName);
-            _repository.SaveAsset(asset);
+
+            var newAsset = new AssetMetadata(asset);
+            newAsset.SetName(newName);
+            _repository.SaveAsset(newAsset);
         }
 
         public void SetDescription(Ulid assetId, string newDescription) {
             var asset = _repository.GetAsset(assetId);
             if (asset == null) return;
-            asset.SetDescription(newDescription);
-            _repository.SaveAsset(asset);
+
+            var newAsset = new AssetMetadata(asset);
+            newAsset.SetDescription(newDescription);
+            _repository.SaveAsset(newAsset);
         }
 
         public void SetFolder(Ulid assetId, Ulid newFolder) {
             var asset = _repository.GetAsset(assetId);
             if (asset == null) return;
-            asset.SetFolder(newFolder);
-            _repository.SaveAsset(asset);
+
+            var newAsset = new AssetMetadata(asset);
+            newAsset.SetFolder(newFolder);
+            _repository.SaveAsset(newAsset);
         }
 
         public void AddTag(Ulid assetId, string tag) {
             var asset = _repository.GetAsset(assetId);
             if (asset == null) return;
-            asset.AddTag(tag);
-            _repository.SaveAsset(asset);
+
+            var newAsset = new AssetMetadata(asset);
+            newAsset.AddTag(tag);
+            _repository.SaveAsset(newAsset);
         }
 
         public void RemoveTag(Ulid assetId, string tag) {
             var asset = _repository.GetAsset(assetId);
             if (asset == null) return;
-            asset.RemoveTag(tag);
-            _repository.SaveAsset(asset);
+
+            var newAsset = new AssetMetadata(asset);
+            newAsset.RemoveTag(tag);
+            _repository.SaveAsset(newAsset);
         }
 
         public void RenameTag(string oldTag, string newTag) {
@@ -87,9 +101,10 @@ namespace _4OF.ee4v.AssetManager.Service {
             foreach (var asset in _repository.GetAllAssets()) {
                 if (!asset.Tags.Contains(oldTag)) continue;
 
-                asset.RemoveTag(oldTag);
-                asset.AddTag(newTag);
-                _repository.SaveAsset(asset);
+                var newAsset = new AssetMetadata(asset);
+                newAsset.RemoveTag(oldTag);
+                newAsset.AddTag(newTag);
+                _repository.SaveAsset(newAsset);
             }
         }
 
@@ -103,8 +118,9 @@ namespace _4OF.ee4v.AssetManager.Service {
             var asset = _repository.GetAsset(assetId);
             if (asset == null) return;
 
-            asset.BoothData.SetShopDomain(match.Groups[1].Value);
-            _repository.SaveAsset(asset);
+            var newAsset = new AssetMetadata(asset);
+            newAsset.BoothData.SetShopDomain(match.Groups[1].Value);
+            _repository.SaveAsset(newAsset);
         }
 
         public void SetBoothItemId(Ulid assetId, string itemURL) {
@@ -117,8 +133,9 @@ namespace _4OF.ee4v.AssetManager.Service {
             var asset = _repository.GetAsset(assetId);
             if (asset == null) return;
 
-            asset.BoothData.SetItemID(match.Groups[1].Value);
-            _repository.SaveAsset(asset);
+            var newAsset = new AssetMetadata(asset);
+            newAsset.BoothData.SetItemID(match.Groups[1].Value);
+            _repository.SaveAsset(newAsset);
         }
 
         public void SetBoothDownloadId(Ulid assetId, string downloadURL) {
@@ -131,8 +148,9 @@ namespace _4OF.ee4v.AssetManager.Service {
             var asset = _repository.GetAsset(assetId);
             if (asset == null) return;
 
-            asset.BoothData.SetDownloadID(match.Groups[1].Value);
-            _repository.SaveAsset(asset);
+            var newAsset = new AssetMetadata(asset);
+            newAsset.BoothData.SetDownloadID(match.Groups[1].Value);
+            _repository.SaveAsset(newAsset);
         }
     }
 }
