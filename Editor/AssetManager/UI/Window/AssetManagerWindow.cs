@@ -36,9 +36,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _navigation.TagListClicked -= OnTagListClicked;
             }
 
-            if (_tagListView != null) {
-                _tagListView.OnTagSelected -= OnTagSelected;
-            }
+            if (_tagListView != null) _tagListView.OnTagSelected -= OnTagSelected;
 
             if (_assetController != null) {
                 _assetController.AssetSelected -= OnAssetSelected;
@@ -129,9 +127,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void OnFolderSelected(Ulid folderId) {
-            if (folderId == Ulid.Empty) {
-            }
-
             _assetController.SetFolder(folderId, _isInitialized);
             ShowAssetView();
         }

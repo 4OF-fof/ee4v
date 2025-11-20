@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
@@ -224,13 +225,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                             card.SetData(folder.Name);
                             card.userData = folder;
                             card.SetThumbnail(null);
-                            LoadFolderThumbnailAsync(card, folder.ID);
+                            LoadImageAsync(card, folder.ID, "folder_" + folder.ID,
+                                AssetManagerContainer.Repository.GetFolderThumbnailDataAsync);
                             break;
                         case AssetMetadata asset:
                             card.SetData(asset.Name);
                             card.userData = asset;
                             card.SetThumbnail(null);
-                            LoadThumbnailAsync(card, asset.ID);
+                            LoadImageAsync(card, asset.ID, asset.ID.ToString(),
+                                AssetManagerContainer.Repository.GetThumbnailDataAsync);
                             break;
                     }
                 }
@@ -240,65 +243,34 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
         }
 
-        private async void LoadThumbnailAsync(AssetCard card, Ulid assetId) {
+        private async void LoadImageAsync(AssetCard card, Ulid id, string cacheKey,
+            Func<Ulid, Task<byte[]>> dataProvider) {
             _cts ??= new CancellationTokenSource();
             var token = _cts.Token;
 
-            var idStr = assetId.ToString();
-            if (_thumbnailCache.TryGetValue(idStr, out var cachedTex)) {
+            if (_thumbnailCache.TryGetValue(cacheKey, out var cachedTex)) {
                 if (cachedTex == null) return;
                 card.SetThumbnail(cachedTex);
-                _thumbnailAccessOrder.Remove(idStr);
-                _thumbnailAccessOrder.Add(idStr);
+                _thumbnailAccessOrder.Remove(cacheKey);
+                _thumbnailAccessOrder.Add(cacheKey);
 
                 return;
             }
 
             try {
-                var fileData = await AssetManagerContainer.Repository.GetThumbnailDataAsync(assetId);
+                var fileData = await dataProvider(id);
                 if (token.IsCancellationRequested) return;
                 if (fileData == null) return;
 
-                if (card.userData is not AssetMetadata currentMeta || currentMeta.ID != assetId) return;
+                switch (card.userData) {
+                    case AssetMetadata meta when meta.ID != id:
+                    case BaseFolder folder when folder.ID != id:
+                        return;
+                }
 
                 var tex = new Texture2D(2, 2);
                 if (tex.LoadImage(fileData)) {
-                    AddToCache(idStr, tex);
-                    card.SetThumbnail(tex);
-                }
-                else {
-                    Object.DestroyImmediate(tex);
-                }
-            }
-            catch (Exception e) {
-                if (e is not OperationCanceledException) Debug.LogWarning($"Failed to load thumbnail: {e.Message}");
-            }
-        }
-
-        private async void LoadFolderThumbnailAsync(AssetCard card, Ulid folderId) {
-            _cts ??= new CancellationTokenSource();
-            var token = _cts.Token;
-
-            var idStr = "folder_" + folderId;
-            if (_thumbnailCache.TryGetValue(idStr, out var cachedTex)) {
-                if (cachedTex == null) return;
-                card.SetThumbnail(cachedTex);
-                _thumbnailAccessOrder.Remove(idStr);
-                _thumbnailAccessOrder.Add(idStr);
-
-                return;
-            }
-
-            try {
-                var fileData = await AssetManagerContainer.Repository.GetFolderThumbnailDataAsync(folderId);
-                if (token.IsCancellationRequested) return;
-                if (fileData == null) return;
-
-                if (card.userData is not BaseFolder currentFolder || currentFolder.ID != folderId) return;
-
-                var tex = new Texture2D(2, 2);
-                if (tex.LoadImage(fileData)) {
-                    AddToCache(idStr, tex);
+                    AddToCache(cacheKey, tex);
                     card.SetThumbnail(tex);
                 }
                 else {
@@ -307,7 +279,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
             catch (Exception e) {
                 if (e is not OperationCanceledException)
-                    Debug.LogWarning($"Failed to load folder thumbnail: {e.Message}");
+                    Debug.LogWarning($"Failed to load thumbnail for {cacheKey}: {e.Message}");
             }
         }
 

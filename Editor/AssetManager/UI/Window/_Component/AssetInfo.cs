@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
@@ -144,10 +145,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void AddNewTag() {
             var tag = _newTagField.value?.Trim();
-            if (!string.IsNullOrEmpty(tag)) {
-                OnTagAdded?.Invoke(tag);
-                _newTagField.value = "";
-            }
+            if (string.IsNullOrEmpty(tag)) return;
+            OnTagAdded?.Invoke(tag);
+            _newTagField.value = "";
         }
 
         public void SetAsset(AssetMetadata asset) {
@@ -165,7 +165,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _nameField.SetValueWithoutNotify(asset.Name);
             _descriptionField.SetValueWithoutNotify(asset.Description);
 
-            LoadThumbnail(asset.ID);
+            LoadThumbnailAsync(asset.ID, _repository.GetThumbnailDataAsync);
             RefreshTags(asset.Tags);
 
             var folderId = asset.Folder;
@@ -191,7 +191,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _descriptionField.value = folder.Description;
             _folderNameLabel.text = "This is a Folder";
 
-            LoadFolderThumbnail(folder.ID);
+            LoadThumbnailAsync(folder.ID, _repository.GetFolderThumbnailDataAsync, true);
         }
 
         private void ClearFields() {
@@ -203,40 +203,26 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _thumbnailContainer.style.backgroundImage = null;
         }
 
-        private async void LoadThumbnail(Ulid assetId) {
+        private async void LoadThumbnailAsync(Ulid id, Func<Ulid, Task<byte[]>> dataProvider, bool isFolder = false) {
             _thumbnailContainer.style.backgroundImage = null;
             if (_repository == null) return;
 
             try {
-                var bytes = await _repository.GetThumbnailDataAsync(assetId);
-                if (bytes == null) return;
+                var bytes = await dataProvider(id);
 
-                if (_currentAsset?.ID != assetId) return;
-
-                var tex = new Texture2D(2, 2);
-                if (tex.LoadImage(bytes))
-                    _thumbnailContainer.style.backgroundImage = new StyleBackground(tex);
-                else
-                    Object.DestroyImmediate(tex);
-            }
-            catch {
-                // ignore
-            }
-        }
-
-        private async void LoadFolderThumbnail(Ulid folderId) {
-            _thumbnailContainer.style.backgroundImage = null;
-            if (_repository == null) return;
-
-            try {
-                var bytes = await _repository.GetFolderThumbnailDataAsync(folderId);
-                if (bytes == null) {
-                    _thumbnailContainer.style.backgroundImage =
-                        new StyleBackground(EditorGUIUtility.IconContent("Folder Icon").image as Texture2D);
-                    return;
+                if (isFolder) {
+                    if (_currentFolder?.ID != id) return;
+                }
+                else {
+                    if (_currentAsset?.ID != id) return;
                 }
 
-                if (_currentFolder?.ID != folderId) return;
+                if (bytes == null) {
+                    if (isFolder)
+                        _thumbnailContainer.style.backgroundImage =
+                            new StyleBackground(EditorGUIUtility.IconContent("Folder Icon").image as Texture2D);
+                    return;
+                }
 
                 var tex = new Texture2D(2, 2);
                 if (tex.LoadImage(bytes))
