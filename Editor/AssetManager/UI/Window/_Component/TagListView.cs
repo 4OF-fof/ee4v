@@ -2,62 +2,60 @@
 using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.Core.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class TagListView : VisualElement {
         private readonly ListView _listView;
+        private readonly AssetToolbar _toolbar;
+        private List<string> _allTags = new();
+        private AssetViewController _controller;
+        private string _currentSearchText = string.Empty;
+        private List<string> _filteredTags = new();
         private IAssetRepository _repository;
-        private List<string> _tags = new();
 
         public TagListView() {
             style.flexGrow = 1;
+            style.backgroundColor = ColorPreset.DefaultBackground;
+
+            _toolbar = new AssetToolbar(0);
+            var slider = _toolbar.Q<SliderInt>();
+            if (slider != null) slider.style.display = DisplayStyle.None;
+            Add(_toolbar);
 
             _listView = new ListView {
                 style = { flexGrow = 1 },
-                makeItem = () =>
-                {
-                    var btn = new Button {
-                        style = {
-                            height = 24,
-                            unityTextAlign = TextAnchor.MiddleLeft,
-                            marginLeft = 0, marginRight = 0,
-                            borderLeftWidth = 0, borderRightWidth = 0, borderTopWidth = 0, borderBottomWidth = 0,
-                            backgroundColor = Color.clear
-                        }
-                    };
-                    return btn;
+                makeItem = () => new Label {
+                    style = {
+                        height = 24,
+                        unityTextAlign = TextAnchor.MiddleLeft,
+                        paddingLeft = 4,
+                        borderBottomWidth = 1,
+                        borderBottomColor = new StyleColor(new Color(0.5f, 0.5f, 0.5f, 0.2f))
+                    }
                 },
                 bindItem = (e, i) =>
                 {
-                    if (i < 0 || i >= _tags.Count) return;
-                    var btn = (Button)e;
-                    var tag = _tags[i];
-                    btn.text = tag;
-                    btn.SetEnabled(false);
+                    var label = (Label)e;
+                    if (i >= 0 && i < _filteredTags.Count)
+                        label.text = _filteredTags[i];
                 },
                 fixedItemHeight = 24,
                 selectionType = SelectionType.Single
             };
 
-            _listView.makeItem = () => new Label {
-                style = {
-                    height = 24,
-                    unityTextAlign = TextAnchor.MiddleLeft,
-                    paddingLeft = 4,
-                    borderBottomWidth = 1,
-                    borderBottomColor = new StyleColor(new Color(0.5f, 0.5f, 0.5f, 0.2f))
-                }
-            };
-            _listView.bindItem = (e, i) =>
-            {
-                var label = (Label)e;
-                label.text = _tags[i];
-            };
-
             _listView.selectionChanged += OnSelectionChanged;
             Add(_listView);
+
+            _toolbar.OnBack += () => _controller?.GoBack();
+            _toolbar.OnForward += () => _controller?.GoForward();
+            _toolbar.OnSearchTextChanged += text =>
+            {
+                _currentSearchText = text;
+                ApplyFilter();
+            };
         }
 
         public void Initialize(IAssetRepository repository) {
@@ -65,15 +63,36 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             Refresh();
         }
 
+        public void SetController(AssetViewController controller) {
+            if (_controller != null) _controller.OnHistoryChanged -= UpdateNavigationState;
+
+            _controller = controller;
+
+            if (_controller == null) return;
+            _controller.OnHistoryChanged += UpdateNavigationState;
+            UpdateNavigationState();
+        }
+
         public event Action<string> OnTagSelected;
 
         public void Refresh() {
             if (_repository == null) return;
 
-            _tags = _repository.GetAllTags();
-            _tags?.Sort();
+            _allTags = _repository.GetAllTags();
+            _allTags?.Sort();
 
-            _listView.itemsSource = _tags;
+            ApplyFilter();
+        }
+
+        private void ApplyFilter() {
+            if (string.IsNullOrWhiteSpace(_currentSearchText))
+                _filteredTags = new List<string>(_allTags ?? new List<string>());
+            else
+                _filteredTags = _allTags?
+                    .Where(t => t.IndexOf(_currentSearchText, StringComparison.OrdinalIgnoreCase) >= 0)
+                    .ToList() ?? new List<string>();
+
+            _listView.itemsSource = _filteredTags;
             _listView.Rebuild();
         }
 
@@ -82,6 +101,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             if (string.IsNullOrEmpty(selected)) return;
             OnTagSelected?.Invoke(selected);
             _listView.ClearSelection();
+        }
+
+        private void UpdateNavigationState() {
+            if (_controller == null) {
+                _toolbar.UpdateNavigationState(false, false);
+                return;
+            }
+
+            _toolbar.UpdateNavigationState(_controller.CanGoBack, _controller.CanGoForward);
         }
     }
 }

@@ -9,6 +9,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         AllItems,
         BoothItems,
         Tag,
+        TagList,
         Uncategorized,
         Trash,
         Folders
@@ -42,6 +43,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         public event Action<List<BaseFolder>> FoldersChanged;
 
         public event Action OnHistoryChanged;
+        public event Action<NavigationMode> ModeChanged;
         public event Action<List<(string Name, Ulid Id)>> BreadcrumbsChanged;
 
         public void SetMode(NavigationMode mode, string contextName, Func<AssetMetadata, bool> filter,
@@ -58,8 +60,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _selectedFolderId = Ulid.Empty;
             _currentTagFilter = null;
             if (mode == NavigationMode.Tag && contextName.StartsWith("Tag: "))
-                _currentTagFilter = contextName.Substring("Tag: ".Length);
+                _currentTagFilter = contextName["Tag: ".Length..];
 
+            ModeChanged?.Invoke(_currentMode);
             OnHistoryChanged?.Invoke();
             Refresh();
         }
@@ -76,6 +79,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _filter = asset => !asset.IsDeleted;
             _currentTagFilter = null;
 
+            ModeChanged?.Invoke(_currentMode);
             OnHistoryChanged?.Invoke();
             Refresh();
         }
@@ -134,6 +138,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _filter = state.Filter;
             _currentTagFilter = state.TagFilter;
 
+            ModeChanged?.Invoke(_currentMode);
             Refresh();
             OnHistoryChanged?.Invoke();
         }
@@ -162,42 +167,61 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         public void Refresh() {
             var displayItems = new List<object>();
 
-            if (_currentMode == NavigationMode.BoothItems && _selectedFolderId == Ulid.Empty) {
-                ShowBoothItemFolders();
-            }
-            else {
-                var libMetadata = _repository.GetLibraryMetadata();
+            switch (_currentMode) {
+                case NavigationMode.BoothItems when _selectedFolderId == Ulid.Empty:
+                    ShowBoothItemFolders();
+                    break;
+                case NavigationMode.TagList: {
+                    AssetsChanged?.Invoke(new List<AssetMetadata>());
+                    ItemsChanged?.Invoke(new List<object>());
+                    BreadcrumbsChanged?.Invoke(new List<(string Name, Ulid Id)> { ("Tag List", Ulid.Empty) });
 
-                if (_selectedFolderId == Ulid.Empty) {
-                    if (_currentMode == NavigationMode.Folders && libMetadata != null)
-                        displayItems.AddRange(libMetadata.FolderList.Where(f => f is not BoothItemFolder));
-                    else if (_currentMode == NavigationMode.Tag && !string.IsNullOrEmpty(_currentTagFilter))
-                        if (libMetadata != null) {
-                            var matchingFolders = new List<BaseFolder>();
-                            CollectFoldersByTag(libMetadata.FolderList, _currentTagFilter, matchingFolders);
-                            displayItems.AddRange(matchingFolders);
-                        }
+                    var foldersDummy = _repository.GetLibraryMetadata()?.FolderList.Where(f => !(f is BoothItemFolder))
+                            .ToList() ??
+                        new List<BaseFolder>();
+                    FoldersChanged?.Invoke(foldersDummy);
+                    return;
                 }
-                else {
-                    var currentFolder = libMetadata?.GetFolder(_selectedFolderId);
-                    if (currentFolder is Folder f) displayItems.AddRange(f.Children);
+                case NavigationMode.AllItems:
+                case NavigationMode.Tag:
+                case NavigationMode.Uncategorized:
+                case NavigationMode.Trash:
+                case NavigationMode.Folders:
+                default: {
+                    var libMetadata = _repository.GetLibraryMetadata();
+
+                    if (_selectedFolderId == Ulid.Empty) {
+                        if (_currentMode == NavigationMode.Folders && libMetadata != null)
+                            displayItems.AddRange(libMetadata.FolderList.Where(f => f is not BoothItemFolder));
+                        else if (_currentMode == NavigationMode.Tag && !string.IsNullOrEmpty(_currentTagFilter))
+                            if (libMetadata != null) {
+                                var matchingFolders = new List<BaseFolder>();
+                                CollectFoldersByTag(libMetadata.FolderList, _currentTagFilter, matchingFolders);
+                                displayItems.AddRange(matchingFolders);
+                            }
+                    }
+                    else {
+                        var currentFolder = libMetadata?.GetFolder(_selectedFolderId);
+                        if (currentFolder is Folder f) displayItems.AddRange(f.Children);
+                    }
+
+                    var allAssets = _repository.GetAllAssets();
+                    IEnumerable<AssetMetadata> assetsSource;
+
+                    if (_selectedFolderId == Ulid.Empty)
+                        assetsSource = _currentMode == NavigationMode.Folders
+                            ? Enumerable.Empty<AssetMetadata>()
+                            : allAssets;
+                    else
+                        assetsSource = allAssets.Where(a => a.Folder == _selectedFolderId);
+
+                    var filtered = assetsSource.Where(a => _filter(a)).ToList();
+                    displayItems.AddRange(filtered);
+
+                    AssetsChanged?.Invoke(filtered);
+                    ItemsChanged?.Invoke(displayItems);
+                    break;
                 }
-
-                var allAssets = _repository.GetAllAssets();
-                IEnumerable<AssetMetadata> assetsSource;
-
-                if (_selectedFolderId == Ulid.Empty)
-                    assetsSource = _currentMode == NavigationMode.Folders
-                        ? Enumerable.Empty<AssetMetadata>()
-                        : allAssets;
-                else
-                    assetsSource = allAssets.Where(a => a.Folder == _selectedFolderId);
-
-                var filtered = assetsSource.Where(a => _filter(a)).ToList();
-                displayItems.AddRange(filtered);
-
-                AssetsChanged?.Invoke(filtered);
-                ItemsChanged?.Invoke(displayItems);
             }
 
             var folders = _repository.GetLibraryMetadata()?.FolderList.Where(f => !(f is BoothItemFolder)).ToList() ??

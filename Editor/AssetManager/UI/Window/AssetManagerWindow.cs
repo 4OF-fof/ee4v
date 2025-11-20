@@ -45,6 +45,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _assetController.FolderPreviewSelected -= OnFolderPreviewSelected;
                 _assetController.FoldersChanged -= OnFoldersChanged;
                 _assetController.BoothItemFoldersChanged -= OnBoothItemFoldersChanged;
+                _assetController.ModeChanged -= OnModeChanged;
             }
 
             if (_assetView != null) _assetView.OnSelectionChange -= OnSelectionChanged;
@@ -103,6 +104,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             _navigation.Initialize(_repository);
             _tagListView.Initialize(_repository);
+            _tagListView.SetController(_assetController);
             _assetInfo.Initialize(_repository, _textureService, _folderService);
 
             _navigation.NavigationChanged += OnNavigationChanged;
@@ -115,6 +117,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetController.FolderPreviewSelected += OnFolderPreviewSelected;
             _assetController.FoldersChanged += OnFoldersChanged;
             _assetController.BoothItemFoldersChanged += OnBoothItemFoldersChanged;
+            _assetController.ModeChanged += OnModeChanged;
 
             _assetView.OnSelectionChange += OnSelectionChanged;
 
@@ -142,17 +145,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private void OnNavigationChanged(NavigationMode mode, string contextName, Func<AssetMetadata, bool> filter) {
             _assetController.SetMode(mode, contextName, filter, _isInitialized);
-            ShowAssetView();
         }
 
         private void OnFolderSelected(Ulid folderId) {
             _assetController.SetFolder(folderId, _isInitialized);
-            ShowAssetView();
         }
 
         private void OnTagListClicked() {
             _tagListView.Refresh();
-            ShowTagListView();
+            _assetController.SetMode(NavigationMode.TagList, "Tag List", _ => false);
         }
 
         private void OnTagSelected(string tag) {
@@ -161,7 +162,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 $"Tag: {tag}",
                 a => !a.IsDeleted && a.Tags.Contains(tag)
             );
-            ShowAssetView();
+        }
+
+        private void OnModeChanged(NavigationMode mode) {
+            if (mode == NavigationMode.TagList)
+                ShowTagListView();
+            else
+                ShowAssetView();
         }
 
         private void OnAssetSelected(AssetMetadata asset) {
