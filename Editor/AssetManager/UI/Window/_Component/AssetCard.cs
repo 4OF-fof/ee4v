@@ -20,15 +20,21 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     borderBottomLeftRadius = 5,
                     borderBottomRightRadius = 5,
                     overflow = Overflow.Hidden,
-                    flexGrow = 1
+                    flexGrow = 1,
+                    flexDirection = FlexDirection.Column 
                 }
             };
             Add(innerContainer);
 
             _thumbnail = new VisualElement {
                 style = {
-                    flexShrink = 0,
-                    backgroundColor = new StyleColor(Color.gray) // Placeholder color
+                    flexGrow = 1,
+                    width = Length.Percent(100),
+                    backgroundColor = new StyleColor(Color.gray),
+                    backgroundSize = new BackgroundSize(BackgroundSizeType.Contain),
+                    backgroundRepeat = new BackgroundRepeat(Repeat.NoRepeat, Repeat.NoRepeat),
+                    backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Center),
+                    backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Center)
                 }
             };
             innerContainer.Add(_thumbnail);
@@ -41,7 +47,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     paddingBottom = 2,
                     paddingLeft = 2,
                     paddingRight = 2,
-                    height = 40
+                    height = 40,
+                    flexShrink = 0,
+                    fontSize = 11,
+                    color = new StyleColor(new Color(0.9f, 0.9f, 0.9f))
                 }
             };
             innerContainer.Add(_nameLabel);
@@ -50,18 +59,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 innerContainer.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f, 1f)));
             innerContainer.RegisterCallback<MouseLeaveEvent>(_ =>
                 innerContainer.style.backgroundColor = new StyleColor(new Color(0.2f, 0.2f, 0.2f, 1f)));
-
-            RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-        }
-
-        private void OnGeometryChanged(GeometryChangedEvent evt) {
-            var width = evt.newRect.width;
-            if (float.IsNaN(width) || width <= 0) return;
-
-            var actualWidth = width - 10;
-
-            _thumbnail.style.width = actualWidth;
-            _thumbnail.style.height = actualWidth;
         }
 
         public void SetData(string itemName) {
@@ -69,7 +66,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         public void SetThumbnail(Texture2D texture) {
-            if (texture == null) return;
+            if (texture == null) {
+                _thumbnail.style.backgroundImage = null;
+                _thumbnail.style.backgroundColor = new StyleColor(Color.gray);
+                return;
+            }
             _thumbnail.style.backgroundImage = new StyleBackground(texture);
             _thumbnail.style.backgroundColor = new StyleColor(Color.clear);
         }

@@ -5,14 +5,23 @@ using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
 
 namespace _4OF.ee4v.AssetManager.UI.Window {
+    public enum NavigationMode {
+        AllItems,
+        BoothItems,
+        Tag,
+        Uncategorized,
+        Trash,
+        Folders
+    }
+
     public class AssetViewController {
         private readonly Stack<NavigationState> _backHistory = new();
         private readonly Stack<NavigationState> _forwardHistory = new();
         private readonly IAssetRepository _repository;
 
         private Func<AssetMetadata, bool> _filter = asset => !asset.IsDeleted;
-        private bool _isBoothMode;
-        private string _rootPathName = "All Items";
+        private NavigationMode _currentMode = NavigationMode.AllItems;
+        private string _contextName = "All Items";
         private Ulid _selectedFolderId = Ulid.Empty;
 
         public AssetViewController(IAssetRepository repository) {
@@ -33,13 +42,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         public event Action OnHistoryChanged;
         public event Action<List<(string Name, Ulid Id)>> BreadcrumbsChanged;
 
-        public void SetRootContext(string rootName, Func<AssetMetadata, bool> filter, bool isBoothMode = false,
-            bool pushHistory = true) {
+        public void SetMode(NavigationMode mode, string contextName, Func<AssetMetadata, bool> filter, bool pushHistory = true) {
             if (pushHistory) PushCurrentStateToBackHistory();
             _forwardHistory.Clear();
 
-            _rootPathName = rootName;
-            _isBoothMode = isBoothMode;
+            _currentMode = mode;
+            _contextName = contextName;
             _filter = filter ?? (asset => !asset.IsDeleted);
             _selectedFolderId = Ulid.Empty;
 
@@ -47,22 +55,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             Refresh();
         }
 
-        public void SetRootContextAndFolder(string rootName, Func<AssetMetadata, bool> filter, Ulid folderId,
-            bool pushHistory = true) {
+        public void SetFolder(Ulid folderId, bool pushHistory = true) {
+            if (_selectedFolderId == folderId) return;
+
             if (pushHistory) PushCurrentStateToBackHistory();
             _forwardHistory.Clear();
 
-            _rootPathName = rootName;
-            _isBoothMode = false;
-            _filter = filter ?? (asset => !asset.IsDeleted);
+            _currentMode = NavigationMode.Folders;
+            _contextName = "Folders";
             _selectedFolderId = folderId;
+            _filter = asset => !asset.IsDeleted;
 
             OnHistoryChanged?.Invoke();
-            Refresh();
-        }
-
-        public void SetFilter(Func<AssetMetadata, bool> filter) {
-            _filter = filter ?? (asset => !asset.IsDeleted);
             Refresh();
         }
 
@@ -74,35 +78,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             FolderPreviewSelected?.Invoke(folder);
         }
 
-        public void SelectFolder(Ulid folderId, bool pushHistory = true) {
-            if (_selectedFolderId == folderId) return;
-
-            if (pushHistory) PushCurrentStateToBackHistory();
-            _forwardHistory.Clear();
-
-            _selectedFolderId = folderId;
-            Refresh();
-            OnHistoryChanged?.Invoke();
-        }
-
         public void GoBack() {
             if (!CanGoBack) return;
-
-            var currentState = CreateCurrentState();
-            _forwardHistory.Push(currentState);
-
-            var prevState = _backHistory.Pop();
-            RestoreState(prevState);
+            _forwardHistory.Push(CreateCurrentState());
+            RestoreState(_backHistory.Pop());
         }
 
         public void GoForward() {
             if (!CanGoForward) return;
-
-            var currentState = CreateCurrentState();
-            _backHistory.Push(currentState);
-
-            var nextState = _forwardHistory.Pop();
-            RestoreState(nextState);
+            _backHistory.Push(CreateCurrentState());
+            RestoreState(_forwardHistory.Pop());
         }
 
         private void PushCurrentStateToBackHistory() {
@@ -111,16 +96,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private NavigationState CreateCurrentState() {
             return new NavigationState {
-                RootPathName = _rootPathName,
-                IsBoothMode = _isBoothMode,
+                Mode = _currentMode,
+                ContextName = _contextName,
                 SelectedFolderId = _selectedFolderId,
                 Filter = _filter
             };
         }
 
         private void RestoreState(NavigationState state) {
-            _rootPathName = state.RootPathName;
-            _isBoothMode = state.IsBoothMode;
+            _currentMode = state.Mode;
+            _contextName = state.ContextName;
             _selectedFolderId = state.SelectedFolderId;
             _filter = state.Filter;
 
@@ -152,15 +137,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         public void Refresh() {
             var displayItems = new List<object>();
 
-            if (_isBoothMode && _selectedFolderId == Ulid.Empty) {
+            if (_currentMode == NavigationMode.BoothItems && _selectedFolderId == Ulid.Empty) {
                 ShowBoothItemFolders();
             }
             else {
                 var libMetadata = _repository.GetLibraryMetadata();
 
                 if (_selectedFolderId == Ulid.Empty) {
-                    if (_rootPathName == "Folders" && libMetadata != null)
-                        displayItems.AddRange(libMetadata.FolderList.Where(f => !(f is BoothItemFolder)));
+                    if (_currentMode == NavigationMode.Folders && libMetadata != null)
+                        displayItems.AddRange(libMetadata.FolderList.Where(f => f is not BoothItemFolder));
                 }
                 else {
                     var currentFolder = libMetadata?.GetFolder(_selectedFolderId);
@@ -171,7 +156,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 IEnumerable<AssetMetadata> assetsSource;
 
                 if (_selectedFolderId == Ulid.Empty)
-                    assetsSource = _rootPathName == "Folders" ? Enumerable.Empty<AssetMetadata>() : allAssets;
+                    assetsSource = _currentMode == NavigationMode.Folders ? Enumerable.Empty<AssetMetadata>() : allAssets;
                 else
                     assetsSource = allAssets.Where(a => a.Folder == _selectedFolderId);
 
@@ -190,8 +175,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void UpdateBreadcrumbs() {
-            var breadcrumbs = new List<(string Name, Ulid Id)>();
-            breadcrumbs.Add((_rootPathName, Ulid.Empty));
+            var breadcrumbs = new List<(string Name, Ulid Id)> { (_contextName, Ulid.Empty) };
 
             if (_selectedFolderId != Ulid.Empty) {
                 var libMetadata = _repository.GetLibraryMetadata();
@@ -228,8 +212,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private struct NavigationState {
-            public string RootPathName;
-            public bool IsBoothMode;
+            public NavigationMode Mode;
+            public string ContextName;
             public Ulid SelectedFolderId;
             public Func<AssetMetadata, bool> Filter;
         }

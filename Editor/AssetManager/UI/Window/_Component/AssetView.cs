@@ -291,7 +291,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             switch (card.userData) {
                 case BaseFolder folder:
                     if (evt.clickCount == 2)
-                        _controller?.SelectFolder(folder.ID);
+                        _controller?.SetFolder(folder.ID);
                     else
                         _controller?.PreviewFolder(folder);
                     break;
@@ -341,7 +341,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 var (itemName, id) = path[i];
                 var isLast = i == path.Count - 1;
 
-                var btn = new Button(() => { _controller?.SelectFolder(id); }) {
+                var btn = new Button(() => { _controller?.SetFolder(id); }) {
                     text = itemName,
                     style = {
                         backgroundColor = Color.clear,

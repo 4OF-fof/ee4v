@@ -7,14 +7,9 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class Navigation : VisualElement {
-        private readonly Button _allButton;
-        private readonly Button _boothItemButton;
+        private readonly List<Button> _buttons = new();
         private readonly FolderView _folderView;
-        private readonly Button _tagListButton;
-        private readonly Button _trashButton;
-        private readonly Button _uncategorizedButton;
-
-        private IAssetRepository _repository;
+        private Button _selectedButton;
 
         public Navigation() {
             style.flexDirection = FlexDirection.Column;
@@ -22,53 +17,20 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             style.paddingRight = 6;
             style.paddingTop = 6;
 
-            _allButton = new Button(() =>
-            {
-                SetSelected(_allButton);
-                OnNavigationChanged("All Items", a => !a.IsDeleted);
-                OnFolderSelected(Ulid.Empty);
+            CreateNavButton("All items", () => FireNav(NavigationMode.AllItems, "All Items", a => !a.IsDeleted));
+            CreateNavButton("Booth Items", () => {
+                FireNav(NavigationMode.BoothItems, "Booth Items", a => !a.IsDeleted);
+                BoothItemClicked?.Invoke();
+            });
+            CreateNavButton("Tag List", () => {
+                TagListClicked?.Invoke();
                 _folderView?.ClearSelection();
-            }) { text = "All items" };
-            Add(_allButton);
+            });
+            CreateNavButton("Uncategorized", () => FireNav(NavigationMode.Uncategorized, "Uncategorized", 
+                a => !a.IsDeleted && a.Folder == Ulid.Empty && (a.Tags == null || a.Tags.Count == 0)));
+            CreateNavButton("Trash", () => FireNav(NavigationMode.Trash, "Trash", a => a.IsDeleted));
 
-            _boothItemButton = new Button(() =>
-            {
-                SetSelected(_boothItemButton);
-                OnNavigationChanged("Booth Items", a => !a.IsDeleted, true);
-                OnBoothItemClicked();
-                _folderView?.ClearSelection();
-            }) { text = "Booth Items" };
-            Add(_boothItemButton);
-
-            _tagListButton = new Button(() =>
-            {
-                SetSelected(_tagListButton);
-                OnTagListClicked();
-                _folderView?.ClearSelection();
-            }) { text = "Tag List" };
-            Add(_tagListButton);
-
-            _uncategorizedButton = new Button(() =>
-            {
-                SetSelected(_uncategorizedButton);
-                OnNavigationChanged("Uncategorized",
-                    a => !a.IsDeleted && a.Folder == Ulid.Empty && (a.Tags == null || a.Tags.Count == 0));
-                OnFolderSelected(Ulid.Empty);
-                _folderView?.ClearSelection();
-            }) { text = "Uncategorized" };
-            Add(_uncategorizedButton);
-
-            _trashButton = new Button(() =>
-            {
-                SetSelected(_trashButton);
-                OnNavigationChanged("Trash", a => a.IsDeleted);
-                OnFolderSelected(Ulid.Empty);
-                _folderView?.ClearSelection();
-            }) { text = "Trash" };
-            Add(_trashButton);
-
-            var spacer = new VisualElement { style = { height = 10 } };
-            Add(spacer);
+            Add(new VisualElement { style = { height = 10 } });
 
             var foldersLabel = new Label("Folders") {
                 style = {
@@ -82,8 +44,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             {
                 if (evt.button != 0) return;
                 SetSelected(null);
-                OnNavigationChanged("Folders", a => !a.IsDeleted);
                 _folderView?.ClearSelection();
+                NavigationChanged?.Invoke(NavigationMode.Folders, "Folders", a => !a.IsDeleted);
                 evt.StopPropagation();
             });
             Add(foldersLabel);
@@ -93,57 +55,46 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             Add(_folderView);
         }
 
-        public void Initialize(IAssetRepository repository) {
-            _repository = repository;
-        }
-
-        public event Action<string, Func<AssetMetadata, bool>, bool> NavigationChanged;
-
-        public event Action<Func<AssetMetadata, bool>> FilterChanged;
+        public event Action<NavigationMode, string, Func<AssetMetadata, bool>> NavigationChanged;
         public event Action<Ulid> FolderSelected;
         public event Action BoothItemClicked;
         public event Action TagListClicked;
+
+        public void Initialize(IAssetRepository repository) { }
 
         public void SetFolders(List<BaseFolder> folders) {
             _folderView.SetFolders(folders);
         }
 
-        private void OnNavigationChanged(string rootName, Func<AssetMetadata, bool> filter, bool isBoothMode = false) {
-            NavigationChanged?.Invoke(rootName, filter, isBoothMode);
-            FilterChanged?.Invoke(filter);
-        }
-
-        private void SetSelected(Button selected) {
-            _allButton?.RemoveFromClassList("selected");
-            _boothItemButton?.RemoveFromClassList("selected");
-            _tagListButton?.RemoveFromClassList("selected");
-            _uncategorizedButton?.RemoveFromClassList("selected");
-            _trashButton?.RemoveFromClassList("selected");
-            selected?.AddToClassList("selected");
-        }
-
         public void SelectAll() {
-            if (_allButton == null) return;
-            SetSelected(_allButton);
-            OnNavigationChanged("All Items", a => !a.IsDeleted);
-            _folderView?.ClearSelection();
+            if (_buttons.Count > 0) _buttons[0].SendEvent(new ClickEvent());
+        }
+
+        private void CreateNavButton(string text, Action onClick) {
+            var btn = new Button { text = text };
+            btn.clicked += () => {
+                SetSelected(btn);
+                onClick?.Invoke();
+            };
+            _buttons.Add(btn);
+            Add(btn);
+        }
+
+        private void FireNav(NavigationMode mode, string naviName, Func<AssetMetadata, bool> filter) {
+            _folderView.ClearSelection();
+            FolderSelected?.Invoke(Ulid.Empty);
+            NavigationChanged?.Invoke(mode, naviName, filter);
+        }
+
+        private void SetSelected(Button btn) {
+            _selectedButton?.RemoveFromClassList("selected");
+            _selectedButton = btn;
+            _selectedButton?.AddToClassList("selected");
         }
 
         private void OnFolderViewSelected(Ulid folderId) {
             SetSelected(null);
-            OnFolderSelected(folderId);
-        }
-
-        private void OnFolderSelected(Ulid folderId) {
             FolderSelected?.Invoke(folderId);
-        }
-
-        private void OnBoothItemClicked() {
-            BoothItemClicked?.Invoke();
-        }
-
-        private void OnTagListClicked() {
-            TagListClicked?.Invoke();
         }
     }
 }

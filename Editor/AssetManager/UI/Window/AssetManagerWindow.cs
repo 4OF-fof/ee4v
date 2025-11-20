@@ -14,15 +14,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
     public class AssetManagerWindow : EditorWindow {
         private AssetViewController _assetController;
         private AssetInfo _assetInfo;
-
         private AssetService _assetService;
         private AssetView _assetView;
         private FolderService _folderService;
-
         private bool _isInitialized;
         private Navigation _navigation;
         private IAssetRepository _repository;
-
         private AssetMetadata _selectedAsset;
         private TagListView _tagListView;
 
@@ -39,7 +36,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _navigation.TagListClicked -= OnTagListClicked;
             }
 
-            if (_tagListView != null) _tagListView.OnTagSelected -= OnTagSelected;
+            if (_tagListView != null) {
+                _tagListView.OnTagSelected -= OnTagSelected;
+            }
 
             if (_assetController != null) {
                 _assetController.AssetSelected -= OnAssetSelected;
@@ -124,21 +123,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _isInitialized = true;
         }
 
-        private void OnNavigationChanged(string rootName, Func<AssetMetadata, bool> filter, bool isBoothMode) {
-            _assetController.SetRootContext(rootName, filter, isBoothMode, _isInitialized);
+        private void OnNavigationChanged(NavigationMode mode, string contextName, Func<AssetMetadata, bool> filter) {
+            _assetController.SetMode(mode, contextName, filter, _isInitialized);
             ShowAssetView();
         }
 
         private void OnFolderSelected(Ulid folderId) {
-            if (folderId == Ulid.Empty)
-                _assetController.SelectFolder(folderId, _isInitialized);
-            else
-                _assetController.SetRootContextAndFolder(
-                    "Folders",
-                    a => !a.IsDeleted,
-                    folderId,
-                    _isInitialized
-                );
+            if (folderId == Ulid.Empty) {
+            }
+
+            _assetController.SetFolder(folderId, _isInitialized);
             ShowAssetView();
         }
 
@@ -148,7 +142,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void OnTagSelected(string tag) {
-            _assetController.SetRootContext(
+            _assetController.SetMode(
+                NavigationMode.Tag,
                 $"Tag: {tag}",
                 a => !a.IsDeleted && a.Tags.Contains(tag)
             );
