@@ -14,7 +14,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             var innerContainer = new VisualElement {
                 style = {
-                    backgroundColor = new StyleColor(new Color(0.2f, 0.2f, 0.2f, 1f)),
                     borderTopLeftRadius = 5,
                     borderTopRightRadius = 5,
                     borderBottomLeftRadius = 5,
@@ -56,11 +55,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 }
             };
             innerContainer.Add(_nameLabel);
-
-            innerContainer.RegisterCallback<MouseEnterEvent>(_ =>
-                innerContainer.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f, 1f)));
-            innerContainer.RegisterCallback<MouseLeaveEvent>(_ =>
-                innerContainer.style.backgroundColor = new StyleColor(new Color(0.2f, 0.2f, 0.2f, 1f)));
         }
 
         public void SetData(string itemName) {
