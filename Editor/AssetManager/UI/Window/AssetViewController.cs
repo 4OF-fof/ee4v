@@ -24,6 +24,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         public event Action<List<AssetMetadata>> AssetsChanged;
         public event Action<List<BoothItemFolder>> BoothItemFoldersChanged;
+        public event Action<List<object>> ItemsChanged;
+
         public event Action<AssetMetadata> AssetSelected;
         public event Action<BaseFolder> FolderPreviewSelected;
         public event Action<List<BaseFolder>> FoldersChanged;
@@ -59,10 +61,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         public void SelectFolder(Ulid folderId) {
             if (_selectedFolderId == folderId) return;
 
-            if (!(_rootPathName == "Folders" && _selectedFolderId == Ulid.Empty)) {
-                _backHistory.Push(_selectedFolderId);
-            }
-            
+            if (!(_rootPathName == "Folders" && _selectedFolderId == Ulid.Empty)) _backHistory.Push(_selectedFolderId);
+
             _forwardHistory.Clear();
 
             InternalSetFolder(folderId);
@@ -94,6 +94,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var rootFolders = libMetadata?.FolderList ?? new List<BaseFolder>();
             CollectBoothItemFolders(rootFolders, boothItemFolders);
             BoothItemFoldersChanged?.Invoke(boothItemFolders);
+            ItemsChanged?.Invoke(new List<object>(boothItemFolders));
         }
 
         private static void CollectBoothItemFolders(IEnumerable<BaseFolder> folders, List<BoothItemFolder> result) {
@@ -109,21 +110,37 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         public void Refresh() {
+            var displayItems = new List<object>();
+
             if (_isBoothMode && _selectedFolderId == Ulid.Empty) {
                 ShowBoothItemFolders();
             }
             else {
+                var libMetadata = _repository.GetLibraryMetadata();
+
+                if (_selectedFolderId == Ulid.Empty) {
+                    if (libMetadata != null)
+                        displayItems.AddRange(libMetadata.FolderList.Where(f => !(f is BoothItemFolder)));
+                }
+                else {
+                    var currentFolder = libMetadata?.GetFolder(_selectedFolderId);
+                    if (currentFolder is Folder f) displayItems.AddRange(f.Children);
+                }
+
                 var allAssets = _repository.GetAllAssets();
                 var assets = _selectedFolderId == Ulid.Empty
                     ? allAssets
                     : allAssets.Where(a => a.Folder == _selectedFolderId);
 
                 var filtered = assets.Where(a => _filter(a)).ToList();
+                displayItems.AddRange(filtered);
+
                 AssetsChanged?.Invoke(filtered);
+
+                ItemsChanged?.Invoke(displayItems);
             }
 
-            var libMetadata = _repository.GetLibraryMetadata();
-            var folders = libMetadata?.FolderList.Where(f => !(f is BoothItemFolder)).ToList() ??
+            var folders = _repository.GetLibraryMetadata()?.FolderList.Where(f => !(f is BoothItemFolder)).ToList() ??
                 new List<BaseFolder>();
             FoldersChanged?.Invoke(folders);
 
@@ -149,7 +166,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             BreadcrumbsChanged?.Invoke(breadcrumbs);
         }
 
-        private bool FindPathRecursive(IReadOnlyList<BaseFolder> currentLevel, Ulid targetId,
+        private static bool FindPathRecursive(IReadOnlyList<BaseFolder> currentLevel, Ulid targetId,
             Stack<(string Name, Ulid Id)> pathStack) {
             foreach (var folder in currentLevel) {
                 if (folder.ID == targetId) {

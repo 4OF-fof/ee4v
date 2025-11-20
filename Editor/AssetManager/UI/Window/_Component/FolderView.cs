@@ -10,6 +10,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly ListView _listView;
         private List<BaseFolder> _folders = new();
 
+        private bool _ignoreSelectionChange;
+
         public FolderView() {
             _listView = new ListView {
                 makeItem = () => new Label(),
@@ -35,10 +37,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         public void ClearSelection() {
-            _listView.ClearSelection();
+            _ignoreSelectionChange = true;
+            try {
+                _listView.ClearSelection();
+            }
+            finally {
+                _ignoreSelectionChange = false;
+            }
         }
 
         private void OnSelectionChanged(IEnumerable<object> selectedItems) {
+            if (_ignoreSelectionChange) return;
+
             var selectedFolder = selectedItems.FirstOrDefault() as BaseFolder;
             OnFolderSelected?.Invoke(selectedFolder?.ID ?? Ulid.Empty);
         }

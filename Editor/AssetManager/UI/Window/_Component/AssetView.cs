@@ -165,7 +165,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 };
 
                 switch (item) {
-                    case BoothItemFolder folder: {
+                    case BaseFolder folder: {
                         card.SetData(folder.Name);
                         card.userData = folder;
                         card.RegisterCallback<PointerDownEvent>(OnCardPointerDown);
@@ -224,7 +224,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             try {
                 var fileData = await Task.Run(() => File.ReadAllBytes(thumbnailPath));
-                if (card.userData is not BoothItemFolder currentFolder || currentFolder.ID != folderId) return;
+                if (card.userData is not BaseFolder currentFolder || currentFolder.ID != folderId) return;
                 var tex = new Texture2D(2, 2);
                 if (tex.LoadImage(fileData)) {
                     _thumbnailCache[idStr] = tex;
@@ -241,11 +241,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void OnCardPointerDown(PointerDownEvent evt) {
             if (evt.button != 0) return;
-            var card = evt.currentTarget as AssetCard;
-            if (card == null) return;
+            if (evt.currentTarget is not AssetCard card) return;
 
             switch (card.userData) {
-                case BoothItemFolder folder:
+                case BaseFolder folder:
                     if (evt.clickCount == 2)
                         _controller?.SelectFolder(folder.ID);
                     else
@@ -261,9 +260,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public void SetController(AssetViewController controller) {
             if (_controller != null) {
-                _controller.AssetsChanged -= OnAssetsChanged;
+                _controller.ItemsChanged -= OnItemsChanged;
+
                 _controller.AssetSelected -= OnControllerAssetSelected;
-                _controller.BoothItemFoldersChanged -= OnBoothItemFoldersChanged;
                 _controller.OnHistoryChanged -= UpdateNavigationState;
                 _controller.BreadcrumbsChanged -= UpdateBreadcrumbs;
             }
@@ -271,9 +270,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _controller = controller;
 
             if (_controller == null) return;
-            _controller.AssetsChanged += OnAssetsChanged;
+            _controller.ItemsChanged += OnItemsChanged;
+
             _controller.AssetSelected += OnControllerAssetSelected;
-            _controller.BoothItemFoldersChanged += OnBoothItemFoldersChanged;
             _controller.OnHistoryChanged += UpdateNavigationState;
             _controller.BreadcrumbsChanged += UpdateBreadcrumbs;
 
@@ -327,8 +326,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
         }
 
-        private void OnAssetsChanged(List<AssetMetadata> assets) {
-            _items = new List<object>(assets ?? new List<AssetMetadata>());
+        private void OnItemsChanged(List<object> items) {
+            _items = items ?? new List<object>();
             _listView.itemsSource = GetRows();
             _listView.Rebuild();
         }
