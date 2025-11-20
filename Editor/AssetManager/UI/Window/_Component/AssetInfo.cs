@@ -98,33 +98,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             descriptionScrollView.Add(_descriptionField);
             _singleSelectionContainer.Add(descriptionScrollView);
-
-            var tagLabel = new Label("Tags")
-                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
-            _singleSelectionContainer.Add(tagLabel);
-
-            _tagsContainer = new VisualElement {
-                style = {
-                    flexDirection = FlexDirection.Row,
-                    flexWrap = Wrap.Wrap,
-                    marginBottom = 4
-                }
-            };
-            _singleSelectionContainer.Add(_tagsContainer);
-
-            var tagInputContainer = new VisualElement
-                { style = { flexDirection = FlexDirection.Row, marginBottom = 10 } };
-            _newTagField = new TextField { style = { flexGrow = 1, marginRight = 4 } };
-            _newTagField.RegisterCallback<KeyDownEvent>(evt =>
-            {
-                if (evt.keyCode == KeyCode.Return) AddNewTag();
-            });
-
-            var addTagButton = new Button(AddNewTag) { text = "+", style = { width = 24 } };
-            tagInputContainer.Add(_newTagField);
-            tagInputContainer.Add(addTagButton);
-            _singleSelectionContainer.Add(tagInputContainer);
-
+            
             var folderHeader = new Label("Folder")
                 { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
             _singleSelectionContainer.Add(folderHeader);
@@ -179,6 +153,33 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             folderRow.Add(folderIcon);
             folderRow.Add(_folderNameLabel);
             _singleSelectionContainer.Add(folderRow);
+
+            var tagLabel = new Label("Tags")
+                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
+            _singleSelectionContainer.Add(tagLabel);
+
+            _tagsContainer = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    flexWrap = Wrap.Wrap,
+                    marginBottom = 4
+                }
+            };
+            _singleSelectionContainer.Add(_tagsContainer);
+
+            var tagInputContainer = new VisualElement
+                { style = { flexDirection = FlexDirection.Row, marginBottom = 10 } };
+            _newTagField = new TextField { style = { flexGrow = 1, marginRight = 4 } };
+            _newTagField.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode == KeyCode.Return) AddNewTag();
+            });
+
+            var addTagButton = new Button(AddNewTag) { text = "+", style = { width = 24 } };
+            tagInputContainer.Add(_newTagField);
+            tagInputContainer.Add(addTagButton);
+            _singleSelectionContainer.Add(tagInputContainer);
+            
             _multiSelectionContainer = new VisualElement {
                 style = { display = DisplayStyle.None, alignItems = Align.Center, marginTop = 20, marginBottom = 40 }
             };
