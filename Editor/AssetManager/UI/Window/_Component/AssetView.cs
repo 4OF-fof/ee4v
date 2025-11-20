@@ -16,6 +16,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetView : VisualElement {
         private readonly Button _backButton;
         private readonly ScrollView _breadcrumbContainer;
+
+        private readonly VisualElement _dropOverlay;
         private readonly Button _forwardButton;
         private readonly ListView _listView;
         private readonly Dictionary<string, Texture2D> _thumbnailCache = new();
@@ -27,6 +29,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public AssetView() {
             style.flexGrow = 1;
+            style.position = Position.Relative;
 
             var toolbar = new Toolbar();
 
@@ -90,8 +93,36 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _listView.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             Add(_listView);
 
+            _dropOverlay = new VisualElement {
+                name = "drop-overlay",
+                style = {
+                    position = Position.Absolute,
+                    top = 0, bottom = 0, left = 0, right = 0,
+                    backgroundColor = new StyleColor(new Color(0f, 0f, 0f, 0.6f)),
+                    alignItems = Align.Center,
+                    justifyContent = Justify.Center,
+                    display = DisplayStyle.None,
+                    opacity = 0
+                },
+                pickingMode = PickingMode.Ignore
+            };
+
+            var dropLabel = new Label("Drop to Import") {
+                style = {
+                    fontSize = 24,
+                    color = Color.white,
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    paddingTop = 20, paddingBottom = 20, paddingLeft = 40, paddingRight = 40,
+                    backgroundColor = new StyleColor(new Color(0.2f, 0.2f, 0.2f, 0.8f)),
+                    borderTopLeftRadius = 10, borderTopRightRadius = 10,
+                    borderBottomLeftRadius = 10, borderBottomRightRadius = 10
+                }
+            };
+            _dropOverlay.Add(dropLabel);
+            Add(_dropOverlay);
+
             RegisterCallback<DetachFromPanelEvent>(OnDetach);
-            
+
             RegisterCallback<DragEnterEvent>(OnDragEnter, TrickleDown.TrickleDown);
             RegisterCallback<DragUpdatedEvent>(OnDragUpdated, TrickleDown.TrickleDown);
             RegisterCallback<DragPerformEvent>(OnDragPerform, TrickleDown.TrickleDown);
@@ -353,7 +384,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private void OnDragEnter(DragEnterEvent evt) {
             if (DragAndDrop.paths.Length <= 0 || !DragAndDrop.paths.Any(File.Exists)) return;
             DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-            style.backgroundColor = new StyleColor(new Color(0.3f, 0.5f, 0.7f, 0.2f));
+            _dropOverlay.style.display = DisplayStyle.Flex;
+            _dropOverlay.style.opacity = 1;
             evt.StopPropagation();
         }
 
@@ -365,18 +397,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void OnDragPerform(DragPerformEvent evt) {
             DragAndDrop.AcceptDrag();
-            style.backgroundColor = StyleKeyword.Null;
+            _dropOverlay.style.display = DisplayStyle.None;
+            _dropOverlay.style.opacity = 0;
 
-            foreach (var path in DragAndDrop.paths) {
-                if (File.Exists(path)) {
+            foreach (var path in DragAndDrop.paths)
+                if (File.Exists(path))
                     _controller?.AddAsset(path);
-                }
-            }
+
             evt.StopPropagation();
         }
 
         private void OnDragLeave(DragLeaveEvent evt) {
-            style.backgroundColor = StyleKeyword.Null;
+            _dropOverlay.style.display = DisplayStyle.None;
+            _dropOverlay.style.opacity = 0;
         }
     }
 }

@@ -148,7 +148,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                         break;
                 }
         }
-        
+
         public void AddAsset(string path) {
             if (string.IsNullOrEmpty(path)) return;
             _repository.CreateAssetFromFile(path);
