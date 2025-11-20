@@ -31,14 +31,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public AssetInfo() {
             style.flexDirection = FlexDirection.Column;
-            style.paddingLeft = 10;
-            style.paddingRight = 10;
-            style.paddingTop = 10;
-            style.paddingBottom = 10;
             style.backgroundColor = ColorPreset.DefaultBackground;
 
+            var scrollView = new ScrollView {
+                style = { flexGrow = 1 }
+            };
+            scrollView.contentContainer.style.paddingLeft = 10;
+            scrollView.contentContainer.style.paddingRight = 10;
+            scrollView.contentContainer.style.paddingTop = 10;
+            scrollView.contentContainer.style.paddingBottom = 10;
+            Add(scrollView);
+
             _singleSelectionContainer = new VisualElement();
-            Add(_singleSelectionContainer);
+            scrollView.Add(_singleSelectionContainer);
 
             _thumbnailContainer = new VisualElement {
                 style = {
@@ -54,6 +59,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
             _singleSelectionContainer.Add(_thumbnailContainer);
 
+            var nameLabel = new Label("Name")
+                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
+            _singleSelectionContainer.Add(nameLabel);
+
             _nameField = CreateTextField(true);
             _nameField.style.marginBottom = 4;
             _nameField.RegisterCallback<FocusOutEvent>(_ =>
@@ -63,16 +72,30 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             });
             _singleSelectionContainer.Add(_nameField);
 
+            var descriptionLabel = new Label("Description")
+                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
+            _singleSelectionContainer.Add(descriptionLabel);
+
+            var descriptionScrollView = new ScrollView {
+                style = {
+                    flexWrap = Wrap.Wrap,
+                    maxHeight = 200,
+                    marginBottom = 4
+                }
+            };
+
             _descriptionField = CreateTextField(false);
             _descriptionField.multiline = true;
             _descriptionField.style.minHeight = 40;
-            _descriptionField.style.marginBottom = 4;
+
             _descriptionField.RegisterCallback<FocusOutEvent>(_ =>
             {
                 if (_currentAsset != null && _descriptionField.value != _currentAsset.Description)
                     OnDescriptionChanged?.Invoke(_descriptionField.value);
             });
-            _singleSelectionContainer.Add(_descriptionField);
+
+            descriptionScrollView.Add(_descriptionField);
+            _singleSelectionContainer.Add(descriptionScrollView);
 
             var tagLabel = new Label("Tags")
                 { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
@@ -136,14 +159,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 }
             };
             _multiSelectionContainer.Add(_multiSelectionLabel);
-            Add(_multiSelectionContainer);
+            scrollView.Add(_multiSelectionContainer);
 
             _infoHeader = new Label("Information")
                 { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
-            Add(_infoHeader);
+            scrollView.Add(_infoHeader);
 
             _infoContainer = new VisualElement { style = { paddingLeft = 4 } };
-            Add(_infoContainer);
+            scrollView.Add(_infoContainer);
         }
 
         public event Action<string> OnNameChanged;
