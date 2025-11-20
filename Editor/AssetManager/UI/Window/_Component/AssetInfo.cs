@@ -11,7 +11,6 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetInfo : VisualElement {
-        // ... existing fields ...
         private readonly TextField _descriptionField;
         private readonly Label _folderNameLabel;
         private readonly VisualElement _infoContainer;
@@ -26,14 +25,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly VisualElement _thumbnailContainer;
 
         private AssetMetadata _currentAsset;
+        private Ulid _currentAssetFolderId;
         private BaseFolder _currentFolder;
-        private FolderService _folderService; // Added
+        private FolderService _folderService;
         private IAssetRepository _repository;
         private TextureService _textureService;
 
         public AssetInfo() {
-            // ... existing constructor code ...
-            // No changes needed in constructor layout
             style.flexDirection = FlexDirection.Column;
             style.backgroundColor = ColorPreset.DefaultBackground;
 
@@ -144,11 +142,31 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     borderBottomRightRadius = 4
                 }
             };
+            folderRow.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 0) return;
+                if (_currentAssetFolderId != Ulid.Empty) OnFolderClicked?.Invoke(_currentAssetFolderId);
+                evt.StopPropagation();
+            });
+            folderRow.RegisterCallback<MouseEnterEvent>(_ =>
+                folderRow.style.backgroundColor = new StyleColor(new Color(0, 0, 0, 0.2f)));
+            folderRow.RegisterCallback<MouseLeaveEvent>(_ =>
+                folderRow.style.backgroundColor = new StyleColor(new Color(0, 0, 0, 0.1f)));
+
             var folderIcon = new Image {
                 image = EditorGUIUtility.IconContent("Folder Icon").image,
-                style = { width = 16, height = 16, marginRight = 4 }
+                style = { width = 16, height = 16, marginRight = 4, flexShrink = 0 }
             };
-            _folderNameLabel = new Label("-") { style = { flexGrow = 1 } };
+
+            _folderNameLabel = new Label("-") {
+                style = {
+                    flexGrow = 1,
+                    flexShrink = 1,
+                    overflow = Overflow.Hidden,
+                    textOverflow = TextOverflow.Ellipsis,
+                    whiteSpace = WhiteSpace.NoWrap
+                }
+            };
 
             folderRow.Add(folderIcon);
             folderRow.Add(_folderNameLabel);
@@ -177,6 +195,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<string> OnDescriptionChanged;
         public event Action<string> OnTagAdded;
         public event Action<string> OnTagRemoved;
+        public event Action<string> OnTagClicked;
+        public event Action<Ulid> OnFolderClicked;
 
         public void Initialize(IAssetRepository repository, TextureService textureService,
             FolderService folderService) {
@@ -279,8 +299,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             RefreshTags(asset.Tags);
 
             var folderId = asset.Folder;
+            _currentAssetFolderId = folderId;
             var folder = _repository?.GetLibraryMetadata()?.GetFolder(folderId);
-            _folderNameLabel.text = folder != null ? folder.Name : "Root";
+            var folderName = folder != null ? folder.Name : "Root";
+            _folderNameLabel.text = folderName;
+            _folderNameLabel.tooltip = folderName;
 
             _infoContainer.Clear();
             AddInfoRow("Size", FormatSize(asset.Size));
@@ -381,6 +404,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     }
                 };
 
+                pill.RegisterCallback<PointerDownEvent>(evt =>
+                {
+                    if (evt.button != 0) return;
+                    OnTagClicked?.Invoke(tag);
+                    evt.StopPropagation();
+                });
+
                 var label = new Label(tag) { style = { marginRight = 4 } };
                 var removeBtn = new Button(() =>
                 {
@@ -402,6 +432,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         paddingLeft = 0, paddingRight = 0
                     }
                 };
+
+                removeBtn.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
+                removeBtn.RegisterCallback<MouseEnterEvent>(_ =>
+                {
+                    removeBtn.style.backgroundColor = ColorPreset.TabCloseButtonHover;
+                    removeBtn.style.color = Color.white;
+                });
+                removeBtn.RegisterCallback<MouseLeaveEvent>(_ =>
+                {
+                    removeBtn.style.backgroundColor = Color.clear;
+                    removeBtn.style.color = new StyleColor(StyleKeyword.Null);
+                });
 
                 pill.Add(label);
                 pill.Add(removeBtn);

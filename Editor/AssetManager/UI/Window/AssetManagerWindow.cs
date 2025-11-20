@@ -55,6 +55,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _assetInfo.OnDescriptionChanged -= OnAssetDescriptionChanged;
                 _assetInfo.OnTagAdded -= OnAssetTagAdded;
                 _assetInfo.OnTagRemoved -= OnAssetTagRemoved;
+                _assetInfo.OnTagClicked -= OnTagSelected;
+                _assetInfo.OnFolderClicked -= OnFolderSelected;
             }
 
             _textureService?.ClearCache();
@@ -125,6 +127,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetInfo.OnDescriptionChanged += OnAssetDescriptionChanged;
             _assetInfo.OnTagAdded += OnAssetTagAdded;
             _assetInfo.OnTagRemoved += OnAssetTagRemoved;
+            _assetInfo.OnTagClicked += OnTagSelected;
+            _assetInfo.OnFolderClicked += OnFolderSelected;
 
             _navigation.SelectAll();
             _assetController.Refresh();
