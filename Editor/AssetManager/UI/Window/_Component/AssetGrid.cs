@@ -33,7 +33,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 makeItem = MakeRow,
                 bindItem = BindRow,
                 itemsSource = _rows,
-                selectionType = SelectionType.None
+                selectionType = SelectionType.None,
+                fixedItemHeight = 220
             };
 
             _listView.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
