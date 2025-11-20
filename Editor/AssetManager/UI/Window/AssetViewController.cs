@@ -59,7 +59,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         public void SelectFolder(Ulid folderId) {
             if (_selectedFolderId == folderId) return;
 
-            _backHistory.Push(_selectedFolderId);
+            if (!(_rootPathName == "Folders" && _selectedFolderId == Ulid.Empty)) {
+                _backHistory.Push(_selectedFolderId);
+            }
+            
             _forwardHistory.Clear();
 
             InternalSetFolder(folderId);
