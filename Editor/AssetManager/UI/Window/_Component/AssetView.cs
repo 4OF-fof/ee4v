@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.UI;
@@ -21,6 +22,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly Dictionary<string, Texture2D> _thumbnailCache = new();
 
         private AssetViewController _controller;
+        private CancellationTokenSource _cts;
         private List<object> _items = new();
         private int _itemsPerRow = 5;
         private float _lastWidth;
@@ -96,6 +98,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         private void OnDetach(DetachFromPanelEvent evt) {
+            CancelCurrentTasks();
+            ClearThumbnailCache();
+        }
+
+        private void CancelCurrentTasks() {
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = new CancellationTokenSource();
+        }
+
+        private void ClearThumbnailCache() {
             foreach (var tex in _thumbnailCache.Values.Where(tex => tex != null)) Object.DestroyImmediate(tex);
             _thumbnailCache.Clear();
         }
@@ -136,56 +149,80 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             return rows;
         }
 
-        private static VisualElement MakeRow() {
-            return new VisualElement {
+        private VisualElement MakeRow() {
+            var row = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
                     flexWrap = Wrap.NoWrap
                 }
             };
+
+            for (var i = 0; i < _itemsPerRow; i++) {
+                var card = new AssetCard {
+                    style = { flexShrink = 0 }
+                };
+                card.RegisterCallback<PointerDownEvent>(OnCardPointerDown);
+                row.Add(card);
+            }
+
+            return row;
         }
 
         private void BindRow(VisualElement element, int index) {
-            element.Clear();
             var rows = _listView.itemsSource as List<List<object>>;
             if (rows == null || index < 0 || index >= rows.Count) return;
 
-            var row = rows[index];
+            var rowData = rows[index];
             var containerWidth = _listView.resolvedStyle.width;
             if (float.IsNaN(containerWidth) || !(containerWidth > 0)) return;
             containerWidth -= 20;
             var itemWidth = containerWidth / _itemsPerRow;
 
-            foreach (var item in row) {
-                var card = new AssetCard {
-                    style = {
-                        width = itemWidth,
-                        flexShrink = 0
-                    }
-                };
+            var elementChildCount = element.childCount;
 
-                switch (item) {
-                    case BaseFolder folder: {
-                        card.SetData(folder.Name);
-                        card.userData = folder;
-                        card.RegisterCallback<PointerDownEvent>(OnCardPointerDown);
-                        LoadFolderThumbnailAsync(card, folder.ID);
-                        break;
-                    }
-                    case AssetMetadata asset: {
-                        card.SetData(asset.Name);
-                        card.userData = asset;
-                        card.RegisterCallback<PointerDownEvent>(OnCardPointerDown);
-                        LoadThumbnailAsync(card, asset.ID);
-                        break;
-                    }
+            if (elementChildCount < _itemsPerRow)
+                for (var i = elementChildCount; i < _itemsPerRow; i++) {
+                    var card = new AssetCard {
+                        style = { flexShrink = 0 }
+                    };
+                    card.RegisterCallback<PointerDownEvent>(OnCardPointerDown);
+                    element.Add(card);
                 }
 
-                element.Add(card);
+            for (var i = 0; i < element.childCount; i++) {
+                var card = element[i] as AssetCard;
+                if (card == null) continue;
+
+                if (i < rowData.Count) {
+                    card.style.display = DisplayStyle.Flex;
+                    card.style.width = itemWidth;
+
+                    var item = rowData[i];
+                    switch (item) {
+                        case BaseFolder folder:
+                            card.SetData(folder.Name);
+                            card.userData = folder;
+                            card.SetThumbnail(null);
+                            LoadFolderThumbnailAsync(card, folder.ID);
+                            break;
+                        case AssetMetadata asset:
+                            card.SetData(asset.Name);
+                            card.userData = asset;
+                            card.SetThumbnail(null);
+                            LoadThumbnailAsync(card, asset.ID);
+                            break;
+                    }
+                }
+                else {
+                    card.style.display = DisplayStyle.None;
+                }
             }
         }
 
         private async void LoadThumbnailAsync(AssetCard card, Ulid assetId) {
+            _cts ??= new CancellationTokenSource();
+            var token = _cts.Token;
+
             var idStr = assetId.ToString();
             if (_thumbnailCache.TryGetValue(idStr, out var cachedTex)) {
                 if (cachedTex != null) card.SetThumbnail(cachedTex);
@@ -196,7 +233,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             if (!File.Exists(thumbnailPath)) return;
 
             try {
-                var fileData = await Task.Run(() => File.ReadAllBytes(thumbnailPath));
+                var fileData = await Task.Run(() => File.ReadAllBytes(thumbnailPath), token);
+                if (token.IsCancellationRequested) return;
+
                 if (card.userData is not AssetMetadata currentMeta || currentMeta.ID != assetId) return;
                 var tex = new Texture2D(2, 2);
                 if (tex.LoadImage(fileData)) {
@@ -208,11 +247,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 }
             }
             catch (Exception e) {
-                Debug.LogWarning($"Failed to load thumbnail: {e.Message}");
+                if (e is not OperationCanceledException) Debug.LogWarning($"Failed to load thumbnail: {e.Message}");
             }
         }
 
         private async void LoadFolderThumbnailAsync(AssetCard card, Ulid folderId) {
+            _cts ??= new CancellationTokenSource();
+            var token = _cts.Token;
+
             var idStr = "folder_" + folderId;
             if (_thumbnailCache.TryGetValue(idStr, out var cachedTex)) {
                 if (cachedTex != null) card.SetThumbnail(cachedTex);
@@ -223,7 +265,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             if (!File.Exists(thumbnailPath)) return;
 
             try {
-                var fileData = await Task.Run(() => File.ReadAllBytes(thumbnailPath));
+                var fileData = await Task.Run(() => File.ReadAllBytes(thumbnailPath), token);
+                if (token.IsCancellationRequested) return;
+
                 if (card.userData is not BaseFolder currentFolder || currentFolder.ID != folderId) return;
                 var tex = new Texture2D(2, 2);
                 if (tex.LoadImage(fileData)) {
@@ -235,7 +279,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 }
             }
             catch (Exception e) {
-                Debug.LogWarning($"Failed to load folder thumbnail: {e.Message}");
+                if (e is not OperationCanceledException)
+                    Debug.LogWarning($"Failed to load folder thumbnail: {e.Message}");
             }
         }
 
@@ -261,7 +306,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public void SetController(AssetViewController controller) {
             if (_controller != null) {
                 _controller.ItemsChanged -= OnItemsChanged;
-
                 _controller.AssetSelected -= OnControllerAssetSelected;
                 _controller.OnHistoryChanged -= UpdateNavigationState;
                 _controller.BreadcrumbsChanged -= UpdateBreadcrumbs;
@@ -271,7 +315,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             if (_controller == null) return;
             _controller.ItemsChanged += OnItemsChanged;
-
             _controller.AssetSelected += OnControllerAssetSelected;
             _controller.OnHistoryChanged += UpdateNavigationState;
             _controller.BreadcrumbsChanged += UpdateBreadcrumbs;
@@ -330,10 +373,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _items = items ?? new List<object>();
             _listView.itemsSource = GetRows();
             _listView.Rebuild();
-        }
-
-        private void OnBoothItemFoldersChanged(List<BoothItemFolder> folders) {
-            ShowBoothItemFolders(folders);
         }
 
         public void ShowBoothItemFolders(List<BoothItemFolder> folders) {

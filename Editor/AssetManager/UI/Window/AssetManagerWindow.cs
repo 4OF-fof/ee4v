@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.AssetManager.UI.Window._Component;
@@ -30,12 +32,37 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _folderService = AssetManagerContainer.FolderService;
         }
 
+        private void OnDisable() {
+            if (_navigation != null) {
+                _navigation.NavigationChanged -= OnNavigationChanged;
+                _navigation.FolderSelected -= OnFolderSelected;
+                _navigation.TagListClicked -= OnTagListClicked;
+            }
+
+            if (_tagListView != null) _tagListView.OnTagSelected -= OnTagSelected;
+
+            if (_assetController != null) {
+                _assetController.AssetSelected -= OnAssetSelected;
+                _assetController.FolderPreviewSelected -= OnFolderPreviewSelected;
+                _assetController.FoldersChanged -= OnFoldersChanged;
+                _assetController.BoothItemFoldersChanged -= OnBoothItemFoldersChanged;
+            }
+
+            if (_assetInfo != null) {
+                _assetInfo.OnNameChanged -= OnAssetNameChanged;
+                _assetInfo.OnDescriptionChanged -= OnAssetDescriptionChanged;
+                _assetInfo.OnTagAdded -= OnAssetTagAdded;
+                _assetInfo.OnTagRemoved -= OnAssetTagRemoved;
+            }
+        }
+
         private void CreateGUI() {
             if (_repository == null) OnEnable();
 
             _isInitialized = false;
 
             var root = rootVisualElement;
+            root.Clear();
             root.style.flexDirection = FlexDirection.Row;
 
             _navigation = new Navigation {
@@ -71,77 +98,23 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetView.SetController(_assetController);
             _navigation.Initialize(_repository);
             _tagListView.Initialize(_repository);
+            _assetInfo.Initialize(_repository);
 
-            _navigation.NavigationChanged += (rootName, filter, isBoothMode) =>
-            {
-                _assetController.SetRootContext(rootName, filter, isBoothMode, _isInitialized);
-                ShowAssetView();
-            };
+            _navigation.NavigationChanged += OnNavigationChanged;
+            _navigation.FolderSelected += OnFolderSelected;
+            _navigation.TagListClicked += OnTagListClicked;
 
-            _navigation.FolderSelected += folderId =>
-            {
-                if (folderId == Ulid.Empty)
-                    _assetController.SelectFolder(folderId, _isInitialized);
-                else
-                    _assetController.SetRootContextAndFolder(
-                        "Folders",
-                        a => !a.IsDeleted,
-                        folderId,
-                        _isInitialized
-                    );
-                ShowAssetView();
-            };
+            _tagListView.OnTagSelected += OnTagSelected;
 
-            _navigation.TagListClicked += () =>
-            {
-                _tagListView.Refresh();
-                ShowTagListView();
-            };
+            _assetController.AssetSelected += OnAssetSelected;
+            _assetController.FolderPreviewSelected += OnFolderPreviewSelected;
+            _assetController.FoldersChanged += OnFoldersChanged;
+            _assetController.BoothItemFoldersChanged += OnBoothItemFoldersChanged;
 
-            _tagListView.OnTagSelected += tag =>
-            {
-                _assetController.SetRootContext(
-                    $"Tag: {tag}",
-                    a => !a.IsDeleted && a.Tags.Contains(tag),
-                    false,
-                    true
-                );
-                ShowAssetView();
-            };
-
-            _assetController.AssetSelected += asset =>
-            {
-                _selectedAsset = asset;
-                _assetInfo.SetAsset(asset);
-            };
-            _assetController.FolderPreviewSelected += folder => { _assetInfo.SetFolder(folder); };
-            _assetController.FoldersChanged += folders => { _navigation.SetFolders(folders); };
-            _assetController.BoothItemFoldersChanged += folders => { _assetView.ShowBoothItemFolders(folders); };
-
-            _assetInfo.OnNameChanged += newName =>
-            {
-                if (_selectedAsset == null) return;
-                _assetService.SetAssetName(_selectedAsset.ID, newName);
-                RefreshUI();
-            };
-            _assetInfo.OnDescriptionChanged += newDesc =>
-            {
-                if (_selectedAsset == null) return;
-                _assetService.SetDescription(_selectedAsset.ID, newDesc);
-                RefreshUI(false);
-            };
-            _assetInfo.OnTagAdded += newTag =>
-            {
-                if (_selectedAsset == null) return;
-                _assetService.AddTag(_selectedAsset.ID, newTag);
-                RefreshUI(false);
-            };
-            _assetInfo.OnTagRemoved += tagToRemove =>
-            {
-                if (_selectedAsset == null) return;
-                _assetService.RemoveTag(_selectedAsset.ID, tagToRemove);
-                RefreshUI(false);
-            };
+            _assetInfo.OnNameChanged += OnAssetNameChanged;
+            _assetInfo.OnDescriptionChanged += OnAssetDescriptionChanged;
+            _assetInfo.OnTagAdded += OnAssetTagAdded;
+            _assetInfo.OnTagRemoved += OnAssetTagRemoved;
 
             _navigation.SelectAll();
             _assetController.Refresh();
@@ -149,6 +122,78 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             ShowAssetView();
 
             _isInitialized = true;
+        }
+
+        private void OnNavigationChanged(string rootName, Func<AssetMetadata, bool> filter, bool isBoothMode) {
+            _assetController.SetRootContext(rootName, filter, isBoothMode, _isInitialized);
+            ShowAssetView();
+        }
+
+        private void OnFolderSelected(Ulid folderId) {
+            if (folderId == Ulid.Empty)
+                _assetController.SelectFolder(folderId, _isInitialized);
+            else
+                _assetController.SetRootContextAndFolder(
+                    "Folders",
+                    a => !a.IsDeleted,
+                    folderId,
+                    _isInitialized
+                );
+            ShowAssetView();
+        }
+
+        private void OnTagListClicked() {
+            _tagListView.Refresh();
+            ShowTagListView();
+        }
+
+        private void OnTagSelected(string tag) {
+            _assetController.SetRootContext(
+                $"Tag: {tag}",
+                a => !a.IsDeleted && a.Tags.Contains(tag)
+            );
+            ShowAssetView();
+        }
+
+        private void OnAssetSelected(AssetMetadata asset) {
+            _selectedAsset = asset;
+            _assetInfo.SetAsset(asset);
+        }
+
+        private void OnFolderPreviewSelected(BaseFolder folder) {
+            _assetInfo.SetFolder(folder);
+        }
+
+        private void OnFoldersChanged(List<BaseFolder> folders) {
+            _navigation.SetFolders(folders);
+        }
+
+        private void OnBoothItemFoldersChanged(List<BoothItemFolder> folders) {
+            _assetView.ShowBoothItemFolders(folders);
+        }
+
+        private void OnAssetNameChanged(string newName) {
+            if (_selectedAsset == null) return;
+            _assetService.SetAssetName(_selectedAsset.ID, newName);
+            RefreshUI();
+        }
+
+        private void OnAssetDescriptionChanged(string newDesc) {
+            if (_selectedAsset == null) return;
+            _assetService.SetDescription(_selectedAsset.ID, newDesc);
+            RefreshUI(false);
+        }
+
+        private void OnAssetTagAdded(string newTag) {
+            if (_selectedAsset == null) return;
+            _assetService.AddTag(_selectedAsset.ID, newTag);
+            RefreshUI(false);
+        }
+
+        private void OnAssetTagRemoved(string tagToRemove) {
+            if (_selectedAsset == null) return;
+            _assetService.RemoveTag(_selectedAsset.ID, tagToRemove);
+            RefreshUI(false);
         }
 
         private void RefreshUI(bool fullRefresh = true) {

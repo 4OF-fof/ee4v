@@ -22,6 +22,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private AssetMetadata _currentAsset;
         private BaseFolder _currentFolder;
+        private IAssetRepository _repository;
 
         public AssetInfo() {
             style.flexDirection = FlexDirection.Column;
@@ -45,7 +46,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
             Add(_thumbnailContainer);
 
-            _nameField = CreateTextField("Name", true);
+            _nameField = CreateTextField(true);
             _nameField.style.marginBottom = 4;
             _nameField.RegisterCallback<FocusOutEvent>(_ =>
             {
@@ -54,7 +55,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             });
             Add(_nameField);
 
-            _descriptionField = CreateTextField("Description", false);
+            _descriptionField = CreateTextField(false);
             _descriptionField.multiline = true;
             _descriptionField.style.minHeight = 40;
             _descriptionField.style.marginBottom = 4;
@@ -130,9 +131,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<string> OnDescriptionChanged;
         public event Action<string> OnTagAdded;
         public event Action<string> OnTagRemoved;
-        public event Action OnFolderChangeRequested;
 
-        private TextField CreateTextField(string placeholder, bool isBold) {
+        public void Initialize(IAssetRepository repository) {
+            _repository = repository;
+        }
+
+        private static TextField CreateTextField(bool isBold) {
             var field = new TextField {
                 isDelayed = true
             };
@@ -167,8 +171,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             RefreshTags(asset.Tags);
 
             var folderId = asset.Folder;
-            var repo = AssetManagerContainer.Repository;
-            var folder = repo.GetLibraryMetadata()?.GetFolder(folderId);
+            var folder = _repository?.GetLibraryMetadata()?.GetFolder(folderId);
             _folderNameLabel.text = folder != null ? folder.Name : "Uncategorized";
 
             _infoContainer.Clear();
@@ -204,7 +207,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private async void LoadThumbnail(Ulid assetId) {
             _thumbnailContainer.style.backgroundImage = null;
-            var path = AssetManagerContainer.Repository.GetThumbnailPath(assetId);
+            if (_repository == null) return;
+            var path = _repository.GetThumbnailPath(assetId);
             if (!File.Exists(path)) return;
 
             try {
@@ -224,7 +228,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private async void LoadFolderThumbnail(Ulid folderId) {
             _thumbnailContainer.style.backgroundImage = null;
-            var path = AssetManagerContainer.Repository.GetFolderThumbnailPath(folderId);
+            if (_repository == null) return;
+            var path = _repository.GetFolderThumbnailPath(folderId);
             if (!File.Exists(path)) {
                 _thumbnailContainer.style.backgroundImage =
                     new StyleBackground(EditorGUIUtility.IconContent("Folder Icon").image as Texture2D);
@@ -305,7 +310,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 counter++;
             }
 
-            return string.Format("{0:n2} {1}", number, suffixes[counter]);
+            return $"{number:n2} {suffixes[counter]}";
         }
     }
 }
