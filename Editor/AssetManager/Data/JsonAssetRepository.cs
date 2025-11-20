@@ -264,6 +264,11 @@ namespace _4OF.ee4v.AssetManager.Data {
             return Path.Combine(_assetRootDir, assetId.ToString(), "thumbnail.png");
         }
 
+        public Task<byte[]> GetThumbnailDataAsync(Ulid assetId) {
+            var path = GetThumbnailPath(assetId);
+            return !File.Exists(path) ? Task.FromResult<byte[]>(null) : Task.Run(() => File.ReadAllBytes(path));
+        }
+
         public void SetFolderThumbnail(Ulid folderId, string imagePath) {
             if (!Directory.Exists(_folderIconDir)) Directory.CreateDirectory(_folderIconDir);
 
@@ -301,6 +306,15 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public string GetFolderThumbnailPath(Ulid folderId) {
             return Path.Combine(_folderIconDir, $"{folderId}.png");
+        }
+
+        public Task<byte[]> GetFolderThumbnailDataAsync(Ulid folderId) {
+            var path = GetFolderThumbnailPath(folderId);
+            return !File.Exists(path) ? Task.FromResult<byte[]>(null) : Task.Run(() => File.ReadAllBytes(path));
+        }
+
+        public List<string> GetAllTags() {
+            return _libraryCache.GetAllTags();
         }
 
         private void LoadAllAssetsFromDisk() {

@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
@@ -208,11 +206,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private async void LoadThumbnail(Ulid assetId) {
             _thumbnailContainer.style.backgroundImage = null;
             if (_repository == null) return;
-            var path = _repository.GetThumbnailPath(assetId);
-            if (!File.Exists(path)) return;
 
             try {
-                var bytes = await Task.Run(() => File.ReadAllBytes(path));
+                var bytes = await _repository.GetThumbnailDataAsync(assetId);
+                if (bytes == null) return;
+
                 if (_currentAsset?.ID != assetId) return;
 
                 var tex = new Texture2D(2, 2);
@@ -229,15 +227,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private async void LoadFolderThumbnail(Ulid folderId) {
             _thumbnailContainer.style.backgroundImage = null;
             if (_repository == null) return;
-            var path = _repository.GetFolderThumbnailPath(folderId);
-            if (!File.Exists(path)) {
-                _thumbnailContainer.style.backgroundImage =
-                    new StyleBackground(EditorGUIUtility.IconContent("Folder Icon").image as Texture2D);
-                return;
-            }
 
             try {
-                var bytes = await Task.Run(() => File.ReadAllBytes(path));
+                var bytes = await _repository.GetFolderThumbnailDataAsync(folderId);
+                if (bytes == null) {
+                    _thumbnailContainer.style.backgroundImage =
+                        new StyleBackground(EditorGUIUtility.IconContent("Folder Icon").image as Texture2D);
+                    return;
+                }
+
                 if (_currentFolder?.ID != folderId) return;
 
                 var tex = new Texture2D(2, 2);

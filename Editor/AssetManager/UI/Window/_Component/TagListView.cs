@@ -13,10 +13,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public TagListView() {
             style.flexGrow = 1;
-            
+
             _listView = new ListView {
                 style = { flexGrow = 1 },
-                makeItem = () => {
+                makeItem = () =>
+                {
                     var btn = new Button {
                         style = {
                             height = 24,
@@ -28,7 +29,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     };
                     return btn;
                 },
-                bindItem = (e, i) => {
+                bindItem = (e, i) =>
+                {
                     if (i < 0 || i >= _tags.Count) return;
                     var btn = (Button)e;
                     var tag = _tags[i];
@@ -38,7 +40,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 fixedItemHeight = 24,
                 selectionType = SelectionType.Single
             };
-            
+
             _listView.makeItem = () => new Label {
                 style = {
                     height = 24,
@@ -48,7 +50,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     borderBottomColor = new StyleColor(new Color(0.5f, 0.5f, 0.5f, 0.2f))
                 }
             };
-            _listView.bindItem = (e, i) => {
+            _listView.bindItem = (e, i) =>
+            {
                 var label = (Label)e;
                 label.text = _tags[i];
             };
@@ -67,11 +70,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public void Refresh() {
             if (_repository == null) return;
 
-            _tags = _repository.GetAllAssets()
-                .SelectMany(a => a.Tags)
-                .Distinct()
-                .OrderBy(t => t)
-                .ToList();
+            _tags = _repository.GetAllTags();
+            _tags?.Sort();
 
             _listView.itemsSource = _tags;
             _listView.Rebuild();

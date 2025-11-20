@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
@@ -15,10 +13,12 @@ using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetView : VisualElement {
+        private const int MaxCacheSize = 200;
         private readonly Button _backButton;
         private readonly ScrollView _breadcrumbContainer;
         private readonly Button _forwardButton;
         private readonly ListView _listView;
+        private readonly List<string> _thumbnailAccessOrder = new();
         private readonly Dictionary<string, Texture2D> _thumbnailCache = new();
 
         private AssetViewController _controller;
@@ -111,6 +111,27 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private void ClearThumbnailCache() {
             foreach (var tex in _thumbnailCache.Values.Where(tex => tex != null)) Object.DestroyImmediate(tex);
             _thumbnailCache.Clear();
+            _thumbnailAccessOrder.Clear();
+        }
+
+        private void AddToCache(string key, Texture2D texture) {
+            if (_thumbnailCache.ContainsKey(key)) {
+                _thumbnailAccessOrder.Remove(key);
+                _thumbnailAccessOrder.Add(key);
+                return;
+            }
+
+            if (_thumbnailCache.Count >= MaxCacheSize) {
+                var oldestKey = _thumbnailAccessOrder[0];
+                _thumbnailAccessOrder.RemoveAt(0);
+                if (_thumbnailCache.TryGetValue(oldestKey, out var oldTex)) {
+                    if (oldTex != null) Object.DestroyImmediate(oldTex);
+                    _thumbnailCache.Remove(oldestKey);
+                }
+            }
+
+            _thumbnailCache[key] = texture;
+            _thumbnailAccessOrder.Add(key);
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt) {
@@ -225,21 +246,24 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             var idStr = assetId.ToString();
             if (_thumbnailCache.TryGetValue(idStr, out var cachedTex)) {
-                if (cachedTex != null) card.SetThumbnail(cachedTex);
+                if (cachedTex == null) return;
+                card.SetThumbnail(cachedTex);
+                _thumbnailAccessOrder.Remove(idStr);
+                _thumbnailAccessOrder.Add(idStr);
+
                 return;
             }
 
-            var thumbnailPath = AssetManagerContainer.Repository.GetThumbnailPath(assetId);
-            if (!File.Exists(thumbnailPath)) return;
-
             try {
-                var fileData = await Task.Run(() => File.ReadAllBytes(thumbnailPath), token);
+                var fileData = await AssetManagerContainer.Repository.GetThumbnailDataAsync(assetId);
                 if (token.IsCancellationRequested) return;
+                if (fileData == null) return;
 
                 if (card.userData is not AssetMetadata currentMeta || currentMeta.ID != assetId) return;
+
                 var tex = new Texture2D(2, 2);
                 if (tex.LoadImage(fileData)) {
-                    _thumbnailCache[idStr] = tex;
+                    AddToCache(idStr, tex);
                     card.SetThumbnail(tex);
                 }
                 else {
@@ -257,21 +281,24 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             var idStr = "folder_" + folderId;
             if (_thumbnailCache.TryGetValue(idStr, out var cachedTex)) {
-                if (cachedTex != null) card.SetThumbnail(cachedTex);
+                if (cachedTex == null) return;
+                card.SetThumbnail(cachedTex);
+                _thumbnailAccessOrder.Remove(idStr);
+                _thumbnailAccessOrder.Add(idStr);
+
                 return;
             }
 
-            var thumbnailPath = AssetManagerContainer.Repository.GetFolderThumbnailPath(folderId);
-            if (!File.Exists(thumbnailPath)) return;
-
             try {
-                var fileData = await Task.Run(() => File.ReadAllBytes(thumbnailPath), token);
+                var fileData = await AssetManagerContainer.Repository.GetFolderThumbnailDataAsync(folderId);
                 if (token.IsCancellationRequested) return;
+                if (fileData == null) return;
 
                 if (card.userData is not BaseFolder currentFolder || currentFolder.ID != folderId) return;
+
                 var tex = new Texture2D(2, 2);
                 if (tex.LoadImage(fileData)) {
-                    _thumbnailCache[idStr] = tex;
+                    AddToCache(idStr, tex);
                     card.SetThumbnail(tex);
                 }
                 else {
