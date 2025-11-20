@@ -148,10 +148,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 if (_currentAssetFolderId != Ulid.Empty) OnFolderClicked?.Invoke(_currentAssetFolderId);
                 evt.StopPropagation();
             });
+
             folderRow.RegisterCallback<MouseEnterEvent>(_ =>
-                folderRow.style.backgroundColor = new StyleColor(new Color(0, 0, 0, 0.2f)));
+            {
+                folderRow.style.backgroundColor = new StyleColor(new Color(0, 0, 0, 0.2f));
+                if (_folderNameLabel != null)
+                    _folderNameLabel.style.color = new StyleColor(ColorPreset.ItemSelectedBorder);
+            });
             folderRow.RegisterCallback<MouseLeaveEvent>(_ =>
-                folderRow.style.backgroundColor = new StyleColor(new Color(0, 0, 0, 0.1f)));
+            {
+                folderRow.style.backgroundColor = new StyleColor(new Color(0, 0, 0, 0.1f));
+                if (_folderNameLabel != null) _folderNameLabel.style.color = new StyleColor(StyleKeyword.Null);
+            });
 
             var folderIcon = new Image {
                 image = EditorGUIUtility.IconContent("Folder Icon").image,
@@ -412,6 +420,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 });
 
                 var label = new Label(tag) { style = { marginRight = 4 } };
+
+                pill.RegisterCallback<MouseEnterEvent>(_ =>
+                {
+                    pill.style.backgroundColor = new StyleColor(new Color(0.4f, 0.4f, 0.4f));
+                });
+                pill.RegisterCallback<MouseLeaveEvent>(_ =>
+                {
+                    pill.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+                });
+
                 var removeBtn = new Button(() =>
                 {
                     if (_currentFolder != null && _folderService != null) {
