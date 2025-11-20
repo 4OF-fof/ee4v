@@ -12,7 +12,10 @@ using UnityEngine.UIElements;
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetInfo : VisualElement {
         private readonly TextField _descriptionField;
+
+        private readonly Label _folderHeader;
         private readonly Label _folderNameLabel;
+        private readonly VisualElement _folderRow;
         private readonly VisualElement _infoContainer;
         private readonly Label _infoHeader;
         private readonly VisualElement _multiSelectionContainer;
@@ -98,12 +101,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             descriptionScrollView.Add(_descriptionField);
             _singleSelectionContainer.Add(descriptionScrollView);
-            
-            var folderHeader = new Label("Folder")
-                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
-            _singleSelectionContainer.Add(folderHeader);
 
-            var folderRow = new VisualElement {
+            _folderHeader = new Label("Folder")
+                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
+            _singleSelectionContainer.Add(_folderHeader);
+
+            _folderRow = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
                     alignItems = Align.Center,
@@ -116,22 +119,22 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     borderBottomRightRadius = 4
                 }
             };
-            folderRow.RegisterCallback<PointerDownEvent>(evt =>
+            _folderRow.RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (evt.button != 0) return;
                 if (_currentAssetFolderId != Ulid.Empty) OnFolderClicked?.Invoke(_currentAssetFolderId);
                 evt.StopPropagation();
             });
 
-            folderRow.RegisterCallback<MouseEnterEvent>(_ =>
+            _folderRow.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                folderRow.style.backgroundColor = new StyleColor(new Color(0, 0, 0, 0.2f));
+                _folderRow.style.backgroundColor = new StyleColor(new Color(0, 0, 0, 0.2f));
                 if (_folderNameLabel != null)
                     _folderNameLabel.style.color = new StyleColor(ColorPreset.ItemSelectedBorder);
             });
-            folderRow.RegisterCallback<MouseLeaveEvent>(_ =>
+            _folderRow.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                folderRow.style.backgroundColor = new StyleColor(new Color(0, 0, 0, 0.1f));
+                _folderRow.style.backgroundColor = new StyleColor(new Color(0, 0, 0, 0.1f));
                 if (_folderNameLabel != null) _folderNameLabel.style.color = new StyleColor(StyleKeyword.Null);
             });
 
@@ -150,9 +153,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 }
             };
 
-            folderRow.Add(folderIcon);
-            folderRow.Add(_folderNameLabel);
-            _singleSelectionContainer.Add(folderRow);
+            _folderRow.Add(folderIcon);
+            _folderRow.Add(_folderNameLabel);
+            _singleSelectionContainer.Add(_folderRow);
 
             var tagLabel = new Label("Tags")
                 { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
@@ -179,7 +182,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             tagInputContainer.Add(_newTagField);
             tagInputContainer.Add(addTagButton);
             _singleSelectionContainer.Add(tagInputContainer);
-            
+
             _multiSelectionContainer = new VisualElement {
                 style = { display = DisplayStyle.None, alignItems = Align.Center, marginTop = 20, marginBottom = 40 }
             };
@@ -310,9 +313,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var folderId = asset.Folder;
             _currentAssetFolderId = folderId;
             var folder = _repository?.GetLibraryMetadata()?.GetFolder(folderId);
-            var folderName = folder != null ? folder.Name : "Root";
-            _folderNameLabel.text = folderName;
-            _folderNameLabel.tooltip = folderName;
+
+            if (folder != null) {
+                _folderHeader.style.display = DisplayStyle.Flex;
+                _folderRow.style.display = DisplayStyle.Flex;
+                _folderNameLabel.text = folder.Name;
+                _folderNameLabel.tooltip = folder.Name;
+            }
+            else {
+                _folderHeader.style.display = DisplayStyle.None;
+                _folderRow.style.display = DisplayStyle.None;
+            }
 
             _infoContainer.Clear();
             AddInfoRow("Size", FormatSize(asset.Size));
@@ -337,7 +348,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _descriptionField.value = folder.Description;
 
             var parentFolder = GetParentFolder(folder.ID);
-            _folderNameLabel.text = parentFolder != null ? parentFolder.Name : "Root";
+            if (parentFolder != null) {
+                _folderHeader.style.display = DisplayStyle.Flex;
+                _folderRow.style.display = DisplayStyle.Flex;
+                _folderNameLabel.text = parentFolder.Name;
+            }
+            else {
+                _folderHeader.style.display = DisplayStyle.None;
+                _folderRow.style.display = DisplayStyle.None;
+            }
 
             RefreshTags(folder.Tags);
 
