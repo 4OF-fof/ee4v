@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -64,12 +65,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         public void SetController(AssetViewController controller) {
-            if (_controller != null) _controller.OnHistoryChanged -= UpdateNavigationState;
+            if (_controller != null) {
+                _controller.OnHistoryChanged -= UpdateNavigationState;
+                _controller.BreadcrumbsChanged -= UpdateBreadcrumbs;
+            }
 
             _controller = controller;
 
             if (_controller == null) return;
             _controller.OnHistoryChanged += UpdateNavigationState;
+            _controller.BreadcrumbsChanged += UpdateBreadcrumbs;
             UpdateNavigationState();
         }
 
@@ -110,6 +115,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             _toolbar.UpdateNavigationState(_controller.CanGoBack, _controller.CanGoForward);
+        }
+
+        private void UpdateBreadcrumbs(List<(string Name, Ulid Id)> path) {
+            _toolbar.UpdateBreadcrumbs(path);
         }
     }
 }

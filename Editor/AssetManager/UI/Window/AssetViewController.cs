@@ -174,9 +174,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 case NavigationMode.TagList: {
                     AssetsChanged?.Invoke(new List<AssetMetadata>());
                     ItemsChanged?.Invoke(new List<object>());
-                    BreadcrumbsChanged?.Invoke(new List<(string Name, Ulid Id)> { ("Tag List", Ulid.Empty) });
 
-                    var foldersDummy = _repository.GetLibraryMetadata()?.FolderList.Where(f => !(f is BoothItemFolder))
+                    UpdateBreadcrumbs();
+
+                    var foldersDummy = _repository.GetLibraryMetadata()?.FolderList.Where(f => f is not BoothItemFolder)
                             .ToList() ??
                         new List<BaseFolder>();
                     FoldersChanged?.Invoke(foldersDummy);
