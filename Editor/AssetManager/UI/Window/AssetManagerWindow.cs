@@ -67,8 +67,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _navigation.Initialize(_repository);
             _tagListView.Initialize(_repository);
 
-            // ナビゲーション変更イベント
-            _navigation.NavigationChanged += (rootName, filter, isBoothMode) => {
+            _navigation.NavigationChanged += (rootName, filter, isBoothMode) =>
+            {
                 _assetController.SetRootContext(rootName, isBoothMode);
                 _assetController.SetFilter(filter);
                 ShowAssetView();
@@ -78,12 +78,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             {
                 _assetController.SelectFolder(folderId);
                 ShowAssetView();
-            };
-
-            _navigation.BoothItemClicked += () =>
-            {
-                // NavigationChanged内で処理されるため明示的な呼び出しは不要だが、
-                // 既存実装との整合性のため残す場合はここに追加処理を書く
             };
 
             _navigation.TagListClicked += () =>

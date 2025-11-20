@@ -51,7 +51,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _uncategorizedButton = new Button(() =>
             {
                 SetSelected(_uncategorizedButton);
-                OnNavigationChanged("Uncategorized", a => !a.IsDeleted && a.Folder == Ulid.Empty && (a.Tags == null || a.Tags.Count == 0));
+                OnNavigationChanged("Uncategorized",
+                    a => !a.IsDeleted && a.Folder == Ulid.Empty && (a.Tags == null || a.Tags.Count == 0));
                 OnFolderSelected(Ulid.Empty);
                 _folderView?.ClearSelection();
             }) { text = "Uncategorized" };
@@ -80,10 +81,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _repository = repository;
         }
 
-        // Navigation変更イベント（ルート名, フィルタ, Boothモード）
-        public event Action<string, Func<AssetMetadata, bool>, bool> NavigationChanged; 
-        
-        // 後方互換用
+        public event Action<string, Func<AssetMetadata, bool>, bool> NavigationChanged;
+
         public event Action<Func<AssetMetadata, bool>> FilterChanged;
         public event Action<Ulid> FolderSelected;
         public event Action BoothItemClicked;
@@ -99,7 +98,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         private void SetSelected(Button selected) {
-            // 初期化中のアクセスによるNRE防止のため、nullチェックを追加
             _allButton?.RemoveFromClassList("selected");
             _boothItemButton?.RemoveFromClassList("selected");
             _tagListButton?.RemoveFromClassList("selected");
@@ -117,7 +115,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void OnFolderViewSelected(Ulid folderId) {
             SetSelected(null);
-            // フォルダ選択時はルート名を「Folders」に変更
             OnNavigationChanged("Folders", a => !a.IsDeleted);
             OnFolderSelected(folderId);
         }

@@ -14,47 +14,43 @@ using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetView : VisualElement {
+        private readonly Button _backButton;
+        private readonly ScrollView _breadcrumbContainer;
+        private readonly Button _forwardButton;
         private readonly ListView _listView;
         private readonly Dictionary<string, Texture2D> _thumbnailCache = new();
-        
+
         private AssetViewController _controller;
         private List<object> _items = new();
         private int _itemsPerRow = 5;
         private float _lastWidth;
 
-        // UI Elements
-        private readonly Button _backButton;
-        private readonly Button _forwardButton;
-        private readonly ScrollView _breadcrumbContainer;
-
         public AssetView() {
             style.flexGrow = 1;
 
             var toolbar = new Toolbar();
-            
-            // Navigation Buttons
+
             _backButton = new Button(() => _controller?.GoBack()) {
                 tooltip = "Back",
                 style = { width = 24, paddingLeft = 0, paddingRight = 0 }
             };
-            _backButton.Add(new Image { 
+            _backButton.Add(new Image {
                 image = EditorGUIUtility.IconContent("d_Animation.PrevKey").image,
                 scaleMode = ScaleMode.ScaleToFit
             });
-            
+
             _forwardButton = new Button(() => _controller?.GoForward()) {
                 tooltip = "Forward",
                 style = { width = 24, paddingLeft = 0, paddingRight = 0 }
             };
-            _forwardButton.Add(new Image { 
+            _forwardButton.Add(new Image {
                 image = EditorGUIUtility.IconContent("d_Animation.NextKey").image,
                 scaleMode = ScaleMode.ScaleToFit
             });
-            
+
             toolbar.Add(_backButton);
             toolbar.Add(_forwardButton);
 
-            // Breadcrumb Container
             _breadcrumbContainer = new ScrollView(ScrollViewMode.Horizontal) {
                 style = {
                     flexGrow = 1,
@@ -63,12 +59,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     alignContent = Align.Center
                 }
             };
-            // スクロールバーを隠し、横並びにする
             _breadcrumbContainer.contentContainer.style.flexDirection = FlexDirection.Row;
             _breadcrumbContainer.contentContainer.style.alignItems = Align.Center;
             toolbar.Add(_breadcrumbContainer);
 
-            // Slider
             var slider = new SliderInt(2, 10) {
                 value = _itemsPerRow,
                 style = { minWidth = 100, maxWidth = 200 }
@@ -82,7 +76,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _listView.Rebuild();
             });
             toolbar.Add(slider);
-            
+
             Add(toolbar);
 
             _listView = new ListView {
@@ -97,7 +91,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             Add(_listView);
 
             RegisterCallback<DetachFromPanelEvent>(OnDetach);
-            
+
             UpdateNavigationState();
         }
 
@@ -186,6 +180,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         break;
                     }
                 }
+
                 element.Add(card);
             }
         }
@@ -207,10 +202,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 if (tex.LoadImage(fileData)) {
                     _thumbnailCache[idStr] = tex;
                     card.SetThumbnail(tex);
-                } else {
+                }
+                else {
                     Object.DestroyImmediate(tex);
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 Debug.LogWarning($"Failed to load thumbnail: {e.Message}");
             }
         }
@@ -232,10 +229,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 if (tex.LoadImage(fileData)) {
                     _thumbnailCache[idStr] = tex;
                     card.SetThumbnail(tex);
-                } else {
+                }
+                else {
                     Object.DestroyImmediate(tex);
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 Debug.LogWarning($"Failed to load folder thumbnail: {e.Message}");
             }
         }
@@ -256,6 +255,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     _controller?.SelectAsset(asset);
                     break;
             }
+
             evt.StopPropagation();
         }
 
@@ -276,7 +276,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _controller.BoothItemFoldersChanged += OnBoothItemFoldersChanged;
             _controller.OnHistoryChanged += UpdateNavigationState;
             _controller.BreadcrumbsChanged += UpdateBreadcrumbs;
-            
+
             _controller.Refresh();
         }
 
@@ -286,6 +286,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _forwardButton.SetEnabled(false);
                 return;
             }
+
             _backButton.SetEnabled(_controller.CanGoBack);
             _forwardButton.SetEnabled(_controller.CanGoForward);
         }
@@ -294,42 +295,35 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _breadcrumbContainer.Clear();
             if (path == null) return;
 
-            for (int i = 0; i < path.Count; i++) {
-                var (name, id) = path[i];
+            for (var i = 0; i < path.Count; i++) {
+                var (itemName, id) = path[i];
                 var isLast = i == path.Count - 1;
 
-                var btn = new Button(() => {
-                    // クリックでその階層へジャンプ
-                    _controller?.SelectFolder(id);
-                }) {
-                    text = name,
+                var btn = new Button(() => { _controller?.SelectFolder(id); }) {
+                    text = itemName,
                     style = {
                         backgroundColor = Color.clear,
                         borderTopWidth = 0, borderBottomWidth = 0, borderLeftWidth = 0, borderRightWidth = 0,
                         marginLeft = 0, marginRight = 0, paddingLeft = 2, paddingRight = 2,
-                        color = ColorPreset.TextColor, // テキストカラーを明示してグレーアウト回避
+                        color = ColorPreset.TextColor,
                         unityTextAlign = TextAnchor.MiddleLeft,
                         fontSize = 12
                     }
                 };
 
-                // 現在の階層は太字にするが、クリック可能かつ無効化しない
-                if (isLast) {
-                    btn.style.unityFontStyleAndWeight = FontStyle.Bold;
-                }
+                if (isLast) btn.style.unityFontStyleAndWeight = FontStyle.Bold;
 
                 _breadcrumbContainer.Add(btn);
 
-                if (!isLast) {
-                    var separator = new Label(">") {
-                        style = {
-                            marginLeft = 2, marginRight = 2,
-                            color = Color.gray,
-                            unityTextAlign = TextAnchor.MiddleCenter
-                        }
-                    };
-                    _breadcrumbContainer.Add(separator);
-                }
+                if (isLast) continue;
+                var separator = new Label(">") {
+                    style = {
+                        marginLeft = 2, marginRight = 2,
+                        color = Color.gray,
+                        unityTextAlign = TextAnchor.MiddleCenter
+                    }
+                };
+                _breadcrumbContainer.Add(separator);
             }
         }
 
