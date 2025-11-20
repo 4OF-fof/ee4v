@@ -44,6 +44,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         public void SetMode(NavigationMode mode, string contextName, Func<AssetMetadata, bool> filter,
             bool pushHistory = true) {
+            if (_currentMode == mode && _contextName == contextName && _selectedFolderId == Ulid.Empty)
+                return;
+
             if (pushHistory) PushCurrentStateToBackHistory();
             _forwardHistory.Clear();
 
