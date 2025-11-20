@@ -67,21 +67,25 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _navigation.Initialize(_repository);
             _tagListView.Initialize(_repository);
 
-            _navigation.FilterChanged += predicate =>
-            {
-                _assetController.SetFilter(predicate);
+            // ナビゲーション変更イベント
+            _navigation.NavigationChanged += (rootName, filter, isBoothMode) => {
+                _assetController.SetRootContext(rootName, isBoothMode);
+                _assetController.SetFilter(filter);
                 ShowAssetView();
             };
+
             _navigation.FolderSelected += folderId =>
             {
                 _assetController.SelectFolder(folderId);
                 ShowAssetView();
             };
+
             _navigation.BoothItemClicked += () =>
             {
-                _assetController.ShowBoothItemFolders();
-                ShowAssetView();
+                // NavigationChanged内で処理されるため明示的な呼び出しは不要だが、
+                // 既存実装との整合性のため残す場合はここに追加処理を書く
             };
+
             _navigation.TagListClicked += () =>
             {
                 _tagListView.Refresh();
@@ -90,6 +94,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             _tagListView.OnTagSelected += tag =>
             {
+                _assetController.SetRootContext($"Tag: {tag}");
                 _assetController.SetFilter(a => !a.IsDeleted && a.Tags.Contains(tag));
                 ShowAssetView();
             };

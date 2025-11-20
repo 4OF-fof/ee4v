@@ -4,7 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
+using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -13,21 +15,63 @@ using Object = UnityEngine.Object;
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetView : VisualElement {
         private readonly ListView _listView;
-
         private readonly Dictionary<string, Texture2D> _thumbnailCache = new();
+        
         private AssetViewController _controller;
-
         private List<object> _items = new();
         private int _itemsPerRow = 5;
         private float _lastWidth;
+
+        // UI Elements
+        private readonly Button _backButton;
+        private readonly Button _forwardButton;
+        private readonly ScrollView _breadcrumbContainer;
 
         public AssetView() {
             style.flexGrow = 1;
 
             var toolbar = new Toolbar();
-            var slider = new SliderInt("Items Per Row", 2) {
+            
+            // Navigation Buttons
+            _backButton = new Button(() => _controller?.GoBack()) {
+                tooltip = "Back",
+                style = { width = 24, paddingLeft = 0, paddingRight = 0 }
+            };
+            _backButton.Add(new Image { 
+                image = EditorGUIUtility.IconContent("d_Animation.PrevKey").image,
+                scaleMode = ScaleMode.ScaleToFit
+            });
+            
+            _forwardButton = new Button(() => _controller?.GoForward()) {
+                tooltip = "Forward",
+                style = { width = 24, paddingLeft = 0, paddingRight = 0 }
+            };
+            _forwardButton.Add(new Image { 
+                image = EditorGUIUtility.IconContent("d_Animation.NextKey").image,
+                scaleMode = ScaleMode.ScaleToFit
+            });
+            
+            toolbar.Add(_backButton);
+            toolbar.Add(_forwardButton);
+
+            // Breadcrumb Container
+            _breadcrumbContainer = new ScrollView(ScrollViewMode.Horizontal) {
+                style = {
+                    flexGrow = 1,
+                    marginLeft = 4,
+                    marginRight = 4,
+                    alignContent = Align.Center
+                }
+            };
+            // スクロールバーを隠し、横並びにする
+            _breadcrumbContainer.contentContainer.style.flexDirection = FlexDirection.Row;
+            _breadcrumbContainer.contentContainer.style.alignItems = Align.Center;
+            toolbar.Add(_breadcrumbContainer);
+
+            // Slider
+            var slider = new SliderInt(2, 10) {
                 value = _itemsPerRow,
-                style = { minWidth = 200 }
+                style = { minWidth = 100, maxWidth = 200 }
             };
             slider.RegisterValueChangedCallback(evt =>
             {
@@ -38,12 +82,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _listView.Rebuild();
             });
             toolbar.Add(slider);
+            
             Add(toolbar);
 
             _listView = new ListView {
-                style = {
-                    flexGrow = 1
-                },
+                style = { flexGrow = 1 },
                 makeItem = MakeRow,
                 bindItem = BindRow,
                 itemsSource = GetRows(),
@@ -54,11 +97,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             Add(_listView);
 
             RegisterCallback<DetachFromPanelEvent>(OnDetach);
+            
+            UpdateNavigationState();
         }
 
         private void OnDetach(DetachFromPanelEvent evt) {
             foreach (var tex in _thumbnailCache.Values.Where(tex => tex != null)) Object.DestroyImmediate(tex);
-
             _thumbnailCache.Clear();
         }
 
@@ -99,20 +143,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         private static VisualElement MakeRow() {
-            var row = new VisualElement {
+            return new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
                     flexWrap = Wrap.NoWrap
                 }
             };
-            return row;
         }
 
         private void BindRow(VisualElement element, int index) {
             element.Clear();
-
             var rows = _listView.itemsSource as List<List<object>>;
-
             if (rows == null || index < 0 || index >= rows.Count) return;
 
             var row = rows[index];
@@ -133,30 +174,24 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     case BoothItemFolder folder: {
                         card.SetData(folder.Name);
                         card.userData = folder;
-
                         card.RegisterCallback<PointerDownEvent>(OnCardPointerDown);
-
                         LoadFolderThumbnailAsync(card, folder.ID);
                         break;
                     }
                     case AssetMetadata asset: {
                         card.SetData(asset.Name);
                         card.userData = asset;
-
                         card.RegisterCallback<PointerDownEvent>(OnCardPointerDown);
-
                         LoadThumbnailAsync(card, asset.ID);
                         break;
                     }
                 }
-
                 element.Add(card);
             }
         }
 
         private async void LoadThumbnailAsync(AssetCard card, Ulid assetId) {
             var idStr = assetId.ToString();
-
             if (_thumbnailCache.TryGetValue(idStr, out var cachedTex)) {
                 if (cachedTex != null) card.SetThumbnail(cachedTex);
                 return;
@@ -167,25 +202,21 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             try {
                 var fileData = await Task.Run(() => File.ReadAllBytes(thumbnailPath));
-
                 if (card.userData is not AssetMetadata currentMeta || currentMeta.ID != assetId) return;
                 var tex = new Texture2D(2, 2);
                 if (tex.LoadImage(fileData)) {
                     _thumbnailCache[idStr] = tex;
                     card.SetThumbnail(tex);
-                }
-                else {
+                } else {
                     Object.DestroyImmediate(tex);
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Debug.LogWarning($"Failed to load thumbnail: {e.Message}");
             }
         }
 
         private async void LoadFolderThumbnailAsync(AssetCard card, Ulid folderId) {
             var idStr = "folder_" + folderId;
-
             if (_thumbnailCache.TryGetValue(idStr, out var cachedTex)) {
                 if (cachedTex != null) card.SetThumbnail(cachedTex);
                 return;
@@ -196,26 +227,21 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             try {
                 var fileData = await Task.Run(() => File.ReadAllBytes(thumbnailPath));
-
                 if (card.userData is not BoothItemFolder currentFolder || currentFolder.ID != folderId) return;
-
                 var tex = new Texture2D(2, 2);
                 if (tex.LoadImage(fileData)) {
                     _thumbnailCache[idStr] = tex;
                     card.SetThumbnail(tex);
-                }
-                else {
+                } else {
                     Object.DestroyImmediate(tex);
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Debug.LogWarning($"Failed to load folder thumbnail: {e.Message}");
             }
         }
 
         private void OnCardPointerDown(PointerDownEvent evt) {
             if (evt.button != 0) return;
-
             var card = evt.currentTarget as AssetCard;
             if (card == null) return;
 
@@ -230,7 +256,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     _controller?.SelectAsset(asset);
                     break;
             }
-
             evt.StopPropagation();
         }
 
@@ -239,6 +264,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _controller.AssetsChanged -= OnAssetsChanged;
                 _controller.AssetSelected -= OnControllerAssetSelected;
                 _controller.BoothItemFoldersChanged -= OnBoothItemFoldersChanged;
+                _controller.OnHistoryChanged -= UpdateNavigationState;
+                _controller.BreadcrumbsChanged -= UpdateBreadcrumbs;
             }
 
             _controller = controller;
@@ -247,7 +274,63 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _controller.AssetsChanged += OnAssetsChanged;
             _controller.AssetSelected += OnControllerAssetSelected;
             _controller.BoothItemFoldersChanged += OnBoothItemFoldersChanged;
+            _controller.OnHistoryChanged += UpdateNavigationState;
+            _controller.BreadcrumbsChanged += UpdateBreadcrumbs;
+            
             _controller.Refresh();
+        }
+
+        private void UpdateNavigationState() {
+            if (_controller == null) {
+                _backButton.SetEnabled(false);
+                _forwardButton.SetEnabled(false);
+                return;
+            }
+            _backButton.SetEnabled(_controller.CanGoBack);
+            _forwardButton.SetEnabled(_controller.CanGoForward);
+        }
+
+        private void UpdateBreadcrumbs(List<(string Name, Ulid Id)> path) {
+            _breadcrumbContainer.Clear();
+            if (path == null) return;
+
+            for (int i = 0; i < path.Count; i++) {
+                var (name, id) = path[i];
+                var isLast = i == path.Count - 1;
+
+                var btn = new Button(() => {
+                    // クリックでその階層へジャンプ
+                    _controller?.SelectFolder(id);
+                }) {
+                    text = name,
+                    style = {
+                        backgroundColor = Color.clear,
+                        borderTopWidth = 0, borderBottomWidth = 0, borderLeftWidth = 0, borderRightWidth = 0,
+                        marginLeft = 0, marginRight = 0, paddingLeft = 2, paddingRight = 2,
+                        color = ColorPreset.TextColor, // テキストカラーを明示してグレーアウト回避
+                        unityTextAlign = TextAnchor.MiddleLeft,
+                        fontSize = 12
+                    }
+                };
+
+                // 現在の階層は太字にするが、クリック可能かつ無効化しない
+                if (isLast) {
+                    btn.style.unityFontStyleAndWeight = FontStyle.Bold;
+                }
+
+                _breadcrumbContainer.Add(btn);
+
+                if (!isLast) {
+                    var separator = new Label(">") {
+                        style = {
+                            marginLeft = 2, marginRight = 2,
+                            color = Color.gray,
+                            unityTextAlign = TextAnchor.MiddleCenter
+                        }
+                    };
+                    _breadcrumbContainer.Add(separator);
+                }
+            }
         }
 
         private void OnAssetsChanged(List<AssetMetadata> assets) {

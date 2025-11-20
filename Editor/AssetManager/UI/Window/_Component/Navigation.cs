@@ -24,8 +24,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _allButton = new Button(() =>
             {
-                SetFilter(a => !a.IsDeleted);
                 SetSelected(_allButton);
+                OnNavigationChanged("All Items", a => !a.IsDeleted);
                 OnFolderSelected(Ulid.Empty);
                 _folderView?.ClearSelection();
             }) { text = "All items" };
@@ -33,8 +33,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _boothItemButton = new Button(() =>
             {
-                SetFilter(a => !a.IsDeleted);
                 SetSelected(_boothItemButton);
+                OnNavigationChanged("Booth Items", a => !a.IsDeleted, true);
                 OnBoothItemClicked();
                 _folderView?.ClearSelection();
             }) { text = "Booth Items" };
@@ -50,8 +50,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _uncategorizedButton = new Button(() =>
             {
-                SetFilter(a => !a.IsDeleted && a.Folder == Ulid.Empty && (a.Tags == null || a.Tags.Count == 0));
                 SetSelected(_uncategorizedButton);
+                OnNavigationChanged("Uncategorized", a => !a.IsDeleted && a.Folder == Ulid.Empty && (a.Tags == null || a.Tags.Count == 0));
                 OnFolderSelected(Ulid.Empty);
                 _folderView?.ClearSelection();
             }) { text = "Uncategorized" };
@@ -59,8 +59,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _trashButton = new Button(() =>
             {
-                SetFilter(a => a.IsDeleted);
                 SetSelected(_trashButton);
+                OnNavigationChanged("Trash", a => a.IsDeleted);
                 OnFolderSelected(Ulid.Empty);
                 _folderView?.ClearSelection();
             }) { text = "Trash" };
@@ -80,6 +80,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _repository = repository;
         }
 
+        // Navigation変更イベント（ルート名, フィルタ, Boothモード）
+        public event Action<string, Func<AssetMetadata, bool>, bool> NavigationChanged; 
+        
+        // 後方互換用
         public event Action<Func<AssetMetadata, bool>> FilterChanged;
         public event Action<Ulid> FolderSelected;
         public event Action BoothItemClicked;
@@ -89,28 +93,32 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _folderView.SetFolders(folders);
         }
 
-        private void SetFilter(Func<AssetMetadata, bool> predicate) {
-            FilterChanged?.Invoke(predicate);
+        private void OnNavigationChanged(string rootName, Func<AssetMetadata, bool> filter, bool isBoothMode = false) {
+            NavigationChanged?.Invoke(rootName, filter, isBoothMode);
+            FilterChanged?.Invoke(filter);
         }
 
         private void SetSelected(Button selected) {
-            _allButton.RemoveFromClassList("selected");
-            _boothItemButton.RemoveFromClassList("selected");
-            _tagListButton.RemoveFromClassList("selected");
-            _uncategorizedButton.RemoveFromClassList("selected");
-            _trashButton.RemoveFromClassList("selected");
+            // 初期化中のアクセスによるNRE防止のため、nullチェックを追加
+            _allButton?.RemoveFromClassList("selected");
+            _boothItemButton?.RemoveFromClassList("selected");
+            _tagListButton?.RemoveFromClassList("selected");
+            _uncategorizedButton?.RemoveFromClassList("selected");
+            _trashButton?.RemoveFromClassList("selected");
             selected?.AddToClassList("selected");
         }
 
         public void SelectAll() {
-            SetFilter(a => !a.IsDeleted);
+            if (_allButton == null) return;
             SetSelected(_allButton);
-            _folderView.ClearSelection();
+            OnNavigationChanged("All Items", a => !a.IsDeleted);
+            _folderView?.ClearSelection();
         }
 
         private void OnFolderViewSelected(Ulid folderId) {
             SetSelected(null);
-            SetFilter(a => !a.IsDeleted);
+            // フォルダ選択時はルート名を「Folders」に変更
+            OnNavigationChanged("Folders", a => !a.IsDeleted);
             OnFolderSelected(folderId);
         }
 
