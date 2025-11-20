@@ -1,8 +1,10 @@
-﻿using UnityEngine;
+﻿using _4OF.ee4v.Core.UI;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetCard : VisualElement {
+        private readonly VisualElement _innerContainer;
         private readonly Label _nameLabel;
         private readonly VisualElement _thumbnail;
 
@@ -12,7 +14,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             style.paddingTop = 5;
             style.paddingBottom = 5;
 
-            var innerContainer = new VisualElement {
+            _innerContainer = new VisualElement {
                 style = {
                     borderTopLeftRadius = 5,
                     borderTopRightRadius = 5,
@@ -20,10 +22,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     borderBottomRightRadius = 5,
                     overflow = Overflow.Hidden,
                     flexGrow = 1,
-                    flexDirection = FlexDirection.Column
+                    flexDirection = FlexDirection.Column,
+                    borderTopWidth = 1,
+                    borderBottomWidth = 1,
+                    borderLeftWidth = 1,
+                    borderRightWidth = 1,
+                    borderTopColor = new StyleColor(Color.clear),
+                    borderBottomColor = new StyleColor(Color.clear),
+                    borderLeftColor = new StyleColor(Color.clear),
+                    borderRightColor = new StyleColor(Color.clear)
                 }
             };
-            Add(innerContainer);
+            Add(_innerContainer);
 
             _thumbnail = new VisualElement {
                 style = {
@@ -36,7 +46,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Center)
                 }
             };
-            innerContainer.Add(_thumbnail);
+            _innerContainer.Add(_thumbnail);
 
             _nameLabel = new Label {
                 style = {
@@ -54,7 +64,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     color = new StyleColor(new Color(0.9f, 0.9f, 0.9f))
                 }
             };
-            innerContainer.Add(_nameLabel);
+            _innerContainer.Add(_nameLabel);
         }
 
         public void SetData(string itemName) {
@@ -71,6 +81,24 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _thumbnail.style.backgroundImage = new StyleBackground(texture);
             _thumbnail.style.backgroundColor = new StyleColor(Color.clear);
+        }
+
+        public void SetSelected(bool selected) {
+            if (selected) {
+                _innerContainer.style.backgroundColor = ColorPreset.ItemSelectedBackGround;
+                var borderColor = ColorPreset.ItemSelectedBorder;
+                _innerContainer.style.borderTopColor = borderColor;
+                _innerContainer.style.borderBottomColor = borderColor;
+                _innerContainer.style.borderLeftColor = borderColor;
+                _innerContainer.style.borderRightColor = borderColor;
+            }
+            else {
+                _innerContainer.style.backgroundColor = Color.clear;
+                _innerContainer.style.borderTopColor = Color.clear;
+                _innerContainer.style.borderBottomColor = Color.clear;
+                _innerContainer.style.borderLeftColor = Color.clear;
+                _innerContainer.style.borderRightColor = Color.clear;
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.UI;
@@ -13,8 +14,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly TextField _descriptionField;
         private readonly Label _folderNameLabel;
         private readonly VisualElement _infoContainer;
+        private readonly VisualElement _multiSelectionContainer;
+        private readonly Label _multiSelectionLabel;
         private readonly TextField _nameField;
         private readonly TextField _newTagField;
+
+        private readonly VisualElement _singleSelectionContainer;
         private readonly VisualElement _tagsContainer;
         private readonly VisualElement _thumbnailContainer;
 
@@ -31,6 +36,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             style.paddingBottom = 10;
             style.backgroundColor = ColorPreset.DefaultBackground;
 
+            _singleSelectionContainer = new VisualElement();
+            Add(_singleSelectionContainer);
+
             _thumbnailContainer = new VisualElement {
                 style = {
                     alignSelf = Align.Center,
@@ -43,7 +51,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     overflow = Overflow.Hidden
                 }
             };
-            Add(_thumbnailContainer);
+            _singleSelectionContainer.Add(_thumbnailContainer);
 
             _nameField = CreateTextField(true);
             _nameField.style.marginBottom = 4;
@@ -52,7 +60,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 if (_currentAsset != null && _nameField.value != _currentAsset.Name)
                     OnNameChanged?.Invoke(_nameField.value);
             });
-            Add(_nameField);
+            _singleSelectionContainer.Add(_nameField);
 
             _descriptionField = CreateTextField(false);
             _descriptionField.multiline = true;
@@ -63,11 +71,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 if (_currentAsset != null && _descriptionField.value != _currentAsset.Description)
                     OnDescriptionChanged?.Invoke(_descriptionField.value);
             });
-            Add(_descriptionField);
+            _singleSelectionContainer.Add(_descriptionField);
 
             var tagLabel = new Label("Tags")
                 { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
-            Add(tagLabel);
+            _singleSelectionContainer.Add(tagLabel);
 
             _tagsContainer = new VisualElement {
                 style = {
@@ -76,7 +84,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     marginBottom = 4
                 }
             };
-            Add(_tagsContainer);
+            _singleSelectionContainer.Add(_tagsContainer);
 
             var tagInputContainer = new VisualElement
                 { style = { flexDirection = FlexDirection.Row, marginBottom = 10 } };
@@ -89,11 +97,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var addTagButton = new Button(AddNewTag) { text = "+", style = { width = 24 } };
             tagInputContainer.Add(_newTagField);
             tagInputContainer.Add(addTagButton);
-            Add(tagInputContainer);
+            _singleSelectionContainer.Add(tagInputContainer);
 
             var folderHeader = new Label("Folder")
                 { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
-            Add(folderHeader);
+            _singleSelectionContainer.Add(folderHeader);
 
             var folderRow = new VisualElement {
                 style = {
@@ -116,7 +124,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             folderRow.Add(folderIcon);
             folderRow.Add(_folderNameLabel);
-            Add(folderRow);
+            _singleSelectionContainer.Add(folderRow);
 
             var infoHeader = new Label("Information")
                 { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
@@ -124,6 +132,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _infoContainer = new VisualElement { style = { paddingLeft = 4 } };
             Add(_infoContainer);
+
+            _multiSelectionContainer = new VisualElement {
+                style = { display = DisplayStyle.None, alignItems = Align.Center, marginTop = 20 }
+            };
+            _multiSelectionLabel = new Label {
+                style = {
+                    fontSize = 14, unityFontStyleAndWeight = FontStyle.Bold, whiteSpace = WhiteSpace.Normal,
+                    unityTextAlign = TextAnchor.MiddleCenter
+                }
+            };
+            _multiSelectionContainer.Add(_multiSelectionLabel);
+            Add(_multiSelectionContainer);
         }
 
         public event Action<string> OnNameChanged;
@@ -134,6 +154,55 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public void Initialize(IAssetRepository repository, TextureService textureService) {
             _repository = repository;
             _textureService = textureService;
+            UpdateSelection(null);
+        }
+
+        public void UpdateSelection(IReadOnlyList<object> selectedItems) {
+            if (selectedItems == null || selectedItems.Count == 0) {
+                ShowLibraryInfo();
+            }
+            else if (selectedItems.Count == 1) {
+                ShowSingleSelection();
+                var item = selectedItems[0];
+                if (item is AssetMetadata asset) SetAsset(asset);
+                else if (item is BaseFolder folder) SetFolder(folder);
+            }
+            else {
+                ShowMultiSelectionInfo(selectedItems.Count);
+            }
+        }
+
+        private void ShowLibraryInfo() {
+            _singleSelectionContainer.style.display = DisplayStyle.None;
+            _multiSelectionContainer.style.display = DisplayStyle.Flex;
+            _multiSelectionLabel.text = "Library Overview";
+
+            _infoContainer.Clear();
+            if (_repository == null) return;
+
+            var allAssets = _repository.GetAllAssets().ToList();
+            var totalSize = allAssets.Sum(a => a.Size);
+
+            AddInfoRow("Total Assets", allAssets.Count.ToString());
+            AddInfoRow("Total Size", FormatSize(totalSize));
+            AddInfoRow("Total Tags", _repository.GetAllTags().Count.ToString());
+
+            var meta = _repository.GetLibraryMetadata();
+            if (meta == null) return;
+            var date = DateTimeOffset.FromUnixTimeMilliseconds(meta.ModificationTime).ToLocalTime();
+            AddInfoRow("Last Update", date.ToString("yyyy/MM/dd HH:mm"));
+        }
+
+        private void ShowMultiSelectionInfo(int count) {
+            _singleSelectionContainer.style.display = DisplayStyle.None;
+            _multiSelectionContainer.style.display = DisplayStyle.Flex;
+            _multiSelectionLabel.text = $"{count} items selected";
+            _infoContainer.Clear();
+        }
+
+        private void ShowSingleSelection() {
+            _singleSelectionContainer.style.display = DisplayStyle.Flex;
+            _multiSelectionContainer.style.display = DisplayStyle.None;
         }
 
         private static TextField CreateTextField(bool isBold) {
@@ -156,13 +225,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _currentFolder = null;
 
             if (asset == null) {
-                SetEnabled(false);
-                ClearFields();
+                ShowLibraryInfo();
                 return;
             }
 
-            SetEnabled(true);
-
+            _singleSelectionContainer.SetEnabled(true);
             _nameField.SetValueWithoutNotify(asset.Name);
             _descriptionField.SetValueWithoutNotify(asset.Description);
 
@@ -180,19 +247,27 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             AddInfoRow("Modified", date.ToString("yyyy/MM/dd HH:mm"));
         }
 
-        public void SetFolder(BaseFolder folder) {
+        private void SetFolder(BaseFolder folder) {
             _currentAsset = null;
             _currentFolder = folder;
-            SetEnabled(true);
+
+            if (folder == null) {
+                ShowLibraryInfo();
+                return;
+            }
+
+            _singleSelectionContainer.SetEnabled(true);
 
             ClearFields();
-            if (folder == null) return;
-
             _nameField.value = folder.Name;
             _descriptionField.value = folder.Description;
             _folderNameLabel.text = "This is a Folder";
 
             LoadThumbnailAsync(folder.ID, true);
+            _infoContainer.Clear();
+
+            var date = DateTimeOffset.FromUnixTimeMilliseconds(folder.ModificationTime).ToLocalTime();
+            AddInfoRow("Modified", date.ToString("yyyy/MM/dd HH:mm"));
         }
 
         private void ClearFields() {

@@ -47,6 +47,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _assetController.BoothItemFoldersChanged -= OnBoothItemFoldersChanged;
             }
 
+            if (_assetView != null) _assetView.OnSelectionChange -= OnSelectionChanged;
+
             if (_assetInfo != null) {
                 _assetInfo.OnNameChanged -= OnAssetNameChanged;
                 _assetInfo.OnDescriptionChanged -= OnAssetDescriptionChanged;
@@ -114,6 +116,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetController.FoldersChanged += OnFoldersChanged;
             _assetController.BoothItemFoldersChanged += OnBoothItemFoldersChanged;
 
+            _assetView.OnSelectionChange += OnSelectionChanged;
+
             _assetInfo.OnNameChanged += OnAssetNameChanged;
             _assetInfo.OnDescriptionChanged += OnAssetDescriptionChanged;
             _assetInfo.OnTagAdded += OnAssetTagAdded;
@@ -125,6 +129,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             ShowAssetView();
 
             _isInitialized = true;
+        }
+
+        private void OnSelectionChanged(List<object> selectedItems) {
+            _assetInfo.UpdateSelection(selectedItems);
+
+            if (selectedItems != null && selectedItems.Count == 1 && selectedItems[0] is AssetMetadata asset)
+                _selectedAsset = asset;
+            else
+                _selectedAsset = null;
         }
 
         private void OnNavigationChanged(NavigationMode mode, string contextName, Func<AssetMetadata, bool> filter) {
@@ -152,12 +165,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void OnAssetSelected(AssetMetadata asset) {
-            _selectedAsset = asset;
-            _assetInfo.SetAsset(asset);
         }
 
         private void OnFolderPreviewSelected(BaseFolder folder) {
-            _assetInfo.SetFolder(folder);
         }
 
         private void OnFoldersChanged(List<BaseFolder> folders) {

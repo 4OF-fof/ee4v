@@ -19,6 +19,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly ListView _listView;
         private readonly ToolbarSearchField _searchField;
 
+        private readonly HashSet<object> _selectedItems = new();
+
         private List<object> _allItems = new();
 
         private AssetViewController _controller;
@@ -28,12 +30,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private List<object> _items = new();
 
         private int _itemsPerRow = 5;
+        private object _lastSelectedReference;
         private float _lastWidth;
         private TextureService _textureService;
 
         public AssetView() {
             style.flexGrow = 1;
             style.backgroundColor = ColorPreset.DefaultBackground;
+
+            focusable = true;
 
             var toolbar = new Toolbar {
                 style = {
@@ -133,8 +138,23 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             RegisterCallback<DetachFromPanelEvent>(OnDetach);
 
+            RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode != KeyCode.Escape) return;
+                ClearSelection();
+                evt.StopPropagation();
+            });
+
+            RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.target != this && evt.target != _listView) return;
+                Focus();
+                ClearSelection();
+            }, TrickleDown.TrickleDown);
             UpdateNavigationState();
         }
+
+        public event Action<List<object>> OnSelectionChange;
 
         private Label CreateNavigationLabel(string text, string labelTooltip) {
             var label = new Label(text) {
@@ -380,6 +400,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     card.style.width = itemWidth;
 
                     var item = rowData[i];
+                    card.SetSelected(_selectedItems.Contains(item));
+
                     switch (item) {
                         case BaseFolder folder:
                             card.SetData(folder.Name);
@@ -433,20 +455,78 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private void OnCardPointerDown(PointerDownEvent evt) {
             if (evt.button != 0) return;
             if (evt.currentTarget is not AssetCard card) return;
+            var targetItem = card.userData;
+            if (targetItem == null) return;
 
-            switch (card.userData) {
-                case BaseFolder folder:
-                    if (evt.clickCount == 2)
-                        _controller?.SetFolder(folder.ID);
-                    else
-                        _controller?.PreviewFolder(folder);
-                    break;
-                case AssetMetadata asset:
-                    _controller?.SelectAsset(asset);
-                    break;
+            Focus();
+
+            if (evt.clickCount == 2) {
+                if (targetItem is BaseFolder folder)
+                    _controller?.SetFolder(folder.ID);
+                evt.StopPropagation();
+                return;
             }
 
+            if (evt.ctrlKey || evt.commandKey) {
+                if (!_selectedItems.Add(targetItem))
+                    _selectedItems.Remove(targetItem);
+                else
+                    _lastSelectedReference = targetItem;
+            }
+            else if (evt.shiftKey && _lastSelectedReference != null && _items.Contains(_lastSelectedReference)) {
+                var startIndex = _items.IndexOf(_lastSelectedReference);
+                var endIndex = _items.IndexOf(targetItem);
+                if (startIndex != -1 && endIndex != -1) {
+                    var min = Mathf.Min(startIndex, endIndex);
+                    var max = Mathf.Max(startIndex, endIndex);
+                    _selectedItems.Clear();
+                    for (var i = min; i <= max; i++) _selectedItems.Add(_items[i]);
+                }
+                else {
+                    _selectedItems.Clear();
+                    _selectedItems.Add(targetItem);
+                    _lastSelectedReference = targetItem;
+                }
+            }
+            else {
+                _selectedItems.Clear();
+                _selectedItems.Add(targetItem);
+                _lastSelectedReference = targetItem;
+            }
+
+            RefreshSelectionVisuals();
+            NotifySelectionChange();
             evt.StopPropagation();
+        }
+
+        private void ClearSelection() {
+            _selectedItems.Clear();
+            _lastSelectedReference = null;
+            RefreshSelectionVisuals();
+            NotifySelectionChange();
+        }
+
+        private void NotifySelectionChange() {
+            OnSelectionChange?.Invoke(_selectedItems.ToList());
+
+            if (_selectedItems.Count == 1) {
+                var item = _selectedItems.First();
+                switch (item) {
+                    case AssetMetadata asset:
+                        _controller?.SelectAsset(asset);
+                        break;
+                    case BaseFolder f:
+                        _controller?.PreviewFolder(f);
+                        break;
+                }
+            }
+            else {
+                _controller?.SelectAsset(null);
+            }
+        }
+
+        private void RefreshSelectionVisuals() {
+            _listView.RefreshItems();
         }
 
         public void SetController(AssetViewController controller) {
@@ -520,11 +600,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void OnItemsChanged(List<object> items) {
             _allItems = items ?? new List<object>();
+
+            _selectedItems.RemoveWhere(i => !_allItems.Contains(i));
+            if (_lastSelectedReference != null && !_allItems.Contains(_lastSelectedReference))
+                _lastSelectedReference = null;
+
             ApplyFilter();
+
+            NotifySelectionChange();
         }
 
         public void ShowBoothItemFolders(List<BoothItemFolder> folders) {
             _allItems = new List<object>(folders ?? new List<BoothItemFolder>());
+            ClearSelection();
             ApplyFilter();
         }
 
