@@ -3,6 +3,7 @@ using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.AssetManager.UI.Window._Component;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -15,6 +16,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private AssetService _assetService;
         private AssetView _assetView;
         private FolderService _folderService;
+
+        private bool _isInitialized;
         private Navigation _navigation;
         private IAssetRepository _repository;
 
@@ -29,6 +32,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private void CreateGUI() {
             if (_repository == null) OnEnable();
+
+            _isInitialized = false;
 
             var root = rootVisualElement;
             root.style.flexDirection = FlexDirection.Row;
@@ -69,14 +74,21 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             _navigation.NavigationChanged += (rootName, filter, isBoothMode) =>
             {
-                _assetController.SetRootContext(rootName, isBoothMode);
-                _assetController.SetFilter(filter);
+                _assetController.SetRootContext(rootName, filter, isBoothMode, _isInitialized);
                 ShowAssetView();
             };
 
             _navigation.FolderSelected += folderId =>
             {
-                _assetController.SelectFolder(folderId);
+                if (folderId == Ulid.Empty)
+                    _assetController.SelectFolder(folderId, _isInitialized);
+                else
+                    _assetController.SetRootContextAndFolder(
+                        "Folders",
+                        a => !a.IsDeleted,
+                        folderId,
+                        _isInitialized
+                    );
                 ShowAssetView();
             };
 
@@ -88,8 +100,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             _tagListView.OnTagSelected += tag =>
             {
-                _assetController.SetRootContext($"Tag: {tag}");
-                _assetController.SetFilter(a => !a.IsDeleted && a.Tags.Contains(tag));
+                _assetController.SetRootContext(
+                    $"Tag: {tag}",
+                    a => !a.IsDeleted && a.Tags.Contains(tag),
+                    false,
+                    true
+                );
                 ShowAssetView();
             };
 
@@ -131,6 +147,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetController.Refresh();
 
             ShowAssetView();
+
+            _isInitialized = true;
         }
 
         private void RefreshUI(bool fullRefresh = true) {

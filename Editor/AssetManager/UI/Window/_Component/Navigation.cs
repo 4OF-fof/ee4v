@@ -70,7 +70,23 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var spacer = new VisualElement { style = { height = 10 } };
             Add(spacer);
 
-            Add(new Label("Folders") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 4 } });
+            var foldersLabel = new Label("Folders") {
+                style = {
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    marginBottom = 4,
+                    paddingTop = 2,
+                    paddingBottom = 2
+                }
+            };
+            foldersLabel.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 0) return;
+                SetSelected(null);
+                OnNavigationChanged("Folders", a => !a.IsDeleted);
+                _folderView?.ClearSelection();
+                evt.StopPropagation();
+            });
+            Add(foldersLabel);
 
             _folderView = new FolderView();
             _folderView.OnFolderSelected += OnFolderViewSelected;
@@ -115,7 +131,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void OnFolderViewSelected(Ulid folderId) {
             SetSelected(null);
-            OnNavigationChanged("Folders", a => !a.IsDeleted);
             OnFolderSelected(folderId);
         }
 
