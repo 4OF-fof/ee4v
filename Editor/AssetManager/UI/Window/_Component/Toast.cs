@@ -68,10 +68,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             {
                 closeLabel.style.backgroundColor = new Color(0.5f, 0.3f, 0.3f);
             });
-            closeLabel.RegisterCallback<MouseLeaveEvent>(_ =>
-            {
-                closeLabel.style.backgroundColor = Color.clear;
-            });
+            closeLabel.RegisterCallback<MouseLeaveEvent>(_ => { closeLabel.style.backgroundColor = Color.clear; });
 
             closeLabel.RegisterCallback<ClickEvent>(evt =>
             {
@@ -120,7 +117,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             schedule.Execute(() =>
             {
                 frame++;
-                var newOpacity = currentOpacity - (opacityStep * frame);
+                var newOpacity = currentOpacity - opacityStep * frame;
                 style.opacity = Mathf.Max(0, newOpacity);
 
                 if (frame < totalFrames) return;
