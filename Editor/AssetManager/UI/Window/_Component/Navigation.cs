@@ -14,6 +14,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private VisualElement _selectedFolderItem;
         private Label _selectedLabel;
         private Func<VisualElement, VisualElement> _showDialogCallback;
+        private Ulid _draggingFolderId = Ulid.Empty;
+        private VisualElement _dragIndicator;
 
         public Navigation() {
             style.flexDirection = FlexDirection.Column;
@@ -73,6 +75,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action TagListClicked;
         public event Action<Ulid, string> OnFolderRenamed;
         public event Action<Ulid> OnFolderDeleted;
+        public event Action<Ulid, Ulid> OnFolderMoved;
 
         public void SetFolders(List<BaseFolder> folders) {
             folders ??= new List<BaseFolder>();
@@ -108,14 +111,71 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
                 itemContainer.RegisterCallback<PointerDownEvent>(evt =>
                 {
-                    if (evt.button == 0) {
-                        OnFolderViewSelected((Ulid)itemContainer.userData, itemContainer);
-                        evt.StopPropagation();
+                    switch (evt.button) {
+                        case 0:
+                            OnFolderViewSelected((Ulid)itemContainer.userData, itemContainer);
+                            evt.StopPropagation();
+                            break;
+                        case 1:
+                            ShowFolderContextMenu(itemContainer, folder.ID, folder.Name);
+                            evt.StopPropagation();
+                            break;
                     }
-                    else if (evt.button == 1) {
-                        ShowFolderContextMenu(itemContainer, folder.ID, folder.Name);
-                        evt.StopPropagation();
+                });
+
+                itemContainer.RegisterCallback<PointerMoveEvent>(evt =>
+                {
+                    if (evt.pressedButtons != 1 || _draggingFolderId != Ulid.Empty) return;
+                    _draggingFolderId = (Ulid)itemContainer.userData;
+                    itemContainer.style.opacity = 0.5f;
+                });
+
+                itemContainer.RegisterCallback<PointerUpEvent>(_ =>
+                {
+                    if (_draggingFolderId != (Ulid)itemContainer.userData) return;
+                    itemContainer.style.opacity = 1.0f;
+                    _draggingFolderId = Ulid.Empty;
+                });
+
+                itemContainer.RegisterCallback<PointerEnterEvent>(_ =>
+                {
+                    if (_draggingFolderId != Ulid.Empty && _draggingFolderId != (Ulid)itemContainer.userData) {
+                        itemContainer.style.backgroundColor = new Color(0.4f, 0.6f, 0.9f, 0.4f);
                     }
+                });
+
+                itemContainer.RegisterCallback<PointerLeaveEvent>(_ =>
+                {
+                    if (_draggingFolderId == Ulid.Empty || _draggingFolderId == (Ulid)itemContainer.userData) return;
+                    if (_currentSelectedFolderId == (Ulid)itemContainer.userData) {
+                        ApplySelectedStyle(itemContainer);
+                    } else {
+                        itemContainer.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+                    }
+                });
+
+                itemContainer.RegisterCallback<PointerUpEvent>(evt =>
+                {
+                    if (_draggingFolderId == Ulid.Empty || _draggingFolderId == (Ulid)itemContainer.userData) return;
+                    var targetFolderId = (Ulid)itemContainer.userData;
+                    var sourceFolderId = _draggingFolderId;
+                        
+                    foreach (var child in _folderContainer.Children()) {
+                        if (child.userData is not Ulid id || id != sourceFolderId) continue;
+                        child.style.opacity = 1.0f;
+                        break;
+                    }
+                        
+                    _draggingFolderId = Ulid.Empty;
+                        
+                    if (_currentSelectedFolderId == targetFolderId) {
+                        ApplySelectedStyle(itemContainer);
+                    } else {
+                        itemContainer.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+                    }
+                        
+                    OnFolderMoved?.Invoke(sourceFolderId, targetFolderId);
+                    evt.StopPropagation();
                 });
 
                 _folderContainer.Add(itemContainer);
