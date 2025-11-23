@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
@@ -15,11 +16,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly Dictionary<Ulid, VisualElement> _folderRowMap = new();
         private readonly Label _foldersLabel;
         private readonly List<Label> _navLabels = new();
+        private readonly List<string> _tempTags = new();
 
         private Ulid _currentSelectedFolderId = Ulid.Empty;
         private Ulid _draggingFolderId = Ulid.Empty;
         private VisualElement _dragIndicator;
         private Vector2 _dragStartPosition;
+
+        private IAssetRepository _repository;
         private VisualElement _selectedFolderItem;
         private Label _selectedLabel;
         private Func<VisualElement, VisualElement> _showDialogCallback;
@@ -29,6 +33,46 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             style.paddingLeft = 6;
             style.paddingRight = 6;
             style.paddingTop = 6;
+
+            // Create Asset button at the top
+            var createAssetButton = new Button {
+                text = "+ New Asset",
+                style = {
+                    marginBottom = 10,
+                    marginLeft = 4,
+                    marginRight = 4,
+                    paddingLeft = 12,
+                    paddingRight = 12,
+                    paddingTop = 8,
+                    paddingBottom = 8,
+                    borderTopLeftRadius = 16,
+                    borderTopRightRadius = 16,
+                    borderBottomLeftRadius = 16,
+                    borderBottomRightRadius = 16,
+                    backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.8f),
+                    color = Color.white,
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    fontSize = 12,
+                    borderTopWidth = 0,
+                    borderBottomWidth = 0,
+                    borderLeftWidth = 0,
+                    borderRightWidth = 0
+                }
+            };
+
+            createAssetButton.RegisterCallback<PointerEnterEvent>(_ =>
+            {
+                createAssetButton.style.backgroundColor = new Color(0.4f, 0.6f, 0.9f, 1.0f);
+            });
+
+            createAssetButton.RegisterCallback<PointerLeaveEvent>(_ =>
+            {
+                createAssetButton.style.backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.8f);
+            });
+
+            createAssetButton.clicked += ShowCreateAssetDialog;
+
+            Add(createAssetButton);
 
             RegisterCallback<PointerUpEvent>(_ =>
             {
@@ -136,6 +180,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _showDialogCallback = callback;
         }
 
+        public void SetRepository(IAssetRepository repository) {
+            _repository = repository;
+        }
+
         public event Action<NavigationMode, string, Func<AssetMetadata, bool>> NavigationChanged;
         public event Action<Ulid> FolderSelected;
         public event Action BoothItemClicked;
@@ -146,6 +194,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<string> OnFolderCreated;
         public event Action<List<Ulid>, Ulid> OnAssetsDroppedToFolder;
         public event Action<Ulid, Ulid, int> OnFolderReordered;
+
+        public event Action<string, string, string, List<string>, string, string>
+            OnAssetCreated; // name, description, fileOrUrl, tags, boothUrl, shopDomain, itemId
 
         public void SelectState(NavigationMode mode, Ulid folderId) {
             SetSelectedFolderItem(null);
@@ -584,6 +635,288 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void DeleteFolder(Ulid folderId) {
             OnFolderDeleted?.Invoke(folderId);
+        }
+
+        private void ShowCreateAssetDialog() {
+            if (_showDialogCallback == null) return;
+
+            _tempTags.Clear();
+            var content = new VisualElement();
+
+            var title = new Label("Create New Asset") {
+                style = {
+                    fontSize = 14,
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    marginBottom = 10
+                }
+            };
+            content.Add(title);
+
+            var nameLabel = new Label("Asset Name:") {
+                style = { marginBottom = 5 }
+            };
+            content.Add(nameLabel);
+
+            var nameField = new TextField { value = "", style = { marginBottom = 10 } };
+            content.Add(nameField);
+
+            var descLabel = new Label("Description (optional):") {
+                style = { marginBottom = 5 }
+            };
+            content.Add(descLabel);
+
+            var descField = new TextField {
+                multiline = true,
+                value = "",
+                style = {
+                    marginBottom = 10,
+                    minHeight = 60
+                }
+            };
+            content.Add(descField);
+
+            var fileUrlLabel = new Label("File Path or URL (optional):") {
+                style = { marginBottom = 5 }
+            };
+            content.Add(fileUrlLabel);
+
+            var fileUrlRow = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    marginBottom = 10
+                }
+            };
+
+            var fileUrlField = new TextField {
+                value = "",
+                style = { flexGrow = 1, marginRight = 5 }
+            };
+            fileUrlRow.Add(fileUrlField);
+
+            var browseBtn = new Button {
+                text = "Browse",
+                style = { width = 70 }
+            };
+            browseBtn.clicked += () =>
+            {
+                var path = EditorUtility.OpenFilePanel("Select Asset File", "", "");
+                if (!string.IsNullOrEmpty(path))
+                    fileUrlField.value = path;
+            };
+            fileUrlRow.Add(browseBtn);
+            content.Add(fileUrlRow);
+
+            // Booth Metadata Section
+            var boothLabel = new Label("Booth URL (optional):") {
+                style = {
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    fontSize = 12,
+                    marginTop = 10,
+                    marginBottom = 5
+                }
+            };
+            content.Add(boothLabel);
+
+            var boothUrlHint = new Label("Format: [shopname].booth.pm/items/[itemid]") {
+                style = {
+                    fontSize = 10,
+                    color = Color.gray,
+                    marginBottom = 5
+                }
+            };
+            content.Add(boothUrlHint);
+
+            var boothUrlField = new TextField {
+                value = "",
+                style = { marginBottom = 10 }
+            };
+            content.Add(boothUrlField);
+
+            // Tags Section
+            var tagsLabel = new Label("Tags:") {
+                style = {
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    fontSize = 12,
+                    marginBottom = 4
+                }
+            };
+            content.Add(tagsLabel);
+
+            var tagsContainer = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    flexWrap = Wrap.Wrap,
+                    marginBottom = 10
+                }
+            };
+            content.Add(tagsContainer);
+
+            void RefreshTagsUI() {
+                tagsContainer.Clear();
+                foreach (var tag in _tempTags) {
+                    var pill = new VisualElement {
+                        style = {
+                            flexDirection = FlexDirection.Row,
+                            backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f)),
+                            borderTopLeftRadius = 10,
+                            borderTopRightRadius = 10,
+                            borderBottomLeftRadius = 10,
+                            borderBottomRightRadius = 10,
+                            paddingLeft = 8,
+                            paddingRight = 4,
+                            paddingTop = 2,
+                            paddingBottom = 2,
+                            marginRight = 4,
+                            marginBottom = 4,
+                            alignItems = Align.Center
+                        }
+                    };
+
+                    var label = new Label(tag) { style = { marginRight = 4 } };
+
+                    pill.RegisterCallback<MouseEnterEvent>(_ =>
+                    {
+                        pill.style.backgroundColor = new StyleColor(new Color(0.4f, 0.4f, 0.4f));
+                    });
+                    pill.RegisterCallback<MouseLeaveEvent>(_ =>
+                    {
+                        pill.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+                    });
+
+                    var tagToRemove = tag;
+                    var removeBtn = new Button(() =>
+                    {
+                        _tempTags.Remove(tagToRemove);
+                        RefreshTagsUI();
+                    }) {
+                        text = "×",
+                        style = {
+                            width = 16,
+                            height = 16,
+                            fontSize = 10,
+                            backgroundColor = Color.clear,
+                            borderTopWidth = 0,
+                            borderBottomWidth = 0,
+                            borderLeftWidth = 0,
+                            borderRightWidth = 0,
+                            paddingLeft = 0,
+                            paddingRight = 0
+                        }
+                    };
+
+                    removeBtn.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
+                    removeBtn.RegisterCallback<MouseEnterEvent>(_ =>
+                    {
+                        removeBtn.style.backgroundColor = new Color(0.8f, 0.3f, 0.3f);
+                        removeBtn.style.color = Color.white;
+                    });
+                    removeBtn.RegisterCallback<MouseLeaveEvent>(_ =>
+                    {
+                        removeBtn.style.backgroundColor = Color.clear;
+                        removeBtn.style.color = new StyleColor(StyleKeyword.Null);
+                    });
+
+                    pill.Add(label);
+                    pill.Add(removeBtn);
+                    tagsContainer.Add(pill);
+                }
+            }
+
+            var addTagButton = new Button(() =>
+            {
+                if (_repository == null) return;
+                var screenPosition = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+                TagSelectorWindow.Show(screenPosition, _repository, tag =>
+                {
+                    if (!string.IsNullOrEmpty(tag) && !_tempTags.Contains(tag)) {
+                        _tempTags.Add(tag);
+                        RefreshTagsUI();
+                    }
+                });
+            }) {
+                text = "+ Add Tag",
+                style = {
+                    backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f)),
+                    borderTopLeftRadius = 10,
+                    borderTopRightRadius = 10,
+                    borderBottomLeftRadius = 10,
+                    borderBottomRightRadius = 10,
+                    paddingLeft = 10,
+                    paddingRight = 10,
+                    paddingTop = 4,
+                    paddingBottom = 4,
+                    height = 24,
+                    borderTopWidth = 0,
+                    borderBottomWidth = 0,
+                    borderLeftWidth = 0,
+                    borderRightWidth = 0,
+                    marginBottom = 10,
+                    width = Length.Percent(100)
+                }
+            };
+            addTagButton.RegisterCallback<MouseEnterEvent>(_ =>
+            {
+                addTagButton.style.backgroundColor = new StyleColor(new Color(0.4f, 0.4f, 0.4f));
+            });
+            addTagButton.RegisterCallback<MouseLeaveEvent>(_ =>
+            {
+                addTagButton.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+            });
+            content.Add(addTagButton);
+
+            var buttonRow = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    justifyContent = Justify.FlexEnd,
+                    marginTop = 10
+                }
+            };
+
+            var cancelBtn = new Button {
+                text = "Cancel",
+                style = { marginRight = 5 }
+            };
+            buttonRow.Add(cancelBtn);
+
+            var createBtn = new Button {
+                text = "Create"
+            };
+            buttonRow.Add(createBtn);
+
+            content.Add(buttonRow);
+
+            var dialogContainer = _showDialogCallback.Invoke(content);
+
+            cancelBtn.clicked += () => dialogContainer?.RemoveFromHierarchy();
+            createBtn.clicked += () =>
+            {
+                var assetName = nameField.value;
+                var description = descField.value;
+                var fileOrUrl = fileUrlField.value;
+                var boothUrl = boothUrlField.value.Trim();
+
+                // Parse Booth URL
+                var shopDomain = "";
+                var itemId = "";
+                if (!string.IsNullOrWhiteSpace(boothUrl)) {
+                    // Remove protocol if present
+                    var url = boothUrl.Replace("https://", "").Replace("http://", "");
+
+                    // Expected format: [shopname].booth.pm/items/[itemid]
+                    var match = Regex.Match(url, @"^([^.]+)\.booth\.pm/items/(\d+)");
+                    if (match.Success) {
+                        shopDomain = match.Groups[1].Value;
+                        itemId = match.Groups[2].Value;
+                    }
+                }
+
+                OnAssetCreated?.Invoke(assetName, description, fileOrUrl, new List<string>(_tempTags), shopDomain,
+                    itemId);
+
+                dialogContainer?.RemoveFromHierarchy();
+            };
+
+            content.schedule.Execute(() => { nameField.Focus(); });
         }
 
         private void ShowCreateFolderDialog() {

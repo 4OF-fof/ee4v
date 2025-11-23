@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
@@ -43,6 +44,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _navigation.OnFolderCreated -= OnFolderCreated;
                 _navigation.OnAssetsDroppedToFolder -= OnAssetsDroppedToFolder;
                 _navigation.OnFolderReordered -= OnFolderReordered;
+                _navigation.OnAssetCreated -= OnAssetCreated;
             }
 
             if (_tagListView != null) _tagListView.OnTagSelected -= OnTagSelected;
@@ -126,7 +128,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _navigation.OnFolderCreated += OnFolderCreated;
             _navigation.OnAssetsDroppedToFolder += OnAssetsDroppedToFolder;
             _navigation.OnFolderReordered += OnFolderReordered;
+            _navigation.OnAssetCreated += OnAssetCreated;
             _navigation.SetShowDialogCallback(ShowDialog);
+            _navigation.SetRepository(_repository);
 
             _tagListView.OnTagSelected += OnTagSelected;
             _tagListView.OnTagRenamed += OnTagRenamed;
@@ -302,6 +306,60 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 ShowToast($"フォルダ '{folderName}' の作成に失敗しました: 名前が無効です", 10, ToastType.Error);
         }
 
+        private void OnAssetCreated(string assetName, string description, string fileOrUrl, List<string> tags,
+            string shopDomain, string itemId) {
+            if (string.IsNullOrWhiteSpace(assetName)) {
+                ShowToast("アセット名を入力してください", 5, ToastType.Error);
+                return;
+            }
+
+            try {
+                AssetMetadata asset;
+
+                if (!string.IsNullOrWhiteSpace(fileOrUrl)) {
+                    if (File.Exists(fileOrUrl)) {
+                        _repository.CreateAssetFromFile(fileOrUrl);
+                        asset = _repository.GetAllAssets().OrderByDescending(a => a.ModificationTime).FirstOrDefault();
+                        if (asset == null) {
+                            ShowToast("ファイルからのアセット作成に失敗しました", 5, ToastType.Error);
+                            return;
+                        }
+                    }
+                    else {
+                        asset = _repository.CreateEmptyAsset();
+                    }
+                }
+                else {
+                    asset = _repository.CreateEmptyAsset();
+                }
+
+                asset.SetName(assetName);
+                if (!string.IsNullOrWhiteSpace(description))
+                    asset.SetDescription(description);
+
+                if (!string.IsNullOrWhiteSpace(shopDomain) || !string.IsNullOrWhiteSpace(itemId)) {
+                    var boothData = new BoothMetadata();
+                    if (!string.IsNullOrWhiteSpace(shopDomain))
+                        boothData.SetShopDomain(shopDomain);
+                    if (!string.IsNullOrWhiteSpace(itemId))
+                        boothData.SetItemID(itemId);
+                    asset.SetBoothData(boothData);
+                }
+
+                if (tags is { Count: > 0 })
+                    foreach (var tag in tags.Where(tag => !string.IsNullOrWhiteSpace(tag)))
+                        asset.AddTag(tag);
+
+                _repository.SaveAsset(asset);
+                _assetController.Refresh();
+                ShowToast($"アセット '{assetName}' を作成しました", 3, ToastType.Success);
+            }
+            catch (Exception ex) {
+                ShowToast($"アセットの作成に失敗しました: {ex.Message}", 5, ToastType.Error);
+                Debug.LogError($"Failed to create asset: {ex}");
+            }
+        }
+
         private void OnFolderMoved(Ulid sourceFolderId, Ulid targetFolderId) {
             _folderService.MoveFolder(sourceFolderId, targetFolderId);
             var folders = _folderService.GetRootFolders();
@@ -465,7 +523,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                     paddingLeft = 20, paddingRight = 20, paddingTop = 20, paddingBottom = 20,
                     borderTopLeftRadius = 8, borderTopRightRadius = 8,
                     borderBottomLeftRadius = 8, borderBottomRightRadius = 8,
-                    minWidth = 300
+                    minWidth = 300,
+                    maxWidth = 500
                 }
             };
 
