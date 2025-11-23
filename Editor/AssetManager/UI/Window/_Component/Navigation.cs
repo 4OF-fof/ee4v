@@ -7,9 +7,12 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class Navigation : VisualElement {
-        private readonly List<Button> _buttons = new();
-        private readonly FolderView _folderView;
-        private Button _selectedButton;
+        private readonly VisualElement _folderContainer;
+        private readonly List<Label> _navLabels = new();
+
+        private Ulid _currentSelectedFolderId = Ulid.Empty;
+        private VisualElement _selectedFolderItem;
+        private Label _selectedLabel;
 
         public Navigation() {
             style.flexDirection = FlexDirection.Column;
@@ -17,42 +20,46 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             style.paddingRight = 6;
             style.paddingTop = 6;
 
-            CreateNavButton("All items", () => FireNav(NavigationMode.AllItems, "All Items", a => !a.IsDeleted));
-            CreateNavButton("Booth Items", () => {
+            CreateNavLabel("All items", () => FireNav(NavigationMode.AllItems, "All Items", a => !a.IsDeleted));
+            CreateNavLabel("Booth Items", () =>
+            {
                 FireNav(NavigationMode.BoothItems, "Booth Items", a => !a.IsDeleted);
                 BoothItemClicked?.Invoke();
             });
-            CreateNavButton("Tag List", () => {
-                TagListClicked?.Invoke();
-                _folderView?.ClearSelection();
-            });
-            CreateNavButton("Uncategorized", () => FireNav(NavigationMode.Uncategorized, "Uncategorized", 
+            CreateNavLabel("Tag List", () => { TagListClicked?.Invoke(); });
+            CreateNavLabel("Uncategorized", () => FireNav(NavigationMode.Uncategorized, "Uncategorized",
                 a => !a.IsDeleted && a.Folder == Ulid.Empty && (a.Tags == null || a.Tags.Count == 0)));
-            CreateNavButton("Trash", () => FireNav(NavigationMode.Trash, "Trash", a => a.IsDeleted));
+            CreateNavLabel("Trash", () => FireNav(NavigationMode.Trash, "Trash", a => a.IsDeleted));
 
             Add(new VisualElement { style = { height = 10 } });
 
             var foldersLabel = new Label("Folders") {
                 style = {
-                    unityFontStyleAndWeight = FontStyle.Bold,
-                    marginBottom = 4,
-                    paddingTop = 2,
-                    paddingBottom = 2
+                    paddingLeft = 8,
+                    paddingRight = 8,
+                    paddingTop = 4,
+                    paddingBottom = 4,
+                    marginBottom = 2,
+                    unityFontStyleAndWeight = FontStyle.Bold
                 }
             };
             foldersLabel.RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (evt.button != 0) return;
-                SetSelected(null);
-                _folderView?.ClearSelection();
+                SetSelected(foldersLabel);
                 NavigationChanged?.Invoke(NavigationMode.Folders, "Folders", a => !a.IsDeleted);
                 evt.StopPropagation();
             });
             Add(foldersLabel);
 
-            _folderView = new FolderView();
-            _folderView.OnFolderSelected += OnFolderViewSelected;
-            Add(_folderView);
+            _folderContainer = new VisualElement();
+            var scrollView = new ScrollView(ScrollViewMode.Vertical) {
+                style = {
+                    flexGrow = 1
+                }
+            };
+            scrollView.Add(_folderContainer);
+            Add(scrollView);
         }
 
         public event Action<NavigationMode, string, Func<AssetMetadata, bool>> NavigationChanged;
@@ -60,40 +67,145 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action BoothItemClicked;
         public event Action TagListClicked;
 
-        public void Initialize(IAssetRepository repository) { }
-
         public void SetFolders(List<BaseFolder> folders) {
-            _folderView.SetFolders(folders);
+            folders ??= new List<BaseFolder>();
+            _folderContainer.Clear();
+
+            _selectedFolderItem = null;
+
+            foreach (var folder in folders) {
+                var itemContainer = new VisualElement {
+                    userData = folder.ID,
+                    style = {
+                        flexDirection = FlexDirection.Row,
+                        marginBottom = 1
+                    }
+                };
+
+                var label = new Label(folder.Name) {
+                    style = {
+                        paddingLeft = 16,
+                        paddingRight = 8,
+                        paddingTop = 3,
+                        paddingBottom = 3,
+                        flexGrow = 1
+                    }
+                };
+
+                itemContainer.Add(label);
+
+                if (folder.ID == _currentSelectedFolderId) {
+                    ApplySelectedStyle(itemContainer);
+                    _selectedFolderItem = itemContainer;
+                }
+
+                itemContainer.RegisterCallback<PointerDownEvent>(evt =>
+                {
+                    if (evt.button != 0) return;
+                    OnFolderViewSelected((Ulid)itemContainer.userData, itemContainer);
+                    evt.StopPropagation();
+                });
+
+                _folderContainer.Add(itemContainer);
+            }
         }
 
         public void SelectAll() {
-            if (_buttons.Count > 0) _buttons[0].SendEvent(new ClickEvent());
+            if (_navLabels.Count <= 0) return;
+            var firstLabel = _navLabels[0];
+            SetSelected(firstLabel);
+            (firstLabel.userData as Action)?.Invoke();
         }
 
-        private void CreateNavButton(string text, Action onClick) {
-            var btn = new Button { text = text };
-            btn.clicked += () => {
-                SetSelected(btn);
-                onClick?.Invoke();
+        private void CreateNavLabel(string text, Action onClick) {
+            var label = new Label(text) {
+                userData = onClick,
+                style = {
+                    paddingLeft = 8,
+                    paddingRight = 8,
+                    paddingTop = 4,
+                    paddingBottom = 4,
+                    marginBottom = 2,
+                    unityFontStyleAndWeight = FontStyle.Bold
+                }
             };
-            _buttons.Add(btn);
-            Add(btn);
+            label.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 0) return;
+                SetSelected(label);
+                onClick?.Invoke();
+                evt.StopPropagation();
+            });
+            _navLabels.Add(label);
+            Add(label);
         }
 
         private void FireNav(NavigationMode mode, string naviName, Func<AssetMetadata, bool> filter) {
-            _folderView.ClearSelection();
+            _currentSelectedFolderId = Ulid.Empty;
+
             FolderSelected?.Invoke(Ulid.Empty);
             NavigationChanged?.Invoke(mode, naviName, filter);
         }
 
-        private void SetSelected(Button btn) {
-            _selectedButton?.RemoveFromClassList("selected");
-            _selectedButton = btn;
-            _selectedButton?.AddToClassList("selected");
+
+        private static void ApplySelectedStyle(VisualElement item) {
+            item.AddToClassList("selected");
+            item.style.backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.3f);
+            foreach (var child in item.Children())
+                if (child is Label childLabel)
+                    childLabel.style.color = new Color(0.4f, 0.7f, 1.0f);
         }
 
-        private void OnFolderViewSelected(Ulid folderId) {
-            SetSelected(null);
+        private void RemoveSelectedStyle(VisualElement item) {
+            item.RemoveFromClassList("selected");
+            item.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+            foreach (var child in item.Children())
+                if (child is Label childLabel)
+                    childLabel.style.color = new StyleColor(StyleKeyword.Null);
+        }
+
+
+        private void SetSelected(Label label) {
+            if (_selectedFolderItem != null) {
+                RemoveSelectedStyle(_selectedFolderItem);
+                _selectedFolderItem = null;
+                _currentSelectedFolderId = Ulid.Empty;
+            }
+
+            if (_selectedLabel != null) {
+                _selectedLabel.RemoveFromClassList("selected");
+                _selectedLabel.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+                _selectedLabel.style.color = new StyleColor(StyleKeyword.Null);
+            }
+
+            _selectedLabel = label;
+            if (_selectedLabel == null) return;
+
+            _selectedLabel.AddToClassList("selected");
+            _selectedLabel.style.backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.3f);
+            _selectedLabel.style.color = new Color(0.4f, 0.7f, 1.0f);
+        }
+
+        private void SetSelectedFolderItem(VisualElement folderItem) {
+            if (_selectedLabel != null) {
+                _selectedLabel.RemoveFromClassList("selected");
+                _selectedLabel.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+                _selectedLabel.style.color = new StyleColor(StyleKeyword.Null);
+                _selectedLabel = null;
+            }
+
+            if (_selectedFolderItem != null) RemoveSelectedStyle(_selectedFolderItem);
+
+            _selectedFolderItem = folderItem;
+            if (_selectedFolderItem == null) return;
+
+            ApplySelectedStyle(_selectedFolderItem);
+        }
+
+        private void OnFolderViewSelected(Ulid folderId, VisualElement folderItem) {
+            _currentSelectedFolderId = folderId;
+
+            SetSelectedFolderItem(folderItem);
             FolderSelected?.Invoke(folderId);
         }
     }
