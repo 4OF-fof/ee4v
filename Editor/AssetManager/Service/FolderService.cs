@@ -192,7 +192,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             return set;
         }
 
-        public List<BaseFolder> GetFlatFolders() {
+        public List<BaseFolder> GetRootFolders() {
             var libraries = _repository.GetLibraryMetadata();
             return libraries?.FolderList.Where(f => f is not BoothItemFolder).ToList() ?? new List<BaseFolder>();
         }

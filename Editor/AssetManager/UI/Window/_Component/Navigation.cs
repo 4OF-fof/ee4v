@@ -7,7 +7,9 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class Navigation : VisualElement {
+        private readonly HashSet<Ulid> _expandedFolders = new();
         private readonly VisualElement _folderContainer;
+        private readonly Dictionary<Ulid, VisualElement> _folderItemMap = new();
         private readonly List<Label> _navLabels = new();
 
         private Ulid _currentSelectedFolderId = Ulid.Empty;
@@ -124,103 +126,161 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public void SetFolders(List<BaseFolder> folders) {
             folders ??= new List<BaseFolder>();
             _folderContainer.Clear();
+            _folderItemMap.Clear();
 
             _selectedFolderItem = null;
 
-            foreach (var folder in folders) {
-                var itemContainer = new VisualElement {
-                    userData = folder.ID,
-                    style = {
-                        flexDirection = FlexDirection.Row,
-                        marginBottom = 1
-                    }
-                };
+            foreach (var folder in folders) CreateFolderTreeItem(folder, _folderContainer, 0);
+        }
 
-                var label = new Label(folder.Name) {
-                    style = {
-                        paddingLeft = 16,
-                        paddingRight = 8,
-                        paddingTop = 3,
-                        paddingBottom = 3,
-                        flexGrow = 1
-                    }
-                };
-
-                itemContainer.Add(label);
-
-                if (folder.ID == _currentSelectedFolderId) {
-                    ApplySelectedStyle(itemContainer);
-                    _selectedFolderItem = itemContainer;
+        private void CreateFolderTreeItem(BaseFolder folder, VisualElement parentContainer, int depth) {
+            var treeItemContainer = new VisualElement {
+                userData = folder.ID,
+                style = {
+                    flexDirection = FlexDirection.Column,
+                    marginBottom = 1
                 }
+            };
 
-                itemContainer.RegisterCallback<PointerDownEvent>(evt =>
+            var itemRow = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    alignItems = Align.Center
+                }
+            };
+
+            var hasChildren = folder is Folder f && f.Children.Count > 0;
+            var isExpanded = _expandedFolders.Contains(folder.ID);
+
+            var expandToggle = new Label(hasChildren ? isExpanded ? "▼" : "▶" : " ") {
+                style = {
+                    paddingLeft = depth * 12,
+                    paddingRight = 0,
+                    width = 16 + depth * 12,
+                    unityTextAlign = TextAnchor.MiddleLeft,
+                    fontSize = 10
+                }
+            };
+
+            if (hasChildren)
+                expandToggle.RegisterCallback<PointerDownEvent>(evt =>
                 {
-                    switch (evt.button) {
-                        case 0:
-                            OnFolderViewSelected((Ulid)itemContainer.userData, itemContainer);
-                            evt.StopPropagation();
-                            break;
-                        case 1:
-                            ShowFolderContextMenu(itemContainer, folder.ID, folder.Name);
-                            evt.StopPropagation();
-                            break;
-                    }
-                });
-
-                itemContainer.RegisterCallback<PointerMoveEvent>(evt =>
-                {
-                    if (evt.pressedButtons != 1 || _draggingFolderId != Ulid.Empty) return;
-                    _draggingFolderId = (Ulid)itemContainer.userData;
-                    itemContainer.style.opacity = 0.5f;
-                });
-
-                itemContainer.RegisterCallback<PointerUpEvent>(_ =>
-                {
-                    if (_draggingFolderId != (Ulid)itemContainer.userData) return;
-                    itemContainer.style.opacity = 1.0f;
-                    _draggingFolderId = Ulid.Empty;
-                });
-
-                itemContainer.RegisterCallback<PointerEnterEvent>(_ =>
-                {
-                    if (_draggingFolderId != Ulid.Empty && _draggingFolderId != (Ulid)itemContainer.userData)
-                        itemContainer.style.backgroundColor = new Color(0.4f, 0.6f, 0.9f, 0.4f);
-                });
-
-                itemContainer.RegisterCallback<PointerLeaveEvent>(_ =>
-                {
-                    if (_draggingFolderId == Ulid.Empty || _draggingFolderId == (Ulid)itemContainer.userData) return;
-                    if (_currentSelectedFolderId == (Ulid)itemContainer.userData)
-                        ApplySelectedStyle(itemContainer);
-                    else
-                        itemContainer.style.backgroundColor = new StyleColor(StyleKeyword.Null);
-                });
-
-                itemContainer.RegisterCallback<PointerUpEvent>(evt =>
-                {
-                    if (_draggingFolderId == Ulid.Empty || _draggingFolderId == (Ulid)itemContainer.userData) return;
-                    var targetFolderId = (Ulid)itemContainer.userData;
-                    var sourceFolderId = _draggingFolderId;
-
-                    foreach (var child in _folderContainer.Children()) {
-                        if (child.userData is not Ulid id || id != sourceFolderId) continue;
-                        child.style.opacity = 1.0f;
-                        break;
-                    }
-
-                    _draggingFolderId = Ulid.Empty;
-
-                    if (_currentSelectedFolderId == targetFolderId)
-                        ApplySelectedStyle(itemContainer);
-                    else
-                        itemContainer.style.backgroundColor = new StyleColor(StyleKeyword.Null);
-
-                    OnFolderMoved?.Invoke(sourceFolderId, targetFolderId);
+                    if (evt.button != 0) return;
+                    ToggleExpand(folder.ID);
                     evt.StopPropagation();
                 });
 
-                _folderContainer.Add(itemContainer);
+            var label = new Label(folder.Name) {
+                style = {
+                    paddingLeft = 0,
+                    paddingRight = 8,
+                    paddingTop = 3,
+                    paddingBottom = 3,
+                    flexGrow = 1
+                }
+            };
+
+            itemRow.Add(expandToggle);
+            itemRow.Add(label);
+            treeItemContainer.Add(itemRow);
+
+            if (folder.ID == _currentSelectedFolderId) {
+                ApplySelectedStyle(itemRow);
+                _selectedFolderItem = itemRow;
             }
+
+            itemRow.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                switch (evt.button) {
+                    case 0:
+                        OnFolderViewSelected((Ulid)treeItemContainer.userData, itemRow);
+                        evt.StopPropagation();
+                        break;
+                    case 1:
+                        ShowFolderContextMenu(itemRow, folder.ID, folder.Name);
+                        evt.StopPropagation();
+                        break;
+                }
+            });
+
+            itemRow.RegisterCallback<PointerMoveEvent>(evt =>
+            {
+                if (evt.pressedButtons != 1 || _draggingFolderId != Ulid.Empty) return;
+                _draggingFolderId = (Ulid)treeItemContainer.userData;
+                itemRow.style.opacity = 0.5f;
+            });
+
+            itemRow.RegisterCallback<PointerUpEvent>(_ =>
+            {
+                if (_draggingFolderId != (Ulid)treeItemContainer.userData) return;
+                itemRow.style.opacity = 1.0f;
+                _draggingFolderId = Ulid.Empty;
+            });
+
+            itemRow.RegisterCallback<PointerEnterEvent>(_ =>
+            {
+                if (_draggingFolderId != Ulid.Empty && _draggingFolderId != (Ulid)treeItemContainer.userData)
+                    itemRow.style.backgroundColor = new Color(0.4f, 0.6f, 0.9f, 0.4f);
+            });
+
+            itemRow.RegisterCallback<PointerLeaveEvent>(_ =>
+            {
+                if (_draggingFolderId == Ulid.Empty || _draggingFolderId == (Ulid)treeItemContainer.userData) return;
+                if (_currentSelectedFolderId == (Ulid)treeItemContainer.userData)
+                    ApplySelectedStyle(itemRow);
+                else
+                    itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+            });
+
+            itemRow.RegisterCallback<PointerUpEvent>(evt =>
+            {
+                if (_draggingFolderId == Ulid.Empty || _draggingFolderId == (Ulid)treeItemContainer.userData) return;
+                var targetFolderId = (Ulid)treeItemContainer.userData;
+                var sourceFolderId = _draggingFolderId;
+
+                if (_folderItemMap.TryGetValue(sourceFolderId, out var sourceItem))
+                    if (sourceItem.Q<VisualElement>() is { } sourceRow)
+                        sourceRow.style.opacity = 1.0f;
+
+                _draggingFolderId = Ulid.Empty;
+
+                if (_currentSelectedFolderId == targetFolderId)
+                    ApplySelectedStyle(itemRow);
+                else
+                    itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+
+                OnFolderMoved?.Invoke(sourceFolderId, targetFolderId);
+                evt.StopPropagation();
+            });
+
+            var childrenContainer = new VisualElement {
+                style = {
+                    display = isExpanded ? DisplayStyle.Flex : DisplayStyle.None
+                }
+            };
+            treeItemContainer.Add(childrenContainer);
+
+            if (folder is Folder folderWithChildren)
+                foreach (var child in folderWithChildren.Children)
+                    CreateFolderTreeItem(child, childrenContainer, depth + 1);
+
+            parentContainer.Add(treeItemContainer);
+            _folderItemMap[folder.ID] = treeItemContainer;
+        }
+
+        private void ToggleExpand(Ulid folderId) {
+            if (!_expandedFolders.Add(folderId)) _expandedFolders.Remove(folderId);
+
+            if (!_folderItemMap.TryGetValue(folderId, out var treeItem)) return;
+
+            var itemRow = treeItem.Q<VisualElement>();
+            var expandToggle = itemRow?.Q<Label>();
+            var childrenContainer = treeItem.ElementAt(1);
+
+            var isExpanded = _expandedFolders.Contains(folderId);
+            if (expandToggle != null) expandToggle.text = isExpanded ? "▼" : "▶";
+            if (childrenContainer != null)
+                childrenContainer.style.display = isExpanded ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         public void SelectAll() {

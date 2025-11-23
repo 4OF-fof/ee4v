@@ -239,28 +239,28 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private void OnFolderRenamed(Ulid folderId, string newName) {
             _folderService.RenameFolder(folderId, newName);
-            var folders = _folderService.GetFlatFolders();
+            var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
         }
 
         private void OnFolderDeleted(Ulid folderId) {
             _folderService.DeleteFolder(folderId);
-            var folders = _folderService.GetFlatFolders();
+            var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
         }
 
         private void OnFolderCreated(string folderName) {
             _folderService.CreateFolder(Ulid.Empty, folderName);
-            var folders = _folderService.GetFlatFolders();
+            var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
         }
 
         private void OnFolderMoved(Ulid sourceFolderId, Ulid targetFolderId) {
             _folderService.MoveFolder(sourceFolderId, targetFolderId);
-            var folders = _folderService.GetFlatFolders();
+            var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
         }
