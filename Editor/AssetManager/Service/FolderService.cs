@@ -155,7 +155,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             if (targetFolder == null) return;
 
             var allDescendantIds = GetSelfAndDescendants(targetFolder);
-            var allAssets = _repository.GetAllAssets();
+            var allAssets = _repository.GetAllAssets().ToList();
 
             foreach (var asset in allAssets)
                 if (allDescendantIds.Contains(asset.Folder))
