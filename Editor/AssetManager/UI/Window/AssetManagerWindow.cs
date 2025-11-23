@@ -305,10 +305,43 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void OnFolderReordered(Ulid parentFolderId, Ulid folderId, int newIndex) {
+            if (parentFolderId == Ulid.Empty) {
+                var libraries = _repository.GetLibraryMetadata();
+                if (libraries != null) {
+                    var full = libraries.FolderList;
+                    var mappedIndex = MapVisibleRootIndexToFullIndex(full, newIndex);
+                    _folderService.ReorderFolder(parentFolderId, folderId, mappedIndex);
+                    var mappedRootFolders = _folderService.GetRootFolders();
+                    _navigation.SetFolders(mappedRootFolders);
+                    RefreshUI(false);
+                    return;
+                }
+            }
+
             _folderService.ReorderFolder(parentFolderId, folderId, newIndex);
-            var folders = _folderService.GetRootFolders();
-            _navigation.SetFolders(folders);
+            var rootFolders = _folderService.GetRootFolders();
+            _navigation.SetFolders(rootFolders);
             RefreshUI(false);
+        }
+
+        private static int MapVisibleRootIndexToFullIndex(IReadOnlyList<BaseFolder> fullList, int visibleIndex) {
+            if (visibleIndex < 0) return 0;
+
+            var visibleCount = 0;
+            for (var i = 0; i < fullList.Count; i++) {
+                if (fullList[i] is BoothItemFolder) continue;
+
+                if (visibleCount == visibleIndex) return i;
+                visibleCount++;
+            }
+
+            if (visibleCount == 0) return 0;
+
+            for (var i = fullList.Count - 1; i >= 0; i--)
+                if (fullList[i] is not BoothItemFolder)
+                    return i + 1;
+
+            return fullList.Count;
         }
 
         private void OnAssetsDroppedToFolder(List<Ulid> assetIds, Ulid targetFolderId) {

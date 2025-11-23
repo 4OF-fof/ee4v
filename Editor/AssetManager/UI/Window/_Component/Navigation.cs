@@ -18,8 +18,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private Ulid _currentSelectedFolderId = Ulid.Empty;
         private Ulid _draggingFolderId = Ulid.Empty;
-        private Vector2 _dragStartPosition;
         private VisualElement _dragIndicator;
+        private Vector2 _dragStartPosition;
         private VisualElement _selectedFolderItem;
         private Label _selectedLabel;
         private Func<VisualElement, VisualElement> _showDialogCallback;
@@ -84,28 +84,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 SetSelected(_foldersLabel);
                 NavigationChanged?.Invoke(NavigationMode.Folders, "Folders", a => !a.IsDeleted);
                 evt.StopPropagation();
-            });
-
-            _foldersLabel.RegisterCallback<PointerEnterEvent>(_ =>
-            {
-                if (_draggingFolderId != Ulid.Empty)
-                    _foldersLabel.style.backgroundColor = new Color(0.4f, 0.6f, 0.9f, 0.4f);
-            });
-
-            _foldersLabel.RegisterCallback<PointerLeaveEvent>(_ =>
-            {
-                if (_draggingFolderId != Ulid.Empty)
-                    _foldersLabel.style.backgroundColor = new StyleColor(StyleKeyword.Null);
-            });
-
-            _foldersLabel.RegisterCallback<PointerUpEvent>(_ =>
-            {
-                if (_draggingFolderId == Ulid.Empty) return;
-                var sourceFolderId = _draggingFolderId;
-
-                _foldersLabel.style.backgroundColor = new StyleColor(StyleKeyword.Null);
-
-                OnFolderMoved?.Invoke(sourceFolderId, Ulid.Empty);
             });
 
             var plusButton = new Label("+") {
@@ -295,11 +273,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             itemRow.RegisterCallback<PointerMoveEvent>(evt =>
             {
                 if (evt.pressedButtons != 1) return;
-                
+
                 if (_draggingFolderId == Ulid.Empty) {
                     var distance = Vector2.Distance(_dragStartPosition, evt.position);
                     if (distance < 4f) return;
-                    
+
                     _draggingFolderId = (Ulid)treeItemContainer.userData;
                     itemRow.style.opacity = 0.5f;
                 }
@@ -689,11 +667,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private static void UpdateDropVisualFeedback(VisualElement itemRow, Vector2 worldPosition) {
             ClearDropVisualFeedback(itemRow);
-            
+
             var localPos = itemRow.WorldToLocal(worldPosition);
             var height = itemRow.resolvedStyle.height;
             var normalizedY = localPos.y / height;
-            
+
             if (normalizedY < 0.25f) {
                 itemRow.style.borderTopWidth = 2;
                 itemRow.style.borderTopColor = new Color(0.4f, 0.7f, 1.0f);

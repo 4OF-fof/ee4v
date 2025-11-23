@@ -202,7 +202,18 @@ namespace _4OF.ee4v.AssetManager.Service {
             if (folderBase == null) return;
 
             if (parentFolderId == Ulid.Empty) {
+                var currentRoots = libraries.FolderList;
+                var fromIndex = -1;
+                for (var i = 0; i < currentRoots.Count; i++) {
+                    if (currentRoots[i].ID != folderId) continue;
+                    fromIndex = i;
+                    break;
+                }
+
                 libraries.RemoveFolder(folderId);
+
+                if (fromIndex >= 0 && fromIndex < newIndex) newIndex--;
+
                 libraries.InsertRootFolderAt(newIndex, folderBase);
                 _repository.SaveLibraryMetadata(libraries);
                 return;
