@@ -66,6 +66,34 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 evt.StopPropagation();
             });
 
+            foldersLabel.RegisterCallback<PointerEnterEvent>(_ =>
+            {
+                if (_draggingFolderId != Ulid.Empty)
+                    foldersLabel.style.backgroundColor = new Color(0.4f, 0.6f, 0.9f, 0.4f);
+            });
+
+            foldersLabel.RegisterCallback<PointerLeaveEvent>(_ =>
+            {
+                if (_draggingFolderId != Ulid.Empty)
+                    foldersLabel.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+            });
+
+            foldersLabel.RegisterCallback<PointerUpEvent>(evt =>
+            {
+                if (_draggingFolderId == Ulid.Empty) return;
+                var sourceFolderId = _draggingFolderId;
+
+                if (_folderItemMap.TryGetValue(sourceFolderId, out var sourceItem))
+                    if (sourceItem.Q<VisualElement>() is { } sourceRow)
+                        sourceRow.style.opacity = 1.0f;
+
+                _draggingFolderId = Ulid.Empty;
+                foldersLabel.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+
+                OnFolderMoved?.Invoke(sourceFolderId, Ulid.Empty);
+                evt.StopPropagation();
+            });
+
             var plusButton = new Label("+") {
                 style = {
                     paddingLeft = 6,
