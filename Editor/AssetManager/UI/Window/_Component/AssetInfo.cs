@@ -53,10 +53,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _thumbnailContainer = new VisualElement {
                 style = {
                     alignSelf = Align.Center,
-                    width = 100,
-                    height = 100,
+                    width = 150,
+                    height = 150,
                     marginBottom = 10,
-                    backgroundColor = new StyleColor(new Color(0, 0, 0, 0.2f)),
+                    // backgroundColor intentionally removed — thumbnails should render without a colored box
                     borderTopLeftRadius = 4, borderTopRightRadius = 4,
                     borderBottomLeftRadius = 4, borderBottomRightRadius = 4,
                     overflow = Overflow.Hidden
@@ -407,6 +407,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 else if (isFolder)
                     _thumbnailContainer.style.backgroundImage =
                         new StyleBackground(EditorGUIUtility.IconContent("Folder Icon").image as Texture2D);
+                else
+                    _thumbnailContainer.style.backgroundImage =
+                        new StyleBackground(EditorGUIUtility.IconContent("ModelImporter Icon").image as Texture2D);
             }
             catch {
                 // ignore

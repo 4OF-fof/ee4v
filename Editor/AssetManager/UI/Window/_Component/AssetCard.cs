@@ -1,4 +1,5 @@
 ﻿using _4OF.ee4v.Core.UI;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -72,10 +73,21 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             tooltip = itemName;
         }
 
-        public void SetThumbnail(Texture2D texture) {
+        public void SetThumbnail(Texture2D texture, bool isFolder = false) {
             if (texture == null) {
-                _thumbnail.style.backgroundImage = null;
-                _thumbnail.style.backgroundColor = new StyleColor(Color.gray);
+                var fallback = isFolder
+                    ? EditorGUIUtility.IconContent("Folder Icon").image as Texture2D
+                    : EditorGUIUtility.IconContent("ModelImporter Icon").image as Texture2D;
+
+                if (fallback != null) {
+                    _thumbnail.style.backgroundImage = new StyleBackground(fallback);
+                    _thumbnail.style.backgroundColor = new StyleColor(Color.clear);
+                }
+                else {
+                    _thumbnail.style.backgroundImage = null;
+                    _thumbnail.style.backgroundColor = new StyleColor(Color.gray);
+                }
+
                 return;
             }
 

@@ -251,7 +251,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         case BaseFolder folder:
                             card.SetData(folder.Name);
                             card.userData = folder;
-                            card.SetThumbnail(null);
+                            card.SetThumbnail(null, true);
                             LoadImageAsync(card, folder.ID, true);
                             break;
                         case AssetMetadata asset:
@@ -288,7 +288,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         return;
                 }
 
-                if (tex != null) card.SetThumbnail(tex);
+                if (tex != null) card.SetThumbnail(tex, isFolder);
             }
             catch {
                 /* ignore */
