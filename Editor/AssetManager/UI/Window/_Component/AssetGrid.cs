@@ -234,6 +234,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var targetItem = card.userData;
             if (targetItem == null) return;
 
+            var currentParent = parent;
+            while (currentParent != null) {
+                if (currentParent is AssetView assetView) {
+                    assetView.Focus();
+                    break;
+                }
+
+                currentParent = currentParent.parent;
+            }
+
             if (evt.clickCount == 2) {
                 if (targetItem is BaseFolder folder)
                     OnFolderDoubleClicked?.Invoke(folder);
@@ -279,6 +289,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var targetItem = card.userData;
             if (targetItem is not AssetMetadata) return;
 
+            if (!_selectedItems.Contains(targetItem)) {
+                _selectedItems.Clear();
+                _selectedItems.Add(targetItem);
+                _lastSelectedReference = targetItem;
+                _listView.RefreshItems();
+                OnSelectionChange?.Invoke(_selectedItems.ToList());
+            }
+
             _isDragging = true;
 
             var selectedAssets = _selectedItems.OfType<AssetMetadata>().ToList();
@@ -288,7 +306,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             DragAndDrop.PrepareStartDrag();
             DragAndDrop.SetGenericData("AssetManagerAssets", assetIds);
             DragAndDrop.StartDrag("Moving Assets");
-            evt.StopPropagation();
         }
 
         private void OnCardPointerUp(PointerUpEvent evt) {
