@@ -21,7 +21,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly VisualElement _multiSelectionContainer;
         private readonly Label _multiSelectionLabel;
         private readonly TextField _nameField;
-        private readonly TextField _newTagField;
 
         private readonly VisualElement _singleSelectionContainer;
         private readonly VisualElement _tagsContainer;
@@ -165,23 +164,41 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 style = {
                     flexDirection = FlexDirection.Row,
                     flexWrap = Wrap.Wrap,
-                    marginBottom = 4
+                    marginBottom = 10
                 }
             };
             _singleSelectionContainer.Add(_tagsContainer);
 
-            var tagInputContainer = new VisualElement
-                { style = { flexDirection = FlexDirection.Row, marginBottom = 10 } };
-            _newTagField = new TextField { style = { flexGrow = 1, marginRight = 4 } };
-            _newTagField.RegisterCallback<KeyDownEvent>(evt =>
+            var addTagButton = new Button(OpenTagSelector) {
+                text = "+ Add Tag",
+                style = {
+                    backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f)),
+                    borderTopLeftRadius = 10,
+                    borderTopRightRadius = 10,
+                    borderBottomLeftRadius = 10,
+                    borderBottomRightRadius = 10,
+                    paddingLeft = 10,
+                    paddingRight = 10,
+                    paddingTop = 4,
+                    paddingBottom = 4,
+                    height = 24,
+                    borderTopWidth = 0,
+                    borderBottomWidth = 0,
+                    borderLeftWidth = 0,
+                    borderRightWidth = 0,
+                    marginBottom = 10,
+                    width = Length.Percent(100)
+                }
+            };
+            addTagButton.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                if (evt.keyCode == KeyCode.Return) AddNewTag();
+                addTagButton.style.backgroundColor = new StyleColor(new Color(0.4f, 0.4f, 0.4f));
             });
-
-            var addTagButton = new Button(AddNewTag) { text = "+", style = { width = 24 } };
-            tagInputContainer.Add(_newTagField);
-            tagInputContainer.Add(addTagButton);
-            _singleSelectionContainer.Add(tagInputContainer);
+            addTagButton.RegisterCallback<MouseLeaveEvent>(_ =>
+            {
+                addTagButton.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+            });
+            _singleSelectionContainer.Add(addTagButton);
 
             _multiSelectionContainer = new VisualElement {
                 style = { display = DisplayStyle.None, alignItems = Align.Center, marginTop = 20, marginBottom = 40 }
@@ -218,20 +235,26 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             UpdateSelection(null);
         }
 
-        private void AddNewTag() {
-            var tag = _newTagField.value?.Trim();
+        private void OpenTagSelector() {
+            var screenPosition = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+            TagSelectorWindow.Show(screenPosition, _repository, OnTagSelectedFromWindow);
+        }
+
+        private void OnTagSelectedFromWindow(string tag) {
             if (string.IsNullOrEmpty(tag)) return;
 
             if (_currentFolder != null && _folderService != null) {
+                if (_currentFolder.Tags != null && _currentFolder.Tags.Contains(tag)) return;
+
                 _folderService.AddTag(_currentFolder.ID, tag);
                 var freshFolder = _repository.GetLibraryMetadata().GetFolder(_currentFolder.ID);
                 if (freshFolder != null) SetFolder(freshFolder);
             }
-            else {
+            else if (_currentAsset != null) {
+                if (_currentAsset.Tags != null && _currentAsset.Tags.Contains(tag)) return;
+
                 OnTagAdded?.Invoke(tag);
             }
-
-            _newTagField.value = "";
         }
 
         public void UpdateSelection(IReadOnlyList<object> selectedItems) {
