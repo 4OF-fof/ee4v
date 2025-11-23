@@ -12,6 +12,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly HashSet<Ulid> _expandedFolders = new();
         private readonly VisualElement _folderContainer;
         private readonly Dictionary<Ulid, VisualElement> _folderItemMap = new();
+        private readonly Dictionary<Ulid, VisualElement> _folderRowMap = new();
         private readonly List<Label> _navLabels = new();
 
         private Ulid _currentSelectedFolderId = Ulid.Empty;
@@ -26,6 +27,23 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             style.paddingLeft = 6;
             style.paddingRight = 6;
             style.paddingTop = 6;
+
+            RegisterCallback<PointerUpEvent>(_ =>
+            {
+                if (_draggingFolderId == Ulid.Empty) return;
+                if (_folderRowMap.TryGetValue(_draggingFolderId, out var row))
+                    row.style.opacity = 1.0f;
+                else
+                    Debug.LogWarning($"itemRow not found for: {_draggingFolderId}");
+                _draggingFolderId = Ulid.Empty;
+            });
+
+            RegisterCallback<PointerLeaveEvent>(_ =>
+            {
+                if (_draggingFolderId == Ulid.Empty) return;
+                if (_folderRowMap.TryGetValue(_draggingFolderId, out var row)) row.style.opacity = 1.0f;
+                _draggingFolderId = Ulid.Empty;
+            });
 
             CreateNavLabel("All items", () => FireNav(NavigationMode.AllItems, "All Items", a => !a.IsDeleted));
             CreateNavLabel("Booth Items", () =>
@@ -78,20 +96,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     foldersLabel.style.backgroundColor = new StyleColor(StyleKeyword.Null);
             });
 
-            foldersLabel.RegisterCallback<PointerUpEvent>(evt =>
+            foldersLabel.RegisterCallback<PointerUpEvent>(_ =>
             {
                 if (_draggingFolderId == Ulid.Empty) return;
                 var sourceFolderId = _draggingFolderId;
 
-                if (_folderItemMap.TryGetValue(sourceFolderId, out var sourceItem))
-                    if (sourceItem.Q<VisualElement>() is { } sourceRow)
-                        sourceRow.style.opacity = 1.0f;
-
-                _draggingFolderId = Ulid.Empty;
                 foldersLabel.style.backgroundColor = new StyleColor(StyleKeyword.Null);
 
                 OnFolderMoved?.Invoke(sourceFolderId, Ulid.Empty);
-                evt.StopPropagation();
             });
 
             var plusButton = new Label("+") {
@@ -158,6 +170,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             folders ??= new List<BaseFolder>();
             _folderContainer.Clear();
             _folderItemMap.Clear();
+            _folderRowMap.Clear();
 
             _selectedFolderItem = null;
 
@@ -241,13 +254,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 itemRow.style.opacity = 0.5f;
             });
 
-            itemRow.RegisterCallback<PointerUpEvent>(_ =>
-            {
-                if (_draggingFolderId != (Ulid)treeItemContainer.userData) return;
-                itemRow.style.opacity = 1.0f;
-                _draggingFolderId = Ulid.Empty;
-            });
-
             itemRow.RegisterCallback<PointerEnterEvent>(_ =>
             {
                 if (_draggingFolderId != Ulid.Empty && _draggingFolderId != (Ulid)treeItemContainer.userData)
@@ -263,17 +269,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
             });
 
-            itemRow.RegisterCallback<PointerUpEvent>(evt =>
+            itemRow.RegisterCallback<PointerUpEvent>(_ =>
             {
                 if (_draggingFolderId == Ulid.Empty || _draggingFolderId == (Ulid)treeItemContainer.userData) return;
                 var targetFolderId = (Ulid)treeItemContainer.userData;
                 var sourceFolderId = _draggingFolderId;
-
-                if (_folderItemMap.TryGetValue(sourceFolderId, out var sourceItem))
-                    if (sourceItem.Q<VisualElement>() is { } sourceRow)
-                        sourceRow.style.opacity = 1.0f;
-
-                _draggingFolderId = Ulid.Empty;
 
                 if (_currentSelectedFolderId == targetFolderId)
                     ApplySelectedStyle(itemRow);
@@ -281,7 +281,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
 
                 OnFolderMoved?.Invoke(sourceFolderId, targetFolderId);
-                evt.StopPropagation();
             });
 
             itemRow.RegisterCallback<DragEnterEvent>(_ =>
@@ -341,6 +340,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             parentContainer.Add(treeItemContainer);
             _folderItemMap[folder.ID] = treeItemContainer;
+            _folderRowMap[folder.ID] = itemRow;
         }
 
         private void ToggleExpand(Ulid folderId) {
