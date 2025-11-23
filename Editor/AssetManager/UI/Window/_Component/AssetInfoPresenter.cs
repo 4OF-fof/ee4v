@@ -1,0 +1,294 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.AssetManager.Service;
+using _4OF.ee4v.Core.Utility;
+using UnityEditor;
+using UnityEngine;
+
+namespace _4OF.ee4v.AssetManager.UI.Window._Component {
+    public class AssetInfoPresenter {
+        private readonly FolderService _folderService;
+        private readonly IAssetRepository _repository;
+        private readonly TextureService _textureService;
+
+        private AssetMetadata _currentAsset;
+        private BaseFolder _currentFolder;
+        private IReadOnlyList<object> _lastSelection;
+
+        public AssetInfoPresenter(IAssetRepository repository, TextureService textureService,
+            FolderService folderService) {
+            _repository = repository;
+            _textureService = textureService;
+            _folderService = folderService;
+
+            if (_repository == null) return;
+            _repository.LibraryChanged += OnRepositoryLibraryChanged;
+            _repository.AssetChanged += OnRepositoryAssetChanged;
+        }
+
+        public event Action<AssetDisplayData> AssetDataUpdated;
+        public event Action<FolderDisplayData> FolderDataUpdated;
+        public event Action<LibraryDisplayData> LibraryDataUpdated;
+        public event Action<int> MultiSelectionUpdated;
+
+        public void Dispose() {
+            if (_repository != null)
+                try {
+                    _repository.LibraryChanged -= OnRepositoryLibraryChanged;
+                    _repository.AssetChanged -= OnRepositoryAssetChanged;
+                }
+                catch {
+                    // ignore
+                }
+        }
+
+        public void UpdateSelection(IReadOnlyList<object> selectedItems) {
+            _lastSelection = selectedItems;
+            if (selectedItems == null || selectedItems.Count == 0) {
+                ShowLibraryInfo();
+            }
+            else if (selectedItems.Count == 1) {
+                var item = selectedItems[0];
+                switch (item) {
+                    case AssetMetadata asset:
+                        SetAsset(asset);
+                        break;
+                    case BaseFolder folder:
+                        SetFolder(folder);
+                        break;
+                }
+            }
+            else {
+                MultiSelectionUpdated?.Invoke(selectedItems.Count);
+            }
+        }
+
+        public void AddTagToAsset(Ulid assetId, string tag) {
+        }
+
+        public void RemoveTagFromAsset(Ulid assetId, string tag) {
+        }
+
+        public void AddTagToFolder(Ulid folderId, string tag) {
+            if (_folderService == null) return;
+            _folderService.AddTag(folderId, tag);
+            RefreshFolder(folderId);
+        }
+
+        public void RemoveTagFromFolder(Ulid folderId, string tag) {
+            if (_folderService == null) return;
+            _folderService.RemoveTag(folderId, tag);
+            RefreshFolder(folderId);
+        }
+
+        public async void LoadThumbnail(Ulid id, bool isFolder, Action<Texture2D> onLoaded) {
+            if (_textureService == null) {
+                onLoaded?.Invoke(null);
+                return;
+            }
+
+            try {
+                Texture2D tex;
+                if (isFolder) {
+                    tex = await _textureService.GetFolderThumbnailAsync(id);
+                    if (_currentFolder?.ID != id) return;
+                }
+                else {
+                    tex = await _textureService.GetAssetThumbnailAsync(id);
+                    if (_currentAsset?.ID != id) return;
+                }
+
+                onLoaded?.Invoke(tex);
+            }
+            catch {
+                onLoaded?.Invoke(null);
+            }
+        }
+
+        private void OnRepositoryLibraryChanged() {
+            EditorApplication.delayCall += () =>
+            {
+                try {
+                    if (_lastSelection == null || _lastSelection.Count == 0) {
+                        ShowLibraryInfo();
+                    }
+                    else if (_lastSelection.Count == 1) {
+                        var item = _lastSelection[0];
+                        switch (item) {
+                            case AssetMetadata a:
+                                var fresh = _repository?.GetAsset(a.ID);
+                                if (fresh != null) SetAsset(fresh);
+                                else UpdateSelection(null);
+                                break;
+                            case BaseFolder f:
+                                var freshFolder = _repository?.GetLibraryMetadata()?.GetFolder(f.ID);
+                                if (freshFolder != null) SetFolder(freshFolder);
+                                else UpdateSelection(null);
+                                break;
+                        }
+                    }
+                }
+                catch {
+                    // ignore
+                }
+            };
+        }
+
+        private void OnRepositoryAssetChanged(Ulid id) {
+            EditorApplication.delayCall += () =>
+            {
+                try {
+                    if (_lastSelection is not { Count: 1 }) return;
+                    if (_currentAsset == null || _currentAsset.ID != id) return;
+                    var fresh = _repository?.GetAsset(id);
+                    if (fresh != null) SetAsset(fresh);
+                    else UpdateSelection(null);
+                }
+                catch {
+                    // ignore
+                }
+            };
+        }
+
+        private void ShowLibraryInfo() {
+            if (_repository == null) {
+                LibraryDataUpdated?.Invoke(new LibraryDisplayData());
+                return;
+            }
+
+            var allAssets = _repository.GetAllAssets().ToList();
+            var totalSize = allAssets.Sum(a => a.Size);
+
+            var data = new LibraryDisplayData {
+                TotalAssets = allAssets.Count,
+                TotalSize = totalSize,
+                TotalTags = _repository.GetAllTags().Count
+            };
+
+            LibraryDataUpdated?.Invoke(data);
+        }
+
+        private void SetAsset(AssetMetadata asset) {
+            _currentAsset = asset;
+            _currentFolder = null;
+
+            if (asset == null) {
+                ShowLibraryInfo();
+                return;
+            }
+
+            var folder = _repository?.GetLibraryMetadata()?.GetFolder(asset.Folder);
+
+            var data = new AssetDisplayData {
+                Id = asset.ID,
+                Name = asset.Name,
+                Description = asset.Description,
+                Tags = asset.Tags,
+                Size = asset.Size,
+                Extension = asset.Ext.TrimStart('.').ToUpper(),
+                ModificationTime = DateTimeOffset.FromUnixTimeMilliseconds(asset.ModificationTime).ToLocalTime(),
+                FolderId = asset.Folder,
+                FolderName = folder?.Name ?? "-"
+            };
+
+            AssetDataUpdated?.Invoke(data);
+        }
+
+        private void SetFolder(BaseFolder folder) {
+            _currentAsset = null;
+            _currentFolder = folder;
+
+            if (folder == null) {
+                ShowLibraryInfo();
+                return;
+            }
+
+            var parentFolder = GetParentFolder(folder.ID);
+            var subFolderCount = 0;
+            if (folder is Folder f) subFolderCount = f.Children?.Count ?? 0;
+
+            var assetCount = 0;
+            if (_repository != null)
+                assetCount = _repository.GetAllAssets()
+                    .Count(a => a.Folder == folder.ID && !a.IsDeleted);
+
+            var data = new FolderDisplayData {
+                Id = folder.ID,
+                Name = folder.Name,
+                Description = folder.Description,
+                Tags = folder.Tags,
+                ParentFolderId = parentFolder?.ID ?? Ulid.Empty,
+                ParentFolderName = parentFolder?.Name ?? "-",
+                SubFolderCount = subFolderCount,
+                AssetCount = assetCount,
+                ModificationTime = DateTimeOffset.FromUnixTimeMilliseconds(folder.ModificationTime).ToLocalTime(),
+                IsFolder = folder is Folder
+            };
+
+            FolderDataUpdated?.Invoke(data);
+        }
+
+        private void RefreshFolder(Ulid folderId) {
+            var fresh = _repository?.GetLibraryMetadata()?.GetFolder(folderId);
+            if (fresh != null) SetFolder(fresh);
+        }
+
+        private BaseFolder GetParentFolder(Ulid childId) {
+            var lib = _repository?.GetLibraryMetadata();
+            if (lib == null) return null;
+
+            foreach (var root in lib.FolderList) {
+                if (root.ID == childId) return null;
+                var parentFolder = FindParentRecursive(root, childId);
+                if (parentFolder != null) return parentFolder;
+            }
+
+            return null;
+        }
+
+        private static BaseFolder FindParentRecursive(BaseFolder current, Ulid childId) {
+            if (current is not Folder f || f.Children == null) return null;
+
+            foreach (var child in f.Children) {
+                if (child.ID == childId) return f;
+                var res = FindParentRecursive(child, childId);
+                if (res != null) return res;
+            }
+
+            return null;
+        }
+    }
+
+    public class AssetDisplayData {
+        public string Description;
+        public string Extension;
+        public Ulid FolderId;
+        public string FolderName;
+        public Ulid Id;
+        public DateTimeOffset ModificationTime;
+        public string Name;
+        public long Size;
+        public IReadOnlyList<string> Tags;
+    }
+
+    public class FolderDisplayData {
+        public int AssetCount;
+        public string Description;
+        public Ulid Id;
+        public bool IsFolder;
+        public DateTimeOffset ModificationTime;
+        public string Name;
+        public Ulid ParentFolderId;
+        public string ParentFolderName;
+        public int SubFolderCount;
+        public IReadOnlyList<string> Tags;
+    }
+
+    public class LibraryDisplayData {
+        public int TotalAssets;
+        public long TotalSize;
+        public int TotalTags;
+    }
+}

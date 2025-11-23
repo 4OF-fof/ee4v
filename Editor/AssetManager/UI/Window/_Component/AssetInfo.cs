@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.UI;
@@ -26,14 +25,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly VisualElement _tagsContainer;
         private readonly VisualElement _thumbnailContainer;
 
-        private AssetMetadata _currentAsset;
         private Ulid _currentAssetFolderId;
-        private BaseFolder _currentFolder;
-        private FolderService _folderService;
-
-        private IReadOnlyList<object> _lastSelection;
-        private IAssetRepository _repository;
-        private TextureService _textureService;
+        private AssetInfoPresenter _presenter;
 
         public AssetInfo() {
             style.flexDirection = FlexDirection.Column;
@@ -57,7 +50,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     width = 150,
                     height = 150,
                     marginBottom = 10,
-                    // backgroundColor intentionally removed — thumbnails should render without a colored box
                     borderTopLeftRadius = 4, borderTopRightRadius = 4,
                     borderBottomLeftRadius = 4, borderBottomRightRadius = 4,
                     overflow = Overflow.Hidden
@@ -71,11 +63,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _nameField = CreateTextField(true);
             _nameField.style.marginBottom = 4;
-            _nameField.RegisterCallback<FocusOutEvent>(_ =>
-            {
-                if (_currentAsset != null && _nameField.value != _currentAsset.Name)
-                    OnNameChanged?.Invoke(_nameField.value);
-            });
+            _nameField.RegisterCallback<FocusOutEvent>(_ => { OnNameChanged?.Invoke(_nameField.value); });
             _singleSelectionContainer.Add(_nameField);
 
             var descriptionLabel = new Label("Description")
@@ -96,8 +84,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _descriptionField.RegisterCallback<FocusOutEvent>(_ =>
             {
-                if (_currentAsset != null && _descriptionField.value != _currentAsset.Description)
-                    OnDescriptionChanged?.Invoke(_descriptionField.value);
+                OnDescriptionChanged?.Invoke(_descriptionField.value);
             });
 
             descriptionScrollView.Add(_descriptionField);
@@ -231,131 +218,105 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public void Initialize(IAssetRepository repository, TextureService textureService,
             FolderService folderService) {
-            _repository = repository;
-            _textureService = textureService;
-            _folderService = folderService;
-            if (_repository != null) {
-                _repository.LibraryChanged += OnRepositoryLibraryChanged;
-                _repository.AssetChanged += OnRepositoryAssetChanged;
-                RegisterCallback<DetachFromPanelEvent>(_ =>
-                {
-                    try {
-                        _repository.LibraryChanged -= OnRepositoryLibraryChanged;
-                        _repository.AssetChanged -= OnRepositoryAssetChanged;
-                    }
-                    catch {
-                        // ignore
-                    }
-                });
-            }
+            _presenter = new AssetInfoPresenter(repository, textureService, folderService);
+            _presenter.AssetDataUpdated += OnAssetDataUpdated;
+            _presenter.FolderDataUpdated += OnFolderDataUpdated;
+            _presenter.LibraryDataUpdated += OnLibraryDataUpdated;
+            _presenter.MultiSelectionUpdated += OnMultiSelectionUpdated;
+
+            RegisterCallback<DetachFromPanelEvent>(_ => { _presenter?.Dispose(); });
 
             UpdateSelection(null);
         }
 
-        private void OnRepositoryLibraryChanged() {
-            EditorApplication.delayCall += () =>
-            {
-                try {
-                    if (_lastSelection == null || _lastSelection.Count == 0) {
-                        ShowLibraryInfo();
-                    }
-                    else if (_lastSelection.Count == 1) {
-                        var item = _lastSelection[0];
-                        switch (item) {
-                            case AssetMetadata a:
-                                var fresh = _repository?.GetAsset(a.ID);
-                                if (fresh != null) SetAsset(fresh);
-                                else UpdateSelection(null);
-                                break;
-                            case BaseFolder f:
-                                var freshFolder = _repository?.GetLibraryMetadata()?.GetFolder(f.ID);
-                                if (freshFolder != null) SetFolder(freshFolder);
-                                else UpdateSelection(null);
-                                break;
-                        }
-                    }
-                }
-                catch {
-                    // ignore
-                }
-            };
-        }
-
-        private void OnRepositoryAssetChanged(Ulid id) {
-            EditorApplication.delayCall += () =>
-            {
-                try {
-                    if (_lastSelection is not { Count: 1 }) return;
-                    if (_currentAsset == null || _currentAsset.ID != id) return;
-                    var fresh = _repository?.GetAsset(id);
-                    if (fresh != null) SetAsset(fresh);
-                    else UpdateSelection(null);
-                }
-                catch {
-                    // ignore
-                }
-            };
-        }
-
         private void OpenTagSelector() {
-            var screenPosition = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
-            TagSelectorWindow.Show(screenPosition, _repository, OnTagSelectedFromWindow);
-        }
-
-        private void OnTagSelectedFromWindow(string tag) {
-            if (string.IsNullOrEmpty(tag)) return;
-
-            if (_currentFolder != null && _folderService != null) {
-                if (_currentFolder.Tags != null && _currentFolder.Tags.Contains(tag)) return;
-
-                _folderService.AddTag(_currentFolder.ID, tag);
-                var freshFolder = _repository.GetLibraryMetadata().GetFolder(_currentFolder.ID);
-                if (freshFolder != null) SetFolder(freshFolder);
-            }
-            else if (_currentAsset != null) {
-                if (_currentAsset.Tags != null && _currentAsset.Tags.Contains(tag)) return;
-
-                OnTagAdded?.Invoke(tag);
-            }
+            OnTagAdded?.Invoke("");
         }
 
         public void UpdateSelection(IReadOnlyList<object> selectedItems) {
-            _lastSelection = selectedItems;
-            if (selectedItems == null || selectedItems.Count == 0) {
-                ShowLibraryInfo();
-            }
-            else if (selectedItems.Count == 1) {
-                ShowSingleSelection();
-                var item = selectedItems[0];
-                switch (item) {
-                    case AssetMetadata asset:
-                        SetAsset(asset);
-                        break;
-                    case BaseFolder folder:
-                        SetFolder(folder);
-                        break;
-                }
-            }
-            else {
-                ShowMultiSelectionInfo(selectedItems.Count);
-            }
+            _presenter?.UpdateSelection(selectedItems);
         }
 
-        private void ShowLibraryInfo() {
+        private void OnAssetDataUpdated(AssetDisplayData data) {
+            ShowSingleSelection();
+            _nameField.SetValueWithoutNotify(data.Name);
+            _descriptionField.SetValueWithoutNotify(data.Description);
+
+            _presenter.LoadThumbnail(data.Id, false, tex =>
+            {
+                if (tex != null)
+                    _thumbnailContainer.style.backgroundImage = new StyleBackground(tex);
+                else
+                    _thumbnailContainer.style.backgroundImage =
+                        new StyleBackground(EditorGUIUtility.IconContent("GameObject Icon").image as Texture2D);
+            });
+
+            RefreshTags(data.Tags);
+
+            _currentAssetFolderId = data.FolderId;
+            if (data.FolderId != Ulid.Empty) {
+                _folderHeader.style.display = DisplayStyle.Flex;
+                _folderRow.style.display = DisplayStyle.Flex;
+                _folderNameLabel.text = data.FolderName;
+                _folderNameLabel.tooltip = data.FolderName;
+            }
+            else {
+                _folderHeader.style.display = DisplayStyle.None;
+                _folderRow.style.display = DisplayStyle.None;
+            }
+
+            _infoContainer.Clear();
+            AddInfoRow("Size", FormatSize(data.Size));
+            AddInfoRow("Type", data.Extension);
+            AddInfoRow("Modified", data.ModificationTime.ToString("yyyy/MM/dd HH:mm"));
+        }
+
+        private void OnFolderDataUpdated(FolderDisplayData data) {
+            ShowSingleSelection();
+            _nameField.SetValueWithoutNotify(data.Name);
+            _descriptionField.SetValueWithoutNotify(data.Description);
+
+            if (data.ParentFolderId != Ulid.Empty) {
+                _folderHeader.style.display = DisplayStyle.Flex;
+                _folderRow.style.display = DisplayStyle.Flex;
+                _folderNameLabel.text = data.ParentFolderName;
+            }
+            else {
+                _folderHeader.style.display = DisplayStyle.None;
+                _folderRow.style.display = DisplayStyle.None;
+            }
+
+            RefreshTags(data.Tags);
+
+            _presenter.LoadThumbnail(data.Id, true, tex =>
+            {
+                if (tex != null)
+                    _thumbnailContainer.style.backgroundImage = new StyleBackground(tex);
+                else
+                    _thumbnailContainer.style.backgroundImage =
+                        new StyleBackground(EditorGUIUtility.IconContent("Folder Icon").image as Texture2D);
+            });
+
+            _infoContainer.Clear();
+            if (data.IsFolder) AddInfoRow("Sub Folders", data.SubFolderCount.ToString());
+            AddInfoRow("Assets", data.AssetCount.ToString());
+            AddInfoRow("Modified", data.ModificationTime.ToString("yyyy/MM/dd HH:mm"));
+        }
+
+        private void OnLibraryDataUpdated(LibraryDisplayData data) {
             _singleSelectionContainer.style.display = DisplayStyle.None;
             _multiSelectionContainer.style.display = DisplayStyle.Flex;
             _infoHeader.style.display = DisplayStyle.None;
             _multiSelectionLabel.text = "Library Overview";
 
             _infoContainer.Clear();
-            if (_repository == null) return;
+            AddInfoRow("Total Assets", data.TotalAssets.ToString());
+            AddInfoRow("Total Size", FormatSize(data.TotalSize));
+            AddInfoRow("Total Tags", data.TotalTags.ToString());
+        }
 
-            var allAssets = _repository.GetAllAssets().ToList();
-            var totalSize = allAssets.Sum(a => a.Size);
-
-            AddInfoRow("Total Assets", allAssets.Count.ToString());
-            AddInfoRow("Total Size", FormatSize(totalSize));
-            AddInfoRow("Total Tags", _repository.GetAllTags().Count.ToString());
+        private void OnMultiSelectionUpdated(int count) {
+            ShowMultiSelectionInfo(count);
         }
 
         private void ShowMultiSelectionInfo(int count) {
@@ -378,128 +339,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
             if (isBold) field.style.unityFontStyleAndWeight = FontStyle.Bold;
             return field;
-        }
-
-        public void SetAsset(AssetMetadata asset) {
-            _currentAsset = asset;
-            _currentFolder = null;
-
-            if (asset == null) {
-                ShowLibraryInfo();
-                return;
-            }
-
-            _singleSelectionContainer.SetEnabled(true);
-            _nameField.SetValueWithoutNotify(asset.Name);
-            _descriptionField.SetValueWithoutNotify(asset.Description);
-
-            LoadThumbnailAsync(asset.ID, false);
-            RefreshTags(asset.Tags);
-
-            var folderId = asset.Folder;
-            _currentAssetFolderId = folderId;
-            var folder = _repository?.GetLibraryMetadata()?.GetFolder(folderId);
-
-            if (folder != null) {
-                _folderHeader.style.display = DisplayStyle.Flex;
-                _folderRow.style.display = DisplayStyle.Flex;
-                _folderNameLabel.text = folder.Name;
-                _folderNameLabel.tooltip = folder.Name;
-            }
-            else {
-                _folderHeader.style.display = DisplayStyle.None;
-                _folderRow.style.display = DisplayStyle.None;
-            }
-
-            _infoContainer.Clear();
-            AddInfoRow("Size", FormatSize(asset.Size));
-            AddInfoRow("Type", asset.Ext.TrimStart('.').ToUpper());
-            var date = DateTimeOffset.FromUnixTimeMilliseconds(asset.ModificationTime).ToLocalTime();
-            AddInfoRow("Modified", date.ToString("yyyy/MM/dd HH:mm"));
-        }
-
-        private void SetFolder(BaseFolder folder) {
-            _currentAsset = null;
-            _currentFolder = folder;
-
-            if (folder == null) {
-                ShowLibraryInfo();
-                return;
-            }
-
-            _singleSelectionContainer.SetEnabled(true);
-
-            ClearFields();
-            _nameField.value = folder.Name;
-            _descriptionField.value = folder.Description;
-
-            var parentFolder = GetParentFolder(folder.ID);
-            if (parentFolder != null) {
-                _folderHeader.style.display = DisplayStyle.Flex;
-                _folderRow.style.display = DisplayStyle.Flex;
-                _folderNameLabel.text = parentFolder.Name;
-            }
-            else {
-                _folderHeader.style.display = DisplayStyle.None;
-                _folderRow.style.display = DisplayStyle.None;
-            }
-
-            RefreshTags(folder.Tags);
-
-            LoadThumbnailAsync(folder.ID, true);
-            _infoContainer.Clear();
-
-            var subFolderCount = 0;
-            if (folder is Folder f) subFolderCount = f.Children?.Count ?? 0;
-
-            var assetCount = 0;
-            if (_repository != null)
-                assetCount = _repository.GetAllAssets()
-                    .Count(a => a.Folder == folder.ID && !a.IsDeleted);
-
-            if (folder is Folder) AddInfoRow("Sub Folders", subFolderCount.ToString());
-            AddInfoRow("Assets", assetCount.ToString());
-
-            var date = DateTimeOffset.FromUnixTimeMilliseconds(folder.ModificationTime).ToLocalTime();
-            AddInfoRow("Modified", date.ToString("yyyy/MM/dd HH:mm"));
-        }
-
-        private void ClearFields() {
-            _nameField.value = "";
-            _descriptionField.value = "";
-            _tagsContainer.Clear();
-            _folderNameLabel.text = "-";
-            _infoContainer.Clear();
-            _thumbnailContainer.style.backgroundImage = null;
-        }
-
-        private async void LoadThumbnailAsync(Ulid id, bool isFolder) {
-            _thumbnailContainer.style.backgroundImage = null;
-            if (_textureService == null) return;
-
-            try {
-                Texture2D tex;
-                if (isFolder) {
-                    tex = await _textureService.GetFolderThumbnailAsync(id);
-                    if (_currentFolder?.ID != id) return;
-                }
-                else {
-                    tex = await _textureService.GetAssetThumbnailAsync(id);
-                    if (_currentAsset?.ID != id) return;
-                }
-
-                if (tex != null)
-                    _thumbnailContainer.style.backgroundImage = new StyleBackground(tex);
-                else if (isFolder)
-                    _thumbnailContainer.style.backgroundImage =
-                        new StyleBackground(EditorGUIUtility.IconContent("Folder Icon").image as Texture2D);
-                else
-                    _thumbnailContainer.style.backgroundImage =
-                        new StyleBackground(EditorGUIUtility.IconContent("GameObject Icon").image as Texture2D);
-            }
-            catch {
-                // ignore
-            }
         }
 
         private void RefreshTags(IReadOnlyList<string> tags) {
@@ -539,17 +378,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     pill.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
                 });
 
-                var removeBtn = new Button(() =>
-                {
-                    if (_currentFolder != null && _folderService != null) {
-                        _folderService.RemoveTag(_currentFolder.ID, tag);
-                        var fresh = _repository.GetLibraryMetadata().GetFolder(_currentFolder.ID);
-                        if (fresh != null) SetFolder(fresh);
-                    }
-                    else {
-                        OnTagRemoved?.Invoke(tag);
-                    }
-                }) {
+                var removeBtn = new Button(() => { OnTagRemoved?.Invoke(tag); }) {
                     text = "×",
                     style = {
                         width = 16, height = 16,
@@ -601,31 +430,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             return $"{number:n2} {suffixes[counter]}";
-        }
-
-        private BaseFolder GetParentFolder(Ulid childId) {
-            var lib = _repository?.GetLibraryMetadata();
-            if (lib == null) return null;
-
-            foreach (var root in lib.FolderList) {
-                if (root.ID == childId) return null;
-                var parentFolder = FindParentRecursive(root, childId);
-                if (parentFolder != null) return parentFolder;
-            }
-
-            return null;
-        }
-
-        private static BaseFolder FindParentRecursive(BaseFolder current, Ulid childId) {
-            if (current is not Folder f || f.Children == null) return null;
-
-            foreach (var child in f.Children) {
-                if (child.ID == childId) return f;
-                var res = FindParentRecursive(child, childId);
-                if (res != null) return res;
-            }
-
-            return null;
         }
     }
 }

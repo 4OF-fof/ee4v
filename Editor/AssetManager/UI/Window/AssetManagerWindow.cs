@@ -433,7 +433,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             if (_selectedAsset == null) return;
             var freshAsset = _repository.GetAsset(_selectedAsset.ID);
             _selectedAsset = freshAsset;
-            _assetInfo.SetAsset(freshAsset);
+            _assetInfo.UpdateSelection(new List<object> { freshAsset });
         }
 
         private void ShowAssetView() {

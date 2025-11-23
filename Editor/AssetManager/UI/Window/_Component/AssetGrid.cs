@@ -9,6 +9,7 @@ using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetGrid : VisualElement {
@@ -98,6 +99,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             Add(_emptyStateContainer);
 
             RegisterCallback<DetachFromPanelEvent>(OnDetach);
+            RegisterCallback<PointerUpEvent>(OnPointerUpAnywhere, TrickleDown.TrickleDown);
+            RegisterCallback<PointerLeaveEvent>(OnPointerLeaveAnywhere, TrickleDown.TrickleDown);
             RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (evt.target != this && evt.target != _listView) return;
@@ -372,10 +375,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var assetIds = selectedAssets.Select(a => a.ID.ToString()).ToArray();
             DragAndDrop.PrepareStartDrag();
             DragAndDrop.SetGenericData("AssetManagerAssets", assetIds);
+            DragAndDrop.objectReferences = Array.Empty<Object>();
             DragAndDrop.StartDrag("Moving Assets");
         }
 
         private void OnCardPointerUp(PointerUpEvent evt) {
+            _isDragging = false;
+        }
+
+        private void OnPointerUpAnywhere(PointerUpEvent evt) {
+            _isDragging = false;
+        }
+
+        private void OnPointerLeaveAnywhere(PointerLeaveEvent evt) {
             _isDragging = false;
         }
     }
