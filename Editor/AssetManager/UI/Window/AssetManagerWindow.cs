@@ -23,6 +23,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private AssetMetadata _selectedAsset;
         private TagListView _tagListView;
         private TextureService _textureService;
+        private ToastManager _toastManager;
 
         private void OnEnable() {
             _repository = AssetManagerContainer.Repository;
@@ -65,6 +66,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             }
 
             _textureService?.ClearCache();
+            _toastManager?.ClearAll();
         }
 
         private void CreateGUI() {
@@ -141,6 +143,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetInfo.OnTagRemoved += OnAssetTagRemoved;
             _assetInfo.OnTagClicked += OnTagSelected;
             _assetInfo.OnFolderClicked += OnFolderSelected;
+
+            _toastManager = new ToastManager(root);
 
             _navigation.SelectAll();
             _assetController.Refresh();
@@ -231,12 +235,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetService.RenameTag(oldTag, newTag);
             _tagListView.Refresh();
             RefreshUI(false);
+            ShowToast($"タグ '{oldTag}' を '{newTag}' にリネームしました", 3f, ToastType.Success);
         }
 
         private void OnTagDeleted(string tag) {
             _assetService.DeleteTag(tag);
             _tagListView.Refresh();
             RefreshUI(false);
+            ShowToast($"タグ '{tag}' を削除しました", 3f, ToastType.Success);
         }
 
         private void OnFolderRenamed(Ulid folderId, string newName) {
@@ -244,6 +250,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
+            ShowToast($"フォルダを '{newName}' にリネームしました", 3f, ToastType.Success);
         }
 
         private void OnFolderDeleted(Ulid folderId) {
@@ -251,6 +258,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
+            ShowToast("フォルダを削除しました", 3f, ToastType.Success);
         }
 
         private void OnFolderCreated(string folderName) {
@@ -258,6 +266,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
+            ShowToast($"フォルダ '{folderName}' を作成しました", 3f, ToastType.Success);
         }
 
         private void OnFolderMoved(Ulid sourceFolderId, Ulid targetFolderId) {
@@ -265,6 +274,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
+            ShowToast("フォルダを移動しました", 3f, ToastType.Success);
         }
 
         private void OnAssetsDroppedToFolder(List<Ulid> assetIds, Ulid targetFolderId) {
@@ -392,6 +402,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             rootVisualElement.Add(container);
 
             return container;
+        }
+
+        private void ShowToast(string message, float? duration = 3f, ToastType type = ToastType.Info) {
+            _toastManager?.Show(message, duration, type);
         }
 
         [MenuItem("ee4v/Asset Manager")]
