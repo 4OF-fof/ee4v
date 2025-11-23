@@ -105,15 +105,23 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private void Close() {
             _autoCloseScheduler?.Pause();
 
+            const int fadeDuration = 200;
+            const int frameInterval = 16;
+            const int totalFrames = fadeDuration / frameInterval;
+            var currentOpacity = style.opacity.value;
+            var opacityStep = currentOpacity / totalFrames;
+            var frame = 0;
+
             schedule.Execute(() =>
             {
-                style.opacity = 0;
-                schedule.Execute(() =>
-                {
-                    OnClosed?.Invoke(this);
-                    RemoveFromHierarchy();
-                }).StartingIn(200);
-            });
+                frame++;
+                var newOpacity = currentOpacity - (opacityStep * frame);
+                style.opacity = Mathf.Max(0, newOpacity);
+
+                if (frame < totalFrames) return;
+                OnClosed?.Invoke(this);
+                RemoveFromHierarchy();
+            }).Every(frameInterval).Until(() => frame >= totalFrames);
         }
     }
 
