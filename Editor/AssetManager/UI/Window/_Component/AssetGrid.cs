@@ -12,6 +12,7 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetGrid : VisualElement {
+        private readonly VisualElement _emptyStateContainer;
         private readonly ListView _listView;
         private readonly List<List<object>> _rows = new();
         private readonly HashSet<object> _selectedItems = new();
@@ -42,6 +43,60 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _listView.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             Add(_listView);
 
+            _emptyStateContainer = new VisualElement {
+                style = {
+                    position = Position.Absolute,
+                    top = 0,
+                    left = 0,
+                    right = 0,
+                    bottom = 0,
+                    alignItems = Align.Center,
+                    justifyContent = Justify.Center,
+                    display = DisplayStyle.None
+                }
+            };
+
+            var emptyContent = new VisualElement {
+                style = {
+                    alignItems = Align.Center,
+                    paddingTop = 40,
+                    paddingBottom = 40
+                }
+            };
+
+            var iconImage = new Image {
+                image = (Texture2D)EditorGUIUtility.IconContent("ModelImporter Icon").image,
+                style = {
+                    width = 64,
+                    height = 64,
+                    marginBottom = 16,
+                    opacity = 0.3f
+                }
+            };
+
+            var messageLabel = new Label("アセットが見つかりません") {
+                style = {
+                    fontSize = 16,
+                    unityTextAlign = TextAnchor.MiddleCenter,
+                    color = new Color(1f, 1f, 1f, 0.5f),
+                    marginBottom = 8
+                }
+            };
+
+            var hintLabel = new Label("検索条件を変更するか、新しいアセットを追加してください") {
+                style = {
+                    fontSize = 12,
+                    unityTextAlign = TextAnchor.MiddleCenter,
+                    color = new Color(1f, 1f, 1f, 0.3f)
+                }
+            };
+
+            emptyContent.Add(iconImage);
+            emptyContent.Add(messageLabel);
+            emptyContent.Add(hintLabel);
+            _emptyStateContainer.Add(emptyContent);
+            Add(_emptyStateContainer);
+
             RegisterCallback<DetachFromPanelEvent>(OnDetach);
             RegisterCallback<PointerDownEvent>(evt =>
             {
@@ -65,7 +120,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _lastSelectedReference = null;
 
             RebuildRows();
+            UpdateEmptyState();
             Refresh();
+        }
+
+        private void UpdateEmptyState() {
+            if (_flatItems.Count == 0) {
+                _listView.style.display = DisplayStyle.None;
+                _emptyStateContainer.style.display = DisplayStyle.Flex;
+            }
+            else {
+                _listView.style.display = DisplayStyle.Flex;
+                _emptyStateContainer.style.display = DisplayStyle.None;
+            }
         }
 
         public void SetItemsPerRow(int count) {
