@@ -42,6 +42,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _navigation.OnFolderMoved -= OnFolderMoved;
                 _navigation.OnFolderCreated -= OnFolderCreated;
                 _navigation.OnAssetsDroppedToFolder -= OnAssetsDroppedToFolder;
+                _navigation.OnFolderReordered -= OnFolderReordered;
             }
 
             if (_tagListView != null) _tagListView.OnTagSelected -= OnTagSelected;
@@ -124,6 +125,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _navigation.OnFolderMoved += OnFolderMoved;
             _navigation.OnFolderCreated += OnFolderCreated;
             _navigation.OnAssetsDroppedToFolder += OnAssetsDroppedToFolder;
+            _navigation.OnFolderReordered += OnFolderReordered;
             _navigation.SetShowDialogCallback(ShowDialog);
 
             _tagListView.OnTagSelected += OnTagSelected;
@@ -268,7 +270,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var oldFolder = libMetadata?.GetFolder(folderId);
             var oldName = oldFolder?.Name ?? "フォルダ";
 
-            _folderService.RenameFolder(folderId, newName);
+            _folderService.SetFolderName(folderId, newName);
             var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
@@ -297,6 +299,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private void OnFolderMoved(Ulid sourceFolderId, Ulid targetFolderId) {
             _folderService.MoveFolder(sourceFolderId, targetFolderId);
+            var folders = _folderService.GetRootFolders();
+            _navigation.SetFolders(folders);
+            RefreshUI(false);
+        }
+
+        private void OnFolderReordered(Ulid parentFolderId, Ulid folderId, int newIndex) {
+            _folderService.ReorderFolder(parentFolderId, folderId, newIndex);
             var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);

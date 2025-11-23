@@ -25,12 +25,20 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public IReadOnlyList<BaseFolder> FolderList => _folderInfo.AsReadOnly();
-        public long ModificationTime { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        public string LibraryVersion { get; private set; } = "1";
+        private long ModificationTime { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        private string LibraryVersion { get; set; } = "1";
 
         public void AddFolder(BaseFolder folder) {
             if (folder == null) return;
             _folderInfo.Add(folder);
+            Touch();
+        }
+
+        public void InsertRootFolderAt(int index, BaseFolder folder) {
+            if (folder == null) return;
+            if (index < 0) index = 0;
+            if (index > _folderInfo.Count) index = _folderInfo.Count;
+            _folderInfo.Insert(index, folder);
             Touch();
         }
 
@@ -172,6 +180,14 @@ namespace _4OF.ee4v.AssetManager.Data {
             return false;
         }
 
+        public void InsertChildAt(int index, BaseFolder folderInfo) {
+            if (folderInfo == null) return;
+            if (index < 0) index = 0;
+            if (index > _children.Count) index = _children.Count;
+            _children.Insert(index, folderInfo);
+            Touch();
+        }
+
         public BaseFolder GetChild(Ulid folderId) {
             if (ID == folderId) return this;
             foreach (var c in _children) {
@@ -182,6 +198,24 @@ namespace _4OF.ee4v.AssetManager.Data {
             }
 
             return null;
+        }
+
+        public bool ReorderFolder(Ulid folderId, int newIndex) {
+            for (var i = 0; i < _children.Count; i++) {
+                if (_children[i].ID != folderId) continue;
+                if (newIndex < 0) return false;
+                if (newIndex > _children.Count) newIndex = _children.Count;
+                if (i == newIndex || (i + 1 == newIndex && newIndex == _children.Count)) return false;
+
+                var folder = _children[i];
+                _children.RemoveAt(i);
+                if (i < newIndex) newIndex--;
+                _children.Insert(newIndex, folder);
+                Touch();
+                return true;
+            }
+
+            return false;
         }
     }
 

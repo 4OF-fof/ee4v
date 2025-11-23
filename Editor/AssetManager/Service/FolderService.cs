@@ -118,10 +118,6 @@ namespace _4OF.ee4v.AssetManager.Service {
             _repository.SaveLibraryMetadata(libraries);
         }
 
-        public void RenameFolder(Ulid folderId, string newName) {
-            SetFolderName(folderId, newName);
-        }
-
         public void SetFolderDescription(Ulid folderId, string description) {
             var libraries = _repository.GetLibraryMetadata();
             var folder = libraries?.GetFolder(folderId);
@@ -195,6 +191,42 @@ namespace _4OF.ee4v.AssetManager.Service {
         public List<BaseFolder> GetRootFolders() {
             var libraries = _repository.GetLibraryMetadata();
             return libraries?.FolderList.Where(f => f is not BoothItemFolder).ToList() ?? new List<BaseFolder>();
+        }
+
+        public void ReorderFolder(Ulid parentFolderId, Ulid folderId, int newIndex) {
+            if (folderId == default) return;
+
+            var libraries = _repository.GetLibraryMetadata();
+
+            var folderBase = libraries?.GetFolder(folderId);
+            if (folderBase == null) return;
+
+            if (parentFolderId == Ulid.Empty) {
+                libraries.RemoveFolder(folderId);
+                libraries.InsertRootFolderAt(newIndex, folderBase);
+                _repository.SaveLibraryMetadata(libraries);
+                return;
+            }
+
+            var newParentBase = libraries.GetFolder(parentFolderId);
+            if (newParentBase is not Folder newParentFolder) {
+                Debug.LogError("Cannot reorder: Target parent is not a valid folder.");
+                return;
+            }
+
+            if (folderBase is Folder movingFolder && IsDescendant(movingFolder, parentFolderId)) {
+                Debug.LogError("Cannot reorder a folder into its own descendant.");
+                return;
+            }
+
+            if (newParentFolder.ReorderFolder(folderId, newIndex)) {
+                _repository.SaveLibraryMetadata(libraries);
+                return;
+            }
+
+            libraries.RemoveFolder(folderId);
+            newParentFolder.InsertChildAt(newIndex, folderBase);
+            _repository.SaveLibraryMetadata(libraries);
         }
     }
 }

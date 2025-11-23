@@ -18,6 +18,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private Ulid _currentSelectedFolderId = Ulid.Empty;
         private Ulid _draggingFolderId = Ulid.Empty;
+        private Vector2 _dragStartPosition;
         private VisualElement _dragIndicator;
         private VisualElement _selectedFolderItem;
         private Label _selectedLabel;
@@ -166,6 +167,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<Ulid, Ulid> OnFolderMoved;
         public event Action<string> OnFolderCreated;
         public event Action<List<Ulid>, Ulid> OnAssetsDroppedToFolder;
+        public event Action<Ulid, Ulid, int> OnFolderReordered;
 
         public void SelectState(NavigationMode mode, Ulid folderId) {
             SetSelectedFolderItem(null);
@@ -279,6 +281,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             {
                 switch (evt.button) {
                     case 0:
+                        _dragStartPosition = evt.position;
                         OnFolderViewSelected((Ulid)treeItemContainer.userData, itemRow);
                         evt.StopPropagation();
                         break;
@@ -291,38 +294,68 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             itemRow.RegisterCallback<PointerMoveEvent>(evt =>
             {
-                if (evt.pressedButtons != 1 || _draggingFolderId != Ulid.Empty) return;
-                _draggingFolderId = (Ulid)treeItemContainer.userData;
-                itemRow.style.opacity = 0.5f;
+                if (evt.pressedButtons != 1) return;
+                
+                if (_draggingFolderId == Ulid.Empty) {
+                    var distance = Vector2.Distance(_dragStartPosition, evt.position);
+                    if (distance < 4f) return;
+                    
+                    _draggingFolderId = (Ulid)treeItemContainer.userData;
+                    itemRow.style.opacity = 0.5f;
+                }
+                else if (_draggingFolderId != (Ulid)treeItemContainer.userData) {
+                    UpdateDropVisualFeedback(itemRow, evt.position);
+                }
             });
 
-            itemRow.RegisterCallback<PointerEnterEvent>(_ =>
+            itemRow.RegisterCallback<PointerEnterEvent>(evt =>
             {
-                if (_draggingFolderId != Ulid.Empty && _draggingFolderId != (Ulid)treeItemContainer.userData)
-                    itemRow.style.backgroundColor = new Color(0.4f, 0.6f, 0.9f, 0.4f);
+                if (_draggingFolderId == Ulid.Empty || _draggingFolderId == (Ulid)treeItemContainer.userData) return;
+                UpdateDropVisualFeedback(itemRow, evt.position);
             });
 
             itemRow.RegisterCallback<PointerLeaveEvent>(_ =>
             {
                 if (_draggingFolderId == Ulid.Empty || _draggingFolderId == (Ulid)treeItemContainer.userData) return;
+                ClearDropVisualFeedback(itemRow);
                 if (_currentSelectedFolderId == (Ulid)treeItemContainer.userData)
                     ApplySelectedStyle(itemRow);
                 else
                     itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
             });
 
-            itemRow.RegisterCallback<PointerUpEvent>(_ =>
+            itemRow.RegisterCallback<PointerUpEvent>(evt =>
             {
                 if (_draggingFolderId == Ulid.Empty || _draggingFolderId == (Ulid)treeItemContainer.userData) return;
                 var targetFolderId = (Ulid)treeItemContainer.userData;
                 var sourceFolderId = _draggingFolderId;
 
+                ClearDropVisualFeedback(itemRow);
+
+                var localPos = itemRow.WorldToLocal(evt.position);
+                var height = itemRow.resolvedStyle.height;
+                var normalizedY = localPos.y / height;
+
+                if (normalizedY < 0.25f) {
+                    var targetParentId = GetParentFolderId(targetFolderId);
+                    var targetIndex = GetChildIndex(parentContainer, targetFolderId);
+                    if (targetIndex >= 0)
+                        OnFolderReordered?.Invoke(targetParentId, sourceFolderId, targetIndex);
+                }
+                else if (normalizedY > 0.75f) {
+                    var targetParentId = GetParentFolderId(targetFolderId);
+                    var targetIndex = GetChildIndex(parentContainer, targetFolderId);
+                    if (targetIndex >= 0)
+                        OnFolderReordered?.Invoke(targetParentId, sourceFolderId, targetIndex + 1);
+                }
+                else {
+                    OnFolderMoved?.Invoke(sourceFolderId, targetFolderId);
+                }
+
                 if (_currentSelectedFolderId == targetFolderId)
                     ApplySelectedStyle(itemRow);
                 else
                     itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
-
-                OnFolderMoved?.Invoke(sourceFolderId, targetFolderId);
             });
 
             itemRow.RegisterCallback<DragEnterEvent>(_ =>
@@ -629,6 +662,55 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
 
             content.schedule.Execute(() => { textField.Focus(); });
+        }
+
+        private Ulid GetParentFolderId(Ulid childFolderId) {
+            if (!_folderItemMap.TryGetValue(childFolderId, out var childItem)) return Ulid.Empty;
+            var parentElement = childItem.parent;
+            while (parentElement != null) {
+                if (parentElement.userData is Ulid parentId && parentId != childFolderId)
+                    return parentId;
+                parentElement = parentElement.parent;
+                if (parentElement == _folderContainer || parentElement == this) return Ulid.Empty;
+            }
+
+            return Ulid.Empty;
+        }
+
+        private static int GetChildIndex(VisualElement container, Ulid folderId) {
+            for (var i = 0; i < container.childCount; i++) {
+                var child = container[i];
+                if (child.userData is Ulid id && id == folderId)
+                    return i;
+            }
+
+            return -1;
+        }
+
+        private static void UpdateDropVisualFeedback(VisualElement itemRow, Vector2 worldPosition) {
+            ClearDropVisualFeedback(itemRow);
+            
+            var localPos = itemRow.WorldToLocal(worldPosition);
+            var height = itemRow.resolvedStyle.height;
+            var normalizedY = localPos.y / height;
+            
+            if (normalizedY < 0.25f) {
+                itemRow.style.borderTopWidth = 2;
+                itemRow.style.borderTopColor = new Color(0.4f, 0.7f, 1.0f);
+            }
+            else if (normalizedY > 0.75f) {
+                itemRow.style.borderBottomWidth = 2;
+                itemRow.style.borderBottomColor = new Color(0.4f, 0.7f, 1.0f);
+            }
+            else {
+                itemRow.style.backgroundColor = new Color(0.4f, 0.6f, 0.9f, 0.4f);
+            }
+        }
+
+        private static void ClearDropVisualFeedback(VisualElement itemRow) {
+            itemRow.style.borderTopWidth = 0;
+            itemRow.style.borderBottomWidth = 0;
+            itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
         }
     }
 }
