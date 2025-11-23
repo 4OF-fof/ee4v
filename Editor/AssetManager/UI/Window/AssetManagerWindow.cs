@@ -40,6 +40,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _navigation.OnFolderDeleted -= OnFolderDeleted;
                 _navigation.OnFolderMoved -= OnFolderMoved;
                 _navigation.OnFolderCreated -= OnFolderCreated;
+                _navigation.OnAssetsDroppedToFolder -= OnAssetsDroppedToFolder;
             }
 
             if (_tagListView != null) _tagListView.OnTagSelected -= OnTagSelected;
@@ -119,6 +120,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _navigation.OnFolderDeleted += OnFolderDeleted;
             _navigation.OnFolderMoved += OnFolderMoved;
             _navigation.OnFolderCreated += OnFolderCreated;
+            _navigation.OnAssetsDroppedToFolder += OnAssetsDroppedToFolder;
             _navigation.SetShowDialogCallback(ShowDialog);
 
             _tagListView.OnTagSelected += OnTagSelected;
@@ -265,6 +267,26 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             RefreshUI(false);
         }
 
+        private void OnAssetsDroppedToFolder(List<Ulid> assetIds, Ulid targetFolderId) {
+            var libMetadata = _repository.GetLibraryMetadata();
+            var assetsFromBoothItemFolder = (from assetId in assetIds
+                select _repository.GetAsset(assetId)
+                into asset
+                where asset != null
+                where asset.Folder != Ulid.Empty && libMetadata != null
+                let currentFolder = libMetadata.GetFolder(asset.Folder)
+                where currentFolder is BoothItemFolder
+                select asset).ToList();
+
+            if (assetsFromBoothItemFolder.Count > 0) {
+                ShowBoothItemFolderWarningDialog(assetIds, targetFolderId, assetsFromBoothItemFolder);
+                return;
+            }
+
+            foreach (var assetId in assetIds) _assetService.SetFolder(assetId, targetFolderId);
+            RefreshUI();
+        }
+
         private void RefreshUI(bool fullRefresh = true) {
             if (fullRefresh) _assetController.Refresh();
 
@@ -282,6 +304,66 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private void ShowTagListView() {
             _assetView.style.display = DisplayStyle.None;
             _tagListView.style.display = DisplayStyle.Flex;
+        }
+
+        private void ShowBoothItemFolderWarningDialog(List<Ulid> assetIds, Ulid targetFolderId,
+            List<AssetMetadata> assetsFromBoothItemFolder) {
+            var content = new VisualElement();
+
+            var titleLabel = new Label("Warning") {
+                style = {
+                    fontSize = 14,
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    marginBottom = 10
+                }
+            };
+            content.Add(titleLabel);
+
+            var messageText = assetsFromBoothItemFolder.Count == 1
+                ? $"The asset '{assetsFromBoothItemFolder[0].Name}' is currently in a Booth Item folder.\n\nMoving it to a regular folder may cause issues with Booth item management. Are you sure you want to continue?"
+                : $"{assetsFromBoothItemFolder.Count} assets are currently in Booth Item folders.\n\nMoving them to a regular folder may cause issues with Booth item management. Are you sure you want to continue?";
+
+            var message = new Label(messageText) {
+                style = {
+                    marginBottom = 15,
+                    whiteSpace = WhiteSpace.Normal
+                }
+            };
+            content.Add(message);
+
+            var buttonRow = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    justifyContent = Justify.FlexEnd
+                }
+            };
+
+            var cancelBtn = new Button {
+                text = "Cancel",
+                style = { marginRight = 5 }
+            };
+            buttonRow.Add(cancelBtn);
+
+            var continueBtn = new Button {
+                text = "Continue",
+                style = {
+                    backgroundColor = new Color(0.8f, 0.4f, 0.4f)
+                }
+            };
+            buttonRow.Add(continueBtn);
+
+            content.Add(buttonRow);
+
+            var dialogContainer = ShowDialog(content);
+
+            cancelBtn.clicked += () => dialogContainer?.RemoveFromHierarchy();
+            continueBtn.clicked += () =>
+            {
+                foreach (var assetId in assetIds) _assetService.SetFolder(assetId, targetFolderId);
+
+                RefreshUI();
+                dialogContainer?.RemoveFromHierarchy();
+            };
         }
 
         private VisualElement ShowDialog(VisualElement dialogContent) {

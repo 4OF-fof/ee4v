@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -122,6 +124,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<Ulid> OnFolderDeleted;
         public event Action<Ulid, Ulid> OnFolderMoved;
         public event Action<string> OnFolderCreated;
+        public event Action<List<Ulid>, Ulid> OnAssetsDroppedToFolder;
 
         public void SetFolders(List<BaseFolder> folders) {
             folders ??= new List<BaseFolder>();
@@ -250,6 +253,50 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
 
                 OnFolderMoved?.Invoke(sourceFolderId, targetFolderId);
+                evt.StopPropagation();
+            });
+
+            itemRow.RegisterCallback<DragEnterEvent>(_ =>
+            {
+                if (DragAndDrop.GetGenericData("AssetManagerAssets") == null) return;
+                itemRow.style.backgroundColor = new Color(0.4f, 0.7f, 1.0f, 0.4f);
+            });
+
+            itemRow.RegisterCallback<DragLeaveEvent>(_ =>
+            {
+                if (DragAndDrop.GetGenericData("AssetManagerAssets") == null) return;
+                if (_currentSelectedFolderId == (Ulid)treeItemContainer.userData)
+                    ApplySelectedStyle(itemRow);
+                else
+                    itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+            });
+
+            itemRow.RegisterCallback<DragUpdatedEvent>(_ =>
+            {
+                if (DragAndDrop.GetGenericData("AssetManagerAssets") == null) {
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
+                    return;
+                }
+
+                DragAndDrop.visualMode = DragAndDropVisualMode.Link;
+            });
+
+            itemRow.RegisterCallback<DragPerformEvent>(evt =>
+            {
+                var assetIdsData = DragAndDrop.GetGenericData("AssetManagerAssets");
+                if (assetIdsData == null) return;
+
+                var targetFolderId = (Ulid)treeItemContainer.userData;
+                var assetIds = ((string[])assetIdsData).Select(Ulid.Parse).ToList();
+
+                DragAndDrop.AcceptDrag();
+
+                if (_currentSelectedFolderId == targetFolderId)
+                    ApplySelectedStyle(itemRow);
+                else
+                    itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+
+                OnAssetsDroppedToFolder?.Invoke(assetIds, targetFolderId);
                 evt.StopPropagation();
             });
 

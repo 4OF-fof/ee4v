@@ -6,6 +6,7 @@ using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -17,6 +18,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private CancellationTokenSource _cts;
 
         private List<object> _flatItems = new();
+        private bool _isDragging;
         private int _itemsPerRow;
         private object _lastSelectedReference;
         private float _lastWidth;
@@ -137,6 +139,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             for (var i = 0; i < _itemsPerRow; i++) {
                 var card = new AssetCard { style = { flexShrink = 0 } };
                 card.RegisterCallback<PointerDownEvent>(OnCardPointerDown);
+                card.RegisterCallback<PointerMoveEvent>(OnCardPointerMove);
+                card.RegisterCallback<PointerUpEvent>(OnCardPointerUp);
                 row.Add(card);
             }
 
@@ -163,6 +167,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             for (var i = 0; i < element.childCount; i++) {
                 var card = element[i] as AssetCard;
                 if (card == null) continue;
+
+                card.UnregisterCallback<PointerMoveEvent>(OnCardPointerMove);
+                card.UnregisterCallback<PointerUpEvent>(OnCardPointerUp);
+                card.RegisterCallback<PointerMoveEvent>(OnCardPointerMove);
+                card.RegisterCallback<PointerUpEvent>(OnCardPointerUp);
 
                 if (i < rowData.Count) {
                     card.style.display = DisplayStyle.Flex;
@@ -262,6 +271,28 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _listView.RefreshItems();
             OnSelectionChange?.Invoke(_selectedItems.ToList());
             evt.StopPropagation();
+        }
+
+        private void OnCardPointerMove(PointerMoveEvent evt) {
+            if (evt.pressedButtons != 1 || _isDragging) return;
+            if (evt.currentTarget is not AssetCard card) return;
+            var targetItem = card.userData;
+            if (targetItem is not AssetMetadata) return;
+
+            _isDragging = true;
+
+            var selectedAssets = _selectedItems.OfType<AssetMetadata>().ToList();
+            if (selectedAssets.Count == 0) return;
+
+            var assetIds = selectedAssets.Select(a => a.ID.ToString()).ToArray();
+            DragAndDrop.PrepareStartDrag();
+            DragAndDrop.SetGenericData("AssetManagerAssets", assetIds);
+            DragAndDrop.StartDrag("Moving Assets");
+            evt.StopPropagation();
+        }
+
+        private void OnCardPointerUp(PointerUpEvent evt) {
+            _isDragging = false;
         }
     }
 }
