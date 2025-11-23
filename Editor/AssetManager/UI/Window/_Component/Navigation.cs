@@ -26,9 +26,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 FireNav(NavigationMode.BoothItems, "Booth Items", a => !a.IsDeleted);
                 BoothItemClicked?.Invoke();
             });
-            CreateNavLabel("Tag List", () => { TagListClicked?.Invoke(); });
             CreateNavLabel("Uncategorized", () => FireNav(NavigationMode.Uncategorized, "Uncategorized",
                 a => !a.IsDeleted && a.Folder == Ulid.Empty && (a.Tags == null || a.Tags.Count == 0)));
+            CreateNavLabel("Tag List", () => { TagListClicked?.Invoke(); });
             CreateNavLabel("Trash", () => FireNav(NavigationMode.Trash, "Trash", a => a.IsDeleted));
 
             Add(new VisualElement { style = { height = 10 } });
