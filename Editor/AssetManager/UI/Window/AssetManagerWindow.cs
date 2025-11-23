@@ -480,7 +480,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _toastManager?.Show(message, duration, type);
         }
 
-        // Public helper so other parts of the editor can show toasts via the Asset Manager window
         public static void ShowToastMessage(string message, float? duration = 3f, ToastType type = ToastType.Info) {
             var window = GetWindow<AssetManagerWindow>();
             window?.ShowToast(message, duration, type);

@@ -432,7 +432,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         new StyleBackground(EditorGUIUtility.IconContent("Folder Icon").image as Texture2D);
                 else
                     _thumbnailContainer.style.backgroundImage =
-                        new StyleBackground(EditorGUIUtility.IconContent("ModelImporter Icon").image as Texture2D);
+                        new StyleBackground(EditorGUIUtility.IconContent("GameObject Icon").image as Texture2D);
             }
             catch {
                 // ignore

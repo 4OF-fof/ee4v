@@ -77,7 +77,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             if (texture == null) {
                 var fallback = isFolder
                     ? EditorGUIUtility.IconContent("Folder Icon").image as Texture2D
-                    : EditorGUIUtility.IconContent("ModelImporter Icon").image as Texture2D;
+                    : EditorGUIUtility.IconContent("GameObject Icon").image as Texture2D;
 
                 if (fallback != null) {
                     _thumbnail.style.backgroundImage = new StyleBackground(fallback);
