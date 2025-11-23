@@ -12,6 +12,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly Label _backLabel;
         private readonly ScrollView _breadcrumbContainer;
         private readonly Label _forwardLabel;
+        private readonly Label _sortLabel;
 
         public AssetToolbar(int initialItemsPerRow) {
             style.alignItems = Align.Center;
@@ -46,7 +47,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             slider.RegisterValueChangedCallback(evt => OnItemSizeChanged?.Invoke(evt.newValue));
             Add(slider);
 
-            var sortLabel = new Label {
+            _sortLabel = new Label {
                 tooltip = "Sort Items",
                 style = {
                     height = 20,
@@ -60,16 +61,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
             var sortIcon = EditorGUIUtility.IconContent("d_AlphabeticalSorting").image;
             if (sortIcon != null)
-                sortLabel.Add(new Image {
+                _sortLabel.Add(new Image {
                     image = sortIcon,
                     style = { width = 16, height = 16 }
                 });
             else
-                sortLabel.text = "Sort";
+                _sortLabel.text = "Sort";
 
-            RegisterHoverEvents(sortLabel);
-            sortLabel.RegisterCallback<PointerDownEvent>(_ => ShowSortMenu());
-            Add(sortLabel);
+            RegisterHoverEvents(_sortLabel);
+            _sortLabel.RegisterCallback<PointerDownEvent>(_ => ShowSortMenu());
+            Add(_sortLabel);
 
             var searchField = new ToolbarSearchField {
                 style = {
@@ -89,6 +90,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<AssetSortType> OnSortChanged;
         public event Action<string> OnSearchTextChanged;
         public event Action<Ulid> OnBreadcrumbClicked;
+
+        public void SetSortVisible(bool visibleSort) {
+            _sortLabel.style.display = visibleSort ? DisplayStyle.Flex : DisplayStyle.None;
+        }
 
         public void UpdateNavigationState(bool canGoBack, bool canGoForward) {
             _backLabel.SetEnabled(canGoBack);
@@ -159,6 +164,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void ShowSortMenu() {
             var menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Date Added (Newest)"), false,
+                () => OnSortChanged?.Invoke(AssetSortType.DateAddedNewest));
+            menu.AddItem(new GUIContent("Date Added (Oldest)"), false,
+                () => OnSortChanged?.Invoke(AssetSortType.DateAddedOldest));
+            menu.AddSeparator("");
             menu.AddItem(new GUIContent("Name (A-Z)"), false, () => OnSortChanged?.Invoke(AssetSortType.NameAsc));
             menu.AddItem(new GUIContent("Name (Z-A)"), false, () => OnSortChanged?.Invoke(AssetSortType.NameDesc));
             menu.AddSeparator("");
@@ -179,6 +189,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     }
 
     public enum AssetSortType {
+        DateAddedNewest,
+        DateAddedOldest,
         NameAsc,
         NameDesc,
         DateNewest,

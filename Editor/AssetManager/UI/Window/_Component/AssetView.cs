@@ -177,6 +177,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 long sizeB = 0;
                 var extA = "";
                 var extB = "";
+                var idA = Ulid.Empty;
+                var idB = Ulid.Empty;
 
                 switch (a) {
                     case AssetMetadata asset:
@@ -184,10 +186,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         dateA = asset.ModificationTime;
                         sizeA = asset.Size;
                         extA = asset.Ext ?? "";
+                        idA = asset.ID;
                         break;
                     case BaseFolder folder:
                         nameA = folder.Name ?? "";
                         dateA = folder.ModificationTime;
+                        idA = folder.ID;
                         break;
                 }
 
@@ -197,23 +201,27 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         dateB = asset.ModificationTime;
                         sizeB = asset.Size;
                         extB = asset.Ext ?? "";
+                        idB = asset.ID;
                         break;
                     case BaseFolder folder:
                         nameB = folder.Name ?? "";
                         dateB = folder.ModificationTime;
+                        idB = folder.ID;
                         break;
                 }
 
                 return _currentSortType switch {
-                    AssetSortType.NameAsc      => string.Compare(nameA, nameB, StringComparison.OrdinalIgnoreCase),
-                    AssetSortType.NameDesc     => string.Compare(nameB, nameA, StringComparison.OrdinalIgnoreCase),
-                    AssetSortType.DateNewest   => dateB.CompareTo(dateA),
-                    AssetSortType.DateOldest   => dateA.CompareTo(dateB),
-                    AssetSortType.SizeSmallest => sizeA.CompareTo(sizeB),
-                    AssetSortType.SizeLargest  => sizeB.CompareTo(sizeA),
-                    AssetSortType.ExtAsc       => string.Compare(extA, extB, StringComparison.OrdinalIgnoreCase),
-                    AssetSortType.ExtDesc      => string.Compare(extB, extA, StringComparison.OrdinalIgnoreCase),
-                    _                          => 0
+                    AssetSortType.DateAddedNewest => idB.CompareTo(idA),
+                    AssetSortType.DateAddedOldest => idA.CompareTo(idB),
+                    AssetSortType.NameAsc         => string.Compare(nameA, nameB, StringComparison.OrdinalIgnoreCase),
+                    AssetSortType.NameDesc        => string.Compare(nameB, nameA, StringComparison.OrdinalIgnoreCase),
+                    AssetSortType.DateNewest      => dateB.CompareTo(dateA),
+                    AssetSortType.DateOldest      => dateA.CompareTo(dateB),
+                    AssetSortType.SizeSmallest    => sizeA.CompareTo(sizeB),
+                    AssetSortType.SizeLargest     => sizeB.CompareTo(sizeA),
+                    AssetSortType.ExtAsc          => string.Compare(extA, extB, StringComparison.OrdinalIgnoreCase),
+                    AssetSortType.ExtDesc         => string.Compare(extB, extA, StringComparison.OrdinalIgnoreCase),
+                    _                             => 0
                 };
             });
         }

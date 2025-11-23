@@ -24,6 +24,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _toolbar = new AssetToolbar(0);
             var slider = _toolbar.Q<SliderInt>();
             if (slider != null) slider.style.display = DisplayStyle.None;
+            _toolbar.SetSortVisible(false);
             Add(_toolbar);
 
             _listView = new ListView {
