@@ -246,19 +246,27 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void OnFolderRenamed(Ulid folderId, string newName) {
+            var libMetadata = _repository.GetLibraryMetadata();
+            var oldFolder = libMetadata?.GetFolder(folderId);
+            var oldName = oldFolder?.Name ?? "フォルダ";
+            
             _folderService.RenameFolder(folderId, newName);
             var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
-            ShowToast($"フォルダを '{newName}' にリネームしました", 3f, ToastType.Success);
+            ShowToast($"フォルダ '{oldName}' を '{newName}' にリネームしました", 3f, ToastType.Success);
         }
 
         private void OnFolderDeleted(Ulid folderId) {
+            var libMetadata = _repository.GetLibraryMetadata();
+            var folder = libMetadata?.GetFolder(folderId);
+            var folderName = folder?.Name ?? "フォルダ";
+            
             _folderService.DeleteFolder(folderId);
             var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
-            ShowToast("フォルダを削除しました", 3f, ToastType.Success);
+            ShowToast($"フォルダ '{folderName}' を削除しました", 3f, ToastType.Success);
         }
 
         private void OnFolderCreated(string folderName) {
@@ -274,7 +282,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
-            ShowToast("フォルダを移動しました", 3f, ToastType.Success);
         }
 
         private void OnAssetsDroppedToFolder(List<Ulid> assetIds, Ulid targetFolderId) {
