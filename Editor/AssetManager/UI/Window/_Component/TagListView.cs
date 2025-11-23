@@ -4,11 +4,13 @@ using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class TagListView : VisualElement {
+        private readonly VisualElement _emptyStateContainer;
         private readonly Dictionary<string, bool> _foldoutStates = new();
         private readonly ScrollView _scrollView;
 
@@ -39,6 +41,64 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 }
             };
             Add(_scrollView);
+
+            _emptyStateContainer = new VisualElement {
+                style = {
+                    position = Position.Absolute,
+                    top = 0,
+                    left = 0,
+                    right = 0,
+                    bottom = 0,
+                    alignItems = Align.Center,
+                    justifyContent = Justify.Center,
+                    display = DisplayStyle.None
+                }
+            };
+
+            var emptyContentRoot = new VisualElement {
+                style = {
+                    alignItems = Align.Center,
+                    paddingTop = 40,
+                    paddingBottom = 40
+                }
+            };
+
+            var rawIcon = EditorGUIUtility.IconContent("Search Icon").image as Texture2D;
+            if (rawIcon != null) rawIcon.filterMode = FilterMode.Bilinear;
+
+            var emptyIcon = new Image {
+                image = rawIcon,
+                scaleMode = ScaleMode.ScaleToFit,
+                style = {
+                    width = 64,
+                    height = 64,
+                    marginBottom = 16,
+                    opacity = 0.3f
+                }
+            };
+
+            var emptyTitle = new Label("タグが見つかりません") {
+                style = {
+                    fontSize = 16,
+                    unityTextAlign = TextAnchor.MiddleCenter,
+                    color = new Color(1f, 1f, 1f, 0.5f),
+                    marginBottom = 8
+                }
+            };
+
+            var emptyHint = new Label("検索条件を変更するか、タグを追加してください") {
+                style = {
+                    fontSize = 12,
+                    unityTextAlign = TextAnchor.MiddleCenter,
+                    color = new Color(1f, 1f, 1f, 0.3f)
+                }
+            };
+
+            emptyContentRoot.Add(emptyIcon);
+            emptyContentRoot.Add(emptyTitle);
+            emptyContentRoot.Add(emptyHint);
+            _emptyStateContainer.Add(emptyContentRoot);
+            Add(_emptyStateContainer);
 
             _toolbar.OnBack += () => _controller?.GoBack();
             _toolbar.OnForward += () => _controller?.GoForward();
@@ -86,16 +146,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             allTags.Sort();
 
             if (allTags.Count == 0) {
-                var label = new Label("No tags found.") {
-                    style = {
-                        unityTextAlign = TextAnchor.MiddleCenter,
-                        opacity = 0.5f,
-                        marginTop = 20
-                    }
-                };
-                _scrollView.Add(label);
+                UpdateEmptyState(true);
                 return;
             }
+
+            UpdateEmptyState(false);
 
             var totalCount = _tagCounts.Values.Sum();
             var header = new Label($"All Tags ({totalCount})") {
@@ -345,13 +400,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private static int GetNodeTagCount(TagNode node) {
             var count = 0;
             foreach (var child in node.Children.Values) {
-                if (!string.IsNullOrEmpty(child.FullPath)) {
-                    count++;
-                }
-                
-                if (child.Children.Count > 0) {
-                    count += GetNodeTagCount(child);
-                }
+                if (!string.IsNullOrEmpty(child.FullPath)) count++;
+
+                if (child.Children.Count > 0) count += GetNodeTagCount(child);
             }
 
             return count;
@@ -377,6 +428,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             return root;
+        }
+
+        private void UpdateEmptyState(bool isEmpty) {
+            if (isEmpty) {
+                _scrollView.style.display = DisplayStyle.None;
+                _emptyStateContainer.style.display = DisplayStyle.Flex;
+            }
+            else {
+                _scrollView.style.display = DisplayStyle.Flex;
+                _emptyStateContainer.style.display = DisplayStyle.None;
+            }
         }
 
         private void UpdateNavigationState() {
