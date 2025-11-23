@@ -44,15 +44,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
             contentContainer1.Add(_messageLabel);
 
-            var closeButton = new Button(Close) {
-                text = "×",
+            var closeLabel = new Label("×") {
                 style = {
                     width = 20,
                     height = 20,
                     marginLeft = 8,
                     unityTextAlign = TextAnchor.MiddleCenter,
                     fontSize = 16,
-                    backgroundColor = new Color(0.3f, 0.3f, 0.3f, 0.5f),
                     borderTopLeftRadius = 3,
                     borderTopRightRadius = 3,
                     borderBottomLeftRadius = 3,
@@ -61,25 +59,32 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     borderRightWidth = 0,
                     borderTopWidth = 0,
                     borderBottomWidth = 0
-                }
+                },
+                pickingMode = PickingMode.Position
             };
-            contentContainer1.Add(closeButton);
+            contentContainer1.Add(closeLabel);
 
-            closeButton.RegisterCallback<MouseEnterEvent>(_ =>
+            closeLabel.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                closeButton.style.backgroundColor = new Color(0.5f, 0.3f, 0.3f);
+                closeLabel.style.backgroundColor = new Color(0.5f, 0.3f, 0.3f);
             });
-            closeButton.RegisterCallback<MouseLeaveEvent>(_ =>
+            closeLabel.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                closeButton.style.backgroundColor = new Color(0.3f, 0.3f, 0.3f, 0.5f);
+                closeLabel.style.backgroundColor = Color.clear;
             });
 
-            if (duration.HasValue && duration.Value > 0)
+            closeLabel.RegisterCallback<ClickEvent>(evt =>
+            {
+                Close();
+                evt.StopPropagation();
+            });
+
+            if (duration is > 0)
                 _autoCloseScheduler = schedule.Execute(Close).StartingIn((long)(duration.Value * 1000));
 
             RegisterCallback<ClickEvent>(evt =>
             {
-                if (evt.target != closeButton) Close();
+                if (evt.target != closeLabel) Close();
             });
 
             style.opacity = 0;
