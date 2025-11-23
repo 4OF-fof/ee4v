@@ -11,11 +11,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly List<Label> _navLabels = new();
 
         private Ulid _currentSelectedFolderId = Ulid.Empty;
+        private Ulid _draggingFolderId = Ulid.Empty;
+        private VisualElement _dragIndicator;
         private VisualElement _selectedFolderItem;
         private Label _selectedLabel;
         private Func<VisualElement, VisualElement> _showDialogCallback;
-        private Ulid _draggingFolderId = Ulid.Empty;
-        private VisualElement _dragIndicator;
 
         public Navigation() {
             style.flexDirection = FlexDirection.Column;
@@ -36,14 +36,22 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             Add(new VisualElement { style = { height = 10 } });
 
+            var foldersHeader = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    alignItems = Align.Center,
+                    marginBottom = 2
+                }
+            };
+
             var foldersLabel = new Label("Folders") {
                 style = {
                     paddingLeft = 8,
                     paddingRight = 8,
                     paddingTop = 4,
                     paddingBottom = 4,
-                    marginBottom = 2,
-                    unityFontStyleAndWeight = FontStyle.Bold
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    flexGrow = 1
                 }
             };
             foldersLabel.RegisterCallback<PointerDownEvent>(evt =>
@@ -53,7 +61,42 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 NavigationChanged?.Invoke(NavigationMode.Folders, "Folders", a => !a.IsDeleted);
                 evt.StopPropagation();
             });
-            Add(foldersLabel);
+
+            var plusButton = new Label("+") {
+                style = {
+                    paddingLeft = 6,
+                    paddingRight = 6,
+                    paddingTop = 2,
+                    paddingBottom = 2,
+                    marginRight = 4,
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    fontSize = 16,
+                    color = new Color(0.7f, 0.7f, 0.7f)
+                }
+            };
+
+            plusButton.RegisterCallback<PointerEnterEvent>(_ =>
+            {
+                plusButton.style.color = new Color(0.4f, 0.7f, 1.0f);
+                plusButton.style.backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.2f);
+            });
+
+            plusButton.RegisterCallback<PointerLeaveEvent>(_ =>
+            {
+                plusButton.style.color = new Color(0.7f, 0.7f, 0.7f);
+                plusButton.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+            });
+
+            plusButton.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 0) return;
+                ShowCreateFolderDialog();
+                evt.StopPropagation();
+            });
+
+            foldersHeader.Add(foldersLabel);
+            foldersHeader.Add(plusButton);
+            Add(foldersHeader);
 
             _folderContainer = new VisualElement();
             var scrollView = new ScrollView(ScrollViewMode.Vertical) {
@@ -76,6 +119,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<Ulid, string> OnFolderRenamed;
         public event Action<Ulid> OnFolderDeleted;
         public event Action<Ulid, Ulid> OnFolderMoved;
+        public event Action<string> OnFolderCreated;
 
         public void SetFolders(List<BaseFolder> folders) {
             folders ??= new List<BaseFolder>();
@@ -139,19 +183,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
                 itemContainer.RegisterCallback<PointerEnterEvent>(_ =>
                 {
-                    if (_draggingFolderId != Ulid.Empty && _draggingFolderId != (Ulid)itemContainer.userData) {
+                    if (_draggingFolderId != Ulid.Empty && _draggingFolderId != (Ulid)itemContainer.userData)
                         itemContainer.style.backgroundColor = new Color(0.4f, 0.6f, 0.9f, 0.4f);
-                    }
                 });
 
                 itemContainer.RegisterCallback<PointerLeaveEvent>(_ =>
                 {
                     if (_draggingFolderId == Ulid.Empty || _draggingFolderId == (Ulid)itemContainer.userData) return;
-                    if (_currentSelectedFolderId == (Ulid)itemContainer.userData) {
+                    if (_currentSelectedFolderId == (Ulid)itemContainer.userData)
                         ApplySelectedStyle(itemContainer);
-                    } else {
+                    else
                         itemContainer.style.backgroundColor = new StyleColor(StyleKeyword.Null);
-                    }
                 });
 
                 itemContainer.RegisterCallback<PointerUpEvent>(evt =>
@@ -159,21 +201,20 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     if (_draggingFolderId == Ulid.Empty || _draggingFolderId == (Ulid)itemContainer.userData) return;
                     var targetFolderId = (Ulid)itemContainer.userData;
                     var sourceFolderId = _draggingFolderId;
-                        
+
                     foreach (var child in _folderContainer.Children()) {
                         if (child.userData is not Ulid id || id != sourceFolderId) continue;
                         child.style.opacity = 1.0f;
                         break;
                     }
-                        
+
                     _draggingFolderId = Ulid.Empty;
-                        
-                    if (_currentSelectedFolderId == targetFolderId) {
+
+                    if (_currentSelectedFolderId == targetFolderId)
                         ApplySelectedStyle(itemContainer);
-                    } else {
+                    else
                         itemContainer.style.backgroundColor = new StyleColor(StyleKeyword.Null);
-                    }
-                        
+
                     OnFolderMoved?.Invoke(sourceFolderId, targetFolderId);
                     evt.StopPropagation();
                 });
@@ -354,6 +395,63 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void DeleteFolder(Ulid folderId) {
             OnFolderDeleted?.Invoke(folderId);
+        }
+
+        private void ShowCreateFolderDialog() {
+            if (_showDialogCallback == null) return;
+
+            var content = new VisualElement();
+
+            var title = new Label("Create New Folder") {
+                style = {
+                    fontSize = 14,
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    marginBottom = 10
+                }
+            };
+            content.Add(title);
+
+            var label = new Label("Folder name:") {
+                style = { marginBottom = 5 }
+            };
+            content.Add(label);
+
+            var textField = new TextField { value = "", style = { marginBottom = 10 } };
+            content.Add(textField);
+
+            var buttonRow = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    justifyContent = Justify.FlexEnd
+                }
+            };
+
+            var cancelBtn = new Button {
+                text = "Cancel",
+                style = { marginRight = 5 }
+            };
+            buttonRow.Add(cancelBtn);
+
+            var okBtn = new Button {
+                text = "Create"
+            };
+            buttonRow.Add(okBtn);
+
+            content.Add(buttonRow);
+
+            var dialogContainer = _showDialogCallback.Invoke(content);
+
+            cancelBtn.clicked += () => dialogContainer?.RemoveFromHierarchy();
+            okBtn.clicked += () =>
+            {
+                var folderName = textField.value;
+                if (!string.IsNullOrWhiteSpace(folderName))
+                    OnFolderCreated?.Invoke(folderName);
+
+                dialogContainer?.RemoveFromHierarchy();
+            };
+
+            content.schedule.Execute(() => { textField.Focus(); });
         }
     }
 }

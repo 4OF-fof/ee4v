@@ -39,6 +39,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _navigation.OnFolderRenamed -= OnFolderRenamed;
                 _navigation.OnFolderDeleted -= OnFolderDeleted;
                 _navigation.OnFolderMoved -= OnFolderMoved;
+                _navigation.OnFolderCreated -= OnFolderCreated;
             }
 
             if (_tagListView != null) _tagListView.OnTagSelected -= OnTagSelected;
@@ -117,6 +118,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _navigation.OnFolderRenamed += OnFolderRenamed;
             _navigation.OnFolderDeleted += OnFolderDeleted;
             _navigation.OnFolderMoved += OnFolderMoved;
+            _navigation.OnFolderCreated += OnFolderCreated;
             _navigation.SetShowDialogCallback(ShowDialog);
 
             _tagListView.OnTagSelected += OnTagSelected;
@@ -149,7 +151,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private void OnSelectionChanged(List<object> selectedItems) {
             _assetInfo.UpdateSelection(selectedItems);
 
-            if (selectedItems != null && selectedItems.Count == 1 && selectedItems[0] is AssetMetadata asset)
+            if (selectedItems is { Count: 1 } && selectedItems[0] is AssetMetadata asset)
                 _selectedAsset = asset;
             else
                 _selectedAsset = null;
@@ -244,6 +246,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private void OnFolderDeleted(Ulid folderId) {
             _folderService.DeleteFolder(folderId);
+            var folders = _folderService.GetFlatFolders();
+            _navigation.SetFolders(folders);
+            RefreshUI(false);
+        }
+
+        private void OnFolderCreated(string folderName) {
+            _folderService.CreateFolder(Ulid.Empty, folderName);
             var folders = _folderService.GetFlatFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
