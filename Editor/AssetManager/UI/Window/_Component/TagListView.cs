@@ -89,6 +89,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 return;
             }
 
+            var totalCount = _tagCounts.Values.Sum();
+            var header = new Label($"All Tags ({totalCount})") {
+                style = {
+                    fontSize = 24,
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    marginBottom = 10,
+                    marginTop = 5,
+                    color = ColorPreset.TextColor
+                }
+            };
+            _scrollView.Add(header);
+
             if (!string.IsNullOrWhiteSpace(_currentSearchText))
                 DrawFlatList(allTags);
             else
@@ -135,7 +147,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             var filtered = allTags
                 .Where(t => t.IndexOf(_currentSearchText, StringComparison.OrdinalIgnoreCase) >= 0)
-                .OrderBy(t => t);
+                .OrderByDescending(GetTagCount)
+                .ThenBy(t => t);
 
             foreach (var tag in filtered) {
                 var count = GetTagCount(tag);
@@ -158,28 +171,36 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
             container.Add(leafContainer);
 
-            var sortedChildren = node.Children.Values.OrderBy(n => n.Name).ToList();
+            var sortedChildren = node.Children.Values
+                .OrderByDescending(n => string.IsNullOrEmpty(n.FullPath) ? 0 : GetTagCount(n.FullPath))
+                .ThenBy(n => n.Name)
+                .ToList();
 
             foreach (var child in sortedChildren) {
                 var isFolder = child.Children.Count > 0;
 
                 if (isFolder) {
-                    var foldout = new Foldout {
-                        text = child.Name,
-                        value = false,
-                        style = {
-                            marginLeft = 0,
-                            marginTop = 4,
-                            unityFontStyleAndWeight = FontStyle.Bold
-                        }
-                    };
-
                     if (!string.IsNullOrEmpty(child.FullPath)) {
                         var count = GetTagCount(child.FullPath);
                         var selfBtn = CreateTagButton(child.Name, child.FullPath, count);
-                        selfBtn.style.marginBottom = 4;
-                        foldout.contentContainer.Add(selfBtn);
+                        leafContainer.Add(selfBtn);
                     }
+
+                    var groupTagCount = GetNodeTagCount(child);
+                    var groupName = $"{child.Name} ({groupTagCount})";
+
+                    var foldout = new Foldout {
+                        text = groupName,
+                        value = false,
+                        style = {
+                            marginLeft = 0,
+                            marginTop = 8,
+                            marginBottom = 4,
+                            unityFontStyleAndWeight = FontStyle.Bold,
+                            fontSize = 24
+                        }
+                    };
+                    foldout.Q<Toggle>().style.fontSize = 24;
 
                     container.Add(foldout);
                     RenderTreeNodes(child, foldout.contentContainer);
@@ -222,6 +243,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private int GetTagCount(string tag) {
             return _tagCounts.GetValueOrDefault(tag, 0);
+        }
+
+        private static int GetNodeTagCount(TagNode node) {
+            var count = 0;
+
+            if (!string.IsNullOrEmpty(node.FullPath) && node.Children.Count == 0) count++;
+
+            count += node.Children.Values.Sum(GetNodeTagCount);
+
+            return count;
         }
 
         private static TagNode BuildTagTree(List<string> tags) {
