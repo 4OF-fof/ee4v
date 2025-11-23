@@ -87,7 +87,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public BaseFolder(BaseFolder baseFolder) {
             ID = baseFolder.ID;
-            Name = baseFolder.Name;
+            Name = string.IsNullOrWhiteSpace(baseFolder.Name) ? "New Folder" : baseFolder.Name;
             Description = baseFolder.Description;
             ModificationTime = baseFolder.ModificationTime;
             _tags = new List<string>(baseFolder.Tags);
@@ -96,19 +96,20 @@ namespace _4OF.ee4v.AssetManager.Data {
         [JsonConstructor]
         public BaseFolder(Ulid id, string name, string description, long modificationTime, List<string> tags) {
             ID = id;
-            Name = name;
+            Name = string.IsNullOrWhiteSpace(name) ? "New Folder" : name;
             Description = description;
             ModificationTime = modificationTime;
             _tags = tags ?? new List<string>();
         }
 
         public Ulid ID { get; } = Ulid.Generate();
-        public string Name { get; private set; } = "";
+        public string Name { get; private set; } = "New Folder";
         public string Description { get; private set; } = "";
         public long ModificationTime { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         public IReadOnlyList<string> Tags => _tags.AsReadOnly();
 
         public void SetName(string newName) {
+            if (string.IsNullOrWhiteSpace(newName)) return;
             Name = newName;
             Touch();
         }

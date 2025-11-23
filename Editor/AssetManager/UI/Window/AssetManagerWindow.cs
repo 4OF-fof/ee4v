@@ -227,8 +227,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private void OnAssetNameChanged(string newName) {
             if (_selectedAsset == null) return;
-            _assetService.SetAssetName(_selectedAsset.ID, newName);
+            var oldName = _selectedAsset.Name;
+            var success = _assetService.SetAssetName(_selectedAsset.ID, newName);
             RefreshUI();
+            if (!success)
+                ShowToast($"アセット '{oldName}' のリネームに失敗しました: 名前が無効です", 10, ToastType.Error);
         }
 
         private void OnAssetDescriptionChanged(string newDesc) {
@@ -255,14 +258,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetService.RenameTag(oldTag, newTag);
             _tagListView.Refresh();
             RefreshUI(false);
-            ShowToast($"タグ '{oldTag}' を '{newTag}' にリネームしました", 3f, ToastType.Success);
+            ShowToast($"タグ '{oldTag}' を '{newTag}' にリネームしました", 3, ToastType.Success);
         }
 
         private void OnTagDeleted(string tag) {
             _assetService.DeleteTag(tag);
             _tagListView.Refresh();
             RefreshUI(false);
-            ShowToast($"タグ '{tag}' を削除しました", 3f, ToastType.Success);
+            ShowToast($"タグ '{tag}' を削除しました", 3, ToastType.Success);
         }
 
         private void OnFolderRenamed(Ulid folderId, string newName) {
@@ -270,11 +273,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var oldFolder = libMetadata?.GetFolder(folderId);
             var oldName = oldFolder?.Name ?? "フォルダ";
 
-            _folderService.SetFolderName(folderId, newName);
+            var success = _folderService.SetFolderName(folderId, newName);
             var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
-            ShowToast($"フォルダ '{oldName}' を '{newName}' にリネームしました", 3f, ToastType.Success);
+            if (!success)
+                ShowToast($"フォルダ '{oldName}' のリネームに失敗しました: 名前が無効です", 10, ToastType.Error);
         }
 
         private void OnFolderDeleted(Ulid folderId) {
@@ -286,15 +290,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
-            ShowToast($"フォルダ '{folderName}' を削除しました", 3f, ToastType.Success);
+            ShowToast($"フォルダ '{folderName}' を削除しました", 3, ToastType.Success);
         }
 
         private void OnFolderCreated(string folderName) {
-            _folderService.CreateFolder(Ulid.Empty, folderName);
+            var success = _folderService.CreateFolder(Ulid.Empty, folderName);
             var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
             RefreshUI(false);
-            ShowToast($"フォルダ '{folderName}' を作成しました", 3f, ToastType.Success);
+            if (!success)
+                ShowToast($"フォルダ '{folderName}' の作成に失敗しました: 名前が無効です", 10, ToastType.Error);
         }
 
         private void OnFolderMoved(Ulid sourceFolderId, Ulid targetFolderId) {
@@ -473,6 +478,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private void ShowToast(string message, float? duration = 3f, ToastType type = ToastType.Info) {
             _toastManager?.Show(message, duration, type);
+        }
+
+        // Public helper so other parts of the editor can show toasts via the Asset Manager window
+        public static void ShowToastMessage(string message, float? duration = 3f, ToastType type = ToastType.Info) {
+            var window = GetWindow<AssetManagerWindow>();
+            window?.ShowToast(message, duration, type);
         }
 
         [MenuItem("ee4v/Asset Manager")]

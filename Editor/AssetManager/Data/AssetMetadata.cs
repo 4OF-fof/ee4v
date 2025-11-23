@@ -12,7 +12,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public AssetMetadata(AssetMetadata metadata) {
             ID = metadata.ID;
-            Name = metadata.Name;
+            Name = string.IsNullOrWhiteSpace(metadata.Name) ? "Untitled" : metadata.Name;
             Description = metadata.Description;
             Size = metadata.Size;
             Ext = metadata.Ext;
@@ -27,7 +27,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         public AssetMetadata(Ulid id, string name, string description, long size, string ext, BoothMetadata boothData,
             Ulid folder, List<string> tags, bool isDeleted, long modificationTime) {
             ID = id;
-            Name = name;
+            Name = string.IsNullOrWhiteSpace(name) ? "Untitled" : name;
             Description = description;
             Size = size;
             Ext = ext;
@@ -39,17 +39,18 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public Ulid ID { get; } = Ulid.Generate();
-        public string Name { get; private set; } = "";
+        public string Name { get; private set; } = "Untitled";
         public string Description { get; private set; } = "";
         public long Size { get; private set; }
         public string Ext { get; private set; } = "";
-        public BoothMetadata BoothData { get; set; } = new();
+        public BoothMetadata BoothData { get; private set; } = new();
         public Ulid Folder { get; private set; } = Ulid.Empty;
         public IReadOnlyList<string> Tags => _tags.AsReadOnly();
         public bool IsDeleted { get; private set; }
         public long ModificationTime { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         public void SetName(string newName) {
+            if (string.IsNullOrWhiteSpace(newName)) return;
             Name = newName;
             Touch();
         }

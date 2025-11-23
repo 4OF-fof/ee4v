@@ -568,7 +568,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             okBtn.clicked += () =>
             {
                 var newName = textField.value;
-                if (!string.IsNullOrWhiteSpace(newName) && newName != oldName)
+                // Allow invoking rename even for empty/whitespace so the service layer can validate and UI can display error
+                if (newName != oldName || string.IsNullOrWhiteSpace(newName))
                     OnFolderRenamed?.Invoke(folderId, newName);
 
                 dialogContainer?.RemoveFromHierarchy();
@@ -633,8 +634,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             okBtn.clicked += () =>
             {
                 var folderName = textField.value;
-                if (!string.IsNullOrWhiteSpace(folderName))
-                    OnFolderCreated?.Invoke(folderName);
+                // Always invoke creation so service layer can validate and UI can provide feedback
+                OnFolderCreated?.Invoke(folderName);
 
                 dialogContainer?.RemoveFromHierarchy();
             };

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
@@ -14,14 +15,17 @@ namespace _4OF.ee4v.AssetManager.Service {
             _assetService = assetService;
         }
 
-        public void CreateFolder(Ulid parentFolderId, string name, string description = null) {
+        public bool CreateFolder(Ulid parentFolderId, string name, string description = null) {
             if (string.IsNullOrWhiteSpace(name)) {
                 Debug.LogError("Folder name cannot be empty");
-                return;
+                return false;
             }
 
             var libraries = _repository.GetLibraryMetadata();
-            if (libraries == null) return;
+            if (libraries == null) {
+                Debug.LogError("Library metadata not available: cannot create folder.");
+                return false;
+            }
 
             var folder = new Folder();
             folder.SetName(name);
@@ -34,13 +38,21 @@ namespace _4OF.ee4v.AssetManager.Service {
                 var parent = libraries.GetFolder(parentFolderId);
                 if (parent is not Folder parentFolder) {
                     Debug.LogError("Cannot create folder: Parent is not a standard folder.");
-                    return;
+                    return false;
                 }
 
                 parentFolder.AddChild(folder);
             }
 
-            _repository.SaveLibraryMetadata(libraries);
+            try {
+                _repository.SaveLibraryMetadata(libraries);
+            }
+            catch (Exception ex) {
+                Debug.LogError($"Failed to save library metadata when creating folder: {ex.Message}");
+                return false;
+            }
+
+            return true;
         }
 
         public void MoveFolder(Ulid folderId, Ulid parentFolderId) {
@@ -82,40 +94,63 @@ namespace _4OF.ee4v.AssetManager.Service {
             _repository.SaveLibraryMetadata(libraries);
         }
 
-        public void UpdateFolder(Folder newFolder) {
-            if (newFolder == null || !AssetValidationService.IsValidAssetName(newFolder.Name)) return;
+        public bool UpdateFolder(Folder newFolder) {
+            if (newFolder == null || !AssetValidationService.IsValidAssetName(newFolder.Name)) {
+                Debug.LogError("Failed to update folder: invalid input or name.");
+                return false;
+            }
 
             var libraries = _repository.GetLibraryMetadata();
             var folder = libraries?.GetFolder(newFolder.ID) as Folder;
-            if (folder == null) return;
+            if (folder == null) {
+                Debug.LogError($"Folder not found: {newFolder.ID}");
+                return false;
+            }
 
             folder.SetName(newFolder.Name);
             folder.SetDescription(newFolder.Description);
             _repository.SaveLibraryMetadata(libraries);
+            return true;
         }
 
-        public void UpdateBoothItemFolder(BoothItemFolder newFolder) {
-            if (newFolder == null || !AssetValidationService.IsValidAssetName(newFolder.Name)) return;
+        public bool UpdateBoothItemFolder(BoothItemFolder newFolder) {
+            if (newFolder == null || !AssetValidationService.IsValidAssetName(newFolder.Name)) {
+                Debug.LogError("Failed to update booth item folder: invalid input or name.");
+                return false;
+            }
 
             var libraries = _repository.GetLibraryMetadata();
             var folder = libraries?.GetFolder(newFolder.ID) as BoothItemFolder;
-            if (folder == null) return;
+            if (folder == null) {
+                Debug.LogError($"Booth item folder not found: {newFolder.ID}");
+                return false;
+            }
 
             folder.SetName(newFolder.Name);
             folder.SetDescription(newFolder.Description);
             folder.SetShopName(newFolder.ShopName);
 
             _repository.SaveLibraryMetadata(libraries);
+            return true;
         }
 
-        public void SetFolderName(Ulid folderId, string newName) {
-            if (!AssetValidationService.IsValidAssetName(newName)) return;
+        public bool SetFolderName(Ulid folderId, string newName) {
+            if (!AssetValidationService.IsValidAssetName(newName)) {
+                Debug.LogError("Invalid folder name: cannot set an empty or invalid name.");
+                return false;
+            }
+
             var libraries = _repository.GetLibraryMetadata();
             var folder = libraries?.GetFolder(folderId);
 
-            if (folder == null) return;
+            if (folder == null) {
+                Debug.LogError($"Folder not found: {folderId}");
+                return false;
+            }
+
             folder.SetName(newName);
             _repository.SaveLibraryMetadata(libraries);
+            return true;
         }
 
         public void SetFolderDescription(Ulid folderId, string description) {

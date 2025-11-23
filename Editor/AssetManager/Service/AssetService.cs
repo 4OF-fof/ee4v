@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Utility;
 using _4OF.ee4v.Core.Utility;
+using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Service {
     public class AssetService {
@@ -47,16 +48,24 @@ namespace _4OF.ee4v.AssetManager.Service {
             _repository.SaveAsset(newAsset);
         }
 
-        public void SetAssetName(Ulid assetId, string newName) {
-            if (!AssetValidationService.IsValidAssetName(newName)) return;
+        public bool SetAssetName(Ulid assetId, string newName) {
+            if (!AssetValidationService.IsValidAssetName(newName)) {
+                Debug.LogError("Invalid asset name: cannot set an empty or invalid name.");
+                return false;
+            }
+
             var asset = _repository.GetAsset(assetId);
-            if (asset == null) return;
+            if (asset == null) {
+                Debug.LogError($"Asset not found: {assetId}");
+                return false;
+            }
 
             _repository.RenameAssetFile(assetId, newName);
 
             var newAsset = new AssetMetadata(asset);
             newAsset.SetName(newName);
             _repository.SaveAsset(newAsset);
+            return true;
         }
 
         public void SetDescription(Ulid assetId, string newDescription) {
