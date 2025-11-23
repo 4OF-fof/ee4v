@@ -75,11 +75,27 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             if (pushHistory) PushCurrentStateToBackHistory();
             _forwardHistory.Clear();
 
-            CurrentMode = NavigationMode.Folders;
-            _contextName = "Folders";
-            SelectedFolderId = folderId;
             _filter = asset => !asset.IsDeleted;
             _currentTagFilter = null;
+
+            if (folderId == Ulid.Empty) {
+                SelectedFolderId = Ulid.Empty;
+            }
+            else {
+                var lib = _repository.GetLibraryMetadata();
+                var folder = lib?.GetFolder(folderId);
+
+                if (folder is BoothItemFolder) {
+                    CurrentMode = NavigationMode.BoothItems;
+                    _contextName = "Booth Items";
+                }
+                else {
+                    CurrentMode = NavigationMode.Folders;
+                    _contextName = "Folders";
+                }
+
+                SelectedFolderId = folderId;
+            }
 
             ModeChanged?.Invoke(CurrentMode);
             OnHistoryChanged?.Invoke();
