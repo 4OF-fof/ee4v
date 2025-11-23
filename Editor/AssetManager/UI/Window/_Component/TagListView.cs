@@ -344,10 +344,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private static int GetNodeTagCount(TagNode node) {
             var count = 0;
-
-            if (!string.IsNullOrEmpty(node.FullPath) && node.Children.Count == 0) count++;
-
-            count += node.Children.Values.Sum(GetNodeTagCount);
+            foreach (var child in node.Children.Values) {
+                if (!string.IsNullOrEmpty(child.FullPath)) {
+                    count++;
+                }
+                
+                if (child.Children.Count > 0) {
+                    count += GetNodeTagCount(child);
+                }
+            }
 
             return count;
         }
