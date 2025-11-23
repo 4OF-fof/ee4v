@@ -9,6 +9,7 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class TagListView : VisualElement {
+        private readonly Dictionary<string, bool> _foldoutStates = new();
         private readonly ScrollView _scrollView;
 
         private readonly Dictionary<string, int> _tagCounts = new();
@@ -16,6 +17,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private AssetViewController _controller;
         private string _currentSearchText = string.Empty;
         private IAssetRepository _repository;
+        private Func<VisualElement, VisualElement> _showDialogCallback;
 
         public TagListView() {
             style.flexGrow = 1;
@@ -66,7 +68,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             UpdateNavigationState();
         }
 
+        public void SetShowDialogCallback(Func<VisualElement, VisualElement> callback) {
+            _showDialogCallback = callback;
+        }
+
         public event Action<string> OnTagSelected;
+        public event Action<string, string> OnTagRenamed;
+        public event Action<string> OnTagDeleted;
 
         public void Refresh() {
             _scrollView.Clear();
@@ -189,9 +197,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     var groupTagCount = GetNodeTagCount(child);
                     var groupName = $"{child.Name} ({groupTagCount})";
 
+                    var foldoutKey = child.FullPath ?? child.Name;
+                    var isOpen = _foldoutStates.GetValueOrDefault(foldoutKey, false);
+
                     var foldout = new Foldout {
                         text = groupName,
-                        value = false,
+                        value = isOpen,
                         style = {
                             marginLeft = 0,
                             marginTop = 8,
@@ -201,6 +212,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         }
                     };
                     foldout.Q<Toggle>().style.fontSize = 24;
+
+                    foldout.RegisterValueChangedCallback(evt => { _foldoutStates[foldoutKey] = evt.newValue; });
 
                     container.Add(foldout);
                     RenderTreeNodes(child, foldout.contentContainer);
@@ -227,18 +240,102 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     paddingRight = 10,
                     marginRight = 4,
                     marginBottom = 4,
-                    backgroundColor = new StyleColor(new Color(0.25f, 0.25f, 0.25f)),
+                    backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f)),
                     borderTopWidth = 0, borderBottomWidth = 0, borderLeftWidth = 0, borderRightWidth = 0,
                     color = ColorPreset.TextColor,
                     fontSize = 11
                 }
             };
 
-            btn.RegisterCallback<MouseEnterEvent>(_ => btn.style.backgroundColor = ColorPreset.MouseOverBackground);
+            btn.RegisterCallback<MouseEnterEvent>(_ =>
+                btn.style.backgroundColor = new StyleColor(new Color(0.4f, 0.4f, 0.4f)));
             btn.RegisterCallback<MouseLeaveEvent>(_ =>
-                btn.style.backgroundColor = new StyleColor(new Color(0.25f, 0.25f, 0.25f)));
+                btn.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f)));
+
+            btn.RegisterCallback<MouseDownEvent>(evt =>
+            {
+                if (evt.button != 1) return;
+                evt.StopPropagation();
+                ShowContextMenu(btn, fullPath);
+            });
 
             return btn;
+        }
+
+        private void ShowContextMenu(VisualElement target, string fullPath) {
+            var menu = new GenericDropdownMenu();
+            menu.AddItem("Rename", false, () => ShowRenameDialog(fullPath));
+            menu.AddItem("Delete", false, () => DeleteTag(fullPath));
+
+            var rect = target.worldBound;
+            var menuRect = new Rect(rect.x, rect.yMax, Mathf.Max(rect.width, 100), 0);
+            menu.DropDown(menuRect, target);
+        }
+
+        private void ShowRenameDialog(string oldTag) {
+            var content = new VisualElement();
+
+            var title = new Label("Rename Tag") {
+                style = {
+                    fontSize = 14,
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    marginBottom = 10
+                }
+            };
+            content.Add(title);
+
+            var label = new Label("New tag name:") {
+                style = { marginBottom = 5 }
+            };
+            content.Add(label);
+
+            var textField = new TextField { value = oldTag, style = { marginBottom = 10 } };
+            content.Add(textField);
+
+            var buttonRow = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    justifyContent = Justify.FlexEnd
+                }
+            };
+
+            var cancelBtn = new Button {
+                text = "Cancel",
+                style = { marginRight = 5 }
+            };
+            buttonRow.Add(cancelBtn);
+
+            var okBtn = new Button {
+                text = "OK"
+            };
+            buttonRow.Add(okBtn);
+
+            content.Add(buttonRow);
+
+            var dialogContainer = _showDialogCallback?.Invoke(content);
+
+            cancelBtn.clicked += () => dialogContainer?.RemoveFromHierarchy();
+            okBtn.clicked += () =>
+            {
+                var newTag = textField.value;
+                if (!string.IsNullOrWhiteSpace(newTag) && newTag != oldTag) {
+                    OnTagRenamed?.Invoke(oldTag, newTag);
+                    Refresh();
+                }
+
+                dialogContainer?.RemoveFromHierarchy();
+            };
+
+            content.schedule.Execute(() =>
+            {
+                textField.Focus();
+                textField.SelectAll();
+            });
+        }
+
+        private void DeleteTag(string tag) {
+            OnTagDeleted?.Invoke(tag);
+            Refresh();
         }
 
         private int GetTagCount(string tag) {

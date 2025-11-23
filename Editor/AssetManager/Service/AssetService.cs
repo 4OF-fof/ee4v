@@ -98,10 +98,8 @@ namespace _4OF.ee4v.AssetManager.Service {
         public void RenameTag(string oldTag, string newTag) {
             if (string.IsNullOrEmpty(oldTag) || string.IsNullOrEmpty(newTag) || oldTag == newTag) return;
 
-            foreach (var asset in _repository.GetAllAssets()) {
-                if (!asset.Tags.Contains(oldTag)) continue;
-
-                var newAsset = new AssetMetadata(asset);
+            var assets = _repository.GetAllAssets().ToList();
+            foreach (var newAsset in from asset in assets where asset.Tags.Contains(oldTag) select new AssetMetadata(asset)) {
                 newAsset.RemoveTag(oldTag);
                 newAsset.AddTag(newTag);
                 _repository.SaveAsset(newAsset);
@@ -111,12 +109,30 @@ namespace _4OF.ee4v.AssetManager.Service {
             if (lib == null) return;
             var modified = false;
             foreach (var folder in lib.FolderList)
-                if (ProcessFolderTagRename(folder, oldTag, newTag))
+                if (RenameFolderTag(folder, oldTag, newTag))
                     modified = true;
             if (modified) _repository.SaveLibraryMetadata(lib);
         }
 
-        private static bool ProcessFolderTagRename(BaseFolder folder, string oldTag, string newTag) {
+        public void DeleteTag(string tag) {
+            if (string.IsNullOrEmpty(tag)) return;
+
+            var assets = _repository.GetAllAssets().ToList();
+            foreach (var newAsset in from asset in assets where asset.Tags.Contains(tag) select new AssetMetadata(asset)) {
+                newAsset.RemoveTag(tag);
+                _repository.SaveAsset(newAsset);
+            }
+
+            var lib = _repository.GetLibraryMetadata();
+            if (lib == null) return;
+            var modified = false;
+            foreach (var folder in lib.FolderList)
+                if (DeleteFolderTag(folder, tag))
+                    modified = true;
+            if (modified) _repository.SaveLibraryMetadata(lib);
+        }
+
+        private static bool RenameFolderTag(BaseFolder folder, string oldTag, string newTag) {
             var modified = false;
             if (folder.Tags.Contains(oldTag)) {
                 folder.RemoveTag(oldTag);
@@ -126,7 +142,21 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             if (folder is not Folder f || f.Children == null) return modified;
             foreach (var child in f.Children)
-                if (ProcessFolderTagRename(child, oldTag, newTag))
+                if (RenameFolderTag(child, oldTag, newTag))
+                    modified = true;
+            return modified;
+        }
+
+        private static bool DeleteFolderTag(BaseFolder folder, string tag) {
+            var modified = false;
+            if (folder.Tags.Contains(tag)) {
+                folder.RemoveTag(tag);
+                modified = true;
+            }
+
+            if (folder is not Folder f || f.Children == null) return modified;
+            foreach (var child in f.Children)
+                if (DeleteFolderTag(child, tag))
                     modified = true;
             return modified;
         }

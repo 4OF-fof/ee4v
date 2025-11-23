@@ -107,6 +107,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _navigation.Initialize(_repository);
             _tagListView.Initialize(_repository);
             _tagListView.SetController(_assetController);
+            _tagListView.SetShowDialogCallback(ShowDialog);
             _assetInfo.Initialize(_repository, _textureService, _folderService);
 
             _navigation.NavigationChanged += OnNavigationChanged;
@@ -114,6 +115,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _navigation.TagListClicked += OnTagListClicked;
 
             _tagListView.OnTagSelected += OnTagSelected;
+            _tagListView.OnTagRenamed += OnTagRenamed;
+            _tagListView.OnTagDeleted += OnTagDeleted;
 
             _assetController.AssetSelected += OnAssetSelected;
             _assetController.FolderPreviewSelected += OnFolderPreviewSelected;
@@ -215,6 +218,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             RefreshUI(false);
         }
 
+        private void OnTagRenamed(string oldTag, string newTag) {
+            _assetService.RenameTag(oldTag, newTag);
+            _tagListView.Refresh();
+            RefreshUI(false);
+        }
+
+        private void OnTagDeleted(string tag) {
+            _assetService.DeleteTag(tag);
+            _tagListView.Refresh();
+            RefreshUI(false);
+        }
 
         private void RefreshUI(bool fullRefresh = true) {
             if (fullRefresh) _assetController.Refresh();
@@ -233,6 +247,34 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private void ShowTagListView() {
             _assetView.style.display = DisplayStyle.None;
             _tagListView.style.display = DisplayStyle.Flex;
+        }
+
+        private VisualElement ShowDialog(VisualElement dialogContent) {
+            var container = new VisualElement {
+                style = {
+                    position = Position.Absolute,
+                    left = 0, right = 0, top = 0, bottom = 0,
+                    backgroundColor = new StyleColor(new Color(0, 0, 0, 0.5f)),
+                    alignItems = Align.Center,
+                    justifyContent = Justify.Center
+                }
+            };
+
+            var dialog = new VisualElement {
+                style = {
+                    backgroundColor = ColorPreset.DefaultBackground,
+                    paddingLeft = 20, paddingRight = 20, paddingTop = 20, paddingBottom = 20,
+                    borderTopLeftRadius = 8, borderTopRightRadius = 8,
+                    borderBottomLeftRadius = 8, borderBottomRightRadius = 8,
+                    minWidth = 300
+                }
+            };
+
+            dialog.Add(dialogContent);
+            container.Add(dialog);
+            rootVisualElement.Add(container);
+
+            return container;
         }
 
         [MenuItem("ee4v/Asset Manager")]
