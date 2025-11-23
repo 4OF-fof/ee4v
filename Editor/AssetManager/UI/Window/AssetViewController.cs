@@ -20,16 +20,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private readonly Stack<NavigationState> _forwardHistory = new();
         private readonly IAssetRepository _repository;
         private string _contextName = "All Items";
-        private NavigationMode _currentMode = NavigationMode.AllItems;
 
         private string _currentTagFilter;
 
         private Func<AssetMetadata, bool> _filter = asset => !asset.IsDeleted;
-        private Ulid _selectedFolderId = Ulid.Empty;
 
         public AssetViewController(IAssetRepository repository) {
             _repository = repository;
         }
+
+        public NavigationMode CurrentMode { get; private set; } = NavigationMode.AllItems;
+
+        public Ulid SelectedFolderId { get; private set; } = Ulid.Empty;
 
         public bool CanGoBack => _backHistory.Count > 0;
         public bool CanGoForward => _forwardHistory.Count > 0;
@@ -48,38 +50,38 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         public void SetMode(NavigationMode mode, string contextName, Func<AssetMetadata, bool> filter,
             bool pushHistory = true) {
-            if (_currentMode == mode && _contextName == contextName && _selectedFolderId == Ulid.Empty)
+            if (CurrentMode == mode && _contextName == contextName && SelectedFolderId == Ulid.Empty)
                 return;
 
             if (pushHistory) PushCurrentStateToBackHistory();
             _forwardHistory.Clear();
 
-            _currentMode = mode;
+            CurrentMode = mode;
             _contextName = contextName;
             _filter = filter ?? (asset => !asset.IsDeleted);
-            _selectedFolderId = Ulid.Empty;
+            SelectedFolderId = Ulid.Empty;
             _currentTagFilter = null;
             if (mode == NavigationMode.Tag && contextName.StartsWith("Tag: "))
                 _currentTagFilter = contextName["Tag: ".Length..];
 
-            ModeChanged?.Invoke(_currentMode);
+            ModeChanged?.Invoke(CurrentMode);
             OnHistoryChanged?.Invoke();
             Refresh();
         }
 
         public void SetFolder(Ulid folderId, bool pushHistory = true) {
-            if (_selectedFolderId == folderId) return;
+            if (SelectedFolderId == folderId) return;
 
             if (pushHistory) PushCurrentStateToBackHistory();
             _forwardHistory.Clear();
 
-            _currentMode = NavigationMode.Folders;
+            CurrentMode = NavigationMode.Folders;
             _contextName = "Folders";
-            _selectedFolderId = folderId;
+            SelectedFolderId = folderId;
             _filter = asset => !asset.IsDeleted;
             _currentTagFilter = null;
 
-            ModeChanged?.Invoke(_currentMode);
+            ModeChanged?.Invoke(CurrentMode);
             OnHistoryChanged?.Invoke();
             Refresh();
         }
@@ -117,9 +119,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private NavigationState CreateCurrentState() {
             return new NavigationState {
-                Mode = _currentMode,
+                Mode = CurrentMode,
                 ContextName = _contextName,
-                SelectedFolderId = _selectedFolderId,
+                SelectedFolderId = SelectedFolderId,
                 Filter = _filter,
                 TagFilter = _currentTagFilter
             };
@@ -132,13 +134,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void RestoreState(NavigationState state) {
-            _currentMode = state.Mode;
+            CurrentMode = state.Mode;
             _contextName = state.ContextName;
-            _selectedFolderId = state.SelectedFolderId;
+            SelectedFolderId = state.SelectedFolderId;
             _filter = state.Filter;
             _currentTagFilter = state.TagFilter;
 
-            ModeChanged?.Invoke(_currentMode);
+            ModeChanged?.Invoke(CurrentMode);
             Refresh();
             OnHistoryChanged?.Invoke();
         }
@@ -167,8 +169,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         public void Refresh() {
             var displayItems = new List<object>();
 
-            switch (_currentMode) {
-                case NavigationMode.BoothItems when _selectedFolderId == Ulid.Empty:
+            switch (CurrentMode) {
+                case NavigationMode.BoothItems when SelectedFolderId == Ulid.Empty:
                     ShowBoothItemFolders();
                     break;
                 case NavigationMode.TagList: {
@@ -191,10 +193,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 default: {
                     var libMetadata = _repository.GetLibraryMetadata();
 
-                    if (_selectedFolderId == Ulid.Empty) {
-                        if (_currentMode == NavigationMode.Folders && libMetadata != null)
+                    if (SelectedFolderId == Ulid.Empty) {
+                        if (CurrentMode == NavigationMode.Folders && libMetadata != null)
                             displayItems.AddRange(libMetadata.FolderList.Where(f => f is not BoothItemFolder));
-                        else if (_currentMode == NavigationMode.Tag && !string.IsNullOrEmpty(_currentTagFilter))
+                        else if (CurrentMode == NavigationMode.Tag && !string.IsNullOrEmpty(_currentTagFilter))
                             if (libMetadata != null) {
                                 var matchingFolders = new List<BaseFolder>();
                                 CollectFoldersByTag(libMetadata.FolderList, _currentTagFilter, matchingFolders);
@@ -202,19 +204,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                             }
                     }
                     else {
-                        var currentFolder = libMetadata?.GetFolder(_selectedFolderId);
+                        var currentFolder = libMetadata?.GetFolder(SelectedFolderId);
                         if (currentFolder is Folder f) displayItems.AddRange(f.Children);
                     }
 
                     var allAssets = _repository.GetAllAssets();
                     IEnumerable<AssetMetadata> assetsSource;
 
-                    if (_selectedFolderId == Ulid.Empty)
-                        assetsSource = _currentMode == NavigationMode.Folders
+                    if (SelectedFolderId == Ulid.Empty)
+                        assetsSource = CurrentMode == NavigationMode.Folders
                             ? Enumerable.Empty<AssetMetadata>()
                             : allAssets;
                     else
-                        assetsSource = allAssets.Where(a => a.Folder == _selectedFolderId);
+                        assetsSource = allAssets.Where(a => a.Folder == SelectedFolderId);
 
                     var filtered = assetsSource.Where(a => _filter(a)).ToList();
                     displayItems.AddRange(filtered);
@@ -242,11 +244,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private void UpdateBreadcrumbs() {
             var breadcrumbs = new List<(string Name, Ulid Id)> { (_contextName, Ulid.Empty) };
 
-            if (_selectedFolderId != Ulid.Empty) {
+            if (SelectedFolderId != Ulid.Empty) {
                 var libMetadata = _repository.GetLibraryMetadata();
                 if (libMetadata != null) {
                     var pathStack = new Stack<(string Name, Ulid Id)>();
-                    if (FindPathRecursive(libMetadata.FolderList, _selectedFolderId, pathStack))
+                    if (FindPathRecursive(libMetadata.FolderList, SelectedFolderId, pathStack))
                         while (pathStack.Count > 0)
                             breadcrumbs.Add(pathStack.Pop());
                 }

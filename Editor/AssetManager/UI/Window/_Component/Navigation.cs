@@ -13,6 +13,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly VisualElement _folderContainer;
         private readonly Dictionary<Ulid, VisualElement> _folderItemMap = new();
         private readonly Dictionary<Ulid, VisualElement> _folderRowMap = new();
+        private readonly Label _foldersLabel;
         private readonly List<Label> _navLabels = new();
 
         private Ulid _currentSelectedFolderId = Ulid.Empty;
@@ -66,7 +67,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 }
             };
 
-            var foldersLabel = new Label("Folders") {
+            _foldersLabel = new Label("Folders") {
                 style = {
                     paddingLeft = 8,
                     paddingRight = 8,
@@ -76,32 +77,32 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     flexGrow = 1
                 }
             };
-            foldersLabel.RegisterCallback<PointerDownEvent>(evt =>
+            _foldersLabel.RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (evt.button != 0) return;
-                SetSelected(foldersLabel);
+                SetSelected(_foldersLabel);
                 NavigationChanged?.Invoke(NavigationMode.Folders, "Folders", a => !a.IsDeleted);
                 evt.StopPropagation();
             });
 
-            foldersLabel.RegisterCallback<PointerEnterEvent>(_ =>
+            _foldersLabel.RegisterCallback<PointerEnterEvent>(_ =>
             {
                 if (_draggingFolderId != Ulid.Empty)
-                    foldersLabel.style.backgroundColor = new Color(0.4f, 0.6f, 0.9f, 0.4f);
+                    _foldersLabel.style.backgroundColor = new Color(0.4f, 0.6f, 0.9f, 0.4f);
             });
 
-            foldersLabel.RegisterCallback<PointerLeaveEvent>(_ =>
+            _foldersLabel.RegisterCallback<PointerLeaveEvent>(_ =>
             {
                 if (_draggingFolderId != Ulid.Empty)
-                    foldersLabel.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+                    _foldersLabel.style.backgroundColor = new StyleColor(StyleKeyword.Null);
             });
 
-            foldersLabel.RegisterCallback<PointerUpEvent>(_ =>
+            _foldersLabel.RegisterCallback<PointerUpEvent>(_ =>
             {
                 if (_draggingFolderId == Ulid.Empty) return;
                 var sourceFolderId = _draggingFolderId;
 
-                foldersLabel.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+                _foldersLabel.style.backgroundColor = new StyleColor(StyleKeyword.Null);
 
                 OnFolderMoved?.Invoke(sourceFolderId, Ulid.Empty);
             });
@@ -138,7 +139,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 evt.StopPropagation();
             });
 
-            foldersHeader.Add(foldersLabel);
+            foldersHeader.Add(_foldersLabel);
             foldersHeader.Add(plusButton);
             Add(foldersHeader);
 
@@ -165,6 +166,47 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<Ulid, Ulid> OnFolderMoved;
         public event Action<string> OnFolderCreated;
         public event Action<List<Ulid>, Ulid> OnAssetsDroppedToFolder;
+
+        public void SelectState(NavigationMode mode, Ulid folderId) {
+            SetSelectedFolderItem(null);
+            SetSelected(null);
+
+            _currentSelectedFolderId = Ulid.Empty;
+
+            switch (mode) {
+                case NavigationMode.Folders:
+                    if (folderId == Ulid.Empty) {
+                        SetSelected(_foldersLabel);
+                        _currentSelectedFolderId = Ulid.Empty;
+                        return;
+                    }
+
+                    if (_folderRowMap.TryGetValue(folderId, out var row)) {
+                        _currentSelectedFolderId = folderId;
+                        ApplySelectedStyle(row);
+                        _selectedFolderItem = row;
+                    }
+
+                    break;
+                case NavigationMode.AllItems:
+                    if (_navLabels.Count > 0) SetSelected(_navLabels[0]);
+                    break;
+                case NavigationMode.BoothItems:
+                    if (_navLabels.Count > 1) SetSelected(_navLabels[1]);
+                    break;
+                case NavigationMode.Uncategorized:
+                    if (_navLabels.Count > 2) SetSelected(_navLabels[2]);
+                    break;
+                case NavigationMode.TagList:
+                    if (_navLabels.Count > 3) SetSelected(_navLabels[3]);
+                    break;
+                case NavigationMode.Trash:
+                    if (_navLabels.Count > 4) SetSelected(_navLabels[4]);
+                    break;
+                case NavigationMode.Tag:
+                    break;
+            }
+        }
 
         public void SetFolders(List<BaseFolder> folders) {
             folders ??= new List<BaseFolder>();

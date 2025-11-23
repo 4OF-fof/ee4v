@@ -71,6 +71,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _grid.Initialize(textureService);
         }
 
+        public void ClearSelection() {
+            _grid.ClearSelection();
+        }
+
         public void SetController(AssetViewController controller) {
             if (_controller != null) {
                 _controller.ItemsChanged -= OnItemsChanged;

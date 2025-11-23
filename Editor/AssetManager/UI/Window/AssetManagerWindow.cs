@@ -52,6 +52,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _assetController.FoldersChanged -= OnFoldersChanged;
                 _assetController.BoothItemFoldersChanged -= OnBoothItemFoldersChanged;
                 _assetController.ModeChanged -= OnModeChanged;
+                _assetController.OnHistoryChanged -= OnControllerHistoryChanged;
             }
 
             if (_assetView != null) _assetView.OnSelectionChange -= OnSelectionChanged;
@@ -134,7 +135,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetController.FoldersChanged += OnFoldersChanged;
             _assetController.BoothItemFoldersChanged += OnBoothItemFoldersChanged;
             _assetController.ModeChanged += OnModeChanged;
-
+            _assetController.OnHistoryChanged += OnControllerHistoryChanged;
             _assetView.OnSelectionChange += OnSelectionChanged;
 
             _assetInfo.OnNameChanged += OnAssetNameChanged;
@@ -165,10 +166,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private void OnNavigationChanged(NavigationMode mode, string contextName, Func<AssetMetadata, bool> filter) {
             _assetController.SetMode(mode, contextName, filter, _isInitialized);
+
+            _assetView?.ClearSelection();
+            _selectedAsset = null;
+            _assetInfo?.UpdateSelection(new List<object>());
         }
 
         private void OnFolderSelected(Ulid folderId) {
             _assetController.SetFolder(folderId, _isInitialized);
+
+            if (folderId != Ulid.Empty && (_selectedAsset == null || _selectedAsset.Folder == folderId)) return;
+            _assetView?.ClearSelection();
+            _selectedAsset = null;
+            _assetInfo?.UpdateSelection(new List<object>());
         }
 
         private void OnTagListClicked() {
@@ -189,6 +199,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 ShowTagListView();
             else
                 ShowAssetView();
+        }
+
+        private void OnControllerHistoryChanged() {
+            _navigation?.SelectState(_assetController.CurrentMode, _assetController.SelectedFolderId);
+
+            _assetView?.ClearSelection();
+            _selectedAsset = null;
+            _assetInfo?.UpdateSelection(new List<object>());
         }
 
         private void OnAssetSelected(AssetMetadata asset) {
@@ -249,7 +267,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var libMetadata = _repository.GetLibraryMetadata();
             var oldFolder = libMetadata?.GetFolder(folderId);
             var oldName = oldFolder?.Name ?? "フォルダ";
-            
+
             _folderService.RenameFolder(folderId, newName);
             var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
@@ -261,7 +279,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var libMetadata = _repository.GetLibraryMetadata();
             var folder = libMetadata?.GetFolder(folderId);
             var folderName = folder?.Name ?? "フォルダ";
-            
+
             _folderService.DeleteFolder(folderId);
             var folders = _folderService.GetRootFolders();
             _navigation.SetFolders(folders);
