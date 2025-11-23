@@ -36,6 +36,9 @@ namespace _4OF.ee4v.AssetManager.Data {
             _libraryCache = new AssetLibrary();
         }
 
+        public event Action LibraryChanged;
+        public event Action<Ulid> AssetChanged;
+
         public void Initialize() {
             Directory.CreateDirectory(_rootDir);
             Directory.CreateDirectory(_assetRootDir);
@@ -199,6 +202,14 @@ namespace _4OF.ee4v.AssetManager.Data {
 
             _libraryCache.UpsertAsset(asset);
             SaveCache();
+
+            try {
+                AssetChanged?.Invoke(asset.ID);
+                LibraryChanged?.Invoke();
+            }
+            catch {
+                // ignore
+            }
         }
 
         public void RenameAssetFile(Ulid assetId, string newName) {
@@ -219,6 +230,14 @@ namespace _4OF.ee4v.AssetManager.Data {
             if (Directory.Exists(assetDir)) Directory.Delete(assetDir, true);
             _libraryCache.RemoveAsset(assetId);
             SaveCache();
+
+            try {
+                AssetChanged?.Invoke(assetId);
+                LibraryChanged?.Invoke();
+            }
+            catch {
+                // ignore
+            }
         }
 
         public void SaveLibraryMetadata(LibraryMetadata libraryMetadata) {
@@ -227,6 +246,13 @@ namespace _4OF.ee4v.AssetManager.Data {
 
             _libraryCache.SetLibrary(libraryMetadata);
             SaveCache();
+
+            try {
+                LibraryChanged?.Invoke();
+            }
+            catch {
+                // ignore
+            }
         }
 
         public void SetThumbnail(Ulid assetId, string imagePath) {
@@ -252,12 +278,27 @@ namespace _4OF.ee4v.AssetManager.Data {
             catch (Exception e) {
                 Debug.LogError($"[JsonAssetRepository] Failed to set thumbnail: {e.Message}");
             }
+            finally {
+                try {
+                    AssetChanged?.Invoke(assetId);
+                }
+                catch {
+                    // ignore
+                }
+            }
         }
 
         public void RemoveThumbnail(Ulid assetId) {
             var assetDir = Path.Combine(_assetRootDir, assetId.ToString());
             var thumbPath = Path.Combine(assetDir, "thumbnail.png");
             if (File.Exists(thumbPath)) File.Delete(thumbPath);
+
+            try {
+                AssetChanged?.Invoke(assetId);
+            }
+            catch {
+                // ignore
+            }
         }
 
         public string GetThumbnailPath(Ulid assetId) {
@@ -291,16 +332,32 @@ namespace _4OF.ee4v.AssetManager.Data {
             catch (Exception e) {
                 Debug.LogError($"[JsonAssetRepository] Failed to set folder thumbnail: {e.Message}");
             }
+            finally {
+                try {
+                    LibraryChanged?.Invoke();
+                }
+                catch {
+                    // ignore
+                }
+            }
         }
 
         public void RemoveFolderThumbnail(Ulid folderId) {
             var path = GetFolderThumbnailPath(folderId);
-            if (!File.Exists(path)) return;
+            if (File.Exists(path)) return;
             try {
                 File.Delete(path);
             }
             catch (Exception e) {
                 Debug.LogError($"[JsonAssetRepository] Failed to delete folder thumbnail: {e.Message}");
+            }
+            finally {
+                try {
+                    LibraryChanged?.Invoke();
+                }
+                catch (Exception) {
+                    /* ignore */
+                }
             }
         }
 

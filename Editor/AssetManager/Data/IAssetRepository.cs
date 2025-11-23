@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using _4OF.ee4v.Core.Utility;
 
@@ -25,5 +26,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         string GetFolderThumbnailPath(Ulid folderId);
         Task<byte[]> GetFolderThumbnailDataAsync(Ulid folderId);
         List<string> GetAllTags();
+        event Action LibraryChanged;
+        event Action<Ulid> AssetChanged;
     }
 }

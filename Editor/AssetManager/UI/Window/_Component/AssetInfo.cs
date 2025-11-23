@@ -30,6 +30,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private Ulid _currentAssetFolderId;
         private BaseFolder _currentFolder;
         private FolderService _folderService;
+
+        private IReadOnlyList<object> _lastSelection;
         private IAssetRepository _repository;
         private TextureService _textureService;
 
@@ -232,7 +234,67 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _repository = repository;
             _textureService = textureService;
             _folderService = folderService;
+            if (_repository != null) {
+                _repository.LibraryChanged += OnRepositoryLibraryChanged;
+                _repository.AssetChanged += OnRepositoryAssetChanged;
+                RegisterCallback<DetachFromPanelEvent>(_ =>
+                {
+                    try {
+                        _repository.LibraryChanged -= OnRepositoryLibraryChanged;
+                        _repository.AssetChanged -= OnRepositoryAssetChanged;
+                    }
+                    catch {
+                        // ignore
+                    }
+                });
+            }
+
             UpdateSelection(null);
+        }
+
+        private void OnRepositoryLibraryChanged() {
+            EditorApplication.delayCall += () =>
+            {
+                try {
+                    if (_lastSelection == null || _lastSelection.Count == 0) {
+                        ShowLibraryInfo();
+                    }
+                    else if (_lastSelection.Count == 1) {
+                        var item = _lastSelection[0];
+                        switch (item) {
+                            case AssetMetadata a:
+                                var fresh = _repository?.GetAsset(a.ID);
+                                if (fresh != null) SetAsset(fresh);
+                                else UpdateSelection(null);
+                                break;
+                            case BaseFolder f:
+                                var freshFolder = _repository?.GetLibraryMetadata()?.GetFolder(f.ID);
+                                if (freshFolder != null) SetFolder(freshFolder);
+                                else UpdateSelection(null);
+                                break;
+                        }
+                    }
+                }
+                catch {
+                    // ignore
+                }
+            };
+        }
+
+        private void OnRepositoryAssetChanged(Ulid id) {
+            EditorApplication.delayCall += () =>
+            {
+                try {
+                    if (_lastSelection is not { Count: 1 }) return;
+                    if (_currentAsset == null || _currentAsset.ID != id) return;
+                    var fresh = _repository?.GetAsset(id);
+                    if (fresh != null) SetAsset(fresh);
+                    else UpdateSelection(null);
+                }
+                catch {
+                    // ignore
+                }
+            };
         }
 
         private void OpenTagSelector() {
@@ -258,6 +320,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         public void UpdateSelection(IReadOnlyList<object> selectedItems) {
+            _lastSelection = selectedItems;
             if (selectedItems == null || selectedItems.Count == 0) {
                 ShowLibraryInfo();
             }
