@@ -163,28 +163,28 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         private void ShowSortMenu() {
-            var menu = new GenericMenu();
-            menu.AddItem(new GUIContent("Date Added (Newest)"), false,
+            var menu = new GenericDropdownMenu();
+            menu.AddItem("Date Added (Newest)", false,
                 () => OnSortChanged?.Invoke(AssetSortType.DateAddedNewest));
-            menu.AddItem(new GUIContent("Date Added (Oldest)"), false,
+            menu.AddItem("Date Added (Oldest)", false,
                 () => OnSortChanged?.Invoke(AssetSortType.DateAddedOldest));
             menu.AddSeparator("");
-            menu.AddItem(new GUIContent("Name (A-Z)"), false, () => OnSortChanged?.Invoke(AssetSortType.NameAsc));
-            menu.AddItem(new GUIContent("Name (Z-A)"), false, () => OnSortChanged?.Invoke(AssetSortType.NameDesc));
+            menu.AddItem("Name (A-Z)", false, () => OnSortChanged?.Invoke(AssetSortType.NameAsc));
+            menu.AddItem("Name (Z-A)", false, () => OnSortChanged?.Invoke(AssetSortType.NameDesc));
             menu.AddSeparator("");
-            menu.AddItem(new GUIContent("Last Edit (Newest)"), false,
+            menu.AddItem("Last Edit (Newest)", false,
                 () => OnSortChanged?.Invoke(AssetSortType.DateNewest));
-            menu.AddItem(new GUIContent("Last Edit (Oldest)"), false,
+            menu.AddItem("Last Edit (Oldest)", false,
                 () => OnSortChanged?.Invoke(AssetSortType.DateOldest));
             menu.AddSeparator("");
-            menu.AddItem(new GUIContent("Size (Smallest)"), false,
+            menu.AddItem("Size (Smallest)", false,
                 () => OnSortChanged?.Invoke(AssetSortType.SizeSmallest));
-            menu.AddItem(new GUIContent("Size (Largest)"), false,
+            menu.AddItem("Size (Largest)", false,
                 () => OnSortChanged?.Invoke(AssetSortType.SizeLargest));
             menu.AddSeparator("");
-            menu.AddItem(new GUIContent("Filetype (A-Z)"), false, () => OnSortChanged?.Invoke(AssetSortType.ExtAsc));
-            menu.AddItem(new GUIContent("Filetype (Z-A)"), false, () => OnSortChanged?.Invoke(AssetSortType.ExtDesc));
-            menu.ShowAsContext();
+            menu.AddItem("Filetype (A-Z)", false, () => OnSortChanged?.Invoke(AssetSortType.ExtAsc));
+            menu.AddItem("Filetype (Z-A)", false, () => OnSortChanged?.Invoke(AssetSortType.ExtDesc));
+            menu.DropDown(_sortLabel.worldBound, _sortLabel);
         }
     }
 
