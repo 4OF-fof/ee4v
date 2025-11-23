@@ -36,6 +36,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _navigation.NavigationChanged -= OnNavigationChanged;
                 _navigation.FolderSelected -= OnFolderSelected;
                 _navigation.TagListClicked -= OnTagListClicked;
+                _navigation.OnFolderRenamed -= OnFolderRenamed;
+                _navigation.OnFolderDeleted -= OnFolderDeleted;
             }
 
             if (_tagListView != null) _tagListView.OnTagSelected -= OnTagSelected;
@@ -111,6 +113,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _navigation.NavigationChanged += OnNavigationChanged;
             _navigation.FolderSelected += OnFolderSelected;
             _navigation.TagListClicked += OnTagListClicked;
+            _navigation.OnFolderRenamed += OnFolderRenamed;
+            _navigation.OnFolderDeleted += OnFolderDeleted;
+            _navigation.SetShowDialogCallback(ShowDialog);
 
             _tagListView.OnTagSelected += OnTagSelected;
             _tagListView.OnTagRenamed += OnTagRenamed;
@@ -225,6 +230,20 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private void OnTagDeleted(string tag) {
             _assetService.DeleteTag(tag);
             _tagListView.Refresh();
+            RefreshUI(false);
+        }
+
+        private void OnFolderRenamed(Ulid folderId, string newName) {
+            _folderService.RenameFolder(folderId, newName);
+            var folders = _folderService.GetFlatFolders();
+            _navigation.SetFolders(folders);
+            RefreshUI(false);
+        }
+
+        private void OnFolderDeleted(Ulid folderId) {
+            _folderService.DeleteFolder(folderId);
+            var folders = _folderService.GetFlatFolders();
+            _navigation.SetFolders(folders);
             RefreshUI(false);
         }
 

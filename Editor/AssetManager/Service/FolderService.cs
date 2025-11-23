@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
@@ -117,6 +118,10 @@ namespace _4OF.ee4v.AssetManager.Service {
             _repository.SaveLibraryMetadata(libraries);
         }
 
+        public void RenameFolder(Ulid folderId, string newName) {
+            SetFolderName(folderId, newName);
+        }
+
         public void SetFolderDescription(Ulid folderId, string description) {
             var libraries = _repository.GetLibraryMetadata();
             var folder = libraries?.GetFolder(folderId);
@@ -180,11 +185,16 @@ namespace _4OF.ee4v.AssetManager.Service {
             return false;
         }
 
-        private HashSet<Ulid> GetSelfAndDescendants(BaseFolder root) {
+        private static HashSet<Ulid> GetSelfAndDescendants(BaseFolder root) {
             var set = new HashSet<Ulid> { root.ID };
             if (root is not Folder f) return set;
             foreach (var child in f.Children) set.UnionWith(GetSelfAndDescendants(child));
             return set;
+        }
+
+        public List<BaseFolder> GetFlatFolders() {
+            var libraries = _repository.GetLibraryMetadata();
+            return libraries?.FolderList.Where(f => f is not BoothItemFolder).ToList() ?? new List<BaseFolder>();
         }
     }
 }

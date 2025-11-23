@@ -13,6 +13,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private Ulid _currentSelectedFolderId = Ulid.Empty;
         private VisualElement _selectedFolderItem;
         private Label _selectedLabel;
+        private Func<VisualElement, VisualElement> _showDialogCallback;
 
         public Navigation() {
             style.flexDirection = FlexDirection.Column;
@@ -62,10 +63,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             Add(scrollView);
         }
 
+        public void SetShowDialogCallback(Func<VisualElement, VisualElement> callback) {
+            _showDialogCallback = callback;
+        }
+
         public event Action<NavigationMode, string, Func<AssetMetadata, bool>> NavigationChanged;
         public event Action<Ulid> FolderSelected;
         public event Action BoothItemClicked;
         public event Action TagListClicked;
+        public event Action<Ulid, string> OnFolderRenamed;
+        public event Action<Ulid> OnFolderDeleted;
 
         public void SetFolders(List<BaseFolder> folders) {
             folders ??= new List<BaseFolder>();
@@ -101,9 +108,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
                 itemContainer.RegisterCallback<PointerDownEvent>(evt =>
                 {
-                    if (evt.button != 0) return;
-                    OnFolderViewSelected((Ulid)itemContainer.userData, itemContainer);
-                    evt.StopPropagation();
+                    if (evt.button == 0) {
+                        OnFolderViewSelected((Ulid)itemContainer.userData, itemContainer);
+                        evt.StopPropagation();
+                    }
+                    else if (evt.button == 1) {
+                        ShowFolderContextMenu(itemContainer, folder.ID, folder.Name);
+                        evt.StopPropagation();
+                    }
                 });
 
                 _folderContainer.Add(itemContainer);
@@ -207,6 +219,81 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             SetSelectedFolderItem(folderItem);
             FolderSelected?.Invoke(folderId);
+        }
+
+        private void ShowFolderContextMenu(VisualElement target, Ulid folderId, string folderName) {
+            var menu = new GenericDropdownMenu();
+            menu.AddItem("Rename", false, () => ShowRenameFolderDialog(folderId, folderName));
+            menu.AddItem("Delete", false, () => DeleteFolder(folderId));
+
+            var rect = target.worldBound;
+            var menuRect = new Rect(rect.x, rect.yMax, Mathf.Max(rect.width, 100), 0);
+            menu.DropDown(menuRect, target);
+        }
+
+        private void ShowRenameFolderDialog(Ulid folderId, string oldName) {
+            if (_showDialogCallback == null) return;
+
+            var content = new VisualElement();
+
+            var title = new Label("Rename Folder") {
+                style = {
+                    fontSize = 14,
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    marginBottom = 10
+                }
+            };
+            content.Add(title);
+
+            var label = new Label("New folder name:") {
+                style = { marginBottom = 5 }
+            };
+            content.Add(label);
+
+            var textField = new TextField { value = oldName, style = { marginBottom = 10 } };
+            content.Add(textField);
+
+            var buttonRow = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    justifyContent = Justify.FlexEnd
+                }
+            };
+
+            var cancelBtn = new Button {
+                text = "Cancel",
+                style = { marginRight = 5 }
+            };
+            buttonRow.Add(cancelBtn);
+
+            var okBtn = new Button {
+                text = "OK"
+            };
+            buttonRow.Add(okBtn);
+
+            content.Add(buttonRow);
+
+            var dialogContainer = _showDialogCallback.Invoke(content);
+
+            cancelBtn.clicked += () => dialogContainer?.RemoveFromHierarchy();
+            okBtn.clicked += () =>
+            {
+                var newName = textField.value;
+                if (!string.IsNullOrWhiteSpace(newName) && newName != oldName)
+                    OnFolderRenamed?.Invoke(folderId, newName);
+
+                dialogContainer?.RemoveFromHierarchy();
+            };
+
+            content.schedule.Execute(() =>
+            {
+                textField.Focus();
+                textField.SelectAll();
+            });
+        }
+
+        private void DeleteFolder(Ulid folderId) {
+            OnFolderDeleted?.Invoke(folderId);
         }
     }
 }
