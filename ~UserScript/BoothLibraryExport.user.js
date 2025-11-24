@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         EE4V BOOTH Library Sync
 // @namespace    https://4of.dev
-// @version      0.1.0
+// @version      0.1.1
 // @description  Send your BOOTH library info to EE4V (Unity).
 // @match        https://accounts.booth.pm/library*
 // @match        https://accounts.booth.pm/library/gifts*
@@ -113,8 +113,6 @@
         overlay.style.display = "none";
     };
 
-
-    // extraction logic
     const storePattern = /^https:\/\/[a-zA-Z0-9-]+\.booth\.pm\/$/;
     const itemPattern = /^https:\/\/booth\.pm\/[^/]+\/items\/\d+/;
     const dlPattern = /^https:\/\/booth\.pm\/downloadables\/\d+/;
@@ -204,6 +202,10 @@
         return result;
     }
 
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     async function runExtract() {
         statusText.textContent = "抽出中...";
         const targets = [
@@ -217,33 +219,37 @@
         for (const base of targets) {
             const first = await fetchPage(base);
             const maxPage = Math.max(...[...first.querySelectorAll("a")]
-                .map(a => (a.href.match(pagePattern) || [0,1])[1]).map(Number));
+                .map(a => (a.href.match(pagePattern) || [0, 1])[1]).map(Number));
 
             const infoFirst = extractLinks(first);
             const gFirst = groupByItem(infoFirst);
             groups.push(...gFirst);
-            gFirst.forEach(g => items.push(g.find(x=>x.type==="item")?.url));
+            gFirst.forEach(g => items.push(g.find(x => x.type === "item")?.url));
 
-            for (let p=2; p<=maxPage; p++) {
+            for (let p = 2; p <= maxPage; p++) {
                 const dom = await fetchPage(`${base}?page=${p}`);
                 const info = extractLinks(dom);
                 const g = groupByItem(info);
                 groups.push(...g);
-                g.forEach(group => items.push(group.find(x=>x.type==="item")?.url));
+                g.forEach(group => items.push(group.find(x => x.type === "item")?.url));
             }
         }
 
         items = [...new Set(items)].filter(Boolean);
         const map = {};
 
+        let index = 1;
         for (const item of items) {
-            statusText.textContent = `詳細取得中... (${items.indexOf(item)+1}/${items.length})`;
+            statusText.textContent = `詳細取得中... (${index}/${items.length})`;
+
             map[item] = await fetchItemInfo(item);
+
+            await sleep(1000);
+            index++;
         }
 
         return merge(groups, map);
     }
-
 
     function sendToUnity(json) {
         statusText.textContent = "Unity へ送信中...";
