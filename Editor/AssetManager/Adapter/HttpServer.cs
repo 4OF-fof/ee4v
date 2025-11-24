@@ -116,11 +116,11 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             var req = ctx.Request;
             var resp = ctx.Response;
             try {
+                // GET / -> health status (only 'waiting' or 'working')
                 if (req.HttpMethod.Equals("GET", StringComparison.OrdinalIgnoreCase) &&
-                    (req.Url.AbsolutePath == "/health" || req.Url.AbsolutePath == "/health/")) {
-                    var uptime = (DateTime.UtcNow - _startedAt).TotalSeconds;
-                    var body =
-                        $"{{\"status\":\"ok\", \"uptimeSeconds\": {uptime:F1}, \"startedAt\": \"{_startedAt:o}\" }}";
+                    (req.Url.AbsolutePath == "/" || req.Url.AbsolutePath == "")) {
+                    var status = BoothLibraryServerState.Status ?? "waiting";
+                    var body = $"{{\"status\":\"{status}\"}}";
                     var data = Encoding.UTF8.GetBytes(body);
                     resp.StatusCode = 200;
                     resp.ContentType = "application/json; charset=utf-8";
@@ -128,8 +128,9 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                     resp.ContentLength64 = data.Length;
                     resp.OutputStream.Write(data, 0, data.Length);
                 }
+                // POST / -> same behavior as previous /contents endpoint (receive JSON array or wrapper)
                 else if (req.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase) &&
-                         (req.Url.AbsolutePath == "/contents" || req.Url.AbsolutePath == "/contents/")) {
+                         (req.Url.AbsolutePath == "/" || req.Url.AbsolutePath == "")) {
                     // Expect a JSON array of shops
                     string body;
                     using (var reader = new StreamReader(req.InputStream, req.ContentEncoding)) {
@@ -156,7 +157,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                             }
                         }
                         catch (Exception ex) {
-                            Debug.LogWarning("Failed parsing JSON body for /contents: " + ex);
+                            Debug.LogWarning("Failed parsing JSON body for POST /: " + ex);
                         }
 
                         if (wrapper?.Shops == null) {
@@ -167,11 +168,31 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                             resp.OutputStream.Write(err, 0, err.Length);
                         }
                         else {
+                            // Import immediately on POST and return created count. Only update UI after successful import.
+                            int created = 0;
+                            try {
+                                created = BoothLibraryImporter.Import(wrapper.Shops);
+                            }
+                            catch (Exception ex) {
+                                Debug.LogError("Error importing shops on POST: " + ex);
+                                // but still return failure status
+                                resp.StatusCode = 500;
+                                resp.ContentType = "application/json; charset=utf-8";
+                                var errStr = $"{{\"ok\":false, \"error\": \"Import failed: {ex.Message.Replace("\"", "\\\"") }\"}}";
+                                var err = Encoding.UTF8.GetBytes(errStr);
+                                resp.ContentLength64 = err.LongLength;
+                                resp.OutputStream.Write(err, 0, err.Length);
+                                return;
+                            }
+
+                            // reflect to UI only after successful import
                             BoothLibraryServerState.SetContents(wrapper.Shops);
+
                             resp.StatusCode = 200;
                             resp.ContentType = "application/json; charset=utf-8";
-                            var ok = Encoding.UTF8.GetBytes("{\"ok\":true}");
-                            resp.ContentLength64 = ok.Length;
+                            var okStr = $"{{\"ok\":true, \"created\":{created}}}";
+                            var ok = Encoding.UTF8.GetBytes(okStr);
+                            resp.ContentLength64 = ok.LongLength;
                             resp.OutputStream.Write(ok, 0, ok.Length);
                         }
                     }
@@ -204,7 +225,6 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
     public abstract class BoothLibraryAdapter {
         static BoothLibraryAdapter() {
-            // Keep stability hooks but do not auto-start the server; server will be started when window is opened.
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             EditorApplication.quitting += OnEditorQuitting;
@@ -220,11 +240,6 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
         private static void OnEditorQuitting() {
             HttpServer.Stop();
-        }
-
-        [MenuItem("ee4v/Open Window")]
-        private static void OpenWindowMenu() {
-            BoothLibraryWindow.ShowWindow();
         }
     }
 }

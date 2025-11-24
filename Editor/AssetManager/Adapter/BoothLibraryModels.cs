@@ -32,6 +32,8 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
     public static class BoothLibraryServerState {
         private static readonly ConcurrentQueue<List<ShopDto>> Pending = new();
+        private static bool _isProcessing;
+        private static readonly object StatusLock = new();
         private static List<ShopDto> _lastContents = new();
         public static IReadOnlyList<ShopDto> LastContents => _lastContents;
 
@@ -52,6 +54,23 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
         public static void Clear() {
             _lastContents = new List<ShopDto>();
+        }
+
+        // Control processing flag used to indicate when an import operation is actively running.
+        public static void SetProcessing(bool processing) {
+            lock (StatusLock) {
+                _isProcessing = processing;
+            }
+        }
+
+        // Expose a simple status for health checks. "working" if processing or pending items exist, otherwise "waiting".
+        public static string Status {
+            get {
+                lock (StatusLock) {
+                    if (_isProcessing) return "working";
+                    return Pending.IsEmpty ? "waiting" : "working";
+                }
+            }
         }
     }
 }

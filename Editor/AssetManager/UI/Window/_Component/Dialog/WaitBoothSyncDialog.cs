@@ -1,9 +1,12 @@
+using System;
+using _4OF.ee4v.AssetManager.Adapter;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
     public static class WaitBoothSyncDialog {
         private const string BoothLibraryUrl = "https://accounts.booth.pm/library";
+        private const int LocalHttpPort = 58080;
 
         public static VisualElement CreateContent() {
             var content = new VisualElement();
@@ -54,7 +57,27 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
 
             content.Add(closeRow);
 
+            try {
+                if (!HttpServer.IsRunning) HttpServer.Start(LocalHttpPort);
+            }
+            catch (Exception ex) {
+                Debug.LogWarning($"Failed to start local HttpServer on port {LocalHttpPort}: {ex}");
+                var errLabel = new Label($"ローカル HTTP サーバの起動に失敗しました: {ex.Message}") {
+                    style = { marginBottom = 8, unityTextAlign = TextAnchor.MiddleLeft, color = new Color(0.8f, 0.2f, 0.2f) }
+                };
+                content.Add(errLabel);
+            }
+
             content.schedule.Execute(() => Application.OpenURL(BoothLibraryUrl));
+
+            content.RegisterCallback<DetachFromPanelEvent>(_ => {
+                try {
+                    if (HttpServer.IsRunning) HttpServer.Stop();
+                }
+                catch (Exception ex) {
+                    Debug.LogWarning($"Error while stopping local HttpServer from detach event: {ex}");
+                }
+            });
 
             return content;
         }
@@ -62,6 +85,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
         private static void CloseDialog(VisualElement content) {
             var dialog = content.parent;
             var container = dialog?.parent;
+
+            try {
+                if (HttpServer.IsRunning) HttpServer.Stop();
+            }
+            catch (Exception ex) {
+                Debug.LogWarning($"Error while stopping local HttpServer: {ex}");
+            }
+
             container?.RemoveFromHierarchy();
         }
     }
