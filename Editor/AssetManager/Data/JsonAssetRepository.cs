@@ -193,7 +193,40 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public void SaveAsset(AssetMetadata asset) {
+            if (asset == null) return;
             var assetDir = Path.Combine(_assetRootDir, asset.ID.ToString());
+            try {
+                var lib = _libraryCache.Libraries;
+                if (lib != null && asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.ItemID)) {
+                    var identifier = asset.BoothData.ItemID;
+                    BoothItemFolder found = null;
+                    foreach (var root in lib.FolderList) {
+                        found = FindBoothItemFolderRecursive(root, asset.BoothData.ShopDomain ?? string.Empty, identifier);
+                        if (found != null) break;
+                    }
+
+                    if (found == null) {
+                        var newFolder = new BoothItemFolder();
+                        newFolder.SetName(identifier ?? (asset.BoothData.FileName ?? asset.Name ?? "Booth Item"));
+                        newFolder.SetDescription(asset.BoothData.FileName ?? string.Empty);
+                        newFolder.SetShopDomain(asset.BoothData.ShopDomain ?? string.Empty);
+                        if (!string.IsNullOrEmpty(identifier) && identifier.All(char.IsDigit)) newFolder.SetItemId(identifier);
+
+                        lib.AddFolder(newFolder);
+                        SaveLibraryMetadata(lib);
+
+                        found = newFolder;
+                    }
+
+                    if (asset.Folder == Ulid.Empty) {
+                        asset.SetFolder(found.ID);
+                    }
+                }
+            }
+            catch {
+                // ignore
+            }
+
             if (!Directory.Exists(assetDir)) Directory.CreateDirectory(assetDir);
 
             var json = JsonConvert.SerializeObject(asset, _serializerSettings);
@@ -423,9 +456,9 @@ namespace _4OF.ee4v.AssetManager.Data {
                 if (cache?.Metadata == null) return false;
 
                 _libraryCache.SetLibrary(cache.Metadata);
-                if (cache.Assets != null)
-                    foreach (var asset in cache.Assets)
-                        _libraryCache.UpsertAsset(asset);
+                if (cache.Assets == null) return true;
+                foreach (var asset in cache.Assets)
+                    _libraryCache.UpsertAsset(asset);
 
                 return true;
             }
@@ -444,6 +477,35 @@ namespace _4OF.ee4v.AssetManager.Data {
                 a.Ext == b.Ext &&
                 a.Folder == b.Folder &&
                 tagsA.SetEquals(tagsB);
+        }
+
+        private static BoothItemFolder FindBoothItemFolderRecursive(BaseFolder root, string shopDomain,
+            string identifier) {
+            switch (root) {
+                case null:
+                    break;
+                case BoothItemFolder bf when !string.IsNullOrEmpty(shopDomain) &&
+                    !string.IsNullOrEmpty(bf.ShopDomain) &&
+                    bf.ShopDomain != shopDomain:
+                    break;
+                case BoothItemFolder bf: {
+                    if (!string.IsNullOrEmpty(identifier))
+                        if ((!string.IsNullOrEmpty(bf.ItemId) && bf.ItemId == identifier) || bf.Name == identifier)
+                            return bf;
+
+                    break;
+                }
+                case Folder { Children: not null } f: {
+                    foreach (var c in f.Children) {
+                        var found = FindBoothItemFolderRecursive(c, shopDomain, identifier);
+                        if (found != null) return found;
+                    }
+
+                    break;
+                }
+            }
+
+            return null;
         }
 
         private class LibraryCacheSchema {
