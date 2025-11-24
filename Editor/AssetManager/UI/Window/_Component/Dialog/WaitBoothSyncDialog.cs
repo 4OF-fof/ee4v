@@ -3,22 +3,23 @@ using _4OF.ee4v.AssetManager.Adapter;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-// System.IO not required after removing file-open UI
-
 namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
     public static class WaitBoothSyncDialog {
         private const string BoothLibraryUrl = "https://accounts.booth.pm/library";
         private const int LocalHttpPort = 58080;
 
         public static VisualElement CreateContent() {
-            var content = new VisualElement();
-            content.style.paddingLeft = 18;
-            content.style.paddingRight = 18;
-            content.style.paddingTop = 14;
-            content.style.paddingBottom = 14;
-            content.style.alignSelf = Align.Stretch;
-            content.style.maxWidth = 820;
-            content.style.flexDirection = FlexDirection.Column;
+            var content = new VisualElement {
+                style = {
+                    paddingLeft = 18,
+                    paddingRight = 18,
+                    paddingTop = 14,
+                    paddingBottom = 14,
+                    alignSelf = Align.Stretch,
+                    maxWidth = 820,
+                    flexDirection = FlexDirection.Column
+                }
+            };
 
             var title = new Label("Import from Booth") {
                 style = {

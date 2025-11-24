@@ -143,7 +143,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                         ShopListDtp wrapper = null;
                         try {
                             if (trim.Length > 0 && trim[0] == '[') {
-                                var wrapped = "{\"Shops\": " + body + "}";
+                                var wrapped = "{\"shopList\": " + body + "}";
                                 wrapper = JsonUtility.FromJson<ShopListDtp>(wrapped);
                             }
                             else {
