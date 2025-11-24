@@ -163,6 +163,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             var folder = _repository?.GetLibraryMetadata()?.GetFolder(asset.Folder);
 
+            var dependencies = GetDependencies(asset);
+
             var data = new AssetDisplayData {
                 Id = asset.ID,
                 Name = asset.Name,
@@ -172,7 +174,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 Extension = asset.Ext.TrimStart('.').ToUpper(),
                 ModificationTime = DateTimeOffset.FromUnixTimeMilliseconds(asset.ModificationTime).ToLocalTime(),
                 FolderId = asset.Folder,
-                FolderName = folder?.Name ?? "-"
+                FolderName = folder?.Name ?? "-",
+                Dependencies = dependencies
             };
 
             AssetDataUpdated?.Invoke(data);
@@ -201,7 +204,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             string shopUrl = null;
             string itemUrl = null;
             string itemId = null;
-            
+
             if (folder is BoothItemFolder boothFolder) {
                 shopName = boothFolder.ShopName;
                 shopUrl = boothFolder.ShopUrl;
@@ -254,9 +257,25 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             return null;
         }
+
+        private List<DependencyDisplayData> GetDependencies(AssetMetadata asset) {
+            var result = new List<DependencyDisplayData>();
+            if (asset?.UnityData?.DependenceItemList == null || _repository == null) return result;
+
+            result.AddRange(from depId in asset.UnityData.DependenceItemList
+                select _repository.GetAsset(depId)
+                into depAsset
+                where depAsset is {
+                    IsDeleted: false
+                }
+                select new DependencyDisplayData { Id = depAsset.ID, Name = depAsset.Name });
+
+            return result;
+        }
     }
 
     public class AssetDisplayData {
+        public IReadOnlyList<DependencyDisplayData> Dependencies;
         public string Description;
         public string Extension;
         public Ulid FolderId;
@@ -272,23 +291,28 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public int AssetCount;
         public string Description;
         public Ulid Id;
-        public bool IsFolder;
         public bool IsBoothItemFolder;
+        public bool IsFolder;
+        public string ItemId;
+        public string ItemUrl;
         public DateTimeOffset ModificationTime;
         public string Name;
         public Ulid ParentFolderId;
         public string ParentFolderName;
-        public int SubFolderCount;
-        public IReadOnlyList<string> Tags;
         public string ShopName;
         public string ShopUrl;
-        public string ItemUrl;
-        public string ItemId;
+        public int SubFolderCount;
+        public IReadOnlyList<string> Tags;
     }
 
     public class LibraryDisplayData {
         public int TotalAssets;
         public long TotalSize;
         public int TotalTags;
+    }
+
+    public class DependencyDisplayData {
+        public Ulid Id;
+        public string Name;
     }
 }

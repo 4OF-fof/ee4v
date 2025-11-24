@@ -10,6 +10,9 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public class AssetInfo : VisualElement {
+        private readonly Button _addDependencyButton;
+        private readonly VisualElement _dependenciesContainer;
+        private readonly Label _dependenciesLabel;
         private readonly TextField _descriptionField;
 
         private readonly Label _folderHeader;
@@ -26,6 +29,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly VisualElement _thumbnailContainer;
 
         private Ulid _currentAssetFolderId;
+        private Ulid _currentAssetId;
         private AssetInfoPresenter _presenter;
 
         public AssetInfo() {
@@ -201,6 +205,50 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             });
             _singleSelectionContainer.Add(addTagButton);
 
+            _dependenciesLabel = new Label("Dependencies")
+                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
+            _singleSelectionContainer.Add(_dependenciesLabel);
+
+            _dependenciesContainer = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    flexWrap = Wrap.Wrap,
+                    marginBottom = 10
+                }
+            };
+            _singleSelectionContainer.Add(_dependenciesContainer);
+
+            _addDependencyButton = new Button(OpenDependencySelector) {
+                text = "+ Add Dependency",
+                style = {
+                    backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f)),
+                    borderTopLeftRadius = 10,
+                    borderTopRightRadius = 10,
+                    borderBottomLeftRadius = 10,
+                    borderBottomRightRadius = 10,
+                    paddingLeft = 10,
+                    paddingRight = 10,
+                    paddingTop = 4,
+                    paddingBottom = 4,
+                    height = 24,
+                    borderTopWidth = 0,
+                    borderBottomWidth = 0,
+                    borderLeftWidth = 0,
+                    borderRightWidth = 0,
+                    marginBottom = 10,
+                    width = Length.Percent(100)
+                }
+            };
+            _addDependencyButton.RegisterCallback<MouseEnterEvent>(_ =>
+            {
+                _addDependencyButton.style.backgroundColor = new StyleColor(new Color(0.4f, 0.4f, 0.4f));
+            });
+            _addDependencyButton.RegisterCallback<MouseLeaveEvent>(_ =>
+            {
+                _addDependencyButton.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+            });
+            _singleSelectionContainer.Add(_addDependencyButton);
+
             _multiSelectionContainer = new VisualElement {
                 style = { display = DisplayStyle.None, alignItems = Align.Center, marginTop = 20, marginBottom = 40 }
             };
@@ -226,6 +274,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<string> OnTagAdded;
         public event Action<string> OnTagRemoved;
         public event Action<string> OnTagClicked;
+        public event Action<Ulid> OnDependencyAdded;
+        public event Action<Ulid> OnDependencyRemoved;
+        public event Action<Ulid> OnDependencyClicked;
         public event Action<Ulid> OnFolderClicked;
 
         public void Initialize(IAssetRepository repository, TextureService textureService,
@@ -245,12 +296,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             OnTagAdded?.Invoke("");
         }
 
+        private void OpenDependencySelector() {
+            if (_currentAssetId == Ulid.Empty) return;
+            OnDependencyAdded?.Invoke(Ulid.Empty);
+        }
+
         public void UpdateSelection(IReadOnlyList<object> selectedItems) {
             _presenter?.UpdateSelection(selectedItems);
         }
 
         private void OnAssetDataUpdated(AssetDisplayData data) {
             ShowSingleSelection();
+            _currentAssetId = data.Id;
             _nameField.SetValueWithoutNotify(data.Name);
             _descriptionField.SetValueWithoutNotify(data.Description);
 
@@ -263,6 +320,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 });
 
             RefreshTags(data.Tags);
+            RefreshDependencies(data.Dependencies);
+
+            _dependenciesLabel.style.display = DisplayStyle.Flex;
+            _dependenciesContainer.style.display = DisplayStyle.Flex;
+            _addDependencyButton.style.display = DisplayStyle.Flex;
 
             _currentAssetFolderId = data.FolderId;
             if (data.FolderId != Ulid.Empty) {
@@ -286,6 +348,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             ShowSingleSelection();
             _nameField.SetValueWithoutNotify(data.Name);
             _descriptionField.SetValueWithoutNotify(data.Description);
+
+            _dependenciesLabel.style.display = DisplayStyle.None;
+            _dependenciesContainer.style.display = DisplayStyle.None;
+            _addDependencyButton.style.display = DisplayStyle.None;
 
             if (data.ParentFolderId != Ulid.Empty) {
                 _folderHeader.style.display = DisplayStyle.Flex;
@@ -314,12 +380,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             AddInfoRow("Modified", data.ModificationTime.ToString("yyyy/MM/dd HH:mm"));
 
             if (!data.IsBoothItemFolder) return;
-            if (!string.IsNullOrEmpty(data.ShopName)) {
-                AddInfoRowWithLink("Shop", data.ShopName, data.ShopUrl);
-            }
-            if (!string.IsNullOrEmpty(data.ItemId)) {
-                AddInfoRowWithLink("Item", data.ItemId, data.ItemUrl);
-            }
+            if (!string.IsNullOrEmpty(data.ShopName)) AddInfoRowWithLink("Shop", data.ShopName, data.ShopUrl);
+            if (!string.IsNullOrEmpty(data.ItemId)) AddInfoRowWithLink("Item", data.ItemId, data.ItemUrl);
         }
 
         private void OnLibraryDataUpdated(LibraryDisplayData data) {
@@ -426,6 +488,72 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
         }
 
+        private void RefreshDependencies(IReadOnlyList<DependencyDisplayData> dependencies) {
+            _dependenciesContainer.Clear();
+            if (dependencies == null) return;
+
+            foreach (var dependency in dependencies) {
+                var pill = new VisualElement {
+                    style = {
+                        flexDirection = FlexDirection.Row,
+                        backgroundColor = new StyleColor(new Color(0.2f, 0.3f, 0.5f)),
+                        borderTopLeftRadius = 10,
+                        borderTopRightRadius = 10,
+                        borderBottomLeftRadius = 10,
+                        borderBottomRightRadius = 10,
+                        paddingLeft = 8, paddingRight = 4, paddingTop = 2, paddingBottom = 2,
+                        marginRight = 4, marginBottom = 4,
+                        alignItems = Align.Center
+                    }
+                };
+
+                pill.RegisterCallback<PointerDownEvent>(evt =>
+                {
+                    if (evt.button != 0) return;
+                    OnDependencyClicked?.Invoke(dependency.Id);
+                    evt.StopPropagation();
+                });
+
+                var label = new Label(dependency.Name) { style = { marginRight = 4 } };
+
+                pill.RegisterCallback<MouseEnterEvent>(_ =>
+                {
+                    pill.style.backgroundColor = new StyleColor(new Color(0.3f, 0.4f, 0.6f));
+                });
+                pill.RegisterCallback<MouseLeaveEvent>(_ =>
+                {
+                    pill.style.backgroundColor = new StyleColor(new Color(0.2f, 0.3f, 0.5f));
+                });
+
+                var removeBtn = new Button(() => { OnDependencyRemoved?.Invoke(dependency.Id); }) {
+                    text = "×",
+                    style = {
+                        width = 16, height = 16,
+                        fontSize = 10,
+                        backgroundColor = Color.clear,
+                        borderTopWidth = 0, borderBottomWidth = 0, borderLeftWidth = 0, borderRightWidth = 0,
+                        paddingLeft = 0, paddingRight = 0
+                    }
+                };
+
+                removeBtn.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
+                removeBtn.RegisterCallback<MouseEnterEvent>(_ =>
+                {
+                    removeBtn.style.backgroundColor = ColorPreset.TabCloseButtonHover;
+                    removeBtn.style.color = Color.white;
+                });
+                removeBtn.RegisterCallback<MouseLeaveEvent>(_ =>
+                {
+                    removeBtn.style.backgroundColor = Color.clear;
+                    removeBtn.style.color = new StyleColor(StyleKeyword.Null);
+                });
+
+                pill.Add(label);
+                pill.Add(removeBtn);
+                _dependenciesContainer.Add(pill);
+            }
+        }
+
         private void AddInfoRow(string label, string value) {
             var row = new VisualElement {
                 style = {
@@ -438,7 +566,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             row.Add(new Label(value) { style = { flexGrow = 1, unityTextAlign = TextAnchor.MiddleRight } });
             _infoContainer.Add(row);
         }
-        
+
         private void AddInfoRowWithLink(string label, string displayText, string url) {
             var row = new VisualElement {
                 style = {
@@ -448,7 +576,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 }
             };
             row.Add(new Label(label) { style = { color = Color.gray, width = 80 } });
-            
+
             var linkLabel = new Label(displayText) {
                 style = {
                     flexGrow = 1,
@@ -456,22 +584,25 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     color = new StyleColor(new Color(0.4f, 0.6f, 1.0f))
                 }
             };
-            
+
             if (!string.IsNullOrEmpty(url)) {
-                linkLabel.RegisterCallback<PointerDownEvent>(evt => {
+                linkLabel.RegisterCallback<PointerDownEvent>(evt =>
+                {
                     if (evt.button != 0) return;
                     Application.OpenURL(url);
                     evt.StopPropagation();
                 });
-                
-                linkLabel.RegisterCallback<MouseEnterEvent>(_ => {
+
+                linkLabel.RegisterCallback<MouseEnterEvent>(_ =>
+                {
                     linkLabel.style.color = new StyleColor(new Color(0.6f, 0.8f, 1.0f));
                 });
-                linkLabel.RegisterCallback<MouseLeaveEvent>(_ => {
+                linkLabel.RegisterCallback<MouseLeaveEvent>(_ =>
+                {
                     linkLabel.style.color = new StyleColor(new Color(0.4f, 0.6f, 1.0f));
                 });
             }
-            
+
             row.Add(linkLabel);
             _infoContainer.Add(row);
         }

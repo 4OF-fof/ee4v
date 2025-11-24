@@ -75,6 +75,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _assetInfo.OnTagAdded -= OnAssetTagAdded;
                 _assetInfo.OnTagRemoved -= OnAssetTagRemoved;
                 _assetInfo.OnTagClicked -= OnTagSelected;
+                _assetInfo.OnDependencyAdded -= OnDependencyAdded;
+                _assetInfo.OnDependencyRemoved -= OnDependencyRemoved;
+                _assetInfo.OnDependencyClicked -= OnDependencyClicked;
                 _assetInfo.OnFolderClicked -= OnFolderSelected;
             }
 
@@ -159,6 +162,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetInfo.OnTagAdded += OnAssetTagAdded;
             _assetInfo.OnTagRemoved += OnAssetTagRemoved;
             _assetInfo.OnTagClicked += OnTagSelected;
+            _assetInfo.OnDependencyAdded += OnDependencyAdded;
+            _assetInfo.OnDependencyRemoved += OnDependencyRemoved;
+            _assetInfo.OnDependencyClicked += OnDependencyClicked;
             _assetInfo.OnFolderClicked += OnFolderSelected;
 
             _toastManager = new ToastManager(root);
@@ -361,6 +367,55 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             _tagListView.Refresh();
             RefreshUI(false);
+        }
+
+        private void OnDependencyAdded(Ulid dependencyId) {
+            if (_selectedAsset == null) {
+                ShowToast("依存関係を追加するアセットが選択されていません", 3, ToastType.Error);
+                return;
+            }
+
+            if (dependencyId == Ulid.Empty) {
+                Vector2 screenPosition;
+                try {
+                    screenPosition = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+                }
+                catch {
+                    screenPosition = new Vector2(position.x + position.width / 2, position.y + position.height / 2);
+                }
+
+                AssetSelectorWindow.Show(screenPosition, _repository, _selectedAsset.ID, OnDependencyAdded);
+                return;
+            }
+
+            _selectedAsset.UnityData.AddDependenceItem(dependencyId);
+            _repository.SaveAsset(_selectedAsset);
+            RefreshUI(false);
+        }
+
+        private void OnDependencyRemoved(Ulid dependencyId) {
+            if (_selectedAsset == null) return;
+
+            _selectedAsset.UnityData.RemoveDependenceItem(dependencyId);
+            _repository.SaveAsset(_selectedAsset);
+            RefreshUI(false);
+        }
+
+        private void OnDependencyClicked(Ulid dependencyId) {
+            var depAsset = _repository.GetAsset(dependencyId);
+            if (depAsset == null || depAsset.IsDeleted) {
+                ShowToast("依存関係先のアセットが見つかりません", 3, ToastType.Error);
+                return;
+            }
+
+            var folder = depAsset.Folder;
+            if (folder != Ulid.Empty) {
+                _navigation.SelectState(NavigationMode.Folders, folder);
+                OnFolderSelected(folder);
+            }
+            else {
+                _navigation.SelectAll();
+            }
         }
 
         private void OnTagRenamed(string oldTag, string newTag) {
