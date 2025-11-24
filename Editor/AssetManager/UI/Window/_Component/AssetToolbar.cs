@@ -36,6 +36,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     alignContent = Align.Center
                 }
             };
+            _breadcrumbContainer.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            _breadcrumbContainer.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             _breadcrumbContainer.contentContainer.style.flexDirection = FlexDirection.Row;
             _breadcrumbContainer.contentContainer.style.alignItems = Align.Center;
             Add(_breadcrumbContainer);
