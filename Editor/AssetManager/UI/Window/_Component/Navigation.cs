@@ -49,45 +49,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             style.paddingRight = 6;
             style.paddingTop = 6;
 
-            var createAssetButton = new Button {
-                text = "+ New Asset",
-                style = {
-                    marginBottom = 10,
-                    marginLeft = 4,
-                    marginRight = 4,
-                    paddingLeft = 12,
-                    paddingRight = 12,
-                    paddingTop = 8,
-                    paddingBottom = 8,
-                    borderTopLeftRadius = 16,
-                    borderTopRightRadius = 16,
-                    borderBottomLeftRadius = 16,
-                    borderBottomRightRadius = 16,
-                    backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.8f),
-                    color = Color.white,
-                    unityFontStyleAndWeight = FontStyle.Bold,
-                    fontSize = 12,
-                    borderTopWidth = 0,
-                    borderBottomWidth = 0,
-                    borderLeftWidth = 0,
-                    borderRightWidth = 0
-                }
-            };
-
-            createAssetButton.RegisterCallback<PointerEnterEvent>(_ =>
-            {
-                createAssetButton.style.backgroundColor = new Color(0.4f, 0.6f, 0.9f, 1.0f);
-            });
-
-            createAssetButton.RegisterCallback<PointerLeaveEvent>(_ =>
-            {
-                createAssetButton.style.backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.8f);
-            });
-
-            createAssetButton.clicked += ShowCreateAssetDialog;
-
-            Add(createAssetButton);
-
             CreateNavLabel("All items", () => FireNav(NavigationMode.AllItems, "All Items", a => !a.IsDeleted));
             CreateNavLabel("Booth Items", () =>
             {
@@ -171,6 +132,46 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
             scrollView.Add(_folderContainer);
             Add(scrollView);
+
+            var createAssetButton = new Button {
+                text = "+ New Asset",
+                style = {
+                    marginTop = 10,
+                    marginBottom = 10,
+                    marginLeft = 4,
+                    marginRight = 4,
+                    paddingLeft = 12,
+                    paddingRight = 12,
+                    paddingTop = 8,
+                    paddingBottom = 8,
+                    borderTopLeftRadius = 16,
+                    borderTopRightRadius = 16,
+                    borderBottomLeftRadius = 16,
+                    borderBottomRightRadius = 16,
+                    backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.8f),
+                    color = Color.white,
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    fontSize = 12,
+                    borderTopWidth = 0,
+                    borderBottomWidth = 0,
+                    borderLeftWidth = 0,
+                    borderRightWidth = 0
+                }
+            };
+
+            createAssetButton.RegisterCallback<PointerEnterEvent>(_ =>
+            {
+                createAssetButton.style.backgroundColor = new Color(0.4f, 0.6f, 0.9f, 1.0f);
+            });
+
+            createAssetButton.RegisterCallback<PointerLeaveEvent>(_ =>
+            {
+                createAssetButton.style.backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.8f);
+            });
+
+            createAssetButton.clicked += ShowCreateAssetDialog;
+            
+            Add(createAssetButton);
         }
 
         public void SetShowDialogCallback(Func<VisualElement, VisualElement> callback) {
