@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using _4OF.ee4v.AssetManager.Data;
@@ -25,6 +26,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private object _lastSelectedReference;
         private float _lastWidth;
         private IAssetRepository _repository;
+        private bool _rightClickHandledByDown;
 
         private TextureService _textureService;
 
@@ -315,10 +317,29 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         private void OnCardPointerDown(PointerDownEvent evt) {
-            if (evt.button != 0) return;
             if (evt.currentTarget is not AssetCard card) return;
             var targetItem = card.userData;
             if (targetItem == null) return;
+
+            if (evt.button == 1) {
+                if (_selectedItems.Contains(targetItem)) {
+                    _selectedItems.Remove(targetItem);
+                    if (_lastSelectedReference == targetItem) _lastSelectedReference = null;
+                }
+                else {
+                    _selectedItems.Clear();
+                    _selectedItems.Add(targetItem);
+                    _lastSelectedReference = targetItem;
+                }
+
+                _listView.RefreshItems();
+                OnSelectionChange?.Invoke(_selectedItems.ToList());
+                _rightClickHandledByDown = true;
+                evt.StopPropagation();
+                return;
+            }
+
+            if (evt.button != 0) return;
 
             var currentParent = parent;
             while (currentParent != null) {
@@ -376,6 +397,95 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             evt.StopPropagation();
         }
 
+        private void ShowContextMenu(AssetCard card, object targetItem, Rect? anchor = null) {
+            var menu = new GenericDropdownMenu();
+
+            switch (targetItem) {
+                case AssetMetadata asset: {
+                    var thumbPath = _repository?.GetThumbnailPath(asset.ID);
+                    var hasThumb = !string.IsNullOrEmpty(thumbPath) && File.Exists(thumbPath);
+
+                    menu.AddItem("サムネイルを設定...", false, () =>
+                    {
+                        var path = EditorUtility.OpenFilePanel("Select Thumbnail", "", "png,jpg,jpeg");
+                        if (string.IsNullOrEmpty(path)) return;
+                        _repository?.SetThumbnail(asset.ID, path);
+                        LoadImageAsync(card, asset.ID, false);
+                    });
+
+                    if (hasThumb)
+                        menu.AddItem("サムネイルを削除", false, () =>
+                        {
+                            _repository?.RemoveThumbnail(asset.ID);
+                            card.SetThumbnail(null);
+                            _listView.RefreshItems();
+                        });
+
+                    menu.AddSeparator("");
+
+                    if (asset.IsDeleted) {
+                        menu.AddItem("物理削除", false, () =>
+                        {
+                            if (!EditorUtility.DisplayDialog("確認", "アセットを完全に削除しますか？この操作は取り消せません。", "削除", "キャンセル"))
+                                return;
+                            AssetManagerContainer.AssetService.DeleteAsset(asset.ID);
+                            _listView.RefreshItems();
+                        });
+
+                        menu.AddItem("復元", false, () =>
+                        {
+                            AssetManagerContainer.AssetService.RestoreAsset(asset.ID);
+                            _listView.RefreshItems();
+                        });
+                    }
+                    else {
+                        menu.AddItem("アセットを削除", false, () =>
+                        {
+                            if (!EditorUtility.DisplayDialog("確認", "アセットを削除しますか？ (ソフト削除) ", "削除", "キャンセル")) return;
+                            AssetManagerContainer.AssetService.RemoveAsset(asset.ID);
+                            _listView.RefreshItems();
+                        });
+                    }
+
+                    break;
+                }
+                case BaseFolder folder: {
+                    var folderThumbPath = _repository?.GetFolderThumbnailPath(folder.ID);
+                    var hasThumb = !string.IsNullOrEmpty(folderThumbPath) && File.Exists(folderThumbPath);
+
+                    menu.AddItem("フォルダのサムネイルを設定...", false, () =>
+                    {
+                        var path = EditorUtility.OpenFilePanel("Select Folder Thumbnail", "", "png,jpg,jpeg");
+                        if (string.IsNullOrEmpty(path)) return;
+                        AssetManagerContainer.FolderService.SetFolderThumbnail(folder.ID, path);
+                        LoadImageAsync(card, folder.ID, true);
+                    });
+
+                    if (hasThumb)
+                        menu.AddItem("フォルダのサムネイルを削除", false, () =>
+                        {
+                            AssetManagerContainer.FolderService.RemoveFolderThumbnail(folder.ID);
+                            card.SetThumbnail(null, true);
+                            _listView.RefreshItems();
+                        });
+
+                    menu.AddSeparator("");
+                    menu.AddItem("フォルダを削除", false, () =>
+                    {
+                        if (!EditorUtility.DisplayDialog("確認", "フォルダを削除しますか？フォルダ内のアセットは削除済みに移行されます。", "削除", "キャンセル"))
+                            return;
+                        AssetManagerContainer.FolderService.DeleteFolder(folder.ID);
+                        _listView.RefreshItems();
+                    });
+
+                    break;
+                }
+            }
+
+            var rect = anchor ?? card.worldBound;
+            menu.DropDown(rect, card);
+        }
+
         private void OnCardPointerMove(PointerMoveEvent evt) {
             if (evt.pressedButtons != 1 || _isDragging) return;
             if (evt.currentTarget is not AssetCard card) return;
@@ -416,6 +526,43 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         private void OnCardPointerUp(PointerUpEvent evt) {
+            if (evt.button == 1 && evt.currentTarget is AssetCard card) {
+                var targetItem = card.userData;
+                if (targetItem != null) {
+                    if (_rightClickHandledByDown) {
+                        _rightClickHandledByDown = false;
+                    }
+                    else {
+                        if (_selectedItems.Contains(targetItem)) {
+                            _selectedItems.Remove(targetItem);
+                            if (_lastSelectedReference == targetItem) _lastSelectedReference = null;
+                        }
+                        else {
+                            _selectedItems.Clear();
+                            _selectedItems.Add(targetItem);
+                            _lastSelectedReference = targetItem;
+                        }
+
+                        _listView.RefreshItems();
+                        OnSelectionChange?.Invoke(_selectedItems.ToList());
+                    }
+
+                    Rect anchorRect;
+                    try {
+                        var worldPos = card.LocalToWorld(evt.localPosition);
+                        anchorRect = new Rect(worldPos.x, worldPos.y, 1, 1);
+                    }
+                    catch {
+                        anchorRect = card.worldBound;
+                    }
+
+                    ShowContextMenu(card, targetItem, anchorRect);
+                    evt.StopPropagation();
+                    _isDragging = false;
+                    return;
+                }
+            }
+
             _isDragging = false;
         }
 
