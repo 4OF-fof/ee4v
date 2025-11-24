@@ -31,6 +31,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _createAssetDialog = new CreateAssetDialog();
             _createAssetDialog.OnAssetCreated += (assetName, desc, fileOrUrl, tags, shop, item) =>
                 OnAssetCreated?.Invoke(assetName, desc, fileOrUrl, tags, shop, item);
+            _createAssetDialog.OnImportFromBoothRequested += () =>
+            {
+                if (_showDialogCallback == null) return;
+                var waitContent = WaitBoothSyncDialog.CreateContent();
+                _showDialogCallback.Invoke(waitContent);
+            };
 
             _createFolderDialog = new CreateFolderDialog();
             _createFolderDialog.OnFolderCreated += folderName => OnFolderCreated?.Invoke(folderName);
@@ -170,7 +176,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             });
 
             createAssetButton.clicked += ShowCreateAssetDialog;
-            
+
             Add(createAssetButton);
         }
 

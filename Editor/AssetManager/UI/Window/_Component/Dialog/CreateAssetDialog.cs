@@ -13,6 +13,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
         private IAssetRepository _repository;
 
         public event Action<string, string, string, List<string>, string, string> OnAssetCreated;
+        public event Action OnImportFromBoothRequested;
 
         public void SetRepository(IAssetRepository repository) {
             _repository = repository;
@@ -22,6 +23,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             _tempTags.Clear();
             var content = new VisualElement();
 
+
             var title = new Label("Create New Asset") {
                 style = {
                     fontSize = 14,
@@ -29,7 +31,41 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                     marginBottom = 10
                 }
             };
-            content.Add(title);
+            var titleRow = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    alignItems = Align.Center,
+                    position = Position.Relative
+                }
+            };
+
+            titleRow.Add(title);
+
+            var importBoothBtn = new Button {
+                text = "Import from Booth",
+                style = {
+                    position = Position.Absolute,
+                    right = 0,
+                    top = 0,
+                    marginRight = 0,
+                    marginTop = 0,
+                    marginBottom = 8,
+                    paddingLeft = 8,
+                    paddingRight = 8,
+                    height = 22,
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    fontSize = 11
+                }
+            };
+
+            importBoothBtn.clicked += () =>
+            {
+                CloseDialog(content);
+                OnImportFromBoothRequested?.Invoke();
+            };
+
+            titleRow.Add(importBoothBtn);
+            content.Add(titleRow);
 
             var nameLabel = new Label("Asset Name:") {
                 style = { marginBottom = 5 }
