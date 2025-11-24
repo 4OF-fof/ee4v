@@ -63,7 +63,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _nameField = CreateTextField(true);
             _nameField.style.marginBottom = 4;
-            _nameField.RegisterCallback<FocusOutEvent>(_ => { OnNameChanged?.Invoke(_nameField.value); });
+            _nameField.RegisterCallback<ChangeEvent<string>>(evt => { OnNameChanged?.Invoke(evt.newValue); });
+            _nameField.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode != KeyCode.Escape) return;
+                _nameField.Blur();
+                evt.StopPropagation();
+            });
             _singleSelectionContainer.Add(_nameField);
 
             var descriptionLabel = new Label("Description")
@@ -82,9 +88,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _descriptionField.multiline = true;
             _descriptionField.style.minHeight = 40;
 
-            _descriptionField.RegisterCallback<FocusOutEvent>(_ =>
+            _descriptionField.RegisterCallback<ChangeEvent<string>>(evt =>
             {
-                OnDescriptionChanged?.Invoke(_descriptionField.value);
+                OnDescriptionChanged?.Invoke(evt.newValue);
+            });
+            _descriptionField.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode != KeyCode.Escape) return;
+                _descriptionField.Blur();
+                evt.StopPropagation();
             });
 
             descriptionScrollView.Add(_descriptionField);
