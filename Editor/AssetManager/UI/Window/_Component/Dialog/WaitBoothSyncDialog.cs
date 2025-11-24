@@ -1,5 +1,6 @@
 using System;
 using _4OF.ee4v.AssetManager.Adapter;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -8,7 +9,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
         private const string BoothLibraryUrl = "https://accounts.booth.pm/library";
         private const int LocalHttpPort = 58080;
 
-        public static VisualElement CreateContent() {
+        public static VisualElement CreateContent(Func<VisualElement, VisualElement> showDialogCallback = null) {
             var content = new VisualElement {
                 style = {
                     paddingLeft = 18,
@@ -142,6 +143,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 content.Add(errLabel);
             }
 
+            var seenWorking = false;
+
+            BoothLibraryImporter.OnImportCompleted += OnImported;
+
+            EditorApplication.update += Poll;
+
             content.RegisterCallback<DetachFromPanelEvent>(_ =>
             {
                 try {
@@ -150,9 +157,81 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 catch (Exception ex) {
                     Debug.LogWarning($"Error while stopping local HttpServer from detach event: {ex}");
                 }
+
+                try {
+                    EditorApplication.update -= Poll;
+                }
+                catch {
+                    /* ignore */
+                }
+
+                try {
+                    BoothLibraryImporter.OnImportCompleted -= OnImported;
+                }
+                catch {
+                    /* ignore */
+                }
             });
 
             return content;
+
+            void Poll() {
+                try {
+                    var status = BoothLibraryServerState.Status ?? "waiting";
+                    if (status == "working") {
+                        seenWorking = true;
+                    }
+                    else if (seenWorking && status == "waiting") {
+                        EditorApplication.update -= Poll;
+                        CloseDialog(content);
+                        try {
+                            if (showDialogCallback != null && BoothThumbnailDownloader.TotalCount > 0)
+                                showDialogCallback.Invoke(DownloadThumbnailDialog.CreateContent());
+                        }
+                        catch (Exception ex) {
+                            Debug.LogWarning($"Failed opening DownloadThumbnailDialog: {ex}");
+                        }
+                    }
+                }
+                catch (Exception ex) {
+                    Debug.LogWarning($"Polling Booth server state failed: {ex}");
+                }
+            }
+
+            void OnImported(int created) {
+                try {
+                    EditorApplication.delayCall += () =>
+                    {
+                        Debug.Log(
+                            $"WaitBoothSyncDialog: detected import completed ({created}) — closing and opening DownloadThumbnailDialog");
+                        try {
+                            EditorApplication.update -= Poll;
+                        }
+                        catch {
+                            /* ignore */
+                        }
+
+                        try {
+                            BoothLibraryImporter.OnImportCompleted -= OnImported;
+                        }
+                        catch {
+                            /* ignore */
+                        }
+
+                        CloseDialog(content);
+                        try {
+                            if (BoothThumbnailDownloader.TotalCount > 0)
+                                showDialogCallback?.Invoke(DownloadThumbnailDialog.CreateContent());
+                        }
+                        catch (Exception ex) {
+                            Debug.LogWarning($"Failed opening DownloadThumbnailDialog: {ex}");
+                        }
+                    };
+                }
+                catch (Exception ex) {
+                    Debug.LogWarning($"OnImported handler failed: {ex}");
+                }
+            }
         }
 
         private static void CloseDialog(VisualElement content) {

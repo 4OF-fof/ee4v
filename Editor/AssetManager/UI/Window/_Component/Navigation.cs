@@ -34,7 +34,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _createAssetDialog.OnImportFromBoothRequested += () =>
             {
                 if (_showDialogCallback == null) return;
-                var waitContent = WaitBoothSyncDialog.CreateContent();
+                var waitContent = WaitBoothSyncDialog.CreateContent(_showDialogCallback);
                 _showDialogCallback.Invoke(waitContent);
             };
 
@@ -49,7 +49,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _dragManipulator.OnFolderReordered += (parentId, sourceId, index) =>
                 OnFolderReordered?.Invoke(parentId, sourceId, index);
             this.AddManipulator(_dragManipulator);
-
+            
             style.flexDirection = FlexDirection.Column;
             style.paddingLeft = 6;
             style.paddingRight = 6;

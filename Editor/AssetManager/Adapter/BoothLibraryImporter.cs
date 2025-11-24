@@ -9,6 +9,8 @@ using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Adapter {
     public static class BoothLibraryImporter {
+        public static event Action<int> OnImportCompleted;
+
         public static int Import(List<ShopDto> shops) {
             if (shops == null) return 0;
 
@@ -115,6 +117,14 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
                 if (stagedAssets.Count == 0) {
                     Debug.Log("No new Booth items to import.");
+                    try {
+                        Debug.Log("BoothLibraryImporter: no items -> OnImportCompleted(0)");
+                        OnImportCompleted?.Invoke(0);
+                    }
+                    catch {
+                        /* ignore */
+                    }
+
                     return 0;
                 }
 
@@ -138,6 +148,14 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                         Debug.LogWarning($"Failed to schedule booth thumbnail downloads: {e.Message}");
                     }
 
+                    try {
+                        Debug.Log($"BoothLibraryImporter: invoking OnImportCompleted ({saved.Count})");
+                        OnImportCompleted?.Invoke(saved.Count);
+                    }
+                    catch {
+                        /* ignore */
+                    }
+
                     return saved.Count;
                 }
                 catch (Exception commitEx) {
@@ -158,6 +176,14 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
                     try {
                         repository.SaveLibraryMetadata(oldLib);
+                    }
+                    catch {
+                        /* ignore */
+                    }
+
+                    try {
+                        Debug.Log("BoothLibraryImporter: import failed — invoking OnImportCompleted(0)");
+                        OnImportCompleted?.Invoke(0);
                     }
                     catch {
                         /* ignore */
