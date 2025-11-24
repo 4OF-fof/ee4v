@@ -26,16 +26,14 @@ namespace _4OF.ee4v.AssetManager.Adapter {
     }
 
     [Serializable]
-    public class ShopsWrapper {
-        public List<ShopDto> Shops;
+    public class ShopListDtp {
+        public List<ShopDto> shopList;
     }
 
     public static class BoothLibraryServerState {
         private static readonly ConcurrentQueue<List<ShopDto>> Pending = new();
         private static bool _isProcessing;
         private static readonly object StatusLock = new();
-        private static List<ShopDto> _lastContents = new();
-        public static IReadOnlyList<ShopDto> LastContents => _lastContents;
 
         public static string Status {
             get {
@@ -48,20 +46,6 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
         public static void SetContents(List<ShopDto> shops) {
             Pending.Enqueue(shops);
-        }
-
-        public static bool TryTakePending(out List<ShopDto> shops) {
-            if (Pending.TryDequeue(out shops)) {
-                _lastContents = shops ?? new List<ShopDto>();
-                return true;
-            }
-
-            shops = null;
-            return false;
-        }
-
-        public static void Clear() {
-            _lastContents = new List<ShopDto>();
         }
 
         public static void SetProcessing(bool processing) {

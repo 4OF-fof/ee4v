@@ -140,21 +140,21 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                     }
                     else {
                         var trim = body.Trim();
-                        ShopsWrapper wrapper = null;
+                        ShopListDtp wrapper = null;
                         try {
                             if (trim.Length > 0 && trim[0] == '[') {
                                 var wrapped = "{\"Shops\": " + body + "}";
-                                wrapper = JsonUtility.FromJson<ShopsWrapper>(wrapped);
+                                wrapper = JsonUtility.FromJson<ShopListDtp>(wrapped);
                             }
                             else {
-                                wrapper = JsonUtility.FromJson<ShopsWrapper>(body);
+                                wrapper = JsonUtility.FromJson<ShopListDtp>(body);
                             }
                         }
                         catch (Exception ex) {
                             Debug.LogWarning("Failed parsing JSON body for POST /: " + ex);
                         }
 
-                        if (wrapper?.Shops == null) {
+                        if (wrapper?.shopList == null) {
                             resp.StatusCode = 400;
                             resp.ContentType = "text/plain; charset=utf-8";
                             var err = Encoding.UTF8.GetBytes("Invalid JSON payload");
@@ -164,7 +164,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                         else {
                             int created;
                             try {
-                                created = BoothLibraryImporter.Import(wrapper.Shops);
+                                created = BoothLibraryImporter.Import(wrapper.shopList);
                             }
                             catch (Exception ex) {
                                 Debug.LogError("Error importing shops on POST: " + ex);
@@ -178,7 +178,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                                 return;
                             }
 
-                            BoothLibraryServerState.SetContents(wrapper.Shops);
+                            BoothLibraryServerState.SetContents(wrapper.shopList);
 
                             resp.StatusCode = 200;
                             resp.ContentType = "application/json; charset=utf-8";
