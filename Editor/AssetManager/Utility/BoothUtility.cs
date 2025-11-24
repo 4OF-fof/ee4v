@@ -24,5 +24,21 @@ namespace _4OF.ee4v.AssetManager.Utility {
                 ? BoothUrlType.DownloadUrl
                 : BoothUrlType.Other;
         }
+
+
+        public static bool TryParseShopItemUrl(string url, out string shopDomain, out string itemId) {
+            shopDomain = string.Empty;
+            itemId = string.Empty;
+            if (string.IsNullOrWhiteSpace(url)) return false;
+
+            var m = Regex.Match(url,
+                @"^https?://(?:(?<sub>[^\.]+)\.booth\.pm|booth\.pm/(?<path>[^/]+))/items/(?<id>\d+)",
+                RegexOptions.IgnoreCase);
+            if (!m.Success) return false;
+
+            shopDomain = m.Groups["sub"].Success ? m.Groups["sub"].Value : m.Groups["path"].Value;
+            itemId = m.Groups["id"].Value;
+            return true;
+        }
     }
 }

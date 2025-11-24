@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.AssetManager.Utility;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -225,14 +225,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
 
             var shopDomain = "";
             var itemId = "";
-            if (!string.IsNullOrWhiteSpace(boothUrl)) {
-                var url = boothUrl.Replace("https://", "").Replace("http://", "");
-                var match = Regex.Match(url, @"^([^.]+)\.booth\.pm/items/(\d+)");
-                if (match.Success) {
-                    shopDomain = match.Groups[1].Value;
-                    itemId = match.Groups[2].Value;
-                }
-            }
+            if (!string.IsNullOrWhiteSpace(boothUrl))
+                BoothUtility.TryParseShopItemUrl(boothUrl, out shopDomain, out itemId);
 
             OnAssetCreated?.Invoke(assetName, description, fileOrUrl, new List<string>(_tempTags), shopDomain, itemId);
             CloseDialog(content);
