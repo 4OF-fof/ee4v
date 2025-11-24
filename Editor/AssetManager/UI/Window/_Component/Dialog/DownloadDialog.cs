@@ -28,7 +28,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
 
             var content = new VisualElement();
 
-            var title = new Label("Download from Booth") {
+            var title = new Label("Boothからダウンロード") {
                 style = {
                     fontSize = 14,
                     unityFontStyleAndWeight = FontStyle.Bold,
@@ -37,7 +37,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             content.Add(title);
 
-            var instructionLabel = new Label("ブラウザでダウンロードページが開きます。\nダウンロードが完了すると自動的に登録されます。") {
+            var instructionLabel = new Label("ブラウザでダウンロードページを開きます。\nダウンロードしたファイルは自動で登録されます。") {
                 style = {
                     whiteSpace = WhiteSpace.Normal,
                     marginBottom = 16,
@@ -46,7 +46,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             content.Add(instructionLabel);
 
-            _statusLabel = new Label("ブラウザを開いています...") {
+            _statusLabel = new Label("ブラウザを開きました。ダウンロード完了を待機しています...") {
                 style = {
                     unityTextAlign = TextAnchor.MiddleCenter,
                     marginBottom = 16,
@@ -64,8 +64,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 }
             };
 
-            var cancelBtn = new Button {
-                text = "キャンセル",
+            var closeBtn = new Button {
+                text = "閉じる",
                 style = {
                     width = 100,
                     height = 30,
@@ -80,16 +80,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                     borderRightWidth = 0
                 }
             };
-            cancelBtn.clicked += () =>
+            closeBtn.clicked += () =>
             {
                 StopMonitoring();
                 CloseDialog(content);
+                OnDownloadCompleted?.Invoke();
             };
 
-            buttonRow.Add(cancelBtn);
+            buttonRow.Add(closeBtn);
             content.Add(buttonRow);
 
-            content.schedule.Execute(() => StartDownload()).ExecuteLater(100);
+            content.schedule.Execute(StartDownload).ExecuteLater(100);
 
             return content;
         }
@@ -97,7 +98,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
         private void StartDownload() {
             try {
                 Application.OpenURL(_downloadUrl);
-                _statusLabel.text = "ダウンロードを監視中...\nファイルが見つかると自動的に登録されます。";
+                _statusLabel.text = "ダウンロードを監視中...";
                 StartMonitoring();
             }
             catch (Exception e) {
@@ -210,14 +211,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
 
                 EditorApplication.delayCall += () =>
                 {
-                    _statusLabel.text = "✓ ダウンロード完了！\nファイルが登録されました。";
+                    _statusLabel.text = "✓登録・削除が完了しました。";
                     StopMonitoring();
-
-                    EditorApplication.delayCall += () =>
-                    {
-                        Thread.Sleep(5000);
-                        OnDownloadCompleted?.Invoke();
-                    };
                 };
             }
             catch (Exception e) {

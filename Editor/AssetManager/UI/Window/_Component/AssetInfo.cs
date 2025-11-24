@@ -250,15 +250,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             });
             _singleSelectionContainer.Add(_addDependencyButton);
 
-            _downloadButtonContainer = new VisualElement {
-                style = {
-                    flexDirection = FlexDirection.Row,
-                    flexWrap = Wrap.Wrap,
-                    marginBottom = 10
-                }
-            };
-            _singleSelectionContainer.Add(_downloadButtonContainer);
-
             _multiSelectionContainer = new VisualElement {
                 style = { display = DisplayStyle.None, alignItems = Align.Center, marginTop = 20, marginBottom = 40 }
             };
@@ -277,6 +268,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _infoContainer = new VisualElement { style = { paddingLeft = 4 } };
             scrollView.Add(_infoContainer);
+
+            _downloadButtonContainer = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    flexWrap = Wrap.Wrap,
+                    marginTop = 10,
+                    marginBottom = 10,
+                    justifyContent = Justify.Center,
+                    alignItems = Align.Center,
+                    width = Length.Percent(100)
+                }
+            };
+            scrollView.Add(_downloadButtonContainer);
         }
 
         public event Action<string> OnNameChanged;
@@ -583,8 +587,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     borderBottomLeftRadius = 10,
                     borderBottomRightRadius = 10,
                     paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 4,
-                    marginRight = 4, marginBottom = 4,
-                    alignItems = Align.Center
+                    marginRight = 0, marginBottom = 10,
+                    alignItems = Align.Center,
+                    width = Length.Percent(100),
+                    justifyContent = Justify.Center
                 }
             };
 
