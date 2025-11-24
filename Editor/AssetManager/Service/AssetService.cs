@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Utility;
@@ -216,6 +217,42 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.BoothData.SetDownloadID(match.Groups[1].Value);
+            _repository.SaveAsset(newAsset);
+        }
+
+        public void AddAssetGuid(Ulid assetId, Guid guid) {
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
+
+            var newAsset = new AssetMetadata(asset);
+            newAsset.UnityData.AddAssetGuid(guid);
+            _repository.SaveAsset(newAsset);
+        }
+
+        public void RemoveAssetGuid(Ulid assetId, Guid guid) {
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
+
+            var newAsset = new AssetMetadata(asset);
+            newAsset.UnityData.RemoveAssetGuid(guid);
+            _repository.SaveAsset(newAsset);
+        }
+
+        public void AddDependenceItem(Ulid assetId, Ulid dependenceItemId) {
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
+
+            var newAsset = new AssetMetadata(asset);
+            newAsset.UnityData.AddDependenceItem(dependenceItemId);
+            _repository.SaveAsset(newAsset);
+        }
+
+        public void RemoveDependenceItem(Ulid assetId, Ulid dependenceItemId) {
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
+
+            var newAsset = new AssetMetadata(asset);
+            newAsset.UnityData.RemoveDependenceItem(dependenceItemId);
             _repository.SaveAsset(newAsset);
         }
     }
