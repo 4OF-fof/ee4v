@@ -27,6 +27,24 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             var textField = new TextField { value = oldName, style = { marginBottom = 10 } };
             content.Add(textField);
 
+            textField.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                switch (evt.keyCode) {
+                    case KeyCode.Return:
+                    case KeyCode.KeypadEnter:
+                        var newName = textField.value;
+                        if (newName != oldName || string.IsNullOrWhiteSpace(newName))
+                            OnFolderRenamed?.Invoke(folderId, newName);
+                        CloseDialog(content);
+                        evt.StopPropagation();
+                        break;
+                    case KeyCode.Escape:
+                        CloseDialog(content);
+                        evt.StopPropagation();
+                        break;
+                }
+            });
+
             var buttonRow = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,

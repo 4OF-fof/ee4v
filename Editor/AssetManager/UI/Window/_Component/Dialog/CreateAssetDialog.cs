@@ -216,8 +216,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
         }
 
         private void OnCreate(VisualElement content) {
-            var data = content.userData as DialogData;
-            if (data == null) return;
+            if (content.userData is not DialogData data) return;
 
             var assetName = data.NameField.value;
             var description = data.DescField.value;

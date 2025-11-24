@@ -3,13 +3,13 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
-    public class CreateFolderDialog {
-        public event Action<string> OnFolderCreated;
+    public class TagRenameDialog {
+        public event Action<string, string> OnTagRenamed;
 
-        public VisualElement CreateContent() {
+        public VisualElement CreateContent(string oldTag) {
             var content = new VisualElement();
 
-            var title = new Label("Create New Folder") {
+            var title = new Label("Rename Tag") {
                 style = {
                     fontSize = 14,
                     unityFontStyleAndWeight = FontStyle.Bold,
@@ -18,12 +18,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             content.Add(title);
 
-            var label = new Label("Folder name:") {
+            var label = new Label("New tag name:") {
                 style = { marginBottom = 5 }
             };
             content.Add(label);
 
-            var textField = new TextField { value = "", style = { marginBottom = 10 } };
+            var textField = new TextField { value = oldTag, style = { marginBottom = 10 } };
             content.Add(textField);
 
             textField.RegisterCallback<KeyDownEvent>(evt =>
@@ -31,13 +31,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 switch (evt.keyCode) {
                     case KeyCode.Return:
                     case KeyCode.KeypadEnter:
-                        var folderName = textField.value;
-                        OnFolderCreated?.Invoke(folderName);
-                        CloseDialog(content);
+                        Commit();
                         evt.StopPropagation();
                         break;
                     case KeyCode.Escape:
-                        CloseDialog(content);
+                        CloseDialog();
                         evt.StopPropagation();
                         break;
                 }
@@ -56,30 +54,35 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             buttonRow.Add(cancelBtn);
 
-            var createBtn = new Button {
-                text = "Create"
+            var okBtn = new Button {
+                text = "OK"
             };
-            buttonRow.Add(createBtn);
+            buttonRow.Add(okBtn);
 
             content.Add(buttonRow);
 
-            cancelBtn.clicked += () => CloseDialog(content);
-            createBtn.clicked += () =>
-            {
-                var folderName = textField.value;
-                OnFolderCreated?.Invoke(folderName);
-                CloseDialog(content);
-            };
+            cancelBtn.clicked += CloseDialog;
+            okBtn.clicked += Commit;
 
-            content.schedule.Execute(() => textField.Focus());
+            content.schedule.Execute(() =>
+            {
+                textField.Focus();
+                textField.SelectAll();
+            });
 
             return content;
-        }
 
-        private static void CloseDialog(VisualElement content) {
-            var dialog = content.parent;
-            var container = dialog?.parent;
-            container?.RemoveFromHierarchy();
+            void CloseDialog() {
+                var dialog = content.parent;
+                var container = dialog?.parent;
+                container?.RemoveFromHierarchy();
+            }
+
+            void Commit() {
+                var newTag = textField.value;
+                if (!string.IsNullOrWhiteSpace(newTag) && newTag != oldTag) OnTagRenamed?.Invoke(oldTag, newTag);
+                CloseDialog();
+            }
         }
     }
 }

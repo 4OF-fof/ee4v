@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.AssetManager.UI.Window._Component.Dialog;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
@@ -328,69 +329,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         private void ShowRenameDialog(string oldTag) {
-            var content = new VisualElement();
-
-            var title = new Label("Rename Tag") {
-                style = {
-                    fontSize = 14,
-                    unityFontStyleAndWeight = FontStyle.Bold,
-                    marginBottom = 10
-                }
-            };
-            content.Add(title);
-
-            var label = new Label("New tag name:") {
-                style = { marginBottom = 5 }
-            };
-            content.Add(label);
-
-            var textField = new TextField { value = oldTag, style = { marginBottom = 10 } };
-            content.Add(textField);
-
-            var buttonRow = new VisualElement {
-                style = {
-                    flexDirection = FlexDirection.Row,
-                    justifyContent = Justify.FlexEnd
-                }
-            };
-
-            var cancelBtn = new Button {
-                text = "Cancel",
-                style = { marginRight = 5 }
-            };
-            buttonRow.Add(cancelBtn);
-
-            var okBtn = new Button {
-                text = "OK"
-            };
-            buttonRow.Add(okBtn);
-
-            content.Add(buttonRow);
-
-            var dialogContainer = _showDialogCallback?.Invoke(content);
-
-            cancelBtn.clicked += () => dialogContainer?.RemoveFromHierarchy();
-            okBtn.clicked += () =>
+            var dialog = new TagRenameDialog();
+            dialog.OnTagRenamed += (oldName, newName) =>
             {
-                var newTag = textField.value;
-                if (!string.IsNullOrWhiteSpace(newTag) && newTag != oldTag) {
-                    OnTagRenamed?.Invoke(oldTag, newTag);
-                    Refresh();
-                }
-
-                dialogContainer?.RemoveFromHierarchy();
+                OnTagRenamed?.Invoke(oldName, newName);
+                Refresh();
             };
 
-            content.schedule.Execute(() =>
-            {
-                textField.Focus();
-                textField.SelectAll();
-            });
-        }
-
-        private void DeleteTag(string tag) {
-            OnTagDeleted?.Invoke(tag);
-            Refresh();
+            _showDialogCallback?.Invoke(dialog.CreateContent(oldTag));
         }
 
         private int GetTagCount(string tag) {
@@ -406,6 +352,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             return count;
+        }
+
+        private void DeleteTag(string tag) {
+            OnTagDeleted?.Invoke(tag);
+            Refresh();
         }
 
         private static TagNode BuildTagTree(List<string> tags) {
