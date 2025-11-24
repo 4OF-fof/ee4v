@@ -17,29 +17,30 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 }
             };
 
-            var title = new Label("サムネイルのダウンロード") {
+            var title = new Label("サムネイルを取得中") {
                 style = {
-                    fontSize = 18,
+                    fontSize = 16,
                     unityFontStyleAndWeight = FontStyle.Bold,
-                    marginBottom = 12
+                    marginBottom = 6
                 }
             };
             content.Add(title);
 
-            var statusLabel = new Label("準備中…") {
-                style = { marginBottom = 8, fontSize = 13 }
+            var progressText = new Label("0 / 0") {
+                style = { marginBottom = 8, fontSize = 12, color = new Color(0.9f, 0.9f, 0.9f) }
             };
-            content.Add(statusLabel);
+            content.Add(progressText);
 
             var barWrapper = new VisualElement {
                 style = {
-                    height = 18,
-                    backgroundColor = new Color(0.85f, 0.85f, 0.85f),
-                    marginBottom = 8,
-                    borderTopLeftRadius = 4,
-                    borderTopRightRadius = 4,
-                    borderBottomLeftRadius = 4,
-                    borderBottomRightRadius = 4
+                    height = 10,
+                    backgroundColor = new Color(0.15f, 0.15f, 0.15f, 0.55f),
+                    marginBottom = 10,
+                    borderTopLeftRadius = 8,
+                    borderTopRightRadius = 8,
+                    borderBottomLeftRadius = 8,
+                    borderBottomRightRadius = 8,
+                    alignSelf = Align.Stretch
                 }
             };
 
@@ -58,27 +59,22 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             barWrapper.Add(barInner);
             content.Add(barWrapper);
 
-            var progressText = new Label("0 / 0") { style = { marginBottom = 12 } };
-            content.Add(progressText);
-
-            var buttonRow = new VisualElement
-                { style = { flexDirection = FlexDirection.Row, justifyContent = Justify.FlexEnd } };
-
-            var backgroundBtn = new Button { text = "バックグラウンドで続行", style = { marginRight = 6 } };
-            var closeBtn = new Button { text = "閉じる" };
-            buttonRow.Add(backgroundBtn);
-            buttonRow.Add(closeBtn);
-
-            content.Add(buttonRow);
-
-            void OnStarted() {
-                UpdateProgress(BoothThumbnailDownloader.TotalCount, BoothThumbnailDownloader.CompletedCount);
-            }
-
-            void OnCompleted() {
-                UpdateProgress(BoothThumbnailDownloader.TotalCount, BoothThumbnailDownloader.CompletedCount);
-                statusLabel.text = "ダウンロード完了";
-            }
+            var closeLabel = new Label("✕") {
+                style = {
+                    position = Position.Absolute,
+                    right = 8,
+                    top = 6,
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    fontSize = 14,
+                    width = 24,
+                    height = 20,
+                    backgroundColor = Color.clear,
+                    unityTextAlign = TextAnchor.MiddleCenter
+                },
+                tooltip = "閉じる"
+            };
+            closeLabel.RegisterCallback<MouseUpEvent>(_ => CloseDialog(content));
+            content.Add(closeLabel);
 
             BoothThumbnailDownloader.OnProgressChanged += UpdateProgress;
             BoothThumbnailDownloader.OnStarted += OnStarted;
@@ -96,14 +92,21 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 }
             });
 
-            backgroundBtn.clicked += () => CloseDialog(content);
-            closeBtn.clicked += () => CloseDialog(content);
 
             return content;
 
+            void OnCompleted() {
+                UpdateProgress(BoothThumbnailDownloader.TotalCount, BoothThumbnailDownloader.CompletedCount);
+                progressText.text =
+                    $"完了 ({BoothThumbnailDownloader.CompletedCount}/{BoothThumbnailDownloader.TotalCount})";
+            }
+
+            void OnStarted() {
+                UpdateProgress(BoothThumbnailDownloader.TotalCount, BoothThumbnailDownloader.CompletedCount);
+            }
+
             void UpdateProgress(int total, int completed) {
-                progressText.text = $"{completed} / {total}";
-                statusLabel.text = total == 0 ? "ダウンロードなし" : $"サムネイルをダウンロード中 ({completed}/{total})";
+                progressText.text = total == 0 ? "0 / 0" : $"{completed} / {total}";
                 var pct = total == 0 ? 0f : (float)completed / total;
                 barInner.style.width = new StyleLength(new Length(pct * 100f, LengthUnit.Percent));
             }
