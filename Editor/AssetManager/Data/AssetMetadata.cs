@@ -17,6 +17,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             Size = metadata.Size;
             Ext = metadata.Ext;
             BoothData = new BoothMetadata(metadata.BoothData);
+            UnityData = new UnityMetadata(metadata.UnityData);
             Folder = metadata.Folder;
             _tags = new List<string>(metadata.Tags);
             IsDeleted = metadata.IsDeleted;
@@ -25,6 +26,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         [JsonConstructor]
         public AssetMetadata(Ulid id, string name, string description, long size, string ext, BoothMetadata boothData,
+            UnityMetadata unityData,
             Ulid folder, List<string> tags, bool isDeleted, long modificationTime) {
             ID = id;
             Name = string.IsNullOrWhiteSpace(name) ? "Untitled" : name;
@@ -32,6 +34,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             Size = size;
             Ext = ext;
             BoothData = boothData;
+            UnityData = unityData;
             Folder = folder;
             _tags = tags ?? new List<string>();
             IsDeleted = isDeleted;
@@ -44,6 +47,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         public long Size { get; private set; }
         public string Ext { get; private set; } = "";
         public BoothMetadata BoothData { get; private set; } = new();
+        public UnityMetadata UnityData { get; private set; } = new();
         public Ulid Folder { get; private set; } = Ulid.Empty;
         public IReadOnlyList<string> Tags => _tags.AsReadOnly();
         public bool IsDeleted { get; private set; }
@@ -72,6 +76,11 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public void SetBoothData(BoothMetadata newBoothData) {
             BoothData = newBoothData;
+            Touch();
+        }
+
+        public void SetUnityData(UnityMetadata newUnityData) {
+            UnityData = newUnityData;
             Touch();
         }
 
@@ -149,6 +158,41 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public void SetFileName(string newFileName) {
             FileName = newFileName;
+        }
+    }
+
+    public class UnityMetadata {
+        public UnityMetadata() {
+        }
+
+        public UnityMetadata(UnityMetadata metadata) {
+            AssetGuidList = new List<Guid>(metadata.AssetGuidList);
+            DependenceItemList = new List<Ulid>(metadata.DependenceItemList);
+        }
+
+        [JsonConstructor]
+        public UnityMetadata(List<Guid> assetGuidList, List<Ulid> dependenceItemList) {
+            AssetGuidList = assetGuidList ?? new List<Guid>();
+            DependenceItemList = dependenceItemList ?? new List<Ulid>();
+        }
+
+        public List<Guid> AssetGuidList { get; } = new();
+        public List<Ulid> DependenceItemList { get; } = new();
+
+        public void AddAssetGuid(Guid guid) {
+            if (!AssetGuidList.Contains(guid)) AssetGuidList.Add(guid);
+        }
+
+        public void RemoveAssetGuid(Guid guid) {
+            AssetGuidList.Remove(guid);
+        }
+
+        public void AddDependenceItem(Ulid itemId) {
+            if (!DependenceItemList.Contains(itemId)) DependenceItemList.Add(itemId);
+        }
+
+        public void RemoveDependenceItem(Ulid itemId) {
+            DependenceItemList.Remove(itemId);
         }
     }
 }
