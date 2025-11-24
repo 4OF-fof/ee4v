@@ -270,7 +270,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                             return bf;
                     break;
                 }
-                case Folder f when f.Children != null: {
+                case Folder { Children: not null } f: {
                     foreach (var c in f.Children) {
                         var found = FindBoothItemFolderRecursive(c, shopDomain, identifier);
                         if (found != null) return found;

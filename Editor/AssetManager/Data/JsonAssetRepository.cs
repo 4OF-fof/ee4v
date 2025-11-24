@@ -25,7 +25,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             _assetRootDir = Path.Combine(_rootDir, "Assets");
             _libraryMetadataPath = Path.Combine(_rootDir, "metadata.json");
             _cacheFilePath = Path.Combine(contentFolderPath, "assetManager_cache.json");
-            _folderIconDir = Path.Combine(contentFolderPath, "FolderIcon");
+            _folderIconDir = Path.Combine(_rootDir, "FolderIcon");
 
             _serializerSettings = new JsonSerializerSettings {
                 Formatting = Formatting.Indented,
