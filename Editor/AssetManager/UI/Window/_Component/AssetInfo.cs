@@ -359,6 +359,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             _infoContainer.Clear();
+            RefreshDownloadButton("");
             AddInfoRow("Size", FormatSize(data.Size));
             AddInfoRow("Type", data.Extension);
             AddInfoRow("Modified", data.ModificationTime.ToString("yyyy/MM/dd HH:mm"));
@@ -395,6 +396,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 });
 
             _infoContainer.Clear();
+            RefreshDownloadButton("");
             if (data.IsFolder) AddInfoRow("Sub Folders", data.SubFolderCount.ToString());
             AddInfoRow("Assets", data.AssetCount.ToString());
             AddInfoRow("Modified", data.ModificationTime.ToString("yyyy/MM/dd HH:mm"));
@@ -411,6 +413,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _multiSelectionLabel.text = "Library Overview";
 
             _infoContainer.Clear();
+            RefreshDownloadButton("");
             AddInfoRow("Total Assets", data.TotalAssets.ToString());
             AddInfoRow("Total Size", FormatSize(data.TotalSize));
             AddInfoRow("Total Tags", data.TotalTags.ToString());
