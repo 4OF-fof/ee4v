@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
@@ -58,10 +57,13 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                                 }
 
                                 var asset = new AssetMetadata();
-                                var name = !string.IsNullOrEmpty(f.filename) ? f.filename :
-                                    !string.IsNullOrEmpty(item.name) ? item.name :
-                                    !string.IsNullOrEmpty(item.itemURL) ? item.itemURL : "Unnamed Booth Item";
-                                name = NormalizePresentation(name);
+                                var name = !string.IsNullOrEmpty(f.filename)
+                                    ? Path.GetFileNameWithoutExtension(f.filename)
+                                    : !string.IsNullOrEmpty(item.name)
+                                        ? item.name
+                                        : !string.IsNullOrEmpty(item.itemURL)
+                                            ? item.itemURL
+                                            : "Unnamed Booth Item";
                                 asset.SetName(name);
 
                                 var booth = new BoothMetadata();
@@ -74,7 +76,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
                                 if (!string.IsNullOrEmpty(itemId)) booth.SetItemID(itemId);
                                 if (!string.IsNullOrEmpty(downloadId)) booth.SetDownloadID(downloadId);
-                                booth.SetFileName(NormalizePresentation(filename));
+                                booth.SetFileName(filename);
 
                                 asset.SetBoothData(booth);
 
@@ -83,7 +85,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                                     !string.IsNullOrEmpty(filename) ? filename : item.itemURL;
 
                                 var folderNameForMeta = !string.IsNullOrEmpty(item.name)
-                                    ? NormalizePresentation(item.name)
+                                    ? item.name
                                     : !string.IsNullOrEmpty(itemId)
                                         ? itemId
                                         : !string.IsNullOrEmpty(item.itemURL)
@@ -158,68 +160,6 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             return !string.IsNullOrEmpty(downloadId) && assets.Any(a => a.BoothData?.DownloadID == downloadId);
         }
 
-        private static Ulid EnsureBoothItemFolder(IAssetRepository repository, string shopDomain, string shopName,
-            string identifier,
-            string folderName, string folderDescription = null, Ulid parentFolderId = default) {
-            var libraries = repository.GetLibraryMetadata();
-            if (libraries == null) {
-                Debug.LogError("Library metadata is not loaded.");
-                return Ulid.Empty;
-            }
-
-            foreach (var root in libraries.FolderList) {
-                var found = FindBoothItemFolderRecursive(root, shopDomain ?? string.Empty, identifier);
-                if (found == null) continue;
-                var needsUpdate = false;
-                var updated = new BoothItemFolder(found);
-                if (!string.IsNullOrEmpty(shopName) && updated.ShopName != shopName) {
-                    updated.SetShopName(shopName);
-                    needsUpdate = true;
-                }
-
-                if (!string.IsNullOrEmpty(folderDescription) && updated.Description != folderDescription) {
-                    updated.SetDescription(folderDescription);
-                    needsUpdate = true;
-                }
-
-                if (needsUpdate)
-                    AssetManagerContainer.FolderService.UpdateBoothItemFolder(updated);
-                return found.ID;
-            }
-
-            var newFolder = new BoothItemFolder();
-            newFolder.SetName(NormalizePresentation(folderName ?? identifier ?? "Booth Item"));
-            newFolder.SetDescription(NormalizePresentation(folderDescription ?? shopName ?? string.Empty));
-            newFolder.SetShopDomain(shopDomain);
-            newFolder.SetShopName(shopName);
-            if (!string.IsNullOrEmpty(identifier) && identifier.All(char.IsDigit)) newFolder.SetItemId(identifier);
-
-            if (parentFolderId == default || parentFolderId == Ulid.Empty) {
-                libraries.AddFolder(newFolder);
-                Debug.Log(
-                    $"Created BoothItemFolder '{newFolder.Name}' (Id: {newFolder.ID}) at root for shop {shopDomain}");
-            }
-            else {
-                var parentBase = libraries.GetFolder(parentFolderId);
-                if (parentBase is BoothItemFolder) {
-                    Debug.LogError("Cannot create a BoothItemFolder under another BoothItemFolder.");
-                    return Ulid.Empty;
-                }
-
-                if (parentBase is not Folder parentFolder) {
-                    Debug.LogError($"Parent folder {parentFolderId} not found.");
-                    return Ulid.Empty;
-                }
-
-                parentFolder.AddChild(newFolder);
-                Debug.Log(
-                    $"Created BoothItemFolder '{newFolder.Name}' (Id: {newFolder.ID}) under parent {parentFolder.ID}");
-            }
-
-            repository.SaveLibraryMetadata(libraries);
-            return newFolder.ID;
-        }
-
         private static Ulid EnsureBoothItemFolderForMeta(LibraryMetadata libraries, string shopDomain, string shopName,
             string identifier,
             string folderName, string folderDescription = null, Ulid parentFolderId = default) {
@@ -236,8 +176,8 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             }
 
             var newFolder = new BoothItemFolder();
-            newFolder.SetName(NormalizePresentation(folderName ?? identifier ?? "Booth Item"));
-            newFolder.SetDescription(NormalizePresentation(folderDescription ?? shopName ?? string.Empty));
+            newFolder.SetName(folderName ?? identifier ?? "Booth Item");
+            newFolder.SetDescription(folderDescription ?? shopName ?? string.Empty);
             newFolder.SetShopDomain(shopDomain);
             newFolder.SetShopName(shopName);
             if (!string.IsNullOrEmpty(identifier) && identifier.All(char.IsDigit)) newFolder.SetItemId(identifier);
@@ -281,29 +221,6 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             }
 
             return null;
-        }
-
-        private static string NormalizePresentation(string input) {
-            if (string.IsNullOrEmpty(input)) return input;
-
-            var decomposed = input.Normalize(NormalizationForm.FormKD);
-            var sb = new StringBuilder(decomposed.Length);
-
-            foreach (var ch in from ch in decomposed
-                     let category = CharUnicodeInfo.GetUnicodeCategory(ch)
-                     where category != UnicodeCategory.NonSpacingMark
-                     select ch) {
-                if (ch >= 32 && ch <= 126) {
-                    sb.Append(ch);
-                    continue;
-                }
-
-                if (ch >= '\uFF01' && ch <= '\uFF5E') sb.Append((char)(ch - 0xFEE0));
-            }
-
-            var cleaned = sb.ToString().Trim();
-            var collapsed = Regex.Replace(cleaned, "[ \t\r\n\\f]+", " ");
-            return collapsed;
         }
     }
 }
