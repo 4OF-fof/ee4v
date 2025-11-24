@@ -22,6 +22,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                 var librariesClone = new LibraryMetadata(repository.GetLibraryMetadata() ?? new LibraryMetadata());
 
                 var stagedAssets = new List<AssetMetadata>();
+                var folderImageCandidates = new Dictionary<Ulid, string>();
 
                 foreach (var shop in shops) {
                     if (shop.items == null) continue;
@@ -96,7 +97,13 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                                     shop.shopName,
                                     folderIdentifier, folderNameForMeta, item.description);
 
-                                if (folderId != Ulid.Empty) asset.SetFolder(folderId);
+                                if (folderId != Ulid.Empty) {
+                                    asset.SetFolder(folderId);
+
+                                    if (!string.IsNullOrEmpty(item.imageURL) &&
+                                        !folderImageCandidates.ContainsKey(folderId))
+                                        folderImageCandidates[folderId] = item.imageURL;
+                                }
 
                                 stagedAssets.Add(asset);
                             }
@@ -123,6 +130,14 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                     }
 
                     Debug.Log($"Imported {saved.Count} Booth items into AssetLibrary");
+
+                    try {
+                        BoothThumbnailDownloader.Enqueue(repository, folderImageCandidates);
+                    }
+                    catch (Exception e) {
+                        Debug.LogWarning($"Failed to schedule booth thumbnail downloads: {e.Message}");
+                    }
+
                     return saved.Count;
                 }
                 catch (Exception commitEx) {
@@ -138,7 +153,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                             }
                     }
                     catch {
-                        // ignore
+                        /* ignore */
                     }
 
                     try {
