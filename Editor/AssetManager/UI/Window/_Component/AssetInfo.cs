@@ -92,8 +92,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _descriptionField = CreateTextField(false);
             _descriptionField.multiline = true;
             _descriptionField.style.minHeight = 40;
-            _descriptionField.style.whiteSpace = WhiteSpace.Normal;
-            _descriptionField.style.overflow = Overflow.Visible;
 
             _descriptionField.RegisterCallback<ChangeEvent<string>>(evt =>
             {
@@ -361,7 +359,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             _infoContainer.Clear();
-            RefreshDownloadButton("");
             AddInfoRow("Size", FormatSize(data.Size));
             AddInfoRow("Type", data.Extension);
             AddInfoRow("Modified", data.ModificationTime.ToString("yyyy/MM/dd HH:mm"));
@@ -431,6 +428,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _infoHeader.style.display = DisplayStyle.None;
             _multiSelectionLabel.text = $"{count} items selected";
             _infoContainer.Clear();
+            RefreshDownloadButton("");
         }
 
         private void ShowSingleSelection() {
