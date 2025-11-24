@@ -300,6 +300,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             if (data.IsFolder) AddInfoRow("Sub Folders", data.SubFolderCount.ToString());
             AddInfoRow("Assets", data.AssetCount.ToString());
             AddInfoRow("Modified", data.ModificationTime.ToString("yyyy/MM/dd HH:mm"));
+
+            if (!data.IsBoothItemFolder) return;
+            if (!string.IsNullOrEmpty(data.ShopName)) {
+                AddInfoRowWithLink("Shop", data.ShopName, data.ShopUrl);
+            }
+            if (!string.IsNullOrEmpty(data.ItemId)) {
+                AddInfoRowWithLink("Item", data.ItemId, data.ItemUrl);
+            }
         }
 
         private void OnLibraryDataUpdated(LibraryDisplayData data) {
@@ -416,6 +424,43 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
             row.Add(new Label(label) { style = { color = Color.gray, width = 80 } });
             row.Add(new Label(value) { style = { flexGrow = 1, unityTextAlign = TextAnchor.MiddleRight } });
+            _infoContainer.Add(row);
+        }
+        
+        private void AddInfoRowWithLink(string label, string displayText, string url) {
+            var row = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    justifyContent = Justify.SpaceBetween,
+                    marginBottom = 2
+                }
+            };
+            row.Add(new Label(label) { style = { color = Color.gray, width = 80 } });
+            
+            var linkLabel = new Label(displayText) {
+                style = {
+                    flexGrow = 1,
+                    unityTextAlign = TextAnchor.MiddleRight,
+                    color = new StyleColor(new Color(0.4f, 0.6f, 1.0f))
+                }
+            };
+            
+            if (!string.IsNullOrEmpty(url)) {
+                linkLabel.RegisterCallback<PointerDownEvent>(evt => {
+                    if (evt.button != 0) return;
+                    Application.OpenURL(url);
+                    evt.StopPropagation();
+                });
+                
+                linkLabel.RegisterCallback<MouseEnterEvent>(_ => {
+                    linkLabel.style.color = new StyleColor(new Color(0.6f, 0.8f, 1.0f));
+                });
+                linkLabel.RegisterCallback<MouseLeaveEvent>(_ => {
+                    linkLabel.style.color = new StyleColor(new Color(0.4f, 0.6f, 1.0f));
+                });
+            }
+            
+            row.Add(linkLabel);
             _infoContainer.Add(row);
         }
 

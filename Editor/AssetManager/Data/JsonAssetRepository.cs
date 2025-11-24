@@ -197,8 +197,8 @@ namespace _4OF.ee4v.AssetManager.Data {
             var assetDir = Path.Combine(_assetRootDir, asset.ID.ToString());
             try {
                 var lib = _libraryCache.Libraries;
-                if (lib != null && asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.ItemID)) {
-                    var identifier = asset.BoothData.ItemID;
+                if (lib != null && asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.ItemId)) {
+                    var identifier = asset.BoothData.ItemId;
                     BoothItemFolder found = null;
                     foreach (var root in lib.FolderList) {
                         found = FindBoothItemFolderRecursive(root, asset.BoothData.ShopDomain ?? string.Empty,

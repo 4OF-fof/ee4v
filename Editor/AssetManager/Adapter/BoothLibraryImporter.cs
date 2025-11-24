@@ -47,15 +47,15 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                                 }
 
                                 if (AlreadyImportedDownloadable(existingAssets, downloadId) ||
-                                    stagedAssets.Any(a => a.BoothData?.DownloadID == downloadId))
+                                    stagedAssets.Any(a => a.BoothData?.DownloadId == downloadId))
                                     continue;
 
                                 var filename = string.IsNullOrEmpty(f.filename) ? null : f.filename;
                                 if (!string.IsNullOrEmpty(itemId) && !string.IsNullOrEmpty(filename)) {
                                     var dupExisting = existingAssets.Any(a =>
-                                        a.BoothData?.ItemID == itemId && a.BoothData?.FileName == filename);
+                                        a.BoothData?.ItemId == itemId && a.BoothData?.FileName == filename);
                                     var dupStaged = stagedAssets.Any(a =>
-                                        a.BoothData?.ItemID == itemId && a.BoothData?.FileName == filename);
+                                        a.BoothData?.ItemId == itemId && a.BoothData?.FileName == filename);
                                     if (dupExisting || dupStaged) continue;
                                 }
 
@@ -198,7 +198,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
         }
 
         private static bool AlreadyImportedDownloadable(IEnumerable<AssetMetadata> assets, string downloadId) {
-            return !string.IsNullOrEmpty(downloadId) && assets.Any(a => a.BoothData?.DownloadID == downloadId);
+            return !string.IsNullOrEmpty(downloadId) && assets.Any(a => a.BoothData?.DownloadId == downloadId);
         }
 
         private static Ulid EnsureBoothItemFolderForMeta(LibraryMetadata libraries, string shopDomain, string shopName,

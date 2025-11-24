@@ -196,6 +196,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 assetCount = _repository.GetAllAssets()
                     .Count(a => a.Folder == folder.ID && !a.IsDeleted);
 
+            var isBoothItemFolder = folder is BoothItemFolder;
+            string shopName = null;
+            string shopUrl = null;
+            string itemUrl = null;
+            string itemId = null;
+            
+            if (folder is BoothItemFolder boothFolder) {
+                shopName = boothFolder.ShopName;
+                shopUrl = boothFolder.ShopUrl;
+                itemUrl = boothFolder.ItemUrl;
+                itemId = boothFolder.ItemId;
+            }
+
             var data = new FolderDisplayData {
                 Id = folder.ID,
                 Name = folder.Name,
@@ -206,7 +219,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 SubFolderCount = subFolderCount,
                 AssetCount = assetCount,
                 ModificationTime = DateTimeOffset.FromUnixTimeMilliseconds(folder.ModificationTime).ToLocalTime(),
-                IsFolder = folder is Folder
+                IsFolder = folder is Folder,
+                IsBoothItemFolder = isBoothItemFolder,
+                ShopName = shopName,
+                ShopUrl = shopUrl,
+                ItemUrl = itemUrl,
+                ItemId = itemId
             };
 
             FolderDataUpdated?.Invoke(data);
@@ -255,12 +273,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public string Description;
         public Ulid Id;
         public bool IsFolder;
+        public bool IsBoothItemFolder;
         public DateTimeOffset ModificationTime;
         public string Name;
         public Ulid ParentFolderId;
         public string ParentFolderName;
         public int SubFolderCount;
         public IReadOnlyList<string> Tags;
+        public string ShopName;
+        public string ShopUrl;
+        public string ItemUrl;
+        public string ItemId;
     }
 
     public class LibraryDisplayData {

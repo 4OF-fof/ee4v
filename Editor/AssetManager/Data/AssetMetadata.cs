@@ -106,45 +106,45 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public BoothMetadata(BoothMetadata data) {
             ShopDomain = data?.ShopDomain ?? "";
-            ItemID = data?.ItemID ?? "";
-            DownloadID = data?.DownloadID ?? "";
+            ItemId = data?.ItemId ?? "";
+            DownloadId = data?.DownloadId ?? "";
             FileName = data?.FileName ?? "";
         }
 
         [JsonConstructor]
         public BoothMetadata(string shopDomain, string itemID, string downloadID, string fileName) {
             ShopDomain = shopDomain;
-            ItemID = itemID;
-            DownloadID = downloadID;
+            ItemId = itemID;
+            DownloadId = downloadID;
             FileName = fileName;
         }
 
         public string ShopDomain { get; private set; } = "";
-        public string ItemID { get; private set; } = "";
-        public string DownloadID { get; private set; } = "";
+        public string ItemId { get; private set; } = "";
+        public string DownloadId { get; private set; } = "";
         public string FileName { get; private set; } = "";
 
-        [JsonIgnore] public string ShopURL => string.IsNullOrEmpty(ShopDomain) ? "" : $"https://{ShopDomain}.booth.pm";
+        [JsonIgnore] public string ShopUrl => string.IsNullOrEmpty(ShopDomain) ? "" : $"https://{ShopDomain}.booth.pm";
 
         [JsonIgnore]
-        public string ItemURL => string.IsNullOrEmpty(ShopDomain) || string.IsNullOrEmpty(ItemID)
+        public string ItemUrl => string.IsNullOrEmpty(ShopDomain) || string.IsNullOrEmpty(ItemId)
             ? ""
-            : $"https://{ShopDomain}.booth.pm/items/{ItemID}";
+            : $"https://{ShopDomain}.booth.pm/items/{ItemId}";
 
         [JsonIgnore]
-        public string DownloadURL =>
-            string.IsNullOrEmpty(DownloadID) ? "" : $"https://booth.pm/downloadables/{DownloadID}";
+        public string DownloadUrl =>
+            string.IsNullOrEmpty(DownloadId) ? "" : $"https://booth.pm/downloadables/{DownloadId}";
 
         public void SetShopDomain(string newShopName) {
             ShopDomain = newShopName;
         }
 
         public void SetItemID(string newItemID) {
-            ItemID = newItemID;
+            ItemId = newItemID;
         }
 
         public void SetDownloadID(string newDownloadID) {
-            DownloadID = newDownloadID;
+            DownloadId = newDownloadID;
         }
 
         public void SetFileName(string newFileName) {
