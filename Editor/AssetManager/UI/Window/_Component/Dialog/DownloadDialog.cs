@@ -211,7 +211,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
 
                 EditorApplication.delayCall += () =>
                 {
-                    _statusLabel.text = "✓登録・削除が完了しました。";
+                    _statusLabel.text = "✓登録が完了しました。";
                     StopMonitoring();
                 };
             }
