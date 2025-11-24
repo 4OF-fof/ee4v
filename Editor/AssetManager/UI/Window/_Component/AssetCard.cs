@@ -73,9 +73,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             tooltip = itemName;
         }
 
-        public void SetThumbnail(Texture2D texture, bool isFolder = false) {
+        public void SetThumbnail(Texture2D texture, bool isFolder = false, bool isEmpty = false) {
             if (texture == null) {
-                var fallback = TextureService.GetDefaultFallback(isFolder);
+                var fallback = TextureService.GetDefaultFallback(isFolder, isEmpty);
 
                 if (fallback != null) {
                     _thumbnail.style.backgroundImage = new StyleBackground(fallback);

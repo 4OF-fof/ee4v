@@ -24,6 +24,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private int _itemsPerRow;
         private object _lastSelectedReference;
         private float _lastWidth;
+        private IAssetRepository _repository;
 
         private TextureService _textureService;
 
@@ -111,8 +112,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<List<object>> OnSelectionChange;
         public event Action<BaseFolder> OnFolderDoubleClicked;
 
-        public void Initialize(TextureService textureService) {
+        public void Initialize(TextureService textureService, IAssetRepository repository = null) {
             _textureService = textureService;
+            _repository = repository;
         }
 
         public void SetItems(List<object> items) {
@@ -254,7 +256,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         case BaseFolder folder:
                             card.SetData(folder.Name);
                             card.userData = folder;
-                            card.SetThumbnail(null, true);
+
+                            var hasSubFolders = folder is Folder f && (f.Children?.Count ?? 0) > 0;
+                            var hasAssets = _repository != null && _repository.GetAllAssets()
+                                .Any(a => a.Folder == folder.ID && !a.IsDeleted);
+                            var isEmpty = !hasSubFolders && !hasAssets;
+
+                            card.SetThumbnail(null, true, isEmpty);
                             LoadImageAsync(card, folder.ID, true);
                             break;
                         case AssetMetadata asset:

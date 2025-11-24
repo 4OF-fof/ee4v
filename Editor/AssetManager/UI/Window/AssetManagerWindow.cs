@@ -118,7 +118,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetController = new AssetViewController(_repository);
 
             _assetView.SetController(_assetController);
-            _assetView.Initialize(_textureService);
+            _assetView.Initialize(_textureService, _repository);
             _tagListView.Initialize(_repository);
             _tagListView.SetController(_assetController);
             _tagListView.SetShowDialogCallback(ShowDialog);

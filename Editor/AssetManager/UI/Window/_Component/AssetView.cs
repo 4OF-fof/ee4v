@@ -67,8 +67,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public event Action<List<object>> OnSelectionChange;
 
-        public void Initialize(TextureService textureService) {
-            _grid.Initialize(textureService);
+        public void Initialize(TextureService textureService, IAssetRepository repository = null) {
+            _grid.Initialize(textureService, repository);
         }
 
         public void ClearSelection() {

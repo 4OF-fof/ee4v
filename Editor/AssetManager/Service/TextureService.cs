@@ -35,9 +35,14 @@ namespace _4OF.ee4v.AssetManager.Service {
             return CreateAndCacheTexture(key, data);
         }
 
-        public static Texture2D GetDefaultFallback(bool isFolder) {
-            var key = isFolder ? "Folder Icon" : "GameObject Icon";
-            return EditorGUIUtility.IconContent(key).image as Texture2D;
+        public static Texture2D GetDefaultFallback(bool isFolder, bool isEmpty = false) {
+            if (!isFolder) {
+                const string key = "GameObject Icon";
+                return EditorGUIUtility.IconContent(key).image as Texture2D;
+            }
+
+            var folderKey = isEmpty ? "FolderEmpty Icon" : "Folder Icon";
+            return EditorGUIUtility.IconContent(folderKey).image as Texture2D;
         }
 
         public void ClearCache() {

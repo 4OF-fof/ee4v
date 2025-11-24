@@ -292,7 +292,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 {
                     _thumbnailContainer.style.backgroundImage = tex != null
                         ? new StyleBackground(tex)
-                        : new StyleBackground(TextureService.GetDefaultFallback(true));
+                        : new StyleBackground(TextureService.GetDefaultFallback(true,
+                            data.SubFolderCount == 0 && data.AssetCount == 0));
                 });
 
             _infoContainer.Clear();
