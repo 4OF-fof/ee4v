@@ -254,17 +254,51 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void OnAssetNameChanged(string newName) {
-            if (_selectedAsset == null) return;
-            var oldName = _selectedAsset.Name;
-            var success = _assetService.SetAssetName(_selectedAsset.ID, newName);
-            RefreshUI();
-            if (!success)
-                ShowToast($"アセット '{oldName}' のリネームに失敗しました: 名前が無効です", 10, ToastType.Error);
+            if (_selectedAsset != null) {
+                var oldName = _selectedAsset.Name;
+                var success = _assetService.SetAssetName(_selectedAsset.ID, newName);
+                RefreshUI();
+                if (!success)
+                    ShowToast($"アセット '{oldName}' のリネームに失敗しました: 名前が無効です", 10, ToastType.Error);
+                return;
+            }
+
+            var targetFolderId = Ulid.Empty;
+            if (_assetController != null && _assetController.SelectedFolderId != Ulid.Empty)
+                targetFolderId = _assetController.SelectedFolderId;
+            else if (_currentPreviewFolderId != Ulid.Empty)
+                targetFolderId = _currentPreviewFolderId;
+
+            if (targetFolderId == Ulid.Empty) return;
+
+            var libMetadata = _repository?.GetLibraryMetadata();
+            var oldFolder = libMetadata?.GetFolder(targetFolderId);
+            var oldFolderName = oldFolder?.Name ?? "フォルダ";
+
+            var successFolder = _folderService.SetFolderName(targetFolderId, newName);
+            var folders = _folderService.GetRootFolders();
+            _navigation.SetFolders(folders);
+            RefreshUI(false);
+            if (!successFolder)
+                ShowToast($"フォルダ '{oldFolderName}' のリネームに失敗しました: 名前が無効です", 10, ToastType.Error);
         }
 
         private void OnAssetDescriptionChanged(string newDesc) {
-            if (_selectedAsset == null) return;
-            _assetService.SetDescription(_selectedAsset.ID, newDesc);
+            if (_selectedAsset != null) {
+                _assetService.SetDescription(_selectedAsset.ID, newDesc);
+                RefreshUI(false);
+                return;
+            }
+
+            var targetFolderId = Ulid.Empty;
+            if (_assetController != null && _assetController.SelectedFolderId != Ulid.Empty)
+                targetFolderId = _assetController.SelectedFolderId;
+            else if (_currentPreviewFolderId != Ulid.Empty)
+                targetFolderId = _currentPreviewFolderId;
+
+            if (targetFolderId == Ulid.Empty) return;
+
+            _folderService.SetFolderDescription(targetFolderId, newDesc);
             RefreshUI(false);
         }
 
