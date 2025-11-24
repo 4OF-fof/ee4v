@@ -416,7 +416,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public void RemoveFolderThumbnail(Ulid folderId) {
             var path = GetFolderThumbnailPath(folderId);
-            if (File.Exists(path)) return;
+            if (!File.Exists(path)) return;
             try {
                 File.Delete(path);
             }

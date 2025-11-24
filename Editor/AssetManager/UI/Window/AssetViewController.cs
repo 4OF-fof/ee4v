@@ -311,6 +311,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void OnRepositoryLibraryChanged() {
+            AssetManagerContainer.TextureService?.ClearCache();
             EditorApplication.delayCall += () =>
             {
                 try {
@@ -323,6 +324,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void OnRepositoryAssetChanged(Ulid assetId) {
+            AssetManagerContainer.TextureService?.RemoveAssetFromCache(assetId);
             EditorApplication.delayCall += () =>
             {
                 try {

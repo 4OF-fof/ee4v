@@ -51,6 +51,22 @@ namespace _4OF.ee4v.AssetManager.Service {
             _lruKeys.Clear();
         }
 
+        public void RemoveAssetFromCache(Ulid assetId) {
+            var key = $"asset_{assetId}";
+            if (!_cache.TryGetValue(key, out var tex)) return;
+            if (tex != null) Object.DestroyImmediate(tex);
+            _cache.Remove(key);
+            _lruKeys.Remove(key);
+        }
+
+        public void RemoveFolderFromCache(Ulid folderId) {
+            var key = $"folder_{folderId}";
+            if (!_cache.TryGetValue(key, out var tex)) return;
+            if (tex != null) Object.DestroyImmediate(tex);
+            _cache.Remove(key);
+            _lruKeys.Remove(key);
+        }
+
         private bool TryGetFromCache(string key, out Texture2D texture) {
             if (!_cache.TryGetValue(key, out texture)) return false;
             _lruKeys.Remove(key);

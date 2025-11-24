@@ -417,7 +417,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         menu.AddItem("サムネイルを削除", false, () =>
                         {
                             _repository?.RemoveThumbnail(asset.ID);
+                            _textureService?.RemoveAssetFromCache(asset.ID);
                             card.SetThumbnail(null);
+                            LoadImageAsync(card, asset.ID, false);
                             _listView.RefreshItems();
                         });
 
@@ -465,7 +467,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         menu.AddItem("フォルダのサムネイルを削除", false, () =>
                         {
                             AssetManagerContainer.FolderService.RemoveFolderThumbnail(folder.ID);
+                            _textureService?.RemoveFolderFromCache(folder.ID);
                             card.SetThumbnail(null, true);
+                            LoadImageAsync(card, folder.ID, true);
                             _listView.RefreshItems();
                         });
 
