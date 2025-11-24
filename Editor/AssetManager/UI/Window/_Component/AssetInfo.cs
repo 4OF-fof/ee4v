@@ -92,6 +92,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _descriptionField = CreateTextField(false);
             _descriptionField.multiline = true;
             _descriptionField.style.minHeight = 40;
+            _descriptionField.style.whiteSpace = WhiteSpace.Normal;
+            _descriptionField.style.overflow = Overflow.Visible;
 
             _descriptionField.RegisterCallback<ChangeEvent<string>>(evt =>
             {
