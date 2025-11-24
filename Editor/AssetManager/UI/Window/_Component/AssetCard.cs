@@ -14,6 +14,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly VisualElement _innerContainer;
         private readonly Label _nameLabel;
         private readonly VisualElement _thumbnail;
+        private bool _isSelected;
 
         public AssetCard() {
             style.paddingLeft = 5;
@@ -100,6 +101,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         public void SetSelected(bool selected) {
+            _isSelected = selected;
             if (selected) {
                 _innerContainer.style.backgroundColor = ColorPreset.ItemSelectedBackGround;
                 var borderColor = ColorPreset.ItemSelectedBorder;
@@ -145,7 +147,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         private void OnDragLeave(DragLeaveEvent evt) {
-            _innerContainer.style.backgroundColor = Color.clear;
+            _innerContainer.style.backgroundColor = _isSelected ? ColorPreset.ItemSelectedBackGround : Color.clear;
             evt.StopImmediatePropagation();
         }
 
@@ -171,7 +173,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             DragAndDrop.AcceptDrag();
-            _innerContainer.style.backgroundColor = Color.clear;
+            _innerContainer.style.backgroundColor = _isSelected ? ColorPreset.ItemSelectedBackGround : Color.clear;
 
             var assetIds = DragAndDrop.GetGenericData("AssetManagerAssets") as string[];
             var folderIds = DragAndDrop.GetGenericData("AssetManagerFolders") as string[];
