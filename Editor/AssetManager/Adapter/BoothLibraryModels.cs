@@ -37,8 +37,16 @@ namespace _4OF.ee4v.AssetManager.Adapter {
         private static List<ShopDto> _lastContents = new();
         public static IReadOnlyList<ShopDto> LastContents => _lastContents;
 
+        public static string Status {
+            get {
+                lock (StatusLock) {
+                    if (_isProcessing) return "working";
+                    return Pending.IsEmpty ? "waiting" : "working";
+                }
+            }
+        }
+
         public static void SetContents(List<ShopDto> shops) {
-            // enqueue and let UI flush in EditorApplication.update
             Pending.Enqueue(shops);
         }
 
@@ -56,20 +64,9 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             _lastContents = new List<ShopDto>();
         }
 
-        // Control processing flag used to indicate when an import operation is actively running.
         public static void SetProcessing(bool processing) {
             lock (StatusLock) {
                 _isProcessing = processing;
-            }
-        }
-
-        // Expose a simple status for health checks. "working" if processing or pending items exist, otherwise "waiting".
-        public static string Status {
-            get {
-                lock (StatusLock) {
-                    if (_isProcessing) return "working";
-                    return Pending.IsEmpty ? "waiting" : "working";
-                }
             }
         }
     }

@@ -84,7 +84,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             while (IsRunning)
                 try {
                     var context =
-                        _listener.GetContext(); // Will block until a request comes in or the listener is closed
+                        _listener.GetContext();
                     try {
                         HandleContext(context);
                     }
@@ -100,11 +100,9 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                     }
                 }
                 catch (HttpListenerException) {
-                    // Typically thrown when the listener is stopped; break out
                     break;
                 }
                 catch (InvalidOperationException) {
-                    // Listener might have been closed; exit loop
                     break;
                 }
                 catch (Exception e) {
@@ -116,9 +114,8 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             var req = ctx.Request;
             var resp = ctx.Response;
             try {
-                // GET / -> health status (only 'waiting' or 'working')
                 if (req.HttpMethod.Equals("GET", StringComparison.OrdinalIgnoreCase) &&
-                    (req.Url.AbsolutePath == "/" || req.Url.AbsolutePath == "")) {
+                    req.Url.AbsolutePath is "/" or "") {
                     var status = BoothLibraryServerState.Status ?? "waiting";
                     var body = $"{{\"status\":\"{status}\"}}";
                     var data = Encoding.UTF8.GetBytes(body);
@@ -128,10 +125,8 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                     resp.ContentLength64 = data.Length;
                     resp.OutputStream.Write(data, 0, data.Length);
                 }
-                // POST / -> same behavior as previous /contents endpoint (receive JSON array or wrapper)
                 else if (req.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase) &&
-                         (req.Url.AbsolutePath == "/" || req.Url.AbsolutePath == "")) {
-                    // Expect a JSON array of shops
+                         req.Url.AbsolutePath is "/" or "") {
                     string body;
                     using (var reader = new StreamReader(req.InputStream, req.ContentEncoding)) {
                         body = reader.ReadToEnd();
@@ -144,7 +139,6 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                         resp.OutputStream.Write(empty, 0, empty.Length);
                     }
                     else {
-                        // Convert top-level array to wrapper for Unity JsonUtility
                         var trim = body.Trim();
                         ShopsWrapper wrapper = null;
                         try {
@@ -168,24 +162,22 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                             resp.OutputStream.Write(err, 0, err.Length);
                         }
                         else {
-                            // Import immediately on POST and return created count. Only update UI after successful import.
-                            int created = 0;
+                            int created;
                             try {
                                 created = BoothLibraryImporter.Import(wrapper.Shops);
                             }
                             catch (Exception ex) {
                                 Debug.LogError("Error importing shops on POST: " + ex);
-                                // but still return failure status
                                 resp.StatusCode = 500;
                                 resp.ContentType = "application/json; charset=utf-8";
-                                var errStr = $"{{\"ok\":false, \"error\": \"Import failed: {ex.Message.Replace("\"", "\\\"") }\"}}";
+                                var errStr =
+                                    $"{{\"ok\":false, \"error\": \"Import failed: {ex.Message.Replace("\"", "\\\"")}\"}}";
                                 var err = Encoding.UTF8.GetBytes(errStr);
                                 resp.ContentLength64 = err.LongLength;
                                 resp.OutputStream.Write(err, 0, err.Length);
                                 return;
                             }
 
-                            // reflect to UI only after successful import
                             BoothLibraryServerState.SetContents(wrapper.Shops);
 
                             resp.StatusCode = 200;

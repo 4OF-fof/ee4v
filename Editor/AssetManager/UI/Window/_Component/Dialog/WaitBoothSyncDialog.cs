@@ -63,14 +63,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             catch (Exception ex) {
                 Debug.LogWarning($"Failed to start local HttpServer on port {LocalHttpPort}: {ex}");
                 var errLabel = new Label($"ローカル HTTP サーバの起動に失敗しました: {ex.Message}") {
-                    style = { marginBottom = 8, unityTextAlign = TextAnchor.MiddleLeft, color = new Color(0.8f, 0.2f, 0.2f) }
+                    style = {
+                        marginBottom = 8, unityTextAlign = TextAnchor.MiddleLeft, color = new Color(0.8f, 0.2f, 0.2f)
+                    }
                 };
                 content.Add(errLabel);
             }
 
             content.schedule.Execute(() => Application.OpenURL(BoothLibraryUrl));
 
-            content.RegisterCallback<DetachFromPanelEvent>(_ => {
+            content.RegisterCallback<DetachFromPanelEvent>(_ =>
+            {
                 try {
                     if (HttpServer.IsRunning) HttpServer.Stop();
                 }
