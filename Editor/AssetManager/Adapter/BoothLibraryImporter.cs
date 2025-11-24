@@ -217,10 +217,12 @@ namespace _4OF.ee4v.AssetManager.Adapter {
             }
 
             var newFolder = new BoothItemFolder();
-            if (!string.IsNullOrEmpty(identifier) && identifier.All(char.IsDigit))
-                newFolder.SetName(identifier);
-            else
-                newFolder.SetName(folderName ?? identifier ?? "Booth Item");
+            var preferredName = !string.IsNullOrEmpty(folderName)
+                ? folderName
+                : !string.IsNullOrEmpty(identifier)
+                    ? identifier
+                    : "Booth Item";
+            newFolder.SetName(preferredName);
             newFolder.SetDescription(folderDescription ?? shopName ?? string.Empty);
             newFolder.SetShopDomain(shopDomain);
             newFolder.SetShopName(shopName);

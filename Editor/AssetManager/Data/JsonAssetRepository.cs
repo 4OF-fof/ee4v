@@ -208,7 +208,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
                     if (found == null) {
                         var newFolder = new BoothItemFolder();
-                        newFolder.SetName(identifier ?? asset.BoothData.FileName ?? asset.Name ?? "Booth Item");
+                        newFolder.SetName(asset.BoothData.FileName ?? asset.Name ?? identifier ?? "Booth Item");
                         newFolder.SetDescription(asset.BoothData.FileName ?? string.Empty);
                         newFolder.SetShopDomain(asset.BoothData.ShopDomain ?? string.Empty);
                         if (!string.IsNullOrEmpty(identifier) && identifier.All(char.IsDigit))
