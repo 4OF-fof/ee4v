@@ -16,6 +16,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         bool HasAssetFile(Ulid assetId);
         AssetMetadata CreateEmptyAsset();
         void SaveAsset(AssetMetadata asset);
+        void SaveAssets(IEnumerable<AssetMetadata> assets);
         void RenameAssetFile(Ulid assetId, string newName);
         void DeleteAsset(Ulid assetId);
         void SaveLibraryMetadata(LibraryMetadata libraryMetadata);

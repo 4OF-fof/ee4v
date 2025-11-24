@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using _4OF.ee4v.AssetManager.Data;
@@ -113,13 +114,15 @@ namespace _4OF.ee4v.AssetManager.Service {
             if (string.IsNullOrEmpty(oldTag) || string.IsNullOrEmpty(newTag) || oldTag == newTag) return;
 
             var assets = _repository.GetAllAssets().ToList();
-            foreach (var newAsset in from asset in assets
-                     where asset.Tags.Contains(oldTag)
-                     select new AssetMetadata(asset)) {
+            var assetsToSave = new List<AssetMetadata>();
+            foreach (var asset in assets.Where(a => a.Tags.Contains(oldTag))) {
+                var newAsset = new AssetMetadata(asset);
                 newAsset.RemoveTag(oldTag);
                 newAsset.AddTag(newTag);
-                _repository.SaveAsset(newAsset);
+                assetsToSave.Add(newAsset);
             }
+
+            if (assetsToSave.Count > 0) _repository.SaveAssets(assetsToSave);
 
             var lib = _repository.GetLibraryMetadata();
             if (lib == null) return;
@@ -134,12 +137,14 @@ namespace _4OF.ee4v.AssetManager.Service {
             if (string.IsNullOrEmpty(tag)) return;
 
             var assets = _repository.GetAllAssets().ToList();
-            foreach (var newAsset in from asset in assets
-                     where asset.Tags.Contains(tag)
-                     select new AssetMetadata(asset)) {
+            var assetsToSave = new List<AssetMetadata>();
+            foreach (var asset in assets.Where(a => a.Tags.Contains(tag))) {
+                var newAsset = new AssetMetadata(asset);
                 newAsset.RemoveTag(tag);
-                _repository.SaveAsset(newAsset);
+                assetsToSave.Add(newAsset);
             }
+
+            if (assetsToSave.Count > 0) _repository.SaveAssets(assetsToSave);
 
             var lib = _repository.GetLibraryMetadata();
             if (lib == null) return;

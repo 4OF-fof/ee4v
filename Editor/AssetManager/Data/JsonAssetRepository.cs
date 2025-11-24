@@ -284,6 +284,45 @@ namespace _4OF.ee4v.AssetManager.Data {
             }
         }
 
+        public void SaveAssets(IEnumerable<AssetMetadata> assets) {
+            if (assets == null) return;
+
+            var anyChanged = false;
+            var changedIds = new List<Ulid>();
+
+            foreach (var asset in assets) {
+                if (asset == null) continue;
+
+                var assetDir = Path.Combine(_assetRootDir, asset.ID.ToString());
+                try {
+                    if (!Directory.Exists(assetDir)) Directory.CreateDirectory(assetDir);
+
+                    var json = JsonConvert.SerializeObject(asset, _serializerSettings);
+                    var filePath = Path.Combine(assetDir, "metadata.json");
+                    File.WriteAllText(filePath, json);
+
+                    _libraryCache.UpsertAsset(asset);
+                    anyChanged = true;
+                    changedIds.Add(asset.ID);
+                }
+                catch (Exception e) {
+                    Debug.LogWarning($"[JsonAssetRepository] Failed to write metadata for {asset.ID}: {e.Message}");
+                }
+            }
+
+            if (!anyChanged) return;
+
+            SaveCache();
+
+            try {
+                foreach (var id in changedIds) AssetChanged?.Invoke(id);
+                LibraryChanged?.Invoke();
+            }
+            catch {
+                // ignore
+            }
+        }
+
         public void RenameAssetFile(Ulid assetId, string newName) {
             var asset = _libraryCache.GetAsset(assetId);
             if (asset == null) return;

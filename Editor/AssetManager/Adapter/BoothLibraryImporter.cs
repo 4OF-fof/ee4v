@@ -133,11 +133,8 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                 try {
                     repository.SaveLibraryMetadata(librariesClone);
 
-                    var saved = new List<Ulid>();
-                    foreach (var a in stagedAssets) {
-                        repository.SaveAsset(a);
-                        saved.Add(a.ID);
-                    }
+                    var saved = stagedAssets.Select(a => a.ID).ToList();
+                    if (stagedAssets.Count > 0) repository.SaveAssets(stagedAssets);
 
                     Debug.Log($"Imported {saved.Count} Booth items into AssetLibrary");
 

@@ -19,7 +19,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             Repository.Load();
 
             AssetService = new AssetService(Repository);
-            FolderService = new FolderService(Repository, AssetService);
+            FolderService = new FolderService(Repository);
             TextureService = new TextureService(Repository);
         }
 

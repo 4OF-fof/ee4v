@@ -7,12 +7,10 @@ using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Service {
     public class FolderService {
-        private readonly AssetService _assetService;
         private readonly IAssetRepository _repository;
 
-        public FolderService(IAssetRepository repository, AssetService assetService) {
+        public FolderService(IAssetRepository repository) {
             _repository = repository;
-            _assetService = assetService;
         }
 
         public bool CreateFolder(Ulid parentFolderId, string name, string description = null) {
@@ -188,8 +186,16 @@ namespace _4OF.ee4v.AssetManager.Service {
             var allDescendantIds = GetSelfAndDescendants(targetFolder);
             var allAssets = _repository.GetAllAssets().ToList();
 
-            foreach (var asset in allAssets.Where(asset => allDescendantIds.Contains(asset.Folder)))
-                _assetService.RemoveAsset(asset.ID);
+            var assetsToMarkDeleted = new List<AssetMetadata>();
+            foreach (var asset in allAssets.Where(asset => allDescendantIds.Contains(asset.Folder))) {
+                var newAsset = new AssetMetadata(asset);
+                newAsset.SetDeleted(true);
+                assetsToMarkDeleted.Add(newAsset);
+            }
+
+            if (assetsToMarkDeleted.Count > 0) {
+                _repository.SaveAssets(assetsToMarkDeleted);
+            }
             
             foreach (var fid in allDescendantIds) {
                 try {
