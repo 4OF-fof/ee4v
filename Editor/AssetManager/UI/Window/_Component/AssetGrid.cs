@@ -111,6 +111,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public event Action<List<object>> OnSelectionChange;
         public event Action<BaseFolder> OnFolderDoubleClicked;
+        public event Action<AssetMetadata> OnAssetDoubleClicked;
         public event Action<List<Ulid>, List<Ulid>, Ulid> OnItemsDroppedToFolder;
 
         public void Initialize(TextureService textureService, IAssetRepository repository = null) {
@@ -330,8 +331,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             if (evt.clickCount == 2) {
-                if (targetItem is BaseFolder folder)
-                    OnFolderDoubleClicked?.Invoke(folder);
+                switch (targetItem) {
+                    case BaseFolder folder:
+                        OnFolderDoubleClicked?.Invoke(folder);
+                        break;
+                    case AssetMetadata asset:
+                        OnAssetDoubleClicked?.Invoke(asset);
+                        break;
+                }
                 evt.StopPropagation();
                 return;
             }
