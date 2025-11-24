@@ -188,9 +188,24 @@ namespace _4OF.ee4v.AssetManager.Service {
             var allDescendantIds = GetSelfAndDescendants(targetFolder);
             var allAssets = _repository.GetAllAssets().ToList();
 
-            foreach (var asset in allAssets)
-                if (allDescendantIds.Contains(asset.Folder))
-                    _assetService.RemoveAsset(asset.ID);
+            foreach (var asset in allAssets.Where(asset => allDescendantIds.Contains(asset.Folder)))
+                _assetService.RemoveAsset(asset.ID);
+            
+            foreach (var fid in allDescendantIds) {
+                try {
+                    _repository.RemoveFolderThumbnail(fid);
+                }
+                catch (Exception e) {
+                    Debug.LogWarning($"Failed to remove folder thumbnail for {fid}: {e.Message}");
+                }
+
+                try {
+                    AssetManagerContainer.TextureService?.RemoveFolderFromCache(fid);
+                }
+                catch {
+                    // ignored
+                }
+            }
 
             libraries.RemoveFolder(folderId);
             _repository.SaveLibraryMetadata(libraries);
