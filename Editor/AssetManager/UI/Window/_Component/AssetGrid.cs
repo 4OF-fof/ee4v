@@ -339,6 +339,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         OnAssetDoubleClicked?.Invoke(asset);
                         break;
                 }
+
                 evt.StopPropagation();
                 return;
             }

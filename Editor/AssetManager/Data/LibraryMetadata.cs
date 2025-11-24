@@ -242,9 +242,9 @@ namespace _4OF.ee4v.AssetManager.Data {
         public string ItemId { get; private set; } = "";
         public string ShopDomain { get; private set; } = "";
         public string ShopName { get; private set; } = "";
-        
+
         [JsonIgnore] public string ShopUrl => string.IsNullOrEmpty(ShopDomain) ? "" : $"https://{ShopDomain}.booth.pm";
-        
+
         [JsonIgnore]
         public string ItemUrl => string.IsNullOrEmpty(ShopDomain) || string.IsNullOrEmpty(ItemId)
             ? ""
