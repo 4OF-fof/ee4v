@@ -3,6 +3,8 @@ using _4OF.ee4v.AssetManager.Adapter;
 using UnityEngine;
 using UnityEngine.UIElements;
 
+// System.IO not required after removing file-open UI
+
 namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
     public static class WaitBoothSyncDialog {
         private const string BoothLibraryUrl = "https://accounts.booth.pm/library";
@@ -10,49 +12,118 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
 
         public static VisualElement CreateContent() {
             var content = new VisualElement();
+            content.style.paddingLeft = 18;
+            content.style.paddingRight = 18;
+            content.style.paddingTop = 14;
+            content.style.paddingBottom = 14;
+            content.style.alignSelf = Align.Stretch;
+            content.style.maxWidth = 820;
+            content.style.flexDirection = FlexDirection.Column;
 
             var title = new Label("Import from Booth") {
                 style = {
-                    fontSize = 14,
+                    fontSize = 18,
                     unityFontStyleAndWeight = FontStyle.Bold,
-                    marginBottom = 10
+                    marginBottom = 14
                 }
             };
 
             content.Add(title);
 
-            var message = new Label("ブラウザで操作を行ってください。自動的に Booth のライブラリ画面を開きます。") {
-                style = { marginBottom = 12, unityTextAlign = TextAnchor.MiddleLeft }
+            var message = new Label("ブラウザで BOOTH のライブラリ画面を操作して\nデータを Unity に送信します。") {
+                style = {
+                    marginBottom = 16, fontSize = 13, unityTextAlign = TextAnchor.MiddleLeft,
+                    whiteSpace = WhiteSpace.Normal, flexShrink = 1, flexGrow = 1,
+                    width = new StyleLength(new Length(100, LengthUnit.Percent))
+                }
             };
             content.Add(message);
 
+            var userscriptNotice = new Label("Userscript のインストールが必要です") {
+                style = {
+                    marginBottom = 8,
+                    unityTextAlign = TextAnchor.MiddleLeft,
+                    color = new Color(0.8f, 0.2f, 0.2f),
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    fontSize = 13,
+                    whiteSpace = WhiteSpace.Normal,
+                    flexShrink = 1
+                }
+            };
+            content.Add(userscriptNotice);
+
+            var userscriptDesc1 =
+                new Label("この機能はブラウザ側で動作する Userscript (EE4V BOOTH Library Sync) により、\nBOOTH の情報を Unity に送信します。") {
+                    style = {
+                        marginBottom = 8, fontSize = 12, unityTextAlign = TextAnchor.MiddleLeft,
+                        whiteSpace = WhiteSpace.Normal, flexShrink = 1, flexGrow = 1,
+                        width = new StyleLength(new Length(100, LengthUnit.Percent))
+                    }
+                };
+
+            var userscriptDesc2 =
+                new Label(
+                    "まだインストールしていない場合は、ブラウザ拡張 (例: Tampermonkey) に Userscript を追加して有効化してください。\n送信中はタブと Unity を閉じないでください。") {
+                    style = {
+                        marginBottom = 20, fontSize = 12, unityTextAlign = TextAnchor.MiddleLeft,
+                        whiteSpace = WhiteSpace.Normal, flexShrink = 1, flexGrow = 1,
+                        width = new StyleLength(new Length(100, LengthUnit.Percent))
+                    }
+                };
+
+            userscriptDesc1.style.maxWidth = 480;
+            userscriptDesc2.style.maxWidth = 480;
+            userscriptDesc1.style.flexShrink = 1;
+            userscriptDesc2.style.flexShrink = 1;
+
+            content.Add(userscriptDesc1);
+            content.Add(userscriptDesc2);
+
             var buttonRow = new VisualElement {
-                style = { flexDirection = FlexDirection.Row, justifyContent = Justify.FlexStart, marginBottom = 12 }
+                style = {
+                    flexDirection = FlexDirection.Row, justifyContent = Justify.FlexStart, marginBottom = 12,
+                    width = new StyleLength(new Length(100, LengthUnit.Percent))
+                }
             };
 
             var openBtn = new Button(() => Application.OpenURL(BoothLibraryUrl)) {
-                text = BoothLibraryUrl,
+                text = "BOOTHライブラリを開く",
                 style = {
-                    paddingLeft = 8,
-                    paddingRight = 8,
-                    paddingTop = 4,
-                    paddingBottom = 4,
-                    borderTopLeftRadius = 6,
-                    borderTopRightRadius = 6,
-                    borderBottomLeftRadius = 6,
-                    borderBottomRightRadius = 6
+                    paddingLeft = 12,
+                    paddingRight = 12,
+                    paddingTop = 6,
+                    paddingBottom = 6,
+                    borderTopLeftRadius = 8,
+                    borderTopRightRadius = 8,
+                    borderBottomLeftRadius = 8,
+                    borderBottomRightRadius = 8,
+                    fontSize = 13
                 }
             };
             buttonRow.Add(openBtn);
 
+
             content.Add(buttonRow);
 
             var closeRow = new VisualElement {
-                style = { flexDirection = FlexDirection.Row, justifyContent = Justify.FlexEnd }
+                style = {
+                    flexDirection = FlexDirection.Row, justifyContent = Justify.FlexEnd, marginTop = 2,
+                    width = new StyleLength(new Length(100, LengthUnit.Percent))
+                }
             };
 
-            var closeBtn = new Button { text = "Close" };
+            var closeBtn = new Button {
+                text = "閉じる",
+                style = {
+                    paddingLeft = 12,
+                    paddingRight = 12,
+                    paddingTop = 6,
+                    paddingBottom = 6,
+                    fontSize = 13
+                }
+            };
             closeBtn.clicked += () => CloseDialog(content);
+            closeBtn.style.marginRight = 0;
             closeRow.Add(closeBtn);
 
             content.Add(closeRow);
@@ -69,8 +140,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 };
                 content.Add(errLabel);
             }
-
-            content.schedule.Execute(() => Application.OpenURL(BoothLibraryUrl));
 
             content.RegisterCallback<DetachFromPanelEvent>(_ =>
             {
