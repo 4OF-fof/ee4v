@@ -1,5 +1,11 @@
-﻿using _4OF.ee4v.AssetManager.Service;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.Core.Utility;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -110,5 +116,84 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _innerContainer.style.borderRightColor = Color.clear;
             }
         }
+
+        public void EnableDropZone() {
+            RegisterCallback<DragEnterEvent>(OnDragEnter, TrickleDown.TrickleDown);
+            RegisterCallback<DragLeaveEvent>(OnDragLeave, TrickleDown.TrickleDown);
+            RegisterCallback<DragUpdatedEvent>(OnDragUpdated, TrickleDown.TrickleDown);
+            RegisterCallback<DragPerformEvent>(OnDragPerform, TrickleDown.TrickleDown);
+        }
+
+        public void DisableDropZone() {
+            UnregisterCallback<DragEnterEvent>(OnDragEnter, TrickleDown.TrickleDown);
+            UnregisterCallback<DragLeaveEvent>(OnDragLeave, TrickleDown.TrickleDown);
+            UnregisterCallback<DragUpdatedEvent>(OnDragUpdated, TrickleDown.TrickleDown);
+            UnregisterCallback<DragPerformEvent>(OnDragPerform, TrickleDown.TrickleDown);
+        }
+
+        private void OnDragEnter(DragEnterEvent evt) {
+            if (userData is not BaseFolder) return;
+            if (!CanAcceptDrop()) return;
+
+            if (userData is BoothItemFolder && HasFoldersToDrop()) {
+                evt.StopImmediatePropagation();
+                return;
+            }
+
+            _innerContainer.style.backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.3f);
+            evt.StopImmediatePropagation();
+        }
+
+        private void OnDragLeave(DragLeaveEvent evt) {
+            _innerContainer.style.backgroundColor = Color.clear;
+            evt.StopImmediatePropagation();
+        }
+
+        private void OnDragUpdated(DragUpdatedEvent evt) {
+            if (userData is not BaseFolder) return;
+            if (!CanAcceptDrop()) return;
+
+            if (userData is BoothItemFolder && HasFoldersToDrop())
+                DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
+            else
+                DragAndDrop.visualMode = DragAndDropVisualMode.Move;
+
+            evt.StopImmediatePropagation();
+        }
+
+        private void OnDragPerform(DragPerformEvent evt) {
+            if (userData is not BaseFolder folder) return;
+            if (!CanAcceptDrop()) return;
+
+            if (userData is BoothItemFolder && HasFoldersToDrop()) {
+                evt.StopImmediatePropagation();
+                return;
+            }
+
+            DragAndDrop.AcceptDrag();
+            _innerContainer.style.backgroundColor = Color.clear;
+
+            var assetIds = DragAndDrop.GetGenericData("AssetManagerAssets") as string[];
+            var folderIds = DragAndDrop.GetGenericData("AssetManagerFolders") as string[];
+
+            var assetUlidList = assetIds?.Select(Ulid.Parse).ToList() ?? new List<Ulid>();
+            var folderUlidList = folderIds?.Select(Ulid.Parse).ToList() ?? new List<Ulid>();
+
+            OnDropped?.Invoke(folder.ID, assetUlidList, folderUlidList);
+
+            evt.StopImmediatePropagation();
+        }
+
+        private static bool CanAcceptDrop() {
+            var hasAssets = DragAndDrop.GetGenericData("AssetManagerAssets") != null;
+            var hasFolders = DragAndDrop.GetGenericData("AssetManagerFolders") != null;
+            return hasAssets || hasFolders;
+        }
+
+        private static bool HasFoldersToDrop() {
+            return DragAndDrop.GetGenericData("AssetManagerFolders") != null;
+        }
+
+        public event Action<Ulid, List<Ulid>, List<Ulid>> OnDropped;
     }
 }

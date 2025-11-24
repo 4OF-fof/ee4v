@@ -66,9 +66,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         public event Action<List<object>> OnSelectionChange;
+        public event Action<List<Ulid>, List<Ulid>, Ulid> OnItemsDroppedToFolder;
 
         public void Initialize(TextureService textureService, IAssetRepository repository = null) {
             _grid.Initialize(textureService, repository);
+            _grid.OnItemsDroppedToFolder += (assetIds, folderIds, targetFolderId) =>
+            {
+                OnItemsDroppedToFolder?.Invoke(assetIds, folderIds, targetFolderId);
+            };
         }
 
         public void ClearSelection() {

@@ -63,7 +63,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _assetController.OnHistoryChanged -= OnControllerHistoryChanged;
             }
 
-            if (_assetView != null) _assetView.OnSelectionChange -= OnSelectionChanged;
+            if (_assetView != null) {
+                _assetView.OnSelectionChange -= OnSelectionChanged;
+                _assetView.OnItemsDroppedToFolder -= OnItemsDroppedToFolder;
+            }
 
             if (_assetInfo != null) {
                 _assetInfo.OnNameChanged -= OnAssetNameChanged;
@@ -148,6 +151,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetController.ModeChanged += OnModeChanged;
             _assetController.OnHistoryChanged += OnControllerHistoryChanged;
             _assetView.OnSelectionChange += OnSelectionChanged;
+            _assetView.OnItemsDroppedToFolder += OnItemsDroppedToFolder;
 
             _assetInfo.OnNameChanged += OnAssetNameChanged;
             _assetInfo.OnDescriptionChanged += OnAssetDescriptionChanged;
@@ -490,6 +494,33 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             }
 
             foreach (var assetId in assetIds) _assetService.SetFolder(assetId, targetFolderId);
+            RefreshUI();
+        }
+
+        private void OnItemsDroppedToFolder(List<Ulid> assetIds, List<Ulid> folderIds, Ulid targetFolderId) {
+            if (assetIds.Count > 0) {
+                var libMetadata = _repository.GetLibraryMetadata();
+                var assetsFromBoothItemFolder = (from assetId in assetIds
+                    select _repository.GetAsset(assetId)
+                    into asset
+                    where asset != null
+                    where asset.Folder != Ulid.Empty && libMetadata != null
+                    let currentFolder = libMetadata.GetFolder(asset.Folder)
+                    where currentFolder is BoothItemFolder
+                    select asset).ToList();
+
+                if (assetsFromBoothItemFolder.Count > 0) {
+                    ShowBoothItemFolderWarningDialog(assetIds, targetFolderId, assetsFromBoothItemFolder);
+                    return;
+                }
+
+                foreach (var assetId in assetIds) _assetService.SetFolder(assetId, targetFolderId);
+            }
+
+            if (folderIds.Count > 0)
+                foreach (var folderId in folderIds)
+                    _folderService.MoveFolder(folderId, targetFolderId);
+
             RefreshUI();
         }
 

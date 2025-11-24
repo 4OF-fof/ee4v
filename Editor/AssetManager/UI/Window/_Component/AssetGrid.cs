@@ -111,6 +111,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public event Action<List<object>> OnSelectionChange;
         public event Action<BaseFolder> OnFolderDoubleClicked;
+        public event Action<List<Ulid>, List<Ulid>, Ulid> OnItemsDroppedToFolder;
 
         public void Initialize(TextureService textureService, IAssetRepository repository = null) {
             _textureService = textureService;
@@ -245,6 +246,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 card.RegisterCallback<PointerMoveEvent>(OnCardPointerMove);
                 card.RegisterCallback<PointerUpEvent>(OnCardPointerUp);
 
+                card.OnDropped -= OnCardDropped;
+                card.DisableDropZone();
+
                 if (i < rowData.Count) {
                     card.style.display = DisplayStyle.Flex;
                     card.style.width = itemWidth;
@@ -264,6 +268,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
                             card.SetThumbnail(null, true, isEmpty);
                             LoadImageAsync(card, folder.ID, true);
+
+                            card.EnableDropZone();
+                            card.OnDropped += OnCardDropped;
                             break;
                         case AssetMetadata asset:
                             card.SetData(asset.Name);
@@ -410,6 +417,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void OnPointerLeaveAnywhere(PointerLeaveEvent evt) {
             _isDragging = false;
+        }
+
+        private void OnCardDropped(Ulid targetFolderId, List<Ulid> assetIds, List<Ulid> folderIds) {
+            OnItemsDroppedToFolder?.Invoke(assetIds, folderIds, targetFolderId);
         }
     }
 }
