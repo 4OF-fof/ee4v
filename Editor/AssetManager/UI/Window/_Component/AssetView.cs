@@ -54,7 +54,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _grid.OnSelectionChange += NotifySelectionChange;
             _grid.OnFolderDoubleClicked += folder => { _controller?.SetFolder(folder.ID); };
-            _grid.OnAssetDoubleClicked += OpenAssetDetailWindow;
 
             RegisterCallback<KeyDownEvent>(evt =>
             {
@@ -234,12 +233,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     _                             => 0
                 };
             });
-        }
-
-        private static void OpenAssetDetailWindow(AssetMetadata asset) {
-            if (asset == null) return;
-            var mousePos = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
-            AssetDetailWindow.Open(mousePos, asset);
         }
     }
 }
