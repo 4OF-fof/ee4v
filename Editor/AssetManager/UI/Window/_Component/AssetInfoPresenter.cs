@@ -164,6 +164,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var folder = _repository?.GetLibraryMetadata()?.GetFolder(asset.Folder);
 
             var dependencies = GetDependencies(asset);
+            var hasPhysicalFile = HasPhysicalFile(asset);
 
             var data = new AssetDisplayData {
                 Id = asset.ID,
@@ -175,7 +176,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 ModificationTime = DateTimeOffset.FromUnixTimeMilliseconds(asset.ModificationTime).ToLocalTime(),
                 FolderId = asset.Folder,
                 FolderName = folder?.Name ?? "-",
-                Dependencies = dependencies
+                Dependencies = dependencies,
+                DownloadUrl = asset.BoothData?.DownloadUrl ?? "",
+                HasPhysicalFile = hasPhysicalFile
             };
 
             AssetDataUpdated?.Invoke(data);
@@ -272,14 +275,22 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             return result;
         }
+
+        private bool HasPhysicalFile(AssetMetadata asset) {
+            if (asset == null) return false;
+
+            return _repository?.HasAssetFile(asset.ID) ?? false;
+        }
     }
 
     public class AssetDisplayData {
         public IReadOnlyList<DependencyDisplayData> Dependencies;
         public string Description;
+        public string DownloadUrl;
         public string Extension;
         public Ulid FolderId;
         public string FolderName;
+        public bool HasPhysicalFile;
         public Ulid Id;
         public DateTimeOffset ModificationTime;
         public string Name;

@@ -18,6 +18,10 @@ namespace _4OF.ee4v.AssetManager.Service {
             _repository.CreateAssetFromFile(path);
         }
 
+        public void AddFileToAsset(Ulid assetId, string path) {
+            _repository.AddFileToAsset(assetId, path);
+        }
+
         public void DeleteAsset(Ulid assetId) {
             _repository.DeleteAsset(assetId);
         }

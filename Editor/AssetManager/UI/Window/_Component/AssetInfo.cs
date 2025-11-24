@@ -14,6 +14,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly VisualElement _dependenciesContainer;
         private readonly Label _dependenciesLabel;
         private readonly TextField _descriptionField;
+        private readonly VisualElement _downloadButtonContainer;
 
         private readonly Label _folderHeader;
         private readonly Label _folderNameLabel;
@@ -249,6 +250,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             });
             _singleSelectionContainer.Add(_addDependencyButton);
 
+            _downloadButtonContainer = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    flexWrap = Wrap.Wrap,
+                    marginBottom = 10
+                }
+            };
+            _singleSelectionContainer.Add(_downloadButtonContainer);
+
             _multiSelectionContainer = new VisualElement {
                 style = { display = DisplayStyle.None, alignItems = Align.Center, marginTop = 20, marginBottom = 40 }
             };
@@ -278,6 +288,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<Ulid> OnDependencyRemoved;
         public event Action<Ulid> OnDependencyClicked;
         public event Action<Ulid> OnFolderClicked;
+        public event Action<string> OnDownloadRequested;
 
         public void Initialize(IAssetRepository repository, TextureService textureService,
             FolderService folderService) {
@@ -321,6 +332,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             RefreshTags(data.Tags);
             RefreshDependencies(data.Dependencies);
+
+            if (!string.IsNullOrEmpty(data.DownloadUrl) && !data.HasPhysicalFile)
+                RefreshDownloadButton(data.DownloadUrl);
+            else
+                RefreshDownloadButton("");
 
             _dependenciesLabel.style.display = DisplayStyle.Flex;
             _dependenciesContainer.style.display = DisplayStyle.Flex;
@@ -552,6 +568,49 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 pill.Add(removeBtn);
                 _dependenciesContainer.Add(pill);
             }
+        }
+
+        private void RefreshDownloadButton(string downloadUrl) {
+            _downloadButtonContainer.Clear();
+            if (string.IsNullOrEmpty(downloadUrl)) return;
+
+            var pill = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    backgroundColor = new StyleColor(new Color(0.9f, 0.5f, 0.2f)),
+                    borderTopLeftRadius = 10,
+                    borderTopRightRadius = 10,
+                    borderBottomLeftRadius = 10,
+                    borderBottomRightRadius = 10,
+                    paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 4,
+                    marginRight = 4, marginBottom = 4,
+                    alignItems = Align.Center
+                }
+            };
+
+            pill.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 0) return;
+                OnDownloadRequested?.Invoke(downloadUrl);
+                evt.StopPropagation();
+            });
+
+            var icon = new Label("↓")
+                { style = { fontSize = 14, marginRight = 4, unityFontStyleAndWeight = FontStyle.Bold } };
+            var label = new Label("Download from Booth");
+
+            pill.RegisterCallback<MouseEnterEvent>(_ =>
+            {
+                pill.style.backgroundColor = new StyleColor(new Color(1.0f, 0.6f, 0.3f));
+            });
+            pill.RegisterCallback<MouseLeaveEvent>(_ =>
+            {
+                pill.style.backgroundColor = new StyleColor(new Color(0.9f, 0.5f, 0.2f));
+            });
+
+            pill.Add(icon);
+            pill.Add(label);
+            _downloadButtonContainer.Add(pill);
         }
 
         private void AddInfoRow(string label, string value) {

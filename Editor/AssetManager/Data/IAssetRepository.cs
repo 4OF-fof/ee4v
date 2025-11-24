@@ -12,6 +12,8 @@ namespace _4OF.ee4v.AssetManager.Data {
         IEnumerable<AssetMetadata> GetAllAssets();
         LibraryMetadata GetLibraryMetadata();
         void CreateAssetFromFile(string sourcePath);
+        void AddFileToAsset(Ulid assetId, string sourcePath);
+        bool HasAssetFile(Ulid assetId);
         AssetMetadata CreateEmptyAsset();
         void SaveAsset(AssetMetadata asset);
         void RenameAssetFile(Ulid assetId, string newName);

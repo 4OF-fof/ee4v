@@ -5,6 +5,7 @@ using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.AssetManager.UI.Window._Component;
+using _4OF.ee4v.AssetManager.UI.Window._Component.Dialog;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
@@ -79,6 +80,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _assetInfo.OnDependencyRemoved -= OnDependencyRemoved;
                 _assetInfo.OnDependencyClicked -= OnDependencyClicked;
                 _assetInfo.OnFolderClicked -= OnFolderSelected;
+                _assetInfo.OnDownloadRequested -= OnDownloadRequested;
             }
 
             _textureService?.ClearCache();
@@ -166,6 +168,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetInfo.OnDependencyRemoved += OnDependencyRemoved;
             _assetInfo.OnDependencyClicked += OnDependencyClicked;
             _assetInfo.OnFolderClicked += OnFolderSelected;
+            _assetInfo.OnDownloadRequested += OnDownloadRequested;
 
             _toastManager = new ToastManager(root);
 
@@ -720,6 +723,29 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             rootVisualElement.Add(container);
 
             return container;
+        }
+
+        private void OnDownloadRequested(string downloadUrl) {
+            if (string.IsNullOrEmpty(downloadUrl) || _selectedAsset == null) return;
+
+            var fileName = _selectedAsset.BoothData?.FileName ?? "";
+            if (string.IsNullOrEmpty(fileName)) {
+                ShowToast("ファイル名が設定されていません。", 3f, ToastType.Error);
+                return;
+            }
+
+            var dialog = new DownloadDialog();
+            var content = dialog.CreateContent(downloadUrl, _selectedAsset.ID, fileName, _assetService);
+
+            dialog.OnDownloadCompleted += () =>
+            {
+                var dialogContainer = content.parent?.parent;
+                dialogContainer?.RemoveFromHierarchy();
+                RefreshUI();
+                ShowToast("ダウンロードが完了しました。", 3f, ToastType.Success);
+            };
+
+            ShowDialog(content);
         }
 
         private void ShowToast(string message, float? duration = 3f, ToastType type = ToastType.Info) {

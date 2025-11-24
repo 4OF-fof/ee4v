@@ -184,6 +184,45 @@ namespace _4OF.ee4v.AssetManager.Data {
             }
         }
 
+        public void AddFileToAsset(Ulid assetId, string sourcePath) {
+            var asset = GetAsset(assetId);
+            if (asset == null) {
+                Debug.LogError($"[JsonAssetRepository] Asset not found: {assetId}");
+                return;
+            }
+
+            var fileInfo = new FileInfo(sourcePath);
+            var assetDir = Path.Combine(_assetRootDir, assetId.ToString());
+
+            try {
+                if (!Directory.Exists(assetDir)) Directory.CreateDirectory(assetDir);
+
+                var destPath = Path.Combine(assetDir, fileInfo.Name);
+                File.Copy(sourcePath, destPath, true);
+
+                var updatedAsset = new AssetMetadata(asset);
+                if (updatedAsset.Size == 0) updatedAsset.SetSize(fileInfo.Length);
+                if (string.IsNullOrEmpty(updatedAsset.Ext)) updatedAsset.SetExt(fileInfo.Extension);
+
+                SaveAsset(updatedAsset);
+                AssetChanged?.Invoke(assetId);
+            }
+            catch (Exception e) {
+                Debug.LogError($"[JsonAssetRepository] Failed to add file to asset: {e.Message}");
+                throw;
+            }
+        }
+
+        public bool HasAssetFile(Ulid assetId) {
+            var assetDir = Path.Combine(_assetRootDir, assetId.ToString());
+            if (!Directory.Exists(assetDir)) return false;
+
+            var files = Directory.GetFiles(assetDir)
+                .Where(f => !f.EndsWith("metadata.json") && !f.EndsWith("thumbnail.png"))
+                .ToArray();
+            return files.Length > 0;
+        }
+
         public AssetMetadata CreateEmptyAsset() {
             var assetMetadata = new AssetMetadata();
             var assetDir = Path.Combine(_assetRootDir, assetMetadata.ID.ToString());
