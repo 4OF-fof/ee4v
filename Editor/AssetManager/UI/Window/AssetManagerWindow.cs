@@ -16,7 +16,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private AssetViewController _assetController;
         private AssetInfo _assetInfo;
         private AssetService _assetService;
+
         private AssetView _assetView;
+
+        // When a folder is previewed in the grid (single-selection preview), AssetController.SelectedFolderId
+        // may be empty. Keep the previewed folder ID so tag operations can apply to previewed folders.
+        private Ulid _currentPreviewFolderId = Ulid.Empty;
         private FolderService _folderService;
         private bool _isInitialized;
         private Navigation _navigation;
@@ -164,10 +169,20 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private void OnSelectionChanged(List<object> selectedItems) {
             _assetInfo.UpdateSelection(selectedItems);
 
-            if (selectedItems is { Count: 1 } && selectedItems[0] is AssetMetadata asset)
-                _selectedAsset = asset;
-            else
-                _selectedAsset = null;
+            switch (selectedItems) {
+                case { Count: 1 } when selectedItems[0] is AssetMetadata asset:
+                    _selectedAsset = asset;
+                    _currentPreviewFolderId = Ulid.Empty;
+                    break;
+                case { Count: 1 } when selectedItems[0] is BaseFolder folder:
+                    _selectedAsset = null;
+                    _currentPreviewFolderId = folder.ID;
+                    break;
+                default:
+                    _selectedAsset = null;
+                    _currentPreviewFolderId = Ulid.Empty;
+                    break;
+            }
         }
 
         private void OnNavigationChanged(NavigationMode mode, string contextName, Func<AssetMetadata, bool> filter) {
@@ -175,6 +190,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             _assetView?.ClearSelection();
             _selectedAsset = null;
+            _currentPreviewFolderId = Ulid.Empty;
             _assetInfo?.UpdateSelection(new List<object>());
         }
 
@@ -184,6 +200,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             if (folderId != Ulid.Empty && (_selectedAsset == null || _selectedAsset.Folder == folderId)) return;
             _assetView?.ClearSelection();
             _selectedAsset = null;
+            _currentPreviewFolderId = Ulid.Empty;
             _assetInfo?.UpdateSelection(new List<object>());
         }
 
@@ -216,9 +233,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void OnAssetSelected(AssetMetadata asset) {
+            _currentPreviewFolderId = Ulid.Empty;
         }
 
         private void OnFolderPreviewSelected(BaseFolder folder) {
+            _currentPreviewFolderId = folder?.ID ?? Ulid.Empty;
         }
 
         private void OnFoldersChanged(List<BaseFolder> folders) {
@@ -245,15 +264,62 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void OnAssetTagAdded(string newTag) {
-            if (_selectedAsset == null) return;
-            _assetService.AddTag(_selectedAsset.ID, newTag);
+            if (string.IsNullOrWhiteSpace(newTag)) {
+                Vector2 screenPosition;
+                try {
+                    screenPosition = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+                }
+                catch {
+                    screenPosition = new Vector2(position.x + position.width / 2, position.y + position.height / 2);
+                }
+
+                TagSelectorWindow.Show(screenPosition, _repository, OnAssetTagAdded);
+                return;
+            }
+
+            if (_selectedAsset != null) {
+                _assetService.AddTag(_selectedAsset.ID, newTag);
+            }
+            else {
+                var targetFolderId = Ulid.Empty;
+                if (_assetController != null && _assetController.SelectedFolderId != Ulid.Empty)
+                    targetFolderId = _assetController.SelectedFolderId;
+                else if (_currentPreviewFolderId != Ulid.Empty)
+                    targetFolderId = _currentPreviewFolderId;
+
+                if (targetFolderId != Ulid.Empty) {
+                    _folderService.AddTag(targetFolderId, newTag);
+                }
+                else {
+                    ShowToast("タグの追加対象が見つかりませんでした", 3, ToastType.Error);
+                    return;
+                }
+            }
+
             _tagListView.Refresh();
             RefreshUI(false);
         }
 
         private void OnAssetTagRemoved(string tagToRemove) {
-            if (_selectedAsset == null) return;
-            _assetService.RemoveTag(_selectedAsset.ID, tagToRemove);
+            if (_selectedAsset != null) {
+                _assetService.RemoveTag(_selectedAsset.ID, tagToRemove);
+            }
+            else {
+                var targetFolderId = Ulid.Empty;
+                if (_assetController != null && _assetController.SelectedFolderId != Ulid.Empty)
+                    targetFolderId = _assetController.SelectedFolderId;
+                else if (_currentPreviewFolderId != Ulid.Empty)
+                    targetFolderId = _currentPreviewFolderId;
+
+                if (targetFolderId != Ulid.Empty) {
+                    _folderService.RemoveTag(targetFolderId, tagToRemove);
+                }
+                else {
+                    ShowToast("タグの削除対象が見つかりませんでした", 3, ToastType.Error);
+                    return;
+                }
+            }
+
             _tagListView.Refresh();
             RefreshUI(false);
         }

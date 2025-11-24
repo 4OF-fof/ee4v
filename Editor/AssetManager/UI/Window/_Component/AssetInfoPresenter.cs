@@ -34,14 +34,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<int> MultiSelectionUpdated;
 
         public void Dispose() {
-            if (_repository != null)
-                try {
-                    _repository.LibraryChanged -= OnRepositoryLibraryChanged;
-                    _repository.AssetChanged -= OnRepositoryAssetChanged;
-                }
-                catch {
-                    // ignore
-                }
+            if (_repository == null) return;
+            try {
+                _repository.LibraryChanged -= OnRepositoryLibraryChanged;
+                _repository.AssetChanged -= OnRepositoryAssetChanged;
+            }
+            catch {
+                // ignore
+            }
         }
 
         public void UpdateSelection(IReadOnlyList<object> selectedItems) {
@@ -63,24 +63,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             else {
                 MultiSelectionUpdated?.Invoke(selectedItems.Count);
             }
-        }
-
-        public void AddTagToAsset(Ulid assetId, string tag) {
-        }
-
-        public void RemoveTagFromAsset(Ulid assetId, string tag) {
-        }
-
-        public void AddTagToFolder(Ulid folderId, string tag) {
-            if (_folderService == null) return;
-            _folderService.AddTag(folderId, tag);
-            RefreshFolder(folderId);
-        }
-
-        public void RemoveTagFromFolder(Ulid folderId, string tag) {
-            if (_folderService == null) return;
-            _folderService.RemoveTag(folderId, tag);
-            RefreshFolder(folderId);
         }
 
         public async void LoadThumbnail(Ulid id, bool isFolder, Action<Texture2D> onLoaded) {
@@ -228,11 +210,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
 
             FolderDataUpdated?.Invoke(data);
-        }
-
-        private void RefreshFolder(Ulid folderId) {
-            var fresh = _repository?.GetLibraryMetadata()?.GetFolder(folderId);
-            if (fresh != null) SetFolder(fresh);
         }
 
         private BaseFolder GetParentFolder(Ulid childId) {

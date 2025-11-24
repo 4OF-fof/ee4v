@@ -242,14 +242,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _nameField.SetValueWithoutNotify(data.Name);
             _descriptionField.SetValueWithoutNotify(data.Description);
 
-            _presenter.LoadThumbnail(data.Id, false, tex =>
-            {
-                if (tex != null)
-                    _thumbnailContainer.style.backgroundImage = new StyleBackground(tex);
-                else
-                    _thumbnailContainer.style.backgroundImage =
-                        new StyleBackground(EditorGUIUtility.IconContent("GameObject Icon").image as Texture2D);
-            });
+            _presenter.LoadThumbnail(data.Id, false,
+                tex =>
+                {
+                    _thumbnailContainer.style.backgroundImage = tex != null
+                        ? new StyleBackground(tex)
+                        : new StyleBackground(EditorGUIUtility.IconContent("GameObject Icon").image as Texture2D);
+                });
 
             RefreshTags(data.Tags);
 
@@ -288,14 +287,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             RefreshTags(data.Tags);
 
-            _presenter.LoadThumbnail(data.Id, true, tex =>
-            {
-                if (tex != null)
-                    _thumbnailContainer.style.backgroundImage = new StyleBackground(tex);
-                else
-                    _thumbnailContainer.style.backgroundImage =
-                        new StyleBackground(EditorGUIUtility.IconContent("Folder Icon").image as Texture2D);
-            });
+            _presenter.LoadThumbnail(data.Id, true,
+                tex =>
+                {
+                    _thumbnailContainer.style.backgroundImage = tex != null
+                        ? new StyleBackground(tex)
+                        : new StyleBackground(EditorGUIUtility.IconContent("Folder Icon").image as Texture2D);
+                });
 
             _infoContainer.Clear();
             if (data.IsFolder) AddInfoRow("Sub Folders", data.SubFolderCount.ToString());
