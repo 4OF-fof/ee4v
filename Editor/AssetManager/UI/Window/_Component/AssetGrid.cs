@@ -365,7 +365,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             if (evt.pressedButtons != 1 || _isDragging) return;
             if (evt.currentTarget is not AssetCard card) return;
             var targetItem = card.userData;
-            if (targetItem is not AssetMetadata) return;
+            if (targetItem is not AssetMetadata && targetItem is not BaseFolder) return;
 
             if (!_selectedItems.Contains(targetItem)) {
                 _selectedItems.Clear();
@@ -378,13 +378,26 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _isDragging = true;
 
             var selectedAssets = _selectedItems.OfType<AssetMetadata>().ToList();
-            if (selectedAssets.Count == 0) return;
+            var selectedFolders = _selectedItems.OfType<BaseFolder>().ToList();
+            if (selectedAssets.Count == 0 && selectedFolders.Count == 0) return;
 
-            var assetIds = selectedAssets.Select(a => a.ID.ToString()).ToArray();
             DragAndDrop.PrepareStartDrag();
-            DragAndDrop.SetGenericData("AssetManagerAssets", assetIds);
+
+            if (selectedAssets.Count > 0) {
+                var assetIds = selectedAssets.Select(a => a.ID.ToString()).ToArray();
+                DragAndDrop.SetGenericData("AssetManagerAssets", assetIds);
+            }
+
+            if (selectedFolders.Count > 0) {
+                var folderIds = selectedFolders.Select(f => f.ID.ToString()).ToArray();
+                DragAndDrop.SetGenericData("AssetManagerFolders", folderIds);
+            }
+
             DragAndDrop.objectReferences = Array.Empty<Object>();
-            DragAndDrop.StartDrag("Moving Assets");
+
+            var dragLabel = selectedAssets.Count > 0 && selectedFolders.Count > 0 ? "Moving Items" :
+                selectedFolders.Count > 0 ? "Moving Folders" : "Moving Assets";
+            DragAndDrop.StartDrag(dragLabel);
         }
 
         private void OnCardPointerUp(PointerUpEvent evt) {

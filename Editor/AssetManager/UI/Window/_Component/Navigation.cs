@@ -49,7 +49,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _dragManipulator.OnFolderReordered += (parentId, sourceId, index) =>
                 OnFolderReordered?.Invoke(parentId, sourceId, index);
             this.AddManipulator(_dragManipulator);
-            
+
             style.flexDirection = FlexDirection.Column;
             style.paddingLeft = 6;
             style.paddingRight = 6;
@@ -142,8 +142,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var createAssetButton = new Button {
                 text = "+ New Asset",
                 style = {
-                    marginTop = 10,
-                    marginBottom = 10,
+                    marginTop = 15,
+                    marginBottom = 20,
                     marginLeft = 4,
                     marginRight = 4,
                     paddingLeft = 12,
@@ -335,13 +335,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             itemRow.RegisterCallback<DragEnterEvent>(_ =>
             {
-                if (DragAndDrop.GetGenericData("AssetManagerAssets") == null) return;
+                if (DragAndDrop.GetGenericData("AssetManagerAssets") == null &&
+                    DragAndDrop.GetGenericData("AssetManagerFolders") == null) return;
                 itemRow.style.backgroundColor = new Color(0.4f, 0.7f, 1.0f, 0.4f);
             });
 
             itemRow.RegisterCallback<DragLeaveEvent>(_ =>
             {
-                if (DragAndDrop.GetGenericData("AssetManagerAssets") == null) return;
+                if (DragAndDrop.GetGenericData("AssetManagerAssets") == null &&
+                    DragAndDrop.GetGenericData("AssetManagerFolders") == null) return;
                 if (_currentSelectedFolderId == (Ulid)treeItemContainer.userData)
                     ApplySelectedStyle(itemRow);
                 else
@@ -350,7 +352,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             itemRow.RegisterCallback<DragUpdatedEvent>(_ =>
             {
-                if (DragAndDrop.GetGenericData("AssetManagerAssets") == null) {
+                if (DragAndDrop.GetGenericData("AssetManagerAssets") == null &&
+                    DragAndDrop.GetGenericData("AssetManagerFolders") == null) {
                     DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
                     return;
                 }
@@ -361,10 +364,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             itemRow.RegisterCallback<DragPerformEvent>(evt =>
             {
                 var assetIdsData = DragAndDrop.GetGenericData("AssetManagerAssets");
-                if (assetIdsData == null) return;
+                var folderIdsData = DragAndDrop.GetGenericData("AssetManagerFolders");
+                if (assetIdsData == null && folderIdsData == null) return;
 
                 var targetFolderId = (Ulid)treeItemContainer.userData;
-                var assetIds = ((string[])assetIdsData).Select(Ulid.Parse).ToList();
 
                 DragAndDrop.AcceptDrag();
 
@@ -373,7 +376,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 else
                     itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
 
-                OnAssetsDroppedToFolder?.Invoke(assetIds, targetFolderId);
+                if (assetIdsData != null) {
+                    var assetIds = ((string[])assetIdsData).Select(Ulid.Parse).ToList();
+                    OnAssetsDroppedToFolder?.Invoke(assetIds, targetFolderId);
+                }
+
+                if (folderIdsData != null) {
+                    var folderIds = ((string[])folderIdsData).Select(Ulid.Parse).ToList();
+                    foreach (var sourceFolderId in folderIds.Where(sourceFolderId => sourceFolderId != targetFolderId))
+                        OnFolderMoved?.Invoke(sourceFolderId, targetFolderId);
+                }
+
                 evt.StopPropagation();
             });
 
