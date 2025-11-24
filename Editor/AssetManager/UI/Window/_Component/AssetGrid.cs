@@ -322,11 +322,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             if (targetItem == null) return;
 
             if (evt.button == 1) {
-                if (_selectedItems.Contains(targetItem)) {
-                    _selectedItems.Remove(targetItem);
-                    if (_lastSelectedReference == targetItem) _lastSelectedReference = null;
-                }
-                else {
+                if (!_selectedItems.Contains(targetItem)) {
                     _selectedItems.Clear();
                     _selectedItems.Add(targetItem);
                     _lastSelectedReference = targetItem;
@@ -400,90 +396,127 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private void ShowContextMenu(AssetCard card, object targetItem, Rect? anchor = null) {
             var menu = new GenericDropdownMenu();
 
-            switch (targetItem) {
-                case AssetMetadata asset: {
-                    var thumbPath = _repository?.GetThumbnailPath(asset.ID);
-                    var hasThumb = !string.IsNullOrEmpty(thumbPath) && File.Exists(thumbPath);
+            var targets = _selectedItems.Contains(targetItem)
+                ? _selectedItems.ToList()
+                : new List<object> { targetItem };
 
-                    menu.AddItem("サムネイルを設定...", false, () =>
-                    {
-                        var path = EditorUtility.OpenFilePanel("Select Thumbnail", "", "png,jpg,jpeg");
-                        if (string.IsNullOrEmpty(path)) return;
-                        _repository?.SetThumbnail(asset.ID, path);
-                        LoadImageAsync(card, asset.ID, false);
-                    });
+            var assetTargets = targets.OfType<AssetMetadata>().ToList();
+            var folderTargets = targets.OfType<BaseFolder>().ToList();
 
-                    if (hasThumb)
-                        menu.AddItem("サムネイルを削除", false, () =>
-                        {
-                            _repository?.RemoveThumbnail(asset.ID);
-                            _textureService?.RemoveAssetFromCache(asset.ID);
-                            card.SetThumbnail(null);
-                            LoadImageAsync(card, asset.ID, false);
-                            _listView.RefreshItems();
-                        });
+            var deletedAssetTargets = assetTargets.Where(a => a.IsDeleted).ToList();
+            var activeAssetTargets = assetTargets.Where(a => !a.IsDeleted).ToList();
 
-                    menu.AddSeparator("");
+            if (assetTargets.Count > 0 && assetTargets.Count == deletedAssetTargets.Count && folderTargets.Count == 0) {
+                var plural = deletedAssetTargets.Count > 1;
 
-                    if (asset.IsDeleted) {
-                        menu.AddItem("物理削除", false, () =>
-                        {
-                            if (!EditorUtility.DisplayDialog("確認", "アセットを完全に削除しますか？この操作は取り消せません。", "削除", "キャンセル"))
-                                return;
-                            AssetManagerContainer.AssetService.DeleteAsset(asset.ID);
-                            _listView.RefreshItems();
-                        });
+                menu.AddItem(plural ? $"{deletedAssetTargets.Count} 個を完全に削除" : "完全に削除", false, () =>
+                {
+                    var message = plural
+                        ? $"選択した {deletedAssetTargets.Count} 個のアセットを完全に削除しますか？この操作は取り消せません。"
+                        : "アセットを完全に削除しますか？この操作は取り消せません。";
+                    if (!EditorUtility.DisplayDialog("確認", message, "削除", "キャンセル")) return;
+                    foreach (var a in deletedAssetTargets) AssetManagerContainer.AssetService.DeleteAsset(a.ID);
+                    _listView.RefreshItems();
+                });
 
-                        menu.AddItem("復元", false, () =>
-                        {
-                            AssetManagerContainer.AssetService.RestoreAsset(asset.ID);
-                            _listView.RefreshItems();
-                        });
-                    }
-                    else {
-                        menu.AddItem("アセットを削除", false, () =>
-                        {
-                            if (!EditorUtility.DisplayDialog("確認", "アセットを削除しますか？ (ソフト削除) ", "削除", "キャンセル")) return;
-                            AssetManagerContainer.AssetService.RemoveAsset(asset.ID);
-                            _listView.RefreshItems();
-                        });
+                menu.AddItem(plural ? $"{deletedAssetTargets.Count} 個を復元" : "復元", false, () =>
+                {
+                    foreach (var a in deletedAssetTargets) AssetManagerContainer.AssetService.RestoreAsset(a.ID);
+                    _listView.RefreshItems();
+                });
+
+                var targetRect = anchor ?? card.worldBound;
+                menu.DropDown(targetRect, card);
+                return;
+            }
+
+            if (activeAssetTargets.Count > 0 || folderTargets.Count > 0)
+                menu.AddItem("サムネイルを設定...", false, () =>
+                {
+                    var path = EditorUtility.OpenFilePanel("Select Thumbnail", "", "png,jpg,jpeg");
+                    if (string.IsNullOrEmpty(path)) return;
+
+                    foreach (var a in activeAssetTargets) {
+                        _repository?.SetThumbnail(a.ID, path);
+                        LoadImageAsync(card, a.ID, false);
                     }
 
-                    break;
-                }
-                case BaseFolder folder: {
-                    var folderThumbPath = _repository?.GetFolderThumbnailPath(folder.ID);
-                    var hasThumb = !string.IsNullOrEmpty(folderThumbPath) && File.Exists(folderThumbPath);
+                    foreach (var f in folderTargets) {
+                        AssetManagerContainer.FolderService.SetFolderThumbnail(f.ID, path);
+                        LoadImageAsync(card, f.ID, true);
+                    }
 
-                    menu.AddItem("フォルダのサムネイルを設定...", false, () =>
-                    {
-                        var path = EditorUtility.OpenFilePanel("Select Folder Thumbnail", "", "png,jpg,jpeg");
-                        if (string.IsNullOrEmpty(path)) return;
-                        AssetManagerContainer.FolderService.SetFolderThumbnail(folder.ID, path);
-                        LoadImageAsync(card, folder.ID, true);
-                    });
+                    _listView.RefreshItems();
+                });
 
-                    if (hasThumb)
-                        menu.AddItem("フォルダのサムネイルを削除", false, () =>
-                        {
-                            AssetManagerContainer.FolderService.RemoveFolderThumbnail(folder.ID);
-                            _textureService?.RemoveFolderFromCache(folder.ID);
-                            card.SetThumbnail(null, true);
-                            LoadImageAsync(card, folder.ID, true);
-                            _listView.RefreshItems();
-                        });
+            var anyRemovableThumb = activeAssetTargets.Any(a =>
+            {
+                var p = _repository?.GetThumbnailPath(a.ID);
+                return !string.IsNullOrEmpty(p) && File.Exists(p);
+            }) || folderTargets.Any(f =>
+            {
+                var p = _repository?.GetFolderThumbnailPath(f.ID);
+                return !string.IsNullOrEmpty(p) && File.Exists(p);
+            });
 
-                    menu.AddSeparator("");
-                    menu.AddItem("フォルダを削除", false, () =>
-                    {
-                        if (!EditorUtility.DisplayDialog("確認", "フォルダを削除しますか？フォルダ内のアセットは削除済みに移行されます。", "削除", "キャンセル"))
-                            return;
-                        AssetManagerContainer.FolderService.DeleteFolder(folder.ID);
-                        _listView.RefreshItems();
-                    });
+            if (anyRemovableThumb)
+                menu.AddItem("サムネイルを削除", false, () =>
+                {
+                    foreach (var a in activeAssetTargets) {
+                        _repository?.RemoveThumbnail(a.ID);
+                        _textureService?.RemoveAssetFromCache(a.ID);
+                        LoadImageAsync(card, a.ID, false);
+                    }
 
-                    break;
-                }
+                    foreach (var f in from f in folderTargets
+                             let thumbPath = _repository?.GetFolderThumbnailPath(f.ID)
+                             where !string.IsNullOrEmpty(thumbPath) && File.Exists(thumbPath)
+                             select f) {
+                        AssetManagerContainer.FolderService.RemoveFolderThumbnail(f.ID);
+                        _textureService?.RemoveFolderFromCache(f.ID);
+                        LoadImageAsync(card, f.ID, true);
+                    }
+
+                    _listView.RefreshItems();
+                });
+
+            menu.AddSeparator("");
+
+            if (activeAssetTargets.Count > 0) {
+                var plural = activeAssetTargets.Count > 1;
+                menu.AddItem(plural ? $"{activeAssetTargets.Count} 個を削除" : "アセットを削除", false, () =>
+                {
+                    foreach (var a in activeAssetTargets) AssetManagerContainer.AssetService.RemoveAsset(a.ID);
+                    _listView.RefreshItems();
+                });
+            }
+
+            if (folderTargets.Count > 0) {
+                var plural = folderTargets.Count > 1;
+                menu.AddItem(plural ? $"{folderTargets.Count} 個のフォルダを削除" : "フォルダを削除", false, () =>
+                {
+                    foreach (var f in folderTargets) AssetManagerContainer.FolderService.DeleteFolder(f.ID);
+
+                    _listView.RefreshItems();
+                });
+            }
+
+            if (deletedAssetTargets.Count > 0) {
+                menu.AddItem("復元", false, () =>
+                {
+                    foreach (var a in deletedAssetTargets) AssetManagerContainer.AssetService.RestoreAsset(a.ID);
+                    _listView.RefreshItems();
+                });
+                menu.AddItem("完全に削除", false, () =>
+                {
+                    var plural2 = deletedAssetTargets.Count > 1;
+                    var message = plural2
+                        ? $"選択した {deletedAssetTargets.Count} 個のアセットを完全に削除しますか？この操作は取り消せません。"
+                        : "アセットを完全に削除しますか？この操作は取り消せません。";
+                    if (!EditorUtility.DisplayDialog("確認", message, "削除", "キャンセル")) return;
+                    foreach (var a in deletedAssetTargets) AssetManagerContainer.AssetService.DeleteAsset(a.ID);
+                    _listView.RefreshItems();
+                });
             }
 
             var rect = anchor ?? card.worldBound;
