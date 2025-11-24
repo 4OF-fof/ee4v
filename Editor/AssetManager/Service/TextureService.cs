@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
+using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -32,6 +33,11 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var data = await _repository.GetFolderThumbnailDataAsync(folderId);
             return CreateAndCacheTexture(key, data);
+        }
+
+        public static Texture2D GetDefaultFallback(bool isFolder) {
+            var key = isFolder ? "Folder Icon" : "GameObject Icon";
+            return EditorGUIUtility.IconContent(key).image as Texture2D;
         }
 
         public void ClearCache() {

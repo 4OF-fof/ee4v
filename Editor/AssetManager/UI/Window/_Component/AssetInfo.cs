@@ -247,7 +247,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 {
                     _thumbnailContainer.style.backgroundImage = tex != null
                         ? new StyleBackground(tex)
-                        : new StyleBackground(EditorGUIUtility.IconContent("GameObject Icon").image as Texture2D);
+                        : new StyleBackground(TextureService.GetDefaultFallback(false));
                 });
 
             RefreshTags(data.Tags);
@@ -292,7 +292,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 {
                     _thumbnailContainer.style.backgroundImage = tex != null
                         ? new StyleBackground(tex)
-                        : new StyleBackground(EditorGUIUtility.IconContent("Folder Icon").image as Texture2D);
+                        : new StyleBackground(TextureService.GetDefaultFallback(true));
                 });
 
             _infoContainer.Clear();

@@ -1,5 +1,5 @@
-﻿using _4OF.ee4v.Core.UI;
-using UnityEditor;
+﻿using _4OF.ee4v.AssetManager.Service;
+using _4OF.ee4v.Core.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -75,9 +75,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public void SetThumbnail(Texture2D texture, bool isFolder = false) {
             if (texture == null) {
-                var fallback = isFolder
-                    ? EditorGUIUtility.IconContent("Folder Icon").image as Texture2D
-                    : EditorGUIUtility.IconContent("GameObject Icon").image as Texture2D;
+                var fallback = TextureService.GetDefaultFallback(isFolder);
 
                 if (fallback != null) {
                     _thumbnail.style.backgroundImage = new StyleBackground(fallback);
