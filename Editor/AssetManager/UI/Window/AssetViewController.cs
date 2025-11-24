@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
+using UnityEditor;
 
 namespace _4OF.ee4v.AssetManager.UI.Window {
     public enum NavigationMode {
@@ -27,6 +28,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         public AssetViewController(IAssetRepository repository) {
             _repository = repository;
+
+            if (_repository == null) return;
+            _repository.LibraryChanged += OnRepositoryLibraryChanged;
+            _repository.AssetChanged += OnRepositoryAssetChanged;
         }
 
         public NavigationMode CurrentMode { get; private set; } = NavigationMode.AllItems;
@@ -108,6 +113,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         public void PreviewFolder(BaseFolder folder) {
             FolderPreviewSelected?.Invoke(folder);
+        }
+
+        public void Dispose() {
+            if (_repository == null) return;
+            try {
+                _repository.LibraryChanged -= OnRepositoryLibraryChanged;
+                _repository.AssetChanged -= OnRepositoryAssetChanged;
+            }
+            catch {
+                // ignore
+            }
         }
 
         public void GoBack() {
@@ -292,6 +308,30 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             }
 
             return false;
+        }
+
+        private void OnRepositoryLibraryChanged() {
+            EditorApplication.delayCall += () =>
+            {
+                try {
+                    Refresh();
+                }
+                catch {
+                    // ignore
+                }
+            };
+        }
+
+        private void OnRepositoryAssetChanged(Ulid assetId) {
+            EditorApplication.delayCall += () =>
+            {
+                try {
+                    Refresh();
+                }
+                catch {
+                    // ignore
+                }
+            };
         }
 
         private struct NavigationState {

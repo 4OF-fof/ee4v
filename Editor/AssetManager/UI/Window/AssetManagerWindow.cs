@@ -61,6 +61,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _assetController.BoothItemFoldersChanged -= OnBoothItemFoldersChanged;
                 _assetController.ModeChanged -= OnModeChanged;
                 _assetController.OnHistoryChanged -= OnControllerHistoryChanged;
+                _assetController.Dispose();
             }
 
             if (_assetView != null) {

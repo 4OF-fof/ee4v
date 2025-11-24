@@ -201,16 +201,18 @@ namespace _4OF.ee4v.AssetManager.Data {
                     var identifier = asset.BoothData.ItemID;
                     BoothItemFolder found = null;
                     foreach (var root in lib.FolderList) {
-                        found = FindBoothItemFolderRecursive(root, asset.BoothData.ShopDomain ?? string.Empty, identifier);
+                        found = FindBoothItemFolderRecursive(root, asset.BoothData.ShopDomain ?? string.Empty,
+                            identifier);
                         if (found != null) break;
                     }
 
                     if (found == null) {
                         var newFolder = new BoothItemFolder();
-                        newFolder.SetName(identifier ?? (asset.BoothData.FileName ?? asset.Name ?? "Booth Item"));
+                        newFolder.SetName(identifier ?? asset.BoothData.FileName ?? asset.Name ?? "Booth Item");
                         newFolder.SetDescription(asset.BoothData.FileName ?? string.Empty);
                         newFolder.SetShopDomain(asset.BoothData.ShopDomain ?? string.Empty);
-                        if (!string.IsNullOrEmpty(identifier) && identifier.All(char.IsDigit)) newFolder.SetItemId(identifier);
+                        if (!string.IsNullOrEmpty(identifier) && identifier.All(char.IsDigit))
+                            newFolder.SetItemId(identifier);
 
                         lib.AddFolder(newFolder);
                         SaveLibraryMetadata(lib);
@@ -218,9 +220,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                         found = newFolder;
                     }
 
-                    if (asset.Folder == Ulid.Empty) {
-                        asset.SetFolder(found.ID);
-                    }
+                    if (asset.Folder == Ulid.Empty) asset.SetFolder(found.ID);
                 }
             }
             catch {
