@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
+using _4OF.ee4v.AssetManager.UI.Window._Component.Dialog;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -16,7 +17,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             AssetService assetService,
             FolderService folderService,
             TextureService textureService,
-            Action onRefresh
+            Action onRefresh,
+            Action<VisualElement> showDialog
         ) {
             var menu = new GenericDropdownMenu();
 
@@ -59,6 +61,23 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 {
                     var files = repository.GetAssetFiles(singleAsset.ID);
                     if (files.Count > 0) EditorUtility.RevealInFinder(files[0]);
+                });
+                menu.AddSeparator("");
+            }
+
+            if (singleAsset != null) {
+                menu.AddItem("Booth情報を編集...", false, () =>
+                {
+                    var dialog = new EditBoothInfoDialog();
+                    dialog.OnBoothInfoUpdated += (domain, itemId) =>
+                    {
+                        var newAsset = new AssetMetadata(singleAsset);
+                        newAsset.BoothData.SetShopDomain(domain);
+                        newAsset.BoothData.SetItemID(itemId);
+                        assetService.SaveAsset(newAsset);
+                        onRefresh?.Invoke();
+                    };
+                    showDialog?.Invoke(dialog.CreateContent(singleAsset.BoothData?.ItemUrl ?? ""));
                 });
                 menu.AddSeparator("");
             }

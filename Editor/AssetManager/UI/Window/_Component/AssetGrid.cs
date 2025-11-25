@@ -27,6 +27,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private float _lastWidth;
         private IAssetRepository _repository;
         private bool _rightClickHandledByDown;
+        private Action<VisualElement> _showDialog;
 
         private TextureService _textureService;
         private AssetThumbnailLoader _thumbnailLoader;
@@ -118,11 +119,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<List<Ulid>, List<Ulid>, Ulid> OnItemsDroppedToFolder;
 
         public void Initialize(TextureService textureService, IAssetRepository repository, AssetService assetService,
-            FolderService folderService) {
+            FolderService folderService, Action<VisualElement> showDialog) {
             _textureService = textureService;
             _repository = repository;
             _assetService = assetService;
             _folderService = folderService;
+            _showDialog = showDialog;
             _thumbnailLoader = new AssetThumbnailLoader(_textureService);
         }
 
@@ -474,7 +476,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _assetService,
                 _folderService,
                 _textureService,
-                Refresh
+                Refresh,
+                _showDialog
             );
             menu.DropDown(anchorRect, card);
             evt.StopPropagation();

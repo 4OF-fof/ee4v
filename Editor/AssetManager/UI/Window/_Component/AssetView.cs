@@ -72,8 +72,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<VisualElement> OnSortMenuRequested;
 
         public void Initialize(TextureService textureService, IAssetRepository repository, AssetService assetService,
-            FolderService folderService) {
-            _grid.Initialize(textureService, repository, assetService, folderService);
+            FolderService folderService, Action<VisualElement> showDialog) {
+            _grid.Initialize(textureService, repository, assetService, folderService, showDialog);
             _grid.OnItemsDroppedToFolder += (assetIds, folderIds, targetFolderId) =>
             {
                 OnItemsDroppedToFolder?.Invoke(assetIds, folderIds, targetFolderId);

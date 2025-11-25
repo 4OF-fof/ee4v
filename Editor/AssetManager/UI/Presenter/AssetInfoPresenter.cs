@@ -196,7 +196,11 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
                 FolderName = folder?.Name ?? "-",
                 Dependencies = dependencies,
                 DownloadUrl = asset.BoothData?.DownloadUrl ?? "",
-                HasPhysicalFile = hasPhysicalFile
+                HasPhysicalFile = hasPhysicalFile,
+                ShopName = asset.BoothData?.ShopDomain ?? "",
+                ShopUrl = asset.BoothData?.ShopUrl ?? "",
+                ItemId = asset.BoothData?.ItemId ?? "",
+                ItemUrl = asset.BoothData?.ItemUrl ?? ""
             };
 
             AssetDataUpdated?.Invoke(data);
@@ -310,8 +314,12 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
         public string FolderName;
         public bool HasPhysicalFile;
         public Ulid Id;
+        public string ItemId;
+        public string ItemUrl;
         public DateTimeOffset ModificationTime;
         public string Name;
+        public string ShopName;
+        public string ShopUrl;
         public long Size;
         public IReadOnlyList<string> Tags;
     }
