@@ -67,6 +67,24 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 menu.AddSeparator("");
             }
 
+            var singleFolder = folderTargets.Count == 1 ? folderTargets[0] : null;
+            if (singleFolder is BoothItemFolder) {
+                var guids = repository.GetAllAssets()
+                    .Where(a => a.Folder == singleFolder.ID && !a.IsDeleted)
+                    .SelectMany(a => a.UnityData.AssetGuidList)
+                    .Select(g => g.ToString("N"))
+                    .ToList();
+
+                if (guids.Count > 0) {
+                    menu.AddItem("プロジェクトでハイライト", false, () =>
+                    {
+                        ProjectExtensionAPI.ClearHighlights();
+                        ProjectExtensionAPI.SetHighlights(guids);
+                    });
+                    menu.AddSeparator("");
+                }
+            }
+
             if (singleAsset != null) {
                 menu.AddItem("エクスプローラーで開く", false, () =>
                 {
