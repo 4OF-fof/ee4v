@@ -228,7 +228,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             var cancelBtn = new Button(Close) { text = "Cancel", style = { width = 80 } };
             var importBtn = new Button(DoImport) {
-                text = "Import",
+                text = "Select",
                 style = { width = 80, backgroundColor = new Color(0.2f, 0.5f, 0.2f), color = Color.white }
             };
 
@@ -266,6 +266,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var arrow = new Label(node.IsExpanded ? "▼" : "▶") {
                 style = {
                     width = 16,
+                    marginLeft = 0,
+                    marginRight = 0,
                     unityTextAlign = TextAnchor.MiddleCenter,
                     fontSize = 10,
                     color = Color.gray,
@@ -279,8 +281,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                     display = node.IsExpanded ? DisplayStyle.Flex : DisplayStyle.None
                 }
             };
-
-            if (node.IsDirectory)
+            
+            if (node.IsDirectory) {
                 arrow.RegisterCallback<PointerDownEvent>(evt =>
                 {
                     if (evt.button != 0) return;
@@ -289,11 +291,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                     childrenContainer.style.display = node.IsExpanded ? DisplayStyle.Flex : DisplayStyle.None;
                     evt.StopPropagation();
                 });
-            row.Add(arrow);
-
-            if (node.IsDirectory) {
-                var spacer = new VisualElement { style = { width = 18, height = 18, marginLeft = 0, marginRight = 0 } };
-                row.Add(spacer);
+                row.Add(arrow);
             }
             else {
                 var isChecked = IsNodeChecked(node);
