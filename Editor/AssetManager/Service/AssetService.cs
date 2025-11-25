@@ -288,5 +288,10 @@ namespace _4OF.ee4v.AssetManager.Service {
             newAsset.UnityData.RemoveDependenceItem(dependenceItemId);
             SaveAsset(newAsset);
         }
+
+        public void ImportFilesFromZip(Ulid assetId, string tempRootPath, List<string> relativePaths) {
+            if (relativePaths == null || relativePaths.Count == 0) return;
+            _repository.ImportFiles(assetId, tempRootPath, relativePaths);
+        }
     }
 }

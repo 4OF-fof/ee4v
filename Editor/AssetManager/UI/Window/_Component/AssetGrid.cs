@@ -450,6 +450,21 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var deletedAssetTargets = assetTargets.Where(a => a.IsDeleted).ToList();
             var activeAssetTargets = assetTargets.Where(a => !a.IsDeleted).ToList();
 
+            var singleAsset = activeAssetTargets.Count == 1 ? activeAssetTargets[0] : null;
+            if (singleAsset != null && singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase)) {
+                menu.AddItem("インポート対象を選択...", false, () =>
+                {
+                    var boundPosition = card.worldBound.position;
+                    ZipImportWindow.Open(
+                        GUIUtility.GUIToScreenPoint(new Vector2(boundPosition.x + 20, boundPosition.y + 20)),
+                        singleAsset.ID,
+                        _repository,
+                        AssetManagerContainer.AssetService
+                    );
+                });
+                menu.AddSeparator("");
+            }
+
             if (assetTargets.Count > 0 && assetTargets.Count == deletedAssetTargets.Count && folderTargets.Count == 0) {
                 var plural = deletedAssetTargets.Count > 1;
 

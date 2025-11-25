@@ -29,14 +29,11 @@ namespace _4OF.ee4v.AssetManager.Data {
         void RemoveFolderThumbnail(Ulid folderId);
         string GetFolderThumbnailPath(Ulid folderId);
         Task<byte[]> GetFolderThumbnailDataAsync(Ulid folderId);
+        void ImportFiles(Ulid assetId, string sourceRootPath, List<string> relativePaths);
+        List<string> GetAssetFiles(Ulid assetId, string searchPattern = "*");
         List<string> GetAllTags();
         event Action LibraryChanged;
         event Action<Ulid> AssetChanged;
-
-        /// <summary>
-        ///     Raised when a specific folder's metadata changed (rename/description/tags/thumbnail).
-        ///     The handler receives the folder id so UI can perform a targeted update.
-        /// </summary>
         event Action<Ulid> FolderChanged;
     }
 }

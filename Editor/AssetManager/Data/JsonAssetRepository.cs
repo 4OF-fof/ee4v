@@ -464,8 +464,48 @@ namespace _4OF.ee4v.AssetManager.Data {
                 : Task.Run(() => FileSystemProvider.ReadAllBytes(path));
         }
 
+        public void ImportFiles(Ulid assetId, string sourceRootPath, List<string> relativePaths) {
+            var assetDir = Path.Combine(_assetRootDir, assetId.ToString());
+            var importDir = Path.Combine(assetDir, "Import");
+
+            if (!FileSystemProvider.DirectoryExists(importDir)) FileSystemProvider.CreateDirectory(importDir);
+
+            foreach (var relPath in relativePaths) {
+                var srcFile = Path.Combine(sourceRootPath, relPath);
+                var destFile = Path.Combine(importDir, relPath);
+
+                var destDir = Path.GetDirectoryName(destFile);
+                if (!string.IsNullOrEmpty(destDir) && !FileSystemProvider.DirectoryExists(destDir))
+                    FileSystemProvider.CreateDirectory(destDir);
+
+                if (FileSystemProvider.FileExists(srcFile)) FileSystemProvider.CopyFile(srcFile, destFile, true);
+            }
+
+            try {
+                AssetChanged?.Invoke(assetId);
+            }
+            catch {
+                /* ignore */
+            }
+        }
+
         public List<string> GetAllTags() {
             return _libraryCache.GetAllTags();
+        }
+
+        public List<string> GetAssetFiles(Ulid assetId, string searchPattern = "*") {
+            var assetDir = Path.Combine(_assetRootDir, assetId.ToString());
+            if (!FileSystemProvider.DirectoryExists(assetDir)) return new List<string>();
+
+            try {
+                var files = Directory.GetFiles(assetDir, searchPattern, SearchOption.TopDirectoryOnly)
+                    .Where(f => !f.EndsWith("metadata.json") && !f.EndsWith("thumbnail.png"))
+                    .ToList();
+                return files;
+            }
+            catch {
+                return new List<string>();
+            }
         }
 
         private void LoadAllAssetsFromDisk() {
