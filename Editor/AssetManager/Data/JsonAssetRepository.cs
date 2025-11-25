@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
-// Newtonsoft.Json usages were moved to MetadataSerializer
 using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.AssetManager.Data {
@@ -13,7 +12,6 @@ namespace _4OF.ee4v.AssetManager.Data {
         private readonly string _assetRootDir;
         private readonly string _cacheFilePath;
         private readonly string _folderIconDir;
-        private readonly FileSystemProvider _fs;
 
         private readonly AssetLibrary _libraryCache;
         private readonly string _libraryMetadataPath;
@@ -22,10 +20,10 @@ namespace _4OF.ee4v.AssetManager.Data {
         private readonly MetadataSerializer _serializer;
 
         public JsonAssetRepository(string contentFolderPath)
-            : this(contentFolderPath, new FileSystemProvider(), new MetadataSerializer()) {
+            : this(contentFolderPath, new MetadataSerializer()) {
         }
 
-        private JsonAssetRepository(string contentFolderPath, FileSystemProvider fs, MetadataSerializer serializer) {
+        private JsonAssetRepository(string contentFolderPath, MetadataSerializer serializer) {
             _rootDir = Path.Combine(contentFolderPath, "AssetManager");
             _assetRootDir = Path.Combine(_rootDir, "Assets");
             _libraryMetadataPath = Path.Combine(_rootDir, "metadata.json");
@@ -33,7 +31,6 @@ namespace _4OF.ee4v.AssetManager.Data {
             _folderIconDir = Path.Combine(_rootDir, "FolderIcon");
 
             _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
-            _fs = fs ?? throw new ArgumentNullException(nameof(fs));
 
             _libraryCache = new AssetLibrary();
         }
