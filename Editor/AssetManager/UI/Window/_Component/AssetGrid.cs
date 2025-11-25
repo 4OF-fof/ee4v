@@ -451,6 +451,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var activeAssetTargets = assetTargets.Where(a => !a.IsDeleted).ToList();
 
             var singleAsset = activeAssetTargets.Count == 1 ? activeAssetTargets[0] : null;
+
+            if (singleAsset != null) {
+                if (singleAsset.Ext.Equals(".unitypackage", StringComparison.OrdinalIgnoreCase)) {
+                    menu.AddItem("インポート", false, () => AssetManagerContainer.AssetService.ImportAsset(singleAsset.ID));
+                    menu.AddSeparator("");
+                }
+                else if (singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase)) {
+                    if (_repository.HasImportItems(singleAsset.ID)) {
+                        menu.AddItem("インポート", false, () => AssetManagerContainer.AssetService.ImportAsset(singleAsset.ID));
+                    }
+                }
+            }
+
             if (singleAsset != null && singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase)) {
                 menu.AddItem("インポート対象を選択...", false, () =>
                 {

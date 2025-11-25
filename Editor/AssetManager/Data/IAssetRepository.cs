@@ -30,6 +30,8 @@ namespace _4OF.ee4v.AssetManager.Data {
         string GetFolderThumbnailPath(Ulid folderId);
         Task<byte[]> GetFolderThumbnailDataAsync(Ulid folderId);
         void ImportFiles(Ulid assetId, string sourceRootPath, List<string> relativePaths);
+        bool HasImportItems(Ulid assetId);
+        string GetImportDirectoryPath(Ulid assetId);
         List<string> GetAssetFiles(Ulid assetId, string searchPattern = "*");
         List<string> GetAllTags();
         event Action LibraryChanged;

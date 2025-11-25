@@ -9,7 +9,6 @@ using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Service {
     public class AssetService {
-        // ... (他のフィールド、メソッドは変更なし) ...
         private readonly FolderService _folderService;
         private readonly IAssetRepository _repository;
 
@@ -18,7 +17,6 @@ namespace _4OF.ee4v.AssetManager.Service {
             _folderService = folderService;
         }
 
-        // ... (CreateAsset, AddFileToAsset などのメソッドは省略) ...
         public void SaveAsset(AssetMetadata asset) {
             if (asset == null) return;
 
@@ -35,6 +33,7 @@ namespace _4OF.ee4v.AssetManager.Service {
                 }
             }
             catch {
+                // ignored
             }
 
             _repository.SaveAsset(asset);
@@ -294,6 +293,29 @@ namespace _4OF.ee4v.AssetManager.Service {
             if (relativePaths == null || relativePaths.Count == 0) return;
 
             _repository.ImportFiles(assetId, tempRootPath, relativePaths);
+        }
+
+        public void ImportAsset(Ulid assetId) {
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
+
+            if (asset.Ext.Equals(".unitypackage", StringComparison.OrdinalIgnoreCase)) {
+                var files = _repository.GetAssetFiles(assetId, "*.unitypackage");
+                if (files.Count > 0) {
+                    UnityEditor.AssetDatabase.ImportPackage(files[0], true);
+                }
+            }
+            else if (asset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase)) {
+                if (!_repository.HasImportItems(assetId)) return;
+                var importDir = _repository.GetImportDirectoryPath(assetId);
+                var packages = System.IO.Directory.GetFiles(importDir, "*.unitypackage", System.IO.SearchOption.AllDirectories);
+                if (packages.Length > 0) {
+                    UnityEditor.AssetDatabase.ImportPackage(packages[0], true);
+                }
+                else {
+                    Debug.LogWarning("No unitypackage found in the import folder.");
+                }
+            }
         }
     }
 }
