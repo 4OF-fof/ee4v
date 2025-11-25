@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.IO;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Utility;
 using _4OF.ee4v.Core.Utility;
@@ -33,7 +34,7 @@ namespace _4OF.ee4v.AssetManager.Service {
                 }
             }
             catch {
-                // ignore
+                // ignored
             }
 
             _repository.SaveAsset(asset);
@@ -290,8 +291,11 @@ namespace _4OF.ee4v.AssetManager.Service {
         }
 
         public void ImportFilesFromZip(Ulid assetId, string tempRootPath, List<string> relativePaths) {
-            if (relativePaths == null) return;
-            _repository.ImportFiles(assetId, tempRootPath, relativePaths);
+            if (relativePaths == null || relativePaths.Count == 0) return;
+
+            foreach (var fullSourcePath in relativePaths.Select(relPath => Path.Combine(tempRootPath, relPath)).Where(File.Exists)) {
+                _repository.AddFileToAsset(assetId, fullSourcePath);
+            }
         }
     }
 }

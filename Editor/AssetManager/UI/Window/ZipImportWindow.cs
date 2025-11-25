@@ -23,6 +23,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private IAssetRepository _repository;
         private Ulid _targetAssetId;
         private string _tempExtractPath;
+        private string _rootPath;
         private VisualElement _treeContainer;
 
         protected override void OnDestroy() {
@@ -82,7 +83,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 return;
             }
 
-            BuildTreeNodes(_tempExtractPath);
+            _rootPath = _tempExtractPath;
+            var zipName = Path.GetFileNameWithoutExtension(zipPath);
+            var entries = Directory.GetFileSystemEntries(_tempExtractPath);
+            if (entries.Length == 1 && Directory.Exists(entries[0])) {
+                var dirName = Path.GetFileName(entries[0]);
+                if (string.Equals(dirName, zipName, StringComparison.OrdinalIgnoreCase)) {
+                    _rootPath = entries[0];
+                }
+            }
+
+            BuildTreeNodes(_rootPath);
         }
 
         private void BuildTreeNodes(string rootPath) {
@@ -174,6 +185,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         protected override VisualElement Content() {
             var root = base.Content();
+            root.style.flexGrow = 1;
 
             var toolbar = new VisualElement {
                 style = { flexDirection = FlexDirection.Row, marginBottom = 5, flexShrink = 0 }
@@ -279,14 +291,20 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 });
             row.Add(arrow);
 
-            var isChecked = IsNodeChecked(node);
-            var toggle = new Toggle { value = isChecked, style = { marginLeft = 0, marginRight = 0 } };
-            toggle.RegisterValueChangedCallback(evt =>
-            {
-                SetNodeChecked(node, evt.newValue);
-                RenderTree();
-            });
-            row.Add(toggle);
+            if (node.IsDirectory) {
+                var spacer = new VisualElement { style = { width = 18, height = 18, marginLeft = 0, marginRight = 0 } };
+                row.Add(spacer);
+            }
+            else {
+                var isChecked = IsNodeChecked(node);
+                var toggle = new Toggle { value = isChecked, style = { marginLeft = 0, marginRight = 0 } };
+                toggle.RegisterValueChangedCallback(evt =>
+                {
+                    SetNodeChecked(node, evt.newValue);
+                    RenderTree();
+                });
+                row.Add(toggle);
+            }
 
             var icon = EditorGUIUtility.IconContent(node.IsDirectory ? "Folder Icon" : "TextAsset Icon").image;
             var iconImg = new Image
@@ -320,13 +338,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void DoImport() {
-            var paths = _selectedPaths.ToList();
-            _assetService.ImportFilesFromZip(_targetAssetId, _tempExtractPath, paths);
+            if (_selectedPaths.Count == 0) {
+                Close();
+                return;
+            }
 
-            AssetManagerWindow.ShowToastMessage(
-                paths.Count == 0 ? "Import folder cleared." : $"{paths.Count} items imported.",
-                3f,
-                ToastType.Success);
+            var paths = _selectedPaths.ToList();
+            _assetService.ImportFilesFromZip(_targetAssetId, _rootPath, paths);
+
+            AssetManagerWindow.ShowToastMessage($"{paths.Count} items imported.", 3f, ToastType.Success);
             Close();
         }
 
