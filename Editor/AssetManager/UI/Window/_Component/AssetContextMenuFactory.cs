@@ -35,10 +35,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     canImport = repository.HasImportItems(singleAsset.ID);
 
                 if (canImport) {
-                    menu.AddItem("インポート", false, () =>
-                    {
-                        assetService.ImportAsset(singleAsset.ID);
-                    });
+                    menu.AddItem("インポート", false, () => { assetService.ImportAsset(singleAsset.ID); });
                     menu.AddSeparator("");
                 }
             }

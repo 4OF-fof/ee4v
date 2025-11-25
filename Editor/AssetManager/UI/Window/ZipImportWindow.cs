@@ -229,7 +229,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             var cancelBtn = new Button(Close) { text = "Cancel", style = { width = 80 } };
             var importBtn = new Button(DoImport) {
-                text = "Import",
+                text = "Select",
                 style = { width = 80, backgroundColor = new Color(0.2f, 0.5f, 0.2f), color = Color.white }
             };
 
@@ -303,9 +303,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                     SetNodeChecked(node, evt.newValue);
                     RenderTree();
                 });
+                row.Add(toggle);
             }
-
-            row.Add(toggle);
 
             var icon = EditorGUIUtility.IconContent(node.IsDirectory ? "Folder Icon" : "TextAsset Icon").image;
             var iconImg = new Image
@@ -319,9 +318,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             itemContainer.Add(childrenContainer);
             parentContainer.Add(itemContainer);
 
-            if (node.IsDirectory)
-                foreach (var child in node.Children)
-                    RenderNodeRecursive(child, childrenContainer);
+            if (!node.IsDirectory) return;
+            foreach (var child in node.Children)
+                RenderNodeRecursive(child, childrenContainer);
         }
 
         private bool IsNodeChecked(FileNode node) {

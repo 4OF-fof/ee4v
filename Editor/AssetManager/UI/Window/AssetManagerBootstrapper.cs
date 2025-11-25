@@ -268,11 +268,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _window.SetSelectedAsset(asset);
                 assetInfo.UpdateSelection(asset != null ? new List<object> { asset } : new List<object>());
             };
-            _presenterSelectedAssetHandler = asset =>
-            {
-                _window.SetSelectedAsset(asset);
-                assetInfo.UpdateSelection(asset != null ? new List<object> { asset } : new List<object>());
-            };
             _selectionModel.SelectedAsset.OnValueChanged += _presenterSelectedAssetHandler;
 
             _presenterPreviewFolderHandler = id =>
