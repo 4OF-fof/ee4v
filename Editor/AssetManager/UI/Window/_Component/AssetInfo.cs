@@ -15,12 +15,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly VisualElement _dependenciesContainer;
         private readonly Label _dependenciesLabel;
         private readonly TextField _descriptionField;
-        private readonly VisualElement _downloadButtonContainer;
+
+        private readonly VisualElement _downloadButtonPill;
 
         private readonly Label _folderHeader;
         private readonly Label _folderNameLabel;
         private readonly VisualElement _folderRow;
+
         private readonly VisualElement _infoContainer;
+
         private readonly Label _infoHeader;
         private readonly VisualElement _multiSelectionContainer;
         private readonly Label _multiSelectionLabel;
@@ -32,7 +35,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private Ulid _currentAssetFolderId;
         private Ulid _currentAssetId;
+        private string _currentDownloadUrl;
         private AssetInfoPresenter _presenter;
+        private InfoRow _rowAssets;
+        private LinkInfoRow _rowItem;
+        private InfoRow _rowModified;
+        private LinkInfoRow _rowShop;
+        private InfoRow _rowSize;
+        private InfoRow _rowSubFolders;
+        private InfoRow _rowTotalAssets;
+        private InfoRow _rowTotalSize;
+        private InfoRow _rowTotalTags;
+        private InfoRow _rowType;
 
         public AssetInfo() {
             style.flexDirection = FlexDirection.Column;
@@ -270,7 +284,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _infoContainer = new VisualElement { style = { paddingLeft = 4 } };
             scrollView.Add(_infoContainer);
 
-            _downloadButtonContainer = new VisualElement {
+            InitializeInfoRows();
+
+            var downloadButtonContainer = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
                     flexWrap = Wrap.Wrap,
@@ -281,7 +297,25 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     width = Length.Percent(100)
                 }
             };
-            scrollView.Add(_downloadButtonContainer);
+            _downloadButtonPill = CreateDownloadButton();
+            downloadButtonContainer.Add(_downloadButtonPill);
+
+            scrollView.Add(downloadButtonContainer);
+        }
+
+        private void InitializeInfoRows() {
+            _rowSize = new InfoRow(_infoContainer, "Size");
+            _rowType = new InfoRow(_infoContainer, "Type");
+            _rowModified = new InfoRow(_infoContainer, "Modified");
+            _rowSubFolders = new InfoRow(_infoContainer, "Sub Folders");
+            _rowAssets = new InfoRow(_infoContainer, "Assets");
+
+            _rowTotalAssets = new InfoRow(_infoContainer, "Total Assets");
+            _rowTotalSize = new InfoRow(_infoContainer, "Total Size");
+            _rowTotalTags = new InfoRow(_infoContainer, "Total Tags");
+
+            _rowShop = new LinkInfoRow(_infoContainer, "Shop");
+            _rowItem = new LinkInfoRow(_infoContainer, "Item");
         }
 
         public event Action<string> OnNameChanged;
@@ -339,9 +373,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             RefreshDependencies(data.Dependencies);
 
             if (!string.IsNullOrEmpty(data.DownloadUrl) && !data.HasPhysicalFile)
-                RefreshDownloadButton(data.DownloadUrl);
+                SetDownloadButtonVisible(true, data.DownloadUrl);
             else
-                RefreshDownloadButton("");
+                SetDownloadButtonVisible(false, "");
 
             _dependenciesLabel.style.display = DisplayStyle.Flex;
             _dependenciesContainer.style.display = DisplayStyle.Flex;
@@ -359,10 +393,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _folderRow.style.display = DisplayStyle.None;
             }
 
-            _infoContainer.Clear();
-            AddInfoRow("Size", FormatSize(data.Size));
-            AddInfoRow("Type", data.Extension);
-            AddInfoRow("Modified", data.ModificationTime.ToString("yyyy/MM/dd HH:mm"));
+            HideAllInfoRows();
+            _rowSize.Show(FormatSize(data.Size));
+            _rowType.Show(data.Extension);
+            _rowModified.Show(data.ModificationTime.ToString("yyyy/MM/dd HH:mm"));
         }
 
         private void OnFolderDataUpdated(FolderDisplayData data) {
@@ -395,15 +429,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                             data.SubFolderCount == 0 && data.AssetCount == 0));
                 });
 
-            _infoContainer.Clear();
-            RefreshDownloadButton("");
-            if (data.IsFolder) AddInfoRow("Sub Folders", data.SubFolderCount.ToString());
-            AddInfoRow("Assets", data.AssetCount.ToString());
-            AddInfoRow("Modified", data.ModificationTime.ToString("yyyy/MM/dd HH:mm"));
+            SetDownloadButtonVisible(false, "");
 
-            if (!data.IsBoothItemFolder) return;
-            if (!string.IsNullOrEmpty(data.ShopName)) AddInfoRowWithLink("Shop", data.ShopName, data.ShopUrl);
-            if (!string.IsNullOrEmpty(data.ItemId)) AddInfoRowWithLink("Item", data.ItemId, data.ItemUrl);
+            HideAllInfoRows();
+
+            if (data.IsFolder) _rowSubFolders.Show(data.SubFolderCount.ToString());
+            _rowAssets.Show(data.AssetCount.ToString());
+            _rowModified.Show(data.ModificationTime.ToString("yyyy/MM/dd HH:mm"));
+
+            if (data.IsBoothItemFolder) {
+                if (!string.IsNullOrEmpty(data.ShopName)) _rowShop.Show(data.ShopName, data.ShopUrl);
+                if (!string.IsNullOrEmpty(data.ItemId)) _rowItem.Show(data.ItemId, data.ItemUrl);
+            }
         }
 
         private void OnLibraryDataUpdated(LibraryDisplayData data) {
@@ -412,11 +449,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _infoHeader.style.display = DisplayStyle.None;
             _multiSelectionLabel.text = "Library Overview";
 
-            _infoContainer.Clear();
-            RefreshDownloadButton("");
-            AddInfoRow("Total Assets", data.TotalAssets.ToString());
-            AddInfoRow("Total Size", FormatSize(data.TotalSize));
-            AddInfoRow("Total Tags", data.TotalTags.ToString());
+            SetDownloadButtonVisible(false, "");
+            HideAllInfoRows();
+
+            _rowTotalAssets.Show(data.TotalAssets.ToString());
+            _rowTotalSize.Show(FormatSize(data.TotalSize));
+            _rowTotalTags.Show(data.TotalTags.ToString());
         }
 
         private void OnMultiSelectionUpdated(int count) {
@@ -428,14 +466,28 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _multiSelectionContainer.style.display = DisplayStyle.Flex;
             _infoHeader.style.display = DisplayStyle.None;
             _multiSelectionLabel.text = $"{count} items selected";
-            _infoContainer.Clear();
-            RefreshDownloadButton("");
+
+            HideAllInfoRows();
+            SetDownloadButtonVisible(false, "");
         }
 
         private void ShowSingleSelection() {
             _singleSelectionContainer.style.display = DisplayStyle.Flex;
             _multiSelectionContainer.style.display = DisplayStyle.None;
             _infoHeader.style.display = DisplayStyle.Flex;
+        }
+
+        private void HideAllInfoRows() {
+            _rowSize.Hide();
+            _rowType.Hide();
+            _rowModified.Hide();
+            _rowSubFolders.Hide();
+            _rowAssets.Hide();
+            _rowTotalAssets.Hide();
+            _rowTotalSize.Hide();
+            _rowTotalTags.Hide();
+            _rowShop.Hide();
+            _rowItem.Hide();
         }
 
         private static TextField CreateTextField(bool isBold) {
@@ -578,10 +630,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
         }
 
-        private void RefreshDownloadButton(string downloadUrl) {
-            _downloadButtonContainer.Clear();
-            if (string.IsNullOrEmpty(downloadUrl)) return;
-
+        private VisualElement CreateDownloadButton() {
             var pill = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
@@ -594,14 +643,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     marginRight = 0, marginBottom = 10,
                     alignItems = Align.Center,
                     width = Length.Percent(100),
-                    justifyContent = Justify.Center
+                    justifyContent = Justify.Center,
+                    display = DisplayStyle.None
                 }
             };
 
             pill.RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (evt.button != 0) return;
-                OnDownloadRequested?.Invoke(downloadUrl);
+                if (!string.IsNullOrEmpty(_currentDownloadUrl)) OnDownloadRequested?.Invoke(_currentDownloadUrl);
                 evt.StopPropagation();
             });
 
@@ -620,60 +670,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             pill.Add(icon);
             pill.Add(label);
-            _downloadButtonContainer.Add(pill);
+            return pill;
         }
 
-        private void AddInfoRow(string label, string value) {
-            var row = new VisualElement {
-                style = {
-                    flexDirection = FlexDirection.Row,
-                    justifyContent = Justify.SpaceBetween,
-                    marginBottom = 2
-                }
-            };
-            row.Add(new Label(label) { style = { color = Color.gray, width = 80 } });
-            row.Add(new Label(value) { style = { flexGrow = 1, unityTextAlign = TextAnchor.MiddleRight } });
-            _infoContainer.Add(row);
-        }
-
-        private void AddInfoRowWithLink(string label, string displayText, string url) {
-            var row = new VisualElement {
-                style = {
-                    flexDirection = FlexDirection.Row,
-                    justifyContent = Justify.SpaceBetween,
-                    marginBottom = 2
-                }
-            };
-            row.Add(new Label(label) { style = { color = Color.gray, width = 80 } });
-
-            var linkLabel = new Label(displayText) {
-                style = {
-                    flexGrow = 1,
-                    unityTextAlign = TextAnchor.MiddleRight,
-                    color = new StyleColor(new Color(0.4f, 0.6f, 1.0f))
-                }
-            };
-
-            if (!string.IsNullOrEmpty(url)) {
-                linkLabel.RegisterCallback<PointerDownEvent>(evt =>
-                {
-                    if (evt.button != 0) return;
-                    Application.OpenURL(url);
-                    evt.StopPropagation();
-                });
-
-                linkLabel.RegisterCallback<MouseEnterEvent>(_ =>
-                {
-                    linkLabel.style.color = new StyleColor(new Color(0.6f, 0.8f, 1.0f));
-                });
-                linkLabel.RegisterCallback<MouseLeaveEvent>(_ =>
-                {
-                    linkLabel.style.color = new StyleColor(new Color(0.4f, 0.6f, 1.0f));
-                });
-            }
-
-            row.Add(linkLabel);
-            _infoContainer.Add(row);
+        private void SetDownloadButtonVisible(bool buttonVisible, string url) {
+            _currentDownloadUrl = url;
+            _downloadButtonPill.style.display = buttonVisible ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private static string FormatSize(long bytes) {
@@ -686,6 +688,90 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             return $"{number:n2} {suffixes[counter]}";
+        }
+
+        private class InfoRow {
+            private readonly VisualElement _row;
+            private readonly Label _valueLabel;
+
+            public InfoRow(VisualElement container, string label) {
+                _row = new VisualElement {
+                    style = {
+                        flexDirection = FlexDirection.Row,
+                        justifyContent = Justify.SpaceBetween,
+                        marginBottom = 2,
+                        display = DisplayStyle.None
+                    }
+                };
+                _row.Add(new Label(label) { style = { color = Color.gray, width = 80 } });
+                _valueLabel = new Label { style = { flexGrow = 1, unityTextAlign = TextAnchor.MiddleRight } };
+                _row.Add(_valueLabel);
+                container.Add(_row);
+            }
+
+            public void Show(string value) {
+                _valueLabel.text = value;
+                _row.style.display = DisplayStyle.Flex;
+            }
+
+            public void Hide() {
+                _row.style.display = DisplayStyle.None;
+            }
+        }
+
+        private class LinkInfoRow {
+            private readonly VisualElement _row;
+            private readonly Label _valueLabel;
+            private string _currentUrl;
+
+            public LinkInfoRow(VisualElement container, string label) {
+                _row = new VisualElement {
+                    style = {
+                        flexDirection = FlexDirection.Row,
+                        justifyContent = Justify.SpaceBetween,
+                        marginBottom = 2,
+                        display = DisplayStyle.None
+                    }
+                };
+                _row.Add(new Label(label) { style = { color = Color.gray, width = 80 } });
+
+                _valueLabel = new Label {
+                    style = {
+                        flexGrow = 1,
+                        unityTextAlign = TextAnchor.MiddleRight,
+                        color = new StyleColor(new Color(0.4f, 0.6f, 1.0f))
+                    }
+                };
+
+                _valueLabel.RegisterCallback<PointerDownEvent>(evt =>
+                {
+                    if (evt.button != 0) return;
+                    if (!string.IsNullOrEmpty(_currentUrl)) Application.OpenURL(_currentUrl);
+                    evt.StopPropagation();
+                });
+
+                _valueLabel.RegisterCallback<MouseEnterEvent>(_ =>
+                {
+                    _valueLabel.style.color = new StyleColor(new Color(0.6f, 0.8f, 1.0f));
+                });
+                _valueLabel.RegisterCallback<MouseLeaveEvent>(_ =>
+                {
+                    _valueLabel.style.color = new StyleColor(new Color(0.4f, 0.6f, 1.0f));
+                });
+
+                _row.Add(_valueLabel);
+                container.Add(_row);
+            }
+
+            public void Show(string text, string url) {
+                _valueLabel.text = text;
+                _currentUrl = url;
+                _row.style.display = DisplayStyle.Flex;
+            }
+
+            public void Hide() {
+                _row.style.display = DisplayStyle.None;
+            }
         }
     }
 }
