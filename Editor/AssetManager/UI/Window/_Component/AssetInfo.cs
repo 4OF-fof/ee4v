@@ -329,7 +329,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private void InitializeInfoRows() {
             _rowSize = new InfoRow(_infoContainer, "Size");
             _rowType = new InfoRow(_infoContainer, "Type");
-            _rowModified = new InfoRow(_infoContainer, "Modified");
             _rowSubFolders = new InfoRow(_infoContainer, "Sub Folders");
             _rowAssets = new InfoRow(_infoContainer, "Assets");
 
@@ -339,6 +338,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _rowShop = new LinkInfoRow(_infoContainer, "Shop");
             _rowItem = new LinkInfoRow(_infoContainer, "Item");
+            _rowModified = new InfoRow(_infoContainer, "Modified");
         }
 
         public event Action<string> OnNameChanged;
@@ -464,10 +464,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _rowAssets.Show(data.AssetCount.ToString());
             _rowModified.Show(data.ModificationTime.ToString("yyyy/MM/dd HH:mm"));
 
-            if (data.IsBoothItemFolder) {
-                if (!string.IsNullOrEmpty(data.ShopName)) _rowShop.Show(data.ShopName, data.ShopUrl);
-                if (!string.IsNullOrEmpty(data.ItemId)) _rowItem.Show(data.ItemId, data.ItemUrl);
-            }
+            if (!data.IsBoothItemFolder) return;
+            if (!string.IsNullOrEmpty(data.ShopName)) _rowShop.Show(data.ShopName, data.ShopUrl);
+            if (!string.IsNullOrEmpty(data.ItemId)) _rowItem.Show(data.ItemId, data.ItemUrl);
         }
 
         private void OnLibraryDataUpdated(LibraryDisplayData data) {
@@ -507,7 +506,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private void HideAllInfoRows() {
             _rowSize.Hide();
             _rowType.Hide();
-            _rowModified.Hide();
             _rowSubFolders.Hide();
             _rowAssets.Hide();
             _rowTotalAssets.Hide();
@@ -515,6 +513,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _rowTotalTags.Hide();
             _rowShop.Hide();
             _rowItem.Hide();
+            _rowModified.Hide();
         }
 
         private static TextField CreateTextField(bool isBold) {
