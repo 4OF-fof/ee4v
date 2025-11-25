@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.AssetManager.UI.Presenter;
@@ -21,6 +23,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly Label _folderHeader;
         private readonly Label _folderNameLabel;
         private readonly VisualElement _folderRow;
+        private readonly VisualElement _importTargetsContainer;
+        private readonly Label _importTargetsLabel;
 
         private readonly VisualElement _infoContainer;
 
@@ -37,6 +41,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private Ulid _currentAssetId;
         private string _currentDownloadUrl;
         private AssetInfoPresenter _presenter;
+        private IAssetRepository _repository;
         private InfoRow _rowAssets;
         private LinkInfoRow _rowItem;
         private InfoRow _rowModified;
@@ -265,6 +270,24 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             });
             _singleSelectionContainer.Add(_addDependencyButton);
 
+            _importTargetsLabel = new Label("Import Targets") {
+                style = {
+                    unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4,
+                    display = DisplayStyle.None
+                }
+            };
+            _singleSelectionContainer.Add(_importTargetsLabel);
+
+            _importTargetsContainer = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    flexWrap = Wrap.Wrap,
+                    marginBottom = 10,
+                    display = DisplayStyle.None
+                }
+            };
+            _singleSelectionContainer.Add(_importTargetsContainer);
+
             _multiSelectionContainer = new VisualElement {
                 style = { display = DisplayStyle.None, alignItems = Align.Center, marginTop = 20, marginBottom = 40 }
             };
@@ -329,8 +352,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<Ulid> OnFolderClicked;
         public event Action<string> OnDownloadRequested;
 
-        public void Initialize(IAssetRepository repository, TextureService textureService,
-            FolderService folderService) {
+        public void Initialize(IAssetRepository repository, TextureService textureService) {
+            _repository = repository;
             _presenter = new AssetInfoPresenter(repository, textureService);
             _presenter.AssetDataUpdated += OnAssetDataUpdated;
             _presenter.FolderDataUpdated += OnFolderDataUpdated;
@@ -371,6 +394,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             RefreshTags(data.Tags);
             RefreshDependencies(data.Dependencies);
+            RefreshImportTargets(data);
 
             if (!string.IsNullOrEmpty(data.DownloadUrl) && !data.HasPhysicalFile)
                 SetDownloadButtonVisible(true, data.DownloadUrl);
@@ -407,6 +431,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _dependenciesLabel.style.display = DisplayStyle.None;
             _dependenciesContainer.style.display = DisplayStyle.None;
             _addDependencyButton.style.display = DisplayStyle.None;
+
+            _importTargetsLabel.style.display = DisplayStyle.None;
+            _importTargetsContainer.style.display = DisplayStyle.None;
 
             if (data.ParentFolderId != Ulid.Empty) {
                 _folderHeader.style.display = DisplayStyle.Flex;
@@ -627,6 +654,55 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 pill.Add(label);
                 pill.Add(removeBtn);
                 _dependenciesContainer.Add(pill);
+            }
+        }
+
+        private void RefreshImportTargets(AssetDisplayData data) {
+            _importTargetsContainer.Clear();
+
+            if (data.Extension != "zip") {
+                _importTargetsLabel.style.display = DisplayStyle.None;
+                _importTargetsContainer.style.display = DisplayStyle.None;
+                return;
+            }
+
+            var importDir = _repository.GetImportDirectoryPath(data.Id);
+            if (!Directory.Exists(importDir)) {
+                _importTargetsLabel.style.display = DisplayStyle.None;
+                _importTargetsContainer.style.display = DisplayStyle.None;
+                return;
+            }
+
+            var files = Directory.GetFileSystemEntries(importDir);
+            var targets = (from file in files where !file.EndsWith(".meta") select Path.GetFileName(file)).ToList();
+
+            if (targets.Count == 0) {
+                _importTargetsLabel.style.display = DisplayStyle.None;
+                _importTargetsContainer.style.display = DisplayStyle.None;
+                return;
+            }
+
+            _importTargetsLabel.style.display = DisplayStyle.Flex;
+            _importTargetsContainer.style.display = DisplayStyle.Flex;
+
+            foreach (var target in targets) {
+                var pill = new VisualElement {
+                    style = {
+                        flexDirection = FlexDirection.Row,
+                        backgroundColor = new StyleColor(new Color(0.2f, 0.5f, 0.3f)),
+                        borderTopLeftRadius = 10,
+                        borderTopRightRadius = 10,
+                        borderBottomLeftRadius = 10,
+                        borderBottomRightRadius = 10,
+                        paddingLeft = 8, paddingRight = 8, paddingTop = 2, paddingBottom = 2,
+                        marginRight = 4, marginBottom = 4,
+                        alignItems = Align.Center
+                    }
+                };
+
+                var label = new Label(target);
+                pill.Add(label);
+                _importTargetsContainer.Add(pill);
             }
         }
 

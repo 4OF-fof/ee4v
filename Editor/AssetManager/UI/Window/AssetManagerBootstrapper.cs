@@ -147,7 +147,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             tagListView.Initialize(_repository);
             tagListView.SetController(_assetController);
             tagListView.SetShowDialogCallback(ShowDialog);
-            assetInfo.Initialize(_repository, _textureService, _folderService);
+            assetInfo.Initialize(_repository, _textureService);
 
             var refreshUIAction = new Action<bool>(RefreshUI);
             var setNavFoldersAction = new Action<List<BaseFolder>>(folders => navigation.SetFolders(folders));
