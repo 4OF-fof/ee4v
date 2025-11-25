@@ -313,12 +313,11 @@ namespace _4OF.ee4v.AssetManager.Service {
                 var importDir = _repository.GetImportDirectoryPath(assetId);
                     
                 var packages = Directory.GetFiles(importDir, "*.unitypackage", SearchOption.AllDirectories);
-                if (packages.Length > 0) {
-                    AssetDatabase.ImportPackage(packages[0], true);
-                } 
-                else {
-                    ImportDirectoryContent(importDir, destFolder);
+                foreach (var pkg in packages) {
+                    AssetDatabase.ImportPackage(pkg, true);
                 }
+
+                ImportDirectoryContent(importDir, destFolder);
                 return;
             }
 
@@ -352,7 +351,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         private static void ImportDirectoryContent(string sourceDir, string destRootDir) {
             var allFiles = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
-            var filesToProcess = allFiles.Where(file => !file.EndsWith(".meta", StringComparison.OrdinalIgnoreCase)).Where(file => !Path.GetFileName(file).StartsWith(".")).ToList();
+            var filesToProcess = (from file in allFiles where !file.EndsWith(".meta", StringComparison.OrdinalIgnoreCase) where !file.EndsWith(".unitypackage", StringComparison.OrdinalIgnoreCase) where !Path.GetFileName(file).StartsWith(".") select file).ToList();
 
             if (filesToProcess.Count == 0) return;
 
@@ -400,10 +399,9 @@ namespace _4OF.ee4v.AssetManager.Service {
                 Debug.Log($"Imported '{Path.GetFileName(destFile)}' with restored GUID.");
             } else {
                 AssetDatabase.Refresh();
-                if (File.Exists(destMetaPath)) {
-                    File.Copy(destMetaPath, storedMetaPath, true);
-                    Debug.Log($"Imported '{Path.GetFileName(destFile)}' and backed up new meta.");
-                }
+                if (!File.Exists(destMetaPath)) return;
+                File.Copy(destMetaPath, storedMetaPath, true);
+                Debug.Log($"Imported '{Path.GetFileName(destFile)}' and backed up new meta.");
             }
         }
     }
