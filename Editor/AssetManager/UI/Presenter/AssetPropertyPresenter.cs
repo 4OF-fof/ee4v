@@ -1,7 +1,5 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.AssetManager.UI.Window;
@@ -12,7 +10,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Presenter {
-    public class AssetManagerPresenter {
+    public class AssetPropertyPresenter {
         private readonly AssetViewController _assetController;
         private readonly AssetService _assetService;
         private readonly FolderService _folderService;
@@ -26,9 +24,8 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
 
         private readonly Action<string, float?, ToastType> _showToast;
         private readonly Action _tagListRefresh;
-        private bool _isInitialized;
 
-        public AssetManagerPresenter(
+        public AssetPropertyPresenter(
             IAssetRepository repository,
             AssetService assetService,
             FolderService folderService,
@@ -46,7 +43,6 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             _assetService = assetService;
             _folderService = folderService;
             _assetController = controller;
-
             _showToast = showToast;
             _refreshUI = refreshUI;
             _setNavigationFolders = setNavigationFolders;
@@ -58,15 +54,10 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
         }
 
         private AssetMetadata SelectedAsset { get; set; }
-
         private Ulid CurrentPreviewFolderId { get; set; } = Ulid.Empty;
 
         public event Action<AssetMetadata> OnSelectedAssetChanged;
         public event Action<Ulid> OnPreviewFolderChanged;
-
-        public void SetInitialized(bool initialized) {
-            _isInitialized = initialized;
-        }
 
         public void UpdateSelection(List<object> selectedItems) {
             var previousSelected = SelectedAsset;
@@ -91,43 +82,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             if (previousPreviewFolder != CurrentPreviewFolderId) OnPreviewFolderChanged?.Invoke(CurrentPreviewFolderId);
         }
 
-        public void OnNavigationChanged(NavigationMode mode, string contextName, Func<AssetMetadata, bool> filter) {
-            _assetController.SetMode(mode, contextName, filter, _isInitialized);
-
-            SelectedAsset = null;
-            CurrentPreviewFolderId = Ulid.Empty;
-            OnSelectedAssetChanged?.Invoke(null);
-            OnPreviewFolderChanged?.Invoke(CurrentPreviewFolderId);
-        }
-
-        public void OnFolderSelected(Ulid folderId) {
-            _assetController.SetFolder(folderId, _isInitialized);
-
-            if (folderId != Ulid.Empty && (SelectedAsset == null || SelectedAsset.Folder == folderId)) return;
-
-            SelectedAsset = null;
-            CurrentPreviewFolderId = Ulid.Empty;
-            OnSelectedAssetChanged?.Invoke(null);
-            OnPreviewFolderChanged?.Invoke(CurrentPreviewFolderId);
-        }
-
-        public void OnTagListClicked() {
-            _assetController.SetMode(NavigationMode.TagList, "Tag List", _ => false, _isInitialized);
-
-            SelectedAsset = null;
-            CurrentPreviewFolderId = Ulid.Empty;
-            OnSelectedAssetChanged?.Invoke(null);
-            OnPreviewFolderChanged?.Invoke(CurrentPreviewFolderId);
-        }
-
-        public void OnTagSelected(string tag) {
-            _assetController.SetMode(
-                NavigationMode.Tag,
-                $"Tag: {tag}",
-                a => !a.IsDeleted && a.Tags.Contains(tag),
-                _isInitialized
-            );
-
+        public void ClearSelection() {
             SelectedAsset = null;
             CurrentPreviewFolderId = Ulid.Empty;
             OnSelectedAssetChanged?.Invoke(null);
@@ -267,186 +222,6 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             SelectedAsset.UnityData.RemoveDependenceItem(dependencyId);
             _assetService.SaveAsset(SelectedAsset);
             _refreshUI(false);
-        }
-
-        public void OnTagRenamed(string oldTag, string newTag) {
-            _assetService.RenameTag(oldTag, newTag);
-            _tagListRefresh?.Invoke();
-            _refreshUI(false);
-            _showToast?.Invoke($"タグ '{oldTag}' を '{newTag}' にリネームしました", 3, ToastType.Success);
-        }
-
-        public void OnTagDeleted(string tag) {
-            _assetService.DeleteTag(tag);
-            _tagListRefresh?.Invoke();
-            _refreshUI(false);
-            _showToast?.Invoke($"タグ '{tag}' を削除しました", 3, ToastType.Success);
-        }
-
-        public void OnFolderRenamed(Ulid folderId, string newName) {
-            var libMetadata = _repository.GetLibraryMetadata();
-            var oldFolder = libMetadata?.GetFolder(folderId);
-            var oldName = oldFolder?.Name ?? "フォルダ";
-
-            var success = _folderService.SetFolderName(folderId, newName);
-            var folders = _folderService.GetRootFolders();
-            _setNavigationFolders?.Invoke(folders);
-            _refreshUI(false);
-            if (!success)
-                _showToast?.Invoke($"フォルダ '{oldName}' のリネームに失敗しました: 名前が無効です", 10, ToastType.Error);
-        }
-
-        public void OnFolderDeleted(Ulid folderId) {
-            var libMetadata = _repository.GetLibraryMetadata();
-            var folder = libMetadata?.GetFolder(folderId);
-            var folderName = folder?.Name ?? "フォルダ";
-
-            _folderService.DeleteFolder(folderId);
-            var folders = _folderService.GetRootFolders();
-            _setNavigationFolders?.Invoke(folders);
-            _refreshUI(false);
-            _showToast?.Invoke($"フォルダ '{folderName}' を削除しました", 3, ToastType.Success);
-        }
-
-        public void OnFolderCreated(string folderName) {
-            var success = _folderService.CreateFolder(Ulid.Empty, folderName);
-            var folders = _folderService.GetRootFolders();
-            _setNavigationFolders?.Invoke(folders);
-            _refreshUI(false);
-            if (!success)
-                _showToast?.Invoke($"フォルダ '{folderName}' の作成に失敗しました: 名前が無効です", 10, ToastType.Error);
-        }
-
-        public void OnAssetCreated(string assetName, string description, string fileOrUrl, List<string> tags,
-            string shopDomain, string itemId) {
-            if (string.IsNullOrWhiteSpace(assetName)) {
-                _showToast?.Invoke("アセット名を入力してください", 5, ToastType.Error);
-                return;
-            }
-
-            try {
-                AssetMetadata asset;
-
-                if (!string.IsNullOrWhiteSpace(fileOrUrl)) {
-                    if (File.Exists(fileOrUrl)) {
-                        _repository.CreateAssetFromFile(fileOrUrl);
-                        asset = _repository.GetAllAssets().OrderByDescending(a => a.ModificationTime).FirstOrDefault();
-                        if (asset == null) {
-                            _showToast?.Invoke("ファイルからのアセット作成に失敗しました", 5, ToastType.Error);
-                            return;
-                        }
-                    }
-                    else {
-                        asset = _repository.CreateEmptyAsset();
-                    }
-                }
-                else {
-                    asset = _repository.CreateEmptyAsset();
-                }
-
-                asset.SetName(assetName);
-                if (!string.IsNullOrWhiteSpace(description))
-                    asset.SetDescription(description);
-
-                if (!string.IsNullOrWhiteSpace(shopDomain) || !string.IsNullOrWhiteSpace(itemId)) {
-                    var boothData = new BoothMetadata();
-                    if (!string.IsNullOrWhiteSpace(shopDomain))
-                        boothData.SetShopDomain(shopDomain);
-                    if (!string.IsNullOrWhiteSpace(itemId))
-                        boothData.SetItemID(itemId);
-                    asset.SetBoothData(boothData);
-                }
-
-                if (tags is { Count: > 0 })
-                    foreach (var tag in tags.Where(tag => !string.IsNullOrWhiteSpace(tag)))
-                        asset.AddTag(tag);
-
-                _assetService.SaveAsset(asset);
-                _assetController.Refresh();
-                _showToast?.Invoke($"アセット '{assetName}' を作成しました", 3, ToastType.Success);
-            }
-            catch (Exception ex) {
-                _showToast?.Invoke($"アセットの作成に失敗しました: {ex.Message}", 5, ToastType.Error);
-                Debug.LogError($"Failed to create asset: {ex}");
-            }
-        }
-
-        public void OnFolderMoved(Ulid sourceFolderId, Ulid targetFolderId) {
-            _folderService.MoveFolder(sourceFolderId, targetFolderId);
-            var folders = _folderService.GetRootFolders();
-            _setNavigationFolders?.Invoke(folders);
-            _refreshUI(false);
-        }
-
-        public void OnFolderReordered(Ulid parentFolderId, Ulid folderId, int newIndex) {
-            if (parentFolderId == Ulid.Empty) {
-                var libraries = _repository.GetLibraryMetadata();
-                if (libraries != null) {
-                    var full = libraries.FolderList;
-                    var mappedIndex = MapVisibleRootIndexToFullIndex(full, newIndex);
-                    _folderService.ReorderFolder(parentFolderId, folderId, mappedIndex);
-                    var mappedRootFolders = _folderService.GetRootFolders();
-                    _setNavigationFolders?.Invoke(mappedRootFolders);
-                    _refreshUI(false);
-                    return;
-                }
-            }
-
-            _folderService.ReorderFolder(parentFolderId, folderId, newIndex);
-            var rootFolders = _folderService.GetRootFolders();
-            _setNavigationFolders?.Invoke(rootFolders);
-            _refreshUI(false);
-        }
-
-        private static int MapVisibleRootIndexToFullIndex(IReadOnlyList<BaseFolder> fullList, int visibleIndex) {
-            if (visibleIndex < 0) return 0;
-
-            var visibleCount = 0;
-            for (var i = 0; i < fullList.Count; i++) {
-                if (fullList[i] is BoothItemFolder) continue;
-
-                if (visibleCount == visibleIndex) return i;
-                visibleCount++;
-            }
-
-            if (visibleCount == 0) return 0;
-
-            for (var i = fullList.Count - 1; i >= 0; i--)
-                if (fullList[i] is not BoothItemFolder)
-                    return i + 1;
-
-            return fullList.Count;
-        }
-
-        public List<AssetMetadata> FindAssetsFromBoothItemFolder(List<Ulid> assetIds) {
-            var libMetadata = _repository.GetLibraryMetadata();
-            var assetsFromBoothItemFolder = (from assetId in assetIds
-                select _repository.GetAsset(assetId)
-                into asset
-                where asset != null
-                where asset.Folder != Ulid.Empty && libMetadata != null
-                let currentFolder = libMetadata.GetFolder(asset.Folder)
-                where currentFolder is BoothItemFolder
-                select asset).ToList();
-
-            return assetsFromBoothItemFolder;
-        }
-
-        public void PerformSetFolderForAssets(List<Ulid> assetIds, Ulid targetFolderId) {
-            foreach (var assetId in assetIds) _assetService.SetFolder(assetId, targetFolderId);
-            _refreshUI(true);
-        }
-
-        public void PerformItemsDroppedToFolder(List<Ulid> assetIds, List<Ulid> folderIds, Ulid targetFolderId) {
-            if (assetIds.Count > 0)
-                foreach (var assetId in assetIds)
-                    _assetService.SetFolder(assetId, targetFolderId);
-
-            if (folderIds.Count > 0)
-                foreach (var folderId in folderIds)
-                    _folderService.MoveFolder(folderId, targetFolderId);
-
-            _refreshUI(true);
         }
 
         public void OnDownloadRequested(string downloadUrl) {
