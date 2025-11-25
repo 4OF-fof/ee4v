@@ -53,10 +53,8 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public List<BaseFolder> GetFoldersByTag(string tag) {
-            if (string.IsNullOrEmpty(tag) || !_tagIndex.TryGetValue(tag, out var idSet))
+            if (string.IsNullOrEmpty(tag) || !_tagIndex.TryGetValue(tag, out var idSet) || Libraries == null)
                 return new List<BaseFolder>();
-
-            if (Libraries == null) return new List<BaseFolder>();
 
             return idSet
                 .Select(id => Libraries.GetFolder(id))
@@ -72,40 +70,6 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public List<string> GetAllTags() {
             return _tagIndex.Keys.ToList();
-        }
-
-        public List<Ulid> GetAllFolders() {
-            return _folderIndex.Keys.ToList();
-        }
-
-        public void RenameTag(string tag, string newTag) {
-            if (string.IsNullOrEmpty(tag) || string.IsNullOrEmpty(newTag) || tag == newTag) return;
-            if (!_tagIndex.TryGetValue(tag, out var idSet)) return;
-
-            var ids = idSet.ToList();
-            foreach (var id in ids) {
-                var asset = GetAsset(id);
-                if (asset != null) {
-                    asset.AddTag(newTag);
-                    asset.RemoveTag(tag);
-                }
-                else {
-                    var folder = Libraries?.GetFolder(id);
-                    if (folder != null) {
-                        folder.AddTag(newTag);
-                        folder.RemoveTag(tag);
-                    }
-                }
-
-                if (!_tagIndex.TryGetValue(newTag, out var newSet)) {
-                    newSet = new HashSet<Ulid>();
-                    _tagIndex[newTag] = newSet;
-                }
-
-                newSet.Add(id);
-            }
-
-            _tagIndex.Remove(tag);
         }
 
         public void SetLibrary(LibraryMetadata libraryMetadata) {
