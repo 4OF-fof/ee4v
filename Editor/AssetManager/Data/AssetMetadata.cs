@@ -15,7 +15,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             Name = string.IsNullOrWhiteSpace(metadata.Name) ? "Untitled" : metadata.Name;
             Description = metadata.Description;
             Size = metadata.Size;
-            Ext = metadata.Ext?.ToLowerInvariant();
+            Ext = metadata.Ext;
             BoothData = new BoothMetadata(metadata.BoothData);
             UnityData = new UnityMetadata(metadata.UnityData);
             Folder = metadata.Folder;
@@ -32,7 +32,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             Name = string.IsNullOrWhiteSpace(name) ? "Untitled" : name;
             Description = description;
             Size = size;
-            Ext = ext?.ToLowerInvariant();
+            Ext = ext;
             BoothData = boothData;
             UnityData = unityData;
             Folder = folder;

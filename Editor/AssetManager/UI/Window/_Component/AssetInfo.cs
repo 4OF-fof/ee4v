@@ -648,7 +648,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private void RefreshImportTargets(AssetDisplayData data) {
             _importTargetsContainer.Clear();
 
-            if (data.Extension != "zip") {
+            if (!string.Equals(data.Extension, "ZIP", StringComparison.OrdinalIgnoreCase)) {
                 _importTargetsLabel.style.display = DisplayStyle.None;
                 _importTargetsContainer.style.display = DisplayStyle.None;
                 return;
