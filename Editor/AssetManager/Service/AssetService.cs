@@ -315,29 +315,29 @@ namespace _4OF.ee4v.AssetManager.Service {
                 else {
                     AssetImportTracker.StopTracking();
                 }
+
                 return;
             }
 
             if (asset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase)) {
                 if (_repository.HasImportItems(assetId)) {
                     var importDir = _repository.GetImportDirectoryPath(assetId);
-                    
+
                     var packages = Directory.GetFiles(importDir, "*.unitypackage", SearchOption.AllDirectories);
                     if (packages.Length > 0) {
                         RegisterPackageEvents();
-                        foreach (var pkg in packages) {
-                            AssetDatabase.ImportPackage(pkg, true);
-                        }
+                        foreach (var pkg in packages) AssetDatabase.ImportPackage(pkg, true);
                     }
 
                     ImportDirectoryContent(importDir, destFolder);
                     AssetDatabase.Refresh();
-                    
+
                     if (packages.Length == 0) AssetImportTracker.StopTracking();
                 }
                 else {
                     AssetImportTracker.StopTracking();
                 }
+
                 return;
             }
 
@@ -379,8 +379,8 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         private void ImportSingleFile(AssetMetadata asset, string destFolder) {
             var assetFiles = _repository.GetAssetFiles(asset.ID);
-            var mainFile = assetFiles.FirstOrDefault(f => 
-                !f.EndsWith("metadata.json") && 
+            var mainFile = assetFiles.FirstOrDefault(f =>
+                !f.EndsWith("metadata.json") &&
                 !f.EndsWith("thumbnail.png") &&
                 !f.Contains(Path.DirectorySeparatorChar + "Import" + Path.DirectorySeparatorChar));
 
@@ -393,10 +393,10 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var fileName = Path.GetFileName(mainFile);
             var destPath = Path.Combine(destFolder, fileName);
-            
+
             var repoImportDir = _repository.GetImportDirectoryPath(asset.ID);
             if (!Directory.Exists(repoImportDir)) Directory.CreateDirectory(repoImportDir);
-            
+
             var storedMetaPath = Path.Combine(repoImportDir, fileName + ".meta");
 
             CopyAndManageMeta(mainFile, destPath, storedMetaPath);
@@ -404,7 +404,11 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         private static void ImportDirectoryContent(string sourceDir, string destRootDir) {
             var allFiles = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
-            var filesToProcess = (from file in allFiles where !file.EndsWith(".meta", StringComparison.OrdinalIgnoreCase) where !file.EndsWith(".unitypackage", StringComparison.OrdinalIgnoreCase) where !Path.GetFileName(file).StartsWith(".") select file).ToList();
+            var filesToProcess = (from file in allFiles
+                where !file.EndsWith(".meta", StringComparison.OrdinalIgnoreCase)
+                where !file.EndsWith(".unitypackage", StringComparison.OrdinalIgnoreCase)
+                where !Path.GetFileName(file).StartsWith(".")
+                select file).ToList();
 
             if (filesToProcess.Count == 0) return;
 
@@ -424,21 +428,18 @@ namespace _4OF.ee4v.AssetManager.Service {
 
                 File.Copy(sourcePath, destPath, true);
 
-                if (File.Exists(storedMetaPath)) {
+                if (File.Exists(storedMetaPath))
                     File.Copy(storedMetaPath, destMetaPath, true);
-                } else {
+                else
                     delayedMetaBackups.Add((destMetaPath, storedMetaPath));
-                }
             }
 
             AssetDatabase.Refresh();
 
-            foreach (var (destMeta, storedMeta) in delayedMetaBackups) {
-                if (File.Exists(destMeta)) {
+            foreach (var (destMeta, storedMeta) in delayedMetaBackups)
+                if (File.Exists(destMeta))
                     File.Copy(destMeta, storedMeta, true);
-                }
-            }
-            
+
             Debug.Log($"Imported {filesToProcess.Count} files from import directory.");
         }
 
@@ -450,7 +451,8 @@ namespace _4OF.ee4v.AssetManager.Service {
                 File.Copy(storedMetaPath, destMetaPath, true);
                 AssetDatabase.Refresh();
                 Debug.Log($"Imported '{Path.GetFileName(destFile)}' with restored GUID.");
-            } else {
+            }
+            else {
                 AssetDatabase.Refresh();
                 if (!File.Exists(destMetaPath)) return;
                 File.Copy(destMetaPath, storedMetaPath, true);
@@ -463,17 +465,8 @@ namespace _4OF.ee4v.AssetManager.Service {
         private static Ulid _targetAssetId = Ulid.Empty;
         private static IAssetRepository _repository;
 
-        public static void StartTracking(Ulid assetId, IAssetRepository repository) {
-            _targetAssetId = assetId;
-            _repository = repository;
-        }
-
-        public static void StopTracking() {
-            _targetAssetId = Ulid.Empty;
-            _repository = null;
-        }
-
-        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths) {
+        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
+            string[] movedAssets, string[] movedFromAssetPaths) {
             if (_targetAssetId == Ulid.Empty || _repository == null) return;
 
             var asset = _repository.GetAsset(_targetAssetId);
@@ -488,9 +481,17 @@ namespace _4OF.ee4v.AssetManager.Service {
                 changed = true;
             }
 
-            if (changed) {
-                _repository.SaveAsset(asset);
-            }
+            if (changed) _repository.SaveAsset(asset);
+        }
+
+        public static void StartTracking(Ulid assetId, IAssetRepository repository) {
+            _targetAssetId = assetId;
+            _repository = repository;
+        }
+
+        public static void StopTracking() {
+            _targetAssetId = Ulid.Empty;
+            _repository = null;
         }
     }
 }

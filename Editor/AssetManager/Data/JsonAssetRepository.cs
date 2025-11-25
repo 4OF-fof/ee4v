@@ -494,7 +494,8 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public bool HasImportItems(Ulid assetId) {
             var importDir = GetImportDirectoryPath(assetId);
-            return FileSystemProvider.DirectoryExists(importDir) && Directory.EnumerateFileSystemEntries(importDir).Any();
+            return FileSystemProvider.DirectoryExists(importDir) &&
+                Directory.EnumerateFileSystemEntries(importDir).Any();
         }
 
         public string GetImportDirectoryPath(Ulid assetId) {

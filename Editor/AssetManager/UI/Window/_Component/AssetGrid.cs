@@ -455,16 +455,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             if (singleAsset != null) {
                 var canImport = true;
-                
-                if (singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase)) {
+
+                if (singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase))
                     canImport = _repository.HasImportItems(singleAsset.ID);
-                }
 
                 if (canImport) {
-                    menu.AddItem("インポート", false, () => {
-                        var destPath = ReflectionWrapper.GetProjectWindowCurrentPath(ReflectionWrapper.ProjectBrowserWindow);
+                    menu.AddItem("インポート", false, () =>
+                    {
+                        var destPath =
+                            ReflectionWrapper.GetProjectWindowCurrentPath(ReflectionWrapper.ProjectBrowserWindow);
                         if (string.IsNullOrEmpty(destPath)) destPath = "Assets";
-                        
+
                         AssetManagerContainer.AssetService.ImportAsset(singleAsset.ID, destPath);
                     });
                     menu.AddSeparator("");
