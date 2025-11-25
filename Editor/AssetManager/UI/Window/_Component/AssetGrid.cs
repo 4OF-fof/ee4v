@@ -486,6 +486,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 menu.AddSeparator("");
             }
 
+            if (singleAsset != null) {
+                menu.AddItem("エクスプローラーで開く", false, () =>
+                {
+                    var files = _repository.GetAssetFiles(singleAsset.ID);
+                    if (files.Count > 0) EditorUtility.RevealInFinder(files[0]);
+                });
+                menu.AddSeparator("");
+            }
+
             if (assetTargets.Count > 0 && assetTargets.Count == deletedAssetTargets.Count && folderTargets.Count == 0) {
                 var plural = deletedAssetTargets.Count > 1;
 

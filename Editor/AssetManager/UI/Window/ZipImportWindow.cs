@@ -74,12 +74,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var zipPath = zipFiles[0];
 
             try {
+                EditorUtility.DisplayProgressBar("Please Wait", "ZIPファイルを展開中... (これには数秒かかる場合があります)", 0.5f);
                 ZipFile.ExtractToDirectory(zipPath, _tempExtractPath);
             }
             catch (Exception e) {
                 EditorUtility.DisplayDialog("Error", $"Failed to extract ZIP: {e.Message}", "OK");
                 Close();
                 return;
+            }
+            finally {
+                EditorUtility.ClearProgressBar();
             }
 
             _rootPath = _tempExtractPath;
