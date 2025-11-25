@@ -5,7 +5,6 @@ using System.IO.Compression;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
-using _4OF.ee4v.AssetManager.UI.Window._Component;
 using _4OF.ee4v.Core.Data;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
@@ -21,9 +20,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private AssetService _assetService;
         private IAssetRepository _repository;
+        private string _rootPath;
         private Ulid _targetAssetId;
         private string _tempExtractPath;
-        private string _rootPath;
         private VisualElement _treeContainer;
 
         protected override void OnDestroy() {
@@ -88,9 +87,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var entries = Directory.GetFileSystemEntries(_tempExtractPath);
             if (entries.Length == 1 && Directory.Exists(entries[0])) {
                 var dirName = Path.GetFileName(entries[0]);
-                if (string.Equals(dirName, zipName, StringComparison.OrdinalIgnoreCase)) {
-                    _rootPath = entries[0];
-                }
+                if (string.Equals(dirName, zipName, StringComparison.OrdinalIgnoreCase)) _rootPath = entries[0];
             }
 
             BuildTreeNodes(_rootPath);
@@ -228,7 +225,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             var cancelBtn = new Button(Close) { text = "Cancel", style = { width = 80 } };
             var importBtn = new Button(DoImport) {
-                text = "Select",
+                text = "Import",
                 style = { width = 80, backgroundColor = new Color(0.2f, 0.5f, 0.2f), color = Color.white }
             };
 
@@ -242,9 +239,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private void RenderTree() {
             _treeContainer.Clear();
-            if (_nodes.Count > 0)
-                foreach (var child in _nodes[0].Children)
-                    RenderNodeRecursive(child, _treeContainer);
+            if (_nodes.Count <= 0) return;
+            foreach (var child in _nodes[0].Children)
+                RenderNodeRecursive(child, _treeContainer);
         }
 
         private void RenderNodeRecursive(FileNode node, VisualElement parentContainer) {
@@ -281,7 +278,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                     display = node.IsExpanded ? DisplayStyle.Flex : DisplayStyle.None
                 }
             };
-            
+
+            var isChecked = IsNodeChecked(node);
+            var toggle = new Toggle { value = isChecked, style = { marginLeft = 0, marginRight = 0 } };
+
             if (node.IsDirectory) {
                 arrow.RegisterCallback<PointerDownEvent>(evt =>
                 {
@@ -294,15 +294,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 row.Add(arrow);
             }
             else {
-                var isChecked = IsNodeChecked(node);
-                var toggle = new Toggle { value = isChecked, style = { marginLeft = 0, marginRight = 0 } };
                 toggle.RegisterValueChangedCallback(evt =>
                 {
                     SetNodeChecked(node, evt.newValue);
                     RenderTree();
                 });
-                row.Add(toggle);
             }
+
+            row.Add(toggle);
 
             var icon = EditorGUIUtility.IconContent(node.IsDirectory ? "Folder Icon" : "TextAsset Icon").image;
             var iconImg = new Image
@@ -343,8 +342,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             var paths = _selectedPaths.ToList();
             _assetService.ImportFilesFromZip(_targetAssetId, _rootPath, paths);
-
-            AssetManagerWindow.ShowToastMessage($"{paths.Count} items imported.", 3f, ToastType.Success);
             Close();
         }
 

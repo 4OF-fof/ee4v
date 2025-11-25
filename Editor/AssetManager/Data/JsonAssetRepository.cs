@@ -39,6 +39,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         public event Action<Ulid> AssetChanged;
         public event Action<Ulid> FolderChanged;
 
+        // ... (Initialize から GetFolderThumbnailDataAsync までは変更なし) ...
         public void Initialize() {
             FileSystemProvider.CreateDirectory(_rootDir);
             FileSystemProvider.CreateDirectory(_assetRootDir);
@@ -468,15 +469,14 @@ namespace _4OF.ee4v.AssetManager.Data {
             var assetDir = Path.Combine(_assetRootDir, assetId.ToString());
             var importDir = Path.Combine(assetDir, "Import");
 
-            if (FileSystemProvider.DirectoryExists(importDir)) {
-                FileSystemProvider.DeleteDirectory(importDir, true);
-            }
-            
+            if (FileSystemProvider.DirectoryExists(importDir)) FileSystemProvider.DeleteDirectory(importDir, true);
+
             FileSystemProvider.CreateDirectory(importDir);
 
             foreach (var relPath in relativePaths) {
                 var srcFile = Path.Combine(sourceRootPath, relPath);
-                var destFile = Path.Combine(importDir, relPath);
+
+                var destFile = Path.Combine(importDir, Path.GetFileName(relPath));
 
                 var destDir = Path.GetDirectoryName(destFile);
                 if (!string.IsNullOrEmpty(destDir) && !FileSystemProvider.DirectoryExists(destDir))
