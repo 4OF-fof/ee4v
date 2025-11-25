@@ -7,6 +7,7 @@ using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
+using _4OF.ee4v.ProjectExtension.Service;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -453,14 +454,20 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var singleAsset = activeAssetTargets.Count == 1 ? activeAssetTargets[0] : null;
 
             if (singleAsset != null) {
-                if (singleAsset.Ext.Equals(".unitypackage", StringComparison.OrdinalIgnoreCase)) {
-                    menu.AddItem("インポート", false, () => AssetManagerContainer.AssetService.ImportAsset(singleAsset.ID));
-                    menu.AddSeparator("");
+                var canImport = true;
+                
+                if (singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase)) {
+                    canImport = _repository.HasImportItems(singleAsset.ID);
                 }
-                else if (singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase)) {
-                    if (_repository.HasImportItems(singleAsset.ID)) {
-                        menu.AddItem("インポート", false, () => AssetManagerContainer.AssetService.ImportAsset(singleAsset.ID));
-                    }
+
+                if (canImport) {
+                    menu.AddItem("インポート", false, () => {
+                        var destPath = ReflectionWrapper.GetProjectWindowCurrentPath(ReflectionWrapper.ProjectBrowserWindow);
+                        if (string.IsNullOrEmpty(destPath)) destPath = "Assets";
+                        
+                        AssetManagerContainer.AssetService.ImportAsset(singleAsset.ID, destPath);
+                    });
+                    menu.AddSeparator("");
                 }
             }
 

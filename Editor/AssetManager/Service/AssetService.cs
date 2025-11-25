@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Utility;
 using _4OF.ee4v.Core.Utility;
+using UnityEditor;
 using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Service {
@@ -33,7 +35,6 @@ namespace _4OF.ee4v.AssetManager.Service {
                 }
             }
             catch {
-                // ignored
             }
 
             _repository.SaveAsset(asset);
@@ -295,25 +296,82 @@ namespace _4OF.ee4v.AssetManager.Service {
             _repository.ImportFiles(assetId, tempRootPath, relativePaths);
         }
 
-        public void ImportAsset(Ulid assetId) {
+        public void ImportAsset(Ulid assetId, string destFolder = "Assets") {
             var asset = _repository.GetAsset(assetId);
             if (asset == null) return;
 
             if (asset.Ext.Equals(".unitypackage", StringComparison.OrdinalIgnoreCase)) {
                 var files = _repository.GetAssetFiles(assetId, "*.unitypackage");
                 if (files.Count > 0) {
-                    UnityEditor.AssetDatabase.ImportPackage(files[0], true);
+                    AssetDatabase.ImportPackage(files[0], true);
                 }
+                return;
             }
-            else if (asset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase)) {
+
+            if (asset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase)) {
                 if (!_repository.HasImportItems(assetId)) return;
                 var importDir = _repository.GetImportDirectoryPath(assetId);
-                var packages = System.IO.Directory.GetFiles(importDir, "*.unitypackage", System.IO.SearchOption.AllDirectories);
+                var packages = Directory.GetFiles(importDir, "*.unitypackage", SearchOption.AllDirectories);
                 if (packages.Length > 0) {
-                    UnityEditor.AssetDatabase.ImportPackage(packages[0], true);
+                    AssetDatabase.ImportPackage(packages[0], true);
                 }
                 else {
-                    Debug.LogWarning("No unitypackage found in the import folder.");
+                    Debug.LogWarning("No unitypackage found in the import folder. (Direct file copy for zip content is not yet fully supported via Import button)");
+                }
+                return;
+            }
+
+            var assetFiles = _repository.GetAssetFiles(assetId);
+            var mainFile = assetFiles.FirstOrDefault(f => 
+                !f.EndsWith("metadata.json") && 
+                !f.EndsWith("thumbnail.png") &&
+                !f.Contains(Path.DirectorySeparatorChar + "Import" + Path.DirectorySeparatorChar));
+
+            if (string.IsNullOrEmpty(mainFile) || !File.Exists(mainFile)) {
+                Debug.LogError($"Asset file not found for {asset.Name}");
+                return;
+            }
+
+            var fileName = Path.GetFileName(mainFile);
+            var destPath = Path.Combine(destFolder, fileName);
+            var metaFileName = fileName + ".meta";
+            
+            var repoImportDir = _repository.GetImportDirectoryPath(assetId);
+            var storedMetaPath = Path.Combine(repoImportDir, metaFileName);
+
+            if (!Directory.Exists(destFolder)) Directory.CreateDirectory(destFolder);
+            if (!Directory.Exists(repoImportDir)) Directory.CreateDirectory(repoImportDir);
+
+            if (File.Exists(storedMetaPath)) {
+                var destMetaPath = destPath + ".meta";
+                try {
+                    File.Copy(mainFile, destPath, true);
+                    File.Copy(storedMetaPath, destMetaPath, true);
+                    
+                    Debug.Log($"Imported '{fileName}' with restored Meta (GUID preserved).");
+                    
+                    AssetDatabase.Refresh();
+                }
+                catch (Exception ex) {
+                    Debug.LogError($"Failed to import asset with meta: {ex.Message}");
+                }
+            }
+            else {
+                try {
+                    File.Copy(mainFile, destPath, true);
+                    AssetDatabase.Refresh();
+
+                    var generatedMetaPath = destPath + ".meta";
+                    if (File.Exists(generatedMetaPath)) {
+                        File.Copy(generatedMetaPath, storedMetaPath, true);
+                        Debug.Log($"Imported '{fileName}' and backed up Meta file to repository.");
+                    }
+                    else {
+                        Debug.LogWarning($"Imported '{fileName}' but could not find generated Meta file for backup.");
+                    }
+                }
+                catch (Exception ex) {
+                    Debug.LogError($"Failed to import asset: {ex.Message}");
                 }
             }
         }
