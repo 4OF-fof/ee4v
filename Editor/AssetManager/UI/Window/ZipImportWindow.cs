@@ -43,15 +43,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void CleanupTempFiles() {
-            if (!string.IsNullOrEmpty(_tempExtractPath) && Directory.Exists(_tempExtractPath)) {
-                try {
-                    Directory.Delete(_tempExtractPath, true);
-                }
-                catch {
-                }
-
-                _tempExtractPath = null;
+            if (string.IsNullOrEmpty(_tempExtractPath) || !Directory.Exists(_tempExtractPath)) return;
+            try {
+                Directory.Delete(_tempExtractPath, true);
             }
+            catch {
+                // ignored
+            }
+
+            _tempExtractPath = null;
         }
 
         private void ExtractZipAndBuildTree() {
@@ -320,15 +320,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         }
 
         private void DoImport() {
-            if (_selectedPaths.Count == 0) {
-                Close();
-                return;
-            }
-
             var paths = _selectedPaths.ToList();
             _assetService.ImportFilesFromZip(_targetAssetId, _tempExtractPath, paths);
 
-            AssetManagerWindow.ShowToastMessage($"{paths.Count} items imported.", 3f, ToastType.Success);
+            AssetManagerWindow.ShowToastMessage(
+                paths.Count == 0 ? "Import folder cleared." : $"{paths.Count} items imported.",
+                3f,
+                ToastType.Success);
             Close();
         }
 
