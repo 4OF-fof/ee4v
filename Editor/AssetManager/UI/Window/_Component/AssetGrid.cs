@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
-using _4OF.ee4v.ProjectExtension.Service;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -19,10 +17,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly ListView _listView;
         private readonly List<List<object>> _rows = new();
         private readonly HashSet<object> _selectedItems = new();
+        private AssetService _assetService;
         private CancellationTokenSource _cts;
 
         private List<object> _flatItems = new();
-        private bool _isDragging;
+        private FolderService _folderService;
         private int _itemsPerRow;
         private object _lastSelectedReference;
         private float _lastWidth;
@@ -30,6 +29,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private bool _rightClickHandledByDown;
 
         private TextureService _textureService;
+        private AssetThumbnailLoader _thumbnailLoader;
 
         public AssetGrid(int initialItemsPerRow) {
             _itemsPerRow = initialItemsPerRow;
@@ -117,9 +117,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<AssetMetadata> OnAssetDoubleClicked;
         public event Action<List<Ulid>, List<Ulid>, Ulid> OnItemsDroppedToFolder;
 
-        public void Initialize(TextureService textureService, IAssetRepository repository = null) {
+        public void Initialize(TextureService textureService, IAssetRepository repository, AssetService assetService,
+            FolderService folderService) {
             _textureService = textureService;
             _repository = repository;
+            _assetService = assetService;
+            _folderService = folderService;
+            _thumbnailLoader = new AssetThumbnailLoader(_textureService);
         }
 
         public void SetItems(List<object> items) {
@@ -260,7 +264,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             for (var i = 0; i < _itemsPerRow; i++) {
                 var card = new AssetCard { style = { flexShrink = 0 } };
                 card.RegisterCallback<PointerDownEvent>(OnCardPointerDown);
-                card.RegisterCallback<PointerMoveEvent>(OnCardPointerMove);
                 card.RegisterCallback<PointerUpEvent>(OnCardPointerUp);
                 row.Add(card);
             }
@@ -289,9 +292,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 var card = element[i] as AssetCard;
                 if (card == null) continue;
 
-                card.UnregisterCallback<PointerMoveEvent>(OnCardPointerMove);
                 card.UnregisterCallback<PointerUpEvent>(OnCardPointerUp);
-                card.RegisterCallback<PointerMoveEvent>(OnCardPointerMove);
                 card.RegisterCallback<PointerUpEvent>(OnCardPointerUp);
 
                 card.OnDropped -= OnCardDropped;
@@ -315,7 +316,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                             var isEmpty = !hasSubFolders && !hasAssets;
 
                             card.SetThumbnail(null, true, isEmpty);
-                            LoadImageAsync(card, folder.ID, true);
+                            _thumbnailLoader?.LoadThumbnailAsync(card, folder.ID, true,
+                                _cts?.Token ?? CancellationToken.None);
 
                             card.EnableDropZone();
                             card.OnDropped += OnCardDropped;
@@ -324,40 +326,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                             card.SetData(asset.Name);
                             card.userData = asset;
                             card.SetThumbnail(null);
-                            LoadImageAsync(card, asset.ID, false);
+                            _thumbnailLoader?.LoadThumbnailAsync(card, asset.ID, false,
+                                _cts?.Token ?? CancellationToken.None);
                             break;
                     }
                 }
                 else {
                     card.style.display = DisplayStyle.None;
                 }
-            }
-        }
-
-        private async void LoadImageAsync(AssetCard card, Ulid id, bool isFolder) {
-            if (_textureService == null) return;
-            _cts ??= new CancellationTokenSource();
-            var token = _cts.Token;
-
-            try {
-                Texture2D tex;
-                if (isFolder)
-                    tex = await _textureService.GetFolderThumbnailAsync(id);
-                else
-                    tex = await _textureService.GetAssetThumbnailAsync(id);
-
-                if (token.IsCancellationRequested) return;
-
-                switch (card.userData) {
-                    case AssetMetadata meta when meta.ID != id:
-                    case BaseFolder folder when folder.ID != id:
-                        return;
-                }
-
-                if (tex != null) card.SetThumbnail(tex, isFolder);
-            }
-            catch {
-                /* ignore */
             }
         }
 
@@ -433,189 +409,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _lastSelectedReference = targetItem;
             }
 
-            _listView.RefreshItems();
-            OnSelectionChange?.Invoke(_selectedItems.ToList());
-            evt.StopPropagation();
-        }
-
-        private void ShowContextMenu(AssetCard card, object targetItem, Rect? anchor = null) {
-            var menu = new GenericDropdownMenu();
-
-            var targets = _selectedItems.Contains(targetItem)
-                ? _selectedItems.ToList()
-                : new List<object> { targetItem };
-
-            var assetTargets = targets.OfType<AssetMetadata>().ToList();
-            var folderTargets = targets.OfType<BaseFolder>().ToList();
-
-            var deletedAssetTargets = assetTargets.Where(a => a.IsDeleted).ToList();
-            var activeAssetTargets = assetTargets.Where(a => !a.IsDeleted).ToList();
-
-            var singleAsset = activeAssetTargets.Count == 1 ? activeAssetTargets[0] : null;
-
-            if (singleAsset != null) {
-                var canImport = true;
-
-                if (singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase))
-                    canImport = _repository.HasImportItems(singleAsset.ID);
-
-                if (canImport) {
-                    menu.AddItem("インポート", false, () =>
-                    {
-                        var destPath =
-                            ReflectionWrapper.GetProjectWindowCurrentPath(ReflectionWrapper.ProjectBrowserWindow);
-                        if (string.IsNullOrEmpty(destPath)) destPath = "Assets";
-
-                        AssetManagerContainer.AssetService.ImportAsset(singleAsset.ID, destPath);
-                    });
-                    menu.AddSeparator("");
-                }
-            }
-
-            if (singleAsset != null && singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase)) {
-                menu.AddItem("インポート対象を選択...", false, () =>
-                {
-                    var boundPosition = card.worldBound.position;
-                    ZipImportWindow.Open(
-                        GUIUtility.GUIToScreenPoint(new Vector2(boundPosition.x + 20, boundPosition.y + 20)),
-                        singleAsset.ID,
-                        _repository,
-                        AssetManagerContainer.AssetService
-                    );
-                });
-                menu.AddSeparator("");
-            }
-
-            if (singleAsset != null) {
-                menu.AddItem("エクスプローラーで開く", false, () =>
-                {
-                    var files = _repository.GetAssetFiles(singleAsset.ID);
-                    if (files.Count > 0) EditorUtility.RevealInFinder(files[0]);
-                });
-                menu.AddSeparator("");
-            }
-
-            if (assetTargets.Count > 0 && assetTargets.Count == deletedAssetTargets.Count && folderTargets.Count == 0) {
-                var plural = deletedAssetTargets.Count > 1;
-
-                menu.AddItem(plural ? $"{deletedAssetTargets.Count} 個を完全に削除" : "完全に削除", false, () =>
-                {
-                    var message = plural
-                        ? $"選択した {deletedAssetTargets.Count} 個のアセットを完全に削除しますか？この操作は取り消せません。"
-                        : "アセットを完全に削除しますか？この操作は取り消せません。";
-                    if (!EditorUtility.DisplayDialog("確認", message, "削除", "キャンセル")) return;
-                    foreach (var a in deletedAssetTargets) AssetManagerContainer.AssetService.DeleteAsset(a.ID);
-                    _listView.RefreshItems();
-                });
-
-                menu.AddItem(plural ? $"{deletedAssetTargets.Count} 個を復元" : "復元", false, () =>
-                {
-                    foreach (var a in deletedAssetTargets) AssetManagerContainer.AssetService.RestoreAsset(a.ID);
-                    _listView.RefreshItems();
-                });
-
-                var targetRect = anchor ?? card.worldBound;
-                menu.DropDown(targetRect, card);
-                return;
-            }
-
-            if (activeAssetTargets.Count > 0 || folderTargets.Count > 0)
-                menu.AddItem("サムネイルを設定...", false, () =>
-                {
-                    var path = EditorUtility.OpenFilePanel("Select Thumbnail", "", "png,jpg,jpeg");
-                    if (string.IsNullOrEmpty(path)) return;
-
-                    foreach (var a in activeAssetTargets) {
-                        _repository?.SetThumbnail(a.ID, path);
-                        LoadImageAsync(card, a.ID, false);
-                    }
-
-                    foreach (var f in folderTargets) {
-                        AssetManagerContainer.FolderService.SetFolderThumbnail(f.ID, path);
-                        LoadImageAsync(card, f.ID, true);
-                    }
-
-                    _listView.RefreshItems();
-                });
-
-            var anyRemovableThumb = activeAssetTargets.Any(a =>
-            {
-                var p = _repository?.GetThumbnailPath(a.ID);
-                return !string.IsNullOrEmpty(p) && File.Exists(p);
-            }) || folderTargets.Any(f =>
-            {
-                var p = _repository?.GetFolderThumbnailPath(f.ID);
-                return !string.IsNullOrEmpty(p) && File.Exists(p);
-            });
-
-            if (anyRemovableThumb)
-                menu.AddItem("サムネイルを削除", false, () =>
-                {
-                    foreach (var a in activeAssetTargets) {
-                        _repository?.RemoveThumbnail(a.ID);
-                        _textureService?.RemoveAssetFromCache(a.ID);
-                        LoadImageAsync(card, a.ID, false);
-                    }
-
-                    foreach (var f in from f in folderTargets
-                             let thumbPath = _repository?.GetFolderThumbnailPath(f.ID)
-                             where !string.IsNullOrEmpty(thumbPath) && File.Exists(thumbPath)
-                             select f) {
-                        AssetManagerContainer.FolderService.RemoveFolderThumbnail(f.ID);
-                        _textureService?.RemoveFolderFromCache(f.ID);
-                        LoadImageAsync(card, f.ID, true);
-                    }
-
-                    _listView.RefreshItems();
-                });
-
-            menu.AddSeparator("");
-
-            if (activeAssetTargets.Count > 0) {
-                var plural = activeAssetTargets.Count > 1;
-                menu.AddItem(plural ? $"{activeAssetTargets.Count} 個を削除" : "アセットを削除", false, () =>
-                {
-                    foreach (var a in activeAssetTargets) AssetManagerContainer.AssetService.RemoveAsset(a.ID);
-                    _listView.RefreshItems();
-                });
-            }
-
-            if (folderTargets.Count > 0) {
-                var plural = folderTargets.Count > 1;
-                menu.AddItem(plural ? $"{folderTargets.Count} 個のフォルダを削除" : "フォルダを削除", false, () =>
-                {
-                    foreach (var f in folderTargets) AssetManagerContainer.FolderService.DeleteFolder(f.ID);
-
-                    _listView.RefreshItems();
-                });
-            }
-
-            if (deletedAssetTargets.Count > 0) {
-                menu.AddItem("復元", false, () =>
-                {
-                    foreach (var a in deletedAssetTargets) AssetManagerContainer.AssetService.RestoreAsset(a.ID);
-                    _listView.RefreshItems();
-                });
-                menu.AddItem("完全に削除", false, () =>
-                {
-                    var plural2 = deletedAssetTargets.Count > 1;
-                    var message = plural2
-                        ? $"選択した {deletedAssetTargets.Count} 個のアセットを完全に削除しますか？この操作は取り消せません。"
-                        : "アセットを完全に削除しますか？この操作は取り消せません。";
-                    if (!EditorUtility.DisplayDialog("確認", message, "削除", "キャンセル")) return;
-                    foreach (var a in deletedAssetTargets) AssetManagerContainer.AssetService.DeleteAsset(a.ID);
-                    _listView.RefreshItems();
-                });
-            }
-
-            var rect = anchor ?? card.worldBound;
-            menu.DropDown(rect, card);
-        }
-
-        private void OnCardPointerMove(PointerMoveEvent evt) {
-            if (evt.pressedButtons != 1 || _isDragging) return;
-            if (evt.currentTarget is not AssetCard card) return;
-            var targetItem = card.userData;
             if (targetItem is not AssetMetadata && targetItem is not BaseFolder) return;
 
             if (!_selectedItems.Contains(targetItem)) {
@@ -625,8 +418,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _listView.RefreshItems();
                 OnSelectionChange?.Invoke(_selectedItems.ToList());
             }
-
-            _isDragging = true;
 
             var selectedAssets = _selectedItems.OfType<AssetMetadata>().ToList();
             var selectedFolders = _selectedItems.OfType<BaseFolder>().ToList();
@@ -682,22 +473,24 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         anchorRect = card.worldBound;
                     }
 
-                    ShowContextMenu(card, targetItem, anchorRect);
+                    var menu = AssetContextMenuFactory.Create(
+                        _selectedItems.ToList(),
+                        _repository,
+                        _assetService,
+                        _folderService,
+                        _textureService,
+                        Refresh
+                    );
+                    menu.DropDown(anchorRect, card);
                     evt.StopPropagation();
-                    _isDragging = false;
-                    return;
                 }
             }
-
-            _isDragging = false;
         }
 
-        private void OnPointerUpAnywhere(PointerUpEvent evt) {
-            _isDragging = false;
+        private static void OnPointerUpAnywhere(PointerUpEvent evt) {
         }
 
-        private void OnPointerLeaveAnywhere(PointerLeaveEvent evt) {
-            _isDragging = false;
+        private static void OnPointerLeaveAnywhere(PointerLeaveEvent evt) {
         }
 
         private void OnCardDropped(Ulid targetFolderId, List<Ulid> assetIds, List<Ulid> folderIds) {

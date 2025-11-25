@@ -1,0 +1,40 @@
+using System.Threading;
+using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.AssetManager.Service;
+using _4OF.ee4v.Core.Utility;
+using UnityEngine;
+
+namespace _4OF.ee4v.AssetManager.UI.Window._Component {
+    public class AssetThumbnailLoader {
+        private readonly TextureService _textureService;
+
+        public AssetThumbnailLoader(TextureService textureService) {
+            _textureService = textureService;
+        }
+
+        public async void LoadThumbnailAsync(AssetCard card, Ulid id, bool isFolder, CancellationToken token) {
+            if (_textureService == null) return;
+
+            try {
+                Texture2D tex;
+                if (isFolder)
+                    tex = await _textureService.GetFolderThumbnailAsync(id);
+                else
+                    tex = await _textureService.GetAssetThumbnailAsync(id);
+
+                if (token.IsCancellationRequested) return;
+
+                switch (card.userData) {
+                    case AssetMetadata meta when meta.ID != id:
+                    case BaseFolder folder when folder.ID != id:
+                        return;
+                }
+
+                if (tex != null) card.SetThumbnail(tex, isFolder);
+            }
+            catch {
+                // Ignore
+            }
+        }
+    }
+}

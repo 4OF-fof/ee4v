@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
+using _4OF.ee4v.AssetManager.UI.Model;
 using _4OF.ee4v.AssetManager.UI.Window;
 using _4OF.ee4v.AssetManager.UI.Window._Component;
 using _4OF.ee4v.AssetManager.UI.Window._Component.Dialog;
@@ -15,6 +16,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
         private readonly AssetService _assetService;
         private readonly FolderService _folderService;
         private readonly Func<Vector2> _getScreenPosition;
+        private readonly AssetSelectionModel _model;
         private readonly Action<bool> _refreshUI;
         private readonly IAssetRepository _repository;
         private readonly Action<List<BaseFolder>> _setNavigationFolders;
@@ -30,6 +32,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             AssetService assetService,
             FolderService folderService,
             AssetViewController controller,
+            AssetSelectionModel model,
             Action<string, float?, ToastType> showToast,
             Action<bool> refreshUI,
             Action<List<BaseFolder>> setNavigationFolders,
@@ -43,6 +46,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             _assetService = assetService;
             _folderService = folderService;
             _assetController = controller;
+            _model = model;
             _showToast = showToast;
             _refreshUI = refreshUI;
             _setNavigationFolders = setNavigationFolders;
@@ -53,40 +57,30 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             _showAssetSelector = showAssetSelector;
         }
 
-        private AssetMetadata SelectedAsset { get; set; }
-        private Ulid CurrentPreviewFolderId { get; set; } = Ulid.Empty;
-
-        public event Action<AssetMetadata> OnSelectedAssetChanged;
-        public event Action<Ulid> OnPreviewFolderChanged;
+        private AssetMetadata SelectedAsset => _model.SelectedAsset.Value;
+        private Ulid CurrentPreviewFolderId => _model.PreviewFolderId.Value;
 
         public void UpdateSelection(List<object> selectedItems) {
-            var previousSelected = SelectedAsset;
-            var previousPreviewFolder = CurrentPreviewFolderId;
+            _model.SetSelection(selectedItems);
 
             switch (selectedItems) {
                 case { Count: 1 } when selectedItems[0] is AssetMetadata asset:
-                    SelectedAsset = asset;
-                    CurrentPreviewFolderId = Ulid.Empty;
+                    _model.SetSelectedAsset(asset);
+                    _model.SetPreviewFolder(Ulid.Empty);
                     break;
                 case { Count: 1 } when selectedItems[0] is BaseFolder folder:
-                    SelectedAsset = null;
-                    CurrentPreviewFolderId = folder.ID;
+                    _model.SetSelectedAsset(null);
+                    _model.SetPreviewFolder(folder.ID);
                     break;
                 default:
-                    SelectedAsset = null;
-                    CurrentPreviewFolderId = Ulid.Empty;
+                    _model.SetSelectedAsset(null);
+                    _model.SetPreviewFolder(Ulid.Empty);
                     break;
             }
-
-            if (!Equals(previousSelected, SelectedAsset)) OnSelectedAssetChanged?.Invoke(SelectedAsset);
-            if (previousPreviewFolder != CurrentPreviewFolderId) OnPreviewFolderChanged?.Invoke(CurrentPreviewFolderId);
         }
 
         public void ClearSelection() {
-            SelectedAsset = null;
-            CurrentPreviewFolderId = Ulid.Empty;
-            OnSelectedAssetChanged?.Invoke(null);
-            OnPreviewFolderChanged?.Invoke(CurrentPreviewFolderId);
+            _model.Clear();
         }
 
         public void OnNameChanged(string newName) {
