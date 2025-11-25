@@ -7,9 +7,8 @@ using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
 
-namespace _4OF.ee4v.AssetManager.UI.Window._Component {
+namespace _4OF.ee4v.AssetManager.UI.Presenter {
     public class AssetInfoPresenter {
-        private readonly FolderService _folderService;
         private readonly IAssetRepository _repository;
         private readonly TextureService _textureService;
 
@@ -17,11 +16,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private BaseFolder _currentFolder;
         private IReadOnlyList<object> _lastSelection;
 
-        public AssetInfoPresenter(IAssetRepository repository, TextureService textureService,
-            FolderService folderService) {
+        public AssetInfoPresenter(IAssetRepository repository, TextureService textureService) {
             _repository = repository;
             _textureService = textureService;
-            _folderService = folderService;
 
             if (_repository == null) return;
             _repository.LibraryChanged += OnRepositoryLibraryChanged;

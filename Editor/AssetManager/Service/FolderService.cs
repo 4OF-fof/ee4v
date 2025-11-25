@@ -293,5 +293,82 @@ namespace _4OF.ee4v.AssetManager.Service {
             newParentFolder.InsertChildAt(newIndex, folderBase);
             _repository.SaveLibraryMetadata(libraries);
         }
+
+        public Ulid EnsureBoothItemFolder(string shopDomain, string shopName, string identifier,
+            string folderName, string folderDescription = null, Ulid parentFolderId = default) {
+            var libraries = _repository.GetLibraryMetadata();
+            if (libraries == null) return Ulid.Empty;
+
+            foreach (var root in libraries.FolderList) {
+                var found = FindBoothItemFolderRecursive(root, shopDomain ?? string.Empty, identifier);
+                if (found == null) continue;
+                if (!string.IsNullOrEmpty(shopName) && found.ShopName != shopName) found.SetShopName(shopName);
+                if (!string.IsNullOrEmpty(folderDescription) && found.Description != folderDescription)
+                    found.SetDescription(folderDescription);
+
+                return found.ID;
+            }
+
+            var newFolder = new BoothItemFolder();
+            var preferredName = !string.IsNullOrEmpty(folderName)
+                ? folderName
+                : !string.IsNullOrEmpty(identifier)
+                    ? identifier
+                    : "Booth Item";
+            newFolder.SetName(preferredName);
+            newFolder.SetDescription(folderDescription ?? shopName ?? string.Empty);
+            newFolder.SetShopDomain(shopDomain);
+            newFolder.SetShopName(shopName);
+            if (!string.IsNullOrEmpty(identifier) && identifier.All(char.IsDigit)) newFolder.SetItemId(identifier);
+
+            if (parentFolderId == default || parentFolderId == Ulid.Empty) {
+                libraries.AddFolder(newFolder);
+            }
+            else {
+                var parentBase = libraries.GetFolder(parentFolderId);
+                if (parentBase is BoothItemFolder || parentBase is not Folder parentFolder) return Ulid.Empty;
+
+                parentFolder.AddChild(newFolder);
+            }
+
+            try {
+                _repository.SaveLibraryMetadata(libraries);
+            }
+            catch (Exception e) {
+                Debug.LogWarning($"Failed saving library metadata while ensuring booth folder: {e.Message}");
+                return Ulid.Empty;
+            }
+
+            return newFolder.ID;
+        }
+
+        private static BoothItemFolder FindBoothItemFolderRecursive(BaseFolder root, string shopDomain,
+            string identifier) {
+            switch (root) {
+                case null:
+                    break;
+                case BoothItemFolder bf when !string.IsNullOrEmpty(shopDomain) &&
+                    !string.IsNullOrEmpty(bf.ShopDomain) &&
+                    bf.ShopDomain != shopDomain:
+                    break;
+                case BoothItemFolder bf: {
+                    if (!string.IsNullOrEmpty(identifier))
+                        if ((!string.IsNullOrEmpty(bf.ItemId) && bf.ItemId == identifier) || bf.Name == identifier)
+                            return bf;
+
+                    break;
+                }
+                case Folder { Children: not null } f: {
+                    foreach (var c in f.Children) {
+                        var found = FindBoothItemFolderRecursive(c, shopDomain, identifier);
+                        if (found != null) return found;
+                    }
+
+                    break;
+                }
+            }
+
+            return null;
+        }
     }
 }

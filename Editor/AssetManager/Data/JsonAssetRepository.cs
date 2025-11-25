@@ -235,37 +235,6 @@ namespace _4OF.ee4v.AssetManager.Data {
         public void SaveAsset(AssetMetadata asset) {
             if (asset == null) return;
             var assetDir = Path.Combine(_assetRootDir, asset.ID.ToString());
-            try {
-                var lib = _libraryCache.Libraries;
-                if (lib != null && asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.ItemId)) {
-                    var identifier = asset.BoothData.ItemId;
-                    BoothItemFolder found = null;
-                    foreach (var root in lib.FolderList) {
-                        found = FindBoothItemFolderRecursive(root, asset.BoothData.ShopDomain ?? string.Empty,
-                            identifier);
-                        if (found != null) break;
-                    }
-
-                    if (found == null) {
-                        var newFolder = new BoothItemFolder();
-                        newFolder.SetName(asset.BoothData.FileName ?? asset.Name ?? identifier ?? "Booth Item");
-                        newFolder.SetDescription(asset.BoothData.FileName ?? string.Empty);
-                        newFolder.SetShopDomain(asset.BoothData.ShopDomain ?? string.Empty);
-                        if (!string.IsNullOrEmpty(identifier) && identifier.All(char.IsDigit))
-                            newFolder.SetItemId(identifier);
-
-                        lib.AddFolder(newFolder);
-                        SaveLibraryMetadata(lib);
-
-                        found = newFolder;
-                    }
-
-                    if (asset.Folder == Ulid.Empty) asset.SetFolder(found.ID);
-                }
-            }
-            catch {
-                // ignore
-            }
 
             if (!Directory.Exists(assetDir)) Directory.CreateDirectory(assetDir);
 
@@ -567,35 +536,6 @@ namespace _4OF.ee4v.AssetManager.Data {
                 a.Ext == b.Ext &&
                 a.Folder == b.Folder &&
                 tagsA.SetEquals(tagsB);
-        }
-
-        private static BoothItemFolder FindBoothItemFolderRecursive(BaseFolder root, string shopDomain,
-            string identifier) {
-            switch (root) {
-                case null:
-                    break;
-                case BoothItemFolder bf when !string.IsNullOrEmpty(shopDomain) &&
-                    !string.IsNullOrEmpty(bf.ShopDomain) &&
-                    bf.ShopDomain != shopDomain:
-                    break;
-                case BoothItemFolder bf: {
-                    if (!string.IsNullOrEmpty(identifier))
-                        if ((!string.IsNullOrEmpty(bf.ItemId) && bf.ItemId == identifier) || bf.Name == identifier)
-                            return bf;
-
-                    break;
-                }
-                case Folder { Children: not null } f: {
-                    foreach (var c in f.Children) {
-                        var found = FindBoothItemFolderRecursive(c, shopDomain, identifier);
-                        if (found != null) return found;
-                    }
-
-                    break;
-                }
-            }
-
-            return null;
         }
 
         private class LibraryCacheSchema {

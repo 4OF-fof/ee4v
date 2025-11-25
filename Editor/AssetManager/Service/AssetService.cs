@@ -9,10 +9,34 @@ using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Service {
     public class AssetService {
+        private readonly FolderService _folderService;
         private readonly IAssetRepository _repository;
 
-        public AssetService(IAssetRepository repository) {
+        public AssetService(IAssetRepository repository, FolderService folderService) {
             _repository = repository;
+            _folderService = folderService;
+        }
+
+        public void SaveAsset(AssetMetadata asset) {
+            if (asset == null) return;
+
+            try {
+                var lib = _repository.GetLibraryMetadata();
+                if (lib != null && asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.ItemId)) {
+                    var identifier = asset.BoothData.ItemId;
+                    var folderName = asset.BoothData.FileName ?? asset.Name ?? identifier ?? "Booth Item";
+                    var folderDesc = asset.BoothData.FileName ?? string.Empty;
+                    var folderId = _folderService?.EnsureBoothItemFolder(asset.BoothData.ShopDomain ?? string.Empty,
+                        null, identifier, folderName, folderDesc) ?? Ulid.Empty;
+
+                    if (folderId != Ulid.Empty && asset.Folder == Ulid.Empty) asset.SetFolder(folderId);
+                }
+            }
+            catch {
+                // ignore
+            }
+
+            _repository.SaveAsset(asset);
         }
 
         public void CreateAsset(string path) {
@@ -33,7 +57,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.SetDeleted(true);
-            _repository.SaveAsset(newAsset);
+            SaveAsset(newAsset);
         }
 
         public void RestoreAsset(Ulid assetId) {
@@ -42,7 +66,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.SetDeleted(false);
-            _repository.SaveAsset(newAsset);
+            SaveAsset(newAsset);
         }
 
         public void UpdateAsset(AssetMetadata newAsset) {
@@ -51,7 +75,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             if (oldAsset == null) return;
 
             if (oldAsset.Name != newAsset.Name) _repository.RenameAssetFile(newAsset.ID, newAsset.Name);
-            _repository.SaveAsset(newAsset);
+            SaveAsset(newAsset);
         }
 
         public bool SetAssetName(Ulid assetId, string newName) {
@@ -70,7 +94,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.SetName(newName);
-            _repository.SaveAsset(newAsset);
+            SaveAsset(newAsset);
             return true;
         }
 
@@ -80,7 +104,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.SetDescription(newDescription);
-            _repository.SaveAsset(newAsset);
+            SaveAsset(newAsset);
         }
 
         public void SetFolder(Ulid assetId, Ulid newFolder) {
@@ -89,7 +113,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.SetFolder(newFolder);
-            _repository.SaveAsset(newAsset);
+            SaveAsset(newAsset);
         }
 
         public void AddTag(Ulid assetId, string tag) {
@@ -98,7 +122,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.AddTag(tag);
-            _repository.SaveAsset(newAsset);
+            SaveAsset(newAsset);
         }
 
         public void RemoveTag(Ulid assetId, string tag) {
@@ -107,7 +131,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.RemoveTag(tag);
-            _repository.SaveAsset(newAsset);
+            SaveAsset(newAsset);
         }
 
         public void RenameTag(string oldTag, string newTag) {
@@ -196,7 +220,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.BoothData.SetShopDomain(match.Groups[1].Value);
-            _repository.SaveAsset(newAsset);
+            SaveAsset(newAsset);
         }
 
         public void SetBoothItemId(Ulid assetId, string itemURL) {
@@ -211,7 +235,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.BoothData.SetItemID(match.Groups[1].Value);
-            _repository.SaveAsset(newAsset);
+            SaveAsset(newAsset);
         }
 
         public void SetBoothDownloadId(Ulid assetId, string downloadURL) {
@@ -226,7 +250,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.BoothData.SetDownloadID(match.Groups[1].Value);
-            _repository.SaveAsset(newAsset);
+            SaveAsset(newAsset);
         }
 
         public void AddAssetGuid(Ulid assetId, Guid guid) {
@@ -235,7 +259,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.UnityData.AddAssetGuid(guid);
-            _repository.SaveAsset(newAsset);
+            SaveAsset(newAsset);
         }
 
         public void RemoveAssetGuid(Ulid assetId, Guid guid) {
@@ -244,7 +268,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.UnityData.RemoveAssetGuid(guid);
-            _repository.SaveAsset(newAsset);
+            SaveAsset(newAsset);
         }
 
         public void AddDependenceItem(Ulid assetId, Ulid dependenceItemId) {
@@ -253,7 +277,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.UnityData.AddDependenceItem(dependenceItemId);
-            _repository.SaveAsset(newAsset);
+            SaveAsset(newAsset);
         }
 
         public void RemoveDependenceItem(Ulid assetId, Ulid dependenceItemId) {
@@ -262,7 +286,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.UnityData.RemoveDependenceItem(dependenceItemId);
-            _repository.SaveAsset(newAsset);
+            SaveAsset(newAsset);
         }
     }
 }

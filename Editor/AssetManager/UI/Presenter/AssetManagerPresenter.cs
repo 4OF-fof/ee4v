@@ -200,7 +200,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             }
 
             SelectedAsset.UnityData.AddDependenceItem(dependencyId);
-            _repository.SaveAsset(SelectedAsset);
+            _assetService.SaveAsset(SelectedAsset);
             _refreshUI(false);
         }
 
@@ -208,10 +208,10 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             if (SelectedAsset == null) return;
 
             SelectedAsset.UnityData.RemoveDependenceItem(dependencyId);
-            _repository.SaveAsset(SelectedAsset);
+            _assetService.SaveAsset(SelectedAsset);
             _refreshUI(false);
         }
-        
+
         public void OnTagRenamed(string oldTag, string newTag) {
             _assetService.RenameTag(oldTag, newTag);
             _tagListRefresh?.Invoke();
@@ -304,7 +304,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
                     foreach (var tag in tags.Where(tag => !string.IsNullOrWhiteSpace(tag)))
                         asset.AddTag(tag);
 
-                _repository.SaveAsset(asset);
+                _assetService.SaveAsset(asset);
                 _assetController.Refresh();
                 _showToast?.Invoke($"アセット '{assetName}' を作成しました", 3, ToastType.Success);
             }

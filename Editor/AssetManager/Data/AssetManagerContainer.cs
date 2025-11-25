@@ -18,21 +18,9 @@ namespace _4OF.ee4v.AssetManager.Data {
             Repository.Initialize();
             Repository.Load();
 
-            AssetService = new AssetService(Repository);
             FolderService = new FolderService(Repository);
+            AssetService = new AssetService(Repository, FolderService);
             TextureService = new TextureService(Repository);
-        }
-
-        public static void SetDependenciesForTest(IAssetRepository repository, AssetService assetService,
-            FolderService folderService, TextureService textureService) {
-            Repository = repository;
-            AssetService = assetService;
-            FolderService = folderService;
-            TextureService = textureService;
-        }
-
-        public static void Reload() {
-            Initialize();
         }
     }
 }

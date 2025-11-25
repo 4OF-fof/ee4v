@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
+using _4OF.ee4v.AssetManager.UI.Presenter;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
@@ -296,7 +297,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public void Initialize(IAssetRepository repository, TextureService textureService,
             FolderService folderService) {
-            _presenter = new AssetInfoPresenter(repository, textureService, folderService);
+            _presenter = new AssetInfoPresenter(repository, textureService);
             _presenter.AssetDataUpdated += OnAssetDataUpdated;
             _presenter.FolderDataUpdated += OnFolderDataUpdated;
             _presenter.LibraryDataUpdated += OnLibraryDataUpdated;
