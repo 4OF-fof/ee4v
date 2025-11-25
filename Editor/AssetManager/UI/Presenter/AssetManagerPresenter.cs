@@ -26,6 +26,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
 
         private readonly Action<string, float?, ToastType> _showToast;
         private readonly Action _tagListRefresh;
+        private bool _isInitialized;
 
         public AssetManagerPresenter(
             IAssetRepository repository,
@@ -56,11 +57,21 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             _showAssetSelector = showAssetSelector;
         }
 
-        public AssetMetadata SelectedAsset { get; private set; }
+        private AssetMetadata SelectedAsset { get; set; }
 
-        public Ulid CurrentPreviewFolderId { get; private set; } = Ulid.Empty;
+        private Ulid CurrentPreviewFolderId { get; set; } = Ulid.Empty;
+
+        public event Action<AssetMetadata> OnSelectedAssetChanged;
+        public event Action<Ulid> OnPreviewFolderChanged;
+
+        public void SetInitialized(bool initialized) {
+            _isInitialized = initialized;
+        }
 
         public void UpdateSelection(List<object> selectedItems) {
+            var previousSelected = SelectedAsset;
+            var previousPreviewFolder = CurrentPreviewFolderId;
+
             switch (selectedItems) {
                 case { Count: 1 } when selectedItems[0] is AssetMetadata asset:
                     SelectedAsset = asset;
@@ -75,6 +86,52 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
                     CurrentPreviewFolderId = Ulid.Empty;
                     break;
             }
+
+            if (!Equals(previousSelected, SelectedAsset)) OnSelectedAssetChanged?.Invoke(SelectedAsset);
+            if (previousPreviewFolder != CurrentPreviewFolderId) OnPreviewFolderChanged?.Invoke(CurrentPreviewFolderId);
+        }
+
+        public void OnNavigationChanged(NavigationMode mode, string contextName, Func<AssetMetadata, bool> filter) {
+            _assetController.SetMode(mode, contextName, filter, _isInitialized);
+
+            SelectedAsset = null;
+            CurrentPreviewFolderId = Ulid.Empty;
+            OnSelectedAssetChanged?.Invoke(null);
+            OnPreviewFolderChanged?.Invoke(CurrentPreviewFolderId);
+        }
+
+        public void OnFolderSelected(Ulid folderId) {
+            _assetController.SetFolder(folderId, _isInitialized);
+
+            if (folderId != Ulid.Empty && (SelectedAsset == null || SelectedAsset.Folder == folderId)) return;
+
+            SelectedAsset = null;
+            CurrentPreviewFolderId = Ulid.Empty;
+            OnSelectedAssetChanged?.Invoke(null);
+            OnPreviewFolderChanged?.Invoke(CurrentPreviewFolderId);
+        }
+
+        public void OnTagListClicked() {
+            _assetController.SetMode(NavigationMode.TagList, "Tag List", _ => false, _isInitialized);
+
+            SelectedAsset = null;
+            CurrentPreviewFolderId = Ulid.Empty;
+            OnSelectedAssetChanged?.Invoke(null);
+            OnPreviewFolderChanged?.Invoke(CurrentPreviewFolderId);
+        }
+
+        public void OnTagSelected(string tag) {
+            _assetController.SetMode(
+                NavigationMode.Tag,
+                $"Tag: {tag}",
+                a => !a.IsDeleted && a.Tags.Contains(tag),
+                _isInitialized
+            );
+
+            SelectedAsset = null;
+            CurrentPreviewFolderId = Ulid.Empty;
+            OnSelectedAssetChanged?.Invoke(null);
+            OnPreviewFolderChanged?.Invoke(CurrentPreviewFolderId);
         }
 
         public void OnNameChanged(string newName) {

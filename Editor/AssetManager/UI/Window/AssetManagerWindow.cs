@@ -27,6 +27,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private Navigation _navigation;
         private Action<Ulid, string, VisualElement> _navigationContextMenuHandler;
         private AssetManagerPresenter _presenter;
+        private Action<Ulid> _presenterPreviewFolderHandler;
+        private Action<AssetMetadata> _presenterSelectedAssetHandler;
         private IAssetRepository _repository;
         private AssetMetadata _selectedAsset;
         private TagListView _tagListView;
@@ -42,9 +44,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private void OnDisable() {
             if (_navigation != null) {
-                _navigation.NavigationChanged -= OnNavigationChanged;
-                _navigation.FolderSelected -= OnFolderSelected;
-                _navigation.TagListClicked -= OnTagListClicked;
+                _navigation.NavigationChanged -= _presenter.OnNavigationChanged;
+                _navigation.FolderSelected -= _presenter.OnFolderSelected;
+                _navigation.TagListClicked -= _presenter.OnTagListClicked;
                 _navigation.OnFolderRenamed -= _presenter.OnFolderRenamed;
                 _navigation.OnFolderDeleted -= _presenter.OnFolderDeleted;
                 _navigation.OnFolderMoved -= _presenter.OnFolderMoved;
@@ -57,7 +59,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             }
 
             if (_tagListView != null) {
-                _tagListView.OnTagSelected -= OnTagSelected;
+                _tagListView.OnTagSelected -= _presenter.OnTagSelected;
                 _tagListView.OnTagRenamed -= _presenter.OnTagRenamed;
                 _tagListView.OnTagDeleted -= _presenter.OnTagDeleted;
             }
@@ -84,12 +86,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _assetInfo.OnDescriptionChanged -= _presenter.OnDescriptionChanged;
                 _assetInfo.OnTagAdded -= _presenter.OnTagAdded;
                 _assetInfo.OnTagRemoved -= _presenter.OnTagRemoved;
-                _assetInfo.OnTagClicked -= OnTagSelected;
+                _assetInfo.OnTagClicked -= _presenter.OnTagSelected;
                 _assetInfo.OnDependencyAdded -= _presenter.OnDependencyAdded;
                 _assetInfo.OnDependencyRemoved -= _presenter.OnDependencyRemoved;
                 _assetInfo.OnDependencyClicked -= OnDependencyClicked;
-                _assetInfo.OnFolderClicked -= OnFolderSelected;
+                _assetInfo.OnFolderClicked -= _presenter.OnFolderSelected;
                 _assetInfo.OnDownloadRequested -= _presenter.OnDownloadRequested;
+            }
+
+            if (_presenter != null) {
+                if (_presenterSelectedAssetHandler != null)
+                    _presenter.OnSelectedAssetChanged -= _presenterSelectedAssetHandler;
+                if (_presenterPreviewFolderHandler != null)
+                    _presenter.OnPreviewFolderChanged -= _presenterPreviewFolderHandler;
             }
 
             _textureService?.ClearCache();
@@ -166,9 +175,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                     AssetSelectorWindow.Show(screenPos, repo, selectedId ?? Ulid.Empty, cb)
             );
 
-            _navigation.NavigationChanged += OnNavigationChanged;
-            _navigation.FolderSelected += OnFolderSelected;
-            _navigation.TagListClicked += OnTagListClicked;
+            _navigation.NavigationChanged += _presenter.OnNavigationChanged;
+            _navigation.FolderSelected += _presenter.OnFolderSelected;
+            _navigation.TagListClicked += _presenter.OnTagListClicked;
             _navigation.OnFolderRenamed += _presenter.OnFolderRenamed;
             _navigation.OnFolderDeleted += _presenter.OnFolderDeleted;
             _navigation.OnFolderMoved += _presenter.OnFolderMoved;
@@ -187,31 +196,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _navigation.SetShowDialogCallback(ShowDialog);
             _navigation.SetRepository(_repository);
 
-            _presenter = new AssetManagerPresenter(
-                _repository,
-                _assetService,
-                _folderService,
-                _assetController,
-                ShowToast,
-                RefreshUI,
-                folders => _navigation.SetFolders(folders),
-                () => _tagListView.Refresh(),
-                () =>
-                {
-                    try {
-                        return GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
-                    }
-                    catch {
-                        return new Vector2(position.x + position.width / 2, position.y + position.height / 2);
-                    }
-                },
-                ShowDialog,
-                TagSelectorWindow.Show,
-                (screenPos, repo, selectedId, cb) =>
-                    AssetSelectorWindow.Show(screenPos, repo, selectedId ?? Ulid.Empty, cb)
-            );
-
-            _tagListView.OnTagSelected += OnTagSelected;
+            _tagListView.OnTagSelected += _presenter.OnTagSelected;
             _tagListView.OnTagRenamed += _presenter.OnTagRenamed;
             _tagListView.OnTagDeleted += _presenter.OnTagDeleted;
 
@@ -252,11 +237,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetInfo.OnDescriptionChanged += _presenter.OnDescriptionChanged;
             _assetInfo.OnTagAdded += _presenter.OnTagAdded;
             _assetInfo.OnTagRemoved += _presenter.OnTagRemoved;
-            _assetInfo.OnTagClicked += OnTagSelected;
+            _assetInfo.OnTagClicked += _presenter.OnTagSelected;
             _assetInfo.OnDependencyAdded += _presenter.OnDependencyAdded;
             _assetInfo.OnDependencyRemoved += _presenter.OnDependencyRemoved;
             _assetInfo.OnDependencyClicked += OnDependencyClicked;
-            _assetInfo.OnFolderClicked += OnFolderSelected;
+            _assetInfo.OnFolderClicked += _presenter.OnFolderSelected;
             _assetInfo.OnDownloadRequested += _presenter.OnDownloadRequested;
 
             _toastManager = new ToastManager(root);
@@ -267,47 +252,33 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             ShowAssetView();
 
             _isInitialized = true;
+            _presenter.SetInitialized(_isInitialized);
+
+            _presenterSelectedAssetHandler = asset =>
+            {
+                _selectedAsset = asset;
+                _assetInfo.UpdateSelection(asset != null ? new List<object> { asset } : new List<object>());
+            };
+            _presenter.OnSelectedAssetChanged += _presenterSelectedAssetHandler;
+
+            _presenterPreviewFolderHandler = id =>
+            {
+                _currentPreviewFolderId = id;
+                if (id != Ulid.Empty) {
+                    var folder = _repository.GetLibraryMetadata()?.GetFolder(id);
+                    _assetInfo.UpdateSelection(new List<object> { folder });
+                }
+                else {
+                    if (_selectedAsset == null)
+                        _assetInfo.UpdateSelection(new List<object>());
+                }
+            };
+            _presenter.OnPreviewFolderChanged += _presenterPreviewFolderHandler;
         }
 
         private void OnSelectionChanged(List<object> selectedItems) {
             _presenter.UpdateSelection(selectedItems);
-
-            _selectedAsset = _presenter.SelectedAsset;
-            _currentPreviewFolderId = _presenter.CurrentPreviewFolderId;
-
             _assetInfo.UpdateSelection(selectedItems);
-        }
-
-        private void OnNavigationChanged(NavigationMode mode, string contextName, Func<AssetMetadata, bool> filter) {
-            _assetController.SetMode(mode, contextName, filter, _isInitialized);
-
-            _assetView?.ClearSelection();
-            _selectedAsset = null;
-            _currentPreviewFolderId = Ulid.Empty;
-            _assetInfo?.UpdateSelection(new List<object>());
-        }
-
-        private void OnFolderSelected(Ulid folderId) {
-            _assetController.SetFolder(folderId, _isInitialized);
-
-            if (folderId != Ulid.Empty && (_selectedAsset == null || _selectedAsset.Folder == folderId)) return;
-            _assetView?.ClearSelection();
-            _selectedAsset = null;
-            _currentPreviewFolderId = Ulid.Empty;
-            _assetInfo?.UpdateSelection(new List<object>());
-        }
-
-        private void OnTagListClicked() {
-            _tagListView.Refresh();
-            _assetController.SetMode(NavigationMode.TagList, "Tag List", _ => false);
-        }
-
-        private void OnTagSelected(string tag) {
-            _assetController.SetMode(
-                NavigationMode.Tag,
-                $"Tag: {tag}",
-                a => !a.IsDeleted && a.Tags.Contains(tag)
-            );
         }
 
         private void OnModeChanged(NavigationMode mode) {
@@ -360,7 +331,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var folder = depAsset.Folder;
             if (folder != Ulid.Empty) {
                 _navigation.SelectState(NavigationMode.Folders, folder);
-                OnFolderSelected(folder);
+                _presenter.OnFolderSelected(folder);
             }
             else {
                 _navigation.SelectAll();
