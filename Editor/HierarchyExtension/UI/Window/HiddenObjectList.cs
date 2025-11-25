@@ -16,7 +16,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.Window {
         private readonly List<TreeNode> _treeNodes = new();
         private VisualElement _treeContainer;
 
-        [MenuItem("ee4v/Hidden Object")]
+        [MenuItem("ee4v/Window/Hidden Object")]
         private static void OpenFromMenu() {
             var pos = new Vector2(300, 100);
             Open(pos);

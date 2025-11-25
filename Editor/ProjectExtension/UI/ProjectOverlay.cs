@@ -1,4 +1,6 @@
 ﻿using _4OF.ee4v.Core.Data;
+using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.ProjectExtension.API;
 using UnityEditor;
 using UnityEngine;
 
@@ -15,6 +17,9 @@ namespace _4OF.ee4v.ProjectExtension.UI {
 
             if (!string.IsNullOrEmpty(path) && AssetDatabase.IsValidFolder(path))
                 ProjectFolderOverlay.Draw(path, selectionRect);
+            
+            if (ProjectExtensionAPI.IsHighlighted(guid)) 
+                EditorGUI.DrawRect(selectionRect, ColorPreset.HighlightColor);
         }
     }
 }

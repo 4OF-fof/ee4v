@@ -5,6 +5,7 @@ using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.AssetManager.UI.Window._Component.Dialog;
+using _4OF.ee4v.ProjectExtension.API;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -52,6 +53,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         repository,
                         assetService
                     );
+                });
+                menu.AddSeparator("");
+            }
+
+            if (singleAsset != null && singleAsset.UnityData.AssetGuidList.Count > 0) {
+                menu.AddItem("プロジェクトでハイライト", false, () =>
+                {
+                    var guids = singleAsset.UnityData.AssetGuidList.Select(g => g.ToString("N")).ToList();
+                    ProjectExtensionAPI.ClearHighlights();
+                    ProjectExtensionAPI.SetHighlights(guids);
                 });
                 menu.AddSeparator("");
             }
