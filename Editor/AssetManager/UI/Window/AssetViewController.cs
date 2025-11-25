@@ -32,6 +32,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             if (_repository == null) return;
             _repository.LibraryChanged += OnRepositoryLibraryChanged;
             _repository.AssetChanged += OnRepositoryAssetChanged;
+            _repository.FolderChanged += OnRepositoryFolderChanged;
         }
 
         public NavigationMode CurrentMode { get; private set; } = NavigationMode.AllItems;
@@ -49,6 +50,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         public event Action<AssetMetadata> AssetSelected;
         public event Action<BaseFolder> FolderPreviewSelected;
         public event Action<List<BaseFolder>> FoldersChanged;
+        public event Action<BaseFolder> FolderUpdated;
 
         public event Action OnHistoryChanged;
         public event Action<NavigationMode> ModeChanged;
@@ -121,6 +123,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             try {
                 _repository.LibraryChanged -= OnRepositoryLibraryChanged;
                 _repository.AssetChanged -= OnRepositoryAssetChanged;
+                _repository.FolderChanged -= OnRepositoryFolderChanged;
             }
             catch {
                 // ignore
@@ -347,6 +350,28 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             };
         }
 
+        private void OnRepositoryFolderChanged(Ulid folderId) {
+            AssetManagerContainer.TextureService?.RemoveFolderFromCache(folderId);
+            EditorApplication.delayCall += () =>
+            {
+                try {
+                    var lib = _repository.GetLibraryMetadata();
+                    var folder = lib?.GetFolder(folderId);
+
+                    if (folder == null) {
+                        Refresh();
+                        return;
+                    }
+
+                    if (IsFolderVisibleInCurrentView(folder)) FolderUpdated?.Invoke(folder);
+                    else Refresh();
+                }
+                catch {
+                    // ignore
+                }
+            };
+        }
+
         private bool IsAssetVisibleInCurrentView(AssetMetadata asset) {
             if (asset == null) return false;
 
@@ -359,6 +384,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 NavigationMode.Trash => asset.IsDeleted,
                 _                    => _filter != null && _filter(asset)
             };
+        }
+
+        private bool IsFolderVisibleInCurrentView(BaseFolder folder) {
+            if (folder == null) return false;
+
+            if (SelectedFolderId == Ulid.Empty && CurrentMode == NavigationMode.Folders) return true;
+
+            if (SelectedFolderId == Ulid.Empty && CurrentMode == NavigationMode.BoothItems && folder is BoothItemFolder)
+                return true;
+
+            if (SelectedFolderId != Ulid.Empty) return folder.ID == SelectedFolderId;
+
+            return false;
         }
 
         private struct NavigationState {

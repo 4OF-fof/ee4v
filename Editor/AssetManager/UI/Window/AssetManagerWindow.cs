@@ -58,6 +58,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             if (_assetController != null) {
                 _assetController.AssetSelected -= OnAssetSelected;
                 _assetController.FolderPreviewSelected -= OnFolderPreviewSelected;
+                _assetController.FolderUpdated -= OnFolderUpdated;
                 _assetController.FoldersChanged -= OnFoldersChanged;
                 _assetController.BoothItemFoldersChanged -= OnBoothItemFoldersChanged;
                 _assetController.ModeChanged -= OnModeChanged;
@@ -152,6 +153,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             _assetController.AssetSelected += OnAssetSelected;
             _assetController.FolderPreviewSelected += OnFolderPreviewSelected;
+            _assetController.FolderUpdated += OnFolderUpdated;
             _assetController.FoldersChanged += OnFoldersChanged;
             _assetController.BoothItemFoldersChanged += OnBoothItemFoldersChanged;
             _assetController.ModeChanged += OnModeChanged;
@@ -260,6 +262,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private void OnBoothItemFoldersChanged(List<BoothItemFolder> folders) {
             _assetView.ShowBoothItemFolders(folders);
+        }
+
+        private void OnFolderUpdated(BaseFolder folder) {
+            var folders = _folderService.GetRootFolders();
+            _navigation.SetFolders(folders);
+
+            if (_currentPreviewFolderId != Ulid.Empty && _currentPreviewFolderId == folder.ID)
+                _assetInfo.UpdateSelection(new List<object> { folder });
         }
 
         private void OnAssetNameChanged(string newName) {

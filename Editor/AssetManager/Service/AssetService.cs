@@ -126,11 +126,10 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var lib = _repository.GetLibraryMetadata();
             if (lib == null) return;
-            var modified = false;
-            foreach (var folder in lib.FolderList)
-                if (RenameFolderTag(folder, oldTag, newTag))
-                    modified = true;
-            if (modified) _repository.SaveLibraryMetadata(lib);
+            var modifiedFolderIds = new List<Ulid>();
+            foreach (var folder in lib.FolderList) RenameFolderTag(folder, oldTag, newTag, modifiedFolderIds);
+            if (modifiedFolderIds.Count <= 0) return;
+            foreach (var fid in modifiedFolderIds) _repository.SaveFolder(fid);
         }
 
         public void DeleteTag(string tag) {
@@ -148,38 +147,39 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var lib = _repository.GetLibraryMetadata();
             if (lib == null) return;
-            var modified = false;
-            foreach (var folder in lib.FolderList)
-                if (DeleteFolderTag(folder, tag))
-                    modified = true;
-            if (modified) _repository.SaveLibraryMetadata(lib);
+            var modifiedFolderIds = new List<Ulid>();
+            foreach (var folder in lib.FolderList) DeleteFolderTag(folder, tag, modifiedFolderIds);
+            if (modifiedFolderIds.Count <= 0) return;
+            foreach (var fid in modifiedFolderIds) _repository.SaveFolder(fid);
         }
 
-        private static bool RenameFolderTag(BaseFolder folder, string oldTag, string newTag) {
+        private static bool RenameFolderTag(BaseFolder folder, string oldTag, string newTag, List<Ulid> modifiedIds) {
             var modified = false;
             if (folder.Tags.Contains(oldTag)) {
                 folder.RemoveTag(oldTag);
                 folder.AddTag(newTag);
                 modified = true;
+                modifiedIds?.Add(folder.ID);
             }
 
             if (folder is not Folder f || f.Children == null) return modified;
             foreach (var child in f.Children)
-                if (RenameFolderTag(child, oldTag, newTag))
+                if (RenameFolderTag(child, oldTag, newTag, modifiedIds))
                     modified = true;
             return modified;
         }
 
-        private static bool DeleteFolderTag(BaseFolder folder, string tag) {
+        private static bool DeleteFolderTag(BaseFolder folder, string tag, List<Ulid> modifiedIds) {
             var modified = false;
             if (folder.Tags.Contains(tag)) {
                 folder.RemoveTag(tag);
                 modified = true;
+                modifiedIds?.Add(folder.ID);
             }
 
             if (folder is not Folder f || f.Children == null) return modified;
             foreach (var child in f.Children)
-                if (DeleteFolderTag(child, tag))
+                if (DeleteFolderTag(child, tag, modifiedIds))
                     modified = true;
             return modified;
         }

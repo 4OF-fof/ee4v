@@ -26,6 +26,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             if (_repository == null) return;
             _repository.LibraryChanged += OnRepositoryLibraryChanged;
             _repository.AssetChanged += OnRepositoryAssetChanged;
+            _repository.FolderChanged += OnRepositoryFolderChanged;
         }
 
         public event Action<AssetDisplayData> AssetDataUpdated;
@@ -38,6 +39,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             try {
                 _repository.LibraryChanged -= OnRepositoryLibraryChanged;
                 _repository.AssetChanged -= OnRepositoryAssetChanged;
+                _repository.FolderChanged -= OnRepositoryFolderChanged;
             }
             catch {
                 // ignore
@@ -128,6 +130,23 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     if (_currentAsset == null || _currentAsset.ID != id) return;
                     var fresh = _repository?.GetAsset(id);
                     if (fresh != null) SetAsset(fresh);
+                    else UpdateSelection(null);
+                }
+                catch {
+                    // ignore
+                }
+            };
+        }
+
+        private void OnRepositoryFolderChanged(Ulid id) {
+            _textureService?.RemoveFolderFromCache(id);
+            EditorApplication.delayCall += () =>
+            {
+                try {
+                    if (_lastSelection is not { Count: 1 }) return;
+                    if (_currentFolder == null || _currentFolder.ID != id) return;
+                    var freshFolder = _repository?.GetLibraryMetadata()?.GetFolder(id);
+                    if (freshFolder != null) SetFolder(freshFolder);
                     else UpdateSelection(null);
                 }
                 catch {

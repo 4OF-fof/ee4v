@@ -38,6 +38,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public event Action LibraryChanged;
         public event Action<Ulid> AssetChanged;
+        public event Action<Ulid> FolderChanged;
 
         public void Initialize() {
             Directory.CreateDirectory(_rootDir);
@@ -363,6 +364,20 @@ namespace _4OF.ee4v.AssetManager.Data {
             }
         }
 
+        public void SaveFolder(Ulid folderId, bool structureChanged = false) {
+            try {
+                var json = JsonConvert.SerializeObject(_libraryCache.Libraries, _serializerSettings);
+                File.WriteAllText(_libraryMetadataPath, json);
+
+                SaveCache();
+                FolderChanged?.Invoke(folderId);
+                if (structureChanged) LibraryChanged?.Invoke();
+            }
+            catch {
+                // ignore
+            }
+        }
+
         public void SetThumbnail(Ulid assetId, string imagePath) {
             var assetDir = Path.Combine(_assetRootDir, assetId.ToString());
             if (!Directory.Exists(assetDir)) return;
@@ -442,7 +457,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             }
             finally {
                 try {
-                    LibraryChanged?.Invoke();
+                    FolderChanged?.Invoke(folderId);
                 }
                 catch {
                     // ignore
@@ -461,7 +476,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             }
             finally {
                 try {
-                    LibraryChanged?.Invoke();
+                    FolderChanged?.Invoke(folderId);
                 }
                 catch (Exception) {
                     /* ignore */

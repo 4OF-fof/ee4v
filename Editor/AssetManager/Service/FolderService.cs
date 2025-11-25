@@ -107,7 +107,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             folder.SetName(newFolder.Name);
             folder.SetDescription(newFolder.Description);
-            _repository.SaveLibraryMetadata(libraries);
+            _repository.SaveFolder(newFolder.ID);
             return true;
         }
 
@@ -128,7 +128,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             folder.SetDescription(newFolder.Description);
             folder.SetShopName(newFolder.ShopName);
 
-            _repository.SaveLibraryMetadata(libraries);
+            _repository.SaveFolder(newFolder.ID);
             return true;
         }
 
@@ -147,7 +147,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             }
 
             folder.SetName(newName);
-            _repository.SaveLibraryMetadata(libraries);
+            _repository.SaveFolder(folderId);
             return true;
         }
 
@@ -157,7 +157,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             if (folder == null) return;
             folder.SetDescription(description);
-            _repository.SaveLibraryMetadata(libraries);
+            _repository.SaveFolder(folderId);
         }
 
         public void AddTag(Ulid folderId, string tag) {
@@ -166,7 +166,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             if (folder == null) return;
 
             folder.AddTag(tag);
-            _repository.SaveLibraryMetadata(libraries);
+            _repository.SaveFolder(folderId);
         }
 
         public void RemoveTag(Ulid folderId, string tag) {
@@ -175,7 +175,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             if (folder == null) return;
 
             folder.RemoveTag(tag);
-            _repository.SaveLibraryMetadata(libraries);
+            _repository.SaveFolder(folderId);
         }
 
         public void DeleteFolder(Ulid folderId) {
@@ -193,10 +193,8 @@ namespace _4OF.ee4v.AssetManager.Service {
                 assetsToMarkDeleted.Add(newAsset);
             }
 
-            if (assetsToMarkDeleted.Count > 0) {
-                _repository.SaveAssets(assetsToMarkDeleted);
-            }
-            
+            if (assetsToMarkDeleted.Count > 0) _repository.SaveAssets(assetsToMarkDeleted);
+
             foreach (var fid in allDescendantIds) {
                 try {
                     _repository.RemoveFolderThumbnail(fid);

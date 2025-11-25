@@ -163,21 +163,34 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             OnSelectionChange?.Invoke(new List<object>());
         }
 
-        public void UpdateItem(AssetMetadata asset) {
-            if (asset == null || _flatItems == null) return;
+        public void UpdateItem(object item) {
+            if (item == null || _flatItems == null) return;
 
-            var idx = _flatItems.FindIndex(o => o is AssetMetadata a && a.ID == asset.ID);
+            var idx = item switch {
+                AssetMetadata asset => _flatItems.FindIndex(o => o is AssetMetadata a && a.ID == asset.ID),
+                BaseFolder folder   => _flatItems.FindIndex(o => o is BaseFolder f && f.ID == folder.ID),
+                _                   => -1
+            };
             if (idx == -1) return;
 
-            _flatItems[idx] = asset;
+            _flatItems[idx] = item;
 
             foreach (var row in _rows)
                 for (var c = 0; c < row.Count; c++)
-                    if (row[c] is AssetMetadata am && am.ID == asset.ID)
-                        row[c] = asset;
+                    switch (item) {
+                        case AssetMetadata am when row[c] is AssetMetadata am2 && am2.ID == am.ID:
+                        case BaseFolder bf when row[c] is BaseFolder bf2 && bf2.ID == bf.ID:
+                            row[c] = item;
+                            break;
+                    }
 
             try {
-                var rowIndex = _rows.FindIndex(r => r.Any(o => o is AssetMetadata am && am.ID == asset.ID));
+                var rowIndex = item switch {
+                    AssetMetadata a => _rows.FindIndex(r => r.Any(o => o is AssetMetadata am && am.ID == a.ID)),
+                    BaseFolder f    => _rows.FindIndex(r => r.Any(o => o is BaseFolder bf && bf.ID == f.ID)),
+                    _               => -1
+                };
+
                 if (rowIndex >= 0)
                     try {
                         _listView.RefreshItem(rowIndex);

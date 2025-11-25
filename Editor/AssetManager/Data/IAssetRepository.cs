@@ -20,6 +20,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         void RenameAssetFile(Ulid assetId, string newName);
         void DeleteAsset(Ulid assetId);
         void SaveLibraryMetadata(LibraryMetadata libraryMetadata);
+        void SaveFolder(Ulid folderId, bool structureChanged = false);
         void SetThumbnail(Ulid assetId, string imagePath);
         void RemoveThumbnail(Ulid assetId);
         string GetThumbnailPath(Ulid assetId);
@@ -31,5 +32,11 @@ namespace _4OF.ee4v.AssetManager.Data {
         List<string> GetAllTags();
         event Action LibraryChanged;
         event Action<Ulid> AssetChanged;
+
+        /// <summary>
+        ///     Raised when a specific folder's metadata changed (rename/description/tags/thumbnail).
+        ///     The handler receives the folder id so UI can perform a targeted update.
+        /// </summary>
+        event Action<Ulid> FolderChanged;
     }
 }

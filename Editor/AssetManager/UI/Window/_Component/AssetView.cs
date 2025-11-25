@@ -86,6 +86,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _controller.OnHistoryChanged -= UpdateNavigationState;
                 _controller.BreadcrumbsChanged -= UpdateBreadcrumbs;
                 _controller.AssetUpdated -= OnAssetUpdated;
+                _controller.FolderUpdated -= OnFolderUpdated;
             }
 
             _controller = controller;
@@ -95,6 +96,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _controller.OnHistoryChanged += UpdateNavigationState;
             _controller.BreadcrumbsChanged += UpdateBreadcrumbs;
             _controller.AssetUpdated += OnAssetUpdated;
+            _controller.FolderUpdated += OnFolderUpdated;
 
             _controller.Refresh();
             UpdateNavigationState();
@@ -145,6 +147,24 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _allItems[masterIndex] = updated;
 
                 var filteredIndex = _filteredItems.FindIndex(o => o is AssetMetadata a && a.ID == updated.ID);
+                if (filteredIndex != -1) {
+                    _filteredItems[filteredIndex] = updated;
+                    _grid.UpdateItem(updated);
+                    return;
+                }
+            }
+
+            ApplyFilterAndSort();
+        }
+
+        private void OnFolderUpdated(BaseFolder updated) {
+            if (updated == null) return;
+
+            var masterIndex = _allItems.FindIndex(o => o is BaseFolder f && f.ID == updated.ID);
+            if (masterIndex != -1) {
+                _allItems[masterIndex] = updated;
+
+                var filteredIndex = _filteredItems.FindIndex(o => o is BaseFolder f && f.ID == updated.ID);
                 if (filteredIndex != -1) {
                     _filteredItems[filteredIndex] = updated;
                     _grid.UpdateItem(updated);
