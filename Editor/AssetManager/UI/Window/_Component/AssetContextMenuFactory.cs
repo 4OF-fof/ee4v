@@ -29,9 +29,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var singleAsset = activeAssetTargets.Count == 1 ? activeAssetTargets[0] : null;
 
             if (singleAsset != null) {
-                var canImport = true;
+                var canImport = repository.HasAssetFile(singleAsset.ID);
 
-                if (singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase))
+                if (canImport && singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase))
                     canImport = repository.HasImportItems(singleAsset.ID);
 
                 if (canImport) {
