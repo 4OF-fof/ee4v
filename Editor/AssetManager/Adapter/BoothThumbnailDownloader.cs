@@ -28,6 +28,11 @@ namespace _4OF.ee4v.AssetManager.Adapter {
         public static event Action OnCompleted;
 
         public static void Enqueue(IAssetRepository repository, Dictionary<Ulid, string> jobs) {
+            if (IsRunning) {
+                Debug.LogWarning("ダウンロード処理が進行中のため、新規リクエストはスキップされました。");
+                return;
+            }
+
             if (repository == null || jobs == null || jobs.Count == 0) return;
 
             var filtered = jobs.Where(kv => kv.Key != Ulid.Empty && !string.IsNullOrWhiteSpace(kv.Value))

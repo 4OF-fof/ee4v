@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
@@ -32,8 +33,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
                 if (tex != null) card.SetThumbnail(tex, isFolder);
             }
-            catch {
+            catch (OperationCanceledException) {
                 // Ignore
+            }
+            catch (Exception e) {
+                Debug.LogWarning($"Thumbnail load failed: {e.Message}");
             }
         }
     }

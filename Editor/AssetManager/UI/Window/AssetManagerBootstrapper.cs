@@ -183,9 +183,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             navigation.NavigationChanged += _window.OnNavigationChanged;
 
-            _window.SetViews(navigation, assetView, tagListView, assetInfo, _assetController, _navigationPresenter, _gridPresenter, _propertyPresenter, _toastManager);
+            _window.SetViews(navigation, assetView, tagListView, assetInfo, _assetController, _navigationPresenter,
+                _gridPresenter, _propertyPresenter, _toastManager);
 
-            navigation.NavigationChanged += _window.OnNavigationChanged;
+
             navigation.FolderSelected += _window.OnFolderSelected;
             navigation.TagListClicked += _window.OnTagListClicked;
             navigation.OnFolderRenamed += _navigationPresenter.OnFolderRenamed;

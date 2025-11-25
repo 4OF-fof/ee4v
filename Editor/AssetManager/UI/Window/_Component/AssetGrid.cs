@@ -409,15 +409,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _lastSelectedReference = targetItem;
             }
 
-            if (targetItem is not AssetMetadata && targetItem is not BaseFolder) return;
+            _listView.RefreshItems();
+            OnSelectionChange?.Invoke(_selectedItems.ToList());
 
-            if (!_selectedItems.Contains(targetItem)) {
-                _selectedItems.Clear();
-                _selectedItems.Add(targetItem);
-                _lastSelectedReference = targetItem;
-                _listView.RefreshItems();
-                OnSelectionChange?.Invoke(_selectedItems.ToList());
-            }
+            if (targetItem is not AssetMetadata && targetItem is not BaseFolder) return;
 
             var selectedAssets = _selectedItems.OfType<AssetMetadata>().ToList();
             var selectedFolders = _selectedItems.OfType<BaseFolder>().ToList();
@@ -443,48 +438,46 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         private void OnCardPointerUp(PointerUpEvent evt) {
-            if (evt.button == 1 && evt.currentTarget is AssetCard card) {
-                var targetItem = card.userData;
-                if (targetItem != null) {
-                    if (_rightClickHandledByDown) {
-                        _rightClickHandledByDown = false;
-                    }
-                    else {
-                        if (_selectedItems.Contains(targetItem)) {
-                            _selectedItems.Remove(targetItem);
-                            if (_lastSelectedReference == targetItem) _lastSelectedReference = null;
-                        }
-                        else {
-                            _selectedItems.Clear();
-                            _selectedItems.Add(targetItem);
-                            _lastSelectedReference = targetItem;
-                        }
-
-                        _listView.RefreshItems();
-                        OnSelectionChange?.Invoke(_selectedItems.ToList());
-                    }
-
-                    Rect anchorRect;
-                    try {
-                        var worldPos = card.LocalToWorld(evt.localPosition);
-                        anchorRect = new Rect(worldPos.x, worldPos.y, 1, 1);
-                    }
-                    catch {
-                        anchorRect = card.worldBound;
-                    }
-
-                    var menu = AssetContextMenuFactory.Create(
-                        _selectedItems.ToList(),
-                        _repository,
-                        _assetService,
-                        _folderService,
-                        _textureService,
-                        Refresh
-                    );
-                    menu.DropDown(anchorRect, card);
-                    evt.StopPropagation();
-                }
+            if (evt.button != 1 || evt.currentTarget is not AssetCard card) return;
+            var targetItem = card.userData;
+            if (targetItem == null) return;
+            if (_rightClickHandledByDown) {
+                _rightClickHandledByDown = false;
             }
+            else {
+                if (_selectedItems.Contains(targetItem)) {
+                    _selectedItems.Remove(targetItem);
+                    if (_lastSelectedReference == targetItem) _lastSelectedReference = null;
+                }
+                else {
+                    _selectedItems.Clear();
+                    _selectedItems.Add(targetItem);
+                    _lastSelectedReference = targetItem;
+                }
+
+                _listView.RefreshItems();
+                OnSelectionChange?.Invoke(_selectedItems.ToList());
+            }
+
+            Rect anchorRect;
+            try {
+                var worldPos = card.LocalToWorld(evt.localPosition);
+                anchorRect = new Rect(worldPos.x, worldPos.y, 1, 1);
+            }
+            catch {
+                anchorRect = card.worldBound;
+            }
+
+            var menu = AssetContextMenuFactory.Create(
+                _selectedItems.ToList(),
+                _repository,
+                _assetService,
+                _folderService,
+                _textureService,
+                Refresh
+            );
+            menu.DropDown(anchorRect, card);
+            evt.StopPropagation();
         }
 
         private static void OnPointerUpAnywhere(PointerUpEvent evt) {

@@ -33,5 +33,23 @@ namespace _4OF.ee4v.Core.Utility {
         public static implicit operator T(BindableProperty<T> property) {
             return property.Value;
         }
+
+        public IDisposable Subscribe(Action<T> observer) {
+            OnValueChanged += observer;
+            return new Subscription(() => OnValueChanged -= observer);
+        }
+
+        private class Subscription : IDisposable {
+            private Action _unsubscribe;
+
+            public Subscription(Action unsubscribe) {
+                _unsubscribe = unsubscribe;
+            }
+
+            public void Dispose() {
+                _unsubscribe?.Invoke();
+                _unsubscribe = null;
+            }
+        }
     }
 }
