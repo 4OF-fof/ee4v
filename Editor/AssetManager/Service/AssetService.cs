@@ -11,8 +11,18 @@ using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Service {
     public class AssetService {
+        private static AssetDatabase.ImportPackageCallback _currentImportPackageCompletedHandler;
+        private static AssetDatabase.ImportPackageCallback _currentImportPackageCancelledHandler;
+        private static AssetDatabase.ImportPackageFailedCallback _currentImportPackageFailedHandler;
         private readonly FolderService _folderService;
+
+        private readonly Queue<Ulid> _importQueue = new();
         private readonly IAssetRepository _repository;
+        private string _currentDestFolder;
+
+        private Queue<string> _internalPackageQueue = new();
+        private bool _isImporting;
+        private Action _onInternalBatchComplete;
 
         public AssetService(IAssetRepository repository, FolderService folderService) {
             _repository = repository;
@@ -47,6 +57,11 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         public void AddFileToAsset(Ulid assetId, string path) {
             _repository.AddFileToAsset(assetId, path);
+
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) return;
+            asset.UnityData.AssetGuidList.Clear();
+            _repository.SaveAsset(asset);
         }
 
         public void DeleteAsset(Ulid assetId) {
@@ -298,22 +313,68 @@ namespace _4OF.ee4v.AssetManager.Service {
         }
 
         public void ImportAsset(Ulid assetId, string destFolder = "Assets") {
+            if (_isImporting) {
+                Debug.LogWarning("Already importing assets. Please wait.");
+                return;
+            }
+
             var asset = _repository.GetAsset(assetId);
             if (asset == null) return;
 
-            asset.UnityData.AssetGuidList.Clear();
-            _repository.SaveAsset(asset);
-
             AssetImportTracker.StartTracking(assetId, _repository);
+
+            _currentDestFolder = destFolder;
+            _importQueue.Clear();
+
+            var dependencies = new HashSet<Ulid>();
+            CollectDependencies(assetId, dependencies);
+
+            foreach (var depId in dependencies.Where(depId => depId != assetId)) _importQueue.Enqueue(depId);
+            _importQueue.Enqueue(assetId);
+
+            _isImporting = true;
+            ProcessImportQueue();
+        }
+
+        private void CollectDependencies(Ulid assetId, HashSet<Ulid> visited) {
+            if (!visited.Add(assetId)) return;
+
+            var asset = _repository.GetAsset(assetId);
+
+            if (asset?.UnityData?.DependenceItemList == null) return;
+            foreach (var depId in asset.UnityData.DependenceItemList) CollectDependencies(depId, visited);
+        }
+
+        private void ProcessImportQueue() {
+            if (_importQueue.Count == 0) {
+                _isImporting = false;
+                AssetImportTracker.StopTracking();
+                Debug.Log("All imports completed.");
+                return;
+            }
+
+            var nextAssetId = _importQueue.Dequeue();
+            ImportAssetInternal(nextAssetId, _currentDestFolder,
+                () => { EditorApplication.delayCall += ProcessImportQueue; });
+        }
+
+        private void ImportAssetInternal(Ulid assetId, string destFolder, Action onComplete) {
+            var asset = _repository.GetAsset(assetId);
+            if (asset == null) {
+                onComplete?.Invoke();
+                return;
+            }
+
+            Debug.Log($"Importing asset: {asset.Name} ({asset.ID})");
 
             if (asset.Ext.Equals(".unitypackage", StringComparison.OrdinalIgnoreCase)) {
                 var files = _repository.GetAssetFiles(assetId, "*.unitypackage");
                 if (files.Count > 0) {
-                    RegisterPackageEvents();
+                    RegisterPackageEvents(onComplete);
                     AssetDatabase.ImportPackage(files[0], true);
                 }
                 else {
-                    AssetImportTracker.StopTracking();
+                    onComplete?.Invoke();
                 }
 
                 return;
@@ -324,18 +385,19 @@ namespace _4OF.ee4v.AssetManager.Service {
                     var importDir = _repository.GetImportDirectoryPath(assetId);
 
                     var packages = Directory.GetFiles(importDir, "*.unitypackage", SearchOption.AllDirectories);
-                    if (packages.Length > 0) {
-                        RegisterPackageEvents();
-                        foreach (var pkg in packages) AssetDatabase.ImportPackage(pkg, true);
-                    }
+                    _internalPackageQueue = new Queue<string>(packages);
 
-                    ImportDirectoryContent(importDir, destFolder);
-                    AssetDatabase.Refresh();
+                    _onInternalBatchComplete = () =>
+                    {
+                        ImportDirectoryContent(importDir, destFolder);
+                        AssetDatabase.Refresh();
+                        onComplete?.Invoke();
+                    };
 
-                    if (packages.Length == 0) AssetImportTracker.StopTracking();
+                    ProcessInternalPackageQueue();
                 }
                 else {
-                    AssetImportTracker.StopTracking();
+                    onComplete?.Invoke();
                 }
 
                 return;
@@ -343,38 +405,64 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             ImportSingleFile(asset, destFolder);
             AssetDatabase.Refresh();
-            AssetImportTracker.StopTracking();
+            onComplete?.Invoke();
         }
 
-        private void RegisterPackageEvents() {
-            AssetDatabase.importPackageCompleted -= OnImportPackageCompleted;
-            AssetDatabase.importPackageCancelled -= OnImportPackageCancelled;
-            AssetDatabase.importPackageFailed -= OnImportPackageFailed;
+        private void ProcessInternalPackageQueue() {
+            if (_internalPackageQueue.Count == 0) {
+                _onInternalBatchComplete?.Invoke();
+                _onInternalBatchComplete = null;
+                return;
+            }
 
-            AssetDatabase.importPackageCompleted += OnImportPackageCompleted;
-            AssetDatabase.importPackageCancelled += OnImportPackageCancelled;
-            AssetDatabase.importPackageFailed += OnImportPackageFailed;
+            var pkgPath = _internalPackageQueue.Dequeue();
+            RegisterPackageEvents(() => EditorApplication.delayCall += ProcessInternalPackageQueue);
+            AssetDatabase.ImportPackage(pkgPath, true);
+        }
+
+        private void RegisterPackageEvents(Action onComplete) {
+            UnregisterPackageEvents();
+
+            _currentImportPackageCompletedHandler = OnCompleted;
+            _currentImportPackageCancelledHandler = OnCancelled;
+            _currentImportPackageFailedHandler = OnFailed;
+
+            AssetDatabase.importPackageCompleted += _currentImportPackageCompletedHandler;
+            AssetDatabase.importPackageCancelled += _currentImportPackageCancelledHandler;
+            AssetDatabase.importPackageFailed += _currentImportPackageFailedHandler;
+            return;
+
+            void OnCompleted(string name) {
+                UnregisterPackageEvents();
+                onComplete?.Invoke();
+            }
+
+            void OnFailed(string name, string error) {
+                UnregisterPackageEvents();
+                Debug.LogError($"Import failed: {name}, Error: {error}");
+                onComplete?.Invoke();
+            }
+
+            void OnCancelled(string name) {
+                UnregisterPackageEvents();
+                Debug.LogWarning($"Import cancelled: {name}");
+                onComplete?.Invoke();
+            }
         }
 
         private void UnregisterPackageEvents() {
-            AssetDatabase.importPackageCompleted -= OnImportPackageCompleted;
-            AssetDatabase.importPackageCancelled -= OnImportPackageCancelled;
-            AssetDatabase.importPackageFailed -= OnImportPackageFailed;
-        }
+            if (_currentImportPackageCompletedHandler != null)
+                AssetDatabase.importPackageCompleted -= _currentImportPackageCompletedHandler;
 
-        private void OnImportPackageCompleted(string packageName) {
-            UnregisterPackageEvents();
-            AssetImportTracker.StopTracking();
-        }
+            if (_currentImportPackageCancelledHandler != null)
+                AssetDatabase.importPackageCancelled -= _currentImportPackageCancelledHandler;
 
-        private void OnImportPackageCancelled(string packageName) {
-            UnregisterPackageEvents();
-            AssetImportTracker.StopTracking();
-        }
+            if (_currentImportPackageFailedHandler != null)
+                AssetDatabase.importPackageFailed -= _currentImportPackageFailedHandler;
 
-        private void OnImportPackageFailed(string packageName, string errorMessage) {
-            UnregisterPackageEvents();
-            AssetImportTracker.StopTracking();
+            _currentImportPackageCompletedHandler = null;
+            _currentImportPackageCancelledHandler = null;
+            _currentImportPackageFailedHandler = null;
         }
 
         private void ImportSingleFile(AssetMetadata asset, string destFolder) {
@@ -404,11 +492,14 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         private static void ImportDirectoryContent(string sourceDir, string destRootDir) {
             var allFiles = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
-            var filesToProcess = (from file in allFiles
-                where !file.EndsWith(".meta", StringComparison.OrdinalIgnoreCase)
-                where !file.EndsWith(".unitypackage", StringComparison.OrdinalIgnoreCase)
-                where !Path.GetFileName(file).StartsWith(".")
-                select file).ToList();
+            var filesToProcess = new List<string>();
+
+            foreach (var file in allFiles) {
+                if (file.EndsWith(".meta", StringComparison.OrdinalIgnoreCase)) continue;
+                if (file.EndsWith(".unitypackage", StringComparison.OrdinalIgnoreCase)) continue;
+                if (Path.GetFileName(file).StartsWith(".")) continue;
+                filesToProcess.Add(file);
+            }
 
             if (filesToProcess.Count == 0) return;
 
@@ -433,8 +524,6 @@ namespace _4OF.ee4v.AssetManager.Service {
                 else
                     delayedMetaBackups.Add((destMetaPath, storedMetaPath));
             }
-
-            AssetDatabase.Refresh();
 
             foreach (var (destMeta, storedMeta) in delayedMetaBackups)
                 if (File.Exists(destMeta))
@@ -473,10 +562,9 @@ namespace _4OF.ee4v.AssetManager.Service {
             if (asset == null) return;
 
             var changed = false;
-            foreach (var path in importedAssets) {
+            foreach (var path in importedAssets.Concat(movedAssets)) {
                 var guidStr = AssetDatabase.AssetPathToGUID(path);
-                if (!Guid.TryParse(guidStr, out var guid)) continue;
-                if (asset.UnityData.AssetGuidList.Contains(guid)) continue;
+                if (!Guid.TryParse(guidStr, out var guid) || asset.UnityData.AssetGuidList.Contains(guid)) continue;
                 asset.UnityData.AddAssetGuid(guid);
                 changed = true;
             }
