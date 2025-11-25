@@ -277,7 +277,6 @@ namespace _4OF.ee4v.AssetManager.Data {
 
             try {
                 AssetChanged?.Invoke(asset.ID);
-                LibraryChanged?.Invoke();
             }
             catch {
                 // ignore
@@ -316,7 +315,6 @@ namespace _4OF.ee4v.AssetManager.Data {
 
             try {
                 foreach (var id in changedIds) AssetChanged?.Invoke(id);
-                LibraryChanged?.Invoke();
             }
             catch {
                 // ignore
@@ -344,7 +342,6 @@ namespace _4OF.ee4v.AssetManager.Data {
 
             try {
                 AssetChanged?.Invoke(assetId);
-                LibraryChanged?.Invoke();
             }
             catch {
                 // ignore

@@ -85,6 +85,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _controller.ItemsChanged -= OnItemsChanged;
                 _controller.OnHistoryChanged -= UpdateNavigationState;
                 _controller.BreadcrumbsChanged -= UpdateBreadcrumbs;
+                _controller.AssetUpdated -= OnAssetUpdated;
             }
 
             _controller = controller;
@@ -93,6 +94,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _controller.ItemsChanged += OnItemsChanged;
             _controller.OnHistoryChanged += UpdateNavigationState;
             _controller.BreadcrumbsChanged += UpdateBreadcrumbs;
+            _controller.AssetUpdated += OnAssetUpdated;
 
             _controller.Refresh();
             UpdateNavigationState();
@@ -132,6 +134,24 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void OnItemsChanged(List<object> items) {
             _allItems = items ?? new List<object>();
+            ApplyFilterAndSort();
+        }
+
+        private void OnAssetUpdated(AssetMetadata updated) {
+            if (updated == null) return;
+
+            var masterIndex = _allItems.FindIndex(o => o is AssetMetadata a && a.ID == updated.ID);
+            if (masterIndex != -1) {
+                _allItems[masterIndex] = updated;
+
+                var filteredIndex = _filteredItems.FindIndex(o => o is AssetMetadata a && a.ID == updated.ID);
+                if (filteredIndex != -1) {
+                    _filteredItems[filteredIndex] = updated;
+                    _grid.UpdateItem(updated);
+                    return;
+                }
+            }
+
             ApplyFilterAndSort();
         }
 

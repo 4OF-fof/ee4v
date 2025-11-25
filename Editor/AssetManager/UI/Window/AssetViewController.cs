@@ -42,6 +42,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         public bool CanGoForward => _forwardHistory.Count > 0;
 
         public event Action<List<AssetMetadata>> AssetsChanged;
+        public event Action<AssetMetadata> AssetUpdated;
         public event Action<List<BoothItemFolder>> BoothItemFoldersChanged;
         public event Action<List<object>> ItemsChanged;
 
@@ -328,11 +329,35 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             EditorApplication.delayCall += () =>
             {
                 try {
-                    Refresh();
+                    var fresh = _repository?.GetAsset(assetId);
+
+                    if (fresh == null) {
+                        Refresh();
+                        return;
+                    }
+
+                    if (IsAssetVisibleInCurrentView(fresh))
+                        AssetUpdated?.Invoke(fresh);
+                    else
+                        Refresh();
                 }
                 catch {
                     // ignore
                 }
+            };
+        }
+
+        private bool IsAssetVisibleInCurrentView(AssetMetadata asset) {
+            if (asset == null) return false;
+
+            if (SelectedFolderId != Ulid.Empty) return asset.Folder == SelectedFolderId;
+
+            return CurrentMode switch {
+                NavigationMode.Folders => false,
+                NavigationMode.Tag when !string.IsNullOrEmpty(_currentTagFilter) => asset.Tags != null &&
+                    asset.Tags.Contains(_currentTagFilter),
+                NavigationMode.Trash => asset.IsDeleted,
+                _                    => _filter != null && _filter(asset)
             };
         }
 

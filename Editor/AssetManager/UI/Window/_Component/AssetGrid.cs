@@ -163,6 +163,37 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             OnSelectionChange?.Invoke(new List<object>());
         }
 
+        public void UpdateItem(AssetMetadata asset) {
+            if (asset == null || _flatItems == null) return;
+
+            var idx = _flatItems.FindIndex(o => o is AssetMetadata a && a.ID == asset.ID);
+            if (idx == -1) return;
+
+            _flatItems[idx] = asset;
+
+            foreach (var row in _rows)
+                for (var c = 0; c < row.Count; c++)
+                    if (row[c] is AssetMetadata am && am.ID == asset.ID)
+                        row[c] = asset;
+
+            try {
+                var rowIndex = _rows.FindIndex(r => r.Any(o => o is AssetMetadata am && am.ID == asset.ID));
+                if (rowIndex >= 0)
+                    try {
+                        _listView.RefreshItem(rowIndex);
+                    }
+                    catch {
+                        _listView.RefreshItems();
+                    }
+                else
+                    _listView.RefreshItems();
+            }
+            catch {
+                RebuildRows();
+                _listView.RefreshItems();
+            }
+        }
+
         private void RebuildRows() {
             _rows.Clear();
             var currentRow = new List<object>();
