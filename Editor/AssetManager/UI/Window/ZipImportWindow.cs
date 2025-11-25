@@ -6,6 +6,7 @@ using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.AssetManager.UI.Window._Component;
+using _4OF.ee4v.Core.Data;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
 using _4OF.ee4v.Core.Utility;
@@ -16,8 +17,8 @@ using UnityEngine.UIElements;
 namespace _4OF.ee4v.AssetManager.UI.Window {
     public class ZipImportWindow : BaseWindow {
         private readonly List<FileNode> _nodes = new();
-
         private readonly HashSet<string> _selectedPaths = new();
+
         private AssetService _assetService;
         private IAssetRepository _repository;
         private Ulid _targetAssetId;
@@ -46,8 +47,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 try {
                     Directory.Delete(_tempExtractPath, true);
                 }
-                catch (Exception e) {
-                    Debug.LogWarning($"[ee4v] Failed to cleanup temp zip folder: {e.Message}");
+                catch {
                 }
 
                 _tempExtractPath = null;
@@ -89,45 +89,75 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _nodes.Clear();
             _selectedPaths.Clear();
 
+            var contentFolder = EditorPrefsManager.ContentFolderPath;
+            var importDir = Path.Combine(contentFolder, "AssetManager", "Assets", _targetAssetId.ToString(), "Import");
+
+            var existingRelativePaths = new HashSet<string>();
+            var hasExistingImports = false;
+
+            if (Directory.Exists(importDir)) {
+                var files = Directory.GetFiles(importDir, "*", SearchOption.AllDirectories);
+                if (files.Length > 0) {
+                    hasExistingImports = true;
+                    foreach (var f in files) {
+                        var rel = Path.GetRelativePath(importDir, f).Replace('\\', '/');
+                        existingRelativePaths.Add(rel);
+                    }
+                }
+            }
+
             var rootDirInfo = new DirectoryInfo(rootPath);
             var rootNode = new FileNode {
                 Name = "Root",
                 IsDirectory = true,
-                RelativePath = ""
+                RelativePath = "",
+                IsExpanded = true
             };
 
-            AddDirectoryNodes(rootDirInfo, rootNode, rootPath);
+            AddDirectoryNodes(rootDirInfo, rootNode, rootPath, hasExistingImports, existingRelativePaths);
             _nodes.Add(rootNode);
-
-            SelectAllRecursive(rootNode);
         }
 
-        private void SelectAllRecursive(FileNode node) {
-            if (!node.IsDirectory) _selectedPaths.Add(node.RelativePath);
-            foreach (var child in node.Children) SelectAllRecursive(child);
-        }
-
-        private void AddDirectoryNodes(DirectoryInfo dirInfo, FileNode parentNode, string rootPath) {
+        private void AddDirectoryNodes(DirectoryInfo dirInfo, FileNode parentNode, string rootPath,
+            bool hasExistingImports, HashSet<string> existingRelativePaths) {
             foreach (var dir in dirInfo.GetDirectories()) {
                 var node = new FileNode {
                     Name = dir.Name,
                     IsDirectory = true,
-                    RelativePath = Path.GetRelativePath(rootPath, dir.FullName)
+                    RelativePath = Path.GetRelativePath(rootPath, dir.FullName).Replace('\\', '/'),
+                    IsExpanded = true
                 };
                 parentNode.Children.Add(node);
-                AddDirectoryNodes(dir, node, rootPath);
+                AddDirectoryNodes(dir, node, rootPath, hasExistingImports, existingRelativePaths);
             }
 
             foreach (var file in dirInfo.GetFiles()) {
                 if (file.Name.StartsWith(".")) continue;
 
+                var relPath = Path.GetRelativePath(rootPath, file.FullName).Replace('\\', '/');
                 var node = new FileNode {
                     Name = file.Name,
                     IsDirectory = false,
-                    RelativePath = Path.GetRelativePath(rootPath, file.FullName)
+                    RelativePath = relPath
                 };
+
+                var shouldSelect = false;
+                if (hasExistingImports) {
+                    if (existingRelativePaths.Contains(relPath)) shouldSelect = true;
+                }
+                else {
+                    if (file.Extension.Equals(".unitypackage", StringComparison.OrdinalIgnoreCase)) shouldSelect = true;
+                }
+
+                if (shouldSelect) _selectedPaths.Add(relPath);
+
                 parentNode.Children.Add(node);
             }
+        }
+
+        private void SelectAllRecursive(FileNode node) {
+            if (!node.IsDirectory) _selectedPaths.Add(node.RelativePath);
+            foreach (var child in node.Children) SelectAllRecursive(child);
         }
 
         protected override VisualElement HeaderContent() {
@@ -179,7 +209,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             root.Add(scrollArea);
 
             var footer = new VisualElement {
-                style = { flexDirection = FlexDirection.Row, marginTop = 8, justifyContent = Justify.FlexEnd, flexShrink = 0 }
+                style = {
+                    flexDirection = FlexDirection.Row, marginTop = 8, justifyContent = Justify.FlexEnd, flexShrink = 0
+                }
             };
 
             var cancelBtn = new Button(Close) { text = "Cancel", style = { width = 80 } };
@@ -200,21 +232,55 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _treeContainer.Clear();
             if (_nodes.Count > 0)
                 foreach (var child in _nodes[0].Children)
-                    RenderNode(child, 0, _treeContainer);
+                    RenderNodeRecursive(child, _treeContainer);
         }
 
-        private void RenderNode(FileNode node, int depth, VisualElement container) {
+        private void RenderNodeRecursive(FileNode node, VisualElement parentContainer) {
+            var itemContainer = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Column
+                }
+            };
+
             var row = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
                     alignItems = Align.Center,
-                    paddingLeft = depth * 16 + 4,
-                    height = 20
+                    height = 20,
+                    paddingLeft = 0
                 }
             };
 
+            var arrow = new Label(node.IsExpanded ? "▼" : "▶") {
+                style = {
+                    width = 16,
+                    unityTextAlign = TextAnchor.MiddleCenter,
+                    fontSize = 10,
+                    color = Color.gray,
+                    visibility = node.IsDirectory ? Visibility.Visible : Visibility.Hidden
+                }
+            };
+
+            var childrenContainer = new VisualElement {
+                style = {
+                    paddingLeft = 16,
+                    display = node.IsExpanded ? DisplayStyle.Flex : DisplayStyle.None
+                }
+            };
+
+            if (node.IsDirectory)
+                arrow.RegisterCallback<PointerDownEvent>(evt =>
+                {
+                    if (evt.button != 0) return;
+                    node.IsExpanded = !node.IsExpanded;
+                    arrow.text = node.IsExpanded ? "▼" : "▶";
+                    childrenContainer.style.display = node.IsExpanded ? DisplayStyle.Flex : DisplayStyle.None;
+                    evt.StopPropagation();
+                });
+            row.Add(arrow);
+
             var isChecked = IsNodeChecked(node);
-            var toggle = new Toggle { value = isChecked };
+            var toggle = new Toggle { value = isChecked, style = { marginLeft = 0, marginRight = 0 } };
             toggle.RegisterValueChangedCallback(evt =>
             {
                 SetNodeChecked(node, evt.newValue);
@@ -223,16 +289,20 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             row.Add(toggle);
 
             var icon = EditorGUIUtility.IconContent(node.IsDirectory ? "Folder Icon" : "TextAsset Icon").image;
-            var iconImg = new Image { image = icon, style = { width = 16, height = 16, marginRight = 4 } };
+            var iconImg = new Image
+                { image = icon, style = { width = 16, height = 16, marginLeft = 4, marginRight = 4 } };
             row.Add(iconImg);
 
             var label = new Label(node.Name) { style = { fontSize = 12 } };
             row.Add(label);
 
-            container.Add(row);
+            itemContainer.Add(row);
+            itemContainer.Add(childrenContainer);
+            parentContainer.Add(itemContainer);
 
-            if (!node.IsDirectory) return;
-            foreach (var child in node.Children) RenderNode(child, depth + 1, container);
+            if (node.IsDirectory)
+                foreach (var child in node.Children)
+                    RenderNodeRecursive(child, childrenContainer);
         }
 
         private bool IsNodeChecked(FileNode node) {
@@ -265,6 +335,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private class FileNode {
             public readonly List<FileNode> Children = new();
             public bool IsDirectory;
+            public bool IsExpanded;
             public string Name;
             public string RelativePath;
         }

@@ -97,7 +97,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                         if (assetMetadata != null) onDiskAssets[assetMetadata.ID] = assetMetadata;
                     }
                     catch {
-                        /* ignore */
+                        // ignored
                     }
                 }
 
@@ -177,7 +177,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                     Directory.Delete(assetDir, true);
                 }
                 catch {
-                    /* ignore */
+                    // ignored
                 }
 
                 throw;
@@ -247,7 +247,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 AssetChanged?.Invoke(asset.ID);
             }
             catch {
-                // ignore
+                // ignored
             }
         }
 
@@ -285,7 +285,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 foreach (var id in changedIds) AssetChanged?.Invoke(id);
             }
             catch {
-                // ignore
+                // ignored
             }
         }
 
@@ -312,7 +312,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 AssetChanged?.Invoke(assetId);
             }
             catch {
-                // ignore
+                // ignored
             }
         }
 
@@ -327,7 +327,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 LibraryChanged?.Invoke();
             }
             catch {
-                // ignore
+                // ignored
             }
         }
 
@@ -341,7 +341,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 if (structureChanged) LibraryChanged?.Invoke();
             }
             catch {
-                // ignore
+                // ignored
             }
         }
 
@@ -373,7 +373,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                     AssetChanged?.Invoke(assetId);
                 }
                 catch {
-                    // ignore
+                    // ignored
                 }
             }
         }
@@ -387,7 +387,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 AssetChanged?.Invoke(assetId);
             }
             catch {
-                // ignore
+                // ignored
             }
         }
 
@@ -429,7 +429,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                     FolderChanged?.Invoke(folderId);
                 }
                 catch {
-                    // ignore
+                    // ignored
                 }
             }
         }
@@ -448,7 +448,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                     FolderChanged?.Invoke(folderId);
                 }
                 catch (Exception) {
-                    /* ignore */
+                    // ignored
                 }
             }
         }
@@ -468,7 +468,11 @@ namespace _4OF.ee4v.AssetManager.Data {
             var assetDir = Path.Combine(_assetRootDir, assetId.ToString());
             var importDir = Path.Combine(assetDir, "Import");
 
-            if (!FileSystemProvider.DirectoryExists(importDir)) FileSystemProvider.CreateDirectory(importDir);
+            if (FileSystemProvider.DirectoryExists(importDir)) {
+                FileSystemProvider.DeleteDirectory(importDir, true);
+            }
+            
+            FileSystemProvider.CreateDirectory(importDir);
 
             foreach (var relPath in relativePaths) {
                 var srcFile = Path.Combine(sourceRootPath, relPath);
@@ -485,7 +489,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 AssetChanged?.Invoke(assetId);
             }
             catch {
-                /* ignore */
+                // ignored
             }
         }
 
