@@ -410,6 +410,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _rowModified.Show(data.ModificationTime.ToString("yyyy/MM/dd HH:mm"));
             if (!string.IsNullOrEmpty(data.ShopName)) _rowShop.Show(data.ShopName, data.ShopUrl);
             if (!string.IsNullOrEmpty(data.ItemId)) _rowItem.Show(data.ItemId, data.ItemUrl);
+
+            MarkDirtyRepaint();
         }
 
         private void OnFolderDataUpdated(FolderDisplayData data) {
