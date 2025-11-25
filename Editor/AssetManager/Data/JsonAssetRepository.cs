@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using _4OF.ee4v.Core.Utility;
-using Newtonsoft.Json;
 using UnityEngine;
+// Newtonsoft.Json usages were moved to MetadataSerializer
 using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.AssetManager.Data {
@@ -13,25 +13,27 @@ namespace _4OF.ee4v.AssetManager.Data {
         private readonly string _assetRootDir;
         private readonly string _cacheFilePath;
         private readonly string _folderIconDir;
+        private readonly FileSystemProvider _fs;
 
         private readonly AssetLibrary _libraryCache;
         private readonly string _libraryMetadataPath;
         private readonly string _rootDir;
 
-        private readonly JsonSerializerSettings _serializerSettings;
+        private readonly MetadataSerializer _serializer;
 
-        public JsonAssetRepository(string contentFolderPath) {
+        public JsonAssetRepository(string contentFolderPath)
+            : this(contentFolderPath, new FileSystemProvider(), new MetadataSerializer()) {
+        }
+
+        private JsonAssetRepository(string contentFolderPath, FileSystemProvider fs, MetadataSerializer serializer) {
             _rootDir = Path.Combine(contentFolderPath, "AssetManager");
             _assetRootDir = Path.Combine(_rootDir, "Assets");
             _libraryMetadataPath = Path.Combine(_rootDir, "metadata.json");
             _cacheFilePath = Path.Combine(contentFolderPath, "assetManager_cache.json");
             _folderIconDir = Path.Combine(_rootDir, "FolderIcon");
 
-            _serializerSettings = new JsonSerializerSettings {
-                Formatting = Formatting.Indented,
-                TypeNameHandling = TypeNameHandling.Auto,
-                SerializationBinder = new AllowedTypesBinder()
-            };
+            _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
+            _fs = fs ?? throw new ArgumentNullException(nameof(fs));
 
             _libraryCache = new AssetLibrary();
         }
@@ -41,11 +43,11 @@ namespace _4OF.ee4v.AssetManager.Data {
         public event Action<Ulid> FolderChanged;
 
         public void Initialize() {
-            Directory.CreateDirectory(_rootDir);
-            Directory.CreateDirectory(_assetRootDir);
-            Directory.CreateDirectory(_folderIconDir);
+            FileSystemProvider.CreateDirectory(_rootDir);
+            FileSystemProvider.CreateDirectory(_assetRootDir);
+            FileSystemProvider.CreateDirectory(_folderIconDir);
 
-            if (File.Exists(_libraryMetadataPath)) return;
+            if (FileSystemProvider.FileExists(_libraryMetadataPath)) return;
 
             var metadata = new LibraryMetadata();
             SaveLibraryMetadata(metadata);
@@ -54,14 +56,14 @@ namespace _4OF.ee4v.AssetManager.Data {
         public void Load() {
             if (LoadCache()) return;
 
-            if (!File.Exists(_libraryMetadataPath)) {
+            if (!FileSystemProvider.FileExists(_libraryMetadataPath)) {
                 Debug.LogError($"[JsonAssetRepository] Metadata file not found at {_libraryMetadataPath}");
                 return;
             }
 
             try {
-                var json = File.ReadAllText(_libraryMetadataPath);
-                var metadata = JsonConvert.DeserializeObject<LibraryMetadata>(json, _serializerSettings);
+                var json = FileSystemProvider.ReadAllText(_libraryMetadataPath);
+                var metadata = _serializer.Deserialize<LibraryMetadata>(json);
                 _libraryCache.SetLibrary(metadata);
 
                 LoadAllAssetsFromDisk();
@@ -77,7 +79,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
             var result = await Task.Run(() =>
             {
-                if (!Directory.Exists(_assetRootDir))
+                if (!FileSystemProvider.DirectoryExists(_assetRootDir))
                     return (
                         Error: "Assets directory does not exist.",
                         OnDisk: null,
@@ -87,14 +89,14 @@ namespace _4OF.ee4v.AssetManager.Data {
                     );
 
                 var onDiskAssets = new Dictionary<Ulid, AssetMetadata>();
-                var assetDirs = Directory.GetDirectories(_assetRootDir);
+                var assetDirs = FileSystemProvider.GetDirectories(_assetRootDir);
                 foreach (var assetDir in assetDirs) {
                     var metadataPath = Path.Combine(assetDir, "metadata.json");
-                    if (!File.Exists(metadataPath)) continue;
+                    if (!FileSystemProvider.FileExists(metadataPath)) continue;
 
                     try {
-                        var json = File.ReadAllText(metadataPath);
-                        var assetMetadata = JsonConvert.DeserializeObject<AssetMetadata>(json, _serializerSettings);
+                        var json = FileSystemProvider.ReadAllText(metadataPath);
+                        var assetMetadata = _serializer.Deserialize<AssetMetadata>(json);
                         if (assetMetadata != null) onDiskAssets[assetMetadata.ID] = assetMetadata;
                     }
                     catch {
@@ -165,9 +167,9 @@ namespace _4OF.ee4v.AssetManager.Data {
             var assetDir = Path.Combine(_assetRootDir, assetMetadata.ID.ToString());
 
             try {
-                Directory.CreateDirectory(assetDir);
+                FileSystemProvider.CreateDirectory(assetDir);
                 var destPath = Path.Combine(assetDir, fileInfo.Name);
-                File.Copy(sourcePath, destPath, true);
+                FileSystemProvider.CopyFile(sourcePath, destPath, true);
 
                 SaveAsset(assetMetadata);
             }
@@ -196,10 +198,10 @@ namespace _4OF.ee4v.AssetManager.Data {
             var assetDir = Path.Combine(_assetRootDir, assetId.ToString());
 
             try {
-                if (!Directory.Exists(assetDir)) Directory.CreateDirectory(assetDir);
+                if (!FileSystemProvider.DirectoryExists(assetDir)) FileSystemProvider.CreateDirectory(assetDir);
 
                 var destPath = Path.Combine(assetDir, fileInfo.Name);
-                File.Copy(sourcePath, destPath, true);
+                FileSystemProvider.CopyFile(sourcePath, destPath, true);
 
                 var updatedAsset = new AssetMetadata(asset);
                 if (updatedAsset.Size == 0) updatedAsset.SetSize(fileInfo.Length);
@@ -216,7 +218,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public bool HasAssetFile(Ulid assetId) {
             var assetDir = Path.Combine(_assetRootDir, assetId.ToString());
-            if (!Directory.Exists(assetDir)) return false;
+            if (!FileSystemProvider.DirectoryExists(assetDir)) return false;
 
             var files = Directory.GetFiles(assetDir)
                 .Where(f => !f.EndsWith("metadata.json") && !f.EndsWith("thumbnail.png"))
@@ -227,7 +229,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         public AssetMetadata CreateEmptyAsset() {
             var assetMetadata = new AssetMetadata();
             var assetDir = Path.Combine(_assetRootDir, assetMetadata.ID.ToString());
-            Directory.CreateDirectory(assetDir);
+            FileSystemProvider.CreateDirectory(assetDir);
             SaveAsset(assetMetadata);
             return assetMetadata;
         }
@@ -236,11 +238,10 @@ namespace _4OF.ee4v.AssetManager.Data {
             if (asset == null) return;
             var assetDir = Path.Combine(_assetRootDir, asset.ID.ToString());
 
-            if (!Directory.Exists(assetDir)) Directory.CreateDirectory(assetDir);
-
-            var json = JsonConvert.SerializeObject(asset, _serializerSettings);
+            if (!FileSystemProvider.DirectoryExists(assetDir)) FileSystemProvider.CreateDirectory(assetDir);
+            var json = _serializer.Serialize(asset);
             var filePath = Path.Combine(assetDir, "metadata.json");
-            File.WriteAllText(filePath, json);
+            FileSystemProvider.WriteAllText(filePath, json);
 
             _libraryCache.UpsertAsset(asset);
             SaveCache();
@@ -264,11 +265,11 @@ namespace _4OF.ee4v.AssetManager.Data {
 
                 var assetDir = Path.Combine(_assetRootDir, asset.ID.ToString());
                 try {
-                    if (!Directory.Exists(assetDir)) Directory.CreateDirectory(assetDir);
+                    if (!FileSystemProvider.DirectoryExists(assetDir)) FileSystemProvider.CreateDirectory(assetDir);
 
-                    var json = JsonConvert.SerializeObject(asset, _serializerSettings);
+                    var json = _serializer.Serialize(asset);
                     var filePath = Path.Combine(assetDir, "metadata.json");
-                    File.WriteAllText(filePath, json);
+                    FileSystemProvider.WriteAllText(filePath, json);
 
                     _libraryCache.UpsertAsset(asset);
                     anyChanged = true;
@@ -301,12 +302,12 @@ namespace _4OF.ee4v.AssetManager.Data {
             var oldPath = Path.Combine(assetDir, oldFileName);
             var newPath = Path.Combine(assetDir, newFileName);
 
-            if (File.Exists(oldPath)) File.Move(oldPath, newPath);
+            if (FileSystemProvider.FileExists(oldPath)) FileSystemProvider.MoveFile(oldPath, newPath);
         }
 
         public void DeleteAsset(Ulid assetId) {
             var assetDir = Path.Combine(_assetRootDir, assetId.ToString());
-            if (Directory.Exists(assetDir)) Directory.Delete(assetDir, true);
+            if (FileSystemProvider.DirectoryExists(assetDir)) FileSystemProvider.DeleteDirectory(assetDir, true);
             _libraryCache.RemoveAsset(assetId);
             SaveCache();
 
@@ -319,8 +320,8 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public void SaveLibraryMetadata(LibraryMetadata libraryMetadata) {
-            var json = JsonConvert.SerializeObject(libraryMetadata, _serializerSettings);
-            File.WriteAllText(_libraryMetadataPath, json);
+            var json = _serializer.Serialize(libraryMetadata);
+            FileSystemProvider.WriteAllText(_libraryMetadataPath, json);
 
             _libraryCache.SetLibrary(libraryMetadata);
             SaveCache();
@@ -335,8 +336,8 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public void SaveFolder(Ulid folderId, bool structureChanged = false) {
             try {
-                var json = JsonConvert.SerializeObject(_libraryCache.Libraries, _serializerSettings);
-                File.WriteAllText(_libraryMetadataPath, json);
+                var json = _serializer.Serialize(_libraryCache.Libraries);
+                FileSystemProvider.WriteAllText(_libraryMetadataPath, json);
 
                 SaveCache();
                 FolderChanged?.Invoke(folderId);
@@ -352,13 +353,13 @@ namespace _4OF.ee4v.AssetManager.Data {
             if (!Directory.Exists(assetDir)) return;
 
             try {
-                var fileData = File.ReadAllBytes(imagePath);
+                var fileData = FileSystemProvider.ReadAllBytes(imagePath);
                 var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false, false);
                 if (tex.LoadImage(fileData)) {
                     var finalTex = TextureUtility.FitImage(tex, 512) ?? tex;
                     var pngBytes = finalTex.EncodeToPNG();
                     var destPath = Path.Combine(assetDir, "thumbnail.png");
-                    File.WriteAllBytes(destPath, pngBytes);
+                    FileSystemProvider.WriteAllBytes(destPath, pngBytes);
 
                     if (finalTex != tex) Object.DestroyImmediate(finalTex);
                     Object.DestroyImmediate(tex);
@@ -383,7 +384,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         public void RemoveThumbnail(Ulid assetId) {
             var assetDir = Path.Combine(_assetRootDir, assetId.ToString());
             var thumbPath = Path.Combine(assetDir, "thumbnail.png");
-            if (File.Exists(thumbPath)) File.Delete(thumbPath);
+            if (FileSystemProvider.FileExists(thumbPath)) FileSystemProvider.DeleteFile(thumbPath);
 
             try {
                 AssetChanged?.Invoke(assetId);
@@ -399,20 +400,22 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public Task<byte[]> GetThumbnailDataAsync(Ulid assetId) {
             var path = GetThumbnailPath(assetId);
-            return !File.Exists(path) ? Task.FromResult<byte[]>(null) : Task.Run(() => File.ReadAllBytes(path));
+            return !FileSystemProvider.FileExists(path)
+                ? Task.FromResult<byte[]>(null)
+                : Task.Run(() => FileSystemProvider.ReadAllBytes(path));
         }
 
         public void SetFolderThumbnail(Ulid folderId, string imagePath) {
-            if (!Directory.Exists(_folderIconDir)) Directory.CreateDirectory(_folderIconDir);
+            if (!FileSystemProvider.DirectoryExists(_folderIconDir)) FileSystemProvider.CreateDirectory(_folderIconDir);
 
             try {
-                var fileData = File.ReadAllBytes(imagePath);
+                var fileData = FileSystemProvider.ReadAllBytes(imagePath);
                 var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false, false);
                 if (tex.LoadImage(fileData)) {
                     var finalTex = TextureUtility.FitImage(tex, 512) ?? tex;
                     var pngBytes = finalTex.EncodeToPNG();
                     var destPath = Path.Combine(_folderIconDir, $"{folderId}.png");
-                    File.WriteAllBytes(destPath, pngBytes);
+                    FileSystemProvider.WriteAllBytes(destPath, pngBytes);
 
                     if (finalTex != tex) Object.DestroyImmediate(finalTex);
                     Object.DestroyImmediate(tex);
@@ -436,9 +439,9 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public void RemoveFolderThumbnail(Ulid folderId) {
             var path = GetFolderThumbnailPath(folderId);
-            if (!File.Exists(path)) return;
+            if (!FileSystemProvider.FileExists(path)) return;
             try {
-                File.Delete(path);
+                FileSystemProvider.DeleteFile(path);
             }
             catch (Exception e) {
                 Debug.LogError($"[JsonAssetRepository] Failed to delete folder thumbnail: {e.Message}");
@@ -459,7 +462,9 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public Task<byte[]> GetFolderThumbnailDataAsync(Ulid folderId) {
             var path = GetFolderThumbnailPath(folderId);
-            return !File.Exists(path) ? Task.FromResult<byte[]>(null) : Task.Run(() => File.ReadAllBytes(path));
+            return !FileSystemProvider.FileExists(path)
+                ? Task.FromResult<byte[]>(null)
+                : Task.Run(() => FileSystemProvider.ReadAllBytes(path));
         }
 
         public List<string> GetAllTags() {
@@ -467,16 +472,16 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         private void LoadAllAssetsFromDisk() {
-            if (!Directory.Exists(_assetRootDir)) return;
+            if (!FileSystemProvider.DirectoryExists(_assetRootDir)) return;
 
-            var assetDirs = Directory.GetDirectories(_assetRootDir);
+            var assetDirs = FileSystemProvider.GetDirectories(_assetRootDir);
             foreach (var assetDir in assetDirs) {
                 var metadataPath = Path.Combine(assetDir, "metadata.json");
-                if (!File.Exists(metadataPath)) continue;
+                if (!FileSystemProvider.FileExists(metadataPath)) continue;
 
                 try {
-                    var json = File.ReadAllText(metadataPath);
-                    var assetMetadata = JsonConvert.DeserializeObject<AssetMetadata>(json, _serializerSettings);
+                    var json = FileSystemProvider.ReadAllText(metadataPath);
+                    var assetMetadata = _serializer.Deserialize<AssetMetadata>(json);
                     if (assetMetadata != null) _libraryCache.UpsertAsset(assetMetadata);
                 }
                 catch (Exception e) {
@@ -493,12 +498,12 @@ namespace _4OF.ee4v.AssetManager.Data {
                     Assets = _libraryCache.Assets.ToList()
                 };
 
-                var json = JsonConvert.SerializeObject(cacheData, _serializerSettings);
+                var json = _serializer.Serialize(cacheData);
                 var tempPath = _cacheFilePath + ".tmp";
-                File.WriteAllText(tempPath, json);
+                FileSystemProvider.WriteAllText(tempPath, json);
 
-                if (File.Exists(_cacheFilePath)) File.Delete(_cacheFilePath);
-                File.Move(tempPath, _cacheFilePath);
+                if (FileSystemProvider.FileExists(_cacheFilePath)) FileSystemProvider.DeleteFile(_cacheFilePath);
+                FileSystemProvider.MoveFile(tempPath, _cacheFilePath);
             }
             catch (Exception e) {
                 Debug.LogWarning($"[JsonAssetRepository] Failed to save cache: {e.Message}");
@@ -506,11 +511,11 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         private bool LoadCache() {
-            if (!File.Exists(_cacheFilePath)) return false;
+            if (!FileSystemProvider.FileExists(_cacheFilePath)) return false;
 
             try {
-                var json = File.ReadAllText(_cacheFilePath);
-                var cache = JsonConvert.DeserializeObject<LibraryCacheSchema>(json, _serializerSettings);
+                var json = FileSystemProvider.ReadAllText(_cacheFilePath);
+                var cache = _serializer.Deserialize<LibraryCacheSchema>(json);
 
                 if (cache?.Metadata == null) return false;
 
