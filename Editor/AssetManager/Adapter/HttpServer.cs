@@ -3,15 +3,16 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Adapter {
     public static class HttpServer {
         private static HttpListener _listener;
-        private static Thread _listenerThread;
+        private static Task _listenerTask;
+        private static CancellationTokenSource _cts;
         private static bool _running;
-        private static DateTime _startedAt;
         private static readonly object Lock = new();
 
         public static bool IsRunning {
@@ -39,9 +40,8 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                 }
 
                 _running = true;
-                _startedAt = DateTime.UtcNow;
-                _listenerThread = new Thread(ListenLoop) { IsBackground = true, Name = "BoothLibraryHttpServer" };
-                _listenerThread.Start();
+                _cts = new CancellationTokenSource();
+                _listenerTask = Task.Run(() => ListenLoopAsync(_cts.Token), _cts.Token);
                 Debug.Log($"HttpServer started and listening on {prefix}");
             }
         }
@@ -65,28 +65,33 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                 }
 
                 try {
-                    if (_listenerThread is { IsAlive: true })
-                        if (!_listenerThread.Join(500))
-                            _listenerThread.Abort();
+                    _cts?.Cancel();
+                    if (_listenerTask != null)
+                        if (!_listenerTask.Wait(500))
+                            Debug.LogWarning("HttpServer listener task did not stop within timeout");
                 }
                 catch (Exception ex) {
                     Debug.LogError("Error while stopping listener thread: " + ex);
                 }
 
-                _listenerThread = null;
+                _listenerTask = null;
+                _cts?.Dispose();
+                _cts = null;
                 _listener = null;
                 Debug.Log("HttpServer stopped");
             }
         }
 
-        private static void ListenLoop() {
+        private static async Task ListenLoopAsync(CancellationToken token) {
             if (_listener == null) return;
-            while (IsRunning)
+            while (IsRunning && !token.IsCancellationRequested)
                 try {
-                    var context =
-                        _listener.GetContext();
+                    var getContextTask = _listener.GetContextAsync();
+                    var completed = await Task.WhenAny(getContextTask, Task.Delay(Timeout.Infinite, token));
+                    if (completed != getContextTask) break;
+                    var context = await getContextTask;
                     try {
-                        HandleContext(context);
+                        _ = Task.Run(async () => await HandleContextAsync(context), token);
                     }
                     catch (Exception e) {
                         Debug.LogError("Error handling request: " + e);
@@ -110,7 +115,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                 }
         }
 
-        private static void HandleContext(HttpListenerContext ctx) {
+        private static async Task HandleContextAsync(HttpListenerContext ctx) {
             var req = ctx.Request;
             var resp = ctx.Response;
             try {
@@ -123,20 +128,20 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                     resp.ContentType = "application/json; charset=utf-8";
                     resp.ContentEncoding = Encoding.UTF8;
                     resp.ContentLength64 = data.Length;
-                    resp.OutputStream.Write(data, 0, data.Length);
+                    await resp.OutputStream.WriteAsync(data, 0, data.Length);
                 }
                 else if (req.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase) &&
                          req.Url.AbsolutePath is "/" or "") {
                     string body;
                     using (var reader = new StreamReader(req.InputStream, req.ContentEncoding)) {
-                        body = reader.ReadToEnd();
+                        body = await reader.ReadToEndAsync();
                     }
 
                     if (string.IsNullOrWhiteSpace(body)) {
                         resp.StatusCode = 400;
                         var empty = Encoding.UTF8.GetBytes("Empty body");
                         resp.ContentLength64 = empty.Length;
-                        resp.OutputStream.Write(empty, 0, empty.Length);
+                        await resp.OutputStream.WriteAsync(empty, 0, empty.Length);
                     }
                     else {
                         var trim = body.Trim();
@@ -159,12 +164,24 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                             resp.ContentType = "text/plain; charset=utf-8";
                             var err = Encoding.UTF8.GetBytes("Invalid JSON payload");
                             resp.ContentLength64 = err.Length;
-                            resp.OutputStream.Write(err, 0, err.Length);
+                            await resp.OutputStream.WriteAsync(err, 0, err.Length);
                         }
                         else {
                             int created;
                             try {
-                                created = BoothLibraryImporter.Import(wrapper.shopList);
+                                var tcs = new TaskCompletionSource<int>();
+                                EditorApplication.delayCall += () =>
+                                {
+                                    try {
+                                        var res = BoothLibraryImporter.Import(wrapper.shopList);
+                                        tcs.TrySetResult(res);
+                                    }
+                                    catch (Exception ex) {
+                                        tcs.TrySetException(ex);
+                                    }
+                                };
+
+                                created = await tcs.Task;
                             }
                             catch (Exception ex) {
                                 Debug.LogError("Error importing shops on POST: " + ex);
@@ -174,18 +191,30 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                                     $"{{\"ok\":false, \"error\": \"Import failed: {ex.Message.Replace("\"", "\\\"")}\"}}";
                                 var err = Encoding.UTF8.GetBytes(errStr);
                                 resp.ContentLength64 = err.LongLength;
-                                resp.OutputStream.Write(err, 0, err.Length);
+                                await resp.OutputStream.WriteAsync(err, 0, err.Length);
                                 return;
                             }
 
-                            BoothLibraryServerState.SetContents(wrapper.shopList);
+                            var tcsSet = new TaskCompletionSource<bool>();
+                            var contents = wrapper.shopList;
+                            EditorApplication.delayCall += () =>
+                            {
+                                try {
+                                    BoothLibraryServerState.SetContents(contents);
+                                    tcsSet.TrySetResult(true);
+                                }
+                                catch (Exception ex) {
+                                    tcsSet.TrySetException(ex);
+                                }
+                            };
+                            await tcsSet.Task;
 
                             resp.StatusCode = 200;
                             resp.ContentType = "application/json; charset=utf-8";
                             var okStr = $"{{\"ok\":true, \"created\":{created}}}";
                             var ok = Encoding.UTF8.GetBytes(okStr);
                             resp.ContentLength64 = ok.LongLength;
-                            resp.OutputStream.Write(ok, 0, ok.Length);
+                            await resp.OutputStream.WriteAsync(ok, 0, ok.Length);
                         }
                     }
                 }
@@ -194,7 +223,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                     resp.ContentType = "text/plain";
                     var notFound = Encoding.UTF8.GetBytes("Not Found");
                     resp.ContentLength64 = notFound.Length;
-                    resp.OutputStream.Write(notFound, 0, notFound.Length);
+                    await resp.OutputStream.WriteAsync(notFound, 0, notFound.Length);
                 }
             }
             finally {
@@ -212,26 +241,6 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                     // ignored
                 }
             }
-        }
-    }
-
-    public abstract class BoothLibraryAdapter {
-        static BoothLibraryAdapter() {
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
-            EditorApplication.quitting += OnEditorQuitting;
-        }
-
-        private static void OnPlayModeStateChanged(PlayModeStateChange state) {
-            if (state == PlayModeStateChange.EnteredPlayMode) HttpServer.Stop();
-        }
-
-        private static void OnBeforeAssemblyReload() {
-            HttpServer.Stop();
-        }
-
-        private static void OnEditorQuitting() {
-            HttpServer.Stop();
         }
     }
 }
