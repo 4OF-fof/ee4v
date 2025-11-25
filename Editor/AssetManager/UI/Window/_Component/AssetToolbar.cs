@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
-    public class AssetToolbar : VisualElement {
+    public sealed class AssetToolbar : VisualElement {
         private readonly Label _backLabel;
         private readonly ScrollView _breadcrumbContainer;
         private readonly Label _forwardLabel;
@@ -71,7 +71,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _sortLabel.text = "Sort";
 
             RegisterHoverEvents(_sortLabel);
-            _sortLabel.RegisterCallback<PointerDownEvent>(_ => ShowSortMenu());
+            _sortLabel.RegisterCallback<PointerDownEvent>(_ => OnSortMenuRequested?.Invoke(_sortLabel));
             Add(_sortLabel);
 
             var searchField = new ToolbarSearchField {
@@ -92,6 +92,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<AssetSortType> OnSortChanged;
         public event Action<string> OnSearchTextChanged;
         public event Action<Ulid> OnBreadcrumbClicked;
+        public event Action<VisualElement> OnSortMenuRequested;
 
         public void SetSortVisible(bool visibleSort) {
             _sortLabel.style.display = visibleSort ? DisplayStyle.Flex : DisplayStyle.None;
@@ -164,29 +165,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             element.RegisterCallback<MouseLeaveEvent>(_ => { element.style.backgroundColor = Color.clear; });
         }
 
-        private void ShowSortMenu() {
-            var menu = new GenericDropdownMenu();
-            menu.AddItem("Date Added (Newest)", false,
-                () => OnSortChanged?.Invoke(AssetSortType.DateAddedNewest));
-            menu.AddItem("Date Added (Oldest)", false,
-                () => OnSortChanged?.Invoke(AssetSortType.DateAddedOldest));
-            menu.AddSeparator("");
-            menu.AddItem("Name (A-Z)", false, () => OnSortChanged?.Invoke(AssetSortType.NameAsc));
-            menu.AddItem("Name (Z-A)", false, () => OnSortChanged?.Invoke(AssetSortType.NameDesc));
-            menu.AddSeparator("");
-            menu.AddItem("Last Edit (Newest)", false,
-                () => OnSortChanged?.Invoke(AssetSortType.DateNewest));
-            menu.AddItem("Last Edit (Oldest)", false,
-                () => OnSortChanged?.Invoke(AssetSortType.DateOldest));
-            menu.AddSeparator("");
-            menu.AddItem("Size (Smallest)", false,
-                () => OnSortChanged?.Invoke(AssetSortType.SizeSmallest));
-            menu.AddItem("Size (Largest)", false,
-                () => OnSortChanged?.Invoke(AssetSortType.SizeLargest));
-            menu.AddSeparator("");
-            menu.AddItem("Filetype (A-Z)", false, () => OnSortChanged?.Invoke(AssetSortType.ExtAsc));
-            menu.AddItem("Filetype (Z-A)", false, () => OnSortChanged?.Invoke(AssetSortType.ExtDesc));
-            menu.DropDown(_sortLabel.worldBound, _sortLabel);
+        private void OnOnSortChanged(AssetSortType obj) {
+            OnSortChanged?.Invoke(obj);
         }
     }
 

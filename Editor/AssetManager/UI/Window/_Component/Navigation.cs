@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.UI.Window._Component.Dialog;
 using _4OF.ee4v.Core.Utility;
@@ -195,8 +194,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public event Action<Ulid, string> OnFolderRenamed;
         public event Action<Ulid> OnFolderDeleted;
         public event Action<Ulid, Ulid> OnFolderMoved;
+        public event Action<Ulid, string, VisualElement> OnFolderContextMenuRequested;
         public event Action<string> OnFolderCreated;
-        public event Action<List<Ulid>, Ulid> OnAssetsDroppedToFolder;
+        public event Action<Ulid, string[], string[]> OnDropRequested;
         public event Action<Ulid, Ulid, int> OnFolderReordered;
 
         public event Action<string, string, string, List<string>, string, string> OnAssetCreated;
@@ -318,7 +318,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         evt.StopPropagation();
                         break;
                     case 1:
-                        ShowFolderContextMenu(itemRow, folder.ID, folder.Name);
+                        OnFolderContextMenuRequested?.Invoke(folder.ID, folder.Name, itemRow);
                         evt.StopPropagation();
                         break;
                 }
@@ -363,8 +363,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             itemRow.RegisterCallback<DragPerformEvent>(evt =>
             {
-                var assetIdsData = DragAndDrop.GetGenericData("AssetManagerAssets");
-                var folderIdsData = DragAndDrop.GetGenericData("AssetManagerFolders");
+                var assetIdsData = DragAndDrop.GetGenericData("AssetManagerAssets") as string[];
+                var folderIdsData = DragAndDrop.GetGenericData("AssetManagerFolders") as string[];
                 if (assetIdsData == null && folderIdsData == null) return;
 
                 var targetFolderId = (Ulid)treeItemContainer.userData;
@@ -376,16 +376,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 else
                     itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
 
-                if (assetIdsData != null) {
-                    var assetIds = ((string[])assetIdsData).Select(Ulid.Parse).ToList();
-                    OnAssetsDroppedToFolder?.Invoke(assetIds, targetFolderId);
-                }
-
-                if (folderIdsData != null) {
-                    var folderIds = ((string[])folderIdsData).Select(Ulid.Parse).ToList();
-                    foreach (var sourceFolderId in folderIds.Where(sourceFolderId => sourceFolderId != targetFolderId))
-                        OnFolderMoved?.Invoke(sourceFolderId, targetFolderId);
-                }
+                OnDropRequested?.Invoke(targetFolderId, assetIdsData, folderIdsData);
 
                 evt.StopPropagation();
             });
@@ -520,16 +511,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             FolderSelected?.Invoke(folderId);
         }
 
-        private void ShowFolderContextMenu(VisualElement target, Ulid folderId, string folderName) {
-            var menu = new GenericDropdownMenu();
-            menu.AddItem("Rename", false, () => ShowRenameFolderDialog(folderId, folderName));
-            menu.AddItem("Delete", false, () => DeleteFolder(folderId));
-
-            var rect = target.worldBound;
-            var menuRect = new Rect(rect.x, rect.yMax, Mathf.Max(rect.width, 100), 0);
-            menu.DropDown(menuRect, target);
-        }
-
         private Ulid GetParentFolderId(Ulid folderId) {
             if (!_folderItemMap.TryGetValue(folderId, out var treeItem)) return Ulid.Empty;
 
@@ -564,14 +545,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _showDialogCallback.Invoke(content);
         }
 
-        private void ShowRenameFolderDialog(Ulid folderId, string oldName) {
+        public void ShowRenameFolderDialog(Ulid folderId, string oldName) {
             if (_showDialogCallback == null) return;
             var content = _renameFolderDialog.CreateContent(folderId, oldName);
             _showDialogCallback.Invoke(content);
-        }
-
-        private void DeleteFolder(Ulid folderId) {
-            OnFolderDeleted?.Invoke(folderId);
         }
     }
 }

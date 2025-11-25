@@ -19,10 +19,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         private AssetView _assetView;
 
+        private Action<VisualElement> _assetViewSortMenuHandler;
+
         private Ulid _currentPreviewFolderId = Ulid.Empty;
         private FolderService _folderService;
         private bool _isInitialized;
         private Navigation _navigation;
+        private Action<Ulid, string, VisualElement> _navigationContextMenuHandler;
         private AssetManagerPresenter _presenter;
         private IAssetRepository _repository;
         private AssetMetadata _selectedAsset;
@@ -46,7 +49,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _navigation.OnFolderDeleted -= _presenter.OnFolderDeleted;
                 _navigation.OnFolderMoved -= _presenter.OnFolderMoved;
                 _navigation.OnFolderCreated -= _presenter.OnFolderCreated;
-                _navigation.OnAssetsDroppedToFolder -= OnAssetsDroppedToFolder;
+                _navigation.OnDropRequested -= OnNavigationDropRequested;
+                if (_navigationContextMenuHandler != null)
+                    _navigation.OnFolderContextMenuRequested -= _navigationContextMenuHandler;
                 _navigation.OnFolderReordered -= _presenter.OnFolderReordered;
                 _navigation.OnAssetCreated -= _presenter.OnAssetCreated;
             }
@@ -71,6 +76,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             if (_assetView != null) {
                 _assetView.OnSelectionChange -= OnSelectionChanged;
                 _assetView.OnItemsDroppedToFolder -= OnItemsDroppedToFolder;
+                if (_assetViewSortMenuHandler != null) _assetView.OnSortMenuRequested -= _assetViewSortMenuHandler;
             }
 
             if (_assetInfo != null) {
@@ -167,7 +173,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _navigation.OnFolderDeleted += _presenter.OnFolderDeleted;
             _navigation.OnFolderMoved += _presenter.OnFolderMoved;
             _navigation.OnFolderCreated += _presenter.OnFolderCreated;
-            _navigation.OnAssetsDroppedToFolder += OnAssetsDroppedToFolder;
+            _navigation.OnDropRequested += OnNavigationDropRequested;
+            _navigationContextMenuHandler = (id, folderName, target) =>
+            {
+                var menu = new GenericDropdownMenu();
+                menu.AddItem("Rename", false, () => _navigation.ShowRenameFolderDialog(id, folderName));
+                menu.AddItem("Delete", false, () => _presenter.OnFolderDeleted(id));
+                menu.DropDown(target.worldBound, target);
+            };
+            _navigation.OnFolderContextMenuRequested += _navigationContextMenuHandler;
             _navigation.OnFolderReordered += _presenter.OnFolderReordered;
             _navigation.OnAssetCreated += _presenter.OnAssetCreated;
             _navigation.SetShowDialogCallback(ShowDialog);
@@ -210,6 +224,29 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _assetController.OnHistoryChanged += OnControllerHistoryChanged;
             _assetView.OnSelectionChange += OnSelectionChanged;
             _assetView.OnItemsDroppedToFolder += OnItemsDroppedToFolder;
+            _assetViewSortMenuHandler = element =>
+            {
+                var menu = new GenericDropdownMenu();
+                menu.AddItem("Name (A-Z)", false, () => _assetView.ApplySortType(AssetSortType.NameAsc));
+                menu.AddItem("Name (Z-A)", false, () => _assetView.ApplySortType(AssetSortType.NameDesc));
+                menu.AddSeparator("");
+                menu.AddItem("Date Added (Newest)", false,
+                    () => _assetView.ApplySortType(AssetSortType.DateAddedNewest));
+                menu.AddItem("Date Added (Oldest)", false,
+                    () => _assetView.ApplySortType(AssetSortType.DateAddedOldest));
+                menu.AddSeparator("");
+                menu.AddItem("Last Edit (Newest)", false, () => _assetView.ApplySortType(AssetSortType.DateNewest));
+                menu.AddItem("Last Edit (Oldest)", false, () => _assetView.ApplySortType(AssetSortType.DateOldest));
+                menu.AddSeparator("");
+                menu.AddItem("Size (Smallest)", false, () => _assetView.ApplySortType(AssetSortType.SizeSmallest));
+                menu.AddItem("Size (Largest)", false, () => _assetView.ApplySortType(AssetSortType.SizeLargest));
+                menu.AddSeparator("");
+                menu.AddItem("Filetype (A-Z)", false, () => _assetView.ApplySortType(AssetSortType.ExtAsc));
+                menu.AddItem("Filetype (Z-A)", false, () => _assetView.ApplySortType(AssetSortType.ExtDesc));
+                var targetElement = element ?? _assetView;
+                menu.DropDown(targetElement.worldBound, targetElement);
+            };
+            _assetView.OnSortMenuRequested += _assetViewSortMenuHandler;
 
             _assetInfo.OnNameChanged += _presenter.OnNameChanged;
             _assetInfo.OnDescriptionChanged += _presenter.OnDescriptionChanged;
@@ -330,15 +367,21 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             }
         }
 
-        private void OnAssetsDroppedToFolder(List<Ulid> assetIds, Ulid targetFolderId) {
-            var assetsFromBoothItemFolder = _presenter.FindAssetsFromBoothItemFolder(assetIds);
+        private void OnNavigationDropRequested(Ulid targetFolderId, string[] assetIdsData, string[] folderIdsData) {
+            if (assetIdsData is { Length: > 0 }) {
+                var assetIds = assetIdsData.Select(Ulid.Parse).ToList();
 
-            if (assetsFromBoothItemFolder.Count > 0) {
-                ShowBoothItemFolderWarningDialog(assetIds, targetFolderId, assetsFromBoothItemFolder);
-                return;
+                var assetsFromBoothItemFolder = _presenter.FindAssetsFromBoothItemFolder(assetIds);
+                if (assetsFromBoothItemFolder.Count > 0)
+                    ShowBoothItemFolderWarningDialog(assetIds, targetFolderId, assetsFromBoothItemFolder);
+                else
+                    _presenter.PerformSetFolderForAssets(assetIds, targetFolderId);
             }
 
-            _presenter.PerformSetFolderForAssets(assetIds, targetFolderId);
+            if (folderIdsData is not { Length: > 0 }) return;
+            var folderIds = folderIdsData.Select(Ulid.Parse).ToList();
+            foreach (var sourceFolderId in folderIds.Where(id => id != targetFolderId))
+                _presenter.OnFolderMoved(sourceFolderId, targetFolderId);
         }
 
         private void OnItemsDroppedToFolder(List<Ulid> assetIds, List<Ulid> folderIds, Ulid targetFolderId) {

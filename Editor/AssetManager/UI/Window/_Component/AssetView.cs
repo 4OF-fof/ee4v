@@ -52,6 +52,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 ApplyFilterAndSort();
             };
 
+            _toolbar.OnSortMenuRequested += element => OnSortMenuRequested?.Invoke(element);
+
             _grid.OnSelectionChange += NotifySelectionChange;
             _grid.OnFolderDoubleClicked += folder => { _controller?.SetFolder(folder.ID); };
 
@@ -67,6 +69,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public event Action<List<object>> OnSelectionChange;
         public event Action<List<Ulid>, List<Ulid>, Ulid> OnItemsDroppedToFolder;
+        public event Action<VisualElement> OnSortMenuRequested;
 
         public void Initialize(TextureService textureService, IAssetRepository repository = null) {
             _grid.Initialize(textureService, repository);
@@ -136,6 +139,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void OnItemsChanged(List<object> items) {
             _allItems = items ?? new List<object>();
+            ApplyFilterAndSort();
+        }
+
+        public void ApplySortType(AssetSortType type) {
+            _currentSortType = type;
             ApplyFilterAndSort();
         }
 
