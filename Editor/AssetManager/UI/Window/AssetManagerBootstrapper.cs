@@ -258,7 +258,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             assetInfo.OnFolderClicked += _navigationPresenter.OnFolderSelected;
             assetInfo.OnDownloadRequested += _propertyPresenter.OnDownloadRequested;
 
-            navigation.SelectAll();
+            navigation.SelectBoothItems();
             _assetController.Refresh();
 
             _window.ShowAssetView();

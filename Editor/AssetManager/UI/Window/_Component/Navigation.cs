@@ -419,6 +419,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             (firstLabel.userData as Action)?.Invoke();
         }
 
+        public void SelectBoothItems() {
+            if (_navLabels.Count <= 1) return;
+            var label = _navLabels[1];
+            SetSelected(label);
+            (label.userData as Action)?.Invoke();
+        }
+
         private void CreateNavLabel(string text, Action onClick) {
             var label = new Label(text) {
                 userData = onClick,
@@ -549,6 +556,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             if (_showDialogCallback == null) return;
             var content = _renameFolderDialog.CreateContent(folderId, oldName);
             _showDialogCallback.Invoke(content);
+        }
+
+        protected virtual void OnOnFolderDeleted(Ulid obj) {
+            OnFolderDeleted?.Invoke(obj);
         }
     }
 }
