@@ -18,7 +18,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly Label _dependenciesLabel;
         private readonly TextField _descriptionField;
 
-        private readonly VisualElement _downloadButtonPill;
+        private readonly Button _downloadButton;
 
         private readonly Label _folderHeader;
         private readonly Label _folderNameLabel;
@@ -288,6 +288,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
             _singleSelectionContainer.Add(_importTargetsContainer);
 
+            _downloadButton = CreateDownloadButton();
+            _singleSelectionContainer.Add(_downloadButton);
+
             _multiSelectionContainer = new VisualElement {
                 style = { display = DisplayStyle.None, alignItems = Align.Center, marginTop = 20, marginBottom = 40 }
             };
@@ -308,22 +311,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             scrollView.Add(_infoContainer);
 
             InitializeInfoRows();
-
-            var downloadButtonContainer = new VisualElement {
-                style = {
-                    flexDirection = FlexDirection.Row,
-                    flexWrap = Wrap.Wrap,
-                    marginTop = 10,
-                    marginBottom = 10,
-                    justifyContent = Justify.Center,
-                    alignItems = Align.Center,
-                    width = Length.Percent(100)
-                }
-            };
-            _downloadButtonPill = CreateDownloadButton();
-            downloadButtonContainer.Add(_downloadButtonPill);
-
-            scrollView.Add(downloadButtonContainer);
         }
 
         private void InitializeInfoRows() {
@@ -707,52 +694,41 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
         }
 
-        private VisualElement CreateDownloadButton() {
-            var pill = new VisualElement {
+        private Button CreateDownloadButton() {
+            var button = new Button(() =>
+            {
+                if (!string.IsNullOrEmpty(_currentDownloadUrl)) OnDownloadRequested?.Invoke(_currentDownloadUrl);
+            }) {
+                text = "Download from Booth",
                 style = {
-                    flexDirection = FlexDirection.Row,
+                    height = 30,
+                    marginTop = 10,
+                    marginBottom = 10,
                     backgroundColor = new StyleColor(new Color(0.9f, 0.5f, 0.2f)),
-                    borderTopLeftRadius = 10,
-                    borderTopRightRadius = 10,
-                    borderBottomLeftRadius = 10,
-                    borderBottomRightRadius = 10,
-                    paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 4,
-                    marginRight = 0, marginBottom = 10,
-                    alignItems = Align.Center,
-                    width = Length.Percent(100),
-                    justifyContent = Justify.Center,
+                    color = Color.white,
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    alignSelf = Align.Center,
+                    width = Length.Percent(90),
+                    fontSize = 12,
                     display = DisplayStyle.None
                 }
             };
 
-            pill.RegisterCallback<PointerDownEvent>(evt =>
+            button.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                if (evt.button != 0) return;
-                if (!string.IsNullOrEmpty(_currentDownloadUrl)) OnDownloadRequested?.Invoke(_currentDownloadUrl);
-                evt.StopPropagation();
+                button.style.backgroundColor = new StyleColor(new Color(1.0f, 0.6f, 0.3f));
+            });
+            button.RegisterCallback<MouseLeaveEvent>(_ =>
+            {
+                button.style.backgroundColor = new StyleColor(new Color(0.9f, 0.5f, 0.2f));
             });
 
-            var icon = new Label("↓")
-                { style = { fontSize = 14, marginRight = 4, unityFontStyleAndWeight = FontStyle.Bold } };
-            var label = new Label("Download from Booth");
-
-            pill.RegisterCallback<MouseEnterEvent>(_ =>
-            {
-                pill.style.backgroundColor = new StyleColor(new Color(1.0f, 0.6f, 0.3f));
-            });
-            pill.RegisterCallback<MouseLeaveEvent>(_ =>
-            {
-                pill.style.backgroundColor = new StyleColor(new Color(0.9f, 0.5f, 0.2f));
-            });
-
-            pill.Add(icon);
-            pill.Add(label);
-            return pill;
+            return button;
         }
 
         private void SetDownloadButtonVisible(bool buttonVisible, string url) {
             _currentDownloadUrl = url;
-            _downloadButtonPill.style.display = buttonVisible ? DisplayStyle.Flex : DisplayStyle.None;
+            _downloadButton.style.display = buttonVisible ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private static string FormatSize(long bytes) {
