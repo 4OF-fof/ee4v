@@ -2,6 +2,7 @@ using System;
 using _4OF.ee4v.AssetManager.Adapter;
 using _4OF.ee4v.Core.UI;
 using UnityEditor;
+using _4OF.ee4v.Core.i18n;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -23,7 +24,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 }
             };
 
-            var title = new Label("Import from Booth") {
+            var title = new Label(I18N.Get("UI.AssetManager.Dialog.WaitBoothSync.Title")) {
                 style = {
                     fontSize = 18,
                     unityFontStyleAndWeight = FontStyle.Bold,
@@ -33,7 +34,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
 
             content.Add(title);
 
-            var message = new Label("ブラウザで BOOTH のライブラリ画面を操作して\nデータを Unity に送信します。") {
+            var message = new Label(I18N.Get("UI.AssetManager.Dialog.WaitBoothSync.Message")) {
                 style = {
                     marginBottom = 16, fontSize = 13, unityTextAlign = TextAnchor.MiddleLeft,
                     whiteSpace = WhiteSpace.Normal, flexShrink = 1, flexGrow = 1,
@@ -42,7 +43,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             content.Add(message);
 
-            var userscriptNotice = new Label("Userscript のインストールが必要です") {
+            var userscriptNotice = new Label(I18N.Get("UI.AssetManager.Dialog.WaitBoothSync.UserscriptNotice")) {
                 style = {
                     marginBottom = 8,
                     unityTextAlign = TextAnchor.MiddleLeft,
@@ -56,7 +57,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             content.Add(userscriptNotice);
 
             var userscriptDesc1 =
-                new Label("この機能はブラウザ側で動作する Userscript (EE4V BOOTH Library Sync) により、\nBOOTH の情報を Unity に送信します。") {
+                new Label(I18N.Get("UI.AssetManager.Dialog.WaitBoothSync.UserscriptDesc1")) {
                     style = {
                         marginBottom = 8, fontSize = 12, unityTextAlign = TextAnchor.MiddleLeft,
                         whiteSpace = WhiteSpace.Normal, flexShrink = 1, flexGrow = 1,
@@ -66,7 +67,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
 
             var userscriptDesc2 =
                 new Label(
-                    "まだインストールしていない場合は、ブラウザ拡張 (例: Tampermonkey) に Userscript を追加して有効化してください。\n送信中はタブと Unity を閉じないでください。") {
+                    I18N.Get("UI.AssetManager.Dialog.WaitBoothSync.UserscriptDesc2")) {
                     style = {
                         marginBottom = 20, fontSize = 12, unityTextAlign = TextAnchor.MiddleLeft,
                         whiteSpace = WhiteSpace.Normal, flexShrink = 1, flexGrow = 1,
@@ -90,7 +91,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
 
             var openBtn = new Button(() => Application.OpenURL(BoothLibraryUrl)) {
-                text = "BOOTHライブラリを開く",
+                text = I18N.Get("UI.AssetManager.Dialog.WaitBoothSync.OpenLibrary"),
                 style = {
                     paddingLeft = 12,
                     paddingRight = 12,
@@ -116,7 +117,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
 
             var closeBtn = new Button {
-                text = "閉じる",
+                text = I18N.Get("UI.AssetManager.Dialog.Button.Close"),
                 style = {
                     paddingLeft = 12,
                     paddingRight = 12,
@@ -191,12 +192,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                                 showDialogCallback.Invoke(DownloadThumbnailDialog.CreateContent());
                         }
                         catch (Exception ex) {
-                            Debug.LogWarning($"Failed opening DownloadThumbnailDialog: {ex}");
+                            Debug.LogWarning(I18N.Get("Debug.AssetManager.Dialog.WaitBoothSync.FailedOpeningDownloadThumbnailDialogFmt", ex.Message));
                         }
                     }
                 }
                 catch (Exception ex) {
-                    Debug.LogWarning($"Polling Booth server state failed: {ex}");
+                    Debug.LogWarning(I18N.Get("Debug.AssetManager.Dialog.WaitBoothSync.PollingFailedFmt", ex.Message));
                 }
             }
 
@@ -204,8 +205,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 try {
                     EditorApplication.delayCall += () =>
                     {
-                        Debug.Log(
-                            $"WaitBoothSyncDialog: detected import completed ({created}) — closing and opening DownloadThumbnailDialog");
+                        Debug.Log(I18N.Get("Debug.AssetManager.Dialog.WaitBoothSync.ImportCompletedFmt", created));
                         try {
                             EditorApplication.update -= Poll;
                         }

@@ -5,6 +5,7 @@ using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.AssetManager.UI.Window._Component.Dialog;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.ProjectExtension.API;
 using UnityEditor;
 using UnityEngine;
@@ -40,7 +41,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var importableAssets = activeAssetTargets.Where(a => repository.HasAssetFile(a.ID)).ToList();
 
             if (importableAssets.Count > 0) {
-                var label = importableAssets.Count > 1 ? $"{importableAssets.Count} 個をインポート" : "インポート";
+                var label = importableAssets.Count > 1 ? I18N.Get("UI.AssetManager.ContextMenu.ImportPluralFmt", importableAssets.Count) : I18N.Get("UI.AssetManager.ContextMenu.Import");
 
                 menu.AddItem(label, false, () => { assetService.ImportAssetList(importableAssets.Select(a => a.ID)); });
                 height += ItemHeight;
@@ -49,7 +50,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     var canImportZip = repository.HasAssetFile(singleAsset.ID);
 
                     if (canImportZip) {
-                        menu.AddItem("インポート対象を選択", false, () =>
+                        menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.ImportSelectFromZip"), false, () =>
                         {
                             var mousePos = Event.current != null ? Event.current.mousePosition : Vector2.zero;
                             ZipImportWindow.Open(
@@ -84,8 +85,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 highlightGuids = highlightGuids.Distinct().ToList();
 
                 var label = activeAssetTargets.Count + folderTargets.Count > 1
-                    ? "プロジェクトでまとめてハイライト"
-                    : "プロジェクトでハイライト";
+                    ? I18N.Get("UI.AssetManager.ContextMenu.HighlightProjectPlural")
+                    : I18N.Get("UI.AssetManager.ContextMenu.HighlightProject");
 
                 menu.AddItem(label, false, () =>
                 {
@@ -97,7 +98,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             if (singleAsset != null) {
-                menu.AddItem("エクスプローラーで開く", false, () =>
+                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.OpenInExplorer"), false, () =>
                 {
                     var files = repository.GetAssetFiles(singleAsset.ID);
                     if (files.Count > 0) EditorUtility.RevealInFinder(files[0]);
@@ -107,7 +108,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             if (singleAsset != null) {
-                menu.AddItem("Booth情報を編集", false, () =>
+                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.EditBoothInfo"), false, () =>
                 {
                     var dialog = new EditBoothInfoDialog();
                     dialog.OnBoothInfoUpdated += (domain, itemId) =>
@@ -127,9 +128,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             if (assetTargets.Count > 0 && assetTargets.Count == deletedAssetTargets.Count && folderTargets.Count == 0) {
                 var plural = deletedAssetTargets.Count > 1;
 
-                menu.AddItem(plural ? $"{deletedAssetTargets.Count} 個を復元" : "復元", false, () =>
+                menu.AddItem(plural ? I18N.Get("UI.AssetManager.ContextMenu.RestorePluralFmt", deletedAssetTargets.Count) : I18N.Get("UI.AssetManager.ContextMenu.Restore"), false, () =>
                     ExecuteRestore(deletedAssetTargets));
-                menu.AddItem(plural ? $"{deletedAssetTargets.Count} 個を完全に削除" : "完全に削除", false, () =>
+                menu.AddItem(plural ? I18N.Get("UI.AssetManager.ContextMenu.DeletePermanentlyPluralFmt", deletedAssetTargets.Count) : I18N.Get("UI.AssetManager.ContextMenu.DeletePermanently"), false, () =>
                     ExecuteHardDelete(deletedAssetTargets));
 
                 height += ItemHeight * 2;
@@ -138,9 +139,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             if (activeAssetTargets.Count > 0 || folderTargets.Count > 0) {
-                menu.AddItem("サムネイルを設定", false, () =>
+                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.SetThumbnail"), false, () =>
                 {
-                    var path = EditorUtility.OpenFilePanel("Select Thumbnail", "", "png,jpg,jpeg");
+                    var path = EditorUtility.OpenFilePanel(I18N.Get("UI.AssetManager.ContextMenu.SelectThumbnailDialogTitle"), "", "png,jpg,jpeg");
                     if (string.IsNullOrEmpty(path)) return;
 
                     foreach (var a in activeAssetTargets) repository?.SetThumbnail(a.ID, path);
@@ -162,7 +163,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             });
 
             if (anyRemovableThumb) {
-                menu.AddItem("サムネイルを削除", false, () =>
+                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.RemoveThumbnail"), false, () =>
                 {
                     foreach (var a in activeAssetTargets) {
                         repository?.RemoveThumbnail(a.ID);
@@ -187,7 +188,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             if (activeAssetTargets.Count > 0) {
                 var plural = activeAssetTargets.Count > 1;
-                menu.AddItem(plural ? $"{activeAssetTargets.Count} 個を削除" : "アセットを削除", false, () =>
+                menu.AddItem(plural ? I18N.Get("UI.AssetManager.ContextMenu.DeleteAssetsPluralFmt", activeAssetTargets.Count) : I18N.Get("UI.AssetManager.ContextMenu.DeleteAsset"), false, () =>
                 {
                     foreach (var a in activeAssetTargets) assetService.RemoveAsset(a.ID);
                     onRefresh?.Invoke();
@@ -197,7 +198,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             if (folderTargets.Count > 0) {
                 var plural = folderTargets.Count > 1;
-                menu.AddItem(plural ? $"{folderTargets.Count} 個のフォルダを削除" : "フォルダを削除", false, () =>
+                menu.AddItem(plural ? I18N.Get("UI.AssetManager.ContextMenu.DeleteFoldersPluralFmt", folderTargets.Count) : I18N.Get("UI.AssetManager.ContextMenu.DeleteFolder"), false, () =>
                 {
                     foreach (var f in folderTargets) folderService.DeleteFolder(f.ID);
                     onRefresh?.Invoke();
@@ -206,8 +207,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             if (deletedAssetTargets.Count > 0) {
-                menu.AddItem("復元", false, () => ExecuteRestore(deletedAssetTargets));
-                menu.AddItem("完全に削除", false, () => ExecuteHardDelete(deletedAssetTargets));
+                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.Restore"), false, () => ExecuteRestore(deletedAssetTargets));
+                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.DeletePermanently"), false, () => ExecuteHardDelete(deletedAssetTargets));
                 height += ItemHeight * 2;
             }
 
@@ -223,10 +224,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 var count = targetAssets.Count;
                 var plural = count > 1;
                 var message = plural
-                    ? $"選択した {count} 個のアセットを完全に削除しますか？この操作は取り消せません。"
-                    : "アセットを完全に削除しますか？この操作は取り消せません。";
+                    ? I18N.Get("UI.AssetManager.ContextMenu.DeleteAssetsConfirmPluralFmt", count)
+                    : I18N.Get("UI.AssetManager.ContextMenu.DeleteAssetConfirm");
 
-                if (!EditorUtility.DisplayDialog("確認", message, "削除", "キャンセル")) return;
+                if (!EditorUtility.DisplayDialog(I18N.Get("UI.Core.ConfirmTitle"), message, I18N.Get("UI.Core.Delete"), I18N.Get("UI.Core.Cancel"))) return;
 
                 foreach (var a in targetAssets) assetService.DeleteAsset(a.ID);
                 onRefresh?.Invoke();

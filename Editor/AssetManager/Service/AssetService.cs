@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Utility;
 using _4OF.ee4v.Core.Utility;
+using _4OF.ee4v.Core.i18n;
 using UnityEditor;
 using UnityEngine;
 
@@ -36,7 +37,7 @@ namespace _4OF.ee4v.AssetManager.Service {
                 var lib = _repository.GetLibraryMetadata();
                 if (lib != null && asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.ItemId)) {
                     var identifier = asset.BoothData.ItemId;
-                    var folderName = asset.BoothData.FileName ?? asset.Name ?? identifier ?? "Booth Item";
+                    var folderName = asset.BoothData.FileName ?? asset.Name ?? identifier ?? I18N.Get("UI.AssetManager.Default.BoothItem");
                     var folderDesc = asset.BoothData.FileName ?? string.Empty;
                     var folderId = _folderService?.EnsureBoothItemFolder(asset.BoothData.ShopDomain ?? string.Empty,
                         null, identifier, folderName, folderDesc) ?? Ulid.Empty;
@@ -314,7 +315,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         public void ImportAsset(Ulid assetId, string destFolder = "Assets") {
             if (_isImporting) {
-                Debug.LogWarning("Already importing assets. Please wait.");
+                Debug.LogWarning(I18N.Get("Debug.AssetManager.Import.AlreadyImporting"));
                 return;
             }
 
@@ -338,7 +339,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         public void ImportAssetList(IEnumerable<Ulid> assetIds, string destFolder = "Assets") {
             if (_isImporting) {
-                Debug.LogWarning("Already importing assets. Please wait.");
+                Debug.LogWarning(I18N.Get("Debug.AssetManager.Import.AlreadyImporting"));
                 return;
             }
 
@@ -377,7 +378,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             if (_importQueue.Count == 0) {
                 _isImporting = false;
                 AssetImportTracker.StopTracking();
-                Debug.Log("All imports completed.");
+                Debug.Log(I18N.Get("Debug.AssetManager.Import.Completed"));
                 return;
             }
 
@@ -393,7 +394,7 @@ namespace _4OF.ee4v.AssetManager.Service {
                 return;
             }
 
-            Debug.Log($"Importing asset: {asset.Name} ({asset.ID})");
+            Debug.Log(I18N.Get("Debug.AssetManager.Import.ImportingAssetFmt", asset.Name, asset.ID));
 
             if (asset.Ext.Equals(".unitypackage", StringComparison.OrdinalIgnoreCase)) {
                 var files = _repository.GetAssetFiles(assetId, "*.unitypackage");
@@ -554,7 +555,7 @@ namespace _4OF.ee4v.AssetManager.Service {
                 if (File.Exists(destMeta))
                     File.Copy(destMeta, storedMeta, true);
 
-            Debug.Log($"Imported {filesToProcess.Count} files from import directory.");
+            Debug.Log(I18N.Get("Debug.AssetManager.Import.ImportedFilesFromImportDirectoryFmt", filesToProcess.Count));
         }
 
         private static void CopyAndManageMeta(string sourceFile, string destFile, string storedMetaPath) {
@@ -564,13 +565,13 @@ namespace _4OF.ee4v.AssetManager.Service {
             if (File.Exists(storedMetaPath)) {
                 File.Copy(storedMetaPath, destMetaPath, true);
                 AssetDatabase.Refresh();
-                Debug.Log($"Imported '{Path.GetFileName(destFile)}' with restored GUID.");
+                Debug.Log(I18N.Get("Debug.AssetManager.Import.ImportedFileWithRestoredGuidFmt", Path.GetFileName(destFile)));
             }
             else {
                 AssetDatabase.Refresh();
                 if (!File.Exists(destMetaPath)) return;
                 File.Copy(destMetaPath, storedMetaPath, true);
-                Debug.Log($"Imported '{Path.GetFileName(destFile)}' and backed up new meta.");
+                Debug.Log(I18N.Get("Debug.AssetManager.Import.ImportedFileAndBackedUpMetaFmt", Path.GetFileName(destFile)));
             }
         }
     }

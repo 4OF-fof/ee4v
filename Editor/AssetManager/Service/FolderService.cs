@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
+using _4OF.ee4v.Core.i18n;
 using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Service {
@@ -320,7 +321,7 @@ namespace _4OF.ee4v.AssetManager.Service {
                 ? folderName
                 : !string.IsNullOrEmpty(identifier)
                     ? identifier
-                    : "Booth Item";
+                    : I18N.Get("UI.AssetManager.Default.BoothItem");
             newFolder.SetName(preferredName);
             newFolder.SetDescription(folderDescription ?? shopName ?? string.Empty);
             newFolder.SetShopDomain(shopDomain);

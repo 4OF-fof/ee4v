@@ -4,13 +4,14 @@ using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
+using _4OF.ee4v.Core.i18n;
 
 namespace _4OF.ee4v.AssetManager.API {
     public static class AssetManagerAPI {
         public static void ImportBackupPackage(string packagePath, string avatarId, string avatarName,
             string description = null) {
             if (string.IsNullOrEmpty(packagePath) || !File.Exists(packagePath)) {
-                Debug.LogError($"[AssetManagerAPI] Backup file not found: {packagePath}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.API.BackupFileNotFoundFmt", packagePath));
                 return;
             }
 
@@ -19,13 +20,13 @@ namespace _4OF.ee4v.AssetManager.API {
             var assetService = AssetManagerContainer.AssetService;
 
             if (repository == null) {
-                Debug.LogError("[AssetManagerAPI] Repository is not initialized.");
+                Debug.LogError(I18N.Get("Debug.AssetManager.API.RepositoryNotInitialized"));
                 return;
             }
 
             var folderId = folderService.EnsureBackupFolder(avatarId, avatarName);
             if (folderId == Ulid.Empty) {
-                Debug.LogError("[AssetManagerAPI] Failed to ensure backup folder.");
+                Debug.LogError(I18N.Get("Debug.AssetManager.API.FailedToEnsureBackupFolder"));
                 return;
             }
 
@@ -44,14 +45,14 @@ namespace _4OF.ee4v.AssetManager.API {
                     if (!string.IsNullOrEmpty(description)) newMeta.SetDescription(description);
 
                     assetService.SaveAsset(newMeta);
-                    Debug.Log($"[AssetManagerAPI] Backup imported successfully: {fileName}");
+                    Debug.Log(I18N.Get("Debug.AssetManager.API.BackupImportedFmt", fileName));
                 }
                 else {
-                    Debug.LogError("[AssetManagerAPI] Failed to retrieve created asset metadata.");
+                    Debug.LogError(I18N.Get("Debug.AssetManager.API.FailedToRetrieveCreatedAssetMetadata"));
                 }
             }
             catch (Exception e) {
-                Debug.LogError($"[AssetManagerAPI] Exception during backup import: {e.Message}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.API.ExceptionDuringBackupImportFmt", e.Message));
             }
         }
     }

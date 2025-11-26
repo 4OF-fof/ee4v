@@ -6,6 +6,7 @@ using _4OF.ee4v.AssetManager.UI.Presenter;
 using _4OF.ee4v.AssetManager.UI.Window._Component;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
+using _4OF.ee4v.Core.i18n;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -130,7 +131,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         internal void OnDependencyClicked(Ulid dependencyId) {
             var depAsset = AssetManagerContainer.Repository.GetAsset(dependencyId);
             if (depAsset == null || depAsset.IsDeleted) {
-                ShowToast("依存関係先のアセットが見つかりません", 3, ToastType.Error);
+                ShowToast(I18N.Get("UI.AssetManager.Toast.DependencyAssetNotSelected"), 3, ToastType.Error);
                 return;
             }
 
@@ -245,7 +246,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
         [MenuItem("ee4v/Asset Manager")]
         public static void ShowWindow() {
-            var window = GetWindow<AssetManagerWindow>("Asset Manager");
+            var window = GetWindow<AssetManagerWindow>(I18N.Get("UI.AssetManager.Window.Title"));
             window.minSize = new Vector2(800, 400);
             AssetManagerContainer.Repository.Load();
             window.Show();
@@ -255,7 +256,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             List<AssetMetadata> assetsFromBoothItemFolder) {
             var content = new VisualElement();
 
-            var titleLabel = new Label("Warning") {
+            var titleLabel = new Label(I18N.Get("UI.AssetManager.Dialog.BoothItemWarning.Title")) {
                 style = {
                     fontSize = 14,
                     unityFontStyleAndWeight = FontStyle.Bold,
@@ -265,8 +266,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             content.Add(titleLabel);
 
             var messageText = assetsFromBoothItemFolder.Count == 1
-                ? $"The asset '{assetsFromBoothItemFolder[0].Name}' is currently in a Booth Item folder.\n\nMoving it to a regular folder may cause issues with Booth item management. Are you sure you want to continue?"
-                : $"{assetsFromBoothItemFolder.Count} assets are currently in Booth Item folders.\n\nMoving them to a regular folder may cause issues with Booth item management. Are you sure you want to continue?";
+                ? I18N.Get("UI.AssetManager.Dialog.BoothItemWarning.Single", assetsFromBoothItemFolder[0].Name)
+                : I18N.Get("UI.AssetManager.Dialog.BoothItemWarning.Multi", assetsFromBoothItemFolder.Count);
 
             var message = new Label(messageText) {
                 style = {
@@ -284,13 +285,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             };
 
             var cancelBtn = new Button {
-                text = "Cancel",
+                text = I18N.Get("UI.AssetManager.Dialog.Button.Cancel"),
                 style = { marginRight = 5 }
             };
             buttonRow.Add(cancelBtn);
 
             var continueBtn = new Button {
-                text = "Continue",
+                text = I18N.Get("UI.AssetManager.Dialog.Button.Continue"),
                 style = {
                     backgroundColor = new StyleColor(ColorPreset.WarningButton)
                 }

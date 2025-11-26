@@ -9,6 +9,7 @@ using _4OF.ee4v.AssetManager.UI.Window._Component.Dialog;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 using UnityEngine.UIElements;
+using _4OF.ee4v.Core.i18n;
 
 namespace _4OF.ee4v.AssetManager.UI.Presenter {
     public class AssetPropertyPresenter {
@@ -89,7 +90,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
                 var success = _assetService.SetAssetName(SelectedAsset.ID, newName);
                 _refreshUI(true);
                 if (!success)
-                    _showToast?.Invoke($"アセット '{oldName}' のリネームに失敗しました: 名前が無効です", 10, ToastType.Error);
+                    _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.AssetRenameFailedInvalidFmt", oldName), 10, ToastType.Error);
                 return;
             }
 
@@ -101,14 +102,14 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
 
             var libMetadata = _repository?.GetLibraryMetadata();
             var oldFolder = libMetadata?.GetFolder(targetFolderId);
-            var oldFolderName = oldFolder?.Name ?? "フォルダ";
+            var oldFolderName = oldFolder?.Name ?? I18N.Get("UI.AssetManager.Folder.UnknownName");
 
             var successFolder = _folderService.SetFolderName(targetFolderId, newName);
             var folders = _folderService.GetRootFolders();
             _setNavigationFolders?.Invoke(folders);
             _refreshUI(false);
             if (!successFolder)
-                _showToast?.Invoke($"フォルダ '{oldFolderName}' のリネームに失敗しました: 名前が無効です", 10, ToastType.Error);
+                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.FolderRenameFailedInvalid", oldFolderName), 10, ToastType.Error);
         }
 
         public void OnDescriptionChanged(string newDesc) {
@@ -154,7 +155,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
                     _folderService.AddTag(targetFolderId, newTag);
                 }
                 else {
-                    _showToast?.Invoke("タグの追加対象が見つかりませんでした", 3, ToastType.Error);
+                    _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.TagAddNotFound"), 3, ToastType.Error);
                     return;
                 }
             }
@@ -176,7 +177,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
                     _folderService.RemoveTag(targetFolderId, tagToRemove);
                 }
                 else {
-                    _showToast?.Invoke("タグの削除対象が見つかりませんでした", 3, ToastType.Error);
+                    _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.TagDeleteNotFound"), 3, ToastType.Error);
                     return;
                 }
             }
@@ -187,7 +188,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
 
         public void OnDependencyAdded(Ulid dependencyId) {
             if (SelectedAsset == null) {
-                _showToast?.Invoke("依存関係を追加するアセットが選択されていません", 3, ToastType.Error);
+                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.DependencyAssetNotSelected"), 3, ToastType.Error);
                 return;
             }
 
@@ -222,8 +223,8 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             if (string.IsNullOrEmpty(downloadUrl) || SelectedAsset == null) return;
 
             var fileName = SelectedAsset.BoothData?.FileName ?? "";
-            if (string.IsNullOrEmpty(fileName)) {
-                _showToast?.Invoke("ファイル名が設定されていません。", 3f, ToastType.Error);
+                if (string.IsNullOrEmpty(fileName)) {
+                _showToast?.Invoke(I18N.Get("UI.AssetManager.Download.FileNameNotSet"), 3f, ToastType.Error);
                 return;
             }
 
@@ -235,7 +236,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
                 var dialogContainer = content.parent?.parent;
                 dialogContainer?.RemoveFromHierarchy();
                 _refreshUI(true);
-                _showToast?.Invoke("ダウンロードが完了しました。", 3f, ToastType.Success);
+                _showToast?.Invoke(I18N.Get("UI.AssetManager.Download.Completed"), 3f, ToastType.Success);
             };
 
             _showDialog?.Invoke(content);

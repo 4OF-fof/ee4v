@@ -5,6 +5,7 @@ using System.Threading;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
@@ -80,7 +81,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 }
             };
 
-            var messageLabel = new Label("アセットが見つかりません") {
+            var messageLabel = new Label(I18N.Get("UI.AssetManager.AssetGrid.EmptyTitle")) {
                 style = {
                     fontSize = 16,
                     unityTextAlign = TextAnchor.MiddleCenter,
@@ -89,7 +90,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 }
             };
 
-            var hintLabel = new Label("検索条件を変更するか、新しいアセットを追加してください") {
+            var hintLabel = new Label(I18N.Get("UI.AssetManager.AssetGrid.EmptyHint")) {
                 style = {
                     fontSize = 12,
                     unityTextAlign = TextAnchor.MiddleCenter,
@@ -434,8 +435,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             DragAndDrop.objectReferences = Array.Empty<Object>();
 
-            var dragLabel = selectedAssets.Count > 0 && selectedFolders.Count > 0 ? "Moving Items" :
-                selectedFolders.Count > 0 ? "Moving Folders" : "Moving Assets";
+            var dragLabel = selectedAssets.Count > 0 && selectedFolders.Count > 0 ? I18N.Get("UI.AssetManager.AssetGrid.DraggingItems") :
+                selectedFolders.Count > 0 ? I18N.Get("UI.AssetManager.AssetGrid.DraggingFolders") : I18N.Get("UI.AssetManager.AssetGrid.DraggingAssets");
             DragAndDrop.StartDrag(dragLabel);
         }
 

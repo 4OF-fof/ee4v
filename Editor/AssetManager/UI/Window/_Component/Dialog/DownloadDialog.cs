@@ -4,6 +4,7 @@ using System.Threading;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
+using _4OF.ee4v.Core.i18n;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -29,7 +30,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
 
             var content = new VisualElement();
 
-            var title = new Label("Boothからダウンロード") {
+            var title = new Label(I18N.Get("UI.AssetManager.Download.Title")) {
                 style = {
                     fontSize = 14,
                     unityFontStyleAndWeight = FontStyle.Bold,
@@ -38,7 +39,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             content.Add(title);
 
-            var instructionLabel = new Label("ブラウザでダウンロードページを開きます。\nダウンロードしたファイルは自動で登録されます。") {
+            var instructionLabel = new Label(I18N.Get("UI.AssetManager.Download.Instruction")) {
                 style = {
                     whiteSpace = WhiteSpace.Normal,
                     marginBottom = 16,
@@ -47,7 +48,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             content.Add(instructionLabel);
 
-            _statusLabel = new Label("ブラウザを開きました。ダウンロード完了を待機しています...") {
+            _statusLabel = new Label(I18N.Get("UI.AssetManager.Download.StatusWaiting")) {
                 style = {
                     unityTextAlign = TextAnchor.MiddleCenter,
                     marginBottom = 16,
@@ -66,7 +67,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
 
             var closeBtn = new Button {
-                text = "閉じる",
+                text = I18N.Get("UI.AssetManager.Download.Close"),
                 style = {
                     width = 100,
                     height = 30,
@@ -99,11 +100,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
         private void StartDownload() {
             try {
                 Application.OpenURL(_downloadUrl);
-                _statusLabel.text = "ダウンロードを監視中...";
+                _statusLabel.text = I18N.Get("UI.AssetManager.Download.StatusMonitoring");
                 StartMonitoring();
             }
             catch (Exception e) {
-                _statusLabel.text = $"エラー: ブラウザを開けませんでした。\n{e.Message}";
+                _statusLabel.text = I18N.Get("UI.AssetManager.Download.Error.BrowserOpenFailedFmt", e.Message);
             }
         }
 
@@ -112,7 +113,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
 
             var downloadsPath = GetDownloadsPath();
             if (string.IsNullOrEmpty(downloadsPath) || !Directory.Exists(downloadsPath)) {
-                _statusLabel.text = "エラー: ダウンロードフォルダが見つかりません。";
+                _statusLabel.text = I18N.Get("UI.AssetManager.Download.Error.DownloadFolderNotFound");
                 return;
             }
 
@@ -207,19 +208,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                     File.Delete(filePath);
                 }
                 catch (Exception deleteEx) {
-                    Debug.LogWarning($"ダウンロードファイルの削除に失敗しました: {deleteEx.Message}");
+                    Debug.LogWarning(I18N.Get("Debug.AssetManager.Download.DeleteFailedFmt", deleteEx.Message));
                 }
 
                 EditorApplication.delayCall += () =>
                 {
-                    _statusLabel.text = "✓登録が完了しました。";
+                    _statusLabel.text = I18N.Get("UI.AssetManager.Download.Completed");
                     StopMonitoring();
                 };
             }
             catch (Exception e) {
                 EditorApplication.delayCall += () =>
                 {
-                    _statusLabel.text = $"エラー: ファイルの登録に失敗しました。\n{e.Message}";
+                    _statusLabel.text = I18N.Get("UI.AssetManager.Download.Error.RegistrationFailedFmt", e.Message);
                     StopMonitoring();
                 };
             }
@@ -229,7 +230,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             var downloadsPath = Path.Combine(userProfile, "Downloads");
 
-            if (!Directory.Exists(downloadsPath)) Debug.LogError("ダウンロードフォルダが見つかりません。");
+            if (!Directory.Exists(downloadsPath)) Debug.LogError(I18N.Get("Debug.AssetManager.Download.FolderNotFound"));
 
             return downloadsPath;
         }

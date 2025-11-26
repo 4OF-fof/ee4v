@@ -1,6 +1,7 @@
 using System;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.Core.i18n;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,7 +13,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
         public VisualElement CreateContent() {
             var content = new VisualElement();
 
-            var title = new Label("Create New Folder") {
+            var title = new Label(I18N.Get("UI.AssetManager.Dialog.CreateFolder.Title")) {
                 style = {
                     fontSize = 14,
                     unityFontStyleAndWeight = FontStyle.Bold,
@@ -21,7 +22,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             content.Add(title);
 
-            var label = new Label("Folder name:") {
+            var label = new Label(I18N.Get("UI.AssetManager.Dialog.CreateFolder.Label")) {
                 style = { marginBottom = 5 }
             };
             content.Add(label);
@@ -63,13 +64,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
 
             var cancelBtn = new Button {
-                text = "Cancel",
+                text = I18N.Get("UI.AssetManager.Dialog.Button.Cancel"),
                 style = { marginRight = 5 }
             };
             buttonRow.Add(cancelBtn);
 
             var createBtn = new Button {
-                text = "Create"
+                text = I18N.Get("UI.AssetManager.Dialog.Button.Create")
             };
             buttonRow.Add(createBtn);
 
@@ -85,7 +86,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
 
         private void AttemptCreate(string folderName, VisualElement content) {
             if (!AssetValidationService.IsValidAssetName(folderName)) {
-                ShowError("無効なフォルダ名です。");
+                ShowError(I18N.Get("UI.AssetManager.Dialog.RenameFolder.Error.InvalidName"));
                 return;
             }
 

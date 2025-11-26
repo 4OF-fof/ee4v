@@ -1,6 +1,7 @@
 ﻿using System;
 using _4OF.ee4v.AssetManager.Utility;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.Core.i18n;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -11,7 +12,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
         public VisualElement CreateContent(string currentUrl) {
             var content = new VisualElement();
 
-            var title = new Label("Edit Booth Info") {
+            var title = new Label(I18N.Get("UI.AssetManager.Dialog.EditBoothInfo.Title")) {
                 style = {
                     fontSize = 14,
                     unityFontStyleAndWeight = FontStyle.Bold,
@@ -20,12 +21,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             content.Add(title);
 
-            var label = new Label("Booth URL:") {
+            var label = new Label(I18N.Get("UI.AssetManager.Dialog.EditBoothInfo.BoothUrlLabel")) {
                 style = { marginBottom = 5 }
             };
             content.Add(label);
 
-            var hint = new Label("Format: [shopname].booth.pm/items/[itemid]") {
+            var hint = new Label(I18N.Get("UI.AssetManager.Dialog.EditBoothInfo.BoothURLHint")) {
                 style = {
                     fontSize = 10,
                     color = ColorPreset.InActiveItem,
@@ -60,13 +61,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
 
             var cancelBtn = new Button {
-                text = "Cancel",
+                text = I18N.Get("UI.AssetManager.Dialog.Button.Cancel"),
                 style = { marginRight = 5 }
             };
             buttonRow.Add(cancelBtn);
 
             var okBtn = new Button {
-                text = "OK"
+                text = I18N.Get("UI.AssetManager.Dialog.Button.OK")
             };
             buttonRow.Add(okBtn);
 

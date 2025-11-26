@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -54,7 +55,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             if (LoadCache()) return;
 
             if (!FileSystemProvider.FileExists(_libraryMetadataPath)) {
-                Debug.LogError($"[JsonAssetRepository] Metadata file not found at {_libraryMetadataPath}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Repository.MetadataFileNotFoundFmt", _libraryMetadataPath));
                 return;
             }
 
@@ -67,7 +68,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 SaveCache();
             }
             catch (Exception e) {
-                Debug.LogError($"[JsonAssetRepository] Failed to load library: {e.Message}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Repository.FailedToLoadLibraryFmt", e.Message));
             }
         }
 
@@ -119,8 +120,8 @@ namespace _4OF.ee4v.AssetManager.Data {
                 );
             });
 
-            if (result.Error != null) {
-                Debug.LogError($"[JsonAssetRepository] Verification failed: {result.Error}");
+                if (result.Error != null) {
+                Debug.LogError(I18N.Get("Debug.AssetManager.Repository.VerificationFailedFmt", result.Error));
                 return;
             }
 
@@ -138,7 +139,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 result.MissingOnDisk is { Count: > 0 } ||
                 result.Modified is { Count: > 0 }) {
                 SaveCache();
-                Debug.Log("[JsonAssetRepository] Cache updated and verified.");
+                Debug.Log(I18N.Get("Debug.AssetManager.Repository.CacheUpdatedAndVerified"));
             }
         }
 
@@ -171,7 +172,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 SaveAsset(assetMetadata);
             }
             catch (Exception e) {
-                Debug.LogError($"[JsonAssetRepository] Failed to create asset: {e.Message}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Repository.FailedToCreateAssetFmt", e.Message));
                 if (!Directory.Exists(assetDir)) throw;
                 try {
                     Directory.Delete(assetDir, true);
@@ -187,7 +188,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         public void AddFileToAsset(Ulid assetId, string sourcePath) {
             var asset = GetAsset(assetId);
             if (asset == null) {
-                Debug.LogError($"[JsonAssetRepository] Asset not found: {assetId}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Repository.AssetNotFoundFmt", assetId));
                 return;
             }
 
@@ -208,7 +209,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 AssetChanged?.Invoke(assetId);
             }
             catch (Exception e) {
-                Debug.LogError($"[JsonAssetRepository] Failed to add file to asset: {e.Message}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Repository.FailedToAddFileToAssetFmt", e.Message));
                 throw;
             }
         }
@@ -273,7 +274,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                     changedIds.Add(asset.ID);
                 }
                 catch (Exception e) {
-                    Debug.LogWarning($"[JsonAssetRepository] Failed to write metadata for {asset.ID}: {e.Message}");
+                    Debug.LogWarning(I18N.Get("Debug.AssetManager.Repository.FailedToWriteMetadataForFmt", asset.ID, e.Message));
                 }
             }
 
@@ -366,7 +367,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 }
             }
             catch (Exception e) {
-                Debug.LogError($"[JsonAssetRepository] Failed to set thumbnail: {e.Message}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Repository.FailedToSetThumbnailFmt", e.Message));
             }
             finally {
                 try {
@@ -422,7 +423,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 }
             }
             catch (Exception e) {
-                Debug.LogError($"[JsonAssetRepository] Failed to set folder thumbnail: {e.Message}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Repository.FailedToSetFolderThumbnailFmt", e.Message));
             }
             finally {
                 try {
@@ -441,7 +442,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 FileSystemProvider.DeleteFile(path);
             }
             catch (Exception e) {
-                Debug.LogError($"[JsonAssetRepository] Failed to delete folder thumbnail: {e.Message}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Repository.FailedToDeleteFolderThumbnailFmt", e.Message));
             }
             finally {
                 try {
@@ -536,7 +537,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 }
                 catch (Exception e) {
                     Debug.LogError(
-                        $"[JsonAssetRepository] Failed to load asset metadata from {metadataPath}: {e.Message}");
+                        I18N.Get("Debug.AssetManager.Repository.FailedToLoadAssetMetadataFromFmt", metadataPath, e.Message));
                 }
             }
         }
@@ -556,7 +557,7 @@ namespace _4OF.ee4v.AssetManager.Data {
                 FileSystemProvider.MoveFile(tempPath, _cacheFilePath);
             }
             catch (Exception e) {
-                Debug.LogWarning($"[JsonAssetRepository] Failed to save cache: {e.Message}");
+                Debug.LogWarning(I18N.Get("Debug.AssetManager.Repository.FailedToSaveCacheFmt", e.Message));
             }
         }
 

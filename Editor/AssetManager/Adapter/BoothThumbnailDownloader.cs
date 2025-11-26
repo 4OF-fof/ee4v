@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.UI.Window;
 using _4OF.ee4v.AssetManager.UI.Window._Component;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
@@ -29,7 +30,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
 
         public static void Enqueue(IAssetRepository repository, Dictionary<Ulid, string> jobs) {
             if (IsRunning) {
-                Debug.LogWarning("ダウンロード処理が進行中のため、新規リクエストはスキップされました。");
+                Debug.LogWarning(I18N.Get("Debug.AssetManager.Download.AlreadyRunning"));
                 return;
             }
 
@@ -92,8 +93,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                             try {
                                 using var resp = await Http.GetAsync(url);
                                 if (!resp.IsSuccessStatusCode) {
-                                    Debug.LogWarning(
-                                        $"Booth thumbnail download failed (HTTP {resp.StatusCode}) for {url}");
+                                    Debug.LogWarning(I18N.Get("Debug.AssetManager.Download.HttpFailedFmt", resp.StatusCode, url));
                                 }
                                 else {
                                     var bytes = await resp.Content.ReadAsByteArrayAsync();
@@ -115,8 +115,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                                                 repository.SetFolderThumbnail(folderId, localTemp);
                                             }
                                             catch (Exception e) {
-                                                Debug.LogError(
-                                                    $"Failed to set folder thumbnail for {folderId}: {e.Message}");
+                                                Debug.LogError(I18N.Get("Debug.AssetManager.Download.SetFolderThumbnailFailedFmt", folderId, e.Message));
                                             }
 
                                             try {
@@ -130,7 +129,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                                 }
                             }
                             catch (Exception e) {
-                                Debug.LogWarning($"Failed downloading booth image from '{url}' : {e.Message}");
+                                Debug.LogWarning(I18N.Get("Debug.AssetManager.Download.FailedToDownloadFromUrlFmt", url, e.Message));
                                 if (!string.IsNullOrEmpty(tempPath))
                                     try {
                                         File.Delete(tempPath);
@@ -153,7 +152,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                             };
                         }
                         catch (Exception e) {
-                            Debug.LogWarning($"Failed processing booth thumbnail for folder {folderId}: {e.Message}");
+                            Debug.LogWarning(I18N.Get("Debug.AssetManager.Download.FailedProcessingFolderFmt", folderId, e.Message));
                             Interlocked.Increment(ref _completedCount);
                             var now = _completedCount;
                             EditorApplication.delayCall += () =>
@@ -192,11 +191,11 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                 EditorApplication.delayCall += () =>
                 {
                     try {
-                        AssetManagerWindow.ShowToastMessage($"Booth thumbnails finished: {count} attempted", 4f,
+                        AssetManagerWindow.ShowToastMessage(I18N.Get("UI.AssetManager.DownloadThumbnail.FinishedAttemptedFmt", count), 4f,
                             ToastType.Success);
                     }
                     catch {
-                        EditorUtility.DisplayDialog("ee4v", $"Booth thumbnails finished: {count} attempted", "OK");
+                        EditorUtility.DisplayDialog(I18N.Get("UI.Core.AppName"), I18N.Get("UI.AssetManager.DownloadThumbnail.FinishedAttemptedFmt", count), I18N.Get("UI.Core.OK"));
                     }
                 };
             }

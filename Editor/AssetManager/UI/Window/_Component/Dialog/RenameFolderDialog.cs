@@ -1,6 +1,7 @@
 using System;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -13,7 +14,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
         public VisualElement CreateContent(Ulid folderId, string oldName) {
             var content = new VisualElement();
 
-            var title = new Label("Rename Folder") {
+            var title = new Label(I18N.Get("UI.AssetManager.Dialog.RenameFolder.Title")) {
                 style = {
                     fontSize = 14,
                     unityFontStyleAndWeight = FontStyle.Bold,
@@ -22,7 +23,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             content.Add(title);
 
-            var label = new Label("New folder name:") {
+            var label = new Label(I18N.Get("UI.AssetManager.Dialog.RenameFolder.NewFolderLabel")) {
                 style = { marginBottom = 5 }
             };
             content.Add(label);
@@ -64,13 +65,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
 
             var cancelBtn = new Button {
-                text = "Cancel",
+                text = I18N.Get("UI.AssetManager.Dialog.Button.Cancel"),
                 style = { marginRight = 5 }
             };
             buttonRow.Add(cancelBtn);
 
             var okBtn = new Button {
-                text = "OK"
+                text = I18N.Get("UI.AssetManager.Dialog.Button.OK")
             };
             buttonRow.Add(okBtn);
 
@@ -90,7 +91,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
 
         private void AttemptRename(string newName, string oldName, Ulid folderId, VisualElement content) {
             if (!AssetValidationService.IsValidAssetName(newName)) {
-                ShowError("無効なフォルダ名です。");
+                ShowError(I18N.Get("UI.AssetManager.Dialog.RenameFolder.Error.InvalidName"));
                 return;
             }
 

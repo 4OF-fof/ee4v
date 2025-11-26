@@ -7,6 +7,7 @@ using _4OF.ee4v.Core.UI.Window;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using _4OF.ee4v.Core.i18n;
 
 namespace _4OF.ee4v.AssetManager.UI.Window {
     public class TagSelectorWindow : BaseWindow {
@@ -41,7 +42,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 }
             };
 
-            var titleLabel = new Label("Select Tag") {
+            var titleLabel = new Label(I18N.Get("UI.AssetManager.TagSelector.Title")) {
                 style = {
                     flexGrow = 1,
                     marginLeft = 8,
@@ -156,7 +157,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             foreach (var tagButton in filteredTags.Select(CreateTagButton)) _tagContainer.Add(tagButton);
 
             if (filteredTags.Count != 0 || (!string.IsNullOrWhiteSpace(searchText) && !hasExactMatch)) return;
-            var noResultLabel = new Label(string.IsNullOrEmpty(searchText) ? "No tags available" : "No matching tags") {
+            var noResultLabel = new Label(string.IsNullOrEmpty(searchText) ? I18N.Get("UI.AssetManager.TagSelector.NoTags") : I18N.Get("UI.AssetManager.TagSelector.NoMatchingTags")) {
                 style = {
                     unityTextAlign = TextAnchor.MiddleCenter,
                     color = ColorPreset.InActiveItem,
@@ -174,7 +175,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 _searchField.value = string.Empty;
                 RefreshTagList();
             }) {
-                text = $"+ Create '{tagName}'",
+                text = I18N.Get("UI.AssetManager.TagSelector.CreateTagFmt", tagName),
                 style = {
                     height = 24,
                     marginRight = 4,
@@ -214,7 +215,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 OnTagSelected?.Invoke(tag);
                 _searchField.value = string.Empty;
             }) {
-                text = $"{tag} ({count})",
+                text = I18N.Get("UI.AssetManager.TagSelector.TagWithCount", tag, count),
                 tooltip = tag,
                 style = {
                     height = 24,

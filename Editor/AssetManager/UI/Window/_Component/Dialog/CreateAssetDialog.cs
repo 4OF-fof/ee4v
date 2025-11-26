@@ -8,6 +8,7 @@ using _4OF.ee4v.Core.UI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using _4OF.ee4v.Core.i18n;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
     public class CreateAssetDialog {
@@ -27,7 +28,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             var content = new VisualElement();
 
 
-            var title = new Label("Create New Asset") {
+            var title = new Label(I18N.Get("UI.AssetManager.Dialog.CreateAsset.Title")) {
                 style = {
                     fontSize = 14,
                     unityFontStyleAndWeight = FontStyle.Bold,
@@ -45,7 +46,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             titleRow.Add(title);
 
             var importBoothBtn = new Button {
-                text = "Import from Booth",
+                text = I18N.Get("UI.AssetManager.Dialog.CreateAsset.ImportFromBooth"),
                 style = {
                     position = Position.Absolute,
                     right = 0,
@@ -70,7 +71,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             titleRow.Add(importBoothBtn);
             content.Add(titleRow);
 
-            var nameLabel = new Label("Asset Name:") {
+            var nameLabel = new Label(I18N.Get("UI.AssetManager.Dialog.CreateAsset.AssetNameLabel")) {
                 style = { marginBottom = 5 }
             };
             content.Add(nameLabel);
@@ -78,7 +79,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             var nameField = new TextField { value = "", style = { marginBottom = 10 } };
             content.Add(nameField);
 
-            var descLabel = new Label("Description (optional):") {
+            var descLabel = new Label(I18N.Get("UI.AssetManager.Dialog.CreateAsset.DescriptionLabel")) {
                 style = { marginBottom = 5 }
             };
             content.Add(descLabel);
@@ -93,7 +94,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             content.Add(descField);
 
-            var fileUrlLabel = new Label("File Path or URL (optional):") {
+            var fileUrlLabel = new Label(I18N.Get("UI.AssetManager.Dialog.CreateAsset.FileOrUrlLabel")) {
                 style = { marginBottom = 5 }
             };
             content.Add(fileUrlLabel);
@@ -112,19 +113,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             fileUrlRow.Add(fileUrlField);
 
             var browseBtn = new Button {
-                text = "Browse",
+                text = I18N.Get("UI.AssetManager.Dialog.CreateAsset.Browse"),
                 style = { width = 70 }
             };
             browseBtn.clicked += () =>
             {
-                var path = EditorUtility.OpenFilePanel("Select Asset File", "", "");
+                var path = EditorUtility.OpenFilePanel(I18N.Get("UI.AssetManager.Dialog.CreateAsset.SelectAssetFileDialogTitle"), "", "");
                 if (!string.IsNullOrEmpty(path))
                     fileUrlField.value = path;
             };
             fileUrlRow.Add(browseBtn);
             content.Add(fileUrlRow);
 
-            var boothLabel = new Label("Booth URL (optional):") {
+            var boothLabel = new Label(I18N.Get("UI.AssetManager.Dialog.CreateAsset.BoothURLLabel")) {
                 style = {
                     unityFontStyleAndWeight = FontStyle.Bold,
                     fontSize = 12,
@@ -134,7 +135,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             content.Add(boothLabel);
 
-            var boothUrlHint = new Label("Format: [shopname].booth.pm/items/[itemid]") {
+            var boothUrlHint = new Label(I18N.Get("UI.AssetManager.Dialog.CreateAsset.BoothURLHint")) {
                 style = {
                     fontSize = 10,
                     color = ColorPreset.InActiveItem,
@@ -149,7 +150,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             content.Add(boothUrlField);
 
-            var tagsLabel = new Label("Tags:") {
+            var tagsLabel = new Label(I18N.Get("UI.AssetManager.Dialog.CreateAsset.TagsLabel")) {
                 style = {
                     unityFontStyleAndWeight = FontStyle.Bold,
                     fontSize = 12,
@@ -178,7 +179,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                     RefreshTagsUi();
                 });
             }) {
-                text = "+ Add Tag",
+                text = I18N.Get("UI.AssetManager.AssetInfo.AddTag"),
                 style = {
                     backgroundColor = ColorPreset.TagPillBackgroundStyle,
                     borderTopLeftRadius = 10,
@@ -227,13 +228,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
 
             var cancelBtn = new Button {
-                text = "Cancel",
+                text = I18N.Get("UI.AssetManager.Dialog.Button.Cancel"),
                 style = { marginRight = 5 }
             };
             buttonRow.Add(cancelBtn);
 
             var createBtn = new Button {
-                text = "Create"
+                text = I18N.Get("UI.AssetManager.Dialog.Button.Create")
             };
             buttonRow.Add(createBtn);
 
@@ -288,7 +289,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             var boothUrl = data.BoothUrlField.value.Trim();
 
             if (!AssetValidationService.IsValidAssetName(assetName)) {
-                ShowError("無効なアセット名です。");
+                ShowError(I18N.Get("UI.AssetManager.Dialog.InvalidAssetName"));
                 return;
             }
 
@@ -296,7 +297,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             var itemId = "";
             if (!string.IsNullOrWhiteSpace(boothUrl))
                 if (!BoothUtility.TryParseShopItemUrl(boothUrl, out shopDomain, out itemId)) {
-                    ShowError("BOOTHのURL形式が正しくありません。\n例: https://[shop].booth.pm/items/[id]");
+                    ShowError(I18N.Get("UI.AssetManager.Dialog.InvalidBoothUrl"));
                     return;
                 }
 

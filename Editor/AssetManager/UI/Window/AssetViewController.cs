@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 
@@ -21,7 +22,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private readonly Stack<NavigationState> _backHistory = new();
         private readonly Stack<NavigationState> _forwardHistory = new();
         private readonly IAssetRepository _repository;
-        private string _contextName = "All Items";
+        private string _contextName = I18N.Get("UI.AssetManager.Navigation.AllItemsContext");
 
         private string _currentTagFilter;
 
@@ -70,8 +71,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             _filter = filter ?? (asset => !asset.IsDeleted);
             SelectedFolderId = Ulid.Empty;
             _currentTagFilter = null;
-            if (mode == NavigationMode.Tag && contextName.StartsWith("Tag: "))
-                _currentTagFilter = contextName["Tag: ".Length..];
+            if (mode == NavigationMode.Tag && contextName.StartsWith(I18N.Get("UI.AssetManager.Navigation.TagPrefix")))
+                _currentTagFilter = contextName[I18N.Get("UI.AssetManager.Navigation.TagPrefix").Length..];
 
             ModeChanged?.Invoke(CurrentMode);
             OnHistoryChanged?.Invoke();
@@ -96,15 +97,15 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
                 if (folder is BoothItemFolder) {
                     CurrentMode = NavigationMode.BoothItems;
-                    _contextName = "Booth Items";
+                    _contextName = I18N.Get("UI.AssetManager.Navigation.BoothItemsContext");
                 }
                 else if (folder is BackupFolder) {
                     CurrentMode = NavigationMode.Backups;
-                    _contextName = "Backups";
+                    _contextName = I18N.Get("UI.AssetManager.Navigation.BackupsContext");
                 }
                 else {
                     CurrentMode = NavigationMode.Folders;
-                    _contextName = "Folders";
+                    _contextName = I18N.Get("UI.AssetManager.Navigation.FoldersContext");
                 }
 
                 SelectedFolderId = folderId;

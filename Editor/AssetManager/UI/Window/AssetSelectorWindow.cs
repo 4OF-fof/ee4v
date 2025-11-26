@@ -8,6 +8,7 @@ using _4OF.ee4v.Core.Utility;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using _4OF.ee4v.Core.i18n;
 
 namespace _4OF.ee4v.AssetManager.UI.Window {
     public class AssetSelectorWindow : BaseWindow {
@@ -44,7 +45,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 }
             };
 
-            var titleLabel = new Label("Select Asset") {
+            var titleLabel = new Label(I18N.Get("UI.AssetManager.AssetSelector.Title")) {
                 style = {
                     flexGrow = 1,
                     marginLeft = 8,
@@ -131,7 +132,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             if (filteredAssets.Count != 0) return;
             var noResultLabel =
-                new Label(string.IsNullOrEmpty(searchText) ? "No assets available" : "No matching assets") {
+                new Label(string.IsNullOrEmpty(searchText) ? I18N.Get("UI.AssetManager.AssetSelector.NoAssets") : I18N.Get("UI.AssetManager.AssetSelector.NoMatchingAssets")) {
                     style = {
                         unityTextAlign = TextAnchor.MiddleCenter,
                         color = ColorPreset.InActiveItem,

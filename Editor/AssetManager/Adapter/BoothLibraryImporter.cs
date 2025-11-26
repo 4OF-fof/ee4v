@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.Utility;
+using _4OF.ee4v.Core.i18n;
 using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Adapter {
@@ -66,7 +67,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                                         ? item.name
                                         : !string.IsNullOrEmpty(item.itemURL)
                                             ? item.itemURL
-                                            : "Unnamed Booth Item";
+                                            : I18N.Get("UI.AssetManager.Default.UnnamedBoothItem");
                                 asset.SetName(name);
 
                                 var booth = new BoothMetadata();
@@ -110,15 +111,15 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                                 stagedAssets.Add(asset);
                             }
                             catch (Exception e) {
-                                Debug.LogError($"Failed staging booth downloadable: {e.Message}");
+                                Debug.LogError(I18N.Get("Debug.AssetManager.BoothLibraryImporter.FailedStagingDownloadableFmt", e.Message));
                             }
                     }
                 }
 
                 if (stagedAssets.Count == 0) {
-                    Debug.Log("No new Booth items to import.");
+                    Debug.Log(I18N.Get("Debug.AssetManager.BoothLibraryImporter.NoNewItems"));
                     try {
-                        Debug.Log("BoothLibraryImporter: no items -> OnImportCompleted(0)");
+                        Debug.Log(I18N.Get("Debug.AssetManager.BoothLibraryImporter.NoItemsOnImportCompleted"));
                         OnImportCompleted?.Invoke(0);
                     }
                     catch {
@@ -136,17 +137,17 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                     var saved = stagedAssets.Select(a => a.ID).ToList();
                     if (stagedAssets.Count > 0) repository.SaveAssets(stagedAssets);
 
-                    Debug.Log($"Imported {saved.Count} Booth items into AssetLibrary");
+                    Debug.Log(I18N.Get("Debug.AssetManager.BoothLibraryImporter.ImportedItemsFmt", saved.Count));
 
                     try {
                         BoothThumbnailDownloader.Enqueue(repository, folderImageCandidates);
                     }
                     catch (Exception e) {
-                        Debug.LogWarning($"Failed to schedule booth thumbnail downloads: {e.Message}");
+                        Debug.LogWarning(I18N.Get("Debug.AssetManager.BoothLibraryImporter.FailedToScheduleThumbnailDownloadFmt", e.Message));
                     }
 
                     try {
-                        Debug.Log($"BoothLibraryImporter: invoking OnImportCompleted ({saved.Count})");
+                        Debug.Log(I18N.Get("Debug.AssetManager.BoothLibraryImporter.InvokingOnImportCompletedFmt", saved.Count));
                         OnImportCompleted?.Invoke(saved.Count);
                     }
                     catch {
@@ -179,7 +180,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                     }
 
                     try {
-                        Debug.Log("BoothLibraryImporter: import failed — invoking OnImportCompleted(0)");
+                        Debug.Log(I18N.Get("Debug.AssetManager.BoothLibraryImporter.ImportFailedInvokeCompleted"));
                         OnImportCompleted?.Invoke(0);
                     }
                     catch {
@@ -218,7 +219,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                 ? folderName
                 : !string.IsNullOrEmpty(identifier)
                     ? identifier
-                    : "Booth Item";
+                    : I18N.Get("UI.AssetManager.Default.BoothItem");
             newFolder.SetName(preferredName);
             newFolder.SetDescription(folderDescription ?? shopName ?? string.Empty);
             newFolder.SetShopDomain(shopDomain);

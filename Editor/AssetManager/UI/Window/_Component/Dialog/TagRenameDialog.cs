@@ -2,6 +2,7 @@ using System;
 using _4OF.ee4v.Core.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
+using _4OF.ee4v.Core.i18n;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
     public class TagRenameDialog {
@@ -11,7 +12,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
         public VisualElement CreateContent(string oldTag) {
             var content = new VisualElement();
 
-            var title = new Label("Rename Tag") {
+            var title = new Label(I18N.Get("UI.AssetManager.Dialog.TagRename.Title")) {
                 style = {
                     fontSize = 14,
                     unityFontStyleAndWeight = FontStyle.Bold,
@@ -20,7 +21,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             content.Add(title);
 
-            var label = new Label("New tag name:") {
+            var label = new Label(I18N.Get("UI.AssetManager.Dialog.TagRename.NewTagLabel")) {
                 style = { marginBottom = 5 }
             };
             content.Add(label);
@@ -62,13 +63,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
 
             var cancelBtn = new Button {
-                text = "Cancel",
+                text = I18N.Get("UI.AssetManager.Dialog.Button.Cancel"),
                 style = { marginRight = 5 }
             };
             buttonRow.Add(cancelBtn);
 
             var okBtn = new Button {
-                text = "OK"
+                text = I18N.Get("UI.AssetManager.Dialog.Button.OK")
             };
             buttonRow.Add(okBtn);
 
@@ -94,7 +95,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             void Commit() {
                 var newTag = textField.value;
                 if (string.IsNullOrWhiteSpace(newTag)) {
-                    ShowError("タグ名を入力してください。");
+                    ShowError(I18N.Get("UI.AssetManager.Dialog.TagRename.Error.EmptyName"));
                     return;
                 }
 

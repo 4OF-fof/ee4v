@@ -4,6 +4,7 @@ using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.UI.Window._Component.Dialog;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
@@ -78,7 +79,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 }
             };
 
-            var emptyTitle = new Label("タグが見つかりません") {
+            var emptyTitle = new Label(I18N.Get("UI.AssetManager.TagListView.EmptyTitle")) {
                 style = {
                     fontSize = 16,
                     unityTextAlign = TextAnchor.MiddleCenter,
@@ -87,7 +88,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 }
             };
 
-            var emptyHint = new Label("検索条件を変更するか、タグを追加してください") {
+            var emptyHint = new Label(I18N.Get("UI.AssetManager.TagListView.EmptyHint")) {
                 style = {
                     fontSize = 12,
                     unityTextAlign = TextAnchor.MiddleCenter,
@@ -154,7 +155,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             UpdateEmptyState(false);
 
             var totalCount = _tagCounts.Values.Sum();
-            var header = new Label($"All Tags ({totalCount})") {
+            var header = new Label(I18N.Get("UI.AssetManager.TagListView.AllTags", totalCount)) {
                 style = {
                     fontSize = 24,
                     unityFontStyleAndWeight = FontStyle.Bold,
@@ -251,7 +252,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     }
 
                     var groupTagCount = GetNodeTagCount(child);
-                    var groupName = $"{child.Name} ({groupTagCount})";
+                    var groupName = I18N.Get("UI.AssetManager.TagListView.GroupNameFmt", child.Name, groupTagCount);
 
                     var foldoutKey = child.FullPath ?? child.Name;
                     var isOpen = _foldoutStates.GetValueOrDefault(foldoutKey, false);
@@ -284,7 +285,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private Button CreateTagButton(string displayName, string fullPath, int count) {
             var btn = new Button(() => OnTagSelected?.Invoke(fullPath)) {
-                text = $"{displayName} ({count})",
+                text = I18N.Get("UI.AssetManager.TagListView.TagWithCountFmt", displayName, count),
                 tooltip = fullPath,
                 style = {
                     height = 24,
@@ -320,8 +321,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private void ShowContextMenu(VisualElement target, string fullPath) {
             var menu = new GenericDropdownMenu();
-            menu.AddItem("Rename", false, () => ShowRenameDialog(fullPath));
-            menu.AddItem("Delete", false, () => DeleteTag(fullPath));
+            menu.AddItem(I18N.Get("UI.AssetManager.TagListView.Rename"), false, () => ShowRenameDialog(fullPath));
+            menu.AddItem(I18N.Get("UI.AssetManager.TagListView.Delete"), false, () => DeleteTag(fullPath));
 
             var rect = target.worldBound;
             var menuRect = new Rect(rect.x, rect.yMax, Mathf.Max(rect.width, 100), 0);

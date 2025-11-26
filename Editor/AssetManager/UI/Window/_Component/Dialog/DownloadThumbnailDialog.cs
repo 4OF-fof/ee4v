@@ -1,5 +1,6 @@
 using _4OF.ee4v.AssetManager.Adapter;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.Core.i18n;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -18,7 +19,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 }
             };
 
-            var title = new Label("サムネイルを取得中") {
+            var title = new Label(I18N.Get("UI.AssetManager.DownloadThumbnail.Title")) {
                 style = {
                     fontSize = 16,
                     unityFontStyleAndWeight = FontStyle.Bold,
@@ -27,7 +28,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             content.Add(title);
 
-            var progressText = new Label("0 / 0") {
+            var progressText = new Label(I18N.Get("UI.AssetManager.DownloadThumbnail.ProgressFmt", 0, 0)) {
                 style = { marginBottom = 8, fontSize = 12, color = ColorPreset.TextColor }
             };
             content.Add(progressText);
@@ -72,7 +73,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                     backgroundColor = Color.clear,
                     unityTextAlign = TextAnchor.MiddleCenter
                 },
-                tooltip = "閉じる"
+                tooltip = I18N.Get("UI.AssetManager.Download.Close")
             };
             closeLabel.RegisterCallback<MouseUpEvent>(_ => CloseDialog(content));
             content.Add(closeLabel);
@@ -98,8 +99,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
 
             void OnCompleted() {
                 UpdateProgress(BoothThumbnailDownloader.TotalCount, BoothThumbnailDownloader.CompletedCount);
-                progressText.text =
-                    $"完了 ({BoothThumbnailDownloader.CompletedCount}/{BoothThumbnailDownloader.TotalCount})";
+                progressText.text = I18N.Get("UI.AssetManager.DownloadThumbnail.CompletedFmt", BoothThumbnailDownloader.CompletedCount, BoothThumbnailDownloader.TotalCount);
             }
 
             void OnStarted() {
@@ -107,7 +107,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             }
 
             void UpdateProgress(int total, int completed) {
-                progressText.text = total == 0 ? "0 / 0" : $"{completed} / {total}";
+                progressText.text = total == 0 ? I18N.Get("UI.AssetManager.DownloadThumbnail.ProgressFmt", 0, 0) : I18N.Get("UI.AssetManager.DownloadThumbnail.ProgressFmt", completed, total);
                 var pct = total == 0 ? 0f : (float)completed / total;
                 barInner.style.width = new StyleLength(new Length(pct * 100f, LengthUnit.Percent));
             }

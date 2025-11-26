@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 
@@ -37,7 +38,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 // Ignore
             }
             catch (Exception e) {
-                Debug.LogWarning($"Thumbnail load failed: {e.Message}");
+                Debug.LogWarning(I18N.Get("Debug.AssetManager.ThumbnailLoadFailedFmt", e.Message));
             }
         }
     }

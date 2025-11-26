@@ -6,6 +6,7 @@ using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.AssetManager.UI.Presenter;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
@@ -82,7 +83,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
             _singleSelectionContainer.Add(_thumbnailContainer);
 
-            var nameLabel = new Label("Name")
+            var nameLabel = new Label(I18N.Get("UI.AssetManager.AssetInfo.Name"))
                 { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
             _singleSelectionContainer.Add(nameLabel);
 
@@ -97,7 +98,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             });
             _singleSelectionContainer.Add(_nameField);
 
-            var descriptionLabel = new Label("Description")
+            var descriptionLabel = new Label(I18N.Get("UI.AssetManager.AssetInfo.Description"))
                 { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
             _singleSelectionContainer.Add(descriptionLabel);
 
@@ -127,7 +128,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             descriptionScrollView.Add(_descriptionField);
             _singleSelectionContainer.Add(descriptionScrollView);
 
-            _folderHeader = new Label("Folder")
+            _folderHeader = new Label(I18N.Get("UI.AssetManager.AssetInfo.Folder"))
                 { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
             _singleSelectionContainer.Add(_folderHeader);
 
@@ -182,7 +183,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _folderRow.Add(_folderNameLabel);
             _singleSelectionContainer.Add(_folderRow);
 
-            var tagLabel = new Label("Tags")
+            var tagLabel = new Label(I18N.Get("UI.AssetManager.AssetInfo.Tags"))
                 { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
             _singleSelectionContainer.Add(tagLabel);
 
@@ -196,7 +197,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _singleSelectionContainer.Add(_tagsContainer);
 
             var addTagButton = new Button(OpenTagSelector) {
-                text = "+ Add Tag",
+                text = I18N.Get("UI.AssetManager.AssetInfo.AddTag"),
                 style = {
                     backgroundColor = ColorPreset.TagPillBackgroundStyle,
                     borderTopLeftRadius = 10,
@@ -226,7 +227,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             });
             _singleSelectionContainer.Add(addTagButton);
 
-            _dependenciesLabel = new Label("Dependencies")
+            _dependenciesLabel = new Label(I18N.Get("UI.AssetManager.AssetInfo.Dependencies"))
                 { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
             _singleSelectionContainer.Add(_dependenciesLabel);
 
@@ -240,7 +241,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _singleSelectionContainer.Add(_dependenciesContainer);
 
             _addDependencyButton = new Button(OpenDependencySelector) {
-                text = "+ Add Dependency",
+                text = I18N.Get("UI.AssetManager.AssetInfo.AddDependency"),
                 style = {
                     backgroundColor = ColorPreset.TagPillBackgroundStyle,
                     borderTopLeftRadius = 10,
@@ -270,7 +271,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             });
             _singleSelectionContainer.Add(_addDependencyButton);
 
-            _importTargetsLabel = new Label("Import Targets") {
+            _importTargetsLabel = new Label(I18N.Get("UI.AssetManager.AssetInfo.ImportTargets")) {
                 style = {
                     unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4,
                     display = DisplayStyle.None
@@ -303,7 +304,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _multiSelectionContainer.Add(_multiSelectionLabel);
             scrollView.Add(_multiSelectionContainer);
 
-            _infoHeader = new Label("Information")
+            _infoHeader = new Label(I18N.Get("UI.AssetManager.AssetInfo.Information"))
                 { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
             scrollView.Add(_infoHeader);
 
@@ -314,18 +315,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         }
 
         private void InitializeInfoRows() {
-            _rowSize = new InfoRow(_infoContainer, "Size");
-            _rowType = new InfoRow(_infoContainer, "Type");
-            _rowSubFolders = new InfoRow(_infoContainer, "Sub Folders");
-            _rowAssets = new InfoRow(_infoContainer, "Assets");
+            _rowSize = new InfoRow(_infoContainer, I18N.Get("UI.AssetManager.AssetInfo.Size"));
+            _rowType = new InfoRow(_infoContainer, I18N.Get("UI.AssetManager.AssetInfo.Type"));
+            _rowSubFolders = new InfoRow(_infoContainer, I18N.Get("UI.AssetManager.AssetInfo.SubFolders"));
+            _rowAssets = new InfoRow(_infoContainer, I18N.Get("UI.AssetManager.AssetInfo.Assets"));
 
-            _rowTotalAssets = new InfoRow(_infoContainer, "Total Assets");
-            _rowTotalSize = new InfoRow(_infoContainer, "Total Size");
-            _rowTotalTags = new InfoRow(_infoContainer, "Total Tags");
+            _rowTotalAssets = new InfoRow(_infoContainer, I18N.Get("UI.AssetManager.AssetInfo.TotalAssets"));
+            _rowTotalSize = new InfoRow(_infoContainer, I18N.Get("UI.AssetManager.AssetInfo.TotalSize"));
+            _rowTotalTags = new InfoRow(_infoContainer, I18N.Get("UI.AssetManager.AssetInfo.TotalTags"));
 
-            _rowShop = new LinkInfoRow(_infoContainer, "Shop");
-            _rowItem = new LinkInfoRow(_infoContainer, "Item");
-            _rowModified = new InfoRow(_infoContainer, "Modified");
+            _rowShop = new LinkInfoRow(_infoContainer, I18N.Get("UI.AssetManager.AssetInfo.Shop"));
+            _rowItem = new LinkInfoRow(_infoContainer, I18N.Get("UI.AssetManager.AssetInfo.Item"));
+            _rowModified = new InfoRow(_infoContainer, I18N.Get("UI.AssetManager.AssetInfo.Modified"));
         }
 
         public event Action<string> OnNameChanged;
@@ -464,7 +465,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _singleSelectionContainer.style.display = DisplayStyle.None;
             _multiSelectionContainer.style.display = DisplayStyle.Flex;
             _infoHeader.style.display = DisplayStyle.None;
-            _multiSelectionLabel.text = "Library Overview";
+            _multiSelectionLabel.text = I18N.Get("UI.AssetManager.AssetInfo.LibraryOverview");
 
             SetDownloadButtonVisible(false, "");
             HideAllInfoRows();
@@ -482,7 +483,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _singleSelectionContainer.style.display = DisplayStyle.None;
             _multiSelectionContainer.style.display = DisplayStyle.Flex;
             _infoHeader.style.display = DisplayStyle.None;
-            _multiSelectionLabel.text = $"{count} items selected";
+            _multiSelectionLabel.text = I18N.Get("UI.AssetManager.AssetInfo.SelectedItems", count);
 
             HideAllInfoRows();
             SetDownloadButtonVisible(false, "");
@@ -701,7 +702,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             {
                 if (!string.IsNullOrEmpty(_currentDownloadUrl)) OnDownloadRequested?.Invoke(_currentDownloadUrl);
             }) {
-                text = "Download from Booth",
+                text = I18N.Get("UI.AssetManager.AssetInfo.DownloadFromBooth"),
                 style = {
                     height = 30,
                     marginTop = 10,

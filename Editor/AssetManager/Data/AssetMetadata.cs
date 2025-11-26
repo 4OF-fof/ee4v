@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using _4OF.ee4v.Core.Utility;
+using _4OF.ee4v.Core.i18n;
 using Newtonsoft.Json;
 
 namespace _4OF.ee4v.AssetManager.Data {
@@ -12,7 +13,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public AssetMetadata(AssetMetadata metadata) {
             ID = metadata.ID;
-            Name = string.IsNullOrWhiteSpace(metadata.Name) ? "Untitled" : metadata.Name;
+            Name = string.IsNullOrWhiteSpace(metadata.Name) ? I18N.Get("UI.AssetManager.Default.Untitled") : metadata.Name;
             Description = metadata.Description;
             Size = metadata.Size;
             Ext = metadata.Ext;
@@ -29,7 +30,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             UnityMetadata unityData,
             Ulid folder, List<string> tags, bool isDeleted, long modificationTime) {
             ID = id;
-            Name = string.IsNullOrWhiteSpace(name) ? "Untitled" : name;
+            Name = string.IsNullOrWhiteSpace(name) ? I18N.Get("UI.AssetManager.Default.Untitled") : name;
             Description = description;
             Size = size;
             Ext = ext;
@@ -42,7 +43,7 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
 
         public Ulid ID { get; } = Ulid.Generate();
-        public string Name { get; private set; } = "Untitled";
+        public string Name { get; private set; } = I18N.Get("UI.AssetManager.Default.Untitled");
         public string Description { get; private set; } = "";
         public long Size { get; private set; }
         public string Ext { get; private set; } = "";

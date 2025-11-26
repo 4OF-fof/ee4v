@@ -7,6 +7,7 @@ using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.AssetManager.UI.Window;
 using _4OF.ee4v.AssetManager.UI.Window._Component;
 using _4OF.ee4v.Core.Utility;
+using _4OF.ee4v.Core.i18n;
 using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.UI.Presenter {
@@ -52,13 +53,13 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
         }
 
         public void OnTagListClicked() {
-            _assetController.SetMode(NavigationMode.TagList, "Tag List", _ => false, _isInitialized);
+            _assetController.SetMode(NavigationMode.TagList, I18N.Get("UI.AssetManager.Navigation.TagList"), _ => false, _isInitialized);
         }
 
         public void OnTagSelected(string tag) {
             _assetController.SetMode(
                 NavigationMode.Tag,
-                $"Tag: {tag}",
+                $"{I18N.Get("UI.AssetManager.Navigation.TagPrefix")}{tag}",
                 a => !a.IsDeleted && a.Tags.Contains(tag),
                 _isInitialized
             );
@@ -69,33 +70,33 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             var folders = _folderService.GetRootFolders();
             _setNavigationFolders?.Invoke(folders);
             _refreshUI(false);
-            if (!success)
-                _showToast?.Invoke($"フォルダ '{folderName}' の作成に失敗しました: 名前が無効です", 10, ToastType.Error);
+                if (!success)
+                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.FolderCreateFailedInvalid", folderName), 10, ToastType.Error);
         }
 
         public void OnFolderRenamed(Ulid folderId, string newName) {
             var libMetadata = _repository.GetLibraryMetadata();
             var oldFolder = libMetadata?.GetFolder(folderId);
-            var oldName = oldFolder?.Name ?? "フォルダ";
+            var oldName = oldFolder?.Name ?? I18N.Get("UI.AssetManager.Folder.UnknownName");
 
             var success = _folderService.SetFolderName(folderId, newName);
             var folders = _folderService.GetRootFolders();
             _setNavigationFolders?.Invoke(folders);
             _refreshUI(false);
             if (!success)
-                _showToast?.Invoke($"フォルダ '{oldName}' のリネームに失敗しました: 名前が無効です", 10, ToastType.Error);
+                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.FolderRenameFailedInvalid", oldName), 10, ToastType.Error);
         }
 
         public void OnFolderDeleted(Ulid folderId) {
             var libMetadata = _repository.GetLibraryMetadata();
             var folder = libMetadata?.GetFolder(folderId);
-            var folderName = folder?.Name ?? "フォルダ";
+            var folderName = folder?.Name ?? I18N.Get("UI.AssetManager.Folder.UnknownName");
 
             _folderService.DeleteFolder(folderId);
             var folders = _folderService.GetRootFolders();
             _setNavigationFolders?.Invoke(folders);
             _refreshUI(false);
-            _showToast?.Invoke($"フォルダ '{folderName}' を削除しました", 3, ToastType.Success);
+            _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.FolderDeleted", folderName), 3, ToastType.Success);
         }
 
         public void OnFolderMoved(Ulid sourceFolderId, Ulid targetFolderId) {
@@ -128,7 +129,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
         public void OnAssetCreated(string assetName, string description, string fileOrUrl, List<string> tags,
             string shopDomain, string itemId) {
             if (string.IsNullOrWhiteSpace(assetName)) {
-                _showToast?.Invoke("アセット名を入力してください", 5, ToastType.Error);
+                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.AssetNameRequired"), 5, ToastType.Error);
                 return;
             }
 
@@ -140,7 +141,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
                         _repository.CreateAssetFromFile(fileOrUrl);
                         asset = _repository.GetAllAssets().OrderByDescending(a => a.ModificationTime).FirstOrDefault();
                         if (asset == null) {
-                            _showToast?.Invoke("ファイルからのアセット作成に失敗しました", 5, ToastType.Error);
+                            _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.CreateFromFileFailed"), 5, ToastType.Error);
                             return;
                         }
                     }
@@ -171,10 +172,10 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
 
                 _assetService.SaveAsset(asset);
                 _assetController.Refresh();
-                _showToast?.Invoke($"アセット '{assetName}' を作成しました", 3, ToastType.Success);
+                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.AssetCreatedFmt", assetName), 3, ToastType.Success);
             }
             catch (Exception ex) {
-                _showToast?.Invoke($"アセットの作成に失敗しました: {ex.Message}", 5, ToastType.Error);
+                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.AssetCreateFailedFmt", ex.Message), 5, ToastType.Error);
                 Debug.LogError($"Failed to create asset: {ex}");
             }
         }
@@ -183,14 +184,14 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             _assetService.RenameTag(oldTag, newTag);
             _tagListRefresh?.Invoke();
             _refreshUI(false);
-            _showToast?.Invoke($"タグ '{oldTag}' を '{newTag}' にリネームしました", 3, ToastType.Success);
+            _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.TagRenamedFmt", oldTag, newTag), 3, ToastType.Success);
         }
 
         public void OnTagDeleted(string tag) {
             _assetService.DeleteTag(tag);
             _tagListRefresh?.Invoke();
             _refreshUI(false);
-            _showToast?.Invoke($"タグ '{tag}' を削除しました", 3, ToastType.Success);
+            _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.TagDeleted", tag), 3, ToastType.Success);
         }
 
         private static int MapVisibleRootIndexToFullIndex(IReadOnlyList<BaseFolder> fullList, int visibleIndex) {

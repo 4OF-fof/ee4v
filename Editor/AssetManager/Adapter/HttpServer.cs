@@ -4,6 +4,7 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using _4OF.ee4v.Core.i18n;
 using UnityEditor;
 using UnityEngine;
 
@@ -42,7 +43,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                 _running = true;
                 _cts = new CancellationTokenSource();
                 _listenerTask = Task.Run(() => ListenLoopAsync(_cts.Token), _cts.Token);
-                Debug.Log($"HttpServer started and listening on {prefix}");
+                Debug.Log(I18N.Get("Debug.AssetManager.HttpServer.StartedFmt", prefix));
             }
         }
 
@@ -67,8 +68,8 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                 try {
                     _cts?.Cancel();
                     if (_listenerTask != null)
-                        if (!_listenerTask.Wait(500))
-                            Debug.LogWarning("HttpServer listener task did not stop within timeout");
+                            if (!_listenerTask.Wait(500))
+                            Debug.LogWarning(I18N.Get("Debug.AssetManager.HttpServer.ListenerTimeout"));
                 }
                 catch (Exception ex) {
                     Debug.LogError("Error while stopping listener thread: " + ex);
@@ -78,7 +79,7 @@ namespace _4OF.ee4v.AssetManager.Adapter {
                 _cts?.Dispose();
                 _cts = null;
                 _listener = null;
-                Debug.Log("HttpServer stopped");
+                Debug.Log(I18N.Get("Debug.AssetManager.HttpServer.Stopped"));
             }
         }
 

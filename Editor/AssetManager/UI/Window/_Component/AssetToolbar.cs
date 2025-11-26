@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -20,11 +21,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             style.height = 24;
             style.backgroundColor = ColorPreset.DefaultBackground;
 
-            _backLabel = CreateNavigationLabel("<", "Back");
+            _backLabel = CreateNavigationLabel("<", I18N.Get("UI.AssetManager.AssetToolbar.Back"));
             _backLabel.RegisterCallback<PointerDownEvent>(_ => OnBack?.Invoke());
             Add(_backLabel);
 
-            _forwardLabel = CreateNavigationLabel(">", "Forward");
+            _forwardLabel = CreateNavigationLabel(">", I18N.Get("UI.AssetManager.AssetToolbar.Forward"));
             _forwardLabel.RegisterCallback<PointerDownEvent>(_ => OnForward?.Invoke());
             Add(_forwardLabel);
 
@@ -50,7 +51,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             Add(slider);
 
             _sortLabel = new Label {
-                tooltip = "Sort Items",
+                tooltip = I18N.Get("UI.AssetManager.AssetToolbar.SortTooltip"),
                 style = {
                     height = 20,
                     width = 24,
@@ -68,7 +69,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     style = { width = 16, height = 16 }
                 });
             else
-                _sortLabel.text = "Sort";
+                _sortLabel.text = I18N.Get("UI.AssetManager.AssetToolbar.SortLabel");
 
             RegisterHoverEvents(_sortLabel);
             _sortLabel.RegisterCallback<PointerDownEvent>(_ => OnSortMenuRequested?.Invoke(_sortLabel));

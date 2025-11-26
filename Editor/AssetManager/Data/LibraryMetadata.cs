@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.Core.Utility;
+using _4OF.ee4v.Core.i18n;
 using Newtonsoft.Json;
 
 namespace _4OF.ee4v.AssetManager.Data {
@@ -87,7 +88,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         public BaseFolder(BaseFolder baseFolder) {
             ID = baseFolder.ID;
-            Name = string.IsNullOrWhiteSpace(baseFolder.Name) ? "New Folder" : baseFolder.Name;
+            Name = string.IsNullOrWhiteSpace(baseFolder.Name) ? I18N.Get("UI.AssetManager.Default.NewFolder") : baseFolder.Name;
             Description = baseFolder.Description;
             ModificationTime = baseFolder.ModificationTime;
             _tags = new List<string>(baseFolder.Tags);
@@ -96,14 +97,14 @@ namespace _4OF.ee4v.AssetManager.Data {
         [JsonConstructor]
         public BaseFolder(Ulid id, string name, string description, long modificationTime, List<string> tags) {
             ID = id;
-            Name = string.IsNullOrWhiteSpace(name) ? "New Folder" : name;
+            Name = string.IsNullOrWhiteSpace(name) ? I18N.Get("UI.AssetManager.Default.NewFolder") : name;
             Description = description;
             ModificationTime = modificationTime;
             _tags = tags ?? new List<string>();
         }
 
         public Ulid ID { get; } = Ulid.Generate();
-        public string Name { get; private set; } = "New Folder";
+        public string Name { get; private set; } = I18N.Get("UI.AssetManager.Default.NewFolder");
         public string Description { get; private set; } = "";
         public long ModificationTime { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         public IReadOnlyList<string> Tags => _tags.AsReadOnly();
