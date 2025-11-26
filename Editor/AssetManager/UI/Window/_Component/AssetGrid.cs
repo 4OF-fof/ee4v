@@ -471,6 +471,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _showDialog,
                 out var menuHeight
             );
+            
+            if (menuHeight <= 20f) return;
+            
             Rect anchorRect;
             try {
                 var worldPos = card.LocalToWorld(evt.localPosition);
