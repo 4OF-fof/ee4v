@@ -336,6 +336,34 @@ namespace _4OF.ee4v.AssetManager.Service {
             ProcessImportQueue();
         }
 
+        public void ImportAssetList(IEnumerable<Ulid> assetIds, string destFolder = "Assets") {
+            if (_isImporting) {
+                Debug.LogWarning("Already importing assets. Please wait.");
+                return;
+            }
+
+            var assetIdList = assetIds.ToList();
+            if (assetIdList.Count == 0) return;
+
+            AssetImportTracker.StartTracking(assetIdList[0], _repository);
+
+            _currentDestFolder = destFolder;
+            _importQueue.Clear();
+
+            var allDependencies = new HashSet<Ulid>();
+            var targetIds = new HashSet<Ulid>(assetIdList);
+
+            foreach (var assetId in assetIdList) CollectDependencies(assetId, allDependencies);
+
+            foreach (var depId in allDependencies.Where(depId => !targetIds.Contains(depId)))
+                _importQueue.Enqueue(depId);
+
+            foreach (var assetId in assetIdList) _importQueue.Enqueue(assetId);
+
+            _isImporting = true;
+            ProcessImportQueue();
+        }
+
         private void CollectDependencies(Ulid assetId, HashSet<Ulid> visited) {
             if (!visited.Add(assetId)) return;
 
@@ -420,7 +448,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             AssetDatabase.ImportPackage(pkgPath, true);
         }
 
-        private void RegisterPackageEvents(Action onComplete) {
+        private static void RegisterPackageEvents(Action onComplete) {
             UnregisterPackageEvents();
 
             _currentImportPackageCompletedHandler = OnCompleted;
@@ -450,7 +478,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             }
         }
 
-        private void UnregisterPackageEvents() {
+        private static void UnregisterPackageEvents() {
             if (_currentImportPackageCompletedHandler != null)
                 AssetDatabase.importPackageCompleted -= _currentImportPackageCompletedHandler;
 
@@ -492,14 +520,11 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         private static void ImportDirectoryContent(string sourceDir, string destRootDir) {
             var allFiles = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
-            var filesToProcess = new List<string>();
-
-            foreach (var file in allFiles) {
-                if (file.EndsWith(".meta", StringComparison.OrdinalIgnoreCase)) continue;
-                if (file.EndsWith(".unitypackage", StringComparison.OrdinalIgnoreCase)) continue;
-                if (Path.GetFileName(file).StartsWith(".")) continue;
-                filesToProcess.Add(file);
-            }
+            var filesToProcess = (from file in allFiles
+                where !file.EndsWith(".meta", StringComparison.OrdinalIgnoreCase)
+                where !file.EndsWith(".unitypackage", StringComparison.OrdinalIgnoreCase)
+                where !Path.GetFileName(file).StartsWith(".")
+                select file).ToList();
 
             if (filesToProcess.Count == 0) return;
 

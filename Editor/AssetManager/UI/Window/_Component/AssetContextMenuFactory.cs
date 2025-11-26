@@ -37,69 +37,63 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             var singleAsset = activeAssetTargets.Count == 1 ? activeAssetTargets[0] : null;
 
-            if (singleAsset != null) {
-                var hasImportAction = false;
-                var canImport = repository.HasAssetFile(singleAsset.ID);
-                var isZip = singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase);
+            var importableAssets = activeAssetTargets.Where(a => repository.HasAssetFile(a.ID)).ToList();
 
-                if (canImport && isZip)
-                    canImport = repository.HasImportItems(singleAsset.ID);
+            if (importableAssets.Count > 0) {
+                var label = importableAssets.Count > 1 ? $"{importableAssets.Count} 個をインポート" : "インポート";
 
-                if (canImport) {
-                    menu.AddItem("インポート", false, () => { assetService.ImportAsset(singleAsset.ID); });
-                    height += ItemHeight;
-                    hasImportAction = true;
+                menu.AddItem(label, false, () => { assetService.ImportAssetList(importableAssets.Select(a => a.ID)); });
+                height += ItemHeight;
+
+                if (singleAsset != null && singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase)) {
+                    var canImportZip = repository.HasAssetFile(singleAsset.ID);
+
+                    if (canImportZip) {
+                        menu.AddItem("インポート対象を選択", false, () =>
+                        {
+                            var mousePos = Event.current != null ? Event.current.mousePosition : Vector2.zero;
+                            ZipImportWindow.Open(
+                                GUIUtility.GUIToScreenPoint(mousePos),
+                                singleAsset.ID,
+                                repository,
+                                assetService
+                            );
+                        });
+                        height += ItemHeight;
+                    }
                 }
 
-                if (isZip) {
-                    menu.AddItem("インポート対象を選択", false, () =>
-                    {
-                        var mousePos = Event.current != null ? Event.current.mousePosition : Vector2.zero;
-                        ZipImportWindow.Open(
-                            GUIUtility.GUIToScreenPoint(mousePos),
-                            singleAsset.ID,
-                            repository,
-                            assetService
-                        );
-                    });
-                    height += ItemHeight;
-                    hasImportAction = true;
-                }
-
-                if (hasImportAction) {
-                    menu.AddSeparator("");
-                    height += SeparatorHeight;
-                }
+                menu.AddSeparator("");
+                height += SeparatorHeight;
             }
 
-            if (singleAsset != null && singleAsset.UnityData.AssetGuidList.Count > 0) {
-                menu.AddItem("プロジェクトでハイライト", false, () =>
+            var highlightGuids = new List<string>();
+
+            foreach (var asset in activeAssetTargets)
+                highlightGuids.AddRange(asset.UnityData.AssetGuidList.Select(g => g.ToString("N")));
+
+            foreach (var folder in folderTargets.OfType<BoothItemFolder>()) {
+                var guidsInFolder = repository.GetAllAssets()
+                    .Where(a => a.Folder == folder.ID && !a.IsDeleted)
+                    .SelectMany(a => a.UnityData.AssetGuidList)
+                    .Select(g => g.ToString("N"));
+                highlightGuids.AddRange(guidsInFolder);
+            }
+
+            if (highlightGuids.Count > 0) {
+                highlightGuids = highlightGuids.Distinct().ToList();
+
+                var label = activeAssetTargets.Count + folderTargets.Count > 1
+                    ? "プロジェクトでまとめてハイライト"
+                    : "プロジェクトでハイライト";
+
+                menu.AddItem(label, false, () =>
                 {
-                    var guids = singleAsset.UnityData.AssetGuidList.Select(g => g.ToString("N")).ToList();
                     ProjectExtensionAPI.ClearHighlights();
-                    ProjectExtensionAPI.SetHighlights(guids);
+                    ProjectExtensionAPI.SetHighlights(highlightGuids);
                 });
                 menu.AddSeparator("");
                 height += ItemHeight + SeparatorHeight;
-            }
-
-            var singleFolder = folderTargets.Count == 1 ? folderTargets[0] : null;
-            if (singleFolder is BoothItemFolder) {
-                var guids = repository.GetAllAssets()
-                    .Where(a => a.Folder == singleFolder.ID && !a.IsDeleted)
-                    .SelectMany(a => a.UnityData.AssetGuidList)
-                    .Select(g => g.ToString("N"))
-                    .ToList();
-
-                if (guids.Count > 0) {
-                    menu.AddItem("プロジェクトでハイライト", false, () =>
-                    {
-                        ProjectExtensionAPI.ClearHighlights();
-                        ProjectExtensionAPI.SetHighlights(guids);
-                    });
-                    menu.AddSeparator("");
-                    height += ItemHeight + SeparatorHeight;
-                }
             }
 
             if (singleAsset != null) {
