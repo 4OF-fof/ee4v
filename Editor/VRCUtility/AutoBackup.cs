@@ -1,9 +1,7 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
-using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.AssetManager.API;
 using _4OF.ee4v.Core.i18n;
-using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
 using VRC.SDK3A.Editor;
@@ -69,46 +67,16 @@ namespace _4OF.ee4v.VRCUtility {
 
             try {
                 AssetDatabase.ExportPackage(assetsOnlyDependencies, tempPath, ExportPackageOptions.Default);
+
+                AssetManagerAPI.ImportBackupPackage(
+                    tempPath,
+                    avatarId,
+                    prefabAsset.name,
+                    $"Auto backup for upload {timestamp}"
+                );
             }
             catch (Exception e) {
-                Debug.LogError($"Failed to export temporary package: {e.Message}");
-                return;
-            }
-
-            var repository = AssetManagerContainer.Repository;
-            var folderService = AssetManagerContainer.FolderService;
-            var assetService = AssetManagerContainer.AssetService;
-
-            if (repository == null) {
-                Debug.LogError("AssetManager Repository is not initialized.");
-                return;
-            }
-
-            var avatarName = prefabAsset.name;
-            var folderId = folderService.EnsureBackupFolder(avatarId, avatarName);
-
-            if (folderId == Ulid.Empty) {
-                Debug.LogError("Failed to get or create backup folder.");
-                return;
-            }
-
-            try {
-                repository.CreateAssetFromFile(tempPath);
-
-                var assets = repository.GetAllAssets();
-                var createdAsset = assets.OrderByDescending(a => a.ModificationTime).FirstOrDefault();
-
-                if (createdAsset == null) return;
-                var newMeta = new AssetMetadata(createdAsset);
-                newMeta.SetName(Path.GetFileNameWithoutExtension(fileName));
-                newMeta.SetFolder(folderId);
-                newMeta.SetDescription($"Auto backup for upload {timestamp}");
-
-                assetService.SaveAsset(newMeta);
-                Debug.Log($"[ee4v] Backup saved to AssetManager: {fileName}");
-            }
-            catch (Exception e) {
-                Debug.LogError($"Failed to import backup to AssetManager: {e.Message}");
+                Debug.LogError($"Failed to export/import backup: {e.Message}");
             }
             finally {
                 if (File.Exists(tempPath)) File.Delete(tempPath);

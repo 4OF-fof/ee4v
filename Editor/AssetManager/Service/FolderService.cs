@@ -66,7 +66,7 @@ namespace _4OF.ee4v.AssetManager.Service {
                         libraries.RemoveFolder(folderId);
                         libraries.AddFolder(boothItem);
                         break;
-                    case BackupFolder backupFolder: // 追加: BackupFolder対応
+                    case BackupFolder backupFolder:
                         libraries.RemoveFolder(folderId);
                         libraries.AddFolder(backupFolder);
                         break;
@@ -248,7 +248,6 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         public List<BaseFolder> GetRootFolders() {
             var libraries = _repository.GetLibraryMetadata();
-            // 修正: BoothItemFolderに加え、BackupFolderも通常のフォルダリストから除外する
             return libraries?.FolderList
                 .Where(f => f is not BoothItemFolder && f is not BackupFolder)
                 .ToList() ?? new List<BaseFolder>();
@@ -394,7 +393,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             var newFolder = new BackupFolder();
             newFolder.SetName(!string.IsNullOrEmpty(avatarName) ? avatarName : avatarId);
             newFolder.SetAvatarId(avatarId);
-            newFolder.SetDescription($"Backup for {avatarId}");
+            newFolder.SetDescription($"Backups for {avatarId}");
 
             libraries.AddFolder(newFolder);
 
@@ -410,12 +409,20 @@ namespace _4OF.ee4v.AssetManager.Service {
         }
 
         private static BackupFolder FindBackupFolderRecursive(BaseFolder root, string avatarId) {
-            return root switch {
-                BackupFolder bf when bf.AvatarId == avatarId => bf,
-                Folder { Children: not null } f => f.Children.Select(c => FindBackupFolderRecursive(c, avatarId))
-                    .FirstOrDefault(found => found != null),
-                _ => null
-            };
+            switch (root) {
+                case BackupFolder bf when bf.AvatarId == avatarId:
+                    return bf;
+                case Folder { Children: not null } f: {
+                    foreach (var c in f.Children) {
+                        var found = FindBackupFolderRecursive(c, avatarId);
+                        if (found != null) return found;
+                    }
+
+                    break;
+                }
+            }
+
+            return null;
         }
     }
 }
