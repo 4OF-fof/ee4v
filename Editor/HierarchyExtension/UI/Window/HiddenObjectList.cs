@@ -226,8 +226,8 @@ namespace _4OF.ee4v.HierarchyExtension.UI.Window {
                     paddingLeft = depth * 14 + 2,
                     paddingRight = 2,
                     backgroundColor = node.IsHidden
-                        ? new Color(0.3f, 0.3f, 0.3f, 0.2f)
-                        : new Color(0.2f, 0.2f, 0.2f, 0.1f)
+                        ? ColorPreset.HiddenObjectHidden
+                        : ColorPreset.HiddenObjectNormal
                 }
             };
 

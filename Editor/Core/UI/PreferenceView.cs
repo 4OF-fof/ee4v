@@ -72,7 +72,7 @@ namespace _4OF.ee4v.Core.UI {
 
             #region HierarchyExtension
 
-            EditorGUILayout.LabelField("Hierarchy Extension", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(I18N.Get("UI.Core.Preference.HierarchyExtension"), EditorStyles.boldLabel);
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox)) {
                 EditorGUI.BeginChangeCheck();
                 EditorPrefsManager.EnableHierarchyExtension = EditorGUILayout.Toggle(
@@ -114,9 +114,9 @@ namespace _4OF.ee4v.Core.UI {
                                         }
                                         else {
                                             EditorUtility.DisplayDialog(
-                                                "Invalid Path",
+                                                I18N.Get("UI.Core.InvalidPathTitle"),
                                                 I18N.Get("UI.Core.SceneCreateFolderPathError"),
-                                                "OK"
+                                                I18N.Get("UI.Core.OK")
                                             );
                                         }
                                     }
@@ -229,7 +229,7 @@ namespace _4OF.ee4v.Core.UI {
 
             #region ProjectExtension
 
-            EditorGUILayout.LabelField("Project Extension", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(I18N.Get("UI.Core.Preference.ProjectExtension"), EditorStyles.boldLabel);
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox)) {
                 EditorGUI.BeginChangeCheck();
                 EditorPrefsManager.EnableProjectExtension = EditorGUILayout.Toggle(
@@ -274,7 +274,7 @@ namespace _4OF.ee4v.Core.UI {
 
             #region Compatibility
 
-            EditorGUILayout.LabelField("Compatibility", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(I18N.Get("UI.Core.Preference.Compatibility"), EditorStyles.boldLabel);
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox)) {
                 EditorGUI.BeginChangeCheck();
                 EditorPrefsManager.CompatLilEditorToolbox = EditorGUILayout.ToggleLeft(

@@ -26,11 +26,16 @@ namespace _4OF.ee4v.Core.UI {
         public static Color ItemSelectedBackGround = FromHex("#3f7fff", 0.3f);
 
         public static Color FavoriteStar = FromHex("#ffc107");
+        public static Color NonFavorite = Color.gray;
 
         public static Color HighlightColor = FromHex("#ffea04", 0.2f);
 
         public static Color SuccessButton = FromHex("#2e7d32");
         public static Color SuccessButtonHover = FromHex("#388e3c");
+
+        public static Color HiddenObjectHidden = new(0.3f, 0.3f, 0.3f, 0.2f);
+        public static Color HiddenObjectNormal = new(0.2f, 0.2f, 0.2f, 0.1f);
+        public static Color PrefabRootText = Color.cyan;
 
         public static StyleColor TabBackground = new(DefaultBackground);
         public static StyleColor AddButtonHover = new(MouseOverBackground);

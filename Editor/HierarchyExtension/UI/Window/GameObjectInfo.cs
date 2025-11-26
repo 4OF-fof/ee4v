@@ -133,7 +133,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.Window {
 
             var titleText = _gameObjectList.Count == 1
                 ? _gameObjectList[0].name
-                : $"Selected {_gameObjectList.Count} Objects";
+                : I18N.Get("UI.HierarchyExtension.SelectedObjectsFmt", _gameObjectList.Count);
             var titleLabel = new Label(titleText) {
                 style = {
                     flexShrink = 1,

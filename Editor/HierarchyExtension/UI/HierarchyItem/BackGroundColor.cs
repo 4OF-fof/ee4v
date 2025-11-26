@@ -32,7 +32,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.HierarchyItem {
             }
 
             var displayName = obj != null ? obj.name : string.Empty;
-            if (obj is GameObject go && PrefabUtility.IsAnyPrefabInstanceRoot(go)) GUI.color = Color.cyan;
+            if (obj is GameObject go && PrefabUtility.IsAnyPrefabInstanceRoot(go)) GUI.color = ColorPreset.PrefabRootText;
             GUI.Label(nameRect, displayName, EditorStyles.label);
             GUI.color = prevColor;
         }

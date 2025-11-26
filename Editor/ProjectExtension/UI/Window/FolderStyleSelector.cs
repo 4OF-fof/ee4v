@@ -59,7 +59,7 @@ namespace _4OF.ee4v.ProjectExtension.UI.Window {
 
             var titleText = _pathList.Count == 1
                 ? Path.GetFileName(_pathList[0])
-                : $"Selected {_pathList.Count} Objects";
+                : I18N.Get("UI.ProjectExtension.SelectedObjectsFmt", _pathList.Count);
             var titleLabel = new Label(titleText) {
                 tooltip = _pathList[0],
                 style = {

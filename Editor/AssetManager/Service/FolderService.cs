@@ -16,13 +16,13 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         public bool CreateFolder(Ulid parentFolderId, string name, string description = null) {
             if (string.IsNullOrWhiteSpace(name)) {
-                Debug.LogError("Folder name cannot be empty");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Service.FolderNameEmpty"));
                 return false;
             }
 
             var libraries = _repository.GetLibraryMetadata();
             if (libraries == null) {
-                Debug.LogError("Library metadata not available: cannot create folder.");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Service.LibraryMetadataNotAvailable"));
                 return false;
             }
 
@@ -36,7 +36,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             else {
                 var parent = libraries.GetFolder(parentFolderId);
                 if (parent is not Folder parentFolder) {
-                    Debug.LogError("Cannot create folder: Parent is not a standard folder.");
+                    Debug.LogError(I18N.Get("Debug.AssetManager.Service.ParentNotStandardFolder"));
                     return false;
                 }
 
@@ -83,12 +83,12 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newParentBase = libraries.GetFolder(parentFolderId);
             if (newParentBase is not Folder newParentFolder) {
-                Debug.LogError("Cannot move: Target parent is not a valid folder.");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Service.TargetParentNotValid"));
                 return;
             }
 
             if (folderBase is Folder movingFolder && IsDescendant(movingFolder, parentFolderId)) {
-                Debug.LogError("Cannot move a folder into its own descendant.");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Service.CannotMoveToDescendant"));
                 return;
             }
 
@@ -99,14 +99,14 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         public bool UpdateFolder(Folder newFolder) {
             if (newFolder == null || !AssetValidationService.IsValidAssetName(newFolder.Name)) {
-                Debug.LogError("Failed to update folder: invalid input or name.");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Service.FailedToUpdateFolder"));
                 return false;
             }
 
             var libraries = _repository.GetLibraryMetadata();
             var folder = libraries?.GetFolder(newFolder.ID) as Folder;
             if (folder == null) {
-                Debug.LogError($"Folder not found: {newFolder.ID}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Service.FolderNotFoundFmt", newFolder.ID));
                 return false;
             }
 
@@ -118,14 +118,14 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         public bool UpdateBoothItemFolder(BoothItemFolder newFolder) {
             if (newFolder == null || !AssetValidationService.IsValidAssetName(newFolder.Name)) {
-                Debug.LogError("Failed to update booth item folder: invalid input or name.");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Service.FailedToUpdateBoothItemFolder"));
                 return false;
             }
 
             var libraries = _repository.GetLibraryMetadata();
             var folder = libraries?.GetFolder(newFolder.ID) as BoothItemFolder;
             if (folder == null) {
-                Debug.LogError($"Booth item folder not found: {newFolder.ID}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Service.BoothItemFolderNotFoundFmt", newFolder.ID));
                 return false;
             }
 
@@ -139,7 +139,7 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         public bool SetFolderName(Ulid folderId, string newName) {
             if (!AssetValidationService.IsValidAssetName(newName)) {
-                Debug.LogError("Invalid folder name: cannot set an empty or invalid name.");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Service.InvalidFolderName"));
                 return false;
             }
 
@@ -147,7 +147,7 @@ namespace _4OF.ee4v.AssetManager.Service {
             var folder = libraries?.GetFolder(folderId);
 
             if (folder == null) {
-                Debug.LogError($"Folder not found: {folderId}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Service.FolderNotFoundFmt", folderId));
                 return false;
             }
 
@@ -282,12 +282,12 @@ namespace _4OF.ee4v.AssetManager.Service {
 
             var newParentBase = libraries.GetFolder(parentFolderId);
             if (newParentBase is not Folder newParentFolder) {
-                Debug.LogError("Cannot reorder: Target parent is not a valid folder.");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Service.TargetParentNotValidReorder"));
                 return;
             }
 
             if (folderBase is Folder movingFolder && IsDescendant(movingFolder, parentFolderId)) {
-                Debug.LogError("Cannot reorder a folder into its own descendant.");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Service.CannotReorderToDescendant"));
                 return;
             }
 

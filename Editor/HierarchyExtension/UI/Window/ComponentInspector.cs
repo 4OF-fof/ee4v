@@ -90,7 +90,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.Window {
                     activeToggle.RegisterValueChangedCallback(evt =>
                     {
                         if (evt.newValue == behaviour.enabled) return;
-                        Undo.RecordObject(behaviour, "Toggle GameObject Active");
+                        Undo.RecordObject(behaviour, I18N.Get("UI.HierarchyExtension.Undo.ToggleActive"));
                         behaviour.enabled = evt.newValue;
                         EditorUtility.SetDirty(behaviour);
                     });

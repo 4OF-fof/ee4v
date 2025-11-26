@@ -136,8 +136,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 if (!HttpServer.IsRunning) HttpServer.Start(LocalHttpPort);
             }
             catch (Exception ex) {
-                Debug.LogWarning($"Failed to start local HttpServer on port {LocalHttpPort}: {ex}");
-                var errLabel = new Label($"ローカル HTTP サーバの起動に失敗しました: {ex.Message}") {
+                Debug.LogWarning(I18N.Get("Debug.AssetManager.WaitBoothSync.HttpServerStartFailedFmt", LocalHttpPort, ex));
+                var errLabel = new Label(I18N.Get("Debug.AssetManager.WaitBoothSync.ImportFailedFmt", ex.Message)) {
                     style = {
                         marginBottom = 8, unityTextAlign = TextAnchor.MiddleLeft, color = ColorPreset.WarningText
                     }

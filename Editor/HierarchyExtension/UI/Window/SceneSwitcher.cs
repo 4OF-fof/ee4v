@@ -84,7 +84,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.Window {
 
                         var isFav = SceneList.instance.Contents.FirstOrDefault(s => s.path == path)?.isFavorite ??
                             false;
-                        starButton.tintColor = isFav ? ColorPreset.FavoriteStar : Color.gray;
+                        starButton.tintColor = isFav ? ColorPreset.FavoriteStar : ColorPreset.NonFavorite;
 
                         allScenePaths = SceneListService.SortedSceneList.ToList();
                         var current = searchBar.value;
@@ -191,7 +191,7 @@ namespace _4OF.ee4v.HierarchyExtension.UI.Window {
 
                 var isFavorite = SceneList.instance.Contents.Any(s => s.path == path && s.isFavorite);
                 starButton.image = EditorGUIUtility.IconContent("d_Favorite Icon").image;
-                starButton.tintColor = isFavorite ? ColorPreset.FavoriteStar : Color.gray;
+                starButton.tintColor = isFavorite ? ColorPreset.FavoriteStar : ColorPreset.NonFavorite;
 
                 var openScenePathsNow = GetOpenScenePaths();
                 var isOpen = openScenePathsNow.Contains(path);
