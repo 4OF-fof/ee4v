@@ -38,31 +38,38 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var singleAsset = activeAssetTargets.Count == 1 ? activeAssetTargets[0] : null;
 
             if (singleAsset != null) {
+                var hasImportAction = false;
                 var canImport = repository.HasAssetFile(singleAsset.ID);
+                var isZip = singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase);
 
-                if (canImport && singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase))
+                if (canImport && isZip)
                     canImport = repository.HasImportItems(singleAsset.ID);
 
                 if (canImport) {
                     menu.AddItem("インポート", false, () => { assetService.ImportAsset(singleAsset.ID); });
-                    menu.AddSeparator("");
-                    height += ItemHeight + SeparatorHeight;
+                    height += ItemHeight;
+                    hasImportAction = true;
                 }
-            }
 
-            if (singleAsset != null && singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase)) {
-                menu.AddItem("インポート対象を選択...", false, () =>
-                {
-                    var mousePos = Event.current != null ? Event.current.mousePosition : Vector2.zero;
-                    ZipImportWindow.Open(
-                        GUIUtility.GUIToScreenPoint(mousePos),
-                        singleAsset.ID,
-                        repository,
-                        assetService
-                    );
-                });
-                menu.AddSeparator("");
-                height += ItemHeight + SeparatorHeight;
+                if (isZip) {
+                    menu.AddItem("インポート対象を選択", false, () =>
+                    {
+                        var mousePos = Event.current != null ? Event.current.mousePosition : Vector2.zero;
+                        ZipImportWindow.Open(
+                            GUIUtility.GUIToScreenPoint(mousePos),
+                            singleAsset.ID,
+                            repository,
+                            assetService
+                        );
+                    });
+                    height += ItemHeight;
+                    hasImportAction = true;
+                }
+
+                if (hasImportAction) {
+                    menu.AddSeparator("");
+                    height += SeparatorHeight;
+                }
             }
 
             if (singleAsset != null && singleAsset.UnityData.AssetGuidList.Count > 0) {
@@ -106,7 +113,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             if (singleAsset != null) {
-                menu.AddItem("Booth情報を編集...", false, () =>
+                menu.AddItem("Booth情報を編集", false, () =>
                 {
                     var dialog = new EditBoothInfoDialog();
                     dialog.OnBoothInfoUpdated += (domain, itemId) =>
@@ -126,21 +133,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             if (assetTargets.Count > 0 && assetTargets.Count == deletedAssetTargets.Count && folderTargets.Count == 0) {
                 var plural = deletedAssetTargets.Count > 1;
 
-                menu.AddItem(plural ? $"{deletedAssetTargets.Count} 個を完全に削除" : "完全に削除", false, () =>
-                {
-                    var message = plural
-                        ? $"選択した {deletedAssetTargets.Count} 個のアセットを完全に削除しますか？この操作は取り消せません。"
-                        : "アセットを完全に削除しますか？この操作は取り消せません。";
-                    if (!EditorUtility.DisplayDialog("確認", message, "削除", "キャンセル")) return;
-                    foreach (var a in deletedAssetTargets) assetService.DeleteAsset(a.ID);
-                    onRefresh?.Invoke();
-                });
-
                 menu.AddItem(plural ? $"{deletedAssetTargets.Count} 個を復元" : "復元", false, () =>
-                {
-                    foreach (var a in deletedAssetTargets) assetService.RestoreAsset(a.ID);
-                    onRefresh?.Invoke();
-                });
+                    ExecuteRestore(deletedAssetTargets));
+                menu.AddItem(plural ? $"{deletedAssetTargets.Count} 個を完全に削除" : "完全に削除", false, () =>
+                    ExecuteHardDelete(deletedAssetTargets));
 
                 height += ItemHeight * 2;
                 estimatedHeight = height;
@@ -148,7 +144,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             }
 
             if (activeAssetTargets.Count > 0 || folderTargets.Count > 0) {
-                menu.AddItem("サムネイルを設定...", false, () =>
+                menu.AddItem("サムネイルを設定", false, () =>
                 {
                     var path = EditorUtility.OpenFilePanel("Select Thumbnail", "", "png,jpg,jpeg");
                     if (string.IsNullOrEmpty(path)) return;
@@ -215,30 +211,32 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 height += ItemHeight;
             }
 
-            if (deletedAssetTargets.Count <= 0) {
-                estimatedHeight = height;
-                return menu;
+            if (deletedAssetTargets.Count > 0) {
+                menu.AddItem("復元", false, () => ExecuteRestore(deletedAssetTargets));
+                menu.AddItem("完全に削除", false, () => ExecuteHardDelete(deletedAssetTargets));
+                height += ItemHeight * 2;
             }
-
-            menu.AddItem("復元", false, () =>
-            {
-                foreach (var a in deletedAssetTargets) assetService.RestoreAsset(a.ID);
-                onRefresh?.Invoke();
-            });
-            menu.AddItem("完全に削除", false, () =>
-            {
-                var plural2 = deletedAssetTargets.Count > 1;
-                var message = plural2
-                    ? $"選択した {deletedAssetTargets.Count} 個のアセットを完全に削除しますか？この操作は取り消せません。"
-                    : "アセットを完全に削除しますか？この操作は取り消せません。";
-                if (!EditorUtility.DisplayDialog("確認", message, "削除", "キャンセル")) return;
-                foreach (var a in deletedAssetTargets) assetService.DeleteAsset(a.ID);
-                onRefresh?.Invoke();
-            });
-            height += ItemHeight * 2;
 
             estimatedHeight = height;
             return menu;
+
+            void ExecuteRestore(List<AssetMetadata> targetAssets) {
+                foreach (var a in targetAssets) assetService.RestoreAsset(a.ID);
+                onRefresh?.Invoke();
+            }
+
+            void ExecuteHardDelete(List<AssetMetadata> targetAssets) {
+                var count = targetAssets.Count;
+                var plural = count > 1;
+                var message = plural
+                    ? $"選択した {count} 個のアセットを完全に削除しますか？この操作は取り消せません。"
+                    : "アセットを完全に削除しますか？この操作は取り消せません。";
+
+                if (!EditorUtility.DisplayDialog("確認", message, "削除", "キャンセル")) return;
+
+                foreach (var a in targetAssets) assetService.DeleteAsset(a.ID);
+                onRefresh?.Invoke();
+            }
         }
     }
 }
