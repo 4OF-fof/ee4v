@@ -461,15 +461,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 OnSelectionChange?.Invoke(_selectedItems.ToList());
             }
 
-            Rect anchorRect;
-            try {
-                var worldPos = card.LocalToWorld(evt.localPosition);
-                anchorRect = new Rect(worldPos.x, worldPos.y, 1, 1);
-            }
-            catch {
-                anchorRect = card.worldBound;
-            }
-
             var menu = AssetContextMenuFactory.Create(
                 _selectedItems.ToList(),
                 _repository,
@@ -477,8 +468,25 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _folderService,
                 _textureService,
                 Refresh,
-                _showDialog
+                _showDialog,
+                out var menuHeight
             );
+            Rect anchorRect;
+            try {
+                var worldPos = card.LocalToWorld(evt.localPosition);
+
+                if (panel != null) {
+                    var rootHeight = panel.visualTree.layout.height;
+
+                    if (worldPos.y + menuHeight > rootHeight) worldPos.y -= menuHeight;
+                }
+
+                anchorRect = new Rect(worldPos.x, worldPos.y, 1, 1);
+            }
+            catch {
+                anchorRect = card.worldBound;
+            }
+
             menu.DropDown(anchorRect, card);
             evt.StopPropagation();
         }

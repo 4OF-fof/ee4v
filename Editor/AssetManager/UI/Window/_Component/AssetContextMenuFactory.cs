@@ -12,6 +12,10 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
     public static class AssetContextMenuFactory {
+        private const float ItemHeight = 19f;
+        private const float SeparatorHeight = 6f;
+        private const float MenuPadding = 10f;
+
         public static GenericDropdownMenu Create(
             List<object> targets,
             IAssetRepository repository,
@@ -19,9 +23,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             FolderService folderService,
             TextureService textureService,
             Action onRefresh,
-            Action<VisualElement> showDialog
+            Action<VisualElement> showDialog,
+            out float estimatedHeight
         ) {
             var menu = new GenericDropdownMenu();
+            var height = MenuPadding;
 
             var assetTargets = targets.OfType<AssetMetadata>().ToList();
             var folderTargets = targets.OfType<BaseFolder>().ToList();
@@ -40,6 +46,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 if (canImport) {
                     menu.AddItem("インポート", false, () => { assetService.ImportAsset(singleAsset.ID); });
                     menu.AddSeparator("");
+                    height += ItemHeight + SeparatorHeight;
                 }
             }
 
@@ -55,6 +62,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     );
                 });
                 menu.AddSeparator("");
+                height += ItemHeight + SeparatorHeight;
             }
 
             if (singleAsset != null && singleAsset.UnityData.AssetGuidList.Count > 0) {
@@ -65,6 +73,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     ProjectExtensionAPI.SetHighlights(guids);
                 });
                 menu.AddSeparator("");
+                height += ItemHeight + SeparatorHeight;
             }
 
             var singleFolder = folderTargets.Count == 1 ? folderTargets[0] : null;
@@ -82,6 +91,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         ProjectExtensionAPI.SetHighlights(guids);
                     });
                     menu.AddSeparator("");
+                    height += ItemHeight + SeparatorHeight;
                 }
             }
 
@@ -92,6 +102,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     if (files.Count > 0) EditorUtility.RevealInFinder(files[0]);
                 });
                 menu.AddSeparator("");
+                height += ItemHeight + SeparatorHeight;
             }
 
             if (singleAsset != null) {
@@ -109,6 +120,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     showDialog?.Invoke(dialog.CreateContent(singleAsset.BoothData?.ItemUrl ?? ""));
                 });
                 menu.AddSeparator("");
+                height += ItemHeight + SeparatorHeight;
             }
 
             if (assetTargets.Count > 0 && assetTargets.Count == deletedAssetTargets.Count && folderTargets.Count == 0) {
@@ -130,10 +142,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     onRefresh?.Invoke();
                 });
 
+                height += ItemHeight * 2;
+                estimatedHeight = height;
                 return menu;
             }
 
-            if (activeAssetTargets.Count > 0 || folderTargets.Count > 0)
+            if (activeAssetTargets.Count > 0 || folderTargets.Count > 0) {
                 menu.AddItem("サムネイルを設定...", false, () =>
                 {
                     var path = EditorUtility.OpenFilePanel("Select Thumbnail", "", "png,jpg,jpeg");
@@ -144,6 +158,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
                     onRefresh?.Invoke();
                 });
+                height += ItemHeight;
+            }
 
             var anyRemovableThumb = activeAssetTargets.Any(a =>
             {
@@ -155,7 +171,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 return !string.IsNullOrEmpty(p) && File.Exists(p);
             });
 
-            if (anyRemovableThumb)
+            if (anyRemovableThumb) {
                 menu.AddItem("サムネイルを削除", false, () =>
                 {
                     foreach (var a in activeAssetTargets) {
@@ -173,8 +189,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
                     onRefresh?.Invoke();
                 });
+                height += ItemHeight;
+            }
 
             menu.AddSeparator("");
+            height += SeparatorHeight;
 
             if (activeAssetTargets.Count > 0) {
                 var plural = activeAssetTargets.Count > 1;
@@ -183,6 +202,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     foreach (var a in activeAssetTargets) assetService.RemoveAsset(a.ID);
                     onRefresh?.Invoke();
                 });
+                height += ItemHeight;
             }
 
             if (folderTargets.Count > 0) {
@@ -192,9 +212,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     foreach (var f in folderTargets) folderService.DeleteFolder(f.ID);
                     onRefresh?.Invoke();
                 });
+                height += ItemHeight;
             }
 
-            if (deletedAssetTargets.Count <= 0) return menu;
+            if (deletedAssetTargets.Count <= 0) {
+                estimatedHeight = height;
+                return menu;
+            }
+
             menu.AddItem("復元", false, () =>
             {
                 foreach (var a in deletedAssetTargets) assetService.RestoreAsset(a.ID);
@@ -210,7 +235,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 foreach (var a in deletedAssetTargets) assetService.DeleteAsset(a.ID);
                 onRefresh?.Invoke();
             });
+            height += ItemHeight * 2;
 
+            estimatedHeight = height;
             return menu;
         }
     }
