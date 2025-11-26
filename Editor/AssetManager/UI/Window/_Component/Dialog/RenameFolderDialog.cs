@@ -1,10 +1,13 @@
 using System;
+using _4OF.ee4v.AssetManager.Service;
+using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
     public class RenameFolderDialog {
+        private Label _errorLabel;
         public event Action<Ulid, string> OnFolderRenamed;
 
         public VisualElement CreateContent(Ulid folderId, string oldName) {
@@ -27,15 +30,22 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             var textField = new TextField { value = oldName, style = { marginBottom = 10 } };
             content.Add(textField);
 
+            _errorLabel = new Label {
+                style = {
+                    color = ColorPreset.WarningText,
+                    whiteSpace = WhiteSpace.Normal,
+                    marginBottom = 5,
+                    display = DisplayStyle.None
+                }
+            };
+            content.Add(_errorLabel);
+
             textField.RegisterCallback<KeyDownEvent>(evt =>
             {
                 switch (evt.keyCode) {
                     case KeyCode.Return:
                     case KeyCode.KeypadEnter:
-                        var newName = textField.value;
-                        if (newName != oldName || string.IsNullOrWhiteSpace(newName))
-                            OnFolderRenamed?.Invoke(folderId, newName);
-                        CloseDialog(content);
+                        AttemptRename(textField.value, oldName, folderId, content);
                         evt.StopPropagation();
                         break;
                     case KeyCode.Escape:
@@ -44,6 +54,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                         break;
                 }
             });
+            textField.RegisterCallback<InputEvent>(_ => HideError());
 
             var buttonRow = new VisualElement {
                 style = {
@@ -66,13 +77,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             content.Add(buttonRow);
 
             cancelBtn.clicked += () => CloseDialog(content);
-            okBtn.clicked += () =>
-            {
-                var newName = textField.value;
-                if (newName != oldName || string.IsNullOrWhiteSpace(newName))
-                    OnFolderRenamed?.Invoke(folderId, newName);
-                CloseDialog(content);
-            };
+            okBtn.clicked += () => AttemptRename(textField.value, oldName, folderId, content);
 
             content.schedule.Execute(() =>
             {
@@ -81,6 +86,29 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             });
 
             return content;
+        }
+
+        private void AttemptRename(string newName, string oldName, Ulid folderId, VisualElement content) {
+            if (!AssetValidationService.IsValidAssetName(newName)) {
+                ShowError("無効なフォルダ名です。");
+                return;
+            }
+
+            if (newName != oldName)
+                OnFolderRenamed?.Invoke(folderId, newName);
+            CloseDialog(content);
+        }
+
+        private void ShowError(string message) {
+            if (_errorLabel == null) return;
+            _errorLabel.text = message;
+            _errorLabel.style.display = DisplayStyle.Flex;
+        }
+
+        private void HideError() {
+            if (_errorLabel == null) return;
+            _errorLabel.text = "";
+            _errorLabel.style.display = DisplayStyle.None;
         }
 
         private static void CloseDialog(VisualElement content) {

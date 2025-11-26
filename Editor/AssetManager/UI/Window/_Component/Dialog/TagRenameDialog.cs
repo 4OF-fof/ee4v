@@ -1,9 +1,11 @@
 using System;
+using _4OF.ee4v.Core.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
     public class TagRenameDialog {
+        private Label _errorLabel;
         public event Action<string, string> OnTagRenamed;
 
         public VisualElement CreateContent(string oldTag) {
@@ -26,6 +28,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             var textField = new TextField { value = oldTag, style = { marginBottom = 10 } };
             content.Add(textField);
 
+            _errorLabel = new Label {
+                style = {
+                    color = ColorPreset.WarningText,
+                    whiteSpace = WhiteSpace.Normal,
+                    marginBottom = 5,
+                    display = DisplayStyle.None
+                }
+            };
+            content.Add(_errorLabel);
+
             textField.RegisterCallback<KeyDownEvent>(evt =>
             {
                 switch (evt.keyCode) {
@@ -40,6 +52,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                         break;
                 }
             });
+            textField.RegisterCallback<InputEvent>(_ => HideError());
 
             var buttonRow = new VisualElement {
                 style = {
@@ -80,9 +93,26 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
 
             void Commit() {
                 var newTag = textField.value;
-                if (!string.IsNullOrWhiteSpace(newTag) && newTag != oldTag) OnTagRenamed?.Invoke(oldTag, newTag);
+                if (string.IsNullOrWhiteSpace(newTag)) {
+                    ShowError("タグ名を入力してください。");
+                    return;
+                }
+
+                if (newTag != oldTag) OnTagRenamed?.Invoke(oldTag, newTag);
                 CloseDialog();
             }
+        }
+
+        private void ShowError(string message) {
+            if (_errorLabel == null) return;
+            _errorLabel.text = message;
+            _errorLabel.style.display = DisplayStyle.Flex;
+        }
+
+        private void HideError() {
+            if (_errorLabel == null) return;
+            _errorLabel.text = "";
+            _errorLabel.style.display = DisplayStyle.None;
         }
     }
 }

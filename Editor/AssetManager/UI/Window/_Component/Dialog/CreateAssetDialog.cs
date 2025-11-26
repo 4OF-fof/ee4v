@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.AssetManager.Service;
 using _4OF.ee4v.AssetManager.Utility;
+using _4OF.ee4v.Core.UI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -10,6 +12,7 @@ using UnityEngine.UIElements;
 namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
     public class CreateAssetDialog {
         private readonly List<string> _tempTags = new();
+        private Label _errorLabel;
         private IAssetRepository _repository;
 
         public event Action<string, string, string, List<string>, string, string> OnAssetCreated;
@@ -205,6 +208,16 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             });
             content.Add(addTagButton);
 
+            _errorLabel = new Label {
+                style = {
+                    color = ColorPreset.WarningText,
+                    whiteSpace = WhiteSpace.Normal,
+                    marginBottom = 5,
+                    display = DisplayStyle.None
+                }
+            };
+            content.Add(_errorLabel);
+
             var buttonRow = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
@@ -233,6 +246,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 BoothUrlField = boothUrlField
             };
 
+            nameField.RegisterCallback<InputEvent>(_ => HideError());
+            boothUrlField.RegisterCallback<InputEvent>(_ => HideError());
+
             cancelBtn.clicked += () => CloseDialog(content);
             createBtn.clicked += () => OnCreate(content);
 
@@ -251,6 +267,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             }
         }
 
+        private void ShowError(string message) {
+            if (_errorLabel == null) return;
+            _errorLabel.text = message;
+            _errorLabel.style.display = DisplayStyle.Flex;
+        }
+
+        private void HideError() {
+            if (_errorLabel == null) return;
+            _errorLabel.text = "";
+            _errorLabel.style.display = DisplayStyle.None;
+        }
+
         private void OnCreate(VisualElement content) {
             if (content.userData is not DialogData data) return;
 
@@ -259,10 +287,18 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             var fileOrUrl = data.FileUrlField.value;
             var boothUrl = data.BoothUrlField.value.Trim();
 
+            if (!AssetValidationService.IsValidAssetName(assetName)) {
+                ShowError("無効なアセット名です。");
+                return;
+            }
+
             var shopDomain = "";
             var itemId = "";
             if (!string.IsNullOrWhiteSpace(boothUrl))
-                BoothUtility.TryParseShopItemUrl(boothUrl, out shopDomain, out itemId);
+                if (!BoothUtility.TryParseShopItemUrl(boothUrl, out shopDomain, out itemId)) {
+                    ShowError("BOOTHのURL形式が正しくありません。\n例: https://[shop].booth.pm/items/[id]");
+                    return;
+                }
 
             OnAssetCreated?.Invoke(assetName, description, fileOrUrl, new List<string>(_tempTags), shopDomain, itemId);
             CloseDialog(content);

@@ -1,9 +1,12 @@
 using System;
+using _4OF.ee4v.AssetManager.Service;
+using _4OF.ee4v.Core.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
     public class CreateFolderDialog {
+        private Label _errorLabel;
         public event Action<string> OnFolderCreated;
 
         public VisualElement CreateContent() {
@@ -26,14 +29,22 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             var textField = new TextField { value = "", style = { marginBottom = 10 } };
             content.Add(textField);
 
+            _errorLabel = new Label {
+                style = {
+                    color = ColorPreset.WarningText,
+                    whiteSpace = WhiteSpace.Normal,
+                    marginBottom = 5,
+                    display = DisplayStyle.None
+                }
+            };
+            content.Add(_errorLabel);
+
             textField.RegisterCallback<KeyDownEvent>(evt =>
             {
                 switch (evt.keyCode) {
                     case KeyCode.Return:
                     case KeyCode.KeypadEnter:
-                        var folderName = textField.value;
-                        OnFolderCreated?.Invoke(folderName);
-                        CloseDialog(content);
+                        AttemptCreate(textField.value, content);
                         evt.StopPropagation();
                         break;
                     case KeyCode.Escape:
@@ -42,6 +53,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                         break;
                 }
             });
+            textField.RegisterCallback<InputEvent>(_ => HideError());
 
             var buttonRow = new VisualElement {
                 style = {
@@ -64,16 +76,33 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             content.Add(buttonRow);
 
             cancelBtn.clicked += () => CloseDialog(content);
-            createBtn.clicked += () =>
-            {
-                var folderName = textField.value;
-                OnFolderCreated?.Invoke(folderName);
-                CloseDialog(content);
-            };
+            createBtn.clicked += () => AttemptCreate(textField.value, content);
 
             content.schedule.Execute(() => textField.Focus());
 
             return content;
+        }
+
+        private void AttemptCreate(string folderName, VisualElement content) {
+            if (!AssetValidationService.IsValidAssetName(folderName)) {
+                ShowError("無効なフォルダ名です。");
+                return;
+            }
+
+            OnFolderCreated?.Invoke(folderName);
+            CloseDialog(content);
+        }
+
+        private void ShowError(string message) {
+            if (_errorLabel == null) return;
+            _errorLabel.text = message;
+            _errorLabel.style.display = DisplayStyle.Flex;
+        }
+
+        private void HideError() {
+            if (_errorLabel == null) return;
+            _errorLabel.text = "";
+            _errorLabel.style.display = DisplayStyle.None;
         }
 
         private static void CloseDialog(VisualElement content) {
