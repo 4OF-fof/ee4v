@@ -294,5 +294,6 @@
   "Debug.AssetManager.Service.AssetNotFoundFmt": "Asset not found: {0}",
   "Debug.AssetManager.Service.NameEmptyOrWhitespace": "Name cannot be empty or whitespace.",
   "Debug.AssetManager.Service.NameContainsInvalidCharsFmt": "Name '{0}' contains invalid characters.",
-  "Debug.AssetManager.Repository.AssetsDirectoryNotExist": "Assets directory does not exist."
+  "Debug.AssetManager.Repository.AssetsDirectoryNotExist": "Assets directory does not exist.",
+  "UI.AssetManager.AssetInfo.DownloadFromBooth": "Download from Booth"
 }

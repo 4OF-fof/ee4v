@@ -258,7 +258,7 @@
   "UI.AssetManager.Dialog.WaitBoothSync.UserscriptNotice": "Userscript のインストールが必要です",
   "UI.AssetManager.Dialog.WaitBoothSync.UserscriptDesc1": "この機能はブラウザ側で動作する Userscript (EE4V BOOTH Library Sync) により、\nBOOTH の情報を Unity に送信します。",
   "UI.AssetManager.Dialog.WaitBoothSync.UserscriptDesc2": "まだインストールしていない場合は、ブラウザ拡張 (例: Tampermonkey) に Userscript を追加して有効化してください。\n送信中はタブと Unity を閉じないでください。",
-  "UI.AssetManager.Dialog.WaitBoothSync.OpenLibrary": "BOOTHライブラリを開く",
+  "UI.AssetManager.Dialog.WaitBoothSync.OpenLibrary": "Boothライブラリを開く",
   "UI.AssetManager.Dialog.Button.Close": "閉じる",
   "Debug.AssetManager.WaitBoothSync.HttpServerStartFailedFmt": "ローカル HTTP サーバの起動に失敗しました: {0}",
   "Debug.AssetManager.WaitBoothSync.ImportFailedFmt": "ローカル HTTP サーバの起動に失敗しました: {0}",
@@ -301,5 +301,6 @@
   "Debug.AssetManager.Service.AssetNotFoundFmt": "アセットが見つかりません: {0}",
   "Debug.AssetManager.Service.NameEmptyOrWhitespace": "名前を空または空白にすることはできません。",
   "Debug.AssetManager.Service.NameContainsInvalidCharsFmt": "名前 '{0}' に無効な文字が含まれています。",
-  "Debug.AssetManager.Repository.AssetsDirectoryNotExist": "Assetsディレクトリが存在しません。"
+  "Debug.AssetManager.Repository.AssetsDirectoryNotExist": "Assetsディレクトリが存在しません。",
+  "UI.AssetManager.AssetInfo.DownloadFromBooth": "Boothからダウンロード"
 }
