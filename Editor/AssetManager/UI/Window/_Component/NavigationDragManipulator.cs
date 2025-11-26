@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -126,14 +127,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             switch (normalizedY) {
                 case < 0.25f:
                     itemRow.style.borderTopWidth = 2;
-                    itemRow.style.borderTopColor = new Color(0.4f, 0.7f, 1.0f);
+                    itemRow.style.borderTopColor = ColorPreset.AccentBlue;
                     break;
                 case > 0.75f:
                     itemRow.style.borderBottomWidth = 2;
-                    itemRow.style.borderBottomColor = new Color(0.4f, 0.7f, 1.0f);
+                    itemRow.style.borderBottomColor = ColorPreset.AccentBlue;
                     break;
                 default:
-                    itemRow.style.backgroundColor = new Color(0.4f, 0.6f, 0.9f, 0.4f);
+                    itemRow.style.backgroundColor = ColorPreset.AccentBlue40Style;
                     break;
             }
         }

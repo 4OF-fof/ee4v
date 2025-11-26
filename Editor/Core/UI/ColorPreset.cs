@@ -26,8 +26,11 @@ namespace _4OF.ee4v.Core.UI {
         public static Color ItemSelectedBackGround = FromHex("#3f7fff", 0.3f);
 
         public static Color FavoriteStar = FromHex("#ffc107");
-        
+
         public static Color HighlightColor = FromHex("#ffea04", 0.2f);
+
+        public static Color SuccessButton = FromHex("#2e7d32");
+        public static Color SuccessButtonHover = FromHex("#388e3c");
 
         public static StyleColor TabBackground = new(DefaultBackground);
         public static StyleColor AddButtonHover = new(MouseOverBackground);
@@ -37,6 +40,32 @@ namespace _4OF.ee4v.Core.UI {
         public static StyleColor TabText = new(TextColor);
         public static StyleColor DropFolderArea = new(FromHex("#334c7f", 0.3f));
         public static StyleColor TabCloseButtonHover = new(FromHex("#e53333", 0.8f));
+        public static StyleColor SuccessButtonStyle = new(SuccessButton);
+        public static StyleColor SuccessButtonHoverStyle = new(SuccessButtonHover);
+        public static Color TransparentBlack10 = new(0f, 0f, 0f, 0.1f);
+        public static Color TransparentBlack20 = new(0f, 0f, 0f, 0.2f);
+        public static Color TransparentBlack50 = new(0f, 0f, 0f, 0.5f);
+        public static StyleColor TransparentBlack10Style = new(TransparentBlack10);
+        public static StyleColor TransparentBlack20Style = new(TransparentBlack20);
+        public static StyleColor TransparentBlack50Style = new(TransparentBlack50);
+        public static Color PrimaryButton = FromHex("#f57c00");
+        public static Color PrimaryButtonHover = FromHex("#ff9800");
+        public static StyleColor PrimaryButtonStyle = new(PrimaryButton);
+        public static StyleColor PrimaryButtonHoverStyle = new(PrimaryButtonHover);
+        public static Color TransparentWhite50 = new(1f, 1f, 1f, 0.5f);
+        public static Color TransparentWhite30 = new(1f, 1f, 1f, 0.3f);
+        public static Color AccentBlue = FromHex("#2686f3");
+        public static Color AccentBlueHover = FromHex("#41a0ff");
+        public static StyleColor AccentBlueStyle = new(AccentBlue);
+        public static StyleColor AccentBlueHoverStyle = new(AccentBlueHover);
+        public static Color AccentBlue20 = new(0.26f, 0.58f, 0.95f, 0.2f);
+        public static Color AccentBlue40 = new(0.26f, 0.58f, 0.95f, 0.4f);
+        public static StyleColor AccentBlue20Style = new(AccentBlue20);
+        public static StyleColor AccentBlue40Style = new(AccentBlue40);
+        public static Color TagPillBackground = FromHex(EditorGUIUtility.isProSkin ? "#4d4d4d" : "#cccccc");
+        public static Color TagPillHover = FromHex(EditorGUIUtility.isProSkin ? "#666666" : "#bfbfbf");
+        public static StyleColor TagPillBackgroundStyle = new(TagPillBackground);
+        public static StyleColor TagPillHoverStyle = new(TagPillHover);
 
         private static readonly Dictionary<int, Texture2D> AlphaGradientCache = new();
 

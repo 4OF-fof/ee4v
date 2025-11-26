@@ -159,7 +159,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var noResultLabel = new Label(string.IsNullOrEmpty(searchText) ? "No tags available" : "No matching tags") {
                 style = {
                     unityTextAlign = TextAnchor.MiddleCenter,
-                    color = Color.gray,
+                    color = ColorPreset.InActiveItem,
                     marginTop = 20,
                     width = Length.Percent(100)
                 }
@@ -181,7 +181,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                     marginBottom = 4,
                     paddingLeft = 10,
                     paddingRight = 10,
-                    backgroundColor = new StyleColor(new Color(0.2f, 0.5f, 0.2f)),
+                    backgroundColor = ColorPreset.SuccessButtonStyle,
                     borderTopWidth = 0,
                     borderBottomWidth = 0,
                     borderLeftWidth = 0,
@@ -190,17 +190,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                     borderTopRightRadius = 12,
                     borderBottomLeftRadius = 12,
                     borderBottomRightRadius = 12,
-                    color = Color.white
+                    color = ColorPreset.TextColor
                 }
             };
 
             button.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                button.style.backgroundColor = new StyleColor(new Color(0.3f, 0.6f, 0.3f));
+                button.style.backgroundColor = ColorPreset.SuccessButtonHoverStyle;
             });
             button.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                button.style.backgroundColor = new StyleColor(new Color(0.2f, 0.5f, 0.2f));
+                button.style.backgroundColor = ColorPreset.SuccessButtonStyle;
             });
 
             return button;
@@ -226,7 +226,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                     paddingRight = 10,
                     marginRight = 4,
                     marginBottom = 4,
-                    backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f)),
+                    backgroundColor = ColorPreset.TagPillBackgroundStyle,
                     borderTopWidth = 0,
                     borderBottomWidth = 0,
                     borderLeftWidth = 0,
@@ -237,11 +237,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             button.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                button.style.backgroundColor = new StyleColor(new Color(0.4f, 0.4f, 0.4f));
+                button.style.backgroundColor = ColorPreset.TagPillHoverStyle;
             });
             button.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                button.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+                button.style.backgroundColor = ColorPreset.TagPillBackgroundStyle;
             });
 
             return button;

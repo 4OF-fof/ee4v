@@ -211,7 +211,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             var scrollArea = new ScrollView {
                 style = {
-                    flexGrow = 1, backgroundColor = new Color(0, 0, 0, 0.1f), borderTopWidth = 1, borderBottomWidth = 1,
+                    flexGrow = 1, backgroundColor = ColorPreset.TransparentBlack10Style, borderTopWidth = 1,
+                    borderBottomWidth = 1,
                     borderTopColor = ColorPreset.WindowBorder, borderBottomColor = ColorPreset.WindowBorder,
                     borderRightColor = ColorPreset.WindowBorder, borderLeftColor = ColorPreset.WindowBorder
                 }
@@ -230,7 +231,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var cancelBtn = new Button(Close) { text = "Cancel", style = { width = 80 } };
             var importBtn = new Button(DoImport) {
                 text = "Select",
-                style = { width = 80, backgroundColor = new Color(0.2f, 0.5f, 0.2f), color = Color.white }
+                style = { width = 80, backgroundColor = ColorPreset.SuccessButtonStyle, color = ColorPreset.TextColor }
             };
 
             footer.Add(cancelBtn);
@@ -271,7 +272,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                     marginRight = 0,
                     unityTextAlign = TextAnchor.MiddleCenter,
                     fontSize = 10,
-                    color = Color.gray,
+                    color = ColorPreset.InActiveItem,
                     visibility = node.IsDirectory ? Visibility.Visible : Visibility.Hidden
                 }
             };

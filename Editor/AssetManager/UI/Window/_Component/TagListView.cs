@@ -82,7 +82,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 style = {
                     fontSize = 16,
                     unityTextAlign = TextAnchor.MiddleCenter,
-                    color = new Color(1f, 1f, 1f, 0.5f),
+                    color = ColorPreset.TransparentWhite50,
                     marginBottom = 8
                 }
             };
@@ -91,7 +91,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 style = {
                     fontSize = 12,
                     unityTextAlign = TextAnchor.MiddleCenter,
-                    color = new Color(1f, 1f, 1f, 0.3f)
+                    color = ColorPreset.TransparentWhite30
                 }
             };
 
@@ -296,7 +296,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     paddingRight = 10,
                     marginRight = 4,
                     marginBottom = 4,
-                    backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f)),
+                    backgroundColor = ColorPreset.TagPillBackgroundStyle,
                     borderTopWidth = 0, borderBottomWidth = 0, borderLeftWidth = 0, borderRightWidth = 0,
                     color = ColorPreset.TextColor,
                     fontSize = 11
@@ -304,9 +304,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
 
             btn.RegisterCallback<MouseEnterEvent>(_ =>
-                btn.style.backgroundColor = new StyleColor(new Color(0.4f, 0.4f, 0.4f)));
+                btn.style.backgroundColor = ColorPreset.TagPillHoverStyle);
             btn.RegisterCallback<MouseLeaveEvent>(_ =>
-                btn.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f)));
+                btn.style.backgroundColor = ColorPreset.TagPillBackgroundStyle);
 
             btn.RegisterCallback<MouseDownEvent>(evt =>
             {

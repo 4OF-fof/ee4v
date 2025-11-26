@@ -101,8 +101,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         public void UpdateNavigationState(bool canGoBack, bool canGoForward) {
             _backLabel.SetEnabled(canGoBack);
             _forwardLabel.SetEnabled(canGoForward);
-            _backLabel.style.color = canGoBack ? ColorPreset.TextColor : Color.gray;
-            _forwardLabel.style.color = canGoForward ? ColorPreset.TextColor : Color.gray;
+            _backLabel.style.color = canGoBack ? ColorPreset.TextColor : ColorPreset.InActiveItem;
+            _forwardLabel.style.color = canGoForward ? ColorPreset.TextColor : ColorPreset.InActiveItem;
         }
 
         public void UpdateBreadcrumbs(List<(string Name, Ulid Id)> path) {
@@ -132,7 +132,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 var separator = new Label(">") {
                     style = {
                         marginLeft = 2, marginRight = 2,
-                        color = Color.gray,
+                        color = ColorPreset.InActiveItem,
                         unityTextAlign = TextAnchor.MiddleCenter
                     }
                 };

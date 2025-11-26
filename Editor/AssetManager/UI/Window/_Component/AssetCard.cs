@@ -47,7 +47,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 style = {
                     flexGrow = 1,
                     width = Length.Percent(100),
-                    backgroundColor = new StyleColor(Color.gray),
+                    backgroundColor = new StyleColor(ColorPreset.InActiveItem),
                     backgroundSize = new BackgroundSize(BackgroundSizeType.Contain),
                     backgroundRepeat = new BackgroundRepeat(Repeat.NoRepeat, Repeat.NoRepeat),
                     backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Center),
@@ -69,7 +69,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     height = 38,
                     flexShrink = 0,
                     fontSize = 11,
-                    color = new StyleColor(new Color(0.9f, 0.9f, 0.9f))
+                    color = new StyleColor(ColorPreset.TextColor)
                 }
             };
             _innerContainer.Add(_nameLabel);
@@ -90,7 +90,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 }
                 else {
                     _thumbnail.style.backgroundImage = null;
-                    _thumbnail.style.backgroundColor = new StyleColor(Color.gray);
+                    _thumbnail.style.backgroundColor = new StyleColor(ColorPreset.InActiveItem);
                 }
 
                 return;
@@ -142,7 +142,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 return;
             }
 
-            _innerContainer.style.backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.3f);
+            _innerContainer.style.backgroundColor = ColorPreset.DropFolderArea;
             evt.StopImmediatePropagation();
         }
 

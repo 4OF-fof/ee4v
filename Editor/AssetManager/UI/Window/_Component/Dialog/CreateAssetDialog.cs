@@ -137,7 +137,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             var boothUrlHint = new Label("Format: [shopname].booth.pm/items/[itemid]") {
                 style = {
                     fontSize = 10,
-                    color = Color.gray,
+                    color = ColorPreset.InActiveItem,
                     marginBottom = 5
                 }
             };
@@ -180,7 +180,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             }) {
                 text = "+ Add Tag",
                 style = {
-                    backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f)),
+                    backgroundColor = ColorPreset.TagPillBackgroundStyle,
                     borderTopLeftRadius = 10,
                     borderTopRightRadius = 10,
                     borderBottomLeftRadius = 10,
@@ -200,11 +200,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             };
             addTagButton.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                addTagButton.style.backgroundColor = new StyleColor(new Color(0.4f, 0.4f, 0.4f));
+                addTagButton.style.backgroundColor = ColorPreset.TagPillHoverStyle;
             });
             addTagButton.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                addTagButton.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+                addTagButton.style.backgroundColor = ColorPreset.TagPillBackgroundStyle;
             });
             content.Add(addTagButton);
 
@@ -314,7 +314,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             var pill = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
-                    backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f)),
+                    backgroundColor = ColorPreset.TabBackground,
                     borderTopLeftRadius = 10,
                     borderTopRightRadius = 10,
                     borderBottomLeftRadius = 10,
@@ -333,11 +333,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
 
             pill.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                pill.style.backgroundColor = new StyleColor(new Color(0.4f, 0.4f, 0.4f));
+                pill.style.backgroundColor = ColorPreset.TagPillHoverStyle;
             });
             pill.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                pill.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+                pill.style.backgroundColor = ColorPreset.TagPillBackgroundStyle;
             });
 
             var removeBtn = new Button(() => onRemove?.Invoke()) {
@@ -359,8 +359,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             removeBtn.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
             removeBtn.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                removeBtn.style.backgroundColor = new Color(0.8f, 0.3f, 0.3f);
-                removeBtn.style.color = Color.white;
+                removeBtn.style.backgroundColor = new StyleColor(ColorPreset.WarningButton);
+                removeBtn.style.color = ColorPreset.TextColor;
             });
             removeBtn.RegisterCallback<MouseLeaveEvent>(_ =>
             {

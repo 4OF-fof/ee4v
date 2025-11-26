@@ -1,4 +1,5 @@
 using _4OF.ee4v.AssetManager.Adapter;
+using _4OF.ee4v.Core.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -27,14 +28,14 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             content.Add(title);
 
             var progressText = new Label("0 / 0") {
-                style = { marginBottom = 8, fontSize = 12, color = new Color(0.9f, 0.9f, 0.9f) }
+                style = { marginBottom = 8, fontSize = 12, color = ColorPreset.TextColor }
             };
             content.Add(progressText);
 
             var barWrapper = new VisualElement {
                 style = {
                     height = 10,
-                    backgroundColor = new Color(0.15f, 0.15f, 0.15f, 0.55f),
+                    backgroundColor = ColorPreset.TransparentBlack50Style,
                     marginBottom = 10,
                     borderTopLeftRadius = 8,
                     borderTopRightRadius = 8,
@@ -48,7 +49,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 style = {
                     width = 0,
                     height = 18,
-                    backgroundColor = new Color(0.26f, 0.58f, 0.95f),
+                    backgroundColor = ColorPreset.AccentBlueStyle,
                     borderTopLeftRadius = 4,
                     borderTopRightRadius = 4,
                     borderBottomLeftRadius = 4,

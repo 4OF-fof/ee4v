@@ -136,7 +136,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     flexDirection = FlexDirection.Row,
                     alignItems = Align.Center,
                     marginBottom = 10,
-                    backgroundColor = new StyleColor(new Color(0, 0, 0, 0.1f)),
+                    backgroundColor = ColorPreset.TransparentBlack10Style,
                     paddingLeft = 4, paddingTop = 4, paddingBottom = 4,
                     borderTopLeftRadius = 4,
                     borderTopRightRadius = 4,
@@ -153,13 +153,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             _folderRow.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                _folderRow.style.backgroundColor = new StyleColor(new Color(0, 0, 0, 0.2f));
+                _folderRow.style.backgroundColor = ColorPreset.TransparentBlack20Style;
                 if (_folderNameLabel != null)
                     _folderNameLabel.style.color = new StyleColor(ColorPreset.ItemSelectedBorder);
             });
             _folderRow.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                _folderRow.style.backgroundColor = new StyleColor(new Color(0, 0, 0, 0.1f));
+                _folderRow.style.backgroundColor = ColorPreset.TransparentBlack10Style;
                 if (_folderNameLabel != null) _folderNameLabel.style.color = new StyleColor(StyleKeyword.Null);
             });
 
@@ -198,7 +198,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             var addTagButton = new Button(OpenTagSelector) {
                 text = "+ Add Tag",
                 style = {
-                    backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f)),
+                    backgroundColor = ColorPreset.TagPillBackgroundStyle,
                     borderTopLeftRadius = 10,
                     borderTopRightRadius = 10,
                     borderBottomLeftRadius = 10,
@@ -218,11 +218,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
             addTagButton.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                addTagButton.style.backgroundColor = new StyleColor(new Color(0.4f, 0.4f, 0.4f));
+                addTagButton.style.backgroundColor = ColorPreset.TagPillHoverStyle;
             });
             addTagButton.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                addTagButton.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+                addTagButton.style.backgroundColor = ColorPreset.TagPillBackgroundStyle;
             });
             _singleSelectionContainer.Add(addTagButton);
 
@@ -242,7 +242,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _addDependencyButton = new Button(OpenDependencySelector) {
                 text = "+ Add Dependency",
                 style = {
-                    backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f)),
+                    backgroundColor = ColorPreset.TagPillBackgroundStyle,
                     borderTopLeftRadius = 10,
                     borderTopRightRadius = 10,
                     borderBottomLeftRadius = 10,
@@ -262,11 +262,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             };
             _addDependencyButton.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                _addDependencyButton.style.backgroundColor = new StyleColor(new Color(0.4f, 0.4f, 0.4f));
+                _addDependencyButton.style.backgroundColor = ColorPreset.TagPillHoverStyle;
             });
             _addDependencyButton.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                _addDependencyButton.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+                _addDependencyButton.style.backgroundColor = ColorPreset.TagPillBackgroundStyle;
             });
             _singleSelectionContainer.Add(_addDependencyButton);
 
@@ -523,7 +523,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 var pill = new VisualElement {
                     style = {
                         flexDirection = FlexDirection.Row,
-                        backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f)),
+                        backgroundColor = ColorPreset.TagPillBackgroundStyle,
                         borderTopLeftRadius = 10,
                         borderTopRightRadius = 10,
                         borderBottomLeftRadius = 10,
@@ -545,11 +545,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
                 pill.RegisterCallback<MouseEnterEvent>(_ =>
                 {
-                    pill.style.backgroundColor = new StyleColor(new Color(0.4f, 0.4f, 0.4f));
+                    pill.style.backgroundColor = ColorPreset.TagPillHoverStyle;
                 });
                 pill.RegisterCallback<MouseLeaveEvent>(_ =>
                 {
-                    pill.style.backgroundColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+                    pill.style.backgroundColor = ColorPreset.TagPillBackgroundStyle;
                 });
 
                 var removeBtn = new Button(() => { OnTagRemoved?.Invoke(tag); }) {
@@ -567,7 +567,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 removeBtn.RegisterCallback<MouseEnterEvent>(_ =>
                 {
                     removeBtn.style.backgroundColor = ColorPreset.TabCloseButtonHover;
-                    removeBtn.style.color = Color.white;
+                    removeBtn.style.color = ColorPreset.TextColor;
                 });
                 removeBtn.RegisterCallback<MouseLeaveEvent>(_ =>
                 {
@@ -589,7 +589,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 var pill = new VisualElement {
                     style = {
                         flexDirection = FlexDirection.Row,
-                        backgroundColor = new StyleColor(new Color(0.2f, 0.3f, 0.5f)),
+                        backgroundColor = ColorPreset.DropFolderArea,
                         borderTopLeftRadius = 10,
                         borderTopRightRadius = 10,
                         borderBottomLeftRadius = 10,
@@ -611,11 +611,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
                 pill.RegisterCallback<MouseEnterEvent>(_ =>
                 {
-                    pill.style.backgroundColor = new StyleColor(new Color(0.3f, 0.4f, 0.6f));
+                    pill.style.backgroundColor = ColorPreset.TabHoveredBackground;
                 });
                 pill.RegisterCallback<MouseLeaveEvent>(_ =>
                 {
-                    pill.style.backgroundColor = new StyleColor(new Color(0.2f, 0.3f, 0.5f));
+                    pill.style.backgroundColor = ColorPreset.DropFolderArea;
                 });
 
                 var removeBtn = new Button(() => { OnDependencyRemoved?.Invoke(dependency.Id); }) {
@@ -633,7 +633,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 removeBtn.RegisterCallback<MouseEnterEvent>(_ =>
                 {
                     removeBtn.style.backgroundColor = ColorPreset.TabCloseButtonHover;
-                    removeBtn.style.color = Color.white;
+                    removeBtn.style.color = ColorPreset.TextColor;
                 });
                 removeBtn.RegisterCallback<MouseLeaveEvent>(_ =>
                 {
@@ -679,7 +679,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 var pill = new VisualElement {
                     style = {
                         flexDirection = FlexDirection.Row,
-                        backgroundColor = new StyleColor(new Color(0.2f, 0.5f, 0.3f)),
+                        backgroundColor = ColorPreset.SuccessButtonStyle,
                         borderTopLeftRadius = 10,
                         borderTopRightRadius = 10,
                         borderBottomLeftRadius = 10,
@@ -706,8 +706,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     height = 30,
                     marginTop = 10,
                     marginBottom = 10,
-                    backgroundColor = new StyleColor(new Color(0.9f, 0.5f, 0.2f)),
-                    color = Color.white,
+                    backgroundColor = ColorPreset.PrimaryButtonStyle,
+                    color = ColorPreset.TextColor,
                     unityFontStyleAndWeight = FontStyle.Bold,
                     alignSelf = Align.Center,
                     width = Length.Percent(90),
@@ -718,11 +718,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             button.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                button.style.backgroundColor = new StyleColor(new Color(1.0f, 0.6f, 0.3f));
+                button.style.backgroundColor = ColorPreset.PrimaryButtonHoverStyle;
             });
             button.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                button.style.backgroundColor = new StyleColor(new Color(0.9f, 0.5f, 0.2f));
+                button.style.backgroundColor = ColorPreset.PrimaryButtonStyle;
             });
 
             return button;
@@ -758,7 +758,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         display = DisplayStyle.None
                     }
                 };
-                _row.Add(new Label(label) { style = { color = Color.gray, width = 80 } });
+                _row.Add(new Label(label) { style = { color = ColorPreset.InActiveItem, width = 80 } });
                 _valueLabel = new Label { style = { flexGrow = 1, unityTextAlign = TextAnchor.MiddleRight } };
                 _row.Add(_valueLabel);
                 container.Add(_row);
@@ -788,13 +788,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                         display = DisplayStyle.None
                     }
                 };
-                _row.Add(new Label(label) { style = { color = Color.gray, width = 80 } });
+                _row.Add(new Label(label) { style = { color = ColorPreset.InActiveItem, width = 80 } });
 
                 _valueLabel = new Label {
                     style = {
                         flexGrow = 1,
                         unityTextAlign = TextAnchor.MiddleRight,
-                        color = new StyleColor(new Color(0.4f, 0.6f, 1.0f))
+                        color = ColorPreset.AccentBlueStyle
                     }
                 };
 
@@ -807,11 +807,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
                 _valueLabel.RegisterCallback<MouseEnterEvent>(_ =>
                 {
-                    _valueLabel.style.color = new StyleColor(new Color(0.6f, 0.8f, 1.0f));
+                    _valueLabel.style.color = ColorPreset.AccentBlueHoverStyle;
                 });
                 _valueLabel.RegisterCallback<MouseLeaveEvent>(_ =>
                 {
-                    _valueLabel.style.color = new StyleColor(new Color(0.4f, 0.6f, 1.0f));
+                    _valueLabel.style.color = ColorPreset.AccentBlueStyle;
                 });
 
                 _row.Add(_valueLabel);

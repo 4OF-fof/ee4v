@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor.UIElements;
@@ -60,7 +61,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             var container = new VisualElement {
                 style = {
-                    flexGrow = 1,
                     paddingLeft = 8,
                     paddingRight = 8,
                     paddingTop = 8,
@@ -76,7 +76,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                     marginBottom = 8
                 }
             };
-
             _searchField = new ToolbarSearchField {
                 style = {
                     height = 20,
@@ -85,7 +84,6 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             };
             _searchField.RegisterValueChangedCallback(evt => FilterAssets(evt.newValue));
             searchRow.Add(_searchField);
-            container.Add(searchRow);
 
             _searchField.schedule.Execute(() => _searchField?.Q<TextField>()?.Focus()).ExecuteLater(50);
 
@@ -136,7 +134,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 new Label(string.IsNullOrEmpty(searchText) ? "No assets available" : "No matching assets") {
                     style = {
                         unityTextAlign = TextAnchor.MiddleCenter,
-                        color = Color.gray,
+                        color = ColorPreset.InActiveItem,
                         marginTop = 20,
                         width = Length.Percent(100)
                     }
@@ -153,7 +151,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                     paddingLeft = 8,
                     paddingRight = 8,
                     marginBottom = 2,
-                    backgroundColor = new StyleColor(new Color(0.25f, 0.25f, 0.25f)),
+                    backgroundColor = ColorPreset.TabBackground,
                     borderTopLeftRadius = 4,
                     borderTopRightRadius = 4,
                     borderBottomLeftRadius = 4,
@@ -171,11 +169,11 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             button.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                button.style.backgroundColor = new StyleColor(new Color(0.35f, 0.35f, 0.35f));
+                button.style.backgroundColor = ColorPreset.TabHoveredBackground;
             });
             button.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                button.style.backgroundColor = new StyleColor(new Color(0.25f, 0.25f, 0.25f));
+                button.style.backgroundColor = ColorPreset.TabBackground;
             });
 
             var nameLabel = new Label(asset.Name) {
@@ -191,7 +189,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var extLabel = new Label(asset.Ext) {
                 style = {
                     fontSize = 10,
-                    color = new StyleColor(new Color(0.7f, 0.7f, 0.7f)),
+                    color = new StyleColor(ColorPreset.InActiveItem),
                     marginLeft = 8
                 }
             };

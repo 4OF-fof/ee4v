@@ -1,4 +1,5 @@
 using System;
+using _4OF.ee4v.Core.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -8,7 +9,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
         private readonly Label _messageLabel;
 
         public Toast(string message, float? duration = null) {
-            style.backgroundColor = new Color(0.2f, 0.2f, 0.2f, 0.95f);
+            style.backgroundColor = ColorPreset.DefaultBackground;
             style.borderTopLeftRadius = 6;
             style.borderTopRightRadius = 6;
             style.borderBottomLeftRadius = 6;
@@ -23,7 +24,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             style.flexDirection = FlexDirection.Row;
             style.alignItems = Align.Center;
             style.borderLeftWidth = 3;
-            style.borderLeftColor = new Color(0.3f, 0.7f, 1.0f);
+            style.borderLeftColor = ColorPreset.AccentBlue;
 
             var contentContainer1 = new VisualElement {
                 style = {
@@ -39,7 +40,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     flexGrow = 1,
                     unityTextAlign = TextAnchor.MiddleLeft,
                     whiteSpace = WhiteSpace.Normal,
-                    color = Color.white
+                    color = ColorPreset.TextColor
                 }
             };
             contentContainer1.Add(_messageLabel);
@@ -66,7 +67,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             closeLabel.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                closeLabel.style.backgroundColor = new Color(0.5f, 0.3f, 0.3f);
+                closeLabel.style.backgroundColor = new StyleColor(ColorPreset.WarningButton);
             });
             closeLabel.RegisterCallback<MouseLeaveEvent>(_ => { closeLabel.style.backgroundColor = Color.clear; });
 
@@ -96,10 +97,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         public void SetType(ToastType type) {
             style.borderLeftColor = type switch {
-                ToastType.Info    => new Color(0.3f, 0.7f, 1.0f),
-                ToastType.Success => new Color(0.3f, 0.8f, 0.4f),
-                ToastType.Warning => new Color(1.0f, 0.8f, 0.3f),
-                ToastType.Error   => new Color(1.0f, 0.3f, 0.3f),
+                ToastType.Info    => ColorPreset.AccentBlue,
+                ToastType.Success => ColorPreset.SuccessButton,
+                ToastType.Warning => ColorPreset.HighlightColor,
+                ToastType.Error   => ColorPreset.WarningButton,
                 _                 => style.borderLeftColor
             };
         }

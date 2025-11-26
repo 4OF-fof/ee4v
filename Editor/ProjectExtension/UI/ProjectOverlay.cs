@@ -17,8 +17,8 @@ namespace _4OF.ee4v.ProjectExtension.UI {
 
             if (!string.IsNullOrEmpty(path) && AssetDatabase.IsValidFolder(path))
                 ProjectFolderOverlay.Draw(path, selectionRect);
-            
-            if (ProjectExtensionAPI.IsHighlighted(guid)) 
+
+            if (ProjectExtensionAPI.IsHighlighted(guid))
                 EditorGUI.DrawRect(selectionRect, ColorPreset.HighlightColor);
         }
     }

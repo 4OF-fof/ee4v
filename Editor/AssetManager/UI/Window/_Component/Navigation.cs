@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.AssetManager.UI.Window._Component.Dialog;
+using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
@@ -104,19 +105,19 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     marginRight = 4,
                     unityFontStyleAndWeight = FontStyle.Bold,
                     fontSize = 16,
-                    color = new Color(0.7f, 0.7f, 0.7f)
+                    color = ColorPreset.InActiveItem
                 }
             };
 
             plusButton.RegisterCallback<PointerEnterEvent>(_ =>
             {
-                plusButton.style.color = new Color(0.4f, 0.7f, 1.0f);
-                plusButton.style.backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.2f);
+                plusButton.style.color = ColorPreset.AccentBlue;
+                plusButton.style.backgroundColor = ColorPreset.AccentBlue20Style;
             });
 
             plusButton.RegisterCallback<PointerLeaveEvent>(_ =>
             {
-                plusButton.style.color = new Color(0.7f, 0.7f, 0.7f);
+                plusButton.style.color = ColorPreset.InActiveItem;
                 plusButton.style.backgroundColor = new StyleColor(StyleKeyword.Null);
             });
 
@@ -155,8 +156,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                     borderTopRightRadius = 16,
                     borderBottomLeftRadius = 16,
                     borderBottomRightRadius = 16,
-                    backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.8f),
-                    color = Color.white,
+                    backgroundColor = ColorPreset.AccentBlue40Style,
+                    color = ColorPreset.TextColor,
                     unityFontStyleAndWeight = FontStyle.Bold,
                     fontSize = 12,
                     borderTopWidth = 0,
@@ -168,12 +169,12 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
             createAssetButton.RegisterCallback<PointerEnterEvent>(_ =>
             {
-                createAssetButton.style.backgroundColor = new Color(0.4f, 0.6f, 0.9f, 1.0f);
+                createAssetButton.style.backgroundColor = ColorPreset.AccentBlueStyle;
             });
 
             createAssetButton.RegisterCallback<PointerLeaveEvent>(_ =>
             {
-                createAssetButton.style.backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.8f);
+                createAssetButton.style.backgroundColor = ColorPreset.AccentBlue40Style;
             });
 
             createAssetButton.clicked += ShowCreateAssetDialog;
@@ -342,7 +343,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             {
                 if (DragAndDrop.GetGenericData("AssetManagerAssets") == null &&
                     DragAndDrop.GetGenericData("AssetManagerFolders") == null) return;
-                itemRow.style.backgroundColor = new Color(0.4f, 0.7f, 1.0f, 0.4f);
+                itemRow.style.backgroundColor = ColorPreset.AccentBlue40Style;
             });
 
             itemRow.RegisterCallback<DragLeaveEvent>(_ =>
@@ -464,10 +465,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
 
         private static void ApplySelectedStyle(VisualElement item) {
             item.AddToClassList("selected");
-            item.style.backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.3f);
+            item.style.backgroundColor = ColorPreset.AccentBlue40Style;
             foreach (var child in item.Children())
                 if (child is Label childLabel)
-                    childLabel.style.color = new Color(0.4f, 0.7f, 1.0f);
+                    childLabel.style.color = ColorPreset.AccentBlue;
         }
 
         private void RemoveSelectedStyle(VisualElement item) {
@@ -496,8 +497,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             if (_selectedLabel == null) return;
 
             _selectedLabel.AddToClassList("selected");
-            _selectedLabel.style.backgroundColor = new Color(0.3f, 0.5f, 0.8f, 0.3f);
-            _selectedLabel.style.color = new Color(0.4f, 0.7f, 1.0f);
+            _selectedLabel.style.backgroundColor = ColorPreset.AccentBlue40Style;
+            _selectedLabel.style.color = ColorPreset.AccentBlue;
         }
 
         private void SetSelectedFolderItem(VisualElement folderItem) {

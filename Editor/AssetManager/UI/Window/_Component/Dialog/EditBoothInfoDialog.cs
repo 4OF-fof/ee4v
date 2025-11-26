@@ -1,5 +1,6 @@
 ﻿using System;
 using _4OF.ee4v.AssetManager.Utility;
+using _4OF.ee4v.Core.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -27,7 +28,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
             var hint = new Label("Format: [shopname].booth.pm/items/[itemid]") {
                 style = {
                     fontSize = 10,
-                    color = Color.gray,
+                    color = ColorPreset.InActiveItem,
                     marginBottom = 5
                 }
             };

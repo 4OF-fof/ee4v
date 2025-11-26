@@ -12,7 +12,7 @@ namespace _4OF.ee4v.ProjectExtension.API {
 
         public static void SetHighlights(IEnumerable<string> guids) {
             HighlightedGuids.Clear();
-            if (guids != null) {
+            if (guids != null)
                 foreach (var guid in guids) {
                     if (string.IsNullOrEmpty(guid)) continue;
 
@@ -24,12 +24,10 @@ namespace _4OF.ee4v.ProjectExtension.API {
                         if (string.IsNullOrEmpty(path) || path == "Assets") break;
 
                         var parentGuid = AssetDatabase.AssetPathToGUID(path);
-                        if (!string.IsNullOrEmpty(parentGuid)) {
-                            HighlightedGuids.Add(parentGuid);
-                        }
+                        if (!string.IsNullOrEmpty(parentGuid)) HighlightedGuids.Add(parentGuid);
                     }
                 }
-            }
+
             EditorApplication.RepaintProjectWindow();
         }
 

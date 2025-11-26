@@ -84,7 +84,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 style = {
                     fontSize = 16,
                     unityTextAlign = TextAnchor.MiddleCenter,
-                    color = new Color(1f, 1f, 1f, 0.5f),
+                    color = ColorPreset.TransparentWhite50,
                     marginBottom = 8
                 }
             };
@@ -93,7 +93,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 style = {
                     fontSize = 12,
                     unityTextAlign = TextAnchor.MiddleCenter,
-                    color = new Color(1f, 1f, 1f, 0.3f)
+                    color = ColorPreset.TransparentWhite30
                 }
             };
 
@@ -471,9 +471,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 _showDialog,
                 out var menuHeight
             );
-            
+
             if (menuHeight <= 20f) return;
-            
+
             Rect anchorRect;
             try {
                 var worldPos = card.LocalToWorld(evt.localPosition);

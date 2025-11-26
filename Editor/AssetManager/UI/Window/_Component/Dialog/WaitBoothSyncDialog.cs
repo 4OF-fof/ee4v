@@ -1,5 +1,6 @@
 using System;
 using _4OF.ee4v.AssetManager.Adapter;
+using _4OF.ee4v.Core.UI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -45,7 +46,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 style = {
                     marginBottom = 8,
                     unityTextAlign = TextAnchor.MiddleLeft,
-                    color = new Color(0.8f, 0.2f, 0.2f),
+                    color = ColorPreset.WarningText,
                     unityFontStyleAndWeight = FontStyle.Bold,
                     fontSize = 13,
                     whiteSpace = WhiteSpace.Normal,
@@ -137,9 +138,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 Debug.LogWarning($"Failed to start local HttpServer on port {LocalHttpPort}: {ex}");
                 var errLabel = new Label($"ローカル HTTP サーバの起動に失敗しました: {ex.Message}") {
                     style = {
-                        marginBottom = 8, unityTextAlign = TextAnchor.MiddleLeft, color = new Color(0.8f, 0.2f, 0.2f)
+                        marginBottom = 8, unityTextAlign = TextAnchor.MiddleLeft, color = ColorPreset.WarningText
                     }
                 };
+                errLabel.style.color = ColorPreset.WarningText;
                 content.Add(errLabel);
             }
 

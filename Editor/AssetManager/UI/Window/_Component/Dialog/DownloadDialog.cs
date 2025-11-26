@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading;
 using _4OF.ee4v.AssetManager.Service;
+using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
@@ -51,7 +52,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                     unityTextAlign = TextAnchor.MiddleCenter,
                     marginBottom = 16,
                     fontSize = 12,
-                    color = new Color(0.7f, 0.7f, 0.7f)
+                    color = ColorPreset.InActiveItem
                 }
             };
             content.Add(_statusLabel);
@@ -69,7 +70,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component.Dialog {
                 style = {
                     width = 100,
                     height = 30,
-                    backgroundColor = new Color(0.4f, 0.4f, 0.4f),
+                    backgroundColor = ColorPreset.TabBackground,
                     borderTopLeftRadius = 4,
                     borderTopRightRadius = 4,
                     borderBottomLeftRadius = 4,

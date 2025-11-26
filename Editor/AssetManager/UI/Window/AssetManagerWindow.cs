@@ -210,7 +210,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 style = {
                     position = Position.Absolute,
                     left = 0, right = 0, top = 0, bottom = 0,
-                    backgroundColor = new StyleColor(new Color(0, 0, 0, 0.5f)),
+                    backgroundColor = ColorPreset.TransparentBlack50Style,
                     alignItems = Align.Center,
                     justifyContent = Justify.Center
                 }
@@ -292,7 +292,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var continueBtn = new Button {
                 text = "Continue",
                 style = {
-                    backgroundColor = new Color(0.8f, 0.4f, 0.4f)
+                    backgroundColor = new StyleColor(ColorPreset.WarningButton)
                 }
             };
             buttonRow.Add(continueBtn);
