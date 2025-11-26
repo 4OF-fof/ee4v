@@ -84,5 +84,8 @@
   "Debug.ProjectExtension.RemovedWorkspaceLabelsMultiple": "ワークスペースラベル '{0}' を {1} 個のアセットから削除しました。",
   "Debug.VRCUtility.UploadSuccess": "アップロード成功。アバターID: {0}",
   "Debug.VRCUtility.TargetPrefab": "対象のプレハブ名: {0}",
-  "Debug.VRCUtility.BackupFailed": "バックアップ失敗"
+  "Debug.VRCUtility.BackupFailed": "バックアップ失敗",
+  "Debug.VRCUtility.ExportImportFailed": "バックアップのエクスポート/インポートに失敗しました: {0}",
+  "Debug.VRCUtility.UploadError": "アップロード中にエラーが発生しました",
+  "Debug.VRCUtility.BackupDescription": "自動バックアップ ({0})"
 }

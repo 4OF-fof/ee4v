@@ -51,6 +51,7 @@ namespace _4OF.ee4v.VRCUtility {
         }
 
         private static void OnUploadError(object sender, object target) {
+            Debug.LogWarning(I18N.Get("Debug.VRCUtility.UploadError"));
             _currentlyBuildingAvatar = null;
         }
 
@@ -72,11 +73,11 @@ namespace _4OF.ee4v.VRCUtility {
                     tempPath,
                     avatarId,
                     prefabAsset.name,
-                    $"Auto backup for upload {timestamp}"
+                    I18N.Get("Debug.VRCUtility.BackupDescription", timestamp)
                 );
             }
             catch (Exception e) {
-                Debug.LogError($"Failed to export/import backup: {e.Message}");
+                Debug.LogError(I18N.Get("Debug.VRCUtility.ExportImportFailed", e.Message));
             }
             finally {
                 if (File.Exists(tempPath)) File.Delete(tempPath);

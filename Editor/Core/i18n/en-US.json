@@ -84,5 +84,8 @@
   "Debug.ProjectExtension.RemovedWorkspaceLabelsMultiple": "Removed workspace label '{0}' from {1} asset(s).",
   "Debug.VRCUtility.UploadSuccess": "Upload success. Avatar ID: {0}",
   "Debug.VRCUtility.TargetPrefab": "Target prefab name: {0}",
-  "Debug.VRCUtility.BackupFailed": "Backup failed"
+  "Debug.VRCUtility.BackupFailed": "Backup failed",
+  "Debug.VRCUtility.ExportImportFailed": "Failed to export/import backup: {0}",
+  "Debug.VRCUtility.UploadError": "Upload error occurred",
+  "Debug.VRCUtility.BackupDescription": "Auto backup ({0})"
 }
