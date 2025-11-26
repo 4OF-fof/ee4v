@@ -14,6 +14,7 @@ namespace _4OF.ee4v.AssetManager.Data {
             _allowedBaseTypes.Add(typeof(LibraryMetadata));
             _allowedBaseTypes.Add(typeof(BaseFolder));
             _allowedBaseTypes.Add(typeof(Folder));
+            _allowedBaseTypes.Add(typeof(BackupFolder));
             _allowedBaseTypes.Add(typeof(BoothItemFolder));
             _allowedBaseTypes.Add(typeof(AssetMetadata));
             _allowedBaseTypes.Add(typeof(BoothMetadata));

@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.UI.Window._Component {
-    public class Navigation : VisualElement {
+    public sealed class Navigation : VisualElement {
         private readonly CreateAssetDialog _createAssetDialog;
         private readonly CreateFolderDialog _createFolderDialog;
         private readonly NavigationDragManipulator _dragManipulator;
@@ -60,6 +60,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 FireNav(NavigationMode.BoothItems, "Booth Items", a => !a.IsDeleted);
                 BoothItemClicked?.Invoke();
             });
+            CreateNavLabel("Backups", () => FireNav(NavigationMode.Backups, "Backups", a => !a.IsDeleted));
+
             CreateNavLabel("Uncategorized", () => FireNav(NavigationMode.Uncategorized, "Uncategorized",
                 a => !a.IsDeleted && a.Folder == Ulid.Empty && (a.Tags == null || a.Tags.Count == 0)));
             CreateNavLabel("Tag List", () => { TagListClicked?.Invoke(); });
@@ -228,14 +230,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
                 case NavigationMode.BoothItems:
                     if (_navLabels.Count > 1) SetSelected(_navLabels[1]);
                     break;
-                case NavigationMode.Uncategorized:
+                case NavigationMode.Backups:
                     if (_navLabels.Count > 2) SetSelected(_navLabels[2]);
                     break;
-                case NavigationMode.TagList:
+                case NavigationMode.Uncategorized:
                     if (_navLabels.Count > 3) SetSelected(_navLabels[3]);
                     break;
-                case NavigationMode.Trash:
+                case NavigationMode.TagList:
                     if (_navLabels.Count > 4) SetSelected(_navLabels[4]);
+                    break;
+                case NavigationMode.Trash:
+                    if (_navLabels.Count > 5) SetSelected(_navLabels[5]);
                     break;
                 case NavigationMode.Tag:
                     break;
@@ -558,7 +563,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window._Component {
             _showDialogCallback.Invoke(content);
         }
 
-        protected virtual void OnOnFolderDeleted(Ulid obj) {
+        private void OnOnFolderDeleted(Ulid obj) {
             OnFolderDeleted?.Invoke(obj);
         }
     }

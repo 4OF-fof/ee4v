@@ -13,7 +13,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         TagList,
         Uncategorized,
         Trash,
-        Folders
+        Folders,
+        Backups
     }
 
     public class AssetViewController {
@@ -96,6 +97,10 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 if (folder is BoothItemFolder) {
                     CurrentMode = NavigationMode.BoothItems;
                     _contextName = "Booth Items";
+                }
+                else if (folder is BackupFolder) {
+                    CurrentMode = NavigationMode.Backups;
+                    _contextName = "Backups";
                 }
                 else {
                     CurrentMode = NavigationMode.Folders;
@@ -202,6 +207,26 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 }
         }
 
+        private void ShowBackupFolders() {
+            var backupFolders = new List<BackupFolder>();
+            var libMetadata = _repository.GetLibraryMetadata();
+            var rootFolders = libMetadata?.FolderList ?? new List<BaseFolder>();
+            CollectBackupFolders(rootFolders, backupFolders);
+            ItemsChanged?.Invoke(new List<object>(backupFolders));
+        }
+
+        private static void CollectBackupFolders(IEnumerable<BaseFolder> folders, List<BackupFolder> result) {
+            foreach (var folder in folders)
+                switch (folder) {
+                    case BackupFolder backupFolder:
+                        result.Add(backupFolder);
+                        break;
+                    case Folder parentFolder:
+                        CollectBackupFolders(parentFolder.Children, result);
+                        break;
+                }
+        }
+
         public void Refresh() {
             var displayItems = new List<object>();
 
@@ -209,13 +234,17 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 case NavigationMode.BoothItems when SelectedFolderId == Ulid.Empty:
                     ShowBoothItemFolders();
                     break;
+                case NavigationMode.Backups when SelectedFolderId == Ulid.Empty:
+                    ShowBackupFolders();
+                    break;
                 case NavigationMode.TagList: {
                     AssetsChanged?.Invoke(new List<AssetMetadata>());
                     ItemsChanged?.Invoke(new List<object>());
 
                     UpdateBreadcrumbs();
 
-                    var foldersDummy = _repository.GetLibraryMetadata()?.FolderList.Where(f => f is not BoothItemFolder)
+                    var foldersDummy = _repository.GetLibraryMetadata()?.FolderList
+                            .Where(f => f is not BoothItemFolder && f is not BackupFolder)
                             .ToList() ??
                         new List<BaseFolder>();
                     FoldersChanged?.Invoke(foldersDummy);
@@ -231,7 +260,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
                     if (SelectedFolderId == Ulid.Empty) {
                         if (CurrentMode == NavigationMode.Folders && libMetadata != null)
-                            displayItems.AddRange(libMetadata.FolderList.Where(f => f is not BoothItemFolder));
+                            displayItems.AddRange(libMetadata.FolderList.Where(f =>
+                                f is not BoothItemFolder && f is not BackupFolder));
                         else if (CurrentMode == NavigationMode.Tag && !string.IsNullOrEmpty(_currentTagFilter))
                             if (libMetadata != null) {
                                 var matchingFolders = new List<BaseFolder>();
@@ -263,8 +293,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 }
             }
 
-            var folders = _repository.GetLibraryMetadata()?.FolderList.Where(f => !(f is BoothItemFolder)).ToList() ??
-                new List<BaseFolder>();
+            var folders = _repository.GetLibraryMetadata()?.FolderList
+                .Where(f => f is not BoothItemFolder && f is not BackupFolder)
+                .ToList() ?? new List<BaseFolder>();
             FoldersChanged?.Invoke(folders);
 
             UpdateBreadcrumbs();
@@ -307,6 +338,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                         return true;
                     case BoothItemFolder boothFolder when boothFolder.ID == targetId:
                         pathStack.Push((boothFolder.Name, boothFolder.ID));
+                        return true;
+                    case BackupFolder backupFolder when backupFolder.ID == targetId:
+                        pathStack.Push((backupFolder.Name, backupFolder.ID));
                         return true;
                 }
             }
@@ -392,6 +426,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             if (SelectedFolderId == Ulid.Empty && CurrentMode == NavigationMode.Folders) return true;
 
             if (SelectedFolderId == Ulid.Empty && CurrentMode == NavigationMode.BoothItems && folder is BoothItemFolder)
+                return true;
+
+            if (SelectedFolderId == Ulid.Empty && CurrentMode == NavigationMode.Backups && folder is BackupFolder)
                 return true;
 
             if (SelectedFolderId != Ulid.Empty) return folder.ID == SelectedFolderId;

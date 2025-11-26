@@ -1,4 +1,7 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
+using _4OF.ee4v.AssetManager.Data;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
@@ -39,7 +42,7 @@ namespace _4OF.ee4v.VRCUtility {
 
                 if (prefabAsset != null) {
                     Debug.Log(I18N.Get("Debug.VRCUtility.TargetPrefab", prefabAsset.name));
-                    FileUtility.ExportUnityPackage(prefabAsset, avatarId);
+                    BackupToAssetManager(prefabAsset, avatarId);
                 }
 
                 _currentlyBuildingAvatar = null;
@@ -51,6 +54,65 @@ namespace _4OF.ee4v.VRCUtility {
 
         private static void OnUploadError(object sender, object target) {
             _currentlyBuildingAvatar = null;
+        }
+
+        private static void BackupToAssetManager(GameObject prefabAsset, string avatarId) {
+            var prefabPath = AssetDatabase.GetAssetPath(prefabAsset);
+            if (string.IsNullOrEmpty(prefabPath)) return;
+
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var fileName = $"{prefabAsset.name}_{timestamp}.unitypackage";
+            var tempPath = Path.Combine(Path.GetTempPath(), fileName);
+
+            var dependencies = AssetDatabase.GetDependencies(prefabPath, true);
+            var assetsOnlyDependencies = Array.FindAll(dependencies, path => path.StartsWith("Assets/"));
+
+            try {
+                AssetDatabase.ExportPackage(assetsOnlyDependencies, tempPath, ExportPackageOptions.Default);
+            }
+            catch (Exception e) {
+                Debug.LogError($"Failed to export temporary package: {e.Message}");
+                return;
+            }
+
+            var repository = AssetManagerContainer.Repository;
+            var folderService = AssetManagerContainer.FolderService;
+            var assetService = AssetManagerContainer.AssetService;
+
+            if (repository == null) {
+                Debug.LogError("AssetManager Repository is not initialized.");
+                return;
+            }
+
+            var avatarName = prefabAsset.name;
+            var folderId = folderService.EnsureBackupFolder(avatarId, avatarName);
+
+            if (folderId == Ulid.Empty) {
+                Debug.LogError("Failed to get or create backup folder.");
+                return;
+            }
+
+            try {
+                repository.CreateAssetFromFile(tempPath);
+
+                var assets = repository.GetAllAssets();
+                var createdAsset = assets.OrderByDescending(a => a.ModificationTime).FirstOrDefault();
+
+                if (createdAsset == null) return;
+                var newMeta = new AssetMetadata(createdAsset);
+                newMeta.SetName(Path.GetFileNameWithoutExtension(fileName));
+                newMeta.SetFolder(folderId);
+                newMeta.SetDescription($"Auto backup for upload {timestamp}");
+
+                assetService.SaveAsset(newMeta);
+                Debug.Log($"[ee4v] Backup saved to AssetManager: {fileName}");
+            }
+            catch (Exception e) {
+                Debug.LogError($"Failed to import backup to AssetManager: {e.Message}");
+            }
+            finally {
+                if (File.Exists(tempPath)) File.Delete(tempPath);
+            }
         }
     }
 }

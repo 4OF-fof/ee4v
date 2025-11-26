@@ -220,6 +220,28 @@ namespace _4OF.ee4v.AssetManager.Data {
         }
     }
 
+    public class BackupFolder : BaseFolder {
+        public BackupFolder() {
+        }
+
+        public BackupFolder(BackupFolder backupFolder) : base(backupFolder) {
+            AvatarId = backupFolder.AvatarId;
+        }
+
+        [JsonConstructor]
+        public BackupFolder(Ulid id, string name, string description, long modificationTime, List<string> tags,
+            string avatarId) : base(id, name, description, modificationTime, tags) {
+            AvatarId = avatarId ?? "";
+        }
+
+        public string AvatarId { get; private set; } = "";
+
+        public void SetAvatarId(string avatarId) {
+            AvatarId = avatarId ?? "";
+            Touch();
+        }
+    }
+
     public class BoothItemFolder : BaseFolder {
         public BoothItemFolder() {
         }
@@ -232,8 +254,7 @@ namespace _4OF.ee4v.AssetManager.Data {
 
         [JsonConstructor]
         public BoothItemFolder(Ulid id, string name, string description, long modificationTime, List<string> tags,
-            string itemId,
-            string shopDomain, string shopName) : base(id, name, description, modificationTime, tags) {
+            string itemId, string shopDomain, string shopName) : base(id, name, description, modificationTime, tags) {
             ItemId = itemId ?? "";
             ShopDomain = shopDomain ?? "";
             ShopName = shopName ?? "";

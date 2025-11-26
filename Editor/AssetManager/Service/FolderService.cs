@@ -66,6 +66,10 @@ namespace _4OF.ee4v.AssetManager.Service {
                         libraries.RemoveFolder(folderId);
                         libraries.AddFolder(boothItem);
                         break;
+                    case BackupFolder backupFolder: // 追加: BackupFolder対応
+                        libraries.RemoveFolder(folderId);
+                        libraries.AddFolder(backupFolder);
+                        break;
                     case Folder f:
                         libraries.RemoveFolder(folderId);
                         libraries.AddFolder(f);
@@ -244,7 +248,10 @@ namespace _4OF.ee4v.AssetManager.Service {
 
         public List<BaseFolder> GetRootFolders() {
             var libraries = _repository.GetLibraryMetadata();
-            return libraries?.FolderList.Where(f => f is not BoothItemFolder).ToList() ?? new List<BaseFolder>();
+            // 修正: BoothItemFolderに加え、BackupFolderも通常のフォルダリストから除外する
+            return libraries?.FolderList
+                .Where(f => f is not BoothItemFolder && f is not BackupFolder)
+                .ToList() ?? new List<BaseFolder>();
         }
 
         public void ReorderFolder(Ulid parentFolderId, Ulid folderId, int newIndex) {
@@ -369,6 +376,46 @@ namespace _4OF.ee4v.AssetManager.Service {
             }
 
             return null;
+        }
+
+        public Ulid EnsureBackupFolder(string avatarId, string avatarName) {
+            var libraries = _repository.GetLibraryMetadata();
+            if (libraries == null) return Ulid.Empty;
+
+            foreach (var root in libraries.FolderList) {
+                var found = FindBackupFolderRecursive(root, avatarId);
+                if (found == null) continue;
+                if (string.IsNullOrEmpty(avatarName) || found.Name == avatarName) return found.ID;
+                found.SetName(avatarName);
+                _repository.SaveFolder(found.ID);
+                return found.ID;
+            }
+
+            var newFolder = new BackupFolder();
+            newFolder.SetName(!string.IsNullOrEmpty(avatarName) ? avatarName : avatarId);
+            newFolder.SetAvatarId(avatarId);
+            newFolder.SetDescription($"Backup for {avatarId}");
+
+            libraries.AddFolder(newFolder);
+
+            try {
+                _repository.SaveLibraryMetadata(libraries);
+            }
+            catch (Exception e) {
+                Debug.LogWarning($"Failed saving library metadata while ensuring backup folder: {e.Message}");
+                return Ulid.Empty;
+            }
+
+            return newFolder.ID;
+        }
+
+        private static BackupFolder FindBackupFolderRecursive(BaseFolder root, string avatarId) {
+            return root switch {
+                BackupFolder bf when bf.AvatarId == avatarId => bf,
+                Folder { Children: not null } f => f.Children.Select(c => FindBackupFolderRecursive(c, avatarId))
+                    .FirstOrDefault(found => found != null),
+                _ => null
+            };
         }
     }
 }
