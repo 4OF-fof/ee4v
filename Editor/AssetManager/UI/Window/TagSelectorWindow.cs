@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using _4OF.ee4v.AssetManager.Data;
+using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
 using UnityEditor.UIElements;

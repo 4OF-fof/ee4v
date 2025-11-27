@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using _4OF.ee4v.AssetManager.Data;
-using _4OF.ee4v.AssetManager.Service;
+using _4OF.ee4v.AssetManager.Core;
+using _4OF.ee4v.AssetManager.UI.Component;
 using _4OF.ee4v.AssetManager.UI.Window;
-using _4OF.ee4v.AssetManager.UI.Window._Component;
 using _4OF.ee4v.Core.Utility;
 using _4OF.ee4v.Core.i18n;
 using UnityEngine;
