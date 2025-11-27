@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using _4OF.ee4v.Core.i18n;
 using Newtonsoft.Json;
 
 namespace _4OF.ee4v.Core.Utility {
@@ -38,7 +39,7 @@ namespace _4OF.ee4v.Core.Utility {
         public static Ulid Empty => new(0, 0);
 
         public static Ulid Parse(string value) {
-            return TryParse(value, out var ulid) ? ulid : throw new FormatException("Invalid ULID string.");
+            return TryParse(value, out var ulid) ? ulid : throw new FormatException(I18N.Get("Debug.Core.Utility.Ulid.InvalidString"));
         }
 
         public static bool TryParse(string value, out Ulid ulid) {
@@ -51,9 +52,9 @@ namespace _4OF.ee4v.Core.Utility {
             return true;
         }
 
-        public static Ulid FromBytes(byte[] bytes) {
+        private static Ulid FromBytes(byte[] bytes) {
             if (bytes == null) throw new ArgumentNullException(nameof(bytes));
-            if (bytes.Length != 16) throw new ArgumentException("ULID must be 16 bytes.", nameof(bytes));
+            if (bytes.Length != 16) throw new ArgumentException(I18N.Get("Debug.Core.Utility.Ulid.InvalidByteLength"), nameof(bytes));
 
             ulong most = 0, least = 0;
             for (var i = 0; i < 8; i++) most = (most << 8) | bytes[i];
@@ -61,7 +62,7 @@ namespace _4OF.ee4v.Core.Utility {
             return new Ulid(most, least);
         }
 
-        public byte[] ToByteArray() {
+        private byte[] ToByteArray() {
             var b = new byte[16];
             var v = _most;
             for (var i = 7; i >= 0; i--) {
@@ -150,11 +151,10 @@ namespace _4OF.ee4v.Core.Utility {
                 buffer = (buffer << 5) | val;
                 bitsLeft += 5;
 
-                if (bitsLeft >= 8) {
-                    bitsLeft -= 8;
-                    if (index >= 16) return false;
-                    bytes[index++] = (byte)((buffer >> bitsLeft) & 0xFF);
-                }
+                if (bitsLeft < 8) continue;
+                bitsLeft -= 8;
+                if (index >= 16) return false;
+                bytes[index++] = (byte)((buffer >> bitsLeft) & 0xFF);
             }
 
             return index == 16;
