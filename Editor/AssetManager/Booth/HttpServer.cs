@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using _4OF.ee4v.Core.i18n;
+using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
 
@@ -146,21 +148,21 @@ namespace _4OF.ee4v.AssetManager.Booth {
                     }
                     else {
                         var trim = body.Trim();
-                        ShopListDtp wrapper = null;
+                        List<ShopDto> shopList = null;
                         try {
                             if (trim.Length > 0 && trim[0] == '[') {
-                                var wrapped = "{\"shopList\": " + body + "}";
-                                wrapper = JsonUtility.FromJson<ShopListDtp>(wrapped);
+                                shopList = JsonConvert.DeserializeObject<List<ShopDto>>(body);
                             }
                             else {
-                                wrapper = JsonUtility.FromJson<ShopListDtp>(body);
+                                var wrapper = JsonConvert.DeserializeObject<ShopListDtp>(body);
+                                shopList = wrapper?.shopList;
                             }
                         }
                         catch (Exception ex) {
                             Debug.LogWarning(I18N.Get("Debug.AssetManager.HttpServer.JsonParseFailedFmt", ex.Message));
                         }
 
-                        if (wrapper?.shopList == null) {
+                        if (shopList == null) {
                             resp.StatusCode = 400;
                             resp.ContentType = "text/plain; charset=utf-8";
                             var err = Encoding.UTF8.GetBytes("Invalid JSON payload");
@@ -171,10 +173,11 @@ namespace _4OF.ee4v.AssetManager.Booth {
                             int created;
                             try {
                                 var tcs = new TaskCompletionSource<int>();
+                                var finalShopList = shopList;
                                 EditorApplication.delayCall += () =>
                                 {
                                     try {
-                                        var res = BoothLibraryImporter.Import(wrapper.shopList);
+                                        var res = BoothLibraryImporter.Import(finalShopList);
                                         tcs.TrySetResult(res);
                                     }
                                     catch (Exception ex) {
@@ -197,7 +200,7 @@ namespace _4OF.ee4v.AssetManager.Booth {
                             }
 
                             var tcsSet = new TaskCompletionSource<bool>();
-                            var contents = wrapper.shopList;
+                            var contents = shopList;
                             EditorApplication.delayCall += () =>
                             {
                                 try {
