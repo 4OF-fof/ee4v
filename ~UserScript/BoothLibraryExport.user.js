@@ -1,8 +1,8 @@
 ﻿// ==UserScript==
 // @name         EE4V BOOTH Library Sync
 // @namespace    https://4of.dev
-// @version      0.1.1
-// @description  Send your BOOTH library info to EE4V (Unity).
+// @version      0.2.0
+// @description  Send your BOOTH library info to EE4V (Unity). Fixed for new BOOTH layout.
 // @match        https://accounts.booth.pm/library*
 // @match        https://accounts.booth.pm/library/gifts*
 // @grant        GM_xmlhttpRequest
@@ -12,7 +12,6 @@
 (function () {
     'use strict';
 
-    // Hide Booth UI
     const hideCSS = document.createElement("style");
     hideCSS.textContent = `
         body.booth-hidden *:not(#booth-overlay):not(#booth-overlay *) {
@@ -27,7 +26,6 @@
     `;
     document.head.appendChild(hideCSS);
 
-    // Overlay UI
     const overlay = document.createElement("div");
     overlay.id = "booth-overlay";
     Object.assign(overlay.style, {
@@ -113,9 +111,6 @@
         overlay.style.display = "none";
     };
 
-    const storePattern = /^https:\/\/[a-zA-Z0-9-]+\.booth\.pm\/$/;
-    const itemPattern = /^https:\/\/booth\.pm\/[^/]+\/items\/\d+/;
-    const dlPattern = /^https:\/\/booth\.pm\/downloadables\/\d+/;
     const pagePattern = /page=(\d+)/;
 
     async function fetchPage(url) {
@@ -123,39 +118,52 @@
         return new DOMParser().parseFromString(await res.text(), "text/html");
     }
 
-    function extractLinks(dom) {
-        const list = [];
-        dom.querySelectorAll("a").forEach(a => {
-            const href = a.href;
-            if (!href) return;
-            if (href.startsWith("https://accounts.booth.pm")) return;
+    function extractItemsFromDOM(dom) {
+        const extractedItems = [];
 
-            if (itemPattern.test(href)) list.push({ type: "item", url: href });
-            else if (storePattern.test(href)) list.push({ type: "store", url: href });
-            else if (dlPattern.test(href)) {
+        const thumbnails = dom.querySelectorAll('.l-library-item-thumbnail');
+
+        thumbnails.forEach(thumb => {
+            const card = thumb.closest('.bg-white');
+            if (!card) return;
+
+            const itemLink = card.querySelector('a[href*="/items/"]');
+            if (!itemLink) return;
+            const itemUrl = itemLink.href;
+
+            const shopLink = card.querySelector('a[href*=".booth.pm"]:not([href*="accounts.booth.pm"])');
+            const shopUrl = shopLink ? shopLink.href : null;
+
+            const files = [];
+            const dlButtons = card.querySelectorAll('.js-download-button');
+
+            dlButtons.forEach(btn => {
+                const dlUrl = btn.getAttribute('data-href');
+                if (!dlUrl) return;
+
+                const row = btn.closest('.desktop\\:flex') || btn.closest('.mt-16');
                 let filename = null;
-                const flex = a.closest(".desktop\\:flex") || a.closest(".mt-16");
-                if (flex) {
-                    const nameDiv = flex.querySelector(".min-w-0 .text-14") || flex.querySelector(".text-14");
-                    if (nameDiv) filename = nameDiv.textContent.trim();
+                if (row) {
+                    const textEl = row.querySelector('.text-14');
+                    if (textEl) filename = textEl.textContent.trim();
                 }
-                list.push({ type: "download", url: href, filename });
+
+                files.push({
+                    url: dlUrl,
+                    filename: filename
+                });
+            });
+
+            if (files.length > 0) {
+                extractedItems.push({
+                    itemUrl: itemUrl,
+                    shopUrl: shopUrl,
+                    files: files
+                });
             }
         });
-        return list;
-    }
 
-    function groupByItem(arr) {
-        const res = [];
-        let tmp = [];
-        arr.forEach(x => {
-            if (x.type === "item") {
-                if (tmp.length) res.push(tmp);
-                tmp = [x];
-            } else tmp.push(x);
-        });
-        if (tmp.length) res.push(tmp);
-        return res;
+        return extractedItems;
     }
 
     async function fetchItemInfo(url) {
@@ -173,30 +181,35 @@
         }
     }
 
-    function merge(allGroups, infoMap) {
+    function restructureData(extractedList, infoMap) {
         const result = [];
-        allGroups.forEach(g => {
-            const item = g.find(x => x.type === "item");
-            const store = g.find(x => x.type === "store");
-            const downloads = g.filter(x => x.type === "download");
-            if (!item || !store || downloads.length === 0) return;
 
-            const storeURL = store.url;
-            const itemURL = item.url;
+        extractedList.forEach(data => {
+            if (!data.shopUrl) return;
 
-            let entry = result.find(r => r.shopURL === storeURL);
+            let entry = result.find(r => r.shopURL === data.shopUrl);
+
+            const info = infoMap[data.itemUrl] || {};
+
             if (!entry) {
-                entry = { shopURL: storeURL, shopName: infoMap[itemURL]?.shopName ?? null, items: [] };
+                entry = {
+                    shopURL: data.shopUrl,
+                    shopName: info.shopName ?? null,
+                    items: []
+                };
                 result.push(entry);
             }
 
-            entry.items.push({
-                itemURL,
-                name: infoMap[itemURL]?.name ?? null,
-                description: infoMap[itemURL]?.description ?? null,
-                imageURL: infoMap[itemURL]?.imageURL ?? null,
-                files: downloads.map(f => ({ url: f.url, filename: f.filename ?? null }))
-            });
+            const existingItem = entry.items.find(i => i.itemURL === data.itemUrl);
+            if (!existingItem) {
+                entry.items.push({
+                    itemURL: data.itemUrl,
+                    name: info.name ?? null,
+                    description: info.description ?? null,
+                    imageURL: info.imageURL ?? null,
+                    files: data.files
+                });
+            }
         });
 
         return result;
@@ -207,48 +220,45 @@
     }
 
     async function runExtract() {
-        statusText.textContent = "抽出中...";
+        statusText.textContent = "ページ解析中...";
         const targets = [
             "https://accounts.booth.pm/library",
             "https://accounts.booth.pm/library/gifts"
         ];
 
-        let groups = [];
-        let items = [];
+        let allExtractedItems = [];
 
         for (const base of targets) {
-            const first = await fetchPage(base);
-            const maxPage = Math.max(...[...first.querySelectorAll("a")]
-                .map(a => (a.href.match(pagePattern) || [0, 1])[1]).map(Number));
+            const firstDom = await fetchPage(base);
+            const pageLinks = [...firstDom.querySelectorAll("a")].map(a => a.href);
+            const pageNums = pageLinks.map(href => {
+                const match = href.match(pagePattern);
+                return match ? parseInt(match[1]) : 1;
+            });
+            const maxPage = pageNums.length > 0 ? Math.max(...pageNums) : 1;
 
-            const infoFirst = extractLinks(first);
-            const gFirst = groupByItem(infoFirst);
-            groups.push(...gFirst);
-            gFirst.forEach(g => items.push(g.find(x => x.type === "item")?.url));
+            allExtractedItems.push(...extractItemsFromDOM(firstDom));
 
             for (let p = 2; p <= maxPage; p++) {
+                statusText.textContent = `ページ解析中... (${p}/${maxPage})`;
                 const dom = await fetchPage(`${base}?page=${p}`);
-                const info = extractLinks(dom);
-                const g = groupByItem(info);
-                groups.push(...g);
-                g.forEach(group => items.push(group.find(x => x.type === "item")?.url));
+                allExtractedItems.push(...extractItemsFromDOM(dom));
+                await sleep(1000);
             }
         }
 
-        items = [...new Set(items)].filter(Boolean);
-        const map = {};
+        const uniqueItemUrls = [...new Set(allExtractedItems.map(x => x.itemUrl))];
+        const infoMap = {};
 
         let index = 1;
-        for (const item of items) {
-            statusText.textContent = `詳細取得中... (${index}/${items.length})`;
-
-            map[item] = await fetchItemInfo(item);
-
-            await sleep(1000);
+        for (const itemUrl of uniqueItemUrls) {
+            statusText.textContent = `詳細取得中... (${index}/${uniqueItemUrls.length})`;
+            infoMap[itemUrl] = await fetchItemInfo(itemUrl);
+            await sleep(1);
             index++;
         }
 
-        return merge(groups, map);
+        return restructureData(allExtractedItems, infoMap);
     }
 
     function sendToUnity(json) {
@@ -269,26 +279,32 @@
         sendBtn.disabled = true;
         backBtn.disabled = true;
 
-        const result = await runExtract();
-        const ok = await sendToUnity(result);
+        try {
+            const result = await runExtract();
+            const ok = await sendToUnity(result);
 
-        if (ok) {
-            statusText.innerHTML = `
-                送信が完了しました。<br><br>
-                <b>Unityに戻り次の操作を続けてください。</b><br>
-                <span style='font-size:12px;color:#666;'>※このタブは閉じても問題ありません。</span>
-            `;
-        } else {
-            statusText.innerHTML = `
-                送信に失敗しました。<br>
-                サーバーを確認してもう一度試してください。
-            `;
+            if (ok) {
+                statusText.innerHTML = `
+                    送信が完了しました。<br><br>
+                    <b>Unityに戻り次の操作を続けてください。</b><br>
+                    <span style='font-size:12px;color:#666;'>※このタブは閉じても問題ありません。</span>
+                `;
+            } else {
+                statusText.innerHTML = `
+                    送信に失敗しました。<br>
+                    サーバー(localhost:58080)を確認してもう一度試してください。
+                `;
+                sendBtn.disabled = false;
+                backBtn.disabled = false;
+            }
+        } catch (e) {
+            console.error(e);
+            statusText.innerHTML = `エラーが発生しました: <br>${e.message}`;
             sendBtn.disabled = false;
+            backBtn.disabled = false;
         }
     };
 
-
-    // Initial check for Unity server
     GM_xmlhttpRequest({
         method: "GET",
         url: "http://localhost:58080/",
@@ -297,6 +313,9 @@
                 document.body.classList.add("booth-hidden");
                 overlay.style.display = "flex";
             }
+        },
+        onerror: () => {
+            console.log("Unity server not found.");
         }
     });
 
