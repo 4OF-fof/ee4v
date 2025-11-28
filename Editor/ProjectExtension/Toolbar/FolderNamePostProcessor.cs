@@ -9,7 +9,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
             if (deletedAssets is { Length: > 0 })
                 foreach (var deletedPath in deletedAssets) {
                     if (string.IsNullOrEmpty(deletedPath)) continue;
-                    var p = FileUtility.NormalizePath(deletedPath);
+                    var p = AssetUtility.NormalizePath(deletedPath);
                     var index = FolderStyleService.IndexOfPath(p);
                     if (index >= 0) FolderStyleList.instance.RemoveFolderStyle(index);
                 }
@@ -21,8 +21,8 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
                     ? movedFromAssetPaths[i]
                     : null;
                 if (string.IsNullOrEmpty(newPath) || string.IsNullOrEmpty(oldPath)) continue;
-                var oldP = FileUtility.NormalizePath(oldPath);
-                var newP = FileUtility.NormalizePath(newPath);
+                var oldP = AssetUtility.NormalizePath(oldPath);
+                var newP = AssetUtility.NormalizePath(newPath);
                 var idx = FolderStyleService.IndexOfPath(oldP);
                 if (idx >= 0) FolderStyleList.instance.UpdateFolderStyle(idx, newP);
             }

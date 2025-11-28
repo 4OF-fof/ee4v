@@ -1,4 +1,6 @@
 ﻿using System;
+using _4OF.ee4v.Core.Setting;
+using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -47,16 +49,25 @@ namespace _4OF.ee4v.Core.UI.Window {
         }
 
         public void CreateGUI() {
-            var borderColor = ColorPreset.WindowBorder;
+            var customFont = EditorPrefsManager.Language switch {
+                "ja-JP" => AssetUtility.FindAndLoadFont("SourceHanSansJa-Regular"),
+                "ko-KR" => AssetUtility.FindAndLoadFont("SourceHanSansKo-Regular"),
+                _       => null
+            };
+
+            if (customFont != null) {
+                rootVisualElement.style.unityFontDefinition = new StyleFontDefinition(customFont);
+            }
+            
             rootVisualElement.style.borderRightWidth = 2;
             rootVisualElement.style.borderLeftWidth = 2;
             rootVisualElement.style.borderTopWidth = 2;
             rootVisualElement.style.borderBottomWidth = 2;
 
-            rootVisualElement.style.borderRightColor = borderColor;
-            rootVisualElement.style.borderLeftColor = borderColor;
-            rootVisualElement.style.borderTopColor = borderColor;
-            rootVisualElement.style.borderBottomColor = borderColor;
+            rootVisualElement.style.borderRightColor = ColorPreset.WindowBorder;
+            rootVisualElement.style.borderLeftColor = ColorPreset.WindowBorder;
+            rootVisualElement.style.borderTopColor = ColorPreset.WindowBorder;
+            rootVisualElement.style.borderBottomColor = ColorPreset.WindowBorder;
 
             var header = Header();
             if (header != null) rootVisualElement.Add(header);

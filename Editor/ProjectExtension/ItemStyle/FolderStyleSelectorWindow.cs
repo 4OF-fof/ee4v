@@ -83,7 +83,7 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
                 if (_pathList.Any(p =>
                     {
                         var s = FolderStyleList.instance.Contents.FirstOrDefault(x =>
-                            x.path == FileUtility.NormalizePath(p));
+                            x.path == AssetUtility.NormalizePath(p));
                         return s?.icon != null;
                     }))
                     anyHasIcon = true;
@@ -97,7 +97,7 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
             };
             if (_pathList is { Count: 1 }) {
                 var existing = FolderStyleList.instance.Contents
-                    .FirstOrDefault(s => s.path == FileUtility.NormalizePath(_pathList[0]))?.icon;
+                    .FirstOrDefault(s => s.path == AssetUtility.NormalizePath(_pathList[0]))?.icon;
                 if (existing != null) iconFiled.value = existing;
             }
 
@@ -105,7 +105,7 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
             {
                 var newIcon = evt.newValue as Texture;
                 foreach (var p in _pathList) {
-                    var np = FileUtility.NormalizePath(p);
+                    var np = AssetUtility.NormalizePath(p);
                     var idx = FolderStyleService.IndexOfPath(np);
                     if (idx == -1)
                         FolderStyleList.instance.AddFolderStyle(np, Color.clear, newIcon);

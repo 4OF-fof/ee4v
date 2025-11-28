@@ -6,8 +6,10 @@ using _4OF.ee4v.AssetManager.UI.Model;
 using _4OF.ee4v.AssetManager.UI.Presenter;
 using _4OF.ee4v.AssetManager.UI.Window;
 using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -109,6 +111,16 @@ namespace _4OF.ee4v.AssetManager.UI {
             var root = _window.rootVisualElement;
             root.Clear();
             root.style.flexDirection = FlexDirection.Row;
+
+            var customFont = EditorPrefsManager.Language switch {
+                "ja-JP" => AssetUtility.FindAndLoadFont("SourceHanSansJa-Regular"),
+                "ko-KR" => AssetUtility.FindAndLoadFont("SourceHanSansKo-Regular"),
+                _       => null
+            };
+
+            if (customFont != null) {
+                root.style.unityFontDefinition = new StyleFontDefinition(customFont);
+            }
 
             var navigation = new Navigation {
                 style = {
