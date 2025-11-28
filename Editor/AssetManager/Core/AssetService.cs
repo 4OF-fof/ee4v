@@ -88,6 +88,7 @@ public void SaveAsset(AssetMetadata asset) {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.SetDeleted(true);
+            newAsset.SetFolder(Ulid.Empty);
             SaveAsset(newAsset);
         }
 

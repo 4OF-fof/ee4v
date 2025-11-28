@@ -194,6 +194,7 @@ namespace _4OF.ee4v.AssetManager.Core {
             foreach (var asset in allAssets.Where(asset => allDescendantIds.Contains(asset.Folder))) {
                 var newAsset = new AssetMetadata(asset);
                 newAsset.SetDeleted(true);
+                newAsset.SetFolder(Ulid.Empty);
                 assetsToMarkDeleted.Add(newAsset);
             }
 
