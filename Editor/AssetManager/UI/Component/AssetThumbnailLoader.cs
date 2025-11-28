@@ -30,8 +30,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                     case BaseFolder folder when folder.ID != id:
                         return;
                 }
-
-                if (tex != null) card.SetThumbnail(tex, isFolder);
+                card.SetThumbnail(tex, isFolder);
             }
             catch (OperationCanceledException) {
                 // Ignore
