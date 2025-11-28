@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using _4OF.ee4v.AssetManager.Booth;
 using _4OF.ee4v.AssetManager.Booth.Dialog;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.AssetManager.UI.Window;
 using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.Utility;
 using _4OF.ee4v.ProjectExtension.ItemStyle.API;
 using UnityEditor;
 using UnityEngine;
@@ -149,6 +151,46 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                 height += ItemHeight * 2;
                 estimatedHeight = height;
                 return menu;
+            }
+            
+            var boothFolders = folderTargets.OfType<BoothItemFolder>().ToList();
+            if (boothFolders.Count > 0) {
+                var label = boothFolders.Count > 1
+                    ? I18N.Get("UI.AssetManager.ContextMenu.RefetchThumbnailPlural")
+                    : I18N.Get("UI.AssetManager.ContextMenu.RefetchThumbnail");
+
+                menu.AddItem(label, false,
+                    () => { BoothUtility.FetchAndDownloadThumbnails(boothFolders, repository, showDialog); });
+
+                height += ItemHeight + SeparatorHeight;
+            }
+            
+            var assetsWithParentThumb = activeAssetTargets.Where(a =>
+            {
+                if (a.Folder == Ulid.Empty) return false;
+                var parent = repository.GetLibraryMetadata()?.GetFolder(a.Folder);
+
+                if (parent == null) return false;
+                var p = repository.GetFolderThumbnailPath(parent.ID);
+                return !string.IsNullOrEmpty(p) && File.Exists(p);
+            }).ToList();
+
+            if (assetsWithParentThumb.Count > 0) {
+                var label = assetsWithParentThumb.Count > 1
+                    ? I18N.Get("UI.AssetManager.ContextMenu.UseParentThumbnailPlural")
+                    : I18N.Get("UI.AssetManager.ContextMenu.UseParentThumbnail");
+
+                menu.AddItem(label, false, () =>
+                {
+                    foreach (var asset in assetsWithParentThumb) {
+                        var parent = repository.GetLibraryMetadata().GetFolder(asset.Folder);
+                        var p = repository.GetFolderThumbnailPath(parent.ID);
+                        repository.SetThumbnail(asset.ID, p);
+                    }
+
+                    onRefresh?.Invoke();
+                });
+                height += ItemHeight;
             }
 
             if (activeAssetTargets.Count > 0 || folderTargets.Count > 0) {
