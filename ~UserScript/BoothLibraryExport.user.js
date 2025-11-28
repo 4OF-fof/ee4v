@@ -261,42 +261,68 @@
         return restructureData(allExtractedItems, infoMap);
     }
 
-    function sendToUnity(json) {
-        statusText.textContent = "Unity へ送信中...";
-        return new Promise(resolve => {
-            GM_xmlhttpRequest({
-                method: "POST",
-                url: "http://localhost:58080/",
-                data: JSON.stringify(json),
-                headers: { "Content-Type": "application/json" },
-                onload: () => resolve(true),
-                onerror: () => resolve(false)
-            });
-        });
-    }
-
     sendBtn.onclick = async () => {
         sendBtn.disabled = true;
         backBtn.disabled = true;
 
         try {
             const result = await runExtract();
-            const ok = await sendToUnity(result);
 
-            if (ok) {
-                statusText.innerHTML = `
-                    送信が完了しました。<br><br>
-                    <b>Unityに戻り次の操作を続けてください。</b><br>
-                    <span style='font-size:12px;color:#666;'>※このタブは閉じても問題ありません。</span>
-                `;
-            } else {
-                statusText.innerHTML = `
-                    送信に失敗しました。<br>
-                    サーバー(localhost:58080)を確認してもう一度試してください。
-                `;
-                sendBtn.disabled = false;
-                backBtn.disabled = false;
-            }
+            statusText.textContent = "Unity へ送信中...";
+
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: "http://localhost:58080/",
+                data: JSON.stringify(result),
+                headers: { "Content-Type": "application/json" },
+                onload: () => {
+                    card.innerHTML = "";
+
+                    const doneContainer = document.createElement("div");
+                    Object.assign(doneContainer.style, {
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "20px 0"
+                    });
+
+                    const icon = document.createElement("div");
+                    icon.textContent = "✔";
+                    Object.assign(icon.style, {
+                        fontSize: "48px",
+                        color: "#4caf50",
+                        lineHeight: "1"
+                    });
+                    doneContainer.appendChild(icon);
+
+                    const title = document.createElement("h2");
+                    title.textContent = "送信完了";
+                    title.style.marginBottom = "16px";
+                    doneContainer.appendChild(title);
+
+                    const msg = document.createElement("div");
+                    msg.innerHTML = `
+                        Unity へのデータ送信が完了しました。<br>
+                        インポート処理は Unity 側で行われます。
+                    `;
+                    msg.style.lineHeight = "1.6";
+                    msg.style.fontSize = "14px";
+                    doneContainer.appendChild(msg);
+
+                    card.appendChild(doneContainer);
+                },
+                onerror: () => {
+                    statusText.innerHTML = `
+                        送信に失敗しました。<br>
+                        Unity の "Boothからインポート" ダイアログが開いているか確認してください。<br>
+                        (localhost:58080 に接続できませんでした)
+                    `;
+                    sendBtn.disabled = false;
+                    backBtn.disabled = false;
+                }
+            });
+
         } catch (e) {
             console.error(e);
             statusText.innerHTML = `エラーが発生しました: <br>${e.message}`;
