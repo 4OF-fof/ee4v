@@ -13,7 +13,9 @@ namespace _4OF.ee4v.AssetManager.Core {
 
         public AssetMetadata(AssetMetadata metadata) {
             ID = metadata.ID;
-            Name = string.IsNullOrWhiteSpace(metadata.Name) ? I18N.Get("UI.AssetManager.Default.Untitled") : metadata.Name;
+            Name = string.IsNullOrWhiteSpace(metadata.Name)
+                ? I18N.Get("UI.AssetManager.Default.Untitled")
+                : metadata.Name;
             Description = metadata.Description;
             Size = metadata.Size;
             Ext = metadata.Ext;

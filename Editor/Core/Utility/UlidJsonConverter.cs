@@ -13,7 +13,8 @@ namespace _4OF.ee4v.Core.Utility {
             if (reader.TokenType == JsonToken.Null)
                 return objectType == typeof(Ulid?)
                     ? null
-                    : throw new JsonSerializationException(I18N.Get("Debug.Core.Utility.UlidJsonConverter.CannotConvertNull"));
+                    : throw new JsonSerializationException(
+                        I18N.Get("Debug.Core.Utility.UlidJsonConverter.CannotConvertNull"));
 
             if (reader.TokenType != JsonToken.String)
                 throw new JsonSerializationException(

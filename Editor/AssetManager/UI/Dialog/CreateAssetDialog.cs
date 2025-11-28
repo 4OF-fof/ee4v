@@ -118,7 +118,8 @@ namespace _4OF.ee4v.AssetManager.UI.Dialog {
             };
             browseBtn.clicked += () =>
             {
-                var path = EditorUtility.OpenFilePanel(I18N.Get("UI.AssetManager.Dialog.CreateAsset.SelectAssetFileDialogTitle"), "", "");
+                var path = EditorUtility.OpenFilePanel(
+                    I18N.Get("UI.AssetManager.Dialog.CreateAsset.SelectAssetFileDialogTitle"), "", "");
                 if (!string.IsNullOrEmpty(path))
                     fileUrlField.value = path;
             };

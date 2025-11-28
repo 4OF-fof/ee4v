@@ -120,7 +120,7 @@ namespace _4OF.ee4v.AssetManager.Core {
                 );
             });
 
-                if (result.Error != null) {
+            if (result.Error != null) {
                 Debug.LogError(I18N.Get("Debug.AssetManager.Repository.VerificationFailedFmt", result.Error));
                 return;
             }
@@ -274,7 +274,8 @@ namespace _4OF.ee4v.AssetManager.Core {
                     changedIds.Add(asset.ID);
                 }
                 catch (Exception e) {
-                    Debug.LogWarning(I18N.Get("Debug.AssetManager.Repository.FailedToWriteMetadataForFmt", asset.ID, e.Message));
+                    Debug.LogWarning(I18N.Get("Debug.AssetManager.Repository.FailedToWriteMetadataForFmt", asset.ID,
+                        e.Message));
                 }
             }
 
@@ -537,7 +538,8 @@ namespace _4OF.ee4v.AssetManager.Core {
                 }
                 catch (Exception e) {
                     Debug.LogError(
-                        I18N.Get("Debug.AssetManager.Repository.FailedToLoadAssetMetadataFromFmt", metadataPath, e.Message));
+                        I18N.Get("Debug.AssetManager.Repository.FailedToLoadAssetMetadataFromFmt", metadataPath,
+                            e.Message));
                 }
             }
         }

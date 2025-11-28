@@ -5,37 +5,28 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace _4OF.ee4v._Dev {
     public class I18NDebugger : EditorWindow {
+        private const string TargetFolderName = "4of/ee4v";
         private readonly List<string> _codeKeys = new();
+
+        private readonly List<HardcodedStringInfo> _hardcodedStrings = new();
         private readonly Dictionary<string, string> _jsonFilePaths = new();
         private readonly Dictionary<string, List<string>> _jsonKeys = new();
         private readonly Dictionary<string, List<string>> _missingKeys = new();
         private readonly Dictionary<string, List<string>> _unusedKeys = new();
+        private bool _foldoutHardcoded = true;
 
         private bool _foldoutMissing = true;
         private bool _foldoutUnused = true;
         private Vector2 _scrollPosition;
 
-        private readonly List<HardcodedStringInfo> _hardcodedStrings = new();
-        private bool _foldoutHardcoded = true;
-
-        // 検索対象のルートフォルダ名 (Assets直下にある想定)
-        private const string TargetFolderName = "4of/ee4v"; 
-
-        private class HardcodedStringInfo {
-            public string FilePath;
-            public int LineNumber;
-            public string Text;
-            public string FileName => Path.GetFileName(FilePath);
-        }
-
         private void OnGUI() {
             GUILayout.Label("I18n Analysis Tool", EditorStyles.boldLabel);
-            
-            // ターゲットフォルダの表示
+
             GUILayout.Label($"Target Directory: Assets/{TargetFolderName}", EditorStyles.miniLabel);
 
             if (GUILayout.Button("Analyze Project", GUILayout.Height(30))) Analyze();
@@ -44,35 +35,35 @@ namespace _4OF.ee4v._Dev {
 
             _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
 
-            // ... (表示部分は変更なし) ...
             if (_codeKeys.Count > 0 || _hardcodedStrings.Count > 0) {
                 if (_hardcodedStrings.Count > 0) {
                     GUI.color = new Color(1f, 0.9f, 0.6f);
-                    _foldoutHardcoded = EditorGUILayout.Foldout(_foldoutHardcoded, $"Potential Hardcoded Strings: {_hardcodedStrings.Count} items", true);
+                    _foldoutHardcoded = EditorGUILayout.Foldout(_foldoutHardcoded,
+                        $"Potential Hardcoded Strings: {_hardcodedStrings.Count} items", true);
                     GUI.color = Color.white;
 
                     if (_foldoutHardcoded) {
                         GUILayout.BeginVertical(EditorStyles.helpBox);
                         GUILayout.Label("Strings found in code NOT wrapped in I18N.Get()", EditorStyles.miniLabel);
-                        
-                        foreach (var info in _hardcodedStrings) {
+
+                        foreach (var info in _hardcodedStrings)
                             using (new EditorGUILayout.HorizontalScope()) {
-                                if (GUILayout.Button("Jump", GUILayout.Width(45))) {
+                                if (GUILayout.Button("Jump", GUILayout.Width(45)))
                                     OpenScriptAtLine(info.FilePath, info.LineNumber);
-                                }
-                                
-                                EditorGUILayout.LabelField($"[{info.FileName}:{info.LineNumber}]", GUILayout.Width(140));
+
+                                EditorGUILayout.LabelField($"[{info.FileName}:{info.LineNumber}]",
+                                    GUILayout.Width(140));
                                 EditorGUILayout.SelectableLabel($"\"{info.Text}\"", GUILayout.Height(18));
                             }
-                        }
+
                         GUILayout.EndVertical();
                         EditorGUILayout.Space();
                     }
                 }
                 else {
-                    if (_codeKeys.Count > 0)
-                    {
-                        GUILayout.Label("No hardcoded strings found (checked filters applied).", EditorStyles.miniLabel);
+                    if (_codeKeys.Count > 0) {
+                        GUILayout.Label("No hardcoded strings found (checked filters applied).",
+                            EditorStyles.miniLabel);
                         EditorGUILayout.Space();
                     }
                 }
@@ -161,9 +152,8 @@ namespace _4OF.ee4v._Dev {
         }
 
         private void ScanCodeFiles() {
-            // 変更点: Application.dataPath 全体ではなく、ee4v フォルダ以下を対象にする
             var targetPath = Path.Combine(Application.dataPath, TargetFolderName);
-            
+
             if (!Directory.Exists(targetPath)) {
                 Debug.LogError($"Target directory not found: {targetPath}");
                 return;
@@ -171,18 +161,19 @@ namespace _4OF.ee4v._Dev {
 
             var scripts = Directory.GetFiles(targetPath, "*.cs", SearchOption.AllDirectories);
 
-            var i18nRegex = new Regex(@"I18N\.Get\s*\(\s*""([^""]+)""", RegexOptions.Compiled);
-            var stringLiteralRegex = new Regex(@"(I18N\.Get\s*\(\s*)|(Debug\.\w+\s*\(\s*)|""((?:[^""\\]|\\.)*)""", RegexOptions.Compiled);
+            var i18NRegex = new Regex(@"I18N\.Get\s*\(\s*""([^""]+)""", RegexOptions.Compiled);
+            var stringLiteralRegex = new Regex(@"(I18N\.Get\s*\(\s*)|(Debug\.\w+\s*\(\s*)|""((?:[^""\\]|\\.)*)""",
+                RegexOptions.Compiled);
 
             foreach (var path in scripts) {
                 if (path.Contains("I18NDebugger.cs") || path.Contains("AllowedTypesBinder.cs")) continue;
 
                 var lines = File.ReadAllLines(path);
-                for (int i = 0; i < lines.Length; i++) {
+                for (var i = 0; i < lines.Length; i++) {
                     var line = lines[i].Trim();
-                    
-                    var i18nMatches = i18nRegex.Matches(line);
-                    foreach (Match match in i18nMatches)
+
+                    var i18NMatches = i18NRegex.Matches(line);
+                    foreach (Match match in i18NMatches)
                         if (match.Success && match.Groups.Count > 1) {
                             var key = match.Groups[1].Value;
                             if (!_codeKeys.Contains(key)) _codeKeys.Add(key);
@@ -196,34 +187,28 @@ namespace _4OF.ee4v._Dev {
                     if (line.StartsWith("const string")) continue;
 
                     var matches = stringLiteralRegex.Matches(line);
-                    bool skipNextString = false;
+                    var skipNextString = false;
 
                     foreach (Match m in matches) {
-                        if (m.Groups[1].Success) {
-                            skipNextString = true;
-                            continue;
-                        }
-                        
-                        if (m.Groups[2].Success) {
+                        if (m.Groups[1].Success || m.Groups[2].Success) {
                             skipNextString = true;
                             continue;
                         }
 
-                        if (m.Groups[3].Success) {
-                            if (skipNextString) {
-                                skipNextString = false;
-                                continue;
-                            }
-
-                            var content = m.Groups[3].Value;
-                            if (IsNoiseString(content, line)) continue;
-
-                            _hardcodedStrings.Add(new HardcodedStringInfo {
-                                FilePath = path,
-                                LineNumber = i + 1,
-                                Text = content
-                            });
+                        if (!m.Groups[3].Success) continue;
+                        if (skipNextString) {
+                            skipNextString = false;
+                            continue;
                         }
+
+                        var content = m.Groups[3].Value;
+                        if (IsNoiseString(content, line)) continue;
+
+                        _hardcodedStrings.Add(new HardcodedStringInfo {
+                            FilePath = path,
+                            LineNumber = i + 1,
+                            Text = content
+                        });
                     }
                 }
             }
@@ -233,10 +218,10 @@ namespace _4OF.ee4v._Dev {
             Debug.Log($"Found {_hardcodedStrings.Count} potential hardcoded strings under {TargetFolderName}.");
         }
 
-        private bool IsNoiseString(string text, string lineContext) {
+        private static bool IsNoiseString(string text, string lineContext) {
             if (string.IsNullOrWhiteSpace(text)) return true;
             if (text.Length <= 1) return true;
-            
+
             if (Regex.IsMatch(text, @"^[\d\W]+$")) return true;
             if (Regex.IsMatch(text, @"^\.[a-z0-9]+$", RegexOptions.IgnoreCase)) return true;
             if (text.Contains("/") || text.Contains("\\")) return true;
@@ -244,7 +229,7 @@ namespace _4OF.ee4v._Dev {
             if (lineContext.StartsWith("case \"")) return true;
             if (lineContext.Contains("GetComponent")) return true;
             if (lineContext.Contains("Find")) return true;
-            if (lineContext.Contains("const string")) return true; // const宣言の右辺も除外しておく
+            if (lineContext.Contains("const string")) return true;
 
             if (Regex.IsMatch(text, @"^[a-fA-F0-9]{32}$")) return true;
 
@@ -252,8 +237,6 @@ namespace _4OF.ee4v._Dev {
         }
 
         private void ScanJsonFiles() {
-            // 変更点: AssetDatabaseの検索範囲も ee4v フォルダに限定する
-            // FindAssets の第二引数で検索フォルダを指定できます
             var guids = AssetDatabase.FindAssets("t:TextAsset", new[] { $"Assets/{TargetFolderName}" });
 
             foreach (var guid in guids) {
@@ -280,8 +263,6 @@ namespace _4OF.ee4v._Dev {
             }
         }
 
-        // ... Compare, AddMissingKeys, RemoveUnusedKeys, SaveJsonFile, OpenScriptAtLine, GetRelativePath は変更なし ...
-        
         private void Compare() {
             foreach (var lang in _jsonKeys.Keys) {
                 var jsonKeyList = _jsonKeys[lang];
@@ -347,21 +328,25 @@ namespace _4OF.ee4v._Dev {
             AssetDatabase.Refresh();
         }
 
-        private void OpenScriptAtLine(string filePath, int lineNumber) {
+        private static void OpenScriptAtLine(string filePath, int lineNumber) {
             var scriptAsset = AssetDatabase.LoadAssetAtPath<MonoScript>(GetRelativePath(filePath));
-            if (scriptAsset != null) {
+            if (scriptAsset)
                 AssetDatabase.OpenAsset(scriptAsset, lineNumber);
-            }
-            else {
-                UnityEditorInternal.InternalEditorUtility.OpenFileAtLineExternal(filePath, lineNumber);
-            }
+            else
+                InternalEditorUtility.OpenFileAtLineExternal(filePath, lineNumber);
         }
 
-        private string GetRelativePath(string fullPath) {
-            if (fullPath.StartsWith(Application.dataPath)) {
-                return "Assets" + fullPath.Substring(Application.dataPath.Length);
-            }
+        private static string GetRelativePath(string fullPath) {
+            if (fullPath.StartsWith(Application.dataPath))
+                return "Assets" + fullPath[Application.dataPath.Length..];
             return fullPath;
+        }
+
+        private class HardcodedStringInfo {
+            public string FilePath;
+            public int LineNumber;
+            public string Text;
+            public string FileName => Path.GetFileName(FilePath);
         }
     }
 }

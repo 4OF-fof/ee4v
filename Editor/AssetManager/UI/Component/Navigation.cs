@@ -57,18 +57,26 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             style.paddingRight = 6;
             style.paddingTop = 6;
 
-            CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.AllItems"), () => FireNav(NavigationMode.AllItems, I18N.Get("UI.AssetManager.Navigation.AllItemsContext"), a => !a.IsDeleted));
+            CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.AllItems"),
+                () => FireNav(NavigationMode.AllItems, I18N.Get("UI.AssetManager.Navigation.AllItemsContext"),
+                    a => !a.IsDeleted));
             CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.BoothItems"), () =>
             {
-                FireNav(NavigationMode.BoothItems, I18N.Get("UI.AssetManager.Navigation.BoothItemsContext"), a => !a.IsDeleted);
+                FireNav(NavigationMode.BoothItems, I18N.Get("UI.AssetManager.Navigation.BoothItemsContext"),
+                    a => !a.IsDeleted);
                 BoothItemClicked?.Invoke();
             });
-            CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.Backups"), () => FireNav(NavigationMode.Backups, I18N.Get("UI.AssetManager.Navigation.BackupsContext"), a => !a.IsDeleted));
+            CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.Backups"),
+                () => FireNav(NavigationMode.Backups, I18N.Get("UI.AssetManager.Navigation.BackupsContext"),
+                    a => !a.IsDeleted));
 
-            CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.Uncategorized"), () => FireNav(NavigationMode.Uncategorized, I18N.Get("UI.AssetManager.Navigation.UncategorizedContext"),
-                a => !a.IsDeleted && a.Folder == Ulid.Empty && (a.Tags == null || a.Tags.Count == 0)));
+            CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.Uncategorized"), () =>
+                FireNav(NavigationMode.Uncategorized, I18N.Get("UI.AssetManager.Navigation.UncategorizedContext"),
+                    a => !a.IsDeleted && a.Folder == Ulid.Empty && (a.Tags == null || a.Tags.Count == 0)));
             CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.TagList"), () => { TagListClicked?.Invoke(); });
-            CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.Trash"), () => FireNav(NavigationMode.Trash, I18N.Get("UI.AssetManager.Navigation.TrashContext"), a => a.IsDeleted));
+            CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.Trash"),
+                () => FireNav(NavigationMode.Trash, I18N.Get("UI.AssetManager.Navigation.TrashContext"),
+                    a => a.IsDeleted));
 
             Add(new VisualElement { style = { height = 10 } });
 
@@ -94,7 +102,8 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             {
                 if (evt.button != 0) return;
                 SetSelected(_foldersLabel);
-                NavigationChanged?.Invoke(NavigationMode.Folders, I18N.Get("UI.AssetManager.Navigation.FoldersContext"), a => !a.IsDeleted);
+                NavigationChanged?.Invoke(NavigationMode.Folders, I18N.Get("UI.AssetManager.Navigation.FoldersContext"),
+                    a => !a.IsDeleted);
                 evt.StopPropagation();
             });
 

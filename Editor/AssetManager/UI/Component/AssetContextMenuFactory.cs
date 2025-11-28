@@ -41,7 +41,9 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             var importableAssets = activeAssetTargets.Where(a => repository.HasAssetFile(a.ID)).ToList();
 
             if (importableAssets.Count > 0) {
-                var label = importableAssets.Count > 1 ? I18N.Get("UI.AssetManager.ContextMenu.ImportPluralFmt", importableAssets.Count) : I18N.Get("UI.AssetManager.ContextMenu.Import");
+                var label = importableAssets.Count > 1
+                    ? I18N.Get("UI.AssetManager.ContextMenu.ImportPluralFmt", importableAssets.Count)
+                    : I18N.Get("UI.AssetManager.ContextMenu.Import");
 
                 menu.AddItem(label, false, () => { assetService.ImportAssetList(importableAssets.Select(a => a.ID)); });
                 height += ItemHeight;
@@ -128,10 +130,16 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             if (assetTargets.Count > 0 && assetTargets.Count == deletedAssetTargets.Count && folderTargets.Count == 0) {
                 var plural = deletedAssetTargets.Count > 1;
 
-                menu.AddItem(plural ? I18N.Get("UI.AssetManager.ContextMenu.RestorePluralFmt", deletedAssetTargets.Count) : I18N.Get("UI.AssetManager.ContextMenu.Restore"), false, () =>
-                    ExecuteRestore(deletedAssetTargets));
-                menu.AddItem(plural ? I18N.Get("UI.AssetManager.ContextMenu.DeletePermanentlyPluralFmt", deletedAssetTargets.Count) : I18N.Get("UI.AssetManager.ContextMenu.DeletePermanently"), false, () =>
-                    ExecuteHardDelete(deletedAssetTargets));
+                menu.AddItem(
+                    plural
+                        ? I18N.Get("UI.AssetManager.ContextMenu.RestorePluralFmt", deletedAssetTargets.Count)
+                        : I18N.Get("UI.AssetManager.ContextMenu.Restore"), false, () =>
+                        ExecuteRestore(deletedAssetTargets));
+                menu.AddItem(
+                    plural
+                        ? I18N.Get("UI.AssetManager.ContextMenu.DeletePermanentlyPluralFmt", deletedAssetTargets.Count)
+                        : I18N.Get("UI.AssetManager.ContextMenu.DeletePermanently"), false, () =>
+                        ExecuteHardDelete(deletedAssetTargets));
 
                 height += ItemHeight * 2;
                 estimatedHeight = height;
@@ -141,7 +149,8 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             if (activeAssetTargets.Count > 0 || folderTargets.Count > 0) {
                 menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.SetThumbnail"), false, () =>
                 {
-                    var path = EditorUtility.OpenFilePanel(I18N.Get("UI.AssetManager.ContextMenu.SelectThumbnailDialogTitle"), "", "png,jpg,jpeg");
+                    var path = EditorUtility.OpenFilePanel(
+                        I18N.Get("UI.AssetManager.ContextMenu.SelectThumbnailDialogTitle"), "", "png,jpg,jpeg");
                     if (string.IsNullOrEmpty(path)) return;
 
                     foreach (var a in activeAssetTargets) repository?.SetThumbnail(a.ID, path);
@@ -188,27 +197,35 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
 
             if (activeAssetTargets.Count > 0) {
                 var plural = activeAssetTargets.Count > 1;
-                menu.AddItem(plural ? I18N.Get("UI.AssetManager.ContextMenu.DeleteAssetsPluralFmt", activeAssetTargets.Count) : I18N.Get("UI.AssetManager.ContextMenu.DeleteAsset"), false, () =>
-                {
-                    foreach (var a in activeAssetTargets) assetService.RemoveAsset(a.ID);
-                    onRefresh?.Invoke();
-                });
+                menu.AddItem(
+                    plural
+                        ? I18N.Get("UI.AssetManager.ContextMenu.DeleteAssetsPluralFmt", activeAssetTargets.Count)
+                        : I18N.Get("UI.AssetManager.ContextMenu.DeleteAsset"), false, () =>
+                    {
+                        foreach (var a in activeAssetTargets) assetService.RemoveAsset(a.ID);
+                        onRefresh?.Invoke();
+                    });
                 height += ItemHeight;
             }
 
             if (folderTargets.Count > 0) {
                 var plural = folderTargets.Count > 1;
-                menu.AddItem(plural ? I18N.Get("UI.AssetManager.ContextMenu.DeleteFoldersPluralFmt", folderTargets.Count) : I18N.Get("UI.AssetManager.ContextMenu.DeleteFolder"), false, () =>
-                {
-                    foreach (var f in folderTargets) folderService.DeleteFolder(f.ID);
-                    onRefresh?.Invoke();
-                });
+                menu.AddItem(
+                    plural
+                        ? I18N.Get("UI.AssetManager.ContextMenu.DeleteFoldersPluralFmt", folderTargets.Count)
+                        : I18N.Get("UI.AssetManager.ContextMenu.DeleteFolder"), false, () =>
+                    {
+                        foreach (var f in folderTargets) folderService.DeleteFolder(f.ID);
+                        onRefresh?.Invoke();
+                    });
                 height += ItemHeight;
             }
 
             if (deletedAssetTargets.Count > 0) {
-                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.Restore"), false, () => ExecuteRestore(deletedAssetTargets));
-                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.DeletePermanently"), false, () => ExecuteHardDelete(deletedAssetTargets));
+                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.Restore"), false,
+                    () => ExecuteRestore(deletedAssetTargets));
+                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.DeletePermanently"), false,
+                    () => ExecuteHardDelete(deletedAssetTargets));
                 height += ItemHeight * 2;
             }
 
@@ -227,7 +244,8 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                     ? I18N.Get("UI.AssetManager.ContextMenu.DeleteAssetsConfirmPluralFmt", count)
                     : I18N.Get("UI.AssetManager.ContextMenu.DeleteAssetConfirm");
 
-                if (!EditorUtility.DisplayDialog(I18N.Get("UI.Core.ConfirmTitle"), message, I18N.Get("UI.Core.Delete"), I18N.Get("UI.Core.Cancel"))) return;
+                if (!EditorUtility.DisplayDialog(I18N.Get("UI.Core.ConfirmTitle"), message, I18N.Get("UI.Core.Delete"),
+                        I18N.Get("UI.Core.Cancel"))) return;
 
                 foreach (var a in targetAssets) assetService.DeleteAsset(a.ID);
                 onRefresh?.Invoke();

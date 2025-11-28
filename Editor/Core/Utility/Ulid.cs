@@ -39,7 +39,9 @@ namespace _4OF.ee4v.Core.Utility {
         public static Ulid Empty => new(0, 0);
 
         public static Ulid Parse(string value) {
-            return TryParse(value, out var ulid) ? ulid : throw new FormatException(I18N.Get("Debug.Core.Utility.Ulid.InvalidString"));
+            return TryParse(value, out var ulid)
+                ? ulid
+                : throw new FormatException(I18N.Get("Debug.Core.Utility.Ulid.InvalidString"));
         }
 
         public static bool TryParse(string value, out Ulid ulid) {
@@ -54,7 +56,8 @@ namespace _4OF.ee4v.Core.Utility {
 
         private static Ulid FromBytes(byte[] bytes) {
             if (bytes == null) throw new ArgumentNullException(nameof(bytes));
-            if (bytes.Length != 16) throw new ArgumentException(I18N.Get("Debug.Core.Utility.Ulid.InvalidByteLength"), nameof(bytes));
+            if (bytes.Length != 16)
+                throw new ArgumentException(I18N.Get("Debug.Core.Utility.Ulid.InvalidByteLength"), nameof(bytes));
 
             ulong most = 0, least = 0;
             for (var i = 0; i < 8; i++) most = (most << 8) | bytes[i];

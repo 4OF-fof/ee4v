@@ -60,6 +60,25 @@ namespace _4OF.ee4v.AssetManager.Booth.Dialog {
             barWrapper.Add(barInner);
             content.Add(barWrapper);
 
+            var buttonContainer = new VisualElement {
+                style = {
+                    flexDirection = FlexDirection.Row,
+                    justifyContent = Justify.FlexEnd,
+                    marginTop = 4,
+                    display = DisplayStyle.None
+                }
+            };
+            content.Add(buttonContainer);
+
+            var doneButton = new Button(() => CloseDialog(content)) {
+                text = I18N.Get("UI.AssetManager.Download.Close"),
+                style = {
+                    width = 80,
+                    height = 26
+                }
+            };
+            buttonContainer.Add(doneButton);
+
             var closeLabel = new Label("✕") {
                 style = {
                     position = Position.Absolute,
@@ -81,9 +100,8 @@ namespace _4OF.ee4v.AssetManager.Booth.Dialog {
             BoothThumbnailDownloader.OnStarted += OnStarted;
             BoothThumbnailDownloader.OnCompleted += OnCompleted;
 
-            if (BoothThumbnailDownloader.TotalCount == 0 && !BoothThumbnailDownloader.IsRunning) {
+            if (BoothThumbnailDownloader.TotalCount == 0 && !BoothThumbnailDownloader.IsRunning)
                 content.schedule.Execute(() => CloseDialog(content));
-            }
 
             content.RegisterCallback<DetachFromPanelEvent>(_ =>
             {
@@ -105,16 +123,26 @@ namespace _4OF.ee4v.AssetManager.Booth.Dialog {
                     CloseDialog(content);
                     return;
                 }
+
                 UpdateProgress(BoothThumbnailDownloader.TotalCount, BoothThumbnailDownloader.CompletedCount);
-                progressText.text = I18N.Get("UI.AssetManager.DownloadThumbnail.CompletedFmt", BoothThumbnailDownloader.CompletedCount, BoothThumbnailDownloader.TotalCount);
+                progressText.text = I18N.Get("UI.AssetManager.DownloadThumbnail.CompletedFmt",
+                    BoothThumbnailDownloader.CompletedCount, BoothThumbnailDownloader.TotalCount);
+
+                barInner.style.backgroundColor = ColorPreset.SuccessButtonStyle;
+                buttonContainer.style.display = DisplayStyle.Flex;
             }
 
             void OnStarted() {
+                barInner.style.backgroundColor = ColorPreset.AccentBlueStyle;
+                buttonContainer.style.display = DisplayStyle.None;
+
                 UpdateProgress(BoothThumbnailDownloader.TotalCount, BoothThumbnailDownloader.CompletedCount);
             }
 
             void UpdateProgress(int total, int completed) {
-                progressText.text = total == 0 ? I18N.Get("UI.AssetManager.DownloadThumbnail.ProgressFmt", 0, 0) : I18N.Get("UI.AssetManager.DownloadThumbnail.ProgressFmt", completed, total);
+                progressText.text = total == 0
+                    ? I18N.Get("UI.AssetManager.DownloadThumbnail.ProgressFmt", 0, 0)
+                    : I18N.Get("UI.AssetManager.DownloadThumbnail.ProgressFmt", completed, total);
                 var pct = total == 0 ? 0f : (float)completed / total;
                 barInner.style.width = new StyleLength(new Length(pct * 100f, LengthUnit.Percent));
             }

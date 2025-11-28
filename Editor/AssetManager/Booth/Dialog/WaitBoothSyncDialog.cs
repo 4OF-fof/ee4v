@@ -135,7 +135,8 @@ namespace _4OF.ee4v.AssetManager.Booth.Dialog {
                 if (!HttpServer.IsRunning) HttpServer.Start(LocalHttpPort);
             }
             catch (Exception ex) {
-                Debug.LogWarning(I18N.Get("Debug.AssetManager.WaitBoothSync.HttpServerStartFailedFmt", LocalHttpPort, ex));
+                Debug.LogWarning(I18N.Get("Debug.AssetManager.WaitBoothSync.HttpServerStartFailedFmt", LocalHttpPort,
+                    ex));
                 var errLabel = new Label(I18N.Get("Debug.AssetManager.WaitBoothSync.ImportFailedFmt", ex.Message)) {
                     style = {
                         marginBottom = 8, unityTextAlign = TextAnchor.MiddleLeft, color = ColorPreset.WarningText
@@ -191,7 +192,9 @@ namespace _4OF.ee4v.AssetManager.Booth.Dialog {
                                 showDialogCallback.Invoke(DownloadThumbnailDialog.CreateContent());
                         }
                         catch (Exception ex) {
-                            Debug.LogWarning(I18N.Get("Debug.AssetManager.Dialog.WaitBoothSync.FailedOpeningDownloadThumbnailDialogFmt", ex.Message));
+                            Debug.LogWarning(I18N.Get(
+                                "Debug.AssetManager.Dialog.WaitBoothSync.FailedOpeningDownloadThumbnailDialogFmt",
+                                ex.Message));
                         }
                     }
                 }

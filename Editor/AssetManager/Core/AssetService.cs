@@ -36,7 +36,8 @@ namespace _4OF.ee4v.AssetManager.Core {
                 var lib = _repository.GetLibraryMetadata();
                 if (lib != null && asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.ItemId)) {
                     var identifier = asset.BoothData.ItemId;
-                    var folderName = asset.BoothData.FileName ?? asset.Name ?? identifier ?? I18N.Get("UI.AssetManager.Default.BoothItem");
+                    var folderName = asset.BoothData.FileName ??
+                        asset.Name ?? identifier ?? I18N.Get("UI.AssetManager.Default.BoothItem");
                     var folderDesc = asset.BoothData.FileName ?? string.Empty;
                     var folderId = _folderService?.EnsureBoothItemFolder(asset.BoothData.ShopDomain ?? string.Empty,
                         null, identifier, folderName, folderDesc) ?? Ulid.Empty;
@@ -564,13 +565,15 @@ namespace _4OF.ee4v.AssetManager.Core {
             if (File.Exists(storedMetaPath)) {
                 File.Copy(storedMetaPath, destMetaPath, true);
                 AssetDatabase.Refresh();
-                Debug.Log(I18N.Get("Debug.AssetManager.Import.ImportedFileWithRestoredGuidFmt", Path.GetFileName(destFile)));
+                Debug.Log(I18N.Get("Debug.AssetManager.Import.ImportedFileWithRestoredGuidFmt",
+                    Path.GetFileName(destFile)));
             }
             else {
                 AssetDatabase.Refresh();
                 if (!File.Exists(destMetaPath)) return;
                 File.Copy(destMetaPath, storedMetaPath, true);
-                Debug.Log(I18N.Get("Debug.AssetManager.Import.ImportedFileAndBackedUpMetaFmt", Path.GetFileName(destFile)));
+                Debug.Log(I18N.Get("Debug.AssetManager.Import.ImportedFileAndBackedUpMetaFmt",
+                    Path.GetFileName(destFile)));
             }
         }
     }

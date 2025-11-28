@@ -93,7 +93,8 @@ namespace _4OF.ee4v.AssetManager.Booth {
                             try {
                                 using var resp = await Http.GetAsync(url);
                                 if (!resp.IsSuccessStatusCode) {
-                                    Debug.LogWarning(I18N.Get("Debug.AssetManager.Download.HttpFailedFmt", resp.StatusCode, url));
+                                    Debug.LogWarning(I18N.Get("Debug.AssetManager.Download.HttpFailedFmt",
+                                        resp.StatusCode, url));
                                 }
                                 else {
                                     var bytes = await resp.Content.ReadAsByteArrayAsync();
@@ -115,7 +116,9 @@ namespace _4OF.ee4v.AssetManager.Booth {
                                                 repository.SetFolderThumbnail(folderId, localTemp);
                                             }
                                             catch (Exception e) {
-                                                Debug.LogError(I18N.Get("Debug.AssetManager.Download.SetFolderThumbnailFailedFmt", folderId, e.Message));
+                                                Debug.LogError(I18N.Get(
+                                                    "Debug.AssetManager.Download.SetFolderThumbnailFailedFmt", folderId,
+                                                    e.Message));
                                             }
 
                                             try {
@@ -129,7 +132,8 @@ namespace _4OF.ee4v.AssetManager.Booth {
                                 }
                             }
                             catch (Exception e) {
-                                Debug.LogWarning(I18N.Get("Debug.AssetManager.Download.FailedToDownloadFromUrlFmt", url, e.Message));
+                                Debug.LogWarning(I18N.Get("Debug.AssetManager.Download.FailedToDownloadFromUrlFmt", url,
+                                    e.Message));
                                 if (!string.IsNullOrEmpty(tempPath))
                                     try {
                                         File.Delete(tempPath);
@@ -152,7 +156,8 @@ namespace _4OF.ee4v.AssetManager.Booth {
                             };
                         }
                         catch (Exception e) {
-                            Debug.LogWarning(I18N.Get("Debug.AssetManager.Download.FailedProcessingFolderFmt", folderId, e.Message));
+                            Debug.LogWarning(I18N.Get("Debug.AssetManager.Download.FailedProcessingFolderFmt", folderId,
+                                e.Message));
                             Interlocked.Increment(ref _completedCount);
                             var now = _completedCount;
                             EditorApplication.delayCall += () =>
@@ -191,11 +196,14 @@ namespace _4OF.ee4v.AssetManager.Booth {
                 EditorApplication.delayCall += () =>
                 {
                     try {
-                        AssetManagerWindow.ShowToastMessage(I18N.Get("UI.AssetManager.DownloadThumbnail.FinishedAttemptedFmt", count), 4f,
+                        AssetManagerWindow.ShowToastMessage(
+                            I18N.Get("UI.AssetManager.DownloadThumbnail.FinishedAttemptedFmt", count), 4f,
                             ToastType.Success);
                     }
                     catch {
-                        EditorUtility.DisplayDialog(I18N.Get("UI.Core.AppName"), I18N.Get("UI.AssetManager.DownloadThumbnail.FinishedAttemptedFmt", count), I18N.Get("UI.Core.OK"));
+                        EditorUtility.DisplayDialog(I18N.Get("UI.Core.AppName"),
+                            I18N.Get("UI.AssetManager.DownloadThumbnail.FinishedAttemptedFmt", count),
+                            I18N.Get("UI.Core.OK"));
                     }
                 };
             }

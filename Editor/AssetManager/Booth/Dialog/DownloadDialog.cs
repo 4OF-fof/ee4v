@@ -230,7 +230,8 @@ namespace _4OF.ee4v.AssetManager.Booth.Dialog {
             var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             var downloadsPath = Path.Combine(userProfile, "Downloads");
 
-            if (!Directory.Exists(downloadsPath)) Debug.LogError(I18N.Get("Debug.AssetManager.Download.FolderNotFound"));
+            if (!Directory.Exists(downloadsPath))
+                Debug.LogError(I18N.Get("Debug.AssetManager.Download.FolderNotFound"));
 
             return downloadsPath;
         }

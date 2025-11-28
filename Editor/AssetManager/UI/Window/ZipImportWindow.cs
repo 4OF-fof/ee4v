@@ -4,11 +4,11 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Core;
+using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
 using _4OF.ee4v.Core.Utility;
-using _4OF.ee4v.Core.i18n;
-using _4OF.ee4v.Core.Setting;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -66,7 +66,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             var zipFiles = _repository.GetAssetFiles(_targetAssetId, "*.zip");
             if (zipFiles == null || zipFiles.Count == 0) {
-                EditorUtility.DisplayDialog(I18N.Get("UI.Core.ErrorTitle"), I18N.Get("UI.AssetManager.ZipImport.Error.ZipNotFound"), I18N.Get("UI.Core.OK"));
+                EditorUtility.DisplayDialog(I18N.Get("UI.Core.ErrorTitle"),
+                    I18N.Get("UI.AssetManager.ZipImport.Error.ZipNotFound"), I18N.Get("UI.Core.OK"));
                 Close();
                 return;
             }
@@ -74,11 +75,13 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var zipPath = zipFiles[0];
 
             try {
-                EditorUtility.DisplayProgressBar(I18N.Get("UI.Common.PleaseWait"), I18N.Get("UI.AssetManager.ZipImport.Progress.Extracting"), 0.5f);
+                EditorUtility.DisplayProgressBar(I18N.Get("UI.Common.PleaseWait"),
+                    I18N.Get("UI.AssetManager.ZipImport.Progress.Extracting"), 0.5f);
                 ZipFile.ExtractToDirectory(zipPath, _tempExtractPath);
             }
             catch (Exception e) {
-                EditorUtility.DisplayDialog(I18N.Get("UI.Core.ErrorTitle"), I18N.Get("UI.AssetManager.ZipImport.Error.FailedToExtract", e.Message), I18N.Get("UI.Core.OK"));
+                EditorUtility.DisplayDialog(I18N.Get("UI.Core.ErrorTitle"),
+                    I18N.Get("UI.AssetManager.ZipImport.Error.FailedToExtract", e.Message), I18N.Get("UI.Core.OK"));
                 Close();
                 return;
             }
@@ -228,7 +231,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 }
             };
 
-            var cancelBtn = new Button(Close) { text = I18N.Get("UI.AssetManager.Dialog.Button.Cancel"), style = { width = 80 } };
+            var cancelBtn = new Button(Close)
+                { text = I18N.Get("UI.AssetManager.Dialog.Button.Cancel"), style = { width = 80 } };
             var importBtn = new Button(DoImport) {
                 text = I18N.Get("UI.AssetManager.ZipImport.Select"),
                 style = { width = 80, backgroundColor = ColorPreset.SuccessButtonStyle, color = ColorPreset.TextColor }

@@ -4,11 +4,10 @@ using _4OF.ee4v.AssetManager.Booth.Dialog;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.AssetManager.UI.Component;
 using _4OF.ee4v.AssetManager.UI.Model;
-using _4OF.ee4v.AssetManager.UI.Window;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 using UnityEngine.UIElements;
-using _4OF.ee4v.Core.i18n;
 
 namespace _4OF.ee4v.AssetManager.UI.Presenter {
     public class AssetPropertyPresenter {
@@ -89,7 +88,8 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
                 var success = _assetService.SetAssetName(SelectedAsset.ID, newName);
                 _refreshUI(true);
                 if (!success)
-                    _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.AssetRenameFailedInvalidFmt", oldName), 10, ToastType.Error);
+                    _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.AssetRenameFailedInvalidFmt", oldName), 10,
+                        ToastType.Error);
                 return;
             }
 
@@ -108,7 +108,8 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             _setNavigationFolders?.Invoke(folders);
             _refreshUI(false);
             if (!successFolder)
-                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.FolderRenameFailedInvalid", oldFolderName), 10, ToastType.Error);
+                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.FolderRenameFailedInvalid", oldFolderName), 10,
+                    ToastType.Error);
         }
 
         public void OnDescriptionChanged(string newDesc) {
@@ -222,7 +223,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             if (string.IsNullOrEmpty(downloadUrl) || SelectedAsset == null) return;
 
             var fileName = SelectedAsset.BoothData?.FileName ?? "";
-                if (string.IsNullOrEmpty(fileName)) {
+            if (string.IsNullOrEmpty(fileName)) {
                 _showToast?.Invoke(I18N.Get("UI.AssetManager.Download.FileNameNotSet"), 3f, ToastType.Error);
                 return;
             }

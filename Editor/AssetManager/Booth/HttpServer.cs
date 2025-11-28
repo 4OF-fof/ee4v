@@ -70,8 +70,8 @@ namespace _4OF.ee4v.AssetManager.Booth {
                 try {
                     _cts?.Cancel();
                     if (_listenerTask != null)
-                            if (!_listenerTask.Wait(500))
-                                Debug.LogWarning(I18N.Get("Debug.AssetManager.HttpServer.ListenerTimeout"));
+                        if (!_listenerTask.Wait(500))
+                            Debug.LogWarning(I18N.Get("Debug.AssetManager.HttpServer.ListenerTimeout"));
                 }
                 catch (Exception ex) {
                     Debug.LogError(I18N.Get("Debug.AssetManager.HttpServer.StopListenerFailedFmt", ex.Message));
@@ -103,7 +103,8 @@ namespace _4OF.ee4v.AssetManager.Booth {
                             context.Response.Close();
                         }
                         catch (Exception ex) {
-                            Debug.LogWarning(I18N.Get("Debug.AssetManager.HttpServer.HandleContextFailedFmt", ex.Message));
+                            Debug.LogWarning(I18N.Get("Debug.AssetManager.HttpServer.HandleContextFailedFmt",
+                                ex.Message));
                         }
                     }
                 }
@@ -170,52 +171,23 @@ namespace _4OF.ee4v.AssetManager.Booth {
                             await resp.OutputStream.WriteAsync(err, 0, err.Length);
                         }
                         else {
-                            int created;
-                            try {
-                                var tcs = new TaskCompletionSource<int>();
-                                var finalShopList = shopList;
-                                EditorApplication.delayCall += () =>
-                                {
-                                    try {
-                                        var res = BoothLibraryImporter.Import(finalShopList);
-                                        tcs.TrySetResult(res);
-                                    }
-                                    catch (Exception ex) {
-                                        tcs.TrySetException(ex);
-                                    }
-                                };
-
-                                created = await tcs.Task;
-                            }
-                            catch (Exception ex) {
-                                Debug.LogError(I18N.Get("Debug.AssetManager.HttpServer.ImportFailedFmt", ex.Message));
-                                resp.StatusCode = 500;
-                                resp.ContentType = "application/json; charset=utf-8";
-                                var errStr =
-                                    $"{{\"ok\":false, \"error\": \"Import failed: {ex.Message.Replace("\"", "\\\"")}\"}}";
-                                var err = Encoding.UTF8.GetBytes(errStr);
-                                resp.ContentLength64 = err.LongLength;
-                                await resp.OutputStream.WriteAsync(err, 0, err.Length);
-                                return;
-                            }
-
-                            var tcsSet = new TaskCompletionSource<bool>();
-                            var contents = shopList;
+                            var finalShopList = shopList;
                             EditorApplication.delayCall += () =>
                             {
                                 try {
-                                    BoothLibraryServerState.SetContents(contents);
-                                    tcsSet.TrySetResult(true);
+                                    BoothLibraryImporter.Import(finalShopList);
+
+                                    BoothLibraryServerState.SetContents(finalShopList);
                                 }
                                 catch (Exception ex) {
-                                    tcsSet.TrySetException(ex);
+                                    Debug.LogError(
+                                        I18N.Get("Debug.AssetManager.HttpServer.ImportFailedFmt", ex.Message));
                                 }
                             };
-                            await tcsSet.Task;
 
                             resp.StatusCode = 200;
                             resp.ContentType = "application/json; charset=utf-8";
-                            var okStr = $"{{\"ok\":true, \"created\":{created}}}";
+                            var okStr = "{\"ok\":true, \"message\":\"Request accepted\"}";
                             var ok = Encoding.UTF8.GetBytes(okStr);
                             resp.ContentLength64 = ok.LongLength;
                             await resp.OutputStream.WriteAsync(ok, 0, ok.Length);

@@ -202,8 +202,10 @@ namespace _4OF.ee4v.AssetManager.UI {
             _navigationContextMenuHandler = (id, folderName, target) =>
             {
                 var menu = new GenericDropdownMenu();
-                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.Rename"), false, () => navigation.ShowRenameFolderDialog(id, folderName));
-                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.Delete"), false, () => _navigationPresenter.OnFolderDeleted(id));
+                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.Rename"), false,
+                    () => navigation.ShowRenameFolderDialog(id, folderName));
+                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.Delete"), false,
+                    () => _navigationPresenter.OnFolderDeleted(id));
                 menu.DropDown(target.worldBound, target);
             };
             navigation.OnFolderContextMenuRequested += _navigationContextMenuHandler;
@@ -230,22 +232,30 @@ namespace _4OF.ee4v.AssetManager.UI {
             _assetViewSortMenuHandler = element =>
             {
                 var menu = new GenericDropdownMenu();
-                menu.AddItem(I18N.Get("UI.AssetManager.Sort.NameAsc"), false, () => assetView.ApplySortType(AssetSortType.NameAsc));
-                menu.AddItem(I18N.Get("UI.AssetManager.Sort.NameDesc"), false, () => assetView.ApplySortType(AssetSortType.NameDesc));
+                menu.AddItem(I18N.Get("UI.AssetManager.Sort.NameAsc"), false,
+                    () => assetView.ApplySortType(AssetSortType.NameAsc));
+                menu.AddItem(I18N.Get("UI.AssetManager.Sort.NameDesc"), false,
+                    () => assetView.ApplySortType(AssetSortType.NameDesc));
                 menu.AddSeparator("");
                 menu.AddItem(I18N.Get("UI.AssetManager.Sort.DateAddedNewest"), false,
                     () => assetView.ApplySortType(AssetSortType.DateAddedNewest));
                 menu.AddItem(I18N.Get("UI.AssetManager.Sort.DateAddedOldest"), false,
                     () => assetView.ApplySortType(AssetSortType.DateAddedOldest));
                 menu.AddSeparator("");
-                menu.AddItem(I18N.Get("UI.AssetManager.Sort.LastEditNewest"), false, () => assetView.ApplySortType(AssetSortType.DateNewest));
-                menu.AddItem(I18N.Get("UI.AssetManager.Sort.LastEditOldest"), false, () => assetView.ApplySortType(AssetSortType.DateOldest));
+                menu.AddItem(I18N.Get("UI.AssetManager.Sort.LastEditNewest"), false,
+                    () => assetView.ApplySortType(AssetSortType.DateNewest));
+                menu.AddItem(I18N.Get("UI.AssetManager.Sort.LastEditOldest"), false,
+                    () => assetView.ApplySortType(AssetSortType.DateOldest));
                 menu.AddSeparator("");
-                menu.AddItem(I18N.Get("UI.AssetManager.Sort.SizeSmallest"), false, () => assetView.ApplySortType(AssetSortType.SizeSmallest));
-                menu.AddItem(I18N.Get("UI.AssetManager.Sort.SizeLargest"), false, () => assetView.ApplySortType(AssetSortType.SizeLargest));
+                menu.AddItem(I18N.Get("UI.AssetManager.Sort.SizeSmallest"), false,
+                    () => assetView.ApplySortType(AssetSortType.SizeSmallest));
+                menu.AddItem(I18N.Get("UI.AssetManager.Sort.SizeLargest"), false,
+                    () => assetView.ApplySortType(AssetSortType.SizeLargest));
                 menu.AddSeparator("");
-                menu.AddItem(I18N.Get("UI.AssetManager.Sort.FileTypeAsc"), false, () => assetView.ApplySortType(AssetSortType.ExtAsc));
-                menu.AddItem(I18N.Get("UI.AssetManager.Sort.FileTypeDesc"), false, () => assetView.ApplySortType(AssetSortType.ExtDesc));
+                menu.AddItem(I18N.Get("UI.AssetManager.Sort.FileTypeAsc"), false,
+                    () => assetView.ApplySortType(AssetSortType.ExtAsc));
+                menu.AddItem(I18N.Get("UI.AssetManager.Sort.FileTypeDesc"), false,
+                    () => assetView.ApplySortType(AssetSortType.ExtDesc));
                 var targetElement = element ?? assetView;
                 menu.DropDown(targetElement.worldBound, targetElement);
             };

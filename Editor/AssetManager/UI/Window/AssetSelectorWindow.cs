@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Core;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using _4OF.ee4v.Core.i18n;
 
 namespace _4OF.ee4v.AssetManager.UI.Window {
     public class AssetSelectorWindow : BaseWindow {
@@ -132,7 +132,9 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
 
             if (filteredAssets.Count != 0) return;
             var noResultLabel =
-                new Label(string.IsNullOrEmpty(searchText) ? I18N.Get("UI.AssetManager.AssetSelector.NoAssets") : I18N.Get("UI.AssetManager.AssetSelector.NoMatchingAssets")) {
+                new Label(string.IsNullOrEmpty(searchText)
+                    ? I18N.Get("UI.AssetManager.AssetSelector.NoAssets")
+                    : I18N.Get("UI.AssetManager.AssetSelector.NoMatchingAssets")) {
                     style = {
                         unityTextAlign = TextAnchor.MiddleCenter,
                         color = ColorPreset.InActiveItem,

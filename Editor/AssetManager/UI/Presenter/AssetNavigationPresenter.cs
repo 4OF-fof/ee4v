@@ -4,9 +4,8 @@ using System.IO;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.AssetManager.UI.Component;
-using _4OF.ee4v.AssetManager.UI.Window;
-using _4OF.ee4v.Core.Utility;
 using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.UI.Presenter {
@@ -52,7 +51,8 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
         }
 
         public void OnTagListClicked() {
-            _assetController.SetMode(NavigationMode.TagList, I18N.Get("UI.AssetManager.Navigation.TagList"), _ => false, _isInitialized);
+            _assetController.SetMode(NavigationMode.TagList, I18N.Get("UI.AssetManager.Navigation.TagList"), _ => false,
+                _isInitialized);
         }
 
         public void OnTagSelected(string tag) {
@@ -69,8 +69,9 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             var folders = _folderService.GetRootFolders();
             _setNavigationFolders?.Invoke(folders);
             _refreshUI(false);
-                if (!success)
-                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.FolderCreateFailedInvalid", folderName), 10, ToastType.Error);
+            if (!success)
+                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.FolderCreateFailedInvalid", folderName), 10,
+                    ToastType.Error);
         }
 
         public void OnFolderRenamed(Ulid folderId, string newName) {
@@ -83,7 +84,8 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
             _setNavigationFolders?.Invoke(folders);
             _refreshUI(false);
             if (!success)
-                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.FolderRenameFailedInvalid", oldName), 10, ToastType.Error);
+                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.FolderRenameFailedInvalid", oldName), 10,
+                    ToastType.Error);
         }
 
         public void OnFolderDeleted(Ulid folderId) {
@@ -140,7 +142,8 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
                         _repository.CreateAssetFromFile(fileOrUrl);
                         asset = _repository.GetAllAssets().OrderByDescending(a => a.ModificationTime).FirstOrDefault();
                         if (asset == null) {
-                            _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.CreateFromFileFailed"), 5, ToastType.Error);
+                            _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.CreateFromFileFailed"), 5,
+                                ToastType.Error);
                             return;
                         }
                     }
@@ -174,7 +177,8 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
                 _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.AssetCreatedFmt", assetName), 3, ToastType.Success);
             }
             catch (Exception ex) {
-                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.AssetCreateFailedFmt", ex.Message), 5, ToastType.Error);
+                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.AssetCreateFailedFmt", ex.Message), 5,
+                    ToastType.Error);
                 Debug.LogError($"Failed to create asset: {ex}");
             }
         }

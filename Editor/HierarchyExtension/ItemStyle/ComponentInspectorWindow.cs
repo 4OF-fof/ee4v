@@ -48,8 +48,8 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle {
         protected override bool CanReuseFor(object reuseKey) {
             return reuseKey switch {
                 UnityEngine.Component c => c == _component,
-                Material m  => m == _material,
-                _           => false
+                Material m              => m == _material,
+                _                       => false
             };
         }
 

@@ -88,7 +88,9 @@ namespace _4OF.ee4v.AssetManager.Core {
 
         public BaseFolder(BaseFolder baseFolder) {
             ID = baseFolder.ID;
-            Name = string.IsNullOrWhiteSpace(baseFolder.Name) ? I18N.Get("UI.AssetManager.Default.NewFolder") : baseFolder.Name;
+            Name = string.IsNullOrWhiteSpace(baseFolder.Name)
+                ? I18N.Get("UI.AssetManager.Default.NewFolder")
+                : baseFolder.Name;
             Description = baseFolder.Description;
             ModificationTime = baseFolder.ModificationTime;
             _tags = new List<string>(baseFolder.Tags);

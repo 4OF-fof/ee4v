@@ -111,7 +111,8 @@ namespace _4OF.ee4v.AssetManager.Booth {
                                 stagedAssets.Add(asset);
                             }
                             catch (Exception e) {
-                                Debug.LogError(I18N.Get("Debug.AssetManager.BoothLibraryImporter.FailedStagingDownloadableFmt", e.Message));
+                                Debug.LogError(I18N.Get(
+                                    "Debug.AssetManager.BoothLibraryImporter.FailedStagingDownloadableFmt", e.Message));
                             }
                     }
                 }
@@ -143,11 +144,13 @@ namespace _4OF.ee4v.AssetManager.Booth {
                         BoothThumbnailDownloader.Enqueue(repository, folderImageCandidates);
                     }
                     catch (Exception e) {
-                        Debug.LogWarning(I18N.Get("Debug.AssetManager.BoothLibraryImporter.FailedToScheduleThumbnailDownloadFmt", e.Message));
+                        Debug.LogWarning(I18N.Get(
+                            "Debug.AssetManager.BoothLibraryImporter.FailedToScheduleThumbnailDownloadFmt", e.Message));
                     }
 
                     try {
-                        Debug.Log(I18N.Get("Debug.AssetManager.BoothLibraryImporter.InvokingOnImportCompletedFmt", saved.Count));
+                        Debug.Log(I18N.Get("Debug.AssetManager.BoothLibraryImporter.InvokingOnImportCompletedFmt",
+                            saved.Count));
                         OnImportCompleted?.Invoke(saved.Count);
                     }
                     catch {
