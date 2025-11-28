@@ -14,6 +14,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
         private readonly Label _nameLabel;
         private readonly VisualElement _thumbnail;
         private bool _isSelected;
+        private Texture2D _currentTexture;
 
         public AssetCard() {
             style.paddingLeft = 5;
@@ -80,6 +81,9 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
         }
 
         public void SetThumbnail(Texture2D texture, bool isFolder = false, bool isEmpty = false) {
+            if (texture != null && _currentTexture == texture) return;
+            _currentTexture = texture;
+
             if (texture == null) {
                 var fallback = TextureService.GetDefaultFallback(isFolder, isEmpty);
 

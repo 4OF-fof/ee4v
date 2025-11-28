@@ -226,8 +226,6 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             }
 
             if (currentRow.Count > 0) _rows.Add(currentRow);
-            _listView.itemsSource = _rows;
-            _listView.Rebuild();
         }
 
         private void OnDetach(DetachFromPanelEvent evt) {
@@ -310,6 +308,8 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                     switch (item) {
                         case BaseFolder folder:
                             card.SetData(folder.Name);
+
+                            var isSameFolder = card.userData is BaseFolder oldFolder && oldFolder.ID == folder.ID;
                             card.userData = folder;
 
                             var hasSubFolders = folder is Folder f && (f.Children?.Count ?? 0) > 0;
@@ -317,7 +317,10 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                                 .Any(a => a.Folder == folder.ID && !a.IsDeleted);
                             var isEmpty = !hasSubFolders && !hasAssets;
 
-                            card.SetThumbnail(null, true, isEmpty);
+                            if (!isSameFolder) {
+                                card.SetThumbnail(null, true, isEmpty);
+                            }
+                            
                             _thumbnailLoader?.LoadThumbnailAsync(card, folder.ID, true,
                                 _cts?.Token ?? CancellationToken.None);
 
@@ -326,8 +329,14 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                             break;
                         case AssetMetadata asset:
                             card.SetData(asset.Name);
+
+                            var isSameAsset = card.userData is AssetMetadata oldAsset && oldAsset.ID == asset.ID;
                             card.userData = asset;
-                            card.SetThumbnail(null);
+                            
+                            if (!isSameAsset) {
+                                card.SetThumbnail(null);
+                            }
+
                             _thumbnailLoader?.LoadThumbnailAsync(card, asset.ID, false,
                                 _cts?.Token ?? CancellationToken.None);
                             break;
