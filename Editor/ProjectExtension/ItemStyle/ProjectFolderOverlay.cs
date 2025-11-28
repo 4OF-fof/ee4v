@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
+using _4OF.ee4v.AssetManager.API;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
 using UnityEditor;
@@ -49,14 +50,27 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
 
             var color = style?.color ?? Color.clear;
             var icon = style?.icon;
-            if (color == Color.clear && icon == null) return false;
+            var assetUlid = style?.assetUlid;
+
+            if (color == Color.clear && icon == null && string.IsNullOrEmpty(assetUlid)) return false;
+
             EditorGUI.DrawRect(imageRect, backgroundColor);
+
             if (icon != null) {
                 GUI.DrawTexture(imageRect, icon, ScaleMode.ScaleToFit);
                 return true;
             }
 
+            if (!string.IsNullOrEmpty(assetUlid)) {
+                var amTexture = AssetManagerAPI.GetAssetThumbnail(assetUlid);
+                if (amTexture != null) {
+                    GUI.DrawTexture(imageRect, amTexture, ScaleMode.ScaleToFit);
+                    return true;
+                }
+            }
+
             if (color == Color.clear) return false;
+
             var prevColor = GUI.color;
             GUI.color = color;
             var isEmpty = !Directory.EnumerateFileSystemEntries(path).Any();

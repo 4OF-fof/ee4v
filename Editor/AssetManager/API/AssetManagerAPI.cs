@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
@@ -54,6 +56,40 @@ namespace _4OF.ee4v.AssetManager.API {
             catch (Exception e) {
                 Debug.LogError(I18N.Get("Debug.AssetManager.API.ExceptionDuringBackupImportFmt", e.Message));
             }
+        }
+
+        public static Dictionary<string, string> GetAssetsAssociatedWithGuid(string guid) {
+            var result = new Dictionary<string, string>();
+            var repository = AssetManagerContainer.Repository;
+            
+            if (repository == null || !Guid.TryParse(guid, out var targetGuid)) return result;
+
+            var assets = repository.GetAllAssets();
+            foreach (var asset in assets) {
+                if (asset.UnityData != null && asset.UnityData.AssetGuidList.Contains(targetGuid)) {
+                    result[asset.ID.ToString()] = asset.Name;
+                }
+            }
+
+            return result;
+        }
+
+        public static Texture2D GetAssetThumbnail(string ulidString) {
+            if (!Ulid.TryParse(ulidString, out var ulid)) return null;
+            var service = AssetManagerContainer.TextureService;
+            if (service == null) return null;
+
+            if (service.TryGetCachedAssetThumbnail(ulid, out var texture)) {
+                return texture;
+            }
+
+            _ = LoadThumbnailAndRepaint(service, ulid);
+            return null;
+        }
+
+        private static async Task LoadThumbnailAndRepaint(TextureService service, Ulid ulid) {
+            await service.GetAssetThumbnailAsync(ulid);
+            UnityEditor.EditorApplication.RepaintProjectWindow();
         }
     }
 }

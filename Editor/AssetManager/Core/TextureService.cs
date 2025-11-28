@@ -34,6 +34,11 @@ namespace _4OF.ee4v.AssetManager.Core {
             return CreateAndCacheTexture(key, data);
         }
 
+        public bool TryGetCachedAssetThumbnail(Ulid assetId, out Texture2D texture) {
+            var key = $"asset_{assetId}";
+            return TryGetFromCache(key, out texture);
+        }
+
         public static Texture2D GetDefaultFallback(bool isFolder, bool isEmpty = false) {
             if (!isFolder) {
                 const string key = "GameObject Icon";

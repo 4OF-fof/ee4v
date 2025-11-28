@@ -9,11 +9,12 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
         [SerializeField] private List<FolderStyle> contents = new();
         public IReadOnlyList<FolderStyle> Contents => contents;
 
-        public void AddFolderStyle(string guid, Color color, Texture icon) {
+        public void AddFolderStyle(string guid, Color color, Texture icon, string assetUlid = null) {
             contents.Add(new FolderStyle {
                 guid = guid,
                 color = color,
-                icon = icon
+                icon = icon,
+                assetUlid = assetUlid
             });
             Save(true);
         }
@@ -25,11 +26,16 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
         }
 
         public void UpdateFolderStyle(int index, string guid = null, Color? color = null, Texture icon = null,
-            bool setIcon = false) {
+            bool setIcon = false, string assetUlid = null) {
             if (index < 0 || index >= contents.Count) return;
-            if (guid != null) contents[index].guid = guid;
-            if (color.HasValue) contents[index].color = color.Value;
-            if (setIcon) contents[index].icon = icon;
+
+            var style = contents[index];
+            if (guid != null) style.guid = guid;
+            if (color.HasValue) style.color = color.Value;
+            if (setIcon) style.icon = icon;
+            if (assetUlid != null) style.assetUlid = assetUlid;
+
+            contents[index] = style;
             Save(true);
         }
 
@@ -38,6 +44,7 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
             public string guid;
             public Color color;
             public Texture icon;
+            public string assetUlid;
         }
     }
 }
