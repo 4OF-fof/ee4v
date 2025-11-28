@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using _4OF.ee4v.Core.Utility;
 using _4OF.ee4v.ProjectExtension.ItemStyle;
 using _4OF.ee4v.Runtime;
 using UnityEditor;
@@ -65,9 +64,10 @@ namespace _4OF.ee4v.Core.UI.Component {
         public static VisualElement Element(List<string> folderPaths) {
             ColorList.RemoveAll(c => c == Color.clear);
             ColorList.Insert(0, Color.clear);
+
             if (folderPaths is { Count: 1 }) {
-                var style = FolderStyleList.instance.Contents.FirstOrDefault(s =>
-                    s.path == AssetUtility.NormalizePath(folderPaths[0]));
+                var guid = AssetDatabase.AssetPathToGUID(folderPaths[0]);
+                var style = FolderStyleList.instance.Contents.FirstOrDefault(s => s.guid == guid);
                 var existingColor = style?.color ?? Color.clear;
                 _selectedColor = existingColor != Color.clear ? existingColor : ColorList[0];
             }
@@ -79,14 +79,16 @@ namespace _4OF.ee4v.Core.UI.Component {
                 {
                     if (folderPaths != null)
                         foreach (var folderPath in folderPaths) {
-                            var p = AssetUtility.NormalizePath(folderPath);
-                            var idx = FolderStyleService.IndexOfPath(p);
+                            var guid = AssetDatabase.AssetPathToGUID(folderPath);
+                            if (string.IsNullOrEmpty(guid)) continue;
+
+                            var idx = FolderStyleService.IndexOfGuid(guid);
                             if (color == Color.clear) {
                                 if (idx >= 0) FolderStyleList.instance.RemoveFolderStyle(idx);
                             }
                             else {
                                 if (idx == -1)
-                                    FolderStyleList.instance.AddFolderStyle(p, color, null);
+                                    FolderStyleList.instance.AddFolderStyle(guid, color, null);
                                 else
                                     FolderStyleList.instance.UpdateFolderStyle(idx, color: color);
                             }

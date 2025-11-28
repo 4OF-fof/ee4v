@@ -2,7 +2,6 @@
 using System.Linq;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
-using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
 
@@ -45,8 +44,9 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
         }
 
         private static bool DrawStyledFolder(string path, Rect imageRect, Color backgroundColor) {
-            var style = FolderStyleList.instance.Contents.FirstOrDefault(s =>
-                s.path == AssetUtility.NormalizePath(path));
+            var guid = AssetDatabase.AssetPathToGUID(path);
+            var style = FolderStyleList.instance.Contents.FirstOrDefault(s => s.guid == guid);
+
             var color = style?.color ?? Color.clear;
             var icon = style?.icon;
             if (color == Color.clear && icon == null) return false;

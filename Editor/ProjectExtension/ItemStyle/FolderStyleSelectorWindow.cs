@@ -4,7 +4,6 @@ using System.Linq;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI.Component;
 using _4OF.ee4v.Core.UI.Window;
-using _4OF.ee4v.Core.Utility;
 using _4OF.ee4v.ProjectExtension.Core;
 using UnityEditor;
 using UnityEngine;
@@ -79,11 +78,12 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
             var root = base.Content();
             var colorSelector = ColorSelector.Element(_pathList);
             var anyHasIcon = false;
+
             if (_pathList != null)
                 if (_pathList.Any(p =>
                     {
-                        var s = FolderStyleList.instance.Contents.FirstOrDefault(x =>
-                            x.path == AssetUtility.NormalizePath(p));
+                        var guid = AssetDatabase.AssetPathToGUID(p);
+                        var s = FolderStyleList.instance.Contents.FirstOrDefault(x => x.guid == guid);
                         return s?.icon != null;
                     }))
                     anyHasIcon = true;
@@ -96,8 +96,9 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
                 objectType = typeof(Texture)
             };
             if (_pathList is { Count: 1 }) {
+                var guid = AssetDatabase.AssetPathToGUID(_pathList[0]);
                 var existing = FolderStyleList.instance.Contents
-                    .FirstOrDefault(s => s.path == AssetUtility.NormalizePath(_pathList[0]))?.icon;
+                    .FirstOrDefault(s => s.guid == guid)?.icon;
                 if (existing != null) iconFiled.value = existing;
             }
 
@@ -105,10 +106,12 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
             {
                 var newIcon = evt.newValue as Texture;
                 foreach (var p in _pathList) {
-                    var np = AssetUtility.NormalizePath(p);
-                    var idx = FolderStyleService.IndexOfPath(np);
+                    var guid = AssetDatabase.AssetPathToGUID(p);
+                    if (string.IsNullOrEmpty(guid)) continue;
+
+                    var idx = FolderStyleService.IndexOfGuid(guid);
                     if (idx == -1)
-                        FolderStyleList.instance.AddFolderStyle(np, Color.clear, newIcon);
+                        FolderStyleList.instance.AddFolderStyle(guid, Color.clear, newIcon);
                     else
                         FolderStyleList.instance.UpdateFolderStyle(idx, icon: newIcon, setIcon: true);
                 }

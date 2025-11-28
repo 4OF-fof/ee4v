@@ -9,9 +9,9 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
         [SerializeField] private List<FolderStyle> contents = new();
         public IReadOnlyList<FolderStyle> Contents => contents;
 
-        public void AddFolderStyle(string path, Color color, Texture icon) {
+        public void AddFolderStyle(string guid, Color color, Texture icon) {
             contents.Add(new FolderStyle {
-                path = path,
+                guid = guid,
                 color = color,
                 icon = icon
             });
@@ -24,10 +24,10 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
             Save(true);
         }
 
-        public void UpdateFolderStyle(int index, string path = null, Color? color = null, Texture icon = null,
+        public void UpdateFolderStyle(int index, string guid = null, Color? color = null, Texture icon = null,
             bool setIcon = false) {
             if (index < 0 || index >= contents.Count) return;
-            if (path != null) contents[index].path = path;
+            if (guid != null) contents[index].guid = guid;
             if (color.HasValue) contents[index].color = color.Value;
             if (setIcon) contents[index].icon = icon;
             Save(true);
@@ -35,7 +35,7 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
 
         [Serializable]
         public class FolderStyle {
-            public string path;
+            public string guid;
             public Color color;
             public Texture icon;
         }
