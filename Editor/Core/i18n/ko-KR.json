@@ -181,7 +181,7 @@
   "UI.AssetManager.Dialog.WaitBoothSync.UserscriptDesc2": "설치되지 않은 경우 브라우저 확장 프로그램(예: Tampermonkey)에 유저스크립트를 추가하고 활성화하십시오. 전송 중에는 탭이나 Unity를 닫지 마십시오.",
   "UI.AssetManager.Dialog.WaitBoothSync.UserscriptNotice": "유저스크립트 설치 필요",
   "UI.AssetManager.Download.Close": "닫기",
-  "UI.AssetManager.Download.Completed": "✓ 등록 완료.",
+  "UI.AssetManager.Download.Completed": "등록 완료.",
   "UI.AssetManager.Download.Error.BrowserOpenFailedFmt": "오류: 브라우저를 열 수 없습니다.\n{0}",
   "UI.AssetManager.Download.Error.DownloadFolderNotFound": "오류: 다운로드 폴더를 찾을 수 없습니다.",
   "UI.AssetManager.Download.Error.RegistrationFailedFmt": "오류: 파일을 등록하지 못했습니다.\n{0}",

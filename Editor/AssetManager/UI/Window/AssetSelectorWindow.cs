@@ -87,7 +87,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             searchRow.Add(_searchField);
 
             _searchField.schedule.Execute(() => _searchField?.Q<TextField>()?.Focus()).ExecuteLater(50);
-            
+
             container.Add(searchRow);
 
             var scrollView = new ScrollView {

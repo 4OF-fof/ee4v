@@ -181,7 +181,7 @@
   "UI.AssetManager.Dialog.WaitBoothSync.UserscriptDesc2": "まだインストールしていない場合は、ブラウザ拡張 (例: Tampermonkey) に Userscript を追加して有効化してください。\n送信中はタブと Unity を閉じないでください。",
   "UI.AssetManager.Dialog.WaitBoothSync.UserscriptNotice": "Userscript のインストールが必要です",
   "UI.AssetManager.Download.Close": "閉じる",
-  "UI.AssetManager.Download.Completed": "✓登録が完了しました。",
+  "UI.AssetManager.Download.Completed": "登録が完了しました。",
   "UI.AssetManager.Download.Error.BrowserOpenFailedFmt": "エラー: ブラウザを開けませんでした。\n{0}",
   "UI.AssetManager.Download.Error.DownloadFolderNotFound": "エラー: ダウンロードフォルダが見つかりません。",
   "UI.AssetManager.Download.Error.RegistrationFailedFmt": "エラー: ファイルの登録に失敗しました。\n{0}",

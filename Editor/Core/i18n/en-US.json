@@ -181,7 +181,7 @@
   "UI.AssetManager.Dialog.WaitBoothSync.UserscriptDesc2": "If not installed, please add the userscript to a browser extension (e.g., Tampermonkey) and enable it. Do not close the tab or Unity while sending.",
   "UI.AssetManager.Dialog.WaitBoothSync.UserscriptNotice": "Userscript installation required",
   "UI.AssetManager.Download.Close": "Close",
-  "UI.AssetManager.Download.Completed": "✓ Registration complete.",
+  "UI.AssetManager.Download.Completed": "Registration complete.",
   "UI.AssetManager.Download.Error.BrowserOpenFailedFmt": "Error: Could not open browser.\n{0}",
   "UI.AssetManager.Download.Error.DownloadFolderNotFound": "Error: Download folder not found.",
   "UI.AssetManager.Download.Error.RegistrationFailedFmt": "Error: Failed to register file.\n{0}",

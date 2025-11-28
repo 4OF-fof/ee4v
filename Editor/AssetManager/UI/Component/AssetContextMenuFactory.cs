@@ -39,11 +39,12 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             var singleAsset = activeAssetTargets.Count == 1 ? activeAssetTargets[0] : null;
 
             var assetsWithFiles = activeAssetTargets.Where(a => repository.HasAssetFile(a.ID)).ToList();
-            var importableAssets = assetsWithFiles.Where(a => !a.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase) || repository.HasImportItems(a.ID)).ToList();
+            var importableAssets = assetsWithFiles.Where(a =>
+                !a.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase) || repository.HasImportItems(a.ID)).ToList();
 
             var showZipImport = singleAsset != null &&
-                                singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase) &&
-                                repository.HasAssetFile(singleAsset.ID);
+                singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase) &&
+                repository.HasAssetFile(singleAsset.ID);
 
             if (importableAssets.Count > 0 || showZipImport) {
                 if (importableAssets.Count > 0) {
@@ -51,7 +52,8 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                         ? I18N.Get("UI.AssetManager.ContextMenu.ImportPluralFmt", importableAssets.Count)
                         : I18N.Get("UI.AssetManager.ContextMenu.Import");
 
-                    menu.AddItem(label, false, () => { assetService.ImportAssetList(importableAssets.Select(a => a.ID)); });
+                    menu.AddItem(label, false,
+                        () => { assetService.ImportAssetList(importableAssets.Select(a => a.ID)); });
                     height += ItemHeight;
                 }
 
