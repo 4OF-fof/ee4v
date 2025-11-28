@@ -241,7 +241,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             if (float.IsNaN(newWidth) || newWidth == 0 || Math.Abs(newWidth - _lastWidth) < 1) return;
             _lastWidth = newWidth;
             UpdateItemHeight();
-            _listView.RefreshItems();
+            _listView.Rebuild();
         }
 
         private void UpdateItemHeight() {
