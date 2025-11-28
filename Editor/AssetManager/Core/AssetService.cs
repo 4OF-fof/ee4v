@@ -29,20 +29,33 @@ namespace _4OF.ee4v.AssetManager.Core {
             _folderService = folderService;
         }
 
-        public void SaveAsset(AssetMetadata asset) {
+public void SaveAsset(AssetMetadata asset) {
             if (asset == null) return;
 
             try {
                 var lib = _repository.GetLibraryMetadata();
                 if (lib != null && asset.BoothData != null && !string.IsNullOrEmpty(asset.BoothData.ItemId)) {
                     var identifier = asset.BoothData.ItemId;
-                    var folderName = asset.BoothData.FileName ??
-                        asset.Name ?? identifier ?? I18N.Get("UI.AssetManager.Default.BoothItem");
-                    var folderDesc = asset.BoothData.FileName ?? string.Empty;
-                    var folderId = _folderService?.EnsureBoothItemFolder(asset.BoothData.ShopDomain ?? string.Empty,
-                        null, identifier, folderName, folderDesc) ?? Ulid.Empty;
 
-                    if (folderId != Ulid.Empty && asset.Folder == Ulid.Empty) asset.SetFolder(folderId);
+                    var folderId = _folderService?.EnsureBoothItemFolder(asset.BoothData.ShopDomain ?? string.Empty,
+                        asset.BoothData.ShopDomain, identifier, identifier) ?? Ulid.Empty;
+
+                    if (folderId != Ulid.Empty) {
+                        if (asset.Folder != folderId) asset.SetFolder(folderId);
+
+                        var siblings = _repository.GetAllAssets()
+                            .Where(a => a.ID != asset.ID && a.BoothData?.ItemId == identifier && a.Folder != folderId)
+                            .ToList();
+
+                        if (siblings.Count > 0) {
+                            var siblingsToSave = new List<AssetMetadata>();
+                            foreach (var copy in siblings.Select(sibling => new AssetMetadata(sibling))) {
+                                copy.SetFolder(folderId);
+                                siblingsToSave.Add(copy);
+                            }
+                            _repository.SaveAssets(siblingsToSave);
+                        }
+                    }
                 }
             }
             catch {
