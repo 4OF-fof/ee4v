@@ -9,7 +9,6 @@ using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -118,9 +117,7 @@ namespace _4OF.ee4v.AssetManager.UI {
                 _       => null
             };
 
-            if (customFont != null) {
-                root.style.unityFontDefinition = new StyleFontDefinition(customFont);
-            }
+            if (customFont != null) root.style.unityFontDefinition = new StyleFontDefinition(customFont);
 
             var navigation = new Navigation {
                 style = {

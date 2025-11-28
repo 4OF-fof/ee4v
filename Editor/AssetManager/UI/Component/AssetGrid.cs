@@ -435,10 +435,8 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             DragAndDrop.objectReferences = Array.Empty<Object>();
 
             var dragLabel = selectedAssets.Count > 0 && selectedFolders.Count > 0
-                ?
-                I18N.Get("UI.AssetManager.AssetGrid.DraggingItems")
-                :
-                selectedFolders.Count > 0
+                ? I18N.Get("UI.AssetManager.AssetGrid.DraggingItems")
+                : selectedFolders.Count > 0
                     ? I18N.Get("UI.AssetManager.AssetGrid.DraggingFolders")
                     : I18N.Get("UI.AssetManager.AssetGrid.DraggingAssets");
             DragAndDrop.StartDrag(dragLabel);

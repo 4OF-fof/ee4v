@@ -55,10 +55,8 @@ namespace _4OF.ee4v.Core.UI.Window {
                 _       => null
             };
 
-            if (customFont != null) {
-                rootVisualElement.style.unityFontDefinition = new StyleFontDefinition(customFont);
-            }
-            
+            if (customFont != null) rootVisualElement.style.unityFontDefinition = new StyleFontDefinition(customFont);
+
             rootVisualElement.style.borderRightWidth = 2;
             rootVisualElement.style.borderLeftWidth = 2;
             rootVisualElement.style.borderTopWidth = 2;
