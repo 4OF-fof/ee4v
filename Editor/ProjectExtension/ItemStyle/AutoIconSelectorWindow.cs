@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using _4OF.ee4v.AssetManager.API;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
 using UnityEngine;
@@ -8,19 +10,24 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.ProjectExtension.ItemStyle {
     public class AutoIconSelectorWindow : BaseWindow {
+        private readonly List<(string ulid, Image img)> _loadingImages = new();
         private Dictionary<string, string> _candidates;
         private Action<string> _onSelected;
 
-        private readonly List<(string ulid, Image img)> _loadingImages = new();
-
         public static void Open(string folderGuid, Vector2 screenPosition, Action<string> onSelected) {
+            var candidates = AssetManagerAPI.GetAssetsAssociatedWithGuid(folderGuid);
+
+            if (candidates is { Count: 1 }) {
+                onSelected?.Invoke(candidates.Keys.First());
+                return;
+            }
+
             var window = OpenSetup<AutoIconSelectorWindow>(screenPosition);
             window._onSelected = onSelected;
-            
-            window._candidates = AssetManagerAPI.GetAssetsAssociatedWithGuid(folderGuid);
-            
+            window._candidates = candidates;
+
             window.position = new Rect(screenPosition.x, screenPosition.y, 350, 400);
-            
+
             window.ShowPopup();
             window.UpdateContent();
         }
@@ -40,8 +47,8 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
                     flexGrow = 1
                 }
             };
-            
-            var label = new Label("Select Asset Icon") {
+
+            var label = new Label(I18N.Get("UI.ProjectExtension.SelectAssetIcon")) {
                 style = {
                     unityFontStyleAndWeight = FontStyle.Bold,
                     fontSize = 14,
@@ -55,18 +62,18 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
         protected override VisualElement Content() {
             _loadingImages.Clear();
             var root = base.Content();
-            
+
             root.style.paddingTop = 8;
             root.style.paddingBottom = 8;
             root.style.paddingLeft = 8;
             root.style.paddingRight = 8;
 
             if (_candidates == null || _candidates.Count == 0) {
-                var noAssetLabel = new Label("No associated assets found.") {
+                var noAssetLabel = new Label(I18N.Get("UI.ProjectExtension.NoAssociatedAssetsFound")) {
                     style = {
                         marginTop = 20,
                         unityTextAlign = TextAnchor.MiddleCenter,
-                        color = Color.gray
+                        color = ColorPreset.NonFavorite
                     }
                 };
                 root.Add(noAssetLabel);
@@ -110,18 +117,17 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
                     style = {
                         width = 90,
                         height = 90,
-                        backgroundColor = new Color(0.18f, 0.18f, 0.18f, 1f), 
+                        backgroundColor = ColorPreset.WindowHeader,
                         marginBottom = 4,
                         borderTopLeftRadius = 4, borderTopRightRadius = 4,
                         borderBottomLeftRadius = 4, borderBottomRightRadius = 4
                     }
                 };
 
-                if (thumb != null) {
+                if (thumb != null)
                     img.image = thumb;
-                } else {
+                else
                     _loadingImages.Add((ulid, img));
-                }
 
                 card.Add(img);
 
@@ -145,27 +151,16 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
                     Close();
                 });
 
-                card.RegisterCallback<MouseEnterEvent>(_ => {
-                    card.style.backgroundColor = new Color(0.3f, 0.3f, 0.3f, 1f);
-                    card.style.borderLeftColor = ColorPreset.HighlightColor;
-                    card.style.borderRightColor = ColorPreset.HighlightColor;
-                    card.style.borderTopColor = ColorPreset.HighlightColor;
-                    card.style.borderBottomColor = ColorPreset.HighlightColor;
+                card.RegisterCallback<MouseEnterEvent>(_ =>
+                {
+                    card.style.backgroundColor = ColorPreset.MouseOverBackground;
                 });
-                card.RegisterCallback<MouseLeaveEvent>(_ => {
-                    card.style.backgroundColor = Color.clear;
-                    card.style.borderLeftColor = Color.clear;
-                    card.style.borderRightColor = Color.clear;
-                    card.style.borderTopColor = Color.clear;
-                    card.style.borderBottomColor = Color.clear;
-                });
+                card.RegisterCallback<MouseLeaveEvent>(_ => { card.style.backgroundColor = Color.clear; });
 
                 gridContainer.Add(card);
             }
 
-            if (_loadingImages.Count > 0) {
-                root.schedule.Execute(UpdateLoadingImages).Every(100);
-            }
+            if (_loadingImages.Count > 0) root.schedule.Execute(UpdateLoadingImages).Every(100);
 
             return root;
         }

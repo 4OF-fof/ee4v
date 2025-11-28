@@ -143,7 +143,7 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
                     if (idx != -1) FolderStyleList.instance.UpdateFolderStyle(idx, assetUlid: "");
                     UpdateContent();
                 }) {
-                    text = "Unlink (Remove Auto Icon)",
+                    text = I18N.Get("UI.ProjectExtension.UnlinkAutoIcon"),
                     style = { height = 24 }
                 };
                 root.Add(unlinkBtn);
@@ -166,12 +166,12 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
                         UpdateContent();
                     });
                 }) {
-                    text = "Auto Icon from Assets",
+                    text = I18N.Get("UI.ProjectExtension.AutoIconFromAssets"),
                     style = { height = 24 }
                 };
 
                 selectBtn.SetEnabled(hasAssets);
-                if (!hasAssets) selectBtn.tooltip = "No associated assets found in Asset Manager.";
+                if (!hasAssets) selectBtn.tooltip = I18N.Get("UI.ProjectExtension.NoAssociatedAssetsTooltip");
                 root.Add(selectBtn);
             }
 
