@@ -64,7 +64,7 @@ namespace _4OF.ee4v.AssetManager.Booth {
                     _listener?.Close();
                 }
                 catch (Exception ex) {
-                    Debug.LogError("Error while closing HttpListener: " + ex);
+                    Debug.LogError(I18N.Get("Debug.AssetManager.HttpServer.CloseFailedFmt", ex.Message));
                 }
 
                 try {

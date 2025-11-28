@@ -22,6 +22,7 @@
   "Debug.AssetManager.Download.FolderNotFound": "ダウンロードフォルダが見つかりません。",
   "Debug.AssetManager.Download.HttpFailedFmt": "Booth のサムネイルのダウンロードに失敗しました (HTTP {0}): {1}",
   "Debug.AssetManager.Download.SetFolderThumbnailFailedFmt": "フォルダ {0} のサムネイル設定に失敗しました: {1}",
+  "Debug.AssetManager.HttpServer.CloseFailedFmt": "HttpListenerを閉じるときにエラーが発生しました: {0}",
   "Debug.AssetManager.HttpServer.HandleContextFailedFmt": "コンテキストの処理中にエラーが発生しました: {0}",
   "Debug.AssetManager.HttpServer.ImportFailedFmt": "インポート処理に失敗しました: {0}",
   "Debug.AssetManager.HttpServer.JsonParseFailedFmt": "JSONの解析に失敗しました: {0}",

@@ -22,6 +22,7 @@
   "Debug.AssetManager.Download.FolderNotFound": "Download folder not found.",
   "Debug.AssetManager.Download.HttpFailedFmt": "Booth thumbnail download failed (HTTP {0}) for {1}",
   "Debug.AssetManager.Download.SetFolderThumbnailFailedFmt": "Failed to set folder thumbnail for {0}: {1}",
+  "Debug.AssetManager.HttpServer.CloseFailedFmt": "Error while closing HttpListener: {0}",
   "Debug.AssetManager.HttpServer.HandleContextFailedFmt": "Error processing context: {0}",
   "Debug.AssetManager.HttpServer.ImportFailedFmt": "Import failed: {0}",
   "Debug.AssetManager.HttpServer.JsonParseFailedFmt": "Failed to parse JSON: {0}",
