@@ -38,32 +38,35 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
 
             var singleAsset = activeAssetTargets.Count == 1 ? activeAssetTargets[0] : null;
 
-            var importableAssets = activeAssetTargets.Where(a => repository.HasAssetFile(a.ID)).ToList();
+            var assetsWithFiles = activeAssetTargets.Where(a => repository.HasAssetFile(a.ID)).ToList();
+            var importableAssets = assetsWithFiles.Where(a => !a.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase) || repository.HasImportItems(a.ID)).ToList();
 
-            if (importableAssets.Count > 0) {
-                var label = importableAssets.Count > 1
-                    ? I18N.Get("UI.AssetManager.ContextMenu.ImportPluralFmt", importableAssets.Count)
-                    : I18N.Get("UI.AssetManager.ContextMenu.Import");
+            var showZipImport = singleAsset != null &&
+                                singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase) &&
+                                repository.HasAssetFile(singleAsset.ID);
 
-                menu.AddItem(label, false, () => { assetService.ImportAssetList(importableAssets.Select(a => a.ID)); });
-                height += ItemHeight;
+            if (importableAssets.Count > 0 || showZipImport) {
+                if (importableAssets.Count > 0) {
+                    var label = importableAssets.Count > 1
+                        ? I18N.Get("UI.AssetManager.ContextMenu.ImportPluralFmt", importableAssets.Count)
+                        : I18N.Get("UI.AssetManager.ContextMenu.Import");
 
-                if (singleAsset != null && singleAsset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase)) {
-                    var canImportZip = repository.HasAssetFile(singleAsset.ID);
+                    menu.AddItem(label, false, () => { assetService.ImportAssetList(importableAssets.Select(a => a.ID)); });
+                    height += ItemHeight;
+                }
 
-                    if (canImportZip) {
-                        menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.ImportSelectFromZip"), false, () =>
-                        {
-                            var mousePos = Event.current != null ? Event.current.mousePosition : Vector2.zero;
-                            ZipImportWindow.Open(
-                                GUIUtility.GUIToScreenPoint(mousePos),
-                                singleAsset.ID,
-                                repository,
-                                assetService
-                            );
-                        });
-                        height += ItemHeight;
-                    }
+                if (showZipImport) {
+                    menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.ImportSelectFromZip"), false, () =>
+                    {
+                        var mousePos = Event.current != null ? Event.current.mousePosition : Vector2.zero;
+                        ZipImportWindow.Open(
+                            GUIUtility.GUIToScreenPoint(mousePos),
+                            singleAsset.ID,
+                            repository,
+                            assetService
+                        );
+                    });
+                    height += ItemHeight;
                 }
 
                 menu.AddSeparator("");
