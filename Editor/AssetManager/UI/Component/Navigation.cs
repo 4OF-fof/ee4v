@@ -208,7 +208,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
         public event Action<Ulid, string> OnFolderRenamed;
         public event Action<Ulid> OnFolderDeleted;
         public event Action<Ulid, Ulid> OnFolderMoved;
-        public event Action<Ulid, string, VisualElement> OnFolderContextMenuRequested;
+        public event Action<Ulid, string, VisualElement, Vector2> OnFolderContextMenuRequested;
         public event Action<string> OnFolderCreated;
         public event Action<Ulid, string[], string[]> OnDropRequested;
         public event Action<Ulid, Ulid, int> OnFolderReordered;
@@ -335,7 +335,8 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                         evt.StopPropagation();
                         break;
                     case 1:
-                        OnFolderContextMenuRequested?.Invoke(folder.ID, folder.Name, itemRow);
+                        var worldPos = itemRow.LocalToWorld(evt.localPosition);
+                        OnFolderContextMenuRequested?.Invoke(folder.ID, folder.Name, itemRow, worldPos);
                         evt.StopPropagation();
                         break;
                 }

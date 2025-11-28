@@ -23,7 +23,7 @@ namespace _4OF.ee4v.AssetManager.UI {
 
         private Action<VisualElement> _assetViewSortMenuHandler;
         private AssetGridPresenter _gridPresenter;
-        private Action<Ulid, string, VisualElement> _navigationContextMenuHandler;
+        private Action<Ulid, string, VisualElement, Vector2> _navigationContextMenuHandler;
 
         private AssetNavigationPresenter _navigationPresenter;
         private Action<Ulid> _presenterPreviewFolderHandler;
@@ -208,14 +208,21 @@ namespace _4OF.ee4v.AssetManager.UI {
             navigation.OnFolderCreated += _navigationPresenter.OnFolderCreated;
             navigation.OnDropRequested += _window.OnNavigationDropRequested;
 
-            _navigationContextMenuHandler = (id, folderName, target) =>
+            _navigationContextMenuHandler = (id, folderName, target, pos) =>
             {
                 var menu = new GenericDropdownMenu();
                 menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.Rename"), false,
                     () => navigation.ShowRenameFolderDialog(id, folderName));
                 menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.Delete"), false,
                     () => _navigationPresenter.OnFolderDeleted(id));
-                menu.DropDown(target.worldBound, target);
+
+                const float menuHeight = 10f + 2 * 19f;
+                if (target.panel != null) {
+                    var rootHeight = target.panel.visualTree.layout.height;
+                    if (pos.y + menuHeight > rootHeight) pos.y -= menuHeight;
+                }
+
+                menu.DropDown(new Rect(pos.x, pos.y, 0, 0), target);
             };
             navigation.OnFolderContextMenuRequested += _navigationContextMenuHandler;
             navigation.OnFolderReordered += _navigationPresenter.OnFolderReordered;
