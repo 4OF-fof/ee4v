@@ -81,6 +81,10 @@ namespace _4OF.ee4v.AssetManager.Booth.Dialog {
             BoothThumbnailDownloader.OnStarted += OnStarted;
             BoothThumbnailDownloader.OnCompleted += OnCompleted;
 
+            if (BoothThumbnailDownloader.TotalCount == 0 && !BoothThumbnailDownloader.IsRunning) {
+                content.schedule.Execute(() => CloseDialog(content));
+            }
+
             content.RegisterCallback<DetachFromPanelEvent>(_ =>
             {
                 try {
@@ -97,6 +101,10 @@ namespace _4OF.ee4v.AssetManager.Booth.Dialog {
             return content;
 
             void OnCompleted() {
+                if (BoothThumbnailDownloader.TotalCount == 0) {
+                    CloseDialog(content);
+                    return;
+                }
                 UpdateProgress(BoothThumbnailDownloader.TotalCount, BoothThumbnailDownloader.CompletedCount);
                 progressText.text = I18N.Get("UI.AssetManager.DownloadThumbnail.CompletedFmt", BoothThumbnailDownloader.CompletedCount, BoothThumbnailDownloader.TotalCount);
             }
