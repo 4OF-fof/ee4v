@@ -55,7 +55,7 @@ namespace _4OF.ee4v.AssetManager.Booth {
                     _listener?.Stop();
                 }
                 catch (Exception ex) {
-                    Debug.LogError("Error while stopping HttpListener: " + ex);
+                    Debug.LogError(I18N.Get("Debug.AssetManager.HttpServer.StopFailedFmt", ex.Message));
                 }
 
                 try {
@@ -69,10 +69,10 @@ namespace _4OF.ee4v.AssetManager.Booth {
                     _cts?.Cancel();
                     if (_listenerTask != null)
                             if (!_listenerTask.Wait(500))
-                            Debug.LogWarning(I18N.Get("Debug.AssetManager.HttpServer.ListenerTimeout"));
+                                Debug.LogWarning(I18N.Get("Debug.AssetManager.HttpServer.ListenerTimeout"));
                 }
                 catch (Exception ex) {
-                    Debug.LogError("Error while stopping listener thread: " + ex);
+                    Debug.LogError(I18N.Get("Debug.AssetManager.HttpServer.StopListenerFailedFmt", ex.Message));
                 }
 
                 _listenerTask = null;
@@ -95,13 +95,13 @@ namespace _4OF.ee4v.AssetManager.Booth {
                         _ = Task.Run(async () => await HandleContextAsync(context), token);
                     }
                     catch (Exception e) {
-                        Debug.LogError("Error handling request: " + e);
+                        Debug.LogError(I18N.Get("Debug.AssetManager.HttpServer.HandleContextFailedFmt", e.Message));
                         try {
                             context.Response.StatusCode = 500;
                             context.Response.Close();
                         }
                         catch (Exception ex) {
-                            Debug.LogWarning("Failed closing response after exception: " + ex);
+                            Debug.LogWarning(I18N.Get("Debug.AssetManager.HttpServer.HandleContextFailedFmt", ex.Message));
                         }
                     }
                 }
@@ -112,7 +112,7 @@ namespace _4OF.ee4v.AssetManager.Booth {
                     break;
                 }
                 catch (Exception e) {
-                    Debug.LogError("Unexpected error in ListenLoop: " + e);
+                    Debug.LogError(I18N.Get("Debug.AssetManager.HttpServer.ListenLoopFailedFmt", e.Message));
                 }
         }
 
@@ -157,7 +157,7 @@ namespace _4OF.ee4v.AssetManager.Booth {
                             }
                         }
                         catch (Exception ex) {
-                            Debug.LogWarning("Failed parsing JSON body for POST /: " + ex);
+                            Debug.LogWarning(I18N.Get("Debug.AssetManager.HttpServer.JsonParseFailedFmt", ex.Message));
                         }
 
                         if (wrapper?.shopList == null) {
@@ -185,7 +185,7 @@ namespace _4OF.ee4v.AssetManager.Booth {
                                 created = await tcs.Task;
                             }
                             catch (Exception ex) {
-                                Debug.LogError("Error importing shops on POST: " + ex);
+                                Debug.LogError(I18N.Get("Debug.AssetManager.HttpServer.ImportFailedFmt", ex.Message));
                                 resp.StatusCode = 500;
                                 resp.ContentType = "application/json; charset=utf-8";
                                 var errStr =
