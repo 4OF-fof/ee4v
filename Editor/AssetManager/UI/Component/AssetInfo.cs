@@ -531,7 +531,9 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                         borderBottomRightRadius = 10,
                         paddingLeft = 8, paddingRight = 4, paddingTop = 2, paddingBottom = 2,
                         marginRight = 4, marginBottom = 4,
-                        alignItems = Align.Center
+                        alignItems = Align.Center,
+                        maxWidth = Length.Percent(100),
+                        overflow = Overflow.Hidden
                     }
                 };
 
@@ -542,7 +544,15 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                     evt.StopPropagation();
                 });
 
-                var label = new Label(tag) { style = { marginRight = 4 } };
+                var label = new Label(tag) { 
+                    style = { 
+                        marginRight = 4,
+                        flexShrink = 1,
+                        overflow = Overflow.Hidden,
+                        textOverflow = TextOverflow.Ellipsis,
+                        whiteSpace = WhiteSpace.NoWrap
+                    } 
+                };
 
                 pill.RegisterCallback<MouseEnterEvent>(_ =>
                 {
@@ -560,7 +570,8 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                         fontSize = 10,
                         backgroundColor = Color.clear,
                         borderTopWidth = 0, borderBottomWidth = 0, borderLeftWidth = 0, borderRightWidth = 0,
-                        paddingLeft = 0, paddingRight = 0
+                        paddingLeft = 0, paddingRight = 0,
+                        flexShrink = 0
                     }
                 };
 
@@ -597,7 +608,9 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                         borderBottomRightRadius = 10,
                         paddingLeft = 8, paddingRight = 4, paddingTop = 2, paddingBottom = 2,
                         marginRight = 4, marginBottom = 4,
-                        alignItems = Align.Center
+                        alignItems = Align.Center,
+                        maxWidth = Length.Percent(100),
+                        overflow = Overflow.Hidden
                     }
                 };
 
@@ -608,7 +621,15 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                     evt.StopPropagation();
                 });
 
-                var label = new Label(dependency.Name) { style = { marginRight = 4 } };
+                var label = new Label(dependency.Name) { 
+                    style = { 
+                        marginRight = 4,
+                        flexShrink = 1,
+                        overflow = Overflow.Hidden,
+                        textOverflow = TextOverflow.Ellipsis,
+                        whiteSpace = WhiteSpace.NoWrap
+                    } 
+                };
 
                 pill.RegisterCallback<MouseEnterEvent>(_ =>
                 {
@@ -626,7 +647,8 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                         fontSize = 10,
                         backgroundColor = Color.clear,
                         borderTopWidth = 0, borderBottomWidth = 0, borderLeftWidth = 0, borderRightWidth = 0,
-                        paddingLeft = 0, paddingRight = 0
+                        paddingLeft = 0, paddingRight = 0,
+                        flexShrink = 0
                     }
                 };
 
@@ -687,11 +709,20 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                         borderBottomRightRadius = 10,
                         paddingLeft = 8, paddingRight = 8, paddingTop = 2, paddingBottom = 2,
                         marginRight = 4, marginBottom = 4,
-                        alignItems = Align.Center
+                        alignItems = Align.Center,
+                        maxWidth = Length.Percent(100),
+                        overflow = Overflow.Hidden
                     }
                 };
 
-                var label = new Label(target);
+                var label = new Label(target) {
+                    style = {
+                        flexShrink = 1,
+                        overflow = Overflow.Hidden,
+                        textOverflow = TextOverflow.Ellipsis,
+                        whiteSpace = WhiteSpace.NoWrap
+                    }
+                };
                 pill.Add(label);
                 _importTargetsContainer.Add(pill);
             }
