@@ -38,7 +38,7 @@ namespace _4OF.ee4v.AssetManager.UI {
         }
 
         private void CreateGUI() {
-            if (_bootstrapper == null) _bootstrapper = new AssetManagerBootstrapper(this);
+            _bootstrapper ??= new AssetManagerBootstrapper(this);
             _bootstrapper.Initialize();
         }
 
