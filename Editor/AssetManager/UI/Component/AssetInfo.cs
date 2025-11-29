@@ -102,8 +102,8 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             _singleSelectionContainer.Add(descriptionLabel);
 
             var descriptionScrollView = new ScrollView {
+                mode = ScrollViewMode.Vertical,
                 style = {
-                    flexWrap = Wrap.Wrap,
                     maxHeight = 200,
                     marginBottom = 4
                 }
@@ -112,6 +112,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             _descriptionField = CreateTextField(false);
             _descriptionField.multiline = true;
             _descriptionField.style.minHeight = 40;
+            _descriptionField.style.whiteSpace = WhiteSpace.Normal;
 
             _descriptionField.RegisterCallback<ChangeEvent<string>>(evt =>
             {
