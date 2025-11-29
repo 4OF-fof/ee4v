@@ -1,5 +1,4 @@
 ﻿using System;
-using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
@@ -49,12 +48,7 @@ namespace _4OF.ee4v.Core.UI.Window {
         }
 
         public void CreateGUI() {
-            var customFont = EditorPrefsManager.Language switch {
-                "ja-JP" => AssetUtility.FindAndLoadFont("SourceHanSansJa-Regular"),
-                "ko-KR" => AssetUtility.FindAndLoadFont("SourceHanSansKo-Regular"),
-                _       => null
-            };
-
+            var customFont = AssetUtility.GetFont();
             if (customFont != null) rootVisualElement.style.unityFontDefinition = new StyleFontDefinition(customFont);
 
             rootVisualElement.style.borderRightWidth = 2;
