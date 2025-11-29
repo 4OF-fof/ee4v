@@ -29,7 +29,7 @@ namespace _4OF.ee4v.AssetManager.Core {
             _folderService = folderService;
         }
 
-public void SaveAsset(AssetMetadata asset) {
+        public void SaveAsset(AssetMetadata asset) {
             if (asset == null) return;
 
             try {
@@ -423,6 +423,8 @@ public void SaveAsset(AssetMetadata asset) {
                 return;
             }
 
+            var targetFolder = Path.Combine(destFolder, asset.Name);
+
             if (asset.Ext.Equals(".zip", StringComparison.OrdinalIgnoreCase)) {
                 if (_repository.HasImportItems(assetId)) {
                     var importDir = _repository.GetImportDirectoryPath(assetId);
@@ -432,7 +434,7 @@ public void SaveAsset(AssetMetadata asset) {
 
                     _onInternalBatchComplete = () =>
                     {
-                        ImportDirectoryContent(importDir, destFolder);
+                        ImportDirectoryContent(importDir, targetFolder);
                         AssetDatabase.Refresh();
                         onComplete?.Invoke();
                     };
@@ -446,7 +448,7 @@ public void SaveAsset(AssetMetadata asset) {
                 return;
             }
 
-            ImportSingleFile(asset, destFolder);
+            ImportSingleFile(asset, targetFolder);
             AssetDatabase.Refresh();
             onComplete?.Invoke();
         }
