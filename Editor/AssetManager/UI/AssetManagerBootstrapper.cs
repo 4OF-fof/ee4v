@@ -110,9 +110,9 @@ namespace _4OF.ee4v.AssetManager.UI {
             root.Clear();
             root.style.flexDirection = FlexDirection.Row;
 
-            var customFont = AssetUtility.GetFont();
-
-            if (customFont != null) root.style.unityFontDefinition = new StyleFontDefinition(customFont);
+            // TODO: ListViewが壊れるので一時的に無効化
+            // var customFont = AssetUtility.GetFont();
+            // if (customFont != null) root.style.unityFontDefinition = new StyleFontDefinition(customFont);
 
             var navigation = new Navigation {
                 style = {
