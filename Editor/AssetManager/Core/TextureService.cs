@@ -50,7 +50,7 @@ namespace _4OF.ee4v.AssetManager.Core {
         }
 
         public void ClearCache() {
-            foreach (var tex in _cache.Values.Where(tex => tex != null)) Object.DestroyImmediate(tex);
+            foreach (var tex in _cache.Values.Where(tex => tex)) Object.DestroyImmediate(tex);
             _cache.Clear();
             _lruKeys.Clear();
         }
@@ -81,7 +81,9 @@ namespace _4OF.ee4v.AssetManager.Core {
         private Texture2D CreateAndCacheTexture(string key, byte[] data) {
             if (data == null || data.Length == 0) return null;
 
-            var tex = new Texture2D(2, 2);
+            var tex = new Texture2D(2, 2) {
+                hideFlags = HideFlags.HideAndDontSave
+            };
             if (tex.LoadImage(data)) {
                 AddToCache(key, tex);
                 return tex;
