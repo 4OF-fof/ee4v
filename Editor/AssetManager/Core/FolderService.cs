@@ -187,6 +187,14 @@ namespace _4OF.ee4v.AssetManager.Core {
             var targetFolder = libraries?.GetFolder(folderId);
             if (targetFolder == null) return;
 
+            var rescueList = new List<BoothItemFolder>();
+            CollectBoothItemFoldersRecursive(targetFolder, rescueList);
+
+            foreach (var item in rescueList) {
+                libraries.RemoveFolder(item.ID);
+                libraries.AddFolder(item);
+            }
+
             var allDescendantIds = GetSelfAndDescendants(targetFolder);
             var allAssets = _repository.GetAllAssets().ToList();
 
@@ -218,6 +226,18 @@ namespace _4OF.ee4v.AssetManager.Core {
 
             libraries.RemoveFolder(folderId);
             _repository.SaveLibraryMetadata(libraries);
+        }
+        
+        private static void CollectBoothItemFoldersRecursive(BaseFolder current, List<BoothItemFolder> result) {
+            if (current is not Folder folder || folder.Children == null) return;
+            foreach (var child in folder.Children) {
+                if (child is BoothItemFolder boothItem) {
+                    result.Add(boothItem);
+                }
+                else {
+                    CollectBoothItemFoldersRecursive(child, result);
+                }
+            }
         }
 
         public void SetFolderThumbnail(Ulid folderId, string path) {
