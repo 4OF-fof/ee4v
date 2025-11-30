@@ -44,8 +44,6 @@ namespace _4OF.ee4v.Core.UI.Component {
 
         private static Color _selectedColor = Color.clear;
 
-        private static List<Color> ColorList => EditorGUIUtility.isProSkin ? DarkColorList : LightColorList;
-
         public ColorSelector(List<ObjectStyleComponent> componentList) {
             ColorList.RemoveAll(c => c == Color.clear);
             ColorList.Insert(0, Color.clear);
@@ -98,6 +96,8 @@ namespace _4OF.ee4v.Core.UI.Component {
                 }
             ));
         }
+
+        private static List<Color> ColorList => EditorGUIUtility.isProSkin ? DarkColorList : LightColorList;
 
         private static VisualElement CreateColorSelectorElement(Action<Color> onColorSelected) {
             var root = new VisualElement {

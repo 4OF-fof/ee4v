@@ -9,7 +9,8 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
             name = "ee4v-project-toolbar-tabContainer-tab-close";
             style.width = 16;
             style.height = 16;
-            style.backgroundImage = new StyleBackground(EditorGUIUtility.IconContent("winbtn_win_close").image as Texture2D);
+            style.backgroundImage =
+                new StyleBackground(EditorGUIUtility.IconContent("winbtn_win_close").image as Texture2D);
             style.backgroundColor = new StyleColor(StyleKeyword.None);
             style.marginRight = 4;
             style.marginLeft = 2;

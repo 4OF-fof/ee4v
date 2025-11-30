@@ -13,37 +13,6 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle.Component {
         public static Action<Texture, List<ObjectStyleComponent>> OnIconChanged;
         private static Texture _separatorTexture;
 
-        private static Texture Separator => _separatorTexture ??= CreateSeparatorTexture();
-
-        private static List<Texture> BuildIconListFromPrefs() {
-            var list = new List<Texture> { Separator };
-            var keys = EditorPrefsManager.IconList;
-            if (keys == null || keys.Count == 0) return list;
-            foreach (var key in keys.Where(key => !string.IsNullOrEmpty(key))) {
-                if (key == "<SEP>") {
-                    list.Add(Separator);
-                    continue;
-                }
-
-                Texture tex;
-                if (key.StartsWith("asset:")) {
-                    var path = key["asset:".Length..];
-                    tex = AssetDatabase.LoadAssetAtPath<Texture>(path);
-                }
-                else {
-                    tex = EditorGUIUtility.FindTexture(key);
-                    if (tex == null) {
-                        var content = EditorGUIUtility.IconContent(key);
-                        tex = content?.image;
-                    }
-                }
-
-                if (tex != null) list.Add(tex);
-            }
-
-            return list;
-        }
-
         public IconSelector(List<GameObject> gameObjectList, List<ObjectStyleComponent> objectStyleComponentList) {
             Texture selectedIcon;
             var baseIcons = BuildIconListFromPrefs();
@@ -116,6 +85,37 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle.Component {
                     EditorApplication.RepaintHierarchyWindow();
                 });
             }
+        }
+
+        private static Texture Separator => _separatorTexture ??= CreateSeparatorTexture();
+
+        private static List<Texture> BuildIconListFromPrefs() {
+            var list = new List<Texture> { Separator };
+            var keys = EditorPrefsManager.IconList;
+            if (keys == null || keys.Count == 0) return list;
+            foreach (var key in keys.Where(key => !string.IsNullOrEmpty(key))) {
+                if (key == "<SEP>") {
+                    list.Add(Separator);
+                    continue;
+                }
+
+                Texture tex;
+                if (key.StartsWith("asset:")) {
+                    var path = key["asset:".Length..];
+                    tex = AssetDatabase.LoadAssetAtPath<Texture>(path);
+                }
+                else {
+                    tex = EditorGUIUtility.FindTexture(key);
+                    if (tex == null) {
+                        var content = EditorGUIUtility.IconContent(key);
+                        tex = content?.image;
+                    }
+                }
+
+                if (tex != null) list.Add(tex);
+            }
+
+            return list;
         }
 
         private static VisualElement SpacerItem() {

@@ -25,7 +25,8 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
             _addButton = new AddButton();
             tabContainer1.Add(_addButton);
 
-            _addButton.clicked += () => {
+            _addButton.clicked += () =>
+            {
                 var tab = new Tab("Assets");
                 TabManager.Insert(tabContainer1.childCount - 1, tab);
                 TabManager.SelectTab(tab);

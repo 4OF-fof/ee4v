@@ -35,7 +35,8 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
 
             SetState(state);
 
-            RegisterCallback<MouseEnterEvent>(_ => {
+            RegisterCallback<MouseEnterEvent>(_ =>
+            {
                 var current = GetState();
                 style.backgroundColor = current == State.Selected
                     ? ColorPreset.TabSelectedBackground
@@ -44,7 +45,8 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
                 _closeButton.style.opacity = 1f;
             });
 
-            RegisterCallback<MouseLeaveEvent>(_ => {
+            RegisterCallback<MouseLeaveEvent>(_ =>
+            {
                 var current = GetState();
                 style.backgroundColor = current == State.Selected
                     ? ColorPreset.TabSelectedBackground
@@ -56,9 +58,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
             Add(tabLabel);
             Add(_closeButton);
 
-            _closeButton.clicked += () => {
-                TabManager.Remove(this);
-            };
+            _closeButton.clicked += () => { TabManager.Remove(this); };
         }
 
         public State GetState() {
@@ -87,9 +87,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
         }
 
         public static void SetState(VisualElement tabElement, State state) {
-            if (tabElement is Tab tab) {
-                tab.SetState(state);
-            }
+            if (tabElement is Tab tab) tab.SetState(state);
         }
     }
 }

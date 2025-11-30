@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
-    public class WorkspaceTab : VisualElement{
+    public class WorkspaceTab : VisualElement {
         public enum State {
             Default,
             Selected
@@ -43,14 +43,16 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
 
             SetState(this, state);
 
-            RegisterCallback<MouseEnterEvent>(_ => {
+            RegisterCallback<MouseEnterEvent>(_ =>
+            {
                 var current = GetState(this);
                 style.backgroundColor = current == State.Selected
                     ? ColorPreset.TabSelectedBackground
                     : ColorPreset.TabHoveredBackground;
             });
 
-            RegisterCallback<MouseLeaveEvent>(_ => {
+            RegisterCallback<MouseLeaveEvent>(_ =>
+            {
                 var current = GetState(this);
                 style.backgroundColor = current == State.Selected
                     ? ColorPreset.TabSelectedBackground
@@ -71,17 +73,20 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
                 menu.ShowAsContext();
             });
 
-            RegisterCallback<DragEnterEvent>(evt => {
+            RegisterCallback<DragEnterEvent>(evt =>
+            {
                 DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
                 evt.StopPropagation();
             });
 
-            RegisterCallback<DragUpdatedEvent>(evt => {
+            RegisterCallback<DragUpdatedEvent>(evt =>
+            {
                 DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
                 evt.StopPropagation();
             });
 
-            RegisterCallback<DragPerformEvent>(evt => {
+            RegisterCallback<DragPerformEvent>(evt =>
+            {
                 if (DragAndDrop.objectReferences == null || DragAndDrop.objectReferences.Length == 0)
                     return;
 
@@ -111,9 +116,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
                 evt.StopPropagation();
             });
 
-            RegisterCallback<DragLeaveEvent>(evt => {
-                evt.StopPropagation();
-            });
+            RegisterCallback<DragLeaveEvent>(evt => { evt.StopPropagation(); });
 
             Add(folderIcon);
             Add(tabLabel);

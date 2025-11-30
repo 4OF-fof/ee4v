@@ -52,9 +52,7 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle.Component {
             Material[] materialList = null;
             if (renderer != null) materialList = renderer.sharedMaterials;
 
-            if (materialList == null) {
-                return;
-            }
+            if (materialList == null) return;
 
             foreach (var material in materialList) {
                 if (material == null) continue;
