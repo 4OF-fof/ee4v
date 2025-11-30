@@ -14,7 +14,7 @@ namespace _4OF.ee4v.Core.Utility {
                 _       => null
             };
         }
-        
+
         private static Font FindAndLoadFont(string fontName) {
             var guids = AssetDatabase.FindAssets($"{fontName} t:Font");
 

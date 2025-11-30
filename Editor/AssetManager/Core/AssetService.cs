@@ -53,6 +53,7 @@ namespace _4OF.ee4v.AssetManager.Core {
                                 copy.SetFolder(folderId);
                                 siblingsToSave.Add(copy);
                             }
+
                             _repository.SaveAssets(siblingsToSave);
                         }
                     }

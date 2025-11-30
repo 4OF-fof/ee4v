@@ -15,7 +15,7 @@ namespace _4OF.ee4v.Core.i18n {
             _currentLanguage = EditorPrefs.GetString("4OF.ee4v.Language", "ja-JP");
             LoadTranslations();
         }
-        
+
         private static void LoadTranslations() {
             _translations = new Dictionary<string, string>();
             var directoryPath = GetI18NDirectory();

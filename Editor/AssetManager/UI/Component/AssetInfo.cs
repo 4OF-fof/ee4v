@@ -543,14 +543,14 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                     evt.StopPropagation();
                 });
 
-                var label = new Label(tag) { 
-                    style = { 
+                var label = new Label(tag) {
+                    style = {
                         marginRight = 4,
                         flexShrink = 1,
                         overflow = Overflow.Hidden,
                         textOverflow = TextOverflow.Ellipsis,
                         whiteSpace = WhiteSpace.NoWrap
-                    } 
+                    }
                 };
 
                 pill.RegisterCallback<MouseEnterEvent>(_ =>
@@ -620,14 +620,14 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                     evt.StopPropagation();
                 });
 
-                var label = new Label(dependency.Name) { 
-                    style = { 
+                var label = new Label(dependency.Name) {
+                    style = {
                         marginRight = 4,
                         flexShrink = 1,
                         overflow = Overflow.Hidden,
                         textOverflow = TextOverflow.Ellipsis,
                         whiteSpace = WhiteSpace.NoWrap
-                    } 
+                    }
                 };
 
                 pill.RegisterCallback<MouseEnterEvent>(_ =>

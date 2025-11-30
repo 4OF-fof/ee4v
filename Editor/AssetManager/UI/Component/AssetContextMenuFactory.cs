@@ -152,7 +152,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                 estimatedHeight = height;
                 return menu;
             }
-            
+
             var boothFolders = folderTargets.OfType<BoothItemFolder>().ToList();
             if (boothFolders.Count > 0) {
                 var label = boothFolders.Count > 1
@@ -164,7 +164,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
 
                 height += ItemHeight + SeparatorHeight;
             }
-            
+
             var assetsWithParentThumb = activeAssetTargets.Where(a =>
             {
                 if (a.Folder == Ulid.Empty) return false;

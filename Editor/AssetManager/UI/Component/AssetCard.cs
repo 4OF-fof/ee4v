@@ -13,8 +13,8 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
         private readonly VisualElement _innerContainer;
         private readonly Label _nameLabel;
         private readonly VisualElement _thumbnail;
-        private bool _isSelected;
         private Texture2D _currentTexture;
+        private bool _isSelected;
 
         public AssetCard() {
             style.paddingLeft = 5;

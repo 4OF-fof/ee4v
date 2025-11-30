@@ -227,17 +227,14 @@ namespace _4OF.ee4v.AssetManager.Core {
             libraries.RemoveFolder(folderId);
             _repository.SaveLibraryMetadata(libraries);
         }
-        
+
         private static void CollectBoothItemFoldersRecursive(BaseFolder current, List<BoothItemFolder> result) {
             if (current is not Folder folder || folder.Children == null) return;
-            foreach (var child in folder.Children) {
-                if (child is BoothItemFolder boothItem) {
+            foreach (var child in folder.Children)
+                if (child is BoothItemFolder boothItem)
                     result.Add(boothItem);
-                }
-                else {
+                else
                     CollectBoothItemFoldersRecursive(child, result);
-                }
-            }
         }
 
         public void SetFolderThumbnail(Ulid folderId, string path) {

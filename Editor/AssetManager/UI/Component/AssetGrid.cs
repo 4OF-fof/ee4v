@@ -317,10 +317,8 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                                 .Any(a => a.Folder == folder.ID && !a.IsDeleted);
                             var isEmpty = !hasSubFolders && !hasAssets;
 
-                            if (!isSameFolder) {
-                                card.SetThumbnail(null, true, isEmpty);
-                            }
-                            
+                            if (!isSameFolder) card.SetThumbnail(null, true, isEmpty);
+
                             _thumbnailLoader?.LoadThumbnailAsync(card, folder.ID, true,
                                 _cts?.Token ?? CancellationToken.None);
 
@@ -332,10 +330,8 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
 
                             var isSameAsset = card.userData is AssetMetadata oldAsset && oldAsset.ID == asset.ID;
                             card.userData = asset;
-                            
-                            if (!isSameAsset) {
-                                card.SetThumbnail(null);
-                            }
+
+                            if (!isSameAsset) card.SetThumbnail(null);
 
                             _thumbnailLoader?.LoadThumbnailAsync(card, asset.ID, false,
                                 _cts?.Token ?? CancellationToken.None);
