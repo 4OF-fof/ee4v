@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.Core.UI.Component {
-    public static class ColorSelector {
+    public class ColorSelector : VisualElement {
         private const float Alpha = 0.7f;
         public static Action<Color, List<ObjectStyleComponent>> OnColorChangedComponent;
 
@@ -46,36 +46,36 @@ namespace _4OF.ee4v.Core.UI.Component {
 
         private static List<Color> ColorList => EditorGUIUtility.isProSkin ? DarkColorList : LightColorList;
 
-        public static VisualElement Element(List<ObjectStyleComponent> componentList) {
+        public ColorSelector(List<ObjectStyleComponent> componentList) {
             ColorList.RemoveAll(c => c == Color.clear);
             ColorList.Insert(0, Color.clear);
             if (componentList is { Count: 1 })
                 _selectedColor = componentList[0].color != Color.clear ? componentList[0].color : ColorList[0];
             else
                 _selectedColor = Color.clear;
-            return CreateColorSelectorElement(color =>
+            Add(CreateColorSelectorElement(color =>
                 {
                     foreach (var component in componentList) component.color = color;
                     OnColorChangedComponent?.Invoke(color, componentList);
                 }
-            );
+            ));
         }
 
-        public static VisualElement Element(List<string> folderPaths) {
+        public ColorSelector(List<string> folderPaths) {
             ColorList.RemoveAll(c => c == Color.clear);
             ColorList.Insert(0, Color.clear);
 
             if (folderPaths is { Count: 1 }) {
                 var guid = AssetDatabase.AssetPathToGUID(folderPaths[0]);
-                var style = FolderStyleList.instance.Contents.FirstOrDefault(s => s.guid == guid);
-                var existingColor = style?.color ?? Color.clear;
+                var folderStyle = FolderStyleList.instance.Contents.FirstOrDefault(s => s.guid == guid);
+                var existingColor = folderStyle?.color ?? Color.clear;
                 _selectedColor = existingColor != Color.clear ? existingColor : ColorList[0];
             }
             else {
                 _selectedColor = Color.clear;
             }
 
-            return CreateColorSelectorElement(color =>
+            Add(CreateColorSelectorElement(color =>
                 {
                     if (folderPaths != null)
                         foreach (var folderPath in folderPaths) {
@@ -96,7 +96,7 @@ namespace _4OF.ee4v.Core.UI.Component {
 
                     EditorApplication.RepaintProjectWindow();
                 }
-            );
+            ));
         }
 
         private static VisualElement CreateColorSelectorElement(Action<Color> onColorSelected) {

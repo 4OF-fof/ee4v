@@ -4,14 +4,11 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.HierarchyExtension.ItemStyle.Component {
-    public static class ComponentList {
-        public static VisualElement Element(GameObject gameObject, Action<bool> onLockChanged) {
-            var root = new VisualElement {
-                style = {
-                    flexDirection = FlexDirection.Row,
-                    flexWrap = Wrap.Wrap
-                }
-            };
+    public class ComponentList : VisualElement {
+        public ComponentList(GameObject gameObject, Action<bool> onLockChanged) {
+            style.flexDirection = FlexDirection.Row;
+            style.flexWrap = Wrap.Wrap;
+
             foreach (var component in gameObject.GetComponents<UnityEngine.Component>()) {
                 if (component == null || component.GetType().Name == "ObjectStyleComponent") continue;
                 var componentButton = new Button {
@@ -48,14 +45,16 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle.Component {
                 var buttonLabel = new Label(component.GetType().Name);
                 componentButton.Add(buttonLabel);
 
-                root.Add(componentButton);
+                Add(componentButton);
             }
 
             var renderer = gameObject.GetComponent<Renderer>();
             Material[] materialList = null;
             if (renderer != null) materialList = renderer.sharedMaterials;
 
-            if (materialList == null) return root;
+            if (materialList == null) {
+                return;
+            }
 
             foreach (var material in materialList) {
                 if (material == null) continue;
@@ -93,10 +92,8 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle.Component {
                 var buttonLabel = new Label(material.name);
                 materialButton.Add(buttonLabel);
 
-                root.Add(materialButton);
+                Add(materialButton);
             }
-
-            return root;
         }
     }
 }

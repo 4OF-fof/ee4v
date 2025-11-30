@@ -7,16 +7,31 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
-    public static class WorkspaceTab {
+    public class WorkspaceTab : VisualElement{
         public enum State {
             Default,
             Selected
         }
 
-        public static VisualElement Element(string path, string name = null, State state = State.Default) {
-            if (string.IsNullOrEmpty(name)) name = Path.GetFileName(path);
+        public WorkspaceTab(string path, string name = null, State state = State.Default) {
+            if (string.IsNullOrEmpty(name))
+                name = Path.GetFileName(path);
 
-            var tabLabel = TabLabel.Draw(name, path);
+            this.name = "ee4v-project-toolbar-workspaceContainer-tab";
+            userData = state;
+
+            style.alignItems = Align.Center;
+            style.flexDirection = FlexDirection.Row;
+            style.height = Length.Percent(95);
+            style.marginTop = 1;
+            style.paddingLeft = 4;
+            style.backgroundColor = ColorPreset.TabBackground;
+            style.borderRightWidth = 1;
+            style.borderTopRightRadius = 4;
+            style.borderTopLeftRadius = 4;
+            style.borderRightColor = ColorPreset.TabBorder;
+
+            var tabLabel = new TabLabel(name);
 
             var folderIcon = new Image {
                 image = EditorGUIUtility.IconContent("Folder Icon").image as Texture2D,
@@ -26,67 +41,47 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
                 }
             };
 
-            var tab = new VisualElement {
-                name = "ee4v-project-toolbar-workspaceContainer-tab",
-                style = {
-                    alignItems = Align.Center,
-                    flexDirection = FlexDirection.Row,
-                    height = Length.Percent(95),
-                    marginTop = 1,
-                    paddingLeft = 4,
-                    backgroundColor = ColorPreset.TabBackground,
-                    borderRightWidth = 1,
-                    borderTopRightRadius = 4, borderTopLeftRadius = 4,
-                    borderRightColor = ColorPreset.TabBorder
-                },
-                userData = state
-            };
-            SetState(tab, state);
+            SetState(this, state);
 
-            tab.RegisterCallback<MouseEnterEvent>(_ =>
-            {
-                var current = GetState(tab);
-                tab.style.backgroundColor = current == State.Selected
+            RegisterCallback<MouseEnterEvent>(_ => {
+                var current = GetState(this);
+                style.backgroundColor = current == State.Selected
                     ? ColorPreset.TabSelectedBackground
                     : ColorPreset.TabHoveredBackground;
             });
 
-            tab.RegisterCallback<MouseLeaveEvent>(_ =>
-            {
-                var current = GetState(tab);
-                tab.style.backgroundColor = current == State.Selected
+            RegisterCallback<MouseLeaveEvent>(_ => {
+                var current = GetState(this);
+                style.backgroundColor = current == State.Selected
                     ? ColorPreset.TabSelectedBackground
                     : ColorPreset.TabBackground;
             });
 
-            tab.RegisterCallback<MouseDownEvent>(evt =>
+            RegisterCallback<MouseDownEvent>(evt =>
             {
-                if (evt.button == 1) {
-                    evt.StopPropagation();
-                    var menu = new GenericMenu();
-                    menu.AddItem(new GUIContent(I18N.Get("UI.ProjectExtension.CloseTab")), false,
-                        () => { TabManager.Remove(tab); });
-                    menu.ShowAsContext();
-                }
+                if (evt.button != 1) return;
+                evt.StopPropagation();
+
+                var menu = new GenericMenu();
+                menu.AddItem(
+                    new GUIContent(I18N.Get("UI.ProjectExtension.CloseTab")),
+                    false,
+                    () => { TabManager.Remove(this); }
+                );
+                menu.ShowAsContext();
             });
 
-            tab.Add(folderIcon);
-            tab.Add(tabLabel);
-
-            tab.RegisterCallback<DragEnterEvent>(evt =>
-            {
+            RegisterCallback<DragEnterEvent>(evt => {
                 DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
                 evt.StopPropagation();
             });
 
-            tab.RegisterCallback<DragUpdatedEvent>(evt =>
-            {
+            RegisterCallback<DragUpdatedEvent>(evt => {
                 DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
                 evt.StopPropagation();
             });
 
-            tab.RegisterCallback<DragPerformEvent>(evt =>
-            {
+            RegisterCallback<DragPerformEvent>(evt => {
                 if (DragAndDrop.objectReferences == null || DragAndDrop.objectReferences.Length == 0)
                     return;
 
@@ -94,14 +89,17 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
                 var labelName = $"Ee4v.ws.{name}";
 
                 foreach (var obj in DragAndDrop.objectReferences) {
-                    if (obj == null) continue;
+                    if (obj == null)
+                        continue;
 
                     var assetPath = AssetDatabase.GetAssetPath(obj);
-                    if (string.IsNullOrEmpty(assetPath)) continue;
+                    if (string.IsNullOrEmpty(assetPath))
+                        continue;
 
                     var labels = AssetDatabase.GetLabels(obj).ToList();
 
-                    if (labels.Contains(labelName)) continue;
+                    if (labels.Contains(labelName))
+                        continue;
 
                     labels.Add(labelName);
                     AssetDatabase.SetLabels(obj, labels.ToArray());
@@ -109,14 +107,18 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
 
                 DragAndDrop.AcceptDrag();
                 AssetDatabase.SaveAssets();
-                TabManager.SelectTab(tab);
+                TabManager.SelectTab(this);
                 evt.StopPropagation();
             });
 
-            tab.RegisterCallback<DragLeaveEvent>(evt => { evt.StopPropagation(); });
+            RegisterCallback<DragLeaveEvent>(evt => {
+                evt.StopPropagation();
+            });
 
-            return tab;
+            Add(folderIcon);
+            Add(tabLabel);
         }
+
 
         private static State GetState(VisualElement tab) {
             return tab.userData is State s ? s : State.Default;

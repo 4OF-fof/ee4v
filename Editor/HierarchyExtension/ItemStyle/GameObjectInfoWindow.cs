@@ -183,14 +183,14 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle {
         protected override VisualElement Content() {
             var root = base.Content();
             var scrollArea = new ScrollView();
-            var colorSelector = ColorSelector.Element(_objectStylComponentList);
+            var colorSelector = new ColorSelector(_objectStylComponentList);
             scrollArea.Add(colorSelector);
             scrollArea.Add(Spacer(16));
-            var iconSelector = IconSelector.Element(_gameObjectList, _objectStylComponentList);
+            var iconSelector = new IconSelector(_gameObjectList, _objectStylComponentList);
             scrollArea.Add(iconSelector);
             if (_gameObjectList.Count == 1) {
                 scrollArea.Add(Spacer(16));
-                var componentList = ComponentList.Element(_gameObjectList[0], locked => IsLocked = locked);
+                var componentList = new ComponentList(_gameObjectList[0], locked => IsLocked = locked);
                 scrollArea.Add(componentList);
             }
 

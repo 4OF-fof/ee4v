@@ -56,7 +56,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
             _isInitialized = true;
 
             if (!EditorPrefsManager.EnableProjectTab) return;
-            var projectToolBar = ProjectToolBar.Element();
+            var projectToolBar = new ProjectToolBar();
             _projectWindow.rootVisualElement.Add(projectToolBar);
             TabManager.Initialize();
         }
@@ -90,7 +90,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
             };
 
             var workspaceContainer = WorkspaceContainer.Element();
-            var tabContainer = TabContainer.Element();
+            var tabContainer = new TabContainer();
 
             containerWrapper.Add(workspaceContainer);
             containerWrapper.Add(tabContainer);

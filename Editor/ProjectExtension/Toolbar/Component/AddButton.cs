@@ -5,44 +5,47 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
-    public static class AddButton {
-        public static Button Element() {
-            var addButton = new Button {
-                name = "ee4v-project-toolbar-tabContainer-addButton",
-                tooltip = I18N.Get("UI.ProjectExtension.AddNewTab"),
-                style = {
-                    width = 20, height = 20,
-                    backgroundColor = new StyleColor(StyleKeyword.None),
-                    marginRight = 4, marginLeft = 2, marginTop = 2,
-                    paddingRight = 0, paddingLeft = 0, paddingTop = 0, paddingBottom = 0,
-                    alignSelf = Align.Center,
-                    borderTopWidth = 0, borderBottomWidth = 0, borderLeftWidth = 0, borderRightWidth = 0,
-                    opacity = 0.7f,
-                    justifyContent = Justify.Center,
-                    alignItems = Align.Center
-                }
-            };
+    public class AddButton : Button {
+        public AddButton() {
+            name = "ee4v-project-toolbar-tabContainer-addButton";
+            tooltip = I18N.Get("UI.ProjectExtension.AddNewTab");
+            style.width = 20;
+            style.height = 20;
+            style.backgroundColor = new StyleColor(StyleKeyword.None);
+            style.marginRight = 4;
+            style.marginLeft = 2;
+            style.marginTop = 2;
+            style.paddingRight = 0;
+            style.paddingLeft = 0;
+            style.paddingTop = 0;
+            style.paddingBottom = 0;
+            style.alignSelf = Align.Center;
+            style.borderTopWidth = 0;
+            style.borderBottomWidth = 0;
+            style.borderLeftWidth = 0;
+            style.borderRightWidth = 0;
+            style.opacity = 0.7f;
+            style.justifyContent = Justify.Center;
+            style.alignItems = Align.Center;
 
             var icon = new Image {
                 image = EditorGUIUtility.IconContent("CreateAddNew").image as Texture2D,
                 style = { width = 14, height = 14 }
             };
-            addButton.Add(icon);
+            Add(icon);
 
-            addButton.RegisterCallback<MouseEnterEvent>(_ =>
-                addButton.style.backgroundColor = ColorPreset.AddButtonHover);
-            addButton.RegisterCallback<MouseLeaveEvent>(_ =>
-                addButton.style.backgroundColor = new StyleColor(StyleKeyword.None));
+            RegisterCallback<MouseEnterEvent>(_ =>
+                style.backgroundColor = ColorPreset.AddButtonHover);
+            RegisterCallback<MouseLeaveEvent>(_ =>
+                style.backgroundColor = new StyleColor(StyleKeyword.None));
 
-            addButton.RegisterCallback<PointerDownEvent>(evt =>
+            RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (evt.button != 1) return;
                 evt.StopPropagation();
                 var screenPosition = GUIUtility.GUIToScreenPoint(evt.position);
                 CreateWorkspaceWindow.Show(screenPosition);
             });
-
-            return addButton;
         }
     }
 }

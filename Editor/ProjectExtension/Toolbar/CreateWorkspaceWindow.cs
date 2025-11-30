@@ -145,7 +145,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
         }
 
         private static void CreateWorkspace(string workspaceName) {
-            var workspaceTab = WorkspaceTab.Element(workspaceName, workspaceName);
+            var workspaceTab = new WorkspaceTab(workspaceName, workspaceName);
             TabManager.AddWorkspaceTab(workspaceTab);
             TabManager.SelectTab(workspaceTab);
         }

@@ -196,7 +196,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
 
             if (totalTabCount > 0) return;
 
-            var newTab = Tab.Element("Assets", "Assets");
+            var newTab = new Tab("Assets", "Assets");
             Add(newTab);
             SelectTab(newTab);
         }
@@ -221,13 +221,11 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
             foreach (var objectTab in objectTabList)
                 if (objectTab.isWorkspace) {
                     if (_workspaceContainer == null) continue;
-                    var newWorkspaceTab = WorkspaceTab.Element(objectTab.path, objectTab.tabName);
-                    if (newWorkspaceTab == null) continue;
+                    var newWorkspaceTab = new WorkspaceTab(objectTab.path, objectTab.tabName);
                     _workspaceContainer.Add(newWorkspaceTab);
                 }
                 else {
-                    var newTab = Tab.Element(objectTab.path, objectTab.tabName);
-                    if (newTab == null) continue;
+                    var newTab = new Tab(objectTab.path, objectTab.tabName);
                     _tabContainer.Insert(Math.Min(tabInsertIndex, _tabContainer.childCount - 1), newTab);
                     firstRegularTab ??= newTab;
                     tabInsertIndex++;

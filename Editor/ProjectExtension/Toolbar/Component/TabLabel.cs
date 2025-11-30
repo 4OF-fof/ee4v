@@ -3,23 +3,20 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
-    public static class TabLabel {
-        public static Label Draw(string name, string path) {
-            var openButton = new Label {
-                name = "ee4v-project-toolbar-tabContainer-tab-label",
-                text = name,
-                style = {
-                    backgroundColor = new StyleColor(StyleKeyword.None),
-                    borderTopWidth = 0, borderBottomWidth = 0,
-                    color = ColorPreset.TabText,
-                    unityBackgroundImageTintColor = new StyleColor(Color.clear),
-                    borderRightWidth = 4, borderLeftWidth = 4,
-                    borderLeftColor = new StyleColor(Color.clear),
-                    borderRightColor = new StyleColor(Color.clear)
-                }
-            };
+    public sealed class TabLabel : Label {
+        public TabLabel(string name) {
+            this.name = "ee4v-project-toolbar-tabContainer-tab-label";
+            text = name;
 
-            return openButton;
+            style.backgroundColor = new StyleColor(StyleKeyword.None);
+            style.borderTopWidth = 0;
+            style.borderBottomWidth = 0;
+            style.color = ColorPreset.TabText;
+            style.unityBackgroundImageTintColor = new StyleColor(Color.clear);
+            style.borderRightWidth = 4;
+            style.borderLeftWidth = 4;
+            style.borderLeftColor = new StyleColor(Color.clear);
+            style.borderRightColor = new StyleColor(Color.clear);
         }
     }
 }

@@ -78,7 +78,7 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
 
         protected override VisualElement Content() {
             var root = base.Content();
-            var colorSelector = ColorSelector.Element(_pathList);
+            var colorSelector = new ColorSelector(_pathList);
             var anyHasIcon = false;
 
             if (_pathList != null)

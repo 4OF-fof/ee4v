@@ -6,38 +6,36 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
-    public static class TabContainer {
-        public static ScrollView Element() {
-            var addButton = AddButton.Element();
-            var scrollView = new ScrollView(ScrollViewMode.Horizontal) {
-                style = {
-                    flexGrow = 1,
-                    height = 20
-                },
-                verticalScrollerVisibility = ScrollerVisibility.Hidden,
-                horizontalScrollerVisibility = ScrollerVisibility.Hidden
-            };
+    public class TabContainer : ScrollView {
+        private readonly AddButton _addButton;
 
-            var tabContainer = scrollView.contentContainer;
-            tabContainer.name = "ee4v-project-toolbar-tabContainer";
-            tabContainer.style.alignItems = Align.Center;
-            tabContainer.style.height = Length.Percent(100);
-            tabContainer.style.flexDirection = FlexDirection.Row;
+        public TabContainer() : base(ScrollViewMode.Horizontal) {
+            style.flexGrow = 1;
+            style.height = 20;
 
-            tabContainer.Add(addButton);
+            verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            horizontalScrollerVisibility = ScrollerVisibility.Hidden;
 
-            addButton.clicked += () =>
-            {
-                var tab = Tab.Element("Assets");
-                TabManager.Insert(tabContainer.childCount - 1, tab);
+            var tabContainer1 = contentContainer;
+            tabContainer1.name = "ee4v-project-toolbar-tabContainer";
+            tabContainer1.style.alignItems = Align.Center;
+            tabContainer1.style.height = Length.Percent(100);
+            tabContainer1.style.flexDirection = FlexDirection.Row;
+
+            _addButton = new AddButton();
+            tabContainer1.Add(_addButton);
+
+            _addButton.clicked += () => {
+                var tab = new Tab("Assets");
+                TabManager.Insert(tabContainer1.childCount - 1, tab);
                 TabManager.SelectTab(tab);
             };
 
-            TabControl(tabContainer);
-            RegisterDropEvents(tabContainer);
-
-            return scrollView;
+            TabControl(tabContainer1);
+            RegisterDropEvents(tabContainer1);
         }
+
+        public sealed override VisualElement contentContainer => base.contentContainer;
 
         private static void TabControl(VisualElement tabContainer) {
             VisualElement dragging = null;
@@ -243,8 +241,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
                 var insertIndex = tabContainer.childCount - 1;
                 var createdEntries =
                     folderPathList.Select(path => new { path, name = Path.GetFileName(path) }).ToList();
-                foreach (var newTab in createdEntries.Select(entry => Tab.Element(entry.path, entry.name))
-                             .Where(newTab => newTab != null)) {
+                foreach (var newTab in createdEntries.Select(entry => new Tab(entry.path, entry.name))) {
                     TabManager.Insert(insertIndex, newTab);
                     insertIndex++;
                 }

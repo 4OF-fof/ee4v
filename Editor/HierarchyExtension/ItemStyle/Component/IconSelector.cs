@@ -9,11 +9,9 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.HierarchyExtension.ItemStyle.Component {
-    public static class IconSelector {
+    public class IconSelector : VisualElement {
         public static Action<Texture, List<ObjectStyleComponent>> OnIconChanged;
         private static Texture _separatorTexture;
-
-        private static Texture _selectedIcon;
 
         private static Texture Separator => _separatorTexture ??= CreateSeparatorTexture();
 
@@ -46,8 +44,8 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle.Component {
             return list;
         }
 
-        public static VisualElement Element(List<GameObject> gameObjectList,
-            List<ObjectStyleComponent> objectStyleComponentList) {
+        public IconSelector(List<GameObject> gameObjectList, List<ObjectStyleComponent> objectStyleComponentList) {
+            Texture selectedIcon;
             var baseIcons = BuildIconListFromPrefs();
             baseIcons.RemoveAll(t => t == null);
             var componentIcons = new List<Texture>();
@@ -74,18 +72,14 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle.Component {
 
             if (objectStyleComponentList is { Count: 1 }) {
                 var stored = objectStyleComponentList[0].icon;
-                _selectedIcon = stored != null && stored != Separator ? stored : mergedIconList[0];
+                selectedIcon = stored != null && stored != Separator ? stored : mergedIconList[0];
             }
             else {
-                _selectedIcon = null;
+                selectedIcon = null;
             }
 
-            var root = new VisualElement {
-                style = {
-                    flexDirection = FlexDirection.Row,
-                    flexWrap = Wrap.Wrap
-                }
-            };
+            style.flexDirection = FlexDirection.Row;
+            style.flexWrap = Wrap.Wrap;
 
             var items = new List<VisualElement>();
 
@@ -95,10 +89,10 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle.Component {
                 else if (icon == Separator) item = SpacerItem();
                 else item = IconPreview(icon);
 
-                if (icon == _selectedIcon && icon != Separator) item = SelectedStyle(item);
+                if (icon == selectedIcon && icon != Separator) item = SelectedStyle(item);
 
                 items.Add(item);
-                root.Add(item);
+                Add(item);
 
                 if (icon == Separator) continue;
                 var capturedItem = item;
@@ -114,16 +108,14 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle.Component {
                         it.style.backgroundColor = Color.clear;
                     }
 
-                    _selectedIcon = capturedIcon;
+                    selectedIcon = capturedIcon;
                     capturedItem = SelectedStyle(capturedItem);
-                    foreach (var component in objectStyleComponentList) component.icon = _selectedIcon;
+                    foreach (var component in objectStyleComponentList) component.icon = selectedIcon;
 
-                    OnIconChanged?.Invoke(_selectedIcon, objectStyleComponentList);
+                    OnIconChanged?.Invoke(selectedIcon, objectStyleComponentList);
                     EditorApplication.RepaintHierarchyWindow();
                 });
             }
-
-            return root;
         }
 
         private static VisualElement SpacerItem() {
