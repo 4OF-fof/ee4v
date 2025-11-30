@@ -282,7 +282,8 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             var itemRow = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
-                    alignItems = Align.Center
+                    alignItems = Align.Center,
+                    overflow = Overflow.Hidden
                 }
             };
 
@@ -295,7 +296,8 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                     paddingRight = 0,
                     width = 16 + depth * 12,
                     unityTextAlign = TextAnchor.MiddleLeft,
-                    fontSize = 10
+                    fontSize = 10,
+                    flexShrink = 0
                 }
             };
 
@@ -308,12 +310,17 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                 });
 
             var label = new Label(folder.Name) {
+                tooltip = folder.Name,
                 style = {
                     paddingLeft = 0,
                     paddingRight = 8,
                     paddingTop = 3,
                     paddingBottom = 3,
-                    flexGrow = 1
+                    flexGrow = 1,
+                    flexShrink = 1,
+                    overflow = Overflow.Hidden,
+                    textOverflow = TextOverflow.Ellipsis,
+                    whiteSpace = WhiteSpace.NoWrap
                 }
             };
 
