@@ -125,6 +125,17 @@ namespace _4OF.ee4v.Core.Setting {
         }
 
         #endregion
+        
+        #region VRCUtility
+
+        private const string EnableAutoBackupKey = "4OF.ee4v.EnableAutoBackup";
+
+        public static bool EnableAutoBackup {
+            get => EditorPrefs.GetBool(EnableAutoBackupKey, true);
+            set => EditorPrefs.SetBool(EnableAutoBackupKey, value);
+        }
+
+        #endregion
 
         #region Compatibility
 

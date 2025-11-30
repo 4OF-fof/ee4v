@@ -270,6 +270,19 @@ namespace _4OF.ee4v.Core.Setting {
             EditorGUILayout.Space(10);
 
             #endregion
+            
+            #region VRCUtility
+
+            EditorGUILayout.LabelField(I18N.Get("UI.Core.Preference.VRCUtility"), EditorStyles.boldLabel);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox)) {
+                EditorPrefsManager.EnableAutoBackup = EditorGUILayout.ToggleLeft(
+                    new GUIContent(I18N.Get("UI.Core.EnableAutoBackupLabel"),
+                        I18N.Get("UI.Core.EnableAutoBackupTooltip")),
+                    EditorPrefsManager.EnableAutoBackup);
+            }
+            EditorGUILayout.Space(10);
+
+            #endregion
 
             #region Compatibility
 

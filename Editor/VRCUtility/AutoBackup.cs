@@ -2,6 +2,7 @@
 using System.IO;
 using _4OF.ee4v.AssetManager.API;
 using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.Setting;
 using UnityEditor;
 using UnityEngine;
 using VRC.SDK3A.Editor;
@@ -32,6 +33,7 @@ namespace _4OF.ee4v.VRCUtility {
         }
 
         private static void OnUploadSuccess(object sender, object target) {
+            if (!EditorPrefsManager.EnableAutoBackup) return;
             var avatarId = target as string ?? "";
             Debug.Log(I18N.Get("Debug.VRCUtility.UploadSuccess", avatarId));
 
