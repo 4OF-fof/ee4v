@@ -67,7 +67,6 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
                     flexShrink = 1,
                     fontSize = 14,
                     marginRight = 4,
-                    unityFontStyleAndWeight = FontStyle.Bold,
                     overflow = Overflow.Hidden,
                     textOverflow = TextOverflow.Ellipsis
                 }

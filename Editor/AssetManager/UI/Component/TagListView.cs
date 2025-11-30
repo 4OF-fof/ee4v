@@ -158,7 +158,6 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             var header = new Label(I18N.Get("UI.AssetManager.TagListView.AllTags", totalCount)) {
                 style = {
                     fontSize = 24,
-                    unityFontStyleAndWeight = FontStyle.Bold,
                     marginBottom = 10,
                     marginTop = 5,
                     color = ColorPreset.TextColor
@@ -264,7 +263,6 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                             marginLeft = 0,
                             marginTop = 8,
                             marginBottom = 4,
-                            unityFontStyleAndWeight = FontStyle.Bold,
                             fontSize = 24
                         }
                     };

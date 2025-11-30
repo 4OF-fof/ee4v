@@ -126,7 +126,6 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                     }
                 };
 
-                if (isLast) btn.style.unityFontStyleAndWeight = FontStyle.Bold;
                 _breadcrumbContainer.Add(btn);
 
                 if (isLast) continue;
@@ -150,7 +149,6 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                     unityTextAlign = TextAnchor.MiddleCenter,
                     paddingLeft = 0, paddingRight = 0,
                     fontSize = 14,
-                    unityFontStyleAndWeight = FontStyle.Bold,
                     alignSelf = Align.Center
                 }
             };

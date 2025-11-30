@@ -102,7 +102,6 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle {
             var titleLabel = new Label(labelText) {
                 tooltip = labelText,
                 style = {
-                    unityFontStyleAndWeight = FontStyle.Bold,
                     flexGrow = 1, flexShrink = 1,
                     unityTextAlign = TextAnchor.MiddleLeft,
                     marginRight = 4,

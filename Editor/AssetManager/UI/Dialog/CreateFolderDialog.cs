@@ -16,7 +16,6 @@ namespace _4OF.ee4v.AssetManager.UI.Dialog {
             var title = new Label(I18N.Get("UI.AssetManager.Dialog.CreateFolder.Title")) {
                 style = {
                     fontSize = 14,
-                    unityFontStyleAndWeight = FontStyle.Bold,
                     marginBottom = 10
                 }
             };

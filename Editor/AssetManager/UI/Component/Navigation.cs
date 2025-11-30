@@ -94,7 +94,6 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                     paddingRight = 8,
                     paddingTop = 4,
                     paddingBottom = 4,
-                    unityFontStyleAndWeight = FontStyle.Bold,
                     flexGrow = 1
                 }
             };
@@ -114,7 +113,6 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                     paddingTop = 2,
                     paddingBottom = 2,
                     marginRight = 4,
-                    unityFontStyleAndWeight = FontStyle.Bold,
                     fontSize = 16,
                     color = ColorPreset.InActiveItem
                 }
@@ -169,8 +167,6 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                     borderBottomRightRadius = 16,
                     backgroundColor = ColorPreset.AccentBlue40Style,
                     color = ColorPreset.TextColor,
-                    unityFontStyleAndWeight = FontStyle.Bold,
-                    fontSize = 12,
                     borderTopWidth = 0,
                     borderBottomWidth = 0,
                     borderLeftWidth = 0,
@@ -452,8 +448,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                     paddingRight = 8,
                     paddingTop = 4,
                     paddingBottom = 4,
-                    marginBottom = 2,
-                    unityFontStyleAndWeight = FontStyle.Bold
+                    marginBottom = 2
                 }
             };
             label.RegisterCallback<PointerDownEvent>(evt =>

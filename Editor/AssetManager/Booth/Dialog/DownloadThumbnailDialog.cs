@@ -21,7 +21,6 @@ namespace _4OF.ee4v.AssetManager.Booth.Dialog {
             var title = new Label(I18N.Get("UI.AssetManager.DownloadThumbnail.Title")) {
                 style = {
                     fontSize = 16,
-                    unityFontStyleAndWeight = FontStyle.Bold,
                     marginBottom = 6
                 }
             };
@@ -84,7 +83,6 @@ namespace _4OF.ee4v.AssetManager.Booth.Dialog {
                     position = Position.Absolute,
                     right = 8,
                     top = 6,
-                    unityFontStyleAndWeight = FontStyle.Bold,
                     fontSize = 14,
                     width = 24,
                     height = 20,

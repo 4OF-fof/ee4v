@@ -31,7 +31,6 @@ namespace _4OF.ee4v.AssetManager.UI.Dialog {
             var title = new Label(I18N.Get("UI.AssetManager.Dialog.CreateAsset.Title")) {
                 style = {
                     fontSize = 14,
-                    unityFontStyleAndWeight = FontStyle.Bold,
                     marginBottom = 10
                 }
             };
@@ -57,7 +56,6 @@ namespace _4OF.ee4v.AssetManager.UI.Dialog {
                     paddingLeft = 8,
                     paddingRight = 8,
                     height = 22,
-                    unityFontStyleAndWeight = FontStyle.Bold,
                     fontSize = 11
                 }
             };
@@ -128,7 +126,6 @@ namespace _4OF.ee4v.AssetManager.UI.Dialog {
 
             var boothLabel = new Label(I18N.Get("UI.AssetManager.Dialog.CreateAsset.BoothURLLabel")) {
                 style = {
-                    unityFontStyleAndWeight = FontStyle.Bold,
                     fontSize = 12,
                     marginTop = 10,
                     marginBottom = 5
@@ -153,7 +150,6 @@ namespace _4OF.ee4v.AssetManager.UI.Dialog {
 
             var tagsLabel = new Label(I18N.Get("UI.AssetManager.Dialog.CreateAsset.TagsLabel")) {
                 style = {
-                    unityFontStyleAndWeight = FontStyle.Bold,
                     fontSize = 12,
                     marginBottom = 4
                 }

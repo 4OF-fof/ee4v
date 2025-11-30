@@ -22,8 +22,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
                 style = {
                     unityTextAlign = TextAnchor.MiddleCenter,
                     fontSize = 12,
-                    color = ColorPreset.TextColor,
-                    unityFontStyleAndWeight = FontStyle.Bold
+                    color = ColorPreset.TextColor
                 }
             };
             return label;

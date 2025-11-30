@@ -45,8 +45,7 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
             var titleLabel = new Label(I18N.Get("UI.AssetManager.TagSelector.Title")) {
                 style = {
                     flexGrow = 1,
-                    marginLeft = 8,
-                    unityFontStyleAndWeight = FontStyle.Bold
+                    marginLeft = 8
                 }
             };
             root.Add(titleLabel);
