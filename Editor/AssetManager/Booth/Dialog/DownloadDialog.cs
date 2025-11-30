@@ -33,6 +33,7 @@ namespace _4OF.ee4v.AssetManager.Booth.Dialog {
             var title = new Label(I18N.Get("UI.AssetManager.Download.Title")) {
                 style = {
                     fontSize = 14,
+                    unityFontStyleAndWeight = FontStyle.Bold,
                     marginBottom = 10
                 }
             };

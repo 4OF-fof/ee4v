@@ -180,7 +180,8 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
                 style = {
                     unityTextAlign = TextAnchor.MiddleCenter,
                     fontSize = 12,
-                    color = ColorPreset.TextColor
+                    color = ColorPreset.TextColor,
+                    unityFontStyleAndWeight = FontStyle.Bold
                 }
             };
             return label;

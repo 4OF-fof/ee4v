@@ -26,6 +26,7 @@ namespace _4OF.ee4v.AssetManager.Booth.Dialog {
             var title = new Label(I18N.Get("UI.AssetManager.Dialog.WaitBoothSync.Title")) {
                 style = {
                     fontSize = 18,
+                    unityFontStyleAndWeight = FontStyle.Bold,
                     marginBottom = 14
                 }
             };
@@ -46,6 +47,7 @@ namespace _4OF.ee4v.AssetManager.Booth.Dialog {
                     marginBottom = 8,
                     unityTextAlign = TextAnchor.MiddleLeft,
                     color = ColorPreset.WarningText,
+                    unityFontStyleAndWeight = FontStyle.Bold,
                     fontSize = 13,
                     whiteSpace = WhiteSpace.Normal,
                     flexShrink = 1

@@ -83,10 +83,10 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             _singleSelectionContainer.Add(_thumbnailContainer);
 
             var nameLabel = new Label(I18N.Get("UI.AssetManager.AssetInfo.Name"))
-                { style = { fontSize = 12, marginBottom = 4 } };
+                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
             _singleSelectionContainer.Add(nameLabel);
 
-            _nameField = CreateTextField();
+            _nameField = CreateTextField(true);
             _nameField.style.marginBottom = 4;
             _nameField.RegisterCallback<ChangeEvent<string>>(evt => { OnNameChanged?.Invoke(evt.newValue); });
             _nameField.RegisterCallback<KeyDownEvent>(evt =>
@@ -98,7 +98,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             _singleSelectionContainer.Add(_nameField);
 
             var descriptionLabel = new Label(I18N.Get("UI.AssetManager.AssetInfo.Description"))
-                { style = { fontSize = 12, marginBottom = 4 } };
+                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
             _singleSelectionContainer.Add(descriptionLabel);
 
             var descriptionScrollView = new ScrollView {
@@ -109,7 +109,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                 }
             };
 
-            _descriptionField = CreateTextField();
+            _descriptionField = CreateTextField(false);
             _descriptionField.multiline = true;
             _descriptionField.style.minHeight = 40;
             _descriptionField.style.whiteSpace = WhiteSpace.Normal;
@@ -129,7 +129,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             _singleSelectionContainer.Add(descriptionScrollView);
 
             _folderHeader = new Label(I18N.Get("UI.AssetManager.AssetInfo.Folder"))
-                { style = { fontSize = 12, marginBottom = 4 } };
+                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
             _singleSelectionContainer.Add(_folderHeader);
 
             _folderRow = new VisualElement {
@@ -184,7 +184,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             _singleSelectionContainer.Add(_folderRow);
 
             var tagLabel = new Label(I18N.Get("UI.AssetManager.AssetInfo.Tags"))
-                { style = { fontSize = 12, marginBottom = 4 } };
+                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
             _singleSelectionContainer.Add(tagLabel);
 
             _tagsContainer = new VisualElement {
@@ -228,7 +228,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             _singleSelectionContainer.Add(addTagButton);
 
             _dependenciesLabel = new Label(I18N.Get("UI.AssetManager.AssetInfo.Dependencies"))
-                { style = { fontSize = 12, marginBottom = 4 } };
+                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
             _singleSelectionContainer.Add(_dependenciesLabel);
 
             _dependenciesContainer = new VisualElement {
@@ -273,7 +273,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
 
             _importTargetsLabel = new Label(I18N.Get("UI.AssetManager.AssetInfo.ImportTargets")) {
                 style = {
-                    fontSize = 12, marginBottom = 4,
+                    unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4,
                     display = DisplayStyle.None
                 }
             };
@@ -297,7 +297,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             };
             _multiSelectionLabel = new Label {
                 style = {
-                    fontSize = 14, whiteSpace = WhiteSpace.Normal,
+                    fontSize = 14, unityFontStyleAndWeight = FontStyle.Bold, whiteSpace = WhiteSpace.Normal,
                     unityTextAlign = TextAnchor.MiddleCenter
                 }
             };
@@ -305,7 +305,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             scrollView.Add(_multiSelectionContainer);
 
             _infoHeader = new Label(I18N.Get("UI.AssetManager.AssetInfo.Information"))
-                { style = { fontSize = 12, marginBottom = 4 } };
+                { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12, marginBottom = 4 } };
             scrollView.Add(_infoHeader);
 
             _infoContainer = new VisualElement { style = { paddingLeft = 4 } };
@@ -508,10 +508,11 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             _rowModified.Hide();
         }
 
-        private static TextField CreateTextField() {
+        private static TextField CreateTextField(bool isBold) {
             var field = new TextField {
                 isDelayed = true
             };
+            if (isBold) field.style.unityFontStyleAndWeight = FontStyle.Bold;
             return field;
         }
 
@@ -739,6 +740,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                     marginBottom = 10,
                     backgroundColor = ColorPreset.PrimaryButtonStyle,
                     color = ColorPreset.TextColor,
+                    unityFontStyleAndWeight = FontStyle.Bold,
                     alignSelf = Align.Center,
                     width = Length.Percent(90),
                     fontSize = 12,

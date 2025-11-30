@@ -42,6 +42,7 @@ namespace _4OF.ee4v.HierarchyExtension.HiddenObject {
 
             var titleLabel = new Label(I18N.Get("UI.HierarchyExtension.HiddenObjectWindowTitle")) {
                 style = {
+                    unityFontStyleAndWeight = FontStyle.Bold,
                     unityTextAlign = TextAnchor.MiddleLeft,
                     flexGrow = 1,
                     marginRight = 4,

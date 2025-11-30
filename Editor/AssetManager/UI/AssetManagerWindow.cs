@@ -259,6 +259,7 @@ namespace _4OF.ee4v.AssetManager.UI {
             var titleLabel = new Label(I18N.Get("UI.AssetManager.Dialog.BoothItemWarning.Title")) {
                 style = {
                     fontSize = 14,
+                    unityFontStyleAndWeight = FontStyle.Bold,
                     marginBottom = 10
                 }
             };

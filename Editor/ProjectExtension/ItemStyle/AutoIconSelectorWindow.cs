@@ -50,6 +50,7 @@ namespace _4OF.ee4v.ProjectExtension.ItemStyle {
 
             var label = new Label(I18N.Get("UI.ProjectExtension.SelectAssetIcon")) {
                 style = {
+                    unityFontStyleAndWeight = FontStyle.Bold,
                     fontSize = 14,
                     color = ColorPreset.TextColor
                 }
