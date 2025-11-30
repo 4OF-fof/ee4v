@@ -235,6 +235,10 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
                 itemUrl = boothFolder.ItemUrl;
                 itemId = boothFolder.ItemId;
             }
+            else if (folder is BackupFolder backupFolder) {
+                itemId = backupFolder.AvatarId;
+                itemUrl = $"https://vrchat.com/home/avatar/{backupFolder.AvatarId}";
+            }
 
             var data = new FolderDisplayData {
                 Id = folder.ID,

@@ -72,8 +72,7 @@ namespace _4OF.ee4v.VRCUtility {
                 AssetManagerAPI.ImportBackupPackage(
                     tempPath,
                     avatarId,
-                    prefabAsset.name,
-                    I18N.Get("Debug.VRCUtility.BackupDescription", timestamp)
+                    prefabAsset.name
                 );
             }
             catch (Exception e) {

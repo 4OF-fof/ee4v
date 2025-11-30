@@ -414,7 +414,7 @@ namespace _4OF.ee4v.AssetManager.Core {
             var newFolder = new BackupFolder();
             newFolder.SetName(!string.IsNullOrEmpty(avatarName) ? avatarName : avatarId);
             newFolder.SetAvatarId(avatarId);
-            newFolder.SetDescription($"Backups for {avatarId}");
+            newFolder.SetDescription("");
 
             libraries.AddFolder(newFolder);
 

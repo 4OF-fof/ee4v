@@ -456,7 +456,6 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             _rowAssets.Show(data.AssetCount.ToString());
             _rowModified.Show(data.ModificationTime.ToString("yyyy/MM/dd HH:mm"));
 
-            if (!data.IsBoothItemFolder) return;
             if (!string.IsNullOrEmpty(data.ShopName)) _rowShop.Show(data.ShopName, data.ShopUrl);
             if (!string.IsNullOrEmpty(data.ItemId)) _rowItem.Show(data.ItemId, data.ItemUrl);
         }
@@ -820,13 +819,17 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                         display = DisplayStyle.None
                     }
                 };
-                _row.Add(new Label(label) { style = { color = ColorPreset.InActiveItem, width = 80 } });
+                _row.Add(new Label(label) { style = { color = ColorPreset.InActiveItem, width = 80, flexShrink = 0 } });
 
                 _valueLabel = new Label {
                     style = {
                         flexGrow = 1,
+                        flexShrink = 1,
                         unityTextAlign = TextAnchor.MiddleRight,
-                        color = ColorPreset.AccentBlueStyle
+                        color = ColorPreset.AccentBlueStyle,
+                        whiteSpace = WhiteSpace.NoWrap,
+                        overflow = Overflow.Hidden,
+                        textOverflow = TextOverflow.Ellipsis
                     }
                 };
 
@@ -852,6 +855,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
 
             public void Show(string text, string url) {
                 _valueLabel.text = text;
+                _valueLabel.tooltip = text;
                 _currentUrl = url;
                 _row.style.display = DisplayStyle.Flex;
             }

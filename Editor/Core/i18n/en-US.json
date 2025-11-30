@@ -77,7 +77,6 @@
   "Debug.ProjectExtension.RemovedWorkspaceLabels": "Removed workspace label '{0}' from {1} asset(s).",
   "Debug.ProjectExtension.RemovedWorkspaceLabelSingle": "Removed workspace label '{0}'.",
   "Debug.ProjectExtension.RemovedWorkspaceLabelsMultiple": "Removed workspace label '{0}' from {1} asset(s).",
-  "Debug.VRCUtility.BackupDescription": "Auto backup ({0})",
   "Debug.VRCUtility.BackupFailed": "Backup failed",
   "Debug.VRCUtility.ExportImportFailed": "Failed to export/import backup: {0}",
   "Debug.VRCUtility.TargetPrefab": "Target prefab name: {0}",

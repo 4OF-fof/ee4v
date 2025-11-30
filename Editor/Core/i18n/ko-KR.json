@@ -77,7 +77,6 @@
   "Debug.ProjectExtension.RemovedWorkspaceLabels": "{1}개의 에셋에서 워크스페이스 레이블 '{0}'을(를) 제거했습니다.",
   "Debug.ProjectExtension.RemovedWorkspaceLabelSingle": "워크스페이스 레이블 '{0}'을(를) 제거했습니다.",
   "Debug.ProjectExtension.RemovedWorkspaceLabelsMultiple": "{1}개의 에셋에서 워크스페이스 레이블 '{0}'을(를) 제거했습니다.",
-  "Debug.VRCUtility.BackupDescription": "자동 백업 ({0})",
   "Debug.VRCUtility.BackupFailed": "백업 실패",
   "Debug.VRCUtility.ExportImportFailed": "백업 내보내기/가져오기 실패: {0}",
   "Debug.VRCUtility.TargetPrefab": "대상 프리팹 이름: {0}",
