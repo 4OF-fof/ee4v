@@ -114,10 +114,21 @@ namespace _4OF.ee4v.AssetManager.UI.Window {
         private void RefreshAssetList() {
             if (_repository == null) return;
 
-            _allAssets = _repository.GetAllAssets()
-                .Where(a => !a.IsDeleted && a.ID != _currentAssetId)
-                .OrderBy(a => a.Name)
-                .ToList();
+            var currentAsset = _repository.GetAsset(_currentAssetId);
+            var targetFolder = currentAsset?.Folder ?? Ulid.Empty;
+
+            var query = _repository.GetAllAssets()
+                .Where(a => !a.IsDeleted && a.ID != _currentAssetId);
+
+            if (currentAsset != null)
+                _allAssets = query
+                    .OrderByDescending(a => a.Folder == targetFolder)
+                    .ThenBy(a => a.Name)
+                    .ToList();
+            else
+                _allAssets = query
+                    .OrderBy(a => a.Name)
+                    .ToList();
 
             FilterAssets(string.Empty);
         }
