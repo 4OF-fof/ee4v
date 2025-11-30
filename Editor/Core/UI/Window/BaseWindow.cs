@@ -48,10 +48,6 @@ namespace _4OF.ee4v.Core.UI.Window {
         }
 
         public void CreateGUI() {
-            // TODO: ListViewが壊れるので一時的に無効化
-            // var customFont = AssetUtility.GetFont();
-            // if (customFont != null) rootVisualElement.style.unityFontDefinition = new StyleFontDefinition(customFont);
-
             rootVisualElement.style.borderRightWidth = 2;
             rootVisualElement.style.borderLeftWidth = 2;
             rootVisualElement.style.borderTopWidth = 2;
