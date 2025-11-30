@@ -25,6 +25,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
 
         private readonly Action<string, float?, ToastType> _showToast;
         private readonly Action _tagListRefresh;
+        private List<object> _currentSelection = new();
 
         public AssetPropertyPresenter(
             IAssetRepository repository,
@@ -60,6 +61,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
         private Ulid CurrentPreviewFolderId => _model.PreviewFolderId.Value;
 
         public void UpdateSelection(List<object> selectedItems) {
+            _currentSelection = selectedItems ?? new List<object>();
             _model.SetSelection(selectedItems);
 
             switch (selectedItems) {
@@ -79,6 +81,7 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
         }
 
         public void ClearSelection() {
+            _currentSelection.Clear();
             _model.Clear();
         }
 
@@ -143,8 +146,16 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
                 return;
             }
 
-            if (SelectedAsset != null) {
-                _assetService.AddTag(SelectedAsset.ID, newTag);
+            if (_currentSelection.Count > 0) {
+                foreach (var item in _currentSelection)
+                    switch (item) {
+                        case AssetMetadata asset:
+                            _assetService.AddTag(asset.ID, newTag);
+                            break;
+                        case BaseFolder folder:
+                            _folderService.AddTag(folder.ID, newTag);
+                            break;
+                    }
             }
             else {
                 var targetFolderId = _assetController?.SelectedFolderId ?? Ulid.Empty;
@@ -165,8 +176,16 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
         }
 
         public void OnTagRemoved(string tagToRemove) {
-            if (SelectedAsset != null) {
-                _assetService.RemoveTag(SelectedAsset.ID, tagToRemove);
+            if (_currentSelection.Count > 0) {
+                foreach (var item in _currentSelection)
+                    switch (item) {
+                        case AssetMetadata asset:
+                            _assetService.RemoveTag(asset.ID, tagToRemove);
+                            break;
+                        case BaseFolder folder:
+                            _folderService.RemoveTag(folder.ID, tagToRemove);
+                            break;
+                    }
             }
             else {
                 var targetFolderId = _assetController?.SelectedFolderId ?? Ulid.Empty;

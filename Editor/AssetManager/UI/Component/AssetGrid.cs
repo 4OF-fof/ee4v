@@ -135,13 +135,42 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
         public void SetItems(List<object> items) {
             _flatItems = items ?? new List<object>();
 
-            _selectedItems.RemoveWhere(i => !_flatItems.Contains(i));
-            if (_lastSelectedReference != null && !_flatItems.Contains(_lastSelectedReference))
-                _lastSelectedReference = null;
+            var newSelection = new HashSet<object>();
+            object newLastSelected = null;
+            var selectionChanged = false;
+
+            if (_selectedItems.Count > 0)
+                foreach (var oldItem in _selectedItems) {
+                    var match = FindMatchingItem(oldItem, _flatItems);
+                    if (match != null) {
+                        newSelection.Add(match);
+                        if (!ReferenceEquals(match, oldItem)) selectionChanged = true;
+                    }
+                    else {
+                        selectionChanged = true;
+                    }
+
+                    if (ReferenceEquals(oldItem, _lastSelectedReference))
+                        newLastSelected = match;
+                }
+
+            _selectedItems.Clear();
+            foreach (var item in newSelection) _selectedItems.Add(item);
+            _lastSelectedReference = newLastSelected;
 
             RebuildRows();
             UpdateEmptyState();
             Refresh();
+
+            if (selectionChanged) OnSelectionChange?.Invoke(_selectedItems.ToList());
+        }
+
+        private static object FindMatchingItem(object item, List<object> candidates) {
+            return item switch {
+                AssetMetadata asset => candidates.FirstOrDefault(c => c is AssetMetadata ca && ca.ID == asset.ID),
+                BaseFolder folder   => candidates.FirstOrDefault(c => c is BaseFolder cf && cf.ID == folder.ID),
+                _                   => candidates.Contains(item) ? item : null
+            };
         }
 
         private void UpdateEmptyState() {
