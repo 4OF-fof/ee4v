@@ -189,7 +189,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             _itemsPerRow = count;
             UpdateItemHeight();
             RebuildRows();
-            Refresh();
+            _listView.Rebuild();
         }
 
         private void Refresh() {
