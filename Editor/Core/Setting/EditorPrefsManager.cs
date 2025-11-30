@@ -11,8 +11,8 @@ namespace _4OF.ee4v.Core.Setting {
         private const string LanguageKey = "4OF.ee4v.Language";
 
         public static string Language {
-            get => EditorPrefs.GetString(LanguageKey, "ja-JP");
-            set => EditorPrefs.SetString(LanguageKey, value ?? "ja-JP");
+            get => EditorPrefs.GetString(LanguageKey, "en-US");
+            set => EditorPrefs.SetString(LanguageKey, value ?? "en-US");
         }
 
         private const string EnableHierarchyExtensionKey = "4OF.ee4v.EnableHierarchyExtension";
