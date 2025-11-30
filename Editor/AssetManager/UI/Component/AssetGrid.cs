@@ -19,12 +19,16 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
         private readonly HashSet<object> _selectedItems = new();
         private AssetService _assetService;
         private CancellationTokenSource _cts;
+        private Vector2 _dragStartPos;
 
         private List<object> _flatItems = new();
         private FolderService _folderService;
+
+        private bool _isDragPending;
         private int _itemsPerRow;
         private object _lastSelectedReference;
         private float _lastWidth;
+        private bool _pendingSelectionClear;
         private IAssetRepository _repository;
         private bool _rightClickHandledByDown;
         private Action<VisualElement> _showDialog;
@@ -265,6 +269,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                 var card = new AssetCard { style = { flexShrink = 0 } };
                 card.RegisterCallback<PointerDownEvent>(OnCardPointerDown);
                 card.RegisterCallback<PointerUpEvent>(OnCardPointerUp);
+                card.RegisterCallback<PointerMoveEvent>(OnCardPointerMove);
                 row.Add(card);
             }
 
@@ -285,6 +290,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                 for (var i = elementChildCount; i < _itemsPerRow; i++) {
                     var card = new AssetCard { style = { flexShrink = 0 } };
                     card.RegisterCallback<PointerDownEvent>(OnCardPointerDown);
+                    card.RegisterCallback<PointerMoveEvent>(OnCardPointerMove);
                     element.Add(card);
                 }
 
@@ -365,6 +371,10 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
 
             if (evt.button != 0) return;
 
+            _isDragPending = true;
+            _dragStartPos = evt.position;
+            _pendingSelectionClear = false;
+
             var currentParent = parent;
             while (currentParent != null) {
                 if (currentParent is AssetView assetView) {
@@ -376,6 +386,7 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
             }
 
             if (evt.clickCount == 2) {
+                _isDragPending = false;
                 switch (targetItem) {
                     case BaseFolder folder:
                         OnFolderDoubleClicked?.Invoke(folder);
@@ -411,14 +422,35 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
                 }
             }
             else {
-                _selectedItems.Clear();
-                _selectedItems.Add(targetItem);
-                _lastSelectedReference = targetItem;
+                if (_selectedItems.Contains(targetItem)) {
+                    _pendingSelectionClear = true;
+                }
+                else {
+                    _selectedItems.Clear();
+                    _selectedItems.Add(targetItem);
+                    _lastSelectedReference = targetItem;
+                }
             }
 
             _listView.RefreshItems();
             OnSelectionChange?.Invoke(_selectedItems.ToList());
 
+            evt.StopPropagation();
+        }
+
+        private void OnCardPointerMove(PointerMoveEvent evt) {
+            if (!_isDragPending) return;
+            if (evt.currentTarget is not AssetCard card) return;
+
+            if (Vector2.Distance(_dragStartPos, evt.position) < 5f) return;
+
+            _isDragPending = false;
+            _pendingSelectionClear = false;
+
+            StartDrag(card.userData);
+        }
+
+        private void StartDrag(object targetItem) {
             if (targetItem is not AssetMetadata && targetItem is not BaseFolder) return;
 
             var selectedAssets = _selectedItems.OfType<AssetMetadata>().ToList();
@@ -448,9 +480,26 @@ namespace _4OF.ee4v.AssetManager.UI.Component {
         }
 
         private void OnCardPointerUp(PointerUpEvent evt) {
-            if (evt.button != 1 || evt.currentTarget is not AssetCard card) return;
+            if (evt.currentTarget is not AssetCard card) return;
             var targetItem = card.userData;
             if (targetItem == null) return;
+
+            if (evt.button == 0) {
+                if (_pendingSelectionClear) {
+                    _selectedItems.Clear();
+                    _selectedItems.Add(targetItem);
+                    _lastSelectedReference = targetItem;
+                    _listView.RefreshItems();
+                    OnSelectionChange?.Invoke(_selectedItems.ToList());
+                }
+
+                _pendingSelectionClear = false;
+                _isDragPending = false;
+                return;
+            }
+
+            if (evt.button != 1) return;
+
             if (_rightClickHandledByDown) {
                 _rightClickHandledByDown = false;
             }
