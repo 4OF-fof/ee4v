@@ -146,7 +146,7 @@ namespace _4OF.ee4v.Core.Setting {
 
         #region HiddenItemList
 
-        public const string HiddenItemListKey = "4OF.ee4v.DefaultHiddenItemList";
+        private const string HiddenItemListKey = "4OF.ee4v.DefaultHiddenItemList";
 
         private static string HiddenItemListCsv {
             get => EditorPrefs.GetString(HiddenItemListKey, "");
