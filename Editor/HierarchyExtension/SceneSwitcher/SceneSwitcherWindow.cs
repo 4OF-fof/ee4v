@@ -253,6 +253,10 @@ namespace _4OF.ee4v.HierarchyExtension.SceneSwitcher {
             baseFolder = baseFolder.Replace('\\', '/').Trim();
             if (!baseFolder.EndsWith("/")) baseFolder += "/";
 
+            if (!Directory.Exists(baseFolder)) {
+                Directory.CreateDirectory(baseFolder);
+            }
+
             var scenePath = $"{baseFolder}{sceneName}.unity";
 
             if (File.Exists(scenePath)) {
