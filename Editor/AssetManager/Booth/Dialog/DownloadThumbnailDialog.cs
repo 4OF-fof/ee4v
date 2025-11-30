@@ -100,7 +100,7 @@ namespace _4OF.ee4v.AssetManager.Booth.Dialog {
             BoothThumbnailDownloader.OnStarted += OnStarted;
             BoothThumbnailDownloader.OnCompleted += OnCompleted;
 
-            if (BoothThumbnailDownloader.TotalCount == 0 && !BoothThumbnailDownloader.IsRunning)
+            if (BoothThumbnailDownloader.TotalCount == 0)
                 content.schedule.Execute(() => CloseDialog(content));
 
             content.RegisterCallback<DetachFromPanelEvent>(_ =>
