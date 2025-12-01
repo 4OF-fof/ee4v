@@ -2,6 +2,7 @@
 using System.IO;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Setting;
+using _4OF.ee4v.Runtime;
 using UnityEditor;
 using UnityEngine;
 
@@ -38,29 +39,29 @@ namespace _4OF.ee4v.AvatarModifyUtility {
             var originalToVariantMap = new Dictionary<Material, Material>();
             var renderers = sourceObject.GetComponentsInChildren<Renderer>(true);
 
-            foreach (var renderer in renderers) {
-                foreach (var sharedMat in renderer.sharedMaterials) {
-                    if (sharedMat == null) continue;
-                    if (originalToVariantMap.ContainsKey(sharedMat)) continue;
+            foreach (var renderer in renderers)
+            foreach (var sharedMat in renderer.sharedMaterials) {
+                if (sharedMat == null) continue;
+                if (originalToVariantMap.ContainsKey(sharedMat)) continue;
 
-                    var matName = sharedMat.name;
-                    var newMatPath = Path.Combine(materialFolder, matName + ".mat").Replace('\\', '/');
-                    
-                    newMatPath = AssetDatabase.GenerateUniqueAssetPath(newMatPath);
+                var matName = sharedMat.name;
+                var newMatPath = Path.Combine(materialFolder, matName + ".mat").Replace('\\', '/');
 
-                    var newMat = new Material(sharedMat);
-                    AssetDatabase.CreateAsset(newMat, newMatPath);
-                    originalToVariantMap[sharedMat] = newMat;
-                }
+                newMatPath = AssetDatabase.GenerateUniqueAssetPath(newMatPath);
+
+                var newMat = new Material(sharedMat);
+                AssetDatabase.CreateAsset(newMat, newMatPath);
+                originalToVariantMap[sharedMat] = newMat;
             }
+
+            if (sourceObject.GetComponent<VariantAutoUpdater>() == null)
+                sourceObject.AddComponent<VariantAutoUpdater>();
 
             var prefabPath = Path.Combine(targetFolder, variantName + ".prefab").Replace('\\', '/');
-            if (PrefabUtility.IsPartOfAnyPrefab(sourceObject)) {
+            if (PrefabUtility.IsPartOfAnyPrefab(sourceObject))
                 PrefabUtility.SaveAsPrefabAssetAndConnect(sourceObject, prefabPath, InteractionMode.AutomatedAction);
-            }
-            else {
+            else
                 PrefabUtility.SaveAsPrefabAssetAndConnect(sourceObject, prefabPath, InteractionMode.AutomatedAction);
-            }
 
             var contentsRoot = PrefabUtility.LoadPrefabContents(prefabPath);
             try {
@@ -75,11 +76,9 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                         modified = true;
                     }
 
-                    if (modified) {
-                        renderer.sharedMaterials = sharedMats;
-                    }
+                    if (modified) renderer.sharedMaterials = sharedMats;
                 }
-                
+
                 PrefabUtility.SaveAsPrefabAsset(contentsRoot, prefabPath);
             }
             finally {
