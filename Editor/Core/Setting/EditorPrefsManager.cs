@@ -133,7 +133,7 @@ namespace _4OF.ee4v.Core.Setting {
 
         #endregion
         
-        #region VRCUtility
+        #region AvatarModifyUtility
 
         private const string EnableAutoBackupKey = "4OF.ee4v.EnableAutoBackup";
 

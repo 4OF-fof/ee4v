@@ -280,9 +280,9 @@ namespace _4OF.ee4v.Core.Setting {
 
             #endregion
             
-            #region VRCUtility
+            #region AvatarModifyUtility
 
-            EditorGUILayout.LabelField(I18N.Get("UI.Core.Preference.VRCUtility"), EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(I18N.Get("UI.Core.Preference.AvatarModifyUtility"), EditorStyles.boldLabel);
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox)) {
                 EditorPrefsManager.EnableAutoBackup = EditorGUILayout.ToggleLeft(
                     new GUIContent(I18N.Get("UI.Core.EnableAutoBackupLabel"),

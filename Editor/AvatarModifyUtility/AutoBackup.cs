@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using VRC.SDK3A.Editor;
 
-namespace _4OF.ee4v.VRCUtility {
+namespace _4OF.ee4v.AvatarModifyUtility {
     public static class AutoBackup {
         private static GameObject _currentlyBuildingAvatar;
 
@@ -35,25 +35,25 @@ namespace _4OF.ee4v.VRCUtility {
         private static void OnUploadSuccess(object sender, object target) {
             if (!EditorPrefsManager.EnableAutoBackup) return;
             var avatarId = target as string ?? "";
-            Debug.Log(I18N.Get("Debug.VRCUtility.UploadSuccess", avatarId));
+            Debug.Log(I18N.Get("Debug.AvatarModifyUtility.UploadSuccess", avatarId));
 
             if (_currentlyBuildingAvatar != null) {
                 var prefabAsset = PrefabUtility.GetCorrespondingObjectFromSource(_currentlyBuildingAvatar);
 
                 if (prefabAsset != null) {
-                    Debug.Log(I18N.Get("Debug.VRCUtility.TargetPrefab", prefabAsset.name));
+                    Debug.Log(I18N.Get("Debug.AvatarModifyUtility.TargetPrefab", prefabAsset.name));
                     BackupToAssetManager(prefabAsset, avatarId);
                 }
 
                 _currentlyBuildingAvatar = null;
             }
             else {
-                Debug.LogWarning(I18N.Get("Debug.VRCUtility.BackupFailed"));
+                Debug.LogWarning(I18N.Get("Debug.AvatarModifyUtility.BackupFailed"));
             }
         }
 
         private static void OnUploadError(object sender, object target) {
-            Debug.LogWarning(I18N.Get("Debug.VRCUtility.UploadError"));
+            Debug.LogWarning(I18N.Get("Debug.AvatarModifyUtility.UploadError"));
             _currentlyBuildingAvatar = null;
         }
 
@@ -78,7 +78,7 @@ namespace _4OF.ee4v.VRCUtility {
                 );
             }
             catch (Exception e) {
-                Debug.LogError(I18N.Get("Debug.VRCUtility.ExportImportFailed", e.Message));
+                Debug.LogError(I18N.Get("Debug.AvatarModifyUtility.ExportImportFailed", e.Message));
             }
             finally {
                 if (File.Exists(tempPath)) File.Delete(tempPath);
