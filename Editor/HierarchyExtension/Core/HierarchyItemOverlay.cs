@@ -27,10 +27,16 @@ namespace _4OF.ee4v.HierarchyExtension.Core {
             if (EditorPrefsManager.ShowDepthLine) ItemDepthLine.Draw(obj, selectionRect);
 
             if (obj == null) return;
-            var style = obj.GetComponent<ObjectStyleComponent>();
+            var (style, isSelf) = GetEffectiveStyle(obj);
+
             if (style != null) {
-                ReflectionWrapper.SetItemIcon(instanceId, style.icon as Texture2D);
-                BackGroundColor.Draw(obj, selectionRect, style.color, style.icon);
+                if (isSelf) {
+                    ReflectionWrapper.SetItemIcon(instanceId, style.icon as Texture2D);
+                    BackGroundColor.Draw(obj, selectionRect, style.color, style.icon);
+                }
+                else {
+                    BackGroundColor.Draw(obj, selectionRect, style.color);
+                }
             }
 
             if (EditorPrefsManager.ShowComponentIcons)
@@ -60,6 +66,18 @@ namespace _4OF.ee4v.HierarchyExtension.Core {
             }
 
             GUI.color = prevColor;
+        }
+
+        private static (ObjectStyleComponent, bool) GetEffectiveStyle(GameObject obj) {
+            var current = obj.transform;
+            while (current != null) {
+                var style = current.GetComponent<ObjectStyleComponent>();
+                if (style != null && (style.color != Color.clear || style.icon != null)) {
+                    return (style, current.gameObject == obj);
+                }
+                current = current.parent;
+            }
+            return (null, false);
         }
 
         private static void DrawHeading(string name, Rect selectionRect) {
