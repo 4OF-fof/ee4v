@@ -38,17 +38,13 @@ namespace _4OF.ee4v.AssetManager.UI.Presenter {
         }
 
         public void PerformSetFolderForAssets(List<Ulid> assetIds, Ulid targetFolderId) {
-            if (assetIds.Count > 0) {
-                _assetService.SetFolder(assetIds, targetFolderId);
-            }
-            
+            if (assetIds.Count > 0) _assetService.SetFolder(assetIds, targetFolderId);
+
             _refreshUI(true);
         }
 
         public void PerformItemsDroppedToFolder(List<Ulid> assetIds, List<Ulid> folderIds, Ulid targetFolderId) {
-            if (assetIds.Count > 0) {
-                _assetService.SetFolder(assetIds, targetFolderId);
-            }
+            if (assetIds.Count > 0) _assetService.SetFolder(assetIds, targetFolderId);
 
             if (folderIds.Count > 0)
                 foreach (var folderId in folderIds)

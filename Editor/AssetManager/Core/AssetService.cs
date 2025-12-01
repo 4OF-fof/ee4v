@@ -148,7 +148,7 @@ namespace _4OF.ee4v.AssetManager.Core {
             newAsset.SetFolder(newFolder);
             SaveAsset(newAsset);
         }
-        
+
         public void SetFolder(IEnumerable<Ulid> assetIds, Ulid newFolder) {
             var assetsToSave = new List<AssetMetadata>();
             foreach (var assetId in assetIds) {
@@ -160,9 +160,7 @@ namespace _4OF.ee4v.AssetManager.Core {
                 assetsToSave.Add(newAsset);
             }
 
-            if (assetsToSave.Count > 0) {
-                _repository.SaveAssets(assetsToSave);
-            }
+            if (assetsToSave.Count > 0) _repository.SaveAssets(assetsToSave);
         }
 
         public void AddTag(Ulid assetId, string tag) {

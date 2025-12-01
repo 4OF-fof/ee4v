@@ -79,11 +79,11 @@ namespace _4OF.ee4v.HierarchyExtension.Core {
             var current = obj.transform;
             while (current != null) {
                 var style = current.GetComponent<ObjectStyleComponent>();
-                if (style != null && (style.color != Color.clear || style.icon != null)) {
+                if (style != null && (style.color != Color.clear || style.icon != null))
                     return (style, current.gameObject == obj);
-                }
                 current = current.parent;
             }
+
             return (null, false);
         }
 
@@ -98,8 +98,8 @@ namespace _4OF.ee4v.HierarchyExtension.Core {
             };
             EditorGUI.LabelField(backRect, labelText, labelStyle);
         }
-        
-private static void DrawSeparator(string name, Rect selectionRect) {
+
+        private static void DrawSeparator(string name, Rect selectionRect) {
             var backRect = new Rect(32, selectionRect.y, EditorGUIUtility.currentViewWidth - 32, selectionRect.height);
             EditorGUI.DrawRect(backRect, ColorPreset.DefaultBackground);
 
@@ -108,7 +108,7 @@ private static void DrawSeparator(string name, Rect selectionRect) {
                 fontSize = 12,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
-                normal = { textColor = ColorPreset.InActiveItem } 
+                normal = { textColor = ColorPreset.InActiveItem }
             };
             EditorGUI.LabelField(backRect, labelText, labelStyle);
 
@@ -119,18 +119,19 @@ private static void DrawSeparator(string name, Rect selectionRect) {
             const float padding = 6f;
 
             if (!string.IsNullOrEmpty(labelText)) {
-                var leftLineWidth = (backRect.width / 2f) - (size.x / 2f) - padding;
+                var leftLineWidth = backRect.width / 2f - size.x / 2f - padding;
                 if (leftLineWidth > 0) {
                     var leftLineRect = new Rect(backRect.x, centerY, leftLineWidth, 1);
                     EditorGUI.DrawRect(leftLineRect, lineColor);
                 }
 
-                var rightLineWidth = (backRect.width / 2f) - (size.x / 2f) - padding;
+                var rightLineWidth = backRect.width / 2f - size.x / 2f - padding;
                 if (!(rightLineWidth > 0)) return;
-                var rightLineX = backRect.x + (backRect.width / 2f) + (size.x / 2f) + padding;
+                var rightLineX = backRect.x + backRect.width / 2f + size.x / 2f + padding;
                 var rightLineRect = new Rect(rightLineX, centerY, rightLineWidth, 1);
                 EditorGUI.DrawRect(rightLineRect, lineColor);
-            } else {
+            }
+            else {
                 var lineRect = new Rect(backRect.x, centerY, backRect.width, 1);
                 EditorGUI.DrawRect(lineRect, lineColor);
             }

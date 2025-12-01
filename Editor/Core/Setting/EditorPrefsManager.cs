@@ -97,7 +97,7 @@ namespace _4OF.ee4v.Core.Setting {
             get => EditorPrefs.GetString(HeadingPrefixKey, ":HEADING");
             set => EditorPrefs.SetString(HeadingPrefixKey, value ?? string.Empty);
         }
-        
+
         private const string SeparatorPrefixKey = "4OF.ee4v.SeparatorPrefix";
 
         public static string SeparatorPrefix {
@@ -132,7 +132,7 @@ namespace _4OF.ee4v.Core.Setting {
         }
 
         #endregion
-        
+
         #region AvatarModifyUtility
 
         private const string EnableAutoBackupKey = "4OF.ee4v.EnableAutoBackup";
@@ -151,6 +151,7 @@ namespace _4OF.ee4v.Core.Setting {
             }
             set => EditorPrefs.SetString(VariantCreateFolderPathKey, value ?? "Assets/Variant");
         }
+
         #endregion
 
         #region Compatibility

@@ -150,7 +150,7 @@ namespace _4OF.ee4v.Core.Setting {
                                 EditorPrefsManager.HeadingPrefix =
                                     EditorGUILayout.TextField(EditorPrefsManager.HeadingPrefix);
                             }
-                            
+
                             EditorGUI.BeginChangeCheck();
                             using (new EditorGUILayout.HorizontalScope()) {
                                 EditorGUILayout.PrefixLabel(new GUIContent(I18N.Get("UI.Core.SeparatorPrefixLabel"),
@@ -158,6 +158,7 @@ namespace _4OF.ee4v.Core.Setting {
                                 EditorPrefsManager.SeparatorPrefix =
                                     EditorGUILayout.TextField(EditorPrefsManager.SeparatorPrefix);
                             }
+
                             if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
 
                             if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
@@ -279,7 +280,7 @@ namespace _4OF.ee4v.Core.Setting {
             EditorGUILayout.Space(10);
 
             #endregion
-            
+
             #region AvatarModifyUtility
 
             EditorGUILayout.LabelField(I18N.Get("UI.Core.Preference.AvatarModifyUtility"), EditorStyles.boldLabel);
@@ -289,6 +290,7 @@ namespace _4OF.ee4v.Core.Setting {
                         I18N.Get("UI.Core.EnableAutoBackupTooltip")),
                     EditorPrefsManager.EnableAutoBackup);
             }
+
             EditorGUILayout.Space(10);
 
             using (new EditorGUILayout.HorizontalScope()) {
@@ -322,6 +324,7 @@ namespace _4OF.ee4v.Core.Setting {
                     }
                 }
             }
+
             #endregion
 
             #region Compatibility

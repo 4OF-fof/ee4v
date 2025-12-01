@@ -9,9 +9,9 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AvatarModifyUtility {
     public class VariantConverterWindow : BaseWindow {
-        private GameObject _targetObject;
-        private TextField _nameField;
         private Label _errorLabel;
+        private TextField _nameField;
+        private GameObject _targetObject;
 
         [MenuItem("GameObject/ee4v/Create Variant", false, -1)]
         private static void CreateVariant(MenuCommand menuCommand) {
@@ -23,18 +23,18 @@ namespace _4OF.ee4v.AvatarModifyUtility {
             Vector2 mousePos;
             if (Event.current != null) {
                 mousePos = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
-            } else {
+            }
+            else {
                 var win = focusedWindow;
-                if (win != null) {
+                if (win != null)
                     mousePos = win.position.position + new Vector2(100, 100);
-                } else {
+                else
                     mousePos = new Vector2(200, 200);
-                }
             }
 
             Show(obj, mousePos);
         }
-        
+
         [MenuItem("GameObject/ee4v/Create Variant", true, -1)]
         private static bool ValidateCreateVariant() {
             var obj = Selection.activeGameObject;
@@ -92,8 +92,9 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                     height = 24
                 }
             };
-            
-            _nameField.RegisterCallback<KeyDownEvent>(evt => {
+
+            _nameField.RegisterCallback<KeyDownEvent>(evt =>
+            {
                 switch (evt.keyCode) {
                     case KeyCode.Return:
                     case KeyCode.KeypadEnter:
@@ -152,7 +153,8 @@ namespace _4OF.ee4v.AvatarModifyUtility {
 
             container.Add(buttonContainer);
 
-            _nameField.schedule.Execute(() => {
+            _nameField.schedule.Execute(() =>
+            {
                 _nameField.Focus();
                 _nameField.SelectAll();
             }).ExecuteLater(100);
