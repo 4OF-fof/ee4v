@@ -291,6 +291,37 @@ namespace _4OF.ee4v.Core.Setting {
             }
             EditorGUILayout.Space(10);
 
+            using (new EditorGUILayout.HorizontalScope()) {
+                EditorPrefsManager.VariantCreateFolderPath = EditorGUILayout.TextField(
+                    new GUIContent(I18N.Get("UI.Core.VariantCreateFolderPathLabel"),
+                        I18N.Get("UI.Core.VariantCreateFolderPathTooltip")),
+                    EditorPrefsManager.VariantCreateFolderPath);
+                if (GUILayout.Button("...", GUILayout.Width(30))) {
+                    var path = EditorUtility.OpenFolderPanel(
+                        I18N.Get("UI.Core.VariantCreateFolderPathWindow"),
+                        EditorPrefsManager.VariantCreateFolderPath,
+                        ""
+                    );
+                    if (!string.IsNullOrEmpty(path)) {
+                        var dataPath = Application.dataPath.Replace('\\', '/');
+                        var normalized = path.Replace('\\', '/');
+
+                        if (normalized.StartsWith(dataPath)) {
+                            normalized = "Assets" + normalized.Substring(dataPath.Length);
+                            EditorPrefsManager.VariantCreateFolderPath = normalized;
+                            GUIUtility.keyboardControl = 0;
+                            EditorGUI.FocusTextInControl(null);
+                        }
+                        else {
+                            EditorUtility.DisplayDialog(
+                                I18N.Get("UI.Core.InvalidPathTitle"),
+                                I18N.Get("UI.Core.VariantCreateFolderPathError"),
+                                I18N.Get("UI.Core.OK")
+                            );
+                        }
+                    }
+                }
+            }
             #endregion
 
             #region Compatibility

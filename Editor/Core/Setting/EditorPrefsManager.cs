@@ -142,6 +142,15 @@ namespace _4OF.ee4v.Core.Setting {
             set => EditorPrefs.SetBool(EnableAutoBackupKey, value);
         }
 
+        private const string VariantCreateFolderPathKey = "4OF.ee4v.VariantCreateFolderPath";
+
+        public static string VariantCreateFolderPath {
+            get {
+                const string defaultPath = "Assets/Variant";
+                return EditorPrefs.GetString(VariantCreateFolderPathKey, defaultPath);
+            }
+            set => EditorPrefs.SetString(VariantCreateFolderPathKey, value ?? "Assets/Variant");
+        }
         #endregion
 
         #region Compatibility
