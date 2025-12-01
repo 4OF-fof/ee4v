@@ -17,12 +17,19 @@ namespace _4OF.ee4v.HierarchyExtension.Core {
                 selectionRect.height);
             var menuRect = new Rect(selectionRect.xMax - 16, selectionRect.y, 16, selectionRect.height);
 
-            if (EditorPrefsManager.EnableCustomStyleItem)
+            if (EditorPrefsManager.EnableCustomStyleItem) {
                 if (obj != null && EditorPrefsManager.HeadingPrefix != "" &&
                     obj.name.StartsWith(EditorPrefsManager.HeadingPrefix)) {
                     DrawHeading(obj.name, selectionRect);
                     return;
                 }
+
+                if (obj != null && EditorPrefsManager.SeparatorPrefix != "" &&
+                    obj.name.StartsWith(EditorPrefsManager.SeparatorPrefix)) {
+                    DrawSeparator(obj.name, selectionRect);
+                    return;
+                }
+            }
 
             if (EditorPrefsManager.ShowDepthLine) ItemDepthLine.Draw(obj, selectionRect);
 
@@ -90,6 +97,43 @@ namespace _4OF.ee4v.HierarchyExtension.Core {
                 alignment = TextAnchor.MiddleCenter
             };
             EditorGUI.LabelField(backRect, labelText, labelStyle);
+        }
+        
+private static void DrawSeparator(string name, Rect selectionRect) {
+            var backRect = new Rect(32, selectionRect.y, EditorGUIUtility.currentViewWidth - 32, selectionRect.height);
+            EditorGUI.DrawRect(backRect, ColorPreset.DefaultBackground);
+
+            var labelText = name.Replace(EditorPrefsManager.SeparatorPrefix, string.Empty).TrimStart();
+            var labelStyle = new GUIStyle(EditorStyles.label) {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = ColorPreset.InActiveItem } 
+            };
+            EditorGUI.LabelField(backRect, labelText, labelStyle);
+
+            var content = new GUIContent(labelText);
+            var size = labelStyle.CalcSize(content);
+            var lineColor = ColorPreset.InActiveItem;
+            var centerY = backRect.y + backRect.height / 2f;
+            const float padding = 6f;
+
+            if (!string.IsNullOrEmpty(labelText)) {
+                var leftLineWidth = (backRect.width / 2f) - (size.x / 2f) - padding;
+                if (leftLineWidth > 0) {
+                    var leftLineRect = new Rect(backRect.x, centerY, leftLineWidth, 1);
+                    EditorGUI.DrawRect(leftLineRect, lineColor);
+                }
+
+                var rightLineWidth = (backRect.width / 2f) - (size.x / 2f) - padding;
+                if (!(rightLineWidth > 0)) return;
+                var rightLineX = backRect.x + (backRect.width / 2f) + (size.x / 2f) + padding;
+                var rightLineRect = new Rect(rightLineX, centerY, rightLineWidth, 1);
+                EditorGUI.DrawRect(rightLineRect, lineColor);
+            } else {
+                var lineRect = new Rect(backRect.x, centerY, backRect.width, 1);
+                EditorGUI.DrawRect(lineRect, lineColor);
+            }
         }
     }
 }

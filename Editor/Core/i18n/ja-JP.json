@@ -309,6 +309,8 @@
   "UI.Core.SceneCreateFolderPathLabel": "シーン作成フォルダ",
   "UI.Core.SceneCreateFolderPathTooltip": "新しく作成されたシーンを保存するフォルダ (デフォルト: Assets/)",
   "UI.Core.SceneCreateFolderPathWindow": "シーン作成フォルダを選択",
+  "UI.Core.SeparatorPrefixLabel": "区切り線プレフィックス",
+  "UI.Core.SeparatorPrefixTooltip": "ヒエラルキーで区切り線アイテムを識別するためのプレフィックス文字列を設定します。",
   "UI.Core.ShowComponentIconsLabel": "コンポーネントアイコンを表示",
   "UI.Core.ShowComponentIconsTooltip": "ヒエラルキーでコンポーネントアイコンを表示または非表示にします。",
   "UI.Core.ShowDepthLineLabel": "ガイドラインを表示",

@@ -309,6 +309,8 @@
   "UI.Core.SceneCreateFolderPathLabel": "씬 생성 폴더",
   "UI.Core.SceneCreateFolderPathTooltip": "새로 생성된 씬을 저장할 폴더 (기본값: Assets/)",
   "UI.Core.SceneCreateFolderPathWindow": "씬 생성 폴더 선택",
+  "UI.Core.SeparatorPrefixLabel": "구분선 접두사",
+  "UI.Core.SeparatorPrefixTooltip": "히어라키에서 구분선 아이템을 식별하기 위한 접두사 문자열을 설정합니다.",
   "UI.Core.ShowComponentIconsLabel": "컴포넌트 아이콘 표시",
   "UI.Core.ShowComponentIconsTooltip": "계층 구조에서 컴포넌트 아이콘을 표시하거나 숨깁니다.",
   "UI.Core.ShowDepthLineLabel": "깊이 선 표시",

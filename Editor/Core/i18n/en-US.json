@@ -309,6 +309,8 @@
   "UI.Core.SceneCreateFolderPathLabel": "Scene Create Folder",
   "UI.Core.SceneCreateFolderPathTooltip": "Folder to save newly created scenes (default: Assets/)",
   "UI.Core.SceneCreateFolderPathWindow": "Select Scene Create Folder",
+  "UI.Core.SeparatorPrefixLabel": "Separator Prefix",
+  "UI.Core.SeparatorPrefixTooltip": "Set the prefix string to identify separator items in the hierarchy.",
   "UI.Core.ShowComponentIconsLabel": "Show Component Icons",
   "UI.Core.ShowComponentIconsTooltip": "Show or hide component icons in the hierarchy.",
   "UI.Core.ShowDepthLineLabel": "Show Depth Line",

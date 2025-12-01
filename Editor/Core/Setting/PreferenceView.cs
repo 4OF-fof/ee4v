@@ -150,6 +150,15 @@ namespace _4OF.ee4v.Core.Setting {
                                 EditorPrefsManager.HeadingPrefix =
                                     EditorGUILayout.TextField(EditorPrefsManager.HeadingPrefix);
                             }
+                            
+                            EditorGUI.BeginChangeCheck();
+                            using (new EditorGUILayout.HorizontalScope()) {
+                                EditorGUILayout.PrefixLabel(new GUIContent(I18N.Get("UI.Core.SeparatorPrefixLabel"),
+                                    I18N.Get("UI.Core.SeparatorPrefixTooltip")));
+                                EditorPrefsManager.SeparatorPrefix =
+                                    EditorGUILayout.TextField(EditorPrefsManager.SeparatorPrefix);
+                            }
+                            if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
 
                             if (EditorGUI.EndChangeCheck()) EditorApplication.RepaintHierarchyWindow();
 

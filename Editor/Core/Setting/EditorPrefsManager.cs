@@ -94,8 +94,15 @@ namespace _4OF.ee4v.Core.Setting {
         private const string HeadingPrefixKey = "4OF.ee4v.HeadingPrefix";
 
         public static string HeadingPrefix {
-            get => EditorPrefs.GetString(HeadingPrefixKey, "HEADING:");
+            get => EditorPrefs.GetString(HeadingPrefixKey, ":HEADING");
             set => EditorPrefs.SetString(HeadingPrefixKey, value ?? string.Empty);
+        }
+        
+        private const string SeparatorPrefixKey = "4OF.ee4v.SeparatorPrefix";
+
+        public static string SeparatorPrefix {
+            get => EditorPrefs.GetString(SeparatorPrefixKey, ":SEPARATOR");
+            set => EditorPrefs.SetString(SeparatorPrefixKey, value ?? string.Empty);
         }
 
         #endregion
