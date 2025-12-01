@@ -22,6 +22,8 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                 return;
             }
 
+            sourceObject.name = variantName;
+
             var parentGuid = AssetDatabase.AssetPathToGUID(Path.GetDirectoryName(targetFolder));
             if (string.IsNullOrEmpty(parentGuid)) {
                 Directory.CreateDirectory(targetFolder);
@@ -87,7 +89,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
             AssetDatabase.Refresh();
             var createdAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
             EditorGUIUtility.PingObject(createdAsset);
-            
+            EditorUtility.SetDirty(sourceObject);
             Debug.Log(I18N.Get("Debug.HierarchyExtension.VariantCreated", variantName));
         }
     }
