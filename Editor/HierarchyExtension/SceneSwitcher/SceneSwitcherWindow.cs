@@ -172,6 +172,7 @@ namespace _4OF.ee4v.HierarchyExtension.SceneSwitcher {
                     icon.image = null;
                     starButton.image = null;
                     element.SetEnabled(true);
+                    element.style.opacity = 1f;
                     element.userData = path;
                     return;
                 }
@@ -247,8 +248,6 @@ namespace _4OF.ee4v.HierarchyExtension.SceneSwitcher {
         }
 
         private static void CreateAndOpenNewScene(string sceneName) {
-            var newScene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
-
             var baseFolder = EditorPrefsManager.SceneCreateFolderPath;
             baseFolder = baseFolder.Replace('\\', '/').Trim();
             if (!baseFolder.EndsWith("/")) baseFolder += "/";
@@ -258,13 +257,24 @@ namespace _4OF.ee4v.HierarchyExtension.SceneSwitcher {
             }
 
             var scenePath = $"{baseFolder}{sceneName}.unity";
+            var templatePath = $"{baseFolder}TEMPLATE.unity";
 
             if (File.Exists(scenePath)) {
                 Debug.LogError(I18N.Get("Debug.HierarchyExtension.SceneAlreadyExists", scenePath));
                 return;
             }
 
-            EditorSceneManager.SaveScene(newScene, scenePath);
+            if (File.Exists(templatePath)) {
+                if (AssetDatabase.CopyAsset(templatePath, scenePath)) {
+                    AssetDatabase.Refresh();
+                    EditorSceneManager.OpenScene(scenePath);
+                }
+            }
+            else {
+                var newScene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+                EditorSceneManager.SaveScene(newScene, scenePath);
+            }
+
             SceneListService.MoveToTop(scenePath);
         }
 
