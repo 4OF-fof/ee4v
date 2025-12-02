@@ -248,7 +248,7 @@ namespace _4OF.ee4v.HierarchyExtension.SceneSwitcher {
         }
 
         private static void CreateAndOpenNewScene(string sceneName) {
-            var baseFolder = EditorPrefsManager.SceneCreateFolderPath;
+            var baseFolder = Settings.I.sceneCreateFolderPath;
             baseFolder = baseFolder.Replace('\\', '/').Trim();
             if (!baseFolder.EndsWith("/")) baseFolder += "/";
 

@@ -33,7 +33,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
         }
 
         private static void OnUploadSuccess(object sender, object target) {
-            if (!EditorPrefsManager.EnableAutoBackup) return;
+            if (!Settings.I.enableAutoBackup) return;
             var avatarId = target as string ?? "";
             Debug.Log(I18N.Get("Debug.AvatarModifyUtility.UploadSuccess", avatarId));
 

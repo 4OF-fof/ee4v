@@ -18,7 +18,7 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle {
                 if (component == null) continue;
                 var componentType = component.GetType();
                 if (componentType.Name == "ObjectStyleComponent") continue;
-                if (EditorPrefsManager.IgnoreComponentNameList.Contains(componentType.Name)) continue;
+                if (Settings.I.ignoreComponentNameList.Contains(componentType.Name)) continue;
 
                 Texture image = AssetPreview.GetMiniThumbnail(component);
                 if (image == null) continue;

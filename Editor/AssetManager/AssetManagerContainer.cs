@@ -13,7 +13,7 @@ namespace _4OF.ee4v.AssetManager {
         public static TextureService TextureService { get; private set; }
 
         private static void Initialize() {
-            Repository = new AssetRepository(EditorPrefsManager.ContentFolderPath);
+            Repository = new AssetRepository(Settings.I.contentFolderPath);
 
             Repository.Initialize();
             Repository.Load();

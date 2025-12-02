@@ -25,7 +25,7 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle.Component {
                          into comps
                          from comp in comps
                          where comp != null && comp.GetType().Name != "ObjectStyleComponent" &&
-                             !EditorPrefsManager.IgnoreComponentNameList.Contains(comp.GetType().Name)
+                             !Settings.I.ignoreComponentNameList.Contains(comp.GetType().Name)
                          select EditorGUIUtility.ObjectContent(comp, comp.GetType())
                          into content
                          select content?.image
@@ -91,7 +91,7 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle.Component {
 
         private static List<Texture> BuildIconListFromPrefs() {
             var list = new List<Texture> { Separator };
-            var keys = EditorPrefsManager.IconList;
+            var keys = Settings.I.iconList;
             if (keys == null || keys.Count == 0) return list;
             foreach (var key in keys.Where(key => !string.IsNullOrEmpty(key))) {
                 if (key == "<SEP>") {

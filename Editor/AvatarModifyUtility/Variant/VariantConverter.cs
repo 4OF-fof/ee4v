@@ -11,7 +11,7 @@ namespace _4OF.ee4v.AvatarModifyUtility.Variant {
         public static void CreateVariantWithMaterials(GameObject sourceObject, string variantName) {
             if (sourceObject == null || string.IsNullOrEmpty(variantName)) return;
 
-            var rootFolder = EditorPrefsManager.VariantCreateFolderPath;
+            var rootFolder = Settings.I.variantCreateFolderPath;
             if (!rootFolder.EndsWith("/")) rootFolder += "/";
             if (!Directory.Exists(rootFolder)) Directory.CreateDirectory(rootFolder);
 
