@@ -5,7 +5,7 @@ using _4OF.ee4v.AssetManager.API;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI.Component;
 using _4OF.ee4v.Core.UI.Window;
-using _4OF.ee4v.Core.Utility;
+using _4OF.ee4v.Core.Wraps;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -37,8 +37,8 @@ namespace _4OF.ee4v.ProjectExtension.FolderStyle {
         }
 
         private static void FocusProjectWindow() {
-            if (ReflectionWrapper.ProjectBrowserType != null)
-                FocusWindowIfItsOpen(ReflectionWrapper.ProjectBrowserType);
+            if (ProjectBrowserWrap.Type != null)
+                FocusWindowIfItsOpen(ProjectBrowserWrap.Type);
         }
 
         private void UpdateContent() {

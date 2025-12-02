@@ -1,6 +1,6 @@
 using System;
 using System.Linq;
-using _4OF.ee4v.Core.Utility;
+using _4OF.ee4v.Core.Wraps;
 using _4OF.ee4v.ProjectExtension.Toolbar.Component.Tab;
 using UnityEditor;
 using UnityEngine;
@@ -15,7 +15,10 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
 
         public static void Initialize() {
             if (_tabContainer != null) return;
-            var projectWindow = ReflectionWrapper.ProjectBrowserWindow;
+
+            var pbWrap = ProjectBrowserWrap.GetWindow();
+            var projectWindow = pbWrap?.Instance as EditorWindow;
+
             if (projectWindow) {
                 _tabContainer = projectWindow.rootVisualElement?.Q<VisualElement>("ee4v-project-toolbar-tabContainer");
                 _workspaceContainer =
@@ -26,6 +29,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
             KeepOneTab();
         }
 
+        // ... (Add, AddWorkspaceTab, Insert, Remove, Move, UpdateTab, KeepOneTab, Sync は変更なし)
         private static void Add(VisualElement tab) {
             Initialize();
             var path = tab.tooltip;
@@ -167,16 +171,21 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
             if (isWorkspaceTab) {
                 var labelName = tabElement.Q<Label>()?.text;
                 if (!string.IsNullOrEmpty(labelName)) {
-                    ReflectionWrapper.SetSearchFilter($"l=Ee4v.ws.{labelName}");
+                    var pbWrap = ProjectBrowserWrap.GetWindow();
+                    pbWrap?.SetSearch($"l=Ee4v.ws.{labelName}");
+
                     TabListService.SetCurrentWorkspace(labelName);
                 }
             }
             else {
-                ReflectionWrapper.ClearSearchFilter();
+                var pbWrap = ProjectBrowserWrap.GetWindow();
+                pbWrap?.ClearSearch();
+
                 var folderObject = AssetDatabase.LoadAssetAtPath<DefaultAsset>(tabElement.tooltip);
                 if (folderObject == null) return;
 
-                ReflectionWrapper.ShowFolderContents(folderObject.GetInstanceID());
+                pbWrap?.ShowFolderContents(folderObject.GetInstanceID(), false);
+
                 Selection.activeObject = null;
                 GUI.FocusControl(null);
                 TabListService.SetCurrentWorkspace(null);

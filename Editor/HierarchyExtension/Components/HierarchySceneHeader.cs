@@ -1,6 +1,6 @@
 ﻿using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
-using _4OF.ee4v.Core.Utility;
+using _4OF.ee4v.Core.Wraps;
 using _4OF.ee4v.HierarchyExtension.SceneSwitcher;
 using UnityEditor;
 using UnityEngine;
@@ -16,7 +16,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
 
         private static void Draw(Rect selectionRect) {
             var windowWidth = EditorGUIUtility.currentViewWidth;
-            if (ReflectionWrapper.IsHierarchyScrollbarVisible()) windowWidth -= 14;
+            if (SceneHierarchyWindowWrap.IsScrollbarVisible) windowWidth -= 14;
             var sceneRect = new Rect(48, selectionRect.y, windowWidth - 94, 16);
             var hiddenRect = new Rect(sceneRect.xMax, selectionRect.y, 24, 16);
             var hiddenIconRect = new Rect(hiddenRect.x + 4, selectionRect.y, 16, 16);

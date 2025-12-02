@@ -1,7 +1,7 @@
 ﻿using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
-using _4OF.ee4v.Core.Utility;
+using _4OF.ee4v.Core.Wraps;
 using _4OF.ee4v.HierarchyExtension.ItemStyle;
 using _4OF.ee4v.Runtime;
 using UnityEditor;
@@ -30,7 +30,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
             var (style, isSelf) = GetEffectiveStyle(gameObject);
             if (style == null) return;
             if (isSelf) {
-                ReflectionWrapper.SetItemIcon(instanceID, style.icon as Texture2D);
+                SceneHierarchyWindowWrap.SetItemIcon(instanceID, style.icon as Texture2D);
                 BackGroundColor.Draw(gameObject, fullRect, style.color, style.icon);
             }
             else {

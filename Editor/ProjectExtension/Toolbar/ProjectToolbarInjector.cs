@@ -1,6 +1,6 @@
 ﻿using System.IO;
 using _4OF.ee4v.Core.Setting;
-using _4OF.ee4v.Core.Utility;
+using _4OF.ee4v.Core.Wraps;
 using _4OF.ee4v.ProjectExtension.Toolbar.Component;
 using UnityEditor;
 using UnityEngine.UIElements;
@@ -14,24 +14,26 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
 
         [InitializeOnLoadMethod]
         private static void Initialize() {
-            if (!EditorPrefsManager.EnableProjectExtension) return;
+            if (!Settings.I.enableProjectExtension) return;
 
             EditorApplication.update -= InitializationCheck;
             EditorApplication.update += InitializationCheck;
         }
 
         private static void InitializationCheck() {
-            var projectWindow = ReflectionWrapper.ProjectBrowserWindow;
-            if (projectWindow == null) return;
+            var pbWrap = ProjectBrowserWrap.GetWindow();
+            if (pbWrap == null) return;
 
-            if (!EditorPrefsManager.CompatLilEditorToolbox)
+            _projectWindow = pbWrap.Instance as EditorWindow;
+
+            if (!Settings.I.compatLilEditorToolbox)
                 InitializeContent();
             else
                 CompatInjector();
 
             EditorApplication.update -= InitializationCheck;
 
-            if (_isInitialized && EditorPrefsManager.EnableProjectTab) EnableWatcher();
+            if (_isInitialized && Settings.I.enableProjectTab) EnableWatcher();
         }
 
         private static void EnableWatcher() {
@@ -50,12 +52,11 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
         private static void InitializeContent() {
             if (_isInitialized) return;
 
-            _projectWindow = ReflectionWrapper.ProjectBrowserWindow;
             if (_projectWindow == null) return;
 
             _isInitialized = true;
 
-            if (!EditorPrefsManager.EnableProjectTab) return;
+            if (!Settings.I.enableProjectTab) return;
             var projectToolBar = new ProjectToolBar();
             _projectWindow.rootVisualElement.Add(projectToolBar);
             TabManager.Initialize();
@@ -67,7 +68,9 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
                 return;
             }
 
-            var newPath = ReflectionWrapper.GetProjectWindowCurrentPath(_projectWindow);
+            var pbWrap = new ProjectBrowserWrap(_projectWindow);
+            var newPath = pbWrap.GetCurrentFolderPath();
+
             if (string.IsNullOrEmpty(newPath) || _currentFolderPath == newPath) return;
             UpdateCurrentPath(newPath);
             _currentFolderPath = newPath;
@@ -76,7 +79,6 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
         private static void CompatInjector() {
             if (_isInitialized) return;
 
-            _projectWindow = ReflectionWrapper.ProjectBrowserWindow;
             if (_projectWindow == null || _projectWindow.rootVisualElement.childCount <= 0) return;
 
             _isInitialized = true;

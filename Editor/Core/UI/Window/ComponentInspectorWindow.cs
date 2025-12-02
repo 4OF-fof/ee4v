@@ -1,5 +1,5 @@
 ﻿using _4OF.ee4v.Core.i18n;
-using _4OF.ee4v.Core.Utility;
+using _4OF.ee4v.Core.Wraps;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -134,7 +134,7 @@ namespace _4OF.ee4v.Core.UI.Window {
                         var materialEditor = _editor as MaterialEditor;
                         if (materialEditor != null) {
                             materialEditor.DrawHeader();
-                            ReflectionWrapper.DrawMaterialInspector(materialEditor, _material);
+                            MaterialEditorWrap.DrawMaterialInspector(materialEditor, _material);
                         }
                         else {
                             Debug.LogError(I18N.Get("Debug.HierarchyExtension.CouldNotCastToMaterialEditor"));
