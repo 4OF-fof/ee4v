@@ -1,5 +1,6 @@
 ﻿using _4OF.ee4v.Core.Attributes;
 using _4OF.ee4v.HierarchyExtension.Components;
+using _4OF.ee4v.HierarchyExtension.Components.CustomStyle;
 
 [assembly: ExportsHierarchyExtensionComponent(
     typeof(HierarchyComponentIcons),

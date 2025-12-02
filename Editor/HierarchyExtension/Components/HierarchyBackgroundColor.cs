@@ -1,10 +1,10 @@
-﻿using UnityEngine;
-using UnityEditor;
-using _4OF.ee4v.Core.Interfaces;
+﻿using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.Wraps;
+using _4OF.ee4v.HierarchyExtension.Components.CustomStyle;
 using _4OF.ee4v.HierarchyExtension.ItemStyle;
 using _4OF.ee4v.Runtime;
+using UnityEngine;
 
 namespace _4OF.ee4v.HierarchyExtension.Components {
     public class HierarchyBackgroundColor : IHierarchyExtensionComponent {
@@ -14,10 +14,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
             if (gameObject == null) return;
             if (!Settings.I.enableCustomStyleItem) return;
 
-            if ((!string.IsNullOrEmpty(Settings.I.headingPrefix) && gameObject.name.StartsWith(Settings.I.headingPrefix)) ||
-                (!string.IsNullOrEmpty(Settings.I.separatorPrefix) && gameObject.name.StartsWith(Settings.I.separatorPrefix))) {
-                return;
-            }
+            if (CustomStyleUtility.IsCustomStyleItem(gameObject)) return;
 
             var (style, isSelf) = GetEffectiveStyle(gameObject);
             if (style == null) return;
@@ -39,6 +36,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
                     return (style, current.gameObject == obj);
                 current = current.parent;
             }
+
             return (null, false);
         }
     }

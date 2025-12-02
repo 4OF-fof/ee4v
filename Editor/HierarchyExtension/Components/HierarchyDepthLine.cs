@@ -1,8 +1,9 @@
-﻿using UnityEditor;
-using UnityEngine;
-using _4OF.ee4v.Core.Interfaces;
+﻿using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.HierarchyExtension.Components.CustomStyle;
+using UnityEditor;
+using UnityEngine;
 
 namespace _4OF.ee4v.HierarchyExtension.Components {
     public class HierarchyDepthLine : IHierarchyExtensionComponent {
@@ -11,11 +12,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
         public void OnGUI(ref Rect currentRect, GameObject gameObject, int instanceID, Rect fullRect) {
             if (gameObject == null) return;
 
-            if (Settings.I.enableCustomStyleItem && 
-                ((!string.IsNullOrEmpty(Settings.I.headingPrefix) && gameObject.name.StartsWith(Settings.I.headingPrefix)) ||
-                 (!string.IsNullOrEmpty(Settings.I.separatorPrefix) && gameObject.name.StartsWith(Settings.I.separatorPrefix)))) {
-                return;
-            }
+            if (CustomStyleUtility.IsCustomStyleItem(gameObject)) return;
 
             if (!Settings.I.showDepthLine) return;
 

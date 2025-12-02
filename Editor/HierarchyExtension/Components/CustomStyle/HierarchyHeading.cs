@@ -1,10 +1,10 @@
-﻿using UnityEngine;
-using UnityEditor;
-using _4OF.ee4v.Core.Interfaces;
+﻿using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
+using UnityEditor;
+using UnityEngine;
 
-namespace _4OF.ee4v.HierarchyExtension.Components {
+namespace _4OF.ee4v.HierarchyExtension.Components.CustomStyle {
     public class HierarchyHeading : IHierarchyExtensionComponent {
         public int Priority => -100;
 

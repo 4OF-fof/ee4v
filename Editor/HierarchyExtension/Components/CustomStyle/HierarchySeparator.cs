@@ -1,10 +1,10 @@
-﻿using UnityEngine;
-using UnityEditor;
-using _4OF.ee4v.Core.Interfaces;
+﻿using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
+using UnityEditor;
+using UnityEngine;
 
-namespace _4OF.ee4v.HierarchyExtension.Components {
+namespace _4OF.ee4v.HierarchyExtension.Components.CustomStyle {
     public class HierarchySeparator : IHierarchyExtensionComponent {
         public int Priority => -100;
 
@@ -35,7 +35,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
                 const float padding = 6f;
 
                 var leftLineWidth = backRect.width / 2f - size.x / 2f - padding;
-                if (leftLineWidth > 0) 
+                if (leftLineWidth > 0)
                     EditorGUI.DrawRect(new Rect(backRect.x, centerY, leftLineWidth, 1), lineColor);
 
                 var rightLineWidth = backRect.width / 2f - size.x / 2f - padding;

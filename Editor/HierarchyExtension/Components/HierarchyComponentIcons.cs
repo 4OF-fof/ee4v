@@ -1,10 +1,10 @@
-﻿using System.Linq;
-using UnityEditor;
-using UnityEngine;
-using _4OF.ee4v.Core.Interfaces;
+﻿using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
+using _4OF.ee4v.HierarchyExtension.Components.CustomStyle;
+using UnityEditor;
+using UnityEngine;
 using VRC.SDK3.Avatars.Components;
 
 namespace _4OF.ee4v.HierarchyExtension.Components {
@@ -14,12 +14,8 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
         public void OnGUI(ref Rect currentRect, GameObject gameObject, int instanceID, Rect fullRect) {
             if (gameObject == null) return;
 
-            if (Settings.I.enableCustomStyleItem && 
-                ((!string.IsNullOrEmpty(Settings.I.headingPrefix) && gameObject.name.StartsWith(Settings.I.headingPrefix)) ||
-                 (!string.IsNullOrEmpty(Settings.I.separatorPrefix) && gameObject.name.StartsWith(Settings.I.separatorPrefix)))) {
-                return;
-            }
-            
+            if (CustomStyleUtility.IsCustomStyleItem(gameObject)) return;
+
             if (!Settings.I.showComponentIcons) return;
             if (Settings.I.compatFaceEmo && gameObject.GetComponent<VRCAvatarDescriptor>() != null) return;
 
@@ -56,7 +52,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
                 var iconRect = new Rect(iconPosition.x, iconPosition.y - 1f, iconPosition.width, iconPosition.height);
 
                 var prevColor = GUI.color;
-                if (component is Behaviour { enabled: false }) 
+                if (component is Behaviour { enabled: false })
                     GUI.color = ColorPreset.InActiveItem;
 
                 var tooltipContent = new GUIContent(string.Empty, null, typeName);
