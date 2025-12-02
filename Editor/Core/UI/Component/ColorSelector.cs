@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using _4OF.ee4v.ProjectExtension.FolderStyle;
+using _4OF.ee4v.ProjectExtension.StyledFolder;
 using _4OF.ee4v.Runtime;
 using UnityEditor;
 using UnityEngine;

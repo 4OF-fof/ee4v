@@ -8,7 +8,7 @@ using _4OF.ee4v.Core.UI.Window;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.ProjectExtension.FolderStyle {
+namespace _4OF.ee4v.ProjectExtension.StyledFolder {
     public class AutoIconSelectorWindow : BaseWindow {
         private readonly List<(string ulid, Image img)> _loadingImages = new();
         private Dictionary<string, string> _candidates;

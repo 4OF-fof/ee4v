@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace _4OF.ee4v.ProjectExtension {
+namespace _4OF.ee4v.ProjectExtension.ContentOverlay {
     public static class FolderContentService {
         private static readonly Dictionary<string, Texture> IconCache = new();
 

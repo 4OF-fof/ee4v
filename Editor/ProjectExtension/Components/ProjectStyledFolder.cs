@@ -4,7 +4,7 @@ using _4OF.ee4v.AssetManager.API;
 using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
-using _4OF.ee4v.ProjectExtension.FolderStyle;
+using _4OF.ee4v.ProjectExtension.StyledFolder;
 using UnityEditor;
 using UnityEngine;
 

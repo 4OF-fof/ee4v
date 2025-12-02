@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 
-namespace _4OF.ee4v.ProjectExtension {
+namespace _4OF.ee4v.ProjectExtension.ContentOverlay {
     internal class FolderIconCacheProcessor : AssetPostprocessor {
         private static void OnPostprocessAllAssets(
             string[] importedAssets,
