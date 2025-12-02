@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace _4OF.ee4v.ProjectExtension.ItemStyle {
+namespace _4OF.ee4v.ProjectExtension.FolderStyle {
     [FilePath("ee4v/UserData/FolderStyleList.asset", FilePathAttribute.Location.ProjectFolder)]
     public class FolderStyleList : ScriptableSingleton<FolderStyleList> {
         [SerializeField] private List<FolderStyle> contents = new();

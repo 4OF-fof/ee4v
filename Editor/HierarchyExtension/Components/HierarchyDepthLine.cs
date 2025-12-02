@@ -1,16 +1,29 @@
-﻿using _4OF.ee4v.Core.UI;
+﻿using _4OF.ee4v.Core.Interfaces;
+using _4OF.ee4v.Core.Setting;
+using _4OF.ee4v.Core.UI;
 using UnityEditor;
 using UnityEngine;
 
-namespace _4OF.ee4v.HierarchyExtension {
-    public static class ItemDepthLine {
-        public static void Draw(GameObject obj, Rect depthLineRect) {
+namespace _4OF.ee4v.HierarchyExtension.Components {
+    public class HierarchyDepthLine : IHierarchyExtensionComponent {
+        public int Priority => 0;
+
+        public void OnGUI(ref Rect currentRect, GameObject gameObject, int instanceID, Rect fullRect) {
+            if (gameObject == null) return;
+            if (!Settings.I.showDepthLine) return;
+
+            Draw(gameObject, fullRect);
+        }
+
+        private static void Draw(GameObject obj, Rect depthLineRect) {
             var parent = obj.transform.parent;
             var position = depthLineRect;
             position.x -= 16;
             position.width = 16;
+
             if (obj.transform.childCount == 0 && parent != null) DrawXLine(position);
             if (parent == null) return;
+
             position.x -= 14;
             if (parent.childCount == 1 || parent.GetChild(parent.childCount - 1) == obj.transform)
                 DrawBranchEnd(position);
@@ -19,7 +32,6 @@ namespace _4OF.ee4v.HierarchyExtension {
 
             while (parent != null) {
                 var parentParent = parent.parent;
-
                 if (parentParent == null) break;
 
                 if (parent == parentParent.GetChild(parentParent.childCount - 1)) {

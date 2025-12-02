@@ -1,20 +1,31 @@
 ﻿using System.IO;
 using System.Linq;
 using _4OF.ee4v.AssetManager.API;
+using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
-using _4OF.ee4v.ProjectExtension.ItemStyle;
+using _4OF.ee4v.ProjectExtension.FolderStyle;
 using UnityEditor;
 using UnityEngine;
 
-namespace _4OF.ee4v.ProjectExtension.Core {
-    public static class ProjectFolderOverlay {
-        public static void Draw(string path, Rect selectionRect) {
+namespace _4OF.ee4v.ProjectExtension.Components {
+    public class ProjectFolderOverlayComponent : IProjectExtensionComponent {
+        public int Priority => 0;
+
+        public void OnGUI(ref Rect currentRect, string guid, Rect fullRect) {
+            var path = AssetDatabase.GUIDToAssetPath(guid);
+            if (string.IsNullOrEmpty(path) || !AssetDatabase.IsValidFolder(path)) return;
+
+            Draw(path, fullRect);
+        }
+
+        private static void Draw(string path, Rect selectionRect) {
             var e = Event.current;
-            if (EditorPrefsManager.EnableStyledFolder && selectionRect.Contains(e.mousePosition) && e.alt) {
+            if (Settings.I.enableStyledFolder && selectionRect.Contains(e.mousePosition) && e.alt) {
                 var anchorScreen = GUIUtility.GUIToScreenPoint(new Vector2(selectionRect.xMax, selectionRect.y));
                 var selectedPathList = Selection.assetGUIDs.Select(AssetDatabase.GUIDToAssetPath)
                     .Where(AssetDatabase.IsValidFolder).ToList();
+
                 if (selectedPathList.Count <= 1)
                     FolderStyleSelectorWindow.Open(path, anchorScreen);
                 else
@@ -23,6 +34,7 @@ namespace _4OF.ee4v.ProjectExtension.Core {
 
             var backgroundColor = ColorPreset.ProjectBackground;
             Rect imageRect;
+
             if (selectionRect.height > 20) {
                 imageRect = new Rect(selectionRect.x - 1, selectionRect.y - 1, selectionRect.width + 2,
                     selectionRect.width + 2);
@@ -38,9 +50,10 @@ namespace _4OF.ee4v.ProjectExtension.Core {
             }
 
             var isDrawIcon = false;
-            if (EditorPrefsManager.EnableStyledFolder) isDrawIcon = DrawStyledFolder(path, imageRect, backgroundColor);
+            if (Settings.I.enableStyledFolder) isDrawIcon = DrawStyledFolder(path, imageRect, backgroundColor);
 
-            if (!EditorPrefsManager.ShowFolderOverlayIcon || isDrawIcon) return;
+            if (!Settings.I.showFolderOverlayIcon || isDrawIcon) return;
+
             imageRect.height -= imageRect.height * 0.05f;
             DrawOverlayIcon(path, imageRect);
         }
@@ -84,10 +97,16 @@ namespace _4OF.ee4v.ProjectExtension.Core {
         }
 
         private static void DrawOverlayIcon(string path, Rect imageRect) {
-            var overlayRect = new Rect((imageRect.x + imageRect.xMax) / 2, (imageRect.y + imageRect.yMax) / 2,
-                imageRect.width / 2, imageRect.height / 2);
+            var overlayRect = new Rect(
+                (imageRect.x + imageRect.xMax) / 2,
+                (imageRect.y + imageRect.yMax) / 2,
+                imageRect.width / 2,
+                imageRect.height / 2
+            );
+
             var overlayIcon = FolderContentService.GetMostIconInFolder(path);
             if (overlayIcon == null) return;
+
             var outlineOffsetsOuter = new[]
                 { new Vector2(-1f, 0), new Vector2(1f, 0), new Vector2(0, -1f), new Vector2(0, 1f) };
 

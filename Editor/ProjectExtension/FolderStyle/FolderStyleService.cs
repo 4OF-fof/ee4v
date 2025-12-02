@@ -1,4 +1,4 @@
-﻿namespace _4OF.ee4v.ProjectExtension.ItemStyle {
+﻿namespace _4OF.ee4v.ProjectExtension.FolderStyle {
     public static class FolderStyleService {
         public static int IndexOfGuid(string guid) {
             if (string.IsNullOrEmpty(guid)) return -1;

@@ -2,7 +2,6 @@ using System.Linq;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
-using _4OF.ee4v.ProjectExtension.Toolbar.Component;
 using _4OF.ee4v.ProjectExtension.Toolbar.Component.Tab;
 using UnityEngine;
 using UnityEngine.UIElements;

@@ -11,7 +11,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using ObjectField = UnityEditor.UIElements.ObjectField;
 
-namespace _4OF.ee4v.ProjectExtension.ItemStyle {
+namespace _4OF.ee4v.ProjectExtension.FolderStyle {
     public class FolderStyleSelectorWindow : BaseWindow {
         private List<string> _pathList = new();
 

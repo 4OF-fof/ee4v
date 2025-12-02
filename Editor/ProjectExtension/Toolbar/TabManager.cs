@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using _4OF.ee4v.Core.Utility;
-using _4OF.ee4v.ProjectExtension.Toolbar.Component;
 using _4OF.ee4v.ProjectExtension.Toolbar.Component.Tab;
 using UnityEditor;
 using UnityEngine;

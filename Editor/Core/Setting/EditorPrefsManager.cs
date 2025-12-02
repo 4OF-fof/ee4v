@@ -1,309 +1,227 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using UnityEditor;
 
 namespace _4OF.ee4v.Core.Setting {
+    [Obsolete("Use Ee4vSettings.I instead.")]
     public static class EditorPrefsManager {
         #region Core
 
-        private const string LanguageKey = "4OF.ee4v.Language";
-
         public static string Language {
-            get => EditorPrefs.GetString(LanguageKey, "en-US");
-            set => EditorPrefs.SetString(LanguageKey, value ?? "en-US");
+            get => Settings.I.language;
+            set {
+                Settings.I.language = value;
+                Settings.I.Save();
+            }
         }
-
-        private const string EnableHierarchyExtensionKey = "4OF.ee4v.EnableHierarchyExtension";
 
         public static bool EnableHierarchyExtension {
-            get => EditorPrefs.GetBool(EnableHierarchyExtensionKey, true);
-            set => EditorPrefs.SetBool(EnableHierarchyExtensionKey, value);
+            get => Settings.I.enableHierarchyExtension;
+            set {
+                Settings.I.enableHierarchyExtension = value;
+                Settings.I.Save();
+            }
         }
-
-        private const string EnableProjectExtensionKey = "4OF.ee4v.EnableInspectorExtension";
 
         public static bool EnableProjectExtension {
-            get => EditorPrefs.GetBool(EnableProjectExtensionKey, true);
-            set => EditorPrefs.SetBool(EnableProjectExtensionKey, value);
+            get => Settings.I.enableProjectExtension;
+            set {
+                Settings.I.enableProjectExtension = value;
+                Settings.I.Save();
+            }
         }
-
-        private const string ContentFolderPathKey = "4OF.ee4v.ee4vContentFolderPath";
 
         public static string ContentFolderPath {
-            get {
-                var defaultPath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                    "ee4v"
-                );
-                return EditorPrefs.GetString(ContentFolderPathKey, defaultPath);
+            get => Settings.I.contentFolderPath;
+            set {
+                Settings.I.contentFolderPath = value;
+                Settings.I.Save();
             }
-            set => EditorPrefs.SetString(ContentFolderPathKey, value ?? "");
         }
 
-        private const string SceneCreateFolderPathKey = "4OF.ee4v.SceneCreateFolderPath";
-
         public static string SceneCreateFolderPath {
-            get {
-                const string defaultPath = "Assets/";
-                return EditorPrefs.GetString(SceneCreateFolderPathKey, defaultPath);
+            get => Settings.I.sceneCreateFolderPath;
+            set {
+                Settings.I.sceneCreateFolderPath = value;
+                Settings.I.Save();
             }
-            set => EditorPrefs.SetString(SceneCreateFolderPathKey, value ?? "Assets/");
         }
 
         #endregion
 
         #region HierarchyExtension
 
-        private const string ShowComponentIconsKey = "4OF.ee4v.ShowComponentIcons";
-
         public static bool ShowComponentIcons {
-            get => EditorPrefs.GetBool(ShowComponentIconsKey, true);
-            set => EditorPrefs.SetBool(ShowComponentIconsKey, value);
+            get => Settings.I.showComponentIcons;
+            set {
+                Settings.I.showComponentIcons = value;
+                Settings.I.Save();
+            }
         }
-
-        private const string ShowMenuIconKey = "4OF.ee4v.ShowMenuIcon";
 
         public static bool ShowMenuIcon {
-            get => EditorPrefs.GetBool(ShowMenuIconKey, true);
-            set => EditorPrefs.SetBool(ShowMenuIconKey, value);
+            get => Settings.I.showMenuIcon;
+            set {
+                Settings.I.showMenuIcon = value;
+                Settings.I.Save();
+            }
         }
-
-        private const string EnableSceneSwitcherKey = "4OF.ee4v.EnableSceneSwitcher";
 
         public static bool EnableSceneSwitcher {
-            get => EditorPrefs.GetBool(EnableSceneSwitcherKey, true);
-            set => EditorPrefs.SetBool(EnableSceneSwitcherKey, value);
+            get => Settings.I.enableSceneSwitcher;
+            set {
+                Settings.I.enableSceneSwitcher = value;
+                Settings.I.Save();
+            }
         }
-
-        private const string ShowDepthLineKey = "4OF.ee4v.ShowDepthLine";
 
         public static bool ShowDepthLine {
-            get => EditorPrefs.GetBool(ShowDepthLineKey, true);
-            set => EditorPrefs.SetBool(ShowDepthLineKey, value);
+            get => Settings.I.showDepthLine;
+            set {
+                Settings.I.showDepthLine = value;
+                Settings.I.Save();
+            }
         }
-
-        private const string EnableCustomStyleItemKey = "4OF.ee4v.EnableCustomStyleItem";
 
         public static bool EnableCustomStyleItem {
-            get => EditorPrefs.GetBool(EnableCustomStyleItemKey, true);
-            set => EditorPrefs.SetBool(EnableCustomStyleItemKey, value);
+            get => Settings.I.enableCustomStyleItem;
+            set {
+                Settings.I.enableCustomStyleItem = value;
+                Settings.I.Save();
+            }
         }
-
-        private const string HeadingPrefixKey = "4OF.ee4v.HeadingPrefix";
 
         public static string HeadingPrefix {
-            get => EditorPrefs.GetString(HeadingPrefixKey, ":HEADING");
-            set => EditorPrefs.SetString(HeadingPrefixKey, value ?? string.Empty);
+            get => Settings.I.headingPrefix;
+            set {
+                Settings.I.headingPrefix = value;
+                Settings.I.Save();
+            }
         }
 
-        private const string SeparatorPrefixKey = "4OF.ee4v.SeparatorPrefix";
-
         public static string SeparatorPrefix {
-            get => EditorPrefs.GetString(SeparatorPrefixKey, ":SEPARATOR");
-            set => EditorPrefs.SetString(SeparatorPrefixKey, value ?? string.Empty);
+            get => Settings.I.separatorPrefix;
+            set {
+                Settings.I.separatorPrefix = value;
+                Settings.I.Save();
+            }
         }
 
         #endregion
 
         #region ProjectExtension
 
-        private const string ShowSceneIconKey = "4OF.ee4v.EnableProjectTab";
-
+        // 元のキーは ShowSceneIconKey でしたが、プロパティ名は EnableProjectTab
         public static bool EnableProjectTab {
-            get => EditorPrefs.GetBool(ShowSceneIconKey, true);
-            set => EditorPrefs.SetBool(ShowSceneIconKey, value);
+            get => Settings.I.enableProjectTab;
+            set {
+                Settings.I.enableProjectTab = value;
+                Settings.I.Save();
+            }
         }
 
-        private const string ShowFileColorKey = "4OF.ee4v.EnableStyledFolder";
-
+        // 元のキーは ShowFileColorKey でしたが、プロパティ名は EnableStyledFolder
         public static bool EnableStyledFolder {
-            get => EditorPrefs.GetBool(ShowFileColorKey, true);
-            set => EditorPrefs.SetBool(ShowFileColorKey, value);
+            get => Settings.I.enableStyledFolder;
+            set {
+                Settings.I.enableStyledFolder = value;
+                Settings.I.Save();
+            }
         }
 
-
-        private const string ShowFolderColorKey = "4OF.ee4v.ShowFolderOverlayIcon";
-
+        // 元のキーは ShowFolderColorKey でしたが、プロパティ名は ShowFolderOverlayIcon
         public static bool ShowFolderOverlayIcon {
-            get => EditorPrefs.GetBool(ShowFolderColorKey, true);
-            set => EditorPrefs.SetBool(ShowFolderColorKey, value);
+            get => Settings.I.showFolderOverlayIcon;
+            set {
+                Settings.I.showFolderOverlayIcon = value;
+                Settings.I.Save();
+            }
         }
 
         #endregion
 
         #region AvatarModifyUtility
 
-        private const string EnableAutoBackupKey = "4OF.ee4v.EnableAutoBackup";
-
         public static bool EnableAutoBackup {
-            get => EditorPrefs.GetBool(EnableAutoBackupKey, true);
-            set => EditorPrefs.SetBool(EnableAutoBackupKey, value);
+            get => Settings.I.enableAutoBackup;
+            set {
+                Settings.I.enableAutoBackup = value;
+                Settings.I.Save();
+            }
         }
 
-        private const string VariantCreateFolderPathKey = "4OF.ee4v.VariantCreateFolderPath";
-
         public static string VariantCreateFolderPath {
-            get {
-                const string defaultPath = "Assets/Variant";
-                return EditorPrefs.GetString(VariantCreateFolderPathKey, defaultPath);
+            get => Settings.I.variantCreateFolderPath;
+            set {
+                Settings.I.variantCreateFolderPath = value;
+                Settings.I.Save();
             }
-            set => EditorPrefs.SetString(VariantCreateFolderPathKey, value ?? "Assets/Variant");
         }
 
         #endregion
 
         #region Compatibility
 
-        private const string CompatLilEditorToolboxKey = "4OF.ee4v.compatLilEditorToolbox";
-
         public static bool CompatLilEditorToolbox {
-            get => EditorPrefs.GetBool(CompatLilEditorToolboxKey, false);
-            set => EditorPrefs.SetBool(CompatLilEditorToolboxKey, value);
+            get => Settings.I.compatLilEditorToolbox;
+            set {
+                Settings.I.compatLilEditorToolbox = value;
+                Settings.I.Save();
+            }
         }
 
-        private const string CompatFaceEmoKey = "4OF.ee4v.compatFaceEmo";
-
         public static bool CompatFaceEmo {
-            get => EditorPrefs.GetBool(CompatFaceEmoKey, false);
-            set => EditorPrefs.SetBool(CompatFaceEmoKey, value);
+            get => Settings.I.compatFaceEmo;
+            set {
+                Settings.I.compatFaceEmo = value;
+                Settings.I.Save();
+            }
         }
 
         #endregion
 
-        #region HiddenItemList
+        #region Lists (Helpers)
 
-        private const string HiddenItemListKey = "4OF.ee4v.DefaultHiddenItemList";
-
-        private static string HiddenItemListCsv {
-            get => EditorPrefs.GetString(HiddenItemListKey, "");
-            set => EditorPrefs.SetString(HiddenItemListKey, value ?? string.Empty);
-        }
-
-        private static readonly List<string> DefaultHiddenItemList = new() {
-            "nadena.dev.ndmf__Activator"
-        };
+        // リストは参照を返すため、取得側で操作してSaveを呼ばないと保存されない可能性がある点に注意が必要ですが、
+        // 旧コードの利用箇所を見る限り、getして表示、setして保存というパターンが多いので
+        // setterでSave()を呼ぶ形にしています。
 
         public static List<string> HiddenItemList {
-            get {
-                var csv = HiddenItemListCsv;
-                if (string.IsNullOrEmpty(csv))
-                    return EditorPrefs.HasKey(HiddenItemListKey)
-                        ? new List<string> { string.Empty }
-                        : new List<string>();
-                var parts = csv.Split(',');
-                var list = parts.Select(p => p.Trim()).ToList();
-                return list.Count == 0 ? DefaultHiddenItemList : list;
-            }
+            get => Settings.I.hiddenItemList;
             set {
-                if (value == null) {
-                    HiddenItemListCsv = string.Empty;
-                    return;
-                }
-
-                HiddenItemListCsv = string.Join(",", value);
+                Settings.I.hiddenItemList = value;
+                Settings.I.Save();
             }
         }
 
         public static void ResetHiddenItemList() {
-            HiddenItemList = DefaultHiddenItemList;
+            Settings.I.ResetHiddenItemList();
+            Settings.I.Save();
         }
-
-        #endregion
-
-        #region IgnoreComponentNameList
-
-        private const string IgnoreComponentNameListKey = "4OF.ee4v.IgnoreComponentNameList";
-
-        private static string IgnoreComponentNameListCsv {
-            get => EditorPrefs.GetString(IgnoreComponentNameListKey, "");
-            set => EditorPrefs.SetString(IgnoreComponentNameListKey, value ?? string.Empty);
-        }
-
-        private static readonly List<string> DefaultIgnoreComponentNameList = new() {
-            "Transform"
-        };
 
         public static List<string> IgnoreComponentNameList {
-            get {
-                var csv = IgnoreComponentNameListCsv;
-                if (string.IsNullOrEmpty(csv))
-                    return EditorPrefs.HasKey(IgnoreComponentNameListKey)
-                        ? new List<string> { string.Empty }
-                        : new List<string>();
-                var parts = csv.Split(',');
-                var list = parts.Select(p => p.Trim()).ToList();
-                return list.Count == 0 ? DefaultIgnoreComponentNameList : list;
-            }
+            get => Settings.I.ignoreComponentNameList;
             set {
-                if (value == null) {
-                    IgnoreComponentNameListCsv = string.Empty;
-                    return;
-                }
-
-                IgnoreComponentNameListCsv = string.Join(",", value);
+                Settings.I.ignoreComponentNameList = value;
+                Settings.I.Save();
             }
         }
 
         public static void ResetIgnoreComponentNameList() {
-            IgnoreComponentNameList = DefaultIgnoreComponentNameList;
+            Settings.I.ResetIgnoreComponentNameList();
+            Settings.I.Save();
         }
-
-        #endregion
-
-        #region IconList
-
-        private const string IconListKey = "4OF.ee4v.IconListKeys";
-
-        private static string IconListCsv {
-            get => EditorPrefs.GetString(IconListKey, string.Empty);
-            set => EditorPrefs.SetString(IconListKey, value ?? string.Empty);
-        }
-
-        private static readonly List<string> DefaultIconList = new() {
-            "Folder Icon",
-            "FolderOpened Icon",
-            "FolderFavorite Icon",
-            "Favorite Icon",
-            "<SEP>",
-            "UnityEditor.AnimationWindow",
-            "UnityEditor.ConsoleWindow",
-            "UnityEditor.FindDependencies",
-            "UnityEditor.GameView",
-            "UnityEditor.Graphs.AnimatorControllerTool",
-            "UnityEditor.HierarchyWindow",
-            "UnityEditor.InspectorWindow",
-            "UnityEditor.ProfilerWindow",
-            "UnityEditor.SceneHierarchyWindow",
-            "UnityEditor.SceneView",
-            "UnityEditor.Timeline.TimelineWindow",
-            "UnityEditor.VersionControl"
-        };
 
         public static List<string> IconList {
-            get {
-                var csv = IconListCsv;
-                if (string.IsNullOrEmpty(csv))
-                    return EditorPrefs.HasKey(IconListKey)
-                        ? new List<string> { string.Empty }
-                        : new List<string>();
-                var parts = csv.Split(',');
-                var list = parts.Select(p => p.Trim()).ToList();
-                return list.Count == 0 ? DefaultIconList : list;
-            }
+            get => Settings.I.iconList;
             set {
-                if (value == null) {
-                    IconListCsv = string.Empty;
-                    return;
-                }
-
-                IconListCsv = string.Join(",", value);
+                Settings.I.iconList = value;
+                Settings.I.Save();
             }
         }
 
         public static void ResetIconList() {
-            IconList = DefaultIconList;
+            Settings.I.ResetIconList();
+            Settings.I.Save();
         }
 
         #endregion
