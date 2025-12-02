@@ -1,5 +1,6 @@
 ﻿using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.Core.UI.Window;
 using UnityEditor;
 using UnityEngine;
 

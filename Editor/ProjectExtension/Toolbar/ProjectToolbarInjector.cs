@@ -1,9 +1,9 @@
 ﻿using System.IO;
 using _4OF.ee4v.Core.Setting;
-using _4OF.ee4v.ProjectExtension.Core;
 using _4OF.ee4v.ProjectExtension.Toolbar.Component;
 using UnityEditor;
 using UnityEngine.UIElements;
+using _4OF.ee4v.Core.Utility;
 
 namespace _4OF.ee4v.ProjectExtension.Toolbar {
     public static class ProjectToolbarInjector {

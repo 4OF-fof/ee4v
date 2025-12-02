@@ -2,7 +2,7 @@
 using System.Linq;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
-using _4OF.ee4v.HierarchyExtension.ItemStyle;
+using _4OF.ee4v.Core.UI.Window;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;

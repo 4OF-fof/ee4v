@@ -1,11 +1,10 @@
 ﻿using _4OF.ee4v.Core.i18n;
-using _4OF.ee4v.Core.UI.Window;
-using _4OF.ee4v.HierarchyExtension.Core;
+using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.HierarchyExtension.ItemStyle {
+namespace _4OF.ee4v.Core.UI.Window {
     public class ComponentInspectorWindow : BaseWindow {
         private const int KMaxAutoSizeAttempts = 6;
         private const float KHeaderHeight = 28f;
