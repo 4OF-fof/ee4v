@@ -401,12 +401,11 @@ namespace _4OF.ee4v.Core.Setting {
         }
 
         private static void DrawHiddenItemList() {
-            if (_hiddenItemReorderableList == null) {
-                _hiddenItemReorderableList = new ReorderableList(
-                    Settings.I.hiddenItemList,
-                    typeof(string),
-                    false, false, true, true);
-                _hiddenItemReorderableList.drawElementCallback = (rect, index, _, _) =>
+            _hiddenItemReorderableList ??= new ReorderableList(
+                Settings.I.hiddenItemList,
+                typeof(string),
+                false, false, true, true) {
+                drawElementCallback = (rect, index, _, _) =>
                 {
                     var list = Settings.I.hiddenItemList;
                     if (index < 0 || index >= list.Count) return;
@@ -418,33 +417,31 @@ namespace _4OF.ee4v.Core.Setting {
                     if (!EditorGUI.EndChangeCheck()) return;
                     list[index] = newValue;
                     Settings.I.Save();
-                };
-                _hiddenItemReorderableList.onAddCallback = rl =>
+                },
+                onAddCallback = _ =>
                 {
                     Settings.I.hiddenItemList.Add("");
                     Settings.I.Save();
-                };
-                _hiddenItemReorderableList.onRemoveCallback = rl =>
+                },
+                onRemoveCallback = rl =>
                 {
-                    if (rl.index >= 0 && rl.index < Settings.I.hiddenItemList.Count) {
-                        Settings.I.hiddenItemList.RemoveAt(rl.index);
-                        Settings.I.Save();
-                    }
-                };
-                _hiddenItemReorderableList.onReorderCallback = rl => { Settings.I.Save(); };
-            }
+                    if (rl.index < 0 || rl.index >= Settings.I.hiddenItemList.Count) return;
+                    Settings.I.hiddenItemList.RemoveAt(rl.index);
+                    Settings.I.Save();
+                },
+                onReorderCallback = _ => { Settings.I.Save(); }
+            };
 
             _hiddenItemReorderableList.list = Settings.I.hiddenItemList;
             _hiddenItemReorderableList.DoLayoutList();
         }
 
         private static void DrawIgnoreComponentNameList() {
-            if (_ignoreComponentReorderableList == null) {
-                _ignoreComponentReorderableList = new ReorderableList(
-                    Settings.I.ignoreComponentNameList,
-                    typeof(string),
-                    false, false, true, true);
-                _ignoreComponentReorderableList.drawElementCallback = (rect, index, _, _) =>
+            _ignoreComponentReorderableList ??= new ReorderableList(
+                Settings.I.ignoreComponentNameList,
+                typeof(string),
+                false, false, true, true) {
+                drawElementCallback = (rect, index, _, _) =>
                 {
                     var list = Settings.I.ignoreComponentNameList;
                     if (index < 0 || index >= list.Count) return;
@@ -453,25 +450,23 @@ namespace _4OF.ee4v.Core.Setting {
                     var newValue = EditorGUI.TextField(
                         new Rect(rect.x, rect.y, rect.width, EditorGUIUtility.singleLineHeight),
                         list[index]);
-                    if (EditorGUI.EndChangeCheck()) {
-                        list[index] = newValue;
-                        Settings.I.Save();
-                    }
-                };
-                _ignoreComponentReorderableList.onAddCallback = rl =>
+                    if (!EditorGUI.EndChangeCheck()) return;
+                    list[index] = newValue;
+                    Settings.I.Save();
+                },
+                onAddCallback = _ =>
                 {
                     Settings.I.ignoreComponentNameList.Add("");
                     Settings.I.Save();
-                };
-                _ignoreComponentReorderableList.onRemoveCallback = rl =>
+                },
+                onRemoveCallback = rl =>
                 {
-                    if (rl.index >= 0 && rl.index < Settings.I.ignoreComponentNameList.Count) {
-                        Settings.I.ignoreComponentNameList.RemoveAt(rl.index);
-                        Settings.I.Save();
-                    }
-                };
-                _ignoreComponentReorderableList.onReorderCallback = rl => { Settings.I.Save(); };
-            }
+                    if (rl.index < 0 || rl.index >= Settings.I.ignoreComponentNameList.Count) return;
+                    Settings.I.ignoreComponentNameList.RemoveAt(rl.index);
+                    Settings.I.Save();
+                },
+                onReorderCallback = _ => { Settings.I.Save(); }
+            };
 
             _ignoreComponentReorderableList.list = Settings.I.ignoreComponentNameList;
             _ignoreComponentReorderableList.DoLayoutList();
@@ -485,13 +480,11 @@ namespace _4OF.ee4v.Core.Setting {
             if (_iconUseAssetFlags.Count > list.Count)
                 _iconUseAssetFlags.RemoveRange(list.Count, _iconUseAssetFlags.Count - list.Count);
 
-            if (_iconReorderableList == null) {
-                _iconReorderableList = new ReorderableList(
-                    list,
-                    typeof(string),
-                    true, false, true, true);
-
-                _iconReorderableList.drawElementCallback = (rect, index, _, _) =>
+            _iconReorderableList ??= new ReorderableList(
+                list,
+                typeof(string),
+                true, false, true, true) {
+                drawElementCallback = (rect, index, _, _) =>
                 {
                     if (index < 0 || index >= list.Count) return;
                     rect.y += 2;
@@ -537,29 +530,26 @@ namespace _4OF.ee4v.Core.Setting {
                     }
 
                     if (EditorGUI.EndChangeCheck()) Settings.I.Save();
-                };
-
-                _iconReorderableList.onAddCallback = rl =>
+                },
+                onAddCallback = _ =>
                 {
                     list.Add("");
                     _iconUseAssetFlags.Add(false);
                     Settings.I.Save();
-                };
-
-                _iconReorderableList.onRemoveCallback = rl =>
+                },
+                onRemoveCallback = rl =>
                 {
-                    if (rl.index >= 0 && rl.index < list.Count) {
-                        list.RemoveAt(rl.index);
-                        _iconUseAssetFlags.RemoveAt(rl.index);
-                        Settings.I.Save();
-                    }
-                };
-                _iconReorderableList.onReorderCallback = rl =>
+                    if (rl.index < 0 || rl.index >= list.Count) return;
+                    list.RemoveAt(rl.index);
+                    _iconUseAssetFlags.RemoveAt(rl.index);
+                    Settings.I.Save();
+                },
+                onReorderCallback = _ =>
                 {
                     _iconUseAssetFlags = new List<bool>(list.Select(s => s != null && s.StartsWith("asset:")));
                     Settings.I.Save();
-                };
-            }
+                }
+            };
 
             _iconReorderableList.list = list;
             _iconReorderableList.DoLayoutList();
