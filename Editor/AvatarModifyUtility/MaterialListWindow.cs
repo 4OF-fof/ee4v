@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.HierarchyExtension.ItemStyle;
 using UnityEditor;
@@ -44,7 +45,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                 }
             };
 
-            var label = new Label("Target:") {
+            var label = new Label(I18N.Get("UI.AvatarModifyUtility.MaterialList.Target")) {
                 style = {
                     marginRight = 8,
                     unityFontStyleAndWeight = FontStyle.Bold,
@@ -82,7 +83,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
             toolbar.Add(spacer);
 
             var refreshBtn = new Button(OnRefreshClicked) {
-                text = "Refresh",
+                text = I18N.Get("UI.AvatarModifyUtility.MaterialList.Refresh"),
                 style = {
                     height = 24,
                     width = 60,
@@ -118,7 +119,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
         [MenuItem("ee4v/Material List")]
         public static void ShowWindow() {
             var window = GetWindow<MaterialListWindow>();
-            window.titleContent = new GUIContent("Material List");
+            window.titleContent = new GUIContent(I18N.Get("UI.AvatarModifyUtility.MaterialList.Title"));
             window.minSize = new Vector2(320, 300);
             window.Show();
         }
@@ -175,13 +176,13 @@ namespace _4OF.ee4v.AvatarModifyUtility {
             _scrollView.Clear();
 
             if (_currentRoot == null) {
-                _statusLabel.text = "Select a Prefab in Hierarchy or drag it to the Target field.";
+                _statusLabel.text = I18N.Get("UI.AvatarModifyUtility.MaterialList.SelectPrefabHint");
                 _scrollView.Add(_statusLabel);
                 return;
             }
 
             if (_materialList.Count == 0) {
-                _statusLabel.text = "No Materials found in this Prefab.";
+                _statusLabel.text = I18N.Get("UI.AvatarModifyUtility.MaterialList.NoMaterialsFound");
                 _scrollView.Add(_statusLabel);
                 return;
             }
@@ -215,7 +216,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                     paddingLeft = 6, paddingRight = 6, paddingTop = 6, paddingBottom = 6,
                     backgroundColor = ColorPreset.TransparentBlack10Style,
                     borderBottomWidth = 1,
-                    borderBottomColor = new StyleColor(new Color(0, 0, 0, 0.1f))
+                    borderBottomColor = ColorPreset.TransparentBlack10Style
                 }
             };
 
@@ -238,7 +239,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                     borderTopRightRadius = 3,
                     borderBottomLeftRadius = 3,
                     borderBottomRightRadius = 3,
-                    backgroundColor = new StyleColor(new Color(0, 0, 0, 0.2f))
+                    backgroundColor = ColorPreset.TransparentBlack20Style
                 }
             };
             header.Add(icon);
@@ -252,7 +253,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                     marginBottom = 2
                 }
             };
-            var countLabel = new Label($"{data.UsedBy.Count} objects used") {
+            var countLabel = new Label(I18N.Get("UI.AvatarModifyUtility.MaterialList.ObjectsUsedCountFmt", data.UsedBy.Count)) {
                 style = { fontSize = 10, color = ColorPreset.InActiveItem }
             };
             infoContainer.Add(nameLabel);
@@ -269,7 +270,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
 
                 ComponentInspectorWindow.Open(data.Material, contextObj, mousePos);
             }) {
-                text = "Inspect",
+                text = I18N.Get("UI.AvatarModifyUtility.MaterialList.Inspect"),
                 style = {
                     height = 24,
                     paddingLeft = 6, paddingRight = 6,
