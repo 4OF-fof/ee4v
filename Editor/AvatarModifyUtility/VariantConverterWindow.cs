@@ -38,7 +38,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
         [MenuItem("GameObject/ee4v/Create Variant", true, -1)]
         private static bool ValidateCreateVariant() {
             var obj = Selection.activeGameObject;
-            if (AssetDatabase.Contains(obj)) return false;
+            if (obj == null || AssetDatabase.Contains(obj)) return false;
             return obj != null && PrefabUtility.IsAnyPrefabInstanceRoot(obj);
         }
 
