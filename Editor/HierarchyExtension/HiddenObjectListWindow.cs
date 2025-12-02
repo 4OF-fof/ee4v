@@ -138,7 +138,7 @@ namespace _4OF.ee4v.HierarchyExtension {
             if (obj == null) return;
 
             if ((obj.hideFlags & HideFlags.HideInHierarchy) != 0)
-                if (!Settings.I.hiddenItemList.Contains(obj.name))
+                if (!SettingSingleton.I.hiddenItemList.Contains(obj.name))
                     collection.Add(obj);
 
             var transform = obj.transform;

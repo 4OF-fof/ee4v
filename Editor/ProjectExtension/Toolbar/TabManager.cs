@@ -133,7 +133,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
             _tabContainer.Remove(tab);
             _tabContainer.Insert(Mathf.Clamp(toIndex, 0, _tabContainer.childCount - 1), tab);
 
-            if (CurrentTab == tab) TabEntry.SetState(tab, TabEntry.State.Selected);
+            if (CurrentTab == tab) TabEntry.SetState(tab, BaseTab.State.Selected);
             EditorUtility.SetDirty(TabList.instance);
         }
 
@@ -156,15 +156,15 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
 
             if (CurrentTab != null) {
                 if (currentIsWorkspaceTab)
-                    WorkspaceTabEntry.SetState(CurrentTab, WorkspaceTabEntry.State.Default);
+                    WorkspaceTabEntry.SetState(CurrentTab, BaseTab.State.Default);
                 else
-                    TabEntry.SetState(CurrentTab, TabEntry.State.Default);
+                    TabEntry.SetState(CurrentTab, BaseTab.State.Default);
             }
 
             if (isWorkspaceTab)
-                WorkspaceTabEntry.SetState(tabElement, WorkspaceTabEntry.State.Selected);
+                WorkspaceTabEntry.SetState(tabElement, BaseTab.State.Selected);
             else
-                TabEntry.SetState(tabElement, TabEntry.State.Selected);
+                TabEntry.SetState(tabElement, BaseTab.State.Selected);
 
             CurrentTab = tabElement;
 
@@ -241,11 +241,11 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
                 }
 
             if (firstRegularTab == null) return;
-            TabEntry.SetState(firstRegularTab, TabEntry.State.Selected);
+            TabEntry.SetState(firstRegularTab, BaseTab.State.Selected);
             SelectTab(firstRegularTab);
             var others = _tabContainer.Children()
                 .Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab" && e != firstRegularTab).ToList();
-            foreach (var o in others) TabEntry.SetState(o, TabEntry.State.Default);
+            foreach (var o in others) TabEntry.SetState(o, BaseTab.State.Default);
         }
     }
 }

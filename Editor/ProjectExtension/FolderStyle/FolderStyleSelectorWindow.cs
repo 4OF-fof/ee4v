@@ -85,7 +85,7 @@ namespace _4OF.ee4v.ProjectExtension.FolderStyle {
                 if (_pathList.Any(p =>
                     {
                         var guid = AssetDatabase.AssetPathToGUID(p);
-                        var s = FolderStyleList.instance.Contents.FirstOrDefault(x => x.guid == guid);
+                        var s = FolderStyleList.instance.GetStyle(guid);
                         return s?.icon != null || !string.IsNullOrEmpty(s?.assetUlid);
                     }))
                     anyHasIcon = true;
@@ -100,23 +100,16 @@ namespace _4OF.ee4v.ProjectExtension.FolderStyle {
 
             if (_pathList is { Count: 1 }) {
                 var guid = AssetDatabase.AssetPathToGUID(_pathList[0]);
-                var style = FolderStyleList.instance.Contents.FirstOrDefault(s => s.guid == guid);
+                var style = FolderStyleList.instance.GetStyle(guid);
                 if (style?.icon != null) iconFiled.value = style.icon;
             }
 
             iconFiled.RegisterValueChangedCallback(evt =>
             {
                 var newIcon = evt.newValue as Texture;
-                foreach (var p in _pathList) {
-                    var guid = AssetDatabase.AssetPathToGUID(p);
-                    if (string.IsNullOrEmpty(guid)) continue;
-
-                    var idx = FolderStyleService.IndexOfGuid(guid);
-                    if (idx == -1)
-                        FolderStyleList.instance.AddFolderStyle(guid, Color.clear, newIcon, "");
-                    else
-                        FolderStyleList.instance.UpdateFolderStyle(idx, icon: newIcon, setIcon: true, assetUlid: "");
-                }
+                foreach (var guid in _pathList.Select(AssetDatabase.AssetPathToGUID)
+                             .Where(guid => !string.IsNullOrEmpty(guid)))
+                    FolderStyleList.instance.SetStyle(guid, icon: newIcon, setIcon: true, assetUlid: "");
 
                 var hasIcon = newIcon != null;
                 colorSelector.SetEnabled(!hasIcon);
@@ -127,7 +120,7 @@ namespace _4OF.ee4v.ProjectExtension.FolderStyle {
 
             if (_pathList is not { Count: 1 }) return root;
             var folderGuid = AssetDatabase.AssetPathToGUID(_pathList[0]);
-            var folderStyle = FolderStyleList.instance.Contents.FirstOrDefault(s => s.guid == folderGuid);
+            var folderStyle = FolderStyleList.instance.GetStyle(folderGuid);
 
             var assets = AssetManagerAPI.GetAssetsAssociatedWithGuid(folderGuid);
             var hasAssets = assets.Count > 0;
@@ -139,8 +132,7 @@ namespace _4OF.ee4v.ProjectExtension.FolderStyle {
             if (isLinked) {
                 var unlinkBtn = new Button(() =>
                 {
-                    var idx = FolderStyleService.IndexOfGuid(folderGuid);
-                    if (idx != -1) FolderStyleList.instance.UpdateFolderStyle(idx, assetUlid: "");
+                    FolderStyleList.instance.SetStyle(folderGuid, assetUlid: "");
                     UpdateContent();
                 }) {
                     text = I18N.Get("UI.ProjectExtension.UnlinkAutoIcon"),
@@ -156,13 +148,8 @@ namespace _4OF.ee4v.ProjectExtension.FolderStyle {
 
                     AutoIconSelectorWindow.Open(folderGuid, pos, selectedUlid =>
                     {
-                        var idx = FolderStyleService.IndexOfGuid(folderGuid);
-                        if (idx == -1)
-                            FolderStyleList.instance.AddFolderStyle(folderGuid, Color.clear, null, selectedUlid);
-                        else
-                            FolderStyleList.instance.UpdateFolderStyle(idx, assetUlid: selectedUlid, icon: null,
-                                setIcon: true);
-
+                        FolderStyleList.instance.SetStyle(folderGuid, assetUlid: selectedUlid, icon: null,
+                            setIcon: true);
                         UpdateContent();
                     });
                 }) {

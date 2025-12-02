@@ -65,7 +65,7 @@ namespace _4OF.ee4v.Core.UI.Component {
 
             if (folderPaths is { Count: 1 }) {
                 var guid = AssetDatabase.AssetPathToGUID(folderPaths[0]);
-                var folderStyle = FolderStyleList.instance.Contents.FirstOrDefault(s => s.guid == guid);
+                var folderStyle = FolderStyleList.instance.GetStyle(guid);
                 var existingColor = folderStyle?.color ?? Color.clear;
                 _selectedColor = existingColor != Color.clear ? existingColor : ColorList[0];
             }
@@ -76,21 +76,12 @@ namespace _4OF.ee4v.Core.UI.Component {
             Add(CreateColorSelectorElement(color =>
                 {
                     if (folderPaths != null)
-                        foreach (var folderPath in folderPaths) {
-                            var guid = AssetDatabase.AssetPathToGUID(folderPath);
-                            if (string.IsNullOrEmpty(guid)) continue;
-
-                            var idx = FolderStyleService.IndexOfGuid(guid);
-                            if (color == Color.clear) {
-                                if (idx >= 0) FolderStyleList.instance.RemoveFolderStyle(idx);
-                            }
-                            else {
-                                if (idx == -1)
-                                    FolderStyleList.instance.AddFolderStyle(guid, color, null);
-                                else
-                                    FolderStyleList.instance.UpdateFolderStyle(idx, color: color);
-                            }
-                        }
+                        foreach (var guid in folderPaths.Select(AssetDatabase.AssetPathToGUID)
+                                     .Where(guid => !string.IsNullOrEmpty(guid)))
+                            if (color == Color.clear)
+                                FolderStyleList.instance.RemoveStyle(guid);
+                            else
+                                FolderStyleList.instance.SetStyle(guid, color);
 
                     EditorApplication.RepaintProjectWindow();
                 }

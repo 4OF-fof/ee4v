@@ -4,8 +4,8 @@ using System.IO;
 using UnityEditor;
 
 namespace _4OF.ee4v.Core.Setting {
-    [FilePath("ee4v/Settings.asset", FilePathAttribute.Location.ProjectFolder)]
-    public class Settings : ScriptableSingleton<Settings> {
+    [FilePath("ee4v/Settings.asset", FilePathAttribute.Location.PreferencesFolder)]
+    public class SettingSingleton : ScriptableSingleton<SettingSingleton> {
         // Core  
         public string language = "en-US";
         public string contentFolderPath;
@@ -59,7 +59,7 @@ namespace _4OF.ee4v.Core.Setting {
             "UnityEditor.VersionControl"
         };
 
-        public static Settings I => instance;
+        public static SettingSingleton I => instance;
 
         private void OnEnable() {
             if (string.IsNullOrEmpty(contentFolderPath))

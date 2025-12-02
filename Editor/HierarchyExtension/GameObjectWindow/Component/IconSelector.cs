@@ -25,7 +25,7 @@ namespace _4OF.ee4v.HierarchyExtension.GameObjectWindow.Component {
                          into comps
                          from comp in comps
                          where comp != null && comp.GetType().Name != "ObjectStyleComponent" &&
-                             !Settings.I.ignoreComponentNameList.Contains(comp.GetType().Name)
+                             !SettingSingleton.I.ignoreComponentNameList.Contains(comp.GetType().Name)
                          select EditorGUIUtility.ObjectContent(comp, comp.GetType())
                          into content
                          select content?.image
@@ -91,7 +91,7 @@ namespace _4OF.ee4v.HierarchyExtension.GameObjectWindow.Component {
 
         private static List<Texture> BuildIconListFromPrefs() {
             var list = new List<Texture> { Separator };
-            var keys = Settings.I.iconList;
+            var keys = SettingSingleton.I.iconList;
             if (keys == null || keys.Count == 0) return list;
             foreach (var key in keys.Where(key => !string.IsNullOrEmpty(key))) {
                 if (key == "<SEP>") {

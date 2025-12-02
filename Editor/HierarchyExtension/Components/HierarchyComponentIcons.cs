@@ -14,10 +14,10 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
         public void OnGUI(ref Rect currentRect, GameObject gameObject, int instanceID, Rect fullRect) {
             if (gameObject == null) return;
 
-            if (Settings.I.enableCustomStyleItem && gameObject.IsCustomStyleItem()) return;
+            if (SettingSingleton.I.enableCustomStyleItem && gameObject.IsCustomStyleItem()) return;
 
-            if (!Settings.I.showComponentIcons) return;
-            if (Settings.I.compatFaceEmo && gameObject.GetComponent<VRCAvatarDescriptor>() != null) return;
+            if (!SettingSingleton.I.showComponentIcons) return;
+            if (SettingSingleton.I.compatFaceEmo && gameObject.GetComponent<VRCAvatarDescriptor>() != null) return;
 
             var nameSize = EditorStyles.label.CalcSize(new GUIContent(gameObject.name));
             var startX = fullRect.x + nameSize.x + 17;
@@ -44,7 +44,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
                 var typeName = component.GetType().Name;
 
                 if (typeName == "ObjectStyleComponent") continue;
-                if (Settings.I.ignoreComponentNameList.Contains(typeName)) continue;
+                if (SettingSingleton.I.ignoreComponentNameList.Contains(typeName)) continue;
 
                 Texture image = AssetPreview.GetMiniThumbnail(component);
                 if (image == null) continue;

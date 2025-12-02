@@ -27,7 +27,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
             var e = Event.current;
             if (e.type != EventType.MouseDown) return;
             if (sceneRect.Contains(e.mousePosition)) {
-                if (!Settings.I.enableSceneSwitcher) return;
+                if (!SettingSingleton.I.enableSceneSwitcher) return;
                 var screenSceneRect = new Rect(GUIUtility.GUIToScreenPoint(sceneRect.position), sceneRect.size);
                 SceneListService.SceneListRegister();
                 SceneSwitcherWindow.Open(screenSceneRect);

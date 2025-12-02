@@ -12,9 +12,9 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
         public void OnGUI(ref Rect currentRect, GameObject gameObject, int instanceID, Rect fullRect) {
             if (gameObject == null) return;
 
-            if (Settings.I.enableCustomStyleItem && gameObject.IsCustomStyleItem()) return;
+            if (SettingSingleton.I.enableCustomStyleItem && gameObject.IsCustomStyleItem()) return;
 
-            if (!Settings.I.showDepthLine) return;
+            if (!SettingSingleton.I.showDepthLine) return;
 
             Draw(gameObject, fullRect);
         }

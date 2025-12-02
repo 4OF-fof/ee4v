@@ -14,7 +14,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
 
         [InitializeOnLoadMethod]
         private static void Initialize() {
-            if (!Settings.I.enableProjectExtension) return;
+            if (!SettingSingleton.I.enableProjectExtension) return;
 
             EditorApplication.update -= InitializationCheck;
             EditorApplication.update += InitializationCheck;
@@ -26,14 +26,14 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
 
             _projectWindow = pbWrap.Instance as EditorWindow;
 
-            if (!Settings.I.compatLilEditorToolbox)
+            if (!SettingSingleton.I.compatLilEditorToolbox)
                 InitializeContent();
             else
                 CompatInjector();
 
             EditorApplication.update -= InitializationCheck;
 
-            if (_isInitialized && Settings.I.enableProjectTab) EnableWatcher();
+            if (_isInitialized && SettingSingleton.I.enableProjectTab) EnableWatcher();
         }
 
         private static void EnableWatcher() {
@@ -56,7 +56,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
 
             _isInitialized = true;
 
-            if (!Settings.I.enableProjectTab) return;
+            if (!SettingSingleton.I.enableProjectTab) return;
             var projectToolBar = new ProjectToolBar();
             _projectWindow.rootVisualElement.Add(projectToolBar);
             TabManager.Initialize();

@@ -10,14 +10,14 @@ namespace _4OF.ee4v.HierarchyExtension.Components.CustomStyle {
 
         public void OnGUI(ref Rect currentRect, GameObject gameObject, int instanceID, Rect fullRect) {
             if (gameObject == null) return;
-            if (!Settings.I.enableCustomStyleItem) return;
+            if (!SettingSingleton.I.enableCustomStyleItem) return;
 
             if (gameObject.GetCustomStyleType() != HierarchyItemType.Separator) return;
 
             var backRect = new Rect(32, fullRect.y, EditorGUIUtility.currentViewWidth - 32, fullRect.height);
             EditorGUI.DrawRect(backRect, ColorPreset.DefaultBackground);
 
-            var labelText = gameObject.name.Replace(Settings.I.separatorPrefix, string.Empty).TrimStart();
+            var labelText = gameObject.name.Replace(SettingSingleton.I.separatorPrefix, string.Empty).TrimStart();
             var labelStyle = new GUIStyle(EditorStyles.label) {
                 fontSize = 12,
                 fontStyle = FontStyle.Bold,

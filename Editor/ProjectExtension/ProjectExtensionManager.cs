@@ -36,7 +36,7 @@ namespace _4OF.ee4v.ProjectExtension {
         }
 
         private static void OnGUI(string guid, Rect selectionRect) {
-            if (!Settings.I.enableProjectExtension) return;
+            if (!SettingSingleton.I.enableProjectExtension) return;
             if (ProjectExtensionAPI.IsHighlighted(guid)) EditorGUI.DrawRect(selectionRect, ColorPreset.HighlightColor);
 
             var currentRect = selectionRect;

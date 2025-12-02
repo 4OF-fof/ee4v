@@ -175,7 +175,7 @@ namespace _4OF.ee4v.AvatarModifyUtility.Variant {
                 return;
             }
 
-            var rootFolder = Settings.I.variantCreateFolderPath;
+            var rootFolder = SettingSingleton.I.variantCreateFolderPath;
             var targetPath = Path.Combine(rootFolder, variantName).Replace('\\', '/');
             if (AssetDatabase.IsValidFolder(targetPath)) {
                 _errorLabel.text = I18N.Get("UI.HierarchyExtension.CreateVariantWindow.Error.AlreadyExists");

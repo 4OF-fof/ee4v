@@ -104,7 +104,7 @@ namespace _4OF.ee4v.AssetManager.Window {
             _nodes.Clear();
             _selectedPaths.Clear();
 
-            var contentFolder = Settings.I.contentFolderPath;
+            var contentFolder = SettingSingleton.I.contentFolderPath;
             var importDir = Path.Combine(contentFolder, "AssetManager", "Assets", _targetAssetId.ToString(), "Import");
 
             var existingRelativePaths = new HashSet<string>();

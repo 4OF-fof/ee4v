@@ -34,7 +34,7 @@ namespace _4OF.ee4v.HierarchyExtension {
         }
 
         private static void OnGUI(int instanceID, Rect selectionRect) {
-            if (!Settings.I.enableHierarchyExtension) return;
+            if (!SettingSingleton.I.enableHierarchyExtension) return;
 
             var gameObject = EditorUtility.InstanceIDToObject(instanceID) as GameObject;
 
