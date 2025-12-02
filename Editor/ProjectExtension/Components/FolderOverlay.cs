@@ -1,4 +1,5 @@
-﻿using _4OF.ee4v.Core.Interfaces;
+﻿using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.ProjectExtension.ContentOverlay;
@@ -6,8 +7,11 @@ using UnityEditor;
 using UnityEngine;
 
 namespace _4OF.ee4v.ProjectExtension.Components {
-    public class ProjectContentOverlay : IProjectExtensionComponent {
+    public class FolderOverlay : IProjectExtensionComponent {
         public int Priority => 10;
+        public string Name => "Folder Overlay";
+        public string Description => I18N.Get("_System.ProjectExtension.FolderOverlay.Description");
+        public string Trigger => I18N.Get("_System.Trigger.Always");
 
         public void OnGUI(ref Rect currentRect, string guid, Rect fullRect) {
             if (!SettingSingleton.I.showFolderOverlayIcon) return;

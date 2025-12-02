@@ -151,9 +151,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
             var isWorkspaceTab = tabElement.name == "ee4v-project-toolbar-workspaceContainer-tab";
             if (tabElement == CurrentTab && !isWorkspaceTab) return;
 
-            if (CurrentTab != null) {
-                BaseTab.SetState(CurrentTab, BaseTab.State.Default);
-            }
+            if (CurrentTab != null) BaseTab.SetState(CurrentTab, BaseTab.State.Default);
 
             BaseTab.SetState(tabElement, BaseTab.State.Selected);
 

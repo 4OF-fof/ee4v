@@ -6,23 +6,23 @@ namespace _4OF.ee4v.Core.Wraps {
     internal class ProjectBrowserWrap : WrapBase {
         public static readonly Type Type = typeof(Editor).Assembly.GetType("UnityEditor.ProjectBrowser");
 
-        private static readonly Func<object, object[], object> ShowFolderContentsFunc = 
+        private static readonly Func<object, object[], object> ShowFolderContentsFunc =
             GetMethod(Type, "ShowFolderContents", new[] { typeof(int), typeof(bool) });
 
-        private static readonly Action<object, string> SetSearchAction = 
+        private static readonly Action<object, string> SetSearchAction =
             GetAction<string>(Type, "SetSearch");
 
-        private static readonly Action<object> ClearSearchAction = 
+        private static readonly Action<object> ClearSearchAction =
             GetAction(Type, "ClearSearch");
 
-        private static readonly Func<object, object> GetSearchFilter = 
+        private static readonly Func<object, object> GetSearchFilter =
             GetField<object>(Type, "m_SearchFilter").g;
-
-        public object Instance { get; }
 
         public ProjectBrowserWrap(object instance) {
             Instance = instance;
         }
+
+        public object Instance { get; }
 
         public static ProjectBrowserWrap GetWindow() {
             var win = EditorWindow.GetWindow(Type);
@@ -48,15 +48,13 @@ namespace _4OF.ee4v.Core.Wraps {
             if (searchFilter != null) {
                 using var so = new SerializedObject((Object)Instance);
                 var mFolders = so.FindProperty("m_SearchFilter.m_Folders");
-                if (mFolders != null && mFolders.arraySize > 0) {
-                    return mFolders.GetArrayElementAtIndex(0).stringValue;
-                }
+                if (mFolders != null && mFolders.arraySize > 0) return mFolders.GetArrayElementAtIndex(0).stringValue;
             }
 
             using var so2 = new SerializedObject((Object)Instance);
             var lastFolders = so2.FindProperty("m_LastFolders");
-            return (lastFolders != null && lastFolders.arraySize > 0) 
-                ? lastFolders.GetArrayElementAtIndex(0).stringValue 
+            return lastFolders != null && lastFolders.arraySize > 0
+                ? lastFolders.GetArrayElementAtIndex(0).stringValue
                 : null;
         }
     }

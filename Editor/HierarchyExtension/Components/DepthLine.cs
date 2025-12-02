@@ -1,4 +1,5 @@
-﻿using _4OF.ee4v.Core.Interfaces;
+﻿using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.HierarchyExtension.Components.CustomStyle;
@@ -6,8 +7,11 @@ using UnityEditor;
 using UnityEngine;
 
 namespace _4OF.ee4v.HierarchyExtension.Components {
-    public class HierarchyDepthLine : IHierarchyExtensionComponent {
+    public class DepthLine : IHierarchyExtensionComponent {
         public int Priority => 0;
+        public string Name => "DepthLine";
+        public string Description => I18N.Get("_System.HierarchyExtension.DepthLine.Description");
+        public string Trigger => I18N.Get("_System.Trigger.Always");
 
         public void OnGUI(ref Rect currentRect, GameObject gameObject, int instanceID, Rect fullRect) {
             if (gameObject == null) return;

@@ -1,4 +1,5 @@
-﻿using _4OF.ee4v.Core.Interfaces;
+﻿using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
@@ -8,8 +9,11 @@ using UnityEngine;
 using VRC.SDK3.Avatars.Components;
 
 namespace _4OF.ee4v.HierarchyExtension.Components {
-    public class HierarchyComponentIcons : IHierarchyExtensionComponent {
+    public class ComponentIcons : IHierarchyExtensionComponent {
         public int Priority => 100;
+        public string Name => "Component Icons";
+        public string Description => I18N.Get("_System.HierarchyExtension.ComponentIcons.Description");
+        public string Trigger => I18N.Get("_System.HierarchyExtension.ComponentIcons.Trigger");
 
         public void OnGUI(ref Rect currentRect, GameObject gameObject, int instanceID, Rect fullRect) {
             if (gameObject == null) return;

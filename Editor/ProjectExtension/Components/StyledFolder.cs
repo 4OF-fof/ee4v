@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Linq;
 using _4OF.ee4v.AssetManager.API;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
@@ -9,8 +10,11 @@ using UnityEditor;
 using UnityEngine;
 
 namespace _4OF.ee4v.ProjectExtension.Components {
-    public class ProjectStyledFolder : IProjectExtensionComponent {
+    public class StyledFolder : IProjectExtensionComponent {
         public int Priority => 0;
+        public string Name => "Styled Folder";
+        public string Description => I18N.Get("_System.ProjectExtension.StyledFolder.Description");
+        public string Trigger => I18N.Get("_System.ProjectExtension.StyledFolder.Trigger");
 
         public void OnGUI(ref Rect currentRect, string guid, Rect fullRect) {
             if (!SettingSingleton.I.enableStyledFolder) return;
@@ -38,7 +42,7 @@ namespace _4OF.ee4v.ProjectExtension.Components {
             Draw(path, fullRect, style);
         }
 
-        private void Draw(string path, Rect rect, FolderStyleList.FolderStyle style) {
+        private static void Draw(string path, Rect rect, FolderStyleList.FolderStyle style) {
             var backgroundColor = ColorPreset.ProjectBackground;
             Rect imageRect;
 

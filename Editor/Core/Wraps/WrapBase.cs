@@ -60,12 +60,13 @@ namespace _4OF.ee4v.Core.Wraps {
         }
 
         protected static Action<object, T> GetAction<T>(Type type, string name) {
-            var method = type.GetMethod(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(T) }, null);
+            var method = type.GetMethod(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null, new[] { typeof(T) }, null);
             if (method == null) return null;
 
             var targetParam = Expression.Parameter(typeof(object), "target");
             var argParam = Expression.Parameter(typeof(T), "arg");
-            
+
             var castTarget = Expression.Convert(targetParam, type);
             var call = Expression.Call(castTarget, method, argParam);
             return Expression.Lambda<Action<object, T>>(call, targetParam, argParam).Compile();
@@ -94,9 +95,11 @@ namespace _4OF.ee4v.Core.Wraps {
 
             return (getter, setter);
         }
-        
+
         protected static Func<object, object[], object> GetMethod(Type type, string name, Type[] types) {
-            var method = type.GetMethod(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null);
+            var method = type.GetMethod(name,
+                BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types,
+                null);
             if (method == null) return null;
             return (target, args) => method.Invoke(target, args);
         }

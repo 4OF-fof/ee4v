@@ -177,13 +177,15 @@ namespace _4OF.ee4v.Core.Setting {
                             using (new EditorGUILayout.HorizontalScope()) {
                                 EditorGUILayout.PrefixLabel(new GUIContent(I18N.Get("UI.Core.HeadingPrefixLabel"),
                                     I18N.Get("UI.Core.HeadingPrefixTooltip")));
-                                SettingSingleton.I.headingPrefix = EditorGUILayout.TextField(SettingSingleton.I.headingPrefix);
+                                SettingSingleton.I.headingPrefix =
+                                    EditorGUILayout.TextField(SettingSingleton.I.headingPrefix);
                             }
 
                             using (new EditorGUILayout.HorizontalScope()) {
                                 EditorGUILayout.PrefixLabel(new GUIContent(I18N.Get("UI.Core.SeparatorPrefixLabel"),
                                     I18N.Get("UI.Core.SeparatorPrefixTooltip")));
-                                SettingSingleton.I.separatorPrefix = EditorGUILayout.TextField(SettingSingleton.I.separatorPrefix);
+                                SettingSingleton.I.separatorPrefix =
+                                    EditorGUILayout.TextField(SettingSingleton.I.separatorPrefix);
                             }
 
                             if (EditorGUI.EndChangeCheck()) {

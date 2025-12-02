@@ -6,7 +6,7 @@ using Object = UnityEngine.Object;
 
 namespace _4OF.ee4v.Core.Wraps {
     internal class MaterialEditorWrap : WrapBase {
-        private static readonly Func<object, object> GetCustomShaderGUI = 
+        private static readonly Func<object, object> GetCustomShaderGUI =
             GetField<object>(typeof(MaterialEditor), "m_CustomShaderGUI").g;
 
         public static void DrawMaterialInspector(MaterialEditor editor, Material material) {
@@ -15,10 +15,10 @@ namespace _4OF.ee4v.Core.Wraps {
 
             if (customShaderGUI == null) return;
             var onGUI = customShaderGUI.GetType().GetMethod(
-                "OnGUI", 
+                "OnGUI",
                 BindingFlags.Public | BindingFlags.Instance,
-                null, 
-                new[] { typeof(MaterialEditor), typeof(MaterialProperty[]) }, 
+                null,
+                new[] { typeof(MaterialEditor), typeof(MaterialProperty[]) },
                 null
             );
 
@@ -28,6 +28,7 @@ namespace _4OF.ee4v.Core.Wraps {
                 using (new GUILayout.VerticalScope()) {
                     onGUI.Invoke(customShaderGUI, new object[] { editor, props });
                 }
+
                 GUILayout.Space(4);
             }
         }

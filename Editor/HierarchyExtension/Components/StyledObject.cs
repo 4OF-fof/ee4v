@@ -1,4 +1,5 @@
-﻿using _4OF.ee4v.Core.Interfaces;
+﻿using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Wraps;
@@ -8,8 +9,11 @@ using UnityEditor;
 using UnityEngine;
 
 namespace _4OF.ee4v.HierarchyExtension.Components {
-    public class HierarchyBackgroundColor : IHierarchyExtensionComponent {
+    public class StyledObject : IHierarchyExtensionComponent {
         public int Priority => -200;
+        public string Name => "Styled Object";
+        public string Description => I18N.Get("_System.HierarchyExtension.StyledObject.Description");
+        public string Trigger => I18N.Get("_System.HierarchyExtension.StyledObject.Trigger");
 
         public void OnGUI(ref Rect currentRect, GameObject gameObject, int instanceID, Rect fullRect) {
             if (gameObject == null) return;
