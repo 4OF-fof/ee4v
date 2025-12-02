@@ -1,7 +1,7 @@
 ﻿using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.ProjectExtension.API;
 using _4OF.ee4v.ProjectExtension.ItemStyle;
-using _4OF.ee4v.ProjectExtension.ItemStyle.API;
 using UnityEditor;
 using UnityEngine;
 

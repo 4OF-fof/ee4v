@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using _4OF.ee4v.Core.Utility;
 using _4OF.ee4v.ProjectExtension.Toolbar.Component;
+using _4OF.ee4v.ProjectExtension.Toolbar.Component.Tab;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -129,7 +130,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
             _tabContainer.Remove(tab);
             _tabContainer.Insert(Mathf.Clamp(toIndex, 0, _tabContainer.childCount - 1), tab);
 
-            if (CurrentTab == tab) Tab.SetState(tab, Tab.State.Selected);
+            if (CurrentTab == tab) TabEntry.SetState(tab, TabEntry.State.Selected);
             EditorUtility.SetDirty(TabList.instance);
         }
 
@@ -152,15 +153,15 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
 
             if (CurrentTab != null) {
                 if (currentIsWorkspaceTab)
-                    WorkspaceTab.SetState(CurrentTab, WorkspaceTab.State.Default);
+                    WorkspaceTabEntry.SetState(CurrentTab, WorkspaceTabEntry.State.Default);
                 else
-                    Tab.SetState(CurrentTab, Tab.State.Default);
+                    TabEntry.SetState(CurrentTab, TabEntry.State.Default);
             }
 
             if (isWorkspaceTab)
-                WorkspaceTab.SetState(tabElement, WorkspaceTab.State.Selected);
+                WorkspaceTabEntry.SetState(tabElement, WorkspaceTabEntry.State.Selected);
             else
-                Tab.SetState(tabElement, Tab.State.Selected);
+                TabEntry.SetState(tabElement, TabEntry.State.Selected);
 
             CurrentTab = tabElement;
 
@@ -196,7 +197,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
 
             if (totalTabCount > 0) return;
 
-            var newTab = new Tab("Assets", "Assets");
+            var newTab = new TabEntry("Assets", "Assets");
             Add(newTab);
             SelectTab(newTab);
         }
@@ -221,22 +222,22 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
             foreach (var objectTab in objectTabList)
                 if (objectTab.isWorkspace) {
                     if (_workspaceContainer == null) continue;
-                    var newWorkspaceTab = new WorkspaceTab(objectTab.path, objectTab.tabName);
+                    var newWorkspaceTab = new WorkspaceTabEntry(objectTab.path, objectTab.tabName);
                     _workspaceContainer.Add(newWorkspaceTab);
                 }
                 else {
-                    var newTab = new Tab(objectTab.path, objectTab.tabName);
+                    var newTab = new TabEntry(objectTab.path, objectTab.tabName);
                     _tabContainer.Insert(Math.Min(tabInsertIndex, _tabContainer.childCount - 1), newTab);
                     firstRegularTab ??= newTab;
                     tabInsertIndex++;
                 }
 
             if (firstRegularTab == null) return;
-            Tab.SetState(firstRegularTab, Tab.State.Selected);
+            TabEntry.SetState(firstRegularTab, TabEntry.State.Selected);
             SelectTab(firstRegularTab);
             var others = _tabContainer.Children()
                 .Where(e => e.name == "ee4v-project-toolbar-tabContainer-tab" && e != firstRegularTab).ToList();
-            foreach (var o in others) Tab.SetState(o, Tab.State.Default);
+            foreach (var o in others) TabEntry.SetState(o, TabEntry.State.Default);
         }
     }
 }

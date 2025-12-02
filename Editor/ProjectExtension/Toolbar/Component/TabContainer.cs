@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Linq;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.ProjectExtension.Toolbar.Component.Tab;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -27,7 +28,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
 
             _addButton.clicked += () =>
             {
-                var tab = new Tab("Assets");
+                var tab = new TabEntry("Assets");
                 TabManager.Insert(tabContainer1.childCount - 1, tab);
                 TabManager.SelectTab(tab);
             };
@@ -242,7 +243,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
                 var insertIndex = tabContainer.childCount - 1;
                 var createdEntries =
                     folderPathList.Select(path => new { path, name = Path.GetFileName(path) }).ToList();
-                foreach (var newTab in createdEntries.Select(entry => new Tab(entry.path, entry.name))) {
+                foreach (var newTab in createdEntries.Select(entry => new TabEntry(entry.path, entry.name))) {
                     TabManager.Insert(insertIndex, newTab);
                     insertIndex++;
                 }

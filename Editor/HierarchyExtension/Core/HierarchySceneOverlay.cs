@@ -1,6 +1,5 @@
 ﻿using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.Utility;
-using _4OF.ee4v.HierarchyExtension.HiddenObject;
 using _4OF.ee4v.HierarchyExtension.SceneSwitcher;
 using UnityEditor;
 using UnityEngine;
