@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.AssetManager.Presenter;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;

@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace _4OF.ee4v.AssetManager {
-    public class JsonAssetRepository : IAssetRepository {
+namespace _4OF.ee4v.AssetManager.Core {
+    public class AssetRepository : IAssetRepository {
         private readonly string _assetRootDir;
         private readonly string _cacheFilePath;
         private readonly string _folderIconDir;
@@ -21,11 +20,11 @@ namespace _4OF.ee4v.AssetManager {
 
         private readonly MetadataSerializer _serializer;
 
-        public JsonAssetRepository(string contentFolderPath)
+        public AssetRepository(string contentFolderPath)
             : this(contentFolderPath, new MetadataSerializer()) {
         }
 
-        private JsonAssetRepository(string contentFolderPath, MetadataSerializer serializer) {
+        private AssetRepository(string contentFolderPath, MetadataSerializer serializer) {
             _rootDir = Path.Combine(contentFolderPath, "AssetManager");
             _assetRootDir = Path.Combine(_rootDir, "Assets");
             _libraryMetadataPath = Path.Combine(_rootDir, "metadata.json");

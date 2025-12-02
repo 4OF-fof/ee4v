@@ -1,4 +1,5 @@
-﻿using _4OF.ee4v.Core.Setting;
+﻿using _4OF.ee4v.AssetManager.Core;
+using _4OF.ee4v.Core.Setting;
 
 namespace _4OF.ee4v.AssetManager {
     public static class AssetManagerContainer {
@@ -12,7 +13,7 @@ namespace _4OF.ee4v.AssetManager {
         public static TextureService TextureService { get; private set; }
 
         private static void Initialize() {
-            Repository = new JsonAssetRepository(EditorPrefsManager.ContentFolderPath);
+            Repository = new AssetRepository(EditorPrefsManager.ContentFolderPath);
 
             Repository.Initialize();
             Repository.Load();

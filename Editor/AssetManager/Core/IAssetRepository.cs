@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.Core.Utility;
 
-namespace _4OF.ee4v.AssetManager {
+namespace _4OF.ee4v.AssetManager.Core {
     public interface IAssetRepository {
         void Initialize();
         void Load();
