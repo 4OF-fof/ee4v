@@ -48,8 +48,8 @@ namespace _4OF.ee4v.Core.Setting {
                 )
             ];
             if (EditorGUI.EndChangeCheck()) {
+                I18N.SetLanguage(SettingSingleton.I.language);
                 SettingSingleton.I.Save();
-                _needRestart = true;
             }
 
             using (new EditorGUILayout.HorizontalScope()) {
