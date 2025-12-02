@@ -4,72 +4,65 @@ using UnityEngine;
 
 namespace _4OF.ee4v.Core.Wraps {
     internal class SceneHierarchyWindowWrap : WrapBase {
-        private static readonly Type TSceneHierarchyWindow =
-            typeof(Editor).Assembly.GetType("UnityEditor.SceneHierarchyWindow");
-
-        private static readonly (Func<object> g, Action<object> s) PILastInteractedHierarchyWindow =
-            GetStaticProperty(TSceneHierarchyWindow, "lastInteractedHierarchyWindow");
-
-        private static readonly (Func<object, object> g, Action<object, object> s) FiMSceneHierarchy =
-            GetField(TSceneHierarchyWindow, "m_SceneHierarchy");
-
+        public static readonly Type Type = typeof(Editor).Assembly.GetType("UnityEditor.SceneHierarchyWindow");
         private static readonly Type TSceneHierarchy = typeof(Editor).Assembly.GetType("UnityEditor.SceneHierarchy");
+        private static readonly Type TTreeViewController = typeof(Editor).Assembly.GetType("UnityEditor.IMGUI.Controls.TreeViewController");
+        private static readonly Type TTreeViewItem = typeof(Editor).Assembly.GetType("UnityEditor.IMGUI.Controls.TreeViewItem");
 
-        private static readonly (Func<object, object> g, Action<object, object> s) FiMTreeView =
-            GetField(TSceneHierarchy, "m_TreeView");
+        private static readonly Func<object> GetLastInteractedHierarchyWindow = 
+            GetStaticProperty<object>(Type, "lastInteractedHierarchyWindow").g;
 
-        private static readonly Type TTreeViewController =
-            typeof(Editor).Assembly.GetType("UnityEditor.IMGUI.Controls.TreeViewController");
+        private static readonly Func<object, object> GetSceneHierarchy = 
+            GetField<object>(Type, "m_SceneHierarchy").g;
 
-        private static readonly (Func<object, object> g, Action<object, object> s) PIShowingVerticalScrollBar =
-            GetProperty(TTreeViewController, "showingVerticalScrollBar");
+        private static readonly Func<object, object> GetTreeView = 
+            GetField<object>(TSceneHierarchy, "m_TreeView").g;
 
-        private static readonly Func<object, object[], object> MiFindItem =
+        private static readonly Func<object, bool> GetShowingVerticalScrollBar = 
+            GetProperty<bool>(TTreeViewController, "showingVerticalScrollBar").g;
+
+        private static readonly Func<object, object[], object> FindItemFunc = 
             GetMethod(TTreeViewController, "FindItem", new[] { typeof(int) });
 
-        private static readonly Type TTreeViewItem =
-            typeof(Editor).Assembly.GetType("UnityEditor.IMGUI.Controls.TreeViewItem");
+        private static readonly Action<object, Texture2D> SetIconAction = 
+            GetProperty<Texture2D>(TTreeViewItem, "icon").s ?? GetField<Texture2D>(TTreeViewItem, "icon").s;
+        
+        public object Instance { get; }
 
-        private static readonly (Func<object, object> g, Action<object, object> s) PIIcon =
-            GetProperty(TTreeViewItem, "icon");
+        public SceneHierarchyWindowWrap(object instance) {
+            Instance = instance;
+        }
 
-        private static readonly (Func<object, object> g, Action<object, object> s) FiIcon =
-            GetField(TTreeViewItem, "icon");
-
-        public static object LastInteractedWindow => PILastInteractedHierarchyWindow.g();
-
-        public static bool IsScrollbarVisible {
+        public static SceneHierarchyWindowWrap LastInteractedWindow {
             get {
-                var window = LastInteractedWindow;
-                if (window == null) return false;
-
-                var sceneHierarchy = FiMSceneHierarchy.g(window);
-                if (sceneHierarchy == null) return false;
-
-                var treeView = FiMTreeView.g(sceneHierarchy);
-                if (treeView == null) return false;
-
-                return (bool)PIShowingVerticalScrollBar.g(treeView);
+                var instance = GetLastInteractedHierarchyWindow?.Invoke();
+                return instance != null ? new SceneHierarchyWindowWrap(instance) : null;
             }
         }
 
-        public static void SetItemIcon(int instanceId, Texture2D icon) {
-            var window = LastInteractedWindow;
-            if (window == null) return;
+        public bool IsScrollbarVisible {
+            get {
+                if (Instance == null) return false;
+                var sceneHierarchy = GetSceneHierarchy(Instance);
+                if (sceneHierarchy == null) return false;
+                var treeView = GetTreeView(sceneHierarchy);
+                return treeView != null && GetShowingVerticalScrollBar(treeView);
+            }
+        }
 
-            var sceneHierarchy = FiMSceneHierarchy.g(window);
+        public void SetItemIcon(int instanceId, Texture2D icon) {
+            if (Instance == null) return;
+            
+            var sceneHierarchy = GetSceneHierarchy(Instance);
             if (sceneHierarchy == null) return;
-
-            var treeView = FiMTreeView.g(sceneHierarchy);
+            
+            var treeView = GetTreeView(sceneHierarchy);
             if (treeView == null) return;
 
-            var item = MiFindItem(treeView, new object[] { instanceId });
-            if (item == null) return;
-
-            if (PIIcon.s != null)
-                PIIcon.s(item, icon);
-            else if (FiIcon.s != null)
-                FiIcon.s(item, icon);
+            var item = FindItemFunc(treeView, new object[] { instanceId });
+            if (item != null) {
+                SetIconAction?.Invoke(item, icon);
+            }
         }
     }
 }

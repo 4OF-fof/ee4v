@@ -21,7 +21,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
             if (style == null) return;
 
             if (isSelf) {
-                SceneHierarchyWindowWrap.SetItemIcon(instanceID, style.icon as Texture2D);
+                SceneHierarchyWindowWrap.LastInteractedWindow?.SetItemIcon(instanceID, style.icon as Texture2D);
                 DrawBackGround(gameObject, fullRect, style.color, style.icon);
             }
             else {

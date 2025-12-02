@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using _4OF.ee4v.Core.Attributes;
 using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using UnityEditor;
