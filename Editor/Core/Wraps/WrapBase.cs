@@ -4,36 +4,43 @@ using System.Reflection;
 
 namespace _4OF.ee4v.Core.Wraps {
     internal abstract class WrapBase {
-
-        protected static (Func<object> g, Action<object> s) GetField(Type type, string name) {
-            var field = type.GetField(name,
-                BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+        protected static (Func<object, object> g, Action<object, object> s) GetField(Type type, string name) {
+            var field = type.GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (field == null) return (null, null);
 
             return (
-                CreateGetter(field),
-                CreateSetter(field)
+                CreateInstanceGetter(field),
+                CreateInstanceSetter(field)
             );
         }
 
-        protected static (Func<T> g, Action<T> s) GetStaticField<T>(Type type, string name) {
+        protected static (Func<object, object> g, Action<object, object> s) GetProperty(Type type, string name) {
+            var prop = type.GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (prop == null) return (null, null);
+
+            return (
+                CreateInstanceGetter(prop),
+                CreateInstanceSetter(prop)
+            );
+        }
+
+        protected static (Func<object> g, Action<object> s) GetStaticField(Type type, string name) {
             var field = type.GetField(name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
             if (field == null) return (null, null);
 
             return (
-                CreateStaticGetter<T>(field),
-                CreateStaticSetter<T>(field)
+                CreateStaticGetter(field),
+                CreateStaticSetter(field)
             );
         }
 
-        protected static (Func<object> g, Action<object> s) GetProperty(Type type, string name) {
-            var prop = type.GetProperty(name,
-                BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+        protected static (Func<object> g, Action<object> s) GetStaticProperty(Type type, string name) {
+            var prop = type.GetProperty(name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
             if (prop == null) return (null, null);
 
             return (
-                CreateGetter(prop),
-                CreateSetter(prop)
+                CreateStaticGetter(prop),
+                CreateStaticSetter(prop)
             );
         }
 
@@ -45,36 +52,89 @@ namespace _4OF.ee4v.Core.Wraps {
                     BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null,
                     types, null);
 
-            return method == null ? null : CreateMethodInvoker(method);
+            if (method == null) return null;
+
+            return CreateMethodInvoker(method);
         }
 
-        private static Func<object> CreateGetter(MemberInfo member) {
-            if (member is FieldInfo field && field.IsStatic) {
-                var body = Expression.Convert(Expression.Field(null, field), typeof(object));
-                return Expression.Lambda<Func<object>>(body).Compile();
+        private static Func<object, object> CreateInstanceGetter(MemberInfo member) {
+            var targetParam = Expression.Parameter(typeof(object), "target");
+
+            Expression body = member switch {
+                FieldInfo field => Expression.Field(
+                    Expression.Convert(targetParam, field.DeclaringType ?? throw new InvalidOperationException()),
+                    field),
+                PropertyInfo prop => Expression.Property(
+                    Expression.Convert(targetParam, prop.DeclaringType ?? throw new InvalidOperationException()), prop),
+                _ => null
+            };
+
+            if (body == null) return null;
+
+            return Expression.Lambda<Func<object, object>>(
+                Expression.Convert(body, typeof(object)), targetParam).Compile();
+        }
+
+        private static Action<object, object> CreateInstanceSetter(MemberInfo member) {
+            var targetParam = Expression.Parameter(typeof(object), "target");
+            var valueParam = Expression.Parameter(typeof(object), "value");
+            Expression left = null;
+            Type memberType = null;
+
+            switch (member) {
+                case FieldInfo field:
+                    left = Expression.Field(
+                        Expression.Convert(targetParam, field.DeclaringType ?? throw new InvalidOperationException()),
+                        field);
+                    memberType = field.FieldType;
+                    break;
+                case PropertyInfo { CanWrite: true } prop:
+                    left = Expression.Property(
+                        Expression.Convert(targetParam, prop.DeclaringType ?? throw new InvalidOperationException()),
+                        prop);
+                    memberType = prop.PropertyType;
+                    break;
             }
 
-            if (member is not PropertyInfo prop || !prop.GetMethod.IsStatic)
-                return () => throw new NotImplementedException("Instance getters need target object.");
-            {
-                var body = Expression.Convert(Expression.Property(null, prop), typeof(object));
-                return Expression.Lambda<Func<object>>(body).Compile();
+            if (left == null) return (_, _) => { };
+
+            var body = Expression.Assign(left, Expression.Convert(valueParam, memberType));
+            return Expression.Lambda<Action<object, object>>(body, targetParam, valueParam).Compile();
+        }
+
+        private static Func<object> CreateStaticGetter(MemberInfo member) {
+            Expression body = member switch {
+                FieldInfo field   => Expression.Field(null, field),
+                PropertyInfo prop => Expression.Property(null, prop),
+                _                 => null
+            };
+
+            if (body == null) return null;
+
+            return Expression.Lambda<Func<object>>(
+                Expression.Convert(body, typeof(object))).Compile();
+        }
+
+        private static Action<object> CreateStaticSetter(MemberInfo member) {
+            var valueParam = Expression.Parameter(typeof(object), "value");
+            Expression left = null;
+            Type memberType = null;
+
+            switch (member) {
+                case FieldInfo field:
+                    left = Expression.Field(null, field);
+                    memberType = field.FieldType;
+                    break;
+                case PropertyInfo { CanWrite: true } prop:
+                    left = Expression.Property(null, prop);
+                    memberType = prop.PropertyType;
+                    break;
             }
-        }
 
-        private static Func<T> CreateStaticGetter<T>(FieldInfo field) {
-            var body = Expression.Field(null, field);
-            return Expression.Lambda<Func<T>>(body).Compile();
-        }
+            if (left == null) return _ => { };
 
-        private static Action<T> CreateStaticSetter<T>(FieldInfo field) {
-            var valueParam = Expression.Parameter(typeof(T), "value");
-            var body = Expression.Assign(Expression.Field(null, field), valueParam);
-            return Expression.Lambda<Action<T>>(body, valueParam).Compile();
-        }
-
-        private static Action<object> CreateSetter(MemberInfo member) {
-            return obj => throw new NotImplementedException("Instance setters need target object.");
+            var body = Expression.Assign(left, Expression.Convert(valueParam, memberType));
+            return Expression.Lambda<Action<object>>(body, valueParam).Compile();
         }
 
         private static Func<object, object[], object> CreateMethodInvoker(MethodInfo method) {
@@ -96,7 +156,8 @@ namespace _4OF.ee4v.Core.Wraps {
                 call = Expression.Call(method, callArgs);
             }
             else {
-                var instance = Expression.Convert(targetParam, method.DeclaringType);
+                var instance = Expression.Convert(targetParam,
+                    method.DeclaringType ?? throw new InvalidOperationException());
                 call = Expression.Call(instance, method, callArgs);
             }
 
