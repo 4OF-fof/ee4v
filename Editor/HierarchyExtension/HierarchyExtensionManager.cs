@@ -21,14 +21,15 @@ namespace _4OF.ee4v.HierarchyExtension {
         private static void Resolve() {
             _components = new List<IHierarchyExtensionComponent>();
 
-            var types = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(a => a.GetCustomAttributes(typeof(ExportsHierarchyExtensionComponent), false))
-                .SelectMany(attr => ((ExportsHierarchyExtensionComponent)attr).Types)
-                .Distinct();
+            var types = TypeCache.GetTypesDerivedFrom<IHierarchyExtensionComponent>()
+                .Where(t => !t.IsAbstract && !t.IsInterface);
 
-            foreach (var type in types)
-                if (Activator.CreateInstance(type) is IHierarchyExtensionComponent component)
+            foreach (var type in types) {
+                if (type.GetConstructor(Type.EmptyTypes) != null &&
+                    Activator.CreateInstance(type) is IHierarchyExtensionComponent component) {
                     _components.Add(component);
+                }
+            }
 
             _components.Sort((a, b) => a.Priority.CompareTo(b.Priority));
         }

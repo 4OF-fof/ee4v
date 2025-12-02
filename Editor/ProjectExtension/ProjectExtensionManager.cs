@@ -23,14 +23,15 @@ namespace _4OF.ee4v.ProjectExtension {
         private static void Resolve() {
             _components = new List<IProjectExtensionComponent>();
 
-            var types = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(a => a.GetCustomAttributes(typeof(ExportsProjectExtensionComponent), false))
-                .SelectMany(attr => ((ExportsProjectExtensionComponent)attr).Types)
-                .Distinct();
+            var types = TypeCache.GetTypesDerivedFrom<IProjectExtensionComponent>()
+                .Where(t => !t.IsAbstract && !t.IsInterface);
 
-            foreach (var type in types)
-                if (Activator.CreateInstance(type) is IProjectExtensionComponent component)
+            foreach (var type in types) {
+                if (type.GetConstructor(Type.EmptyTypes) != null &&
+                    Activator.CreateInstance(type) is IProjectExtensionComponent component) {
                     _components.Add(component);
+                }
+            }
 
             _components.Sort((a, b) => a.Priority.CompareTo(b.Priority));
         }
