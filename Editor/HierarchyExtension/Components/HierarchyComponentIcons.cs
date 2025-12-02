@@ -14,7 +14,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
         public void OnGUI(ref Rect currentRect, GameObject gameObject, int instanceID, Rect fullRect) {
             if (gameObject == null) return;
 
-            if (CustomStyleUtility.IsCustomStyleItem(gameObject)) return;
+            if (Settings.I.enableCustomStyleItem && gameObject.IsCustomStyleItem()) return;
 
             if (!Settings.I.showComponentIcons) return;
             if (Settings.I.compatFaceEmo && gameObject.GetComponent<VRCAvatarDescriptor>() != null) return;

@@ -15,7 +15,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
             if (gameObject == null) return;
             if (!Settings.I.enableCustomStyleItem) return;
 
-            if (CustomStyleUtility.IsCustomStyleItem(gameObject)) return;
+            if (gameObject.IsCustomStyleItem()) return;
 
             var (style, isSelf) = GetEffectiveStyle(gameObject);
             if (style == null) return;

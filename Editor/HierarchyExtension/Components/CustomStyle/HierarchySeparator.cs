@@ -12,8 +12,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components.CustomStyle {
             if (gameObject == null) return;
             if (!Settings.I.enableCustomStyleItem) return;
 
-            if (string.IsNullOrEmpty(Settings.I.separatorPrefix) ||
-                !gameObject.name.StartsWith(Settings.I.separatorPrefix)) return;
+            if (gameObject.GetCustomStyleType() != HierarchyItemType.Separator) return;
 
             var backRect = new Rect(32, fullRect.y, EditorGUIUtility.currentViewWidth - 32, fullRect.height);
             EditorGUI.DrawRect(backRect, ColorPreset.DefaultBackground);

@@ -2,19 +2,32 @@
 using UnityEngine;
 
 namespace _4OF.ee4v.HierarchyExtension.Components.CustomStyle {
+    public enum HierarchyItemType {
+        Normal,
+        Heading,
+        Separator
+    }
+
     public static class CustomStyleUtility {
-        public static bool IsCustomStyleItem(GameObject gameObject) {
-            if (gameObject == null) return false;
+        public static HierarchyItemType GetCustomStyleType(this GameObject gameObject) {
+            if (gameObject == null) return HierarchyItemType.Normal;
 
-            if (!string.IsNullOrEmpty(Settings.I.headingPrefix) &&
-                gameObject.name.StartsWith(Settings.I.headingPrefix))
-                return true;
+            var name = gameObject.name;
+            var settings = Settings.I;
 
-            if (!string.IsNullOrEmpty(Settings.I.separatorPrefix) &&
-                gameObject.name.StartsWith(Settings.I.separatorPrefix))
-                return true;
+            if (!string.IsNullOrEmpty(settings.headingPrefix) &&
+                name.StartsWith(settings.headingPrefix))
+                return HierarchyItemType.Heading;
 
-            return false;
+            if (!string.IsNullOrEmpty(settings.separatorPrefix) &&
+                name.StartsWith(settings.separatorPrefix))
+                return HierarchyItemType.Separator;
+
+            return HierarchyItemType.Normal;
+        }
+
+        public static bool IsCustomStyleItem(this GameObject gameObject) {
+            return gameObject.GetCustomStyleType() != HierarchyItemType.Normal;
         }
     }
 }
