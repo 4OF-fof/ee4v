@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.HierarchyExtension.ItemStyle.Component {
+namespace _4OF.ee4v.HierarchyExtension.GameObjectWindow.Component {
     public class ComponentList : VisualElement {
         public ComponentList(GameObject gameObject, Action<bool> onLockChanged) {
             style.flexDirection = FlexDirection.Row;

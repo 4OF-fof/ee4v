@@ -8,7 +8,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.HierarchyExtension.ItemStyle.Component {
+namespace _4OF.ee4v.HierarchyExtension.GameObjectWindow.Component {
     public class IconSelector : VisualElement {
         public static Action<Texture, List<ObjectStyleComponent>> OnIconChanged;
         private static Texture _separatorTexture;

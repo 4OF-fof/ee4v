@@ -4,14 +4,14 @@ using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Component;
 using _4OF.ee4v.Core.UI.Window;
-using _4OF.ee4v.HierarchyExtension.ItemStyle.Component;
+using _4OF.ee4v.HierarchyExtension.GameObjectWindow.Component;
 using _4OF.ee4v.Runtime;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.HierarchyExtension.ItemStyle {
-    public class GameObjectInfoWindow : BaseWindow {
+namespace _4OF.ee4v.HierarchyExtension.GameObjectWindow {
+    public class GameObjectWindow : BaseWindow {
         private readonly List<ObjectStyleComponent> _objectStylComponentList = new();
 
         private List<GameObject> _gameObjectList = new();
@@ -28,7 +28,7 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle {
         }
 
         public static void Open(GameObject obj, Vector2 screenPosition) {
-            var window = OpenSetup<GameObjectInfoWindow>(screenPosition, obj);
+            var window = OpenSetup<GameObjectWindow>(screenPosition, obj);
             window._gameObjectList.Add(obj);
             window._objectStylComponentList.Add(obj.GetComponent<ObjectStyleComponent>());
             if (window._objectStylComponentList[0] == null)
@@ -44,7 +44,7 @@ namespace _4OF.ee4v.HierarchyExtension.ItemStyle {
         }
 
         public static void Open(GameObject[] objList, Vector2 screenPosition) {
-            var window = OpenSetup<GameObjectInfoWindow>(screenPosition, objList);
+            var window = OpenSetup<GameObjectWindow>(screenPosition, objList);
             window._gameObjectList = objList.ToList();
             foreach (var obj in objList) {
                 window._objectStylComponentList.Add(obj.GetComponent<ObjectStyleComponent>());

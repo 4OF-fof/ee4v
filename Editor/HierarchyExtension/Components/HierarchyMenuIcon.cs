@@ -1,7 +1,6 @@
 ﻿using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.HierarchyExtension.Components.CustomStyle;
-using _4OF.ee4v.HierarchyExtension.ItemStyle;
 using UnityEditor;
 using UnityEngine;
 
@@ -29,9 +28,9 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
                 var selectedGameObjectList = Selection.gameObjects;
 
                 if (selectedGameObjectList.Length <= 1)
-                    GameObjectInfoWindow.Open(gameObject, anchorScreen);
+                    GameObjectWindow.GameObjectWindow.Open(gameObject, anchorScreen);
                 else
-                    GameObjectInfoWindow.Open(selectedGameObjectList, anchorScreen);
+                    GameObjectWindow.GameObjectWindow.Open(selectedGameObjectList, anchorScreen);
             }
 
             GUI.color = prevColor;
