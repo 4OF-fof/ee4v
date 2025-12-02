@@ -5,11 +5,11 @@ using _4OF.ee4v.AssetManager.API;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI.Component;
 using _4OF.ee4v.Core.UI.Window;
+using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using ObjectField = UnityEditor.UIElements.ObjectField;
-using _4OF.ee4v.Core.Utility;
 
 namespace _4OF.ee4v.ProjectExtension.ItemStyle {
     public class FolderStyleSelectorWindow : BaseWindow {

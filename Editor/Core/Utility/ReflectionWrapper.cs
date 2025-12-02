@@ -17,6 +17,12 @@ namespace _4OF.ee4v.Core.Utility {
         private static object _treeView;
         private static MethodInfo _findItemMethod;
 
+        public static readonly Type ProjectBrowserType = Type.GetType("UnityEditor.ProjectBrowser,UnityEditor");
+        public static readonly EditorWindow ProjectBrowserWindow = EditorWindow.GetWindow(ProjectBrowserType);
+
+        private static readonly MethodInfo ShowFolderContentsMethod = ProjectBrowserType.GetMethod("ShowFolderContents",
+            BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(int), typeof(bool) }, null);
+
         public static bool IsHierarchyScrollbarVisible() {
             const BindingFlags instanceFlags = BindingFlags.NonPublic | BindingFlags.Instance;
             const BindingFlags staticFlags = BindingFlags.Public | BindingFlags.Static;
@@ -129,12 +135,6 @@ namespace _4OF.ee4v.Core.Utility {
 
             _findItemMethod = _treeView.GetType().GetMethod("FindItem", BindingFlags.Public | BindingFlags.Instance);
         }
-
-        public static readonly Type ProjectBrowserType = Type.GetType("UnityEditor.ProjectBrowser,UnityEditor");
-        public static readonly EditorWindow ProjectBrowserWindow = EditorWindow.GetWindow(ProjectBrowserType);
-
-        private static readonly MethodInfo ShowFolderContentsMethod = ProjectBrowserType.GetMethod("ShowFolderContents",
-            BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(int), typeof(bool) }, null);
 
         public static void ShowFolderContents(int instanceId) {
             try {

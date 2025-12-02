@@ -1,10 +1,10 @@
 using System;
 using System.Linq;
+using _4OF.ee4v.Core.Utility;
 using _4OF.ee4v.ProjectExtension.Toolbar.Component;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-using _4OF.ee4v.Core.Utility;
 
 namespace _4OF.ee4v.ProjectExtension.Toolbar {
     public static class TabManager {

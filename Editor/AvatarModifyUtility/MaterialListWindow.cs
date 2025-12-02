@@ -253,9 +253,10 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                     marginBottom = 2
                 }
             };
-            var countLabel = new Label(I18N.Get("UI.AvatarModifyUtility.MaterialList.ObjectsUsedCountFmt", data.UsedBy.Count)) {
-                style = { fontSize = 10, color = ColorPreset.InActiveItem }
-            };
+            var countLabel =
+                new Label(I18N.Get("UI.AvatarModifyUtility.MaterialList.ObjectsUsedCountFmt", data.UsedBy.Count)) {
+                    style = { fontSize = 10, color = ColorPreset.InActiveItem }
+                };
             infoContainer.Add(nameLabel);
             infoContainer.Add(countLabel);
             header.Add(infoContainer);
