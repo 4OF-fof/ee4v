@@ -325,44 +325,42 @@ namespace _4OF.ee4v.Core.Setting {
                         I18N.Get("UI.Core.EnableAutoBackupTooltip")),
                     Settings.I.enableAutoBackup);
                 if (EditorGUI.EndChangeCheck()) Settings.I.Save();
-            }
 
-            EditorGUILayout.Space(10);
+                using (new EditorGUILayout.HorizontalScope()) {
+                    EditorGUI.BeginChangeCheck();
+                    var newVariantPath = EditorGUILayout.TextField(
+                        new GUIContent(I18N.Get("UI.Core.VariantCreateFolderPathLabel"),
+                            I18N.Get("UI.Core.VariantCreateFolderPathTooltip")),
+                        Settings.I.variantCreateFolderPath);
+                    if (EditorGUI.EndChangeCheck()) {
+                        Settings.I.variantCreateFolderPath = newVariantPath;
+                        Settings.I.Save();
+                    }
 
-            using (new EditorGUILayout.HorizontalScope()) {
-                EditorGUI.BeginChangeCheck();
-                var newVariantPath = EditorGUILayout.TextField(
-                    new GUIContent(I18N.Get("UI.Core.VariantCreateFolderPathLabel"),
-                        I18N.Get("UI.Core.VariantCreateFolderPathTooltip")),
-                    Settings.I.variantCreateFolderPath);
-                if (EditorGUI.EndChangeCheck()) {
-                    Settings.I.variantCreateFolderPath = newVariantPath;
-                    Settings.I.Save();
-                }
+                    if (GUILayout.Button("...", GUILayout.Width(30))) {
+                        var path = EditorUtility.OpenFolderPanel(
+                            I18N.Get("UI.Core.VariantCreateFolderPathWindow"),
+                            Settings.I.variantCreateFolderPath,
+                            ""
+                        );
+                        if (!string.IsNullOrEmpty(path)) {
+                            var dataPath = Application.dataPath.Replace('\\', '/');
+                            var normalized = path.Replace('\\', '/');
 
-                if (GUILayout.Button("...", GUILayout.Width(30))) {
-                    var path = EditorUtility.OpenFolderPanel(
-                        I18N.Get("UI.Core.VariantCreateFolderPathWindow"),
-                        Settings.I.variantCreateFolderPath,
-                        ""
-                    );
-                    if (!string.IsNullOrEmpty(path)) {
-                        var dataPath = Application.dataPath.Replace('\\', '/');
-                        var normalized = path.Replace('\\', '/');
-
-                        if (normalized.StartsWith(dataPath)) {
-                            normalized = "Assets" + normalized.Substring(dataPath.Length);
-                            Settings.I.variantCreateFolderPath = normalized;
-                            Settings.I.Save();
-                            GUIUtility.keyboardControl = 0;
-                            EditorGUI.FocusTextInControl(null);
-                        }
-                        else {
-                            EditorUtility.DisplayDialog(
-                                I18N.Get("UI.Core.InvalidPathTitle"),
-                                I18N.Get("UI.Core.VariantCreateFolderPathError"),
-                                I18N.Get("UI.Core.OK")
-                            );
+                            if (normalized.StartsWith(dataPath)) {
+                                normalized = "Assets" + normalized.Substring(dataPath.Length);
+                                Settings.I.variantCreateFolderPath = normalized;
+                                Settings.I.Save();
+                                GUIUtility.keyboardControl = 0;
+                                EditorGUI.FocusTextInControl(null);
+                            }
+                            else {
+                                EditorUtility.DisplayDialog(
+                                    I18N.Get("UI.Core.InvalidPathTitle"),
+                                    I18N.Get("UI.Core.VariantCreateFolderPathError"),
+                                    I18N.Get("UI.Core.OK")
+                                );
+                            }
                         }
                     }
                 }

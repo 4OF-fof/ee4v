@@ -1,0 +1,30 @@
+﻿using UnityEngine;
+using UnityEditor;
+using _4OF.ee4v.Core.Interfaces;
+using _4OF.ee4v.Core.Setting;
+using _4OF.ee4v.Core.UI;
+
+namespace _4OF.ee4v.HierarchyExtension.Components {
+    public class HierarchyHeading : IHierarchyExtensionComponent {
+        public int Priority => -100;
+
+        public void OnGUI(ref Rect currentRect, GameObject gameObject, int instanceID, Rect fullRect) {
+            if (gameObject == null) return;
+            if (!Settings.I.enableCustomStyleItem) return;
+
+            if (string.IsNullOrEmpty(Settings.I.headingPrefix) ||
+                !gameObject.name.StartsWith(Settings.I.headingPrefix)) return;
+
+            var backRect = new Rect(32, fullRect.y, EditorGUIUtility.currentViewWidth - 32, fullRect.height);
+            EditorGUI.DrawRect(backRect, ColorPreset.WindowHeader);
+
+            var labelText = gameObject.name.Replace(Settings.I.headingPrefix, string.Empty).TrimStart();
+            var labelStyle = new GUIStyle(EditorStyles.label) {
+                fontSize = 16,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            EditorGUI.LabelField(backRect, labelText, labelStyle);
+        }
+    }
+}

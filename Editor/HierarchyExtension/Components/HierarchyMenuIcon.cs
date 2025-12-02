@@ -1,8 +1,8 @@
-﻿using _4OF.ee4v.Core.Interfaces;
+﻿using UnityEngine;
+using UnityEditor;
+using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.HierarchyExtension.ItemStyle;
-using UnityEditor;
-using UnityEngine;
 
 namespace _4OF.ee4v.HierarchyExtension.Components {
     public class HierarchyMenuIcon : IHierarchyExtensionComponent {
@@ -10,6 +10,13 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
 
         public void OnGUI(ref Rect currentRect, GameObject gameObject, int instanceID, Rect fullRect) {
             if (gameObject == null) return;
+
+            if (Settings.I.enableCustomStyleItem && 
+                ((!string.IsNullOrEmpty(Settings.I.headingPrefix) && gameObject.name.StartsWith(Settings.I.headingPrefix)) ||
+                    (!string.IsNullOrEmpty(Settings.I.separatorPrefix) && gameObject.name.StartsWith(Settings.I.separatorPrefix)))) {
+                return;
+            }
+
             if (!Settings.I.showMenuIcon) return;
 
             var nameSize = EditorStyles.label.CalcSize(new GUIContent(gameObject.name));

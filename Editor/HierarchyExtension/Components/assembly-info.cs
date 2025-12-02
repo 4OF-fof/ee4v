@@ -6,5 +6,7 @@ using _4OF.ee4v.HierarchyExtension.Components;
     typeof(HierarchyDepthLine),
     typeof(HierarchyMenuIcon),
     typeof(HierarchySceneHeader),
-    typeof(HierarchyStyleComponent)
+    typeof(HierarchyBackgroundColor),
+    typeof(HierarchyHeading),
+    typeof(HierarchySeparator)
 )]
