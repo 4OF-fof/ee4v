@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.Core.UI;
+using _4OF.ee4v.HierarchyExtension.ItemStyle;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -10,6 +11,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
     public class MaterialListWindow : EditorWindow {
         private readonly List<MaterialData> _materialList = new();
         private GameObject _currentRoot;
+        private bool _isManualSelection;
         private ScrollView _scrollView;
         private Label _statusLabel;
 
@@ -60,7 +62,20 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                     height = 20
                 }
             };
-            _targetObjectField.SetEnabled(false);
+
+            _targetObjectField.SetEnabled(true);
+            _targetObjectField.RegisterValueChangedCallback(evt =>
+            {
+                var newObj = evt.newValue as GameObject;
+                if (newObj == _currentRoot) return;
+
+                _isManualSelection = true;
+                _currentRoot = newObj;
+                if (_currentRoot != null) AnalyzeMaterialUsage();
+                RebuildUI();
+                _isManualSelection = false;
+            });
+
             toolbar.Add(_targetObjectField);
 
             var spacer = new VisualElement { style = { flexGrow = 1 } };
@@ -109,11 +124,15 @@ namespace _4OF.ee4v.AvatarModifyUtility {
         }
 
         private void OnSelectionChanged() {
-            var activeGo = Selection.activeGameObject;
+            if (_isManualSelection) return;
 
+            var activeGo = Selection.activeGameObject;
             GameObject newRoot = null;
             if (activeGo != null) newRoot = PrefabUtility.GetNearestPrefabInstanceRoot(activeGo);
-            if (_currentRoot != null && activeGo.transform.IsChildOf(_currentRoot.transform)) return;
+
+            if (_currentRoot != null && activeGo != null &&
+                activeGo.transform.IsChildOf(_currentRoot.transform)) return;
+
             _currentRoot = newRoot;
             if (_currentRoot != null) AnalyzeMaterialUsage();
             RebuildUI();
@@ -152,11 +171,11 @@ namespace _4OF.ee4v.AvatarModifyUtility {
         private void RebuildUI() {
             if (_targetObjectField == null) return;
 
-            _targetObjectField.value = _currentRoot;
+            _targetObjectField.SetValueWithoutNotify(_currentRoot);
             _scrollView.Clear();
 
             if (_currentRoot == null) {
-                _statusLabel.text = "Select a Prefab in Hierarchy to view materials.";
+                _statusLabel.text = "Select a Prefab in Hierarchy or drag it to the Target field.";
                 _scrollView.Add(_statusLabel);
                 return;
             }
@@ -174,10 +193,8 @@ namespace _4OF.ee4v.AvatarModifyUtility {
             var card = new VisualElement {
                 style = {
                     marginLeft = 10, marginRight = 10, marginBottom = 6,
-                    borderTopWidth = 1,
-                    borderBottomWidth = 1,
-                    borderLeftWidth = 1,
-                    borderRightWidth = 1,
+                    borderTopWidth = 1, borderBottomWidth = 1,
+                    borderLeftWidth = 1, borderRightWidth = 1,
                     borderTopColor = ColorPreset.WindowBorder,
                     borderBottomColor = ColorPreset.WindowBorder,
                     borderLeftColor = ColorPreset.WindowBorder,
@@ -204,8 +221,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
 
             var chevron = new Label(data.IsExpanded ? "▼" : "▶") {
                 style = {
-                    width = 20,
-                    fontSize = 10,
+                    width = 20, fontSize = 10,
                     unityTextAlign = TextAnchor.MiddleCenter,
                     color = ColorPreset.InActiveItem
                 }
@@ -227,7 +243,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
             };
             header.Add(icon);
 
-            var infoContainer = new VisualElement { style = { flexGrow = 1, justifyContent = Justify.Center } };
+            var infoContainer = new VisualElement { style = { justifyContent = Justify.Center } };
             var nameLabel = new Label(data.Material.name) {
                 style = {
                     unityFontStyleAndWeight = FontStyle.Bold,
@@ -243,10 +259,32 @@ namespace _4OF.ee4v.AvatarModifyUtility {
             infoContainer.Add(countLabel);
             header.Add(infoContainer);
 
+            var headerSpacer = new VisualElement { style = { flexGrow = 1 } };
+            header.Add(headerSpacer);
+
+            var inspectBtn = new Button(() =>
+            {
+                var mousePos = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+                var contextObj = data.UsedBy.FirstOrDefault() ?? _currentRoot;
+
+                ComponentInspectorWindow.Open(data.Material, contextObj, mousePos);
+            }) {
+                text = "Inspect",
+                style = {
+                    height = 24,
+                    paddingLeft = 6, paddingRight = 6,
+                    backgroundColor = ColorPreset.TabBackground
+                }
+            };
+
+            inspectBtn.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
+            header.Add(inspectBtn);
+
+
             var content = new VisualElement {
                 style = {
                     display = data.IsExpanded ? DisplayStyle.Flex : DisplayStyle.None,
-                    paddingLeft = 0, paddingRight = 0, paddingBottom = 4, paddingTop = 0,
+                    paddingBottom = 4,
                     backgroundColor = ColorPreset.DefaultBackground
                 }
             };
@@ -258,13 +296,8 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                         data.IsExpanded = !data.IsExpanded;
                         chevron.text = data.IsExpanded ? "▼" : "▶";
                         content.style.display = data.IsExpanded ? DisplayStyle.Flex : DisplayStyle.None;
-
                         SelectObjects(data.UsedBy);
                         break;
-                    case 1: {
-                        if (data.Material) Selection.activeObject = data.Material;
-                        break;
-                    }
                 }
 
                 evt.StopPropagation();
