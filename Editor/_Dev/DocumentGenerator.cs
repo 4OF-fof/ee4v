@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using _4OF.ee4v.AssetManager.Interfaces;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
@@ -21,7 +22,7 @@ namespace _4OF.ee4v._Dev {
 
             if (allTranslatedData.Count == 0) {
                 Debug.LogError(
-                    "IHierarchyExtensionComponent and IProjectExtensionComponent implementations not found.");
+                    "Implementations not found.");
                 return;
             }
 
@@ -59,7 +60,8 @@ namespace _4OF.ee4v._Dev {
                 typeof(IProjectExtensionComponent),
                 typeof(IProjectToolbarComponent),
                 typeof(IEditorService),
-                typeof(IEditorUtility)
+                typeof(IEditorUtility),
+                typeof(IAssetManagerComponent)
             };
 
             foreach (var interfaceType in componentTypes) {
@@ -100,12 +102,15 @@ namespace _4OF.ee4v._Dev {
             var toolbarHeader = GetMarkdownToolbarHeader(langCode);
             var editorServiceHeader = GetMarkdownEditorServiceHeader(langCode);
             var editorUtilityHeader = GetMarkdownEditorUtilityHeader(langCode);
+            var assetManagerHeader = GetMarkdownAssetManagerHeader(langCode);
+
             var nameCol = GetMarkdownNameCol(langCode);
             var descriptionCol = GetMarkdownDescriptionCol(langCode);
             var triggerCol = GetMarkdownTriggerCol(langCode);
 
             sb.AppendLine(title);
             sb.AppendLine();
+
             // Hierarchy Extension
             sb.AppendLine(hierarchyHeader);
             sb.AppendLine();
@@ -139,6 +144,18 @@ namespace _4OF.ee4v._Dev {
             var toolbarComponents = data.Where(d => d.ComponentType.Contains("ProjectToolbar")).ToList();
             foreach (var comp in toolbarComponents)
                 sb.AppendLine($"| **{comp.Name.Trim()}** | {comp.Description.Trim()} | {comp.Trigger.Trim()} |");
+
+            sb.AppendLine();
+
+            // Asset Manager
+            sb.AppendLine(assetManagerHeader);
+            sb.AppendLine();
+            sb.AppendLine($"| {nameCol} | {descriptionCol} |");
+            sb.AppendLine("| :--- | :--- |");
+
+            var assetManagerComponents = data.Where(d => d.ComponentType.Contains("AssetManager")).ToList();
+            foreach (var comp in assetManagerComponents)
+                sb.AppendLine($"| **{comp.Name.Trim()}** | {comp.Description.Trim()} |");
 
             sb.AppendLine();
 
@@ -200,6 +217,15 @@ namespace _4OF.ee4v._Dev {
                 "en-US" => "## Project Toolbar Extensions",
                 "ko-KR" => "## Project Toolbar 확장 기능",
                 _       => "## Project Toolbar Extensions"
+            };
+        }
+
+        private static string GetMarkdownAssetManagerHeader(string langCode) {
+            return langCode switch {
+                "ja-JP" => "## Asset Manager コンポーネント",
+                "en-US" => "## Asset Manager Components",
+                "ko-KR" => "## Asset Manager 컴포넌트",
+                _       => "## Asset Manager Components"
             };
         }
 

@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using _4OF.ee4v.AssetManager.Component;
-using _4OF.ee4v.AssetManager.Core;
-using _4OF.ee4v.AssetManager.Presenter;
+﻿using _4OF.ee4v.AssetManager.Component;
+using _4OF.ee4v.AssetManager.Interfaces;
+using _4OF.ee4v.AssetManager.Manager;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
@@ -13,236 +10,9 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.Window {
     public class AssetManagerWindow : EditorWindow {
-        private AssetViewController _assetController;
-        private AssetManagerBootstrapper _bootstrapper;
-
-        private Ulid _currentPreviewFolderId = Ulid.Empty;
-        private AssetGridPresenter _gridPresenter;
-        private AssetNavigationPresenter _navigationPresenter;
-        private AssetPropertyPresenter _propertyPresenter;
-        private AssetMetadata _selectedAsset;
-        private ToastManager _toastManager;
-
-        public Navigation Navigation { get; private set; }
-        public AssetView AssetView { get; private set; }
-        public TagListView TagListView { get; private set; }
-        public AssetInfo AssetInfo { get; private set; }
-
-        private void OnEnable() {
-            _bootstrapper = new AssetManagerBootstrapper(this);
-        }
-
-        private void OnDisable() {
-            _bootstrapper?.Dispose();
-            _bootstrapper = null;
-        }
-
-        private void CreateGUI() {
-            _bootstrapper ??= new AssetManagerBootstrapper(this);
-            _bootstrapper.Initialize();
-        }
-
-        public void SetViews(
-            Navigation navigation,
-            AssetView assetView,
-            TagListView tagListView,
-            AssetInfo assetInfo,
-            AssetViewController assetController,
-            AssetNavigationPresenter navigationPresenter,
-            AssetGridPresenter gridPresenter,
-            AssetPropertyPresenter propertyPresenter,
-            ToastManager toastManager) {
-            Navigation = navigation;
-            AssetView = assetView;
-            TagListView = tagListView;
-            AssetInfo = assetInfo;
-            _assetController = assetController;
-            _navigationPresenter = navigationPresenter;
-            _gridPresenter = gridPresenter;
-            _propertyPresenter = propertyPresenter;
-            _toastManager = toastManager;
-        }
-
-        internal void OnNavigationChanged(NavigationMode mode, string contextName, Func<AssetMetadata, bool> filter) {
-            _navigationPresenter.OnNavigationChanged(mode, contextName, filter);
-            _propertyPresenter.ClearSelection();
-        }
-
-        internal void OnFolderSelected(Ulid folderId) {
-            _navigationPresenter.OnFolderSelected(folderId);
-            _propertyPresenter.ClearSelection();
-        }
-
-        internal void OnTagListClicked() {
-            _navigationPresenter.OnTagListClicked();
-            _propertyPresenter.ClearSelection();
-        }
-
-        internal void OnTagSelected(string tag) {
-            _navigationPresenter.OnTagSelected(tag);
-            _propertyPresenter.ClearSelection();
-        }
-
-        internal void OnSelectionChanged(List<object> selectedItems) {
-            _propertyPresenter.UpdateSelection(selectedItems);
-            AssetInfo.UpdateSelection(selectedItems);
-        }
-
-        internal void OnModeChanged(NavigationMode mode) {
-            if (mode == NavigationMode.TagList)
-                ShowTagListView();
-            else
-                ShowAssetView();
-        }
-
-        internal void OnControllerHistoryChanged() {
-            Navigation?.SelectState(_assetController.CurrentMode, _assetController.SelectedFolderId);
-
-            AssetView?.ClearSelection();
-            _selectedAsset = null;
-            AssetInfo?.UpdateSelection(new List<object>());
-            _propertyPresenter.ClearSelection();
-        }
-
-        internal void OnAssetSelected(AssetMetadata asset) {
-            _currentPreviewFolderId = Ulid.Empty;
-        }
-
-        internal void OnFolderPreviewSelected(BaseFolder folder) {
-            _currentPreviewFolderId = folder?.ID ?? Ulid.Empty;
-        }
-
-        internal void OnFoldersChanged(List<BaseFolder> folders) {
-            Navigation.SetFolders(folders);
-        }
-
-        internal void OnBoothItemFoldersChanged(List<BoothItemFolder> folders) {
-            AssetView.ShowBoothItemFolders(folders);
-        }
-
-        internal void OnFolderUpdated(BaseFolder folder) {
-            var folders = AssetManagerContainer.FolderService.GetRootFolders();
-            Navigation.SetFolders(folders);
-
-            if (_currentPreviewFolderId != Ulid.Empty && _currentPreviewFolderId == folder.ID)
-                AssetInfo.UpdateSelection(new List<object> { folder });
-        }
-
-        internal void OnDependencyClicked(Ulid dependencyId) {
-            var depAsset = AssetManagerContainer.Repository.GetAsset(dependencyId);
-            if (depAsset == null || depAsset.IsDeleted) {
-                ShowToast(I18N.Get("UI.AssetManager.Toast.DependencyAssetNotSelected"), 3, ToastType.Error);
-                return;
-            }
-
-            var folder = depAsset.Folder;
-            if (folder != Ulid.Empty) {
-                Navigation.SelectState(NavigationMode.Folders, folder);
-                _navigationPresenter.OnFolderSelected(folder);
-            }
-            else {
-                Navigation.SelectAll();
-            }
-        }
-
-        internal void OnNavigationDropRequested(Ulid targetFolderId, string[] assetIdsData, string[] folderIdsData) {
-            if (assetIdsData is { Length: > 0 }) {
-                var assetIds = assetIdsData.Select(Ulid.Parse).ToList();
-
-                var assetsFromBoothItemFolder = _gridPresenter.FindAssetsFromBoothItemFolder(assetIds);
-                if (assetsFromBoothItemFolder.Count > 0)
-                    ShowBoothItemFolderWarningDialog(assetIds, targetFolderId, assetsFromBoothItemFolder);
-                else
-                    _gridPresenter.PerformSetFolderForAssets(assetIds, targetFolderId);
-            }
-
-            if (folderIdsData is not { Length: > 0 }) return;
-            var folderIds = folderIdsData.Select(Ulid.Parse).ToList();
-            foreach (var sourceFolderId in folderIds.Where(id => id != targetFolderId))
-                _navigationPresenter.OnFolderMoved(sourceFolderId, targetFolderId);
-        }
-
-        internal void OnItemsDroppedToFolder(List<Ulid> assetIds, List<Ulid> folderIds, Ulid targetFolderId) {
-            if (assetIds.Count > 0) {
-                var assetsFromBoothItemFolder = _gridPresenter.FindAssetsFromBoothItemFolder(assetIds);
-
-                if (assetsFromBoothItemFolder.Count > 0) {
-                    ShowBoothItemFolderWarningDialog(assetIds, targetFolderId, assetsFromBoothItemFolder);
-                    return;
-                }
-            }
-
-            _gridPresenter.PerformItemsDroppedToFolder(assetIds, folderIds, targetFolderId);
-        }
-
-        public void RefreshUI(bool fullRefresh = true) {
-            if (fullRefresh) _assetController.Refresh();
-
-            if (_selectedAsset == null) return;
-            var freshAsset = AssetManagerContainer.Repository.GetAsset(_selectedAsset.ID);
-            _selectedAsset = freshAsset;
-            AssetInfo.UpdateSelection(new List<object> { freshAsset });
-        }
-
-        public void ShowAssetView() {
-            AssetView.style.display = DisplayStyle.Flex;
-            TagListView.style.display = DisplayStyle.None;
-        }
-
-        private void ShowTagListView() {
-            AssetView.style.display = DisplayStyle.None;
-            TagListView.style.display = DisplayStyle.Flex;
-        }
-
-        public void SetSelectedAsset(AssetMetadata asset) {
-            _selectedAsset = asset;
-        }
-
-        public AssetMetadata GetSelectedAsset() {
-            return _selectedAsset;
-        }
-
-        public void SetCurrentPreviewFolderId(Ulid id) {
-            _currentPreviewFolderId = id;
-        }
-
-        public VisualElement ShowDialog(VisualElement dialogContent) {
-            var container = new VisualElement {
-                style = {
-                    position = Position.Absolute,
-                    left = 0, right = 0, top = 0, bottom = 0,
-                    backgroundColor = ColorPreset.TransparentBlack50Style,
-                    alignItems = Align.Center,
-                    justifyContent = Justify.Center
-                }
-            };
-
-            var dialog = new VisualElement {
-                style = {
-                    backgroundColor = ColorPreset.DefaultBackground,
-                    paddingLeft = 20, paddingRight = 20, paddingTop = 20, paddingBottom = 20,
-                    borderTopLeftRadius = 8, borderTopRightRadius = 8,
-                    borderBottomLeftRadius = 8, borderBottomRightRadius = 8,
-                    minWidth = 300,
-                    maxWidth = 500
-                }
-            };
-
-            dialog.Add(dialogContent);
-            container.Add(dialog);
-            rootVisualElement.Add(container);
-
-            return container;
-        }
-
-        private void ShowToast(string message, float? duration = 3f, ToastType type = ToastType.Info) {
-            _toastManager?.Show(message, duration, type);
-        }
-
-        public static void ShowToastMessage(string message, float? duration = 3f, ToastType type = ToastType.Info) {
-            var window = GetWindow<AssetManagerWindow>();
-            window?.ShowToast(message, duration, type);
-        }
+        private AssetManagerComponentManager _componentManager;
+        private AssetManagerContext _context;
+        // ToastManagerのフィールドは削除（OverlayComponentへ移動）
 
         [MenuItem("ee4v/Asset Manager")]
         public static void ShowWindow() {
@@ -252,64 +22,146 @@ namespace _4OF.ee4v.AssetManager.Window {
             window.Show();
         }
 
-        private void ShowBoothItemFolderWarningDialog(List<Ulid> assetIds, Ulid targetFolderId,
-            List<AssetMetadata> assetsFromBoothItemFolder) {
-            var content = new VisualElement();
+        private void OnEnable() {
+            if (_context == null) Initialize();
+        }
 
-            var titleLabel = new Label(I18N.Get("UI.AssetManager.Dialog.BoothItemWarning.Title")) {
-                style = {
-                    fontSize = 14,
-                    unityFontStyleAndWeight = FontStyle.Bold,
-                    marginBottom = 10
-                }
+        private void OnDisable() {
+            _componentManager?.Dispose();
+            _context?.ViewController?.Dispose();
+            // _toastManager?.ClearAll(); // 削除
+        }
+
+        private void CreateGUI() {
+            Initialize();
+        }
+
+        private void Initialize() {
+            // コンテキストの作成
+            _context = new AssetManagerContext {
+                Repository = AssetManagerContainer.Repository,
+                AssetService = AssetManagerContainer.AssetService,
+                FolderService = AssetManagerContainer.FolderService,
+                TextureService = AssetManagerContainer.TextureService,
+                ViewController = new AssetViewController(AssetManagerContainer.Repository),
+                SelectionModel = new AssetSelectionModel(),
+                // ShowDialog, ShowToast は OverlayComponent によって初期化時に設定されるため、ここではnullのまま
+                RequestRefresh = RefreshUI,
+                RequestTagListRefresh = () => { /* Event will be subscribed by TagListComponent */ }
             };
-            content.Add(titleLabel);
 
-            var messageText = assetsFromBoothItemFolder.Count == 1
-                ? I18N.Get("UI.AssetManager.Dialog.BoothItemWarning.Single", assetsFromBoothItemFolder[0].Name)
-                : I18N.Get("UI.AssetManager.Dialog.BoothItemWarning.Multi", assetsFromBoothItemFolder.Count);
-
-            var message = new Label(messageText) {
-                style = {
-                    marginBottom = 15,
-                    whiteSpace = WhiteSpace.Normal
-                }
+            // コントローラのイベントをモデルに反映
+            _context.ViewController.AssetSelected += asset => {
+                _context.SelectionModel.SetSelectedAsset(asset);
+                _context.SelectionModel.SetPreviewFolder(Ulid.Empty);
             };
-            content.Add(message);
+            _context.ViewController.FolderPreviewSelected += folder => {
+                _context.SelectionModel.SetPreviewFolder(folder?.ID ?? Ulid.Empty);
+                if (folder != null) _context.SelectionModel.SetSelectedAsset(null);
+            };
 
-            var buttonRow = new VisualElement {
+            // UIレイアウトの構築
+            var root = rootVisualElement;
+            root.Clear();
+            
+            // メインレイアウト（Navigation, Main, Inspector）用のコンテナ
+            var contentRoot = new VisualElement {
+                name = "ee4v-content-root",
                 style = {
                     flexDirection = FlexDirection.Row,
-                    justifyContent = Justify.FlexEnd
+                    flexGrow = 1,
+                    height = Length.Percent(100)
                 }
             };
+            root.Add(contentRoot);
 
-            var cancelBtn = new Button {
-                text = I18N.Get("UI.AssetManager.Dialog.Button.Cancel"),
-                style = { marginRight = 5 }
-            };
-            buttonRow.Add(cancelBtn);
-
-            var continueBtn = new Button {
-                text = I18N.Get("UI.AssetManager.Dialog.Button.Continue"),
+            // 各領域のコンテナ作成
+            var leftContainer = new VisualElement {
+                name = "Region-Navigation",
                 style = {
-                    backgroundColor = new StyleColor(ColorPreset.WarningButton)
+                    width = 200,
+                    minWidth = 150,
+                    flexShrink = 0,
+                    borderRightWidth = 1,
+                    borderRightColor = ColorPreset.WindowBorder
                 }
             };
-            buttonRow.Add(continueBtn);
+            contentRoot.Add(leftContainer);
 
-            content.Add(buttonRow);
-
-            var dialogContainer = ShowDialog(content);
-
-            cancelBtn.clicked += () => dialogContainer?.RemoveFromHierarchy();
-            continueBtn.clicked += () =>
-            {
-                foreach (var assetId in assetIds) AssetManagerContainer.AssetService.SetFolder(assetId, targetFolderId);
-
-                RefreshUI();
-                dialogContainer?.RemoveFromHierarchy();
+            var mainContainer = new VisualElement {
+                name = "Region-Main",
+                style = { flexGrow = 1 }
             };
+            contentRoot.Add(mainContainer);
+
+            var rightContainer = new VisualElement {
+                name = "Region-Inspector",
+                style = {
+                    width = 300,
+                    minWidth = 250,
+                    flexShrink = 0,
+                    borderLeftWidth = 1,
+                    borderLeftColor = ColorPreset.WindowBorder
+                }
+            };
+            contentRoot.Add(rightContainer);
+
+            // オーバーレイレイヤー（全画面を覆うコンテナ）
+            // contentRootの後に配置することで手前に描画される
+            var overlayContainer = new VisualElement {
+                name = "Region-Overlay",
+                pickingMode = PickingMode.Ignore, // コンテンツがない場所はクリックを透過
+                style = {
+                    position = Position.Absolute,
+                    left = 0, right = 0, top = 0, bottom = 0
+                }
+            };
+            root.Add(overlayContainer);
+
+            // コンポーネントマネージャーの初期化
+            _componentManager = new AssetManagerComponentManager();
+            
+            // Initialize内で OverlayComponent が先に初期化され、_context.ShowDialog等が設定される
+            _componentManager.Initialize(_context);
+
+            // 各コンポーネントの配置
+            MountComponents(AssetManagerComponentLocation.Navigation, leftContainer);
+            MountComponents(AssetManagerComponentLocation.MainView, mainContainer);
+            MountComponents(AssetManagerComponentLocation.Inspector, rightContainer);
+            MountComponents(AssetManagerComponentLocation.Overlay, overlayContainer);
+
+            // 初期表示更新
+            _context.ViewController.Refresh();
+        }
+
+        private void MountComponents(AssetManagerComponentLocation location, VisualElement container) {
+            foreach (var component in _componentManager.GetComponents(location)) {
+                var element = component.CreateElement();
+                if (element != null) container.Add(element);
+            }
+        }
+
+        private void RefreshUI(bool fullRefresh) {
+            if (fullRefresh) _context.ViewController.Refresh();
+            
+            var selectedAsset = _context.SelectionModel.SelectedAsset.Value;
+            if (selectedAsset != null) {
+                var freshAsset = _context.Repository.GetAsset(selectedAsset.ID);
+                _context.SelectionModel.SetSelectedAsset(freshAsset);
+            }
+        }
+
+        // ShowDialog, ShowToast メソッドは OverlayComponent に移譲されたため削除
+        
+        // 静的ヘルパーメソッドはウィンドウインスタンス経由でContextを呼び出す形に変更可能だが、
+        // Contextへのアクセスが難しいため、簡易的に GetWindow して OverlayComponent の機能を使いたいところだが、
+        // 現状の静的メソッド ShowToastMessage は Window が _context を持っている前提で修正が必要。
+        // ただし、このメソッドは外部からの呼び出し用であり、内部的には Context.ShowToast を使うべき。
+        
+        public static void ShowToastMessage(string message, float? duration = 3f, ToastType type = ToastType.Info) {
+            var window = GetWindow<AssetManagerWindow>();
+            // window._context.ShowToast が設定されていれば実行
+            window?._context?.ShowToast?.Invoke(message, duration, type);
         }
     }
 }

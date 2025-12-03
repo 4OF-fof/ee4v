@@ -5,12 +5,12 @@
 | 名称 (Name) | 機能 (Description) | 起動条件 (Trigger) |
 | :--- | :--- | :--- |
 | **Component Icons** | オブジェクトにアタッチされたコンポーネントのアイコンを表示します。 | 常時(クリックでウィンドウ展開) |
-| **GaneObject Window** | オブジェクトの見た目のカスタマイズや情報表示を行うウィンドウを展開します。 | メニューアイコンをクリック |
-| **Hidden Object** | 非表示にされたオブジェクトの一覧を表示します。 | 目のアイコンをクリック |
-| **DepthLine** | オブジェクトの深さに応じてヒエラルキー内にガイドラインを表示します。 | 常時 |
-| **CustomStyle: Heading** | 見出しの見た目をオブジェクトに適用します。 | 特定の文字列を名前の先頭に追加(デフォルト: ':HEADING') |
-| **Scene Switcher** | シーン間の切り替えを簡単に行えるウィンドウを展開します。 | シーン名をクリック |
 | **CustomStyle: Separator** | 区切り線の見た目をオブジェクトに適用します。 | 特定の文字列を名前の先頭に追加(デフォルト: ':SEPARATOR') |
+| **Scene Switcher** | シーン間の切り替えを簡単に行えるウィンドウを展開します。 | シーン名をクリック |
+| **CustomStyle: Heading** | 見出しの見た目をオブジェクトに適用します。 | 特定の文字列を名前の先頭に追加(デフォルト: ':HEADING') |
+| **DepthLine** | オブジェクトの深さに応じてヒエラルキー内にガイドラインを表示します。 | 常時 |
+| **Hidden Object** | 非表示にされたオブジェクトの一覧を表示します。 | 目のアイコンをクリック |
+| **GaneObject Window** | オブジェクトの見た目のカスタマイズや情報表示を行うウィンドウを展開します。 | メニューアイコンをクリック |
 | **Styled Object** | オブジェクトに色やアイコンを設定し、ヒエラルキーでの視認性を向上させます。 | 専用ウィンドウ(GaneObject Window)から設定 |
 
 ## Project 拡張機能
@@ -27,6 +27,15 @@
 | **Tab** | プロジェクトウィンドウにタブを追加します。 | 追加ボタンをクリック。またはタブ領域にフォルダをドラッグ＆ドロップ。 |
 | **WorkSpace** | 一時的なワークスペースを作成し、仮想的なフォルダとして使用します。 | 追加ボタンを右クリック。作成されたタブにアセットをドラッグ＆ドロップすることで追加できます。 |
 
+## Asset Manager コンポーネント
+
+| 名称 (Name) | 機能 (Description) |
+| :--- | :--- |
+| **Inspector** | Displays detailed information about the selected asset or folder. |
+| **Asset Grid** | Displays assets in a grid view with toolbar. |
+| **Tag List** | Displays list of all tags. |
+| **Navigation Tree** | Displays folder hierarchy and filters. |
+
 ## Editor Service 拡張機能
 
 | 名称 (Name) | 機能 (Description) | 起動条件 (Trigger) |
@@ -37,5 +46,5 @@
 
 | 名称 (Name) | 機能 (Description) | 起動条件 (Trigger) |
 | :--- | :--- | :--- |
-| **Variant Converter** | アバタープレハブのバリアントを作成します。同時にマテリアルもバリアントに変換されます。 | ヒエラルキーでプレハブを右クリック |
 | **Material List** | プレハブに使用されているマテリアルの一覧を表示します。 | `ee4v>Material List`からウィンドウを開きます。ヒエラルキーでプレハブを選択するか、ウィンドウ上でターゲットを指定してください。 |
+| **Variant Converter** | アバタープレハブのバリアントを作成します。同時にマテリアルもバリアントに変換されます。 | ヒエラルキーでプレハブを右クリック |
