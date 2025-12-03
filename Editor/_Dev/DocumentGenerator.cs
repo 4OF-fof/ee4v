@@ -56,7 +56,8 @@ namespace _4OF.ee4v._Dev {
             var allData = new List<ResolvedComponentData>();
             var componentTypes = new List<Type> {
                 typeof(IHierarchyExtensionComponent),
-                typeof(IProjectExtensionComponent)
+                typeof(IProjectExtensionComponent),
+                typeof(IProjectToolbarComponent)
             };
 
             foreach (var interfaceType in componentTypes) {
@@ -94,6 +95,7 @@ namespace _4OF.ee4v._Dev {
             var title = GetMarkdownTitle(langCode);
             var hierarchyHeader = GetMarkdownHierarchyHeader(langCode);
             var projectHeader = GetMarkdownProjectHeader(langCode);
+            var toolbarHeader = GetMarkdownToolbarHeader(langCode);
             var nameCol = GetMarkdownNameCol(langCode);
             var descriptionCol = GetMarkdownDescriptionCol(langCode);
             var triggerCol = GetMarkdownTriggerCol(langCode);
@@ -120,6 +122,18 @@ namespace _4OF.ee4v._Dev {
 
             var projectComponents = data.Where(d => d.ComponentType.Contains("ProjectExtension")).ToList();
             foreach (var comp in projectComponents)
+                sb.AppendLine($"| **{comp.Name.Trim()}** | {comp.Description.Trim()} | {comp.Trigger.Trim()} |");
+            
+            sb.AppendLine();
+            
+            // Project Toolbar
+            sb.AppendLine(toolbarHeader);
+            sb.AppendLine();
+            sb.AppendLine($"| {nameCol} | {descriptionCol} | {triggerCol} |");
+            sb.AppendLine("| :--- | :--- | :--- |");
+
+            var toolbarComponents = data.Where(d => d.ComponentType.Contains("ProjectToolbar")).ToList();
+            foreach (var comp in toolbarComponents)
                 sb.AppendLine($"| **{comp.Name.Trim()}** | {comp.Description.Trim()} | {comp.Trigger.Trim()} |");
 
             return sb.ToString();
@@ -149,6 +163,15 @@ namespace _4OF.ee4v._Dev {
                 "en-US" => "## Project Extensions",
                 "ko-KR" => "## Project 확장 기능",
                 _       => "## Project Extensions"
+            };
+        }
+        
+        private static string GetMarkdownToolbarHeader(string langCode) {
+            return langCode switch {
+                "ja-JP" => "## Project Toolbar 拡張機能",
+                "en-US" => "## Project Toolbar Extensions",
+                "ko-KR" => "## Project Toolbar 확장 기능",
+                _       => "## Project Toolbar Extensions"
             };
         }
 
