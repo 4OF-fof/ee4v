@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 namespace _4OF.ee4v.AssetManager.Components {
     public class TagListViewComponent : IAssetManagerComponent {
         private AssetManagerContext _context;
-        private AssetNavigationPresenter _presenter; // TagList操作はNavigationPresenterが担当している
+        private AssetNavigationPresenter _presenter;
         private TagListView _tagListView;
 
         public AssetManagerComponentLocation Location => AssetManagerComponentLocation.MainView;
@@ -23,7 +23,6 @@ namespace _4OF.ee4v.AssetManager.Components {
             _tagListView.SetController(context.ViewController);
             _tagListView.SetShowDialogCallback(context.ShowDialog);
 
-            // PresenterはNavigationComponentと共有せず新規作成（Tag操作用）
             _presenter = new AssetNavigationPresenter(
                 context.Repository,
                 context.AssetService,
@@ -31,7 +30,7 @@ namespace _4OF.ee4v.AssetManager.Components {
                 context.ViewController,
                 context.ShowToast,
                 context.RequestRefresh,
-                _ => { }, // フォルダ設定はこのコンポーネントでは行わない
+                _ => { },
                 () => _tagListView.Refresh()
             );
 
@@ -60,7 +59,6 @@ namespace _4OF.ee4v.AssetManager.Components {
         }
 
         private void OnTagSelected(string tag) {
-            // タグ選択時はNavigationPresenter経由でモード切り替え
             _presenter.OnTagSelected(tag);
         }
 

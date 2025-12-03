@@ -10,15 +10,11 @@ namespace _4OF.ee4v.AssetManager.Components {
         private ToastManager _toastManager;
 
         public AssetManagerComponentLocation Location => AssetManagerComponentLocation.Overlay;
-
-        // 他のコンポーネントが Initialize 中に ShowDialog/ShowToast を参照する可能性があるため、
-        // 最優先で初期化されるように設定します。
         public int Priority => -100;
 
         public void Initialize(AssetManagerContext context) {
             _context = context;
 
-            // ルートコンテナの作成（画面全体を覆う、透過・タッチ無視）
             _rootContainer = new VisualElement {
                 name = "ee4v-overlay-root",
                 pickingMode = PickingMode.Ignore,
@@ -29,11 +25,8 @@ namespace _4OF.ee4v.AssetManager.Components {
                 }
             };
 
-            // ToastManagerの初期化
-            // ToastManagerはコンテナ内にトースト表示用コンテナを生成して追加します
             _toastManager = new ToastManager(_rootContainer);
 
-            // Contextへの機能提供
             context.ShowDialog = ShowDialogContent;
             context.ShowToast = ShowToastMessage;
         }
@@ -56,7 +49,6 @@ namespace _4OF.ee4v.AssetManager.Components {
         }
 
         private VisualElement ShowDialogContent(VisualElement dialogContent) {
-            // 背景（暗幕）
             var backdrop = new VisualElement {
                 style = {
                     position = Position.Absolute,
@@ -67,7 +59,6 @@ namespace _4OF.ee4v.AssetManager.Components {
                 }
             };
 
-            // ダイアログ本体のコンテナ
             var dialogContainer = new VisualElement {
                 style = {
                     backgroundColor = ColorPreset.DefaultBackground,
@@ -79,15 +70,10 @@ namespace _4OF.ee4v.AssetManager.Components {
                 }
             };
 
-            // コンテンツの追加
             dialogContainer.Add(dialogContent);
             backdrop.Add(dialogContainer);
-
-            // オーバーレイに追加
             _rootContainer.Add(backdrop);
-
-            // 閉じるためのヘルパーメソッドを提供できるように、backdrop自体を返す
-            // (呼び出し元で parent?.RemoveFromHierarchy() するため)
+            
             return backdrop;
         }
     }
