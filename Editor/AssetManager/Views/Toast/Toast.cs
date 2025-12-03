@@ -3,7 +3,7 @@ using _4OF.ee4v.Core.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.AssetManager.Modules {
+namespace _4OF.ee4v.AssetManager.Views.Toast {
     public class Toast : VisualElement {
         private readonly IVisualElementScheduledItem _autoCloseScheduler;
         private readonly Label _messageLabel;

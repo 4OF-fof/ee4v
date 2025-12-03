@@ -2,12 +2,11 @@ using System;
 using System.Threading;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.AssetManager.Services;
-using _4OF.ee4v.AssetManager.Views.Components.AssetGrid;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 
-namespace _4OF.ee4v.AssetManager.Modules {
+namespace _4OF.ee4v.AssetManager.Views.Components.AssetView {
     public class AssetThumbnailLoader {
         private readonly TextureService _textureService;
 

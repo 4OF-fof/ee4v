@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Core;
-using _4OF.ee4v.AssetManager.Modules;
 using _4OF.ee4v.AssetManager.State;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
@@ -168,7 +167,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                     case 0:
                         SelectFolder(folder.ID);
                         OnFolderSelected?.Invoke(folder.ID);
-                        _dragManipulator.StartDrag(folder.ID, evt.position, itemRow);
+                        _dragManipulator.StartDrag(folder.ID, itemRow);
                         evt.StopPropagation();
                         break;
                     case 1:
@@ -200,7 +199,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             });
 
             _dragManipulator.RegisterFolderItem(itemRow, treeItemContainer, parentContainer, 
-                GetParentFolderId, GetChildIndex, ApplySelectedStyle);
+                GetParentFolderId, GetChildIndex);
 
             var childrenContainer = new VisualElement {
                 style = { display = isExpanded ? DisplayStyle.Flex : DisplayStyle.None }

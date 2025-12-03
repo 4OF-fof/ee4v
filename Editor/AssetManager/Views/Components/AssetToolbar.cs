@@ -8,7 +8,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.AssetManager.Modules {
+namespace _4OF.ee4v.AssetManager.Views.Components {
     public sealed class AssetToolbar : VisualElement {
         private readonly Label _backLabel;
         private readonly ScrollView _breadcrumbContainer;

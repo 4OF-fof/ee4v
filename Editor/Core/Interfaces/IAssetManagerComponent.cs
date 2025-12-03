@@ -1,8 +1,8 @@
 ﻿using System;
 using _4OF.ee4v.AssetManager.Core;
-using _4OF.ee4v.AssetManager.Modules;
 using _4OF.ee4v.AssetManager.Services;
 using _4OF.ee4v.AssetManager.State;
+using _4OF.ee4v.AssetManager.Views.Toast;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.Core.Interfaces {

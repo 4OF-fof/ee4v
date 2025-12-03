@@ -1,5 +1,5 @@
-﻿using _4OF.ee4v.AssetManager.Modules;
-using _4OF.ee4v.AssetManager.State;
+﻿using _4OF.ee4v.AssetManager.State;
+using _4OF.ee4v.AssetManager.Views.Toast;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Manager;

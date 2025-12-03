@@ -4,14 +4,15 @@ using System.Linq;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.AssetManager.Services;
 using _4OF.ee4v.AssetManager.State;
-using _4OF.ee4v.AssetManager.Views;
+using _4OF.ee4v.AssetManager.Views.Components;
+using _4OF.ee4v.AssetManager.Views.Components.AssetView;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.AssetManager.Modules {
-    public class AssetView : VisualElement {
+namespace _4OF.ee4v.AssetManager.Views {
+    public class AssetListView : VisualElement {
         private readonly AssetGrid _grid;
         private readonly AssetToolbar _toolbar;
         private List<object> _allItems = new();
@@ -22,7 +23,7 @@ namespace _4OF.ee4v.AssetManager.Modules {
         private AssetSortType _currentSortType = AssetSortType.NameAsc;
         private List<object> _filteredItems = new();
 
-        public AssetView() {
+        public AssetListView() {
             style.flexGrow = 1;
             style.backgroundColor = ColorPreset.DefaultBackground;
             focusable = true;

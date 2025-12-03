@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.AssetManager.Modules {
+namespace _4OF.ee4v.AssetManager.Views.Toast {
     public class ToastManager {
         private readonly List<Toast> _activeToasts = new();
         private readonly VisualElement _container;

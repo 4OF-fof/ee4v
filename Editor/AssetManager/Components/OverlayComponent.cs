@@ -1,4 +1,4 @@
-﻿using _4OF.ee4v.AssetManager.Modules;
+﻿using _4OF.ee4v.AssetManager.Views.Toast;
 using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.UI;
 using UnityEngine.UIElements;

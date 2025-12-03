@@ -1,11 +1,11 @@
-﻿using _4OF.ee4v.AssetManager.Modules;
-using _4OF.ee4v.AssetManager.Presenter;
+﻿using _4OF.ee4v.AssetManager.Presenter;
 using _4OF.ee4v.AssetManager.State;
+using _4OF.ee4v.AssetManager.Views;
 using _4OF.ee4v.Core.Interfaces;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.Components {
-    public class TagListComponent : IAssetManagerComponent {
+    public class TagListViewComponent : IAssetManagerComponent {
         private AssetManagerContext _context;
         private AssetNavigationPresenter _presenter; // TagList操作はNavigationPresenterが担当している
         private TagListView _tagListView;

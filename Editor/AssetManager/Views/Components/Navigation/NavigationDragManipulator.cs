@@ -5,11 +5,10 @@ using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.AssetManager.Modules {
+namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
     public class NavigationDragManipulator : PointerManipulator {
         private readonly Dictionary<Ulid, VisualElement> _folderRowMap;
         private Ulid _draggingFolderId = Ulid.Empty;
-        private Vector2 _dragStartPosition;
 
         public NavigationDragManipulator(Dictionary<Ulid, VisualElement> folderRowMap) {
             _folderRowMap = folderRowMap;
@@ -30,18 +29,17 @@ namespace _4OF.ee4v.AssetManager.Modules {
 
         public void RegisterFolderItem(VisualElement itemRow, VisualElement treeItemContainer,
             VisualElement parentContainer, Func<Ulid, Ulid> getParentFolderId,
-            Func<VisualElement, Ulid, int> getChildIndex, Action<VisualElement> applySelectedStyle) {
+            Func<VisualElement, Ulid, int> getChildIndex) {
             itemRow.RegisterCallback<PointerMoveEvent>(evt => OnPointerMove(evt, itemRow, treeItemContainer));
             itemRow.RegisterCallback<PointerEnterEvent>(evt => OnPointerEnter(evt, itemRow, treeItemContainer));
-            itemRow.RegisterCallback<PointerLeaveEvent>(evt =>
-                OnPointerLeaveItem(evt, itemRow, treeItemContainer, applySelectedStyle));
+            itemRow.RegisterCallback<PointerLeaveEvent>(_ =>
+                OnPointerLeaveItem(itemRow, treeItemContainer));
             itemRow.RegisterCallback<PointerUpEvent>(evt => OnPointerUpItem(evt, itemRow, treeItemContainer,
-                parentContainer, getParentFolderId, getChildIndex, applySelectedStyle));
+                parentContainer, getParentFolderId, getChildIndex));
         }
 
-        public void StartDrag(Ulid folderId, Vector2 position, VisualElement itemRow) {
+        public void StartDrag(Ulid folderId, VisualElement itemRow) {
             _draggingFolderId = folderId;
-            _dragStartPosition = position;
             itemRow.style.opacity = 0.5f;
         }
 
@@ -58,15 +56,14 @@ namespace _4OF.ee4v.AssetManager.Modules {
             UpdateDropVisualFeedback(itemRow, evt.position);
         }
 
-        private void OnPointerLeaveItem(PointerLeaveEvent evt, VisualElement itemRow, VisualElement treeItemContainer,
-            Action<VisualElement> applySelectedStyle) {
+        private void OnPointerLeaveItem(VisualElement itemRow, VisualElement treeItemContainer) {
             if (_draggingFolderId == Ulid.Empty || _draggingFolderId == (Ulid)treeItemContainer.userData) return;
             ClearDropVisualFeedback(itemRow);
         }
 
         private void OnPointerUpItem(PointerUpEvent evt, VisualElement itemRow, VisualElement treeItemContainer,
             VisualElement parentContainer, Func<Ulid, Ulid> getParentFolderId,
-            Func<VisualElement, Ulid, int> getChildIndex, Action<VisualElement> applySelectedStyle) {
+            Func<VisualElement, Ulid, int> getChildIndex) {
             if (_draggingFolderId == Ulid.Empty || _draggingFolderId == (Ulid)treeItemContainer.userData) return;
 
             var targetFolderId = (Ulid)treeItemContainer.userData;

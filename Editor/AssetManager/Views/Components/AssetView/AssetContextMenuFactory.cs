@@ -14,7 +14,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.AssetManager.Modules {
+namespace _4OF.ee4v.AssetManager.Views.Components.AssetView {
     public static class AssetContextMenuFactory {
         private const float ItemHeight = 19f;
         private const float SeparatorHeight = 6f;

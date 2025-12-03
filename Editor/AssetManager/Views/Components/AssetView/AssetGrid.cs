@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using _4OF.ee4v.AssetManager.Core;
-using _4OF.ee4v.AssetManager.Modules;
 using _4OF.ee4v.AssetManager.Services;
-using _4OF.ee4v.AssetManager.Views.Components.AssetGrid;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
@@ -14,7 +12,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
-namespace _4OF.ee4v.AssetManager.Views {
+namespace _4OF.ee4v.AssetManager.Views.Components.AssetView {
     public class AssetGrid : VisualElement {
         private readonly VisualElement _emptyStateContainer;
         private readonly ListView _listView;
@@ -409,7 +407,7 @@ namespace _4OF.ee4v.AssetManager.Views {
 
             var currentParent = parent;
             while (currentParent != null) {
-                if (currentParent is AssetView assetView) {
+                if (currentParent is Views.AssetListView assetView) {
                     assetView.Focus();
                     break;
                 }

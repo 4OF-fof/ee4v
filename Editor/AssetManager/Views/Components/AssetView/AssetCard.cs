@@ -9,7 +9,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.AssetManager.Views.Components.AssetGrid {
+namespace _4OF.ee4v.AssetManager.Views.Components.AssetView {
     public class AssetCard : VisualElement {
         private readonly VisualElement _innerContainer;
         private readonly Label _nameLabel;

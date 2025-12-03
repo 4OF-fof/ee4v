@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.AssetManager.State;
+using _4OF.ee4v.AssetManager.Views.Components;
 using _4OF.ee4v.AssetManager.Views.Dialog;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
@@ -11,7 +12,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.AssetManager.Modules {
+namespace _4OF.ee4v.AssetManager.Views {
     public class TagListView : VisualElement {
         private readonly VisualElement _emptyStateContainer;
         private readonly Dictionary<string, bool> _foldoutStates = new();

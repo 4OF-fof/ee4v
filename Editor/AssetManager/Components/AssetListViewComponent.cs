@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using _4OF.ee4v.AssetManager.Core;
-using _4OF.ee4v.AssetManager.Modules;
 using _4OF.ee4v.AssetManager.Presenter;
 using _4OF.ee4v.AssetManager.State;
+using _4OF.ee4v.AssetManager.Views;
+using _4OF.ee4v.AssetManager.Views.Components;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.UI;
@@ -12,8 +13,8 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.Components {
-    public class AssetGridComponent : IAssetManagerComponent {
-        private AssetView _assetView;
+    public class AssetListViewComponent : IAssetManagerComponent {
+        private AssetListView _assetListView;
         private AssetManagerContext _context;
         private AssetGridPresenter _presenter;
         private Action<VisualElement> _sortMenuHandler;
@@ -23,7 +24,7 @@ namespace _4OF.ee4v.AssetManager.Components {
 
         public void Initialize(AssetManagerContext context) {
             _context = context;
-            _assetView = new AssetView();
+            _assetListView = new AssetListView();
 
             _presenter = new AssetGridPresenter(
                 context.Repository,
@@ -32,10 +33,9 @@ namespace _4OF.ee4v.AssetManager.Components {
                 context.RequestRefresh
             );
 
-            _assetView.SetController(context.ViewController);
+            _assetListView.SetController(context.ViewController);
 
-            // 変更点: context.ShowDialog (Func) を Action にラップして渡す
-            _assetView.Initialize(
+            _assetListView.Initialize(
                 context.TextureService,
                 context.Repository,
                 context.AssetService,
@@ -43,33 +43,33 @@ namespace _4OF.ee4v.AssetManager.Components {
                 content => context.ShowDialog(content)
             );
 
-            _assetView.OnSelectionChange += OnSelectionChanged;
-            _assetView.OnItemsDroppedToFolder += OnItemsDropped;
+            _assetListView.OnSelectionChange += OnSelectionChanged;
+            _assetListView.OnItemsDroppedToFolder += OnItemsDropped;
 
-            _sortMenuHandler = element => ShowSortMenu(element);
-            _assetView.OnSortMenuRequested += _sortMenuHandler;
+            _sortMenuHandler = ShowSortMenu;
+            _assetListView.OnSortMenuRequested += _sortMenuHandler;
 
             context.ViewController.ModeChanged += OnModeChanged;
-            context.ViewController.BoothItemFoldersChanged += _assetView.ShowBoothItemFolders;
+            context.ViewController.BoothItemFoldersChanged += _assetListView.ShowBoothItemFolders;
             context.ViewController.OnHistoryChanged += OnHistoryChanged;
         }
 
         public VisualElement CreateElement() {
-            return _assetView;
+            return _assetListView;
         }
 
         public void Dispose() {
-            if (_assetView != null) {
-                _assetView.OnSelectionChange -= OnSelectionChanged;
-                _assetView.OnItemsDroppedToFolder -= OnItemsDropped;
-                _assetView.OnSortMenuRequested -= _sortMenuHandler;
+            if (_assetListView != null) {
+                _assetListView.OnSelectionChange -= OnSelectionChanged;
+                _assetListView.OnItemsDroppedToFolder -= OnItemsDropped;
+                _assetListView.OnSortMenuRequested -= _sortMenuHandler;
             }
 
-            if (_context?.ViewController != null) {
-                _context.ViewController.ModeChanged -= OnModeChanged;
-                _context.ViewController.BoothItemFoldersChanged -= _assetView.ShowBoothItemFolders;
-                _context.ViewController.OnHistoryChanged -= OnHistoryChanged;
-            }
+            if (_context?.ViewController == null) return;
+            _context.ViewController.ModeChanged -= OnModeChanged;
+            if (_assetListView != null)
+                _context.ViewController.BoothItemFoldersChanged -= _assetListView.ShowBoothItemFolders;
+            _context.ViewController.OnHistoryChanged -= OnHistoryChanged;
         }
 
         private void OnSelectionChanged(List<object> selectedItems) {
@@ -89,41 +89,41 @@ namespace _4OF.ee4v.AssetManager.Components {
         }
 
         private void OnModeChanged(NavigationMode mode) {
-            _assetView.style.display = mode == NavigationMode.TagList ? DisplayStyle.None : DisplayStyle.Flex;
+            _assetListView.style.display = mode == NavigationMode.TagList ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
         private void OnHistoryChanged() {
-            _assetView.ClearSelection();
+            _assetListView.ClearSelection();
         }
 
         private void ShowSortMenu(VisualElement element) {
             var menu = new GenericDropdownMenu();
             menu.AddItem(I18N.Get("UI.AssetManager.Sort.NameAsc"), false,
-                () => _assetView.ApplySortType(AssetSortType.NameAsc));
+                () => _assetListView.ApplySortType(AssetSortType.NameAsc));
             menu.AddItem(I18N.Get("UI.AssetManager.Sort.NameDesc"), false,
-                () => _assetView.ApplySortType(AssetSortType.NameDesc));
+                () => _assetListView.ApplySortType(AssetSortType.NameDesc));
             menu.AddSeparator("");
             menu.AddItem(I18N.Get("UI.AssetManager.Sort.DateAddedNewest"), false,
-                () => _assetView.ApplySortType(AssetSortType.DateAddedNewest));
+                () => _assetListView.ApplySortType(AssetSortType.DateAddedNewest));
             menu.AddItem(I18N.Get("UI.AssetManager.Sort.DateAddedOldest"), false,
-                () => _assetView.ApplySortType(AssetSortType.DateAddedOldest));
+                () => _assetListView.ApplySortType(AssetSortType.DateAddedOldest));
             menu.AddSeparator("");
             menu.AddItem(I18N.Get("UI.AssetManager.Sort.LastEditNewest"), false,
-                () => _assetView.ApplySortType(AssetSortType.DateNewest));
+                () => _assetListView.ApplySortType(AssetSortType.DateNewest));
             menu.AddItem(I18N.Get("UI.AssetManager.Sort.LastEditOldest"), false,
-                () => _assetView.ApplySortType(AssetSortType.DateOldest));
+                () => _assetListView.ApplySortType(AssetSortType.DateOldest));
             menu.AddSeparator("");
             menu.AddItem(I18N.Get("UI.AssetManager.Sort.SizeSmallest"), false,
-                () => _assetView.ApplySortType(AssetSortType.SizeSmallest));
+                () => _assetListView.ApplySortType(AssetSortType.SizeSmallest));
             menu.AddItem(I18N.Get("UI.AssetManager.Sort.SizeLargest"), false,
-                () => _assetView.ApplySortType(AssetSortType.SizeLargest));
+                () => _assetListView.ApplySortType(AssetSortType.SizeLargest));
             menu.AddSeparator("");
             menu.AddItem(I18N.Get("UI.AssetManager.Sort.FileTypeAsc"), false,
-                () => _assetView.ApplySortType(AssetSortType.ExtAsc));
+                () => _assetListView.ApplySortType(AssetSortType.ExtAsc));
             menu.AddItem(I18N.Get("UI.AssetManager.Sort.FileTypeDesc"), false,
-                () => _assetView.ApplySortType(AssetSortType.ExtDesc));
+                () => _assetListView.ApplySortType(AssetSortType.ExtDesc));
 
-            var targetElement = element ?? _assetView;
+            var targetElement = element ?? _assetListView;
             menu.DropDown(targetElement.worldBound, targetElement);
         }
 
