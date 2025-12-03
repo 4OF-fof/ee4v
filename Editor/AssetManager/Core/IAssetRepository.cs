@@ -7,7 +7,9 @@ namespace _4OF.ee4v.AssetManager.Core {
     public interface IAssetRepository {
         void Initialize();
         void Load();
-        Task LoadAndVerifyAsync();
+        Task<VerificationResult> LoadAndVerifyAsync();
+        void ApplyVerificationResult(VerificationResult result);
+
         AssetMetadata GetAsset(Ulid assetId);
         IEnumerable<AssetMetadata> GetAllAssets();
         LibraryMetadata GetLibraryMetadata();
@@ -37,5 +39,18 @@ namespace _4OF.ee4v.AssetManager.Core {
         event Action LibraryChanged;
         event Action<Ulid> AssetChanged;
         event Action<Ulid> FolderChanged;
+    }
+
+    public class VerificationResult {
+        public Dictionary<Ulid, AssetMetadata> OnDisk { get; set; } = new();
+        public List<Ulid> MissingInCache { get; set; } = new();
+        public List<Ulid> MissingOnDisk { get; set; } = new();
+        public List<AssetMetadata> Modified { get; set; } = new();
+        public string Error { get; set; }
+
+        public bool HasChanges =>
+            MissingInCache is { Count: > 0 } ||
+            MissingOnDisk is { Count: > 0 } ||
+            Modified is { Count: > 0 };
     }
 }

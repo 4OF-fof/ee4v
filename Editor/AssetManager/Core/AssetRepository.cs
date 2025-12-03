@@ -73,19 +73,13 @@ namespace _4OF.ee4v.AssetManager.Core {
             }
         }
 
-        public async Task LoadAndVerifyAsync() {
+        public async Task<VerificationResult> LoadAndVerifyAsync() {
             var cachedAssets = _libraryCache.Assets.ToDictionary(a => a.ID);
 
             var result = await Task.Run(() =>
             {
                 if (!FileSystemProvider.DirectoryExists(_assetRootDir))
-                    return (
-                        Error: "Assets directory does not exist.",
-                        OnDisk: null,
-                        MissingInCache: null,
-                        MissingOnDisk: null,
-                        Modified: null
-                    );
+                    return new VerificationResult { Error = "Assets directory does not exist." };
 
                 var onDiskAssets = new Dictionary<Ulid, AssetMetadata>();
                 var assetDirs = FileSystemProvider.GetDirectories(_assetRootDir);
@@ -112,34 +106,44 @@ namespace _4OF.ee4v.AssetManager.Core {
                         if (!AreAssetsEqual(cachedAsset, kvp.Value))
                             modified.Add(kvp.Value);
 
-                return (
-                    Error: (string)null,
-                    OnDisk: onDiskAssets,
-                    MissingInCache: missingInCache,
-                    MissingOnDisk: missingOnDisk,
-                    Modified: modified
-                );
+                return new VerificationResult {
+                    OnDisk = onDiskAssets,
+                    MissingInCache = missingInCache,
+                    MissingOnDisk = missingOnDisk,
+                    Modified = modified
+                };
             });
 
-            if (result.Error != null) {
-                Debug.LogError(I18N.Get("Debug.AssetManager.Repository.VerificationFailedFmt", result.Error));
-                return;
+            return result;
+        }
+
+        public void ApplyVerificationResult(VerificationResult result) {
+            if (result == null) return;
+
+            var changed = false;
+
+            if (result.MissingInCache is { Count: > 0 }) {
+                foreach (var id in result.MissingInCache)
+                    if (result.OnDisk.TryGetValue(id, out var asset))
+                        _libraryCache.UpsertAsset(asset);
+                changed = true;
             }
 
-            if (result.MissingInCache is { Count: > 0 })
-                foreach (var id in result.MissingInCache)
-                    _libraryCache.UpsertAsset(result.OnDisk[id]);
-            if (result.MissingOnDisk is { Count: > 0 })
+            if (result.MissingOnDisk is { Count: > 0 }) {
                 foreach (var id in result.MissingOnDisk)
                     _libraryCache.RemoveAsset(id);
-            if (result.Modified is { Count: > 0 })
+                changed = true;
+            }
+
+            if (result.Modified is { Count: > 0 }) {
                 foreach (var asset in result.Modified)
                     _libraryCache.UpdateAsset(asset);
+                changed = true;
+            }
 
-            if (result.MissingInCache is { Count: > 0 } ||
-                result.MissingOnDisk is { Count: > 0 } ||
-                result.Modified is { Count: > 0 }) {
+            if (changed) {
                 SaveCache();
+                LibraryChanged?.Invoke();
                 Debug.Log(I18N.Get("Debug.AssetManager.Repository.CacheUpdatedAndVerified"));
             }
         }

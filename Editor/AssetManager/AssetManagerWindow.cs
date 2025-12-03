@@ -1,4 +1,5 @@
 ﻿using _4OF.ee4v.AssetManager.Services;
+using _4OF.ee4v.AssetManager.Views.Dialog;
 using _4OF.ee4v.AssetManager.Views.Toast;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Interfaces;
@@ -33,6 +34,32 @@ namespace _4OF.ee4v.AssetManager {
             window.minSize = new Vector2(800, 400);
             AssetManagerContainer.Repository.Load();
             window.Show();
+            window.CheckLibraryIntegrity();
+        }
+
+        [MenuItem("ee4v/AssetManager/Refresh", false, 100)]
+        public static void RefreshLibrary() {
+            var window = GetWindow<AssetManagerWindow>(I18N.Get("UI.AssetManager.Window.Title"));
+            window.CheckLibraryIntegrity();
+        }
+
+        private async void CheckLibraryIntegrity() {
+            if (AssetManagerContainer.Repository == null) return;
+
+            AssetManagerContainer.Repository.Load();
+
+            var result = await AssetManagerContainer.Repository.LoadAndVerifyAsync();
+            if (result.Error != null) {
+                Debug.LogError(result.Error);
+                return;
+            }
+
+            if (!result.HasChanges) return;
+            var dialog = new VerificationResultDialog();
+            var content = dialog.CreateContent(result, AssetManagerContainer.Repository);
+
+            if (_context == null) Initialize();
+            _context?.ShowDialog?.Invoke(content);
         }
 
         private void Initialize() {
