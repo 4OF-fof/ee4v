@@ -1,43 +1,54 @@
 ﻿using System.IO;
 using System.Linq;
+using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.UI;
-using _4OF.ee4v.ProjectExtension.Toolbar.Component.Tab;
+using _4OF.ee4v.ProjectExtension.Toolbar;
+using _4OF.ee4v.ProjectExtension.Toolbar.Tab;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
-    public class TabContainer : ScrollView {
-        private readonly AddButton _addButton;
+namespace _4OF.ee4v.ProjectExtension.Components.Toolbar {
+    public class Tab : IProjectToolbarComponent {
+        public int Priority => 10;
+        public ToolbarPosition Position => ToolbarPosition.Left;
+        public string Name => "Tab";
+        public string Description => "フォルダショートカットタブを表示します。";
+        public string Trigger => "常時";
 
-        public TabContainer() : base(ScrollViewMode.Horizontal) {
-            style.flexGrow = 1;
-            style.height = 20;
+        public VisualElement CreateElement() {
+            var addButton = new AddButton();
+            var scrollView = new ScrollView(ScrollViewMode.Horizontal) {
+                style = {
+                    flexGrow = 1,
+                    height = 20
+                },
+                verticalScrollerVisibility = ScrollerVisibility.Hidden,
+                horizontalScrollerVisibility = ScrollerVisibility.Hidden
+            };
 
-            verticalScrollerVisibility = ScrollerVisibility.Hidden;
-            horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            var tabContainer = scrollView.contentContainer;
+            tabContainer.name = "ee4v-project-toolbar-tabContainer";
+            tabContainer.style.alignItems = Align.Center;
+            tabContainer.style.height = Length.Percent(100);
+            tabContainer.style.flexDirection = FlexDirection.Row;
 
-            var tabContainer1 = contentContainer;
-            tabContainer1.name = "ee4v-project-toolbar-tabContainer";
-            tabContainer1.style.alignItems = Align.Center;
-            tabContainer1.style.height = Length.Percent(100);
-            tabContainer1.style.flexDirection = FlexDirection.Row;
+            tabContainer.Add(addButton);
 
-            _addButton = new AddButton();
-            tabContainer1.Add(_addButton);
 
-            _addButton.clicked += () =>
+            addButton.clicked += () =>
             {
                 var tab = new TabEntry("Assets");
-                TabManager.Insert(tabContainer1.childCount - 1, tab);
+                TabManager.Insert(tabContainer.childCount - 1, tab);
                 TabManager.SelectTab(tab);
             };
 
-            TabControl(tabContainer1);
-            RegisterDropEvents(tabContainer1);
+            TabControl(tabContainer);
+            RegisterDropEvents(tabContainer);
+
+            return scrollView;
         }
 
-        public sealed override VisualElement contentContainer => base.contentContainer;
 
         private static void TabControl(VisualElement tabContainer) {
             VisualElement dragging = null;

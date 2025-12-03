@@ -4,13 +4,13 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.HierarchyExtension.GameObjectWindow.Component {
+namespace _4OF.ee4v.HierarchyExtension.GameObjectWindow {
     public class ComponentList : VisualElement {
         public ComponentList(GameObject gameObject, Action<bool> onLockChanged) {
             style.flexDirection = FlexDirection.Row;
             style.flexWrap = Wrap.Wrap;
 
-            foreach (var component in gameObject.GetComponents<UnityEngine.Component>()) {
+            foreach (var component in gameObject.GetComponents<Component>()) {
                 if (component == null || component.GetType().Name == "ObjectStyleComponent") continue;
                 var componentButton = new Button {
                     style = {

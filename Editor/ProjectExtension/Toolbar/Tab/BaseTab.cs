@@ -1,7 +1,7 @@
 ﻿using _4OF.ee4v.Core.UI;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.ProjectExtension.Toolbar.Component.Tab {
+namespace _4OF.ee4v.ProjectExtension.Toolbar.Tab {
     public abstract class BaseTab : VisualElement {
         public enum State {
             Default,

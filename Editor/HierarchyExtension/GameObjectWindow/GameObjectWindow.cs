@@ -4,7 +4,6 @@ using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Component;
 using _4OF.ee4v.Core.UI.Window;
-using _4OF.ee4v.HierarchyExtension.GameObjectWindow.Component;
 using _4OF.ee4v.Runtime;
 using UnityEditor;
 using UnityEngine;

@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.ProjectExtension.Toolbar.Component.Tab {
+namespace _4OF.ee4v.ProjectExtension.Toolbar.Tab {
     public class CloseButton : Button {
         public CloseButton() {
             name = "ee4v-project-toolbar-tabContainer-tab-close";

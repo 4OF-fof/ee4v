@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.ProjectExtension.Toolbar.Component.Tab {
+namespace _4OF.ee4v.ProjectExtension.Toolbar.Tab {
     public sealed class WorkspaceTabEntry : BaseTab {
         public WorkspaceTabEntry(string path, string name = null, State state = State.Default) : base(path) {
             if (string.IsNullOrEmpty(name))

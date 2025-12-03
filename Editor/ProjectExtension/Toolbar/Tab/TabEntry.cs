@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.ProjectExtension.Toolbar.Component.Tab {
+namespace _4OF.ee4v.ProjectExtension.Toolbar.Tab {
     public class TabEntry : BaseTab {
         private readonly CloseButton _closeButton;
 

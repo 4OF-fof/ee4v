@@ -1,8 +1,16 @@
+﻿using _4OF.ee4v.Core.Interfaces;
+using _4OF.ee4v.ProjectExtension.Toolbar;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.ProjectExtension.Toolbar.Component {
-    public static class WorkspaceContainer {
-        public static ScrollView Element() {
+namespace _4OF.ee4v.ProjectExtension.Components.Toolbar {
+    public class WorkspaceContainer : IProjectToolbarComponent {
+        public int Priority => 0;
+        public ToolbarPosition Position => ToolbarPosition.Left;
+        public string Name => "WorkSpace";
+        public string Description => "ワークスペース切り替えタブを表示します。";
+        public string Trigger => "常時";
+
+        public VisualElement CreateElement() {
             var scrollView = new ScrollView(ScrollViewMode.Horizontal) {
                 name = "ee4v-project-toolbar-workspaceContainer-scrollView",
                 style = {

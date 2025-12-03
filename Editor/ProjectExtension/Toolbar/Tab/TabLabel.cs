@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.ProjectExtension.Toolbar.Component.Tab {
+namespace _4OF.ee4v.ProjectExtension.Toolbar.Tab {
     public sealed class TabLabel : Label {
         public TabLabel(string name) {
             this.name = "ee4v-project-toolbar-tabContainer-tab-label";
