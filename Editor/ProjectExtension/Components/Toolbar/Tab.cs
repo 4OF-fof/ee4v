@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
+using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.ProjectExtension.Toolbar;
@@ -13,8 +14,8 @@ namespace _4OF.ee4v.ProjectExtension.Components.Toolbar {
         public int Priority => 10;
         public ToolbarPosition Position => ToolbarPosition.Left;
         public string Name => "Tab";
-        public string Description => "フォルダショートカットタブを表示します。";
-        public string Trigger => "常時";
+        public string Description => I18N.Get("_System.ProjectExtension.Toolbar.Tab.Description");
+        public string Trigger => I18N.Get("_System.ProjectExtension.Toolbar.Tab.Trigger");
 
         public VisualElement CreateElement() {
             var addButton = new AddButton();

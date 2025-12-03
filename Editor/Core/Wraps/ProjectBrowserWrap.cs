@@ -30,7 +30,12 @@ namespace _4OF.ee4v.Core.Wraps {
         }
 
         public void ShowFolderContents(int instanceId, bool reveal) {
-            ShowFolderContentsFunc?.Invoke(Instance, new object[] { instanceId, reveal });
+            try {
+                ShowFolderContentsFunc?.Invoke(Instance, new object[] { instanceId, reveal });
+            }
+            catch (Exception) {
+                // Ignore
+            }
         }
 
         public void SetSearch(string searchString) {
@@ -38,7 +43,12 @@ namespace _4OF.ee4v.Core.Wraps {
         }
 
         public void ClearSearch() {
-            ClearSearchAction?.Invoke(Instance);
+            try {
+                ClearSearchAction?.Invoke(Instance);
+            }
+            catch (Exception) {
+                // Ignore
+            }
         }
 
         public string GetCurrentFolderPath() {

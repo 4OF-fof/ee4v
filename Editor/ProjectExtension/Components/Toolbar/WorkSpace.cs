@@ -1,14 +1,15 @@
-﻿using _4OF.ee4v.Core.Interfaces;
+﻿using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.ProjectExtension.Toolbar;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.ProjectExtension.Components.Toolbar {
-    public class WorkspaceContainer : IProjectToolbarComponent {
+    public class Workspace : IProjectToolbarComponent {
         public int Priority => 0;
         public ToolbarPosition Position => ToolbarPosition.Left;
         public string Name => "WorkSpace";
-        public string Description => "ワークスペース切り替えタブを表示します。";
-        public string Trigger => "常時";
+        public string Description => I18N.Get("_System.ProjectExtension.Toolbar.Workspace.Description");
+        public string Trigger => I18N.Get("_System.ProjectExtension.Toolbar.Workspace.Trigger");
 
         public VisualElement CreateElement() {
             var scrollView = new ScrollView(ScrollViewMode.Horizontal) {
