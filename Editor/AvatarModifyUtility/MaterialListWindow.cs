@@ -121,7 +121,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
         public string Description => I18N.Get("_System.AvatarModifyUtility.MaterialList.Description");
         public string Trigger => I18N.Get("_System.AvatarModifyUtility.MaterialList.Trigger");
 
-        [MenuItem("ee4v/Material List")]
+        [MenuItem("ee4v/Material List", false, 1)]
         public static void ShowWindow() {
             var window = GetWindow<MaterialListWindow>();
             window.titleContent = new GUIContent(I18N.Get("UI.AvatarModifyUtility.MaterialList.Title"));

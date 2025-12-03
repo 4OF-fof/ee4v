@@ -31,7 +31,7 @@ namespace _4OF.ee4v.ProjectExtension.API {
             EditorApplication.RepaintProjectWindow();
         }
 
-        [MenuItem("ee4v/Clear highlight")]
+        [MenuItem("ee4v/AssetManager/Clear highlight", false, 1001)]
         public static void ClearHighlights() {
             HighlightedGuids.Clear();
             EditorApplication.RepaintProjectWindow();

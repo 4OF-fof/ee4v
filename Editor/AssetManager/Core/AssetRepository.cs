@@ -589,7 +589,7 @@ namespace _4OF.ee4v.AssetManager.Core {
             }
         }
 
-        private bool AreAssetsEqual(AssetMetadata a, AssetMetadata b) {
+        private static bool AreAssetsEqual(AssetMetadata a, AssetMetadata b) {
             if (a == null || b == null) return false;
             var tagsA = new HashSet<string>(a.Tags ?? Enumerable.Empty<string>());
             var tagsB = new HashSet<string>(b.Tags ?? Enumerable.Empty<string>());

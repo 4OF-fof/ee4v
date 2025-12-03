@@ -28,7 +28,7 @@ namespace _4OF.ee4v.AssetManager {
             Initialize();
         }
 
-        [MenuItem("ee4v/Asset Manager")]
+        [MenuItem("ee4v/Asset Manager", false, 0)]
         public static void ShowWindow() {
             var window = GetWindow<AssetManagerWindow>(I18N.Get("UI.AssetManager.Window.Title"));
             window.minSize = new Vector2(800, 400);
@@ -37,8 +37,9 @@ namespace _4OF.ee4v.AssetManager {
             window.CheckLibraryIntegrity();
         }
 
-        [MenuItem("ee4v/AssetManager/Refresh", false, 100)]
+        [MenuItem("ee4v/AssetManager/Refresh", false, 1000)]
         public static void RefreshLibrary() {
+            if (!HasOpenInstances<AssetManagerWindow>()) return;
             var window = GetWindow<AssetManagerWindow>(I18N.Get("UI.AssetManager.Window.Title"));
             window.CheckLibraryIntegrity();
         }
