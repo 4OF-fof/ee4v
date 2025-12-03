@@ -9,8 +9,6 @@ namespace _4OF.ee4v.AssetManager.Components {
         private VisualElement _rootContainer;
         private ToastManager _toastManager;
 
-        public string Name => "Overlay System";
-        public string Description => "Handles modal dialogs and toast notifications.";
         public AssetManagerComponentLocation Location => AssetManagerComponentLocation.Overlay;
 
         // 他のコンポーネントが Initialize 中に ShowDialog/ShowToast を参照する可能性があるため、

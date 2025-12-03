@@ -28,8 +28,6 @@ namespace _4OF.ee4v.Core.Interfaces {
     }
 
     public interface IAssetManagerComponent : IDisposable {
-        string Name { get; }
-        string Description { get; }
         AssetManagerComponentLocation Location { get; }
         int Priority { get; }
 

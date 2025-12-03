@@ -101,7 +101,6 @@ namespace _4OF.ee4v._Dev {
             var toolbarHeader = GetMarkdownToolbarHeader(langCode);
             var editorServiceHeader = GetMarkdownEditorServiceHeader(langCode);
             var editorUtilityHeader = GetMarkdownEditorUtilityHeader(langCode);
-            var assetManagerHeader = GetMarkdownAssetManagerHeader(langCode);
 
             var nameCol = GetMarkdownNameCol(langCode);
             var descriptionCol = GetMarkdownDescriptionCol(langCode);
@@ -143,18 +142,6 @@ namespace _4OF.ee4v._Dev {
             var toolbarComponents = data.Where(d => d.ComponentType.Contains("ProjectToolbar")).ToList();
             foreach (var comp in toolbarComponents)
                 sb.AppendLine($"| **{comp.Name.Trim()}** | {comp.Description.Trim()} | {comp.Trigger.Trim()} |");
-
-            sb.AppendLine();
-
-            // Asset Manager
-            sb.AppendLine(assetManagerHeader);
-            sb.AppendLine();
-            sb.AppendLine($"| {nameCol} | {descriptionCol} |");
-            sb.AppendLine("| :--- | :--- |");
-
-            var assetManagerComponents = data.Where(d => d.ComponentType.Contains("AssetManager")).ToList();
-            foreach (var comp in assetManagerComponents)
-                sb.AppendLine($"| **{comp.Name.Trim()}** | {comp.Description.Trim()} |");
 
             sb.AppendLine();
 
@@ -216,15 +203,6 @@ namespace _4OF.ee4v._Dev {
                 "en-US" => "## Project Toolbar Extensions",
                 "ko-KR" => "## Project Toolbar 확장 기능",
                 _       => "## Project Toolbar Extensions"
-            };
-        }
-
-        private static string GetMarkdownAssetManagerHeader(string langCode) {
-            return langCode switch {
-                "ja-JP" => "## Asset Manager コンポーネント",
-                "en-US" => "## Asset Manager Components",
-                "ko-KR" => "## Asset Manager 컴포넌트",
-                _       => "## Asset Manager Components"
             };
         }
 

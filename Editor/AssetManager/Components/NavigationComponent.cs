@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.AssetManager.Presenter;
+using _4OF.ee4v.AssetManager.State;
 using _4OF.ee4v.AssetManager.Views;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Interfaces;
@@ -16,8 +17,6 @@ namespace _4OF.ee4v.AssetManager.Components {
         private Navigation _navigationView;
         private AssetNavigationPresenter _presenter;
 
-        public string Name => "Navigation Tree";
-        public string Description => "Displays folder hierarchy and filters.";
         public AssetManagerComponentLocation Location => AssetManagerComponentLocation.Navigation;
         public int Priority => 0;
 
@@ -32,7 +31,6 @@ namespace _4OF.ee4v.AssetManager.Components {
             _navigationView.SetRepository(context.Repository);
             _navigationView.SetShowDialogCallback(context.ShowDialog);
 
-            // Presenterの初期化
             _presenter = new AssetNavigationPresenter(
                 context.Repository,
                 context.AssetService,
@@ -44,7 +42,6 @@ namespace _4OF.ee4v.AssetManager.Components {
                 context.RequestTagListRefresh
             );
 
-            // イベント購読
             _navigationView.NavigationChanged += _presenter.OnNavigationChanged;
             _navigationView.FolderSelected += _presenter.OnFolderSelected;
             _navigationView.TagListClicked += _presenter.OnTagListClicked;
@@ -54,7 +51,6 @@ namespace _4OF.ee4v.AssetManager.Components {
             _navigationView.OnFolderReordered += _presenter.OnFolderReordered;
             _navigationView.OnAssetCreated += _presenter.OnAssetCreated;
 
-            // コンテキストメニュー
             _contextMenuHandler = (id, folderName, target, pos) =>
             {
                 var menu = new GenericDropdownMenu();
@@ -73,12 +69,14 @@ namespace _4OF.ee4v.AssetManager.Components {
             };
             _navigationView.OnFolderContextMenuRequested += _contextMenuHandler;
 
-            // Controllerからの通知受け取り
             context.ViewController.FoldersChanged += OnFoldersChanged;
             context.ViewController.OnHistoryChanged += OnHistoryChanged;
 
-            // 初期表示
-            _navigationView.SelectBoothItems();
+            _presenter.OnNavigationChanged(
+                NavigationMode.BoothItems, 
+                I18N.Get("UI.AssetManager.Navigation.BoothItemsContext"), 
+                a => !a.IsDeleted
+            );
         }
 
         public VisualElement CreateElement() {
@@ -98,10 +96,9 @@ namespace _4OF.ee4v.AssetManager.Components {
                 _navigationView.OnFolderContextMenuRequested -= _contextMenuHandler;
             }
 
-            if (_context?.ViewController != null) {
-                _context.ViewController.FoldersChanged -= OnFoldersChanged;
-                _context.ViewController.OnHistoryChanged -= OnHistoryChanged;
-            }
+            if (_context?.ViewController == null) return;
+            _context.ViewController.FoldersChanged -= OnFoldersChanged;
+            _context.ViewController.OnHistoryChanged -= OnHistoryChanged;
         }
 
         private void OnFoldersChanged(List<BaseFolder> folders) {

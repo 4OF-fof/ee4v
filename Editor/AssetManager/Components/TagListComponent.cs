@@ -10,8 +10,6 @@ namespace _4OF.ee4v.AssetManager.Components {
         private AssetNavigationPresenter _presenter; // TagList操作はNavigationPresenterが担当している
         private TagListView _tagListView;
 
-        public string Name => "Tag List";
-        public string Description => "Displays list of all tags.";
         public AssetManagerComponentLocation Location => AssetManagerComponentLocation.MainView;
         public int Priority => 10;
 

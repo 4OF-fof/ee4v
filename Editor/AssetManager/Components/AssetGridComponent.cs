@@ -18,8 +18,6 @@ namespace _4OF.ee4v.AssetManager.Components {
         private AssetGridPresenter _presenter;
         private Action<VisualElement> _sortMenuHandler;
 
-        public string Name => "Asset Grid";
-        public string Description => "Displays assets in a grid view with toolbar.";
         public AssetManagerComponentLocation Location => AssetManagerComponentLocation.MainView;
         public int Priority => 0;
 

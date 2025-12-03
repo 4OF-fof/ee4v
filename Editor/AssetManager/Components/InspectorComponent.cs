@@ -22,8 +22,6 @@ namespace _4OF.ee4v.AssetManager.Components {
         private AssetPropertyPresenter _presenter;
         private Action<Ulid> _previewFolderHandler;
 
-        public string Name => "Inspector";
-        public string Description => "Displays detailed information about the selected asset or folder.";
         public AssetManagerComponentLocation Location => AssetManagerComponentLocation.Inspector;
         public int Priority => 0;
 

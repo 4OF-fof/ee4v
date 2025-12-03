@@ -119,8 +119,6 @@ namespace _4OF.ee4v.AssetManager.Views {
             }
         }
 
-        public void SelectBoothItems() => SelectState(NavigationMode.BoothItems, Ulid.Empty);
-
         public void ShowRenameFolderDialog(Ulid folderId, string oldName) {
             _showDialogCallback?.Invoke(_renameFolderDialog.CreateContent(folderId, oldName));
         }
