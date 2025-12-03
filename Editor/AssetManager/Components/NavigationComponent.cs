@@ -48,9 +48,7 @@ namespace _4OF.ee4v.AssetManager.Components {
             _navigationView.NavigationChanged += _presenter.OnNavigationChanged;
             _navigationView.FolderSelected += _presenter.OnFolderSelected;
             _navigationView.TagListClicked += _presenter.OnTagListClicked;
-
             _navigationView.OnFolderRenamed += _presenter.OnFolderRenamed;
-            _navigationView.OnFolderDeleted += _presenter.OnFolderDeleted;
             _navigationView.OnFolderMoved += _presenter.OnFolderMoved;
             _navigationView.OnFolderCreated += _presenter.OnFolderCreated;
             _navigationView.OnFolderReordered += _presenter.OnFolderReordered;
@@ -93,7 +91,6 @@ namespace _4OF.ee4v.AssetManager.Components {
                 _navigationView.FolderSelected -= _presenter.OnFolderSelected;
                 _navigationView.TagListClicked -= _presenter.OnTagListClicked;
                 _navigationView.OnFolderRenamed -= _presenter.OnFolderRenamed;
-                _navigationView.OnFolderDeleted -= _presenter.OnFolderDeleted;
                 _navigationView.OnFolderMoved -= _presenter.OnFolderMoved;
                 _navigationView.OnFolderCreated -= _presenter.OnFolderCreated;
                 _navigationView.OnFolderReordered -= _presenter.OnFolderReordered;
