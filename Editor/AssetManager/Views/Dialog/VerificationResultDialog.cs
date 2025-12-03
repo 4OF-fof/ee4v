@@ -3,22 +3,17 @@ using System.Collections.Generic;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
-using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.Views.Dialog {
     public class VerificationResultDialog {
-        private readonly List<Ulid> _selectedMissingInCache = new();
-        private readonly List<Ulid> _selectedMissingOnDisk = new();
-        private readonly List<AssetMetadata> _selectedModified = new();
         private IAssetRepository _repository;
         private VerificationResult _result;
 
         public VisualElement CreateContent(VerificationResult result, IAssetRepository repository) {
             _result = result;
             _repository = repository;
-            InitSelection();
 
             var content = new VisualElement {
                 style = {
@@ -61,35 +56,39 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
                 AddSection(scroll,
                     I18N.Get("UI.AssetManager.Dialog.Verification.FoundOnDisk", _result.MissingInCache.Count),
                     _result.MissingInCache,
-                    _selectedMissingInCache,
-                    id => _result.OnDisk.TryGetValue(id, out var m) ? m.Name : id.ToString(),
+                    id =>
+                    {
+                        var name = _result.OnDisk.TryGetValue(id, out var m) ? m.Name : id.ToString();
+                        return $"(null) -> {name}";
+                    },
                     ColorPreset.SuccessButton);
 
             if (_result.MissingOnDisk.Count > 0)
                 AddSection(scroll,
                     I18N.Get("UI.AssetManager.Dialog.Verification.MissingOnDisk", _result.MissingOnDisk.Count),
                     _result.MissingOnDisk,
-                    _selectedMissingOnDisk,
-                    id => _repository.GetAsset(id)?.Name ?? id.ToString(),
+                    id =>
+                    {
+                        var name = _repository.GetAsset(id)?.Name ?? id.ToString();
+                        return $"{name} -> (null)";
+                    },
                     ColorPreset.WarningText);
 
             if (_result.Modified.Count > 0)
                 AddSection(scroll,
                     I18N.Get("UI.AssetManager.Dialog.Verification.Modified", _result.Modified.Count),
                     _result.Modified,
-                    _selectedModified,
-                    asset => asset.Name,
+                    asset =>
+                    {
+                        var cached = _repository.GetAsset(asset.ID);
+                        var cachedName = cached?.Name ?? "(null)";
+                        return $"{cachedName} -> {asset.Name}";
+                    },
                     ColorPreset.AccentBlue);
 
             var buttonRow = new VisualElement {
-                style = { flexDirection = FlexDirection.Row, justifyContent = Justify.FlexEnd }
+                style = { flexDirection = FlexDirection.Row, justifyContent = Justify.FlexEnd, marginTop = 8 }
             };
-
-            var cancelBtn = new Button(() => CloseDialog(content)) {
-                text = I18N.Get("UI.AssetManager.Dialog.Button.Cancel"),
-                style = { width = 80, marginRight = 10 }
-            };
-            buttonRow.Add(cancelBtn);
 
             var applyBtn = new Button(() => Apply(content)) {
                 text = I18N.Get("UI.AssetManager.Dialog.Verification.Apply"),
@@ -101,15 +100,8 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
             return content;
         }
 
-        private void InitSelection() {
-            if (_result == null) return;
-            _selectedMissingInCache.AddRange(_result.MissingInCache);
-            _selectedMissingOnDisk.AddRange(_result.MissingOnDisk);
-            _selectedModified.AddRange(_result.Modified);
-        }
-
-        private static void AddSection<T>(VisualElement container, string title, List<T> items, List<T> selectedList,
-            Func<T, string> getName, Color color) {
+        private static void AddSection<T>(VisualElement container, string title, List<T> items,
+            Func<T, string> getLabel, Color color) {
             var header = new Label(title) {
                 style = {
                     unityFontStyleAndWeight = FontStyle.Bold,
@@ -120,33 +112,19 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
             container.Add(header);
 
             foreach (var item in items) {
-                var row = new VisualElement
-                    { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, marginLeft = 10 } };
-                var toggle = new Toggle { value = true };
-                toggle.RegisterValueChangedCallback(evt =>
-                {
-                    if (evt.newValue) {
-                        if (!selectedList.Contains(item)) selectedList.Add(item);
+                var row = new VisualElement {
+                    style = {
+                        flexDirection = FlexDirection.Row, alignItems = Align.Center, marginLeft = 10, marginBottom = 2
                     }
-                    else {
-                        selectedList.Remove(item);
-                    }
-                });
-                row.Add(toggle);
-                row.Add(new Label(getName(item)));
+                };
+
+                row.Add(new Label(getLabel(item)));
                 container.Add(row);
             }
         }
 
         private void Apply(VisualElement content) {
-            var appliedResult = new VerificationResult {
-                OnDisk = _result.OnDisk,
-                MissingInCache = _selectedMissingInCache,
-                MissingOnDisk = _selectedMissingOnDisk,
-                Modified = _selectedModified
-            };
-
-            _repository.ApplyVerificationResult(appliedResult);
+            _repository.ApplyVerificationResult(_result);
             CloseDialog(content);
         }
 

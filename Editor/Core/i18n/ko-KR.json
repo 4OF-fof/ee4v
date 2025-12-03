@@ -214,7 +214,7 @@
   "UI.AssetManager.Dialog.TagRename.NewTagLabel": "새 태그 이름:",
   "UI.AssetManager.Dialog.TagRename.Title": "태그 이름 변경",
   "UI.AssetManager.Dialog.Verification.Apply": "적용",
-  "UI.AssetManager.Dialog.Verification.Description": "디스크 파일과 AssetManager 캐시 간에 차이가 있습니다. 적용할 변경 사항을 선택하십시오.",
+  "UI.AssetManager.Dialog.Verification.Description": "디스크 파일과 AssetManager 캐시 간에 차이가 있습니다.",
   "UI.AssetManager.Dialog.Verification.FoundOnDisk": "새로 발견됨 (캐시에 추가): {0} 개",
   "UI.AssetManager.Dialog.Verification.MissingOnDisk": "파일 누락 (캐시에서 제거): {0} 개",
   "UI.AssetManager.Dialog.Verification.Modified": "메타데이터 변경됨 (디스크에서 업데이트): {0} 개",

@@ -214,7 +214,7 @@
   "UI.AssetManager.Dialog.TagRename.NewTagLabel": "New tag name:",
   "UI.AssetManager.Dialog.TagRename.Title": "Rename Tag",
   "UI.AssetManager.Dialog.Verification.Apply": "Apply",
-  "UI.AssetManager.Dialog.Verification.Description": "Differences found between disk files and AssetManager cache. Please select changes to apply.",
+  "UI.AssetManager.Dialog.Verification.Description": "Differences found between disk files and AssetManager cache.",
   "UI.AssetManager.Dialog.Verification.FoundOnDisk": "New Found (Add to Cache): {0} items",
   "UI.AssetManager.Dialog.Verification.MissingOnDisk": "Missing File (Remove from Cache): {0} items",
   "UI.AssetManager.Dialog.Verification.Modified": "Metadata Modified (Update from Disk): {0} items",

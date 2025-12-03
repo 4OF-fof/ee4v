@@ -214,7 +214,7 @@
   "UI.AssetManager.Dialog.TagRename.NewTagLabel": "新しいタグ名:",
   "UI.AssetManager.Dialog.TagRename.Title": "タグ名の変更",
   "UI.AssetManager.Dialog.Verification.Apply": "適用",
-  "UI.AssetManager.Dialog.Verification.Description": "ディスク上のファイルとAssetManagerのキャッシュに差異があります。適用する変更を選択してください。",
+  "UI.AssetManager.Dialog.Verification.Description": "ディスク上のファイルとAssetManagerのキャッシュに差異があります。",
   "UI.AssetManager.Dialog.Verification.FoundOnDisk": "新規検出 (キャッシュに追加): {0} 件",
   "UI.AssetManager.Dialog.Verification.MissingOnDisk": "ファイル消失 (キャッシュから削除): {0} 件",
   "UI.AssetManager.Dialog.Verification.Modified": "メタデータ変更 (ディスクから更新): {0} 件",
