@@ -1,11 +1,9 @@
-﻿using System;
-using _4OF.ee4v.AssetManager.Component;
+﻿using _4OF.ee4v.AssetManager.Component;
 using _4OF.ee4v.AssetManager.Interfaces;
 using _4OF.ee4v.Core.UI;
-using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.AssetManager.Component {
+namespace _4OF.ee4v.AssetManager.Components {
     public class OverlayComponent : IAssetManagerComponent {
         private VisualElement _rootContainer;
         private ToastManager _toastManager;
