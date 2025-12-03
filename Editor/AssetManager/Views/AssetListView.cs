@@ -70,7 +70,6 @@ namespace _4OF.ee4v.AssetManager.Views {
             RegisterCallback<PointerDownEvent>(_ => Focus(), TrickleDown.TrickleDown);
         }
 
-        public event Action<List<object>> OnSelectionChange;
         public event Action<List<Ulid>, List<Ulid>, Ulid> OnItemsDroppedToFolder;
         public event Action<VisualElement> OnSortMenuRequested;
 
@@ -110,8 +109,6 @@ namespace _4OF.ee4v.AssetManager.Views {
         }
 
         private void NotifySelectionChange(List<object> selectedItems) {
-            OnSelectionChange?.Invoke(selectedItems);
-
             if (selectedItems.Count == 1) {
                 var item = selectedItems.First();
                 switch (item) {

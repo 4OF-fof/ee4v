@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using _4OF.ee4v.AssetManager.State;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
@@ -169,18 +170,5 @@ namespace _4OF.ee4v.AssetManager.Views.Components {
         private void OnOnSortChanged(AssetSortType obj) {
             OnSortChanged?.Invoke(obj);
         }
-    }
-
-    public enum AssetSortType {
-        DateAddedNewest,
-        DateAddedOldest,
-        NameAsc,
-        NameDesc,
-        DateNewest,
-        DateOldest,
-        SizeSmallest,
-        SizeLargest,
-        ExtAsc,
-        ExtDesc
     }
 }

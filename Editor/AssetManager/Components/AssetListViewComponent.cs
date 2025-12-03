@@ -4,7 +4,6 @@ using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.AssetManager.Presenter;
 using _4OF.ee4v.AssetManager.State;
 using _4OF.ee4v.AssetManager.Views;
-using _4OF.ee4v.AssetManager.Views.Components;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.UI;
@@ -43,7 +42,6 @@ namespace _4OF.ee4v.AssetManager.Components {
                 content => context.ShowDialog(content)
             );
 
-            _assetListView.OnSelectionChange += OnSelectionChanged;
             _assetListView.OnItemsDroppedToFolder += OnItemsDropped;
 
             _sortMenuHandler = ShowSortMenu;
@@ -60,7 +58,6 @@ namespace _4OF.ee4v.AssetManager.Components {
 
         public void Dispose() {
             if (_assetListView != null) {
-                _assetListView.OnSelectionChange -= OnSelectionChanged;
                 _assetListView.OnItemsDroppedToFolder -= OnItemsDropped;
                 _assetListView.OnSortMenuRequested -= _sortMenuHandler;
             }
@@ -70,10 +67,6 @@ namespace _4OF.ee4v.AssetManager.Components {
             if (_assetListView != null)
                 _context.ViewController.BoothItemFoldersChanged -= _assetListView.ShowBoothItemFolders;
             _context.ViewController.OnHistoryChanged -= OnHistoryChanged;
-        }
-
-        private void OnSelectionChanged(List<object> selectedItems) {
-            // Context経由でSelectionModelなどを更新する処理があればここに記述
         }
 
         private void OnItemsDropped(List<Ulid> assetIds, List<Ulid> folderIds, Ulid targetFolderId) {
