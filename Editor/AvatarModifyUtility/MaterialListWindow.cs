@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
 using UnityEditor;
@@ -9,7 +10,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AvatarModifyUtility {
-    public class MaterialListWindow : EditorWindow {
+    public class MaterialListWindow : EditorWindow, IEditorUtility {
         private readonly List<MaterialData> _materialList = new();
         private GameObject _currentRoot;
         private bool _isManualSelection;
@@ -115,6 +116,10 @@ namespace _4OF.ee4v.AvatarModifyUtility {
 
             RebuildUI();
         }
+
+        public string Name => "Material List";
+        public string Description => I18N.Get("_System.AvatarModifyUtility.MaterialList.Description");
+        public string Trigger => I18N.Get("_System.AvatarModifyUtility.MaterialList.Trigger");
 
         [MenuItem("ee4v/Material List")]
         public static void ShowWindow() {

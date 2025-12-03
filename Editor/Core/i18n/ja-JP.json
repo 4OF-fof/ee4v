@@ -1,6 +1,10 @@
 {
   "_System.AvatarModifyUtility.AutoBackup.Description": "作成したアバターのバックアップを自動的に作成します。",
   "_System.AvatarModifyUtility.AutoBackup.Trigger": "VRChatへのアップロード成功時",
+  "_System.AvatarModifyUtility.MaterialList.Description": "プレハブに使用されているマテリアルの一覧を表示します。",
+  "_System.AvatarModifyUtility.MaterialList.Trigger": "`ee4v>Material List`からウィンドウを開きます。ヒエラルキーでプレハブを選択するか、ウィンドウ上でターゲットを指定してください。",
+  "_System.AvatarModifyUtility.VariantConverter.Description": "アバタープレハブのバリアントを作成します。同時にマテリアルもバリアントに変換されます。",
+  "_System.AvatarModifyUtility.VariantConverter.Trigger": "ヒエラルキーでプレハブを右クリック",
   "_System.HierarchyExtension.ComponentIcons.Description": "オブジェクトにアタッチされたコンポーネントのアイコンを表示します。",
   "_System.HierarchyExtension.ComponentIcons.Trigger": "常時(クリックでウィンドウ展開)",
   "_System.HierarchyExtension.DepthLine.Description": "オブジェクトの深さに応じてヒエラルキー内にガイドラインを表示します。",

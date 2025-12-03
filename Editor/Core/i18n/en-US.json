@@ -1,6 +1,10 @@
 {
   "_System.AvatarModifyUtility.AutoBackup.Description": "Automatically create backups of your avatars.",
   "_System.AvatarModifyUtility.AutoBackup.Trigger": "When uploading to VRChat is successful.",
+  "_System.AvatarModifyUtility.MaterialList.Description": "Displays a list of materials used in the prefab.",
+  "_System.AvatarModifyUtility.MaterialList.Trigger": "Open the window from ee4v > Material List. Select a prefab in the Hierarchy or specify a target in the window.",
+  "_System.AvatarModifyUtility.VariantConverter.Description": "Creates a variant of the avatar prefab. Materials are also converted into variants at the same time.",
+  "_System.AvatarModifyUtility.VariantConverter.Trigger": "Right-click the prefab in the Hierarchy.",
   "_System.HierarchyExtension.ComponentIcons.Description": "Displays icons for components attached to the object.",
   "_System.HierarchyExtension.ComponentIcons.Trigger": "Always (Click to open window)",
   "_System.HierarchyExtension.DepthLine.Description": "Displays guide lines in the hierarchy according to object depth.",

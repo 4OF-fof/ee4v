@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.UI.Window;
@@ -8,10 +9,13 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AvatarModifyUtility.Variant {
-    public class VariantConverterWindow : BaseWindow {
+    public class VariantConverterWindow : BaseWindow, IEditorUtility {
         private Label _errorLabel;
         private TextField _nameField;
         private GameObject _targetObject;
+        public string Name => "Variant Converter";
+        public string Description => I18N.Get("_System.AvatarModifyUtility.VariantConverter.Description");
+        public string Trigger => I18N.Get("_System.AvatarModifyUtility.VariantConverter.Trigger");
 
         [MenuItem("GameObject/ee4v/Create Variant", false, -1)]
         private static void CreateVariant(MenuCommand menuCommand) {

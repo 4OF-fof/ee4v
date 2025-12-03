@@ -32,3 +32,10 @@
 | Name | Description | Trigger |
 | :--- | :--- | :--- |
 | **Auto Backup** | Automatically create backups of your avatars. | When uploading to VRChat is successful. |
+
+## Editor Utility Extensions
+
+| Name | Description | Trigger |
+| :--- | :--- | :--- |
+| **Variant Converter** | Creates a variant of the avatar prefab. Materials are also converted into variants at the same time. | Right-click the prefab in the Hierarchy. |
+| **Material List** | Displays a list of materials used in the prefab. | Open the window from ee4v > Material List. Select a prefab in the Hierarchy or specify a target in the window. |

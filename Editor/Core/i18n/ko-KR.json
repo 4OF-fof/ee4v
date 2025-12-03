@@ -1,6 +1,10 @@
 {
   "_System.AvatarModifyUtility.AutoBackup.Description": "만든 아바타의 백업을 자동으로 만듭니다.",
   "_System.AvatarModifyUtility.AutoBackup.Trigger": "VRChat에 업로드 성공 시",
+  "_System.AvatarModifyUtility.MaterialList.Description": "프리팹에 사용된 머티리얼 목록을 표시합니다.",
+  "_System.AvatarModifyUtility.MaterialList.Trigger": "ee4v > Material List에서 창을 엽니다. 계층(Hierarchy)에서 프리팹을 선택하거나, 창에서 대상(Target)을 지정하십시오.",
+  "_System.AvatarModifyUtility.VariantConverter.Description": "아바타 프리팹의 버전(Variant)을 생성합니다. 동시에 머티리얼도 버전으로 변환됩니다.",
+  "_System.AvatarModifyUtility.VariantConverter.Trigger": "계층(Hierarchy)에서 프리팹을 마우스 오른쪽 버튼으로 클릭합니다.",
   "_System.HierarchyExtension.ComponentIcons.Description": "오브젝트에 첨부된 컴포넌트의 아이콘을 표시합니다.",
   "_System.HierarchyExtension.ComponentIcons.Trigger": "항상 (클릭 시 창 확장)",
   "_System.HierarchyExtension.DepthLine.Description": "오브젝트 깊이에 따라 계층 구조 내에 안내선을 표시합니다.",

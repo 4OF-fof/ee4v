@@ -32,3 +32,10 @@
 | 이름 (Name) | 기능 (Description) | 작동 조건 (Trigger) |
 | :--- | :--- | :--- |
 | **Auto Backup** | 만든 아바타의 백업을 자동으로 만듭니다. | VRChat에 업로드 성공 시 |
+
+## Editor Utility 확장 기능
+
+| 이름 (Name) | 기능 (Description) | 작동 조건 (Trigger) |
+| :--- | :--- | :--- |
+| **Variant Converter** | 아바타 프리팹의 버전(Variant)을 생성합니다. 동시에 머티리얼도 버전으로 변환됩니다. | 계층(Hierarchy)에서 프리팹을 마우스 오른쪽 버튼으로 클릭합니다. |
+| **Material List** | 프리팹에 사용된 머티리얼 목록을 표시합니다. | ee4v > Material List에서 창을 엽니다. 계층(Hierarchy)에서 프리팹을 선택하거나, 창에서 대상(Target)을 지정하십시오. |
