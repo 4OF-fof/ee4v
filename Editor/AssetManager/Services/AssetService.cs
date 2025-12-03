@@ -101,13 +101,13 @@ namespace _4OF.ee4v.AssetManager.Services {
 
         public bool SetAssetName(Ulid assetId, string newName) {
             if (!AssetValidationService.IsValidAssetName(newName)) {
-                Debug.LogError("Invalid asset name: cannot set an empty or invalid name.");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Service.InvalidAssetName"));
                 return false;
             }
 
             var asset = _repository.GetAsset(assetId);
             if (asset == null) {
-                Debug.LogError($"Asset not found: {assetId}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Repository.AssetNotFoundFmt", assetId));
                 return false;
             }
 
@@ -337,10 +337,10 @@ namespace _4OF.ee4v.AssetManager.Services {
                             if (File.Exists(destMeta))
                                 try {
                                     File.Copy(destMeta, storedMeta, true);
-                                    Debug.Log($"Backed up meta file: {Path.GetFileName(destMeta)}");
+                                    Debug.Log(I18N.Get("Debug.AssetManager.Import.BackedUpMetaFmt", Path.GetFileName(destMeta)));
                                 }
                                 catch (Exception e) {
-                                    Debug.LogWarning($"Failed to backup meta file {destMeta}: {e.Message}");
+                                    Debug.LogWarning(I18N.Get("Debug.AssetManager.Import.FailedToBackupMetaFmt", destMeta, e.Message));
                                 }
 
                         onComplete?.Invoke();
@@ -391,13 +391,13 @@ namespace _4OF.ee4v.AssetManager.Services {
 
             void OnFailed(string name, string error) {
                 UnregisterPackageEvents();
-                Debug.LogError($"Import failed: {name}, Error: {error}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Import.ImportPackageFailedFmt", name, error));
                 onComplete?.Invoke();
             }
 
             void OnCancelled(string name) {
                 UnregisterPackageEvents();
-                Debug.LogWarning($"Import cancelled: {name}");
+                Debug.LogWarning(I18N.Get("Debug.AssetManager.Import.ImportPackageCancelledFmt", name));
                 onComplete?.Invoke();
             }
         }
@@ -425,7 +425,7 @@ namespace _4OF.ee4v.AssetManager.Services {
                 !f.Contains(Path.DirectorySeparatorChar + "Import" + Path.DirectorySeparatorChar));
 
             if (string.IsNullOrEmpty(mainFile) || !File.Exists(mainFile)) {
-                Debug.LogError($"Asset file not found for {asset.Name}");
+                Debug.LogError(I18N.Get("Debug.AssetManager.Import.AssetFileNotFoundFmt", asset.Name));
                 return;
             }
 
@@ -475,7 +475,7 @@ namespace _4OF.ee4v.AssetManager.Services {
                             File.Copy(storedMetaPath, destMetaPath, true);
                         }
                         catch (Exception e) {
-                            Debug.LogWarning($"Failed to copy meta file {storedMetaPath} to {destMetaPath}: {e.Message}");
+                            Debug.LogWarning(I18N.Get("Debug.AssetManager.Import.FailedToCopyMetaFmt", storedMetaPath, destMetaPath, e.Message));
                         }
                     else
                         delayedMetaBackups.Add((destMetaPath, storedMetaPath));
@@ -545,7 +545,7 @@ namespace _4OF.ee4v.AssetManager.Services {
             }
 
             _repository.SaveAsset(asset);
-            Debug.Log($"[ee4v] Updated GUIDs for asset '{asset.Name}'. Count: {asset.UnityData.AssetGuidList.Count}");
+            Debug.Log(I18N.Get("Debug.AssetManager.Service.UpdatedAssetGuidsFmt", asset.Name, asset.UnityData.AssetGuidList.Count));
         }
 
         private static List<string> ExtractGuidsFromPackage(string packagePath) {
@@ -576,7 +576,7 @@ namespace _4OF.ee4v.AssetManager.Services {
                 }
             }
             catch (Exception e) {
-                Debug.LogWarning($"[ee4v] Failed to extract GUIDs from package '{packagePath}': {e.Message}");
+                Debug.LogWarning(I18N.Get("Debug.AssetManager.Service.FailedToExtractGuidsFmt", packagePath, e.Message));
             }
 
             return guids;
