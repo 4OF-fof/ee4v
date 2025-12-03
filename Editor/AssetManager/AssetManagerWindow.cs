@@ -9,7 +9,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.AssetManager.Window {
+namespace _4OF.ee4v.AssetManager {
     public class AssetManagerWindow : EditorWindow {
         private AssetManagerComponentManager _componentManager;
         private AssetManagerContext _context;

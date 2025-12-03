@@ -6,7 +6,7 @@ using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 
-namespace _4OF.ee4v.AssetManager.Views.Components.AssetView {
+namespace _4OF.ee4v.AssetManager.Views.Components.AssetListView {
     public class AssetThumbnailLoader {
         private readonly TextureService _textureService;
 

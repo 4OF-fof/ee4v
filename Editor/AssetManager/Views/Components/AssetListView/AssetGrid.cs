@@ -12,7 +12,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
-namespace _4OF.ee4v.AssetManager.Views.Components.AssetView {
+namespace _4OF.ee4v.AssetManager.Views.Components.AssetListView {
     public class AssetGrid : VisualElement {
         private readonly VisualElement _emptyStateContainer;
         private readonly ListView _listView;
@@ -407,7 +407,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetView {
 
             var currentParent = parent;
             while (currentParent != null) {
-                if (currentParent is AssetListView assetView) {
+                if (currentParent is Views.AssetListView assetView) {
                     assetView.Focus();
                     break;
                 }
