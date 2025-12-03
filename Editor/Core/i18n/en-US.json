@@ -1,4 +1,6 @@
 {
+  "_System.AvatarModifyUtility.AutoBackup.Description": "Automatically create backups of your avatars.",
+  "_System.AvatarModifyUtility.AutoBackup.Trigger": "When uploading to VRChat is successful.",
   "_System.HierarchyExtension.ComponentIcons.Description": "Displays icons for components attached to the object.",
   "_System.HierarchyExtension.ComponentIcons.Trigger": "Always (Click to open window)",
   "_System.HierarchyExtension.DepthLine.Description": "Displays guide lines in the hierarchy according to object depth.",
@@ -90,6 +92,8 @@
   "Debug.AvatarModifyUtility.TargetPrefab": "Target prefab name: {0}",
   "Debug.AvatarModifyUtility.UploadError": "Upload error occurred",
   "Debug.AvatarModifyUtility.UploadSuccess": "Upload success. Avatar ID: {0}",
+  "Debug.Core.EditorServiceManager.DisposeFailedFmt": "[ee4v] Failed to dispose service {0}: {1}",
+  "Debug.Core.EditorServiceManager.InitializeFailedFmt": "[ee4v] Failed to initialize service {0}: {1}",
   "Debug.Core.InvalidHex": "Invalid hex color format: {0}. Expected #RRGGBB or #RGB.",
   "Debug.Core.Utility.Ulid.InvalidByteLength": "Invalid byte length.",
   "Debug.Core.Utility.Ulid.InvalidString": "Invalid string.",

@@ -8,7 +8,7 @@ using _4OF.ee4v.ProjectExtension.API;
 using UnityEditor;
 using UnityEngine;
 
-namespace _4OF.ee4v.ProjectExtension {
+namespace _4OF.ee4v.Core.Manager {
     [InitializeOnLoad]
     internal static class ProjectExtensionManager {
         private static List<IProjectExtensionComponent> _components;

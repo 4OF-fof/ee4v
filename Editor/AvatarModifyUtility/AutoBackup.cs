@@ -2,37 +2,62 @@
 using System.IO;
 using _4OF.ee4v.AssetManager.API;
 using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Setting;
 using UnityEditor;
 using UnityEngine;
 using VRC.SDK3A.Editor;
 
 namespace _4OF.ee4v.AvatarModifyUtility {
-    public static class AutoBackup {
-        private static GameObject _currentlyBuildingAvatar;
+    public class AutoBackup : IEditorService {
+        private GameObject _currentlyBuildingAvatar;
+        private IVRCSdkAvatarBuilderApi _cachedBuilder;
 
-        [InitializeOnLoadMethod]
-        private static void Initialize() {
+        public string Name => "Auto Backup";
+        public string Description => I18N.Get("_System.AvatarModifyUtility.AutoBackup.Description");
+        public string Trigger => I18N.Get("_System.AvatarModifyUtility.AutoBackup.Trigger");
+
+        public void Initialize() {
             VRCSdkControlPanel.OnSdkPanelEnable += OnSdkPanelEnable;
         }
 
-        private static void OnSdkPanelEnable(object sender, EventArgs e) {
-            if (!VRCSdkControlPanel.TryGetBuilder<IVRCSdkAvatarBuilderApi>(out var avatarBuilder)) return;
+        public void Dispose() {
+            VRCSdkControlPanel.OnSdkPanelEnable -= OnSdkPanelEnable;
 
-            avatarBuilder.OnSdkBuildStart -= OnBuildStart;
-            avatarBuilder.OnSdkUploadSuccess -= OnUploadSuccess;
-            avatarBuilder.OnSdkUploadError -= OnUploadError;
-
-            avatarBuilder.OnSdkBuildStart += OnBuildStart;
-            avatarBuilder.OnSdkUploadSuccess += OnUploadSuccess;
-            avatarBuilder.OnSdkUploadError += OnUploadError;
+            if (_cachedBuilder == null) return;
+            try {
+                _cachedBuilder.OnSdkBuildStart -= OnBuildStart;
+                _cachedBuilder.OnSdkUploadSuccess -= OnUploadSuccess;
+                _cachedBuilder.OnSdkUploadError -= OnUploadError;
+            }
+            catch {
+                // Ignore
+            }
+            _cachedBuilder = null;
         }
 
-        private static void OnBuildStart(object sender, object target) {
+        private void OnSdkPanelEnable(object sender, EventArgs e) {
+            if (!VRCSdkControlPanel.TryGetBuilder<IVRCSdkAvatarBuilderApi>(out var avatarBuilder)) return;
+
+            if (_cachedBuilder == avatarBuilder) return;
+
+            if (_cachedBuilder != null) {
+                _cachedBuilder.OnSdkBuildStart -= OnBuildStart;
+                _cachedBuilder.OnSdkUploadSuccess -= OnUploadSuccess;
+                _cachedBuilder.OnSdkUploadError -= OnUploadError;
+            }
+
+            _cachedBuilder = avatarBuilder;
+            _cachedBuilder.OnSdkBuildStart += OnBuildStart;
+            _cachedBuilder.OnSdkUploadSuccess += OnUploadSuccess;
+            _cachedBuilder.OnSdkUploadError += OnUploadError;
+        }
+
+        private void OnBuildStart(object sender, object target) {
             if (target is GameObject avatarGo) _currentlyBuildingAvatar = avatarGo;
         }
 
-        private static void OnUploadSuccess(object sender, object target) {
+        private void OnUploadSuccess(object sender, object target) {
             if (!SettingSingleton.I.enableAutoBackup) return;
             var avatarId = target as string ?? "";
             Debug.Log(I18N.Get("Debug.AvatarModifyUtility.UploadSuccess", avatarId));
@@ -52,7 +77,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
             }
         }
 
-        private static void OnUploadError(object sender, object target) {
+        private void OnUploadError(object sender, object target) {
             Debug.LogWarning(I18N.Get("Debug.AvatarModifyUtility.UploadError"));
             _currentlyBuildingAvatar = null;
         }

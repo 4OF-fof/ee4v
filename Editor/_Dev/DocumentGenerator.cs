@@ -57,7 +57,8 @@ namespace _4OF.ee4v._Dev {
             var componentTypes = new List<Type> {
                 typeof(IHierarchyExtensionComponent),
                 typeof(IProjectExtensionComponent),
-                typeof(IProjectToolbarComponent)
+                typeof(IProjectToolbarComponent),
+                typeof(IEditorService)
             };
 
             foreach (var interfaceType in componentTypes) {
@@ -96,6 +97,7 @@ namespace _4OF.ee4v._Dev {
             var hierarchyHeader = GetMarkdownHierarchyHeader(langCode);
             var projectHeader = GetMarkdownProjectHeader(langCode);
             var toolbarHeader = GetMarkdownToolbarHeader(langCode);
+            var editorServiceHeader = GetMarkdownEditorServiceHeader(langCode);
             var nameCol = GetMarkdownNameCol(langCode);
             var descriptionCol = GetMarkdownDescriptionCol(langCode);
             var triggerCol = GetMarkdownTriggerCol(langCode);
@@ -135,6 +137,18 @@ namespace _4OF.ee4v._Dev {
             var toolbarComponents = data.Where(d => d.ComponentType.Contains("ProjectToolbar")).ToList();
             foreach (var comp in toolbarComponents)
                 sb.AppendLine($"| **{comp.Name.Trim()}** | {comp.Description.Trim()} | {comp.Trigger.Trim()} |");
+            
+            sb.AppendLine();
+            
+            // Editor Service
+            sb.AppendLine(editorServiceHeader);
+            sb.AppendLine();
+            sb.AppendLine($"| {nameCol} | {descriptionCol} | {triggerCol} |");
+            sb.AppendLine("| :--- | :--- | :--- |");
+
+            var editorService = data.Where(d => d.ComponentType.Contains("EditorService")).ToList();
+            foreach (var comp in editorService)
+                sb.AppendLine($"| **{comp.Name.Trim()}** | {comp.Description.Trim()} | {comp.Trigger.Trim()} |");
 
             return sb.ToString();
         }
@@ -172,6 +186,15 @@ namespace _4OF.ee4v._Dev {
                 "en-US" => "## Project Toolbar Extensions",
                 "ko-KR" => "## Project Toolbar 확장 기능",
                 _       => "## Project Toolbar Extensions"
+            };
+        }
+
+        private static string GetMarkdownEditorServiceHeader(string langCode) {
+            return langCode switch {
+                "ja-JP" => "## Editor Service 拡張機能",
+                "en-US" => "## Editor Service Extensions",
+                "ko-KR" => "## Editor Service 확장 기능",
+                _       => "## Editor Service Extensions"
             };
         }
 

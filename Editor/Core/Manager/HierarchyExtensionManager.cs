@@ -6,7 +6,7 @@ using _4OF.ee4v.Core.Setting;
 using UnityEditor;
 using UnityEngine;
 
-namespace _4OF.ee4v.HierarchyExtension {
+namespace _4OF.ee4v.Core.Manager {
     [InitializeOnLoad]
     internal static class HierarchyExtensionManager {
         private static List<IHierarchyExtensionComponent> _components;

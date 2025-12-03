@@ -1,4 +1,6 @@
 {
+  "_System.AvatarModifyUtility.AutoBackup.Description": "作成したアバターのバックアップを自動的に作成します。",
+  "_System.AvatarModifyUtility.AutoBackup.Trigger": "VRChatへのアップロード成功時",
   "_System.HierarchyExtension.ComponentIcons.Description": "オブジェクトにアタッチされたコンポーネントのアイコンを表示します。",
   "_System.HierarchyExtension.ComponentIcons.Trigger": "常時(クリックでウィンドウ展開)",
   "_System.HierarchyExtension.DepthLine.Description": "オブジェクトの深さに応じてヒエラルキー内にガイドラインを表示します。",
@@ -90,6 +92,8 @@
   "Debug.AvatarModifyUtility.TargetPrefab": "対象のプレハブ名: {0}",
   "Debug.AvatarModifyUtility.UploadError": "アップロード中にエラーが発生しました",
   "Debug.AvatarModifyUtility.UploadSuccess": "アップロード成功。アバターID: {0}",
+  "Debug.Core.EditorServiceManager.DisposeFailedFmt": "[ee4v] サービスの破棄に失敗しました {0}: {1}",
+  "Debug.Core.EditorServiceManager.InitializeFailedFmt": "[ee4v] サービスの初期化に失敗しました {0}: {1}",
   "Debug.Core.InvalidHex": "無効な16進数カラー形式: {0}。#RRGGBBまたは#RGBが必要です。",
   "Debug.Core.Utility.Ulid.InvalidByteLength": "バイト長が無効です。",
   "Debug.Core.Utility.Ulid.InvalidString": "無効な文字列です。",

@@ -9,7 +9,7 @@ using _4OF.ee4v.ProjectExtension.Toolbar;
 using UnityEditor;
 using UnityEngine.UIElements;
 
-namespace _4OF.ee4v.ProjectExtension {
+namespace _4OF.ee4v.Core.Manager {
     [InitializeOnLoad]
     public static class ProjectToolbarManager {
         private static List<IProjectToolbarComponent> _components;

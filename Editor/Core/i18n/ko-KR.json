@@ -1,4 +1,6 @@
 {
+  "_System.AvatarModifyUtility.AutoBackup.Description": "만든 아바타의 백업을 자동으로 만듭니다.",
+  "_System.AvatarModifyUtility.AutoBackup.Trigger": "VRChat에 업로드 성공 시",
   "_System.HierarchyExtension.ComponentIcons.Description": "오브젝트에 첨부된 컴포넌트의 아이콘을 표시합니다.",
   "_System.HierarchyExtension.ComponentIcons.Trigger": "항상 (클릭 시 창 확장)",
   "_System.HierarchyExtension.DepthLine.Description": "오브젝트 깊이에 따라 계층 구조 내에 안내선을 표시합니다.",
@@ -90,6 +92,8 @@
   "Debug.AvatarModifyUtility.TargetPrefab": "대상 프리팹 이름: {0}",
   "Debug.AvatarModifyUtility.UploadError": "업로드 오류 발생",
   "Debug.AvatarModifyUtility.UploadSuccess": "업로드 성공. 아바타 ID: {0}",
+  "Debug.Core.EditorServiceManager.DisposeFailedFmt": "[ee4v] 서비스 해제 실패 {0}: {1}",
+  "Debug.Core.EditorServiceManager.InitializeFailedFmt": "[ee4v] 서비스 초기화 실패 {0}: {1}",
   "Debug.Core.InvalidHex": "잘못된 16진수 색상 형식: {0}. #RRGGBB 또는 #RGB여야 합니다.",
   "Debug.Core.Utility.Ulid.InvalidByteLength": "유효하지 않은 바이트 길이입니다.",
   "Debug.Core.Utility.Ulid.InvalidString": "유효하지 않은 문자열입니다.",
