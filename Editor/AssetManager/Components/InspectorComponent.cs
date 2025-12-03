@@ -55,17 +55,23 @@ namespace _4OF.ee4v.AssetManager.Components {
 
             _assetSelectedHandler = asset =>
             {
-                _assetInfo.UpdateSelection(asset != null ? new List<object> { asset } : new List<object>());
+                var list = asset != null ? new List<object> { asset } : new List<object>();
+                _assetInfo.UpdateSelection(list);
+                _presenter.UpdateSelection(list);
             };
             _previewFolderHandler = id =>
             {
                 if (id != Ulid.Empty) {
                     var folder = context.Repository.GetLibraryMetadata()?.GetFolder(id);
-                    _assetInfo.UpdateSelection(new List<object> { folder });
+                    var list = new List<object> { folder };
+                    _assetInfo.UpdateSelection(list);
+                    _presenter.UpdateSelection(list);
                 }
                 else {
-                    if (context.SelectionModel.SelectedAsset.Value == null)
-                        _assetInfo.UpdateSelection(new List<object>());
+                    if (context.SelectionModel.SelectedAsset.Value != null) return;
+                    var list = new List<object>();
+                    _assetInfo.UpdateSelection(list);
+                    _presenter.UpdateSelection(list);
                 }
             };
 
