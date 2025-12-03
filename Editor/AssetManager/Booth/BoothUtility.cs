@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.RegularExpressions;
-using _4OF.ee4v.AssetManager.Component;
-using _4OF.ee4v.AssetManager.Component.Dialog;
 using _4OF.ee4v.AssetManager.Core;
+using _4OF.ee4v.AssetManager.Modules;
+using _4OF.ee4v.AssetManager.Views.Dialog;
 using _4OF.ee4v.AssetManager.Window;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;

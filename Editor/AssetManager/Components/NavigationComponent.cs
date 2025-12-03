@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using _4OF.ee4v.AssetManager.Component;
 using _4OF.ee4v.AssetManager.Core;
-using _4OF.ee4v.AssetManager.Interfaces;
 using _4OF.ee4v.AssetManager.Presenter;
+using _4OF.ee4v.AssetManager.Views;
 using _4OF.ee4v.Core.i18n;
+using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;
 using UnityEngine.UIElements;

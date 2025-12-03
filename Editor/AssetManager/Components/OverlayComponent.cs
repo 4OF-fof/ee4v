@@ -1,25 +1,25 @@
-﻿using _4OF.ee4v.AssetManager.Component;
-using _4OF.ee4v.AssetManager.Interfaces;
+﻿using _4OF.ee4v.AssetManager.Modules;
+using _4OF.ee4v.Core.Interfaces;
 using _4OF.ee4v.Core.UI;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.Components {
     public class OverlayComponent : IAssetManagerComponent {
+        private AssetManagerContext _context;
         private VisualElement _rootContainer;
         private ToastManager _toastManager;
-        private AssetManagerContext _context;
 
         public string Name => "Overlay System";
         public string Description => "Handles modal dialogs and toast notifications.";
         public AssetManagerComponentLocation Location => AssetManagerComponentLocation.Overlay;
-        
+
         // 他のコンポーネントが Initialize 中に ShowDialog/ShowToast を参照する可能性があるため、
         // 最優先で初期化されるように設定します。
         public int Priority => -100;
 
         public void Initialize(AssetManagerContext context) {
             _context = context;
-            
+
             // ルートコンテナの作成（画面全体を覆う、透過・タッチ無視）
             _rootContainer = new VisualElement {
                 name = "ee4v-overlay-root",
@@ -46,7 +46,7 @@ namespace _4OF.ee4v.AssetManager.Components {
 
         public void Dispose() {
             _toastManager?.ClearAll();
-            
+
             if (_context != null) {
                 _context.ShowDialog = null;
                 _context.ShowToast = null;
@@ -84,7 +84,7 @@ namespace _4OF.ee4v.AssetManager.Components {
             // コンテンツの追加
             dialogContainer.Add(dialogContent);
             backdrop.Add(dialogContainer);
-            
+
             // オーバーレイに追加
             _rootContainer.Add(backdrop);
 

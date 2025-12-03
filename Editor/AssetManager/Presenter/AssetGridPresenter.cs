@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Core;
+using _4OF.ee4v.AssetManager.Services;
 using _4OF.ee4v.Core.Utility;
 
 namespace _4OF.ee4v.AssetManager.Presenter {

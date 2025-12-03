@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using _4OF.ee4v.AssetManager.Component;
-using _4OF.ee4v.AssetManager.Component.Dialog;
 using _4OF.ee4v.AssetManager.Core;
+using _4OF.ee4v.AssetManager.Modules;
+using _4OF.ee4v.AssetManager.Services;
+using _4OF.ee4v.AssetManager.State;
+using _4OF.ee4v.AssetManager.Views.Dialog;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEngine;

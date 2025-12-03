@@ -1,4 +1,5 @@
 ﻿using _4OF.ee4v.AssetManager.Core;
+using _4OF.ee4v.AssetManager.Services;
 using _4OF.ee4v.Core.Setting;
 
 namespace _4OF.ee4v.AssetManager {

@@ -1,6 +1,7 @@
-﻿using _4OF.ee4v.AssetManager.Component;
-using _4OF.ee4v.AssetManager.Interfaces;
+﻿using _4OF.ee4v.AssetManager.Modules;
 using _4OF.ee4v.AssetManager.Presenter;
+using _4OF.ee4v.AssetManager.State;
+using _4OF.ee4v.Core.Interfaces;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.Components {

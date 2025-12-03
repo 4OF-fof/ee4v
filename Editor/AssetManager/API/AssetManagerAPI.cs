@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using _4OF.ee4v.AssetManager.Core;
+using _4OF.ee4v.AssetManager.Services;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
