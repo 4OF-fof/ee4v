@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.AssetManager.Services;
 using _4OF.ee4v.AssetManager.State;
@@ -36,7 +37,6 @@ namespace _4OF.ee4v.AssetManager.Presenter {
             AssetSelectionModel model,
             Action<string, float?, ToastType> showToast,
             Action<bool> refreshUI,
-            Action<List<BaseFolder>> setNavigationFolders,
             Action tagListRefresh,
             Func<Vector2> getScreenPosition,
             Func<VisualElement, VisualElement> showDialog,
@@ -50,7 +50,6 @@ namespace _4OF.ee4v.AssetManager.Presenter {
             _model = model;
             _showToast = showToast;
             _refreshUI = refreshUI;
-            _setNavigationFolders = setNavigationFolders;
             _tagListRefresh = tagListRefresh;
             _getScreenPosition = getScreenPosition;
             _showDialog = showDialog;
@@ -206,6 +205,14 @@ namespace _4OF.ee4v.AssetManager.Presenter {
             _refreshUI(false);
         }
 
+        public void OnTagClicked(string tag) {
+            _assetController.SetMode(
+                NavigationMode.Tag,
+                $"{I18N.Get("UI.AssetManager.Navigation.TagPrefix")}{tag}",
+                a => !a.IsDeleted && a.Tags.Contains(tag)
+            );
+        }
+
         public void OnDependencyAdded(Ulid dependencyId) {
             if (SelectedAsset == null) {
                 _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.DependencyAssetNotSelected"), 3, ToastType.Error);
@@ -237,6 +244,17 @@ namespace _4OF.ee4v.AssetManager.Presenter {
             SelectedAsset.UnityData.RemoveDependenceItem(dependencyId);
             _assetService.SaveAsset(SelectedAsset);
             _refreshUI(false);
+        }
+
+        public void OnDependencyClicked(Ulid dependencyId) {
+            var depAsset = _repository.GetAsset(dependencyId);
+            if (depAsset == null || depAsset.IsDeleted) {
+                _showToast?.Invoke(I18N.Get("UI.AssetManager.Toast.DependencyAssetNotSelected"), 3, ToastType.Error);
+                return;
+            }
+
+            var folder = depAsset.Folder;
+            if (folder != Ulid.Empty) _assetController.SetFolder(folder);
         }
 
         public void OnDownloadRequested(string downloadUrl) {
