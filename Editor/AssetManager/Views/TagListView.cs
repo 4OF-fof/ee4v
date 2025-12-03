@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Core;
-using _4OF.ee4v.AssetManager.State;
+using _4OF.ee4v.AssetManager.Services;
 using _4OF.ee4v.AssetManager.Views.Components;
 using _4OF.ee4v.AssetManager.Views.Components.TagListView;
 using _4OF.ee4v.AssetManager.Views.Dialog;
@@ -15,21 +15,17 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.Views {
     public class TagListView : VisualElement {
-        private readonly AssetToolbar _toolbar;
-        private readonly Label _headerLabel;
-        private readonly ScrollView _scrollView;
         private readonly TagListContent _content;
         private readonly VisualElement _emptyStateContainer;
+        private readonly Label _headerLabel;
+        private readonly ScrollView _scrollView;
 
         private readonly Dictionary<string, int> _tagCounts = new();
-        private IAssetRepository _repository;
-        private AssetViewController _controller;
-        private Func<VisualElement, VisualElement> _showDialogCallback;
+        private readonly AssetToolbar _toolbar;
+        private AssetListService _controller;
         private string _currentSearchText = string.Empty;
-
-        public event Action<string> OnTagSelected;
-        public event Action<string, string> OnTagRenamed;
-        public event Action<string> OnTagDeleted;
+        private IAssetRepository _repository;
+        private Func<VisualElement, VisualElement> _showDialogCallback;
 
         public TagListView() {
             style.flexGrow = 1;
@@ -41,7 +37,8 @@ namespace _4OF.ee4v.AssetManager.Views {
             _toolbar.SetSortVisible(false);
             _toolbar.OnBack += () => _controller?.GoBack();
             _toolbar.OnForward += () => _controller?.GoForward();
-            _toolbar.OnSearchTextChanged += text => {
+            _toolbar.OnSearchTextChanged += text =>
+            {
                 _currentSearchText = text;
                 Refresh();
             };
@@ -78,12 +75,16 @@ namespace _4OF.ee4v.AssetManager.Views {
             Add(_emptyStateContainer);
         }
 
+        public event Action<string> OnTagSelected;
+        public event Action<string, string> OnTagRenamed;
+        public event Action<string> OnTagDeleted;
+
         public void Initialize(IAssetRepository repository) {
             _repository = repository;
             Refresh();
         }
 
-        public void SetController(AssetViewController controller) {
+        public void SetController(AssetListService controller) {
             if (_controller != null) {
                 _controller.OnHistoryChanged -= UpdateNavigationState;
                 _controller.BreadcrumbsChanged -= UpdateBreadcrumbs;
@@ -172,6 +173,7 @@ namespace _4OF.ee4v.AssetManager.Views {
                 if (!string.IsNullOrEmpty(child.FullPath)) count++;
                 if (child.Children.Count > 0) count += GetNodeTagCount(child);
             }
+
             return count;
         }
 
@@ -185,17 +187,21 @@ namespace _4OF.ee4v.AssetManager.Views {
                         nextNode = new TagNode(part, null);
                         current.Children[part] = nextNode;
                     }
+
                     current = nextNode;
                 }
+
                 current.FullPath = tag;
             }
+
             return root;
         }
 
         private void ShowContextMenu(string fullPath, VisualElement target) {
             var menu = new GenericDropdownMenu();
             menu.AddItem(I18N.Get("UI.AssetManager.TagListView.Rename"), false, () => ShowRenameDialog(fullPath));
-            menu.AddItem(I18N.Get("UI.AssetManager.TagListView.Delete"), false, () => {
+            menu.AddItem(I18N.Get("UI.AssetManager.TagListView.Delete"), false, () =>
+            {
                 OnTagDeleted?.Invoke(fullPath);
                 Refresh();
             });
@@ -207,7 +213,8 @@ namespace _4OF.ee4v.AssetManager.Views {
 
         private void ShowRenameDialog(string oldTag) {
             var dialog = new TagRenameDialog();
-            dialog.OnTagRenamed += (oldName, newName) => {
+            dialog.OnTagRenamed += (oldName, newName) =>
+            {
                 OnTagRenamed?.Invoke(oldName, newName);
                 Refresh();
             };
@@ -219,6 +226,7 @@ namespace _4OF.ee4v.AssetManager.Views {
                 _toolbar.UpdateNavigationState(false, false);
                 return;
             }
+
             _toolbar.UpdateNavigationState(_controller.CanGoBack, _controller.CanGoForward);
         }
 
@@ -254,11 +262,16 @@ namespace _4OF.ee4v.AssetManager.Views {
             };
 
             var emptyTitle = new Label(I18N.Get("UI.AssetManager.TagListView.EmptyTitle")) {
-                style = { fontSize = 16, unityTextAlign = TextAnchor.MiddleCenter, color = ColorPreset.TransparentWhite50, marginBottom = 8 }
+                style = {
+                    fontSize = 16, unityTextAlign = TextAnchor.MiddleCenter, color = ColorPreset.TransparentWhite50,
+                    marginBottom = 8
+                }
             };
 
             var emptyHint = new Label(I18N.Get("UI.AssetManager.TagListView.EmptyHint")) {
-                style = { fontSize = 12, unityTextAlign = TextAnchor.MiddleCenter, color = ColorPreset.TransparentWhite30 }
+                style = {
+                    fontSize = 12, unityTextAlign = TextAnchor.MiddleCenter, color = ColorPreset.TransparentWhite30
+                }
             };
 
             emptyContentRoot.Add(emptyIcon);

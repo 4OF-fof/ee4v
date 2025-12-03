@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.Core.Utility;
 
-namespace _4OF.ee4v.AssetManager.State {
-    public class AssetSelectionModel {
+namespace _4OF.ee4v.AssetManager {
+    public class SelectionService {
         private BindableProperty<List<object>> SelectedItems { get; } = new(new List<object>());
         public BindableProperty<AssetMetadata> SelectedAsset { get; } = new();
         public BindableProperty<Ulid> PreviewFolderId { get; } = new(Ulid.Empty);

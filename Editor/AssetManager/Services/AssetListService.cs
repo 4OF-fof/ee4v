@@ -6,7 +6,7 @@ using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using UnityEditor;
 
-namespace _4OF.ee4v.AssetManager.State {
+namespace _4OF.ee4v.AssetManager.Services {
     public enum NavigationMode {
         AllItems,
         BoothItems,
@@ -18,7 +18,20 @@ namespace _4OF.ee4v.AssetManager.State {
         Backups
     }
 
-    public class AssetViewController {
+    public enum AssetSortType {
+        DateAddedNewest,
+        DateAddedOldest,
+        NameAsc,
+        NameDesc,
+        DateNewest,
+        DateOldest,
+        SizeSmallest,
+        SizeLargest,
+        ExtAsc,
+        ExtDesc
+    }
+
+    public class AssetListService {
         private readonly Stack<NavigationState> _backHistory = new();
         private readonly Stack<NavigationState> _forwardHistory = new();
         private readonly IAssetRepository _repository;
@@ -28,7 +41,7 @@ namespace _4OF.ee4v.AssetManager.State {
 
         private Func<AssetMetadata, bool> _filter = asset => !asset.IsDeleted;
 
-        public AssetViewController(IAssetRepository repository) {
+        public AssetListService(IAssetRepository repository) {
             _repository = repository;
 
             if (_repository == null) return;
@@ -95,17 +108,19 @@ namespace _4OF.ee4v.AssetManager.State {
                 var lib = _repository.GetLibraryMetadata();
                 var folder = lib?.GetFolder(folderId);
 
-                if (folder is BoothItemFolder) {
-                    CurrentMode = NavigationMode.BoothItems;
-                    _contextName = I18N.Get("UI.AssetManager.Navigation.BoothItemsContext");
-                }
-                else if (folder is BackupFolder) {
-                    CurrentMode = NavigationMode.Backups;
-                    _contextName = I18N.Get("UI.AssetManager.Navigation.BackupsContext");
-                }
-                else {
-                    CurrentMode = NavigationMode.Folders;
-                    _contextName = I18N.Get("UI.AssetManager.Navigation.FoldersContext");
+                switch (folder) {
+                    case BoothItemFolder:
+                        CurrentMode = NavigationMode.BoothItems;
+                        _contextName = I18N.Get("UI.AssetManager.Navigation.BoothItemsContext");
+                        break;
+                    case BackupFolder:
+                        CurrentMode = NavigationMode.Backups;
+                        _contextName = I18N.Get("UI.AssetManager.Navigation.BackupsContext");
+                        break;
+                    default:
+                        CurrentMode = NavigationMode.Folders;
+                        _contextName = I18N.Get("UI.AssetManager.Navigation.FoldersContext");
+                        break;
                 }
 
                 SelectedFolderId = folderId;

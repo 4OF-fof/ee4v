@@ -73,7 +73,7 @@ namespace _4OF.ee4v.AssetManager.Components {
             dialogContainer.Add(dialogContent);
             backdrop.Add(dialogContainer);
             _rootContainer.Add(backdrop);
-            
+
             return backdrop;
         }
     }

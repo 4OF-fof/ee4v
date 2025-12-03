@@ -31,7 +31,7 @@ namespace _4OF.ee4v.AssetManager.Components {
                 context.AssetService,
                 context.FolderService,
                 context.ViewController,
-                context.SelectionModel,
+                context.SelectionService,
                 context.ShowToast,
                 context.RequestRefresh,
                 context.RequestTagListRefresh,
@@ -68,15 +68,15 @@ namespace _4OF.ee4v.AssetManager.Components {
                     _presenter.UpdateSelection(list);
                 }
                 else {
-                    if (context.SelectionModel.SelectedAsset.Value != null) return;
+                    if (context.SelectionService.SelectedAsset.Value != null) return;
                     var list = new List<object>();
                     _assetInfo.UpdateSelection(list);
                     _presenter.UpdateSelection(list);
                 }
             };
 
-            context.SelectionModel.SelectedAsset.OnValueChanged += _assetSelectedHandler;
-            context.SelectionModel.PreviewFolderId.OnValueChanged += _previewFolderHandler;
+            context.SelectionService.SelectedAsset.OnValueChanged += _assetSelectedHandler;
+            context.SelectionService.PreviewFolderId.OnValueChanged += _previewFolderHandler;
 
             context.ViewController.OnHistoryChanged += () => _presenter.ClearSelection();
         }
@@ -98,9 +98,9 @@ namespace _4OF.ee4v.AssetManager.Components {
                 _assetInfo.OnDownloadRequested -= _presenter.OnDownloadRequested;
             }
 
-            if (_context?.SelectionModel == null) return;
-            _context.SelectionModel.SelectedAsset.OnValueChanged -= _assetSelectedHandler;
-            _context.SelectionModel.PreviewFolderId.OnValueChanged -= _previewFolderHandler;
+            if (_context?.SelectionService == null) return;
+            _context.SelectionService.SelectedAsset.OnValueChanged -= _assetSelectedHandler;
+            _context.SelectionService.PreviewFolderId.OnValueChanged -= _previewFolderHandler;
         }
 
         private static Vector2 GetScreenPosition() {

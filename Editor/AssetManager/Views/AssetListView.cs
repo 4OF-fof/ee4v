@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.AssetManager.Services;
-using _4OF.ee4v.AssetManager.State;
 using _4OF.ee4v.AssetManager.Views.Components;
 using _4OF.ee4v.AssetManager.Views.Components.AssetListView;
 using _4OF.ee4v.Core.UI;
@@ -17,7 +16,7 @@ namespace _4OF.ee4v.AssetManager.Views {
         private readonly AssetToolbar _toolbar;
         private List<object> _allItems = new();
 
-        private AssetViewController _controller;
+        private AssetListService _controller;
         private string _currentSearchText = string.Empty;
 
         private AssetSortType _currentSortType = AssetSortType.NameAsc;
@@ -86,7 +85,7 @@ namespace _4OF.ee4v.AssetManager.Views {
             _grid.ClearSelection();
         }
 
-        public void SetController(AssetViewController controller) {
+        public void SetController(AssetListService controller) {
             if (_controller != null) {
                 _controller.ItemsChanged -= OnItemsChanged;
                 _controller.OnHistoryChanged -= UpdateNavigationState;

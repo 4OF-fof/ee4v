@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.AssetManager.Services;
-using _4OF.ee4v.AssetManager.State;
 using _4OF.ee4v.AssetManager.Views.Dialog;
 using _4OF.ee4v.AssetManager.Views.Toast;
 using _4OF.ee4v.Core.i18n;
@@ -13,13 +12,13 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.Presenter {
     public class AssetPropertyPresenter {
-        private readonly AssetViewController _assetController;
+        private readonly AssetListService _assetController;
         private readonly AssetService _assetService;
         private readonly FolderService _folderService;
         private readonly Func<Vector2> _getScreenPosition;
-        private readonly AssetSelectionModel _model;
         private readonly Action<bool> _refreshUI;
         private readonly IAssetRepository _repository;
+        private readonly SelectionService _service;
         private readonly Action<List<BaseFolder>> _setNavigationFolders;
         private readonly Action<Vector2, IAssetRepository, Ulid?, Action<Ulid>> _showAssetSelector;
         private readonly Func<VisualElement, VisualElement> _showDialog;
@@ -33,8 +32,8 @@ namespace _4OF.ee4v.AssetManager.Presenter {
             IAssetRepository repository,
             AssetService assetService,
             FolderService folderService,
-            AssetViewController controller,
-            AssetSelectionModel model,
+            AssetListService controller,
+            SelectionService service,
             Action<string, float?, ToastType> showToast,
             Action<bool> refreshUI,
             Action tagListRefresh,
@@ -47,7 +46,7 @@ namespace _4OF.ee4v.AssetManager.Presenter {
             _assetService = assetService;
             _folderService = folderService;
             _assetController = controller;
-            _model = model;
+            _service = service;
             _showToast = showToast;
             _refreshUI = refreshUI;
             _tagListRefresh = tagListRefresh;
@@ -57,32 +56,32 @@ namespace _4OF.ee4v.AssetManager.Presenter {
             _showAssetSelector = showAssetSelector;
         }
 
-        private AssetMetadata SelectedAsset => _model.SelectedAsset.Value;
-        private Ulid CurrentPreviewFolderId => _model.PreviewFolderId.Value;
+        private AssetMetadata SelectedAsset => _service.SelectedAsset.Value;
+        private Ulid CurrentPreviewFolderId => _service.PreviewFolderId.Value;
 
         public void UpdateSelection(List<object> selectedItems) {
             _currentSelection = selectedItems ?? new List<object>();
-            _model.SetSelection(selectedItems);
+            _service.SetSelection(selectedItems);
 
             switch (selectedItems) {
                 case { Count: 1 } when selectedItems[0] is AssetMetadata asset:
-                    _model.SetSelectedAsset(asset);
-                    _model.SetPreviewFolder(Ulid.Empty);
+                    _service.SetSelectedAsset(asset);
+                    _service.SetPreviewFolder(Ulid.Empty);
                     break;
                 case { Count: 1 } when selectedItems[0] is BaseFolder folder:
-                    _model.SetSelectedAsset(null);
-                    _model.SetPreviewFolder(folder.ID);
+                    _service.SetSelectedAsset(null);
+                    _service.SetPreviewFolder(folder.ID);
                     break;
                 default:
-                    _model.SetSelectedAsset(null);
-                    _model.SetPreviewFolder(Ulid.Empty);
+                    _service.SetSelectedAsset(null);
+                    _service.SetPreviewFolder(Ulid.Empty);
                     break;
             }
         }
 
         public void ClearSelection() {
             _currentSelection.Clear();
-            _model.Clear();
+            _service.Clear();
         }
 
         public void OnNameChanged(string newName) {

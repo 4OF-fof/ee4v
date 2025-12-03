@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using _4OF.ee4v.AssetManager.State;
+using _4OF.ee4v.AssetManager.Services;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
@@ -142,7 +142,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components {
             }
         }
 
-        private Label CreateNavigationLabel(string text, string labelTooltip) {
+        private static Label CreateNavigationLabel(string text, string labelTooltip) {
             var label = new Label(text) {
                 tooltip = labelTooltip,
                 style = {

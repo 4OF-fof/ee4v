@@ -1,4 +1,4 @@
-﻿using _4OF.ee4v.AssetManager.State;
+﻿using _4OF.ee4v.AssetManager.Services;
 using _4OF.ee4v.AssetManager.Views.Toast;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Interfaces;
@@ -41,20 +41,20 @@ namespace _4OF.ee4v.AssetManager {
                 AssetService = AssetManagerContainer.AssetService,
                 FolderService = AssetManagerContainer.FolderService,
                 TextureService = AssetManagerContainer.TextureService,
-                ViewController = new AssetViewController(AssetManagerContainer.Repository),
-                SelectionModel = new AssetSelectionModel(),
+                ViewController = new AssetListService(AssetManagerContainer.Repository),
+                SelectionService = new SelectionService(),
                 RequestRefresh = RefreshUI
             };
 
             _context.ViewController.AssetSelected += asset =>
             {
-                _context.SelectionModel.SetSelectedAsset(asset);
-                _context.SelectionModel.SetPreviewFolder(Ulid.Empty);
+                _context.SelectionService.SetSelectedAsset(asset);
+                _context.SelectionService.SetPreviewFolder(Ulid.Empty);
             };
             _context.ViewController.FolderPreviewSelected += folder =>
             {
-                _context.SelectionModel.SetPreviewFolder(folder?.ID ?? Ulid.Empty);
-                if (folder != null) _context.SelectionModel.SetSelectedAsset(null);
+                _context.SelectionService.SetPreviewFolder(folder?.ID ?? Ulid.Empty);
+                if (folder != null) _context.SelectionService.SetSelectedAsset(null);
             };
 
             var root = rootVisualElement;
@@ -131,10 +131,10 @@ namespace _4OF.ee4v.AssetManager {
         private void RefreshUI(bool fullRefresh) {
             if (fullRefresh) _context.ViewController.Refresh();
 
-            var selectedAsset = _context.SelectionModel.SelectedAsset.Value;
+            var selectedAsset = _context.SelectionService.SelectedAsset.Value;
             if (selectedAsset == null) return;
             var freshAsset = _context.Repository.GetAsset(selectedAsset.ID);
-            _context.SelectionModel.SetSelectedAsset(freshAsset);
+            _context.SelectionService.SetSelectedAsset(freshAsset);
         }
 
         public static void ShowToastMessage(string message, float? duration = 3f, ToastType type = ToastType.Info) {

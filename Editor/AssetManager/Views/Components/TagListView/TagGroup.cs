@@ -1,5 +1,6 @@
 ﻿using System;
 using _4OF.ee4v.Core.i18n;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.Views.Components.TagListView {
@@ -7,11 +8,11 @@ namespace _4OF.ee4v.AssetManager.Views.Components.TagListView {
         public TagGroup(string groupName, int count, bool isOpen, Action<bool> onToggle) {
             text = I18N.Get("UI.AssetManager.TagListView.GroupNameFmt", groupName, count);
             value = isOpen;
-            
+
             style.marginLeft = 0;
             style.marginTop = 8;
             style.marginBottom = 4;
-            style.unityFontStyleAndWeight = UnityEngine.FontStyle.Bold;
+            style.unityFontStyleAndWeight = FontStyle.Bold;
             style.fontSize = 24;
 
             var toggle = this.Q<Toggle>();

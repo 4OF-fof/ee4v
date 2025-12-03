@@ -5,7 +5,6 @@ using System.Text.RegularExpressions;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.AssetManager.Views.Dialog;
 using _4OF.ee4v.AssetManager.Views.Toast;
-using _4OF.ee4v.AssetManager.Window;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
 using Newtonsoft.Json.Linq;

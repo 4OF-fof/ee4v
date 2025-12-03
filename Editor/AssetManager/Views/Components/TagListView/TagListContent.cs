@@ -6,14 +6,14 @@ using UnityEngine.UIElements;
 namespace _4OF.ee4v.AssetManager.Views.Components.TagListView {
     public class TagListContent : VisualElement {
         private readonly Dictionary<string, bool> _foldoutStates = new();
-        
-        public event Action<string> OnTagSelected;
-        public event Action<string, VisualElement> OnTagRightClicked;
 
         public TagListContent() {
             style.flexDirection = FlexDirection.Row;
             style.flexWrap = Wrap.Wrap;
         }
+
+        public event Action<string> OnTagSelected;
+        public event Action<string, VisualElement> OnTagRightClicked;
 
         public void DrawFlatList(List<string> tags, Func<string, int> getCount) {
             Clear();
@@ -28,7 +28,8 @@ namespace _4OF.ee4v.AssetManager.Views.Components.TagListView {
             RenderTreeNodes(rootNode, this, getCount, getNodeCount);
         }
 
-        private void RenderTreeNodes(TagNode node, VisualElement container, Func<string, int> getCount, Func<TagNode, int> getNodeCount) {
+        private void RenderTreeNodes(TagNode node, VisualElement container, Func<string, int> getCount,
+            Func<TagNode, int> getNodeCount) {
             var leafContainer = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
@@ -50,15 +51,17 @@ namespace _4OF.ee4v.AssetManager.Views.Components.TagListView {
                 if (isFolder) {
                     if (!string.IsNullOrEmpty(child.FullPath)) {
                         var count = getCount(child.FullPath);
-                        leafContainer.Add(new TagItem(child.Name, child.FullPath, count, OnTagSelected, OnTagRightClicked));
+                        leafContainer.Add(new TagItem(child.Name, child.FullPath, count, OnTagSelected,
+                            OnTagRightClicked));
                     }
 
                     var groupTagCount = getNodeCount(child);
                     var foldoutKey = child.FullPath ?? child.Name;
                     var isOpen = _foldoutStates.GetValueOrDefault(foldoutKey, false);
 
-                    var group = new TagGroup(child.Name, groupTagCount, isOpen, newState => _foldoutStates[foldoutKey] = newState);
-                    
+                    var group = new TagGroup(child.Name, groupTagCount, isOpen,
+                        newState => _foldoutStates[foldoutKey] = newState);
+
                     container.Add(group);
                     RenderTreeNodes(child, group, getCount, getNodeCount);
                 }

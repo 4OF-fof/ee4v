@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using _4OF.ee4v.AssetManager.Core;
-using _4OF.ee4v.AssetManager.State;
+using _4OF.ee4v.AssetManager.Services;
 using _4OF.ee4v.AssetManager.Views.Components.Navigation;
 using _4OF.ee4v.AssetManager.Views.Dialog;
 using _4OF.ee4v.Core.Utility;

@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.AssetManager.Services;
-using _4OF.ee4v.AssetManager.State;
 using _4OF.ee4v.AssetManager.Views.Toast;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
@@ -12,7 +11,7 @@ using UnityEngine;
 
 namespace _4OF.ee4v.AssetManager.Presenter {
     public class AssetNavigationPresenter {
-        private readonly AssetViewController _assetController;
+        private readonly AssetListService _assetController;
         private readonly AssetService _assetService;
         private readonly FolderService _folderService;
         private readonly bool _isInitialized;
@@ -27,7 +26,7 @@ namespace _4OF.ee4v.AssetManager.Presenter {
             IAssetRepository repository,
             AssetService assetService,
             FolderService folderService,
-            AssetViewController controller,
+            AssetListService controller,
             Action<string, float?, ToastType> showToast,
             Action<bool> refreshUI,
             Action<List<BaseFolder>> setNavigationFolders,

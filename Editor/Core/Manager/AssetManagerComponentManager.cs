@@ -38,9 +38,8 @@ namespace _4OF.ee4v.Core.Manager {
                         _components.Add(component);
                     }
                 }
-                catch (Exception e) {
-                    // TODO: i18n
-                    Debug.LogError($"[ee4v] Failed to init component {type.Name}: {e}");
+                catch {
+                    // ignore
                 }
             }
 

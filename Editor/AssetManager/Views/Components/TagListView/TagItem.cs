@@ -5,10 +5,11 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.Views.Components.TagListView {
     public sealed class TagItem : Button {
-        public TagItem(string displayName, string fullPath, int count, Action<string> onSelect, Action<string, VisualElement> onRightClick) {
+        public TagItem(string displayName, string fullPath, int count, Action<string> onSelect,
+            Action<string, VisualElement> onRightClick) {
             text = I18N.Get("UI.AssetManager.TagListView.TagWithCountFmt", displayName, count);
             tooltip = fullPath;
-            
+
             style.height = 24;
             style.borderTopLeftRadius = 12;
             style.borderTopRightRadius = 12;
@@ -33,7 +34,8 @@ namespace _4OF.ee4v.AssetManager.Views.Components.TagListView {
             RegisterCallback<MouseLeaveEvent>(_ =>
                 style.backgroundColor = ColorPreset.TagPillBackgroundStyle);
 
-            RegisterCallback<MouseDownEvent>(evt => {
+            RegisterCallback<MouseDownEvent>(evt =>
+            {
                 if (evt.button != 1) return;
                 evt.StopPropagation();
                 onRightClick?.Invoke(fullPath, this);
