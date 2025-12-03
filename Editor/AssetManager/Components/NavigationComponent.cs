@@ -73,8 +73,8 @@ namespace _4OF.ee4v.AssetManager.Components {
             context.ViewController.OnHistoryChanged += OnHistoryChanged;
 
             _presenter.OnNavigationChanged(
-                NavigationMode.BoothItems, 
-                I18N.Get("UI.AssetManager.Navigation.BoothItemsContext"), 
+                NavigationMode.BoothItems,
+                I18N.Get("UI.AssetManager.Navigation.BoothItemsContext"),
                 a => !a.IsDeleted
             );
         }

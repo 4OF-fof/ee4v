@@ -407,7 +407,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetView {
 
             var currentParent = parent;
             while (currentParent != null) {
-                if (currentParent is Views.AssetListView assetView) {
+                if (currentParent is AssetListView assetView) {
                     assetView.Focus();
                     break;
                 }

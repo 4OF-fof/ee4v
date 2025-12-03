@@ -12,23 +12,15 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
     public class UserFolderTree : VisualElement {
-        private readonly Label _headerLabel;
-        private readonly VisualElement _treeContainer;
         private readonly NavigationDragManipulator _dragManipulator;
-        
+        private readonly HashSet<Ulid> _expandedFolders = new();
+
         private readonly Dictionary<Ulid, VisualElement> _folderItemMap = new();
         private readonly Dictionary<Ulid, VisualElement> _folderRowMap = new();
-        private readonly HashSet<Ulid> _expandedFolders = new();
-        
+        private readonly Label _headerLabel;
+        private readonly VisualElement _treeContainer;
+
         private VisualElement _selectedFolderRow;
-
-        public event Action<NavigationMode, string, Func<AssetMetadata, bool>> OnNavigationRequested;
-        public event Action OnCreateFolderRequested;
-        public event Action<Ulid> OnFolderSelected;
-        public event Action<Ulid, string, VisualElement, Vector2> OnContextMenuRequested;
-
-        public event Action<Ulid, Ulid> OnFolderMoved;
-        public event Action<Ulid, Ulid, int> OnFolderReordered;
 
         public UserFolderTree() {
             style.flexGrow = 1;
@@ -36,18 +28,20 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             var header = new VisualElement {
                 style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, marginBottom = 2 }
             };
-            
+
             _headerLabel = new Label(I18N.Get("UI.AssetManager.Navigation.Folders")) {
                 style = {
                     paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 4,
                     unityFontStyleAndWeight = FontStyle.Bold, flexGrow = 1
                 }
             };
-            _headerLabel.RegisterCallback<PointerDownEvent>(evt => {
+            _headerLabel.RegisterCallback<PointerDownEvent>(evt =>
+            {
                 if (evt.button != 0) return;
                 ClearSelection();
                 SetHeaderSelected(true);
-                OnNavigationRequested?.Invoke(NavigationMode.Folders, I18N.Get("UI.AssetManager.Navigation.FoldersContext"), a => !a.IsDeleted);
+                OnNavigationRequested?.Invoke(NavigationMode.Folders,
+                    I18N.Get("UI.AssetManager.Navigation.FoldersContext"), a => !a.IsDeleted);
                 evt.StopPropagation();
             });
             header.Add(_headerLabel);
@@ -58,15 +52,18 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                     unityFontStyleAndWeight = FontStyle.Bold, fontSize = 16, color = ColorPreset.InActiveItem
                 }
             };
-            plusBtn.RegisterCallback<PointerEnterEvent>(_ => {
+            plusBtn.RegisterCallback<PointerEnterEvent>(_ =>
+            {
                 plusBtn.style.color = ColorPreset.AccentBlue;
                 plusBtn.style.backgroundColor = ColorPreset.AccentBlue20Style;
             });
-            plusBtn.RegisterCallback<PointerLeaveEvent>(_ => {
+            plusBtn.RegisterCallback<PointerLeaveEvent>(_ =>
+            {
                 plusBtn.style.color = ColorPreset.InActiveItem;
                 plusBtn.style.backgroundColor = new StyleColor(StyleKeyword.Null);
             });
-            plusBtn.RegisterCallback<PointerDownEvent>(evt => {
+            plusBtn.RegisterCallback<PointerDownEvent>(evt =>
+            {
                 if (evt.button != 0) return;
                 OnCreateFolderRequested?.Invoke();
                 evt.StopPropagation();
@@ -84,6 +81,14 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             _dragManipulator.OnFolderReordered += (p, s, i) => OnFolderReordered?.Invoke(p, s, i);
             this.AddManipulator(_dragManipulator);
         }
+
+        public event Action<NavigationMode, string, Func<AssetMetadata, bool>> OnNavigationRequested;
+        public event Action OnCreateFolderRequested;
+        public event Action<Ulid> OnFolderSelected;
+        public event Action<Ulid, string, VisualElement, Vector2> OnContextMenuRequested;
+
+        public event Action<Ulid, Ulid> OnFolderMoved;
+        public event Action<Ulid, Ulid, int> OnFolderReordered;
 
         public void SetFolders(List<BaseFolder> folders) {
             _treeContainer.Clear();
@@ -116,7 +121,8 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                 _headerLabel.AddToClassList("selected");
                 _headerLabel.style.backgroundColor = ColorPreset.AccentBlue40Style;
                 _headerLabel.style.color = ColorPreset.AccentBlue;
-            } else {
+            }
+            else {
                 _headerLabel.RemoveFromClassList("selected");
                 _headerLabel.style.backgroundColor = new StyleColor(StyleKeyword.Null);
                 _headerLabel.style.color = new StyleColor(StyleKeyword.Null);
@@ -136,33 +142,34 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             var hasChildren = folder is Folder f && f.Children.Count > 0;
             var isExpanded = _expandedFolders.Contains(folder.ID);
 
-            var expandToggle = new Label(hasChildren ? (isExpanded ? "▼" : "▶") : " ") {
+            var expandToggle = new Label(hasChildren ? isExpanded ? "▼" : "▶" : " ") {
                 style = {
                     paddingLeft = depth * 12, paddingRight = 0, width = 16 + depth * 12,
                     unityTextAlign = TextAnchor.MiddleLeft, fontSize = 10, flexShrink = 0
                 }
             };
-            if (hasChildren) {
-                expandToggle.RegisterCallback<PointerDownEvent>(evt => {
+            if (hasChildren)
+                expandToggle.RegisterCallback<PointerDownEvent>(evt =>
+                {
                     if (evt.button != 0) return;
                     ToggleExpand(folder.ID);
                     evt.StopPropagation();
                 });
-            }
             itemRow.Add(expandToggle);
 
             var label = new Label(folder.Name) {
                 tooltip = folder.Name,
                 style = {
                     paddingLeft = 0, paddingRight = 8, paddingTop = 3, paddingBottom = 3,
-                    flexGrow = 1, flexShrink = 1, overflow = Overflow.Hidden, 
+                    flexGrow = 1, flexShrink = 1, overflow = Overflow.Hidden,
                     textOverflow = TextOverflow.Ellipsis, whiteSpace = WhiteSpace.NoWrap
                 }
             };
             itemRow.Add(label);
             treeItemContainer.Add(itemRow);
 
-            itemRow.RegisterCallback<PointerDownEvent>(evt => {
+            itemRow.RegisterCallback<PointerDownEvent>(evt =>
+            {
                 switch (evt.button) {
                     case 0:
                         SelectFolder(folder.ID);
@@ -178,27 +185,32 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                 }
             });
 
-            itemRow.RegisterCallback<DragEnterEvent>(_ => {
+            itemRow.RegisterCallback<DragEnterEvent>(_ =>
+            {
                 if (CanAcceptDrop()) itemRow.style.backgroundColor = ColorPreset.AccentBlue40Style;
             });
-            itemRow.RegisterCallback<DragLeaveEvent>(_ => {
-                if (CanAcceptDrop() && _selectedFolderRow != itemRow) itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+            itemRow.RegisterCallback<DragLeaveEvent>(_ =>
+            {
+                if (CanAcceptDrop() && _selectedFolderRow != itemRow)
+                    itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
             });
             itemRow.RegisterCallback<DragUpdatedEvent>(_ =>
             {
-                DragAndDrop.visualMode = CanAcceptDrop() ? DragAndDropVisualMode.Link : DragAndDropVisualMode.Rejected;
+                DragAndDrop.visualMode =
+                    CanAcceptDrop() ? DragAndDropVisualMode.Link : DragAndDropVisualMode.Rejected;
             });
-            itemRow.RegisterCallback<DragPerformEvent>(evt => {
+            itemRow.RegisterCallback<DragPerformEvent>(evt =>
+            {
                 if (!CanAcceptDrop()) return;
                 DragAndDrop.AcceptDrag();
-                
+
                 if (_selectedFolderRow == itemRow) ApplySelectedStyle(itemRow);
                 else itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
-                
+
                 evt.StopPropagation();
             });
 
-            _dragManipulator.RegisterFolderItem(itemRow, treeItemContainer, parentContainer, 
+            _dragManipulator.RegisterFolderItem(itemRow, treeItemContainer, parentContainer,
                 GetParentFolderId, GetChildIndex);
 
             var childrenContainer = new VisualElement {
@@ -206,11 +218,9 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             };
             treeItemContainer.Add(childrenContainer);
 
-            if (folder is Folder folderWithChildren) {
-                foreach (var child in folderWithChildren.Children) {
+            if (folder is Folder folderWithChildren)
+                foreach (var child in folderWithChildren.Children)
                     CreateFolderTreeItem(child, childrenContainer, depth + 1);
-                }
-            }
 
             parentContainer.Add(treeItemContainer);
             _folderItemMap[folder.ID] = treeItemContainer;
@@ -219,11 +229,11 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
 
         private void ToggleExpand(Ulid folderId) {
             if (!_expandedFolders.Add(folderId)) _expandedFolders.Remove(folderId);
-            
+
             if (_folderItemMap.TryGetValue(folderId, out var container)) {
                 var toggle = container.Q<VisualElement>().Q<Label>();
                 var children = container.ElementAt(1);
-                
+
                 var expanded = _expandedFolders.Contains(folderId);
                 if (toggle != null) toggle.text = expanded ? "▼" : "▶";
                 if (children != null) children.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
@@ -237,6 +247,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                 if (itemParent.userData is Ulid id) return id;
                 itemParent = itemParent.parent;
             }
+
             return Ulid.Empty;
         }
 
@@ -245,7 +256,10 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             return container.IndexOf(item);
         }
 
-        private static bool CanAcceptDrop() => DragAndDrop.GetGenericData("AssetManagerAssets") != null || DragAndDrop.GetGenericData("AssetManagerFolders") != null;
+        private static bool CanAcceptDrop() {
+            return DragAndDrop.GetGenericData("AssetManagerAssets") != null ||
+                DragAndDrop.GetGenericData("AssetManagerFolders") != null;
+        }
 
         private static void ApplySelectedStyle(VisualElement item) {
             item.AddToClassList("selected");
@@ -256,7 +270,8 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
         private static void RemoveSelectedStyle(VisualElement item) {
             item.RemoveFromClassList("selected");
             item.style.backgroundColor = new StyleColor(StyleKeyword.Null);
-            foreach (var label in item.Children().OfType<Label>()) label.style.color = new StyleColor(StyleKeyword.Null);
+            foreach (var label in item.Children().OfType<Label>())
+                label.style.color = new StyleColor(StyleKeyword.Null);
         }
     }
 }

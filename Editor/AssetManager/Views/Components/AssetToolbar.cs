@@ -159,7 +159,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components {
             return label;
         }
 
-        private void RegisterHoverEvents(VisualElement element) {
+        private static void RegisterHoverEvents(VisualElement element) {
             element.RegisterCallback<MouseEnterEvent>(_ =>
             {
                 if (element.enabledSelf) element.style.backgroundColor = ColorPreset.MouseOverBackground;

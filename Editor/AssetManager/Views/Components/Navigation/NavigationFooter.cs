@@ -6,8 +6,6 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
     public class NavigationFooter : VisualElement {
-        public event Action OnCreateAssetRequested;
-
         public NavigationFooter() {
             var createBtn = new Button {
                 text = I18N.Get("UI.AssetManager.Navigation.NewAsset"),
@@ -22,11 +20,15 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                 }
             };
 
-            createBtn.RegisterCallback<PointerEnterEvent>(_ => createBtn.style.backgroundColor = ColorPreset.AccentBlueStyle);
-            createBtn.RegisterCallback<PointerLeaveEvent>(_ => createBtn.style.backgroundColor = ColorPreset.AccentBlue40Style);
+            createBtn.RegisterCallback<PointerEnterEvent>(_ =>
+                createBtn.style.backgroundColor = ColorPreset.AccentBlueStyle);
+            createBtn.RegisterCallback<PointerLeaveEvent>(_ =>
+                createBtn.style.backgroundColor = ColorPreset.AccentBlue40Style);
             createBtn.clicked += () => OnCreateAssetRequested?.Invoke();
 
             Add(createBtn);
         }
+
+        public event Action OnCreateAssetRequested;
     }
 }

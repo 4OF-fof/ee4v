@@ -10,28 +10,20 @@ using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.AssetManager.Views {
     public sealed class Navigation : VisualElement {
-        private readonly SystemFolderList _systemList;
-        private readonly UserFolderTree _folderTree;
-        private readonly NavigationFooter _footer;
         private readonly CreateAssetDialog _createAssetDialog;
         private readonly CreateFolderDialog _createFolderDialog;
+        private readonly UserFolderTree _folderTree;
+        private readonly NavigationFooter _footer;
         private readonly RenameFolderDialog _renameFolderDialog;
-        
-        private Func<VisualElement, VisualElement> _showDialogCallback;
+        private readonly SystemFolderList _systemList;
 
-        public event Action<NavigationMode, string, Func<AssetMetadata, bool>> NavigationChanged;
-        public event Action<Ulid> FolderSelected;
-        public event Action TagListClicked;
-        public event Action<Ulid, string> OnFolderRenamed;
-        public event Action<Ulid, Ulid> OnFolderMoved;
-        public event Action<Ulid, string, VisualElement, Vector2> OnFolderContextMenuRequested;
-        public event Action<string> OnFolderCreated;
-        public event Action<Ulid, Ulid, int> OnFolderReordered;
-        public event Action<string, string, string, List<string>, string, string> OnAssetCreated;
+        private Func<VisualElement, VisualElement> _showDialogCallback;
 
         public Navigation() {
             style.flexDirection = FlexDirection.Column;
-            style.paddingLeft = 6; style.paddingRight = 6; style.paddingTop = 6;
+            style.paddingLeft = 6;
+            style.paddingRight = 6;
+            style.paddingTop = 6;
 
             _systemList = new SystemFolderList();
             _systemList.OnNavigationRequested += (mode, ctx, filter) =>
@@ -45,17 +37,20 @@ namespace _4OF.ee4v.AssetManager.Views {
             Add(new VisualElement { style = { height = 10 } });
 
             _folderTree = new UserFolderTree();
-            _folderTree.OnNavigationRequested += (mode, ctx, filter) => {
+            _folderTree.OnNavigationRequested += (mode, ctx, filter) =>
+            {
                 _systemList.ClearSelection();
                 NavigationChanged?.Invoke(mode, ctx, filter);
                 FolderSelected?.Invoke(Ulid.Empty);
             };
             _folderTree.OnCreateFolderRequested += ShowCreateFolderDialog;
-            _folderTree.OnFolderSelected += id => {
+            _folderTree.OnFolderSelected += id =>
+            {
                 _systemList.ClearSelection();
                 FolderSelected?.Invoke(id);
             };
-            _folderTree.OnContextMenuRequested += (id, folderName, target, pos) => OnFolderContextMenuRequested?.Invoke(id, folderName, target, pos);
+            _folderTree.OnContextMenuRequested += (id, folderName, target, pos) =>
+                OnFolderContextMenuRequested?.Invoke(id, folderName, target, pos);
             _folderTree.OnFolderMoved += (s, t) => OnFolderMoved?.Invoke(s, t);
             _folderTree.OnFolderReordered += (p, s, i) => OnFolderReordered?.Invoke(p, s, i);
             Add(_folderTree);
@@ -66,7 +61,8 @@ namespace _4OF.ee4v.AssetManager.Views {
 
             _createAssetDialog = new CreateAssetDialog();
             _createAssetDialog.OnAssetCreated += (n, d, f, t, s, i) => OnAssetCreated?.Invoke(n, d, f, t, s, i);
-            _createAssetDialog.OnImportFromBoothRequested += () => {
+            _createAssetDialog.OnImportFromBoothRequested += () =>
+            {
                 if (_showDialogCallback == null) return;
                 _showDialogCallback.Invoke(WaitBoothSyncDialog.CreateContent(_showDialogCallback));
             };
@@ -77,6 +73,16 @@ namespace _4OF.ee4v.AssetManager.Views {
             _renameFolderDialog = new RenameFolderDialog();
             _renameFolderDialog.OnFolderRenamed += (id, n) => OnFolderRenamed?.Invoke(id, n);
         }
+
+        public event Action<NavigationMode, string, Func<AssetMetadata, bool>> NavigationChanged;
+        public event Action<Ulid> FolderSelected;
+        public event Action TagListClicked;
+        public event Action<Ulid, string> OnFolderRenamed;
+        public event Action<Ulid, Ulid> OnFolderMoved;
+        public event Action<Ulid, string, VisualElement, Vector2> OnFolderContextMenuRequested;
+        public event Action<string> OnFolderCreated;
+        public event Action<Ulid, Ulid, int> OnFolderReordered;
+        public event Action<string, string, string, List<string>, string, string> OnAssetCreated;
 
         public void SetRepository(IAssetRepository repository) {
             _createAssetDialog.SetRepository(repository);

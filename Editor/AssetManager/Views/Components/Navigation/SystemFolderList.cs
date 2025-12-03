@@ -13,37 +13,41 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
         private readonly List<Label> _navLabels = new();
         private Label _selectedLabel;
 
-        public event Action<NavigationMode, string, Func<AssetMetadata, bool>> OnNavigationRequested;
-        public event Action OnTagListRequested;
-
         public SystemFolderList() {
             style.flexDirection = FlexDirection.Column;
             style.marginBottom = 10;
 
             CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.AllItems"),
-                () => FireNav(NavigationMode.AllItems, I18N.Get("UI.AssetManager.Navigation.AllItemsContext"), a => !a.IsDeleted));
-            
-            CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.BoothItems"), () => {
-                FireNav(NavigationMode.BoothItems, I18N.Get("UI.AssetManager.Navigation.BoothItemsContext"), a => !a.IsDeleted);
-            });
+                () => FireNav(NavigationMode.AllItems, I18N.Get("UI.AssetManager.Navigation.AllItemsContext"),
+                    a => !a.IsDeleted));
+
+            CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.BoothItems"),
+                () =>
+                {
+                    FireNav(NavigationMode.BoothItems, I18N.Get("UI.AssetManager.Navigation.BoothItemsContext"),
+                        a => !a.IsDeleted);
+                });
 
             CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.Backups"),
-                () => FireNav(NavigationMode.Backups, I18N.Get("UI.AssetManager.Navigation.BackupsContext"), a => !a.IsDeleted));
+                () => FireNav(NavigationMode.Backups, I18N.Get("UI.AssetManager.Navigation.BackupsContext"),
+                    a => !a.IsDeleted));
 
             CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.Uncategorized"),
-                () => FireNav(NavigationMode.Uncategorized, I18N.Get("UI.AssetManager.Navigation.UncategorizedContext"), 
+                () => FireNav(NavigationMode.Uncategorized, I18N.Get("UI.AssetManager.Navigation.UncategorizedContext"),
                     a => !a.IsDeleted && a.Folder == Ulid.Empty && (a.Tags == null || a.Tags.Count == 0)));
 
             CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.TagList"), () => OnTagListRequested?.Invoke());
 
             CreateNavLabel(I18N.Get("UI.AssetManager.Navigation.Trash"),
-                () => FireNav(NavigationMode.Trash, I18N.Get("UI.AssetManager.Navigation.TrashContext"), a => a.IsDeleted));
+                () => FireNav(NavigationMode.Trash, I18N.Get("UI.AssetManager.Navigation.TrashContext"),
+                    a => a.IsDeleted));
         }
 
+        public event Action<NavigationMode, string, Func<AssetMetadata, bool>> OnNavigationRequested;
+        public event Action OnTagListRequested;
+
         public void SelectByIndex(int index) {
-            if (index >= 0 && index < _navLabels.Count) {
-                SetSelected(_navLabels[index]);
-            }
+            if (index >= 0 && index < _navLabels.Count) SetSelected(_navLabels[index]);
         }
 
         public void ClearSelection() {
@@ -62,7 +66,8 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                     marginBottom = 2, unityFontStyleAndWeight = FontStyle.Bold
                 }
             };
-            label.RegisterCallback<PointerDownEvent>(evt => {
+            label.RegisterCallback<PointerDownEvent>(evt =>
+            {
                 if (evt.button != 0) return;
                 SetSelected(label);
                 onClick?.Invoke();
