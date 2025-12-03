@@ -135,6 +135,30 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetListView {
                 height += ItemHeight + SeparatorHeight;
             }
 
+            if (singleAsset != null) {
+                var isUnityPackage = singleAsset.Ext.Equals(".unitypackage", StringComparison.OrdinalIgnoreCase);
+                var hasImportItems = repository.HasImportItems(singleAsset.ID);
+                var hasPackageOrMetaInImport = false;
+
+                if (hasImportItems) {
+                    var importDir = repository.GetImportDirectoryPath(singleAsset.ID);
+                    if (Directory.Exists(importDir)) {
+                        hasPackageOrMetaInImport = Directory.EnumerateFiles(importDir, "*.*", SearchOption.AllDirectories)
+                            .Any(f => f.EndsWith(".unitypackage", StringComparison.OrdinalIgnoreCase) || 
+                                f.EndsWith(".meta", StringComparison.OrdinalIgnoreCase));
+                    }
+                }
+
+                if (isUnityPackage || hasPackageOrMetaInImport) {
+                    menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.GetAssetGuid"), false, () =>
+                    {
+                        assetService.UpdateAssetGuids(singleAsset.ID);
+                    });
+                    menu.AddSeparator("");
+                    height += ItemHeight + SeparatorHeight;
+                }
+            }
+
             if (assetTargets.Count > 0 && assetTargets.Count == deletedAssetTargets.Count && folderTargets.Count == 0) {
                 var plural = deletedAssetTargets.Count > 1;
 

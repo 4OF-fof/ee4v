@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
-using System.Text.RegularExpressions;
-using _4OF.ee4v.AssetManager.Booth;
+using System.Text;
 using _4OF.ee4v.AssetManager.Core;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.Utility;
@@ -67,10 +67,6 @@ namespace _4OF.ee4v.AssetManager.Services {
             _repository.SaveAsset(asset);
         }
 
-        public void CreateAsset(string path) {
-            _repository.CreateAssetFromFile(path);
-        }
-
         public void AddFileToAsset(Ulid assetId, string path) {
             _repository.AddFileToAsset(assetId, path);
 
@@ -100,15 +96,6 @@ namespace _4OF.ee4v.AssetManager.Services {
 
             var newAsset = new AssetMetadata(asset);
             newAsset.SetDeleted(false);
-            SaveAsset(newAsset);
-        }
-
-        public void UpdateAsset(AssetMetadata newAsset) {
-            if (!AssetValidationService.IsValidAssetName(newAsset.Name)) return;
-            var oldAsset = _repository.GetAsset(newAsset.ID);
-            if (oldAsset == null) return;
-
-            if (oldAsset.Name != newAsset.Name) _repository.RenameAssetFile(newAsset.ID, newAsset.Name);
             SaveAsset(newAsset);
         }
 
@@ -256,115 +243,10 @@ namespace _4OF.ee4v.AssetManager.Services {
             return modified;
         }
 
-        public void SetBoothShopDomain(Ulid assetId, string shopURL) {
-            if (BoothUtility.ClassifyBoothUrl(shopURL) != BoothUtility.BoothUrlType.ShopUrl) return;
-
-            var regex = new Regex(@"https?://([^\.]+)\.booth\.pm", RegexOptions.IgnoreCase);
-            var match = regex.Match(shopURL);
-            if (!match.Success) return;
-
-            var asset = _repository.GetAsset(assetId);
-            if (asset == null) return;
-
-            var newAsset = new AssetMetadata(asset);
-            newAsset.BoothData.SetShopDomain(match.Groups[1].Value);
-            SaveAsset(newAsset);
-        }
-
-        public void SetBoothItemId(Ulid assetId, string itemURL) {
-            if (BoothUtility.ClassifyBoothUrl(itemURL) != BoothUtility.BoothUrlType.ItemUrl) return;
-
-            var regex = new Regex(@"items/(\d+)");
-            var match = regex.Match(itemURL);
-            if (!match.Success) return;
-
-            var asset = _repository.GetAsset(assetId);
-            if (asset == null) return;
-
-            var newAsset = new AssetMetadata(asset);
-            newAsset.BoothData.SetItemID(match.Groups[1].Value);
-            SaveAsset(newAsset);
-        }
-
-        public void SetBoothDownloadId(Ulid assetId, string downloadURL) {
-            if (BoothUtility.ClassifyBoothUrl(downloadURL) != BoothUtility.BoothUrlType.DownloadUrl) return;
-
-            var regex = new Regex(@"downloadables/(\d+)", RegexOptions.IgnoreCase);
-            var match = regex.Match(downloadURL);
-            if (!match.Success) return;
-
-            var asset = _repository.GetAsset(assetId);
-            if (asset == null) return;
-
-            var newAsset = new AssetMetadata(asset);
-            newAsset.BoothData.SetDownloadID(match.Groups[1].Value);
-            SaveAsset(newAsset);
-        }
-
-        public void AddAssetGuid(Ulid assetId, Guid guid) {
-            var asset = _repository.GetAsset(assetId);
-            if (asset == null) return;
-
-            var newAsset = new AssetMetadata(asset);
-            newAsset.UnityData.AddAssetGuid(guid);
-            SaveAsset(newAsset);
-        }
-
-        public void RemoveAssetGuid(Ulid assetId, Guid guid) {
-            var asset = _repository.GetAsset(assetId);
-            if (asset == null) return;
-
-            var newAsset = new AssetMetadata(asset);
-            newAsset.UnityData.RemoveAssetGuid(guid);
-            SaveAsset(newAsset);
-        }
-
-        public void AddDependenceItem(Ulid assetId, Ulid dependenceItemId) {
-            var asset = _repository.GetAsset(assetId);
-            if (asset == null) return;
-
-            var newAsset = new AssetMetadata(asset);
-            newAsset.UnityData.AddDependenceItem(dependenceItemId);
-            SaveAsset(newAsset);
-        }
-
-        public void RemoveDependenceItem(Ulid assetId, Ulid dependenceItemId) {
-            var asset = _repository.GetAsset(assetId);
-            if (asset == null) return;
-
-            var newAsset = new AssetMetadata(asset);
-            newAsset.UnityData.RemoveDependenceItem(dependenceItemId);
-            SaveAsset(newAsset);
-        }
-
         public void ImportFilesFromZip(Ulid assetId, string tempRootPath, List<string> relativePaths) {
             if (relativePaths == null || relativePaths.Count == 0) return;
 
             _repository.ImportFiles(assetId, tempRootPath, relativePaths);
-        }
-
-        public void ImportAsset(Ulid assetId, string destFolder = "Assets") {
-            if (_isImporting) {
-                Debug.LogWarning(I18N.Get("Debug.AssetManager.Import.AlreadyImporting"));
-                return;
-            }
-
-            var asset = _repository.GetAsset(assetId);
-            if (asset == null) return;
-
-            AssetImportTracker.StartTracking(assetId, _repository);
-
-            _currentDestFolder = destFolder;
-            _importQueue.Clear();
-
-            var dependencies = new HashSet<Ulid>();
-            CollectDependencies(assetId, dependencies);
-
-            foreach (var depId in dependencies.Where(depId => depId != assetId)) _importQueue.Enqueue(depId);
-            _importQueue.Enqueue(assetId);
-
-            _isImporting = true;
-            ProcessImportQueue();
         }
 
         public void ImportAssetList(IEnumerable<Ulid> assetIds, string destFolder = "Assets") {
@@ -375,8 +257,6 @@ namespace _4OF.ee4v.AssetManager.Services {
 
             var assetIdList = assetIds.ToList();
             if (assetIdList.Count == 0) return;
-
-            AssetImportTracker.StartTracking(assetIdList[0], _repository);
 
             _currentDestFolder = destFolder;
             _importQueue.Clear();
@@ -407,7 +287,6 @@ namespace _4OF.ee4v.AssetManager.Services {
         private void ProcessImportQueue() {
             if (_importQueue.Count == 0) {
                 _isImporting = false;
-                AssetImportTracker.StopTracking();
                 Debug.Log(I18N.Get("Debug.AssetManager.Import.Completed"));
                 return;
             }
@@ -450,8 +329,20 @@ namespace _4OF.ee4v.AssetManager.Services {
 
                     _onInternalBatchComplete = () =>
                     {
-                        ImportDirectoryContent(importDir, targetFolder);
+                        var delayedBackups = ImportDirectoryContent(importDir, targetFolder);
+
                         AssetDatabase.Refresh();
+
+                        foreach (var (destMeta, storedMeta) in delayedBackups)
+                            if (File.Exists(destMeta))
+                                try {
+                                    File.Copy(destMeta, storedMeta, true);
+                                    Debug.Log($"Backed up meta file: {Path.GetFileName(destMeta)}");
+                                }
+                                catch (Exception e) {
+                                    Debug.LogWarning($"Failed to backup meta file {destMeta}: {e.Message}");
+                                }
+
                         onComplete?.Invoke();
                     };
 
@@ -551,7 +442,9 @@ namespace _4OF.ee4v.AssetManager.Services {
             CopyAndManageMeta(mainFile, destPath, storedMetaPath);
         }
 
-        private static void ImportDirectoryContent(string sourceDir, string destRootDir) {
+        private static List<(string dest, string stored)> ImportDirectoryContent(string sourceDir, string destRootDir) {
+            var delayedMetaBackups = new List<(string dest, string stored)>();
+
             var allFiles = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
             var filesToProcess = (from file in allFiles
                 where !file.EndsWith(".meta", StringComparison.OrdinalIgnoreCase)
@@ -559,35 +452,41 @@ namespace _4OF.ee4v.AssetManager.Services {
                 where !Path.GetFileName(file).StartsWith(".")
                 select file).ToList();
 
-            if (filesToProcess.Count == 0) return;
+            if (filesToProcess.Count == 0) return delayedMetaBackups;
 
-            var delayedMetaBackups = new List<(string dest, string stored)>();
+            try {
+                AssetDatabase.StartAssetEditing();
 
-            foreach (var sourcePath in filesToProcess) {
-                var relPath = Path.GetRelativePath(sourceDir, sourcePath);
-                var destPath = Path.Combine(destRootDir, relPath);
-                var destDir = Path.GetDirectoryName(destPath);
+                foreach (var sourcePath in filesToProcess) {
+                    var relPath = Path.GetRelativePath(sourceDir, sourcePath);
+                    var destPath = Path.Combine(destRootDir, relPath);
+                    var destDir = Path.GetDirectoryName(destPath);
 
-                if (!Directory.Exists(destDir))
-                    if (destDir != null)
+                    if (!Directory.Exists(destDir) && destDir != null)
                         Directory.CreateDirectory(destDir);
 
-                var storedMetaPath = sourcePath + ".meta";
-                var destMetaPath = destPath + ".meta";
+                    var storedMetaPath = sourcePath + ".meta";
+                    var destMetaPath = destPath + ".meta";
 
-                File.Copy(sourcePath, destPath, true);
+                    File.Copy(sourcePath, destPath, true);
 
-                if (File.Exists(storedMetaPath))
-                    File.Copy(storedMetaPath, destMetaPath, true);
-                else
-                    delayedMetaBackups.Add((destMetaPath, storedMetaPath));
+                    if (File.Exists(storedMetaPath))
+                        try {
+                            File.Copy(storedMetaPath, destMetaPath, true);
+                        }
+                        catch (Exception e) {
+                            Debug.LogWarning($"Failed to copy meta file {storedMetaPath} to {destMetaPath}: {e.Message}");
+                        }
+                    else
+                        delayedMetaBackups.Add((destMetaPath, storedMetaPath));
+                }
+            }
+            finally {
+                AssetDatabase.StopAssetEditing();
             }
 
-            foreach (var (destMeta, storedMeta) in delayedMetaBackups)
-                if (File.Exists(destMeta))
-                    File.Copy(destMeta, storedMeta, true);
-
             Debug.Log(I18N.Get("Debug.AssetManager.Import.ImportedFilesFromImportDirectoryFmt", filesToProcess.Count));
+            return delayedMetaBackups;
         }
 
         private static void CopyAndManageMeta(string sourceFile, string destFile, string storedMetaPath) {
@@ -608,38 +507,102 @@ namespace _4OF.ee4v.AssetManager.Services {
                     Path.GetFileName(destFile)));
             }
         }
-    }
 
-    public class AssetImportTracker : AssetPostprocessor {
-        private static Ulid _targetAssetId = Ulid.Empty;
-        private static IAssetRepository _repository;
-
-        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
-            string[] movedAssets, string[] movedFromAssetPaths) {
-            if (_targetAssetId == Ulid.Empty || _repository == null) return;
-
-            var asset = _repository.GetAsset(_targetAssetId);
+        public void UpdateAssetGuids(Ulid assetId) {
+            var asset = _repository.GetAsset(assetId);
             if (asset == null) return;
 
-            var changed = false;
-            foreach (var path in importedAssets.Concat(movedAssets)) {
-                var guidStr = AssetDatabase.AssetPathToGUID(path);
-                if (!Guid.TryParse(guidStr, out var guid) || asset.UnityData.AssetGuidList.Contains(guid)) continue;
-                asset.UnityData.AddAssetGuid(guid);
-                changed = true;
+            asset.UnityData.AssetGuidList.Clear();
+
+            if (asset.Ext.Equals(".unitypackage", StringComparison.OrdinalIgnoreCase)) {
+                var packageFiles = _repository.GetAssetFiles(assetId, "*.unitypackage");
+                if (packageFiles.Count > 0) {
+                    var guids = ExtractGuidsFromPackage(packageFiles[0]);
+                    foreach (var guid in guids)
+                        if (Guid.TryParse(guid, out var g) && !asset.UnityData.AssetGuidList.Contains(g))
+                            asset.UnityData.AddAssetGuid(g);
+                }
             }
 
-            if (changed) _repository.SaveAsset(asset);
+            if (_repository.HasImportItems(assetId)) {
+                var importDir = _repository.GetImportDirectoryPath(assetId);
+
+                var allFiles = Directory.GetFiles(importDir, "*", SearchOption.AllDirectories);
+
+                foreach (var file in allFiles)
+                    if (file.EndsWith(".unitypackage", StringComparison.OrdinalIgnoreCase)) {
+                        var guids = ExtractGuidsFromPackage(file);
+                        foreach (var guid in guids)
+                            if (Guid.TryParse(guid, out var g) && !asset.UnityData.AssetGuidList.Contains(g))
+                                asset.UnityData.AddAssetGuid(g);
+                    }
+                    else if (file.EndsWith(".meta", StringComparison.OrdinalIgnoreCase)) {
+                        var guid = ExtractGuidFromMeta(file);
+                        if (!string.IsNullOrEmpty(guid) && Guid.TryParse(guid, out var g) &&
+                            !asset.UnityData.AssetGuidList.Contains(g))
+                            asset.UnityData.AddAssetGuid(g);
+                    }
+            }
+
+            _repository.SaveAsset(asset);
+            Debug.Log($"[ee4v] Updated GUIDs for asset '{asset.Name}'. Count: {asset.UnityData.AssetGuidList.Count}");
         }
 
-        public static void StartTracking(Ulid assetId, IAssetRepository repository) {
-            _targetAssetId = assetId;
-            _repository = repository;
+        private static List<string> ExtractGuidsFromPackage(string packagePath) {
+            var guids = new List<string>();
+            try {
+                using var fs = File.OpenRead(packagePath);
+                using var gzip = new GZipStream(fs, CompressionMode.Decompress);
+                using var tar = new BinaryReader(gzip);
+
+                var buffer = new byte[512];
+                while (true) {
+                    var bytesRead = tar.Read(buffer, 0, 512);
+                    if (bytesRead < 512) break;
+
+                    var name = Encoding.ASCII.GetString(buffer, 0, 100).TrimEnd('\0');
+                    if (string.IsNullOrEmpty(name)) break;
+
+                    var sizeStr = Encoding.ASCII.GetString(buffer, 124, 12).TrimEnd('\0');
+                    var size = Convert.ToInt64(sizeStr, 8);
+
+                    if (name.EndsWith("/pathname")) {
+                        var guid = name.Split('/')[0];
+                        if (IsValidGuid(guid)) guids.Add(guid);
+                    }
+
+                    var chunks = (size + 511) / 512;
+                    for (var i = 0; i < chunks; i++) _ = tar.Read(buffer, 0, 512);
+                }
+            }
+            catch (Exception e) {
+                Debug.LogWarning($"[ee4v] Failed to extract GUIDs from package '{packagePath}': {e.Message}");
+            }
+
+            return guids;
         }
 
-        public static void StopTracking() {
-            _targetAssetId = Ulid.Empty;
-            _repository = null;
+        private static string ExtractGuidFromMeta(string metaPath) {
+            try {
+                foreach (var line in File.ReadLines(metaPath)) {
+                    if (!line.StartsWith("guid:")) continue;
+                    var parts = line.Split(' ');
+                    if (parts.Length >= 2 && IsValidGuid(parts[1])) return parts[1];
+                }
+            }
+            catch {
+                // ignore
+            }
+
+            return null;
+        }
+
+        private static bool IsValidGuid(string guid) {
+            return !string.IsNullOrEmpty(guid) && guid.Length == 32 && guid.All(IsHex);
+        }
+
+        private static bool IsHex(char c) {
+            return c is >= '0' and <= '9' or >= 'a' and <= 'f' or >= 'A' and <= 'F';
         }
     }
 }
