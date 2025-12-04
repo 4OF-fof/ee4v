@@ -47,7 +47,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
                 style = {
                     marginBottom = 8,
                     unityTextAlign = TextAnchor.MiddleLeft,
-                    color = ColorPreset.Warning,
+                    color = ColorPreset.Error,
                     unityFontStyleAndWeight = FontStyle.Bold,
                     fontSize = 13,
                     whiteSpace = WhiteSpace.Normal,
@@ -140,10 +140,10 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
                     ex));
                 var errLabel = new Label(I18N.Get("Debug.AssetManager.WaitBoothSync.ImportFailedFmt", ex.Message)) {
                     style = {
-                        marginBottom = 8, unityTextAlign = TextAnchor.MiddleLeft, color = ColorPreset.Warning
+                        marginBottom = 8, unityTextAlign = TextAnchor.MiddleLeft, color = ColorPreset.Error
                     }
                 };
-                errLabel.style.color = ColorPreset.Warning;
+                errLabel.style.color = ColorPreset.Error;
                 content.Add(errLabel);
             }
 

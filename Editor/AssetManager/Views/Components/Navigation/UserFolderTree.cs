@@ -54,12 +54,10 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             };
             plusBtn.RegisterCallback<PointerEnterEvent>(_ =>
             {
-                plusBtn.style.color = ColorPreset.AccentBlue;
-                plusBtn.style.backgroundColor = ColorPreset.AccentBlue20Style;
+                plusBtn.style.backgroundColor = ColorPreset.SelectedBackGround;
             });
             plusBtn.RegisterCallback<PointerLeaveEvent>(_ =>
             {
-                plusBtn.style.color = ColorPreset.InactiveItem;
                 plusBtn.style.backgroundColor = new StyleColor(StyleKeyword.Null);
             });
             plusBtn.RegisterCallback<PointerDownEvent>(evt =>
@@ -119,8 +117,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
         private void SetHeaderSelected(bool selected) {
             if (selected) {
                 _headerLabel.AddToClassList("selected");
-                _headerLabel.style.backgroundColor = ColorPreset.AccentBlue40Style;
-                _headerLabel.style.color = ColorPreset.AccentBlue;
+                _headerLabel.style.backgroundColor = ColorPreset.SelectedBackGround;
             }
             else {
                 _headerLabel.RemoveFromClassList("selected");
@@ -187,7 +184,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
 
             itemRow.RegisterCallback<DragEnterEvent>(_ =>
             {
-                if (CanAcceptDrop()) itemRow.style.backgroundColor = ColorPreset.AccentBlue40Style;
+                if (CanAcceptDrop()) itemRow.style.backgroundColor = ColorPreset.SelectedBackGround;
             });
             itemRow.RegisterCallback<DragLeaveEvent>(_ =>
             {
@@ -263,8 +260,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
 
         private static void ApplySelectedStyle(VisualElement item) {
             item.AddToClassList("selected");
-            item.style.backgroundColor = ColorPreset.AccentBlue40Style;
-            foreach (var label in item.Children().OfType<Label>()) label.style.color = ColorPreset.AccentBlue;
+            item.style.backgroundColor = ColorPreset.SelectedBackGround;
         }
 
         private static void RemoveSelectedStyle(VisualElement item) {

@@ -50,7 +50,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
                 style = {
                     width = 0,
                     height = 18,
-                    backgroundColor = ColorPreset.AccentBlue,
+                    backgroundColor = ColorPreset.ProgressBar,
                     borderTopLeftRadius = 4,
                     borderTopRightRadius = 4,
                     borderBottomLeftRadius = 4,
@@ -134,7 +134,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
             }
 
             void OnStarted() {
-                barInner.style.backgroundColor = ColorPreset.AccentBlue;
+                barInner.style.backgroundColor = ColorPreset.ProgressBar;
                 buttonContainer.style.display = DisplayStyle.None;
 
                 UpdateProgress(BoothThumbnailDownloader.TotalCount, BoothThumbnailDownloader.CompletedCount);

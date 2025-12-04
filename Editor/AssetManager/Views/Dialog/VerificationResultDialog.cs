@@ -72,7 +72,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
                         var name = _repository.GetAsset(id)?.Name ?? id.ToString();
                         return $"{name} -> (null)";
                     },
-                    ColorPreset.Warning);
+                    ColorPreset.Error);
 
             if (_result.Modified.Count > 0)
                 AddSection(scroll,
@@ -84,7 +84,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
                         var cachedName = cached?.Name ?? "(null)";
                         return $"{cachedName} -> {asset.Name}";
                     },
-                    ColorPreset.AccentBlue);
+                    ColorPreset.Information);
 
             var buttonRow = new VisualElement {
                 style = { flexDirection = FlexDirection.Row, justifyContent = Justify.FlexEnd, marginTop = 8 }

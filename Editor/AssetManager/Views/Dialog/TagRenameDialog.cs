@@ -31,7 +31,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
 
             _errorLabel = new Label {
                 style = {
-                    color = ColorPreset.Warning,
+                    color = ColorPreset.Error,
                     whiteSpace = WhiteSpace.Normal,
                     marginBottom = 5,
                     display = DisplayStyle.None

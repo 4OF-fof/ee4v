@@ -123,15 +123,15 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
 
             switch (normalizedY) {
                 case < 0.25f:
-                    itemRow.style.borderTopWidth = 2;
-                    itemRow.style.borderTopColor = ColorPreset.AccentBlue;
+                    itemRow.style.borderTopWidth = 1;
+                    itemRow.style.borderTopColor = ColorPreset.SelectedBorder;
                     break;
                 case > 0.75f:
-                    itemRow.style.borderBottomWidth = 2;
-                    itemRow.style.borderBottomColor = ColorPreset.AccentBlue;
+                    itemRow.style.borderBottomWidth = 1;
+                    itemRow.style.borderBottomColor = ColorPreset.SelectedBorder;
                     break;
                 default:
-                    itemRow.style.backgroundColor = ColorPreset.AccentBlue40Style;
+                    itemRow.style.backgroundColor = ColorPreset.SelectedBackGround;
                     break;
             }
         }

@@ -14,16 +14,16 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                     paddingLeft = 12, paddingRight = 12, paddingTop = 8, paddingBottom = 8,
                     borderTopLeftRadius = 16, borderTopRightRadius = 16,
                     borderBottomLeftRadius = 16, borderBottomRightRadius = 16,
-                    backgroundColor = ColorPreset.AccentBlue40Style, color = ColorPreset.TextColor,
+                    backgroundColor = ColorPreset.InformationHover,
                     unityFontStyleAndWeight = FontStyle.Bold, fontSize = 12,
                     borderTopWidth = 0, borderBottomWidth = 0, borderLeftWidth = 0, borderRightWidth = 0
                 }
             };
 
             createBtn.RegisterCallback<PointerEnterEvent>(_ =>
-                createBtn.style.backgroundColor = ColorPreset.AccentBlue);
+                createBtn.style.backgroundColor = ColorPreset.InformationHover);
             createBtn.RegisterCallback<PointerLeaveEvent>(_ =>
-                createBtn.style.backgroundColor = ColorPreset.AccentBlue40Style);
+                createBtn.style.backgroundColor = ColorPreset.Information);
             createBtn.clicked += () => OnCreateAssetRequested?.Invoke();
 
             Add(createBtn);

@@ -17,7 +17,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
                 text = I18N.Get("UI.AssetManager.AssetInfo.DownloadFromBooth"),
                 style = {
                     height = 30, marginTop = 10, marginBottom = 10,
-                    backgroundColor = ColorPreset.Primary, color = ColorPreset.TextColor,
+                    backgroundColor = ColorPreset.Information, color = ColorPreset.TextColor,
                     unityFontStyleAndWeight = FontStyle.Bold, alignSelf = Align.Center,
                     width = Length.Percent(90),
                     display = DisplayStyle.None
@@ -26,11 +26,11 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
 
             _downloadButton.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                _downloadButton.style.backgroundColor = ColorPreset.PrimaryHover;
+                _downloadButton.style.backgroundColor = ColorPreset.InformationHover;
             });
             _downloadButton.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                _downloadButton.style.backgroundColor = ColorPreset.Primary;
+                _downloadButton.style.backgroundColor = ColorPreset.Information;
             });
 
             Add(_downloadButton);

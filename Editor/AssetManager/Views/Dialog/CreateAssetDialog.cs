@@ -213,7 +213,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
 
             _errorLabel = new Label {
                 style = {
-                    color = ColorPreset.Warning,
+                    color = ColorPreset.Error,
                     whiteSpace = WhiteSpace.Normal,
                     marginBottom = 5,
                     display = DisplayStyle.None
@@ -362,7 +362,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
             removeBtn.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
             removeBtn.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                removeBtn.style.backgroundColor = new StyleColor(ColorPreset.Warning);
+                removeBtn.style.backgroundColor = new StyleColor(ColorPreset.Error);
                 removeBtn.style.color = ColorPreset.TextColor;
             });
             removeBtn.RegisterCallback<MouseLeaveEvent>(_ =>

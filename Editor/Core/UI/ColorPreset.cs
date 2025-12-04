@@ -3,7 +3,6 @@ using System.Globalization;
 using _4OF.ee4v.Core.i18n;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace _4OF.ee4v.Core.UI {
     public abstract class ColorPreset {
@@ -18,17 +17,19 @@ namespace _4OF.ee4v.Core.UI {
         public static Color InactiveItem = FromHex("#7f7f7f", EditorGUIUtility.isProSkin ? 1f : 0.3f);
 
         // Custom Colors
+        public static Color Clickable = FromHex("#2686f3");
         public static Color FavoriteStar = FromHex("#ffc107");
         public static Color NonFavorite = Color.gray;
         public static Color SelectedBorder = FromHex("#3f7fff");
         public static Color SelectedBackGround = FromHex("#3f7fff", 0.3f);
         public static Color DropArea = FromHex("#334c7f", 0.3f);
         public static Color CloseIcon = FromHex("#e53333", 0.8f);
-        public static Color Warning = FromHex(EditorGUIUtility.isProSkin ? "#b71c1c" : "#ff5252");
+        public static Color Error = FromHex(EditorGUIUtility.isProSkin ? "#b71c1c" : "#ff5252");
+        public static Color Warning = FromHex("#ffea04");
         public static Color Success = FromHex("#2e7d32");
         public static Color SuccessHover = FromHex("#388e3c");
-        public static Color Primary = FromHex("#f57c00");      // TODO: change
-        public static Color PrimaryHover = FromHex("#ff9800"); // TODO: change
+        public static Color Information = FromHex("#2686f3");
+        public static Color InformationHover = FromHex("#4396ff");
         
         // Project
         public static Color IconBorder = Color.black;
@@ -43,15 +44,13 @@ namespace _4OF.ee4v.Core.UI {
         public static Color TagPillBackground = FromHex(EditorGUIUtility.isProSkin ? "#4d4d4d" : "#cccccc");
         public static Color TagPillHover = FromHex(EditorGUIUtility.isProSkin ? "#666666" : "#bfbfbf");
         public static Color ProgressBarBackground = FromHex("#1c1c1c");
+        public static Color ProgressBar = FromHex("#2686f3");
         
         // TODO: refactor
         public static Color TransparentBlack10Style = new (0f, 0f, 0f, 0.1f);
         public static Color TransparentBlack20Style = new(0f, 0f, 0f, 0.2f);
         public static Color TransparentWhite50 = new(1f, 1f, 1f, 0.5f);
         public static Color TransparentWhite30 = new(1f, 1f, 1f, 0.3f);
-        public static Color AccentBlue = FromHex("#2686f3");
-        public static Color AccentBlue20Style = new(0.26f, 0.58f, 0.95f, 0.2f);
-        public static Color AccentBlue40Style = new(0.26f, 0.58f, 0.95f, 0.4f);
 
         private static readonly Dictionary<int, Texture2D> AlphaGradientCache = new();
 

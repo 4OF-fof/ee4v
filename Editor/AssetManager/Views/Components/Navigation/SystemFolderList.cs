@@ -82,8 +82,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             _selectedLabel = label;
             if (_selectedLabel == null) return;
             _selectedLabel.AddToClassList("selected");
-            _selectedLabel.style.backgroundColor = ColorPreset.AccentBlue40Style;
-            _selectedLabel.style.color = ColorPreset.AccentBlue;
+            _selectedLabel.style.backgroundColor = ColorPreset.SelectedBackGround;
         }
 
         private void FireNav(NavigationMode mode, string context, Func<AssetMetadata, bool> filter) {
