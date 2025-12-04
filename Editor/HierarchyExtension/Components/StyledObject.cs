@@ -100,7 +100,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
             if (Mathf.Approximately(color.a, 0f)) return;
 
             var prevColor = GUI.color;
-            GUI.color = obj is GameObject { activeInHierarchy: false } ? ColorPreset.InActiveItem : Color.white;
+            GUI.color = obj is GameObject { activeInHierarchy: false } ? ColorPreset.InactiveItem : Color.white;
             if (obj != null) {
                 if (icon == null) icon = GetDefaultIcon(obj as GameObject);
                 GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit, true);

@@ -48,7 +48,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetListView {
                 style = {
                     flexGrow = 1,
                     width = Length.Percent(100),
-                    backgroundColor = new StyleColor(ColorPreset.InActiveItem),
+                    backgroundColor = new StyleColor(ColorPreset.InactiveItem),
                     backgroundSize = new BackgroundSize(BackgroundSizeType.Contain),
                     backgroundRepeat = new BackgroundRepeat(Repeat.NoRepeat, Repeat.NoRepeat),
                     backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Center),
@@ -94,7 +94,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetListView {
                 }
                 else {
                     _thumbnail.style.backgroundImage = null;
-                    _thumbnail.style.backgroundColor = new StyleColor(ColorPreset.InActiveItem);
+                    _thumbnail.style.backgroundColor = new StyleColor(ColorPreset.InactiveItem);
                 }
 
                 return;
@@ -107,8 +107,8 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetListView {
         public void SetSelected(bool selected) {
             _isSelected = selected;
             if (selected) {
-                _innerContainer.style.backgroundColor = ColorPreset.ItemSelectedBackGround;
-                var borderColor = ColorPreset.ItemSelectedBorder;
+                _innerContainer.style.backgroundColor = ColorPreset.SelectedBackGround;
+                var borderColor = ColorPreset.SelectedBorder;
                 _innerContainer.style.borderTopColor = borderColor;
                 _innerContainer.style.borderBottomColor = borderColor;
                 _innerContainer.style.borderLeftColor = borderColor;
@@ -151,7 +151,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetListView {
         }
 
         private void OnDragLeave(DragLeaveEvent evt) {
-            _innerContainer.style.backgroundColor = _isSelected ? ColorPreset.ItemSelectedBackGround : Color.clear;
+            _innerContainer.style.backgroundColor = _isSelected ? ColorPreset.SelectedBackGround : Color.clear;
             evt.StopImmediatePropagation();
         }
 
@@ -177,7 +177,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetListView {
             }
 
             DragAndDrop.AcceptDrag();
-            _innerContainer.style.backgroundColor = _isSelected ? ColorPreset.ItemSelectedBackGround : Color.clear;
+            _innerContainer.style.backgroundColor = _isSelected ? ColorPreset.SelectedBackGround : Color.clear;
 
             var assetIds = DragAndDrop.GetGenericData("AssetManagerAssets") as string[];
             var folderIds = DragAndDrop.GetGenericData("AssetManagerFolders") as string[];

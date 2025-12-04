@@ -57,7 +57,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
 
                 var prevColor = GUI.color;
                 if (component is Behaviour { enabled: false })
-                    GUI.color = ColorPreset.InActiveItem;
+                    GUI.color = ColorPreset.InactiveItem;
 
                 var tooltipContent = new GUIContent(string.Empty, null, typeName);
                 GUI.DrawTexture(iconRect, image);

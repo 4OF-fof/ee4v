@@ -108,7 +108,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                 style = {
                     unityTextAlign = TextAnchor.MiddleCenter,
                     paddingTop = 40,
-                    color = ColorPreset.InActiveItem,
+                    color = ColorPreset.InactiveItem,
                     fontSize = 14,
                     whiteSpace = WhiteSpace.Normal
                 }
@@ -229,7 +229,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                 style = {
                     width = 20, fontSize = 10,
                     unityTextAlign = TextAnchor.MiddleCenter,
-                    color = ColorPreset.InActiveItem
+                    color = ColorPreset.InactiveItem
                 }
             };
             header.Add(chevron);
@@ -260,7 +260,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
             };
             var countLabel =
                 new Label(I18N.Get("UI.AvatarModifyUtility.MaterialList.ObjectsUsedCountFmt", data.UsedBy.Count)) {
-                    style = { fontSize = 10, color = ColorPreset.InActiveItem }
+                    style = { fontSize = 10, color = ColorPreset.InactiveItem }
                 };
             infoContainer.Add(nameLabel);
             infoContainer.Add(countLabel);

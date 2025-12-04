@@ -62,7 +62,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
                         display = DisplayStyle.None
                     }
                 };
-                _el.Add(new Label(label) { style = { color = ColorPreset.InActiveItem, width = 80 } });
+                _el.Add(new Label(label) { style = { color = ColorPreset.InactiveItem, width = 80 } });
                 _val = new Label { style = { flexGrow = 1, unityTextAlign = TextAnchor.MiddleRight } };
                 _el.Add(_val);
                 parent.Add(_el);
@@ -90,7 +90,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
                         display = DisplayStyle.None
                     }
                 };
-                _el.Add(new Label(label) { style = { color = ColorPreset.InActiveItem, width = 80 } });
+                _el.Add(new Label(label) { style = { color = ColorPreset.InactiveItem, width = 80 } });
                 _val = new Label {
                     style = {
                         flexGrow = 1, unityTextAlign = TextAnchor.MiddleRight, color = ColorPreset.AccentBlueStyle,

@@ -140,7 +140,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
             var boothUrlHint = new Label(I18N.Get("UI.AssetManager.Dialog.CreateAsset.BoothURLHint")) {
                 style = {
                     fontSize = 10,
-                    color = ColorPreset.InActiveItem,
+                    color = ColorPreset.InactiveItem,
                     marginBottom = 5
                 }
             };

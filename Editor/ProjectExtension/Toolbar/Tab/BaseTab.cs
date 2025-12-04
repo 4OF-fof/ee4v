@@ -37,7 +37,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Tab {
         protected virtual void UpdateAppearance() {
             var state = GetState();
             style.backgroundColor = state == State.Selected
-                ? ColorPreset.TabSelectedBackground
+                ? ColorPreset.SelectedTabBackground
                 : ColorPreset.DefaultBackground;
         }
 

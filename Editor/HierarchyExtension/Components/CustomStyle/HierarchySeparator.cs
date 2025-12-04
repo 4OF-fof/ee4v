@@ -26,7 +26,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components.CustomStyle {
                 fontSize = 12,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
-                normal = { textColor = ColorPreset.InActiveItem }
+                normal = { textColor = ColorPreset.InactiveItem }
             };
             EditorGUI.LabelField(backRect, labelText, labelStyle);
 
@@ -34,7 +34,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components.CustomStyle {
                 var content = new GUIContent(labelText);
                 var size = labelStyle.CalcSize(content);
                 var centerY = backRect.y + backRect.height / 2f;
-                var lineColor = ColorPreset.InActiveItem;
+                var lineColor = ColorPreset.InactiveItem;
                 const float padding = 6f;
 
                 var leftLineWidth = backRect.width / 2f - size.x / 2f - padding;
@@ -49,7 +49,7 @@ namespace _4OF.ee4v.HierarchyExtension.Components.CustomStyle {
             }
             else {
                 var centerY = backRect.y + backRect.height / 2f;
-                EditorGUI.DrawRect(new Rect(backRect.x, centerY, backRect.width, 1), ColorPreset.InActiveItem);
+                EditorGUI.DrawRect(new Rect(backRect.x, centerY, backRect.width, 1), ColorPreset.InactiveItem);
             }
         }
     }

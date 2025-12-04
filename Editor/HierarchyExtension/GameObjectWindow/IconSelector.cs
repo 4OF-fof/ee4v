@@ -134,8 +134,8 @@ namespace _4OF.ee4v.HierarchyExtension.GameObjectWindow {
             item.style.borderRightWidth = 1;
             item.style.borderBottomWidth = 1;
             item.style.borderLeftWidth = 1;
-            var selectedBorderColor = ColorPreset.ItemSelectedBorder;
-            var selectedBackgroundColor = ColorPreset.ItemSelectedBackGround;
+            var selectedBorderColor = ColorPreset.SelectedBorder;
+            var selectedBackgroundColor = ColorPreset.SelectedBackGround;
             item.style.borderTopColor = new StyleColor(selectedBorderColor);
             item.style.borderRightColor = new StyleColor(selectedBorderColor);
             item.style.borderBottomColor = new StyleColor(selectedBorderColor);

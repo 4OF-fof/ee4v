@@ -53,7 +53,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
                     unityTextAlign = TextAnchor.MiddleCenter,
                     marginBottom = 16,
                     fontSize = 12,
-                    color = ColorPreset.InActiveItem
+                    color = ColorPreset.InactiveItem
                 }
             };
             content.Add(_statusLabel);

@@ -15,28 +15,34 @@ namespace _4OF.ee4v.Core.UI {
         public static Color WindowBorder = FromHex(EditorGUIUtility.isProSkin ? "#191919" : "#8a8a8a");
         public static Color TextColor = FromHex(EditorGUIUtility.isProSkin ? "#cccccc" : "#000000");
         public static Color PrefabRootText = FromHex("7dacf1");
-        public static Color InActiveItem = FromHex("#7f7f7f", EditorGUIUtility.isProSkin ? 1f : 0.3f);
+        public static Color InactiveItem = FromHex("#7f7f7f", EditorGUIUtility.isProSkin ? 1f : 0.3f);
 
         // Custom Colors
-        public static Color IconBorder = Color.black;
-        public static Color DepthLine = FromHex(EditorGUIUtility.isProSkin ? "#686868" : "#8e8e8e");
         public static Color FavoriteStar = FromHex("#ffc107");
         public static Color NonFavorite = Color.gray;
-        public static Color ItemSelectedBorder = FromHex("#3f7fff");
-        public static Color ItemSelectedBackGround = FromHex("#3f7fff", 0.3f);
-        public static Color TagPillBackground = FromHex(EditorGUIUtility.isProSkin ? "#4d4d4d" : "#cccccc");
-        public static Color TagPillHover = FromHex(EditorGUIUtility.isProSkin ? "#666666" : "#bfbfbf");
+        public static Color SelectedBorder = FromHex("#3f7fff");
+        public static Color SelectedBackGround = FromHex("#3f7fff", 0.3f);
         public static Color DropArea = FromHex("#334c7f", 0.3f);
         public static Color CloseIcon = FromHex("#e53333", 0.8f);
         public static Color Warning = FromHex(EditorGUIUtility.isProSkin ? "#b71c1c" : "#ff5252");
         public static Color Success = FromHex("#2e7d32");
         public static Color SuccessHover = FromHex("#388e3c");
-        public static Color Primary = FromHex("#f57c00");
-        public static Color PrimaryHover = FromHex("#ff9800");
+        public static Color Primary = FromHex("#f57c00");      // TODO: change
+        public static Color PrimaryHover = FromHex("#ff9800"); // TODO: change
+        
+        // Project
+        public static Color IconBorder = Color.black;
+        public static Color SelectedTabBackground = FromHex(EditorGUIUtility.isProSkin ? "#575757" : "#eeeeee");
+        public static Color HighlightColor = FromHex("#ffea04", 0.2f); // TODO: change
+        
+        // Hierarchy
+        public static Color DepthLine = FromHex(EditorGUIUtility.isProSkin ? "#686868" : "#8e8e8e");
+        
+        // Asset Manager
+        public static Color TagPillBackground = FromHex(EditorGUIUtility.isProSkin ? "#4d4d4d" : "#cccccc");
+        public static Color TagPillHover = FromHex(EditorGUIUtility.isProSkin ? "#666666" : "#bfbfbf");
         
         // TODO: refactor
-        public static Color HighlightColor = FromHex("#ffea04", 0.2f);
-        public static StyleColor TabSelectedBackground = new(FromHex(EditorGUIUtility.isProSkin ? "#575757" : "#eeeeee"));
         public static StyleColor TransparentBlack10Style = new(new Color(0f, 0f, 0f, 0.1f));
         public static StyleColor TransparentBlack20Style = new(new Color(0f, 0f, 0f, 0.2f));
         public static StyleColor TransparentBlack50Style = new(new Color(0f, 0f, 0f, 0.5f));

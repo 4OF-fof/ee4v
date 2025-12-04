@@ -150,7 +150,7 @@ namespace _4OF.ee4v.AssetManager.Window {
                     : I18N.Get("UI.AssetManager.AssetSelector.NoMatchingAssets")) {
                     style = {
                         unityTextAlign = TextAnchor.MiddleCenter,
-                        color = ColorPreset.InActiveItem,
+                        color = ColorPreset.InactiveItem,
                         marginTop = 20,
                         width = Length.Percent(100)
                     }
@@ -205,7 +205,7 @@ namespace _4OF.ee4v.AssetManager.Window {
             var extLabel = new Label(asset.Ext) {
                 style = {
                     fontSize = 10,
-                    color = new StyleColor(ColorPreset.InActiveItem),
+                    color = new StyleColor(ColorPreset.InactiveItem),
                     marginLeft = 8
                 }
             };

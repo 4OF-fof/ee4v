@@ -277,7 +277,7 @@ namespace _4OF.ee4v.AssetManager.Window {
                     marginRight = 0,
                     unityTextAlign = TextAnchor.MiddleCenter,
                     fontSize = 10,
-                    color = ColorPreset.InActiveItem,
+                    color = ColorPreset.InactiveItem,
                     visibility = node.IsDirectory ? Visibility.Visible : Visibility.Hidden
                 }
             };

@@ -49,7 +49,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             var plusBtn = new Label("+") {
                 style = {
                     paddingLeft = 6, paddingRight = 6, paddingTop = 2, paddingBottom = 2, marginRight = 4,
-                    unityFontStyleAndWeight = FontStyle.Bold, fontSize = 16, color = ColorPreset.InActiveItem
+                    unityFontStyleAndWeight = FontStyle.Bold, fontSize = 16, color = ColorPreset.InactiveItem
                 }
             };
             plusBtn.RegisterCallback<PointerEnterEvent>(_ =>
@@ -59,7 +59,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             });
             plusBtn.RegisterCallback<PointerLeaveEvent>(_ =>
             {
-                plusBtn.style.color = ColorPreset.InActiveItem;
+                plusBtn.style.color = ColorPreset.InactiveItem;
                 plusBtn.style.backgroundColor = new StyleColor(StyleKeyword.Null);
             });
             plusBtn.RegisterCallback<PointerDownEvent>(evt =>
