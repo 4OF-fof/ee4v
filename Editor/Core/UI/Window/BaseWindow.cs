@@ -57,6 +57,8 @@ namespace _4OF.ee4v.Core.UI.Window {
             rootVisualElement.style.borderTopColor = ColorPreset.WindowBorder;
             rootVisualElement.style.borderBottomColor = ColorPreset.WindowBorder;
 
+            rootVisualElement.style.backgroundColor = ColorPreset.DefaultBackground;
+
             var header = Header();
             if (header != null) rootVisualElement.Add(header);
 

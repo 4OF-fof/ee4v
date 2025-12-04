@@ -224,10 +224,7 @@ namespace _4OF.ee4v.HierarchyExtension {
                     alignItems = Align.Center,
                     height = 18,
                     paddingLeft = depth * 14 + 2,
-                    paddingRight = 2,
-                    backgroundColor = node.IsHidden
-                        ? ColorPreset.HiddenObjectHidden
-                        : ColorPreset.HiddenObjectNormal
+                    paddingRight = 2
                 }
             };
 

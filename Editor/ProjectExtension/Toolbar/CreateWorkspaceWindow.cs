@@ -36,8 +36,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
                     paddingTop = 16,
                     paddingBottom = 16,
                     paddingLeft = 16,
-                    paddingRight = 16,
-                    backgroundColor = ColorPreset.DefaultBackground
+                    paddingRight = 16
                 }
             };
 

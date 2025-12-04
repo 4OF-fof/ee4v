@@ -230,7 +230,7 @@ namespace _4OF.ee4v.ProjectExtension.Components.Toolbar {
             {
                 if (evt.currentTarget != tabContainer) return;
                 if (DragAndDrop.paths.Any(AssetDatabase.IsValidFolder))
-                    tabContainer.style.backgroundColor = ColorPreset.DropFolderArea;
+                    tabContainer.style.backgroundColor = ColorPreset.SDropArea;
             }, TrickleDown.TrickleDown);
             tabContainer.RegisterCallback<DragLeaveEvent>(evt =>
             {

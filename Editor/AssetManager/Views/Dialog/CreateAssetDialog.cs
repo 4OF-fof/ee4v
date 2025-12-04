@@ -183,7 +183,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
             }) {
                 text = I18N.Get("UI.AssetManager.AssetInfo.AddTag"),
                 style = {
-                    backgroundColor = ColorPreset.TagPillBackgroundStyle,
+                    backgroundColor = ColorPreset.STagPillBackground,
                     borderTopLeftRadius = 10,
                     borderTopRightRadius = 10,
                     borderBottomLeftRadius = 10,
@@ -203,11 +203,11 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
             };
             addTagButton.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                addTagButton.style.backgroundColor = ColorPreset.TagPillHoverStyle;
+                addTagButton.style.backgroundColor = ColorPreset.STagPillHover;
             });
             addTagButton.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                addTagButton.style.backgroundColor = ColorPreset.TagPillBackgroundStyle;
+                addTagButton.style.backgroundColor = ColorPreset.STagPillBackground;
             });
             content.Add(addTagButton);
 
@@ -336,11 +336,11 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
 
             pill.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                pill.style.backgroundColor = ColorPreset.TagPillHoverStyle;
+                pill.style.backgroundColor = ColorPreset.STagPillHover;
             });
             pill.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                pill.style.backgroundColor = ColorPreset.TagPillBackgroundStyle;
+                pill.style.backgroundColor = ColorPreset.STagPillBackground;
             });
 
             var removeBtn = new Button(() => onRemove?.Invoke()) {

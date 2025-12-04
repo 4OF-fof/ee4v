@@ -29,19 +29,19 @@ namespace _4OF.ee4v.Core.UI {
         public static Color NonFavorite = Color.gray;
         public static Color ItemSelectedBorder = FromHex("#3f7fff");
         public static Color ItemSelectedBackGround = FromHex("#3f7fff", 0.3f);
-
-
-
+        
+        public static StyleColor STagPillBackground = new(FromHex(EditorGUIUtility.isProSkin ? "#4d4d4d" : "#cccccc"));
+        public static StyleColor STagPillHover = new(FromHex(EditorGUIUtility.isProSkin ? "#666666" : "#bfbfbf"));
+        public static StyleColor SDropArea = new(FromHex("#334c7f", 0.3f));
+        public static StyleColor SCloseIcon = new(FromHex("#e53333", 0.8f));
+        
+        
         
         public static Color WarningButton = FromHex(EditorGUIUtility.isProSkin ? "#b71c1c" : "#ff5252");
         public static Color WarningText = FromHex(EditorGUIUtility.isProSkin ? "#ff8a80" : "#b71c1c");
         public static Color HighlightColor = FromHex("#ffea04", 0.2f);
         public static Color SuccessButton = FromHex("#2e7d32");
-        public static Color HiddenObjectHidden = new(0.3f, 0.3f, 0.3f, 0.2f);
-        public static Color HiddenObjectNormal = new(0.2f, 0.2f, 0.2f, 0.1f);
         public static StyleColor TabSelectedBackground = new(FromHex(EditorGUIUtility.isProSkin ? "#575757" : "#eeeeee"));
-        public static StyleColor DropFolderArea = new(FromHex("#334c7f", 0.3f));
-        public static StyleColor TabCloseButtonHover = new(FromHex("#e53333", 0.8f));
         public static StyleColor SuccessButtonStyle = new(SuccessButton);
         public static StyleColor SuccessButtonHoverStyle = new(FromHex("#388e3c"));
         public static StyleColor TransparentBlack10Style = new(new Color(0f, 0f, 0f, 0.1f));
@@ -55,8 +55,6 @@ namespace _4OF.ee4v.Core.UI {
         public static StyleColor AccentBlueStyle = new(AccentBlue);
         public static StyleColor AccentBlue20Style = new(new Color(0.26f, 0.58f, 0.95f, 0.2f));
         public static StyleColor AccentBlue40Style = new(new Color(0.26f, 0.58f, 0.95f, 0.4f));
-        public static StyleColor TagPillBackgroundStyle = new(FromHex(EditorGUIUtility.isProSkin ? "#4d4d4d" : "#cccccc"));
-        public static StyleColor TagPillHoverStyle = new(FromHex(EditorGUIUtility.isProSkin ? "#666666" : "#bfbfbf"));
 
         private static readonly Dictionary<int, Texture2D> AlphaGradientCache = new();
 

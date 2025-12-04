@@ -26,7 +26,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Tab {
             style.opacity = 0.7f;
 
             RegisterCallback<MouseEnterEvent>(_ =>
-                style.backgroundColor = ColorPreset.TabCloseButtonHover);
+                style.backgroundColor = ColorPreset.SCloseIcon);
 
             RegisterCallback<MouseLeaveEvent>(_ =>
                 style.backgroundColor = new StyleColor(StyleKeyword.None));

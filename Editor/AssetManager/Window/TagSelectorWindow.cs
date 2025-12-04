@@ -229,7 +229,7 @@ namespace _4OF.ee4v.AssetManager.Window {
                     paddingRight = 10,
                     marginRight = 4,
                     marginBottom = 4,
-                    backgroundColor = ColorPreset.TagPillBackgroundStyle,
+                    backgroundColor = ColorPreset.STagPillBackground,
                     borderTopWidth = 0,
                     borderBottomWidth = 0,
                     borderLeftWidth = 0,
@@ -240,11 +240,11 @@ namespace _4OF.ee4v.AssetManager.Window {
 
             button.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                button.style.backgroundColor = ColorPreset.TagPillHoverStyle;
+                button.style.backgroundColor = ColorPreset.STagPillHover;
             });
             button.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                button.style.backgroundColor = ColorPreset.TagPillBackgroundStyle;
+                button.style.backgroundColor = ColorPreset.STagPillBackground;
             });
 
             return button;

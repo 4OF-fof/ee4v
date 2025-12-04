@@ -146,7 +146,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetListView {
                 return;
             }
 
-            _innerContainer.style.backgroundColor = ColorPreset.DropFolderArea;
+            _innerContainer.style.backgroundColor = ColorPreset.SDropArea;
             evt.StopImmediatePropagation();
         }
 

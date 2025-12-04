@@ -45,7 +45,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
         private VisualElement CreateTagPill(string tag) {
             var pill = new VisualElement {
                 style = {
-                    flexDirection = FlexDirection.Row, backgroundColor = ColorPreset.TagPillBackgroundStyle,
+                    flexDirection = FlexDirection.Row, backgroundColor = ColorPreset.STagPillBackground,
                     borderTopLeftRadius = 10, borderTopRightRadius = 10, borderBottomLeftRadius = 10,
                     borderBottomRightRadius = 10,
                     paddingLeft = 8, paddingRight = 4, paddingTop = 2, paddingBottom = 2, marginRight = 4,
@@ -63,11 +63,11 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
 
             pill.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                pill.style.backgroundColor = ColorPreset.TagPillHoverStyle;
+                pill.style.backgroundColor = ColorPreset.STagPillHover;
             });
             pill.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                pill.style.backgroundColor = ColorPreset.TagPillBackgroundStyle;
+                pill.style.backgroundColor = ColorPreset.STagPillBackground;
             });
 
             pill.Add(new Label(tag) {
@@ -89,7 +89,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
             removeBtn.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
             removeBtn.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                removeBtn.style.backgroundColor = ColorPreset.TabCloseButtonHover;
+                removeBtn.style.backgroundColor = ColorPreset.SCloseIcon;
                 removeBtn.style.color = ColorPreset.TextColor;
             });
             removeBtn.RegisterCallback<MouseLeaveEvent>(_ =>
@@ -106,7 +106,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
             var btn = new Button(onClick) {
                 text = text,
                 style = {
-                    backgroundColor = ColorPreset.TagPillBackgroundStyle,
+                    backgroundColor = ColorPreset.STagPillBackground,
                     borderTopLeftRadius = 10, borderTopRightRadius = 10, borderBottomLeftRadius = 10,
                     borderBottomRightRadius = 10,
                     paddingLeft = 10, paddingRight = 10, paddingTop = 4, paddingBottom = 4, height = 24,
@@ -115,10 +115,10 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
                 }
             };
 
-            btn.RegisterCallback<MouseEnterEvent>(_ => { btn.style.backgroundColor = ColorPreset.TagPillHoverStyle; });
+            btn.RegisterCallback<MouseEnterEvent>(_ => { btn.style.backgroundColor = ColorPreset.STagPillHover; });
             btn.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                btn.style.backgroundColor = ColorPreset.TagPillBackgroundStyle;
+                btn.style.backgroundColor = ColorPreset.STagPillBackground;
             });
 
             return btn;
