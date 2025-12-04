@@ -47,11 +47,11 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             };
             plusBtn.RegisterCallback<PointerEnterEvent>(_ =>
             {
-                plusBtn.style.backgroundColor = ColorPreset.SelectedBackGround;
+                plusBtn.style.color = ColorPreset.TextColor;
             });
             plusBtn.RegisterCallback<PointerLeaveEvent>(_ =>
             {
-                plusBtn.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+                plusBtn.style.color = ColorPreset.InactiveItem;
             });
             plusBtn.RegisterCallback<PointerDownEvent>(evt =>
             {
