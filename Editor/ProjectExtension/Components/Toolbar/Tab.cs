@@ -117,7 +117,7 @@ namespace _4OF.ee4v.ProjectExtension.Components.Toolbar {
                     };
                     if (dragging != null) {
                         placeholder.style.marginTop = dragging.style.marginTop;
-                        placeholder.style.backgroundColor = ColorPreset.TabHoveredBackground;
+                        placeholder.style.backgroundColor = ColorPreset.SMouseOverBackground;
 
                         placeholderInserted = false;
 

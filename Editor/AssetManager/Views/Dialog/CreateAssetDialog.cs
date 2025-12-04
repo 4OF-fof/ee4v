@@ -317,7 +317,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
             var pill = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
-                    backgroundColor = ColorPreset.TabBackground,
+                    backgroundColor = ColorPreset.SDefaultBackground,
                     borderTopLeftRadius = 10,
                     borderTopRightRadius = 10,
                     borderBottomLeftRadius = 10,

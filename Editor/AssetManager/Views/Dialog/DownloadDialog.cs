@@ -71,7 +71,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
                 style = {
                     width = 100,
                     height = 30,
-                    backgroundColor = ColorPreset.TabBackground,
+                    backgroundColor = ColorPreset.SDefaultBackground,
                     borderTopLeftRadius = 4,
                     borderTopRightRadius = 4,
                     borderBottomLeftRadius = 4,

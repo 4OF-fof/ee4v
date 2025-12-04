@@ -80,7 +80,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
 
             pill.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                pill.style.backgroundColor = ColorPreset.TabHoveredBackground;
+                pill.style.backgroundColor = ColorPreset.SMouseOverBackground;
             });
             pill.RegisterCallback<MouseLeaveEvent>(_ => { pill.style.backgroundColor = ColorPreset.DropFolderArea; });
 
