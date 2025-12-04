@@ -21,7 +21,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             };
 
             createBtn.RegisterCallback<PointerEnterEvent>(_ =>
-                createBtn.style.backgroundColor = ColorPreset.AccentBlueStyle);
+                createBtn.style.backgroundColor = ColorPreset.AccentBlue);
             createBtn.RegisterCallback<PointerLeaveEvent>(_ =>
                 createBtn.style.backgroundColor = ColorPreset.AccentBlue40Style);
             createBtn.clicked += () => OnCreateAssetRequested?.Invoke();

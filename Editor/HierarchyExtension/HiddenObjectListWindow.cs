@@ -87,15 +87,22 @@ namespace _4OF.ee4v.HierarchyExtension {
                 style = {
                     flexGrow = 1,
                     height = 28,
-                    backgroundColor = ColorPreset.Warning,
+                    backgroundColor = ColorPreset.Success,
                     borderTopRightRadius = 10,
                     borderTopLeftRadius = 10,
                     borderBottomRightRadius = 10,
                     borderBottomLeftRadius = 10
                 }
             };
-            buttonRow.Add(restoreSelectedButton);
+            
+            restoreSelectedButton.RegisterCallback<MouseEnterEvent>(_ => {
+                restoreSelectedButton.style.backgroundColor = ColorPreset.SuccessHover;
+            });
 
+            restoreSelectedButton.RegisterCallback<MouseLeaveEvent>(_ => {
+                restoreSelectedButton.style.backgroundColor = ColorPreset.Success;
+            });
+            buttonRow.Add(restoreSelectedButton);
             root.Add(scrollArea);
             root.Add(buttonRow);
 

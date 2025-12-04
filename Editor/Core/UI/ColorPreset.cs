@@ -39,19 +39,19 @@ namespace _4OF.ee4v.Core.UI {
         public static Color DepthLine = FromHex(EditorGUIUtility.isProSkin ? "#686868" : "#8e8e8e");
         
         // Asset Manager
+        public static Color OverlayBackground = FromHex("#000000", 0.5f);
         public static Color TagPillBackground = FromHex(EditorGUIUtility.isProSkin ? "#4d4d4d" : "#cccccc");
         public static Color TagPillHover = FromHex(EditorGUIUtility.isProSkin ? "#666666" : "#bfbfbf");
+        public static Color ProgressBarBackground = FromHex("#1c1c1c");
         
         // TODO: refactor
-        public static StyleColor TransparentBlack10Style = new(new Color(0f, 0f, 0f, 0.1f));
-        public static StyleColor TransparentBlack20Style = new(new Color(0f, 0f, 0f, 0.2f));
-        public static StyleColor TransparentBlack50Style = new(new Color(0f, 0f, 0f, 0.5f));
+        public static Color TransparentBlack10Style = new (0f, 0f, 0f, 0.1f);
+        public static Color TransparentBlack20Style = new(0f, 0f, 0f, 0.2f);
         public static Color TransparentWhite50 = new(1f, 1f, 1f, 0.5f);
         public static Color TransparentWhite30 = new(1f, 1f, 1f, 0.3f);
         public static Color AccentBlue = FromHex("#2686f3");
-        public static StyleColor AccentBlueStyle = new(AccentBlue);
-        public static StyleColor AccentBlue20Style = new(new Color(0.26f, 0.58f, 0.95f, 0.2f));
-        public static StyleColor AccentBlue40Style = new(new Color(0.26f, 0.58f, 0.95f, 0.4f));
+        public static Color AccentBlue20Style = new(0.26f, 0.58f, 0.95f, 0.2f);
+        public static Color AccentBlue40Style = new(0.26f, 0.58f, 0.95f, 0.4f);
 
         private static readonly Dictionary<int, Texture2D> AlphaGradientCache = new();
 

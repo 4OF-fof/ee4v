@@ -93,7 +93,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
                 _el.Add(new Label(label) { style = { color = ColorPreset.InactiveItem, width = 80 } });
                 _val = new Label {
                     style = {
-                        flexGrow = 1, unityTextAlign = TextAnchor.MiddleRight, color = ColorPreset.AccentBlueStyle,
+                        flexGrow = 1, unityTextAlign = TextAnchor.MiddleRight, color = ColorPreset.AccentBlue,
                         overflow = Overflow.Hidden,
                         textOverflow = TextOverflow.Ellipsis
                     }

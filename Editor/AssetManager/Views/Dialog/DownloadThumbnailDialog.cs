@@ -36,7 +36,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
             var barWrapper = new VisualElement {
                 style = {
                     height = 10,
-                    backgroundColor = ColorPreset.TransparentBlack50Style,
+                    backgroundColor = ColorPreset.ProgressBarBackground,
                     marginBottom = 10,
                     borderTopLeftRadius = 8,
                     borderTopRightRadius = 8,
@@ -50,7 +50,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
                 style = {
                     width = 0,
                     height = 18,
-                    backgroundColor = ColorPreset.AccentBlueStyle,
+                    backgroundColor = ColorPreset.AccentBlue,
                     borderTopLeftRadius = 4,
                     borderTopRightRadius = 4,
                     borderBottomLeftRadius = 4,
@@ -134,7 +134,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
             }
 
             void OnStarted() {
-                barInner.style.backgroundColor = ColorPreset.AccentBlueStyle;
+                barInner.style.backgroundColor = ColorPreset.AccentBlue;
                 buttonContainer.style.display = DisplayStyle.None;
 
                 UpdateProgress(BoothThumbnailDownloader.TotalCount, BoothThumbnailDownloader.CompletedCount);
