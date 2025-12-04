@@ -16,7 +16,6 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
 
         private readonly Dictionary<Ulid, VisualElement> _folderItemMap = new();
         private readonly Dictionary<Ulid, VisualElement> _folderRowMap = new();
-        private readonly Label _headerLabel;
 
         private readonly HashSet<Ulid> _selectedIds = new();
         private readonly VisualElement _treeContainer;
@@ -30,13 +29,13 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                 style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, marginBottom = 2 }
             };
 
-            _headerLabel = new Label(I18N.Get("UI.AssetManager.Navigation.Folders")) {
+            var headerLabel = new Label(I18N.Get("UI.AssetManager.Navigation.Folders")) {
                 style = {
                     paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 4,
                     unityFontStyleAndWeight = FontStyle.Bold, flexGrow = 1
                 }
             };
-            header.Add(_headerLabel);
+            header.Add(headerLabel);
 
             var plusBtn = new Label("+") {
                 style = {
@@ -99,21 +98,8 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
         }
 
         public void ClearSelection() {
-            SetHeaderSelected(false);
             _selectedIds.Clear();
             RefreshSelectionVisuals();
-        }
-
-        private void SetHeaderSelected(bool selected) {
-            if (selected) {
-                _headerLabel.AddToClassList("selected");
-                _headerLabel.style.backgroundColor = ColorPreset.SelectedBackGround;
-            }
-            else {
-                _headerLabel.RemoveFromClassList("selected");
-                _headerLabel.style.backgroundColor = new StyleColor(StyleKeyword.Null);
-                _headerLabel.style.color = new StyleColor(StyleKeyword.Null);
-            }
         }
 
         private void RefreshSelectionVisuals() {
@@ -206,7 +192,6 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                         }
 
                         _lastSelectedId = folder.ID;
-                        SetHeaderSelected(false);
                         RefreshSelectionVisuals();
 
                         if (_selectedIds.Count == 1 && _selectedIds.Contains(folder.ID)) {
