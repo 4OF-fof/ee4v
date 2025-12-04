@@ -263,14 +263,14 @@ namespace _4OF.ee4v.AssetManager.Views {
 
             var emptyTitle = new Label(I18N.Get("UI.AssetManager.TagListView.EmptyTitle")) {
                 style = {
-                    fontSize = 16, unityTextAlign = TextAnchor.MiddleCenter, color = ColorPreset.TransparentWhite50,
+                    fontSize = 16, unityTextAlign = TextAnchor.MiddleCenter, color = ColorPreset.TipsTitle,
                     marginBottom = 8
                 }
             };
 
             var emptyHint = new Label(I18N.Get("UI.AssetManager.TagListView.EmptyHint")) {
                 style = {
-                    fontSize = 12, unityTextAlign = TextAnchor.MiddleCenter, color = ColorPreset.TransparentWhite30
+                    fontSize = 12, unityTextAlign = TextAnchor.MiddleCenter, color = ColorPreset.TipsText
                 }
             };
 

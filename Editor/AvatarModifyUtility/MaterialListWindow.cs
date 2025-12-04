@@ -219,9 +219,6 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                     flexDirection = FlexDirection.Row,
                     alignItems = Align.Center,
                     paddingLeft = 6, paddingRight = 6, paddingTop = 6, paddingBottom = 6,
-                    backgroundColor = ColorPreset.TransparentBlack10Style,
-                    borderBottomWidth = 1,
-                    borderBottomColor = ColorPreset.TransparentBlack10Style
                 }
             };
 
@@ -243,8 +240,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                     borderTopLeftRadius = 3,
                     borderTopRightRadius = 3,
                     borderBottomLeftRadius = 3,
-                    borderBottomRightRadius = 3,
-                    backgroundColor = ColorPreset.TransparentBlack20Style
+                    borderBottomRightRadius = 3
                 }
             };
             header.Add(icon);

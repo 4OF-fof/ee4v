@@ -42,7 +42,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
             _folderRow = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row, alignItems = Align.Center, marginBottom = 10,
-                    backgroundColor = ColorPreset.TransparentBlack10Style,
+                    backgroundColor = ColorPreset.GroupBackGround,
                     paddingLeft = 4, paddingTop = 4, paddingBottom = 4,
                     borderTopLeftRadius = 4, borderTopRightRadius = 4, borderBottomLeftRadius = 4,
                     borderBottomRightRadius = 4
@@ -55,9 +55,9 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
                 evt.StopPropagation();
             });
             _folderRow.RegisterCallback<MouseEnterEvent>(_ =>
-                _folderRow.style.backgroundColor = ColorPreset.TransparentBlack20Style);
+                _folderRow.style.backgroundColor = ColorPreset.GroupBackGroundHover);
             _folderRow.RegisterCallback<MouseLeaveEvent>(_ =>
-                _folderRow.style.backgroundColor = ColorPreset.TransparentBlack10Style);
+                _folderRow.style.backgroundColor = ColorPreset.GroupBackGround);
 
             _folderRow.Add(new Image {
                 image = EditorGUIUtility.IconContent("Folder Icon").image,

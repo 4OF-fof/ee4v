@@ -215,8 +215,9 @@ namespace _4OF.ee4v.AssetManager.Window {
 
             var scrollArea = new ScrollView {
                 style = {
-                    flexGrow = 1, backgroundColor = ColorPreset.TransparentBlack10Style, borderTopWidth = 1,
-                    borderBottomWidth = 1,
+                    flexGrow = 1, backgroundColor = ColorPreset.GroupBackGround,
+                    borderTopWidth = 1, borderBottomWidth = 1,
+                    borderLeftWidth = 1, borderRightWidth = 1,
                     borderTopColor = ColorPreset.WindowBorder, borderBottomColor = ColorPreset.WindowBorder,
                     borderRightColor = ColorPreset.WindowBorder, borderLeftColor = ColorPreset.WindowBorder
                 }

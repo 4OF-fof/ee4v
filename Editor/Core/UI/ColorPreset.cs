@@ -22,6 +22,8 @@ namespace _4OF.ee4v.Core.UI {
         public static Color NonFavorite = Color.gray;
         public static Color SelectedBorder = FromHex("#3f7fff");
         public static Color SelectedBackGround = FromHex("#3f7fff", 0.3f);
+        public static Color GroupBackGround = new (0f, 0f, 0f, 0.1f);
+        public static Color GroupBackGroundHover = new(0f, 0f, 0f, 0.2f);
         public static Color DropArea = FromHex("#334c7f", 0.3f);
         public static Color CloseIcon = FromHex("#e53333", 0.8f);
         public static Color Error = FromHex(EditorGUIUtility.isProSkin ? "#b71c1c" : "#ff5252");
@@ -45,12 +47,8 @@ namespace _4OF.ee4v.Core.UI {
         public static Color TagPillHover = FromHex(EditorGUIUtility.isProSkin ? "#666666" : "#bfbfbf");
         public static Color ProgressBarBackground = FromHex("#1c1c1c");
         public static Color ProgressBar = FromHex("#2686f3");
-        
-        // TODO: refactor
-        public static Color TransparentBlack10Style = new (0f, 0f, 0f, 0.1f);
-        public static Color TransparentBlack20Style = new(0f, 0f, 0f, 0.2f);
-        public static Color TransparentWhite50 = new(1f, 1f, 1f, 0.5f);
-        public static Color TransparentWhite30 = new(1f, 1f, 1f, 0.3f);
+        public static Color TipsTitle =  FromHex("#ffffff", 0.5f);
+        public static Color TipsText = FromHex("#ffffff", 0.3f);
 
         private static readonly Dictionary<int, Texture2D> AlphaGradientCache = new();
 

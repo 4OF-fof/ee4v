@@ -41,7 +41,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
             var scroll = new ScrollView {
                 style = {
                     flexGrow = 1,
-                    backgroundColor = ColorPreset.TransparentBlack10Style,
+                    backgroundColor = ColorPreset.GroupBackGround,
                     borderTopWidth = 1, borderBottomWidth = 1,
                     borderLeftWidth = 1, borderRightWidth = 1,
                     borderTopColor = ColorPreset.WindowBorder, borderBottomColor = ColorPreset.WindowBorder,

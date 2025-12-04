@@ -89,7 +89,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetListView {
                 style = {
                     fontSize = 16,
                     unityTextAlign = TextAnchor.MiddleCenter,
-                    color = ColorPreset.TransparentWhite50,
+                    color = ColorPreset.TipsTitle,
                     marginBottom = 8
                 }
             };
@@ -98,7 +98,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetListView {
                 style = {
                     fontSize = 12,
                     unityTextAlign = TextAnchor.MiddleCenter,
-                    color = ColorPreset.TransparentWhite30
+                    color = ColorPreset.TipsText
                 }
             };
 
