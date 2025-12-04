@@ -53,11 +53,22 @@ namespace _4OF.ee4v.AssetManager.Components {
 
             _contextMenuHandler = (id, folderName, target, pos) =>
             {
+                var selectedIds = _navigationView.GetSelectedFolderIds();
                 var menu = new GenericDropdownMenu();
-                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.Rename"), false,
-                    () => _navigationView.ShowRenameFolderDialog(id, folderName));
-                menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.Delete"), false,
-                    () => _presenter.OnFolderDeleted(id));
+
+                if (selectedIds.Count > 1) {
+                    menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.DeleteFoldersPluralFmt", selectedIds.Count), false,
+                        () =>
+                        {
+                            foreach (var sid in selectedIds) _presenter.OnFolderDeleted(sid);
+                        });
+                }
+                else {
+                    menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.Rename"), false,
+                        () => _navigationView.ShowRenameFolderDialog(id, folderName));
+                    menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.Delete"), false,
+                        () => _presenter.OnFolderDeleted(id));
+                }
 
                 const float menuHeight = 10f + 2 * 19f;
                 if (target.panel != null) {

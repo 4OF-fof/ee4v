@@ -20,7 +20,9 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
         private readonly Label _headerLabel;
         private readonly VisualElement _treeContainer;
 
-        private VisualElement _selectedFolderRow;
+        private readonly HashSet<Ulid> _selectedIds = new();
+        private readonly List<Ulid> _visualOrderList = new();
+        private Ulid _lastSelectedId = Ulid.Empty;
 
         public UserFolderTree() {
             style.flexGrow = 1;
@@ -35,15 +37,6 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                     unityFontStyleAndWeight = FontStyle.Bold, flexGrow = 1
                 }
             };
-            _headerLabel.RegisterCallback<PointerDownEvent>(evt =>
-            {
-                if (evt.button != 0) return;
-                ClearSelection();
-                SetHeaderSelected(true);
-                OnNavigationRequested?.Invoke(NavigationMode.Folders,
-                    I18N.Get("UI.AssetManager.Navigation.FoldersContext"), a => !a.IsDeleted);
-                evt.StopPropagation();
-            });
             header.Add(_headerLabel);
 
             var plusBtn = new Label("+") {
@@ -88,11 +81,15 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
         public event Action<Ulid, Ulid> OnFolderMoved;
         public event Action<Ulid, Ulid, int> OnFolderReordered;
 
+        public List<Ulid> SelectedIds => _selectedIds.ToList();
+
         public void SetFolders(List<BaseFolder> folders) {
             _treeContainer.Clear();
             _folderItemMap.Clear();
             _folderRowMap.Clear();
-            _selectedFolderRow = null;
+            _selectedIds.Clear();
+            _visualOrderList.Clear();
+            _lastSelectedId = Ulid.Empty;
 
             if (folders == null) return;
             foreach (var folder in folders) CreateFolderTreeItem(folder, _treeContainer, 0);
@@ -102,16 +99,17 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             ClearSelection();
             if (folderId == Ulid.Empty) return;
 
-            if (!_folderRowMap.TryGetValue(folderId, out var row)) return;
-            ApplySelectedStyle(row);
-            _selectedFolderRow = row;
+            if (!_folderRowMap.ContainsKey(folderId)) return;
+            
+            _selectedIds.Add(folderId);
+            _lastSelectedId = folderId;
+            RefreshSelectionVisuals();
         }
 
         public void ClearSelection() {
             SetHeaderSelected(false);
-            if (_selectedFolderRow == null) return;
-            RemoveSelectedStyle(_selectedFolderRow);
-            _selectedFolderRow = null;
+            _selectedIds.Clear();
+            RefreshSelectionVisuals();
         }
 
         private void SetHeaderSelected(bool selected) {
@@ -126,7 +124,28 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             }
         }
 
+        private void RefreshSelectionVisuals() {
+            foreach (var (id, row) in _folderRowMap) {
+                if (_selectedIds.Contains(id)) {
+                    row.AddToClassList("selected");
+                    row.style.backgroundColor = ColorPreset.SelectedBackGround;
+                    foreach (var label in row.Children().OfType<Label>())
+                        label.style.color = ColorPreset.TextColor;
+                }
+                else {
+                    row.RemoveFromClassList("selected");
+                    row.style.backgroundColor = new StyleColor(StyleKeyword.Null);
+                    foreach (var label in row.Children().OfType<Label>())
+                        label.style.color = new StyleColor(StyleKeyword.Null);
+                }
+            }
+        }
+
         private void CreateFolderTreeItem(BaseFolder folder, VisualElement parentContainer, int depth) {
+            if (folder is not Folder) return;
+
+            _visualOrderList.Add(folder.ID);
+
             var treeItemContainer = new VisualElement {
                 userData = folder.ID,
                 style = { flexDirection = FlexDirection.Column, marginBottom = 1 }
@@ -136,16 +155,16 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                 style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, overflow = Overflow.Hidden }
             };
 
-            var hasChildren = folder is Folder f && f.Children.Count > 0;
+            var hasChildFolders = folder is Folder f && f.Children.Any(c => c is Folder);
             var isExpanded = _expandedFolders.Contains(folder.ID);
 
-            var expandToggle = new Label(hasChildren ? isExpanded ? "▼" : "▶" : " ") {
+            var expandToggle = new Label(hasChildFolders ? isExpanded ? "▼" : "▶" : " ") {
                 style = {
                     paddingLeft = depth * 12, paddingRight = 0, width = 16 + depth * 12,
                     unityTextAlign = TextAnchor.MiddleLeft, fontSize = 10, flexShrink = 0
                 }
             };
-            if (hasChildren)
+            if (hasChildFolders)
                 expandToggle.RegisterCallback<PointerDownEvent>(evt =>
                 {
                     if (evt.button != 0) return;
@@ -154,10 +173,16 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                 });
             itemRow.Add(expandToggle);
 
+            var folderIcon = new Image {
+                image = EditorGUIUtility.IconContent("Folder Icon").image,
+                style = { width = 16, height = 16, marginRight = 0, marginLeft = 0, flexShrink = 0 }
+            };
+            itemRow.Add(folderIcon);
+
             var label = new Label(folder.Name) {
                 tooltip = folder.Name,
                 style = {
-                    paddingLeft = 0, paddingRight = 8, paddingTop = 3, paddingBottom = 3,
+                    paddingLeft = 2, paddingRight = 8, paddingTop = 3, paddingBottom = 3,
                     flexGrow = 1, flexShrink = 1, overflow = Overflow.Hidden,
                     textOverflow = TextOverflow.Ellipsis, whiteSpace = WhiteSpace.NoWrap
                 }
@@ -169,12 +194,46 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             {
                 switch (evt.button) {
                     case 0:
-                        SelectFolder(folder.ID);
-                        OnFolderSelected?.Invoke(folder.ID);
-                        _dragManipulator.StartDrag(folder.ID, itemRow);
+                        if (evt.shiftKey && _lastSelectedId != Ulid.Empty && _visualOrderList.Contains(_lastSelectedId)) {
+                            var startIdx = _visualOrderList.IndexOf(_lastSelectedId);
+                            var endIdx = _visualOrderList.IndexOf(folder.ID);
+                            if (startIdx != -1 && endIdx != -1) {
+                                var min = Mathf.Min(startIdx, endIdx);
+                                var max = Mathf.Max(startIdx, endIdx);
+                                _selectedIds.Clear();
+                                for (var i = min; i <= max; i++) {
+                                    _selectedIds.Add(_visualOrderList[i]);
+                                }
+                            }
+                        }
+                        else if (evt.ctrlKey || evt.commandKey) {
+                            if (!_selectedIds.Add(folder.ID))
+                                _selectedIds.Remove(folder.ID);
+                        }
+                        else {
+                            _selectedIds.Clear();
+                            _selectedIds.Add(folder.ID);
+                        }
+                        
+                        _lastSelectedId = folder.ID;
+                        SetHeaderSelected(false);
+                        RefreshSelectionVisuals();
+                        
+                        if (_selectedIds.Count == 1 && _selectedIds.Contains(folder.ID)) {
+                            OnFolderSelected?.Invoke(folder.ID);
+                            _dragManipulator.StartDrag(folder.ID, itemRow);
+                        }
+                        
                         evt.StopPropagation();
                         break;
                     case 1:
+                        if (!_selectedIds.Contains(folder.ID)) {
+                            _selectedIds.Clear();
+                            _selectedIds.Add(folder.ID);
+                            _lastSelectedId = folder.ID;
+                            RefreshSelectionVisuals();
+                        }
+                        
                         var worldPos = itemRow.LocalToWorld(evt.localPosition);
                         OnContextMenuRequested?.Invoke(folder.ID, folder.Name, itemRow, worldPos);
                         evt.StopPropagation();
@@ -188,7 +247,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             });
             itemRow.RegisterCallback<DragLeaveEvent>(_ =>
             {
-                if (CanAcceptDrop() && _selectedFolderRow != itemRow)
+                if (CanAcceptDrop() && !_selectedIds.Contains(folder.ID))
                     itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
             });
             itemRow.RegisterCallback<DragUpdatedEvent>(_ =>
@@ -201,7 +260,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                 if (!CanAcceptDrop()) return;
                 DragAndDrop.AcceptDrag();
 
-                if (_selectedFolderRow == itemRow) ApplySelectedStyle(itemRow);
+                if (_selectedIds.Contains(folder.ID)) RefreshSelectionVisuals();
                 else itemRow.style.backgroundColor = new StyleColor(StyleKeyword.Null);
 
                 evt.StopPropagation();
@@ -227,14 +286,13 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
         private void ToggleExpand(Ulid folderId) {
             if (!_expandedFolders.Add(folderId)) _expandedFolders.Remove(folderId);
 
-            if (_folderItemMap.TryGetValue(folderId, out var container)) {
-                var toggle = container.Q<VisualElement>().Q<Label>();
-                var children = container.ElementAt(1);
+            if (!_folderItemMap.TryGetValue(folderId, out var container)) return;
+            var toggle = container.Q<VisualElement>().Q<Label>();
+            var children = container.ElementAt(1);
 
-                var expanded = _expandedFolders.Contains(folderId);
-                if (toggle != null) toggle.text = expanded ? "▼" : "▶";
-                if (children != null) children.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
-            }
+            var expanded = _expandedFolders.Contains(folderId);
+            if (toggle != null) toggle.text = expanded ? "▼" : "▶";
+            if (children != null) children.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private Ulid GetParentFolderId(Ulid folderId) {
@@ -256,18 +314,6 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
         private static bool CanAcceptDrop() {
             return DragAndDrop.GetGenericData("AssetManagerAssets") != null ||
                 DragAndDrop.GetGenericData("AssetManagerFolders") != null;
-        }
-
-        private static void ApplySelectedStyle(VisualElement item) {
-            item.AddToClassList("selected");
-            item.style.backgroundColor = ColorPreset.SelectedBackGround;
-        }
-
-        private static void RemoveSelectedStyle(VisualElement item) {
-            item.RemoveFromClassList("selected");
-            item.style.backgroundColor = new StyleColor(StyleKeyword.Null);
-            foreach (var label in item.Children().OfType<Label>())
-                label.style.color = new StyleColor(StyleKeyword.Null);
         }
     }
 }

@@ -88,8 +88,8 @@ namespace _4OF.ee4v.AssetManager.Services {
                 _currentTagFilter = contextName[I18N.Get("UI.AssetManager.Navigation.TagPrefix").Length..];
 
             ModeChanged?.Invoke(CurrentMode);
-            OnHistoryChanged?.Invoke();
             Refresh();
+            OnHistoryChanged?.Invoke();
         }
 
         public void SetFolder(Ulid folderId, bool pushHistory = true) {
@@ -127,8 +127,8 @@ namespace _4OF.ee4v.AssetManager.Services {
             }
 
             ModeChanged?.Invoke(CurrentMode);
-            OnHistoryChanged?.Invoke();
             Refresh();
+            OnHistoryChanged?.Invoke();
         }
 
         public void SelectAsset(AssetMetadata asset) {

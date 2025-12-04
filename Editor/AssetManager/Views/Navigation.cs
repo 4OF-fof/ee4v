@@ -96,6 +96,10 @@ namespace _4OF.ee4v.AssetManager.Views {
             _folderTree.SetFolders(folders);
         }
 
+        public List<Ulid> GetSelectedFolderIds() {
+            return _folderTree.SelectedIds;
+        }
+
         public void SelectState(NavigationMode mode, Ulid folderId) {
             _systemList.ClearSelection();
             _folderTree.ClearSelection();
