@@ -48,11 +48,6 @@ namespace _4OF.ee4v.AssetManager.Views {
                 _currentSearchText = text;
                 ApplyFilterAndSort();
             };
-            _toolbar.OnSortChanged += type =>
-            {
-                _currentSortType = type;
-                ApplyFilterAndSort();
-            };
 
             _toolbar.OnSortMenuRequested += element => OnSortMenuRequested?.Invoke(element);
 
@@ -83,6 +78,10 @@ namespace _4OF.ee4v.AssetManager.Views {
 
         public void ClearSelection() {
             _grid.ClearSelection();
+        }
+
+        public void ResetSearch() {
+            _toolbar.ClearSearch();
         }
 
         public void SetController(AssetListService controller) {

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using _4OF.ee4v.AssetManager.Services;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
@@ -15,6 +14,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components {
         private readonly ScrollView _breadcrumbContainer;
         private readonly Label _forwardLabel;
         private readonly Label _sortLabel;
+        private readonly ToolbarSearchField _searchField;
 
         public AssetToolbar(int initialItemsPerRow) {
             style.alignItems = Align.Center;
@@ -76,7 +76,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components {
             _sortLabel.RegisterCallback<PointerDownEvent>(_ => OnSortMenuRequested?.Invoke(_sortLabel));
             Add(_sortLabel);
 
-            var searchField = new ToolbarSearchField {
+            _searchField = new ToolbarSearchField {
                 style = {
                     width = 200,
                     marginLeft = 4,
@@ -84,14 +84,13 @@ namespace _4OF.ee4v.AssetManager.Views.Components {
                     alignSelf = Align.Center
                 }
             };
-            searchField.RegisterValueChangedCallback(evt => OnSearchTextChanged?.Invoke(evt.newValue));
-            Add(searchField);
+            _searchField.RegisterValueChangedCallback(evt => OnSearchTextChanged?.Invoke(evt.newValue));
+            Add(_searchField);
         }
 
         public event Action OnBack;
         public event Action OnForward;
         public event Action<int> OnItemSizeChanged;
-        public event Action<AssetSortType> OnSortChanged;
         public event Action<string> OnSearchTextChanged;
         public event Action<Ulid> OnBreadcrumbClicked;
         public event Action<VisualElement> OnSortMenuRequested;
@@ -142,6 +141,10 @@ namespace _4OF.ee4v.AssetManager.Views.Components {
             }
         }
 
+        public void ClearSearch() {
+            if (_searchField != null) _searchField.value = string.Empty;
+        }
+
         private static Label CreateNavigationLabel(string text, string labelTooltip) {
             var label = new Label(text) {
                 tooltip = labelTooltip,
@@ -165,10 +168,6 @@ namespace _4OF.ee4v.AssetManager.Views.Components {
                 if (element.enabledSelf) element.style.backgroundColor = ColorPreset.MouseOverBackground;
             });
             element.RegisterCallback<MouseLeaveEvent>(_ => { element.style.backgroundColor = Color.clear; });
-        }
-
-        private void OnOnSortChanged(AssetSortType obj) {
-            OnSortChanged?.Invoke(obj);
         }
     }
 }

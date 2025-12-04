@@ -87,6 +87,7 @@ namespace _4OF.ee4v.AssetManager.Components {
 
         private void OnHistoryChanged() {
             _assetListView.ClearSelection();
+            _assetListView.ResetSearch();
         }
 
         private void ShowSortMenu(VisualElement element) {
