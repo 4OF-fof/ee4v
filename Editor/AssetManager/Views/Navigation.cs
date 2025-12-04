@@ -37,12 +37,6 @@ namespace _4OF.ee4v.AssetManager.Views {
             Add(new VisualElement { style = { height = 10 } });
 
             _folderTree = new UserFolderTree();
-            _folderTree.OnNavigationRequested += (mode, ctx, filter) =>
-            {
-                _systemList.ClearSelection();
-                NavigationChanged?.Invoke(mode, ctx, filter);
-                FolderSelected?.Invoke(Ulid.Empty);
-            };
             _folderTree.OnCreateFolderRequested += ShowCreateFolderDialog;
             _folderTree.OnFolderSelected += id =>
             {

@@ -73,7 +73,6 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             this.AddManipulator(_dragManipulator);
         }
 
-        public event Action<NavigationMode, string, Func<AssetMetadata, bool>> OnNavigationRequested;
         public event Action OnCreateFolderRequested;
         public event Action<Ulid> OnFolderSelected;
         public event Action<Ulid, string, VisualElement, Vector2> OnContextMenuRequested;

@@ -110,12 +110,16 @@ namespace _4OF.ee4v.AssetManager.Services {
 
                 switch (folder) {
                     case BoothItemFolder:
-                        CurrentMode = NavigationMode.BoothItems;
-                        _contextName = I18N.Get("UI.AssetManager.Navigation.BoothItemsContext");
+                        if (CurrentMode != NavigationMode.Folders) {
+                            CurrentMode = NavigationMode.BoothItems;
+                            _contextName = I18N.Get("UI.AssetManager.Navigation.BoothItemsContext");
+                        }
                         break;
                     case BackupFolder:
-                        CurrentMode = NavigationMode.Backups;
-                        _contextName = I18N.Get("UI.AssetManager.Navigation.BackupsContext");
+                        if (CurrentMode != NavigationMode.Folders) {
+                            CurrentMode = NavigationMode.Backups;
+                            _contextName = I18N.Get("UI.AssetManager.Navigation.BackupsContext");
+                        }
                         break;
                     default:
                         CurrentMode = NavigationMode.Folders;
