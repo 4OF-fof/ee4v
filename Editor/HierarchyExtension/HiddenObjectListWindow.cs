@@ -56,12 +56,18 @@ namespace _4OF.ee4v.HierarchyExtension {
 
         protected override VisualElement Content() {
             var root = base.Content();
+            root.style.flexGrow = 1;
             root.style.position = Position.Relative;
 
             var scrollArea = new ScrollView {
                 style = {
                     flexGrow = 1,
-                    paddingBottom = 40
+                    paddingTop = 5, paddingBottom = 5,
+                    backgroundColor = ColorPreset.GroupBackGround,
+                    borderTopWidth = 1, borderBottomWidth = 1,
+                    borderLeftWidth = 1, borderRightWidth = 1,
+                    borderTopColor = ColorPreset.WindowBorder, borderBottomColor = ColorPreset.WindowBorder,
+                    borderRightColor = ColorPreset.WindowBorder, borderLeftColor = ColorPreset.WindowBorder
                 }
             };
 
@@ -72,13 +78,12 @@ namespace _4OF.ee4v.HierarchyExtension {
 
             var buttonRow = new VisualElement {
                 style = {
-                    position = Position.Absolute,
                     flexDirection = FlexDirection.Row,
-                    left = 0,
-                    right = 0,
-                    bottom = 8,
-                    marginRight = 8,
-                    marginLeft = 8
+                    paddingTop = 6,
+                    paddingBottom = 6,
+                    paddingLeft = 8,
+                    paddingRight = 8,
+                    flexShrink = 0
                 }
             };
 
@@ -105,6 +110,7 @@ namespace _4OF.ee4v.HierarchyExtension {
                 restoreSelectedButton.style.backgroundColor = ColorPreset.Success;
             });
             buttonRow.Add(restoreSelectedButton);
+            
             root.Add(scrollArea);
             root.Add(buttonRow);
 
