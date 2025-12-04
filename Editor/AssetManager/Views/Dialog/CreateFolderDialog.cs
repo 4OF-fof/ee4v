@@ -32,7 +32,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
 
             _errorLabel = new Label {
                 style = {
-                    color = ColorPreset.WarningText,
+                    color = ColorPreset.Warning,
                     whiteSpace = WhiteSpace.Normal,
                     marginBottom = 5,
                     display = DisplayStyle.None

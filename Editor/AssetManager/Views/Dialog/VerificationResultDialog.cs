@@ -61,7 +61,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
                         var name = _result.OnDisk.TryGetValue(id, out var m) ? m.Name : id.ToString();
                         return $"(null) -> {name}";
                     },
-                    ColorPreset.SuccessButton);
+                    ColorPreset.Success);
 
             if (_result.MissingOnDisk.Count > 0)
                 AddSection(scroll,
@@ -72,7 +72,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
                         var name = _repository.GetAsset(id)?.Name ?? id.ToString();
                         return $"{name} -> (null)";
                     },
-                    ColorPreset.WarningText);
+                    ColorPreset.Warning);
 
             if (_result.Modified.Count > 0)
                 AddSection(scroll,
@@ -92,7 +92,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
 
             var applyBtn = new Button(() => Apply(content)) {
                 text = I18N.Get("UI.AssetManager.Dialog.Verification.Apply"),
-                style = { width = 100, backgroundColor = ColorPreset.SuccessButtonStyle, color = ColorPreset.TextColor }
+                style = { width = 100, backgroundColor = ColorPreset.SSuccess, color = ColorPreset.TextColor }
             };
             buttonRow.Add(applyBtn);
 

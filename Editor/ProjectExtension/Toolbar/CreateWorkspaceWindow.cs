@@ -73,7 +73,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar {
 
             _errorLabel = new Label {
                 style = {
-                    color = ColorPreset.WarningText,
+                    color = ColorPreset.Warning,
                     fontSize = 10,
                     marginBottom = 8,
                     minHeight = 20,

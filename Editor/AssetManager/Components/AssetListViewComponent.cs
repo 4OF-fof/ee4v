@@ -161,7 +161,7 @@ namespace _4OF.ee4v.AssetManager.Components {
             var continueBtn = new Button {
                 text = I18N.Get("UI.AssetManager.Dialog.Button.Continue"),
                 style = {
-                    backgroundColor = new StyleColor(ColorPreset.WarningButton)
+                    backgroundColor = new StyleColor(ColorPreset.Warning)
                 }
             };
             buttonRow.Add(continueBtn);

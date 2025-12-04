@@ -184,7 +184,7 @@ namespace _4OF.ee4v.AssetManager.Window {
                     marginBottom = 4,
                     paddingLeft = 10,
                     paddingRight = 10,
-                    backgroundColor = ColorPreset.SuccessButtonStyle,
+                    backgroundColor = ColorPreset.SSuccess,
                     borderTopWidth = 0,
                     borderBottomWidth = 0,
                     borderLeftWidth = 0,
@@ -199,11 +199,11 @@ namespace _4OF.ee4v.AssetManager.Window {
 
             button.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                button.style.backgroundColor = ColorPreset.SuccessButtonHoverStyle;
+                button.style.backgroundColor = ColorPreset.SSuccessHover;
             });
             button.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                button.style.backgroundColor = ColorPreset.SuccessButtonStyle;
+                button.style.backgroundColor = ColorPreset.SSuccess;
             });
 
             return button;

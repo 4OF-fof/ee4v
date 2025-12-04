@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.Core.Interfaces;
 using UnityEditor;
-using UnityEngine;
 
 namespace _4OF.ee4v.Core.Manager {
     public class AssetManagerComponentManager : IDisposable {
@@ -33,10 +32,7 @@ namespace _4OF.ee4v.Core.Manager {
                 if (type.GetConstructor(Type.EmptyTypes) == null) continue;
 
                 try {
-                    if (Activator.CreateInstance(type) is IAssetManagerComponent component) {
-                        component.Initialize(_context);
-                        _components.Add(component);
-                    }
+                    if (Activator.CreateInstance(type) is IAssetManagerComponent component) _components.Add(component);
                 }
                 catch {
                     // ignore
@@ -44,6 +40,14 @@ namespace _4OF.ee4v.Core.Manager {
             }
 
             _components.Sort((a, b) => a.Priority.CompareTo(b.Priority));
+
+            foreach (var component in _components)
+                try {
+                    component.Initialize(_context);
+                }
+                catch {
+                    // ignore
+                }
         }
 
         public IEnumerable<IAssetManagerComponent> GetComponents(AssetManagerComponentLocation location) {

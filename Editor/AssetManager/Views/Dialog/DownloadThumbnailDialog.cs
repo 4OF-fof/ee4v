@@ -129,7 +129,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
                 progressText.text = I18N.Get("UI.AssetManager.DownloadThumbnail.CompletedFmt",
                     BoothThumbnailDownloader.CompletedCount, BoothThumbnailDownloader.TotalCount);
 
-                barInner.style.backgroundColor = ColorPreset.SuccessButtonStyle;
+                barInner.style.backgroundColor = ColorPreset.SSuccess;
                 buttonContainer.style.display = DisplayStyle.Flex;
             }
 

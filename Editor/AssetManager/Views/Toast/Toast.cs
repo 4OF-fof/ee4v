@@ -67,7 +67,7 @@ namespace _4OF.ee4v.AssetManager.Views.Toast {
 
             closeLabel.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                closeLabel.style.backgroundColor = new StyleColor(ColorPreset.WarningButton);
+                closeLabel.style.backgroundColor = new StyleColor(ColorPreset.Warning);
             });
             closeLabel.RegisterCallback<MouseLeaveEvent>(_ => { closeLabel.style.backgroundColor = Color.clear; });
 
@@ -98,9 +98,9 @@ namespace _4OF.ee4v.AssetManager.Views.Toast {
         public void SetType(ToastType type) {
             style.borderLeftColor = type switch {
                 ToastType.Info    => ColorPreset.AccentBlue,
-                ToastType.Success => ColorPreset.SuccessButton,
+                ToastType.Success => ColorPreset.Success,
                 ToastType.Warning => ColorPreset.HighlightColor,
-                ToastType.Error   => ColorPreset.WarningButton,
+                ToastType.Error   => ColorPreset.Warning,
                 _                 => style.borderLeftColor
             };
         }

@@ -87,7 +87,7 @@ namespace _4OF.ee4v.HierarchyExtension {
                 style = {
                     flexGrow = 1,
                     height = 28,
-                    backgroundColor = ColorPreset.WarningButton,
+                    backgroundColor = ColorPreset.Warning,
                     borderTopRightRadius = 10,
                     borderTopLeftRadius = 10,
                     borderBottomRightRadius = 10,

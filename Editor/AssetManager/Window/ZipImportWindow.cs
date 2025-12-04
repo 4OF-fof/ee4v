@@ -236,7 +236,7 @@ namespace _4OF.ee4v.AssetManager.Window {
                 { text = I18N.Get("UI.AssetManager.Dialog.Button.Cancel"), style = { width = 80 } };
             var importBtn = new Button(DoImport) {
                 text = I18N.Get("UI.AssetManager.ZipImport.Select"),
-                style = { width = 80, backgroundColor = ColorPreset.SuccessButtonStyle, color = ColorPreset.TextColor }
+                style = { width = 80, backgroundColor = ColorPreset.SSuccess, color = ColorPreset.TextColor }
             };
 
             footer.Add(cancelBtn);

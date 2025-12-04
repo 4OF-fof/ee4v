@@ -208,7 +208,7 @@ namespace _4OF.ee4v.HierarchyExtension.GameObjectWindow {
             }) {
                 text = I18N.Get("UI.HierarchyExtension.HideInHierarchy"),
                 style = {
-                    backgroundColor = ColorPreset.WarningButton,
+                    backgroundColor = ColorPreset.Warning,
                     marginTop = 8, marginBottom = 4,
                     height = 24,
                     borderTopRightRadius = 10, borderTopLeftRadius = 10,

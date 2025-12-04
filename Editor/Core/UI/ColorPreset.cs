@@ -29,25 +29,24 @@ namespace _4OF.ee4v.Core.UI {
         public static Color NonFavorite = Color.gray;
         public static Color ItemSelectedBorder = FromHex("#3f7fff");
         public static Color ItemSelectedBackGround = FromHex("#3f7fff", 0.3f);
+        public static Color Warning = FromHex(EditorGUIUtility.isProSkin ? "#b71c1c" : "#ff5252");
+        public static Color Success = FromHex("#2e7d32");
         
         public static StyleColor STagPillBackground = new(FromHex(EditorGUIUtility.isProSkin ? "#4d4d4d" : "#cccccc"));
         public static StyleColor STagPillHover = new(FromHex(EditorGUIUtility.isProSkin ? "#666666" : "#bfbfbf"));
         public static StyleColor SDropArea = new(FromHex("#334c7f", 0.3f));
         public static StyleColor SCloseIcon = new(FromHex("#e53333", 0.8f));
+        public static StyleColor SSuccess = new(Success);
+        public static StyleColor SSuccessHover = new(FromHex("#388e3c"));
+        public static StyleColor SPrimary = new(FromHex("#f57c00"));
+        public static StyleColor SPrimaryHover = new(FromHex("#ff9800"));
         
-        // TODO
-        public static Color WarningButton = FromHex(EditorGUIUtility.isProSkin ? "#b71c1c" : "#ff5252");
-        public static Color WarningText = FromHex(EditorGUIUtility.isProSkin ? "#ff8a80" : "#b71c1c");
+        // TODO: refactor
         public static Color HighlightColor = FromHex("#ffea04", 0.2f);
-        public static Color SuccessButton = FromHex("#2e7d32");
         public static StyleColor TabSelectedBackground = new(FromHex(EditorGUIUtility.isProSkin ? "#575757" : "#eeeeee"));
-        public static StyleColor SuccessButtonStyle = new(SuccessButton);
-        public static StyleColor SuccessButtonHoverStyle = new(FromHex("#388e3c"));
         public static StyleColor TransparentBlack10Style = new(new Color(0f, 0f, 0f, 0.1f));
         public static StyleColor TransparentBlack20Style = new(new Color(0f, 0f, 0f, 0.2f));
         public static StyleColor TransparentBlack50Style = new(new Color(0f, 0f, 0f, 0.5f));
-        public static StyleColor PrimaryButtonStyle = new(FromHex("#f57c00"));
-        public static StyleColor PrimaryButtonHoverStyle = new(FromHex("#ff9800"));
         public static Color TransparentWhite50 = new(1f, 1f, 1f, 0.5f);
         public static Color TransparentWhite30 = new(1f, 1f, 1f, 0.3f);
         public static Color AccentBlue = FromHex("#2686f3");

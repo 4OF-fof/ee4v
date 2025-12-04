@@ -115,7 +115,7 @@ namespace _4OF.ee4v.AvatarModifyUtility.Variant {
 
             _errorLabel = new Label {
                 style = {
-                    color = ColorPreset.WarningText,
+                    color = ColorPreset.Warning,
                     fontSize = 10,
                     marginBottom = 8,
                     minHeight = 20,
@@ -148,7 +148,7 @@ namespace _4OF.ee4v.AvatarModifyUtility.Variant {
                 style = {
                     width = 80,
                     height = 26,
-                    backgroundColor = ColorPreset.SuccessButtonStyle,
+                    backgroundColor = ColorPreset.SSuccess,
                     color = ColorPreset.TextColor
                 }
             };
