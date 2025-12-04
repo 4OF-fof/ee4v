@@ -22,7 +22,7 @@ namespace _4OF.ee4v.Core.UI {
         public static Color NonFavorite = Color.gray;
         public static Color SelectedBorder = FromHex("#3f7fff");
         public static Color SelectedBackGround = FromHex("#3f7fff", 0.3f);
-        public static Color GroupBackGround = new (0f, 0f, 0f, 0.1f);
+        public static Color GroupBackGround = new(0f, 0f, 0f, 0.1f);
         public static Color GroupBackGroundHover = new(0f, 0f, 0f, 0.2f);
         public static Color DropArea = FromHex("#334c7f", 0.3f);
         public static Color CloseIcon = FromHex("#e53333", 0.8f);
@@ -32,22 +32,22 @@ namespace _4OF.ee4v.Core.UI {
         public static Color SuccessHover = FromHex("#388e3c");
         public static Color Information = FromHex("#2686f3");
         public static Color InformationHover = FromHex("#4396ff");
-        
+
         // Project
         public static Color IconBorder = Color.black;
         public static Color SelectedTabBackground = FromHex(EditorGUIUtility.isProSkin ? "#575757" : "#eeeeee");
         public static Color HighlightColor = FromHex("#ffea04", 0.2f); // TODO: change
-        
+
         // Hierarchy
         public static Color DepthLine = FromHex(EditorGUIUtility.isProSkin ? "#686868" : "#8e8e8e");
-        
+
         // Asset Manager
         public static Color OverlayBackground = FromHex("#000000", 0.5f);
         public static Color TagPillBackground = FromHex(EditorGUIUtility.isProSkin ? "#4d4d4d" : "#cccccc");
         public static Color TagPillHover = FromHex(EditorGUIUtility.isProSkin ? "#666666" : "#bfbfbf");
         public static Color ProgressBarBackground = FromHex("#1c1c1c");
         public static Color ProgressBar = FromHex("#2686f3");
-        public static Color TipsTitle =  FromHex("#ffffff", 0.5f);
+        public static Color TipsTitle = FromHex("#ffffff", 0.5f);
         public static Color TipsText = FromHex("#ffffff", 0.3f);
 
         private static readonly Dictionary<int, Texture2D> AlphaGradientCache = new();

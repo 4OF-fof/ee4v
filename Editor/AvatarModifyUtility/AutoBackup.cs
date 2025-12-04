@@ -10,8 +10,8 @@ using VRC.SDK3A.Editor;
 
 namespace _4OF.ee4v.AvatarModifyUtility {
     public class AutoBackup : IEditorService {
-        private GameObject _currentlyBuildingAvatar;
         private IVRCSdkAvatarBuilderApi _cachedBuilder;
+        private GameObject _currentlyBuildingAvatar;
 
         public string Name => "Auto Backup";
         public string Description => I18N.Get("_System.AvatarModifyUtility.AutoBackup.Description");
@@ -33,6 +33,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
             catch {
                 // Ignore
             }
+
             _cachedBuilder = null;
         }
 

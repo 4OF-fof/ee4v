@@ -61,10 +61,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
                 evt.StopPropagation();
             });
 
-            pill.RegisterCallback<MouseEnterEvent>(_ =>
-            {
-                pill.style.backgroundColor = ColorPreset.TagPillHover;
-            });
+            pill.RegisterCallback<MouseEnterEvent>(_ => { pill.style.backgroundColor = ColorPreset.TagPillHover; });
             pill.RegisterCallback<MouseLeaveEvent>(_ =>
             {
                 pill.style.backgroundColor = ColorPreset.TagPillBackground;
@@ -116,10 +113,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
             };
 
             btn.RegisterCallback<MouseEnterEvent>(_ => { btn.style.backgroundColor = ColorPreset.TagPillHover; });
-            btn.RegisterCallback<MouseLeaveEvent>(_ =>
-            {
-                btn.style.backgroundColor = ColorPreset.TagPillBackground;
-            });
+            btn.RegisterCallback<MouseLeaveEvent>(_ => { btn.style.backgroundColor = ColorPreset.TagPillBackground; });
 
             return btn;
         }

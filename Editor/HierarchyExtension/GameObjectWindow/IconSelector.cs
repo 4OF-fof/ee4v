@@ -21,7 +21,7 @@ namespace _4OF.ee4v.HierarchyExtension.GameObjectWindow {
             if (gameObjectList != null)
                 foreach (var tex in from go in gameObjectList
                          where go != null
-                         select go.GetComponents<UnityEngine.Component>()
+                         select go.GetComponents<Component>()
                          into comps
                          from comp in comps
                          where comp != null && comp.GetType().Name != "ObjectStyleComponent" &&

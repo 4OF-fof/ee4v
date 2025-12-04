@@ -32,7 +32,8 @@ namespace _4OF.ee4v.Core.Manager {
                     }
                 }
                 catch (Exception e) {
-                    Debug.LogError(I18N.Get("Debug.Core.EditorServiceManager.InitializeFailedFmt", type.Name, e.Message));
+                    Debug.LogError(
+                        I18N.Get("Debug.Core.EditorServiceManager.InitializeFailedFmt", type.Name, e.Message));
                 }
             }
         }
@@ -43,7 +44,8 @@ namespace _4OF.ee4v.Core.Manager {
                     service.Dispose();
                 }
                 catch (Exception e) {
-                    Debug.LogError(I18N.Get("Debug.Core.EditorServiceManager.DisposeFailedFmt", service.Name ?? service.GetType().Name, e.Message));
+                    Debug.LogError(I18N.Get("Debug.Core.EditorServiceManager.DisposeFailedFmt",
+                        service.Name ?? service.GetType().Name, e.Message));
                 }
 
             Services.Clear();

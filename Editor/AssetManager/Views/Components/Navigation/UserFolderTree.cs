@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using _4OF.ee4v.AssetManager.Core;
-using _4OF.ee4v.AssetManager.Services;
 using _4OF.ee4v.Core.i18n;
 using _4OF.ee4v.Core.UI;
 using _4OF.ee4v.Core.Utility;
@@ -18,9 +17,9 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
         private readonly Dictionary<Ulid, VisualElement> _folderItemMap = new();
         private readonly Dictionary<Ulid, VisualElement> _folderRowMap = new();
         private readonly Label _headerLabel;
-        private readonly VisualElement _treeContainer;
 
         private readonly HashSet<Ulid> _selectedIds = new();
+        private readonly VisualElement _treeContainer;
         private readonly List<Ulid> _visualOrderList = new();
         private Ulid _lastSelectedId = Ulid.Empty;
 
@@ -45,14 +44,8 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                     unityFontStyleAndWeight = FontStyle.Bold, fontSize = 16, color = ColorPreset.InactiveItem
                 }
             };
-            plusBtn.RegisterCallback<PointerEnterEvent>(_ =>
-            {
-                plusBtn.style.color = ColorPreset.TextColor;
-            });
-            plusBtn.RegisterCallback<PointerLeaveEvent>(_ =>
-            {
-                plusBtn.style.color = ColorPreset.InactiveItem;
-            });
+            plusBtn.RegisterCallback<PointerEnterEvent>(_ => { plusBtn.style.color = ColorPreset.TextColor; });
+            plusBtn.RegisterCallback<PointerLeaveEvent>(_ => { plusBtn.style.color = ColorPreset.InactiveItem; });
             plusBtn.RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (evt.button != 0) return;
@@ -73,14 +66,14 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             this.AddManipulator(_dragManipulator);
         }
 
+        public List<Ulid> SelectedIds => _selectedIds.ToList();
+
         public event Action OnCreateFolderRequested;
         public event Action<Ulid> OnFolderSelected;
         public event Action<Ulid, string, VisualElement, Vector2> OnContextMenuRequested;
 
         public event Action<Ulid, Ulid> OnFolderMoved;
         public event Action<Ulid, Ulid, int> OnFolderReordered;
-
-        public List<Ulid> SelectedIds => _selectedIds.ToList();
 
         public void SetFolders(List<BaseFolder> folders) {
             _treeContainer.Clear();
@@ -99,7 +92,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             if (folderId == Ulid.Empty) return;
 
             if (!_folderRowMap.ContainsKey(folderId)) return;
-            
+
             _selectedIds.Add(folderId);
             _lastSelectedId = folderId;
             RefreshSelectionVisuals();
@@ -124,7 +117,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
         }
 
         private void RefreshSelectionVisuals() {
-            foreach (var (id, row) in _folderRowMap) {
+            foreach (var (id, row) in _folderRowMap)
                 if (_selectedIds.Contains(id)) {
                     row.AddToClassList("selected");
                     row.style.backgroundColor = ColorPreset.SelectedBackGround;
@@ -137,7 +130,6 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                     foreach (var label in row.Children().OfType<Label>())
                         label.style.color = new StyleColor(StyleKeyword.Null);
                 }
-            }
         }
 
         private void CreateFolderTreeItem(BaseFolder folder, VisualElement parentContainer, int depth) {
@@ -193,16 +185,15 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
             {
                 switch (evt.button) {
                     case 0:
-                        if (evt.shiftKey && _lastSelectedId != Ulid.Empty && _visualOrderList.Contains(_lastSelectedId)) {
+                        if (evt.shiftKey && _lastSelectedId != Ulid.Empty &&
+                            _visualOrderList.Contains(_lastSelectedId)) {
                             var startIdx = _visualOrderList.IndexOf(_lastSelectedId);
                             var endIdx = _visualOrderList.IndexOf(folder.ID);
                             if (startIdx != -1 && endIdx != -1) {
                                 var min = Mathf.Min(startIdx, endIdx);
                                 var max = Mathf.Max(startIdx, endIdx);
                                 _selectedIds.Clear();
-                                for (var i = min; i <= max; i++) {
-                                    _selectedIds.Add(_visualOrderList[i]);
-                                }
+                                for (var i = min; i <= max; i++) _selectedIds.Add(_visualOrderList[i]);
                             }
                         }
                         else if (evt.ctrlKey || evt.commandKey) {
@@ -213,16 +204,16 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                             _selectedIds.Clear();
                             _selectedIds.Add(folder.ID);
                         }
-                        
+
                         _lastSelectedId = folder.ID;
                         SetHeaderSelected(false);
                         RefreshSelectionVisuals();
-                        
+
                         if (_selectedIds.Count == 1 && _selectedIds.Contains(folder.ID)) {
                             OnFolderSelected?.Invoke(folder.ID);
                             _dragManipulator.StartDrag(folder.ID, itemRow);
                         }
-                        
+
                         evt.StopPropagation();
                         break;
                     case 1:
@@ -232,7 +223,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.Navigation {
                             _lastSelectedId = folder.ID;
                             RefreshSelectionVisuals();
                         }
-                        
+
                         var worldPos = itemRow.LocalToWorld(evt.localPosition);
                         OnContextMenuRequested?.Invoke(folder.ID, folder.Name, itemRow, worldPos);
                         evt.StopPropagation();

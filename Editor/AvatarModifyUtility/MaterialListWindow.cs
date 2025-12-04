@@ -218,7 +218,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                 style = {
                     flexDirection = FlexDirection.Row,
                     alignItems = Align.Center,
-                    paddingLeft = 6, paddingRight = 6, paddingTop = 6, paddingBottom = 6,
+                    paddingLeft = 6, paddingRight = 6, paddingTop = 6, paddingBottom = 6
                 }
             };
 

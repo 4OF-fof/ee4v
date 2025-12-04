@@ -13,8 +13,8 @@ namespace _4OF.ee4v.AssetManager.Views.Components {
         private readonly Label _backLabel;
         private readonly ScrollView _breadcrumbContainer;
         private readonly Label _forwardLabel;
-        private readonly Label _sortLabel;
         private readonly ToolbarSearchField _searchField;
+        private readonly Label _sortLabel;
 
         public AssetToolbar(int initialItemsPerRow) {
             style.alignItems = Align.Center;

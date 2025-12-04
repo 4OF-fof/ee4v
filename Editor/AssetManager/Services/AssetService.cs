@@ -337,10 +337,12 @@ namespace _4OF.ee4v.AssetManager.Services {
                             if (File.Exists(destMeta))
                                 try {
                                     File.Copy(destMeta, storedMeta, true);
-                                    Debug.Log(I18N.Get("Debug.AssetManager.Import.BackedUpMetaFmt", Path.GetFileName(destMeta)));
+                                    Debug.Log(I18N.Get("Debug.AssetManager.Import.BackedUpMetaFmt",
+                                        Path.GetFileName(destMeta)));
                                 }
                                 catch (Exception e) {
-                                    Debug.LogWarning(I18N.Get("Debug.AssetManager.Import.FailedToBackupMetaFmt", destMeta, e.Message));
+                                    Debug.LogWarning(I18N.Get("Debug.AssetManager.Import.FailedToBackupMetaFmt",
+                                        destMeta, e.Message));
                                 }
 
                         onComplete?.Invoke();
@@ -475,7 +477,8 @@ namespace _4OF.ee4v.AssetManager.Services {
                             File.Copy(storedMetaPath, destMetaPath, true);
                         }
                         catch (Exception e) {
-                            Debug.LogWarning(I18N.Get("Debug.AssetManager.Import.FailedToCopyMetaFmt", storedMetaPath, destMetaPath, e.Message));
+                            Debug.LogWarning(I18N.Get("Debug.AssetManager.Import.FailedToCopyMetaFmt", storedMetaPath,
+                                destMetaPath, e.Message));
                         }
                     else
                         delayedMetaBackups.Add((destMetaPath, storedMetaPath));
@@ -545,7 +548,8 @@ namespace _4OF.ee4v.AssetManager.Services {
             }
 
             _repository.SaveAsset(asset);
-            Debug.Log(I18N.Get("Debug.AssetManager.Service.UpdatedAssetGuidsFmt", asset.Name, asset.UnityData.AssetGuidList.Count));
+            Debug.Log(I18N.Get("Debug.AssetManager.Service.UpdatedAssetGuidsFmt", asset.Name,
+                asset.UnityData.AssetGuidList.Count));
         }
 
         private static List<string> ExtractGuidsFromPackage(string packagePath) {
@@ -576,7 +580,8 @@ namespace _4OF.ee4v.AssetManager.Services {
                 }
             }
             catch (Exception e) {
-                Debug.LogWarning(I18N.Get("Debug.AssetManager.Service.FailedToExtractGuidsFmt", packagePath, e.Message));
+                Debug.LogWarning(I18N.Get("Debug.AssetManager.Service.FailedToExtractGuidsFmt", packagePath,
+                    e.Message));
             }
 
             return guids;

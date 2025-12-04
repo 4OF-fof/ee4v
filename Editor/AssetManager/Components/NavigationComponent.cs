@@ -57,7 +57,8 @@ namespace _4OF.ee4v.AssetManager.Components {
                 var menu = new GenericDropdownMenu();
 
                 if (selectedIds.Count > 1) {
-                    menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.DeleteFoldersPluralFmt", selectedIds.Count), false,
+                    menu.AddItem(I18N.Get("UI.AssetManager.ContextMenu.DeleteFoldersPluralFmt", selectedIds.Count),
+                        false,
                         () =>
                         {
                             foreach (var sid in selectedIds) _presenter.OnFolderDeleted(sid);

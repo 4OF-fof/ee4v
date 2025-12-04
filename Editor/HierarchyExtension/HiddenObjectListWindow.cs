@@ -94,12 +94,14 @@ namespace _4OF.ee4v.HierarchyExtension {
                     borderBottomLeftRadius = 10
                 }
             };
-            
-            restoreSelectedButton.RegisterCallback<MouseEnterEvent>(_ => {
+
+            restoreSelectedButton.RegisterCallback<MouseEnterEvent>(_ =>
+            {
                 restoreSelectedButton.style.backgroundColor = ColorPreset.SuccessHover;
             });
 
-            restoreSelectedButton.RegisterCallback<MouseLeaveEvent>(_ => {
+            restoreSelectedButton.RegisterCallback<MouseLeaveEvent>(_ =>
+            {
                 restoreSelectedButton.style.backgroundColor = ColorPreset.Success;
             });
             buttonRow.Add(restoreSelectedButton);

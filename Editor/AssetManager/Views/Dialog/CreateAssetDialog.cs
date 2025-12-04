@@ -334,10 +334,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
 
             var label = new Label(tag) { style = { marginRight = 4 } };
 
-            pill.RegisterCallback<MouseEnterEvent>(_ =>
-            {
-                pill.style.backgroundColor = ColorPreset.TagPillHover;
-            });
+            pill.RegisterCallback<MouseEnterEvent>(_ => { pill.style.backgroundColor = ColorPreset.TagPillHover; });
             pill.RegisterCallback<MouseLeaveEvent>(_ =>
             {
                 pill.style.backgroundColor = ColorPreset.TagPillBackground;

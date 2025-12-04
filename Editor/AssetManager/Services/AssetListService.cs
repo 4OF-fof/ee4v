@@ -114,12 +114,14 @@ namespace _4OF.ee4v.AssetManager.Services {
                             CurrentMode = NavigationMode.BoothItems;
                             _contextName = I18N.Get("UI.AssetManager.Navigation.BoothItemsContext");
                         }
+
                         break;
                     case BackupFolder:
                         if (CurrentMode != NavigationMode.Folders) {
                             CurrentMode = NavigationMode.Backups;
                             _contextName = I18N.Get("UI.AssetManager.Navigation.BackupsContext");
                         }
+
                         break;
                     default:
                         CurrentMode = NavigationMode.Folders;
