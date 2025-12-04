@@ -21,28 +21,69 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
 
             if (gameObject.IsCustomStyleItem()) return;
 
-            var (style, isSelf) = GetEffectiveStyle(gameObject);
-            if (style == null) return;
+            GetEffectiveStyle(gameObject, out var color, out var icon, out var isSelf);
+
+            if (color == Color.clear && !isSelf) return;
 
             if (isSelf) {
-                SceneHierarchyWindowWrap.LastInteractedWindow?.SetItemIcon(instanceID, style.icon as Texture2D);
-                DrawBackGround(gameObject, fullRect, style.color, style.icon);
+                var textureToSet = icon != null ? icon : GetDefaultIcon(gameObject);
+                SceneHierarchyWindowWrap.LastInteractedWindow?.SetItemIcon(instanceID, textureToSet as Texture2D);
             }
-            else {
-                DrawBackGround(gameObject, fullRect, style.color);
+
+            DrawBackGround(gameObject, fullRect, color, icon);
+        }
+
+        private static void GetEffectiveStyle(GameObject obj, out Color color, out Texture icon, out bool isSelf) {
+            color = Color.clear;
+            icon = null;
+            isSelf = false;
+
+            var foundColor = false;
+            var foundIcon = false;
+
+            var selfComponent = obj.GetComponent<ObjectStyleComponent>();
+            if (selfComponent != null) {
+                isSelf = true;
+                if (selfComponent.color != Color.clear) {
+                    color = selfComponent.color;
+                    foundColor = true;
+                }
+
+                if (selfComponent.icon != null) {
+                    icon = selfComponent.icon;
+                    foundIcon = true;
+                }
+            }
+
+            if (foundColor && foundIcon) return;
+            var current = obj.transform.parent;
+
+            while (current != null) {
+                if (foundColor && foundIcon) break;
+
+                var comp = current.GetComponent<ObjectStyleComponent>();
+                if (comp != null) {
+                    if (!foundColor && comp.color != Color.clear) {
+                        color = comp.color;
+                        foundColor = true;
+                    }
+
+                    if (!foundIcon && comp.icon != null) {
+                        icon = comp.icon;
+                        foundIcon = true;
+                    }
+                }
+
+                current = current.parent;
             }
         }
 
-        private static (ObjectStyleComponent, bool) GetEffectiveStyle(GameObject obj) {
-            var current = obj.transform;
-            while (current != null) {
-                var style = current.GetComponent<ObjectStyleComponent>();
-                if (style != null && (style.color != Color.clear || style.icon != null))
-                    return (style, current.gameObject == obj);
-                current = current.parent;
-            }
+        private static Texture GetDefaultIcon(GameObject obj) {
+            if (PrefabUtility.GetPrefabAssetType(obj) != PrefabAssetType.NotAPrefab &&
+                !PrefabUtility.IsAnyPrefabInstanceRoot(obj))
+                return EditorGUIUtility.IconContent("GameObject Icon").image;
 
-            return (null, false);
+            return EditorGUIUtility.ObjectContent(obj, typeof(GameObject)).image;
         }
 
         private static void DrawBackGround(Object obj, Rect selectionRect, Color color, Texture icon = null) {
@@ -61,15 +102,8 @@ namespace _4OF.ee4v.HierarchyExtension.Components {
             var prevColor = GUI.color;
             GUI.color = obj is GameObject { activeInHierarchy: false } ? ColorPreset.InActiveItem : Color.white;
             if (obj != null) {
-                if (icon == null) {
-                    if (PrefabUtility.GetPrefabAssetType(obj) != PrefabAssetType.NotAPrefab &&
-                        !PrefabUtility.IsAnyPrefabInstanceRoot(obj as GameObject))
-                        icon = EditorGUIUtility.IconContent("GameObject Icon").image;
-                    else
-                        icon = EditorGUIUtility.ObjectContent(obj, typeof(GameObject)).image;
-                }
-
-                if (icon != null) GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit, true);
+                if (icon == null) icon = GetDefaultIcon(obj as GameObject);
+                GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit, true);
             }
 
             var displayName = obj != null ? obj.name : string.Empty;

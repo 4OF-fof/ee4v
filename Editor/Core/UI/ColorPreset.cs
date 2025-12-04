@@ -14,7 +14,7 @@ namespace _4OF.ee4v.Core.UI {
         public static Color WindowHeader = FromHex(EditorGUIUtility.isProSkin ? "#282828" : "#a5a5a5");
         public static Color WindowBorder = FromHex(EditorGUIUtility.isProSkin ? "#191919" : "#8a8a8a");
         public static Color TextColor = FromHex(EditorGUIUtility.isProSkin ? "#cccccc" : "#000000");
-        public static Color PrefabRootText = Color.cyan;
+        public static Color PrefabRootText = FromHex("7dacf1");
         public static Color InActiveItem = FromHex("#7f7f7f", EditorGUIUtility.isProSkin ? 1f : 0.3f);
 
         public static StyleColor SDefaultBackground = new(DefaultBackground);
@@ -35,8 +35,7 @@ namespace _4OF.ee4v.Core.UI {
         public static StyleColor SDropArea = new(FromHex("#334c7f", 0.3f));
         public static StyleColor SCloseIcon = new(FromHex("#e53333", 0.8f));
         
-        
-        
+        // TODO
         public static Color WarningButton = FromHex(EditorGUIUtility.isProSkin ? "#b71c1c" : "#ff5252");
         public static Color WarningText = FromHex(EditorGUIUtility.isProSkin ? "#ff8a80" : "#b71c1c");
         public static Color HighlightColor = FromHex("#ffea04", 0.2f);
