@@ -184,7 +184,7 @@ namespace _4OF.ee4v.AssetManager.Window {
                     marginBottom = 4,
                     paddingLeft = 10,
                     paddingRight = 10,
-                    backgroundColor = ColorPreset.SSuccess,
+                    backgroundColor = ColorPreset.Success,
                     borderTopWidth = 0,
                     borderBottomWidth = 0,
                     borderLeftWidth = 0,
@@ -199,11 +199,11 @@ namespace _4OF.ee4v.AssetManager.Window {
 
             button.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                button.style.backgroundColor = ColorPreset.SSuccessHover;
+                button.style.backgroundColor = ColorPreset.SuccessHover;
             });
             button.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                button.style.backgroundColor = ColorPreset.SSuccess;
+                button.style.backgroundColor = ColorPreset.Success;
             });
 
             return button;
@@ -229,7 +229,7 @@ namespace _4OF.ee4v.AssetManager.Window {
                     paddingRight = 10,
                     marginRight = 4,
                     marginBottom = 4,
-                    backgroundColor = ColorPreset.STagPillBackground,
+                    backgroundColor = ColorPreset.TagPillBackground,
                     borderTopWidth = 0,
                     borderBottomWidth = 0,
                     borderLeftWidth = 0,
@@ -240,11 +240,11 @@ namespace _4OF.ee4v.AssetManager.Window {
 
             button.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                button.style.backgroundColor = ColorPreset.STagPillHover;
+                button.style.backgroundColor = ColorPreset.TagPillHover;
             });
             button.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                button.style.backgroundColor = ColorPreset.STagPillBackground;
+                button.style.backgroundColor = ColorPreset.TagPillBackground;
             });
 
             return button;

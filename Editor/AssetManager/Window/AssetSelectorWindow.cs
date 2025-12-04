@@ -167,7 +167,7 @@ namespace _4OF.ee4v.AssetManager.Window {
                     paddingLeft = 8,
                     paddingRight = 8,
                     marginBottom = 2,
-                    backgroundColor = ColorPreset.SDefaultBackground,
+                    backgroundColor = ColorPreset.DefaultBackground,
                     borderTopLeftRadius = 4,
                     borderTopRightRadius = 4,
                     borderBottomLeftRadius = 4,
@@ -185,11 +185,11 @@ namespace _4OF.ee4v.AssetManager.Window {
 
             button.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                button.style.backgroundColor = ColorPreset.SMouseOverBackground;
+                button.style.backgroundColor = ColorPreset.MouseOverBackground;
             });
             button.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                button.style.backgroundColor = ColorPreset.SDefaultBackground;
+                button.style.backgroundColor = ColorPreset.DefaultBackground;
             });
 
             var nameLabel = new Label(asset.Name) {

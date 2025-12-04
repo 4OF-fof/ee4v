@@ -23,7 +23,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
             var addButton = new Button(() => OnAddRequested?.Invoke()) {
                 text = I18N.Get("UI.AssetManager.AssetInfo.AddDependency"),
                 style = {
-                    backgroundColor = ColorPreset.STagPillBackground,
+                    backgroundColor = ColorPreset.TagPillBackground,
                     borderTopLeftRadius = 10, borderTopRightRadius = 10, borderBottomLeftRadius = 10,
                     borderBottomRightRadius = 10,
                     paddingLeft = 10, paddingRight = 10, paddingTop = 4, paddingBottom = 4, height = 24,
@@ -34,11 +34,11 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
 
             addButton.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                addButton.style.backgroundColor = ColorPreset.STagPillHover;
+                addButton.style.backgroundColor = ColorPreset.TagPillHover;
             });
             addButton.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                addButton.style.backgroundColor = ColorPreset.STagPillBackground;
+                addButton.style.backgroundColor = ColorPreset.TagPillBackground;
             });
 
             Add(addButton);
@@ -62,7 +62,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
         private VisualElement CreatePill(DependencyDisplayData dep) {
             var pill = new VisualElement {
                 style = {
-                    flexDirection = FlexDirection.Row, backgroundColor = ColorPreset.SDropArea,
+                    flexDirection = FlexDirection.Row, backgroundColor = ColorPreset.DropArea,
                     borderTopLeftRadius = 10, borderTopRightRadius = 10, borderBottomLeftRadius = 10,
                     borderBottomRightRadius = 10,
                     paddingLeft = 8, paddingRight = 4, paddingTop = 2, paddingBottom = 2,
@@ -80,9 +80,9 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
 
             pill.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                pill.style.backgroundColor = ColorPreset.SMouseOverBackground;
+                pill.style.backgroundColor = ColorPreset.MouseOverBackground;
             });
-            pill.RegisterCallback<MouseLeaveEvent>(_ => { pill.style.backgroundColor = ColorPreset.SDropArea; });
+            pill.RegisterCallback<MouseLeaveEvent>(_ => { pill.style.backgroundColor = ColorPreset.DropArea; });
 
             pill.Add(new Label(dep.Name) {
                 style = {
@@ -103,7 +103,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.AssetInfo {
             removeBtn.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
             removeBtn.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                removeBtn.style.backgroundColor = ColorPreset.SCloseIcon;
+                removeBtn.style.backgroundColor = ColorPreset.CloseIcon;
                 removeBtn.style.color = ColorPreset.TextColor;
             });
             removeBtn.RegisterCallback<MouseLeaveEvent>(_ =>

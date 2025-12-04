@@ -17,11 +17,6 @@ namespace _4OF.ee4v.Core.UI {
         public static Color PrefabRootText = FromHex("7dacf1");
         public static Color InActiveItem = FromHex("#7f7f7f", EditorGUIUtility.isProSkin ? 1f : 0.3f);
 
-        public static StyleColor SDefaultBackground = new(DefaultBackground);
-        public static StyleColor SMouseOverBackground = new(MouseOverBackground);
-        public static StyleColor SWindowBorder = new(WindowBorder);
-        public static StyleColor STextColor = new(TextColor);
-
         // Custom Colors
         public static Color IconBorder = Color.black;
         public static Color DepthLine = FromHex(EditorGUIUtility.isProSkin ? "#686868" : "#8e8e8e");
@@ -29,17 +24,15 @@ namespace _4OF.ee4v.Core.UI {
         public static Color NonFavorite = Color.gray;
         public static Color ItemSelectedBorder = FromHex("#3f7fff");
         public static Color ItemSelectedBackGround = FromHex("#3f7fff", 0.3f);
+        public static Color TagPillBackground = FromHex(EditorGUIUtility.isProSkin ? "#4d4d4d" : "#cccccc");
+        public static Color TagPillHover = FromHex(EditorGUIUtility.isProSkin ? "#666666" : "#bfbfbf");
+        public static Color DropArea = FromHex("#334c7f", 0.3f);
+        public static Color CloseIcon = FromHex("#e53333", 0.8f);
         public static Color Warning = FromHex(EditorGUIUtility.isProSkin ? "#b71c1c" : "#ff5252");
         public static Color Success = FromHex("#2e7d32");
-        
-        public static StyleColor STagPillBackground = new(FromHex(EditorGUIUtility.isProSkin ? "#4d4d4d" : "#cccccc"));
-        public static StyleColor STagPillHover = new(FromHex(EditorGUIUtility.isProSkin ? "#666666" : "#bfbfbf"));
-        public static StyleColor SDropArea = new(FromHex("#334c7f", 0.3f));
-        public static StyleColor SCloseIcon = new(FromHex("#e53333", 0.8f));
-        public static StyleColor SSuccess = new(Success);
-        public static StyleColor SSuccessHover = new(FromHex("#388e3c"));
-        public static StyleColor SPrimary = new(FromHex("#f57c00"));
-        public static StyleColor SPrimaryHover = new(FromHex("#ff9800"));
+        public static Color SuccessHover = FromHex("#388e3c");
+        public static Color Primary = FromHex("#f57c00");
+        public static Color PrimaryHover = FromHex("#ff9800");
         
         // TODO: refactor
         public static Color HighlightColor = FromHex("#ffea04", 0.2f);

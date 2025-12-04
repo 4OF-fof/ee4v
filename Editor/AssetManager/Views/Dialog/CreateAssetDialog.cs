@@ -183,7 +183,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
             }) {
                 text = I18N.Get("UI.AssetManager.AssetInfo.AddTag"),
                 style = {
-                    backgroundColor = ColorPreset.STagPillBackground,
+                    backgroundColor = ColorPreset.TagPillBackground,
                     borderTopLeftRadius = 10,
                     borderTopRightRadius = 10,
                     borderBottomLeftRadius = 10,
@@ -203,11 +203,11 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
             };
             addTagButton.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                addTagButton.style.backgroundColor = ColorPreset.STagPillHover;
+                addTagButton.style.backgroundColor = ColorPreset.TagPillHover;
             });
             addTagButton.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                addTagButton.style.backgroundColor = ColorPreset.STagPillBackground;
+                addTagButton.style.backgroundColor = ColorPreset.TagPillBackground;
             });
             content.Add(addTagButton);
 
@@ -317,7 +317,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
             var pill = new VisualElement {
                 style = {
                     flexDirection = FlexDirection.Row,
-                    backgroundColor = ColorPreset.SDefaultBackground,
+                    backgroundColor = ColorPreset.DefaultBackground,
                     borderTopLeftRadius = 10,
                     borderTopRightRadius = 10,
                     borderBottomLeftRadius = 10,
@@ -336,11 +336,11 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
 
             pill.RegisterCallback<MouseEnterEvent>(_ =>
             {
-                pill.style.backgroundColor = ColorPreset.STagPillHover;
+                pill.style.backgroundColor = ColorPreset.TagPillHover;
             });
             pill.RegisterCallback<MouseLeaveEvent>(_ =>
             {
-                pill.style.backgroundColor = ColorPreset.STagPillBackground;
+                pill.style.backgroundColor = ColorPreset.TagPillBackground;
             });
 
             var removeBtn = new Button(() => onRemove?.Invoke()) {

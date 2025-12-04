@@ -16,11 +16,11 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Tab {
             style.height = Length.Percent(95);
             style.marginTop = 1;
             style.paddingLeft = 4;
-            style.backgroundColor = ColorPreset.SDefaultBackground;
+            style.backgroundColor = ColorPreset.DefaultBackground;
             style.borderRightWidth = 1;
             style.borderTopRightRadius = 4;
             style.borderTopLeftRadius = 4;
-            style.borderRightColor = ColorPreset.SWindowBorder;
+            style.borderRightColor = ColorPreset.WindowBorder;
             RegisterCallback<MouseEnterEvent>(OnMouseEnter);
             RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
         }
@@ -38,11 +38,11 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Tab {
             var state = GetState();
             style.backgroundColor = state == State.Selected
                 ? ColorPreset.TabSelectedBackground
-                : ColorPreset.SDefaultBackground;
+                : ColorPreset.DefaultBackground;
         }
 
         protected virtual void OnMouseEnter(MouseEnterEvent evt) {
-            if (GetState() != State.Selected) style.backgroundColor = ColorPreset.SMouseOverBackground;
+            if (GetState() != State.Selected) style.backgroundColor = ColorPreset.MouseOverBackground;
         }
 
         protected virtual void OnMouseLeave(MouseLeaveEvent evt) {

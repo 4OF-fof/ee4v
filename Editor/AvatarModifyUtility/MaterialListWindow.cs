@@ -88,7 +88,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                 style = {
                     height = 24,
                     width = 60,
-                    backgroundColor = ColorPreset.SDefaultBackground
+                    backgroundColor = ColorPreset.DefaultBackground
                 }
             };
             toolbar.Add(refreshBtn);
@@ -280,7 +280,7 @@ namespace _4OF.ee4v.AvatarModifyUtility {
                 style = {
                     height = 24,
                     paddingLeft = 6, paddingRight = 6,
-                    backgroundColor = ColorPreset.SDefaultBackground
+                    backgroundColor = ColorPreset.DefaultBackground
                 }
             };
 

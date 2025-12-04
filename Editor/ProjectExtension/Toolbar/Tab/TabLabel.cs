@@ -11,7 +11,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Tab {
             style.backgroundColor = new StyleColor(StyleKeyword.None);
             style.borderTopWidth = 0;
             style.borderBottomWidth = 0;
-            style.color = ColorPreset.STextColor;
+            style.color = ColorPreset.TextColor;
             style.unityBackgroundImageTintColor = new StyleColor(Color.clear);
             style.borderRightWidth = 4;
             style.borderLeftWidth = 4;

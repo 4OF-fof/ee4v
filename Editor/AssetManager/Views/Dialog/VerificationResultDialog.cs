@@ -92,7 +92,7 @@ namespace _4OF.ee4v.AssetManager.Views.Dialog {
 
             var applyBtn = new Button(() => Apply(content)) {
                 text = I18N.Get("UI.AssetManager.Dialog.Verification.Apply"),
-                style = { width = 100, backgroundColor = ColorPreset.SSuccess, color = ColorPreset.TextColor }
+                style = { width = 100, backgroundColor = ColorPreset.Success, color = ColorPreset.TextColor }
             };
             buttonRow.Add(applyBtn);
 

@@ -148,7 +148,7 @@ namespace _4OF.ee4v.AvatarModifyUtility.Variant {
                 style = {
                     width = 80,
                     height = 26,
-                    backgroundColor = ColorPreset.SSuccess,
+                    backgroundColor = ColorPreset.Success,
                     color = ColorPreset.TextColor
                 }
             };

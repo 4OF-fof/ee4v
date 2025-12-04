@@ -19,7 +19,7 @@ namespace _4OF.ee4v.AssetManager.Views.Components.TagListView {
             style.paddingRight = 10;
             style.marginRight = 4;
             style.marginBottom = 4;
-            style.backgroundColor = ColorPreset.STagPillBackground;
+            style.backgroundColor = ColorPreset.TagPillBackground;
             style.borderTopWidth = 0;
             style.borderBottomWidth = 0;
             style.borderLeftWidth = 0;
@@ -30,9 +30,9 @@ namespace _4OF.ee4v.AssetManager.Views.Components.TagListView {
             clicked += () => onSelect?.Invoke(fullPath);
 
             RegisterCallback<MouseEnterEvent>(_ =>
-                style.backgroundColor = ColorPreset.STagPillHover);
+                style.backgroundColor = ColorPreset.TagPillHover);
             RegisterCallback<MouseLeaveEvent>(_ =>
-                style.backgroundColor = ColorPreset.STagPillBackground);
+                style.backgroundColor = ColorPreset.TagPillBackground);
 
             RegisterCallback<MouseDownEvent>(evt =>
             {

@@ -35,7 +35,7 @@ namespace _4OF.ee4v.ProjectExtension.Toolbar.Tab {
             Add(icon);
 
             RegisterCallback<MouseEnterEvent>(_ =>
-                style.backgroundColor = ColorPreset.SMouseOverBackground);
+                style.backgroundColor = ColorPreset.MouseOverBackground);
             RegisterCallback<MouseLeaveEvent>(_ =>
                 style.backgroundColor = new StyleColor(StyleKeyword.None));
 

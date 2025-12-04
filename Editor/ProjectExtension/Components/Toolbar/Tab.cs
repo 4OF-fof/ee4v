@@ -117,7 +117,7 @@ namespace _4OF.ee4v.ProjectExtension.Components.Toolbar {
                     };
                     if (dragging != null) {
                         placeholder.style.marginTop = dragging.style.marginTop;
-                        placeholder.style.backgroundColor = ColorPreset.SMouseOverBackground;
+                        placeholder.style.backgroundColor = ColorPreset.MouseOverBackground;
 
                         placeholderInserted = false;
 
@@ -230,7 +230,7 @@ namespace _4OF.ee4v.ProjectExtension.Components.Toolbar {
             {
                 if (evt.currentTarget != tabContainer) return;
                 if (DragAndDrop.paths.Any(AssetDatabase.IsValidFolder))
-                    tabContainer.style.backgroundColor = ColorPreset.SDropArea;
+                    tabContainer.style.backgroundColor = ColorPreset.DropArea;
             }, TrickleDown.TrickleDown);
             tabContainer.RegisterCallback<DragLeaveEvent>(evt =>
             {
