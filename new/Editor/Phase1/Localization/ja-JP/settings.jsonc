@@ -1,0 +1,51 @@
+{
+  "settings": {
+    "section": {
+      "injectorUser": "stubトグル (User)",
+      "injectorProject": "stub表示設定 (Project)"
+    },
+    "hierarchyItemStub": {
+      "label": "Hierarchy Item stub を有効化",
+      "tooltip": "Hierarchy 行の右側に最小のバッジを描画します。"
+    },
+    "hierarchyHeaderStub": {
+      "label": "Hierarchy Header stub を有効化",
+      "tooltip": "Hierarchy ウィンドウ上部に簡易ヘッダーを挿入します。"
+    },
+    "projectItemStub": {
+      "label": "Project Item stub を有効化",
+      "tooltip": "Project 行にアクセントバーを描画します。"
+    },
+    "projectToolbarStub": {
+      "label": "Project Toolbar stub を有効化",
+      "tooltip": "Project ウィンドウに軽量ツールバーを挿入します。"
+    },
+    "hierarchyBadgeText": {
+      "label": "Hierarchy バッジ文字列",
+      "tooltip": "Hierarchy Item stub が描画する文字列です。"
+    },
+    "hierarchyHeaderText": {
+      "label": "Hierarchy ヘッダー文字列",
+      "tooltip": "Hierarchy Header stub に表示する文字列です。"
+    },
+    "projectToolbarText": {
+      "label": "Project ツールバー文字列",
+      "tooltip": "挿入した Project Toolbar に表示する文字列です。"
+    },
+    "toolbarButtonWidth": {
+      "label": "ツールバーボタン幅",
+      "tooltip": "Project Toolbar stub のボタン共通幅です。"
+    },
+    "hierarchyAccentColor": {
+      "label": "Hierarchy アクセント色",
+      "tooltip": "Hierarchy Header / Item stub で使う色です。"
+    },
+    "projectAccentColor": {
+      "label": "Project アクセント色",
+      "tooltip": "Project Item stub で使う色です。"
+    },
+    "validation": {
+      "toolbarButtonWidth": "ツールバーボタン幅は 60 以上にしてください。"
+    }
+  }
+}

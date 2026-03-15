@@ -1,0 +1,19 @@
+{
+  "settings": {
+    "section": {
+      "localization": "ローカライズ"
+    },
+    "language": {
+      "label": "言語",
+      "tooltip": "優先して使うUI言語です。"
+    },
+    "fallbackLanguage": {
+      "label": "フォールバック言語",
+      "tooltip": "en-US に落ちる前に参照する第2言語です。"
+    },
+    "validation": {
+      "locale": "言語コードは必須です。",
+      "required": "この項目は必須です。"
+    }
+  }
+}

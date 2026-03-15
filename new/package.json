@@ -1,0 +1,10 @@
+{
+  "name": "dev.4of.ee4v",
+  "displayName": "ee4v",
+  "version": "0.1.0",
+  "unity": "2022.3",
+  "description": "Phase 1 foundation APIs for ee4v editor extensions.",
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
+  }
+}
