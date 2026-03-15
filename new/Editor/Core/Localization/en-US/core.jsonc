@@ -12,8 +12,7 @@
       "tooltip": "Secondary language used before falling back to en-US."
     },
     "validation": {
-      "locale": "Locale is required.",
-      "required": "This field is required."
+      "locale": "Locale is required."
     }
   }
 }

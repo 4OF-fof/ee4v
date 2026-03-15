@@ -1,41 +1,47 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Diagnostics;
 using System.Linq;
-using Ee4v.Injector;
-using Ee4v.Internal;
-using Ee4v.Phase1;
-using Ee4v.Settings;
-using Newtonsoft.Json.Linq;
+using Ee4v.Core.Injector;
+using Ee4v.Core.Internal;
+using Ee4v.Core.Settings;
 using UnityEditor;
 using UnityEditorInternal;
 
-namespace Ee4v.I18n
+namespace Ee4v.Core.I18n
 {
     public static class I18N
     {
         private const string EnglishLocale = "en-US";
-        private static readonly Dictionary<string, Dictionary<string, string>> CatalogCache = new Dictionary<string, Dictionary<string, string>>();
-
-        static I18N()
-        {
-            Phase1Bootstrap.EnsureInitialized();
-        }
+        private static readonly Dictionary<string, string> CallerNamespaceScopeCache = new Dictionary<string, string>(StringComparer.Ordinal);
+        private static readonly HashSet<string> WarnedCallerSites = new HashSet<string>(StringComparer.Ordinal);
+        private static readonly HashSet<string> WarnedDuplicateKeys = new HashSet<string>(StringComparer.Ordinal);
+        private static LocalizationCatalogSnapshot _catalogSnapshot;
 
         public static string CurrentLanguage
         {
-            get { return SettingApi.Get(Phase1Definitions.Language); }
+            get { return SettingApi.Get(CoreLocalizationDefinitions.Language); }
         }
 
         public static string FallbackLanguage
         {
-            get { return SettingApi.Get(Phase1Definitions.FallbackLanguage); }
+            get { return SettingApi.Get(CoreLocalizationDefinitions.FallbackLanguage); }
         }
 
         public static string Get(string key, params object[] args)
         {
+            return GetForScope(ResolveCallerScope(), key, args);
+        }
+
+        public static bool TryGet(string key, out string value)
+        {
+            return TryGetForScope(ResolveCallerScope(), key, out value);
+        }
+
+        internal static string GetForScope(string scope, string key, params object[] args)
+        {
             string resolved;
-            if (!TryGet(key, out resolved))
+            if (!TryGetForScope(scope, key, out resolved))
             {
                 resolved = key;
             }
@@ -55,13 +61,20 @@ namespace Ee4v.I18n
             }
         }
 
-        public static bool TryGet(string key, out string value)
+        internal static bool TryGetForScope(string scope, string key, out string value)
         {
+            if (string.IsNullOrWhiteSpace(scope))
+            {
+                value = null;
+                return false;
+            }
+
             foreach (var locale in GetFallbackSequence())
             {
-                var catalog = GetOrLoadCatalog(locale);
-                if (catalog.TryGetValue(key, out value))
+                var entry = GetEntry(scope, locale, key);
+                if (entry != null)
                 {
+                    value = entry.Value;
                     return true;
                 }
             }
@@ -72,19 +85,16 @@ namespace Ee4v.I18n
 
         public static IReadOnlyList<string> GetAvailableLanguages()
         {
-            return PackagePathUtility.GetLocalizationRootFullPaths()
-                .Where(Directory.Exists)
-                .SelectMany(Directory.GetDirectories)
-                .Select(Path.GetFileName)
-                .Where(name => !string.IsNullOrEmpty(name))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+            return EnsureCatalogLoaded().Locales.Keys
                 .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
         }
 
         public static void Reload()
         {
-            CatalogCache.Clear();
+            _catalogSnapshot = null;
+            CallerNamespaceScopeCache.Clear();
+            WarnedDuplicateKeys.Clear();
             InjectorApi.Repaint(InjectionChannel.HierarchyHeader);
             InjectorApi.Repaint(InjectionChannel.ProjectToolbar);
             InternalEditorUtility.RepaintAllViews();
@@ -109,77 +119,102 @@ namespace Ee4v.I18n
             }
         }
 
-        private static Dictionary<string, string> GetOrLoadCatalog(string locale)
+        internal static string ResolveScopeForNamespace(string namespaceName)
         {
-            Dictionary<string, string> catalog;
-            if (CatalogCache.TryGetValue(locale, out catalog))
+            if (string.IsNullOrWhiteSpace(namespaceName))
             {
-                return catalog;
+                return null;
             }
 
-            catalog = LoadCatalog(locale);
-            CatalogCache[locale] = catalog;
-            return catalog;
+            string scope;
+            if (CallerNamespaceScopeCache.TryGetValue(namespaceName, out scope))
+            {
+                return scope;
+            }
+
+            scope = PackagePathUtility.GetScopeNameForNamespace(namespaceName);
+            CallerNamespaceScopeCache[namespaceName] = scope;
+            return scope;
         }
 
-        private static Dictionary<string, string> LoadCatalog(string locale)
+        private static LocalizationEntry GetEntry(string scope, string locale, string key)
         {
-            var result = new Dictionary<string, string>(StringComparer.Ordinal);
-            var localeDirectories = PackagePathUtility.GetLocalizationRootFullPaths()
-                .Select(rootPath => Path.Combine(rootPath, locale))
-                .Where(Directory.Exists)
-                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-
-            for (var directoryIndex = 0; directoryIndex < localeDirectories.Length; directoryIndex++)
+            LocalizationLocaleCatalog localeCatalog;
+            if (!EnsureCatalogLoaded().Locales.TryGetValue(locale, out localeCatalog))
             {
-                var files = Directory.GetFiles(localeDirectories[directoryIndex], "*.jsonc", SearchOption.TopDirectoryOnly)
-                    .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
+                return null;
+            }
 
-                foreach (var filePath in files)
+            LocalizationScopeCatalog scopeCatalog;
+            if (!localeCatalog.Scopes.TryGetValue(scope, out scopeCatalog))
+            {
+                return null;
+            }
+
+            LocalizationEntry entry;
+            return scopeCatalog.Entries.TryGetValue(key, out entry) ? entry : null;
+        }
+
+        private static LocalizationCatalogSnapshot EnsureCatalogLoaded()
+        {
+            if (_catalogSnapshot != null)
+            {
+                return _catalogSnapshot;
+            }
+
+            _catalogSnapshot = LocalizationCatalogLoader.Load();
+            ReportDuplicateKeys(_catalogSnapshot.DuplicateKeys);
+            return _catalogSnapshot;
+        }
+
+        private static void ReportDuplicateKeys(IReadOnlyList<LocalizationDuplicateKey> duplicates)
+        {
+            for (var i = 0; i < duplicates.Count; i++)
+            {
+                var duplicate = duplicates[i];
+                var duplicateId = duplicate.Locale + "|" + duplicate.Scope + "|" + duplicate.Key + "|" + duplicate.DuplicateFilePath;
+                if (WarnedDuplicateKeys.Add(duplicateId))
                 {
-                    try
-                    {
-                        var content = File.ReadAllText(filePath);
-                        var normalized = JsoncUtility.Normalize(content);
-                        var root = JObject.Parse(normalized);
-                        Flatten(root, string.Empty, result);
-                    }
-                    catch (Exception exception)
-                    {
-                        UnityEngine.Debug.LogError("[ee4v:i18n] Failed to parse " + filePath + "\n" + exception.Message);
-                    }
+                    UnityEngine.Debug.LogError(
+                        "[ee4v:i18n] Duplicate key '" + duplicate.Key + "' in scope '" + duplicate.Scope +
+                        "', locale '" + duplicate.Locale + "'. Original: " + duplicate.OriginalFilePath +
+                        " Duplicate: " + duplicate.DuplicateFilePath);
+                }
+            }
+        }
+
+        private static string ResolveCallerScope()
+        {
+            var stackTrace = new StackTrace();
+            for (var i = 1; i < stackTrace.FrameCount; i++)
+            {
+                var frame = stackTrace.GetFrame(i);
+                if (frame == null)
+                {
+                    continue;
+                }
+
+                var method = frame.GetMethod();
+                var declaringType = method != null ? method.DeclaringType : null;
+                if (declaringType == null || declaringType == typeof(I18N))
+                {
+                    continue;
+                }
+
+                var scope = ResolveScopeForNamespace(declaringType.Namespace);
+                if (!string.IsNullOrWhiteSpace(scope))
+                {
+                    return scope;
+                }
+
+                var callerSite = declaringType.FullName ?? method.Name;
+                if (WarnedCallerSites.Add(callerSite))
+                {
+                    UnityEngine.Debug.LogWarning("[ee4v:i18n] Failed to resolve scope from namespace for caller: " + callerSite);
                 }
             }
 
-            return result;
-        }
-
-        private static void Flatten(JToken token, string prefix, IDictionary<string, string> output)
-        {
-            if (token == null)
-            {
-                return;
-            }
-
-            if (token.Type == JTokenType.Object)
-            {
-                foreach (var property in token.Children<JProperty>())
-                {
-                    var nextPrefix = string.IsNullOrEmpty(prefix) ? property.Name : prefix + "." + property.Name;
-                    Flatten(property.Value, nextPrefix, output);
-                }
-
-                return;
-            }
-
-            if (token.Type == JTokenType.Array)
-            {
-                output[prefix] = string.Join(", ", token.Values<string>().ToArray());
-                return;
-            }
-
-            output[prefix] = token.Value<string>() ?? string.Empty;
+            return null;
         }
     }
 }

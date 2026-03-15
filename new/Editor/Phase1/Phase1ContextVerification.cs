@@ -1,4 +1,4 @@
-using Ee4v.Injector;
+using Ee4v.Core.Injector;
 
 namespace Ee4v.Phase1
 {

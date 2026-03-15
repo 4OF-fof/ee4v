@@ -45,6 +45,7 @@
       "tooltip": "Accent color for project item stubs."
     },
     "validation": {
+      "required": "This field is required.",
       "toolbarButtonWidth": "Toolbar button width must be 60 or greater."
     }
   }

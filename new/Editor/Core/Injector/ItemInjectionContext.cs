@@ -2,7 +2,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Ee4v.Injector
+namespace Ee4v.Core.Injector
 {
     public enum HierarchyItemKind
     {

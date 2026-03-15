@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Ee4v.I18n
+namespace Ee4v.Core.I18n
 {
     internal static class JsoncUtility
     {

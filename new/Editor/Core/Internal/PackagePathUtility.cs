@@ -1,14 +1,21 @@
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEditor;
 
-namespace Ee4v.Internal
+namespace Ee4v.Core.Internal
 {
     internal static class PackagePathUtility
     {
+        private const string Ee4vNamespacePrefix = "Ee4v.";
+        private static readonly Regex NamespaceRegex =
+            new Regex(@"^\s*namespace\s+([A-Za-z_][A-Za-z0-9_\.]*)\s*(?:\{|;)", RegexOptions.Multiline | RegexOptions.Compiled);
+
         private static string _packageRootAssetPath;
         private static string _packageRootFullPath;
+        private static readonly Dictionary<string, string> SourceFileNamespaceCache =
+            new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
 
         public static string GetPackageRootAssetPath()
         {
@@ -68,6 +75,67 @@ namespace Ee4v.Internal
             return Directory.GetDirectories(editorRoot, "Localization", SearchOption.AllDirectories)
                 .OrderBy(path => path, System.StringComparer.OrdinalIgnoreCase)
                 .ToArray();
+        }
+
+        public static string GetEditorRootFullPath()
+        {
+            var packageRoot = GetPackageRootFullPath();
+            return string.IsNullOrEmpty(packageRoot) ? null : Path.Combine(packageRoot, "Editor");
+        }
+
+        public static string GetScopeNameForLocalizationRoot(string localizationRootPath)
+        {
+            if (string.IsNullOrWhiteSpace(localizationRootPath))
+            {
+                return null;
+            }
+
+            var parentDirectory = Path.GetDirectoryName(localizationRootPath);
+            return string.IsNullOrWhiteSpace(parentDirectory)
+                ? null
+                : Path.GetFileName(parentDirectory);
+        }
+
+        public static string GetScopeNameForSourceFile(string sourceFilePath)
+        {
+            if (string.IsNullOrWhiteSpace(sourceFilePath))
+            {
+                return null;
+            }
+
+            return GetScopeNameForNamespace(GetNamespaceForSourceFile(sourceFilePath));
+        }
+
+        public static string GetNamespaceForSourceFile(string sourceFilePath)
+        {
+            if (string.IsNullOrWhiteSpace(sourceFilePath) || !File.Exists(sourceFilePath))
+            {
+                return null;
+            }
+
+            string namespaceName;
+            if (SourceFileNamespaceCache.TryGetValue(sourceFilePath, out namespaceName))
+            {
+                return namespaceName;
+            }
+
+            var content = File.ReadAllText(sourceFilePath);
+            var match = NamespaceRegex.Match(content);
+            namespaceName = match.Success ? match.Groups[1].Value : null;
+            SourceFileNamespaceCache[sourceFilePath] = namespaceName;
+            return namespaceName;
+        }
+
+        public static string GetScopeNameForNamespace(string namespaceName)
+        {
+            if (string.IsNullOrWhiteSpace(namespaceName) ||
+                !namespaceName.StartsWith(Ee4vNamespacePrefix, System.StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            var segments = namespaceName.Split('.');
+            return segments.Length < 2 || string.IsNullOrWhiteSpace(segments[1]) ? null : segments[1];
         }
     }
 }

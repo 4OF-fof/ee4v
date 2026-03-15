@@ -1,4 +1,4 @@
-namespace Ee4v.Settings
+namespace Ee4v.Core.Settings
 {
     public struct SettingValidationResult
     {

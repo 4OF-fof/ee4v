@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 
-namespace Ee4v.Settings
+namespace Ee4v.Core.Settings
 {
     internal sealed class ProjectFileSettingStore : ISettingStore
     {

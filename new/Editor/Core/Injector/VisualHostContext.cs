@@ -1,6 +1,6 @@
 using UnityEditor;
 
-namespace Ee4v.Injector
+namespace Ee4v.Core.Injector
 {
     public sealed class VisualHostContext
     {

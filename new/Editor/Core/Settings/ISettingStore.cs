@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Ee4v.Settings
+namespace Ee4v.Core.Settings
 {
     internal interface ISettingStore
     {

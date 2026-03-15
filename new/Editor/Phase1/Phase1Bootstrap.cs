@@ -1,4 +1,3 @@
-using Ee4v.Phase1;
 using UnityEditor;
 
 namespace Ee4v.Phase1

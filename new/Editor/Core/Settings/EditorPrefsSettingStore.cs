@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using UnityEditor;
 
-namespace Ee4v.Settings
+namespace Ee4v.Core.Settings
 {
     internal sealed class EditorPrefsSettingStore : ISettingStore
     {

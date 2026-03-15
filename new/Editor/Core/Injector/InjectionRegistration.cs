@@ -1,7 +1,7 @@
 using System;
 using UnityEngine.UIElements;
 
-namespace Ee4v.Injector
+namespace Ee4v.Core.Injector
 {
     public abstract class InjectionRegistration
     {

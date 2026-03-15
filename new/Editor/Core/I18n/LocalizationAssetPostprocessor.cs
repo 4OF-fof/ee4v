@@ -1,7 +1,7 @@
-using Ee4v.Internal;
+using Ee4v.Core.Internal;
 using UnityEditor;
 
-namespace Ee4v.I18n
+namespace Ee4v.Core.I18n
 {
     internal sealed class LocalizationAssetPostprocessor : AssetPostprocessor
     {

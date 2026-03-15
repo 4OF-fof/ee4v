@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Ee4v.Core.Internal;
 using Newtonsoft.Json;
 using UnityEngine;
 
-namespace Ee4v.Settings
+namespace Ee4v.Core.Settings
 {
     public abstract class SettingDefinitionBase
     {
@@ -14,7 +16,8 @@ namespace Ee4v.Settings
             string displayNameKey,
             string descriptionKey,
             int order,
-            IReadOnlyList<string> keywords)
+            IReadOnlyList<string> keywords,
+            string localizationScope)
         {
             Key = key;
             Scope = scope;
@@ -23,6 +26,7 @@ namespace Ee4v.Settings
             DescriptionKey = descriptionKey;
             Order = order;
             Keywords = keywords ?? Array.Empty<string>();
+            LocalizationScope = localizationScope ?? string.Empty;
         }
 
         public string Key { get; }
@@ -38,6 +42,8 @@ namespace Ee4v.Settings
         public int Order { get; }
 
         public IReadOnlyList<string> Keywords { get; }
+
+        internal string LocalizationScope { get; }
 
         public abstract Type ValueType { get; }
 
@@ -68,8 +74,17 @@ namespace Ee4v.Settings
             int order = 0,
             Func<T, SettingValidationResult> validator = null,
             Func<SettingDrawerContext<T>, T> customDrawer = null,
-            IReadOnlyList<string> keywords = null)
-            : base(key, scope, sectionKey, displayNameKey, descriptionKey, order, keywords)
+            IReadOnlyList<string> keywords = null,
+            [CallerFilePath] string definitionSourceFilePath = "")
+            : base(
+                key,
+                scope,
+                sectionKey,
+                displayNameKey,
+                descriptionKey,
+                order,
+                keywords,
+                PackagePathUtility.GetScopeNameForSourceFile(definitionSourceFilePath))
         {
             _defaultValue = defaultValue;
             _validator = validator;

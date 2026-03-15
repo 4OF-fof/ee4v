@@ -1,6 +1,6 @@
-using Ee4v.I18n;
-using Ee4v.Injector;
-using Ee4v.Settings;
+using Ee4v.Core.I18n;
+using Ee4v.Core.Injector;
+using Ee4v.Core.Settings;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;

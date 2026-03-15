@@ -2,7 +2,7 @@ using System;
 using UnityEditor;
 using UnityEngine;
 
-namespace Ee4v.Settings
+namespace Ee4v.Core.Settings
 {
     internal static class SettingFieldRenderer
     {

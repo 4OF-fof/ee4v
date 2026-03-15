@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Ee4v.I18n;
-using Ee4v.Phase1;
+using Ee4v.Core.I18n;
 using UnityEditor;
 using UnityEngine;
 
-namespace Ee4v.Settings
+namespace Ee4v.Core.Settings
 {
     internal static class SettingsUiRenderer
     {
@@ -14,11 +13,9 @@ namespace Ee4v.Settings
 
         public static void DrawScope(SettingScope scope, string searchContext)
         {
-            Phase1Bootstrap.EnsureInitialized();
-
             var definitions = SettingApi.GetDefinitions(scope);
             var grouped = definitions
-                .GroupBy(definition => definition.SectionKey)
+                .GroupBy(definition => GetGroupKey(definition))
                 .OrderBy(group => group.Key, StringComparer.Ordinal);
 
             foreach (var group in grouped)
@@ -29,7 +26,8 @@ namespace Ee4v.Settings
                     continue;
                 }
 
-                EditorGUILayout.LabelField(Translate(group.Key), EditorStyles.boldLabel);
+                var firstDefinition = visibleDefinitions[0];
+                EditorGUILayout.LabelField(Translate(firstDefinition.SectionKey, firstDefinition.LocalizationScope), EditorStyles.boldLabel);
                 using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                 {
                     for (var i = 0; i < visibleDefinitions.Length; i++)
@@ -46,12 +44,12 @@ namespace Ee4v.Settings
         {
             var tooltip = string.Empty;
             string translatedTooltip;
-            if (I18N.TryGet(definition.DescriptionKey, out translatedTooltip))
+            if (I18N.TryGetForScope(definition.LocalizationScope, definition.DescriptionKey, out translatedTooltip))
             {
                 tooltip = translatedTooltip;
             }
 
-            var label = new GUIContent(Translate(definition.DisplayNameKey), tooltip);
+            var label = new GUIContent(Translate(definition.DisplayNameKey, definition.LocalizationScope), tooltip);
             var currentValue = SettingApi.GetBoxed(definition);
 
             EditorGUI.BeginChangeCheck();
@@ -85,8 +83,8 @@ namespace Ee4v.Settings
             }
 
             var needle = searchContext.Trim();
-            if (ContainsIgnoreCase(Translate(definition.DisplayNameKey), needle) ||
-                ContainsIgnoreCase(Translate(definition.SectionKey), needle))
+            if (ContainsIgnoreCase(Translate(definition.DisplayNameKey, definition.LocalizationScope), needle) ||
+                ContainsIgnoreCase(Translate(definition.SectionKey, definition.LocalizationScope), needle))
             {
                 return true;
             }
@@ -100,9 +98,14 @@ namespace Ee4v.Settings
                    source.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        private static string Translate(string key)
+        private static string GetGroupKey(SettingDefinitionBase definition)
         {
-            return string.IsNullOrEmpty(key) ? string.Empty : I18N.Get(key);
+            return definition.LocalizationScope + "|" + definition.SectionKey;
+        }
+
+        private static string Translate(string key, string localizationScope)
+        {
+            return string.IsNullOrEmpty(key) ? string.Empty : I18N.GetForScope(localizationScope, key);
         }
     }
 }

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Ee4v.Settings
+namespace Ee4v.Core.Settings
 {
     public struct SettingDrawerContext<T>
     {

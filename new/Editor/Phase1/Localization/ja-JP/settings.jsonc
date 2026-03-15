@@ -45,6 +45,7 @@
       "tooltip": "Project Item stub で使う色です。"
     },
     "validation": {
+      "required": "この項目は必須です。",
       "toolbarButtonWidth": "ツールバーボタン幅は 60 以上にしてください。"
     }
   }

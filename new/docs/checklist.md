@@ -8,6 +8,8 @@
 ## i18n
 - [x] JSONCベースのi18n基盤を実装する
     - [x] 機能ごとのscope単位でファイルを分割できる
+    - [x] scopeごとに独立したキー空間を持ち、別scopeと衝突しない
+    - [x] scope解決は`namespace Ee4v.<Scope>...`とLocalization配置が一致する
     - [x] fallbackは`選択言語 -> fallback選択言語 -> en-US -> key`とする
 
 ## SettingAPI

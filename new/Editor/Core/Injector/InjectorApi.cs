@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Ee4v.Injector
+namespace Ee4v.Core.Injector
 {
     [InitializeOnLoad]
     public static class InjectorApi

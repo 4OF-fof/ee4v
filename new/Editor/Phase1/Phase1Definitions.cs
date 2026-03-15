@@ -1,8 +1,6 @@
 using System;
-using System.Linq;
-using Ee4v.I18n;
-using Ee4v.Settings;
-using UnityEditor;
+using Ee4v.Core.I18n;
+using Ee4v.Core.Settings;
 using UnityEngine;
 
 namespace Ee4v.Phase1
@@ -10,28 +8,6 @@ namespace Ee4v.Phase1
     internal static class Phase1Definitions
     {
         private static bool _registered;
-
-        public static readonly SettingDefinition<string> Language = new SettingDefinition<string>(
-            "phase1.i18n.language",
-            SettingScope.User,
-            "settings.section.localization",
-            "settings.language.label",
-            "settings.language.tooltip",
-            "ja-JP",
-            order: 0,
-            validator: ValidateLocale,
-            customDrawer: DrawLocaleField());
-
-        public static readonly SettingDefinition<string> FallbackLanguage = new SettingDefinition<string>(
-            "phase1.i18n.fallbackLanguage",
-            SettingScope.User,
-            "settings.section.localization",
-            "settings.fallbackLanguage.label",
-            "settings.fallbackLanguage.tooltip",
-            "en-US",
-            order: 1,
-            validator: ValidateLocale,
-            customDrawer: DrawLocaleField());
 
         public static readonly SettingDefinition<bool> EnableHierarchyItemStub = new SettingDefinition<bool>(
             "phase1.injector.hierarchyItem.enabled",
@@ -136,8 +112,6 @@ namespace Ee4v.Phase1
 
             _registered = true;
 
-            SettingApi.Register(Language);
-            SettingApi.Register(FallbackLanguage);
             SettingApi.Register(EnableHierarchyItemStub);
             SettingApi.Register(EnableHierarchyHeaderStub);
             SettingApi.Register(EnableProjectItemStub);
@@ -148,27 +122,6 @@ namespace Ee4v.Phase1
             SettingApi.Register(ToolbarButtonWidth);
             SettingApi.Register(HierarchyAccentColor);
             SettingApi.Register(ProjectAccentColor);
-
-            SettingApi.Changed -= OnSettingChanged;
-            SettingApi.Changed += OnSettingChanged;
-        }
-
-        private static void OnSettingChanged(SettingDefinitionBase definition, object value)
-        {
-            if (definition == Language || definition == FallbackLanguage)
-            {
-                I18N.Reload();
-            }
-        }
-
-        private static SettingValidationResult ValidateLocale(string locale)
-        {
-            if (string.IsNullOrWhiteSpace(locale))
-            {
-                return SettingValidationResult.Error(I18N.Get("settings.validation.locale"));
-            }
-
-            return SettingValidationResult.Success;
         }
 
         private static SettingValidationResult ValidateNonEmpty(string value)
@@ -179,23 +132,6 @@ namespace Ee4v.Phase1
             }
 
             return SettingValidationResult.Success;
-        }
-
-        private static Func<SettingDrawerContext<string>, string> DrawLocaleField()
-        {
-            return context =>
-            {
-                var languages = I18N.GetAvailableLanguages();
-                if (languages.Count == 0)
-                {
-                    return EditorGUILayout.TextField(context.Label, context.Value ?? string.Empty);
-                }
-
-                var options = languages.ToArray();
-                var currentIndex = Math.Max(0, Array.IndexOf(options, context.Value));
-                var nextIndex = EditorGUILayout.Popup(context.Label, currentIndex, options);
-                return options[nextIndex];
-            };
         }
     }
 }

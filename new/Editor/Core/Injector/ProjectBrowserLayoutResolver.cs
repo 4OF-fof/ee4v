@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace Ee4v.Injector
+namespace Ee4v.Core.Injector
 {
     internal static class ProjectBrowserLayoutResolver
     {
