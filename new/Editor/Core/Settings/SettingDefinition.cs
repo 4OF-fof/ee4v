@@ -84,7 +84,8 @@ namespace Ee4v.Core.Settings
                 descriptionKey,
                 order,
                 keywords,
-                PackagePathUtility.GetScopeNameForSourceFile(definitionSourceFilePath))
+                PackagePathUtility.GetScopeNameForNamespace(
+                    PackagePathUtility.GetDeclaredNamespace(definitionSourceFilePath)))
         {
             _defaultValue = defaultValue;
             _validator = validator;

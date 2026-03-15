@@ -15,6 +15,10 @@ namespace Ee4v.Core.DebugTools
     {
         private static readonly Regex TranslationCallRegex =
             new Regex(@"I18N\.(Get|TryGet)\s*\(\s*""([^""]+)""", RegexOptions.Compiled);
+        private static readonly Regex SettingDefinitionRegex =
+            new Regex(
+                @"new\s+SettingDefinition<[^>]+>\s*\(\s*""[^""]+""\s*,\s*[^,]+,\s*""([^""]+)""\s*,\s*""([^""]+)""\s*,\s*""([^""]+)""",
+                RegexOptions.Compiled | RegexOptions.Singleline);
 
         private readonly List<UnresolvedCodeReference> _unresolvedReferences =
             new List<UnresolvedCodeReference>();
@@ -89,9 +93,10 @@ namespace Ee4v.Core.DebugTools
 
             foreach (var filePath in scripts)
             {
-                var namespaceName = PackagePathUtility.GetNamespaceForSourceFile(filePath);
-                var scope = PackagePathUtility.GetScopeNameForSourceFile(filePath);
-                var lines = File.ReadAllLines(filePath);
+                var namespaceName = PackagePathUtility.GetDeclaredNamespace(filePath);
+                var scope = PackagePathUtility.GetScopeNameForNamespace(namespaceName);
+                var content = File.ReadAllText(filePath);
+                var lines = content.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
                 for (var lineIndex = 0; lineIndex < lines.Length; lineIndex++)
                 {
                     var matches = TranslationCallRegex.Matches(lines[lineIndex]);
@@ -118,6 +123,28 @@ namespace Ee4v.Core.DebugTools
                             filePath,
                             lineIndex + 1));
                     }
+                }
+
+                var definitionMatches = SettingDefinitionRegex.Matches(content);
+                foreach (Match match in definitionMatches)
+                {
+                    if (!match.Success || match.Groups.Count < 4)
+                    {
+                        continue;
+                    }
+
+                    var lineNumber = GetLineNumber(content, match.Index);
+                    if (string.IsNullOrWhiteSpace(scope))
+                    {
+                        _unresolvedReferences.Add(new UnresolvedCodeReference(namespaceName, match.Groups[1].Value, filePath, lineNumber));
+                        _unresolvedReferences.Add(new UnresolvedCodeReference(namespaceName, match.Groups[2].Value, filePath, lineNumber));
+                        _unresolvedReferences.Add(new UnresolvedCodeReference(namespaceName, match.Groups[3].Value, filePath, lineNumber));
+                        continue;
+                    }
+
+                    results.Add(new CodeReference(scope, match.Groups[1].Value, filePath, lineNumber));
+                    results.Add(new CodeReference(scope, match.Groups[2].Value, filePath, lineNumber));
+                    results.Add(new CodeReference(scope, match.Groups[3].Value, filePath, lineNumber));
                 }
             }
 
@@ -385,6 +412,20 @@ namespace Ee4v.Core.DebugTools
 
             var relativePath = normalizedFullPath.Substring(normalizedPackageRoot.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             return Path.Combine(PackagePathUtility.GetPackageRootAssetPath(), relativePath).Replace('\\', '/');
+        }
+
+        private static int GetLineNumber(string content, int index)
+        {
+            var lineNumber = 1;
+            for (var i = 0; i < index && i < content.Length; i++)
+            {
+                if (content[i] == '\n')
+                {
+                    lineNumber++;
+                }
+            }
+
+            return lineNumber;
         }
 
         private sealed class CodeReference

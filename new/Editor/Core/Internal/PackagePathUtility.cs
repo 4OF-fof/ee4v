@@ -96,17 +96,7 @@ namespace Ee4v.Core.Internal
                 : Path.GetFileName(parentDirectory);
         }
 
-        public static string GetScopeNameForSourceFile(string sourceFilePath)
-        {
-            if (string.IsNullOrWhiteSpace(sourceFilePath))
-            {
-                return null;
-            }
-
-            return GetScopeNameForNamespace(GetNamespaceForSourceFile(sourceFilePath));
-        }
-
-        public static string GetNamespaceForSourceFile(string sourceFilePath)
+        public static string GetDeclaredNamespace(string sourceFilePath)
         {
             if (string.IsNullOrWhiteSpace(sourceFilePath) || !File.Exists(sourceFilePath))
             {
