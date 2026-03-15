@@ -1,3 +1,4 @@
+using Ee4v.Core.Internal;
 using UnityEditor;
 
 namespace Ee4v.Phase1
@@ -20,8 +21,11 @@ namespace Ee4v.Phase1
             }
 
             _initialized = true;
-            Phase1Definitions.RegisterAll();
-            Phase1StubBootstrap.RegisterAll();
+            FeatureBootstrapContract.Initialize(
+                "Phase1",
+                typeof(Phase1Definitions),
+                Phase1Definitions.RegisterAll,
+                Phase1StubBootstrap.RegisterAll);
         }
     }
 }
