@@ -27,7 +27,7 @@ namespace Ee4v.UI
         private VisualElement _navigatorHost;
         private VisualElement _contentHost;
         private StoryDefinition _selectedStory;
-        private TreeView _navigatorTree;
+        private SearchableTreeView<NavigatorTreeNode> _navigatorTreeView;
         private readonly Dictionary<string, int> _navigatorStoryIds = new Dictionary<string, int>(StringComparer.Ordinal);
         private bool _isSyncingNavigatorSelection;
 
@@ -56,6 +56,26 @@ namespace Ee4v.UI
             {
                 return;
             }
+
+            _stories.Add(new StoryDefinition(
+                "search-field",
+                "Data",
+                "SearchField",
+                "単体でも使える検索入力コンポーネントです。",
+                "文字列入力とクリア操作を 1 つの input surface として提供します。list や tree のローカル filter 入力に使う前提です。",
+                new string[0],
+                ComponentImplementationKind.UiToolkit,
+                BuildSearchFieldStory));
+
+            _stories.Add(new StoryDefinition(
+                "searchable-tree-view",
+                "Data",
+                "SearchableTreeView",
+                "検索窓と tree view をまとめて提供する、絞り込み可能なツリーコンポーネントです。",
+                "呼び出し側は階層データと row 描画だけを渡し、検索文字列の状態管理や tree の絞り込みは component 側に任せます。検索欄と tree 本体も同じ面として見えるように一体の box で扱います。",
+                new[] { "SearchField" },
+                ComponentImplementationKind.UiToolkit,
+                BuildSearchableTreeViewStory));
 
             _stories.Add(new StoryDefinition(
                 "tab-card",
@@ -111,7 +131,9 @@ namespace Ee4v.UI
             var root = rootVisualElement;
             root.Clear();
             root.AddToClassList(UiClassNames.Root);
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Shared/shared.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Data/search-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Data/searchable-tree-view.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Surface/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Surface/tab-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Feedback/alerts.uss");
@@ -142,22 +164,14 @@ namespace Ee4v.UI
             var title = UiTextFactory.Create(I18N.Get("catalog.window.title"), UiClassNames.CatalogNavigatorTitle);
             _navigatorHost.Add(title);
 
-            var subtitle = UiTextFactory.Create(I18N.Get("catalog.window.navigatorSubtitle"), UiClassNames.CatalogNavigatorSubtitle);
-            _navigatorHost.Add(subtitle);
-
-            _navigatorTree = new TreeView();
-            _navigatorTree.AddToClassList("ee4v-ui-catalog-shell__navigator-tree");
-            _navigatorTree.viewDataKey = "ee4v-ui-catalog-navigator-tree";
-            _navigatorTree.selectionType = SelectionType.Single;
-            _navigatorTree.fixedItemHeight = 20;
-            _navigatorTree.makeItem = CreateNavigatorTreeItem;
-            _navigatorTree.bindItem = BindNavigatorTreeItem;
-            _navigatorTree.selectionChanged += OnNavigatorSelectionChanged;
-            _navigatorTree.SetRootItems(BuildNavigatorTreeItems());
-            _navigatorTree.Rebuild();
-            _navigatorTree.ExpandAll();
-            _navigatorTree.style.flexGrow = 1f;
-            _navigatorHost.Add(_navigatorTree);
+            _navigatorTreeView = new SearchableTreeView<NavigatorTreeNode>(
+                CreateNavigatorTreeItem,
+                BindNavigatorTreeItem,
+                OnNavigatorSelectionChanged,
+                I18N.Get("catalog.window.navigatorEmpty"));
+            _navigatorTreeView.SetViewDataKey("ee4v-ui-catalog-navigator-tree");
+            _navigatorTreeView.SetItems(BuildNavigatorTreeItems());
+            _navigatorHost.Add(_navigatorTreeView);
 
             RefreshNavigatorSelection();
         }
@@ -176,7 +190,7 @@ namespace Ee4v.UI
 
         private void RefreshNavigatorSelection()
         {
-            if (_navigatorTree == null)
+            if (_navigatorTreeView == null)
             {
                 return;
             }
@@ -186,7 +200,7 @@ namespace Ee4v.UI
                 _isSyncingNavigatorSelection = true;
                 try
                 {
-                    _navigatorTree.ClearSelection();
+                    _navigatorTreeView.ClearSelection();
                 }
                 finally
                 {
@@ -202,7 +216,7 @@ namespace Ee4v.UI
                 _isSyncingNavigatorSelection = true;
                 try
                 {
-                    _navigatorTree.SetSelectionById(new[] { itemId });
+                    _navigatorTreeView.SetSelectionById(new[] { itemId });
                 }
                 finally
                 {
@@ -284,7 +298,7 @@ namespace Ee4v.UI
                 }
             };
 
-            var controls = CreateControlsSection(parent, "InfoCard の各プロパティを編集し、値の有無ごとの見た目を確認します。");
+            var controls = CreateTabbedControlsSection(parent, "InfoCard の各プロパティを編集し、値の有無ごとの見た目を確認します。");
 
             var eyebrowField = AddTextField(controls.Content, "Eyebrow", eyebrow, value =>
             {
@@ -350,6 +364,27 @@ namespace Ee4v.UI
             FinalizeControlsSection(parent, controls);
         }
 
+        private void BuildSearchFieldStory(VisualElement parent)
+        {
+            var preview = CreatePreviewSection(parent);
+            var surface = CreatePreviewSurface(true);
+            surface.Add(new SearchField("InfoCard"));
+            preview.Body.Add(surface);
+        }
+
+        private void BuildSearchableTreeViewStory(VisualElement parent)
+        {
+            var preview = CreatePreviewSection(parent);
+            var treeView = new SearchableTreeView<SampleTreeNode>(
+                CreateSampleTreeItem,
+                BindSampleTreeItem,
+                null,
+                "一致する項目がありません。");
+            treeView.SetViewDataKey("ee4v-ui-catalog-searchable-tree-view-story");
+            treeView.SetItems(BuildSampleTreeItems());
+            preview.Body.Add(treeView);
+        }
+
         private void BuildTabCardStory(VisualElement parent)
         {
             var firstLabel = "基本";
@@ -358,7 +393,7 @@ namespace Ee4v.UI
             var selectedTabId = "basic";
             Action refresh = null;
 
-            var controls = CreateControlsSection(parent, "タブ名と、選択中タブで表示する内容を編集します。");
+            var controls = CreatePlainControlsSection(parent, "タブ名と、選択中タブで表示する内容を編集します。");
             AddTextField(controls.Content, "タブ1", firstLabel, value =>
             {
                 firstLabel = value;
@@ -381,14 +416,6 @@ namespace Ee4v.UI
 
             refresh = () =>
             {
-                controls.TabCard.SetState(
-                    new TabCardState(
-                        new[]
-                        {
-                            new TabCardTabState("editor", "編集")
-                        },
-                        "editor"));
-
                 tabCard.SetState(
                     new TabCardState(
                         new[]
@@ -453,7 +480,7 @@ namespace Ee4v.UI
                 }
             };
 
-            var controls = CreateControlsSection(parent, "タイトル、メッセージ、tone を切り替えて通知の見た目を確認します。");
+            var controls = CreateTabbedControlsSection(parent, "タイトル、メッセージ、tone を切り替えて通知の見た目を確認します。");
 
             var toneField = AddEnumField(controls.Content, "種類", tone, value =>
             {
@@ -528,7 +555,7 @@ namespace Ee4v.UI
                 }
             };
 
-            var controls = CreateControlsSection(parent, "状態テキストと tone を切り替えて badge の見た目を確認します。");
+            var controls = CreateTabbedControlsSection(parent, "状態テキストと tone を切り替えて badge の見た目を確認します。");
 
             var textField = AddTextField(controls.Content, "テキスト", text, value =>
             {
@@ -570,14 +597,25 @@ namespace Ee4v.UI
             FinalizeControlsSection(parent, controls);
         }
 
-        private ControlsSectionContext CreateControlsSection(VisualElement parent, string description)
+        private ControlsSectionContext CreateTabbedControlsSection(VisualElement parent, string description)
         {
             var card = new InfoCard(new InfoCardState("コントロール", description));
             card.userData = "catalog-controls-section";
             var tabCard = new TabCard();
             card.Body.Add(tabCard);
             parent.Add(card);
-            return new ControlsSectionContext(card, tabCard);
+            return new ControlsSectionContext(card, tabCard.Content, tabCard);
+        }
+
+        private ControlsSectionContext CreatePlainControlsSection(VisualElement parent, string description)
+        {
+            var card = new InfoCard(new InfoCardState("コントロール", description));
+            card.userData = "catalog-controls-section";
+            var content = new VisualElement();
+            content.style.flexDirection = FlexDirection.Column;
+            card.Body.Add(content);
+            parent.Add(card);
+            return new ControlsSectionContext(card, content, null);
         }
 
         private InfoCard CreatePreviewSection(VisualElement parent)
@@ -657,9 +695,17 @@ namespace Ee4v.UI
             return row;
         }
 
-        private void BindNavigatorTreeItem(VisualElement element, int index)
+        private VisualElement CreateSampleTreeItem()
         {
-            var node = _navigatorTree.GetItemDataForIndex<NavigatorTreeNode>(index);
+            var row = new VisualElement();
+            row.AddToClassList("ee4v-ui-catalog-tree-item");
+            row.Add(UiTextFactory.Create(string.Empty, UiClassNames.CatalogTreeTitle));
+            row.Add(UiTextFactory.Create(string.Empty, UiClassNames.CatalogTreeImplementation));
+            return row;
+        }
+
+        private void BindNavigatorTreeItem(VisualElement element, NavigatorTreeNode node)
+        {
             var title = element.ElementAt(0) as UiTextElement;
             var implementation = element.ElementAt(1) as UiTextElement;
 
@@ -675,16 +721,16 @@ namespace Ee4v.UI
             }
         }
 
-        private void OnNavigatorSelectionChanged(IEnumerable<object> items)
+        private void OnNavigatorSelectionChanged(IReadOnlyList<NavigatorTreeNode> items)
         {
             if (_isSyncingNavigatorSelection || items == null)
             {
                 return;
             }
 
-            foreach (var item in items)
+            for (var i = 0; i < items.Count; i++)
             {
-                var node = item as NavigatorTreeNode;
+                var node = items[i];
                 if (node != null && node.Story != null)
                 {
                     SelectStory(node.Story);
@@ -693,7 +739,24 @@ namespace Ee4v.UI
             }
         }
 
-        private List<TreeViewItemData<NavigatorTreeNode>> BuildNavigatorTreeItems()
+        private void BindSampleTreeItem(VisualElement element, SampleTreeNode node)
+        {
+            var title = element.ElementAt(0) as UiTextElement;
+            var meta = element.ElementAt(1) as UiTextElement;
+
+            if (title != null)
+            {
+                title.SetText(node.Title);
+            }
+
+            if (meta != null)
+            {
+                meta.SetText(node.Meta);
+                meta.EnableInClassList("ee4v-ui-catalog-tree-item__implementation--hidden", string.IsNullOrWhiteSpace(node.Meta));
+            }
+        }
+
+        private List<SearchableTreeItemData<NavigatorTreeNode>> BuildNavigatorTreeItems()
         {
             _navigatorStoryIds.Clear();
 
@@ -737,14 +800,59 @@ namespace Ee4v.UI
             return ConvertNavigatorTreeItems(roots);
         }
 
-        private static List<TreeViewItemData<NavigatorTreeNode>> ConvertNavigatorTreeItems(IReadOnlyList<NavigatorTreeNodeBuilder> builders)
+        private static IReadOnlyList<SearchableTreeItemData<SampleTreeNode>> BuildSampleTreeItems()
         {
-            var items = new List<TreeViewItemData<NavigatorTreeNode>>(builders.Count);
+            return new[]
+            {
+                new SearchableTreeItemData<SampleTreeNode>(
+                    1,
+                    new SampleTreeNode("Surface", string.Empty),
+                    "Surface",
+                    new[]
+                    {
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            2,
+                            new SampleTreeNode("InfoCard", "Card"),
+                            "InfoCard Card information"),
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            3,
+                            new SampleTreeNode("TabCard", "Tabs"),
+                            "TabCard Tabs switcher")
+                    }),
+                new SearchableTreeItemData<SampleTreeNode>(
+                    4,
+                    new SampleTreeNode("Feedback", string.Empty),
+                    "Feedback",
+                    new[]
+                    {
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            5,
+                            new SampleTreeNode("Alerts", "Banner"),
+                            "Alerts Banner feedback"),
+                    }),
+                new SearchableTreeItemData<SampleTreeNode>(
+                    6,
+                    new SampleTreeNode("Status", string.Empty),
+                    "Status",
+                    new[]
+                    {
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            7,
+                            new SampleTreeNode("StatusBadge", "Pill"),
+                            "StatusBadge pill status")
+                    })
+            };
+        }
+
+        private static List<SearchableTreeItemData<NavigatorTreeNode>> ConvertNavigatorTreeItems(IReadOnlyList<NavigatorTreeNodeBuilder> builders)
+        {
+            var items = new List<SearchableTreeItemData<NavigatorTreeNode>>(builders.Count);
             for (var i = 0; i < builders.Count; i++)
             {
-                items.Add(new TreeViewItemData<NavigatorTreeNode>(
+                items.Add(new SearchableTreeItemData<NavigatorTreeNode>(
                     builders[i].Id,
                     builders[i].Node,
+                    builders[i].Node.SearchText,
                     ConvertNavigatorTreeItems(builders[i].Children)));
             }
 
@@ -856,6 +964,7 @@ namespace Ee4v.UI
                 Title = title ?? string.Empty;
                 ImplementationShortLabel = implementationShortLabel ?? string.Empty;
                 Story = story;
+                SearchText = BuildSearchText(story, Title);
             }
 
             public string Title { get; }
@@ -863,6 +972,24 @@ namespace Ee4v.UI
             public string ImplementationShortLabel { get; }
 
             public StoryDefinition Story { get; }
+
+            public string SearchText { get; }
+
+            private static string BuildSearchText(StoryDefinition story, string title)
+            {
+                if (story == null)
+                {
+                    return title ?? string.Empty;
+                }
+
+                return string.Join("\n", new[]
+                {
+                    story.Title ?? string.Empty,
+                    story.Group ?? string.Empty,
+                    story.Description ?? string.Empty,
+                    story.Details ?? string.Empty,
+                });
+            }
         }
 
         private sealed class NavigatorTreeNodeBuilder
@@ -883,20 +1010,31 @@ namespace Ee4v.UI
 
         private sealed class ControlsSectionContext
         {
-            public ControlsSectionContext(InfoCard card, TabCard tabCard)
+            public ControlsSectionContext(InfoCard card, VisualElement content, TabCard tabCard)
             {
                 Card = card;
+                Content = content;
                 TabCard = tabCard;
             }
 
             public InfoCard Card { get; }
 
-            public TabCard TabCard { get; }
+            public VisualElement Content { get; }
 
-            public VisualElement Content
+            public TabCard TabCard { get; }
+        }
+
+        private sealed class SampleTreeNode
+        {
+            public SampleTreeNode(string title, string meta)
             {
-                get { return TabCard.Content; }
+                Title = title ?? string.Empty;
+                Meta = meta ?? string.Empty;
             }
+
+            public string Title { get; }
+
+            public string Meta { get; }
         }
     }
 }

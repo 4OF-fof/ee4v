@@ -3,7 +3,7 @@
     "window": {
       "title": "UI Catalog",
       "description": "UI ライブラリの確認画面です。",
-      "navigatorSubtitle": "UI Toolkit を標準実装とし、IMGUI は UI Toolkit では作れない場合や特殊事情に限って使います。"
+      "navigatorEmpty": "一致するコンポーネントがありません。"
     },
     "common": {
       "details": "詳細",

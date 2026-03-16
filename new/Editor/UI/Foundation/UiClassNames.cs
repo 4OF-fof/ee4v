@@ -33,12 +33,19 @@ namespace Ee4v.UI
         public const string TabCardPanel = "ee4v-ui-tab-card__panel";
         public const string TabCardContent = "ee4v-ui-tab-card__content";
 
+        public const string SearchField = "ee4v-ui-search-field";
+        public const string SearchFieldInput = "ee4v-ui-search-field__input";
+        public const string SearchFieldClear = "ee4v-ui-search-field__clear";
+        public const string SearchFieldHasValue = "ee4v-ui-search-field--has-value";
+        public const string SearchableTreeView = "ee4v-ui-searchable-tree-view";
+        public const string SearchableTreeViewTree = "ee4v-ui-searchable-tree-view__tree";
+        public const string SearchableTreeViewEmpty = "ee4v-ui-searchable-tree-view__empty";
+
         public const string CatalogPageTitle = "ee4v-ui-catalog-page__title";
         public const string CatalogPageDescription = "ee4v-ui-catalog-page__description";
         public const string CatalogDetailLabel = "ee4v-ui-catalog-detail-item__label";
         public const string CatalogDetailValue = "ee4v-ui-catalog-detail-item__value";
         public const string CatalogNavigatorTitle = "ee4v-ui-catalog-shell__navigator-title";
-        public const string CatalogNavigatorSubtitle = "ee4v-ui-catalog-shell__navigator-subtitle";
         public const string CatalogTreeTitle = "ee4v-ui-catalog-tree-item__title";
         public const string CatalogTreeImplementation = "ee4v-ui-catalog-tree-item__implementation";
     }

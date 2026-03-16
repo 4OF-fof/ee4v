@@ -21,17 +21,6 @@
     margin-bottom: 4px;
 }
 
-.ee4v-ui-catalog-shell__navigator-subtitle {
-    color: rgba(210, 210, 210, 0.78);
-    margin-bottom: 10px;
-    white-space: normal;
-}
-
-.ee4v-ui-catalog-shell__navigator-tree {
-    flex-grow: 1;
-    margin-top: 2px;
-}
-
 .ee4v-ui-catalog-tree-item {
     flex-direction: row;
     align-items: center;

@@ -1,0 +1,94 @@
+.ee4v-ui-search-field {
+    flex-direction: row;
+    align-items: center;
+    min-height: 18px;
+    height: 18px;
+    margin-bottom: 10px;
+    padding-left: 4px;
+    padding-right: 2px;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-color: rgba(255, 255, 255, 0.08);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+    border-left-color: rgba(255, 255, 255, 0.08);
+    border-right-color: rgba(255, 255, 255, 0.08);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.03);
+    overflow: hidden;
+}
+
+.ee4v-ui-search-field__input {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    min-height: 14px;
+    height: 14px;
+    max-height: 14px;
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+    margin-right: 4px;
+}
+
+.ee4v-ui-search-field__input.unity-base-field,
+.ee4v-ui-search-field__input.unity-text-field {
+    min-height: 14px;
+    height: 14px;
+    max-height: 14px;
+}
+
+.ee4v-ui-search-field__input .unity-base-text-field__input,
+.ee4v-ui-search-field__input .unity-text-field__input,
+.ee4v-ui-search-field__input .unity-base-field__input {
+    min-height: 12px;
+    height: 12px;
+    max-height: 12px;
+    padding-top: 0;
+    padding-bottom: 0;
+    background-color: rgba(0, 0, 0, 0);
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+}
+
+.ee4v-ui-search-field__input .unity-base-field__label,
+.ee4v-ui-search-field__input .unity-text-field__label {
+    display: none;
+}
+
+.ee4v-ui-search-field__clear {
+    width: 12px;
+    min-width: 12px;
+    max-width: 12px;
+    height: 12px;
+    min-height: 12px;
+    max-height: 12px;
+    flex-shrink: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 7px;
+    margin-right: 0;
+    margin-left: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    background-color: rgba(0, 0, 0, 0);
+    color: rgba(210, 210, 210, 0.72);
+    -unity-text-align: middle-center;
+    opacity: 0.8;
+}

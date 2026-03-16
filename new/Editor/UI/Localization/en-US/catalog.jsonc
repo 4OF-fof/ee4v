@@ -3,7 +3,7 @@
     "window": {
       "title": "UI Catalog",
       "description": "Component preview catalog for the UI library.",
-      "navigatorSubtitle": "UI Toolkit is the default for components. Use IMGUI only when UI Toolkit cannot cover the case or special constraints apply."
+      "navigatorEmpty": "No matching components."
     },
     "common": {
       "details": "Details",
