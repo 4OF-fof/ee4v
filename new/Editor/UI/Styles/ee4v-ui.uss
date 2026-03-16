@@ -45,13 +45,18 @@
     border-top-right-radius: 6px;
     border-bottom-width: 1px;
     border-bottom-color: rgba(255, 255, 255, 0.08);
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: rgba(255, 255, 255, 0.015);
+    color: rgba(210, 210, 210, 0.72);
     align-self: flex-end;
 }
 
 .ee4v-ui-tab-card__tab--selected {
-    background-color: rgba(255, 255, 255, 0.055);
-    border-bottom-color: rgba(255, 255, 255, 0.025);
+    background-color: rgba(255, 255, 255, 0.09);
+    border-top-color: rgba(255, 255, 255, 0.14);
+    border-left-color: rgba(255, 255, 255, 0.14);
+    border-right-color: rgba(255, 255, 255, 0.14);
+    border-bottom-color: rgba(255, 255, 255, 0.02);
+    color: rgb(240, 240, 240);
 }
 
 .ee4v-ui-tab-card__panel {
@@ -69,7 +74,7 @@
     border-left-color: rgba(255, 255, 255, 0.08);
     border-right-color: rgba(255, 255, 255, 0.08);
     background-color: rgba(255, 255, 255, 0.025);
-    border-top-left-radius: 0;
+    border-top-left-radius: 8px;
     border-top-right-radius: 8px;
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
