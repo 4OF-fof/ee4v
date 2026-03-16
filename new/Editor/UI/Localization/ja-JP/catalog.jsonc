@@ -2,149 +2,24 @@
   "catalog": {
     "window": {
       "title": "UI Catalog",
-      "description": "I18n Analyzer と Feature Test Manager を UI ベースに置換するためのコンポーネント確認画面です。",
-      "refresh": "再描画",
-      "reloadLanguage": "I18N 再読込",
-      "previewOnly": "Preview 専用",
+      "description": "UI ライブラリの確認画面です。",
       "navigatorSubtitle": "UI Toolkit を標準実装とし、IMGUI は UI Toolkit では作れない場合や特殊事情に限って使います。"
     },
     "common": {
-      "scope": "スコープ",
-      "assembly": "アセンブリ",
-      "mode": "Mode",
-      "preview": "Catalog",
       "details": "詳細",
-      "detailsDescription": "{0} / {1} の確認ページです。",
       "uiToolkit": "UI Toolkit",
-      "imgui": "IMGUI"
-    },
-    "sections": {
-      "overview": {
-        "title": "概要",
-        "description": "UI ライブラリ初期ステップの見た目と状態をここで確認します。"
-      },
-      "primitives": {
-        "title": "Primitives",
-        "description": "Editor/UI 配下に置く低レベル部品です。"
-      },
-      "feature": {
-        "title": "Feature Test 用 Component",
-        "description": "FeatureTestManagerWindow の置換を見据えたカード状態です。"
-      },
-      "analysis": {
-        "title": "Analyzer 用 Component",
-        "description": "I18nAnalyzerWindow の置換を見据えた grouped section です。"
-      }
-    },
-    "overview": {
-      "banner": {
-        "title": "CatalogWindow",
-        "message": "この画面自体が UiWindowPage を利用しており、ページ骨格・toolbar・scroll body をまとめて確認できます。"
-      }
-    },
-    "primitives": {
-      "card": {
-        "title": "Card",
-        "description": "eyebrow、title、description、body slot を持つ基本コンテナです。",
-        "body": "suite 概要や密度の高い editor content の基本面として利用します。"
-      },
-      "banner": {
-        "title": "Message banner",
-        "description": "情報表示とエラー表示のバリエーションです。",
-        "infoTitle": "Informational state",
-        "infoMessage": "非ブロッキングな案内、状態メモ、preview 補足の表示に使います。",
-        "errorTitle": "Error state",
-        "errorMessage": "失敗結果、無効設定、解析不能などの強い通知に使います。"
-      },
-      "empty": {
-        "title": "Empty state",
-        "description": "結果が空のときに専用表示する placeholder です。",
-        "emptyTitle": "表示できる項目がありません",
-        "emptyMessage": "filter や analysis の結果が 0 件のときにこの状態を使います。"
-      },
-      "meta": {
-        "title": "Meta list",
-        "description": "識別子や補助情報を label/value で整列表示します。"
-      },
-      "actions": {
-        "title": "Action row",
-        "description": "toolbar や card footer で使うボタン列です。",
-        "primary": "Primary",
-        "secondary": "Secondary"
-      },
-      "status": {
-        "title": "Status badge",
-        "description": "toolbar や card header で使う compact な状態表示です。"
-      }
+      "imgui": "IMGUI",
+      "none": "なし",
+      "implementation": "実装",
+      "dependencies": "依存コンポーネント",
+      "uiToolkitVisual": "UI Toolkit",
+      "imguiVisual": "IMGUI"
     },
     "status": {
       "idle": "待機中",
       "running": "実行中",
       "passed": "成功",
       "failed": "失敗"
-    },
-    "feature": {
-      "shared": {
-        "description": "title、metadata、登録済み case、直近の実行要約をまとめて表示する suite preview です。",
-        "run": "実行",
-        "caseA": {
-          "title": "登録済み suite を列挙する",
-          "description": "static registrar が解決され一覧に出ることを確認します。"
-        },
-        "caseB": {
-          "title": "assembly filter を適用する",
-          "description": "選択した feature の test assembly だけを対象にすることを確認します。"
-        }
-      },
-      "idle": {
-        "title": "Idle suite card",
-        "resultTitle": "直近結果: 未実行",
-        "resultCounts": "まだ実行されていません",
-        "resultMessage": "この session ではまだ suite が実行されていません。"
-      },
-      "running": {
-        "title": "Running suite card",
-        "resultTitle": "直近結果: 実行中",
-        "resultCounts": "Pass 2  Fail 0  Skip 0  Inc 0  1.24s",
-        "resultMessage": "新しい run が進行中のため、操作は一時的に無効です。"
-      },
-      "passed": {
-        "title": "Passed suite card",
-        "resultTitle": "直近結果: 成功",
-        "resultCounts": "Pass 4  Fail 0  Skip 0  Inc 0  0.48s",
-        "resultMessage": "登録された test case がすべて成功しました。"
-      },
-      "failed": {
-        "title": "Failed suite card",
-        "resultTitle": "直近結果: 失敗",
-        "resultCounts": "Pass 3  Fail 1  Skip 0  Inc 0  0.83s",
-        "resultMessage": "期待した registry 構成の検証で 1 件失敗しています。"
-      }
-    },
-    "analysis": {
-      "reference": {
-        "primary": "settings.language.label",
-        "secondary": "CoreLocalizationDefinitions.cs:18",
-        "action": "Jump"
-      },
-      "populated": {
-        "title": "Populated analyzer section",
-        "description": "missing / unused key を locale-scope 単位で grouped 表示します。",
-        "groupDescription": "各 row は locale と scope のまとまりに対応します。",
-        "groupTitle": "[{0}][{1}] {2} 件"
-      },
-      "empty": {
-        "title": "Empty analyzer section",
-        "description": "問題が見つからなかったときの表示です。",
-        "emptyTitle": "問題は見つかりませんでした",
-        "emptyMessage": "現在の analysis で表示する row がない場合にこの状態を使います。"
-      },
-      "rows": {
-        "firstPrimary": "testing.window.runAll",
-        "firstSecondary": "FeatureTestManagerWindow.cs:81",
-        "secondPrimary": "catalog.window.title",
-        "secondSecondary": "CatalogWindow.cs:35"
-      }
     }
   }
 }

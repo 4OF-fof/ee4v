@@ -10,83 +10,17 @@
     color: rgb(230, 230, 230);
 }
 
-.ee4v-ui-page {
-    flex-grow: 1;
-    padding-left: 14px;
-    padding-right: 14px;
-    padding-top: 12px;
-    padding-bottom: 14px;
-}
-
-.ee4v-ui-page__header {
-    margin-bottom: 10px;
-}
-
-.ee4v-ui-page__title {
-    font-size: 18px;
-    margin-bottom: 4px;
-}
-
-.ee4v-ui-page__description {
-    color: rgba(210, 210, 210, 0.82);
-    white-space: normal;
-}
-
-.ee4v-ui-page__toolbar {
-    margin-bottom: 12px;
-}
-
-.ee4v-ui-page__body {
-    flex-grow: 1;
-}
-
-.ee4v-ui-toolbar {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-top: 8px;
-    padding-bottom: 8px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-color: rgba(255, 255, 255, 0.06);
-    border-bottom-color: rgba(255, 255, 255, 0.06);
-    border-left-color: rgba(255, 255, 255, 0.06);
-    border-right-color: rgba(255, 255, 255, 0.06);
-    background-color: rgba(255, 255, 255, 0.03);
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
-}
-
-.ee4v-ui-toolbar__left,
-.ee4v-ui-toolbar__right,
-.ee4v-ui-action-row__left,
-.ee4v-ui-action-row__right,
-.ee4v-ui-catalog__badge-row,
 .ee4v-ui-catalog__button-row {
     flex-direction: row;
     align-items: center;
 }
 
-.ee4v-ui-toolbar__left,
-.ee4v-ui-action-row__left {
-    flex-grow: 1;
-}
-
-.ee4v-ui-toolbar__right,
-.ee4v-ui-action-row__right,
 .ee4v-ui-card__header-right {
     margin-left: 8px;
     justify-content: flex-end;
 }
 
-.ee4v-ui-card__header,
-.ee4v-ui-reference {
+.ee4v-ui-card__header {
     flex-direction: row;
     align-items: flex-start;
     justify-content: space-between;
@@ -108,12 +42,12 @@
 
 .ee4v-ui-card__eyebrow {
     margin-bottom: 2px;
+    font-size: 11px;
+    color: rgba(220, 220, 220, 0.92);
 }
 
 .ee4v-ui-card__description,
-.ee4v-ui-banner__message,
-.ee4v-ui-reference__secondary,
-.ee4v-ui-grouped__description {
+.ee4v-ui-banner__message {
     color: rgba(210, 210, 210, 0.82);
     white-space: normal;
 }
@@ -169,13 +103,6 @@
     border-bottom-right-radius: 8px;
 }
 
-.ee4v-ui-card__eyebrow,
-.ee4v-ui-grouped__title,
-.ee4v-ui-reference__primary {
-    font-size: 11px;
-    color: rgba(220, 220, 220, 0.92);
-}
-
 .ee4v-ui-banner {
     padding-left: 10px;
     padding-right: 10px;
@@ -205,35 +132,6 @@
     border-left-color: rgb(220, 92, 92);
 }
 
-.ee4v-ui-empty {
-    padding-left: 12px;
-    padding-right: 12px;
-    padding-top: 12px;
-    padding-bottom: 12px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-color: rgba(255, 255, 255, 0.05);
-    border-bottom-color: rgba(255, 255, 255, 0.05);
-    border-left-color: rgba(255, 255, 255, 0.05);
-    border-right-color: rgba(255, 255, 255, 0.05);
-    background-color: rgba(255, 255, 255, 0.015);
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
-}
-
-.ee4v-ui-action-row {
-    flex-direction: row;
-    justify-content: space-between;
-}
-
-.ee4v-ui-action-row--compact {
-    margin-top: -2px;
-}
-
 .ee4v-ui-status--idle {
     background-color: rgba(128, 128, 128, 0.35);
 }
@@ -253,48 +151,4 @@
 .ee4v-ui-status--skipped,
 .ee4v-ui-status--inconclusive {
     background-color: rgba(120, 140, 190, 0.35);
-}
-
-.ee4v-ui-grouped,
-.ee4v-ui-grouped__rows {
-}
-
-.ee4v-ui-reference {
-    padding-left: 8px;
-    padding-right: 8px;
-    padding-top: 8px;
-    padding-bottom: 8px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-color: rgba(255, 255, 255, 0.05);
-    border-bottom-color: rgba(255, 255, 255, 0.05);
-    border-left-color: rgba(255, 255, 255, 0.05);
-    border-right-color: rgba(255, 255, 255, 0.05);
-    background-color: rgba(255, 255, 255, 0.015);
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
-}
-
-.ee4v-ui-reference__text {
-    flex-grow: 1;
-}
-
-.ee4v-ui-grouped__group {
-    margin-bottom: 6px;
-}
-
-.ee4v-ui-grouped__title {
-    margin-bottom: 2px;
-}
-
-.ee4v-ui-catalog__grid {
-    flex-direction: row;
-}
-
-.ee4v-ui-catalog__column {
-    flex-grow: 1;
 }

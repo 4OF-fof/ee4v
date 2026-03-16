@@ -57,14 +57,35 @@ namespace Ee4v.UI
                 return;
             }
 
-            _stories.Add(new StoryDefinition("window-page", "Layout", "UiWindowPage", "タイトル、ツールバー、スクロール可能な本文を持つページ骨格です。", ComponentImplementationKind.UiToolkit, BuildWindowPageStory));
-            _stories.Add(new StoryDefinition("action-row", "Layout", "UiActionRow", "ボタン群を整列表示するアクション行です。", ComponentImplementationKind.UiToolkit, BuildActionRowStory));
-            _stories.Add(new StoryDefinition("card", "Surface", "UiCard", "eyebrow と本文を持つカード面です。", ComponentImplementationKind.UiToolkit, BuildCardStory));
-            _stories.Add(new StoryDefinition("alerts", "Feedback", "Alerts", "情報、警告、エラーを出し分けるアラートです。", ComponentImplementationKind.UiToolkit, BuildAlertsStory));
-            _stories.Add(new StoryDefinition("status-badge", "Status", "StatusBadge", "状態を短く表示するコンパクトなバッジです。", ComponentImplementationKind.UiToolkit, BuildStatusBadgeStory));
-            _stories.Add(new StoryDefinition("reference-row", "Results", "ReferenceRow", "Jump 操作付きの結果行です。", ComponentImplementationKind.UiToolkit, BuildReferenceRowStory));
-            _stories.Add(new StoryDefinition("grouped-result-list", "Results", "GroupedResultList", "locale や scope ごとにまとめて表示する結果リストです。", ComponentImplementationKind.UiToolkit, BuildGroupedResultListStory));
-            _stories.Add(new StoryDefinition("analyzer-result-section", "Results", "AnalyzerResultSection", "件数付きの結果セクションと空状態表示をまとめた部品です。", ComponentImplementationKind.UiToolkit, BuildAnalyzerResultSectionStory));
+            _stories.Add(new StoryDefinition(
+                "card",
+                "Surface",
+                "UiCard",
+                "タイトル、説明、eyebrow、badge、body を組み合わせて情報面を構成する基本コンポーネントです。",
+                "フォームセクション、空状態、密度の高い情報カードの土台として使います。header の各値が欠けても自然に見えるように余白を調整します。",
+                new string[0],
+                ComponentImplementationKind.UiToolkit,
+                BuildCardStory));
+
+            _stories.Add(new StoryDefinition(
+                "alerts",
+                "Feedback",
+                "Alerts",
+                "情報、警告、エラーの tone を切り替えてメッセージを表示する通知コンポーネントです。",
+                "非ブロッキングな案内からエラー通知までを同じ構造で扱います。タイトルとメッセージの両方を持てるので、短い要約と補足説明を分けて表示できます。",
+                new string[0],
+                ComponentImplementationKind.UiToolkit,
+                BuildAlertsStory));
+
+            _stories.Add(new StoryDefinition(
+                "status-badge",
+                "Status",
+                "StatusBadge",
+                "短い状態テキストを pill 形で表示するステータス表示コンポーネントです。",
+                "カード header や一覧の補助情報に載せる小さな状態表示です。長めのテキストでも楕円に潰れず、pill 形を維持する前提で調整しています。",
+                new string[0],
+                ComponentImplementationKind.UiToolkit,
+                BuildStatusBadgeStory));
 
             if (_selectedStory == null && _stories.Count > 0)
             {
@@ -141,35 +162,37 @@ namespace Ee4v.UI
 
         private void RefreshNavigatorSelection()
         {
-            if (_navigatorTree != null)
+            if (_navigatorTree == null)
             {
-                if (_selectedStory == null)
-                {
-                    _isSyncingNavigatorSelection = true;
-                    try
-                    {
-                        _navigatorTree.ClearSelection();
-                    }
-                    finally
-                    {
-                        _isSyncingNavigatorSelection = false;
-                    }
+                return;
+            }
 
-                    return;
+            if (_selectedStory == null)
+            {
+                _isSyncingNavigatorSelection = true;
+                try
+                {
+                    _navigatorTree.ClearSelection();
+                }
+                finally
+                {
+                    _isSyncingNavigatorSelection = false;
                 }
 
-                int itemId;
-                if (_navigatorStoryIds.TryGetValue(_selectedStory.Id, out itemId))
+                return;
+            }
+
+            int itemId;
+            if (_navigatorStoryIds.TryGetValue(_selectedStory.Id, out itemId))
+            {
+                _isSyncingNavigatorSelection = true;
+                try
                 {
-                    _isSyncingNavigatorSelection = true;
-                    try
-                    {
-                        _navigatorTree.SetSelectionById(new[] { itemId });
-                    }
-                    finally
-                    {
-                        _isSyncingNavigatorSelection = false;
-                    }
+                    _navigatorTree.SetSelectionById(new[] { itemId });
+                }
+                finally
+                {
+                    _isSyncingNavigatorSelection = false;
                 }
             }
         }
@@ -183,69 +206,27 @@ namespace Ee4v.UI
 
             _contentHost.Clear();
 
-            var page = new UiWindowPage(new UiWindowPageState(
-                story.Title,
-                story.Description,
-                false));
-            page.Body.Add(CreateDetailsSection(story));
+            var page = new VisualElement();
+            page.AddToClassList("ee4v-ui-catalog-page");
 
-            story.Build(page);
+            var header = new VisualElement();
+            header.AddToClassList("ee4v-ui-catalog-page__header");
+            header.Add(UiTextFactory.Create(story.Title, UiClassNames.CatalogPageTitle));
+            header.Add(UiTextFactory.Create(story.Description, UiClassNames.CatalogPageDescription));
+
+            var body = new ScrollView();
+            body.AddToClassList("ee4v-ui-catalog-page__body");
+
+            page.Add(header);
+            page.Add(body);
+
+            body.contentContainer.Add(CreateDetailsSection(story));
+            story.Build(body.contentContainer);
 
             _contentHost.Add(page);
         }
 
-        private void BuildWindowPageStory(UiWindowPage page)
-        {
-            var title = "ストーリーページ";
-            var description = "入れ子になった UiWindowPage のプレビューです。";
-            var showToolbar = true;
-            var bodyMessage = "本文領域には任意の VisualElement を配置できます。";
-            Action refresh = null;
-
-            var controls = CreateControlsSection(page, "入れ子ページの見出しや本文を編集します。");
-            AddTextField(controls.Body, "タイトル", title, value =>
-            {
-                title = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "説明", description, value =>
-            {
-                description = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "本文メッセージ", bodyMessage, value =>
-            {
-                bodyMessage = value;
-                refresh();
-            });
-            AddToggle(controls.Body, "ツールバーを表示", showToolbar, value =>
-            {
-                showToolbar = value;
-                refresh();
-            });
-
-            var preview = CreatePreviewSection(page);
-            var previewSurface = CreatePreviewSurface();
-            var nestedPage = new UiWindowPage();
-            previewSurface.Add(nestedPage);
-            preview.Body.Add(previewSurface);
-
-            refresh = () =>
-            {
-                nestedPage.SetState(new UiWindowPageState(title, description, showToolbar));
-                nestedPage.ToolbarLeft.Clear();
-                nestedPage.ToolbarRight.Clear();
-                nestedPage.Body.Clear();
-
-                nestedPage.ToolbarLeft.Add(UiTextFactory.Create("左スロット"));
-                nestedPage.ToolbarRight.Add(CreatePreviewButton("操作"));
-                nestedPage.Body.Add(new UiCard(new UiCardState("本文", bodyMessage, "プレビュー")));
-            };
-
-            refresh();
-        }
-
-        private void BuildCardStory(UiWindowPage page)
+        private void BuildCardStory(VisualElement parent)
         {
             var preset = UiCardStoryPreset.Default;
             var eyebrow = "Core";
@@ -254,6 +235,7 @@ namespace Ee4v.UI
             var badgeText = string.Empty;
             var bodyText = "カードはセクション内に積んだり、単体の表示面として使えます。";
             Action refresh = null;
+
             Action<UiCardStoryPreset> applyPreset = selectedPreset =>
             {
                 preset = selectedPreset;
@@ -288,7 +270,7 @@ namespace Ee4v.UI
                 }
             };
 
-            var controls = CreateControlsSection(page, "カードのメタ情報と補助文言を編集します。");
+            var controls = CreateControlsSection(parent, "Card の各プロパティを編集し、値の有無ごとの見た目を確認します。");
             var presetRow = new VisualElement();
             presetRow.AddToClassList(UiClassNames.CatalogButtonRow);
             presetRow.Add(UiTextFactory.Create("プリセット"));
@@ -323,7 +305,7 @@ namespace Ee4v.UI
                 refresh();
             }, true);
 
-            var preview = CreatePreviewSection(page);
+            var preview = CreatePreviewSection(parent);
             var card = new UiCard();
             preview.Body.Add(card);
 
@@ -349,14 +331,14 @@ namespace Ee4v.UI
             applyPreset(preset);
         }
 
-        private void BuildAlertsStory(UiWindowPage page)
+        private void BuildAlertsStory(VisualElement parent)
         {
             var tone = UiBannerTone.Info;
             var title = "情報表示";
             var message = "非ブロッキングな案内やエラー通知に使います。";
             Action refresh = null;
 
-            var controls = CreateControlsSection(page, "バナーの種類と文言を編集します。");
+            var controls = CreateControlsSection(parent, "タイトル、メッセージ、tone を切り替えて通知の見た目を確認します。");
             AddEnumField(controls.Body, "種類", tone, value =>
             {
                 tone = value;
@@ -373,77 +355,21 @@ namespace Ee4v.UI
                 refresh();
             });
 
-            var preview = CreatePreviewSection(page);
+            var preview = CreatePreviewSection(parent);
             var alerts = new Alerts();
             preview.Body.Add(CreatePreviewSurface(alerts, true));
 
-            refresh = () =>
-            {
-                alerts.SetState(new AlertsState(tone, title, message));
-            };
-
+            refresh = () => { alerts.SetState(new AlertsState(tone, title, message)); };
             refresh();
         }
 
-        private void BuildActionRowStory(UiWindowPage page)
-        {
-            var compact = false;
-            var primaryText = "実行";
-            var secondaryText = "設定を開く";
-            var showLeftLabel = true;
-            Action refresh = null;
-
-            var controls = CreateControlsSection(page, "アクション名とレイアウトを編集します。");
-            AddToggle(controls.Body, "コンパクト", compact, value =>
-            {
-                compact = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "主ボタン", primaryText, value =>
-            {
-                primaryText = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "副ボタン", secondaryText, value =>
-            {
-                secondaryText = value;
-                refresh();
-            });
-            AddToggle(controls.Body, "左ラベルを表示", showLeftLabel, value =>
-            {
-                showLeftLabel = value;
-                refresh();
-            });
-
-            var preview = CreatePreviewSection(page);
-            var actionRow = new UiActionRow();
-            preview.Body.Add(CreatePreviewSurface(actionRow));
-
-            refresh = () =>
-            {
-                actionRow.SetState(new UiActionRowState(compact));
-                actionRow.LeftSlot.Clear();
-                actionRow.RightSlot.Clear();
-
-                if (showLeftLabel)
-                {
-                    actionRow.LeftSlot.Add(UiTextFactory.Create("フッター操作"));
-                }
-
-                actionRow.RightSlot.Add(CreatePreviewButton(primaryText));
-                actionRow.RightSlot.Add(CreatePreviewButton(secondaryText));
-            };
-
-            refresh();
-        }
-
-        private void BuildStatusBadgeStory(UiWindowPage page)
+        private void BuildStatusBadgeStory(VisualElement parent)
         {
             var text = "実行中";
             var tone = UiStatusTone.Running;
             Action refresh = null;
 
-            var controls = CreateControlsSection(page, "状態文言と種類を編集します。");
+            var controls = CreateControlsSection(parent, "状態テキストと tone を切り替えて badge の見た目を確認します。");
             AddTextField(controls.Body, "テキスト", text, value =>
             {
                 text = value;
@@ -455,225 +381,44 @@ namespace Ee4v.UI
                 refresh();
             });
 
-            var preview = CreatePreviewSection(page);
+            var preview = CreatePreviewSection(parent);
             var badge = new StatusBadge();
             var surface = CreatePreviewSurface(true);
             surface.Add(badge);
             preview.Body.Add(surface);
 
-            refresh = () =>
-            {
-                badge.SetState(new StatusBadgeState(text, tone));
-            };
-
+            refresh = () => { badge.SetState(new StatusBadgeState(text, tone)); };
             refresh();
         }
 
-        private void BuildReferenceRowStory(UiWindowPage page)
-        {
-            var primary = "testing.window.runAll";
-            var secondary = "FeatureTestManagerWindow.cs:81";
-            var actionLabel = "Jump";
-            var actionEnabled = true;
-            Action refresh = null;
-
-            var controls = CreateControlsSection(page, "結果行の内容と操作可否を編集します。");
-            AddTextField(controls.Body, "主テキスト", primary, value =>
-            {
-                primary = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "補助テキスト", secondary, value =>
-            {
-                secondary = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "操作ラベル", actionLabel, value =>
-            {
-                actionLabel = value;
-                refresh();
-            });
-            AddToggle(controls.Body, "操作を有効化", actionEnabled, value =>
-            {
-                actionEnabled = value;
-                refresh();
-            });
-
-            var preview = CreatePreviewSection(page);
-            var referenceRow = new ReferenceRow();
-            preview.Body.Add(CreatePreviewSurface(referenceRow));
-
-            refresh = () =>
-            {
-                referenceRow.SetState(new ReferenceRowState(
-                    primary,
-                    secondary,
-                    actionLabel,
-                    () => Debug.Log("[ee4v:ui] ReferenceRow preview action."),
-                    actionEnabled));
-            };
-
-            refresh();
-        }
-
-        private void BuildGroupedResultListStory(UiWindowPage page)
-        {
-            var groupTitle = "[ja-JP][Core] 3 item(s)";
-            var groupDescription = "各行は解析結果の参照情報を表します。";
-            var rowCount = 3;
-            var actionLabel = "Jump";
-            Action refresh = null;
-
-            var controls = CreateControlsSection(page, "グループ見出しと行密度を編集します。");
-            AddTextField(controls.Body, "グループタイトル", groupTitle, value =>
-            {
-                groupTitle = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "グループ説明", groupDescription, value =>
-            {
-                groupDescription = value;
-                refresh();
-            });
-            AddIntegerField(controls.Body, "行数", rowCount, value =>
-            {
-                rowCount = Mathf.Clamp(value, 1, 6);
-                refresh();
-            });
-            AddTextField(controls.Body, "操作ラベル", actionLabel, value =>
-            {
-                actionLabel = value;
-                refresh();
-            });
-
-            var preview = CreatePreviewSection(page);
-            var groupedList = new GroupedResultList();
-            preview.Body.Add(CreatePreviewSurface(groupedList));
-
-            refresh = () =>
-            {
-                var rows = new List<ReferenceRowState>();
-                for (var i = 0; i < rowCount; i++)
-                {
-                    rows.Add(new ReferenceRowState(
-                        "settings.field." + (i + 1),
-                        "Definitions.cs:" + (10 + i),
-                        actionLabel,
-                        () => Debug.Log("[ee4v:ui] GroupedResultList preview action.")));
-                }
-
-                groupedList.SetState(new GroupedResultListState(new[]
-                {
-                    new GroupedResultGroupState(groupTitle, rows, groupDescription)
-                }));
-            };
-
-            refresh();
-        }
-
-        private void BuildAnalyzerResultSectionStory(UiWindowPage page)
-        {
-            var title = "不足キー";
-            var description = "グループ結果と空状態を切り替えられる解析セクションです。";
-            var rowCount = 2;
-            var populated = true;
-            var emptyTitle = "問題は見つかりませんでした";
-            var emptyMessage = "現在の解析結果には表示する行がありません。";
-            Action refresh = null;
-
-            var controls = CreateControlsSection(page, "結果ありと空状態を切り替えて確認します。");
-            AddTextField(controls.Body, "タイトル", title, value =>
-            {
-                title = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "説明", description, value =>
-            {
-                description = value;
-                refresh();
-            });
-            AddToggle(controls.Body, "結果あり", populated, value =>
-            {
-                populated = value;
-                refresh();
-            });
-            AddIntegerField(controls.Body, "行数", rowCount, value =>
-            {
-                rowCount = Mathf.Clamp(value, 1, 6);
-                refresh();
-            });
-            AddTextField(controls.Body, "空状態タイトル", emptyTitle, value =>
-            {
-                emptyTitle = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "空状態メッセージ", emptyMessage, value =>
-            {
-                emptyMessage = value;
-                refresh();
-            });
-
-            var preview = CreatePreviewSection(page);
-            var analyzerSection = new AnalyzerResultSection();
-            preview.Body.Add(CreatePreviewSurface(analyzerSection));
-
-            refresh = () =>
-            {
-                var groups = new List<GroupedResultGroupState>();
-                if (populated)
-                {
-                    var rows = new List<ReferenceRowState>();
-                    for (var i = 0; i < rowCount; i++)
-                    {
-                        rows.Add(new ReferenceRowState(
-                            "catalog.sample.key." + (i + 1),
-                            "CatalogWindow.cs:" + (80 + i),
-                            "Jump",
-                            () => Debug.Log("[ee4v:ui] AnalyzerResultSection preview action.")));
-                    }
-
-                    groups.Add(new GroupedResultGroupState("[en-US][UI] " + rowCount + " item(s)", rows));
-                }
-
-                analyzerSection.SetState(new AnalyzerResultSectionState(
-                    title,
-                    description,
-                    new GroupedResultListState(groups),
-                    emptyTitle,
-                    emptyMessage));
-            };
-
-            refresh();
-        }
-
-        private UiCard CreateControlsSection(UiWindowPage page, string description)
+        private UiCard CreateControlsSection(VisualElement parent, string description)
         {
             var card = new UiCard(new UiCardState("コントロール", description));
             card.userData = "catalog-controls-section";
-            page.Body.Add(card);
+            parent.Add(card);
             return card;
         }
 
-        private UiCard CreatePreviewSection(UiWindowPage page)
+        private UiCard CreatePreviewSection(VisualElement parent)
         {
             var card = new UiCard(new UiCardState("プレビュー", "コントロールの変更はすぐにプレビューへ反映されます。"));
             var inserted = false;
-            for (var i = 0; i < page.Body.childCount; i++)
+            for (var i = 0; i < parent.childCount; i++)
             {
-                var child = page.Body.ElementAt(i);
+                var child = parent.ElementAt(i);
                 if (!Equals(child.userData, "catalog-controls-section"))
                 {
                     continue;
                 }
 
-                page.Body.Insert(i, card);
+                parent.Insert(i, card);
                 inserted = true;
                 break;
             }
 
             if (!inserted)
             {
-                page.Body.Add(card);
+                parent.Add(card);
             }
 
             return card;
@@ -696,14 +441,6 @@ namespace Ee4v.UI
             var surface = CreatePreviewSurface(compact);
             surface.Add(content);
             return surface;
-        }
-
-        private Button CreatePreviewButton(string label)
-        {
-            return new Button(() => Debug.Log("[ee4v:ui] Catalog preview button."))
-            {
-                text = label
-            };
         }
 
         private static TextField AddTextField(VisualElement parent, string label, string value, Action<string> onChanged, bool multiline = false)
@@ -752,13 +489,8 @@ namespace Ee4v.UI
         {
             var row = new VisualElement();
             row.AddToClassList("ee4v-ui-catalog-tree-item");
-
-            var title = UiTextFactory.Create(string.Empty, UiClassNames.CatalogTreeTitle);
-
-            var implementation = UiTextFactory.Create(string.Empty, UiClassNames.CatalogTreeImplementation);
-
-            row.Add(title);
-            row.Add(implementation);
+            row.Add(UiTextFactory.Create(string.Empty, UiClassNames.CatalogTreeTitle));
+            row.Add(UiTextFactory.Create(string.Empty, UiClassNames.CatalogTreeImplementation));
             return row;
         }
 
@@ -860,8 +592,27 @@ namespace Ee4v.UI
         {
             var card = new UiCard(new UiCardState(
                 I18N.Get("catalog.common.details"),
-                string.Format(I18N.Get("catalog.common.detailsDescription"), story.Group, story.Title)));
+                story.Details));
+
+            card.Body.Add(CreateDetailItem(I18N.Get("catalog.common.implementation"), GetImplementationLabel(story.Implementation)));
+            card.Body.Add(CreateDetailItem(
+                I18N.Get("catalog.common.dependencies"),
+                story.Dependencies.Count == 0 ? I18N.Get("catalog.common.none") : string.Join("\n", story.Dependencies)));
             return card;
+        }
+
+        private VisualElement CreateDetailItem(string label, string value)
+        {
+            var item = new VisualElement();
+            item.AddToClassList("ee4v-ui-catalog-detail-item");
+
+            var labelElement = UiTextFactory.Create(label, UiClassNames.CatalogDetailLabel);
+            var valueElement = UiTextFactory.Create(value, UiClassNames.CatalogDetailValue);
+            valueElement.SetWhiteSpace(WhiteSpace.Normal);
+
+            item.Add(labelElement);
+            item.Add(valueElement);
+            return item;
         }
 
         private static string GetImplementationShortLabel(ComponentImplementationKind implementation)
@@ -880,20 +631,30 @@ namespace Ee4v.UI
             switch (implementation)
             {
                 case ComponentImplementationKind.Imgui:
-                    return I18N.Get("catalog.common.imgui");
+                    return I18N.Get("catalog.common.imguiVisual");
                 default:
-                    return I18N.Get("catalog.common.uiToolkit");
+                    return I18N.Get("catalog.common.uiToolkitVisual");
             }
         }
 
         private sealed class StoryDefinition
         {
-            public StoryDefinition(string id, string group, string title, string description, ComponentImplementationKind implementation, Action<UiWindowPage> build)
+            public StoryDefinition(
+                string id,
+                string group,
+                string title,
+                string description,
+                string details,
+                IReadOnlyList<string> dependencies,
+                ComponentImplementationKind implementation,
+                Action<VisualElement> build)
             {
                 Id = id;
                 Group = group;
                 Title = title;
                 Description = description;
+                Details = details;
+                Dependencies = dependencies ?? new string[0];
                 Implementation = implementation;
                 Build = build;
             }
@@ -906,9 +667,13 @@ namespace Ee4v.UI
 
             public string Description { get; }
 
+            public string Details { get; }
+
+            public IReadOnlyList<string> Dependencies { get; }
+
             public ComponentImplementationKind Implementation { get; }
 
-            public Action<UiWindowPage> Build { get; }
+            public Action<VisualElement> Build { get; }
         }
 
         private sealed class NavigatorTreeNode

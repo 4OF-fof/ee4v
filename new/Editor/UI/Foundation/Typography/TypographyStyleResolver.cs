@@ -73,8 +73,6 @@ namespace Ee4v.UI
         private static readonly Dictionary<string, TypographyStyleDefinition> Styles =
             new Dictionary<string, TypographyStyleDefinition>(StringComparer.Ordinal)
             {
-                { UiClassNames.PageTitle, Create(true, 18, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 4f) },
-                { UiClassNames.PageDescription, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
                 { UiClassNames.CardEyebrow, Create(true, 11, 220, 220, 220, 235, TextAnchor.UpperLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.CardTitle, Create(true, 14, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.Normal) },
                 { UiClassNames.CardDescription, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
@@ -82,10 +80,10 @@ namespace Ee4v.UI
                 { UiClassNames.BannerTitle, Create(true, 12, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 2f) },
                 { UiClassNames.BannerMessage, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
                 { UiClassNames.StatusBadge, Create(true, 11, 230, 230, 230, 255, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
-                { UiClassNames.GroupTitle, Create(true, 11, 220, 220, 220, 235, TextAnchor.UpperLeft, WhiteSpace.NoWrap, marginBottom: 2f) },
-                { UiClassNames.GroupDescription, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
-                { UiClassNames.ReferencePrimary, Create(true, 11, 220, 220, 220, 235, TextAnchor.UpperLeft, WhiteSpace.Normal) },
-                { UiClassNames.ReferenceSecondary, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
+                { UiClassNames.CatalogPageTitle, Create(true, 18, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 4f) },
+                { UiClassNames.CatalogPageDescription, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
+                { UiClassNames.CatalogDetailLabel, Create(true, 11, 220, 220, 220, 235, TextAnchor.UpperLeft, WhiteSpace.NoWrap, marginBottom: 2f) },
+                { UiClassNames.CatalogDetailValue, Create(false, 12, 230, 230, 230, 235, TextAnchor.UpperLeft, WhiteSpace.Normal) },
                 { UiClassNames.CatalogNavigatorTitle, Create(true, 16, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.NoWrap, marginBottom: 4f) },
                 { UiClassNames.CatalogNavigatorSubtitle, Create(false, 12, 210, 210, 210, 199, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 10f) },
                 { UiClassNames.CatalogTreeTitle, Create(false, 12, 230, 230, 230, 255, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
