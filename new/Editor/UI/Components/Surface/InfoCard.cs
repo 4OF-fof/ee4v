@@ -2,9 +2,9 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
-    internal sealed class UiCardState
+    internal sealed class InfoCardState
     {
-        public UiCardState(string title, string description = null, string eyebrow = null, string badgeText = null)
+        public InfoCardState(string title, string description = null, string eyebrow = null, string badgeText = null)
         {
             Title = title ?? string.Empty;
             Description = description ?? string.Empty;
@@ -21,7 +21,7 @@ namespace Ee4v.UI
         public string BadgeText { get; }
     }
 
-    internal sealed class UiCard : VisualElement
+    internal sealed class InfoCard : VisualElement
     {
         private readonly VisualElement _header;
         private readonly VisualElement _headerText;
@@ -29,53 +29,53 @@ namespace Ee4v.UI
         private readonly UiTextElement _titleLabel;
         private readonly UiTextElement _descriptionLabel;
         private readonly UiTextElement _badgeLabel;
-        private UiCardState _state;
+        private InfoCardState _state;
 
-        public UiCard(UiCardState state = null)
+        public InfoCard(InfoCardState state = null)
         {
-            AddToClassList(UiClassNames.Card);
+            AddToClassList(UiClassNames.InfoCard);
 
             _header = new VisualElement();
-            _header.AddToClassList(UiClassNames.CardHeader);
+            _header.AddToClassList(UiClassNames.InfoCardHeader);
 
             _headerText = new VisualElement();
             _headerText.style.flexGrow = 1f;
             _headerText.style.flexShrink = 1f;
             _headerText.style.minWidth = 0f;
-            _headerText.AddToClassList("ee4v-ui-card__header-text");
+            _headerText.AddToClassList("ee4v-ui-info-card__header-text");
 
-            _eyebrowLabel = UiTextFactory.Create(string.Empty, UiClassNames.CardEyebrow);
-            _titleLabel = UiTextFactory.Create(string.Empty, UiClassNames.CardTitle);
-            _descriptionLabel = UiTextFactory.Create(string.Empty, UiClassNames.CardDescription);
-            _badgeLabel = UiTextFactory.Create(string.Empty, UiClassNames.CardBadge);
+            _eyebrowLabel = UiTextFactory.Create(string.Empty, UiClassNames.InfoCardEyebrow);
+            _titleLabel = UiTextFactory.Create(string.Empty, UiClassNames.InfoCardTitle);
+            _descriptionLabel = UiTextFactory.Create(string.Empty, UiClassNames.InfoCardDescription);
+            _badgeLabel = UiTextFactory.Create(string.Empty, UiClassNames.InfoCardBadge);
 
             _headerText.Add(_eyebrowLabel);
             _headerText.Add(_titleLabel);
             _headerText.Add(_descriptionLabel);
 
             HeaderRight = new VisualElement();
-            HeaderRight.AddToClassList(UiClassNames.CardHeaderRight);
+            HeaderRight.AddToClassList(UiClassNames.InfoCardHeaderRight);
             HeaderRight.Add(_badgeLabel);
 
             _header.Add(_headerText);
             _header.Add(HeaderRight);
 
-            Body = new UiCardBodyElement(RefreshLayout);
-            Body.AddToClassList(UiClassNames.CardBody);
+            Body = new InfoCardBodyElement(RefreshLayout);
+            Body.AddToClassList(UiClassNames.InfoCardBody);
 
             Add(_header);
             Add(Body);
 
-            SetState(state ?? new UiCardState(string.Empty));
+            SetState(state ?? new InfoCardState(string.Empty));
         }
 
         public VisualElement HeaderRight { get; }
 
-        public UiCardBodyElement Body { get; }
+        public InfoCardBodyElement Body { get; }
 
-        public void SetState(UiCardState state)
+        public void SetState(InfoCardState state)
         {
-            _state = state ?? new UiCardState(string.Empty);
+            _state = state ?? new InfoCardState(string.Empty);
 
             var hasEyebrow = !string.IsNullOrWhiteSpace(_state.Eyebrow);
             var hasTitle = !string.IsNullOrWhiteSpace(_state.Title);
@@ -88,7 +88,7 @@ namespace Ee4v.UI
 
             _titleLabel.SetText(_state.Title);
             _titleLabel.style.display = hasTitle ? DisplayStyle.Flex : DisplayStyle.None;
-            _titleLabel.EnableInClassList("ee4v-ui-card__title--with-description", hasDescription);
+            _titleLabel.EnableInClassList("ee4v-ui-info-card__title--with-description", hasDescription);
 
             _descriptionLabel.SetText(_state.Description);
             _descriptionLabel.style.display = hasDescription ? DisplayStyle.Flex : DisplayStyle.None;
@@ -100,7 +100,7 @@ namespace Ee4v.UI
             var hasHeaderRight = hasBadge || HasVisibleHeaderRightChild();
             HeaderRight.style.display = hasHeaderRight ? DisplayStyle.Flex : DisplayStyle.None;
             _header.style.display = hasHeaderText || hasHeaderRight ? DisplayStyle.Flex : DisplayStyle.None;
-            _header.EnableInClassList("ee4v-ui-card__header--single-line", isSingleLineHeader);
+            _header.EnableInClassList("ee4v-ui-info-card__header--single-line", isSingleLineHeader);
 
             RefreshLayout();
         }
@@ -112,8 +112,8 @@ namespace Ee4v.UI
             var hasDescription = _state != null && !string.IsNullOrWhiteSpace(_state.Description);
 
             Body.style.display = hasBody ? DisplayStyle.Flex : DisplayStyle.None;
-            Body.EnableInClassList("ee4v-ui-card__body--with-header", hasBody && hasHeader && hasDescription);
-            Body.EnableInClassList("ee4v-ui-card__body--compact", hasBody && hasHeader && !hasDescription);
+            Body.EnableInClassList("ee4v-ui-info-card__body--with-header", hasBody && hasHeader && hasDescription);
+            Body.EnableInClassList("ee4v-ui-info-card__body--compact", hasBody && hasHeader && !hasDescription);
         }
 
         private bool HasVisibleHeaderRightChild()
@@ -148,11 +148,11 @@ namespace Ee4v.UI
             return false;
         }
 
-        internal sealed class UiCardBodyElement : VisualElement
+        internal sealed class InfoCardBodyElement : VisualElement
         {
             private readonly System.Action _onChanged;
 
-            public UiCardBodyElement(System.Action onChanged)
+            public InfoCardBodyElement(System.Action onChanged)
             {
                 _onChanged = onChanged;
             }

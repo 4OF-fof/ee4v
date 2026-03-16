@@ -15,7 +15,7 @@ namespace Ee4v.UI
             Imgui
         }
 
-        private enum UiCardStoryPreset
+        private enum InfoCardStoryPreset
         {
             Default,
             Section,
@@ -58,14 +58,24 @@ namespace Ee4v.UI
             }
 
             _stories.Add(new StoryDefinition(
-                "card",
+                "tab-card",
                 "Surface",
-                "UiCard",
+                "TabCard",
+                "左上のタブ列で内容を切り替える box コンポーネントです。",
+                "ブラウザのタブのように、上部タブを切り替えながら下部 panel の内容を差し替える用途を想定しています。content slot には任意の UI 要素を配置できます。",
+                new string[0],
+                ComponentImplementationKind.UiToolkit,
+                BuildTabCardStory));
+
+            _stories.Add(new StoryDefinition(
+                "info-card",
+                "Surface",
+                "InfoCard",
                 "タイトル、説明、eyebrow、badge、body を組み合わせて情報面を構成する基本コンポーネントです。",
                 "フォームセクション、空状態、密度の高い情報カードの土台として使います。header の各値が欠けても自然に見えるように余白を調整します。",
                 new string[0],
                 ComponentImplementationKind.UiToolkit,
-                BuildCardStory));
+                BuildInfoCardStory));
 
             _stories.Add(new StoryDefinition(
                 "alerts",
@@ -226,9 +236,9 @@ namespace Ee4v.UI
             _contentHost.Add(page);
         }
 
-        private void BuildCardStory(VisualElement parent)
+        private void BuildInfoCardStory(VisualElement parent)
         {
-            var preset = UiCardStoryPreset.Default;
+            var preset = InfoCardStoryPreset.Default;
             var eyebrow = "Core";
             var title = "Feature Test Manager";
             var description = "密度の高い Editor パネル向けのカードレイアウトです。";
@@ -236,19 +246,19 @@ namespace Ee4v.UI
             var bodyText = "カードはセクション内に積んだり、単体の表示面として使えます。";
             Action refresh = null;
 
-            Action<UiCardStoryPreset> applyPreset = selectedPreset =>
+            Action<InfoCardStoryPreset> applyPreset = selectedPreset =>
             {
                 preset = selectedPreset;
                 switch (selectedPreset)
                 {
-                    case UiCardStoryPreset.Section:
+                    case InfoCardStoryPreset.Section:
                         eyebrow = string.Empty;
                         title = "不足キー";
                         description = "解析結果のグループ表示を包むセクションです。";
                         badgeText = "12";
                         bodyText = "本文には結果リスト、カード、任意のコントロールを配置できます。";
                         break;
-                    case UiCardStoryPreset.EmptyState:
+                    case InfoCardStoryPreset.EmptyState:
                         eyebrow = string.Empty;
                         title = "結果なし";
                         description = "現在の条件で表示対象がないときに使う状態です。";
@@ -270,54 +280,58 @@ namespace Ee4v.UI
                 }
             };
 
-            var controls = CreateControlsSection(parent, "Card の各プロパティを編集し、値の有無ごとの見た目を確認します。");
-            var presetRow = new VisualElement();
-            presetRow.AddToClassList(UiClassNames.CatalogButtonRow);
-            presetRow.Add(UiTextFactory.Create("プリセット"));
-            presetRow.Add(new Button(() => applyPreset(UiCardStoryPreset.Default)) { text = "標準" });
-            presetRow.Add(new Button(() => applyPreset(UiCardStoryPreset.Section)) { text = "UiSection" });
-            presetRow.Add(new Button(() => applyPreset(UiCardStoryPreset.EmptyState)) { text = "UiEmptyState" });
-            controls.Body.Add(presetRow);
+            var controls = CreateControlsSection(parent, "InfoCard の各プロパティを編集し、値の有無ごとの見た目を確認します。");
 
-            var eyebrowField = AddTextField(controls.Body, "Eyebrow", eyebrow, value =>
+            var eyebrowField = AddTextField(controls.Content, "Eyebrow", eyebrow, value =>
             {
                 eyebrow = value;
                 refresh();
             });
-            var titleField = AddTextField(controls.Body, "タイトル（必須）", title, value =>
+            var titleField = AddTextField(controls.Content, "タイトル（必須）", title, value =>
             {
                 title = value;
                 refresh();
             });
-            var descriptionField = AddTextField(controls.Body, "説明", description, value =>
+            var descriptionField = AddTextField(controls.Content, "説明", description, value =>
             {
                 description = value;
                 refresh();
             });
-            var badgeField = AddTextField(controls.Body, "バッジ", badgeText, value =>
+            var badgeField = AddTextField(controls.Content, "バッジ", badgeText, value =>
             {
                 badgeText = value;
                 refresh();
             });
-            var bodyTextField = AddTextField(controls.Body, "本文テキスト", bodyText, value =>
+            var bodyTextField = AddTextField(controls.Content, "本文テキスト", bodyText, value =>
             {
                 bodyText = value;
                 refresh();
             }, true);
 
             var preview = CreatePreviewSection(parent);
-            var card = new UiCard();
+            var card = new InfoCard();
             preview.Body.Add(card);
 
             refresh = () =>
             {
+                controls.TabCard.SetState(
+                    new TabCardState(
+                        new[]
+                        {
+                            new TabCardTabState(InfoCardStoryPreset.Default.ToString(), "標準"),
+                            new TabCardTabState(InfoCardStoryPreset.Section.ToString(), "セクション風"),
+                            new TabCardTabState(InfoCardStoryPreset.EmptyState.ToString(), "空状態風")
+                        },
+                        preset.ToString()),
+                    id => applyPreset((InfoCardStoryPreset)Enum.Parse(typeof(InfoCardStoryPreset), id)));
+
                 eyebrowField.SetValueWithoutNotify(eyebrow);
                 titleField.SetValueWithoutNotify(title);
                 descriptionField.SetValueWithoutNotify(description);
                 badgeField.SetValueWithoutNotify(badgeText);
                 bodyTextField.SetValueWithoutNotify(bodyText);
 
-                card.SetState(new UiCardState(title, description, eyebrow, badgeText));
+                card.SetState(new InfoCardState(title, description, eyebrow, badgeText));
                 card.Body.Clear();
 
                 if (!string.IsNullOrWhiteSpace(bodyText))
@@ -329,6 +343,77 @@ namespace Ee4v.UI
             };
 
             applyPreset(preset);
+            FinalizeControlsSection(parent, controls);
+        }
+
+        private void BuildTabCardStory(VisualElement parent)
+        {
+            var firstLabel = "基本";
+            var secondLabel = "詳細";
+            var thirdLabel = "空状態";
+            var selectedTabId = "basic";
+            Action refresh = null;
+
+            var controls = CreateControlsSection(parent, "タブ名と、選択中タブで表示する内容を編集します。");
+            AddTextField(controls.Content, "タブ1", firstLabel, value =>
+            {
+                firstLabel = value;
+                refresh();
+            });
+            AddTextField(controls.Content, "タブ2", secondLabel, value =>
+            {
+                secondLabel = value;
+                refresh();
+            });
+            AddTextField(controls.Content, "タブ3", thirdLabel, value =>
+            {
+                thirdLabel = value;
+                refresh();
+            });
+
+            var preview = CreatePreviewSection(parent);
+            var tabCard = new TabCard();
+            preview.Body.Add(tabCard);
+
+            refresh = () =>
+            {
+                controls.TabCard.SetState(
+                    new TabCardState(
+                        new[]
+                        {
+                            new TabCardTabState("editor", "編集")
+                        },
+                        "editor"));
+
+                tabCard.SetState(
+                    new TabCardState(
+                        new[]
+                        {
+                            new TabCardTabState("basic", firstLabel),
+                            new TabCardTabState("detail", secondLabel),
+                            new TabCardTabState("empty", thirdLabel)
+                        },
+                        selectedTabId),
+                    id =>
+                    {
+                        selectedTabId = id;
+                        refresh();
+                    });
+
+                tabCard.Content.Clear();
+                tabCard.Content.Add(new InfoCard(new InfoCardState(
+                    selectedTabId == "basic" ? "基本表示" : selectedTabId == "detail" ? "詳細表示" : "空状態表示",
+                    selectedTabId == "basic"
+                        ? "タブ切り替え後の content slot に任意の UI を配置できます。"
+                        : selectedTabId == "detail"
+                            ? "複数のフォーム、説明文、ステータスなどを任意に構成できます。"
+                            : "コンポーネント未選択時やデータ空状態の panel としても使えます。",
+                    null,
+                    selectedTabId.ToUpperInvariant())));
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
         }
 
         private void BuildAlertsStory(VisualElement parent)
@@ -337,30 +422,74 @@ namespace Ee4v.UI
             var title = "情報表示";
             var message = "非ブロッキングな案内やエラー通知に使います。";
             Action refresh = null;
+            Action<UiBannerTone> applyPreset = selectedTone =>
+            {
+                tone = selectedTone;
+                switch (selectedTone)
+                {
+                    case UiBannerTone.Warning:
+                        title = "警告表示";
+                        message = "確認が必要な状態や注意喚起に使います。";
+                        break;
+                    case UiBannerTone.Error:
+                        title = "エラー表示";
+                        message = "処理失敗や設定不備など、強く伝える必要がある状態に使います。";
+                        break;
+                    default:
+                        title = "情報表示";
+                        message = "非ブロッキングな案内やエラー通知に使います。";
+                        break;
+                }
+
+                if (refresh != null)
+                {
+                    refresh();
+                }
+            };
 
             var controls = CreateControlsSection(parent, "タイトル、メッセージ、tone を切り替えて通知の見た目を確認します。");
-            AddEnumField(controls.Body, "種類", tone, value =>
+
+            var toneField = AddEnumField(controls.Content, "種類", tone, value =>
             {
                 tone = value;
                 refresh();
             });
-            AddTextField(controls.Body, "タイトル", title, value =>
+            var titleField = AddTextField(controls.Content, "タイトル", title, value =>
             {
                 title = value;
                 refresh();
             });
-            AddTextField(controls.Body, "メッセージ", message, value =>
+            var messageField = AddTextField(controls.Content, "メッセージ", message, value =>
             {
                 message = value;
                 refresh();
-            });
+            }, true);
 
             var preview = CreatePreviewSection(parent);
             var alerts = new Alerts();
             preview.Body.Add(CreatePreviewSurface(alerts, true));
 
-            refresh = () => { alerts.SetState(new AlertsState(tone, title, message)); };
-            refresh();
+            refresh = () =>
+            {
+                controls.TabCard.SetState(
+                    new TabCardState(
+                        new[]
+                        {
+                            new TabCardTabState(UiBannerTone.Info.ToString(), "Info"),
+                            new TabCardTabState(UiBannerTone.Warning.ToString(), "Warning"),
+                            new TabCardTabState(UiBannerTone.Error.ToString(), "Error")
+                        },
+                        tone.ToString()),
+                    id => applyPreset((UiBannerTone)Enum.Parse(typeof(UiBannerTone), id)));
+
+                toneField.SetValueWithoutNotify((Enum)(object)tone);
+                titleField.SetValueWithoutNotify(title);
+                messageField.SetValueWithoutNotify(message);
+                alerts.SetState(new AlertsState(tone, title, message));
+            };
+
+            applyPreset(tone);
+            FinalizeControlsSection(parent, controls);
         }
 
         private void BuildStatusBadgeStory(VisualElement parent)
@@ -368,14 +497,39 @@ namespace Ee4v.UI
             var text = "実行中";
             var tone = UiStatusTone.Running;
             Action refresh = null;
+            Action<UiStatusTone> applyPreset = selectedTone =>
+            {
+                tone = selectedTone;
+                switch (selectedTone)
+                {
+                    case UiStatusTone.Passed:
+                        text = "成功";
+                        break;
+                    case UiStatusTone.Failed:
+                        text = "失敗";
+                        break;
+                    case UiStatusTone.Idle:
+                        text = "待機中";
+                        break;
+                    default:
+                        text = "実行中";
+                        break;
+                }
+
+                if (refresh != null)
+                {
+                    refresh();
+                }
+            };
 
             var controls = CreateControlsSection(parent, "状態テキストと tone を切り替えて badge の見た目を確認します。");
-            AddTextField(controls.Body, "テキスト", text, value =>
+
+            var textField = AddTextField(controls.Content, "テキスト", text, value =>
             {
                 text = value;
                 refresh();
             });
-            AddEnumField(controls.Body, "種類", tone, value =>
+            var toneField = AddEnumField(controls.Content, "種類", tone, value =>
             {
                 tone = value;
                 refresh();
@@ -387,21 +541,42 @@ namespace Ee4v.UI
             surface.Add(badge);
             preview.Body.Add(surface);
 
-            refresh = () => { badge.SetState(new StatusBadgeState(text, tone)); };
-            refresh();
+            refresh = () =>
+            {
+                controls.TabCard.SetState(
+                    new TabCardState(
+                        new[]
+                        {
+                            new TabCardTabState(UiStatusTone.Idle.ToString(), "Idle"),
+                            new TabCardTabState(UiStatusTone.Running.ToString(), "Running"),
+                            new TabCardTabState(UiStatusTone.Passed.ToString(), "Passed"),
+                            new TabCardTabState(UiStatusTone.Failed.ToString(), "Failed")
+                        },
+                        tone.ToString()),
+                    id => applyPreset((UiStatusTone)Enum.Parse(typeof(UiStatusTone), id)));
+
+                textField.SetValueWithoutNotify(text);
+                toneField.SetValueWithoutNotify((Enum)(object)tone);
+                badge.SetState(new StatusBadgeState(text, tone));
+            };
+
+            applyPreset(tone);
+            FinalizeControlsSection(parent, controls);
         }
 
-        private UiCard CreateControlsSection(VisualElement parent, string description)
+        private ControlsSectionContext CreateControlsSection(VisualElement parent, string description)
         {
-            var card = new UiCard(new UiCardState("コントロール", description));
+            var card = new InfoCard(new InfoCardState("コントロール", description));
             card.userData = "catalog-controls-section";
+            var tabCard = new TabCard();
+            card.Body.Add(tabCard);
             parent.Add(card);
-            return card;
+            return new ControlsSectionContext(card, tabCard);
         }
 
-        private UiCard CreatePreviewSection(VisualElement parent)
+        private InfoCard CreatePreviewSection(VisualElement parent)
         {
-            var card = new UiCard(new UiCardState("プレビュー", "コントロールの変更はすぐにプレビューへ反映されます。"));
+            var card = new InfoCard(new InfoCardState("プレビュー", "コントロールの変更はすぐにプレビューへ反映されます。"));
             var inserted = false;
             for (var i = 0; i < parent.childCount; i++)
             {
@@ -452,24 +627,6 @@ namespace Ee4v.UI
                 field.style.minHeight = 72f;
             }
 
-            field.value = value;
-            field.RegisterValueChangedCallback(evt => onChanged(evt.newValue));
-            parent.Add(field);
-            return field;
-        }
-
-        private static Toggle AddToggle(VisualElement parent, string label, bool value, Action<bool> onChanged)
-        {
-            var field = new Toggle(label);
-            field.value = value;
-            field.RegisterValueChangedCallback(evt => onChanged(evt.newValue));
-            parent.Add(field);
-            return field;
-        }
-
-        private static IntegerField AddIntegerField(VisualElement parent, string label, int value, Action<int> onChanged)
-        {
-            var field = new IntegerField(label);
             field.value = value;
             field.RegisterValueChangedCallback(evt => onChanged(evt.newValue));
             parent.Add(field);
@@ -588,9 +745,9 @@ namespace Ee4v.UI
             return items;
         }
 
-        private UiCard CreateDetailsSection(StoryDefinition story)
+        private InfoCard CreateDetailsSection(StoryDefinition story)
         {
-            var card = new UiCard(new UiCardState(
+            var card = new InfoCard(new InfoCardState(
                 I18N.Get("catalog.common.details"),
                 story.Details));
 
@@ -613,6 +770,16 @@ namespace Ee4v.UI
             item.Add(labelElement);
             item.Add(valueElement);
             return item;
+        }
+
+        private static void FinalizeControlsSection(VisualElement parent, ControlsSectionContext controls)
+        {
+            if (controls == null || controls.Content.childCount > 0)
+            {
+                return;
+            }
+
+            parent.Remove(controls.Card);
         }
 
         private static string GetImplementationShortLabel(ComponentImplementationKind implementation)
@@ -706,6 +873,24 @@ namespace Ee4v.UI
             public NavigatorTreeNode Node { get; }
 
             public List<NavigatorTreeNodeBuilder> Children { get; }
+        }
+
+        private sealed class ControlsSectionContext
+        {
+            public ControlsSectionContext(InfoCard card, TabCard tabCard)
+            {
+                Card = card;
+                TabCard = tabCard;
+            }
+
+            public InfoCard Card { get; }
+
+            public TabCard TabCard { get; }
+
+            public VisualElement Content
+            {
+                get { return TabCard.Content; }
+            }
         }
     }
 }

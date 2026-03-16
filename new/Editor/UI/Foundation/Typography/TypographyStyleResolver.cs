@@ -73,10 +73,10 @@ namespace Ee4v.UI
         private static readonly Dictionary<string, TypographyStyleDefinition> Styles =
             new Dictionary<string, TypographyStyleDefinition>(StringComparer.Ordinal)
             {
-                { UiClassNames.CardEyebrow, Create(true, 11, 220, 220, 220, 235, TextAnchor.UpperLeft, WhiteSpace.NoWrap) },
-                { UiClassNames.CardTitle, Create(true, 14, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.Normal) },
-                { UiClassNames.CardDescription, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
-                { UiClassNames.CardBadge, Create(true, 11, 230, 230, 230, 255, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
+                { UiClassNames.InfoCardEyebrow, Create(true, 11, 220, 220, 220, 235, TextAnchor.UpperLeft, WhiteSpace.NoWrap) },
+                { UiClassNames.InfoCardTitle, Create(true, 14, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.Normal) },
+                { UiClassNames.InfoCardDescription, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
+                { UiClassNames.InfoCardBadge, Create(true, 11, 230, 230, 230, 255, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
                 { UiClassNames.BannerTitle, Create(true, 12, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 2f) },
                 { UiClassNames.BannerMessage, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
                 { UiClassNames.StatusBadge, Create(true, 11, 230, 230, 230, 255, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
