@@ -121,11 +121,11 @@ namespace Ee4v.UI
             root.Clear();
             root.AddToClassList(UiClassNames.Root);
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Data/searchable-tree-view.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Surface/info-card.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Surface/tab-card.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Feedback/alerts.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Status/status-badge.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/searchable-tree-view.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/tab-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/alerts.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/status-badge.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Catalog/catalog-window.uss");
 
             var shell = new VisualElement();
