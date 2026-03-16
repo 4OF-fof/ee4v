@@ -5,13 +5,21 @@
       "description": "Preview components for the upcoming UI-based replacements of I18n Analyzer and Feature Test Manager.",
       "refresh": "Refresh",
       "reloadLanguage": "Reload I18N",
-      "previewOnly": "Preview only"
+      "previewOnly": "Preview only",
+      "navigatorSubtitle": "UI Toolkit is the default for components. Use IMGUI only when UI Toolkit cannot cover the case or special constraints apply."
     },
     "common": {
       "scope": "Scope",
       "assembly": "Assembly",
       "mode": "Mode",
-      "preview": "Catalog"
+      "preview": "Catalog",
+      "implementation": "Implementation",
+      "implementationDescription": "Components should default to UI Toolkit, with IMGUI reserved for exceptional cases.",
+      "policy": "Policy",
+      "uiToolkit": "UI Toolkit",
+      "imgui": "IMGUI",
+      "uiToolkitPolicy": "Default implementation. Build with VisualElement-based UI Toolkit.",
+      "imguiPolicy": "Exception-only implementation. Use only when UI Toolkit is insufficient or special constraints apply."
     },
     "sections": {
       "overview": {

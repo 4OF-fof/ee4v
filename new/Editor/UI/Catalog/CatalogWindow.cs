@@ -9,12 +9,20 @@ namespace Ee4v.UI
 {
     internal sealed class CatalogWindow : EditorWindow
     {
+        private enum ComponentImplementationKind
+        {
+            UiToolkit,
+            Imgui
+        }
+
         private readonly List<StoryDefinition> _stories = new List<StoryDefinition>();
-        private readonly List<NavigatorEntry> _navigatorEntries = new List<NavigatorEntry>();
 
         private VisualElement _navigatorHost;
         private VisualElement _contentHost;
         private StoryDefinition _selectedStory;
+        private TreeView _navigatorTree;
+        private readonly Dictionary<string, int> _navigatorStoryIds = new Dictionary<string, int>(StringComparer.Ordinal);
+        private bool _isSyncingNavigatorSelection;
 
         [MenuItem("Debug/UI Catalog")]
         private static void ShowWindow()
@@ -42,19 +50,19 @@ namespace Ee4v.UI
                 return;
             }
 
-            _stories.Add(new StoryDefinition("window-page", "Components/Layout", "UiWindowPage", "Page shell with title, toolbar, and scroll body.", BuildWindowPageStory));
-            _stories.Add(new StoryDefinition("toolbar-row", "Components/Layout", "UiToolbarRow", "Toolbar row with left and right slots.", BuildToolbarRowStory));
-            _stories.Add(new StoryDefinition("action-row", "Components/Layout", "UiActionRow", "Action layout for aligned button groups.", BuildActionRowStory));
-            _stories.Add(new StoryDefinition("section", "Components/Surface", "UiSection", "Section surface with title, description, and badge.", BuildSectionStory));
-            _stories.Add(new StoryDefinition("card", "Components/Surface", "UiCard", "Card surface with eyebrow and body content.", BuildCardStory));
-            _stories.Add(new StoryDefinition("message-banner", "Components/Feedback", "UiMessageBanner", "Informational, warning, and error banner variants.", BuildMessageBannerStory));
-            _stories.Add(new StoryDefinition("empty-state", "Components/Feedback", "UiEmptyState", "Dedicated presentation for empty results.", BuildEmptyStateStory));
-            _stories.Add(new StoryDefinition("status-badge", "Components/Status", "UiStatusBadge", "Compact status label variants.", BuildStatusBadgeStory));
-            _stories.Add(new StoryDefinition("meta-list", "Components/Data", "UiMetaList", "Label and value rows for compact metadata.", BuildMetaListStory));
-            _stories.Add(new StoryDefinition("reference-row", "Components/Results", "ReferenceRow", "Jump action row for analyzer-like results.", BuildReferenceRowStory));
-            _stories.Add(new StoryDefinition("grouped-result-list", "Components/Results", "GroupedResultList", "Locale and scope grouped result list.", BuildGroupedResultListStory));
-            _stories.Add(new StoryDefinition("analyzer-result-section", "Components/Results", "AnalyzerResultSection", "Section wrapper for populated and empty analyzer states.", BuildAnalyzerResultSectionStory));
-            _stories.Add(new StoryDefinition("feature-test-suite-card", "Components/Testing", "FeatureTestSuiteCard", "Feature test suite card with run action and result summary.", BuildFeatureTestSuiteCardStory));
+            _stories.Add(new StoryDefinition("window-page", "Layout", "UiWindowPage", "タイトル、ツールバー、スクロール可能な本文を持つページ骨格です。", ComponentImplementationKind.UiToolkit, BuildWindowPageStory));
+            _stories.Add(new StoryDefinition("toolbar-row", "Layout", "UiToolbarRow", "左右スロットを持つツールバー行です。", ComponentImplementationKind.UiToolkit, BuildToolbarRowStory));
+            _stories.Add(new StoryDefinition("action-row", "Layout", "UiActionRow", "ボタン群を整列表示するアクション行です。", ComponentImplementationKind.UiToolkit, BuildActionRowStory));
+            _stories.Add(new StoryDefinition("section", "Surface", "UiSection", "タイトル、説明、補助バッジを持つセクション面です。", ComponentImplementationKind.UiToolkit, BuildSectionStory));
+            _stories.Add(new StoryDefinition("card", "Surface", "UiCard", "eyebrow と本文を持つカード面です。", ComponentImplementationKind.UiToolkit, BuildCardStory));
+            _stories.Add(new StoryDefinition("message-banner", "Feedback", "UiMessageBanner", "情報、警告、エラーを出し分けるバナーです。", ComponentImplementationKind.UiToolkit, BuildMessageBannerStory));
+            _stories.Add(new StoryDefinition("empty-state", "Feedback", "UiEmptyState", "結果が空のときに使う専用表示です。", ComponentImplementationKind.UiToolkit, BuildEmptyStateStory));
+            _stories.Add(new StoryDefinition("status-badge", "Status", "UiStatusBadge", "状態を短く表示するコンパクトなバッジです。", ComponentImplementationKind.UiToolkit, BuildStatusBadgeStory));
+            _stories.Add(new StoryDefinition("meta-list", "Data", "UiMetaList", "label/value を縦に並べるメタ情報リストです。", ComponentImplementationKind.UiToolkit, BuildMetaListStory));
+            _stories.Add(new StoryDefinition("reference-row", "Results", "ReferenceRow", "Jump 操作付きの結果行です。", ComponentImplementationKind.UiToolkit, BuildReferenceRowStory));
+            _stories.Add(new StoryDefinition("grouped-result-list", "Results", "GroupedResultList", "locale や scope ごとにまとめて表示する結果リストです。", ComponentImplementationKind.UiToolkit, BuildGroupedResultListStory));
+            _stories.Add(new StoryDefinition("analyzer-result-section", "Results", "AnalyzerResultSection", "件数付きの結果セクションと空状態表示をまとめた部品です。", ComponentImplementationKind.UiToolkit, BuildAnalyzerResultSectionStory));
+            _stories.Add(new StoryDefinition("feature-test-suite-card", "Testing", "FeatureTestSuiteCard", "実行ボタンと結果要約を含む suite カードです。", ComponentImplementationKind.UiToolkit, BuildFeatureTestSuiteCardStory));
 
             if (_selectedStory == null && _stories.Count > 0)
             {
@@ -93,36 +101,29 @@ namespace Ee4v.UI
         private void BuildNavigator()
         {
             _navigatorHost.Clear();
-            _navigatorEntries.Clear();
 
             var title = new Label(I18N.Get("catalog.window.title"));
             title.AddToClassList("ee4v-ui-catalog-shell__navigator-title");
             _navigatorHost.Add(title);
 
-            var subtitle = new Label("Tree view component explorer");
+            var subtitle = new Label(I18N.Get("catalog.window.navigatorSubtitle"));
             subtitle.AddToClassList("ee4v-ui-catalog-shell__navigator-subtitle");
             _navigatorHost.Add(subtitle);
 
-            var navigatorScroll = new ScrollView();
-            navigatorScroll.AddToClassList("ee4v-ui-catalog-shell__navigator-scroll");
-            var folders = new Dictionary<string, VisualElement>(StringComparer.Ordinal);
-            folders[string.Empty] = navigatorScroll;
-            for (var i = 0; i < _stories.Count; i++)
-            {
-                var story = _stories[i];
-                var parent = EnsureFolderTree(folders, navigatorScroll, story.Group);
+            _navigatorTree = new TreeView();
+            _navigatorTree.AddToClassList("ee4v-ui-catalog-shell__navigator-tree");
+            _navigatorTree.viewDataKey = "ee4v-ui-catalog-navigator-tree";
+            _navigatorTree.selectionType = SelectionType.Single;
+            _navigatorTree.fixedItemHeight = 20;
+            _navigatorTree.makeItem = CreateNavigatorTreeItem;
+            _navigatorTree.bindItem = BindNavigatorTreeItem;
+            _navigatorTree.selectionChanged += OnNavigatorSelectionChanged;
+            _navigatorTree.SetRootItems(BuildNavigatorTreeItems());
+            _navigatorTree.Rebuild();
+            _navigatorTree.ExpandAll();
+            _navigatorTree.style.flexGrow = 1f;
+            _navigatorHost.Add(_navigatorTree);
 
-                var button = new Button(() => SelectStory(story))
-                {
-                    text = story.Title
-                };
-                button.AddToClassList("ee4v-ui-catalog-shell__nav-button");
-                parent.Add(button);
-
-                _navigatorEntries.Add(new NavigatorEntry(story, button));
-            }
-
-            _navigatorHost.Add(navigatorScroll);
             RefreshNavigatorSelection();
         }
 
@@ -140,12 +141,36 @@ namespace Ee4v.UI
 
         private void RefreshNavigatorSelection()
         {
-            for (var i = 0; i < _navigatorEntries.Count; i++)
+            if (_navigatorTree != null)
             {
-                var entry = _navigatorEntries[i];
-                entry.Button.EnableInClassList(
-                    "ee4v-ui-catalog-shell__nav-button--selected",
-                    ReferenceEquals(entry.Story, _selectedStory));
+                if (_selectedStory == null)
+                {
+                    _isSyncingNavigatorSelection = true;
+                    try
+                    {
+                        _navigatorTree.ClearSelection();
+                    }
+                    finally
+                    {
+                        _isSyncingNavigatorSelection = false;
+                    }
+
+                    return;
+                }
+
+                int itemId;
+                if (_navigatorStoryIds.TryGetValue(_selectedStory.Id, out itemId))
+                {
+                    _isSyncingNavigatorSelection = true;
+                    try
+                    {
+                        _navigatorTree.SetSelectionById(new[] { itemId });
+                    }
+                    finally
+                    {
+                        _isSyncingNavigatorSelection = false;
+                    }
+                }
             }
         }
 
@@ -166,6 +191,12 @@ namespace Ee4v.UI
             breadcrumb.AddToClassList(UiClassNames.StatusBadge);
             breadcrumb.AddToClassList(UiClassNames.StatusIdle);
 
+            var implementationBadge = new Label(GetImplementationLabel(story.Implementation));
+            implementationBadge.AddToClassList(UiClassNames.StatusBadge);
+            implementationBadge.AddToClassList(story.Implementation == ComponentImplementationKind.UiToolkit
+                ? UiClassNames.StatusPassed
+                : UiClassNames.StatusRunning);
+
             var reloadButton = new Button(() =>
             {
                 I18N.Reload();
@@ -177,78 +208,40 @@ namespace Ee4v.UI
             reloadButton.style.minWidth = UiTokens.ActionButtonWidth;
 
             page.ToolbarLeft.Add(breadcrumb);
+            page.ToolbarLeft.Add(implementationBadge);
             page.ToolbarRight.Add(reloadButton);
+            page.Body.Add(CreateImplementationSection(story));
 
             story.Build(page);
 
             _contentHost.Add(page);
         }
 
-        private static VisualElement EnsureFolderTree(
-            IDictionary<string, VisualElement> folders,
-            VisualElement root,
-            string groupPath)
-        {
-            if (string.IsNullOrWhiteSpace(groupPath))
-            {
-                return root;
-            }
-
-            var segments = groupPath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-            var currentPath = string.Empty;
-            var parent = root;
-
-            for (var i = 0; i < segments.Length; i++)
-            {
-                currentPath = string.IsNullOrEmpty(currentPath)
-                    ? segments[i]
-                    : currentPath + "/" + segments[i];
-
-                VisualElement folder;
-                if (!folders.TryGetValue(currentPath, out folder))
-                {
-                    var foldout = new Foldout
-                    {
-                        text = segments[i],
-                        value = true
-                    };
-                    foldout.AddToClassList("ee4v-ui-catalog-shell__foldout");
-                    parent.Add(foldout);
-                    folders[currentPath] = foldout;
-                    folder = foldout;
-                }
-
-                parent = folder;
-            }
-
-            return parent;
-        }
-
         private void BuildWindowPageStory(UiWindowPage page)
         {
-            var title = "Story Page";
-            var description = "Nested UiWindowPage preview.";
+            var title = "ストーリーページ";
+            var description = "入れ子になった UiWindowPage のプレビューです。";
             var showToolbar = true;
-            var bodyMessage = "The body area hosts arbitrary VisualElements.";
+            var bodyMessage = "本文領域には任意の VisualElement を配置できます。";
             Action refresh = null;
 
-            var controls = CreateControlsSection(page, "Edit the nested page shell.");
-            AddTextField(controls.Body, "Title", title, value =>
+            var controls = CreateControlsSection(page, "入れ子ページの見出しや本文を編集します。");
+            AddTextField(controls.Body, "タイトル", title, value =>
             {
                 title = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Description", description, value =>
+            AddTextField(controls.Body, "説明", description, value =>
             {
                 description = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Body message", bodyMessage, value =>
+            AddTextField(controls.Body, "本文メッセージ", bodyMessage, value =>
             {
                 bodyMessage = value;
                 refresh();
             });
-            AddToggle(controls.Body, "Show toolbar", showToolbar, value =>
+            AddToggle(controls.Body, "ツールバーを表示", showToolbar, value =>
             {
                 showToolbar = value;
                 refresh();
@@ -267,9 +260,9 @@ namespace Ee4v.UI
                 nestedPage.ToolbarRight.Clear();
                 nestedPage.Body.Clear();
 
-                nestedPage.ToolbarLeft.Add(new Label("Left slot"));
-                nestedPage.ToolbarRight.Add(CreatePreviewButton("Action"));
-                nestedPage.Body.Add(new UiCard(new UiCardState("Body", bodyMessage, "Preview")));
+                nestedPage.ToolbarLeft.Add(new Label("左スロット"));
+                nestedPage.ToolbarRight.Add(CreatePreviewButton("操作"));
+                nestedPage.Body.Add(new UiCard(new UiCardState("本文", bodyMessage, "プレビュー")));
             };
 
             refresh();
@@ -277,29 +270,29 @@ namespace Ee4v.UI
 
         private void BuildToolbarRowStory(UiWindowPage page)
         {
-            var leftText = "Project toolbar";
-            var rightText = "Ready";
+            var leftText = "プロジェクトツールバー";
+            var rightText = "準備完了";
             var quiet = false;
             var showAction = true;
             Action refresh = null;
 
-            var controls = CreateControlsSection(page, "Edit slot text and toolbar variant.");
-            AddTextField(controls.Body, "Left text", leftText, value =>
+            var controls = CreateControlsSection(page, "左右スロットの文言とバリエーションを編集します。");
+            AddTextField(controls.Body, "左テキスト", leftText, value =>
             {
                 leftText = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Right text", rightText, value =>
+            AddTextField(controls.Body, "右テキスト", rightText, value =>
             {
                 rightText = value;
                 refresh();
             });
-            AddToggle(controls.Body, "Quiet variant", quiet, value =>
+            AddToggle(controls.Body, "控えめな見た目", quiet, value =>
             {
                 quiet = value;
                 refresh();
             });
-            AddToggle(controls.Body, "Show action button", showAction, value =>
+            AddToggle(controls.Body, "操作ボタンを表示", showAction, value =>
             {
                 showAction = value;
                 refresh();
@@ -321,7 +314,7 @@ namespace Ee4v.UI
 
                 if (showAction)
                 {
-                    toolbar.RightSlot.Add(CreatePreviewButton("Run"));
+                    toolbar.RightSlot.Add(CreatePreviewButton("実行"));
                 }
 
                 toolbar.RightSlot.Add(new Label(rightText));
@@ -332,29 +325,29 @@ namespace Ee4v.UI
 
         private void BuildSectionStory(UiWindowPage page)
         {
-            var title = "Missing Keys";
-            var description = "Section wrapper for grouped analyzer output.";
+            var title = "不足キー";
+            var description = "解析結果のグループ表示を包むセクションです。";
             var badge = "12";
-            var bodyText = "The section body can host result lists, cards, and custom controls.";
+            var bodyText = "本文には結果リスト、カード、任意のコントロールを配置できます。";
             Action refresh = null;
 
-            var controls = CreateControlsSection(page, "Edit header copy and badge text.");
-            AddTextField(controls.Body, "Title", title, value =>
+            var controls = CreateControlsSection(page, "ヘッダー文言とバッジ表示を編集します。");
+            AddTextField(controls.Body, "タイトル", title, value =>
             {
                 title = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Description", description, value =>
+            AddTextField(controls.Body, "説明", description, value =>
             {
                 description = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Badge", badge, value =>
+            AddTextField(controls.Body, "バッジ", badge, value =>
             {
                 badge = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Body text", bodyText, value =>
+            AddTextField(controls.Body, "本文テキスト", bodyText, value =>
             {
                 bodyText = value;
                 refresh();
@@ -378,27 +371,27 @@ namespace Ee4v.UI
         {
             var eyebrow = "Core";
             var title = "Feature Test Manager";
-            var description = "Dense card layout for reusable editor panels.";
-            var bodyText = "Cards can be stacked inside sections or used as standalone preview surfaces.";
+            var description = "密度の高い Editor パネル向けのカードレイアウトです。";
+            var bodyText = "カードはセクション内に積んだり、単体の表示面として使えます。";
             Action refresh = null;
 
-            var controls = CreateControlsSection(page, "Adjust the card metadata and supporting text.");
+            var controls = CreateControlsSection(page, "カードのメタ情報と補助文言を編集します。");
             AddTextField(controls.Body, "Eyebrow", eyebrow, value =>
             {
                 eyebrow = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Title", title, value =>
+            AddTextField(controls.Body, "タイトル", title, value =>
             {
                 title = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Description", description, value =>
+            AddTextField(controls.Body, "説明", description, value =>
             {
                 description = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Body text", bodyText, value =>
+            AddTextField(controls.Body, "本文テキスト", bodyText, value =>
             {
                 bodyText = value;
                 refresh();
@@ -421,22 +414,22 @@ namespace Ee4v.UI
         private void BuildMessageBannerStory(UiWindowPage page)
         {
             var tone = UiBannerTone.Info;
-            var title = "Informational state";
-            var message = "Use banners to communicate non-blocking guidance or errors.";
+            var title = "情報表示";
+            var message = "非ブロッキングな案内やエラー通知に使います。";
             Action refresh = null;
 
-            var controls = CreateControlsSection(page, "Switch variants and edit banner copy.");
-            AddEnumField(controls.Body, "Tone", tone, value =>
+            var controls = CreateControlsSection(page, "バナーの種類と文言を編集します。");
+            AddEnumField(controls.Body, "種類", tone, value =>
             {
                 tone = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Title", title, value =>
+            AddTextField(controls.Body, "タイトル", title, value =>
             {
                 title = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Message", message, value =>
+            AddTextField(controls.Body, "メッセージ", message, value =>
             {
                 message = value;
                 refresh();
@@ -456,17 +449,17 @@ namespace Ee4v.UI
 
         private void BuildEmptyStateStory(UiWindowPage page)
         {
-            var title = "No results";
-            var message = "This state appears when the current filter returns nothing.";
+            var title = "結果なし";
+            var message = "現在の条件で表示対象がないときに使う状態です。";
             Action refresh = null;
 
-            var controls = CreateControlsSection(page, "Edit empty-state copy.");
-            AddTextField(controls.Body, "Title", title, value =>
+            var controls = CreateControlsSection(page, "空状態の文言を編集します。");
+            AddTextField(controls.Body, "タイトル", title, value =>
             {
                 title = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Message", message, value =>
+            AddTextField(controls.Body, "メッセージ", message, value =>
             {
                 message = value;
                 refresh();
@@ -487,28 +480,28 @@ namespace Ee4v.UI
         private void BuildActionRowStory(UiWindowPage page)
         {
             var compact = false;
-            var primaryText = "Run";
-            var secondaryText = "Open Settings";
+            var primaryText = "実行";
+            var secondaryText = "設定を開く";
             var showLeftLabel = true;
             Action refresh = null;
 
-            var controls = CreateControlsSection(page, "Edit action labels and compact layout.");
-            AddToggle(controls.Body, "Compact", compact, value =>
+            var controls = CreateControlsSection(page, "アクション名とレイアウトを編集します。");
+            AddToggle(controls.Body, "コンパクト", compact, value =>
             {
                 compact = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Primary button", primaryText, value =>
+            AddTextField(controls.Body, "主ボタン", primaryText, value =>
             {
                 primaryText = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Secondary button", secondaryText, value =>
+            AddTextField(controls.Body, "副ボタン", secondaryText, value =>
             {
                 secondaryText = value;
                 refresh();
             });
-            AddToggle(controls.Body, "Show left label", showLeftLabel, value =>
+            AddToggle(controls.Body, "左ラベルを表示", showLeftLabel, value =>
             {
                 showLeftLabel = value;
                 refresh();
@@ -526,7 +519,7 @@ namespace Ee4v.UI
 
                 if (showLeftLabel)
                 {
-                    actionRow.LeftSlot.Add(new Label("Footer actions"));
+                    actionRow.LeftSlot.Add(new Label("フッター操作"));
                 }
 
                 actionRow.RightSlot.Add(CreatePreviewButton(primaryText));
@@ -538,17 +531,17 @@ namespace Ee4v.UI
 
         private void BuildStatusBadgeStory(UiWindowPage page)
         {
-            var text = "Running";
+            var text = "実行中";
             var tone = UiStatusTone.Running;
             Action refresh = null;
 
-            var controls = CreateControlsSection(page, "Edit status text and variant.");
-            AddTextField(controls.Body, "Text", text, value =>
+            var controls = CreateControlsSection(page, "状態文言と種類を編集します。");
+            AddTextField(controls.Body, "テキスト", text, value =>
             {
                 text = value;
                 refresh();
             });
-            AddEnumField(controls.Body, "Tone", tone, value =>
+            AddEnumField(controls.Body, "種類", tone, value =>
             {
                 tone = value;
                 refresh();
@@ -571,22 +564,22 @@ namespace Ee4v.UI
         private void BuildMetaListStory(UiWindowPage page)
         {
             var rowCount = 3;
-            var labelPrefix = "Field";
-            var valuePrefix = "Value";
+            var labelPrefix = "項目";
+            var valuePrefix = "値";
             Action refresh = null;
 
-            var controls = CreateControlsSection(page, "Adjust how many rows are rendered and the text prefixes.");
-            AddIntegerField(controls.Body, "Row count", rowCount, value =>
+            var controls = CreateControlsSection(page, "行数と接頭辞を編集します。");
+            AddIntegerField(controls.Body, "行数", rowCount, value =>
             {
                 rowCount = Mathf.Clamp(value, 1, 5);
                 refresh();
             });
-            AddTextField(controls.Body, "Label prefix", labelPrefix, value =>
+            AddTextField(controls.Body, "ラベル接頭辞", labelPrefix, value =>
             {
                 labelPrefix = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Value prefix", valuePrefix, value =>
+            AddTextField(controls.Body, "値接頭辞", valuePrefix, value =>
             {
                 valuePrefix = value;
                 refresh();
@@ -618,23 +611,23 @@ namespace Ee4v.UI
             var actionEnabled = true;
             Action refresh = null;
 
-            var controls = CreateControlsSection(page, "Edit analyzer row content and action state.");
-            AddTextField(controls.Body, "Primary text", primary, value =>
+            var controls = CreateControlsSection(page, "結果行の内容と操作可否を編集します。");
+            AddTextField(controls.Body, "主テキスト", primary, value =>
             {
                 primary = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Secondary text", secondary, value =>
+            AddTextField(controls.Body, "補助テキスト", secondary, value =>
             {
                 secondary = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Action label", actionLabel, value =>
+            AddTextField(controls.Body, "操作ラベル", actionLabel, value =>
             {
                 actionLabel = value;
                 refresh();
             });
-            AddToggle(controls.Body, "Action enabled", actionEnabled, value =>
+            AddToggle(controls.Body, "操作を有効化", actionEnabled, value =>
             {
                 actionEnabled = value;
                 refresh();
@@ -660,28 +653,28 @@ namespace Ee4v.UI
         private void BuildGroupedResultListStory(UiWindowPage page)
         {
             var groupTitle = "[ja-JP][Core] 3 item(s)";
-            var groupDescription = "Rows represent grouped analyzer references.";
+            var groupDescription = "各行は解析結果の参照情報を表します。";
             var rowCount = 3;
             var actionLabel = "Jump";
             Action refresh = null;
 
-            var controls = CreateControlsSection(page, "Generate grouped rows and preview grouping density.");
-            AddTextField(controls.Body, "Group title", groupTitle, value =>
+            var controls = CreateControlsSection(page, "グループ見出しと行密度を編集します。");
+            AddTextField(controls.Body, "グループタイトル", groupTitle, value =>
             {
                 groupTitle = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Group description", groupDescription, value =>
+            AddTextField(controls.Body, "グループ説明", groupDescription, value =>
             {
                 groupDescription = value;
                 refresh();
             });
-            AddIntegerField(controls.Body, "Row count", rowCount, value =>
+            AddIntegerField(controls.Body, "行数", rowCount, value =>
             {
                 rowCount = Mathf.Clamp(value, 1, 6);
                 refresh();
             });
-            AddTextField(controls.Body, "Action label", actionLabel, value =>
+            AddTextField(controls.Body, "操作ラベル", actionLabel, value =>
             {
                 actionLabel = value;
                 refresh();
@@ -714,41 +707,41 @@ namespace Ee4v.UI
 
         private void BuildAnalyzerResultSectionStory(UiWindowPage page)
         {
-            var title = "Missing Keys";
-            var description = "Analyzer section with grouped rows and empty-state fallback.";
+            var title = "不足キー";
+            var description = "グループ結果と空状態を切り替えられる解析セクションです。";
             var rowCount = 2;
             var populated = true;
-            var emptyTitle = "No issues detected";
-            var emptyMessage = "There are no rows to report for the current analysis.";
+            var emptyTitle = "問題は見つかりませんでした";
+            var emptyMessage = "現在の解析結果には表示する行がありません。";
             Action refresh = null;
 
-            var controls = CreateControlsSection(page, "Toggle between populated and empty variants.");
-            AddTextField(controls.Body, "Title", title, value =>
+            var controls = CreateControlsSection(page, "結果ありと空状態を切り替えて確認します。");
+            AddTextField(controls.Body, "タイトル", title, value =>
             {
                 title = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Description", description, value =>
+            AddTextField(controls.Body, "説明", description, value =>
             {
                 description = value;
                 refresh();
             });
-            AddToggle(controls.Body, "Populated", populated, value =>
+            AddToggle(controls.Body, "結果あり", populated, value =>
             {
                 populated = value;
                 refresh();
             });
-            AddIntegerField(controls.Body, "Row count", rowCount, value =>
+            AddIntegerField(controls.Body, "行数", rowCount, value =>
             {
                 rowCount = Mathf.Clamp(value, 1, 6);
                 refresh();
             });
-            AddTextField(controls.Body, "Empty title", emptyTitle, value =>
+            AddTextField(controls.Body, "空状態タイトル", emptyTitle, value =>
             {
                 emptyTitle = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Empty message", emptyMessage, value =>
+            AddTextField(controls.Body, "空状態メッセージ", emptyMessage, value =>
             {
                 emptyMessage = value;
                 refresh();
@@ -792,20 +785,20 @@ namespace Ee4v.UI
             var title = "Core suite";
             var scope = "Core";
             var assembly = "Ee4v.Core.Tests.Editor";
-            var description = "Preview of a suite card with metadata, registered cases, and the latest result.";
-            var runButton = "Run";
+            var description = "metadata、登録済み case、直近結果をまとめて見せる suite カードです。";
+            var runButton = "実行";
             var canRun = true;
             var caseCount = 2;
-            var statusText = "Passed";
+            var statusText = "成功";
             var statusTone = UiStatusTone.Passed;
-            var resultTitle = "Last result: Passed";
+            var resultTitle = "直近結果: 成功";
             var resultCounts = "Pass 4  Fail 0  Skip 0  Inc 0  0.48s";
-            var resultMessage = "All registered test cases completed successfully.";
+            var resultMessage = "登録されたテストケースはすべて成功しました。";
             var resultTone = UiBannerTone.Info;
             Action refresh = null;
 
-            var controls = CreateControlsSection(page, "Edit suite metadata, result copy, and variants.");
-            AddTextField(controls.Body, "Title", title, value =>
+            var controls = CreateControlsSection(page, "suite 情報、結果文言、状態を編集します。");
+            AddTextField(controls.Body, "タイトル", title, value =>
             {
                 title = value;
                 refresh();
@@ -820,52 +813,52 @@ namespace Ee4v.UI
                 assembly = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Description", description, value =>
+            AddTextField(controls.Body, "説明", description, value =>
             {
                 description = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Run label", runButton, value =>
+            AddTextField(controls.Body, "実行ラベル", runButton, value =>
             {
                 runButton = value;
                 refresh();
             });
-            AddToggle(controls.Body, "Can run", canRun, value =>
+            AddToggle(controls.Body, "実行可能", canRun, value =>
             {
                 canRun = value;
                 refresh();
             });
-            AddIntegerField(controls.Body, "Case count", caseCount, value =>
+            AddIntegerField(controls.Body, "ケース数", caseCount, value =>
             {
                 caseCount = Mathf.Clamp(value, 1, 5);
                 refresh();
             });
-            AddTextField(controls.Body, "Status text", statusText, value =>
+            AddTextField(controls.Body, "状態テキスト", statusText, value =>
             {
                 statusText = value;
                 refresh();
             });
-            AddEnumField(controls.Body, "Status tone", statusTone, value =>
+            AddEnumField(controls.Body, "状態種類", statusTone, value =>
             {
                 statusTone = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Result title", resultTitle, value =>
+            AddTextField(controls.Body, "結果タイトル", resultTitle, value =>
             {
                 resultTitle = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Result counts", resultCounts, value =>
+            AddTextField(controls.Body, "結果集計", resultCounts, value =>
             {
                 resultCounts = value;
                 refresh();
             });
-            AddTextField(controls.Body, "Result message", resultMessage, value =>
+            AddTextField(controls.Body, "結果メッセージ", resultMessage, value =>
             {
                 resultMessage = value;
                 refresh();
             });
-            AddEnumField(controls.Body, "Result tone", resultTone, value =>
+            AddEnumField(controls.Body, "結果種類", resultTone, value =>
             {
                 resultTone = value;
                 refresh();
@@ -888,7 +881,7 @@ namespace Ee4v.UI
                 {
                     cases.Add(new FeatureTestSuiteCaseState(
                         "Case " + (i + 1),
-                        "Preview description for test case " + (i + 1) + "."));
+                        "テストケース " + (i + 1) + " のプレビュー説明です。"));
                 }
 
                 suiteCard.SetState(new FeatureTestSuiteCardState(
@@ -914,15 +907,34 @@ namespace Ee4v.UI
 
         private UiSection CreateControlsSection(UiWindowPage page, string description)
         {
-            var section = new UiSection(new UiSectionState("Controls", description));
+            var section = new UiSection(new UiSectionState("コントロール", description));
+            section.userData = "catalog-controls-section";
             page.Body.Add(section);
             return section;
         }
 
         private UiSection CreatePreviewSection(UiWindowPage page)
         {
-            var section = new UiSection(new UiSectionState("Preview", "Component output updates immediately when controls change."));
-            page.Body.Add(section);
+            var section = new UiSection(new UiSectionState("プレビュー", "コントロールの変更はすぐにプレビューへ反映されます。"));
+            var inserted = false;
+            for (var i = 0; i < page.Body.childCount; i++)
+            {
+                var child = page.Body.ElementAt(i);
+                if (!Equals(child.userData, "catalog-controls-section"))
+                {
+                    continue;
+                }
+
+                page.Body.Insert(i, section);
+                inserted = true;
+                break;
+            }
+
+            if (!inserted)
+            {
+                page.Body.Add(section);
+            }
+
             return section;
         }
 
@@ -984,14 +996,174 @@ namespace Ee4v.UI
             return field;
         }
 
+        private VisualElement CreateNavigatorTreeItem()
+        {
+            var row = new VisualElement();
+            row.AddToClassList("ee4v-ui-catalog-tree-item");
+
+            var title = new Label();
+            title.AddToClassList("ee4v-ui-catalog-tree-item__title");
+
+            var implementation = new Label();
+            implementation.AddToClassList("ee4v-ui-catalog-tree-item__implementation");
+
+            row.Add(title);
+            row.Add(implementation);
+            return row;
+        }
+
+        private void BindNavigatorTreeItem(VisualElement element, int index)
+        {
+            var node = _navigatorTree.GetItemDataForIndex<NavigatorTreeNode>(index);
+            var title = element.ElementAt(0) as Label;
+            var implementation = element.ElementAt(1) as Label;
+
+            if (title != null)
+            {
+                title.text = node.Title;
+            }
+
+            if (implementation != null)
+            {
+                implementation.text = node.ImplementationShortLabel;
+                implementation.EnableInClassList("ee4v-ui-catalog-tree-item__implementation--hidden", string.IsNullOrEmpty(node.ImplementationShortLabel));
+            }
+        }
+
+        private void OnNavigatorSelectionChanged(IEnumerable<object> items)
+        {
+            if (_isSyncingNavigatorSelection || items == null)
+            {
+                return;
+            }
+
+            foreach (var item in items)
+            {
+                var node = item as NavigatorTreeNode;
+                if (node != null && node.Story != null)
+                {
+                    SelectStory(node.Story);
+                    return;
+                }
+            }
+        }
+
+        private List<TreeViewItemData<NavigatorTreeNode>> BuildNavigatorTreeItems()
+        {
+            _navigatorStoryIds.Clear();
+
+            var roots = new List<NavigatorTreeNodeBuilder>();
+            var folders = new Dictionary<string, NavigatorTreeNodeBuilder>(StringComparer.Ordinal);
+            var nextId = 1;
+
+            for (var i = 0; i < _stories.Count; i++)
+            {
+                var story = _stories[i];
+                var currentChildren = roots;
+                var segments = story.Group.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                var path = string.Empty;
+
+                for (var segmentIndex = 0; segmentIndex < segments.Length; segmentIndex++)
+                {
+                    path = string.IsNullOrEmpty(path)
+                        ? segments[segmentIndex]
+                        : path + "/" + segments[segmentIndex];
+
+                    NavigatorTreeNodeBuilder folder;
+                    if (!folders.TryGetValue(path, out folder))
+                    {
+                        folder = new NavigatorTreeNodeBuilder(
+                            nextId++,
+                            new NavigatorTreeNode(segments[segmentIndex], string.Empty, null));
+                        folders.Add(path, folder);
+                        currentChildren.Add(folder);
+                    }
+
+                    currentChildren = folder.Children;
+                }
+
+                var storyNode = new NavigatorTreeNodeBuilder(
+                    nextId++,
+                    new NavigatorTreeNode(story.Title, GetImplementationShortLabel(story.Implementation), story));
+                currentChildren.Add(storyNode);
+                _navigatorStoryIds[story.Id] = storyNode.Id;
+            }
+
+            return ConvertNavigatorTreeItems(roots);
+        }
+
+        private static List<TreeViewItemData<NavigatorTreeNode>> ConvertNavigatorTreeItems(IReadOnlyList<NavigatorTreeNodeBuilder> builders)
+        {
+            var items = new List<TreeViewItemData<NavigatorTreeNode>>(builders.Count);
+            for (var i = 0; i < builders.Count; i++)
+            {
+                items.Add(new TreeViewItemData<NavigatorTreeNode>(
+                    builders[i].Id,
+                    builders[i].Node,
+                    ConvertNavigatorTreeItems(builders[i].Children)));
+            }
+
+            return items;
+        }
+
+        private UiSection CreateImplementationSection(StoryDefinition story)
+        {
+            var section = new UiSection(new UiSectionState(
+                I18N.Get("catalog.common.implementation"),
+                I18N.Get("catalog.common.implementationDescription"),
+                GetImplementationLabel(story.Implementation)));
+
+            section.Body.Add(new UiMetaList(new UiMetaListState(new List<UiMetaListItem>
+            {
+                new UiMetaListItem(I18N.Get("catalog.common.implementation"), GetImplementationLabel(story.Implementation)),
+                new UiMetaListItem(I18N.Get("catalog.common.policy"), GetImplementationPolicy(story.Implementation))
+            })));
+
+            return section;
+        }
+
+        private static string GetImplementationShortLabel(ComponentImplementationKind implementation)
+        {
+            switch (implementation)
+            {
+                case ComponentImplementationKind.Imgui:
+                    return "IMGUI";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private static string GetImplementationLabel(ComponentImplementationKind implementation)
+        {
+            switch (implementation)
+            {
+                case ComponentImplementationKind.Imgui:
+                    return I18N.Get("catalog.common.imgui");
+                default:
+                    return I18N.Get("catalog.common.uiToolkit");
+            }
+        }
+
+        private static string GetImplementationPolicy(ComponentImplementationKind implementation)
+        {
+            switch (implementation)
+            {
+                case ComponentImplementationKind.Imgui:
+                    return I18N.Get("catalog.common.imguiPolicy");
+                default:
+                    return I18N.Get("catalog.common.uiToolkitPolicy");
+            }
+        }
+
         private sealed class StoryDefinition
         {
-            public StoryDefinition(string id, string group, string title, string description, Action<UiWindowPage> build)
+            public StoryDefinition(string id, string group, string title, string description, ComponentImplementationKind implementation, Action<UiWindowPage> build)
             {
                 Id = id;
                 Group = group;
                 Title = title;
                 Description = description;
+                Implementation = implementation;
                 Build = build;
             }
 
@@ -1003,20 +1175,41 @@ namespace Ee4v.UI
 
             public string Description { get; }
 
+            public ComponentImplementationKind Implementation { get; }
+
             public Action<UiWindowPage> Build { get; }
         }
 
-        private sealed class NavigatorEntry
+        private sealed class NavigatorTreeNode
         {
-            public NavigatorEntry(StoryDefinition story, Button button)
+            public NavigatorTreeNode(string title, string implementationShortLabel, StoryDefinition story)
             {
+                Title = title ?? string.Empty;
+                ImplementationShortLabel = implementationShortLabel ?? string.Empty;
                 Story = story;
-                Button = button;
             }
 
-            public StoryDefinition Story { get; }
+            public string Title { get; }
 
-            public Button Button { get; }
+            public string ImplementationShortLabel { get; }
+
+            public StoryDefinition Story { get; }
+        }
+
+        private sealed class NavigatorTreeNodeBuilder
+        {
+            public NavigatorTreeNodeBuilder(int id, NavigatorTreeNode node)
+            {
+                Id = id;
+                Node = node;
+                Children = new List<NavigatorTreeNodeBuilder>();
+            }
+
+            public int Id { get; }
+
+            public NavigatorTreeNode Node { get; }
+
+            public List<NavigatorTreeNodeBuilder> Children { get; }
         }
     }
 }

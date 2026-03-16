@@ -5,13 +5,21 @@
       "description": "I18n Analyzer と Feature Test Manager を UI ベースに置換するためのコンポーネント確認画面です。",
       "refresh": "再描画",
       "reloadLanguage": "I18N 再読込",
-      "previewOnly": "Preview 専用"
+      "previewOnly": "Preview 専用",
+      "navigatorSubtitle": "UI Toolkit を標準実装とし、IMGUI は UI Toolkit では作れない場合や特殊事情に限って使います。"
     },
     "common": {
       "scope": "スコープ",
       "assembly": "アセンブリ",
       "mode": "Mode",
-      "preview": "Catalog"
+      "preview": "Catalog",
+      "implementation": "実装",
+      "implementationDescription": "Component は基本的に UI Toolkit ベースで実装し、例外時のみ IMGUI を使います。",
+      "policy": "方針",
+      "uiToolkit": "UI Toolkit",
+      "imgui": "IMGUI",
+      "uiToolkitPolicy": "標準実装。VisualElement ベースで構成します。",
+      "imguiPolicy": "例外実装。UI Toolkit では不足する場合や特殊な事情がある場合のみ使用します。"
     },
     "sections": {
       "overview": {
