@@ -185,26 +185,8 @@ namespace Ee4v.UI
 
             var page = new UiWindowPage(new UiWindowPageState(
                 story.Title,
-                story.Description));
-
-            var breadcrumb = new StatusBadge(new StatusBadgeState(story.Group, UiStatusTone.Idle));
-            var implementationBadge = new StatusBadge(new StatusBadgeState(
-                GetImplementationLabel(story.Implementation),
-                story.Implementation == ComponentImplementationKind.UiToolkit ? UiStatusTone.Passed : UiStatusTone.Running));
-
-            var reloadButton = new Button(() =>
-            {
-                I18N.Reload();
-                RebuildWindow();
-            })
-            {
-                text = I18N.Get("catalog.window.reloadLanguage")
-            };
-            reloadButton.style.minWidth = UiTokens.ActionButtonWidth;
-
-            page.ToolbarLeft.Add(breadcrumb);
-            page.ToolbarLeft.Add(implementationBadge);
-            page.ToolbarRight.Add(reloadButton);
+                story.Description,
+                false));
             page.Body.Add(CreateDetailsSection(story));
 
             story.Build(page);
@@ -320,7 +302,7 @@ namespace Ee4v.UI
                 eyebrow = value;
                 refresh();
             });
-            var titleField = AddTextField(controls.Body, "タイトル", title, value =>
+            var titleField = AddTextField(controls.Body, "タイトル（必須）", title, value =>
             {
                 title = value;
                 refresh();
@@ -393,7 +375,7 @@ namespace Ee4v.UI
 
             var preview = CreatePreviewSection(page);
             var alerts = new Alerts();
-            preview.Body.Add(CreatePreviewSurface(alerts));
+            preview.Body.Add(CreatePreviewSurface(alerts, true));
 
             refresh = () =>
             {
@@ -475,7 +457,7 @@ namespace Ee4v.UI
 
             var preview = CreatePreviewSection(page);
             var badge = new StatusBadge();
-            var surface = CreatePreviewSurface();
+            var surface = CreatePreviewSurface(true);
             surface.Add(badge);
             preview.Body.Add(surface);
 
@@ -697,16 +679,21 @@ namespace Ee4v.UI
             return card;
         }
 
-        private VisualElement CreatePreviewSurface()
+        private VisualElement CreatePreviewSurface(bool compact = false)
         {
             var surface = new VisualElement();
             surface.AddToClassList("ee4v-ui-catalog-preview-surface");
+            if (compact)
+            {
+                surface.AddToClassList("ee4v-ui-catalog-preview-surface--compact");
+            }
+
             return surface;
         }
 
-        private VisualElement CreatePreviewSurface(VisualElement content)
+        private VisualElement CreatePreviewSurface(VisualElement content, bool compact = false)
         {
-            var surface = CreatePreviewSurface();
+            var surface = CreatePreviewSurface(compact);
             surface.Add(content);
             return surface;
         }

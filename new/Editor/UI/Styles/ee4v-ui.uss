@@ -92,8 +92,22 @@
     justify-content: space-between;
 }
 
+.ee4v-ui-card__header--single-line {
+    align-items: center;
+    min-height: 20px;
+}
+
 .ee4v-ui-card__title {
     font-size: 14px;
+    margin-bottom: 0;
+}
+
+.ee4v-ui-card__title--with-description {
+    margin-bottom: 2px;
+}
+
+.ee4v-ui-card__eyebrow {
+    margin-bottom: 2px;
 }
 
 .ee4v-ui-card__description,
@@ -123,7 +137,15 @@
 }
 
 .ee4v-ui-card__body {
+    margin-top: 0;
+}
+
+.ee4v-ui-card__body--with-header {
     margin-top: 10px;
+}
+
+.ee4v-ui-card__body--compact {
+    margin-top: 6px;
 }
 
 .ee4v-ui-card {
