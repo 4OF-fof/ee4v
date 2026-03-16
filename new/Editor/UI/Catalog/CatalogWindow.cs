@@ -58,7 +58,7 @@ namespace Ee4v.UI
 
             _stories.Add(new StoryDefinition(
                 "searchable-tree-view",
-                "Data",
+                "DataView",
                 "SearchableTreeView",
                 "検索窓と tree view をまとめて提供する、絞り込み可能なツリーコンポーネントです。",
                 "呼び出し側は階層データと row 描画だけを渡し、検索文字列の状態管理や tree の絞り込みは component 側に任せます。検索欄と tree 本体も同じ面として見えるように一体の box で扱います。",
@@ -68,7 +68,7 @@ namespace Ee4v.UI
 
             _stories.Add(new StoryDefinition(
                 "tab-card",
-                "Surface",
+                "Interactive",
                 "TabCard",
                 "左上のタブ列で内容を切り替える box コンポーネントです。",
                 "ブラウザのタブのように、上部タブを切り替えながら下部 panel の内容を差し替える用途を想定しています。content slot には任意の UI 要素を配置できます。",
@@ -78,7 +78,7 @@ namespace Ee4v.UI
 
             _stories.Add(new StoryDefinition(
                 "info-card",
-                "Surface",
+                "Display",
                 "InfoCard",
                 "タイトル、説明、eyebrow、badge、body を組み合わせて情報面を構成する基本コンポーネントです。",
                 "シンプルな情報表示から、結果一覧の見出し付きカードまで幅広く使う土台です。header の各値が欠けても自然に見えるように余白を調整し、内蔵の badge と本文を組み合わせて情報密度を調整できます。",
@@ -88,7 +88,7 @@ namespace Ee4v.UI
 
             _stories.Add(new StoryDefinition(
                 "alerts",
-                "Feedback",
+                "Display",
                 "Alerts",
                 "情報、警告、エラーの tone を切り替えてメッセージを表示する通知コンポーネントです。",
                 "非ブロッキングな案内からエラー通知までを同じ構造で扱います。タイトルとメッセージの両方を持てるので、短い要約と補足説明を分けて表示できます。",
@@ -98,7 +98,7 @@ namespace Ee4v.UI
 
             _stories.Add(new StoryDefinition(
                 "status-badge",
-                "Status",
+                "Display",
                 "StatusBadge",
                 "短い状態テキストを pill 形で表示するステータス表示コンポーネントです。",
                 "カード header や一覧の補助情報に載せる小さな状態表示です。長めのテキストでも楕円に潰れず、pill 形を維持する前提で調整しています。",
@@ -778,8 +778,8 @@ namespace Ee4v.UI
             {
                 new SearchableTreeItemData<SampleTreeNode>(
                     1,
-                    new SampleTreeNode("Surface", string.Empty),
-                    "Surface",
+                    new SampleTreeNode("Display", string.Empty),
+                    "Display",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
@@ -788,30 +788,34 @@ namespace Ee4v.UI
                             "InfoCard Card information"),
                         new SearchableTreeItemData<SampleTreeNode>(
                             3,
+                            new SampleTreeNode("Alerts", "Banner"),
+                            "Alerts Banner feedback"),
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            4,
+                            new SampleTreeNode("StatusBadge", "Pill"),
+                            "StatusBadge pill status")
+                    }),
+                new SearchableTreeItemData<SampleTreeNode>(
+                    5,
+                    new SampleTreeNode("Interactive", string.Empty),
+                    "Interactive",
+                    new[]
+                    {
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            6,
                             new SampleTreeNode("TabCard", "Tabs"),
                             "TabCard Tabs switcher")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
-                    4,
-                    new SampleTreeNode("Feedback", string.Empty),
-                    "Feedback",
+                    7,
+                    new SampleTreeNode("DataView", string.Empty),
+                    "DataView",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
-                            5,
-                            new SampleTreeNode("Alerts", "Banner"),
-                            "Alerts Banner feedback"),
-                    }),
-                new SearchableTreeItemData<SampleTreeNode>(
-                    6,
-                    new SampleTreeNode("Status", string.Empty),
-                    "Status",
-                    new[]
-                    {
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            7,
-                            new SampleTreeNode("StatusBadge", "Pill"),
-                            "StatusBadge pill status")
+                            8,
+                            new SampleTreeNode("SearchableTreeView", "Tree"),
+                            "SearchableTreeView searchable tree")
                     })
             };
         }
