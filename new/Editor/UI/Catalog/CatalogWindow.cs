@@ -15,6 +15,13 @@ namespace Ee4v.UI
             Imgui
         }
 
+        private enum UiCardStoryPreset
+        {
+            Default,
+            Section,
+            EmptyState
+        }
+
         private readonly List<StoryDefinition> _stories = new List<StoryDefinition>();
 
         private VisualElement _navigatorHost;
@@ -53,10 +60,8 @@ namespace Ee4v.UI
             _stories.Add(new StoryDefinition("window-page", "Layout", "UiWindowPage", "タイトル、ツールバー、スクロール可能な本文を持つページ骨格です。", ComponentImplementationKind.UiToolkit, BuildWindowPageStory));
             _stories.Add(new StoryDefinition("toolbar-row", "Layout", "UiToolbarRow", "左右スロットを持つツールバー行です。", ComponentImplementationKind.UiToolkit, BuildToolbarRowStory));
             _stories.Add(new StoryDefinition("action-row", "Layout", "UiActionRow", "ボタン群を整列表示するアクション行です。", ComponentImplementationKind.UiToolkit, BuildActionRowStory));
-            _stories.Add(new StoryDefinition("section", "Surface", "UiSection", "タイトル、説明、補助バッジを持つセクション面です。", ComponentImplementationKind.UiToolkit, BuildSectionStory));
             _stories.Add(new StoryDefinition("card", "Surface", "UiCard", "eyebrow と本文を持つカード面です。", ComponentImplementationKind.UiToolkit, BuildCardStory));
             _stories.Add(new StoryDefinition("message-banner", "Feedback", "UiMessageBanner", "情報、警告、エラーを出し分けるバナーです。", ComponentImplementationKind.UiToolkit, BuildMessageBannerStory));
-            _stories.Add(new StoryDefinition("empty-state", "Feedback", "UiEmptyState", "結果が空のときに使う専用表示です。", ComponentImplementationKind.UiToolkit, BuildEmptyStateStory));
             _stories.Add(new StoryDefinition("status-badge", "Status", "UiStatusBadge", "状態を短く表示するコンパクトなバッジです。", ComponentImplementationKind.UiToolkit, BuildStatusBadgeStory));
             _stories.Add(new StoryDefinition("meta-list", "Data", "UiMetaList", "label/value を縦に並べるメタ情報リストです。", ComponentImplementationKind.UiToolkit, BuildMetaListStory));
             _stories.Add(new StoryDefinition("reference-row", "Results", "ReferenceRow", "Jump 操作付きの結果行です。", ComponentImplementationKind.UiToolkit, BuildReferenceRowStory));
@@ -323,75 +328,79 @@ namespace Ee4v.UI
             refresh();
         }
 
-        private void BuildSectionStory(UiWindowPage page)
-        {
-            var title = "不足キー";
-            var description = "解析結果のグループ表示を包むセクションです。";
-            var badge = "12";
-            var bodyText = "本文には結果リスト、カード、任意のコントロールを配置できます。";
-            Action refresh = null;
-
-            var controls = CreateControlsSection(page, "ヘッダー文言とバッジ表示を編集します。");
-            AddTextField(controls.Body, "タイトル", title, value =>
-            {
-                title = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "説明", description, value =>
-            {
-                description = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "バッジ", badge, value =>
-            {
-                badge = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "本文テキスト", bodyText, value =>
-            {
-                bodyText = value;
-                refresh();
-            });
-
-            var preview = CreatePreviewSection(page);
-            var section = new UiSection();
-            preview.Body.Add(section);
-
-            refresh = () =>
-            {
-                section.SetState(new UiSectionState(title, description, badge));
-                section.Body.Clear();
-                section.Body.Add(new Label(bodyText));
-            };
-
-            refresh();
-        }
-
         private void BuildCardStory(UiWindowPage page)
         {
+            var preset = UiCardStoryPreset.Default;
             var eyebrow = "Core";
             var title = "Feature Test Manager";
             var description = "密度の高い Editor パネル向けのカードレイアウトです。";
+            var badgeText = string.Empty;
             var bodyText = "カードはセクション内に積んだり、単体の表示面として使えます。";
             Action refresh = null;
+            Action<UiCardStoryPreset> applyPreset = selectedPreset =>
+            {
+                preset = selectedPreset;
+                switch (selectedPreset)
+                {
+                    case UiCardStoryPreset.Section:
+                        eyebrow = string.Empty;
+                        title = "不足キー";
+                        description = "解析結果のグループ表示を包むセクションです。";
+                        badgeText = "12";
+                        bodyText = "本文には結果リスト、カード、任意のコントロールを配置できます。";
+                        break;
+                    case UiCardStoryPreset.EmptyState:
+                        eyebrow = string.Empty;
+                        title = "結果なし";
+                        description = "現在の条件で表示対象がないときに使う状態です。";
+                        badgeText = string.Empty;
+                        bodyText = string.Empty;
+                        break;
+                    default:
+                        eyebrow = "Core";
+                        title = "Feature Test Manager";
+                        description = "密度の高い Editor パネル向けのカードレイアウトです。";
+                        badgeText = string.Empty;
+                        bodyText = "カードはセクション内に積んだり、単体の表示面として使えます。";
+                        break;
+                }
+
+                if (refresh != null)
+                {
+                    refresh();
+                }
+            };
 
             var controls = CreateControlsSection(page, "カードのメタ情報と補助文言を編集します。");
-            AddTextField(controls.Body, "Eyebrow", eyebrow, value =>
+            var presetRow = new VisualElement();
+            presetRow.AddToClassList(UiClassNames.CatalogButtonRow);
+            presetRow.Add(new Label("プリセット"));
+            presetRow.Add(new Button(() => applyPreset(UiCardStoryPreset.Default)) { text = "標準" });
+            presetRow.Add(new Button(() => applyPreset(UiCardStoryPreset.Section)) { text = "UiSection" });
+            presetRow.Add(new Button(() => applyPreset(UiCardStoryPreset.EmptyState)) { text = "UiEmptyState" });
+            controls.Body.Add(presetRow);
+
+            var eyebrowField = AddTextField(controls.Body, "Eyebrow", eyebrow, value =>
             {
                 eyebrow = value;
                 refresh();
             });
-            AddTextField(controls.Body, "タイトル", title, value =>
+            var titleField = AddTextField(controls.Body, "タイトル", title, value =>
             {
                 title = value;
                 refresh();
             });
-            AddTextField(controls.Body, "説明", description, value =>
+            var descriptionField = AddTextField(controls.Body, "説明", description, value =>
             {
                 description = value;
                 refresh();
             });
-            AddTextField(controls.Body, "本文テキスト", bodyText, value =>
+            var badgeField = AddTextField(controls.Body, "バッジ", badgeText, value =>
+            {
+                badgeText = value;
+                refresh();
+            });
+            var bodyTextField = AddTextField(controls.Body, "本文テキスト", bodyText, value =>
             {
                 bodyText = value;
                 refresh();
@@ -403,12 +412,22 @@ namespace Ee4v.UI
 
             refresh = () =>
             {
-                card.SetState(new UiCardState(title, description, eyebrow));
+                eyebrowField.SetValueWithoutNotify(eyebrow);
+                titleField.SetValueWithoutNotify(title);
+                descriptionField.SetValueWithoutNotify(description);
+                badgeField.SetValueWithoutNotify(badgeText);
+                bodyTextField.SetValueWithoutNotify(bodyText);
+
+                card.SetState(new UiCardState(title, description, eyebrow, badgeText));
                 card.Body.Clear();
-                card.Body.Add(new Label(bodyText));
+
+                if (!string.IsNullOrWhiteSpace(bodyText))
+                {
+                    card.Body.Add(new Label(bodyText));
+                }
             };
 
-            refresh();
+            applyPreset(preset);
         }
 
         private void BuildMessageBannerStory(UiWindowPage page)
@@ -442,36 +461,6 @@ namespace Ee4v.UI
             refresh = () =>
             {
                 banner.SetState(new UiMessageBannerState(tone, title, message));
-            };
-
-            refresh();
-        }
-
-        private void BuildEmptyStateStory(UiWindowPage page)
-        {
-            var title = "結果なし";
-            var message = "現在の条件で表示対象がないときに使う状態です。";
-            Action refresh = null;
-
-            var controls = CreateControlsSection(page, "空状態の文言を編集します。");
-            AddTextField(controls.Body, "タイトル", title, value =>
-            {
-                title = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "メッセージ", message, value =>
-            {
-                message = value;
-                refresh();
-            });
-
-            var preview = CreatePreviewSection(page);
-            var emptyState = new UiEmptyState();
-            preview.Body.Add(CreatePreviewSurface(emptyState));
-
-            refresh = () =>
-            {
-                emptyState.SetState(new UiEmptyStateState(title, message));
             };
 
             refresh();
@@ -905,17 +894,17 @@ namespace Ee4v.UI
             refresh();
         }
 
-        private UiSection CreateControlsSection(UiWindowPage page, string description)
+        private UiCard CreateControlsSection(UiWindowPage page, string description)
         {
-            var section = new UiSection(new UiSectionState("コントロール", description));
-            section.userData = "catalog-controls-section";
-            page.Body.Add(section);
-            return section;
+            var card = new UiCard(new UiCardState("コントロール", description));
+            card.userData = "catalog-controls-section";
+            page.Body.Add(card);
+            return card;
         }
 
-        private UiSection CreatePreviewSection(UiWindowPage page)
+        private UiCard CreatePreviewSection(UiWindowPage page)
         {
-            var section = new UiSection(new UiSectionState("プレビュー", "コントロールの変更はすぐにプレビューへ反映されます。"));
+            var card = new UiCard(new UiCardState("プレビュー", "コントロールの変更はすぐにプレビューへ反映されます。"));
             var inserted = false;
             for (var i = 0; i < page.Body.childCount; i++)
             {
@@ -925,17 +914,17 @@ namespace Ee4v.UI
                     continue;
                 }
 
-                page.Body.Insert(i, section);
+                page.Body.Insert(i, card);
                 inserted = true;
                 break;
             }
 
             if (!inserted)
             {
-                page.Body.Add(section);
+                page.Body.Add(card);
             }
 
-            return section;
+            return card;
         }
 
         private VisualElement CreatePreviewSurface()
@@ -1106,20 +1095,21 @@ namespace Ee4v.UI
             return items;
         }
 
-        private UiSection CreateImplementationSection(StoryDefinition story)
+        private UiCard CreateImplementationSection(StoryDefinition story)
         {
-            var section = new UiSection(new UiSectionState(
+            var card = new UiCard(new UiCardState(
                 I18N.Get("catalog.common.implementation"),
                 I18N.Get("catalog.common.implementationDescription"),
+                null,
                 GetImplementationLabel(story.Implementation)));
 
-            section.Body.Add(new UiMetaList(new UiMetaListState(new List<UiMetaListItem>
+            card.Body.Add(new UiMetaList(new UiMetaListState(new List<UiMetaListItem>
             {
                 new UiMetaListItem(I18N.Get("catalog.common.implementation"), GetImplementationLabel(story.Implementation)),
                 new UiMetaListItem(I18N.Get("catalog.common.policy"), GetImplementationPolicy(story.Implementation))
             })));
 
-            return section;
+            return card;
         }
 
         private static string GetImplementationShortLabel(ComponentImplementationKind implementation)

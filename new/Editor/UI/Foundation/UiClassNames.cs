@@ -15,18 +15,12 @@ namespace Ee4v.UI
         public const string ToolbarRight = "ee4v-ui-toolbar__right";
         public const string ToolbarQuiet = "ee4v-ui-toolbar--quiet";
 
-        public const string Section = "ee4v-ui-section";
-        public const string SectionHeader = "ee4v-ui-section__header";
-        public const string SectionTitle = "ee4v-ui-section__title";
-        public const string SectionDescription = "ee4v-ui-section__description";
-        public const string SectionBadge = "ee4v-ui-section__badge";
-        public const string SectionBody = "ee4v-ui-section__body";
-
         public const string Card = "ee4v-ui-card";
         public const string CardHeader = "ee4v-ui-card__header";
         public const string CardEyebrow = "ee4v-ui-card__eyebrow";
         public const string CardTitle = "ee4v-ui-card__title";
         public const string CardDescription = "ee4v-ui-card__description";
+        public const string CardBadge = "ee4v-ui-card__badge";
         public const string CardHeaderRight = "ee4v-ui-card__header-right";
         public const string CardBody = "ee4v-ui-card__body";
 
@@ -38,8 +32,6 @@ namespace Ee4v.UI
         public const string BannerToneError = "ee4v-ui-banner--error";
 
         public const string EmptyState = "ee4v-ui-empty";
-        public const string EmptyStateTitle = "ee4v-ui-empty__title";
-        public const string EmptyStateMessage = "ee4v-ui-empty__message";
 
         public const string ActionRow = "ee4v-ui-action-row";
         public const string ActionRowLeft = "ee4v-ui-action-row__left";

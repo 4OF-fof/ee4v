@@ -31,15 +31,16 @@ namespace Ee4v.UI
 
     internal sealed class AnalyzerResultSection : VisualElement
     {
-        private readonly UiSection _section;
+        private readonly UiCard _section;
         private readonly GroupedResultList _resultList;
-        private readonly UiEmptyState _emptyState;
+        private readonly UiCard _emptyState;
 
         public AnalyzerResultSection(AnalyzerResultSectionState state = null)
         {
-            _section = new UiSection();
+            _section = new UiCard();
             _resultList = new GroupedResultList();
-            _emptyState = new UiEmptyState();
+            _emptyState = new UiCard();
+            _emptyState.AddToClassList(UiClassNames.EmptyState);
 
             Add(_section);
             _section.Body.Add(_resultList);
@@ -53,9 +54,10 @@ namespace Ee4v.UI
             state = state ?? new AnalyzerResultSectionState(string.Empty, string.Empty, null, string.Empty, string.Empty);
 
             var rowCount = GroupedResultList.CountRows(state.Results);
-            _section.SetState(new UiSectionState(state.Title, state.Description, rowCount.ToString()));
+            _section.SetState(new UiCardState(state.Title, state.Description, null, rowCount.ToString()));
             _resultList.SetState(state.Results);
-            _emptyState.SetState(new UiEmptyStateState(state.EmptyTitle, state.EmptyMessage));
+            _emptyState.SetState(new UiCardState(state.EmptyTitle, state.EmptyMessage));
+            _emptyState.Body.Clear();
 
             _resultList.style.display = rowCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
             _emptyState.style.display = rowCount == 0 ? DisplayStyle.Flex : DisplayStyle.None;
