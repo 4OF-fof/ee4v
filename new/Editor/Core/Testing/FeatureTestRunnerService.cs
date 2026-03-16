@@ -39,11 +39,6 @@ namespace Ee4v.Core.Testing
             get { return _activeRun != null; }
         }
 
-        public string GetProgressSummary()
-        {
-            return _activeRun == null ? "Idle" : "Running";
-        }
-
         public FeatureTestRunRecord GetRecord(string featureScope)
         {
             if (string.IsNullOrWhiteSpace(featureScope))
@@ -53,7 +48,7 @@ namespace Ee4v.Core.Testing
 
             if (!_records.TryGetValue(featureScope, out var record))
             {
-                record = new FeatureTestRunRecord(featureScope);
+                record = new FeatureTestRunRecord();
                 _records.Add(featureScope, record);
             }
 
@@ -311,7 +306,6 @@ namespace Ee4v.Core.Testing
             }
 
             _activeRun.HasStarted = true;
-            _activeRun.StartedAtUtc = DateTime.UtcNow;
             foreach (var descriptor in _activeRun.Descriptors)
             {
                 var record = GetRecord(descriptor.FeatureScope);
@@ -400,7 +394,6 @@ namespace Ee4v.Core.Testing
                 Descriptors = descriptors;
                 RunId = string.Empty;
                 RequestedAtUtc = DateTime.UtcNow;
-                StartedAtUtc = DateTime.UtcNow;
                 LastHeartbeatUtc = RequestedAtUtc;
                 LastUiNotifyUtc = RequestedAtUtc;
                 LastTestName = string.Empty;
@@ -411,8 +404,6 @@ namespace Ee4v.Core.Testing
             public string RunId { get; set; }
 
             public DateTime RequestedAtUtc { get; }
-
-            public DateTime StartedAtUtc { get; set; }
 
             public DateTime LastHeartbeatUtc { get; set; }
 

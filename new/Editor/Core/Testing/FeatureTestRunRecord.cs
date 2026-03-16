@@ -14,15 +14,12 @@ namespace Ee4v.Core.Testing
 
     internal sealed class FeatureTestRunRecord
     {
-        public FeatureTestRunRecord(string featureScope)
+        public FeatureTestRunRecord()
         {
-            FeatureScope = featureScope;
             Status = FeatureTestRunStatus.NotRun;
             Message = string.Empty;
             RunId = string.Empty;
         }
-
-        public string FeatureScope { get; }
 
         public FeatureTestRunStatus Status { get; set; }
 

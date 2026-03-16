@@ -31,10 +31,6 @@ namespace Ee4v.Core.Testing
 
         private void OnDisable()
         {
-            if (_runnerService != null)
-            {
-                _runnerService.Changed -= Repaint;
-            }
         }
 
         private void OnInspectorUpdate()
@@ -90,8 +86,8 @@ namespace Ee4v.Core.Testing
 
                 GUILayout.FlexibleSpace();
 
-                var status = _runnerService != null
-                    ? _runnerService.GetProgressSummary()
+                var status = _runnerService != null && _runnerService.IsRunInProgress
+                    ? I18N.Get("testing.window.running")
                     : I18N.Get("testing.window.idle");
                 GUILayout.Label(status, EditorStyles.miniLabel);
             }
@@ -258,7 +254,6 @@ namespace Ee4v.Core.Testing
             }
 
             _runnerService = new FeatureTestRunnerService();
-            _runnerService.Changed -= RepaintAllOpenWindows;
             _runnerService.Changed += RepaintAllOpenWindows;
         }
 

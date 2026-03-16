@@ -8,24 +8,34 @@ namespace Ee4v.Core.Settings
         [SettingsProvider]
         public static SettingsProvider CreateUserProvider()
         {
-            CoreLocalizationDefinitions.RegisterAll();
-            return new SettingsProvider("Preferences/4OF/ee4v", SettingsScope.User)
-            {
-                label = "ee4v",
-                guiHandler = searchContext => { SettingsUiRenderer.DrawScope(SettingScope.User, searchContext); },
-                keywords = new[] { "ee4v", "settings", "localization" }
-            };
+            return CreateProvider(
+                "Preferences/4OF/ee4v",
+                SettingsScope.User,
+                SettingScope.User,
+                new[] { "ee4v", "settings", "localization" });
         }
 
         [SettingsProvider]
         public static SettingsProvider CreateProjectProvider()
         {
-            CoreLocalizationDefinitions.RegisterAll();
-            return new SettingsProvider("Project/4OF/ee4v", SettingsScope.Project)
+            return CreateProvider(
+                "Project/4OF/ee4v",
+                SettingsScope.Project,
+                SettingScope.Project,
+                new[] { "ee4v", "settings", "project", "injector" });
+        }
+
+        private static SettingsProvider CreateProvider(
+            string path,
+            SettingsScope settingsScope,
+            SettingScope settingScope,
+            string[] keywords)
+        {
+            return new SettingsProvider(path, settingsScope)
             {
                 label = "ee4v",
-                guiHandler = searchContext => { SettingsUiRenderer.DrawScope(SettingScope.Project, searchContext); },
-                keywords = new[] { "ee4v", "settings", "project", "injector" }
+                guiHandler = searchContext => { SettingsUiRenderer.DrawScope(settingScope, searchContext); },
+                keywords = keywords
             };
         }
     }

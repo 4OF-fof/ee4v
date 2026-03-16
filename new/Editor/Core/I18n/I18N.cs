@@ -98,8 +98,6 @@ namespace Ee4v.Core.I18n
             InjectorApi.Repaint(InjectionChannel.HierarchyHeader);
             InjectorApi.Repaint(InjectionChannel.ProjectToolbar);
             InternalEditorUtility.RepaintAllViews();
-            EditorApplication.RepaintHierarchyWindow();
-            EditorApplication.RepaintProjectWindow();
         }
 
         private static IEnumerable<string> GetFallbackSequence()
