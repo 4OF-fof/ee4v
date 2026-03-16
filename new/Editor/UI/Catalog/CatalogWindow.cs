@@ -61,8 +61,8 @@ namespace Ee4v.UI
             _stories.Add(new StoryDefinition("toolbar-row", "Layout", "UiToolbarRow", "左右スロットを持つツールバー行です。", ComponentImplementationKind.UiToolkit, BuildToolbarRowStory));
             _stories.Add(new StoryDefinition("action-row", "Layout", "UiActionRow", "ボタン群を整列表示するアクション行です。", ComponentImplementationKind.UiToolkit, BuildActionRowStory));
             _stories.Add(new StoryDefinition("card", "Surface", "UiCard", "eyebrow と本文を持つカード面です。", ComponentImplementationKind.UiToolkit, BuildCardStory));
-            _stories.Add(new StoryDefinition("message-banner", "Feedback", "UiMessageBanner", "情報、警告、エラーを出し分けるバナーです。", ComponentImplementationKind.UiToolkit, BuildMessageBannerStory));
-            _stories.Add(new StoryDefinition("status-badge", "Status", "UiStatusBadge", "状態を短く表示するコンパクトなバッジです。", ComponentImplementationKind.UiToolkit, BuildStatusBadgeStory));
+            _stories.Add(new StoryDefinition("alerts", "Feedback", "Alerts", "情報、警告、エラーを出し分けるアラートです。", ComponentImplementationKind.UiToolkit, BuildAlertsStory));
+            _stories.Add(new StoryDefinition("status-badge", "Status", "StatusBadge", "状態を短く表示するコンパクトなバッジです。", ComponentImplementationKind.UiToolkit, BuildStatusBadgeStory));
             _stories.Add(new StoryDefinition("meta-list", "Data", "UiMetaList", "label/value を縦に並べるメタ情報リストです。", ComponentImplementationKind.UiToolkit, BuildMetaListStory));
             _stories.Add(new StoryDefinition("reference-row", "Results", "ReferenceRow", "Jump 操作付きの結果行です。", ComponentImplementationKind.UiToolkit, BuildReferenceRowStory));
             _stories.Add(new StoryDefinition("grouped-result-list", "Results", "GroupedResultList", "locale や scope ごとにまとめて表示する結果リストです。", ComponentImplementationKind.UiToolkit, BuildGroupedResultListStory));
@@ -404,7 +404,7 @@ namespace Ee4v.UI
             {
                 bodyText = value;
                 refresh();
-            });
+            }, true);
 
             var preview = CreatePreviewSection(page);
             var card = new UiCard();
@@ -423,14 +423,16 @@ namespace Ee4v.UI
 
                 if (!string.IsNullOrWhiteSpace(bodyText))
                 {
-                    card.Body.Add(new Label(bodyText));
+                    var bodyLabel = new Label(bodyText);
+                    bodyLabel.style.whiteSpace = WhiteSpace.Normal;
+                    card.Body.Add(bodyLabel);
                 }
             };
 
             applyPreset(preset);
         }
 
-        private void BuildMessageBannerStory(UiWindowPage page)
+        private void BuildAlertsStory(UiWindowPage page)
         {
             var tone = UiBannerTone.Info;
             var title = "情報表示";
@@ -455,12 +457,12 @@ namespace Ee4v.UI
             });
 
             var preview = CreatePreviewSection(page);
-            var banner = new UiMessageBanner();
-            preview.Body.Add(CreatePreviewSurface(banner));
+            var alerts = new Alerts();
+            preview.Body.Add(CreatePreviewSurface(alerts));
 
             refresh = () =>
             {
-                banner.SetState(new UiMessageBannerState(tone, title, message));
+                alerts.SetState(new AlertsState(tone, title, message));
             };
 
             refresh();
@@ -537,14 +539,14 @@ namespace Ee4v.UI
             });
 
             var preview = CreatePreviewSection(page);
-            var badge = new UiStatusBadge();
+            var badge = new StatusBadge();
             var surface = CreatePreviewSurface();
             surface.Add(badge);
             preview.Body.Add(surface);
 
             refresh = () =>
             {
-                badge.SetState(new UiStatusBadgeState(text, tone));
+                badge.SetState(new StatusBadgeState(text, tone));
             };
 
             refresh();
@@ -949,9 +951,15 @@ namespace Ee4v.UI
             };
         }
 
-        private static TextField AddTextField(VisualElement parent, string label, string value, Action<string> onChanged)
+        private static TextField AddTextField(VisualElement parent, string label, string value, Action<string> onChanged, bool multiline = false)
         {
             var field = new TextField(label);
+            field.multiline = multiline;
+            if (multiline)
+            {
+                field.style.minHeight = 72f;
+            }
+
             field.value = value;
             field.RegisterValueChangedCallback(evt => onChanged(evt.newValue));
             parent.Add(field);

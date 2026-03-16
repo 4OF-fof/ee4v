@@ -113,17 +113,21 @@
 
 .ee4v-ui-card__badge,
 .ee4v-ui-status {
-    padding-left: 8px;
-    padding-right: 8px;
-    padding-top: 2px;
-    padding-bottom: 2px;
-    border-top-left-radius: 999px;
-    border-top-right-radius: 999px;
-    border-bottom-left-radius: 999px;
-    border-bottom-right-radius: 999px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    min-height: 20px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
     font-size: 11px;
     -unity-font-style: bold;
     background-color: rgba(120, 120, 120, 0.35);
+    white-space: nowrap;
+    unity-text-align: middle-center;
+    align-self: flex-start;
 }
 
 .ee4v-ui-card__body {

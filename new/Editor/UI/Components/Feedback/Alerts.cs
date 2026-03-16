@@ -9,9 +9,9 @@ namespace Ee4v.UI
         Error
     }
 
-    internal sealed class UiMessageBannerState
+    internal sealed class AlertsState
     {
-        public UiMessageBannerState(UiBannerTone tone, string title, string message)
+        public AlertsState(UiBannerTone tone, string title, string message)
         {
             Tone = tone;
             Title = title ?? string.Empty;
@@ -25,12 +25,12 @@ namespace Ee4v.UI
         public string Message { get; }
     }
 
-    internal sealed class UiMessageBanner : VisualElement
+    internal sealed class Alerts : VisualElement
     {
         private readonly Label _titleLabel;
         private readonly Label _messageLabel;
 
-        public UiMessageBanner(UiMessageBannerState state = null)
+        public Alerts(AlertsState state = null)
         {
             AddToClassList(UiClassNames.Banner);
 
@@ -43,12 +43,12 @@ namespace Ee4v.UI
             Add(_titleLabel);
             Add(_messageLabel);
 
-            SetState(state ?? new UiMessageBannerState(UiBannerTone.Info, string.Empty, string.Empty));
+            SetState(state ?? new AlertsState(UiBannerTone.Info, string.Empty, string.Empty));
         }
 
-        public void SetState(UiMessageBannerState state)
+        public void SetState(AlertsState state)
         {
-            state = state ?? new UiMessageBannerState(UiBannerTone.Info, string.Empty, string.Empty);
+            state = state ?? new AlertsState(UiBannerTone.Info, string.Empty, string.Empty);
 
             _titleLabel.text = state.Title;
             _titleLabel.style.display = string.IsNullOrWhiteSpace(state.Title) ? DisplayStyle.None : DisplayStyle.Flex;

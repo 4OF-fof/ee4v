@@ -12,9 +12,9 @@ namespace Ee4v.UI
         Inconclusive
     }
 
-    internal sealed class UiStatusBadgeState
+    internal sealed class StatusBadgeState
     {
-        public UiStatusBadgeState(string text, UiStatusTone tone)
+        public StatusBadgeState(string text, UiStatusTone tone)
         {
             Text = text ?? string.Empty;
             Tone = tone;
@@ -25,17 +25,17 @@ namespace Ee4v.UI
         public UiStatusTone Tone { get; }
     }
 
-    internal sealed class UiStatusBadge : Label
+    internal sealed class StatusBadge : Label
     {
-        public UiStatusBadge(UiStatusBadgeState state = null)
+        public StatusBadge(StatusBadgeState state = null)
         {
             AddToClassList(UiClassNames.StatusBadge);
-            SetState(state ?? new UiStatusBadgeState(string.Empty, UiStatusTone.Idle));
+            SetState(state ?? new StatusBadgeState(string.Empty, UiStatusTone.Idle));
         }
 
-        public void SetState(UiStatusBadgeState state)
+        public void SetState(StatusBadgeState state)
         {
-            state = state ?? new UiStatusBadgeState(string.Empty, UiStatusTone.Idle);
+            state = state ?? new StatusBadgeState(string.Empty, UiStatusTone.Idle);
             text = state.Text;
             style.display = string.IsNullOrWhiteSpace(state.Text) ? DisplayStyle.None : DisplayStyle.Flex;
 

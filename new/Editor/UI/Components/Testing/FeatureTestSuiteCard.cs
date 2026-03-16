@@ -87,13 +87,13 @@ namespace Ee4v.UI
     internal sealed class FeatureTestSuiteCard : VisualElement
     {
         private readonly UiCard _card;
-        private readonly UiStatusBadge _statusBadge;
+        private readonly StatusBadge _statusBadge;
         private readonly UiMetaList _metaList;
         private readonly Label _descriptionLabel;
         private readonly VisualElement _casesContainer;
         private readonly Label _resultTitleLabel;
         private readonly Label _resultCountsLabel;
-        private readonly UiMessageBanner _resultBanner;
+        private readonly Alerts _resultBanner;
         private readonly Button _runButton;
         private Action _runAction;
 
@@ -102,7 +102,7 @@ namespace Ee4v.UI
             AddToClassList(UiClassNames.FeatureSuite);
 
             _card = new UiCard();
-            _statusBadge = new UiStatusBadge();
+            _statusBadge = new StatusBadge();
             _metaList = new UiMetaList();
             _descriptionLabel = new Label();
             _descriptionLabel.AddToClassList(UiClassNames.CardDescription);
@@ -131,7 +131,7 @@ namespace Ee4v.UI
             _resultCountsLabel = new Label();
             _resultCountsLabel.AddToClassList(UiClassNames.FeatureSuiteResultCounts);
 
-            _resultBanner = new UiMessageBanner();
+            _resultBanner = new Alerts();
 
             resultContainer.Add(_resultTitleLabel);
             resultContainer.Add(_resultCountsLabel);
@@ -178,7 +178,7 @@ namespace Ee4v.UI
                 UiBannerTone.Info);
 
             _card.SetState(new UiCardState(state.Title, string.Empty, state.Scope));
-            _statusBadge.SetState(new UiStatusBadgeState(state.StatusText, state.StatusTone));
+            _statusBadge.SetState(new StatusBadgeState(state.StatusText, state.StatusTone));
             _metaList.SetState(state.MetaListState);
 
             _descriptionLabel.text = state.Description;
@@ -207,7 +207,7 @@ namespace Ee4v.UI
             _resultCountsLabel.text = state.ResultCounts;
             _resultCountsLabel.style.display = string.IsNullOrWhiteSpace(state.ResultCounts) ? DisplayStyle.None : DisplayStyle.Flex;
 
-            _resultBanner.SetState(new UiMessageBannerState(state.ResultTone, string.Empty, state.ResultMessage));
+            _resultBanner.SetState(new AlertsState(state.ResultTone, string.Empty, state.ResultMessage));
             _resultBanner.style.display = string.IsNullOrWhiteSpace(state.ResultMessage) ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
