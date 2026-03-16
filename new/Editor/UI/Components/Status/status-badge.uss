@@ -1,0 +1,15 @@
+.ee4v-ui-status--idle {
+    background-color: rgba(128, 128, 128, 0.35);
+}
+
+.ee4v-ui-status--running {
+    background-color: rgba(220, 180, 72, 0.35);
+}
+
+.ee4v-ui-status--passed {
+    background-color: rgba(96, 184, 126, 0.35);
+}
+
+.ee4v-ui-status--failed {
+    background-color: rgba(220, 92, 92, 0.35);
+}

@@ -109,3 +109,7 @@
 .ee4v-ui-catalog-preview-surface--compact {
     min-height: 0;
 }
+
+.ee4v-ui-catalog-preview-card--flush {
+    margin-bottom: 0;
+}

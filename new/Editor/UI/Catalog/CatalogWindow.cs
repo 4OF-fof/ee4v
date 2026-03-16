@@ -111,8 +111,12 @@ namespace Ee4v.UI
             var root = rootVisualElement;
             root.Clear();
             root.AddToClassList(UiClassNames.Root);
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Styles/ee4v-ui.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Styles/catalog-window.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Shared/shared.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Surface/info-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Surface/tab-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Feedback/alerts.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Status/status-badge.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Catalog/catalog-window.uss");
 
             var shell = new VisualElement();
             shell.AddToClassList("ee4v-ui-catalog-shell");
@@ -401,7 +405,7 @@ namespace Ee4v.UI
                     });
 
                 tabCard.Content.Clear();
-                tabCard.Content.Add(new InfoCard(new InfoCardState(
+                var previewCard = new InfoCard(new InfoCardState(
                     selectedTabId == "basic" ? "基本表示" : selectedTabId == "detail" ? "詳細表示" : "空状態表示",
                     selectedTabId == "basic"
                         ? "タブ切り替え後の content slot に任意の UI を配置できます。"
@@ -409,7 +413,9 @@ namespace Ee4v.UI
                             ? "複数のフォーム、説明文、ステータスなどを任意に構成できます。"
                             : "コンポーネント未選択時やデータ空状態の panel としても使えます。",
                     null,
-                    selectedTabId.ToUpperInvariant())));
+                    selectedTabId.ToUpperInvariant()));
+                previewCard.AddToClassList("ee4v-ui-catalog-preview-card--flush");
+                tabCard.Content.Add(previewCard);
             };
 
             refresh();

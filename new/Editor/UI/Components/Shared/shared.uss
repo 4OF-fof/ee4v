@@ -1,0 +1,29 @@
+.ee4v-ui {
+    flex-grow: 1;
+}
+
+.ee4v-ui Label {
+    color: rgb(230, 230, 230);
+}
+
+.ee4v-ui Button {
+    color: rgb(230, 230, 230);
+}
+
+.ee4v-ui-info-card__badge,
+.ee4v-ui-status {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    min-height: 20px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    font-size: 11px;
+    background-color: rgba(120, 120, 120, 0.35);
+    white-space: nowrap;
+    -unity-text-align: middle-center;
+    align-self: flex-start;
+}
