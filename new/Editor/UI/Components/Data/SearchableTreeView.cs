@@ -25,12 +25,15 @@ namespace Ee4v.UI
 
     internal sealed class SearchableTreeView<TData> : VisualElement
     {
-        private readonly SearchField _searchField;
+        private readonly VisualElement _searchContainer;
+        private readonly TextField _searchInput;
+        private readonly Button _clearButton;
         private readonly TreeView _treeView;
         private readonly UiTextElement _emptyLabel;
         private readonly Action<VisualElement, TData> _bindItem;
         private readonly Action<IReadOnlyList<TData>> _onSelectionChanged;
         private IReadOnlyList<SearchableTreeItemData<TData>> _sourceItems;
+        private Action<string> _onSearchValueChanged;
 
         public SearchableTreeView(
             Func<VisualElement> makeItem,
@@ -48,8 +51,41 @@ namespace Ee4v.UI
 
             AddToClassList(UiClassNames.SearchableTreeView);
 
-            _searchField = new SearchField(string.Empty, _ => RefreshTree());
-            Add(_searchField);
+            _searchContainer = new VisualElement();
+            _searchContainer.AddToClassList(UiClassNames.SearchableTreeViewSearch);
+            _searchContainer.style.minHeight = 18f;
+            _searchContainer.style.height = 18f;
+
+            _searchInput = new TextField();
+            _searchInput.AddToClassList(UiClassNames.SearchableTreeViewSearchInput);
+            _searchInput.style.minHeight = 0f;
+            _searchInput.style.height = 14f;
+            _searchInput.style.marginTop = 0f;
+            _searchInput.style.marginBottom = 0f;
+            _searchInput.RegisterValueChangedCallback(evt =>
+            {
+                RefreshSearchVisualState(evt.newValue);
+                if (_onSearchValueChanged != null)
+                {
+                    _onSearchValueChanged(evt.newValue ?? string.Empty);
+                }
+            });
+
+            _clearButton = new Button(ClearSearch)
+            {
+                text = "X"
+            };
+            _clearButton.AddToClassList(UiClassNames.SearchableTreeViewSearchClear);
+            _clearButton.style.width = 12f;
+            _clearButton.style.minWidth = 12f;
+            _clearButton.style.maxWidth = 12f;
+            _clearButton.style.height = 12f;
+            _clearButton.style.minHeight = 12f;
+            _clearButton.style.maxHeight = 12f;
+
+            _searchContainer.Add(_searchInput);
+            _searchContainer.Add(_clearButton);
+            Add(_searchContainer);
 
             _treeView = new TreeView();
             _treeView.AddToClassList(UiClassNames.SearchableTreeViewTree);
@@ -65,6 +101,7 @@ namespace Ee4v.UI
             Add(_emptyLabel);
 
             SetEmptyText(emptyText);
+            SetSearchState(string.Empty, _ => RefreshTree());
             SetItems(null);
         }
 
@@ -127,7 +164,7 @@ namespace Ee4v.UI
 
         private void RefreshTree()
         {
-            var filteredItems = FilterItems(_sourceItems, _searchField.Value);
+            var filteredItems = FilterItems(_sourceItems, _searchInput.value);
             _treeView.SetRootItems(filteredItems);
             _treeView.Rebuild();
             _treeView.ExpandAll();
@@ -135,6 +172,31 @@ namespace Ee4v.UI
             var hasItems = filteredItems.Count > 0;
             _treeView.style.display = hasItems ? DisplayStyle.Flex : DisplayStyle.None;
             _emptyLabel.style.display = hasItems ? DisplayStyle.None : DisplayStyle.Flex;
+        }
+
+        private void SetSearchState(string value, Action<string> onValueChanged = null)
+        {
+            _onSearchValueChanged = onValueChanged;
+            _searchInput.SetValueWithoutNotify(value ?? string.Empty);
+            _searchInput.tooltip = "Search";
+            RefreshSearchVisualState(_searchInput.value);
+        }
+
+        private void ClearSearch()
+        {
+            if (string.IsNullOrEmpty(_searchInput.value))
+            {
+                return;
+            }
+
+            _searchInput.value = string.Empty;
+        }
+
+        private void RefreshSearchVisualState(string value)
+        {
+            var hasValue = !string.IsNullOrWhiteSpace(value);
+            _searchContainer.EnableInClassList(UiClassNames.SearchableTreeViewSearchHasValue, hasValue);
+            _clearButton.style.display = hasValue ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private static List<TreeViewItemData<SearchableTreeItemData<TData>>> FilterItems(IReadOnlyList<SearchableTreeItemData<TData>> sourceItems, string query)

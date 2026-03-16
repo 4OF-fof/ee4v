@@ -33,11 +33,11 @@ namespace Ee4v.UI
         public const string TabCardPanel = "ee4v-ui-tab-card__panel";
         public const string TabCardContent = "ee4v-ui-tab-card__content";
 
-        public const string SearchField = "ee4v-ui-search-field";
-        public const string SearchFieldInput = "ee4v-ui-search-field__input";
-        public const string SearchFieldClear = "ee4v-ui-search-field__clear";
-        public const string SearchFieldHasValue = "ee4v-ui-search-field--has-value";
         public const string SearchableTreeView = "ee4v-ui-searchable-tree-view";
+        public const string SearchableTreeViewSearch = "ee4v-ui-searchable-tree-view__search";
+        public const string SearchableTreeViewSearchInput = "ee4v-ui-searchable-tree-view__search-input";
+        public const string SearchableTreeViewSearchClear = "ee4v-ui-searchable-tree-view__search-clear";
+        public const string SearchableTreeViewSearchHasValue = "ee4v-ui-searchable-tree-view__search--has-value";
         public const string SearchableTreeViewTree = "ee4v-ui-searchable-tree-view__tree";
         public const string SearchableTreeViewEmpty = "ee4v-ui-searchable-tree-view__empty";
 

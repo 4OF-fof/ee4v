@@ -17,9 +17,8 @@ namespace Ee4v.UI
 
         private enum InfoCardStoryPreset
         {
-            Default,
-            Section,
-            EmptyState
+            Simple,
+            Result
         }
 
         private readonly List<StoryDefinition> _stories = new List<StoryDefinition>();
@@ -58,22 +57,12 @@ namespace Ee4v.UI
             }
 
             _stories.Add(new StoryDefinition(
-                "search-field",
-                "Data",
-                "SearchField",
-                "単体でも使える検索入力コンポーネントです。",
-                "文字列入力とクリア操作を 1 つの input surface として提供します。list や tree のローカル filter 入力に使う前提です。",
-                new string[0],
-                ComponentImplementationKind.UiToolkit,
-                BuildSearchFieldStory));
-
-            _stories.Add(new StoryDefinition(
                 "searchable-tree-view",
                 "Data",
                 "SearchableTreeView",
                 "検索窓と tree view をまとめて提供する、絞り込み可能なツリーコンポーネントです。",
                 "呼び出し側は階層データと row 描画だけを渡し、検索文字列の状態管理や tree の絞り込みは component 側に任せます。検索欄と tree 本体も同じ面として見えるように一体の box で扱います。",
-                new[] { "SearchField" },
+                new string[0],
                 ComponentImplementationKind.UiToolkit,
                 BuildSearchableTreeViewStory));
 
@@ -92,7 +81,7 @@ namespace Ee4v.UI
                 "Surface",
                 "InfoCard",
                 "タイトル、説明、eyebrow、badge、body を組み合わせて情報面を構成する基本コンポーネントです。",
-                "フォームセクション、空状態、密度の高い情報カードの土台として使います。header の各値が欠けても自然に見えるように余白を調整します。",
+                "シンプルな情報表示から、結果一覧の見出し付きカードまで幅広く使う土台です。header の各値が欠けても自然に見えるように余白を調整し、内蔵の badge と本文を組み合わせて情報密度を調整できます。",
                 new string[0],
                 ComponentImplementationKind.UiToolkit,
                 BuildInfoCardStory));
@@ -132,7 +121,6 @@ namespace Ee4v.UI
             root.Clear();
             root.AddToClassList(UiClassNames.Root);
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Data/search-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Data/searchable-tree-view.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Surface/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Surface/tab-card.uss");
@@ -256,12 +244,12 @@ namespace Ee4v.UI
 
         private void BuildInfoCardStory(VisualElement parent)
         {
-            var preset = InfoCardStoryPreset.Default;
-            var eyebrow = "Core";
+            var preset = InfoCardStoryPreset.Simple;
+            var eyebrow = string.Empty;
             var title = "Feature Test Manager";
-            var description = "密度の高い Editor パネル向けのカードレイアウトです。";
+            var description = string.Empty;
             var badgeText = string.Empty;
-            var bodyText = "カードはセクション内に積んだり、単体の表示面として使えます。";
+            var bodyText = "カードは単体の情報表示面や、設定グループの土台として使えます。";
             Action refresh = null;
 
             Action<InfoCardStoryPreset> applyPreset = selectedPreset =>
@@ -269,26 +257,19 @@ namespace Ee4v.UI
                 preset = selectedPreset;
                 switch (selectedPreset)
                 {
-                    case InfoCardStoryPreset.Section:
-                        eyebrow = string.Empty;
-                        title = "不足キー";
-                        description = "解析結果のグループ表示を包むセクションです。";
+                    case InfoCardStoryPreset.Result:
+                        eyebrow = "I18N";
+                        title = "解析結果";
+                        description = "件数付きの結果カードとして使う用途を想定した preset です。";
                         badgeText = "12";
-                        bodyText = "本文には結果リスト、カード、任意のコントロールを配置できます。";
-                        break;
-                    case InfoCardStoryPreset.EmptyState:
-                        eyebrow = string.Empty;
-                        title = "結果なし";
-                        description = "現在の条件で表示対象がないときに使う状態です。";
-                        badgeText = string.Empty;
-                        bodyText = string.Empty;
+                        bodyText = "不足キー 8 件\n未参照エントリ 4 件";
                         break;
                     default:
-                        eyebrow = "Core";
+                        eyebrow = string.Empty;
                         title = "Feature Test Manager";
-                        description = "密度の高い Editor パネル向けのカードレイアウトです。";
+                        description = string.Empty;
                         badgeText = string.Empty;
-                        bodyText = "カードはセクション内に積んだり、単体の表示面として使えます。";
+                        bodyText = "カードは単体の情報表示面や、設定グループの土台として使えます。";
                         break;
                 }
 
@@ -336,9 +317,8 @@ namespace Ee4v.UI
                     new TabCardState(
                         new[]
                         {
-                            new TabCardTabState(InfoCardStoryPreset.Default.ToString(), "標準"),
-                            new TabCardTabState(InfoCardStoryPreset.Section.ToString(), "セクション風"),
-                            new TabCardTabState(InfoCardStoryPreset.EmptyState.ToString(), "空状態風")
+                            new TabCardTabState(InfoCardStoryPreset.Simple.ToString(), "Simple"),
+                            new TabCardTabState(InfoCardStoryPreset.Result.ToString(), "Result")
                         },
                         preset.ToString()),
                     id => applyPreset((InfoCardStoryPreset)Enum.Parse(typeof(InfoCardStoryPreset), id)));
@@ -362,14 +342,6 @@ namespace Ee4v.UI
 
             applyPreset(preset);
             FinalizeControlsSection(parent, controls);
-        }
-
-        private void BuildSearchFieldStory(VisualElement parent)
-        {
-            var preview = CreatePreviewSection(parent);
-            var surface = CreatePreviewSurface(true);
-            surface.Add(new SearchField("InfoCard"));
-            preview.Body.Add(surface);
         }
 
         private void BuildSearchableTreeViewStory(VisualElement parent)
