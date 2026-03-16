@@ -1,0 +1,100 @@
+.ee4v-ui-catalog-shell {
+    flex-direction: row;
+    flex-grow: 1;
+}
+
+.ee4v-ui-catalog-shell__navigator {
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-right-width: 1px;
+    border-right-color: rgba(255, 255, 255, 0.07);
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.ee4v-ui-catalog-shell__navigator-title {
+    font-size: 16px;
+    -unity-font-style: bold;
+    margin-bottom: 4px;
+}
+
+.ee4v-ui-catalog-shell__navigator-subtitle {
+    color: rgba(210, 210, 210, 0.78);
+    margin-bottom: 10px;
+    white-space: normal;
+}
+
+.ee4v-ui-catalog-shell__navigator-scroll {
+    flex-grow: 1;
+}
+
+.ee4v-ui-catalog-shell__group-title {
+    margin-top: 10px;
+    margin-bottom: 4px;
+    font-size: 11px;
+    -unity-font-style: bold;
+    color: rgba(210, 210, 210, 0.82);
+}
+
+.ee4v-ui-catalog-shell__nav-button {
+    margin-bottom: 6px;
+}
+
+.ee4v-ui-catalog-shell__foldout {
+    margin-bottom: 4px;
+}
+
+.ee4v-ui-catalog-shell__foldout .unity-foldout__content {
+    margin-left: 12px;
+    margin-top: 4px;
+}
+
+.ee4v-ui-catalog-shell__nav-button--selected {
+    border-left-width: 3px;
+    border-left-color: rgb(86, 156, 214);
+    background-color: rgba(86, 156, 214, 0.16);
+}
+
+.ee4v-ui-catalog-shell__content {
+    flex-grow: 1;
+}
+
+.ee4v-ui-page__body {
+    padding-right: 6px;
+}
+
+.ee4v-ui-page__body .unity-base-field {
+    margin-bottom: 8px;
+}
+
+.ee4v-ui-catalog-preview-surface {
+    min-height: 220px;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-color: rgba(255, 255, 255, 0.06);
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+    border-left-color: rgba(255, 255, 255, 0.06);
+    border-right-color: rgba(255, 255, 255, 0.06);
+    background-color: rgba(255, 255, 255, 0.02);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.ee4v-ui-catalog-preview-surface > .ee4v-ui-page {
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}

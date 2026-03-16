@@ -1,0 +1,145 @@
+{
+  "catalog": {
+    "window": {
+      "title": "UI Catalog",
+      "description": "Preview components for the upcoming UI-based replacements of I18n Analyzer and Feature Test Manager.",
+      "refresh": "Refresh",
+      "reloadLanguage": "Reload I18N",
+      "previewOnly": "Preview only"
+    },
+    "common": {
+      "scope": "Scope",
+      "assembly": "Assembly",
+      "mode": "Mode",
+      "preview": "Catalog"
+    },
+    "sections": {
+      "overview": {
+        "title": "Overview",
+        "description": "This window is a visual inventory for the first UI library step."
+      },
+      "primitives": {
+        "title": "Primitives",
+        "description": "Low-level building blocks hosted under Editor/UI."
+      },
+      "feature": {
+        "title": "Feature Test Components",
+        "description": "Card states intended for FeatureTestManagerWindow."
+      },
+      "analysis": {
+        "title": "Analyzer Components",
+        "description": "Grouped sections intended for I18nAnalyzerWindow."
+      }
+    },
+    "overview": {
+      "banner": {
+        "title": "CatalogWindow",
+        "message": "UiWindowPage hosts this screen and demonstrates the page shell, toolbar, and scroll body."
+      }
+    },
+    "primitives": {
+      "card": {
+        "title": "Card",
+        "description": "Container with eyebrow, title, description, and body slot.",
+        "body": "Use this as the base surface for suite summaries and dense editor content."
+      },
+      "banner": {
+        "title": "Message banners",
+        "description": "Informational and error messaging.",
+        "infoTitle": "Informational state",
+        "infoMessage": "Useful for non-blocking guidance, status notes, and preview hints.",
+        "errorTitle": "Error state",
+        "errorMessage": "Use the error tone for failed runs, invalid configuration, and blocked analysis."
+      },
+      "empty": {
+        "title": "Empty state",
+        "description": "Dedicated placeholder for empty result sets.",
+        "emptyTitle": "Nothing to show",
+        "emptyMessage": "Use this when a section has no data after filtering or analysis."
+      },
+      "meta": {
+        "title": "Meta list",
+        "description": "Aligned label/value rows for identifiers and compact metadata."
+      },
+      "actions": {
+        "title": "Action row",
+        "description": "Button group aligned for toolbar or card footer usage.",
+        "primary": "Primary",
+        "secondary": "Secondary"
+      },
+      "status": {
+        "title": "Status badges",
+        "description": "Compact status indicators used in toolbar and card headers."
+      }
+    },
+    "status": {
+      "idle": "Idle",
+      "running": "Running",
+      "passed": "Passed",
+      "failed": "Failed"
+    },
+    "feature": {
+      "shared": {
+        "description": "Suite preview showing title, metadata, registered cases, and the latest execution summary.",
+        "run": "Run",
+        "caseA": {
+          "title": "Discovers registered suites",
+          "description": "Checks that static registrars are resolved and listed."
+        },
+        "caseB": {
+          "title": "Applies assembly filters",
+          "description": "Confirms that the run targets only the selected feature assembly."
+        }
+      },
+      "idle": {
+        "title": "Idle suite card",
+        "resultTitle": "Last result: Not run",
+        "resultCounts": "No runs yet",
+        "resultMessage": "The suite has not been executed in this session."
+      },
+      "running": {
+        "title": "Running suite card",
+        "resultTitle": "Last result: Running",
+        "resultCounts": "Pass 2  Fail 0  Skip 0  Inc 0  1.24s",
+        "resultMessage": "A new run is in progress. Actions are temporarily disabled."
+      },
+      "passed": {
+        "title": "Passed suite card",
+        "resultTitle": "Last result: Passed",
+        "resultCounts": "Pass 4  Fail 0  Skip 0  Inc 0  0.48s",
+        "resultMessage": "All registered test cases completed successfully."
+      },
+      "failed": {
+        "title": "Failed suite card",
+        "resultTitle": "Last result: Failed",
+        "resultCounts": "Pass 3  Fail 1  Skip 0  Inc 0  0.83s",
+        "resultMessage": "One assertion failed while validating the expected registry shape."
+      }
+    },
+    "analysis": {
+      "reference": {
+        "primary": "settings.language.label",
+        "secondary": "CoreLocalizationDefinitions.cs:18",
+        "action": "Jump"
+      },
+      "populated": {
+        "title": "Populated analyzer section",
+        "description": "Grouped missing or unused keys with jump actions.",
+        "groupDescription": "Rows map cleanly to locale/scope groups.",
+        "groupTitle": "[{0}][{1}] {2} item(s)"
+      },
+      "empty": {
+        "title": "Empty analyzer section",
+        "description": "Shows how the analyzer renders when no issues are present.",
+        "emptyTitle": "No issues detected",
+        "emptyMessage": "Use this state when the current analysis has no rows to report."
+      },
+      "rows": {
+        "firstPrimary": "testing.window.runAll",
+        "firstSecondary": "FeatureTestManagerWindow.cs:81",
+        "secondPrimary": "catalog.window.title",
+        "secondSecondary": "CatalogWindow.cs:35"
+      }
+    }
+  }
+}
