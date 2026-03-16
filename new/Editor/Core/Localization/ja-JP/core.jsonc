@@ -14,5 +14,26 @@
     "validation": {
       "locale": "言語コードは必須です。"
     }
+  },
+  "testing": {
+    "window": {
+      "title": "ee4v Test Manager",
+      "refresh": "更新",
+      "run": "実行",
+      "runAll": "すべて実行",
+      "running": "実行中",
+      "idle": "待機中",
+      "lastResult": "直近結果",
+      "notRunYet": "まだテストは実行されていません。",
+      "noSuites": "登録済みの feature テストがありません。"
+    },
+    "status": {
+      "notRun": "未実行",
+      "running": "実行中",
+      "passed": "成功",
+      "failed": "失敗",
+      "skipped": "スキップ",
+      "inconclusive": "未確定"
+    }
   }
 }

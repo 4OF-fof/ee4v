@@ -14,5 +14,26 @@
     "validation": {
       "locale": "Locale is required."
     }
+  },
+  "testing": {
+    "window": {
+      "title": "ee4v Test Manager",
+      "refresh": "Refresh",
+      "run": "Run",
+      "runAll": "Run All",
+      "running": "Running",
+      "idle": "Idle",
+      "lastResult": "Last result",
+      "notRunYet": "No test has been run yet.",
+      "noSuites": "No feature test suites are registered."
+    },
+    "status": {
+      "notRun": "Not run",
+      "running": "Running",
+      "passed": "Passed",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "inconclusive": "Inconclusive"
+    }
   }
 }

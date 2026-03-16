@@ -1,9 +1,8 @@
 {
-  "name": "Ee4v.Editor",
-  "rootNamespace": "Ee4v",
+  "name": "Ee4v.Core.Tests.Editor",
+  "rootNamespace": "Ee4v.Core.Tests",
   "references": [
-    "UnityEditor.TestRunner",
-    "UnityEngine.TestRunner"
+    "Ee4v.Editor"
   ],
   "includePlatforms": [
     "Editor"
@@ -15,5 +14,8 @@
   "autoReferenced": true,
   "defineConstraints": [],
   "versionDefines": [],
-  "noEngineReferences": false
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
 }

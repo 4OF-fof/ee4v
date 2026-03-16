@@ -37,6 +37,11 @@ feature 固有の実装や確認コードは各 feature 配下に置き、`Core`
 - 設定の定義、保存、UI 自動描画を行う設定基盤を置く
 - feature は `SettingDefinition` を登録して user / project 設定を利用する
 
+### `Editor/Core/Testing`
+- feature 単位の EditMode テスト登録、一覧化、実行管理を行う
+- feature の test assembly から registrar を通して suite を登録する
+- Unity Test Runner API 依存はこの層に閉じ込める
+
 ## File Roles
 
 ### `Editor/Core/Debug`
@@ -92,8 +97,16 @@ feature 固有の実装や確認コードは各 feature 配下に置き、`Core`
 ### `Editor/Core/Settings`
 - `EditorPrefsSettingStore.cs`
   user スコープ設定を EditorPrefs に保存する store
+- `DefaultEditorPrefsFacade.cs`
+  `EditorPrefs` への実アクセスを隔離する facade 実装
+- `DefaultFileSystem.cs`
+  project 設定ファイル入出力の実ファイルアクセス実装
 - `ISettingStore.cs`
   設定保存先の抽象インターフェース
+- `IEditorPrefsFacade.cs`
+  `EditorPrefs` 操作の抽象
+- `IFileSystem.cs`
+  ファイル / ディレクトリアクセスの抽象
 - `ProjectFileSettingStore.cs`
   project スコープ設定を `ProjectSettings/ee4v.settings.json` に保存する store
 - `RegisteredSettingsProviders.cs`
@@ -113,9 +126,24 @@ feature 固有の実装や確認コードは各 feature 配下に置き、`Core`
 - `SettingValidationResult.cs`
   validator の成功 / 失敗結果を表現する
 
+### `Editor/Core/Testing`
+- `IFeatureTestRegistrar.cs`
+  test assembly 側の登録入口インターフェース
+- `FeatureTestDescriptor.cs`
+  feature test suite の表示名、scope、assembly 名などを持つ登録モデル
+- `FeatureTestRegistry.cs`
+  `TypeCache` で registrar を発見し、重複検証とソートを行う registry
+- `UnityFeatureTestRunnerGateway.cs`
+  Unity Test Runner API を呼ぶ gateway 実装
+- `FeatureTestRunnerService.cs`
+  feature 単位 / 全件実行の起動と直近結果の保持を担うサービス
+- `FeatureTestManagerWindow.cs`
+  suite 一覧、Run、Run All、直近結果を扱う管理ウィンドウ
+
 ## Usage Boundaries
 
 - feature は Unity 内部 API に直接依存せず、必要なら `Core/Internal/EditorAPI` の facade を通す
 - feature 固有の localization は各 feature 配下に置き、`Core/Localization` には置かない
 - feature 固有の debug UI や確認コードは `Core/Debug` ではなく feature 配下に置く
+- feature 固有のテストコードは `Editor/<Feature>/Test/Editor` に置き、`Core/Testing` に registrar で登録する
 - `Core` に新しい要素を追加する時は、「複数 feature で再利用されるか」を基準に判断する
