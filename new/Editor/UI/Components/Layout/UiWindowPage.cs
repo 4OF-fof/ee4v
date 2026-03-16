@@ -22,7 +22,9 @@ namespace Ee4v.UI
     {
         private readonly UiTextElement _titleLabel;
         private readonly UiTextElement _descriptionLabel;
-        private readonly UiToolbarRow _toolbar;
+        private readonly VisualElement _toolbar;
+        private readonly VisualElement _toolbarLeft;
+        private readonly VisualElement _toolbarRight;
         private readonly ScrollView _body;
 
         public UiWindowPage(UiWindowPageState state = null)
@@ -39,8 +41,18 @@ namespace Ee4v.UI
             header.Add(_titleLabel);
             header.Add(_descriptionLabel);
 
-            _toolbar = new UiToolbarRow();
+            _toolbar = new VisualElement();
             _toolbar.AddToClassList(UiClassNames.PageToolbar);
+            _toolbar.AddToClassList(UiClassNames.Toolbar);
+
+            _toolbarLeft = new VisualElement();
+            _toolbarLeft.AddToClassList(UiClassNames.ToolbarLeft);
+
+            _toolbarRight = new VisualElement();
+            _toolbarRight.AddToClassList(UiClassNames.ToolbarRight);
+
+            _toolbar.Add(_toolbarLeft);
+            _toolbar.Add(_toolbarRight);
 
             _body = new ScrollView();
             _body.AddToClassList(UiClassNames.PageBody);
@@ -54,12 +66,12 @@ namespace Ee4v.UI
 
         public VisualElement ToolbarLeft
         {
-            get { return _toolbar.LeftSlot; }
+            get { return _toolbarLeft; }
         }
 
         public VisualElement ToolbarRight
         {
-            get { return _toolbar.RightSlot; }
+            get { return _toolbarRight; }
         }
 
         public VisualElement Body

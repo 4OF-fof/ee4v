@@ -13,7 +13,6 @@ namespace Ee4v.UI
         public const string Toolbar = "ee4v-ui-toolbar";
         public const string ToolbarLeft = "ee4v-ui-toolbar__left";
         public const string ToolbarRight = "ee4v-ui-toolbar__right";
-        public const string ToolbarQuiet = "ee4v-ui-toolbar--quiet";
 
         public const string Card = "ee4v-ui-card";
         public const string CardHeader = "ee4v-ui-card__header";
@@ -45,20 +44,6 @@ namespace Ee4v.UI
         public const string StatusFailed = "ee4v-ui-status--failed";
         public const string StatusSkipped = "ee4v-ui-status--skipped";
         public const string StatusInconclusive = "ee4v-ui-status--inconclusive";
-
-        public const string MetaList = "ee4v-ui-meta";
-        public const string MetaRow = "ee4v-ui-meta__row";
-        public const string MetaLabel = "ee4v-ui-meta__label";
-        public const string MetaValue = "ee4v-ui-meta__value";
-
-        public const string FeatureSuite = "ee4v-ui-feature-suite";
-        public const string FeatureSuiteCases = "ee4v-ui-feature-suite__cases";
-        public const string FeatureSuiteCase = "ee4v-ui-feature-suite__case";
-        public const string FeatureSuiteCaseTitle = "ee4v-ui-feature-suite__case-title";
-        public const string FeatureSuiteCaseDescription = "ee4v-ui-feature-suite__case-description";
-        public const string FeatureSuiteResult = "ee4v-ui-feature-suite__result";
-        public const string FeatureSuiteResultTitle = "ee4v-ui-feature-suite__result-title";
-        public const string FeatureSuiteResultCounts = "ee4v-ui-feature-suite__result-counts";
 
         public const string ReferenceRow = "ee4v-ui-reference";
         public const string ReferenceAction = "ee4v-ui-reference__action";

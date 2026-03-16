@@ -63,10 +63,6 @@
     border-bottom-right-radius: 6px;
 }
 
-.ee4v-ui-toolbar--quiet {
-    background-color: rgba(255, 255, 255, 0.015);
-}
-
 .ee4v-ui-toolbar__left,
 .ee4v-ui-toolbar__right,
 .ee4v-ui-action-row__left,
@@ -103,8 +99,7 @@
 .ee4v-ui-card__description,
 .ee4v-ui-banner__message,
 .ee4v-ui-reference__secondary,
-.ee4v-ui-grouped__description,
-.ee4v-ui-feature-suite__case-description {
+.ee4v-ui-grouped__description {
     color: rgba(210, 210, 210, 0.82);
     white-space: normal;
 }
@@ -153,10 +148,7 @@
 }
 
 .ee4v-ui-card__eyebrow,
-.ee4v-ui-meta__label,
 .ee4v-ui-grouped__title,
-.ee4v-ui-feature-suite__result-title,
-.ee4v-ui-feature-suite__case-title,
 .ee4v-ui-reference__primary {
     font-size: 11px;
     color: rgba(220, 220, 220, 0.92);
@@ -241,35 +233,8 @@
     background-color: rgba(120, 140, 190, 0.35);
 }
 
-.ee4v-ui-meta {
-}
-
-.ee4v-ui-meta__row {
-    flex-direction: row;
-    justify-content: space-between;
-}
-
-.ee4v-ui-meta__value,
-.ee4v-ui-feature-suite__result-counts {
-    color: rgba(235, 235, 235, 0.92);
-    margin-left: 12px;
-}
-
-.ee4v-ui-feature-suite__cases,
 .ee4v-ui-grouped,
 .ee4v-ui-grouped__rows {
-}
-
-.ee4v-ui-feature-suite__case {
-    padding-left: 8px;
-    border-left-width: 2px;
-    border-left-color: rgba(255, 255, 255, 0.08);
-}
-
-.ee4v-ui-feature-suite__result {
-    padding-top: 6px;
-    border-top-width: 1px;
-    border-top-color: rgba(255, 255, 255, 0.05);
 }
 
 .ee4v-ui-reference {

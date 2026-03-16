@@ -13,13 +13,10 @@
       "assembly": "Assembly",
       "mode": "Mode",
       "preview": "Catalog",
-      "implementation": "Implementation",
-      "implementationDescription": "Components should default to UI Toolkit, with IMGUI reserved for exceptional cases.",
-      "policy": "Policy",
+      "details": "Details",
+      "detailsDescription": "Story page for {0} / {1}.",
       "uiToolkit": "UI Toolkit",
-      "imgui": "IMGUI",
-      "uiToolkitPolicy": "Default implementation. Build with VisualElement-based UI Toolkit.",
-      "imguiPolicy": "Exception-only implementation. Use only when UI Toolkit is insufficient or special constraints apply."
+      "imgui": "IMGUI"
     },
     "sections": {
       "overview": {

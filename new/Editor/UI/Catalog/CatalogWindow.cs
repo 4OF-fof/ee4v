@@ -58,16 +58,13 @@ namespace Ee4v.UI
             }
 
             _stories.Add(new StoryDefinition("window-page", "Layout", "UiWindowPage", "タイトル、ツールバー、スクロール可能な本文を持つページ骨格です。", ComponentImplementationKind.UiToolkit, BuildWindowPageStory));
-            _stories.Add(new StoryDefinition("toolbar-row", "Layout", "UiToolbarRow", "左右スロットを持つツールバー行です。", ComponentImplementationKind.UiToolkit, BuildToolbarRowStory));
             _stories.Add(new StoryDefinition("action-row", "Layout", "UiActionRow", "ボタン群を整列表示するアクション行です。", ComponentImplementationKind.UiToolkit, BuildActionRowStory));
             _stories.Add(new StoryDefinition("card", "Surface", "UiCard", "eyebrow と本文を持つカード面です。", ComponentImplementationKind.UiToolkit, BuildCardStory));
             _stories.Add(new StoryDefinition("alerts", "Feedback", "Alerts", "情報、警告、エラーを出し分けるアラートです。", ComponentImplementationKind.UiToolkit, BuildAlertsStory));
             _stories.Add(new StoryDefinition("status-badge", "Status", "StatusBadge", "状態を短く表示するコンパクトなバッジです。", ComponentImplementationKind.UiToolkit, BuildStatusBadgeStory));
-            _stories.Add(new StoryDefinition("meta-list", "Data", "UiMetaList", "label/value を縦に並べるメタ情報リストです。", ComponentImplementationKind.UiToolkit, BuildMetaListStory));
             _stories.Add(new StoryDefinition("reference-row", "Results", "ReferenceRow", "Jump 操作付きの結果行です。", ComponentImplementationKind.UiToolkit, BuildReferenceRowStory));
             _stories.Add(new StoryDefinition("grouped-result-list", "Results", "GroupedResultList", "locale や scope ごとにまとめて表示する結果リストです。", ComponentImplementationKind.UiToolkit, BuildGroupedResultListStory));
             _stories.Add(new StoryDefinition("analyzer-result-section", "Results", "AnalyzerResultSection", "件数付きの結果セクションと空状態表示をまとめた部品です。", ComponentImplementationKind.UiToolkit, BuildAnalyzerResultSectionStory));
-            _stories.Add(new StoryDefinition("feature-test-suite-card", "Testing", "FeatureTestSuiteCard", "実行ボタンと結果要約を含む suite カードです。", ComponentImplementationKind.UiToolkit, BuildFeatureTestSuiteCardStory));
 
             if (_selectedStory == null && _stories.Count > 0)
             {
@@ -208,7 +205,7 @@ namespace Ee4v.UI
             page.ToolbarLeft.Add(breadcrumb);
             page.ToolbarLeft.Add(implementationBadge);
             page.ToolbarRight.Add(reloadButton);
-            page.Body.Add(CreateImplementationSection(story));
+            page.Body.Add(CreateDetailsSection(story));
 
             story.Build(page);
 
@@ -261,61 +258,6 @@ namespace Ee4v.UI
                 nestedPage.ToolbarLeft.Add(UiTextFactory.Create("左スロット"));
                 nestedPage.ToolbarRight.Add(CreatePreviewButton("操作"));
                 nestedPage.Body.Add(new UiCard(new UiCardState("本文", bodyMessage, "プレビュー")));
-            };
-
-            refresh();
-        }
-
-        private void BuildToolbarRowStory(UiWindowPage page)
-        {
-            var leftText = "プロジェクトツールバー";
-            var rightText = "準備完了";
-            var quiet = false;
-            var showAction = true;
-            Action refresh = null;
-
-            var controls = CreateControlsSection(page, "左右スロットの文言とバリエーションを編集します。");
-            AddTextField(controls.Body, "左テキスト", leftText, value =>
-            {
-                leftText = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "右テキスト", rightText, value =>
-            {
-                rightText = value;
-                refresh();
-            });
-            AddToggle(controls.Body, "控えめな見た目", quiet, value =>
-            {
-                quiet = value;
-                refresh();
-            });
-            AddToggle(controls.Body, "操作ボタンを表示", showAction, value =>
-            {
-                showAction = value;
-                refresh();
-            });
-
-            var preview = CreatePreviewSection(page);
-            var previewSurface = CreatePreviewSurface();
-            var toolbar = new UiToolbarRow();
-            previewSurface.Add(toolbar);
-            preview.Body.Add(previewSurface);
-
-            refresh = () =>
-            {
-                toolbar.SetState(new UiToolbarRowState(quiet));
-                toolbar.LeftSlot.Clear();
-                toolbar.RightSlot.Clear();
-
-                toolbar.LeftSlot.Add(UiTextFactory.Create(leftText));
-
-                if (showAction)
-                {
-                    toolbar.RightSlot.Add(CreatePreviewButton("実行"));
-                }
-
-                toolbar.RightSlot.Add(UiTextFactory.Create(rightText));
             };
 
             refresh();
@@ -545,48 +487,6 @@ namespace Ee4v.UI
             refresh();
         }
 
-        private void BuildMetaListStory(UiWindowPage page)
-        {
-            var rowCount = 3;
-            var labelPrefix = "項目";
-            var valuePrefix = "値";
-            Action refresh = null;
-
-            var controls = CreateControlsSection(page, "行数と接頭辞を編集します。");
-            AddIntegerField(controls.Body, "行数", rowCount, value =>
-            {
-                rowCount = Mathf.Clamp(value, 1, 5);
-                refresh();
-            });
-            AddTextField(controls.Body, "ラベル接頭辞", labelPrefix, value =>
-            {
-                labelPrefix = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "値接頭辞", valuePrefix, value =>
-            {
-                valuePrefix = value;
-                refresh();
-            });
-
-            var preview = CreatePreviewSection(page);
-            var metaList = new UiMetaList();
-            preview.Body.Add(CreatePreviewSurface(metaList));
-
-            refresh = () =>
-            {
-                var items = new List<UiMetaListItem>();
-                for (var i = 0; i < rowCount; i++)
-                {
-                    items.Add(new UiMetaListItem(labelPrefix + " " + (i + 1), valuePrefix + " " + (i + 1)));
-                }
-
-                metaList.SetState(new UiMetaListState(items));
-            };
-
-            refresh();
-        }
-
         private void BuildReferenceRowStory(UiWindowPage page)
         {
             var primary = "testing.window.runAll";
@@ -759,131 +659,6 @@ namespace Ee4v.UI
                     new GroupedResultListState(groups),
                     emptyTitle,
                     emptyMessage));
-            };
-
-            refresh();
-        }
-
-        private void BuildFeatureTestSuiteCardStory(UiWindowPage page)
-        {
-            var title = "Core suite";
-            var scope = "Core";
-            var assembly = "Ee4v.Core.Tests.Editor";
-            var description = "metadata、登録済み case、直近結果をまとめて見せる suite カードです。";
-            var runButton = "実行";
-            var canRun = true;
-            var caseCount = 2;
-            var statusText = "成功";
-            var statusTone = UiStatusTone.Passed;
-            var resultTitle = "直近結果: 成功";
-            var resultCounts = "Pass 4  Fail 0  Skip 0  Inc 0  0.48s";
-            var resultMessage = "登録されたテストケースはすべて成功しました。";
-            var resultTone = UiBannerTone.Info;
-            Action refresh = null;
-
-            var controls = CreateControlsSection(page, "suite 情報、結果文言、状態を編集します。");
-            AddTextField(controls.Body, "タイトル", title, value =>
-            {
-                title = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "Scope", scope, value =>
-            {
-                scope = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "Assembly", assembly, value =>
-            {
-                assembly = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "説明", description, value =>
-            {
-                description = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "実行ラベル", runButton, value =>
-            {
-                runButton = value;
-                refresh();
-            });
-            AddToggle(controls.Body, "実行可能", canRun, value =>
-            {
-                canRun = value;
-                refresh();
-            });
-            AddIntegerField(controls.Body, "ケース数", caseCount, value =>
-            {
-                caseCount = Mathf.Clamp(value, 1, 5);
-                refresh();
-            });
-            AddTextField(controls.Body, "状態テキスト", statusText, value =>
-            {
-                statusText = value;
-                refresh();
-            });
-            AddEnumField(controls.Body, "状態種類", statusTone, value =>
-            {
-                statusTone = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "結果タイトル", resultTitle, value =>
-            {
-                resultTitle = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "結果集計", resultCounts, value =>
-            {
-                resultCounts = value;
-                refresh();
-            });
-            AddTextField(controls.Body, "結果メッセージ", resultMessage, value =>
-            {
-                resultMessage = value;
-                refresh();
-            });
-            AddEnumField(controls.Body, "結果種類", resultTone, value =>
-            {
-                resultTone = value;
-                refresh();
-            });
-
-            var preview = CreatePreviewSection(page);
-            var suiteCard = new FeatureTestSuiteCard();
-            preview.Body.Add(CreatePreviewSurface(suiteCard));
-
-            refresh = () =>
-            {
-                var metaItems = new List<UiMetaListItem>
-                {
-                    new UiMetaListItem("Scope", scope),
-                    new UiMetaListItem("Assembly", assembly)
-                };
-
-                var cases = new List<FeatureTestSuiteCaseState>();
-                for (var i = 0; i < caseCount; i++)
-                {
-                    cases.Add(new FeatureTestSuiteCaseState(
-                        "Case " + (i + 1),
-                        "テストケース " + (i + 1) + " のプレビュー説明です。"));
-                }
-
-                suiteCard.SetState(new FeatureTestSuiteCardState(
-                    title,
-                    scope,
-                    assembly,
-                    description,
-                    new UiMetaListState(metaItems),
-                    cases,
-                    runButton,
-                    () => Debug.Log("[ee4v:ui] FeatureTestSuiteCard preview action."),
-                    canRun,
-                    statusText,
-                    statusTone,
-                    resultTitle,
-                    resultCounts,
-                    resultMessage,
-                    resultTone));
             };
 
             refresh();
@@ -1094,20 +869,11 @@ namespace Ee4v.UI
             return items;
         }
 
-        private UiCard CreateImplementationSection(StoryDefinition story)
+        private UiCard CreateDetailsSection(StoryDefinition story)
         {
             var card = new UiCard(new UiCardState(
-                I18N.Get("catalog.common.implementation"),
-                I18N.Get("catalog.common.implementationDescription"),
-                null,
-                GetImplementationLabel(story.Implementation)));
-
-            card.Body.Add(new UiMetaList(new UiMetaListState(new List<UiMetaListItem>
-            {
-                new UiMetaListItem(I18N.Get("catalog.common.implementation"), GetImplementationLabel(story.Implementation)),
-                new UiMetaListItem(I18N.Get("catalog.common.policy"), GetImplementationPolicy(story.Implementation))
-            })));
-
+                I18N.Get("catalog.common.details"),
+                string.Format(I18N.Get("catalog.common.detailsDescription"), story.Group, story.Title)));
             return card;
         }
 
@@ -1130,17 +896,6 @@ namespace Ee4v.UI
                     return I18N.Get("catalog.common.imgui");
                 default:
                     return I18N.Get("catalog.common.uiToolkit");
-            }
-        }
-
-        private static string GetImplementationPolicy(ComponentImplementationKind implementation)
-        {
-            switch (implementation)
-            {
-                case ComponentImplementationKind.Imgui:
-                    return I18N.Get("catalog.common.imguiPolicy");
-                default:
-                    return I18N.Get("catalog.common.uiToolkitPolicy");
             }
         }
 
