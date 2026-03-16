@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Ee4v.Core.Settings;
+using Ee4v.Core.Testing;
 using NUnit.Framework;
 
 namespace Ee4v.Core.Tests
@@ -20,6 +21,10 @@ namespace Ee4v.Core.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "Project 設定ファイル未作成時は空を返す",
+            "ProjectFileSettingStore が対象ファイル未作成の状態で空の辞書を返すことを確認します。",
+            order: 0)]
         public void ProjectFileSettingStore_LoadAll_ReturnsEmpty_WhenFileDoesNotExist()
         {
             var fileSystem = new FakeFileSystem();
@@ -31,6 +36,10 @@ namespace Ee4v.Core.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "Project 設定ファイルの保存と再読込",
+            "ProjectFileSettingStore がディレクトリを作成し、保存した JSON を同じ内容で読み戻せることを確認します。",
+            order: 1)]
         public void ProjectFileSettingStore_SaveAll_CreatesDirectory_AndPersistsJson()
         {
             var fileSystem = new FakeFileSystem();
@@ -49,6 +58,10 @@ namespace Ee4v.Core.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "EditorPrefs 未設定時は空を返す",
+            "EditorPrefsSettingStore がキー未作成の状態で空の辞書を返すことを確認します。",
+            order: 2)]
         public void EditorPrefsSettingStore_LoadAll_ReturnsEmpty_WhenKeyDoesNotExist()
         {
             var editorPrefs = new FakeEditorPrefsFacade();
@@ -60,6 +73,10 @@ namespace Ee4v.Core.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "EditorPrefs の保存と再読込",
+            "EditorPrefsSettingStore が fake facade 経由で保存した値を同じ内容で読み戻せることを確認します。",
+            order: 3)]
         public void EditorPrefsSettingStore_SaveAll_RoundTripsValues()
         {
             var editorPrefs = new FakeEditorPrefsFacade();

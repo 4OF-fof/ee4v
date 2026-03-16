@@ -65,7 +65,14 @@ namespace Ee4v.Core.Testing
                         "Feature test registrar '" + registrarType.FullName + "' returned null descriptor.");
                 }
 
-                descriptors.Add(descriptor);
+                var discoveredCases = FeatureTestCaseDiscovery.Discover(descriptor.AssemblyName);
+                descriptors.Add(new FeatureTestDescriptor(
+                    descriptor.FeatureScope,
+                    descriptor.DisplayName,
+                    descriptor.AssemblyName,
+                    descriptor.Description,
+                    descriptor.Order,
+                    discoveredCases.Count > 0 ? discoveredCases : descriptor.TestCases));
             }
 
             ValidateNoDuplicates(

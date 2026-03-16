@@ -29,6 +29,10 @@ namespace Ee4v.Core.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "registrar の並び順は安定している",
+            "FeatureTestRegistry が order と表示名に基づいて安定した順序で descriptor を並べることを確認します。",
+            order: 10)]
         public void FeatureTestRegistry_BuildDescriptors_SortsByOrderAndDisplayName()
         {
             var descriptors = FeatureTestRegistry.BuildDescriptors(new[]
@@ -41,6 +45,10 @@ namespace Ee4v.Core.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "assembly 名の重複を拒否する",
+            "FeatureTestRegistry が同じ assembly 名を返す registrar の組み合わせをエラーとして扱うことを確認します。",
+            order: 11)]
         public void FeatureTestRegistry_BuildDescriptors_RejectsDuplicateAssemblyNames()
         {
             var exception = Assert.Throws<InvalidOperationException>(() =>
@@ -54,6 +62,10 @@ namespace Ee4v.Core.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "feature 単位の assembly filter で実行する",
+            "FeatureTestRunnerService が対象 feature の test assembly だけを filter に入れて実行要求することを確認します。",
+            order: 12)]
         public void FeatureTestRunnerService_TryRun_UsesFeatureAssemblyFilter()
         {
             var gateway = new FakeRunnerGateway();
@@ -68,11 +80,15 @@ namespace Ee4v.Core.Tests
                 Assert.That(errorMessage, Is.Null);
                 Assert.That(assemblyNames, Is.EqualTo(new[] { "Ee4v.Core.Tests.Editor" }));
                 Assert.That(service.GetRecord("Core").Status, Is.EqualTo(FeatureTestRunStatus.Running));
-                Assert.That(service.GetRecord("Core").Message, Does.Contain("Execution requested"));
+                Assert.That(service.GetRecord("Core").Message, Does.Contain("テスト実行を要求"));
             }
         }
 
         [Test]
+        [FeatureTestCase(
+            "実行中は二重実行を拒否する",
+            "FeatureTestRunnerService が run 中の追加実行要求を拒否することを確認します。",
+            order: 13)]
         public void FeatureTestRunnerService_TryRunAll_PreventsConcurrentRuns()
         {
             var gateway = new FakeRunnerGateway();
@@ -91,6 +107,10 @@ namespace Ee4v.Core.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "結果未報告の実行を失敗扱いにする",
+            "Unity Test Runner が assembly 結果を返さない場合に失敗として記録することを確認します。",
+            order: 14)]
         public void FeatureTestRunnerService_UpdatesRecords_WhenRunCompletesWithoutAssemblyResults()
         {
             var gateway = new FakeRunnerGateway();
@@ -104,12 +124,16 @@ namespace Ee4v.Core.Tests
 
                 var record = service.GetRecord("Core");
                 Assert.That(record.Status, Is.EqualTo(FeatureTestRunStatus.Failed));
-                Assert.That(record.Message, Does.Contain("without reporting"));
+                Assert.That(record.Message, Does.Contain("assembly 結果"));
                 Assert.That(record.FinishedAtUtc.HasValue, Is.True);
             }
         }
 
         [Test]
+        [FeatureTestCase(
+            "Test Manager が Core と Phase1 を列挙する",
+            "FeatureTestManagerWindow の再読込で登録済み suite が一覧に並ぶことを確認します。",
+            order: 15)]
         public void FeatureTestManagerWindow_RefreshDescriptors_FindsCoreAndPhase1Registrars()
         {
             var window = ScriptableObject.CreateInstance<FeatureTestManagerWindow>();
@@ -129,6 +153,10 @@ namespace Ee4v.Core.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "Core の static 状態を reset できる",
+            "Ee4vCoreTestReset が SettingApi と InjectorApi の static 登録状態をクリアすることを確認します。",
+            order: 16)]
         public void Ee4vCoreTestReset_ResetAll_ClearsStaticRegistrationsAndHandlers()
         {
             var definition = new SettingDefinition<bool>(

@@ -126,6 +126,8 @@ namespace Ee4v.Core.Testing
                     EditorGUILayout.LabelField(descriptor.Description, EditorStyles.wordWrappedMiniLabel);
                 }
 
+                DrawTestCases(descriptor);
+
                 if (record != null)
                 {
                     EditorGUILayout.Space(3f);
@@ -226,6 +228,26 @@ namespace Ee4v.Core.Testing
                 record.SkipCount,
                 record.InconclusiveCount,
                 record.DurationSeconds);
+        }
+
+        private static void DrawTestCases(FeatureTestDescriptor descriptor)
+        {
+            if (descriptor.TestCases == null || descriptor.TestCases.Count == 0)
+            {
+                return;
+            }
+
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("Tests", EditorStyles.miniBoldLabel);
+            for (var i = 0; i < descriptor.TestCases.Count; i++)
+            {
+                var testCase = descriptor.TestCases[i];
+                EditorGUILayout.LabelField("- " + testCase.Title, EditorStyles.miniLabel);
+                if (!string.IsNullOrWhiteSpace(testCase.Description))
+                {
+                    EditorGUILayout.LabelField("  " + testCase.Description, EditorStyles.wordWrappedMiniLabel);
+                }
+            }
         }
 
         private static void EnsureRunnerService()

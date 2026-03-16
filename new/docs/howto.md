@@ -306,6 +306,7 @@ Editor/
 - test asmdef は `Ee4v.Editor` を参照する
 - `optionalUnityReferences` に `TestAssemblies` を入れる
 - registrar は `IFeatureTestRegistrar` を実装し、descriptor を 1 つ返す
+- 各 `[Test]` メソッドには `FeatureTestCaseAttribute` で title / description を付ける
 - feature の suite は Core の `Debug/ee4v Test Manager` に自動表示される
 
 例:
@@ -323,11 +324,13 @@ namespace Ee4v.MyFeature.Tests
                 "MyFeature",
                 "MyFeature",
                 "Ee4v.MyFeature.Tests.Editor",
-                "MyFeature edit mode tests.");
+                "MyFeature の EditMode テストを管理します。");
         }
     }
 }
 ```
+
+より詳しいテスト構成、reset helper、mock 方針は [docs/test.md](C:/Users/fof/Documents/Project/ee4v/new/docs/test.md) を参照してください。
 
 ## 11. Analyzer で確認する
 
@@ -362,7 +365,8 @@ namespace Ee4v.MyFeature.Tests
 7. 必要な `SettingDefinition` を `RegisterAll()` で登録した
 8. 必要なら `InjectorApi.Register(...)` を追加した
 9. テストを追加するなら `Test/Editor` と registrar を作成した
-10. `Debug/I18n Analyzer` で missing / unused / unresolved が無いことを確認した
+10. 各 `[Test]` メソッドに `FeatureTestCaseAttribute` を付けた
+11. `Debug/I18n Analyzer` で missing / unused / unresolved が無いことを確認した
 
 ## 13. 最小構成
 

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Ee4v.Core.Testing
 {
@@ -9,7 +11,8 @@ namespace Ee4v.Core.Testing
             string displayName,
             string assemblyName,
             string description = "",
-            int order = 0)
+            int order = 0,
+            IReadOnlyList<FeatureTestCaseDescriptor> testCases = null)
         {
             if (string.IsNullOrWhiteSpace(featureScope))
             {
@@ -31,6 +34,10 @@ namespace Ee4v.Core.Testing
             AssemblyName = assemblyName;
             Description = description ?? string.Empty;
             Order = order;
+            TestCases = (testCases ?? Array.Empty<FeatureTestCaseDescriptor>())
+                .OrderBy(testCase => testCase.Order)
+                .ThenBy(testCase => testCase.Title, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
         }
 
         public string FeatureScope { get; }
@@ -42,5 +49,7 @@ namespace Ee4v.Core.Testing
         public string Description { get; }
 
         public int Order { get; }
+
+        public IReadOnlyList<FeatureTestCaseDescriptor> TestCases { get; }
     }
 }

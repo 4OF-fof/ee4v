@@ -129,8 +129,14 @@ feature 固有の実装や確認コードは各 feature 配下に置き、`Core`
 ### `Editor/Core/Testing`
 - `IFeatureTestRegistrar.cs`
   test assembly 側の登録入口インターフェース
+- `FeatureTestCaseAttribute.cs`
+  各 `[Test]` メソッドに付ける表示用 metadata 属性
+- `FeatureTestCaseDescriptor.cs`
+  Test Manager に表示する個別テスト title / description の登録モデル
+- `FeatureTestCaseDiscovery.cs`
+  test assembly を走査して `[Test]` メソッドと `FeatureTestCaseAttribute` から個別テスト一覧を構築する
 - `FeatureTestDescriptor.cs`
-  feature test suite の表示名、scope、assembly 名などを持つ登録モデル
+  feature test suite の表示名、scope、assembly 名、個別テスト一覧を持つ登録モデル
 - `FeatureTestRegistry.cs`
   `TypeCache` で registrar を発見し、重複検証とソートを行う registry
 - `UnityFeatureTestRunnerGateway.cs`

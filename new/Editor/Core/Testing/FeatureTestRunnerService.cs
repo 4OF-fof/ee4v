@@ -101,7 +101,7 @@ namespace Ee4v.Core.Testing
                 var record = GetRecord(descriptor.FeatureScope);
                 record.RunId = string.Empty;
                 record.Status = FeatureTestRunStatus.Running;
-                record.Message = "Execution requested.";
+                record.Message = "テスト実行を要求しました。Unity Test Runner の開始を待っています。";
                 record.PassCount = 0;
                 record.FailCount = 0;
                 record.SkipCount = 0;
@@ -162,14 +162,14 @@ namespace Ee4v.Core.Testing
                 {
                     record.Status = FeatureTestRunStatus.Failed;
                     record.Message = activeRun.HasStarted
-                        ? "Unity Test Runner finished without reporting an assembly result."
-                        : "Execution was requested, but Unity Test Runner never reported a run start for this suite.";
+                        ? "Unity Test Runner は終了しましたが、この suite の assembly 結果を返しませんでした。"
+                        : "テスト実行は要求されましたが、この suite の開始通知が Unity Test Runner から返りませんでした。";
                     record.FinishedAtUtc = DateTime.UtcNow;
                     continue;
                 }
 
                 record.Status = ToStatus(assemblyResult);
-                record.Message = assemblyResult.Message ?? string.Empty;
+                record.Message = BuildResultMessage(descriptor, assemblyResult);
                 record.PassCount = assemblyResult.PassCount;
                 record.FailCount = assemblyResult.FailCount;
                 record.SkipCount = assemblyResult.SkipCount;
@@ -253,6 +253,51 @@ namespace Ee4v.Core.Testing
                 : assemblyName;
         }
 
+        private static string BuildResultMessage(FeatureTestDescriptor descriptor, ITestResultAdaptor assemblyResult)
+        {
+            if (!string.IsNullOrWhiteSpace(assemblyResult.Message))
+            {
+                return assemblyResult.Message;
+            }
+
+            var details = BuildRegisteredCaseSummary(descriptor);
+            switch (ToStatus(assemblyResult))
+            {
+                case FeatureTestRunStatus.Passed:
+                    return string.IsNullOrWhiteSpace(details)
+                        ? "登録されたテストはすべて成功しました。"
+                        : "登録されたテストはすべて成功しました。確認した内容:\n" + details;
+                case FeatureTestRunStatus.Skipped:
+                    return string.IsNullOrWhiteSpace(details)
+                        ? "この suite はスキップされました。"
+                        : "この suite はスキップされました。対象テスト:\n" + details;
+                case FeatureTestRunStatus.Inconclusive:
+                    return string.IsNullOrWhiteSpace(details)
+                        ? "この suite は未確定の結果になりました。"
+                        : "この suite は未確定の結果になりました。対象テスト:\n" + details;
+                case FeatureTestRunStatus.Failed:
+                default:
+                    return string.IsNullOrWhiteSpace(details)
+                        ? "この suite で失敗が発生しました。"
+                        : "この suite で失敗が発生しました。確認対象:\n" + details;
+            }
+        }
+
+        private static string BuildRegisteredCaseSummary(FeatureTestDescriptor descriptor)
+        {
+            if (descriptor == null || descriptor.TestCases == null || descriptor.TestCases.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(
+                "\n",
+                descriptor.TestCases.Select(testCase =>
+                    string.IsNullOrWhiteSpace(testCase.Description)
+                        ? "- " + testCase.Title
+                        : "- " + testCase.Title + ": " + testCase.Description));
+        }
+
         private void NotifyChanged()
         {
             Changed?.Invoke();
@@ -271,7 +316,7 @@ namespace Ee4v.Core.Testing
             {
                 var record = GetRecord(descriptor.FeatureScope);
                 record.Status = FeatureTestRunStatus.Running;
-                record.Message = "Running tests.";
+                record.Message = "テストを実行中です。";
             }
 
             NotifyChanged();
@@ -293,8 +338,8 @@ namespace Ee4v.Core.Testing
                 var record = GetRecord(descriptor.FeatureScope);
                 record.Status = FeatureTestRunStatus.Running;
                 record.Message = string.IsNullOrWhiteSpace(_activeRun.LastTestName)
-                    ? "Running tests."
-                    : "Running: " + _activeRun.LastTestName;
+                    ? "テストを実行中です。"
+                    : "実行中: " + _activeRun.LastTestName;
             }
 
             NotifyChanged();
@@ -323,19 +368,19 @@ namespace Ee4v.Core.Testing
                 foreach (var descriptor in _activeRun.Descriptors)
                 {
                     var record = GetRecord(descriptor.FeatureScope);
-                    record.Message = "Execution request was sent, but Unity Test Runner has not reported a run start yet.";
+                    record.Message = "実行要求は送信済みですが、Unity Test Runner から開始通知がまだ返っていません。";
                 }
             }
 
             if (!_activeRun.HasStarted && now - _activeRun.RequestedAtUtc >= RunStartTimeout)
             {
-                FailActiveRun("Execution request timed out before Unity Test Runner reported a run start.");
+                FailActiveRun("Unity Test Runner の開始通知待ちがタイムアウトしました。");
                 return;
             }
 
             if (_activeRun.HasStarted && now - _activeRun.LastHeartbeatUtc >= RunHeartbeatTimeout)
             {
-                FailActiveRun("Unity Test Runner stopped reporting progress before the run finished.");
+                FailActiveRun("Unity Test Runner の進行通知が途切れたため、この実行を失敗として扱いました。");
                 return;
             }
 

@@ -10,7 +10,7 @@ namespace Ee4v.Core.Tests
                 "Core",
                 "Core",
                 "Ee4v.Core.Tests.Editor",
-                "Core foundation and test management coverage.",
+                "Core 基盤とテスト管理機能の成立性を確認します。",
                 order: -100);
         }
     }

@@ -10,7 +10,7 @@ namespace Ee4v.Phase1.Tests
                 "Phase1",
                 "Phase1",
                 "Ee4v.Phase1.Tests.Editor",
-                "Phase1 definitions and bootstrap coverage.",
+                "Phase1 の定義登録と bootstrap 復元を確認します。",
                 order: 100);
         }
     }

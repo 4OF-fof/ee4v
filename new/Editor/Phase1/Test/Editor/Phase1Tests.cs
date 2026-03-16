@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using Ee4v.Core.Settings;
+using Ee4v.Core.Testing;
 using NUnit.Framework;
 
 namespace Ee4v.Phase1.Tests
@@ -21,6 +22,10 @@ namespace Ee4v.Phase1.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "Phase1 の設定定義が登録される",
+            "Phase1Definitions.RegisterAll が User / Project の各設定定義を想定件数で登録することを確認します。",
+            order: 20)]
         public void Phase1Definitions_RegisterAll_RegistersExpectedSettings()
         {
             Phase1Definitions.RegisterAll();
@@ -33,6 +38,10 @@ namespace Ee4v.Phase1.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "Phase1 のデフォルト値を取得できる",
+            "Phase1 の代表的な設定値を SettingApi 経由で既定値として取得できることを確認します。",
+            order: 21)]
         public void Phase1Definitions_DefaultValues_AreAvailableThroughSettingApi()
         {
             Phase1Definitions.RegisterAll();
@@ -43,6 +52,10 @@ namespace Ee4v.Phase1.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "Phase1 の不正値はバリデーションで拒否される",
+            "Phase1Definitions の validator が空文字のような不正値を拒否することを確認します。",
+            order: 22)]
         public void Phase1Definitions_InvalidProjectValue_ThrowsValidationError()
         {
             Phase1Definitions.RegisterAll();
@@ -54,6 +67,10 @@ namespace Ee4v.Phase1.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "reset 後に Phase1 bootstrap を再実行できる",
+            "Ee4vPhase1TestReset のあとで Phase1 の初期化状態が戻り、再度 bootstrap 可能になることを確認します。",
+            order: 23)]
         public void Ee4vPhase1TestReset_AllowsBootstrapToRunAgain()
         {
             Phase1Bootstrap.EnsureInitialized();
