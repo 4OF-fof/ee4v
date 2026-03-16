@@ -25,26 +25,29 @@ namespace Ee4v.UI
         public UiStatusTone Tone { get; }
     }
 
-    internal sealed class StatusBadge : Label
+    internal sealed class StatusBadge : VisualElement
     {
+        private readonly UiTextElement _textElement;
+
         public StatusBadge(StatusBadgeState state = null)
         {
-            AddToClassList(UiClassNames.StatusBadge);
+            _textElement = UiTextFactory.Create(string.Empty, UiClassNames.StatusBadge);
+            Add(_textElement);
             SetState(state ?? new StatusBadgeState(string.Empty, UiStatusTone.Idle));
         }
 
         public void SetState(StatusBadgeState state)
         {
             state = state ?? new StatusBadgeState(string.Empty, UiStatusTone.Idle);
-            text = state.Text;
             style.display = string.IsNullOrWhiteSpace(state.Text) ? DisplayStyle.None : DisplayStyle.Flex;
+            _textElement.SetText(state.Text);
 
-            EnableInClassList(UiClassNames.StatusIdle, state.Tone == UiStatusTone.Idle);
-            EnableInClassList(UiClassNames.StatusRunning, state.Tone == UiStatusTone.Running);
-            EnableInClassList(UiClassNames.StatusPassed, state.Tone == UiStatusTone.Passed);
-            EnableInClassList(UiClassNames.StatusFailed, state.Tone == UiStatusTone.Failed);
-            EnableInClassList(UiClassNames.StatusSkipped, state.Tone == UiStatusTone.Skipped);
-            EnableInClassList(UiClassNames.StatusInconclusive, state.Tone == UiStatusTone.Inconclusive);
+            _textElement.EnableInClassList(UiClassNames.StatusIdle, state.Tone == UiStatusTone.Idle);
+            _textElement.EnableInClassList(UiClassNames.StatusRunning, state.Tone == UiStatusTone.Running);
+            _textElement.EnableInClassList(UiClassNames.StatusPassed, state.Tone == UiStatusTone.Passed);
+            _textElement.EnableInClassList(UiClassNames.StatusFailed, state.Tone == UiStatusTone.Failed);
+            _textElement.EnableInClassList(UiClassNames.StatusSkipped, state.Tone == UiStatusTone.Skipped);
+            _textElement.EnableInClassList(UiClassNames.StatusInconclusive, state.Tone == UiStatusTone.Inconclusive);
         }
     }
 }

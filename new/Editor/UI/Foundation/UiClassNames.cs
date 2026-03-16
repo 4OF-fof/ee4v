@@ -76,5 +76,9 @@ namespace Ee4v.UI
         public const string CatalogColumn = "ee4v-ui-catalog__column";
         public const string CatalogBadgeRow = "ee4v-ui-catalog__badge-row";
         public const string CatalogButtonRow = "ee4v-ui-catalog__button-row";
+        public const string CatalogNavigatorTitle = "ee4v-ui-catalog-shell__navigator-title";
+        public const string CatalogNavigatorSubtitle = "ee4v-ui-catalog-shell__navigator-subtitle";
+        public const string CatalogTreeTitle = "ee4v-ui-catalog-tree-item__title";
+        public const string CatalogTreeImplementation = "ee4v-ui-catalog-tree-item__implementation";
     }
 }

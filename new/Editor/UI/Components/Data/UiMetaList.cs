@@ -45,11 +45,9 @@ namespace Ee4v.UI
                 var row = new VisualElement();
                 row.AddToClassList(UiClassNames.MetaRow);
 
-                var label = new Label(item.Label);
-                label.AddToClassList(UiClassNames.MetaLabel);
+                var label = UiTextFactory.Create(item.Label, UiClassNames.MetaLabel);
 
-                var value = new Label(item.Value);
-                value.AddToClassList(UiClassNames.MetaValue);
+                var value = UiTextFactory.Create(item.Value, UiClassNames.MetaValue);
 
                 row.Add(label);
                 row.Add(value);

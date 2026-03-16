@@ -20,8 +20,8 @@ namespace Ee4v.UI
 
     internal sealed class UiWindowPage : VisualElement
     {
-        private readonly Label _titleLabel;
-        private readonly Label _descriptionLabel;
+        private readonly UiTextElement _titleLabel;
+        private readonly UiTextElement _descriptionLabel;
         private readonly UiToolbarRow _toolbar;
         private readonly ScrollView _body;
 
@@ -32,11 +32,9 @@ namespace Ee4v.UI
             var header = new VisualElement();
             header.AddToClassList(UiClassNames.PageHeader);
 
-            _titleLabel = new Label();
-            _titleLabel.AddToClassList(UiClassNames.PageTitle);
+            _titleLabel = UiTextFactory.Create(string.Empty, UiClassNames.PageTitle);
 
-            _descriptionLabel = new Label();
-            _descriptionLabel.AddToClassList(UiClassNames.PageDescription);
+            _descriptionLabel = UiTextFactory.Create(string.Empty, UiClassNames.PageDescription);
 
             header.Add(_titleLabel);
             header.Add(_descriptionLabel);
@@ -73,11 +71,9 @@ namespace Ee4v.UI
         {
             state = state ?? new UiWindowPageState(string.Empty, string.Empty);
 
-            _titleLabel.text = state.Title;
-            _titleLabel.style.display = string.IsNullOrWhiteSpace(state.Title) ? DisplayStyle.None : DisplayStyle.Flex;
+            _titleLabel.SetText(state.Title);
 
-            _descriptionLabel.text = state.Description;
-            _descriptionLabel.style.display = string.IsNullOrWhiteSpace(state.Description) ? DisplayStyle.None : DisplayStyle.Flex;
+            _descriptionLabel.SetText(state.Description);
 
             _toolbar.style.display = state.ShowToolbar ? DisplayStyle.Flex : DisplayStyle.None;
         }

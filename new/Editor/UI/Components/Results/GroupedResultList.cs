@@ -52,14 +52,12 @@ namespace Ee4v.UI
                 var group = new VisualElement();
                 group.AddToClassList(UiClassNames.Group);
 
-                var title = new Label(groupState.Title);
-                title.AddToClassList(UiClassNames.GroupTitle);
+                var title = UiTextFactory.Create(groupState.Title, UiClassNames.GroupTitle);
                 group.Add(title);
 
                 if (!string.IsNullOrWhiteSpace(groupState.Description))
                 {
-                    var description = new Label(groupState.Description);
-                    description.AddToClassList(UiClassNames.GroupDescription);
+                    var description = UiTextFactory.Create(groupState.Description, UiClassNames.GroupDescription);
                     group.Add(description);
                 }
 

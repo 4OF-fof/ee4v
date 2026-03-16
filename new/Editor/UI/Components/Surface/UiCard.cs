@@ -24,10 +24,10 @@ namespace Ee4v.UI
     internal sealed class UiCard : VisualElement
     {
         private readonly VisualElement _header;
-        private readonly Label _eyebrowLabel;
-        private readonly Label _titleLabel;
-        private readonly Label _descriptionLabel;
-        private readonly Label _badgeLabel;
+        private readonly UiTextElement _eyebrowLabel;
+        private readonly UiTextElement _titleLabel;
+        private readonly UiTextElement _descriptionLabel;
+        private readonly UiTextElement _badgeLabel;
 
         public UiCard(UiCardState state = null)
         {
@@ -39,17 +39,13 @@ namespace Ee4v.UI
             var headerText = new VisualElement();
             headerText.style.flexGrow = 1f;
 
-            _eyebrowLabel = new Label();
-            _eyebrowLabel.AddToClassList(UiClassNames.CardEyebrow);
+            _eyebrowLabel = UiTextFactory.Create(string.Empty, UiClassNames.CardEyebrow);
 
-            _titleLabel = new Label();
-            _titleLabel.AddToClassList(UiClassNames.CardTitle);
+            _titleLabel = UiTextFactory.Create(string.Empty, UiClassNames.CardTitle);
 
-            _descriptionLabel = new Label();
-            _descriptionLabel.AddToClassList(UiClassNames.CardDescription);
+            _descriptionLabel = UiTextFactory.Create(string.Empty, UiClassNames.CardDescription);
 
-            _badgeLabel = new Label();
-            _badgeLabel.AddToClassList(UiClassNames.CardBadge);
+            _badgeLabel = UiTextFactory.Create(string.Empty, UiClassNames.CardBadge);
 
             headerText.Add(_eyebrowLabel);
             headerText.Add(_titleLabel);
@@ -79,23 +75,38 @@ namespace Ee4v.UI
         {
             state = state ?? new UiCardState();
 
-            _eyebrowLabel.text = state.Eyebrow;
-            _eyebrowLabel.style.display = string.IsNullOrWhiteSpace(state.Eyebrow) ? DisplayStyle.None : DisplayStyle.Flex;
+            _eyebrowLabel.SetText(state.Eyebrow);
 
-            _titleLabel.text = state.Title;
-            _titleLabel.style.display = string.IsNullOrWhiteSpace(state.Title) ? DisplayStyle.None : DisplayStyle.Flex;
+            _titleLabel.SetText(state.Title);
 
-            _descriptionLabel.text = state.Description;
-            _descriptionLabel.style.display = string.IsNullOrWhiteSpace(state.Description) ? DisplayStyle.None : DisplayStyle.Flex;
+            _descriptionLabel.SetText(state.Description);
 
-            _badgeLabel.text = state.BadgeText;
-            _badgeLabel.style.display = string.IsNullOrWhiteSpace(state.BadgeText) ? DisplayStyle.None : DisplayStyle.Flex;
+            _badgeLabel.SetText(state.BadgeText);
 
             var hasHeaderText = !string.IsNullOrWhiteSpace(state.Eyebrow)
                 || !string.IsNullOrWhiteSpace(state.Title)
                 || !string.IsNullOrWhiteSpace(state.Description);
-            var hasHeaderRight = !string.IsNullOrWhiteSpace(state.BadgeText) || HeaderRight.childCount > 1;
+            var hasHeaderRight = !string.IsNullOrWhiteSpace(state.BadgeText) || HasVisibleHeaderRightChild();
             _header.style.display = hasHeaderText || hasHeaderRight ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        private bool HasVisibleHeaderRightChild()
+        {
+            for (var i = 0; i < HeaderRight.childCount; i++)
+            {
+                var child = HeaderRight.ElementAt(i);
+                if (ReferenceEquals(child, _badgeLabel))
+                {
+                    continue;
+                }
+
+                if (child.style.display != DisplayStyle.None)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

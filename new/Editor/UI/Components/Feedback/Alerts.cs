@@ -27,18 +27,16 @@ namespace Ee4v.UI
 
     internal sealed class Alerts : VisualElement
     {
-        private readonly Label _titleLabel;
-        private readonly Label _messageLabel;
+        private readonly UiTextElement _titleLabel;
+        private readonly UiTextElement _messageLabel;
 
         public Alerts(AlertsState state = null)
         {
             AddToClassList(UiClassNames.Banner);
 
-            _titleLabel = new Label();
-            _titleLabel.AddToClassList(UiClassNames.BannerTitle);
+            _titleLabel = UiTextFactory.Create(string.Empty, UiClassNames.BannerTitle);
 
-            _messageLabel = new Label();
-            _messageLabel.AddToClassList(UiClassNames.BannerMessage);
+            _messageLabel = UiTextFactory.Create(string.Empty, UiClassNames.BannerMessage);
 
             Add(_titleLabel);
             Add(_messageLabel);
@@ -50,11 +48,9 @@ namespace Ee4v.UI
         {
             state = state ?? new AlertsState(UiBannerTone.Info, string.Empty, string.Empty);
 
-            _titleLabel.text = state.Title;
-            _titleLabel.style.display = string.IsNullOrWhiteSpace(state.Title) ? DisplayStyle.None : DisplayStyle.Flex;
+            _titleLabel.SetText(state.Title);
 
-            _messageLabel.text = state.Message;
-            _messageLabel.style.display = string.IsNullOrWhiteSpace(state.Message) ? DisplayStyle.None : DisplayStyle.Flex;
+            _messageLabel.SetText(state.Message);
 
             EnableInClassList(UiClassNames.BannerToneInfo, state.Tone == UiBannerTone.Info);
             EnableInClassList(UiClassNames.BannerToneWarning, state.Tone == UiBannerTone.Warning);

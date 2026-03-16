@@ -18,7 +18,6 @@
 
 .ee4v-ui-catalog-shell__navigator-title {
     font-size: 16px;
-    -unity-font-style: bold;
     margin-bottom: 4px;
 }
 

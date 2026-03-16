@@ -107,12 +107,10 @@ namespace Ee4v.UI
         {
             _navigatorHost.Clear();
 
-            var title = new Label(I18N.Get("catalog.window.title"));
-            title.AddToClassList("ee4v-ui-catalog-shell__navigator-title");
+            var title = UiTextFactory.Create(I18N.Get("catalog.window.title"), UiClassNames.CatalogNavigatorTitle);
             _navigatorHost.Add(title);
 
-            var subtitle = new Label(I18N.Get("catalog.window.navigatorSubtitle"));
-            subtitle.AddToClassList("ee4v-ui-catalog-shell__navigator-subtitle");
+            var subtitle = UiTextFactory.Create(I18N.Get("catalog.window.navigatorSubtitle"), UiClassNames.CatalogNavigatorSubtitle);
             _navigatorHost.Add(subtitle);
 
             _navigatorTree = new TreeView();
@@ -192,15 +190,10 @@ namespace Ee4v.UI
                 story.Title,
                 story.Description));
 
-            var breadcrumb = new Label(story.Group);
-            breadcrumb.AddToClassList(UiClassNames.StatusBadge);
-            breadcrumb.AddToClassList(UiClassNames.StatusIdle);
-
-            var implementationBadge = new Label(GetImplementationLabel(story.Implementation));
-            implementationBadge.AddToClassList(UiClassNames.StatusBadge);
-            implementationBadge.AddToClassList(story.Implementation == ComponentImplementationKind.UiToolkit
-                ? UiClassNames.StatusPassed
-                : UiClassNames.StatusRunning);
+            var breadcrumb = new StatusBadge(new StatusBadgeState(story.Group, UiStatusTone.Idle));
+            var implementationBadge = new StatusBadge(new StatusBadgeState(
+                GetImplementationLabel(story.Implementation),
+                story.Implementation == ComponentImplementationKind.UiToolkit ? UiStatusTone.Passed : UiStatusTone.Running));
 
             var reloadButton = new Button(() =>
             {
@@ -265,7 +258,7 @@ namespace Ee4v.UI
                 nestedPage.ToolbarRight.Clear();
                 nestedPage.Body.Clear();
 
-                nestedPage.ToolbarLeft.Add(new Label("左スロット"));
+                nestedPage.ToolbarLeft.Add(UiTextFactory.Create("左スロット"));
                 nestedPage.ToolbarRight.Add(CreatePreviewButton("操作"));
                 nestedPage.Body.Add(new UiCard(new UiCardState("本文", bodyMessage, "プレビュー")));
             };
@@ -315,14 +308,14 @@ namespace Ee4v.UI
                 toolbar.LeftSlot.Clear();
                 toolbar.RightSlot.Clear();
 
-                toolbar.LeftSlot.Add(new Label(leftText));
+                toolbar.LeftSlot.Add(UiTextFactory.Create(leftText));
 
                 if (showAction)
                 {
                     toolbar.RightSlot.Add(CreatePreviewButton("実行"));
                 }
 
-                toolbar.RightSlot.Add(new Label(rightText));
+                toolbar.RightSlot.Add(UiTextFactory.Create(rightText));
             };
 
             refresh();
@@ -374,7 +367,7 @@ namespace Ee4v.UI
             var controls = CreateControlsSection(page, "カードのメタ情報と補助文言を編集します。");
             var presetRow = new VisualElement();
             presetRow.AddToClassList(UiClassNames.CatalogButtonRow);
-            presetRow.Add(new Label("プリセット"));
+            presetRow.Add(UiTextFactory.Create("プリセット"));
             presetRow.Add(new Button(() => applyPreset(UiCardStoryPreset.Default)) { text = "標準" });
             presetRow.Add(new Button(() => applyPreset(UiCardStoryPreset.Section)) { text = "UiSection" });
             presetRow.Add(new Button(() => applyPreset(UiCardStoryPreset.EmptyState)) { text = "UiEmptyState" });
@@ -423,8 +416,8 @@ namespace Ee4v.UI
 
                 if (!string.IsNullOrWhiteSpace(bodyText))
                 {
-                    var bodyLabel = new Label(bodyText);
-                    bodyLabel.style.whiteSpace = WhiteSpace.Normal;
+                    var bodyLabel = UiTextFactory.Create(bodyText);
+                    bodyLabel.SetWhiteSpace(WhiteSpace.Normal);
                     card.Body.Add(bodyLabel);
                 }
             };
@@ -510,7 +503,7 @@ namespace Ee4v.UI
 
                 if (showLeftLabel)
                 {
-                    actionRow.LeftSlot.Add(new Label("フッター操作"));
+                    actionRow.LeftSlot.Add(UiTextFactory.Create("フッター操作"));
                 }
 
                 actionRow.RightSlot.Add(CreatePreviewButton(primaryText));
@@ -998,11 +991,9 @@ namespace Ee4v.UI
             var row = new VisualElement();
             row.AddToClassList("ee4v-ui-catalog-tree-item");
 
-            var title = new Label();
-            title.AddToClassList("ee4v-ui-catalog-tree-item__title");
+            var title = UiTextFactory.Create(string.Empty, UiClassNames.CatalogTreeTitle);
 
-            var implementation = new Label();
-            implementation.AddToClassList("ee4v-ui-catalog-tree-item__implementation");
+            var implementation = UiTextFactory.Create(string.Empty, UiClassNames.CatalogTreeImplementation);
 
             row.Add(title);
             row.Add(implementation);
@@ -1012,17 +1003,17 @@ namespace Ee4v.UI
         private void BindNavigatorTreeItem(VisualElement element, int index)
         {
             var node = _navigatorTree.GetItemDataForIndex<NavigatorTreeNode>(index);
-            var title = element.ElementAt(0) as Label;
-            var implementation = element.ElementAt(1) as Label;
+            var title = element.ElementAt(0) as UiTextElement;
+            var implementation = element.ElementAt(1) as UiTextElement;
 
             if (title != null)
             {
-                title.text = node.Title;
+                title.SetText(node.Title);
             }
 
             if (implementation != null)
             {
-                implementation.text = node.ImplementationShortLabel;
+                implementation.SetText(node.ImplementationShortLabel);
                 implementation.EnableInClassList("ee4v-ui-catalog-tree-item__implementation--hidden", string.IsNullOrEmpty(node.ImplementationShortLabel));
             }
         }
