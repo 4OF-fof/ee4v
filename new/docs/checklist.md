@@ -33,6 +33,14 @@
     - [x] Unityのcallback購読と再描画要求をAPI側で一元管理する
     - [x] phase1では本番機能の移植ではなく、動作確認用の最小stubで成立性を検証する
 
+## InternalEditorAPI
+- [x] Unity内部APIへのアクセスをCore配下に隔離し、featureから直接参照しない
+    - [x] 初回対象としてProjectBrowserを扱い、active window優先で対象を解決できる
+    - [x] ProjectBrowserの現在状態をsnapshotとして取得できる
+    - [x] snapshotはfolderのGUIDを正とし、path・search・view mode・orientationを併記する
+    - [x] folder表示、search設定、search解除を安全に実行できる
+    - [x] 内部APIが利用できない場合は例外ではなく失敗を返し、feature側でgracefulに無効化できる
+
 
 # Phase 2
 - phase2ではphase1で整備した基盤を活用して、既存機能の移植と新機能の実装を進める
@@ -59,8 +67,8 @@
 - [] ProjectTab
     - [] ProjectToolbarにタブを追加する機能を実装する
     - [] タブごとに履歴を管理し、進む・戻るができるようにする
+    - [] CoreのEditorAPIを利用して現在位置を追跡し、履歴管理を実装する
 - [] FolderStyle
     - [] Projectのアイテムのアイコンや背景色を変更できる機能を実装する
 - [] ContentOverlay
     - [] Folderのアイコンに重ねてフォルダ内に存在するアイテムの種類を示すアイコンを表示する機能を実装する
-

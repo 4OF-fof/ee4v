@@ -1,6 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Ee4v.Core.Internal.EditorAPI;
 
 namespace Ee4v.Core.Injector
 {
@@ -129,7 +130,10 @@ namespace Ee4v.Core.Injector
                 return ProjectItemViewMode.Unknown;
             }
 
-            return ProjectBrowserLayoutResolver.GetViewMode();
+            ProjectBrowserSnapshot snapshot;
+            return ProjectBrowser.TryGetSnapshot(out snapshot)
+                ? ToProjectItemViewMode(snapshot.ViewMode)
+                : ProjectItemViewMode.Unknown;
         }
 
         private static ProjectItemOrientation ResolveProjectOrientation(
@@ -142,7 +146,46 @@ namespace Ee4v.Core.Injector
                 return ProjectItemOrientation.Unknown;
             }
 
-            return ProjectBrowserLayoutResolver.GetOrientation(selectionRect, viewMode);
+            ProjectBrowserSnapshot snapshot;
+            if (ProjectBrowser.TryGetSnapshot(selectionRect, out snapshot))
+            {
+                return ToProjectItemOrientation(snapshot.Orientation);
+            }
+
+            if (viewMode == ProjectItemViewMode.OneColumn)
+            {
+                return ProjectItemOrientation.Horizontal;
+            }
+
+            return selectionRect.height > EditorGUIUtility.singleLineHeight * 1.5f
+                ? ProjectItemOrientation.Vertical
+                : ProjectItemOrientation.Horizontal;
+        }
+
+        private static ProjectItemViewMode ToProjectItemViewMode(ProjectBrowserViewMode viewMode)
+        {
+            switch (viewMode)
+            {
+                case ProjectBrowserViewMode.OneColumn:
+                    return ProjectItemViewMode.OneColumn;
+                case ProjectBrowserViewMode.TwoColumns:
+                    return ProjectItemViewMode.TwoColumns;
+                default:
+                    return ProjectItemViewMode.Unknown;
+            }
+        }
+
+        private static ProjectItemOrientation ToProjectItemOrientation(ProjectBrowserOrientation orientation)
+        {
+            switch (orientation)
+            {
+                case ProjectBrowserOrientation.Horizontal:
+                    return ProjectItemOrientation.Horizontal;
+                case ProjectBrowserOrientation.Vertical:
+                    return ProjectItemOrientation.Vertical;
+                default:
+                    return ProjectItemOrientation.Unknown;
+            }
         }
     }
 }
