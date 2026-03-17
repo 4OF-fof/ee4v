@@ -37,9 +37,6 @@ namespace Ee4v.Core.Testing
         private readonly List<FeatureTestDescriptor> _descriptors = new List<FeatureTestDescriptor>();
         private readonly List<DescriptorView> _descriptorViews = new List<DescriptorView>();
         private SearchField _searchField;
-        private Button _refreshButton;
-        private Button _runAllButton;
-        private StatusBadge _overallStatusBadge;
         private Alerts _stateAlert;
         private ScrollView _suiteScrollView;
         private VisualElement _suiteListHost;
@@ -97,35 +94,6 @@ namespace Ee4v.Core.Testing
             var shell = new VisualElement();
             shell.AddToClassList("ee4v-test-manager__shell");
 
-            var toolbar = new VisualElement();
-            toolbar.AddToClassList("ee4v-test-manager__toolbar");
-
-            var actions = new VisualElement();
-            actions.AddToClassList("ee4v-test-manager__actions");
-
-            _refreshButton = new Button(RefreshDescriptors)
-            {
-                text = I18N.Get("testing.window.refresh")
-            };
-            _refreshButton.AddToClassList("ee4v-test-manager__toolbar-button");
-
-            _runAllButton = new Button(TryRunAll)
-            {
-                text = I18N.Get("testing.window.runAll")
-            };
-            _runAllButton.AddToClassList("ee4v-test-manager__toolbar-button");
-
-            actions.Add(_refreshButton);
-            actions.Add(_runAllButton);
-
-            var toolbarStatus = new VisualElement();
-            toolbarStatus.AddToClassList("ee4v-test-manager__toolbar-status");
-            _overallStatusBadge = new StatusBadge();
-            toolbarStatus.Add(_overallStatusBadge);
-
-            toolbar.Add(actions);
-            toolbar.Add(toolbarStatus);
-
             _searchField = new SearchField(new SearchFieldState(_searchQuery, I18N.Get("testing.window.searchPlaceholder")));
             _searchField.AddToClassList("ee4v-test-manager__search");
             _searchField.ValueChanged += ApplySearchQuery;
@@ -140,7 +108,6 @@ namespace Ee4v.Core.Testing
             _suiteListHost.AddToClassList("ee4v-test-manager__list");
             _suiteScrollView.Add(_suiteListHost);
 
-            shell.Add(toolbar);
             shell.Add(_searchField);
             shell.Add(_stateAlert);
             shell.Add(_suiteScrollView);
@@ -191,17 +158,10 @@ namespace Ee4v.Core.Testing
 
         private void RefreshWindowState()
         {
-            if (_refreshButton == null)
+            if (_suiteListHost == null)
             {
                 return;
             }
-
-            var isRunning = _runnerService != null && _runnerService.IsRunInProgress;
-            _refreshButton.SetEnabled(!isRunning);
-            _runAllButton.SetEnabled(!isRunning && _descriptors.Count > 0);
-            _overallStatusBadge.SetState(new StatusBadgeState(
-                isRunning ? I18N.Get("testing.window.running") : I18N.Get("testing.window.idle"),
-                isRunning ? UiStatusTone.Running : UiStatusTone.Idle));
 
             for (var i = 0; i < _descriptorViews.Count; i++)
             {
@@ -323,23 +283,6 @@ namespace Ee4v.Core.Testing
             }
 
             if (!_runnerService.TryRun(descriptor, out var errorMessage))
-            {
-                EditorUtility.DisplayDialog(I18N.Get("testing.window.title"), errorMessage, "OK");
-                return;
-            }
-
-            RefreshWindowState();
-        }
-
-        private void TryRunAll()
-        {
-            EnsureRunnerService();
-            if (_runnerService == null)
-            {
-                return;
-            }
-
-            if (!_runnerService.TryRunAll(_descriptors, out var errorMessage))
             {
                 EditorUtility.DisplayDialog(I18N.Get("testing.window.title"), errorMessage, "OK");
                 return;

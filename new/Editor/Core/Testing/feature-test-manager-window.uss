@@ -10,28 +10,6 @@
     padding-bottom: 12px;
 }
 
-.ee4v-test-manager__toolbar {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
-}
-
-.ee4v-test-manager__actions {
-    flex-direction: row;
-    align-items: center;
-}
-
-.ee4v-test-manager__toolbar-button {
-    margin-right: 6px;
-}
-
-.ee4v-test-manager__toolbar-status {
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-end;
-}
-
 .ee4v-test-manager__search {
     margin-bottom: 10px;
 }
