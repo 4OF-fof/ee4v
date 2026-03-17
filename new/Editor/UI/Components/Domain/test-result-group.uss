@@ -43,35 +43,58 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    margin-top: 4px;
-    padding-left: 0;
-    padding-right: 0;
-    padding-top: 4px;
-    padding-bottom: 4px;
-    border-top-width: 0;
-    border-right-width: 0;
-    border-bottom-width: 0;
-    border-left-width: 0;
-    background-color: rgba(0, 0, 0, 0);
+    margin-top: 8px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: rgba(255, 255, 255, 0.08);
+    border-right-color: rgba(255, 255, 255, 0.08);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+    border-left-color: rgba(255, 255, 255, 0.08);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.03);
     color: rgb(230, 230, 230);
     -unity-text-align: middle-left;
 }
 
 .ee4v-ui-test-result-group__cases-toggle:hover {
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: rgba(255, 255, 255, 0.055);
 }
 
 .ee4v-ui-test-result-group__cases-chevron {
     width: 14px;
     min-width: 14px;
     max-width: 14px;
-    margin-right: 6px;
+    margin-right: 8px;
+    padding-left: 4px;
+    padding-right: 4px;
+    border-top-left-radius: 999px;
+    border-top-right-radius: 999px;
+    border-bottom-left-radius: 999px;
+    border-bottom-right-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.06);
 }
 
 .ee4v-ui-test-result-group__cases-body {
-    margin-top: 4px;
+    margin-top: 8px;
     padding-left: 12px;
     flex-direction: column;
+    border-left-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.08);
+}
+
+.ee4v-ui-test-result-group--expanded .ee4v-ui-test-result-group__cases-toggle {
+    background-color: rgba(255, 255, 255, 0.045);
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
 }
 
 .ee4v-ui-test-result-group__case-card {

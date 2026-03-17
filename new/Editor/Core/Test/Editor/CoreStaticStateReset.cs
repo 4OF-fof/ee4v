@@ -16,6 +16,7 @@ namespace Ee4v.Core.Tests
         public static void ResetAll()
         {
             FeatureTestRegistryReset.Reset();
+            FeatureTestRunnerStateReset.Reset();
             SettingApiReset.Reset();
             InjectorApiReset.Reset();
             PackagePathUtilityReset.Reset();
@@ -90,6 +91,15 @@ namespace Ee4v.Core.Tests
         public static void Reset()
         {
             ReflectionReset.SetStaticField(typeof(FeatureTestRegistry), "_cachedDescriptors", null);
+        }
+    }
+
+    internal static class FeatureTestRunnerStateReset
+    {
+        public static void Reset()
+        {
+            ReflectionReset.SetStaticField(typeof(FeatureTestManagerWindow), "_runnerService", null);
+            FeatureTestRunnerService.ClearPersistedState();
         }
     }
 

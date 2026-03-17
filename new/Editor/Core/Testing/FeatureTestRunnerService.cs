@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.TestTools.TestRunner.Api;
+using UnityEngine;
 
 namespace Ee4v.Core.Testing
 {
     internal sealed class FeatureTestRunnerService : IDisposable
     {
+        private const string SessionStateKey = "ee4v.core.testing.runner-service.state";
         private static readonly TimeSpan RunStartTimeout = TimeSpan.FromSeconds(15d);
         private static readonly TimeSpan RunHeartbeatTimeout = TimeSpan.FromSeconds(120d);
 
@@ -26,6 +28,7 @@ namespace Ee4v.Core.Testing
         internal FeatureTestRunnerService(IFeatureTestRunnerGateway gateway)
         {
             _gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
+            LoadPersistedState();
             _callbacks = new CallbackForwarder(this);
             _gateway.RegisterCallbacks(_callbacks);
             EditorApplication.update -= OnEditorUpdate;
@@ -81,6 +84,11 @@ namespace Ee4v.Core.Testing
         {
             _gateway.UnregisterCallbacks(_callbacks);
             EditorApplication.update -= OnEditorUpdate;
+        }
+
+        internal static void ClearPersistedState()
+        {
+            SessionState.SetString(SessionStateKey, string.Empty);
         }
 
         private bool TryStartRun(IReadOnlyList<FeatureTestDescriptor> descriptors, out string errorMessage)
@@ -295,6 +303,7 @@ namespace Ee4v.Core.Testing
 
         private void NotifyChanged()
         {
+            SaveState();
             Changed?.Invoke();
         }
 
@@ -390,13 +399,33 @@ namespace Ee4v.Core.Testing
         private sealed class ActiveRun
         {
             public ActiveRun(IReadOnlyList<FeatureTestDescriptor> descriptors)
+                : this(
+                    descriptors,
+                    string.Empty,
+                    DateTime.UtcNow,
+                    DateTime.UtcNow,
+                    DateTime.UtcNow,
+                    false,
+                    string.Empty)
+            {
+            }
+
+            public ActiveRun(
+                IReadOnlyList<FeatureTestDescriptor> descriptors,
+                string runId,
+                DateTime requestedAtUtc,
+                DateTime lastHeartbeatUtc,
+                DateTime lastUiNotifyUtc,
+                bool hasStarted,
+                string lastTestName)
             {
                 Descriptors = descriptors;
-                RunId = string.Empty;
-                RequestedAtUtc = DateTime.UtcNow;
-                LastHeartbeatUtc = RequestedAtUtc;
-                LastUiNotifyUtc = RequestedAtUtc;
-                LastTestName = string.Empty;
+                RunId = runId ?? string.Empty;
+                RequestedAtUtc = requestedAtUtc;
+                LastHeartbeatUtc = lastHeartbeatUtc;
+                LastUiNotifyUtc = lastUiNotifyUtc;
+                HasStarted = hasStarted;
+                LastTestName = lastTestName ?? string.Empty;
             }
 
             public IReadOnlyList<FeatureTestDescriptor> Descriptors { get; }
@@ -412,6 +441,214 @@ namespace Ee4v.Core.Testing
             public bool HasStarted { get; set; }
 
             public string LastTestName { get; set; }
+        }
+
+        [Serializable]
+        private sealed class PersistedState
+        {
+            public PersistedRecord[] records;
+            public PersistedActiveRun activeRun;
+        }
+
+        [Serializable]
+        private sealed class PersistedRecord
+        {
+            public string featureScope;
+            public int status;
+            public string runId;
+            public string message;
+            public int passCount;
+            public int failCount;
+            public int skipCount;
+            public int inconclusiveCount;
+            public double durationSeconds;
+            public long finishedAtUtcTicks;
+        }
+
+        [Serializable]
+        private sealed class PersistedActiveRun
+        {
+            public PersistedDescriptor[] descriptors;
+            public string runId;
+            public long requestedAtUtcTicks;
+            public long lastHeartbeatUtcTicks;
+            public long lastUiNotifyUtcTicks;
+            public bool hasStarted;
+            public string lastTestName;
+        }
+
+        [Serializable]
+        private sealed class PersistedDescriptor
+        {
+            public string featureScope;
+            public string displayName;
+            public string assemblyName;
+            public string description;
+            public int order;
+            public PersistedCase[] testCases;
+        }
+
+        [Serializable]
+        private sealed class PersistedCase
+        {
+            public string title;
+            public string description;
+            public int order;
+        }
+
+        private void SaveState()
+        {
+            var state = new PersistedState
+            {
+                records = _records.Select(pair => new PersistedRecord
+                {
+                    featureScope = pair.Key,
+                    status = (int)pair.Value.Status,
+                    runId = pair.Value.RunId,
+                    message = pair.Value.Message,
+                    passCount = pair.Value.PassCount,
+                    failCount = pair.Value.FailCount,
+                    skipCount = pair.Value.SkipCount,
+                    inconclusiveCount = pair.Value.InconclusiveCount,
+                    durationSeconds = pair.Value.DurationSeconds,
+                    finishedAtUtcTicks = pair.Value.FinishedAtUtc.HasValue ? pair.Value.FinishedAtUtc.Value.Ticks : 0L
+                }).ToArray(),
+                activeRun = _activeRun == null
+                    ? null
+                    : new PersistedActiveRun
+                    {
+                        descriptors = _activeRun.Descriptors.Select(ToPersistedDescriptor).ToArray(),
+                        runId = _activeRun.RunId,
+                        requestedAtUtcTicks = _activeRun.RequestedAtUtc.Ticks,
+                        lastHeartbeatUtcTicks = _activeRun.LastHeartbeatUtc.Ticks,
+                        lastUiNotifyUtcTicks = _activeRun.LastUiNotifyUtc.Ticks,
+                        hasStarted = _activeRun.HasStarted,
+                        lastTestName = _activeRun.LastTestName
+                    }
+            };
+
+            SessionState.SetString(SessionStateKey, JsonUtility.ToJson(state));
+        }
+
+        private void LoadPersistedState()
+        {
+            _records.Clear();
+            _activeRun = null;
+
+            var json = SessionState.GetString(SessionStateKey, string.Empty);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            PersistedState state;
+            try
+            {
+                state = JsonUtility.FromJson<PersistedState>(json);
+            }
+            catch
+            {
+                ClearPersistedState();
+                return;
+            }
+
+            if (state == null)
+            {
+                return;
+            }
+
+            if (state.records != null)
+            {
+                for (var i = 0; i < state.records.Length; i++)
+                {
+                    var persisted = state.records[i];
+                    if (persisted == null || string.IsNullOrWhiteSpace(persisted.featureScope))
+                    {
+                        continue;
+                    }
+
+                    _records[persisted.featureScope] = new FeatureTestRunRecord
+                    {
+                        Status = (FeatureTestRunStatus)persisted.status,
+                        RunId = persisted.runId ?? string.Empty,
+                        Message = persisted.message ?? string.Empty,
+                        PassCount = persisted.passCount,
+                        FailCount = persisted.failCount,
+                        SkipCount = persisted.skipCount,
+                        InconclusiveCount = persisted.inconclusiveCount,
+                        DurationSeconds = persisted.durationSeconds,
+                        FinishedAtUtc = persisted.finishedAtUtcTicks > 0L
+                            ? new DateTime(persisted.finishedAtUtcTicks, DateTimeKind.Utc)
+                            : (DateTime?)null
+                    };
+                }
+            }
+
+            if (state.activeRun == null || state.activeRun.descriptors == null || state.activeRun.descriptors.Length == 0)
+            {
+                return;
+            }
+
+            var descriptors = state.activeRun.descriptors
+                .Where(item => item != null && !string.IsNullOrWhiteSpace(item.featureScope) && !string.IsNullOrWhiteSpace(item.displayName) && !string.IsNullOrWhiteSpace(item.assemblyName))
+                .Select(ToDescriptor)
+                .ToArray();
+            if (descriptors.Length == 0)
+            {
+                return;
+            }
+
+            _activeRun = new ActiveRun(
+                descriptors,
+                state.activeRun.runId,
+                FromTicks(state.activeRun.requestedAtUtcTicks),
+                FromTicks(state.activeRun.lastHeartbeatUtcTicks),
+                FromTicks(state.activeRun.lastUiNotifyUtcTicks),
+                state.activeRun.hasStarted,
+                state.activeRun.lastTestName);
+        }
+
+        private static PersistedDescriptor ToPersistedDescriptor(FeatureTestDescriptor descriptor)
+        {
+            return new PersistedDescriptor
+            {
+                featureScope = descriptor.FeatureScope,
+                displayName = descriptor.DisplayName,
+                assemblyName = descriptor.AssemblyName,
+                description = descriptor.Description,
+                order = descriptor.Order,
+                testCases = descriptor.TestCases == null
+                    ? Array.Empty<PersistedCase>()
+                    : descriptor.TestCases.Select(testCase => new PersistedCase
+                    {
+                        title = testCase.Title,
+                        description = testCase.Description,
+                        order = testCase.Order
+                    }).ToArray()
+            };
+        }
+
+        private static FeatureTestDescriptor ToDescriptor(PersistedDescriptor persisted)
+        {
+            return new FeatureTestDescriptor(
+                persisted.featureScope,
+                persisted.displayName,
+                persisted.assemblyName,
+                persisted.description,
+                persisted.order,
+                persisted.testCases == null
+                    ? Array.Empty<FeatureTestCaseDescriptor>()
+                    : persisted.testCases.Select(testCase => new FeatureTestCaseDescriptor(
+                        testCase.title,
+                        testCase.description,
+                        testCase.order)).ToArray());
+        }
+
+        private static DateTime FromTicks(long ticks)
+        {
+            return ticks > 0L
+                ? new DateTime(ticks, DateTimeKind.Utc)
+                : DateTime.UtcNow;
         }
 
         private sealed class CallbackForwarder : ICallbacks

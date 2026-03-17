@@ -134,6 +134,40 @@ namespace Ee4v.Core.Tests
 
         [Test]
         [FeatureTestCase(
+            "run 状態を reload 後も維持する",
+            "FeatureTestRunnerService が session state から active run と record を復元し、reload 後も NotRun に戻さないことを確認します。",
+            order: 14)]
+        public void FeatureTestRunnerService_RestoresRunningStateAcrossServiceRecreation()
+        {
+            var descriptor = new FeatureTestDescriptor(
+                "Core",
+                "Core",
+                "Ee4v.Core.Tests.Editor",
+                testCases: new[]
+                {
+                    new FeatureTestCaseDescriptor("Case 1", "Description")
+                });
+
+            var gateway1 = new FakeRunnerGateway();
+            using (var service1 = new FeatureTestRunnerService(gateway1))
+            {
+                Assert.That(service1.TryRun(descriptor, out _), Is.True);
+                gateway1.TriggerRunStarted();
+            }
+
+            var gateway2 = new FakeRunnerGateway();
+            using (var service2 = new FeatureTestRunnerService(gateway2))
+            {
+                var restored = service2.GetRecord("Core");
+
+                Assert.That(service2.IsRunInProgress, Is.True);
+                Assert.That(restored.Status, Is.EqualTo(FeatureTestRunStatus.Running));
+                Assert.That(restored.Message, Does.Contain("実行"));
+            }
+        }
+
+        [Test]
+        [FeatureTestCase(
             "Test Manager が Core と Phase1 を列挙する",
             "FeatureTestManagerWindow の再読込で登録済み suite が一覧に並ぶことを確認します。",
             order: 15)]
