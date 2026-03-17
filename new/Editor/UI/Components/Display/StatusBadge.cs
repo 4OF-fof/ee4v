@@ -7,7 +7,9 @@ namespace Ee4v.UI
         Idle,
         Running,
         Passed,
-        Failed
+        Failed,
+        Skipped,
+        Inconclusive
     }
 
     internal sealed class StatusBadgeState
@@ -44,6 +46,8 @@ namespace Ee4v.UI
             _textElement.EnableInClassList(UiClassNames.StatusRunning, state.Tone == UiStatusTone.Running);
             _textElement.EnableInClassList(UiClassNames.StatusPassed, state.Tone == UiStatusTone.Passed);
             _textElement.EnableInClassList(UiClassNames.StatusFailed, state.Tone == UiStatusTone.Failed);
+            _textElement.EnableInClassList(UiClassNames.StatusSkipped, state.Tone == UiStatusTone.Skipped);
+            _textElement.EnableInClassList(UiClassNames.StatusInconclusive, state.Tone == UiStatusTone.Inconclusive);
         }
     }
 }

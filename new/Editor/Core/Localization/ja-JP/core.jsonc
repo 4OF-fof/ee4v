@@ -21,11 +21,18 @@
       "refresh": "更新",
       "run": "実行",
       "runAll": "すべて実行",
+      "searchPlaceholder": "suite 名、説明、テスト名で検索",
       "running": "実行中",
       "idle": "待機中",
+      "scope": "Scope",
+      "assembly": "Assembly",
+      "tests": "Tests",
+      "testCasesMeta": "{0}件",
       "lastResult": "直近結果",
+      "countsFormat": "Pass {0}  Fail {1}  Skip {2}  Inc {3}  {4:0.00}s",
       "notRunYet": "まだテストは実行されていません。",
-      "noSuites": "登録済みの feature テストがありません。"
+      "noSuites": "登録済みの feature テストがありません。",
+      "noMatches": "検索条件に一致する feature テストがありません。"
     },
     "status": {
       "notRun": "未実行",

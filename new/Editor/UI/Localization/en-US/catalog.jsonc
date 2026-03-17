@@ -19,7 +19,9 @@
       "idle": "Idle",
       "running": "Running",
       "passed": "Passed",
-      "failed": "Failed"
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "inconclusive": "Inconclusive"
     }
   }
 }

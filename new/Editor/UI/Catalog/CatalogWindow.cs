@@ -58,14 +58,40 @@ namespace Ee4v.UI
             }
 
             _stories.Add(new StoryDefinition(
+                "search-field",
+                "DataView",
+                "SearchField",
+                "検索入力と clear 操作をまとめた単体利用向けの検索コンポーネントです。",
+                "一覧やカード列の絞り込みに使う軽量な検索入力です。placeholder と clear button を持ち、SearchableTreeView の検索 UI と同じ見た目・挙動を単体でも使えます。",
+                new[]
+                {
+                    "Icon"
+                },
+                ComponentImplementationKind.UiToolkit,
+                BuildSearchFieldStory));
+
+            _stories.Add(new StoryDefinition(
                 "searchable-tree-view",
                 "DataView",
                 "SearchableTreeView",
                 "検索窓と tree view をまとめて提供する、絞り込み可能なツリーコンポーネントです。",
-                "呼び出し側は階層データと row 描画だけを渡し、検索文字列の状態管理や tree の絞り込みは component 側に任せます。検索欄と tree 本体も同じ面として見えるように一体の box で扱います。",
-                new string[0],
+                "呼び出し側は階層データと row 描画だけを渡し、検索文字列の状態管理や tree の絞り込みは component 側に任せます。検索欄は SearchField を内部利用し、tree 本体と同じ面の中で扱います。",
+                new[]
+                {
+                    "SearchField"
+                },
                 ComponentImplementationKind.UiToolkit,
                 BuildSearchableTreeViewStory));
+
+            _stories.Add(new StoryDefinition(
+                "collapsible-section",
+                "Interactive",
+                "CollapsibleSection",
+                "header を押して content の開閉を切り替える折りたたみセクションです。",
+                "一覧カードの補足情報や詳細ブロックを閉じた状態から段階的に開示する用途を想定しています。title と meta を header に並べ、content slot に任意要素を配置できます。",
+                new string[0],
+                ComponentImplementationKind.UiToolkit,
+                BuildCollapsibleSectionStory));
 
             _stories.Add(new StoryDefinition(
                 "tab-card",
@@ -132,8 +158,10 @@ namespace Ee4v.UI
             root.Clear();
             root.AddToClassList(UiClassNames.Root);
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/search-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/searchable-tree-view.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/collapsible-section.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/tab-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/alerts.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/status-badge.uss");
@@ -369,6 +397,41 @@ namespace Ee4v.UI
             preview.Body.Add(treeView);
         }
 
+        private void BuildSearchFieldStory(VisualElement parent)
+        {
+            var value = string.Empty;
+            var placeholder = "suite 名、説明、テスト名で検索";
+            Action refresh = null;
+
+            var controls = CreatePlainControlsSection(parent, "placeholder と入力値を変えながら、一覧絞り込み用の単体 search field を確認します。");
+            var valueField = AddTextField(controls.Content, "値", value, nextValue =>
+            {
+                value = nextValue;
+                refresh();
+            });
+            var placeholderField = AddTextField(controls.Content, "Placeholder", placeholder, nextValue =>
+            {
+                placeholder = nextValue;
+                refresh();
+            });
+
+            var preview = CreatePreviewSection(parent);
+            var surface = CreatePreviewSurface(true);
+            var searchField = new SearchField();
+            surface.Add(searchField);
+            preview.Body.Add(surface);
+
+            refresh = () =>
+            {
+                valueField.SetValueWithoutNotify(value);
+                placeholderField.SetValueWithoutNotify(placeholder);
+                searchField.SetState(new SearchFieldState(value, placeholder));
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
+        }
+
         private void BuildTabCardStory(VisualElement parent)
         {
             var firstLabel = "基本";
@@ -511,7 +574,7 @@ namespace Ee4v.UI
 
         private void BuildStatusBadgeStory(VisualElement parent)
         {
-            var text = "実行中";
+            var text = I18N.Get("catalog.status.running");
             var tone = UiStatusTone.Running;
             Action refresh = null;
             Action<UiStatusTone> applyPreset = selectedTone =>
@@ -520,16 +583,22 @@ namespace Ee4v.UI
                 switch (selectedTone)
                 {
                     case UiStatusTone.Passed:
-                        text = "成功";
+                        text = I18N.Get("catalog.status.passed");
                         break;
                     case UiStatusTone.Failed:
-                        text = "失敗";
+                        text = I18N.Get("catalog.status.failed");
+                        break;
+                    case UiStatusTone.Skipped:
+                        text = I18N.Get("catalog.status.skipped");
+                        break;
+                    case UiStatusTone.Inconclusive:
+                        text = I18N.Get("catalog.status.inconclusive");
                         break;
                     case UiStatusTone.Idle:
-                        text = "待機中";
+                        text = I18N.Get("catalog.status.idle");
                         break;
                     default:
-                        text = "実行中";
+                        text = I18N.Get("catalog.status.running");
                         break;
                 }
 
@@ -567,7 +636,9 @@ namespace Ee4v.UI
                             new TabCardTabState(UiStatusTone.Idle.ToString(), "Idle"),
                             new TabCardTabState(UiStatusTone.Running.ToString(), "Running"),
                             new TabCardTabState(UiStatusTone.Passed.ToString(), "Passed"),
-                            new TabCardTabState(UiStatusTone.Failed.ToString(), "Failed")
+                            new TabCardTabState(UiStatusTone.Failed.ToString(), "Failed"),
+                            new TabCardTabState(UiStatusTone.Skipped.ToString(), "Skipped"),
+                            new TabCardTabState(UiStatusTone.Inconclusive.ToString(), "Inconclusive")
                         },
                         tone.ToString()),
                     id => applyPreset((UiStatusTone)Enum.Parse(typeof(UiStatusTone), id)));
@@ -638,11 +709,67 @@ namespace Ee4v.UI
             FinalizeControlsSection(parent, controls);
         }
 
+        private void BuildCollapsibleSectionStory(VisualElement parent)
+        {
+            var title = "登録済みテスト";
+            var meta = "3 items";
+            var expanded = false;
+            Action refresh = null;
+
+            var controls = CreatePlainControlsSection(parent, "title、meta、開閉状態を変えながら、補足情報の段階的表示を確認します。");
+            var titleField = AddTextField(controls.Content, "タイトル", title, nextValue =>
+            {
+                title = nextValue;
+                refresh();
+            });
+            var metaField = AddTextField(controls.Content, "Meta", meta, nextValue =>
+            {
+                meta = nextValue;
+                refresh();
+            });
+
+            var expandedToggle = new Toggle("展開")
+            {
+                value = expanded
+            };
+            expandedToggle.RegisterValueChangedCallback(evt =>
+            {
+                expanded = evt.newValue;
+                refresh();
+            });
+            controls.Content.Add(expandedToggle);
+
+            var preview = CreatePreviewSection(parent);
+            var section = new CollapsibleSection();
+            section.Content.Add(UiTextFactory.Create("- 設定定義の登録確認"));
+            section.Content.Add(UiTextFactory.Create("- 依存関係の初期化確認"));
+            section.Content.Add(UiTextFactory.Create("- Unity Test Runner 連携確認"));
+            preview.Body.Add(section);
+
+            section.ExpandedChanged += nextExpanded =>
+            {
+                expanded = nextExpanded;
+                expandedToggle.SetValueWithoutNotify(nextExpanded);
+            };
+
+            refresh = () =>
+            {
+                titleField.SetValueWithoutNotify(title);
+                metaField.SetValueWithoutNotify(meta);
+                expandedToggle.SetValueWithoutNotify(expanded);
+                section.SetState(new CollapsibleSectionState(title, meta, expanded));
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
+        }
+
         private ControlsSectionContext CreateTabbedControlsSection(VisualElement parent, string description)
         {
             var card = new InfoCard(new InfoCardState("コントロール", description));
             card.userData = "catalog-controls-section";
             var tabCard = new TabCard();
+            tabCard.Content.AddToClassList("ee4v-ui-catalog-controls");
             card.Body.Add(tabCard);
             parent.Add(card);
             return new ControlsSectionContext(card, tabCard.Content, tabCard);
@@ -653,6 +780,7 @@ namespace Ee4v.UI
             var card = new InfoCard(new InfoCardState("コントロール", description));
             card.userData = "catalog-controls-section";
             var content = new VisualElement();
+            content.AddToClassList("ee4v-ui-catalog-controls");
             content.style.flexDirection = FlexDirection.Column;
             card.Body.Add(content);
             parent.Add(card);
@@ -878,29 +1006,37 @@ namespace Ee4v.UI
                             new SampleTreeNode("StatusBadge", "Pill"),
                             "StatusBadge pill status"),
                         new SearchableTreeItemData<SampleTreeNode>(
-                            9,
+                            5,
                             new SampleTreeNode("Icon", "Image"),
                             "Icon image texture builtin")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
-                    5,
+                    6,
                     new SampleTreeNode("Interactive", string.Empty),
                     "Interactive",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
-                            6,
+                            7,
+                            new SampleTreeNode("CollapsibleSection", "Disclosure"),
+                            "CollapsibleSection disclosure section"),
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            8,
                             new SampleTreeNode("TabCard", "Tabs"),
                             "TabCard Tabs switcher")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
-                    7,
+                    9,
                     new SampleTreeNode("DataView", string.Empty),
                     "DataView",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
-                            8,
+                            10,
+                            new SampleTreeNode("SearchField", "Input"),
+                            "SearchField input search"),
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            11,
                             new SampleTreeNode("SearchableTreeView", "Tree"),
                             "SearchableTreeView searchable tree")
                     })

@@ -25,6 +25,8 @@ namespace Ee4v.UI
         public const string StatusRunning = "ee4v-ui-status--running";
         public const string StatusPassed = "ee4v-ui-status--passed";
         public const string StatusFailed = "ee4v-ui-status--failed";
+        public const string StatusSkipped = "ee4v-ui-status--skipped";
+        public const string StatusInconclusive = "ee4v-ui-status--inconclusive";
 
         public const string Icon = "ee4v-ui-icon";
         public const string IconImage = "ee4v-ui-icon__image";
@@ -45,6 +47,24 @@ namespace Ee4v.UI
         public const string SearchableTreeViewTree = "ee4v-ui-searchable-tree-view__tree";
         public const string SearchableTreeViewEmpty = "ee4v-ui-searchable-tree-view__empty";
 
+        public const string SearchField = "ee4v-ui-search-field";
+        public const string SearchFieldHasValue = "ee4v-ui-search-field--has-value";
+        public const string SearchFieldFocused = "ee4v-ui-search-field--focused";
+        public const string SearchFieldIcon = "ee4v-ui-search-field__icon";
+        public const string SearchFieldInputHost = "ee4v-ui-search-field__input-host";
+        public const string SearchFieldInput = "ee4v-ui-search-field__input";
+        public const string SearchFieldPlaceholder = "ee4v-ui-search-field__placeholder";
+        public const string SearchFieldClear = "ee4v-ui-search-field__clear";
+
+        public const string CollapsibleSection = "ee4v-ui-collapsible-section";
+        public const string CollapsibleSectionExpanded = "ee4v-ui-collapsible-section--expanded";
+        public const string CollapsibleSectionHeader = "ee4v-ui-collapsible-section__header";
+        public const string CollapsibleSectionChevron = "ee4v-ui-collapsible-section__chevron";
+        public const string CollapsibleSectionHeaderText = "ee4v-ui-collapsible-section__header-text";
+        public const string CollapsibleSectionTitle = "ee4v-ui-collapsible-section__title";
+        public const string CollapsibleSectionMeta = "ee4v-ui-collapsible-section__meta";
+        public const string CollapsibleSectionContent = "ee4v-ui-collapsible-section__content";
+
         public const string CatalogPageTitle = "ee4v-ui-catalog-page__title";
         public const string CatalogPageDescription = "ee4v-ui-catalog-page__description";
         public const string CatalogDetailLabel = "ee4v-ui-catalog-detail-item__label";
@@ -52,5 +72,6 @@ namespace Ee4v.UI
         public const string CatalogNavigatorTitle = "ee4v-ui-catalog-shell__navigator-title";
         public const string CatalogTreeTitle = "ee4v-ui-catalog-tree-item__title";
         public const string CatalogTreeImplementation = "ee4v-ui-catalog-tree-item__implementation";
+        public const string TestManagerResultSummary = "ee4v-ui-test-manager__result-summary";
     }
 }

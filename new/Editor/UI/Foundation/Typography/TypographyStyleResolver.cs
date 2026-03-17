@@ -80,6 +80,10 @@ namespace Ee4v.UI
                 { UiClassNames.BannerTitle, Create(true, 12, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 2f) },
                 { UiClassNames.BannerMessage, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
                 { UiClassNames.StatusBadge, Create(true, 11, 230, 230, 230, 255, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
+                { UiClassNames.SearchFieldPlaceholder, Create(false, 12, 170, 170, 170, 170, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
+                { UiClassNames.CollapsibleSectionChevron, Create(true, 11, 220, 220, 220, 220, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
+                { UiClassNames.CollapsibleSectionTitle, Create(true, 12, 230, 230, 230, 255, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
+                { UiClassNames.CollapsibleSectionMeta, Create(false, 11, 210, 210, 210, 184, TextAnchor.MiddleRight, WhiteSpace.NoWrap) },
                 { UiClassNames.CatalogPageTitle, Create(true, 18, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 4f) },
                 { UiClassNames.CatalogPageDescription, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
                 { UiClassNames.CatalogDetailLabel, Create(true, 11, 220, 220, 220, 235, TextAnchor.UpperLeft, WhiteSpace.NoWrap, marginBottom: 2f) },
@@ -87,6 +91,7 @@ namespace Ee4v.UI
                 { UiClassNames.CatalogNavigatorTitle, Create(false, 16, 230, 230, 230, 255, TextAnchor.MiddleCenter, WhiteSpace.NoWrap, marginBottom: 10f) },
                 { UiClassNames.CatalogTreeTitle, Create(false, 12, 230, 230, 230, 255, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.CatalogTreeImplementation, Create(false, 10, 210, 210, 210, 184, TextAnchor.MiddleRight, WhiteSpace.NoWrap, marginLeft: 8f) },
+                { UiClassNames.TestManagerResultSummary, Create(true, 12, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 2f) },
             };
 
         public static TypographyResolution Resolve(params string[] classNames)

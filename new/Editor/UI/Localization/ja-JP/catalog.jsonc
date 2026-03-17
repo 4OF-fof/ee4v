@@ -19,7 +19,9 @@
       "idle": "待機中",
       "running": "実行中",
       "passed": "成功",
-      "failed": "失敗"
+      "failed": "失敗",
+      "skipped": "スキップ",
+      "inconclusive": "未確定"
     }
   }
 }

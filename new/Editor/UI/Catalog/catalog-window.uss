@@ -68,7 +68,7 @@
     padding-right: 6px;
 }
 
-.ee4v-ui-catalog-page__body .unity-base-field {
+.ee4v-ui-catalog-controls .unity-base-field {
     margin-bottom: 8px;
 }
 

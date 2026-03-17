@@ -3,13 +3,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Ee4v.Core.I18n;
 using Ee4v.Core.Injector;
 using Ee4v.Core.Settings;
 using Ee4v.Core.Testing;
+using Ee4v.UI;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.TestTools.TestRunner.Api;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Ee4v.Core.Tests
 {
@@ -154,9 +157,138 @@ namespace Ee4v.Core.Tests
 
         [Test]
         [FeatureTestCase(
+            "Test Manager の UI Toolkit 画面が suite card を構築する",
+            "FeatureTestManagerWindow が CreateGUI 後に登録済み suite ごとの card を UI Toolkit で構築することを確認します。",
+            order: 16)]
+        public void FeatureTestManagerWindow_CreateGUI_BuildsSuiteCards()
+        {
+            Ee4vCoreTestReset.RecoverEditorState();
+            var window = ScriptableObject.CreateInstance<FeatureTestManagerWindow>();
+            try
+            {
+                InvokePrivate(window, "RefreshDescriptors");
+                InvokePrivate(window, "CreateGUI");
+
+                var cards = window.rootVisualElement.Query<VisualElement>(className: "ee4v-test-manager__suite-card").ToList();
+
+                Assert.That(cards.Count, Is.GreaterThanOrEqualTo(2));
+            }
+            finally
+            {
+                ScriptableObject.DestroyImmediate(window);
+            }
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Test Manager の検索が suite を絞り込み一致項目を展開する",
+            "FeatureTestManagerWindow の検索入力が suite を絞り込み、検索一致時にテストケース section を自動展開することを確認します。",
+            order: 17)]
+        public void FeatureTestManagerWindow_Search_FiltersAndExpandsMatchingSuite()
+        {
+            Ee4vCoreTestReset.RecoverEditorState();
+            var window = ScriptableObject.CreateInstance<FeatureTestManagerWindow>();
+            try
+            {
+                InvokePrivate(window, "RefreshDescriptors");
+                InvokePrivate(window, "CreateGUI");
+
+                var searchField = window.rootVisualElement.Q<SearchField>();
+                var cards = window.rootVisualElement.Query<VisualElement>(className: "ee4v-test-manager__suite-card").ToList();
+
+                searchField.Value = "Phase1";
+
+                var visibleCards = cards.Where(card => card.style.display.value != DisplayStyle.None).ToList();
+                Assert.That(visibleCards.Count, Is.EqualTo(1));
+
+                var section = visibleCards[0].Q<CollapsibleSection>();
+                Assert.That(section, Is.Not.Null);
+                Assert.That(section.Expanded, Is.True);
+            }
+            finally
+            {
+                ScriptableObject.DestroyImmediate(window);
+            }
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Test Manager が run 状態を UI に反映する",
+            "FeatureTestManagerWindow が FeatureTestRunnerService の record 更新を badge と結果 summary に反映することを確認します。",
+            order: 18)]
+        public void FeatureTestManagerWindow_RefreshWindowState_ReflectsRunnerRecord()
+        {
+            Ee4vCoreTestReset.RecoverEditorState();
+            var gateway = new FakeRunnerGateway();
+            using (var service = new FeatureTestRunnerService(gateway))
+            {
+                ReflectionReset.SetStaticField(typeof(FeatureTestManagerWindow), "_runnerService", service);
+
+                var descriptor = new FeatureTestDescriptor("Core", "Core", "Ee4v.Core.Tests.Editor");
+                Assert.That(service.TryRun(descriptor, out _), Is.True);
+
+                var window = ScriptableObject.CreateInstance<FeatureTestManagerWindow>();
+                try
+                {
+                    InvokePrivate(window, "RefreshDescriptors");
+                    InvokePrivate(window, "CreateGUI");
+
+                    var searchField = window.rootVisualElement.Q<SearchField>();
+                    searchField.Value = "Core";
+
+                    InvokePrivate(window, "RefreshWindowState");
+
+                    var visibleCard = window.rootVisualElement
+                        .Query<VisualElement>(className: "ee4v-test-manager__suite-card")
+                        .ToList()
+                        .Single(card => card.style.display.value != DisplayStyle.None);
+
+                    var summary = visibleCard.Q<UiTextElement>(className: "ee4v-test-manager__result-summary");
+                    var badge = visibleCard.Q<StatusBadge>();
+                    var badgeText = badge.Q<UiTextElement>(className: UiClassNames.StatusBadge);
+
+                    Assert.That(summary.Text, Does.Contain(I18N.Get("testing.status.running")));
+                    Assert.That(badgeText.Text, Is.EqualTo(I18N.Get("testing.status.running")));
+                }
+                finally
+                {
+                    ScriptableObject.DestroyImmediate(window);
+                    ReflectionReset.SetStaticField(typeof(FeatureTestManagerWindow), "_runnerService", null);
+                }
+            }
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Test Manager が load error を alert で表示する",
+            "FeatureTestManagerWindow が suite 読み込みエラー時に state alert をエラー表示へ切り替えることを確認します。",
+            order: 19)]
+        public void FeatureTestManagerWindow_RefreshWindowState_ShowsLoadErrorAlert()
+        {
+            Ee4vCoreTestReset.RecoverEditorState();
+            var window = ScriptableObject.CreateInstance<FeatureTestManagerWindow>();
+            try
+            {
+                InvokePrivate(window, "CreateGUI");
+                SetPrivateField(window, "_loadError", "boom");
+                InvokePrivate(window, "RefreshWindowState");
+
+                var alert = window.rootVisualElement.Q<Alerts>(className: "ee4v-test-manager__state-alert");
+
+                Assert.That(alert, Is.Not.Null);
+                Assert.That(alert.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+            }
+            finally
+            {
+                ScriptableObject.DestroyImmediate(window);
+            }
+        }
+
+        [Test]
+        [FeatureTestCase(
             "Core の static 状態を reset できる",
             "Ee4vCoreTestReset が SettingApi と InjectorApi の static 登録状態をクリアすることを確認します。",
-            order: 16)]
+            order: 20)]
         public void Ee4vCoreTestReset_ResetAll_ClearsStaticRegistrationsAndHandlers()
         {
             var definition = new SettingDefinition<bool>(
@@ -206,6 +338,11 @@ namespace Ee4v.Core.Tests
         private static object GetPrivateField(object target, string fieldName)
         {
             return target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(target);
+        }
+
+        private static void SetPrivateField(object target, string fieldName, object value)
+        {
+            target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic).SetValue(target, value);
         }
 
         private static void InvokePrivate(object target, string methodName)
