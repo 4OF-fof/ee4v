@@ -56,14 +56,18 @@ namespace Ee4v.UI
         public const string SearchFieldPlaceholder = "ee4v-ui-search-field__placeholder";
         public const string SearchFieldClear = "ee4v-ui-search-field__clear";
 
-        public const string CollapsibleSection = "ee4v-ui-collapsible-section";
-        public const string CollapsibleSectionExpanded = "ee4v-ui-collapsible-section--expanded";
-        public const string CollapsibleSectionHeader = "ee4v-ui-collapsible-section__header";
-        public const string CollapsibleSectionChevron = "ee4v-ui-collapsible-section__chevron";
-        public const string CollapsibleSectionHeaderText = "ee4v-ui-collapsible-section__header-text";
-        public const string CollapsibleSectionTitle = "ee4v-ui-collapsible-section__title";
-        public const string CollapsibleSectionMeta = "ee4v-ui-collapsible-section__meta";
-        public const string CollapsibleSectionContent = "ee4v-ui-collapsible-section__content";
+        public const string TestResultGroup = "ee4v-ui-test-result-group";
+        public const string TestResultGroupExpanded = "ee4v-ui-test-result-group--expanded";
+        public const string TestResultGroupSummaryAlert = "ee4v-ui-test-result-group__summary-alert";
+        public const string TestResultGroupRunButton = "ee4v-ui-test-result-group__run-button";
+        public const string TestResultGroupCasesToggle = "ee4v-ui-test-result-group__cases-toggle";
+        public const string TestResultGroupCasesChevron = "ee4v-ui-test-result-group__cases-chevron";
+        public const string TestResultGroupCasesTitle = "ee4v-ui-test-result-group__cases-title";
+        public const string TestResultGroupCasesMeta = "ee4v-ui-test-result-group__cases-meta";
+        public const string TestResultGroupCasesBody = "ee4v-ui-test-result-group__cases-body";
+        public const string TestResultGroupCaseCard = "ee4v-ui-test-result-group__case-card";
+        public const string TestResultGroupCaseTitle = "ee4v-ui-test-result-group__case-title";
+        public const string TestResultGroupCaseDescription = "ee4v-ui-test-result-group__case-description";
 
         public const string CatalogPageTitle = "ee4v-ui-catalog-page__title";
         public const string CatalogPageDescription = "ee4v-ui-catalog-page__description";
@@ -72,6 +76,5 @@ namespace Ee4v.UI
         public const string CatalogNavigatorTitle = "ee4v-ui-catalog-shell__navigator-title";
         public const string CatalogTreeTitle = "ee4v-ui-catalog-tree-item__title";
         public const string CatalogTreeImplementation = "ee4v-ui-catalog-tree-item__implementation";
-        public const string TestManagerResultSummary = "ee4v-ui-test-manager__result-summary";
     }
 }

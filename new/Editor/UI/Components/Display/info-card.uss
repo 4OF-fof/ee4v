@@ -1,5 +1,7 @@
 .ee4v-ui-info-card__header-right {
     margin-left: 8px;
+    flex-direction: row;
+    align-items: center;
     justify-content: flex-end;
 }
 

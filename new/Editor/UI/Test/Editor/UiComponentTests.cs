@@ -38,31 +38,65 @@ namespace Ee4v.UI.Tests
 
         [Test]
         [FeatureTestCase(
-            "CollapsibleSection が開閉状態を反映する",
-            "CollapsibleSection が expanded state に応じて content の表示状態と通知を切り替えることを確認します。",
+            "TestResultGroup が開閉状態を反映する",
+            "TestResultGroup が alert と registered test 一覧の表示状態を切り替えることを確認します。",
             order: 205)]
-        public void CollapsibleSection_SetExpanded_TogglesContentVisibility()
+        public void TestResultGroup_SetExpanded_TogglesCaseVisibility()
         {
-            var section = new CollapsibleSection(new CollapsibleSectionState("Tests", "2 items", expanded: false));
-            section.Content.Add(UiTextFactory.Create("Case 1"));
+            var result = new TestResultGroup(new TestResultGroupState(
+                new InfoCardState("Hoge", "Hogeのテスト", "Ee4v.Hoge.Test.Editor"),
+                runText: "Run",
+                runEnabled: true,
+                summaryMessage: "Pass 1  Fail 0  Skip 0  Inc 0  0.01s",
+                summaryTone: UiBannerTone.Info,
+                casesTitle: "Tests",
+                casesMeta: "1 item",
+                expanded: false,
+                cases: new[]
+                {
+                    new TestResultGroupCaseState("Case 1", "Description", new StatusBadgeState("Passed", UiStatusTone.Passed))
+                }));
 
             var notifications = new List<bool>();
-            section.ExpandedChanged += notifications.Add;
+            result.ExpandedChanged += notifications.Add;
+            var summaryAlert = result.Q<Alerts>(className: UiClassNames.TestResultGroupSummaryAlert);
+            var casesBody = result.Q<VisualElement>(className: UiClassNames.TestResultGroupCasesBody);
+            var caseCard = casesBody.Q<InfoCard>(className: UiClassNames.TestResultGroupCaseCard);
 
-            Assert.That(section.Expanded, Is.False);
-            Assert.That(section.Content.style.display.value, Is.EqualTo(DisplayStyle.None));
+            Assert.That(result.Expanded, Is.False);
+            Assert.That(result.Badge.style.display.value, Is.EqualTo(DisplayStyle.None));
+            Assert.That(summaryAlert.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(casesBody.style.display.value, Is.EqualTo(DisplayStyle.None));
+            Assert.That(caseCard, Is.Not.Null);
+            Assert.That(caseCard.Badge.Q<UiTextElement>(className: UiClassNames.StatusBadge).Text, Is.EqualTo("Passed"));
 
-            section.SetExpanded(true);
+            result.SetExpanded(true);
 
-            Assert.That(section.Expanded, Is.True);
-            Assert.That(section.Content.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(result.Expanded, Is.True);
+            Assert.That(casesBody.style.display.value, Is.EqualTo(DisplayStyle.Flex));
             Assert.That(notifications, Is.EqualTo(new[] { true }));
 
-            section.SetExpanded(false);
+            result.SetExpanded(false);
 
-            Assert.That(section.Expanded, Is.False);
-            Assert.That(section.Content.style.display.value, Is.EqualTo(DisplayStyle.None));
+            Assert.That(result.Expanded, Is.False);
+            Assert.That(casesBody.style.display.value, Is.EqualTo(DisplayStyle.None));
             Assert.That(notifications, Is.EqualTo(new[] { true, false }));
+
+            result.SetState(new TestResultGroupState(
+                new InfoCardState("Hoge", "Hogeのテスト", "Ee4v.Hoge.Test.Editor"),
+                runText: "Run",
+                runEnabled: true,
+                summaryMessage: string.Empty,
+                summaryTone: UiBannerTone.Info,
+                casesTitle: "Tests",
+                casesMeta: "1 item",
+                expanded: false,
+                cases: new[]
+                {
+                    new TestResultGroupCaseState("Case 1", "Description", new StatusBadgeState("Not Run", UiStatusTone.Idle))
+                }));
+
+            Assert.That(summaryAlert.style.display.value, Is.EqualTo(DisplayStyle.None));
         }
 
         [Test]

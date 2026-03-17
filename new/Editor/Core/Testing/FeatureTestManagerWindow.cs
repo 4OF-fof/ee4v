@@ -15,53 +15,17 @@ namespace Ee4v.Core.Testing
         {
             public DescriptorView(
                 FeatureTestDescriptor descriptor,
-                InfoCard card,
-                StatusBadge statusBadge,
-                Button runButton,
-                UiTextElement scopeLabel,
-                UiTextElement assemblyLabel,
-                UiTextElement descriptionLabel,
-                UiTextElement resultSummaryLabel,
-                UiTextElement countsLabel,
-                Alerts resultAlert,
-                CollapsibleSection testCasesSection,
+                TestResultGroup card,
                 string searchText)
             {
                 Descriptor = descriptor;
                 Card = card;
-                StatusBadge = statusBadge;
-                RunButton = runButton;
-                ScopeLabel = scopeLabel;
-                AssemblyLabel = assemblyLabel;
-                DescriptionLabel = descriptionLabel;
-                ResultSummaryLabel = resultSummaryLabel;
-                CountsLabel = countsLabel;
-                ResultAlert = resultAlert;
-                TestCasesSection = testCasesSection;
                 SearchText = searchText ?? string.Empty;
             }
 
             public FeatureTestDescriptor Descriptor { get; }
 
-            public InfoCard Card { get; }
-
-            public StatusBadge StatusBadge { get; }
-
-            public Button RunButton { get; }
-
-            public UiTextElement ScopeLabel { get; }
-
-            public UiTextElement AssemblyLabel { get; }
-
-            public UiTextElement DescriptionLabel { get; }
-
-            public UiTextElement ResultSummaryLabel { get; }
-
-            public UiTextElement CountsLabel { get; }
-
-            public Alerts ResultAlert { get; }
-
-            public CollapsibleSection TestCasesSection { get; }
+            public TestResultGroup Card { get; }
 
             public string SearchText { get; }
 
@@ -127,7 +91,7 @@ namespace Ee4v.Core.Testing
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/alerts.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/status-badge.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/collapsible-section.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/test-result-group.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/Testing/feature-test-manager-window.uss");
 
             var shell = new VisualElement();
@@ -215,14 +179,11 @@ namespace Ee4v.Core.Testing
                 var isMatch = IsDescriptorVisible(view);
                 view.Card.style.display = isMatch ? DisplayStyle.Flex : DisplayStyle.None;
 
-                if (view.TestCasesSection != null)
-                {
-                    view.TestCasesSection.SetExpanded(
-                        !string.IsNullOrWhiteSpace(_searchQuery) && isMatch
-                            ? true
-                            : view.UserExpanded,
-                        notify: false);
-                }
+                view.Card.SetExpanded(
+                    !string.IsNullOrWhiteSpace(_searchQuery) && isMatch
+                        ? true
+                        : view.UserExpanded,
+                    notify: false);
             }
 
             RefreshStateAlert();
@@ -269,106 +230,21 @@ namespace Ee4v.Core.Testing
 
         private DescriptorView CreateDescriptorView(FeatureTestDescriptor descriptor)
         {
-            var card = new InfoCard(new InfoCardState(descriptor.DisplayName));
+            var card = new TestResultGroup();
             card.AddToClassList("ee4v-test-manager__suite-card");
-
-            var headerActions = new VisualElement();
-            headerActions.AddToClassList("ee4v-test-manager__suite-header-actions");
-
-            var badge = new StatusBadge();
-            var runButton = new Button(() => TryRun(descriptor))
-            {
-                text = I18N.Get("testing.window.run")
-            };
-            runButton.AddToClassList("ee4v-test-manager__run-button");
-
-            headerActions.Add(badge);
-            headerActions.Add(runButton);
-            card.HeaderRight.Add(headerActions);
-
-            var metaBlock = new VisualElement();
-            metaBlock.AddToClassList("ee4v-test-manager__meta");
-
-            var scopeLabel = CreateBodyLabel();
-            scopeLabel.AddToClassList("ee4v-test-manager__meta-label");
-            var assemblyLabel = CreateBodyLabel();
-            assemblyLabel.AddToClassList("ee4v-test-manager__meta-label");
-            var descriptionLabel = CreateBodyLabel();
-            descriptionLabel.AddToClassList("ee4v-test-manager__description");
-
-            metaBlock.Add(scopeLabel);
-            metaBlock.Add(assemblyLabel);
-            metaBlock.Add(descriptionLabel);
-            card.Body.Add(metaBlock);
-
-            var resultSummaryLabel = CreateBodyLabel(string.Empty, UiClassNames.TestManagerResultSummary);
-            resultSummaryLabel.AddToClassList("ee4v-test-manager__result-summary");
-            var countsLabel = CreateBodyLabel();
-            countsLabel.AddToClassList("ee4v-test-manager__counts");
-
-            card.Body.Add(resultSummaryLabel);
-            card.Body.Add(countsLabel);
-
-            var resultAlert = new Alerts();
-            resultAlert.AddToClassList("ee4v-test-manager__result-alert");
-            card.Body.Add(resultAlert);
-
-            CollapsibleSection testCasesSection = null;
-            if (descriptor.TestCases != null && descriptor.TestCases.Count > 0)
-            {
-                testCasesSection = new CollapsibleSection(new CollapsibleSectionState(
-                    I18N.Get("testing.window.tests"),
-                    string.Format(I18N.Get("testing.window.testCasesMeta"), descriptor.TestCases.Count),
-                    expanded: false));
-                testCasesSection.AddToClassList("ee4v-test-manager__test-cases");
-
-                for (var i = 0; i < descriptor.TestCases.Count; i++)
-                {
-                    var testCase = descriptor.TestCases[i];
-                    var entry = new VisualElement();
-                    entry.AddToClassList("ee4v-test-manager__test-case");
-
-                    var title = CreateBodyLabel("- " + testCase.Title);
-                    title.AddToClassList("ee4v-test-manager__test-case-title");
-                    entry.Add(title);
-
-                    if (!string.IsNullOrWhiteSpace(testCase.Description))
-                    {
-                        var description = CreateBodyLabel(testCase.Description);
-                        description.AddToClassList("ee4v-test-manager__test-case-description");
-                        entry.Add(description);
-                    }
-
-                    testCasesSection.Content.Add(entry);
-                }
-
-                card.Body.Add(testCasesSection);
-            }
-
             var view = new DescriptorView(
                 descriptor,
                 card,
-                badge,
-                runButton,
-                scopeLabel,
-                assemblyLabel,
-                descriptionLabel,
-                resultSummaryLabel,
-                countsLabel,
-                resultAlert,
-                testCasesSection,
                 BuildSearchText(descriptor));
 
-            if (testCasesSection != null)
+            card.RunRequested += () => TryRun(descriptor);
+            card.ExpandedChanged += expanded =>
             {
-                testCasesSection.ExpandedChanged += expanded =>
+                if (string.IsNullOrWhiteSpace(_searchQuery))
                 {
-                    if (string.IsNullOrWhiteSpace(_searchQuery))
-                    {
-                        view.UserExpanded = expanded;
-                    }
-                };
-            }
+                    view.UserExpanded = expanded;
+                }
+            };
 
             UpdateDescriptorView(view);
             return view;
@@ -381,28 +257,19 @@ namespace Ee4v.Core.Testing
                 ? _runnerService.GetRecord(descriptor.FeatureScope)
                 : new FeatureTestRunRecord();
 
-            view.ScopeLabel.SetText(I18N.Get("testing.window.scope") + ": " + descriptor.FeatureScope);
-            view.AssemblyLabel.SetText(I18N.Get("testing.window.assembly") + ": " + descriptor.AssemblyName);
-            view.DescriptionLabel.SetText(descriptor.Description ?? string.Empty);
-            view.DescriptionLabel.style.display = string.IsNullOrWhiteSpace(descriptor.Description)
-                ? DisplayStyle.None
-                : DisplayStyle.Flex;
-
-            view.StatusBadge.SetState(new StatusBadgeState(FormatStatus(record), ToBadgeTone(record.Status)));
-            view.RunButton.SetEnabled(_runnerService != null && !_runnerService.IsRunInProgress);
-
-            view.ResultSummaryLabel.SetText(I18N.Get("testing.window.lastResult") + ": " + FormatStatus(record));
-            view.CountsLabel.SetText(FormatCounts(record));
-
-            if (string.IsNullOrWhiteSpace(record.Message))
-            {
-                view.ResultAlert.style.display = DisplayStyle.None;
-            }
-            else
-            {
-                view.ResultAlert.style.display = DisplayStyle.Flex;
-                view.ResultAlert.SetState(new AlertsState(ToBannerTone(record.Status), string.Empty, record.Message));
-            }
+            view.Card.SetState(new TestResultGroupState(
+                new InfoCardState(
+                    descriptor.DisplayName,
+                    descriptor.Description,
+                    descriptor.AssemblyName),
+                runText: I18N.Get("testing.window.run"),
+                runEnabled: _runnerService != null && !_runnerService.IsRunInProgress,
+                summaryMessage: FormatCounts(record),
+                summaryTone: ToAlertTone(record.Status),
+                casesTitle: I18N.Get("testing.window.tests"),
+                casesMeta: string.Format(I18N.Get("testing.window.testCasesMeta"), descriptor.TestCases != null ? descriptor.TestCases.Count : 0),
+                expanded: view.UserExpanded,
+                cases: ToCaseStates(descriptor.TestCases, record)));
         }
 
         private void RefreshStateAlert()
@@ -505,7 +372,7 @@ namespace Ee4v.Core.Testing
         {
             if (record.Status == FeatureTestRunStatus.NotRun)
             {
-                return I18N.Get("testing.window.notRunYet");
+                return string.Empty;
             }
 
             return string.Format(
@@ -537,7 +404,7 @@ namespace Ee4v.Core.Testing
             }
         }
 
-        private static UiBannerTone ToBannerTone(FeatureTestRunStatus status)
+        private static UiBannerTone ToAlertTone(FeatureTestRunStatus status)
         {
             switch (status)
             {
@@ -581,11 +448,21 @@ namespace Ee4v.Core.Testing
             return string.Join("\n", parts);
         }
 
-        private static UiTextElement CreateBodyLabel(string text = "", params string[] classNames)
+        private static IReadOnlyList<TestResultGroupCaseState> ToCaseStates(IReadOnlyList<FeatureTestCaseDescriptor> testCases, FeatureTestRunRecord record)
         {
-            var label = UiTextFactory.Create(text, classNames);
-            label.SetWhiteSpace(WhiteSpace.Normal);
-            return label;
+            if (testCases == null || testCases.Count == 0)
+            {
+                return Array.Empty<TestResultGroupCaseState>();
+            }
+
+            var badgeState = new StatusBadgeState(FormatStatus(record), ToBadgeTone(record.Status));
+            var items = new TestResultGroupCaseState[testCases.Count];
+            for (var i = 0; i < testCases.Count; i++)
+            {
+                items[i] = new TestResultGroupCaseState(testCases[i].Title, testCases[i].Description, badgeState);
+            }
+
+            return items;
         }
 
         private static void EnsureRunnerService()

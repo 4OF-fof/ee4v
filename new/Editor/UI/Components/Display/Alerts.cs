@@ -47,10 +47,14 @@ namespace Ee4v.UI
         public void SetState(AlertsState state)
         {
             state = state ?? new AlertsState(UiBannerTone.Info, string.Empty, string.Empty);
+            var hasTitle = !string.IsNullOrWhiteSpace(state.Title);
+            var hasMessage = !string.IsNullOrWhiteSpace(state.Message);
 
             _titleLabel.SetText(state.Title);
+            _titleLabel.style.display = hasTitle ? DisplayStyle.Flex : DisplayStyle.None;
 
             _messageLabel.SetText(state.Message);
+            _messageLabel.style.display = hasMessage ? DisplayStyle.Flex : DisplayStyle.None;
 
             EnableInClassList(UiClassNames.BannerToneInfo, state.Tone == UiBannerTone.Info);
             EnableInClassList(UiClassNames.BannerToneWarning, state.Tone == UiBannerTone.Warning);

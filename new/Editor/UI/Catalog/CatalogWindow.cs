@@ -84,14 +84,19 @@ namespace Ee4v.UI
                 BuildSearchableTreeViewStory));
 
             _stories.Add(new StoryDefinition(
-                "collapsible-section",
-                "Interactive",
-                "CollapsibleSection",
-                "header を押して content の開閉を切り替える折りたたみセクションです。",
-                "一覧カードの補足情報や詳細ブロックを閉じた状態から段階的に開示する用途を想定しています。title と meta を header に並べ、content slot に任意要素を配置できます。",
-                new string[0],
+                "test-result-group",
+                "Domain/Testing",
+                "TestResultGroup",
+                "feature test の状態、件数 alert、実行導線、登録テスト一覧をまとめて表示する testing 向けコンポーネントです。",
+                "ee4v Test Manager の結果表示用に作った domain-specific component です。InfoCard を土台にしつつ、header 右側に status badge と run button、body に件数 alert と登録済みテスト一覧の開閉を持たせています。",
+                new[]
+                {
+                    "InfoCard",
+                    "StatusBadge",
+                    "Alerts"
+                },
                 ComponentImplementationKind.UiToolkit,
-                BuildCollapsibleSectionStory));
+                BuildTestResultGroupStory));
 
             _stories.Add(new StoryDefinition(
                 "tab-card",
@@ -160,8 +165,8 @@ namespace Ee4v.UI
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/search-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/searchable-tree-view.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/test-result-group.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/collapsible-section.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/tab-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/alerts.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/status-badge.uss");
@@ -709,24 +714,35 @@ namespace Ee4v.UI
             FinalizeControlsSection(parent, controls);
         }
 
-        private void BuildCollapsibleSectionStory(VisualElement parent)
+        private void BuildTestResultGroupStory(VisualElement parent)
         {
-            var title = "登録済みテスト";
-            var meta = "3 items";
+            var statusText = "成功";
+            var message = "Pass 3  Fail 0  Skip 0  Inc 0  0.08s";
             var expanded = false;
+            var runEnabled = true;
             Action refresh = null;
 
-            var controls = CreatePlainControlsSection(parent, "title、meta、開閉状態を変えながら、補足情報の段階的表示を確認します。");
-            var titleField = AddTextField(controls.Content, "タイトル", title, nextValue =>
+            var controls = CreatePlainControlsSection(parent, "status、alert、run button と一覧開閉を変えながら testing 向け result panel を確認します。");
+            var statusField = AddTextField(controls.Content, "Status", statusText, nextValue =>
             {
-                title = nextValue;
+                statusText = nextValue;
                 refresh();
             });
-            var metaField = AddTextField(controls.Content, "Meta", meta, nextValue =>
+            var messageField = AddTextField(controls.Content, "Alert", message, nextValue =>
             {
-                meta = nextValue;
+                message = nextValue;
                 refresh();
             });
+            var runEnabledToggle = new Toggle("Run enabled")
+            {
+                value = runEnabled
+            };
+            runEnabledToggle.RegisterValueChangedCallback(evt =>
+            {
+                runEnabled = evt.newValue;
+                refresh();
+            });
+            controls.Content.Add(runEnabledToggle);
 
             var expandedToggle = new Toggle("展開")
             {
@@ -740,13 +756,10 @@ namespace Ee4v.UI
             controls.Content.Add(expandedToggle);
 
             var preview = CreatePreviewSection(parent);
-            var section = new CollapsibleSection();
-            section.Content.Add(UiTextFactory.Create("- 設定定義の登録確認"));
-            section.Content.Add(UiTextFactory.Create("- 依存関係の初期化確認"));
-            section.Content.Add(UiTextFactory.Create("- Unity Test Runner 連携確認"));
-            preview.Body.Add(section);
+            var result = new TestResultGroup();
+            preview.Body.Add(result);
 
-            section.ExpandedChanged += nextExpanded =>
+            result.ExpandedChanged += nextExpanded =>
             {
                 expanded = nextExpanded;
                 expandedToggle.SetValueWithoutNotify(nextExpanded);
@@ -754,10 +767,28 @@ namespace Ee4v.UI
 
             refresh = () =>
             {
-                titleField.SetValueWithoutNotify(title);
-                metaField.SetValueWithoutNotify(meta);
+                statusField.SetValueWithoutNotify(statusText);
+                messageField.SetValueWithoutNotify(message);
+                runEnabledToggle.SetValueWithoutNotify(runEnabled);
                 expandedToggle.SetValueWithoutNotify(expanded);
-                section.SetState(new CollapsibleSectionState(title, meta, expanded));
+                result.SetState(new TestResultGroupState(
+                    new InfoCardState(
+                        "Hoge",
+                        "Hogeのテスト",
+                        "Ee4v.Hoge.Test.Editor"),
+                    runText: "Run",
+                    runEnabled: runEnabled,
+                    summaryMessage: message,
+                    summaryTone: UiBannerTone.Info,
+                    casesTitle: "Tests",
+                    casesMeta: "3 items",
+                    expanded: expanded,
+                    cases: new[]
+                    {
+                        new TestResultGroupCaseState("設定定義の登録確認", "必要な定義が不足なく登録されることを確認します。", new StatusBadgeState(statusText, UiStatusTone.Passed)),
+                        new TestResultGroupCaseState("依存関係の初期化確認", "実行前の static 状態が正しく復元されることを確認します。", new StatusBadgeState(statusText, UiStatusTone.Passed)),
+                        new TestResultGroupCaseState("Unity Test Runner 連携確認", "suite 単位の実行要求が適切な assembly filter で送られることを確認します。", new StatusBadgeState(statusText, UiStatusTone.Passed))
+                    }));
             };
 
             refresh();
@@ -1018,27 +1049,41 @@ namespace Ee4v.UI
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
                             7,
-                            new SampleTreeNode("CollapsibleSection", "Disclosure"),
-                            "CollapsibleSection disclosure section"),
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            8,
                             new SampleTreeNode("TabCard", "Tabs"),
                             "TabCard Tabs switcher")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
-                    9,
+                    8,
                     new SampleTreeNode("DataView", string.Empty),
                     "DataView",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
-                            10,
+                            9,
                             new SampleTreeNode("SearchField", "Input"),
                             "SearchField input search"),
                         new SearchableTreeItemData<SampleTreeNode>(
-                            11,
+                            10,
                             new SampleTreeNode("SearchableTreeView", "Tree"),
                             "SearchableTreeView searchable tree")
+                    }),
+                new SearchableTreeItemData<SampleTreeNode>(
+                    11,
+                    new SampleTreeNode("Domain", string.Empty),
+                    "Domain",
+                    new[]
+                    {
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            12,
+                            new SampleTreeNode("Testing", string.Empty),
+                            "Testing",
+                            new[]
+                            {
+                                new SearchableTreeItemData<SampleTreeNode>(
+                                    13,
+                                    new SampleTreeNode("TestResultGroup", "Testing"),
+                                    "TestResultGroup testing domain result")
+                            })
                     })
             };
         }

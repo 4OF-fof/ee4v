@@ -5,11 +5,22 @@ namespace Ee4v.UI
     internal sealed class InfoCardState
     {
         public InfoCardState(string title, string description = null, string eyebrow = null, string badgeText = null)
+            : this(
+                title,
+                description,
+                eyebrow,
+                string.IsNullOrWhiteSpace(badgeText)
+                    ? null
+                    : new StatusBadgeState(badgeText, UiStatusTone.Idle))
+        {
+        }
+
+        public InfoCardState(string title, string description, string eyebrow, StatusBadgeState badgeState)
         {
             Title = title ?? string.Empty;
             Description = description ?? string.Empty;
             Eyebrow = eyebrow ?? string.Empty;
-            BadgeText = badgeText ?? string.Empty;
+            BadgeState = badgeState;
         }
 
         public string Title { get; }
@@ -18,17 +29,17 @@ namespace Ee4v.UI
 
         public string Eyebrow { get; }
 
-        public string BadgeText { get; }
+        public StatusBadgeState BadgeState { get; }
     }
 
-    internal sealed class InfoCard : VisualElement
+    internal class InfoCard : VisualElement
     {
         private readonly VisualElement _header;
         private readonly VisualElement _headerText;
         private readonly UiTextElement _eyebrowLabel;
         private readonly UiTextElement _titleLabel;
         private readonly UiTextElement _descriptionLabel;
-        private readonly UiTextElement _badgeLabel;
+        private readonly StatusBadge _badge;
         private InfoCardState _state;
 
         public InfoCard(InfoCardState state = null)
@@ -47,15 +58,14 @@ namespace Ee4v.UI
             _eyebrowLabel = UiTextFactory.Create(string.Empty, UiClassNames.InfoCardEyebrow);
             _titleLabel = UiTextFactory.Create(string.Empty, UiClassNames.InfoCardTitle);
             _descriptionLabel = UiTextFactory.Create(string.Empty, UiClassNames.InfoCardDescription);
-            _badgeLabel = UiTextFactory.Create(string.Empty, UiClassNames.InfoCardBadge);
-
             _headerText.Add(_eyebrowLabel);
             _headerText.Add(_titleLabel);
             _headerText.Add(_descriptionLabel);
 
             HeaderRight = new VisualElement();
             HeaderRight.AddToClassList(UiClassNames.InfoCardHeaderRight);
-            HeaderRight.Add(_badgeLabel);
+            _badge = new StatusBadge();
+            HeaderRight.Add(_badge);
 
             _header.Add(_headerText);
             _header.Add(HeaderRight);
@@ -73,6 +83,11 @@ namespace Ee4v.UI
 
         public InfoCardBodyElement Body { get; }
 
+        public StatusBadge Badge
+        {
+            get { return _badge; }
+        }
+
         public void SetState(InfoCardState state)
         {
             _state = state ?? new InfoCardState(string.Empty);
@@ -80,7 +95,7 @@ namespace Ee4v.UI
             var hasEyebrow = !string.IsNullOrWhiteSpace(_state.Eyebrow);
             var hasTitle = !string.IsNullOrWhiteSpace(_state.Title);
             var hasDescription = !string.IsNullOrWhiteSpace(_state.Description);
-            var hasBadge = !string.IsNullOrWhiteSpace(_state.BadgeText);
+            var hasBadge = _state.BadgeState != null && !string.IsNullOrWhiteSpace(_state.BadgeState.Text);
             var isSingleLineHeader = hasTitle && !hasEyebrow && !hasDescription;
 
             _eyebrowLabel.SetText(_state.Eyebrow);
@@ -93,8 +108,7 @@ namespace Ee4v.UI
             _descriptionLabel.SetText(_state.Description);
             _descriptionLabel.style.display = hasDescription ? DisplayStyle.Flex : DisplayStyle.None;
 
-            _badgeLabel.SetText(_state.BadgeText);
-            _badgeLabel.style.display = hasBadge ? DisplayStyle.Flex : DisplayStyle.None;
+            _badge.SetState(_state.BadgeState ?? new StatusBadgeState(string.Empty, UiStatusTone.Idle));
 
             var hasHeaderText = hasEyebrow || hasTitle || hasDescription;
             var hasHeaderRight = hasBadge || HasVisibleHeaderRightChild();
@@ -121,7 +135,7 @@ namespace Ee4v.UI
             for (var i = 0; i < HeaderRight.childCount; i++)
             {
                 var child = HeaderRight.ElementAt(i);
-                if (ReferenceEquals(child, _badgeLabel))
+                if (ReferenceEquals(child, _badge))
                 {
                     continue;
                 }

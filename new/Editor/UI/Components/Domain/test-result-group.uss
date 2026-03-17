@@ -1,0 +1,81 @@
+.ee4v-ui-test-result-group__summary-alert {
+    margin-bottom: 8px;
+}
+
+.ee4v-ui-test-result-group__summary-alert .ee4v-ui-banner__message {
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.ee4v-ui-test-result-group__run-button {
+    margin-left: 6px;
+    min-width: 72px;
+    height: 24px;
+    padding-left: 10px;
+    padding-right: 10px;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: rgba(255, 255, 255, 0.08);
+    border-right-color: rgba(255, 255, 255, 0.08);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+    border-left-color: rgba(255, 255, 255, 0.08);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: rgb(230, 230, 230);
+    -unity-text-align: middle-center;
+    align-self: center;
+}
+
+.ee4v-ui-test-result-group__run-button:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.ee4v-ui-test-result-group__run-button:disabled {
+    opacity: 0.45;
+}
+
+.ee4v-ui-test-result-group__cases-toggle {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    color: rgb(230, 230, 230);
+    -unity-text-align: middle-left;
+}
+
+.ee4v-ui-test-result-group__cases-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.ee4v-ui-test-result-group__cases-chevron {
+    width: 14px;
+    min-width: 14px;
+    max-width: 14px;
+    margin-right: 6px;
+}
+
+.ee4v-ui-test-result-group__cases-body {
+    margin-top: 4px;
+    padding-left: 12px;
+    flex-direction: column;
+}
+
+.ee4v-ui-test-result-group__case-card {
+    margin-top: 6px;
+    margin-bottom: 0;
+    background-color: rgba(255, 255, 255, 0.02);
+}

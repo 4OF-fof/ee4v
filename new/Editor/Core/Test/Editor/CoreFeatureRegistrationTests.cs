@@ -169,9 +169,10 @@ namespace Ee4v.Core.Tests
                 InvokePrivate(window, "RefreshDescriptors");
                 InvokePrivate(window, "CreateGUI");
 
-                var cards = window.rootVisualElement.Query<VisualElement>(className: "ee4v-test-manager__suite-card").ToList();
+                var cards = window.rootVisualElement.Query<TestResultGroup>(className: "ee4v-test-manager__suite-card").ToList();
 
                 Assert.That(cards.Count, Is.GreaterThanOrEqualTo(2));
+                Assert.That(cards[0].Q<Alerts>(className: UiClassNames.TestResultGroupSummaryAlert).style.display.value, Is.EqualTo(DisplayStyle.None));
             }
             finally
             {
@@ -194,16 +195,16 @@ namespace Ee4v.Core.Tests
                 InvokePrivate(window, "CreateGUI");
 
                 var searchField = window.rootVisualElement.Q<SearchField>();
-                var cards = window.rootVisualElement.Query<VisualElement>(className: "ee4v-test-manager__suite-card").ToList();
+                var cards = window.rootVisualElement.Query<TestResultGroup>(className: "ee4v-test-manager__suite-card").ToList();
 
                 searchField.Value = "Phase1";
 
                 var visibleCards = cards.Where(card => card.style.display.value != DisplayStyle.None).ToList();
                 Assert.That(visibleCards.Count, Is.EqualTo(1));
 
-                var section = visibleCards[0].Q<CollapsibleSection>();
-                Assert.That(section, Is.Not.Null);
-                Assert.That(section.Expanded, Is.True);
+                var result = visibleCards[0];
+                Assert.That(result, Is.Not.Null);
+                Assert.That(result.Expanded, Is.True);
             }
             finally
             {
@@ -214,7 +215,7 @@ namespace Ee4v.Core.Tests
         [Test]
         [FeatureTestCase(
             "Test Manager が run 状態を UI に反映する",
-            "FeatureTestManagerWindow が FeatureTestRunnerService の record 更新を badge と結果 summary に反映することを確認します。",
+            "FeatureTestManagerWindow が FeatureTestRunnerService の record 更新を badge と結果 alert に反映することを確認します。",
             order: 18)]
         public void FeatureTestManagerWindow_RefreshWindowState_ReflectsRunnerRecord()
         {
@@ -239,16 +240,19 @@ namespace Ee4v.Core.Tests
                     InvokePrivate(window, "RefreshWindowState");
 
                     var visibleCard = window.rootVisualElement
-                        .Query<VisualElement>(className: "ee4v-test-manager__suite-card")
+                        .Query<TestResultGroup>(className: "ee4v-test-manager__suite-card")
                         .ToList()
                         .Single(card => card.style.display.value != DisplayStyle.None);
 
-                    var summary = visibleCard.Q<UiTextElement>(className: "ee4v-test-manager__result-summary");
-                    var badge = visibleCard.Q<StatusBadge>();
-                    var badgeText = badge.Q<UiTextElement>(className: UiClassNames.StatusBadge);
+                    var result = visibleCard as TestResultGroup;
+                    var summaryAlert = result.Q<Alerts>(className: UiClassNames.TestResultGroupSummaryAlert);
+                    var message = summaryAlert.Q<UiTextElement>(className: UiClassNames.BannerMessage);
+                    var runButton = result.Q<Button>(className: UiClassNames.TestResultGroupRunButton);
 
-                    Assert.That(summary.Text, Does.Contain(I18N.Get("testing.status.running")));
-                    Assert.That(badgeText.Text, Is.EqualTo(I18N.Get("testing.status.running")));
+                    Assert.That(message.Text, Does.Contain("Pass 0"));
+                    Assert.That(result.Badge.style.display.value, Is.EqualTo(DisplayStyle.None));
+                    Assert.That(summaryAlert.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+                    Assert.That(runButton.enabledSelf, Is.False);
                 }
                 finally
                 {
