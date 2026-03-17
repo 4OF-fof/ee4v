@@ -26,6 +26,9 @@ namespace Ee4v.UI
         public const string StatusPassed = "ee4v-ui-status--passed";
         public const string StatusFailed = "ee4v-ui-status--failed";
 
+        public const string Icon = "ee4v-ui-icon";
+        public const string IconImage = "ee4v-ui-icon__image";
+
         public const string TabCard = "ee4v-ui-tab-card";
         public const string TabCardTabs = "ee4v-ui-tab-card__tabs";
         public const string TabCardTab = "ee4v-ui-tab-card__tab";

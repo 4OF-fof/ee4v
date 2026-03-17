@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Ee4v.Core.I18n;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -106,6 +107,16 @@ namespace Ee4v.UI
                 ComponentImplementationKind.UiToolkit,
                 BuildStatusBadgeStory));
 
+            _stories.Add(new StoryDefinition(
+                "icon",
+                "Display",
+                "Icon",
+                "任意の texture または enum 管理された Unity 内蔵アイコンを表示するアイコンコンポーネントです。",
+                "Unity 内蔵アイコンは version 差分の影響を抑えるため enum で許可したものだけを解決します。初期状態では検索アイコンをサポートし、custom texture に切り替えれば任意 texture を表示できます。",
+                new string[0],
+                ComponentImplementationKind.UiToolkit,
+                BuildIconStory));
+
             if (_selectedStory == null && _stories.Count > 0)
             {
                 _selectedStory = _stories[0];
@@ -126,6 +137,7 @@ namespace Ee4v.UI
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/tab-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/alerts.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/status-badge.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/icon.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Catalog/catalog-window.uss");
 
             var shell = new VisualElement();
@@ -569,6 +581,64 @@ namespace Ee4v.UI
             FinalizeControlsSection(parent, controls);
         }
 
+        private void BuildIconStory(VisualElement parent)
+        {
+            var sourceKind = UiIconSourceKind.Builtin;
+            var builtinIcon = UiBuiltinIcon.Search;
+            Texture texture = null;
+            Action refresh = null;
+
+            var controls = CreatePlainControlsSection(parent, "source を切り替え、texture 指定と enum 管理の Unity 内蔵アイコン指定を確認します。");
+
+            var sourceField = AddEnumField(controls.Content, "ソース", sourceKind, value =>
+            {
+                sourceKind = value;
+                refresh();
+            });
+            var builtinField = AddEnumField(controls.Content, "内蔵アイコン", builtinIcon, value =>
+            {
+                builtinIcon = value;
+                refresh();
+            });
+            var textureField = AddObjectField<Texture>(controls.Content, "Texture", texture, value =>
+            {
+                texture = value;
+                refresh();
+            });
+
+            var preview = CreatePreviewSection(parent);
+            var surface = CreatePreviewSurface(true);
+            var icon = new Icon();
+            surface.Add(icon);
+            preview.Body.Add(surface);
+
+            refresh = () =>
+            {
+                sourceField.SetValueWithoutNotify((Enum)(object)sourceKind);
+                builtinField.SetValueWithoutNotify((Enum)(object)builtinIcon);
+                textureField.SetValueWithoutNotify(texture);
+
+                builtinField.style.display = sourceKind == UiIconSourceKind.Builtin ? DisplayStyle.Flex : DisplayStyle.None;
+                textureField.style.display = sourceKind == UiIconSourceKind.Texture ? DisplayStyle.Flex : DisplayStyle.None;
+
+                switch (sourceKind)
+                {
+                    case UiIconSourceKind.Texture:
+                        icon.SetState(IconState.FromTexture(texture, tooltip: texture != null ? texture.name : "Texture"));
+                        break;
+                    case UiIconSourceKind.Builtin:
+                        icon.SetState(IconState.FromBuiltinIcon(builtinIcon, tooltip: UiBuiltinIconResolver.GetIconName(builtinIcon)));
+                        break;
+                    default:
+                        icon.SetState(IconState.Empty());
+                        break;
+                }
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
+        }
+
         private ControlsSectionContext CreateTabbedControlsSection(VisualElement parent, string description)
         {
             var card = new InfoCard(new InfoCardState("コントロール", description));
@@ -654,6 +724,20 @@ namespace Ee4v.UI
         {
             var field = new EnumField(label, (Enum)(object)value);
             field.RegisterValueChangedCallback(evt => onChanged((TEnum)(object)evt.newValue));
+            parent.Add(field);
+            return field;
+        }
+
+        private static ObjectField AddObjectField<TObject>(VisualElement parent, string label, TObject value, Action<TObject> onChanged)
+            where TObject : UnityEngine.Object
+        {
+            var field = new ObjectField(label)
+            {
+                objectType = typeof(TObject),
+                allowSceneObjects = false,
+                value = value
+            };
+            field.RegisterValueChangedCallback(evt => onChanged((TObject)evt.newValue));
             parent.Add(field);
             return field;
         }
@@ -793,7 +877,11 @@ namespace Ee4v.UI
                         new SearchableTreeItemData<SampleTreeNode>(
                             4,
                             new SampleTreeNode("StatusBadge", "Pill"),
-                            "StatusBadge pill status")
+                            "StatusBadge pill status"),
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            9,
+                            new SampleTreeNode("Icon", "Image"),
+                            "Icon image texture builtin")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
                     5,
