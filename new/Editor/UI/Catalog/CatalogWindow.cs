@@ -624,13 +624,12 @@ namespace Ee4v.UI
                 switch (sourceKind)
                 {
                     case UiIconSourceKind.Texture:
-                        icon.SetState(IconState.FromTexture(texture, tooltip: texture != null ? texture.name : "Texture"));
+                        icon.SetState(texture != null
+                            ? IconState.FromTexture(texture, tooltip: texture.name)
+                            : IconState.FromBuiltinIcon(builtinIcon, tooltip: "Assign a texture"));
                         break;
                     case UiIconSourceKind.Builtin:
                         icon.SetState(IconState.FromBuiltinIcon(builtinIcon, tooltip: UiBuiltinIconResolver.GetIconName(builtinIcon)));
-                        break;
-                    default:
-                        icon.SetState(IconState.Empty());
                         break;
                 }
             };

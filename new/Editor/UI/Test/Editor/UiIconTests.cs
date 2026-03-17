@@ -62,5 +62,15 @@ namespace Ee4v.UI.Tests
                 Assert.That(image.image, Is.Not.Null, builtinIcon.ToString());
             }
         }
+
+        [Test]
+        [FeatureTestCase(
+            "Texture source は null texture を許可しない",
+            "IconState が Texture source を使う場合は null texture を受け付けず、source 未設定状態に戻らないことを確認します。",
+            order: 203)]
+        public void IconState_FromTexture_RejectsNullTexture()
+        {
+            Assert.Throws<ArgumentNullException>(() => IconState.FromTexture(null));
+        }
     }
 }

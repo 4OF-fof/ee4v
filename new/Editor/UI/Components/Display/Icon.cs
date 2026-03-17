@@ -6,7 +6,6 @@ namespace Ee4v.UI
 {
     internal enum UiIconSourceKind
     {
-        None,
         Texture,
         Builtin
     }
@@ -53,6 +52,11 @@ namespace Ee4v.UI
             float size = 16f,
             string tooltip = null)
         {
+            if (sourceKind == UiIconSourceKind.Texture && texture == null)
+            {
+                throw new System.ArgumentNullException(nameof(texture), "Texture source requires a texture.");
+            }
+
             SourceKind = sourceKind;
             Texture = texture;
             BuiltinIcon = builtinIcon;
@@ -69,11 +73,6 @@ namespace Ee4v.UI
         public float Size { get; }
 
         public string Tooltip { get; }
-
-        public static IconState Empty(float size = 16f, string tooltip = null)
-        {
-            return new IconState(UiIconSourceKind.None, size: size, tooltip: tooltip);
-        }
 
         public static IconState FromTexture(Texture texture, float size = 16f, string tooltip = null)
         {
@@ -102,21 +101,20 @@ namespace Ee4v.UI
             _image.AddToClassList(UiClassNames.IconImage);
             Add(_image);
 
-            SetState(state ?? IconState.Empty());
+            SetState(state ?? IconState.FromBuiltinIcon(UiBuiltinIcon.Search));
         }
 
         public void SetState(IconState state)
         {
-            state = state ?? IconState.Empty();
+            state = state ?? IconState.FromBuiltinIcon(UiBuiltinIcon.Search);
 
             var texture = ResolveTexture(state);
-            var hasTexture = texture != null;
             var size = state.Size;
 
             tooltip = state.Tooltip;
             style.width = size;
             style.height = size;
-            style.display = hasTexture ? DisplayStyle.Flex : DisplayStyle.None;
+            style.display = DisplayStyle.Flex;
 
             _image.image = texture;
             _image.style.width = size;
@@ -132,7 +130,7 @@ namespace Ee4v.UI
                 case UiIconSourceKind.Builtin:
                     return UiBuiltinIconResolver.TryResolve(state.BuiltinIcon, out var texture) ? texture : null;
                 default:
-                    return null;
+                    throw new System.ArgumentOutOfRangeException(nameof(state.SourceKind), state.SourceKind, null);
             }
         }
     }
