@@ -40,7 +40,7 @@
     min-height: 14px;
     max-height: 14px;
     margin-left: 1px;
-    margin-right: 6px;
+    margin-right: 2px;
     opacity: 1;
 }
 
@@ -70,7 +70,8 @@
     min-height: 14px;
     height: 14px;
     max-height: 14px;
-    padding-top: 0;
+    font-size: 12px;
+    padding-top: 4px;
     padding-bottom: 0;
     background-color: rgba(0, 0, 0, 0);
     border-top-width: 0;
@@ -134,7 +135,10 @@
 }
 
 .ee4v-ui-searchable-tree-view__empty {
-    margin-top: 6px;
+    margin-top: 5px;
+    padding-top: 6px;
+    border-top-width: 1px;
+    border-top-color: rgba(255, 255, 255, 0.06);
     color: rgba(210, 210, 210, 0.72);
     white-space: normal;
 }
