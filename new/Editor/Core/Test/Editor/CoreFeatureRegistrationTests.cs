@@ -168,9 +168,55 @@ namespace Ee4v.Core.Tests
 
         [Test]
         [FeatureTestCase(
+            "discover した test case は result key を持つ",
+            "FeatureTestRegistry が現在の Core suite から検出した test case に result key を付与することを確認します。",
+            order: 15)]
+        public void FeatureTestRegistry_Refresh_PopulatesResultKeysForDiscoveredCases()
+        {
+            Ee4vCoreTestReset.RecoverEditorState();
+
+            var descriptors = FeatureTestRegistry.Refresh();
+            var coreDescriptor = descriptors.Single(item => item.FeatureScope == "Core");
+
+            Assert.That(coreDescriptor.TestCases.Count, Is.GreaterThan(0));
+            Assert.That(coreDescriptor.TestCases.All(testCase => !string.IsNullOrWhiteSpace(testCase.ResultKey)), Is.True);
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "case status を reload 後も復元する",
+            "FeatureTestRunnerService が保存済み case status を session state から復元することを確認します。",
+            order: 16)]
+        public void FeatureTestRunnerService_RestoresCaseStatusesAcrossServiceRecreation()
+        {
+            var gateway1 = new FakeRunnerGateway();
+            using (var service1 = new FeatureTestRunnerService(gateway1))
+            {
+                var record = service1.GetRecord("Core");
+                record.Status = FeatureTestRunStatus.Failed;
+                record.Message = "persisted";
+                record.FailCount = 1;
+                record.CaseStatuses["Ee4v.Core.Tests.Sample.Case1"] = FeatureTestRunStatus.Failed;
+
+                InvokePrivate(service1, "SaveState");
+            }
+
+            var gateway2 = new FakeRunnerGateway();
+            using (var service2 = new FeatureTestRunnerService(gateway2))
+            {
+                var restored = service2.GetRecord("Core");
+
+                Assert.That(restored.Status, Is.EqualTo(FeatureTestRunStatus.Failed));
+                Assert.That(restored.Message, Is.EqualTo("persisted"));
+                Assert.That(restored.CaseStatuses["Ee4v.Core.Tests.Sample.Case1"], Is.EqualTo(FeatureTestRunStatus.Failed));
+            }
+        }
+
+        [Test]
+        [FeatureTestCase(
             "Core reset が実行中 runner state を維持する",
             "Ee4vCoreTestReset.ResetAll が Core suite 実行中の FeatureTestRunnerService を消さないことを確認します。",
-            order: 15)]
+            order: 17)]
         public void Ee4vCoreTestReset_ResetAll_PreservesActiveRunnerState()
         {
             var gateway = new FakeRunnerGateway();
@@ -203,7 +249,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "Test Manager が Core と Phase1 を列挙する",
             "FeatureTestManagerWindow の再読込で登録済み suite が一覧に並ぶことを確認します。",
-            order: 16)]
+            order: 18)]
         public void FeatureTestManagerWindow_RefreshDescriptors_FindsCoreAndPhase1Registrars()
         {
             var window = ScriptableObject.CreateInstance<FeatureTestManagerWindow>();
@@ -226,7 +272,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "Test Manager の UI Toolkit 画面が suite card を構築する",
             "FeatureTestManagerWindow が CreateGUI 後に登録済み suite ごとの card を UI Toolkit で構築することを確認します。",
-            order: 17)]
+            order: 19)]
         public void FeatureTestManagerWindow_CreateGUI_BuildsSuiteCards()
         {
             Ee4vCoreTestReset.RecoverEditorState();
@@ -251,7 +297,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "Test Manager の検索が suite を絞り込み一致項目を展開する",
             "FeatureTestManagerWindow の検索入力が suite を絞り込み、検索一致時にテストケース section を自動展開することを確認します。",
-            order: 18)]
+            order: 20)]
         public void FeatureTestManagerWindow_Search_FiltersAndExpandsMatchingSuite()
         {
             Ee4vCoreTestReset.RecoverEditorState();
@@ -283,7 +329,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "Test Manager が run 状態を UI に反映する",
             "FeatureTestManagerWindow が FeatureTestRunnerService の record 更新を badge と結果 alert に反映することを確認します。",
-            order: 19)]
+            order: 21)]
         public void FeatureTestManagerWindow_RefreshWindowState_ReflectsRunnerRecord()
         {
             Ee4vCoreTestReset.RecoverEditorState();
@@ -334,7 +380,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "Test Manager が counts 不在時は結果メッセージを表示する",
             "FeatureTestManagerWindow が counts 0 件の失敗でも record message を結果 banner に表示することを確認します。",
-            order: 20)]
+            order: 22)]
         public void FeatureTestManagerWindow_RefreshWindowState_ShowsRecordMessageWhenCountsAreMissing()
         {
             Ee4vCoreTestReset.RecoverEditorState();
@@ -387,7 +433,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "Test Manager がケース別バッジを優先表示する",
             "FeatureTestManagerWindow が suite 全体の失敗状態ではなく case ごとの結果バッジを表示することを確認します。",
-            order: 21)]
+            order: 23)]
         public void FeatureTestManagerWindow_RefreshWindowState_UsesPerCaseStatuses()
         {
             Ee4vCoreTestReset.RecoverEditorState();
@@ -447,7 +493,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "Test Manager が load error を alert で表示する",
             "FeatureTestManagerWindow が suite 読み込みエラー時に state alert をエラー表示へ切り替えることを確認します。",
-            order: 22)]
+            order: 24)]
         public void FeatureTestManagerWindow_RefreshWindowState_ShowsLoadErrorAlert()
         {
             Ee4vCoreTestReset.RecoverEditorState();
@@ -473,7 +519,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "Core の static 状態を reset できる",
             "Ee4vCoreTestReset が SettingApi と InjectorApi の static 登録状態をクリアすることを確認します。",
-            order: 23)]
+            order: 25)]
         public void Ee4vCoreTestReset_ResetAll_ClearsStaticRegistrationsAndHandlers()
         {
             var definition = new SettingDefinition<bool>(

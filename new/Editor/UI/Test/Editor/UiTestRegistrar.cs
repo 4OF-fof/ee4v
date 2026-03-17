@@ -10,7 +10,7 @@ namespace Ee4v.UI.Tests
                 "UI",
                 "UI",
                 "Ee4v.UI.Tests.Editor",
-                "UI コンポーネントの成立性と enum 管理された内蔵アイコンの解決可否を確認します。",
+                "enum 管理された Unity 内蔵アイコンの解決可否を確認します。",
                 order: 200);
         }
     }
