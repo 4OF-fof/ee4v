@@ -67,8 +67,9 @@ namespace Ee4v.UI
     {
         private readonly Alerts _summaryAlert;
         private readonly Button _runButton;
+        private readonly VisualElement _casesPanel;
         private readonly Button _casesToggle;
-        private readonly UiTextElement _casesChevron;
+        private readonly Icon _casesChevron;
         private readonly UiTextElement _casesTitle;
         private readonly UiTextElement _casesMeta;
         private readonly VisualElement _casesBody;
@@ -86,10 +87,14 @@ namespace Ee4v.UI
             _summaryAlert = new Alerts();
             _summaryAlert.AddToClassList(UiClassNames.TestResultGroupSummaryAlert);
 
+            _casesPanel = new VisualElement();
+            _casesPanel.AddToClassList(UiClassNames.TestResultGroupCasesPanel);
+
             _casesToggle = new Button(ToggleExpanded);
             _casesToggle.AddToClassList(UiClassNames.TestResultGroupCasesToggle);
 
-            _casesChevron = UiTextFactory.Create(">", UiClassNames.TestResultGroupCasesChevron);
+            _casesChevron = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: 12f));
+            _casesChevron.AddToClassList(UiClassNames.TestResultGroupCasesChevron);
             _casesTitle = UiTextFactory.Create(string.Empty, UiClassNames.TestResultGroupCasesTitle);
             _casesMeta = UiTextFactory.Create(string.Empty, UiClassNames.TestResultGroupCasesMeta);
 
@@ -108,8 +113,9 @@ namespace Ee4v.UI
             _casesBody.AddToClassList(UiClassNames.TestResultGroupCasesBody);
 
             Body.Add(_summaryAlert);
-            Body.Add(_casesToggle);
-            Body.Add(_casesBody);
+            _casesPanel.Add(_casesToggle);
+            _casesPanel.Add(_casesBody);
+            Body.Add(_casesPanel);
 
             SetState(state ?? new TestResultGroupState(new InfoCardState(string.Empty)));
         }
@@ -136,7 +142,7 @@ namespace Ee4v.UI
             _casesTitle.SetText(_state.CasesTitle);
             _casesMeta.SetText(_state.CasesMeta);
             _casesMeta.style.display = string.IsNullOrWhiteSpace(_state.CasesMeta) ? DisplayStyle.None : DisplayStyle.Flex;
-            _casesToggle.style.display = _state.Cases.Count > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            _casesPanel.style.display = _state.Cases.Count > 0 ? DisplayStyle.Flex : DisplayStyle.None;
 
             RebuildCases();
             SetExpanded(_state.Expanded, notify: false);
@@ -147,7 +153,9 @@ namespace Ee4v.UI
         {
             Expanded = expanded;
             EnableInClassList(UiClassNames.TestResultGroupExpanded, expanded);
-            _casesChevron.SetText(expanded ? "v" : ">");
+            _casesChevron.SetState(IconState.FromBuiltinIcon(
+                expanded ? UiBuiltinIcon.DisclosureOpen : UiBuiltinIcon.DisclosureClosed,
+                size: 12f));
             _casesBody.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             RefreshLayout();
 

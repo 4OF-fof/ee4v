@@ -12,31 +12,64 @@ namespace Ee4v.UI
 
     internal enum UiBuiltinIcon
     {
-        Search
+        Search,
+        DisclosureClosed,
+        DisclosureOpen
     }
 
     internal static class UiBuiltinIconResolver
     {
         public static bool TryResolve(UiBuiltinIcon icon, out Texture texture)
         {
-            var iconName = GetIconName(icon);
-            texture = EditorGUIUtility.FindTexture(iconName);
-            if (texture != null)
+            var iconNames = GetIconNames(icon);
+            for (var i = 0; i < iconNames.Length; i++)
             {
-                return true;
+                var iconName = iconNames[i];
+                texture = EditorGUIUtility.FindTexture(iconName);
+                if (texture != null)
+                {
+                    return true;
+                }
+
+                var content = EditorGUIUtility.IconContent(iconName);
+                texture = content != null ? content.image : null;
+                if (texture != null)
+                {
+                    return true;
+                }
             }
 
-            var content = EditorGUIUtility.IconContent(iconName);
-            texture = content != null ? content.image : null;
-            return texture != null;
+            texture = null;
+            return false;
         }
 
         internal static string GetIconName(UiBuiltinIcon icon)
         {
+            return GetIconNames(icon)[0];
+        }
+
+        private static string[] GetIconNames(UiBuiltinIcon icon)
+        {
             switch (icon)
             {
                 case UiBuiltinIcon.Search:
-                    return "Search Icon";
+                    return new[] { "Search Icon" };
+                case UiBuiltinIcon.DisclosureClosed:
+                    return new[]
+                    {
+                        "IN foldout",
+                        "d_IN_foldout",
+                        "Foldout",
+                        "d_Foldout"
+                    };
+                case UiBuiltinIcon.DisclosureOpen:
+                    return new[]
+                    {
+                        "IN foldout on",
+                        "d_IN_foldout on",
+                        "Foldout On",
+                        "d_Foldout On"
+                    };
                 default:
                     throw new System.ArgumentOutOfRangeException(nameof(icon), icon, null);
             }

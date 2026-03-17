@@ -60,6 +60,7 @@ namespace Ee4v.UI
         public const string TestResultGroupExpanded = "ee4v-ui-test-result-group--expanded";
         public const string TestResultGroupSummaryAlert = "ee4v-ui-test-result-group__summary-alert";
         public const string TestResultGroupRunButton = "ee4v-ui-test-result-group__run-button";
+        public const string TestResultGroupCasesPanel = "ee4v-ui-test-result-group__cases-panel";
         public const string TestResultGroupCasesToggle = "ee4v-ui-test-result-group__cases-toggle";
         public const string TestResultGroupCasesChevron = "ee4v-ui-test-result-group__cases-chevron";
         public const string TestResultGroupCasesTitle = "ee4v-ui-test-result-group__cases-title";
