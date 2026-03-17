@@ -168,9 +168,42 @@ namespace Ee4v.Core.Tests
 
         [Test]
         [FeatureTestCase(
+            "Core reset が実行中 runner state を維持する",
+            "Ee4vCoreTestReset.ResetAll が Core suite 実行中の FeatureTestRunnerService を消さないことを確認します。",
+            order: 15)]
+        public void Ee4vCoreTestReset_ResetAll_PreservesActiveRunnerState()
+        {
+            var gateway = new FakeRunnerGateway();
+            using (var service = new FeatureTestRunnerService(gateway))
+            {
+                try
+                {
+                    var descriptor = new FeatureTestDescriptor("Core", "Core", "Ee4v.Core.Tests.Editor");
+                    ReflectionReset.SetStaticField(typeof(FeatureTestManagerWindow), "_runnerService", service);
+
+                    Assert.That(service.TryRun(descriptor, out _), Is.True);
+                    Assert.That(service.IsRunInProgress, Is.True);
+
+                    Ee4vCoreTestReset.ResetAll();
+
+                    var preserved = ReflectionReset.GetStaticField(typeof(FeatureTestManagerWindow), "_runnerService");
+                    Assert.That(preserved, Is.SameAs(service));
+                    Assert.That(service.IsRunInProgress, Is.True);
+                    Assert.That(service.GetRecord("Core").Status, Is.EqualTo(FeatureTestRunStatus.Running));
+                }
+                finally
+                {
+                    ReflectionReset.SetStaticField(typeof(FeatureTestManagerWindow), "_runnerService", null);
+                    FeatureTestRunnerService.ClearPersistedState();
+                }
+            }
+        }
+
+        [Test]
+        [FeatureTestCase(
             "Test Manager が Core と Phase1 を列挙する",
             "FeatureTestManagerWindow の再読込で登録済み suite が一覧に並ぶことを確認します。",
-            order: 15)]
+            order: 16)]
         public void FeatureTestManagerWindow_RefreshDescriptors_FindsCoreAndPhase1Registrars()
         {
             var window = ScriptableObject.CreateInstance<FeatureTestManagerWindow>();
@@ -193,7 +226,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "Test Manager の UI Toolkit 画面が suite card を構築する",
             "FeatureTestManagerWindow が CreateGUI 後に登録済み suite ごとの card を UI Toolkit で構築することを確認します。",
-            order: 16)]
+            order: 17)]
         public void FeatureTestManagerWindow_CreateGUI_BuildsSuiteCards()
         {
             Ee4vCoreTestReset.RecoverEditorState();
@@ -218,7 +251,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "Test Manager の検索が suite を絞り込み一致項目を展開する",
             "FeatureTestManagerWindow の検索入力が suite を絞り込み、検索一致時にテストケース section を自動展開することを確認します。",
-            order: 17)]
+            order: 18)]
         public void FeatureTestManagerWindow_Search_FiltersAndExpandsMatchingSuite()
         {
             Ee4vCoreTestReset.RecoverEditorState();
@@ -250,7 +283,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "Test Manager が run 状態を UI に反映する",
             "FeatureTestManagerWindow が FeatureTestRunnerService の record 更新を badge と結果 alert に反映することを確認します。",
-            order: 18)]
+            order: 19)]
         public void FeatureTestManagerWindow_RefreshWindowState_ReflectsRunnerRecord()
         {
             Ee4vCoreTestReset.RecoverEditorState();
@@ -283,6 +316,7 @@ namespace Ee4v.Core.Tests
                     var message = summaryAlert.Q<UiTextElement>(className: UiClassNames.BannerMessage);
                     var runButton = result.Q<Button>(className: UiClassNames.TestResultGroupRunButton);
 
+                    Assert.That(message.Text, Does.Contain("テスト実行を要求"));
                     Assert.That(message.Text, Does.Contain("Pass 0"));
                     Assert.That(result.Badge.style.display.value, Is.EqualTo(DisplayStyle.None));
                     Assert.That(summaryAlert.style.display.value, Is.EqualTo(DisplayStyle.Flex));
@@ -298,9 +332,122 @@ namespace Ee4v.Core.Tests
 
         [Test]
         [FeatureTestCase(
+            "Test Manager が counts 不在時は結果メッセージを表示する",
+            "FeatureTestManagerWindow が counts 0 件の失敗でも record message を結果 banner に表示することを確認します。",
+            order: 20)]
+        public void FeatureTestManagerWindow_RefreshWindowState_ShowsRecordMessageWhenCountsAreMissing()
+        {
+            Ee4vCoreTestReset.RecoverEditorState();
+            var gateway = new FakeRunnerGateway();
+            using (var service = new FeatureTestRunnerService(gateway))
+            {
+                ReflectionReset.SetStaticField(typeof(FeatureTestManagerWindow), "_runnerService", service);
+
+                var window = ScriptableObject.CreateInstance<FeatureTestManagerWindow>();
+                try
+                {
+                    InvokePrivate(window, "RefreshDescriptors");
+
+                    var record = service.GetRecord("Core");
+                    record.Status = FeatureTestRunStatus.Failed;
+                    record.Message = "Unity Test Runner は終了しましたが、この suite の assembly 結果を返しませんでした。";
+                    record.PassCount = 0;
+                    record.FailCount = 0;
+                    record.SkipCount = 0;
+                    record.InconclusiveCount = 0;
+                    record.DurationSeconds = 0d;
+
+                    InvokePrivate(window, "CreateGUI");
+
+                    var searchField = window.rootVisualElement.Q<SearchField>();
+                    searchField.Value = "Core";
+
+                    InvokePrivate(window, "RefreshWindowState");
+
+                    var visibleCard = window.rootVisualElement
+                        .Query<TestResultGroup>(className: "ee4v-test-manager__suite-card")
+                        .ToList()
+                        .Single(card => card.style.display.value != DisplayStyle.None);
+
+                    var summaryAlert = visibleCard.Q<Alerts>(className: UiClassNames.TestResultGroupSummaryAlert);
+                    var message = summaryAlert.Q<UiTextElement>(className: UiClassNames.BannerMessage);
+
+                    Assert.That(summaryAlert.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+                    Assert.That(message.Text, Does.Contain("assembly 結果"));
+                }
+                finally
+                {
+                    ScriptableObject.DestroyImmediate(window);
+                    ReflectionReset.SetStaticField(typeof(FeatureTestManagerWindow), "_runnerService", null);
+                }
+            }
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Test Manager がケース別バッジを優先表示する",
+            "FeatureTestManagerWindow が suite 全体の失敗状態ではなく case ごとの結果バッジを表示することを確認します。",
+            order: 21)]
+        public void FeatureTestManagerWindow_RefreshWindowState_UsesPerCaseStatuses()
+        {
+            Ee4vCoreTestReset.RecoverEditorState();
+            var gateway = new FakeRunnerGateway();
+            using (var service = new FeatureTestRunnerService(gateway))
+            {
+                ReflectionReset.SetStaticField(typeof(FeatureTestManagerWindow), "_runnerService", service);
+
+                var window = ScriptableObject.CreateInstance<FeatureTestManagerWindow>();
+                try
+                {
+                    InvokePrivate(window, "RefreshDescriptors");
+                    var descriptors = (IList)GetPrivateField(window, "_descriptors");
+                    var coreDescriptor = descriptors.Cast<FeatureTestDescriptor>().Single(item => item.FeatureScope == "Core");
+                    Assert.That(coreDescriptor.TestCases.Count, Is.GreaterThanOrEqualTo(2));
+
+                    var record = service.GetRecord("Core");
+                    record.Status = FeatureTestRunStatus.Failed;
+                    record.Message = "mixed";
+                    record.PassCount = 14;
+                    record.FailCount = 2;
+                    record.CaseStatuses[coreDescriptor.TestCases[0].ResultKey] = FeatureTestRunStatus.Passed;
+                    record.CaseStatuses[coreDescriptor.TestCases[1].ResultKey] = FeatureTestRunStatus.Failed;
+
+                    InvokePrivate(window, "CreateGUI");
+
+                    var searchField = window.rootVisualElement.Q<SearchField>();
+                    searchField.Value = "Core";
+
+                    InvokePrivate(window, "RefreshWindowState");
+
+                    var visibleCard = window.rootVisualElement
+                        .Query<TestResultGroup>(className: "ee4v-test-manager__suite-card")
+                        .ToList()
+                        .Single(card => card.style.display.value != DisplayStyle.None);
+
+                    var caseCards = visibleCard
+                        .Q<VisualElement>(className: UiClassNames.TestResultGroupCasesBody)
+                        .Query<InfoCard>(className: UiClassNames.TestResultGroupCaseCard)
+                        .ToList();
+
+                    var firstCaseBadge = caseCards[0].Badge.Q<UiTextElement>(className: UiClassNames.StatusBadge);
+                    var secondCaseBadge = caseCards[1].Badge.Q<UiTextElement>(className: UiClassNames.StatusBadge);
+
+                    Assert.That(firstCaseBadge.Text, Is.EqualTo(I18N.Get("testing.status.passed")));
+                    Assert.That(secondCaseBadge.Text, Is.EqualTo(I18N.Get("testing.status.failed")));
+                }
+                finally
+                {
+                    ScriptableObject.DestroyImmediate(window);
+                    ReflectionReset.SetStaticField(typeof(FeatureTestManagerWindow), "_runnerService", null);
+                }
+            }
+        }
+
+        [Test]
+        [FeatureTestCase(
             "Test Manager が load error を alert で表示する",
             "FeatureTestManagerWindow が suite 読み込みエラー時に state alert をエラー表示へ切り替えることを確認します。",
-            order: 19)]
+            order: 22)]
         public void FeatureTestManagerWindow_RefreshWindowState_ShowsLoadErrorAlert()
         {
             Ee4vCoreTestReset.RecoverEditorState();
@@ -326,7 +473,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "Core の static 状態を reset できる",
             "Ee4vCoreTestReset が SettingApi と InjectorApi の static 登録状態をクリアすることを確認します。",
-            order: 20)]
+            order: 23)]
         public void Ee4vCoreTestReset_ResetAll_ClearsStaticRegistrationsAndHandlers()
         {
             var definition = new SettingDefinition<bool>(

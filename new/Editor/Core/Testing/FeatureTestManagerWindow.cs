@@ -224,7 +224,7 @@ namespace Ee4v.Core.Testing
                     descriptor.AssemblyName),
                 runText: I18N.Get("testing.window.run"),
                 runEnabled: _runnerService != null && !_runnerService.IsRunInProgress,
-                summaryMessage: FormatCounts(record),
+                summaryMessage: BuildSummaryMessage(record),
                 summaryTone: ToAlertTone(record.Status),
                 casesTitle: I18N.Get("testing.window.tests"),
                 casesMeta: string.Format(I18N.Get("testing.window.testCasesMeta"), descriptor.TestCases != null ? descriptor.TestCases.Count : 0),
@@ -293,7 +293,12 @@ namespace Ee4v.Core.Testing
 
         private static string FormatStatus(FeatureTestRunRecord record)
         {
-            switch (record.Status)
+            return FormatStatus(record.Status);
+        }
+
+        private static string FormatStatus(FeatureTestRunStatus status)
+        {
+            switch (status)
             {
                 case FeatureTestRunStatus.Running:
                     return I18N.Get("testing.status.running");
@@ -311,20 +316,46 @@ namespace Ee4v.Core.Testing
             }
         }
 
-        private static string FormatCounts(FeatureTestRunRecord record)
+        private static string BuildSummaryMessage(FeatureTestRunRecord record)
         {
-            if (record.Status == FeatureTestRunStatus.NotRun)
+            if (record == null || record.Status == FeatureTestRunStatus.NotRun)
             {
                 return string.Empty;
             }
 
-            return string.Format(
+            var counts = string.Format(
                 I18N.Get("testing.window.countsFormat"),
                 record.PassCount,
                 record.FailCount,
                 record.SkipCount,
                 record.InconclusiveCount,
                 record.DurationSeconds);
+
+            if (record.Status == FeatureTestRunStatus.Running)
+            {
+                return !string.IsNullOrWhiteSpace(record.Message)
+                    ? record.Message + "\n" + counts
+                    : counts;
+            }
+
+            if (HasResultCounts(record))
+            {
+                return counts;
+            }
+
+            return !string.IsNullOrWhiteSpace(record.Message)
+                ? record.Message
+                : counts;
+        }
+
+        private static bool HasResultCounts(FeatureTestRunRecord record)
+        {
+            return record != null
+                && (record.PassCount > 0
+                    || record.FailCount > 0
+                    || record.SkipCount > 0
+                    || record.InconclusiveCount > 0
+                    || record.DurationSeconds > 0d);
         }
 
         private static UiStatusTone ToBadgeTone(FeatureTestRunStatus status)
@@ -398,14 +429,31 @@ namespace Ee4v.Core.Testing
                 return Array.Empty<TestResultGroupCaseState>();
             }
 
-            var badgeState = new StatusBadgeState(FormatStatus(record), ToBadgeTone(record.Status));
             var items = new TestResultGroupCaseState[testCases.Count];
             for (var i = 0; i < testCases.Count; i++)
             {
-                items[i] = new TestResultGroupCaseState(testCases[i].Title, testCases[i].Description, badgeState);
+                items[i] = new TestResultGroupCaseState(
+                    testCases[i].Title,
+                    testCases[i].Description,
+                    ToCaseBadgeState(testCases[i], record));
             }
 
             return items;
+        }
+
+        private static StatusBadgeState ToCaseBadgeState(FeatureTestCaseDescriptor testCase, FeatureTestRunRecord record)
+        {
+            if (testCase == null || record == null || string.IsNullOrWhiteSpace(testCase.ResultKey))
+            {
+                return null;
+            }
+
+            if (!record.CaseStatuses.TryGetValue(testCase.ResultKey, out var status))
+            {
+                return null;
+            }
+
+            return new StatusBadgeState(FormatStatus(status), ToBadgeTone(status));
         }
 
         private static void EnsureRunnerService()

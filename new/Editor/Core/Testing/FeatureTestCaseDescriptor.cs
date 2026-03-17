@@ -4,7 +4,7 @@ namespace Ee4v.Core.Testing
 {
     public sealed class FeatureTestCaseDescriptor
     {
-        public FeatureTestCaseDescriptor(string title, string description = "", int order = 0)
+        public FeatureTestCaseDescriptor(string title, string description = "", int order = 0, string resultKey = "")
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -14,6 +14,7 @@ namespace Ee4v.Core.Testing
             Title = title;
             Description = description ?? string.Empty;
             Order = order;
+            ResultKey = resultKey ?? string.Empty;
         }
 
         public string Title { get; }
@@ -21,5 +22,7 @@ namespace Ee4v.Core.Testing
         public string Description { get; }
 
         public int Order { get; }
+
+        public string ResultKey { get; }
     }
 }

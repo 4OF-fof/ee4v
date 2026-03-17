@@ -46,7 +46,8 @@ namespace Ee4v.Core.Testing
                     results.Add(new FeatureTestCaseDescriptor(
                         string.IsNullOrWhiteSpace(metadata?.Title) ? HumanizeMethodName(method.Name) : metadata.Title,
                         metadata?.Description ?? string.Empty,
-                        metadata?.Order ?? results.Count));
+                        metadata?.Order ?? results.Count,
+                        BuildResultKey(method)));
                 }
             }
 
@@ -70,6 +71,24 @@ namespace Ee4v.Core.Testing
             }
 
             return methodName.Replace("_", " ");
+        }
+
+        private static string BuildResultKey(MethodInfo method)
+        {
+            if (method == null)
+            {
+                return string.Empty;
+            }
+
+            var declaringType = method.DeclaringType != null
+                ? method.DeclaringType.FullName
+                : string.Empty;
+            if (string.IsNullOrWhiteSpace(declaringType))
+            {
+                return method.Name ?? string.Empty;
+            }
+
+            return declaringType + "." + method.Name;
         }
     }
 }

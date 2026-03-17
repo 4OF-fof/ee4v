@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Ee4v.Core.Testing
 {
@@ -19,6 +20,7 @@ namespace Ee4v.Core.Testing
             Status = FeatureTestRunStatus.NotRun;
             Message = string.Empty;
             RunId = string.Empty;
+            CaseStatuses = new Dictionary<string, FeatureTestRunStatus>(StringComparer.OrdinalIgnoreCase);
         }
 
         public FeatureTestRunStatus Status { get; set; }
@@ -38,5 +40,7 @@ namespace Ee4v.Core.Testing
         public double DurationSeconds { get; set; }
 
         public DateTime? FinishedAtUtc { get; set; }
+
+        public Dictionary<string, FeatureTestRunStatus> CaseStatuses { get; }
     }
 }

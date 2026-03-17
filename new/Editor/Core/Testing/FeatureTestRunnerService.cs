@@ -111,6 +111,7 @@ namespace Ee4v.Core.Testing
                 record.InconclusiveCount = 0;
                 record.DurationSeconds = 0d;
                 record.FinishedAtUtc = null;
+                record.CaseStatuses.Clear();
             }
 
             var settings = new ExecutionSettings(new Filter
@@ -181,6 +182,7 @@ namespace Ee4v.Core.Testing
                 record.FinishedAtUtc = assemblyResult.EndTime == default(DateTime)
                     ? DateTime.UtcNow
                     : assemblyResult.EndTime.ToUniversalTime();
+                ApplyCaseStatuses(record, descriptor, assemblyResult);
             }
 
             NotifyChanged();
@@ -199,6 +201,7 @@ namespace Ee4v.Core.Testing
                 record.Status = FeatureTestRunStatus.Failed;
                 record.Message = message ?? string.Empty;
                 record.FinishedAtUtc = DateTime.UtcNow;
+                record.CaseStatuses.Clear();
             }
 
             _activeRun = null;
@@ -299,6 +302,125 @@ namespace Ee4v.Core.Testing
                     string.IsNullOrWhiteSpace(testCase.Description)
                         ? "- " + testCase.Title
                         : "- " + testCase.Title + ": " + testCase.Description));
+        }
+
+        private static void ApplyCaseStatuses(FeatureTestRunRecord record, FeatureTestDescriptor descriptor, ITestResultAdaptor assemblyResult)
+        {
+            if (record == null)
+            {
+                return;
+            }
+
+            record.CaseStatuses.Clear();
+            if (descriptor == null || descriptor.TestCases == null || descriptor.TestCases.Count == 0)
+            {
+                return;
+            }
+
+            var leafResults = new List<ITestResultAdaptor>();
+            CollectLeafResults(assemblyResult, leafResults);
+            for (var i = 0; i < descriptor.TestCases.Count; i++)
+            {
+                var testCase = descriptor.TestCases[i];
+                if (string.IsNullOrWhiteSpace(testCase.ResultKey))
+                {
+                    continue;
+                }
+
+                var aggregateStatus = FeatureTestRunStatus.NotRun;
+                var hasMatch = false;
+                for (var j = 0; j < leafResults.Count; j++)
+                {
+                    var leaf = leafResults[j];
+                    var fullName = leaf != null && leaf.Test != null
+                        ? leaf.Test.FullName ?? string.Empty
+                        : string.Empty;
+                    if (!MatchesResultKey(fullName, testCase.ResultKey))
+                    {
+                        continue;
+                    }
+
+                    aggregateStatus = hasMatch
+                        ? MergeStatus(aggregateStatus, ToStatus(leaf))
+                        : ToStatus(leaf);
+                    hasMatch = true;
+                }
+
+                if (hasMatch)
+                {
+                    record.CaseStatuses[testCase.ResultKey] = aggregateStatus;
+                }
+            }
+        }
+
+        private static void CollectLeafResults(ITestResultAdaptor result, ICollection<ITestResultAdaptor> leafResults)
+        {
+            if (result == null || leafResults == null)
+            {
+                return;
+            }
+
+            var hasChildren = false;
+            if (result.HasChildren && result.Children != null)
+            {
+                foreach (var child in result.Children)
+                {
+                    hasChildren = true;
+                    CollectLeafResults(child, leafResults);
+                }
+            }
+
+            if (hasChildren || result.Test == null || result.Test.IsTestAssembly)
+            {
+                return;
+            }
+
+            leafResults.Add(result);
+        }
+
+        private static bool MatchesResultKey(string fullName, string resultKey)
+        {
+            if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(resultKey))
+            {
+                return false;
+            }
+
+            if (string.Equals(fullName, resultKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return fullName.StartsWith(resultKey + "(", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static FeatureTestRunStatus MergeStatus(FeatureTestRunStatus current, FeatureTestRunStatus next)
+        {
+            if (current == FeatureTestRunStatus.Failed || next == FeatureTestRunStatus.Failed)
+            {
+                return FeatureTestRunStatus.Failed;
+            }
+
+            if (current == FeatureTestRunStatus.Inconclusive || next == FeatureTestRunStatus.Inconclusive)
+            {
+                return FeatureTestRunStatus.Inconclusive;
+            }
+
+            if (current == FeatureTestRunStatus.Passed || next == FeatureTestRunStatus.Passed)
+            {
+                return FeatureTestRunStatus.Passed;
+            }
+
+            if (current == FeatureTestRunStatus.Skipped || next == FeatureTestRunStatus.Skipped)
+            {
+                return FeatureTestRunStatus.Skipped;
+            }
+
+            if (current == FeatureTestRunStatus.Running || next == FeatureTestRunStatus.Running)
+            {
+                return FeatureTestRunStatus.Running;
+            }
+
+            return FeatureTestRunStatus.NotRun;
         }
 
         private void NotifyChanged()
@@ -463,6 +585,7 @@ namespace Ee4v.Core.Testing
             public int inconclusiveCount;
             public double durationSeconds;
             public long finishedAtUtcTicks;
+            public PersistedCaseStatus[] caseStatuses;
         }
 
         [Serializable]
@@ -494,6 +617,14 @@ namespace Ee4v.Core.Testing
             public string title;
             public string description;
             public int order;
+            public string resultKey;
+        }
+
+        [Serializable]
+        private sealed class PersistedCaseStatus
+        {
+            public string resultKey;
+            public int status;
         }
 
         private void SaveState()
@@ -511,7 +642,14 @@ namespace Ee4v.Core.Testing
                     skipCount = pair.Value.SkipCount,
                     inconclusiveCount = pair.Value.InconclusiveCount,
                     durationSeconds = pair.Value.DurationSeconds,
-                    finishedAtUtcTicks = pair.Value.FinishedAtUtc.HasValue ? pair.Value.FinishedAtUtc.Value.Ticks : 0L
+                    finishedAtUtcTicks = pair.Value.FinishedAtUtc.HasValue ? pair.Value.FinishedAtUtc.Value.Ticks : 0L,
+                    caseStatuses = pair.Value.CaseStatuses
+                        .Select(caseStatus => new PersistedCaseStatus
+                        {
+                            resultKey = caseStatus.Key,
+                            status = (int)caseStatus.Value
+                        })
+                        .ToArray()
                 }).ToArray(),
                 activeRun = _activeRun == null
                     ? null
@@ -581,6 +719,23 @@ namespace Ee4v.Core.Testing
                             ? new DateTime(persisted.finishedAtUtcTicks, DateTimeKind.Utc)
                             : (DateTime?)null
                     };
+
+                    if (persisted.caseStatuses == null)
+                    {
+                        continue;
+                    }
+
+                    var record = _records[persisted.featureScope];
+                    for (var caseIndex = 0; caseIndex < persisted.caseStatuses.Length; caseIndex++)
+                    {
+                        var caseStatus = persisted.caseStatuses[caseIndex];
+                        if (caseStatus == null || string.IsNullOrWhiteSpace(caseStatus.resultKey))
+                        {
+                            continue;
+                        }
+
+                        record.CaseStatuses[caseStatus.resultKey] = (FeatureTestRunStatus)caseStatus.status;
+                    }
                 }
             }
 
@@ -623,7 +778,8 @@ namespace Ee4v.Core.Testing
                     {
                         title = testCase.Title,
                         description = testCase.Description,
-                        order = testCase.Order
+                        order = testCase.Order,
+                        resultKey = testCase.ResultKey
                     }).ToArray()
             };
         }
@@ -641,7 +797,8 @@ namespace Ee4v.Core.Testing
                     : persisted.testCases.Select(testCase => new FeatureTestCaseDescriptor(
                         testCase.title,
                         testCase.description,
-                        testCase.order)).ToArray());
+                        testCase.order,
+                        testCase.resultKey)).ToArray());
         }
 
         private static DateTime FromTicks(long ticks)
