@@ -1,0 +1,11 @@
+{
+  "stubs": {
+    "hierarchyHeader": {
+      "tooltip": "Phase 1 stub injected through InjectorAPI."
+    },
+    "projectToolbar": {
+      "reload": "Reload i18n",
+      "settings": "Project Settings"
+    }
+  }
+}

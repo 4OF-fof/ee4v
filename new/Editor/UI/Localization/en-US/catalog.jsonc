@@ -1,0 +1,24 @@
+{
+  "catalog": {
+    "window": {
+      "title": "UI Catalog",
+      "navigatorEmpty": "No matching components."
+    },
+    "common": {
+      "details": "Details",
+      "none": "None",
+      "implementation": "Implementation",
+      "dependencies": "Dependencies",
+      "uiToolkitVisual": "UI Toolkit",
+      "imguiVisual": "IMGUI"
+    },
+    "status": {
+      "idle": "Idle",
+      "running": "Running",
+      "passed": "Passed",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "inconclusive": "Inconclusive"
+    }
+  }
+}

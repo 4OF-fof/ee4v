@@ -1,0 +1,33 @@
+.ee4v-test-manager {
+    flex-grow: 1;
+}
+
+.ee4v-test-manager__shell {
+    flex-grow: 1;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.ee4v-test-manager__search {
+    margin-bottom: 10px;
+}
+
+.ee4v-test-manager__state-alert {
+    margin-bottom: 10px;
+}
+
+.ee4v-test-manager__scroll {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.ee4v-test-manager__list {
+    flex-direction: column;
+    padding-bottom: 8px;
+}
+
+.ee4v-test-manager__suite-card {
+    margin-bottom: 12px;
+}

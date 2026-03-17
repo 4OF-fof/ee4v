@@ -1,0 +1,24 @@
+{
+  "catalog": {
+    "window": {
+      "title": "UI Catalog",
+      "navigatorEmpty": "一致するコンポーネントがありません。"
+    },
+    "common": {
+      "details": "詳細",
+      "none": "なし",
+      "implementation": "実装",
+      "dependencies": "依存コンポーネント",
+      "uiToolkitVisual": "UI Toolkit",
+      "imguiVisual": "IMGUI"
+    },
+    "status": {
+      "idle": "待機中",
+      "running": "実行中",
+      "passed": "成功",
+      "failed": "失敗",
+      "skipped": "スキップ",
+      "inconclusive": "未確定"
+    }
+  }
+}

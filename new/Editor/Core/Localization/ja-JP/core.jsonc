@@ -1,0 +1,42 @@
+{
+  "settings": {
+    "section": {
+      "localization": "ローカライズ"
+    },
+    "language": {
+      "label": "言語",
+      "tooltip": "優先して使うUI言語です。"
+    },
+    "fallbackLanguage": {
+      "label": "フォールバック言語",
+      "tooltip": "en-US に落ちる前に参照する第2言語です。"
+    },
+    "validation": {
+      "locale": "言語コードは必須です。"
+    }
+  },
+  "testing": {
+    "window": {
+      "title": "ee4v Test Manager",
+      "run": "実行",
+      "searchPlaceholder": "suite 名、説明、テスト名で検索",
+      "tests": "Tests",
+      "testCasesMeta": "{0}件",
+      "countsFormat": "Pass {0}  Fail {1}  Skip {2}  Inc {3}  {4:0.00}s",
+      "noSuites": "登録済みの feature テストがありません。",
+      "noMatches": "検索条件に一致する feature テストがありません。"
+    },
+    "category": {
+      "standard": "標準",
+      "staticAudit": "静的監査"
+    },
+    "status": {
+      "notRun": "未実行",
+      "running": "実行中",
+      "passed": "成功",
+      "failed": "失敗",
+      "skipped": "スキップ",
+      "inconclusive": "未確定"
+    }
+  }
+}

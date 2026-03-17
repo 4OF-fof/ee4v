@@ -1,0 +1,52 @@
+{
+  "settings": {
+    "section": {
+      "injectorUser": "Stub Toggles (User)",
+      "injectorProject": "Stub Appearance (Project)"
+    },
+    "hierarchyItemStub": {
+      "label": "Enable hierarchy item stub",
+      "tooltip": "Draws a small badge on hierarchy rows."
+    },
+    "hierarchyHeaderStub": {
+      "label": "Enable hierarchy header stub",
+      "tooltip": "Injects a simple header row into the hierarchy window."
+    },
+    "projectItemStub": {
+      "label": "Enable project item stub",
+      "tooltip": "Draws a color marker on project rows."
+    },
+    "projectToolbarStub": {
+      "label": "Enable project toolbar stub",
+      "tooltip": "Injects a lightweight toolbar into the project window."
+    },
+    "hierarchyBadgeText": {
+      "label": "Hierarchy badge text",
+      "tooltip": "Text rendered by the hierarchy item stub."
+    },
+    "hierarchyHeaderText": {
+      "label": "Hierarchy header text",
+      "tooltip": "Text shown in the hierarchy header stub."
+    },
+    "projectToolbarText": {
+      "label": "Project toolbar text",
+      "tooltip": "Text shown on the injected project toolbar."
+    },
+    "toolbarButtonWidth": {
+      "label": "Toolbar button width",
+      "tooltip": "Shared width used by the project toolbar stub buttons."
+    },
+    "hierarchyAccentColor": {
+      "label": "Hierarchy accent color",
+      "tooltip": "Accent color for hierarchy header and item stubs."
+    },
+    "projectAccentColor": {
+      "label": "Project accent color",
+      "tooltip": "Accent color for project item stubs."
+    },
+    "validation": {
+      "required": "This field is required.",
+      "toolbarButtonWidth": "Toolbar button width must be 60 or greater."
+    }
+  }
+}

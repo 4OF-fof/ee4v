@@ -1,0 +1,21 @@
+{
+  "name": "Ee4v.Core.Tests.Editor",
+  "rootNamespace": "Ee4v.Core.Tests",
+  "references": [
+    "Ee4v.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

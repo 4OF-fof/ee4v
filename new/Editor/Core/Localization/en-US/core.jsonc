@@ -1,0 +1,42 @@
+{
+  "settings": {
+    "section": {
+      "localization": "Localization"
+    },
+    "language": {
+      "label": "Language",
+      "tooltip": "Primary UI language."
+    },
+    "fallbackLanguage": {
+      "label": "Fallback language",
+      "tooltip": "Secondary language used before falling back to en-US."
+    },
+    "validation": {
+      "locale": "Locale is required."
+    }
+  },
+  "testing": {
+    "window": {
+      "title": "ee4v Test Manager",
+      "run": "Run",
+      "searchPlaceholder": "Search by suite, description, or test case",
+      "tests": "Tests",
+      "testCasesMeta": "{0} items",
+      "countsFormat": "Pass {0}  Fail {1}  Skip {2}  Inc {3}  {4:0.00}s",
+      "noSuites": "No feature test suites are registered.",
+      "noMatches": "No feature test suites match the current search."
+    },
+    "category": {
+      "standard": "Standard",
+      "staticAudit": "Static Audit"
+    },
+    "status": {
+      "notRun": "Not run",
+      "running": "Running",
+      "passed": "Passed",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "inconclusive": "Inconclusive"
+    }
+  }
+}
