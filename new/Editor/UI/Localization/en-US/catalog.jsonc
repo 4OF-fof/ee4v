@@ -2,13 +2,10 @@
   "catalog": {
     "window": {
       "title": "UI Catalog",
-      "description": "Component preview catalog for the UI library.",
       "navigatorEmpty": "No matching components."
     },
     "common": {
       "details": "Details",
-      "uiToolkit": "UI Toolkit",
-      "imgui": "IMGUI",
       "none": "None",
       "implementation": "Implementation",
       "dependencies": "Dependencies",

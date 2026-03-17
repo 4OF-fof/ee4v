@@ -2,13 +2,10 @@
   "catalog": {
     "window": {
       "title": "UI Catalog",
-      "description": "UI ライブラリの確認画面です。",
       "navigatorEmpty": "一致するコンポーネントがありません。"
     },
     "common": {
       "details": "詳細",
-      "uiToolkit": "UI Toolkit",
-      "imgui": "IMGUI",
       "none": "なし",
       "implementation": "実装",
       "dependencies": "依存コンポーネント",
