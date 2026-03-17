@@ -38,6 +38,7 @@ namespace Ee4v.UI
 
         public const string SearchableTreeView = "ee4v-ui-searchable-tree-view";
         public const string SearchableTreeViewSearch = "ee4v-ui-searchable-tree-view__search";
+        public const string SearchableTreeViewSearchIcon = "ee4v-ui-searchable-tree-view__search-icon";
         public const string SearchableTreeViewSearchInput = "ee4v-ui-searchable-tree-view__search-input";
         public const string SearchableTreeViewSearchClear = "ee4v-ui-searchable-tree-view__search-clear";
         public const string SearchableTreeViewSearchHasValue = "ee4v-ui-searchable-tree-view__search--has-value";

@@ -23,22 +23,34 @@
 .ee4v-ui-searchable-tree-view__search {
     flex-direction: row;
     align-items: center;
-    min-height: 18px;
-    height: 18px;
-    padding-left: 2px;
+    min-height: 20px;
+    height: 20px;
+    padding-left: 6px;
     padding-right: 0;
     padding-top: 0;
     padding-bottom: 0;
     background-color: rgba(0, 0, 0, 0);
 }
 
+.ee4v-ui-searchable-tree-view__search-icon {
+    width: 14px;
+    min-width: 14px;
+    max-width: 14px;
+    height: 14px;
+    min-height: 14px;
+    max-height: 14px;
+    margin-left: 1px;
+    margin-right: 6px;
+    opacity: 1;
+}
+
 .ee4v-ui-searchable-tree-view__search-input {
     flex-grow: 1;
     flex-shrink: 1;
     min-width: 0;
-    min-height: 14px;
-    height: 14px;
-    max-height: 14px;
+    min-height: 16px;
+    height: 16px;
+    max-height: 16px;
     margin-top: 0;
     margin-bottom: 0;
     margin-left: 0;
@@ -47,17 +59,17 @@
 
 .ee4v-ui-searchable-tree-view__search-input.unity-base-field,
 .ee4v-ui-searchable-tree-view__search-input.unity-text-field {
-    min-height: 14px;
-    height: 14px;
-    max-height: 14px;
+    min-height: 16px;
+    height: 16px;
+    max-height: 16px;
 }
 
 .ee4v-ui-searchable-tree-view__search-input .unity-base-text-field__input,
 .ee4v-ui-searchable-tree-view__search-input .unity-text-field__input,
 .ee4v-ui-searchable-tree-view__search-input .unity-base-field__input {
-    min-height: 12px;
-    height: 12px;
-    max-height: 12px;
+    min-height: 14px;
+    height: 14px;
+    max-height: 14px;
     padding-top: 0;
     padding-bottom: 0;
     background-color: rgba(0, 0, 0, 0);

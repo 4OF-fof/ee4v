@@ -26,6 +26,7 @@ namespace Ee4v.UI
     internal sealed class SearchableTreeView<TData> : VisualElement
     {
         private readonly VisualElement _searchContainer;
+        private readonly Icon _searchIcon;
         private readonly TextField _searchInput;
         private readonly Button _clearButton;
         private readonly TreeView _treeView;
@@ -53,13 +54,16 @@ namespace Ee4v.UI
 
             _searchContainer = new VisualElement();
             _searchContainer.AddToClassList(UiClassNames.SearchableTreeViewSearch);
-            _searchContainer.style.minHeight = 18f;
-            _searchContainer.style.height = 18f;
+            _searchContainer.style.minHeight = 20f;
+            _searchContainer.style.height = 20f;
+
+            _searchIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.Search, size: 14f, tooltip: "Search"));
+            _searchIcon.AddToClassList(UiClassNames.SearchableTreeViewSearchIcon);
 
             _searchInput = new TextField();
             _searchInput.AddToClassList(UiClassNames.SearchableTreeViewSearchInput);
             _searchInput.style.minHeight = 0f;
-            _searchInput.style.height = 14f;
+            _searchInput.style.height = 16f;
             _searchInput.style.marginTop = 0f;
             _searchInput.style.marginBottom = 0f;
             _searchInput.RegisterValueChangedCallback(evt =>
@@ -83,6 +87,7 @@ namespace Ee4v.UI
             _clearButton.style.minHeight = 12f;
             _clearButton.style.maxHeight = 12f;
 
+            _searchContainer.Add(_searchIcon);
             _searchContainer.Add(_searchInput);
             _searchContainer.Add(_clearButton);
             Add(_searchContainer);
