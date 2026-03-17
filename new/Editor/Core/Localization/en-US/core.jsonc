@@ -18,21 +18,17 @@
   "testing": {
     "window": {
       "title": "ee4v Test Manager",
-      "refresh": "Refresh",
       "run": "Run",
-      "runAll": "Run All",
       "searchPlaceholder": "Search by suite, description, or test case",
-      "running": "Running",
-      "idle": "Idle",
-      "scope": "Scope",
-      "assembly": "Assembly",
       "tests": "Tests",
       "testCasesMeta": "{0} items",
-      "lastResult": "Last result",
       "countsFormat": "Pass {0}  Fail {1}  Skip {2}  Inc {3}  {4:0.00}s",
-      "notRunYet": "No test has been run yet.",
       "noSuites": "No feature test suites are registered.",
       "noMatches": "No feature test suites match the current search."
+    },
+    "category": {
+      "standard": "Standard",
+      "staticAudit": "Static Audit"
     },
     "status": {
       "notRun": "Not run",

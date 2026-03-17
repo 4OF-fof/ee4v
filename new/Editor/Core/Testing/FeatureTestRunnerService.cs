@@ -608,6 +608,7 @@ namespace Ee4v.Core.Testing
             public string assemblyName;
             public string description;
             public int order;
+            public int category;
             public PersistedCase[] testCases;
         }
 
@@ -618,6 +619,7 @@ namespace Ee4v.Core.Testing
             public string description;
             public int order;
             public string resultKey;
+            public int category;
         }
 
         [Serializable]
@@ -772,6 +774,7 @@ namespace Ee4v.Core.Testing
                 assemblyName = descriptor.AssemblyName,
                 description = descriptor.Description,
                 order = descriptor.Order,
+                category = (int)descriptor.Category,
                 testCases = descriptor.TestCases == null
                     ? Array.Empty<PersistedCase>()
                     : descriptor.TestCases.Select(testCase => new PersistedCase
@@ -779,7 +782,8 @@ namespace Ee4v.Core.Testing
                         title = testCase.Title,
                         description = testCase.Description,
                         order = testCase.Order,
-                        resultKey = testCase.ResultKey
+                        resultKey = testCase.ResultKey,
+                        category = (int)testCase.Category
                     }).ToArray()
             };
         }
@@ -798,7 +802,9 @@ namespace Ee4v.Core.Testing
                         testCase.title,
                         testCase.description,
                         testCase.order,
-                        testCase.resultKey)).ToArray());
+                        testCase.resultKey,
+                        (FeatureTestCategory)testCase.category)).ToArray(),
+                (FeatureTestCategory)persisted.category);
         }
 
         private static DateTime FromTicks(long ticks)

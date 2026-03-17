@@ -221,7 +221,7 @@ namespace Ee4v.Core.Testing
                 new InfoCardState(
                     descriptor.DisplayName,
                     descriptor.Description,
-                    descriptor.AssemblyName),
+                    BuildSuiteEyebrow(descriptor)),
                 runText: I18N.Get("testing.window.run"),
                 runEnabled: _runnerService != null && !_runnerService.IsRunInProgress,
                 summaryMessage: BuildSummaryMessage(record),
@@ -407,7 +407,9 @@ namespace Ee4v.Core.Testing
                 descriptor.DisplayName ?? string.Empty,
                 descriptor.FeatureScope ?? string.Empty,
                 descriptor.AssemblyName ?? string.Empty,
-                descriptor.Description ?? string.Empty
+                descriptor.Description ?? string.Empty,
+                BuildSuiteEyebrow(descriptor),
+                BuildSuiteCategorySummary(descriptor)
             };
 
             if (descriptor.TestCases != null)
@@ -416,6 +418,7 @@ namespace Ee4v.Core.Testing
                 {
                     parts.Add(descriptor.TestCases[i].Title ?? string.Empty);
                     parts.Add(descriptor.TestCases[i].Description ?? string.Empty);
+                    parts.Add(GetCategoryDisplayLabel(descriptor.TestCases[i].Category, includeStandard: true));
                 }
             }
 
@@ -435,10 +438,71 @@ namespace Ee4v.Core.Testing
                 items[i] = new TestResultGroupCaseState(
                     testCases[i].Title,
                     testCases[i].Description,
-                    ToCaseBadgeState(testCases[i], record));
+                    ToCaseBadgeState(testCases[i], record),
+                    GetCategoryDisplayLabel(testCases[i].Category, includeStandard: false));
             }
 
             return items;
+        }
+
+        private static string BuildSuiteEyebrow(FeatureTestDescriptor descriptor)
+        {
+            if (descriptor == null)
+            {
+                return string.Empty;
+            }
+
+            var categorySummary = BuildSuiteCategorySummary(descriptor);
+            if (string.IsNullOrWhiteSpace(categorySummary))
+            {
+                return descriptor.AssemblyName ?? string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(descriptor.AssemblyName))
+            {
+                return categorySummary;
+            }
+
+            return categorySummary + " · " + descriptor.AssemblyName;
+        }
+
+        private static string BuildSuiteCategorySummary(FeatureTestDescriptor descriptor)
+        {
+            if (descriptor == null)
+            {
+                return string.Empty;
+            }
+
+            var categories = new List<FeatureTestCategory> { descriptor.Category };
+            if (descriptor.TestCases != null)
+            {
+                for (var i = 0; i < descriptor.TestCases.Count; i++)
+                {
+                    categories.Add(descriptor.TestCases[i].Category);
+                }
+            }
+
+            return string.Join(
+                ", ",
+                categories
+                    .Distinct()
+                    .Where(category => category != FeatureTestCategory.Standard)
+                    .Select(category => GetCategoryDisplayLabel(category, includeStandard: false))
+                    .Where(label => !string.IsNullOrWhiteSpace(label))
+                    .ToArray());
+        }
+
+        private static string GetCategoryDisplayLabel(FeatureTestCategory category, bool includeStandard)
+        {
+            switch (category)
+            {
+                case FeatureTestCategory.StaticAudit:
+                    return I18N.Get("testing.category.staticAudit");
+                case FeatureTestCategory.Standard:
+                    return includeStandard ? I18N.Get("testing.category.standard") : string.Empty;
+                default:
+                    return category.ToString();
+            }
         }
 
         private static StatusBadgeState ToCaseBadgeState(FeatureTestCaseDescriptor testCase, FeatureTestRunRecord record)

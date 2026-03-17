@@ -72,7 +72,8 @@ namespace Ee4v.Core.Testing
                     descriptor.AssemblyName,
                     descriptor.Description,
                     descriptor.Order,
-                    discoveredCases.Count > 0 ? discoveredCases : descriptor.TestCases));
+                    discoveredCases.Count > 0 ? discoveredCases : descriptor.TestCases,
+                    descriptor.Category));
             }
 
             ValidateNoDuplicates(

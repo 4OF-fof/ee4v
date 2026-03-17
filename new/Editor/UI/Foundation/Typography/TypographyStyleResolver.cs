@@ -93,6 +93,7 @@ namespace Ee4v.UI
                 { UiClassNames.CatalogNavigatorTitle, Create(false, 16, 230, 230, 230, 255, TextAnchor.MiddleCenter, WhiteSpace.NoWrap, marginBottom: 10f) },
                 { UiClassNames.CatalogTreeTitle, Create(false, 12, 230, 230, 230, 255, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.CatalogTreeImplementation, Create(false, 10, 210, 210, 210, 184, TextAnchor.MiddleRight, WhiteSpace.NoWrap, marginLeft: 8f) },
+                { UiClassNames.Phase1StubLabel, Create(true, 12, 255, 255, 255, 255, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
             };
 
         public static TypographyResolution Resolve(params string[] classNames)

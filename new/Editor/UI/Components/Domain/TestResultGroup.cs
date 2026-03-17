@@ -6,11 +6,16 @@ namespace Ee4v.UI
 {
     internal sealed class TestResultGroupCaseState
     {
-        public TestResultGroupCaseState(string title, string description = null, StatusBadgeState badgeState = null)
+        public TestResultGroupCaseState(
+            string title,
+            string description = null,
+            StatusBadgeState badgeState = null,
+            string eyebrow = null)
         {
             Title = title ?? string.Empty;
             Description = description ?? string.Empty;
             BadgeState = badgeState;
+            Eyebrow = eyebrow ?? string.Empty;
         }
 
         public string Title { get; }
@@ -18,6 +23,8 @@ namespace Ee4v.UI
         public string Description { get; }
 
         public StatusBadgeState BadgeState { get; }
+
+        public string Eyebrow { get; }
     }
 
     internal sealed class TestResultGroupState
@@ -174,7 +181,7 @@ namespace Ee4v.UI
                 var entry = new InfoCard(new InfoCardState(
                     testCase.Title,
                     testCase.Description,
-                    string.Empty,
+                    testCase.Eyebrow,
                     testCase.BadgeState));
                 entry.AddToClassList(UiClassNames.TestResultGroupCaseCard);
                 _casesBody.Add(entry);

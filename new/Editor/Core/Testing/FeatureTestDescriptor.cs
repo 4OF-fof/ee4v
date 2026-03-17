@@ -12,7 +12,8 @@ namespace Ee4v.Core.Testing
             string assemblyName,
             string description = "",
             int order = 0,
-            IReadOnlyList<FeatureTestCaseDescriptor> testCases = null)
+            IReadOnlyList<FeatureTestCaseDescriptor> testCases = null,
+            FeatureTestCategory category = FeatureTestCategory.Standard)
         {
             if (string.IsNullOrWhiteSpace(featureScope))
             {
@@ -34,6 +35,7 @@ namespace Ee4v.Core.Testing
             AssemblyName = assemblyName;
             Description = description ?? string.Empty;
             Order = order;
+            Category = category;
             TestCases = (testCases ?? Array.Empty<FeatureTestCaseDescriptor>())
                 .OrderBy(testCase => testCase.Order)
                 .ThenBy(testCase => testCase.Title, StringComparer.OrdinalIgnoreCase)
@@ -49,6 +51,8 @@ namespace Ee4v.Core.Testing
         public string Description { get; }
 
         public int Order { get; }
+
+        public FeatureTestCategory Category { get; }
 
         public IReadOnlyList<FeatureTestCaseDescriptor> TestCases { get; }
     }

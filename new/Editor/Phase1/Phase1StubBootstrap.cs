@@ -1,6 +1,7 @@
 using Ee4v.Core.I18n;
 using Ee4v.Core.Injector;
 using Ee4v.Core.Settings;
+using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -116,12 +117,8 @@ namespace Ee4v.Phase1
             swatch.style.borderBottomRightRadius = 5f;
             swatch.style.backgroundColor = SettingApi.Get(Phase1Definitions.HierarchyAccentColor);
 
-            var label = new Label(SettingApi.Get(Phase1Definitions.HierarchyHeaderText))
-            {
-                tooltip = I18N.Get("stubs.hierarchyHeader.tooltip")
-            };
-            label.style.unityFontStyleAndWeight = FontStyle.Bold;
-            label.style.color = new StyleColor(Color.white);
+            var label = UiTextFactory.Create(SettingApi.Get(Phase1Definitions.HierarchyHeaderText), UiClassNames.Phase1StubLabel);
+            label.tooltip = I18N.Get("stubs.hierarchyHeader.tooltip");
 
             row.Add(swatch);
             row.Add(label);
@@ -163,9 +160,7 @@ namespace Ee4v.Phase1
             row.style.alignItems = Align.Center;
             row.style.flexGrow = 1f;
 
-            var label = new Label(SettingApi.Get(Phase1Definitions.ProjectToolbarText));
-            label.style.unityFontStyleAndWeight = FontStyle.Bold;
-            label.style.color = new StyleColor(Color.white);
+            var label = UiTextFactory.Create(SettingApi.Get(Phase1Definitions.ProjectToolbarText), UiClassNames.Phase1StubLabel);
             label.style.flexGrow = 1f;
             label.style.marginRight = 6f;
 

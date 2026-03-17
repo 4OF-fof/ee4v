@@ -47,7 +47,8 @@ namespace Ee4v.Core.Testing
                         string.IsNullOrWhiteSpace(metadata?.Title) ? HumanizeMethodName(method.Name) : metadata.Title,
                         metadata?.Description ?? string.Empty,
                         metadata?.Order ?? results.Count,
-                        BuildResultKey(method)));
+                        BuildResultKey(method),
+                        metadata?.Category ?? FeatureTestCategory.Standard));
                 }
             }
 

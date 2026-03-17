@@ -77,5 +77,6 @@ namespace Ee4v.UI
         public const string CatalogNavigatorTitle = "ee4v-ui-catalog-shell__navigator-title";
         public const string CatalogTreeTitle = "ee4v-ui-catalog-tree-item__title";
         public const string CatalogTreeImplementation = "ee4v-ui-catalog-tree-item__implementation";
+        public const string Phase1StubLabel = "ee4v-ui-phase1-stub__label";
     }
 }
