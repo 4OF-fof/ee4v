@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -18,6 +17,10 @@ namespace Ee4v.Core.Injector
         private static readonly List<InjectionRegistration> Registrations = new List<InjectionRegistration>();
         private static readonly Dictionary<int, int> HierarchyHostVersions = new Dictionary<int, int>();
         private static readonly Dictionary<int, int> ProjectHostVersions = new Dictionary<int, int>();
+        private static ItemInjectionRegistration[] _hierarchyItemRegistrations = Array.Empty<ItemInjectionRegistration>();
+        private static ItemInjectionRegistration[] _projectItemRegistrations = Array.Empty<ItemInjectionRegistration>();
+        private static VisualElementInjectionRegistration[] _hierarchyHeaderRegistrations = Array.Empty<VisualElementInjectionRegistration>();
+        private static VisualElementInjectionRegistration[] _projectToolbarRegistrations = Array.Empty<VisualElementInjectionRegistration>();
 
         private static bool _hostsDirty = true;
         private static int _hostVersion;
@@ -53,6 +56,7 @@ namespace Ee4v.Core.Injector
             }
 
             Registrations.Sort(CompareRegistrations);
+            RefreshRegistrationCaches();
             MarkHostsDirty();
             Repaint(registration.Channel);
         }
@@ -83,37 +87,51 @@ namespace Ee4v.Core.Injector
 
         private static void OnHierarchyItemGui(int instanceId, Rect selectionRect)
         {
-            var active = Registrations.OfType<ItemInjectionRegistration>()
-                .Where(registration => registration.Channel == InjectionChannel.HierarchyItem && IsEnabled(registration))
-                .ToArray();
-
-            if (active.Length == 0)
+            if (_hierarchyItemRegistrations.Length == 0)
             {
                 return;
             }
 
-            var context = new ItemInjectionContext(InjectionChannel.HierarchyItem, instanceId, null, selectionRect);
-            for (var i = 0; i < active.Length; i++)
+            ItemInjectionContext context = null;
+            for (var i = 0; i < _hierarchyItemRegistrations.Length; i++)
             {
-                active[i].Draw(context);
+                var registration = _hierarchyItemRegistrations[i];
+                if (!IsEnabled(registration))
+                {
+                    continue;
+                }
+
+                if (context == null)
+                {
+                    context = new ItemInjectionContext(InjectionChannel.HierarchyItem, instanceId, null, selectionRect);
+                }
+
+                registration.Draw(context);
             }
         }
 
         private static void OnProjectItemGui(string guid, Rect selectionRect)
         {
-            var active = Registrations.OfType<ItemInjectionRegistration>()
-                .Where(registration => registration.Channel == InjectionChannel.ProjectItem && IsEnabled(registration))
-                .ToArray();
-
-            if (active.Length == 0)
+            if (_projectItemRegistrations.Length == 0)
             {
                 return;
             }
 
-            var context = new ItemInjectionContext(InjectionChannel.ProjectItem, 0, guid, selectionRect);
-            for (var i = 0; i < active.Length; i++)
+            ItemInjectionContext context = null;
+            for (var i = 0; i < _projectItemRegistrations.Length; i++)
             {
-                active[i].Draw(context);
+                var registration = _projectItemRegistrations[i];
+                if (!IsEnabled(registration))
+                {
+                    continue;
+                }
+
+                if (context == null)
+                {
+                    context = new ItemInjectionContext(InjectionChannel.ProjectItem, 0, guid, selectionRect);
+                }
+
+                registration.Draw(context);
             }
         }
 
@@ -170,8 +188,28 @@ namespace Ee4v.Core.Injector
                 }
             }
 
-            var staleIds = knownVersions.Keys.Where(id => !activeIds.Contains(id)).ToArray();
-            for (var i = 0; i < staleIds.Length; i++)
+            List<int> staleIds = null;
+            foreach (var id in knownVersions.Keys)
+            {
+                if (activeIds.Contains(id))
+                {
+                    continue;
+                }
+
+                if (staleIds == null)
+                {
+                    staleIds = new List<int>();
+                }
+
+                staleIds.Add(id);
+            }
+
+            if (staleIds == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < staleIds.Count; i++)
             {
                 knownVersions.Remove(staleIds[i]);
             }
@@ -201,31 +239,96 @@ namespace Ee4v.Core.Injector
         {
             host.Clear();
 
-            var active = Registrations.OfType<VisualElementInjectionRegistration>()
-                .Where(registration => registration.Channel == channel && IsEnabled(registration))
-                .ToArray();
+            var registrations = GetVisualRegistrations(channel);
+            VisualHostContext context = null;
+            var hasEnabledRegistration = false;
 
-            if (active.Length == 0)
+            for (var i = 0; i < registrations.Length; i++)
             {
-                host.style.display = DisplayStyle.None;
-                return;
-            }
+                var registration = registrations[i];
+                if (!IsEnabled(registration))
+                {
+                    continue;
+                }
 
-            host.style.display = DisplayStyle.Flex;
-            var context = new VisualHostContext(channel, window);
-            for (var i = 0; i < active.Length; i++)
-            {
-                var element = active[i].CreateElement(context);
+                if (context == null)
+                {
+                    context = new VisualHostContext(channel, window);
+                }
+
+                hasEnabledRegistration = true;
+                var element = registration.CreateElement(context);
                 if (element != null)
                 {
                     host.Add(element);
                 }
             }
+
+            host.style.display = hasEnabledRegistration ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private static bool IsEnabled(InjectionRegistration registration)
         {
             return registration.IsEnabled == null || registration.IsEnabled();
+        }
+
+        private static void RefreshRegistrationCaches()
+        {
+            var hierarchyItems = new List<ItemInjectionRegistration>();
+            var projectItems = new List<ItemInjectionRegistration>();
+            var hierarchyHeaders = new List<VisualElementInjectionRegistration>();
+            var projectToolbars = new List<VisualElementInjectionRegistration>();
+
+            for (var i = 0; i < Registrations.Count; i++)
+            {
+                var registration = Registrations[i];
+                if (registration is ItemInjectionRegistration itemRegistration)
+                {
+                    if (itemRegistration.Channel == InjectionChannel.HierarchyItem)
+                    {
+                        hierarchyItems.Add(itemRegistration);
+                    }
+                    else if (itemRegistration.Channel == InjectionChannel.ProjectItem)
+                    {
+                        projectItems.Add(itemRegistration);
+                    }
+
+                    continue;
+                }
+
+                var visualRegistration = registration as VisualElementInjectionRegistration;
+                if (visualRegistration == null)
+                {
+                    continue;
+                }
+
+                if (visualRegistration.Channel == InjectionChannel.HierarchyHeader)
+                {
+                    hierarchyHeaders.Add(visualRegistration);
+                }
+                else if (visualRegistration.Channel == InjectionChannel.ProjectToolbar)
+                {
+                    projectToolbars.Add(visualRegistration);
+                }
+            }
+
+            _hierarchyItemRegistrations = hierarchyItems.ToArray();
+            _projectItemRegistrations = projectItems.ToArray();
+            _hierarchyHeaderRegistrations = hierarchyHeaders.ToArray();
+            _projectToolbarRegistrations = projectToolbars.ToArray();
+        }
+
+        private static VisualElementInjectionRegistration[] GetVisualRegistrations(InjectionChannel channel)
+        {
+            switch (channel)
+            {
+                case InjectionChannel.HierarchyHeader:
+                    return _hierarchyHeaderRegistrations;
+                case InjectionChannel.ProjectToolbar:
+                    return _projectToolbarRegistrations;
+                default:
+                    return Array.Empty<VisualElementInjectionRegistration>();
+            }
         }
 
         private static int CompareRegistrations(InjectionRegistration left, InjectionRegistration right)

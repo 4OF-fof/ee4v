@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Ee4v.Core.Injector;
 using Ee4v.Core.Internal;
 using Ee4v.Core.Settings;
@@ -28,14 +29,19 @@ namespace Ee4v.Core.I18n
             get { return SettingApi.Get(CoreLocalizationDefinitions.FallbackLanguage); }
         }
 
-        public static string Get(string key, params object[] args)
+        public static string Get(string key, [CallerFilePath] string callerFilePath = null)
         {
-            return GetForScope(ResolveCallerScope(), key, args);
+            return GetForScope(ResolveCallerScope(callerFilePath), key);
         }
 
-        public static bool TryGet(string key, out string value)
+        public static string Get(string key, params object[] args)
         {
-            return TryGetForScope(ResolveCallerScope(), key, out value);
+            return GetForScope(ResolveCallerScopeFromStack(2), key, args);
+        }
+
+        public static bool TryGet(string key, out string value, [CallerFilePath] string callerFilePath = null)
+        {
+            return TryGetForScope(ResolveCallerScope(callerFilePath), key, out value);
         }
 
         internal static string GetForScope(string scope, string key, params object[] args)
@@ -181,35 +187,45 @@ namespace Ee4v.Core.I18n
             }
         }
 
-        private static string ResolveCallerScope()
+        private static string ResolveCallerScope(string callerFilePath)
         {
-            var stackTrace = new StackTrace();
-            for (var i = 1; i < stackTrace.FrameCount; i++)
+            var scope = ResolveScopeForSourceFile(callerFilePath);
+            return !string.IsNullOrWhiteSpace(scope)
+                ? scope
+                : ResolveCallerScopeFromStack(3);
+        }
+
+        private static string ResolveScopeForSourceFile(string sourceFilePath)
+        {
+            if (string.IsNullOrWhiteSpace(sourceFilePath))
             {
-                var frame = stackTrace.GetFrame(i);
-                if (frame == null)
-                {
-                    continue;
-                }
+                return null;
+            }
 
-                var method = frame.GetMethod();
-                var declaringType = method != null ? method.DeclaringType : null;
-                if (declaringType == null || declaringType == typeof(I18N))
-                {
-                    continue;
-                }
+            return ResolveScopeForNamespace(PackagePathUtility.GetDeclaredNamespace(sourceFilePath));
+        }
 
-                var scope = ResolveScopeForNamespace(declaringType.Namespace);
-                if (!string.IsNullOrWhiteSpace(scope))
-                {
-                    return scope;
-                }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string ResolveCallerScopeFromStack(int skipFrames)
+        {
+            var frame = new StackFrame(skipFrames, false);
+            var method = frame.GetMethod();
+            var declaringType = method != null ? method.DeclaringType : null;
+            if (declaringType == null || declaringType == typeof(I18N))
+            {
+                return null;
+            }
 
-                var callerSite = declaringType.FullName ?? method.Name;
-                if (WarnedCallerSites.Add(callerSite))
-                {
-                    UnityEngine.Debug.LogWarning("[ee4v:i18n] Failed to resolve scope from namespace for caller: " + callerSite);
-                }
+            var scope = ResolveScopeForNamespace(declaringType.Namespace);
+            if (!string.IsNullOrWhiteSpace(scope))
+            {
+                return scope;
+            }
+
+            var callerSite = declaringType.FullName ?? method.Name;
+            if (WarnedCallerSites.Add(callerSite))
+            {
+                UnityEngine.Debug.LogWarning("[ee4v:i18n] Failed to resolve scope from namespace for caller: " + callerSite);
             }
 
             return null;

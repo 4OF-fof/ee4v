@@ -133,6 +133,10 @@ namespace Ee4v.Core.Tests
             ReflectionReset.ClearCollectionField(typeof(InjectorApi), "Registrations");
             ReflectionReset.ClearCollectionField(typeof(InjectorApi), "HierarchyHostVersions");
             ReflectionReset.ClearCollectionField(typeof(InjectorApi), "ProjectHostVersions");
+            ReflectionReset.SetStaticField(typeof(InjectorApi), "_hierarchyItemRegistrations", Array.Empty<ItemInjectionRegistration>());
+            ReflectionReset.SetStaticField(typeof(InjectorApi), "_projectItemRegistrations", Array.Empty<ItemInjectionRegistration>());
+            ReflectionReset.SetStaticField(typeof(InjectorApi), "_hierarchyHeaderRegistrations", Array.Empty<VisualElementInjectionRegistration>());
+            ReflectionReset.SetStaticField(typeof(InjectorApi), "_projectToolbarRegistrations", Array.Empty<VisualElementInjectionRegistration>());
             ReflectionReset.SetStaticField(typeof(InjectorApi), "_hostsDirty", true);
             ReflectionReset.SetStaticField(typeof(InjectorApi), "_hostVersion", 0);
             ReflectionReset.SetStaticField(typeof(InjectorApi), "_nextHostSyncAt", 0d);
