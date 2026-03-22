@@ -38,7 +38,10 @@ namespace Ee4v.UI
             string casesTitle = null,
             string casesMeta = null,
             bool expanded = false,
-            IReadOnlyList<TestResultGroupCaseState> cases = null)
+            IReadOnlyList<TestResultGroupCaseState> cases = null,
+            string detailsTitle = null,
+            string detailsText = null,
+            string detailsCopyButtonText = null)
         {
             CardState = cardState ?? new InfoCardState(string.Empty);
             RunText = runText ?? string.Empty;
@@ -49,6 +52,9 @@ namespace Ee4v.UI
             CasesMeta = casesMeta ?? string.Empty;
             Expanded = expanded;
             Cases = cases ?? Array.Empty<TestResultGroupCaseState>();
+            DetailsTitle = detailsTitle ?? string.Empty;
+            DetailsText = detailsText ?? string.Empty;
+            DetailsCopyButtonText = detailsCopyButtonText ?? string.Empty;
         }
 
         public InfoCardState CardState { get; }
@@ -68,6 +74,12 @@ namespace Ee4v.UI
         public bool Expanded { get; }
 
         public IReadOnlyList<TestResultGroupCaseState> Cases { get; }
+
+        public string DetailsTitle { get; }
+
+        public string DetailsText { get; }
+
+        public string DetailsCopyButtonText { get; }
     }
 
     internal sealed class TestResultGroup : InfoCard
@@ -80,6 +92,9 @@ namespace Ee4v.UI
         private readonly UiTextElement _casesTitle;
         private readonly UiTextElement _casesMeta;
         private readonly VisualElement _casesBody;
+        private readonly VisualElement _detailsPanel;
+        private readonly UiTextElement _detailsTitle;
+        private readonly CopyableTextArea _detailsField;
         private TestResultGroupState _state;
 
         public TestResultGroup(TestResultGroupState state = null)
@@ -93,6 +108,15 @@ namespace Ee4v.UI
 
             _summaryAlert = new Alerts();
             _summaryAlert.AddToClassList(UiClassNames.TestResultGroupSummaryAlert);
+
+            _detailsPanel = new VisualElement();
+            _detailsPanel.AddToClassList(UiClassNames.TestResultGroupDetailsPanel);
+
+            _detailsTitle = UiTextFactory.Create(string.Empty, UiClassNames.TestResultGroupDetailsTitle);
+            _detailsField = new CopyableTextArea();
+            _detailsField.AddToClassList(UiClassNames.TestResultGroupDetailsField);
+            _detailsPanel.Add(_detailsTitle);
+            _detailsPanel.Add(_detailsField);
 
             _casesPanel = new VisualElement();
             _casesPanel.AddToClassList(UiClassNames.TestResultGroupCasesPanel);
@@ -120,6 +144,7 @@ namespace Ee4v.UI
             _casesBody.AddToClassList(UiClassNames.TestResultGroupCasesBody);
 
             Body.Add(_summaryAlert);
+            Body.Add(_detailsPanel);
             _casesPanel.Add(_casesToggle);
             _casesPanel.Add(_casesBody);
             Body.Add(_casesPanel);
@@ -145,6 +170,11 @@ namespace Ee4v.UI
 
             _summaryAlert.SetState(new AlertsState(_state.SummaryTone, string.Empty, _state.SummaryMessage));
             _summaryAlert.style.display = string.IsNullOrWhiteSpace(_state.SummaryMessage) ? DisplayStyle.None : DisplayStyle.Flex;
+
+            _detailsTitle.SetText(_state.DetailsTitle);
+            _detailsTitle.style.display = string.IsNullOrWhiteSpace(_state.DetailsTitle) ? DisplayStyle.None : DisplayStyle.Flex;
+            _detailsField.SetState(new CopyableTextAreaState(_state.DetailsText, _state.DetailsCopyButtonText));
+            _detailsPanel.style.display = string.IsNullOrWhiteSpace(_state.DetailsText) ? DisplayStyle.None : DisplayStyle.Flex;
 
             _casesTitle.SetText(_state.CasesTitle);
             _casesMeta.SetText(_state.CasesMeta);

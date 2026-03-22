@@ -19,6 +19,7 @@ namespace Ee4v.Core.Testing
         {
             Status = FeatureTestRunStatus.NotRun;
             Message = string.Empty;
+            DetailedResult = string.Empty;
             RunId = string.Empty;
             CaseStatuses = new Dictionary<string, FeatureTestRunStatus>(StringComparer.OrdinalIgnoreCase);
         }
@@ -28,6 +29,8 @@ namespace Ee4v.Core.Testing
         public string RunId { get; set; }
 
         public string Message { get; set; }
+
+        public string DetailedResult { get; set; }
 
         public int PassCount { get; set; }
 

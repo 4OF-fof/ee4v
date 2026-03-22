@@ -1,0 +1,47 @@
+.ee4v-ui-copyable-text-area {
+    position: relative;
+    align-self: stretch;
+}
+
+.ee4v-ui-copyable-text-area__copy-button {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    min-width: 56px;
+    height: 20px;
+    padding-left: 7px;
+    padding-right: 7px;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: rgba(255, 255, 255, 0.09);
+    border-right-color: rgba(255, 255, 255, 0.09);
+    border-bottom-color: rgba(255, 255, 255, 0.09);
+    border-left-color: rgba(255, 255, 255, 0.09);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.045);
+    color: rgba(224, 224, 224, 0.88);
+    font-size: 9px;
+    -unity-text-align: middle-center;
+}
+
+.ee4v-ui-copyable-text-area__copy-button:hover {
+    background-color: rgba(255, 255, 255, 0.072);
+}
+
+.ee4v-ui-copyable-text-area__copy-button:disabled {
+    opacity: 0.45;
+}
+
+.ee4v-ui-copyable-text-area__field {
+    min-height: 132px;
+    align-self: stretch;
+}
+
+.ee4v-ui-copyable-text-area__field .unity-base-text-field__input {
+    white-space: normal;
+}

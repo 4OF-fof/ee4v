@@ -105,6 +105,7 @@ namespace Ee4v.Core.Testing
                 record.RunId = string.Empty;
                 record.Status = FeatureTestRunStatus.Running;
                 record.Message = "テスト実行を要求しました。Unity Test Runner の開始を待っています。";
+                record.DetailedResult = string.Empty;
                 record.PassCount = 0;
                 record.FailCount = 0;
                 record.SkipCount = 0;
@@ -168,6 +169,7 @@ namespace Ee4v.Core.Testing
                     record.Message = activeRun.HasStarted
                         ? "Unity Test Runner は終了しましたが、この suite の assembly 結果を返しませんでした。"
                         : "テスト実行は要求されましたが、この suite の開始通知が Unity Test Runner から返りませんでした。";
+                    record.DetailedResult = record.Message;
                     record.FinishedAtUtc = DateTime.UtcNow;
                     continue;
                 }
@@ -183,6 +185,7 @@ namespace Ee4v.Core.Testing
                     ? DateTime.UtcNow
                     : assemblyResult.EndTime.ToUniversalTime();
                 ApplyCaseStatuses(record, descriptor, assemblyResult);
+                record.DetailedResult = BuildDetailedResult(descriptor, record, assemblyResult);
             }
 
             NotifyChanged();
@@ -200,6 +203,7 @@ namespace Ee4v.Core.Testing
                 var record = GetRecord(descriptor.FeatureScope);
                 record.Status = FeatureTestRunStatus.Failed;
                 record.Message = message ?? string.Empty;
+                record.DetailedResult = record.Message;
                 record.FinishedAtUtc = DateTime.UtcNow;
                 record.CaseStatuses.Clear();
             }
@@ -423,6 +427,223 @@ namespace Ee4v.Core.Testing
             return FeatureTestRunStatus.NotRun;
         }
 
+        private static string BuildDetailedResult(
+            FeatureTestDescriptor descriptor,
+            FeatureTestRunRecord record,
+            ITestResultAdaptor assemblyResult)
+        {
+            if (!HasProblemResult(record))
+            {
+                return string.Empty;
+            }
+
+            var sections = new List<string>();
+
+            var caseResultsSection = BuildCaseResultsSection(descriptor, record);
+            if (!string.IsNullOrWhiteSpace(caseResultsSection))
+            {
+                sections.Add(caseResultsSection);
+            }
+
+            var failureDetailsSection = BuildFailureDetailsSection(descriptor, assemblyResult);
+            if (!string.IsNullOrWhiteSpace(failureDetailsSection))
+            {
+                sections.Add(failureDetailsSection);
+            }
+
+            var summarySection = BuildSummarySection(record, failureDetailsSection);
+            if (!string.IsNullOrWhiteSpace(summarySection))
+            {
+                sections.Add(summarySection);
+            }
+
+            if (sections.Count == 0)
+            {
+                var registeredCasesSection = BuildRegisteredCasesSection(descriptor);
+                if (!string.IsNullOrWhiteSpace(registeredCasesSection))
+                {
+                    sections.Add(registeredCasesSection);
+                }
+            }
+
+            return string.Join(
+                "\n\n",
+                sections.Where(section => !string.IsNullOrWhiteSpace(section)));
+        }
+
+        private static bool HasResultCounts(FeatureTestRunRecord record)
+        {
+            return record != null
+                && (record.PassCount > 0
+                    || record.FailCount > 0
+                    || record.SkipCount > 0
+                    || record.InconclusiveCount > 0
+                    || record.DurationSeconds > 0d);
+        }
+
+        private static bool HasProblemResult(FeatureTestRunRecord record)
+        {
+            return record != null
+                && IsProblemStatus(record.Status);
+        }
+
+        private static string BuildCaseResultsSection(FeatureTestDescriptor descriptor, FeatureTestRunRecord record)
+        {
+            if (descriptor == null || descriptor.TestCases == null || descriptor.TestCases.Count == 0 || record == null)
+            {
+                return string.Empty;
+            }
+
+            var lines = new List<string>();
+            for (var i = 0; i < descriptor.TestCases.Count; i++)
+            {
+                var testCase = descriptor.TestCases[i];
+                if (string.IsNullOrWhiteSpace(testCase.ResultKey)
+                    || !record.CaseStatuses.TryGetValue(testCase.ResultKey, out var status))
+                {
+                    continue;
+                }
+
+                if (!IsProblemStatus(status))
+                {
+                    continue;
+                }
+
+                lines.Add("- " + testCase.Title + ": " + FormatStatusLabel(status));
+            }
+
+            return lines.Count == 0
+                ? string.Empty
+                : "Case Results\n" + string.Join("\n", lines);
+        }
+
+        private static string BuildFailureDetailsSection(FeatureTestDescriptor descriptor, ITestResultAdaptor assemblyResult)
+        {
+            if (assemblyResult == null)
+            {
+                return string.Empty;
+            }
+
+            var leafResults = new List<ITestResultAdaptor>();
+            CollectLeafResults(assemblyResult, leafResults);
+
+            var entries = new List<string>();
+            for (var i = 0; i < leafResults.Count; i++)
+            {
+                var leaf = leafResults[i];
+                if (leaf == null)
+                {
+                    continue;
+                }
+
+                var status = ToStatus(leaf);
+                if (!IsProblemStatus(status))
+                {
+                    continue;
+                }
+
+                var lines = new List<string>
+                {
+                    "[" + FormatStatusLabel(status) + "] " + ResolveLeafTitle(descriptor, leaf)
+                };
+
+                if (!string.IsNullOrWhiteSpace(leaf.Message))
+                {
+                    lines.Add(leaf.Message.Trim());
+                }
+
+                entries.Add(string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line))));
+            }
+
+            return entries.Count == 0
+                ? string.Empty
+                : "Failure Details\n" + string.Join("\n\n", entries);
+        }
+
+        private static string BuildSummarySection(FeatureTestRunRecord record, string failureDetailsSection)
+        {
+            if (record == null || string.IsNullOrWhiteSpace(record.Message))
+            {
+                return string.Empty;
+            }
+
+            var summary = record.Message.Trim();
+            if (!string.IsNullOrWhiteSpace(failureDetailsSection)
+                && failureDetailsSection.IndexOf(summary, StringComparison.Ordinal) >= 0)
+            {
+                return string.Empty;
+            }
+
+            return "Summary\n" + summary;
+        }
+
+        private static string BuildRegisteredCasesSection(FeatureTestDescriptor descriptor)
+        {
+            var registeredCases = BuildRegisteredCaseSummary(descriptor);
+            return string.IsNullOrWhiteSpace(registeredCases)
+                ? string.Empty
+                : "Registered Cases\n" + registeredCases;
+        }
+
+        private static bool IsProblemStatus(FeatureTestRunStatus status)
+        {
+            return status == FeatureTestRunStatus.Failed
+                || status == FeatureTestRunStatus.Skipped
+                || status == FeatureTestRunStatus.Inconclusive;
+        }
+
+        private static string ResolveLeafTitle(FeatureTestDescriptor descriptor, ITestResultAdaptor leaf)
+        {
+            if (leaf == null)
+            {
+                return string.Empty;
+            }
+
+            var fullName = leaf.Test != null
+                ? leaf.Test.FullName ?? string.Empty
+                : string.Empty;
+            if (descriptor != null && descriptor.TestCases != null)
+            {
+                for (var i = 0; i < descriptor.TestCases.Count; i++)
+                {
+                    var testCase = descriptor.TestCases[i];
+                    if (!string.IsNullOrWhiteSpace(testCase.ResultKey) && MatchesResultKey(fullName, testCase.ResultKey))
+                    {
+                        return testCase.Title;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(fullName))
+            {
+                return fullName;
+            }
+
+            return leaf.Test != null
+                ? leaf.Test.Name ?? string.Empty
+                : string.Empty;
+        }
+
+        private static string FormatStatusLabel(FeatureTestRunStatus status)
+        {
+            switch (status)
+            {
+                case FeatureTestRunStatus.Running:
+                    return "Running";
+                case FeatureTestRunStatus.Passed:
+                    return "Passed";
+                case FeatureTestRunStatus.Failed:
+                    return "Failed";
+                case FeatureTestRunStatus.Skipped:
+                    return "Skipped";
+                case FeatureTestRunStatus.Inconclusive:
+                    return "Inconclusive";
+                case FeatureTestRunStatus.NotRun:
+                default:
+                    return "NotRun";
+            }
+        }
+
         private void NotifyChanged()
         {
             SaveState();
@@ -442,6 +663,7 @@ namespace Ee4v.Core.Testing
                 var record = GetRecord(descriptor.FeatureScope);
                 record.Status = FeatureTestRunStatus.Running;
                 record.Message = "テストを実行中です。";
+                record.DetailedResult = string.Empty;
             }
 
             NotifyChanged();
@@ -465,6 +687,7 @@ namespace Ee4v.Core.Testing
                 record.Message = string.IsNullOrWhiteSpace(_activeRun.LastTestName)
                     ? "テストを実行中です。"
                     : "実行中: " + _activeRun.LastTestName;
+                record.DetailedResult = string.Empty;
             }
 
             NotifyChanged();
@@ -579,6 +802,7 @@ namespace Ee4v.Core.Testing
             public int status;
             public string runId;
             public string message;
+            public string detailedResult;
             public int passCount;
             public int failCount;
             public int skipCount;
@@ -639,6 +863,7 @@ namespace Ee4v.Core.Testing
                     status = (int)pair.Value.Status,
                     runId = pair.Value.RunId,
                     message = pair.Value.Message,
+                    detailedResult = pair.Value.DetailedResult,
                     passCount = pair.Value.PassCount,
                     failCount = pair.Value.FailCount,
                     skipCount = pair.Value.SkipCount,
@@ -712,6 +937,7 @@ namespace Ee4v.Core.Testing
                         Status = (FeatureTestRunStatus)persisted.status,
                         RunId = persisted.runId ?? string.Empty,
                         Message = persisted.message ?? string.Empty,
+                        DetailedResult = persisted.detailedResult ?? string.Empty,
                         PassCount = persisted.passCount,
                         FailCount = persisted.failCount,
                         SkipCount = persisted.skipCount,

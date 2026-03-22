@@ -31,6 +31,10 @@ namespace Ee4v.UI
         public const string Icon = "ee4v-ui-icon";
         public const string IconImage = "ee4v-ui-icon__image";
 
+        public const string CopyableTextArea = "ee4v-ui-copyable-text-area";
+        public const string CopyableTextAreaCopyButton = "ee4v-ui-copyable-text-area__copy-button";
+        public const string CopyableTextAreaField = "ee4v-ui-copyable-text-area__field";
+
         public const string TabCard = "ee4v-ui-tab-card";
         public const string TabCardTabs = "ee4v-ui-tab-card__tabs";
         public const string TabCardTab = "ee4v-ui-tab-card__tab";
@@ -66,6 +70,9 @@ namespace Ee4v.UI
         public const string TestResultGroupCasesTitle = "ee4v-ui-test-result-group__cases-title";
         public const string TestResultGroupCasesMeta = "ee4v-ui-test-result-group__cases-meta";
         public const string TestResultGroupCasesBody = "ee4v-ui-test-result-group__cases-body";
+        public const string TestResultGroupDetailsPanel = "ee4v-ui-test-result-group__details-panel";
+        public const string TestResultGroupDetailsTitle = "ee4v-ui-test-result-group__details-title";
+        public const string TestResultGroupDetailsField = "ee4v-ui-test-result-group__details-field";
         public const string TestResultGroupCaseCard = "ee4v-ui-test-result-group__case-card";
         public const string TestResultGroupCaseTitle = "ee4v-ui-test-result-group__case-title";
         public const string TestResultGroupCaseDescription = "ee4v-ui-test-result-group__case-description";

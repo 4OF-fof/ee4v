@@ -88,6 +88,7 @@ namespace Ee4v.Core.Testing
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/alerts.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/status-badge.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/copyable-text-area.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/test-result-group.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/Testing/feature-test-manager-window.uss");
 
@@ -228,6 +229,9 @@ namespace Ee4v.Core.Testing
                 summaryTone: ToAlertTone(record.Status),
                 casesTitle: I18N.Get("testing.window.tests"),
                 casesMeta: string.Format(I18N.Get("testing.window.testCasesMeta"), descriptor.TestCases != null ? descriptor.TestCases.Count : 0),
+                detailsTitle: I18N.Get("testing.window.detailsTitle"),
+                detailsText: BuildDetailedResult(record),
+                detailsCopyButtonText: I18N.Get("testing.window.copy"),
                 expanded: view.UserExpanded,
                 cases: ToCaseStates(descriptor.TestCases, record)));
         }
@@ -356,6 +360,51 @@ namespace Ee4v.Core.Testing
                     || record.SkipCount > 0
                     || record.InconclusiveCount > 0
                     || record.DurationSeconds > 0d);
+        }
+
+        private static string BuildDetailedResult(FeatureTestRunRecord record)
+        {
+            if (record == null || record.Status == FeatureTestRunStatus.NotRun)
+            {
+                return string.Empty;
+            }
+
+            if (!IsProblemStatus(record.Status))
+            {
+                return string.Empty;
+            }
+
+            if (!string.IsNullOrWhiteSpace(record.DetailedResult))
+            {
+                return record.DetailedResult;
+            }
+
+            if (record.Status == FeatureTestRunStatus.Running)
+            {
+                return string.Empty;
+            }
+
+            if (!string.IsNullOrWhiteSpace(record.Message))
+            {
+                return record.Message;
+            }
+
+            return HasResultCounts(record)
+                ? string.Format(
+                    I18N.Get("testing.window.countsFormat"),
+                    record.PassCount,
+                    record.FailCount,
+                    record.SkipCount,
+                    record.InconclusiveCount,
+                    record.DurationSeconds)
+                : string.Empty;
+        }
+
+        private static bool IsProblemStatus(FeatureTestRunStatus status)
+        {
+            return status == FeatureTestRunStatus.Failed
+                || status == FeatureTestRunStatus.Skipped
+                || status == FeatureTestRunStatus.Inconclusive;
         }
 
         private static UiStatusTone ToBadgeTone(FeatureTestRunStatus status)

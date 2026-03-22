@@ -195,6 +195,7 @@ namespace Ee4v.Core.Tests
                 var record = service1.GetRecord("Core");
                 record.Status = FeatureTestRunStatus.Failed;
                 record.Message = "persisted";
+                record.DetailedResult = "persisted details";
                 record.FailCount = 1;
                 record.CaseStatuses["Ee4v.Core.Tests.Sample.Case1"] = FeatureTestRunStatus.Failed;
 
@@ -208,6 +209,7 @@ namespace Ee4v.Core.Tests
 
                 Assert.That(restored.Status, Is.EqualTo(FeatureTestRunStatus.Failed));
                 Assert.That(restored.Message, Is.EqualTo("persisted"));
+                Assert.That(restored.DetailedResult, Is.EqualTo("persisted details"));
                 Assert.That(restored.CaseStatuses["Ee4v.Core.Tests.Sample.Case1"], Is.EqualTo(FeatureTestRunStatus.Failed));
             }
         }
@@ -397,6 +399,7 @@ namespace Ee4v.Core.Tests
                     var record = service.GetRecord("Core");
                     record.Status = FeatureTestRunStatus.Failed;
                     record.Message = "Unity Test Runner は終了しましたが、この suite の assembly 結果を返しませんでした。";
+                    record.DetailedResult = "Summary\nUnity Test Runner は終了しましたが、この suite の assembly 結果を返しませんでした。";
                     record.PassCount = 0;
                     record.FailCount = 0;
                     record.SkipCount = 0;
@@ -431,9 +434,113 @@ namespace Ee4v.Core.Tests
 
         [Test]
         [FeatureTestCase(
+            "Test Manager が詳細結果欄を表示する",
+            "FeatureTestManagerWindow が record に詳細結果がある場合、copy 可能なテキスト領域へ反映することを確認します。",
+            order: 23)]
+        public void FeatureTestManagerWindow_RefreshWindowState_ShowsDetailedResultField()
+        {
+            Ee4vCoreTestReset.RecoverEditorState();
+            var gateway = new FakeRunnerGateway();
+            using (var service = new FeatureTestRunnerService(gateway))
+            {
+                ReflectionReset.SetStaticField(typeof(FeatureTestManagerWindow), "_runnerService", service);
+
+                var window = ScriptableObject.CreateInstance<FeatureTestManagerWindow>();
+                try
+                {
+                    InvokePrivate(window, "RefreshDescriptors");
+
+                    var record = service.GetRecord("Core");
+                    record.Status = FeatureTestRunStatus.Failed;
+                    record.Message = "failed";
+                    record.DetailedResult = "Failure Details\nja-JP/Core: testing.window.copy";
+                    record.FailCount = 1;
+
+                    InvokePrivate(window, "CreateGUI");
+
+                    var searchField = window.rootVisualElement.Q<SearchField>();
+                    searchField.Value = "Core";
+
+                    InvokePrivate(window, "RefreshWindowState");
+
+                    var visibleCard = window.rootVisualElement
+                        .Query<TestResultGroup>(className: "ee4v-test-manager__suite-card")
+                        .ToList()
+                        .Single(card => card.style.display.value != DisplayStyle.None);
+
+                    var detailsPanel = visibleCard.Q<VisualElement>(className: UiClassNames.TestResultGroupDetailsPanel);
+                    var detailsField = visibleCard.Q<CopyableTextArea>(className: UiClassNames.TestResultGroupDetailsField);
+                    var copyButton = detailsField.Q<Button>(className: UiClassNames.CopyableTextAreaCopyButton);
+                    var textField = detailsField.Q<TextField>(className: UiClassNames.CopyableTextAreaField);
+
+                    Assert.That(detailsPanel, Is.Not.Null);
+                    Assert.That(detailsPanel.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+                    Assert.That(detailsField, Is.Not.Null);
+                    Assert.That(copyButton.text, Is.EqualTo(I18N.Get("testing.window.copy")));
+                    Assert.That(textField.value, Does.Contain("testing.window.copy"));
+                }
+                finally
+                {
+                    ScriptableObject.DestroyImmediate(window);
+                    ReflectionReset.SetStaticField(typeof(FeatureTestManagerWindow), "_runnerService", null);
+                }
+            }
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Test Manager が成功時の詳細結果欄を隠す",
+            "FeatureTestManagerWindow が passed record の message を詳細結果欄へは表示しないことを確認します。",
+            order: 24)]
+        public void FeatureTestManagerWindow_RefreshWindowState_HidesDetailedResultForPassedRecord()
+        {
+            Ee4vCoreTestReset.RecoverEditorState();
+            var gateway = new FakeRunnerGateway();
+            using (var service = new FeatureTestRunnerService(gateway))
+            {
+                ReflectionReset.SetStaticField(typeof(FeatureTestManagerWindow), "_runnerService", service);
+
+                var window = ScriptableObject.CreateInstance<FeatureTestManagerWindow>();
+                try
+                {
+                    InvokePrivate(window, "RefreshDescriptors");
+
+                    var record = service.GetRecord("Core");
+                    record.Status = FeatureTestRunStatus.Passed;
+                    record.Message = "登録されたテストはすべて成功しました。";
+                    record.DetailedResult = "Case Results\n- dummy: Passed";
+                    record.PassCount = 1;
+
+                    InvokePrivate(window, "CreateGUI");
+
+                    var searchField = window.rootVisualElement.Q<SearchField>();
+                    searchField.Value = "Core";
+
+                    InvokePrivate(window, "RefreshWindowState");
+
+                    var visibleCard = window.rootVisualElement
+                        .Query<TestResultGroup>(className: "ee4v-test-manager__suite-card")
+                        .ToList()
+                        .Single(card => card.style.display.value != DisplayStyle.None);
+
+                    var detailsPanel = visibleCard.Q<VisualElement>(className: UiClassNames.TestResultGroupDetailsPanel);
+
+                    Assert.That(detailsPanel, Is.Not.Null);
+                    Assert.That(detailsPanel.style.display.value, Is.EqualTo(DisplayStyle.None));
+                }
+                finally
+                {
+                    ScriptableObject.DestroyImmediate(window);
+                    ReflectionReset.SetStaticField(typeof(FeatureTestManagerWindow), "_runnerService", null);
+                }
+            }
+        }
+
+        [Test]
+        [FeatureTestCase(
             "Test Manager がケース別バッジを優先表示する",
             "FeatureTestManagerWindow が suite 全体の失敗状態ではなく case ごとの結果バッジを表示することを確認します。",
-            order: 23)]
+            order: 25)]
         public void FeatureTestManagerWindow_RefreshWindowState_UsesPerCaseStatuses()
         {
             Ee4vCoreTestReset.RecoverEditorState();
@@ -493,7 +600,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "Test Manager が load error を alert で表示する",
             "FeatureTestManagerWindow が suite 読み込みエラー時に state alert をエラー表示へ切り替えることを確認します。",
-            order: 24)]
+            order: 26)]
         public void FeatureTestManagerWindow_RefreshWindowState_ShowsLoadErrorAlert()
         {
             Ee4vCoreTestReset.RecoverEditorState();
@@ -519,7 +626,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "Core の static 状態を reset できる",
             "Ee4vCoreTestReset が SettingApi と InjectorApi の static 登録状態をクリアすることを確認します。",
-            order: 25)]
+            order: 27)]
         public void Ee4vCoreTestReset_ResetAll_ClearsStaticRegistrationsAndHandlers()
         {
             var definition = new SettingDefinition<bool>(

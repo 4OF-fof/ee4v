@@ -39,6 +39,22 @@
     opacity: 0.45;
 }
 
+.ee4v-ui-test-result-group__details-panel {
+    margin-top: 8px;
+    flex-direction: column;
+    align-self: stretch;
+}
+
+.ee4v-ui-test-result-group__details-title {
+    margin-bottom: 6px;
+    font-size: 11px;
+    color: rgba(220, 220, 220, 0.92);
+}
+
+.ee4v-ui-test-result-group__details-field {
+    align-self: stretch;
+}
+
 .ee4v-ui-test-result-group__cases-panel {
     margin-top: 8px;
     flex-direction: column;

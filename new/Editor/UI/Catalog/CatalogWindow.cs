@@ -84,16 +84,27 @@ namespace Ee4v.UI
                 BuildSearchableTreeViewStory));
 
             _stories.Add(new StoryDefinition(
+                "copyable-text-area",
+                "Display",
+                "CopyableTextArea",
+                "長文の確認結果を選択・コピーできる、読み取り専用のテキスト領域コンポーネントです。",
+                "右上に copy button を持つ readonly multiline text field です。テスト詳細や監査ログのような長文を表示し、そのまま clipboard へ渡す用途を想定しています。",
+                new string[0],
+                ComponentImplementationKind.UiToolkit,
+                BuildCopyableTextAreaStory));
+
+            _stories.Add(new StoryDefinition(
                 "test-result-group",
                 "Domain/Testing",
                 "TestResultGroup",
                 "feature test の状態、件数 alert、実行導線、登録テスト一覧をまとめて表示する testing 向けコンポーネントです。",
-                "ee4v Test Manager の結果表示用に作った domain-specific component です。InfoCard を土台にしつつ、header 右側に status badge と run button、body に件数 alert と登録済みテスト一覧の開閉を持たせています。",
+                "ee4v Test Manager の結果表示用に作った domain-specific component です。InfoCard を土台にしつつ、header 右側に status badge と run button、body に件数 alert、copy 可能な詳細結果、登録済みテスト一覧の開閉を持たせています。",
                 new[]
                 {
                     "InfoCard",
                     "StatusBadge",
-                    "Alerts"
+                    "Alerts",
+                    "CopyableTextArea"
                 },
                 ComponentImplementationKind.UiToolkit,
                 BuildTestResultGroupStory));
@@ -170,6 +181,7 @@ namespace Ee4v.UI
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/tab-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/alerts.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/status-badge.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/copyable-text-area.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/icon.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Catalog/catalog-window.uss");
 
@@ -431,6 +443,40 @@ namespace Ee4v.UI
                 valueField.SetValueWithoutNotify(value);
                 placeholderField.SetValueWithoutNotify(placeholder);
                 searchField.SetState(new SearchFieldState(value, placeholder));
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
+        }
+
+        private void BuildCopyableTextAreaStory(VisualElement parent)
+        {
+            var text = "ja-JP/Core: testing.window.detailsTitle (Editor/Core/Localization/ja-JP/core.jsonc)\n" +
+                       "en-US/Core: testing.window.copy (Editor/Core/Localization/en-US/core.jsonc)";
+            var buttonText = "Copy";
+            Action refresh = null;
+
+            var controls = CreatePlainControlsSection(parent, "表示する長文と button text を変えながら、詳細結果表示用 text area を確認します。");
+            var textField = AddTextField(controls.Content, "Text", text, nextValue =>
+            {
+                text = nextValue;
+                refresh();
+            }, true);
+            var buttonField = AddTextField(controls.Content, "Button", buttonText, nextValue =>
+            {
+                buttonText = nextValue;
+                refresh();
+            });
+
+            var preview = CreatePreviewSection(parent);
+            var textArea = new CopyableTextArea();
+            preview.Body.Add(textArea);
+
+            refresh = () =>
+            {
+                textField.SetValueWithoutNotify(text);
+                buttonField.SetValueWithoutNotify(buttonText);
+                textArea.SetState(new CopyableTextAreaState(text, buttonText));
             };
 
             refresh();
@@ -718,6 +764,7 @@ namespace Ee4v.UI
         {
             var statusText = "成功";
             var message = "Pass 3  Fail 0  Skip 0  Inc 0  0.08s";
+            var details = "[Failed] ローカライズ未使用キーがない\nja-JP/Core: testing.window.copy (Editor/Core/Localization/ja-JP/core.jsonc)";
             var expanded = false;
             var runEnabled = true;
             Action refresh = null;
@@ -732,7 +779,12 @@ namespace Ee4v.UI
             {
                 message = nextValue;
                 refresh();
-            });
+            }, true);
+            var detailsField = AddTextField(controls.Content, "Details", details, nextValue =>
+            {
+                details = nextValue;
+                refresh();
+            }, true);
             var runEnabledToggle = new Toggle("Run enabled")
             {
                 value = runEnabled
@@ -769,6 +821,7 @@ namespace Ee4v.UI
             {
                 statusField.SetValueWithoutNotify(statusText);
                 messageField.SetValueWithoutNotify(message);
+                detailsField.SetValueWithoutNotify(details);
                 runEnabledToggle.SetValueWithoutNotify(runEnabled);
                 expandedToggle.SetValueWithoutNotify(expanded);
                 result.SetState(new TestResultGroupState(
@@ -782,6 +835,9 @@ namespace Ee4v.UI
                     summaryTone: UiBannerTone.Info,
                     casesTitle: "Tests",
                     casesMeta: "3 items",
+                    detailsTitle: "Detailed Result",
+                    detailsText: details,
+                    detailsCopyButtonText: "Copy",
                     expanded: expanded,
                     cases: new[]
                     {
