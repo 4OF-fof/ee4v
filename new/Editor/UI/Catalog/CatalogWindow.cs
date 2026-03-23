@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Ee4v.Core.I18n;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -11,6 +12,14 @@ namespace Ee4v.UI
     internal sealed class CatalogWindow : EditorWindow
     {
         private const string RootClassName = "ee4v-ui";
+        private static readonly Dictionary<string, int> RootGroupOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Display", 0 },
+            { "DataView", 1 },
+            { "Interactive", 2 },
+            { "Overlay", 3 },
+            { "Domain", 4 }
+        };
         private enum ComponentImplementationKind
         {
             UiToolkit,
@@ -40,7 +49,7 @@ namespace Ee4v.UI
         private readonly Dictionary<string, int> _navigatorStoryIds = new Dictionary<string, int>(StringComparer.Ordinal);
         private bool _isSyncingNavigatorSelection;
 
-        [MenuItem("Debug/UI Catalog")]
+        [MenuItem("Debug/Catalog")]
         private static void ShowWindow()
         {
             var window = GetWindow<CatalogWindow>();
@@ -117,7 +126,7 @@ namespace Ee4v.UI
                 "Domain/Testing",
                 "TestResultGroup",
                 "feature test の状態、件数 alert、実行導線、登録テスト一覧をまとめて表示する testing 向けコンポーネントです。",
-                "ee4v Test Manager の結果表示用に作った domain-specific component です。InfoCard を土台にしつつ、header 右側に status badge と run button、body に件数 alert、copy 可能な詳細結果、登録済みテスト一覧の開閉を持たせています。",
+                "Test List の結果表示用に作った domain-specific component です。InfoCard を土台にしつつ、header 右側に status badge と run button、body に件数 alert、copy 可能な詳細結果、登録済みテスト一覧の開閉を持たせています。",
                 new[]
                 {
                     "InfoCard",
@@ -424,10 +433,17 @@ namespace Ee4v.UI
 
         private void BuildSearchableTreeViewStory(VisualElement parent)
         {
-            var note = new InfoCard(new InfoCardState(
-                "行右側の文字列について",
-                "story で右側に出ている \"Card\" や \"Tree\" は SearchableTreeView 固有の列ではありません。Catalog では bindItem が SampleTreeNode.Meta を 2 列目へ描画しており、実際の表示内容は呼び出し側の row data と bindItem 実装で決まります。"));
-            parent.Add(note);
+            var searchableTreeViewMeta = "Tree";
+            Action refresh = null;
+
+            var controls = CreatePlainControlsSection(
+                parent,
+                "行右側の短い文字列は SearchableTreeView 固有の列ではなく、Catalog story では bindItem が SampleTreeNode.Meta を描画しています。");
+            var searchableTreeViewMetaField = AddTextField(controls.Content, "SampleTreeNode.Meta (SearchableTreeView)", searchableTreeViewMeta, value =>
+            {
+                searchableTreeViewMeta = value;
+                refresh();
+            });
 
             var preview = CreatePreviewSection(parent);
             var treeView = new SearchableTreeView<SampleTreeNode>(
@@ -436,8 +452,16 @@ namespace Ee4v.UI
                 null,
                 "一致する項目がありません。");
             treeView.SetViewDataKey("ee4v-ui-catalog-searchable-tree-view-story");
-            treeView.SetItems(BuildSampleTreeItems());
             preview.Body.Add(treeView);
+
+            refresh = () =>
+            {
+                searchableTreeViewMetaField.SetValueWithoutNotify(searchableTreeViewMeta);
+                treeView.SetItems(BuildSampleTreeItems("Input", searchableTreeViewMeta));
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
         }
 
         private void BuildSearchFieldStory(VisualElement parent)
@@ -1248,10 +1272,13 @@ namespace Ee4v.UI
             var roots = new List<NavigatorTreeNodeBuilder>();
             var folders = new Dictionary<string, NavigatorTreeNodeBuilder>(StringComparer.Ordinal);
             var nextId = 1;
+            var orderedStories = _stories
+                .OrderBy(story => story, StoryDefinitionGroupComparer.Instance)
+                .ToArray();
 
-            for (var i = 0; i < _stories.Count; i++)
+            for (var i = 0; i < orderedStories.Length; i++)
             {
-                var story = _stories[i];
+                var story = orderedStories[i];
                 var currentChildren = roots;
                 var segments = story.Group.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
                 var path = string.Empty;
@@ -1285,7 +1312,9 @@ namespace Ee4v.UI
             return ConvertNavigatorTreeItems(roots);
         }
 
-        private static IReadOnlyList<SearchableTreeItemData<SampleTreeNode>> BuildSampleTreeItems()
+        private static IReadOnlyList<SearchableTreeItemData<SampleTreeNode>> BuildSampleTreeItems(
+            string searchFieldMeta = "Input",
+            string searchableTreeViewMeta = "Tree")
         {
             return new[]
             {
@@ -1314,14 +1343,14 @@ namespace Ee4v.UI
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
                     6,
-                    new SampleTreeNode("Overlay", string.Empty),
-                    "Overlay",
+                    new SampleTreeNode("DataView", string.Empty),
+                    "DataView",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
                             7,
-                            new SampleTreeNode("WindowToast", "Toast"),
-                            "WindowToast editor window overlay toast")
+                            new SampleTreeNode("SearchableTreeView", searchableTreeViewMeta),
+                            "SearchableTreeView searchable tree")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
                     8,
@@ -1331,7 +1360,7 @@ namespace Ee4v.UI
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
                             9,
-                            new SampleTreeNode("SearchField", "Input"),
+                            new SampleTreeNode("SearchField", searchFieldMeta),
                             "SearchField input search"),
                         new SearchableTreeItemData<SampleTreeNode>(
                             10,
@@ -1340,14 +1369,14 @@ namespace Ee4v.UI
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
                     11,
-                    new SampleTreeNode("DataView", string.Empty),
-                    "DataView",
+                    new SampleTreeNode("Overlay", string.Empty),
+                    "Overlay",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
                             12,
-                            new SampleTreeNode("SearchableTreeView", "Tree"),
-                            "SearchableTreeView searchable tree")
+                            new SampleTreeNode("WindowToast", "Toast"),
+                            "WindowToast editor window overlay toast")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
                     13,
@@ -1532,6 +1561,75 @@ namespace Ee4v.UI
             public NavigatorTreeNode Node { get; }
 
             public List<NavigatorTreeNodeBuilder> Children { get; }
+        }
+
+        private sealed class StoryDefinitionGroupComparer : IComparer<StoryDefinition>
+        {
+            public static readonly StoryDefinitionGroupComparer Instance = new StoryDefinitionGroupComparer();
+
+            public int Compare(StoryDefinition left, StoryDefinition right)
+            {
+                if (ReferenceEquals(left, right))
+                {
+                    return 0;
+                }
+
+                if (left == null)
+                {
+                    return -1;
+                }
+
+                if (right == null)
+                {
+                    return 1;
+                }
+
+                var groupCompare = CompareGroup(left.Group, right.Group);
+                if (groupCompare != 0)
+                {
+                    return groupCompare;
+                }
+
+                return string.Compare(left.Title, right.Title, StringComparison.OrdinalIgnoreCase);
+            }
+
+            private static int CompareGroup(string leftGroup, string rightGroup)
+            {
+                var leftSegments = (leftGroup ?? string.Empty).Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                var rightSegments = (rightGroup ?? string.Empty).Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+                var leftRoot = leftSegments.Length > 0 ? leftSegments[0] : string.Empty;
+                var rightRoot = rightSegments.Length > 0 ? rightSegments[0] : string.Empty;
+                var leftOrder = RootGroupOrder.TryGetValue(leftRoot, out var leftValue) ? leftValue : int.MaxValue;
+                var rightOrder = RootGroupOrder.TryGetValue(rightRoot, out var rightValue) ? rightValue : int.MaxValue;
+                var rootCompare = leftOrder.CompareTo(rightOrder);
+                if (rootCompare != 0)
+                {
+                    return rootCompare;
+                }
+
+                var maxLength = Math.Max(leftSegments.Length, rightSegments.Length);
+                for (var i = 0; i < maxLength; i++)
+                {
+                    if (i >= leftSegments.Length)
+                    {
+                        return -1;
+                    }
+
+                    if (i >= rightSegments.Length)
+                    {
+                        return 1;
+                    }
+
+                    var compare = string.Compare(leftSegments[i], rightSegments[i], StringComparison.OrdinalIgnoreCase);
+                    if (compare != 0)
+                    {
+                        return compare;
+                    }
+                }
+
+                return 0;
+            }
         }
 
         private sealed class ControlsSectionContext

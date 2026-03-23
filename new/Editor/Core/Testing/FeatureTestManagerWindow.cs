@@ -44,7 +44,7 @@ namespace Ee4v.Core.Testing
         private string _searchQuery = string.Empty;
         private string _loadError;
 
-        [MenuItem("Debug/ee4v Test Manager")]
+        [MenuItem("Debug/Test List")]
         private static void ShowWindow()
         {
             var window = GetWindow<FeatureTestManagerWindow>();

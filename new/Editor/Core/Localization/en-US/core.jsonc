@@ -17,7 +17,7 @@
   },
   "testing": {
     "window": {
-      "title": "ee4v Test Manager",
+      "title": "Test List",
       "run": "Run",
       "searchPlaceholder": "Search by suite, description, or test case",
       "tests": "Tests",

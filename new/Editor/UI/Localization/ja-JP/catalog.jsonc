@@ -1,7 +1,7 @@
 {
   "catalog": {
     "window": {
-      "title": "UI Catalog",
+      "title": "Catalog",
       "navigatorEmpty": "一致するコンポーネントがありません。"
     },
     "common": {
