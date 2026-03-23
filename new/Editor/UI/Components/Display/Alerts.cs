@@ -27,12 +27,17 @@ namespace Ee4v.UI
 
     internal sealed class Alerts : VisualElement
     {
+        private const string RootClassName = "ee4v-ui-banner";
+        private const string ToneInfoClassName = "ee4v-ui-banner--info";
+        private const string ToneWarningClassName = "ee4v-ui-banner--warning";
+        private const string ToneErrorClassName = "ee4v-ui-banner--error";
+
         private readonly UiTextElement _titleLabel;
         private readonly UiTextElement _messageLabel;
 
         public Alerts(AlertsState state = null)
         {
-            AddToClassList(UiClassNames.Banner);
+            AddToClassList(RootClassName);
 
             _titleLabel = UiTextFactory.Create(string.Empty, UiClassNames.BannerTitle);
 
@@ -56,9 +61,9 @@ namespace Ee4v.UI
             _messageLabel.SetText(state.Message);
             _messageLabel.style.display = hasMessage ? DisplayStyle.Flex : DisplayStyle.None;
 
-            EnableInClassList(UiClassNames.BannerToneInfo, state.Tone == UiBannerTone.Info);
-            EnableInClassList(UiClassNames.BannerToneWarning, state.Tone == UiBannerTone.Warning);
-            EnableInClassList(UiClassNames.BannerToneError, state.Tone == UiBannerTone.Error);
+            EnableInClassList(ToneInfoClassName, state.Tone == UiBannerTone.Info);
+            EnableInClassList(ToneWarningClassName, state.Tone == UiBannerTone.Warning);
+            EnableInClassList(ToneErrorClassName, state.Tone == UiBannerTone.Error);
         }
     }
 }

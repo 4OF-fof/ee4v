@@ -18,6 +18,13 @@ namespace Ee4v.UI
 
     internal sealed class SearchField : VisualElement
     {
+        private const string RootClassName = "ee4v-ui-search-field";
+        private const string HasValueClassName = "ee4v-ui-search-field--has-value";
+        private const string FocusedClassName = "ee4v-ui-search-field--focused";
+        private const string IconClassName = "ee4v-ui-search-field__icon";
+        private const string InputHostClassName = "ee4v-ui-search-field__input-host";
+        private const string InputClassName = "ee4v-ui-search-field__input";
+        private const string ClearClassName = "ee4v-ui-search-field__clear";
         private readonly Icon _searchIcon;
         private readonly VisualElement _inputHost;
         private readonly TextField _input;
@@ -28,16 +35,16 @@ namespace Ee4v.UI
 
         public SearchField(SearchFieldState state = null)
         {
-            AddToClassList(UiClassNames.SearchField);
+            AddToClassList(RootClassName);
 
             _searchIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.Search, size: 14f, tooltip: "Search"));
-            _searchIcon.AddToClassList(UiClassNames.SearchFieldIcon);
+            _searchIcon.AddToClassList(IconClassName);
 
             _inputHost = new VisualElement();
-            _inputHost.AddToClassList(UiClassNames.SearchFieldInputHost);
+            _inputHost.AddToClassList(InputHostClassName);
 
             _input = new TextField();
-            _input.AddToClassList(UiClassNames.SearchFieldInput);
+            _input.AddToClassList(InputClassName);
             _input.RegisterValueChangedCallback(evt =>
             {
                 RefreshVisualState();
@@ -58,7 +65,7 @@ namespace Ee4v.UI
             _placeholderLabel.pickingMode = PickingMode.Ignore;
 
             _clearButton = new Button(ClearValue);
-            _clearButton.AddToClassList(UiClassNames.SearchFieldClear);
+            _clearButton.AddToClassList(ClearClassName);
             _clearIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.Close, size: 10f, tooltip: "Clear"));
             _clearButton.Add(_clearIcon);
 
@@ -114,8 +121,8 @@ namespace Ee4v.UI
             var hasValue = !string.IsNullOrWhiteSpace(Value);
             var showPlaceholder = !hasValue && !_isFocused && !string.IsNullOrWhiteSpace(_placeholderLabel.Text);
 
-            EnableInClassList(UiClassNames.SearchFieldHasValue, hasValue);
-            EnableInClassList(UiClassNames.SearchFieldFocused, _isFocused);
+            EnableInClassList(HasValueClassName, hasValue);
+            EnableInClassList(FocusedClassName, _isFocused);
             _clearButton.style.display = hasValue ? DisplayStyle.Flex : DisplayStyle.None;
             _placeholderLabel.style.display = showPlaceholder ? DisplayStyle.Flex : DisplayStyle.None;
         }

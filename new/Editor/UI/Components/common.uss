@@ -10,7 +10,6 @@
     color: rgb(230, 230, 230);
 }
 
-.ee4v-ui-info-card__badge,
 .ee4v-ui-status {
     padding-left: 10px;
     padding-right: 10px;

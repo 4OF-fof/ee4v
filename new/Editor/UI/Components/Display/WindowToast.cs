@@ -89,6 +89,19 @@ namespace Ee4v.UI
 
     internal sealed class WindowToast : VisualElement
     {
+        private const string RootClassName = "ee4v-ui-window-toast";
+        private const string HeaderClassName = "ee4v-ui-window-toast__header";
+        private const string HeaderTextClassName = "ee4v-ui-window-toast__header-text";
+        private const string TitleClassName = "ee4v-ui-window-toast__title";
+        private const string MessageClassName = "ee4v-ui-window-toast__message";
+        private const string CloseButtonClassName = "ee4v-ui-window-toast__close";
+        private const string ActionsClassName = "ee4v-ui-window-toast__actions";
+        private const string ActionButtonClassName = "ee4v-ui-window-toast__action";
+        private const string DismissingClassName = "ee4v-ui-window-toast--dismissing";
+        private const string ToneInfoClassName = "ee4v-ui-window-toast--info";
+        private const string ToneSuccessClassName = "ee4v-ui-window-toast--success";
+        private const string ToneWarningClassName = "ee4v-ui-window-toast--warning";
+        private const string ToneErrorClassName = "ee4v-ui-window-toast--error";
         private readonly UiTextElement _titleLabel;
         private readonly UiTextElement _messageLabel;
         private readonly Button _closeButton;
@@ -98,29 +111,29 @@ namespace Ee4v.UI
 
         public WindowToast(WindowToastState state = null)
         {
-            AddToClassList(UiClassNames.WindowToast);
+            AddToClassList(RootClassName);
 
             var header = new VisualElement();
-            header.AddToClassList(UiClassNames.WindowToastHeader);
+            header.AddToClassList(HeaderClassName);
 
             var headerText = new VisualElement();
-            headerText.AddToClassList(UiClassNames.WindowToastHeaderText);
+            headerText.AddToClassList(HeaderTextClassName);
 
-            _titleLabel = UiTextFactory.Create(string.Empty, UiClassNames.WindowToastTitle);
-            _messageLabel = UiTextFactory.Create(string.Empty, UiClassNames.WindowToastMessage);
+            _titleLabel = UiTextFactory.Create(string.Empty, TitleClassName);
+            _messageLabel = UiTextFactory.Create(string.Empty, MessageClassName);
             _messageLabel.SetWhiteSpace(WhiteSpace.Normal);
 
             headerText.Add(_titleLabel);
             header.Add(headerText);
 
             _closeButton = new Button(RequestDismiss);
-            _closeButton.AddToClassList(UiClassNames.WindowToastCloseButton);
+            _closeButton.AddToClassList(CloseButtonClassName);
             _closeIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.Close, size: 10f, tooltip: "Dismiss"));
             _closeButton.Add(_closeIcon);
             header.Add(_closeButton);
 
             _actionsRow = new VisualElement();
-            _actionsRow.AddToClassList(UiClassNames.WindowToastActions);
+            _actionsRow.AddToClassList(ActionsClassName);
 
             Add(header);
             Add(_messageLabel);
@@ -134,7 +147,7 @@ namespace Ee4v.UI
         public void SetDismissing(bool isDismissing)
         {
             pickingMode = isDismissing ? PickingMode.Ignore : PickingMode.Position;
-            EnableInClassList(UiClassNames.WindowToastDismissing, isDismissing);
+            EnableInClassList(DismissingClassName, isDismissing);
         }
 
         public void SetState(WindowToastState state)
@@ -149,10 +162,10 @@ namespace Ee4v.UI
 
             _closeButton.style.display = _state.Dismissible ? DisplayStyle.Flex : DisplayStyle.None;
 
-            EnableInClassList(UiClassNames.WindowToastToneInfo, _state.Tone == WindowToastTone.Info);
-            EnableInClassList(UiClassNames.WindowToastToneSuccess, _state.Tone == WindowToastTone.Success);
-            EnableInClassList(UiClassNames.WindowToastToneWarning, _state.Tone == WindowToastTone.Warning);
-            EnableInClassList(UiClassNames.WindowToastToneError, _state.Tone == WindowToastTone.Error);
+            EnableInClassList(ToneInfoClassName, _state.Tone == WindowToastTone.Info);
+            EnableInClassList(ToneSuccessClassName, _state.Tone == WindowToastTone.Success);
+            EnableInClassList(ToneWarningClassName, _state.Tone == WindowToastTone.Warning);
+            EnableInClassList(ToneErrorClassName, _state.Tone == WindowToastTone.Error);
 
             RebuildActions();
         }
@@ -172,7 +185,7 @@ namespace Ee4v.UI
                 {
                     text = action.Label
                 };
-                button.AddToClassList(UiClassNames.WindowToastActionButton);
+                button.AddToClassList(ActionButtonClassName);
                 _actionsRow.Add(button);
             }
 
@@ -197,12 +210,13 @@ namespace Ee4v.UI
     internal sealed class WindowToastHost : VisualElement
     {
         private const double FadeOutDurationSeconds = 0.18d;
+        private const string HostClassName = "ee4v-ui-window-toast-host";
         private readonly List<Entry> _entries = new List<Entry>();
 
         public WindowToastHost()
         {
             name = WindowToastApi.HostElementName;
-            AddToClassList(UiClassNames.WindowToastHost);
+            AddToClassList(HostClassName);
         }
 
         internal int ToastCount
@@ -387,6 +401,7 @@ namespace Ee4v.UI
     internal static class WindowToastApi
     {
         internal const string HostElementName = "ee4v-window-toast-host";
+        private const string RootClassName = "ee4v-ui";
 
         private static readonly Dictionary<int, HostRegistration> Hosts = new Dictionary<int, HostRegistration>();
         private static bool _isSubscribed;
@@ -404,7 +419,7 @@ namespace Ee4v.UI
                 return;
             }
 
-            root.AddToClassList(UiClassNames.Root);
+            root.AddToClassList(RootClassName);
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/window-toast.uss");
 

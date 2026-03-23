@@ -10,6 +10,7 @@ namespace Ee4v.UI
 {
     internal sealed class CatalogWindow : EditorWindow
     {
+        private const string RootClassName = "ee4v-ui";
         private enum ComponentImplementationKind
         {
             UiToolkit,
@@ -190,7 +191,7 @@ namespace Ee4v.UI
 
             var root = rootVisualElement;
             root.Clear();
-            root.AddToClassList(UiClassNames.Root);
+            root.AddToClassList(RootClassName);
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/search-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/searchable-tree-view.uss");

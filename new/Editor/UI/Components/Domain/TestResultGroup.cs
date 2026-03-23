@@ -96,6 +96,21 @@ namespace Ee4v.UI
 
     internal sealed class TestResultGroup : InfoCard
     {
+        private const string RootClassName = "ee4v-ui-test-result-group";
+        private const string ExpandedClassName = "ee4v-ui-test-result-group--expanded";
+        private const string SummaryAlertClassName = "ee4v-ui-test-result-group__summary-alert";
+        private const string RunButtonClassName = "ee4v-ui-test-result-group__run-button";
+        private const string CasesPanelClassName = "ee4v-ui-test-result-group__cases-panel";
+        private const string CasesToggleClassName = "ee4v-ui-test-result-group__cases-toggle";
+        private const string CasesChevronClassName = "ee4v-ui-test-result-group__cases-chevron";
+        private const string CasesBodyClassName = "ee4v-ui-test-result-group__cases-body";
+        private const string CaseCardClassName = "ee4v-ui-test-result-group__case-card";
+        private const string CaseDetailsPanelClassName = "ee4v-ui-test-result-group__case-details-panel";
+        private const string CaseDetailsToggleClassName = "ee4v-ui-test-result-group__case-details-toggle";
+        private const string CaseDetailsChevronClassName = "ee4v-ui-test-result-group__case-details-chevron";
+        private const string CaseDetailsTitleClassName = "ee4v-ui-test-result-group__case-details-title";
+        private const string CaseDetailsBodyClassName = "ee4v-ui-test-result-group__case-details-body";
+        private const string CaseDetailsFieldClassName = "ee4v-ui-test-result-group__case-details-field";
         private readonly Alerts _summaryAlert;
         private readonly Button _runButton;
         private readonly VisualElement _casesPanel;
@@ -109,23 +124,23 @@ namespace Ee4v.UI
         public TestResultGroup(TestResultGroupState state = null)
             : base(new InfoCardState(string.Empty))
         {
-            AddToClassList(UiClassNames.TestResultGroup);
+            AddToClassList(RootClassName);
 
             _runButton = new Button(RaiseRunRequested);
-            _runButton.AddToClassList(UiClassNames.TestResultGroupRunButton);
+            _runButton.AddToClassList(RunButtonClassName);
             HeaderRight.Add(_runButton);
 
             _summaryAlert = new Alerts();
-            _summaryAlert.AddToClassList(UiClassNames.TestResultGroupSummaryAlert);
+            _summaryAlert.AddToClassList(SummaryAlertClassName);
 
             _casesPanel = new VisualElement();
-            _casesPanel.AddToClassList(UiClassNames.TestResultGroupCasesPanel);
+            _casesPanel.AddToClassList(CasesPanelClassName);
 
             _casesToggle = new Button(ToggleExpanded);
-            _casesToggle.AddToClassList(UiClassNames.TestResultGroupCasesToggle);
+            _casesToggle.AddToClassList(CasesToggleClassName);
 
             _casesChevron = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: 12f));
-            _casesChevron.AddToClassList(UiClassNames.TestResultGroupCasesChevron);
+            _casesChevron.AddToClassList(CasesChevronClassName);
             _casesTitle = UiTextFactory.Create(string.Empty, UiClassNames.TestResultGroupCasesTitle);
             _casesMeta = UiTextFactory.Create(string.Empty, UiClassNames.TestResultGroupCasesMeta);
 
@@ -141,7 +156,7 @@ namespace Ee4v.UI
             _casesToggle.Add(casesHeaderText);
 
             _casesBody = new VisualElement();
-            _casesBody.AddToClassList(UiClassNames.TestResultGroupCasesBody);
+            _casesBody.AddToClassList(CasesBodyClassName);
 
             Body.Add(_summaryAlert);
             _casesPanel.Add(_casesToggle);
@@ -183,7 +198,7 @@ namespace Ee4v.UI
         public void SetExpanded(bool expanded, bool notify = true)
         {
             Expanded = expanded;
-            EnableInClassList(UiClassNames.TestResultGroupExpanded, expanded);
+            EnableInClassList(ExpandedClassName, expanded);
             _casesChevron.SetState(IconState.FromBuiltinIcon(
                 expanded ? UiBuiltinIcon.DisclosureOpen : UiBuiltinIcon.DisclosureClosed,
                 size: 12f));
@@ -207,7 +222,7 @@ namespace Ee4v.UI
                     testCase.Description,
                     testCase.Eyebrow,
                     testCase.BadgeState));
-                entry.AddToClassList(UiClassNames.TestResultGroupCaseCard);
+                entry.AddToClassList(CaseCardClassName);
                 AddCaseDetails(entry, testCase);
                 _casesBody.Add(entry);
             }
@@ -221,24 +236,24 @@ namespace Ee4v.UI
             }
 
             var detailsPanel = new VisualElement();
-            detailsPanel.AddToClassList(UiClassNames.TestResultGroupCaseDetailsPanel);
+            detailsPanel.AddToClassList(CaseDetailsPanelClassName);
 
             var detailsToggle = new Button();
-            detailsToggle.AddToClassList(UiClassNames.TestResultGroupCaseDetailsToggle);
+            detailsToggle.AddToClassList(CaseDetailsToggleClassName);
 
             var chevron = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: 10f));
-            chevron.AddToClassList(UiClassNames.TestResultGroupCaseDetailsChevron);
+            chevron.AddToClassList(CaseDetailsChevronClassName);
 
-            var title = UiTextFactory.Create(testCase.DetailsToggleText, UiClassNames.TestResultGroupCaseDetailsTitle);
+            var title = UiTextFactory.Create(testCase.DetailsToggleText, CaseDetailsTitleClassName);
             detailsToggle.Add(chevron);
             detailsToggle.Add(title);
 
             var detailsBody = new VisualElement();
-            detailsBody.AddToClassList(UiClassNames.TestResultGroupCaseDetailsBody);
+            detailsBody.AddToClassList(CaseDetailsBodyClassName);
             detailsBody.style.display = DisplayStyle.None;
 
             var detailsField = new CopyableTextArea(new CopyableTextAreaState(testCase.DetailsText, testCase.DetailsCopyButtonText));
-            detailsField.AddToClassList(UiClassNames.TestResultGroupCaseDetailsField);
+            detailsField.AddToClassList(CaseDetailsFieldClassName);
             detailsBody.Add(detailsField);
 
             detailsToggle.clicked += () =>

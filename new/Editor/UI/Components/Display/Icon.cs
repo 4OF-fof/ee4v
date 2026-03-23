@@ -129,18 +129,20 @@ namespace Ee4v.UI
 
     internal sealed class Icon : VisualElement
     {
+        private const string RootClassName = "ee4v-ui-icon";
+        private const string ImageClassName = "ee4v-ui-icon__image";
         private readonly Image _image;
 
         public Icon(IconState state = null)
         {
-            AddToClassList(UiClassNames.Icon);
+            AddToClassList(RootClassName);
 
             _image = new Image
             {
                 pickingMode = PickingMode.Ignore,
                 scaleMode = ScaleMode.ScaleToFit
             };
-            _image.AddToClassList(UiClassNames.IconImage);
+            _image.AddToClassList(ImageClassName);
             Add(_image);
 
             SetState(state ?? IconState.FromBuiltinIcon(UiBuiltinIcon.Search));

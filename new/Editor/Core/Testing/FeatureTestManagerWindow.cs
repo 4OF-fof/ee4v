@@ -11,6 +11,7 @@ namespace Ee4v.Core.Testing
 {
     internal sealed class FeatureTestManagerWindow : EditorWindow
     {
+        private const string RootClassName = "ee4v-ui";
         private sealed class DescriptorView
         {
             public DescriptorView(
@@ -80,7 +81,7 @@ namespace Ee4v.Core.Testing
 
             var root = rootVisualElement;
             root.Clear();
-            root.AddToClassList(UiClassNames.Root);
+            root.AddToClassList(RootClassName);
             root.AddToClassList("ee4v-test-manager");
 
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");

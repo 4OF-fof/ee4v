@@ -35,6 +35,12 @@ namespace Ee4v.UI
 
     internal sealed class TabCard : VisualElement
     {
+        private const string RootClassName = "ee4v-ui-tab-card";
+        private const string TabsClassName = "ee4v-ui-tab-card__tabs";
+        private const string TabClassName = "ee4v-ui-tab-card__tab";
+        private const string TabSelectedClassName = "ee4v-ui-tab-card__tab--selected";
+        private const string PanelClassName = "ee4v-ui-tab-card__panel";
+        private const string ContentClassName = "ee4v-ui-tab-card__content";
         private readonly VisualElement _tabsRow;
         private readonly VisualElement _panel;
         private readonly VisualElement _content;
@@ -42,16 +48,16 @@ namespace Ee4v.UI
 
         public TabCard(TabCardState state = null, Action<string> onSelect = null)
         {
-            AddToClassList(UiClassNames.TabCard);
+            AddToClassList(RootClassName);
 
             _tabsRow = new VisualElement();
-            _tabsRow.AddToClassList(UiClassNames.TabCardTabs);
+            _tabsRow.AddToClassList(TabsClassName);
 
             _panel = new VisualElement();
-            _panel.AddToClassList(UiClassNames.TabCardPanel);
+            _panel.AddToClassList(PanelClassName);
 
             _content = new VisualElement();
-            _content.AddToClassList(UiClassNames.TabCardContent);
+            _content.AddToClassList(ContentClassName);
 
             _panel.Add(_content);
             Add(_tabsRow);
@@ -88,8 +94,8 @@ namespace Ee4v.UI
                 {
                     text = tab.Label
                 };
-                button.AddToClassList(UiClassNames.TabCardTab);
-                button.EnableInClassList(UiClassNames.TabCardTabSelected, string.Equals(tab.Id, state.SelectedTabId, StringComparison.Ordinal));
+                button.AddToClassList(TabClassName);
+                button.EnableInClassList(TabSelectedClassName, string.Equals(tab.Id, state.SelectedTabId, StringComparison.Ordinal));
                 button.SetEnabled(tab.Enabled);
                 _tabsRow.Add(button);
             }

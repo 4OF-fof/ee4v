@@ -25,6 +25,10 @@ namespace Ee4v.UI
 
     internal sealed class SearchableTreeView<TData> : VisualElement
     {
+        private const string RootClassName = "ee4v-ui-searchable-tree-view";
+        private const string SearchClassName = "ee4v-ui-searchable-tree-view__search";
+        private const string TreeClassName = "ee4v-ui-searchable-tree-view__tree";
+        private const string EmptyClassName = "ee4v-ui-searchable-tree-view__empty";
         private readonly SearchField _searchField;
         private readonly TreeView _treeView;
         private readonly UiTextElement _emptyLabel;
@@ -47,10 +51,10 @@ namespace Ee4v.UI
             _bindItem = bindItem ?? throw new ArgumentNullException(nameof(bindItem));
             _onSelectionChanged = onSelectionChanged;
 
-            AddToClassList(UiClassNames.SearchableTreeView);
+            AddToClassList(RootClassName);
 
             _searchField = new SearchField();
-            _searchField.AddToClassList(UiClassNames.SearchableTreeViewSearch);
+            _searchField.AddToClassList(SearchClassName);
             _searchField.ValueChanged += value =>
             {
                 if (_onSearchValueChanged != null)
@@ -61,7 +65,7 @@ namespace Ee4v.UI
             Add(_searchField);
 
             _treeView = new TreeView();
-            _treeView.AddToClassList(UiClassNames.SearchableTreeViewTree);
+            _treeView.AddToClassList(TreeClassName);
             _treeView.selectionType = SelectionType.Single;
             _treeView.fixedItemHeight = 20;
             _treeView.makeItem = makeItem;
@@ -69,7 +73,7 @@ namespace Ee4v.UI
             _treeView.selectionChanged += OnSelectionChanged;
             Add(_treeView);
 
-            _emptyLabel = UiTextFactory.Create(emptyText, UiClassNames.SearchableTreeViewEmpty);
+            _emptyLabel = UiTextFactory.Create(emptyText, EmptyClassName);
             _emptyLabel.SetWhiteSpace(WhiteSpace.Normal);
             Add(_emptyLabel);
 
