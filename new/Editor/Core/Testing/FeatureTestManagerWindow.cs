@@ -231,9 +231,6 @@ namespace Ee4v.Core.Testing
                 summaryTone: ToAlertTone(record.Status),
                 casesTitle: I18N.Get("testing.window.tests"),
                 casesMeta: string.Format(I18N.Get("testing.window.testCasesMeta"), descriptor.TestCases != null ? descriptor.TestCases.Count : 0),
-                detailsTitle: I18N.Get("testing.window.detailsTitle"),
-                detailsText: BuildDetailedResult(record),
-                detailsCopyButtonText: I18N.Get("testing.window.copy"),
                 expanded: view.UserExpanded,
                 cases: ToCaseStates(descriptor.TestCases, record)));
         }
@@ -379,30 +376,7 @@ namespace Ee4v.Core.Testing
                 return string.Empty;
             }
 
-            if (!string.IsNullOrWhiteSpace(record.DetailedResult))
-            {
-                return record.DetailedResult;
-            }
-
-            if (record.Status == FeatureTestRunStatus.Running)
-            {
-                return string.Empty;
-            }
-
-            if (!string.IsNullOrWhiteSpace(record.Message))
-            {
-                return record.Message;
-            }
-
-            return HasResultCounts(record)
-                ? string.Format(
-                    I18N.Get("testing.window.countsFormat"),
-                    record.PassCount,
-                    record.FailCount,
-                    record.SkipCount,
-                    record.InconclusiveCount,
-                    record.DurationSeconds)
-                : string.Empty;
+            return ExtractFailureDetails(record.DetailedResult);
         }
 
         private static bool IsProblemStatus(FeatureTestRunStatus status)
@@ -410,6 +384,42 @@ namespace Ee4v.Core.Testing
             return status == FeatureTestRunStatus.Failed
                 || status == FeatureTestRunStatus.Skipped
                 || status == FeatureTestRunStatus.Inconclusive;
+        }
+
+        private static string ExtractFailureDetails(string detailedResult)
+        {
+            if (string.IsNullOrWhiteSpace(detailedResult))
+            {
+                return string.Empty;
+            }
+
+            var normalized = detailedResult.Trim();
+            const string header = "Failure Details";
+            var startIndex = normalized.IndexOf(header, StringComparison.Ordinal);
+            if (startIndex < 0)
+            {
+                return string.Empty;
+            }
+
+            var nextSectionIndex = normalized.Length;
+            var nextSectionHeaders = new[]
+            {
+                "\n\nCase Results",
+                "\n\nSummary",
+                "\n\nRegistered Cases"
+            };
+            for (var i = 0; i < nextSectionHeaders.Length; i++)
+            {
+                var candidateIndex = normalized.IndexOf(nextSectionHeaders[i], startIndex + header.Length, StringComparison.Ordinal);
+                if (candidateIndex >= 0)
+                {
+                    nextSectionIndex = Math.Min(nextSectionIndex, candidateIndex);
+                }
+            }
+
+            return nextSectionIndex < normalized.Length
+                ? normalized.Substring(startIndex, nextSectionIndex - startIndex).TrimEnd()
+                : normalized.Substring(startIndex).TrimEnd();
         }
 
         private static UiStatusTone ToBadgeTone(FeatureTestRunStatus status)
@@ -493,31 +503,74 @@ namespace Ee4v.Core.Testing
                     testCases[i].Title,
                     testCases[i].Description,
                     ToCaseBadgeState(testCases[i], record),
-                    GetCategoryDisplayLabel(testCases[i].Category, includeStandard: false));
+                    string.Empty,
+                    BuildCaseDetailsToggleText(testCases[i], record, testCases.Count),
+                    BuildCaseDetailsText(testCases[i], record, testCases.Count),
+                    BuildCaseDetailsCopyButtonText(testCases[i], record, testCases.Count));
             }
 
             return items;
         }
 
-        private static string BuildSuiteEyebrow(FeatureTestDescriptor descriptor)
+        private static string BuildCaseDetailsToggleText(FeatureTestCaseDescriptor testCase, FeatureTestRunRecord record, int totalCaseCount)
         {
-            if (descriptor == null)
+            return string.IsNullOrWhiteSpace(BuildCaseDetailsText(testCase, record, totalCaseCount))
+                ? string.Empty
+                : I18N.Get("testing.window.failureDetailsTitle");
+        }
+
+        private static string BuildCaseDetailsText(FeatureTestCaseDescriptor testCase, FeatureTestRunRecord record, int totalCaseCount)
+        {
+            if (testCase == null || record == null)
             {
                 return string.Empty;
             }
 
-            var categorySummary = BuildSuiteCategorySummary(descriptor);
-            if (string.IsNullOrWhiteSpace(categorySummary))
+            if (!string.IsNullOrWhiteSpace(testCase.ResultKey)
+                && record.CaseDetails.TryGetValue(testCase.ResultKey, out var details))
             {
-                return descriptor.AssemblyName ?? string.Empty;
+                return FormatCaseDetailsText(testCase, ExtractFailureDetails(details));
             }
 
-            if (string.IsNullOrWhiteSpace(descriptor.AssemblyName))
+            return totalCaseCount == 1
+                ? FormatCaseDetailsText(testCase, ExtractFailureDetails(record.DetailedResult))
+                : string.Empty;
+        }
+
+        private static string BuildCaseDetailsCopyButtonText(FeatureTestCaseDescriptor testCase, FeatureTestRunRecord record, int totalCaseCount)
+        {
+            return string.IsNullOrWhiteSpace(BuildCaseDetailsText(testCase, record, totalCaseCount))
+                ? string.Empty
+                : I18N.Get("testing.window.copy");
+        }
+
+        private static string FormatCaseDetailsText(FeatureTestCaseDescriptor testCase, string details)
+        {
+            if (testCase == null || string.IsNullOrWhiteSpace(details))
             {
-                return categorySummary;
+                return string.Empty;
             }
 
-            return categorySummary + " · " + descriptor.AssemblyName;
+            var sections = new List<string>();
+            if (!string.IsNullOrWhiteSpace(testCase.Title))
+            {
+                sections.Add("Test\n" + testCase.Title);
+            }
+
+            if (!string.IsNullOrWhiteSpace(testCase.Description))
+            {
+                sections.Add("Description\n" + testCase.Description);
+            }
+
+            sections.Add(details);
+            return string.Join("\n\n", sections);
+        }
+
+        private static string BuildSuiteEyebrow(FeatureTestDescriptor descriptor)
+        {
+            return descriptor != null
+                ? descriptor.AssemblyName ?? string.Empty
+                : string.Empty;
         }
 
         private static string BuildSuiteCategorySummary(FeatureTestDescriptor descriptor)
@@ -550,6 +603,8 @@ namespace Ee4v.Core.Testing
         {
             switch (category)
             {
+                case FeatureTestCategory.Ui:
+                    return I18N.Get("testing.category.ui");
                 case FeatureTestCategory.StaticAudit:
                     return I18N.Get("testing.category.staticAudit");
                 case FeatureTestCategory.Standard:

@@ -34,10 +34,13 @@ namespace Ee4v.Core.Tests
             order: 26)]
         public void FeatureTestCaseDiscovery_DiscoversStaticAuditCategory()
         {
-            var cases = FeatureTestCaseDiscovery.Discover("Ee4v.StaticAudit.Tests.Editor");
-            var descriptor = cases.Single(item => item.Title == "ローカライズに重複キーがない");
+            var localizationCases = FeatureTestCaseDiscovery.Discover("Ee4v.Localization.Tests.Editor");
+            var uiCases = FeatureTestCaseDiscovery.Discover("Ee4v.UI.Tests.Editor");
+            var localizationCase = localizationCases.Single(item => item.Title == "ローカライズに重複キーがない");
+            var uiCase = uiCases.Single(item => item.Title == "direct Label 利用が許可対象だけに限定される");
 
-            Assert.That(descriptor.Category, Is.EqualTo(FeatureTestCategory.StaticAudit));
+            Assert.That(localizationCase.Category, Is.EqualTo(FeatureTestCategory.StaticAudit));
+            Assert.That(uiCase.Category, Is.EqualTo(FeatureTestCategory.Ui));
         }
 
         [Test]
@@ -48,13 +51,13 @@ namespace Ee4v.Core.Tests
         public void FeatureTestRunnerService_RestoresCategoriesAcrossServiceRecreation()
         {
             var descriptor = new FeatureTestDescriptor(
-                "StaticAudit",
-                "Static Audit",
-                "Ee4v.StaticAudit.Tests.Editor",
+                "Localization",
+                "Localization",
+                "Ee4v.Localization.Tests.Editor",
                 testCases: new[]
                 {
                     new FeatureTestCaseDescriptor(
-                        "Static Audit Case",
+                        "Localization Case",
                         "Description",
                         resultKey: "Ee4v.Core.Tests.StaticAuditCase",
                         category: FeatureTestCategory.StaticAudit)
@@ -86,8 +89,8 @@ namespace Ee4v.Core.Tests
 
         [Test]
         [FeatureTestCase(
-            "Test Manager が静的監査カテゴリで検索できる",
-            "FeatureTestManagerWindow の検索が Static Audit カテゴリ文字列に反応し、suite / case のカテゴリ表示を維持することを確認します。",
+            "Test Manager がローカライズカテゴリで検索できる",
+            "FeatureTestManagerWindow の検索が Localization カテゴリ文字列に反応し、suite / case のカテゴリ表示を維持することを確認します。",
             order: 28)]
         public void FeatureTestManagerWindow_Search_FindsStaticAuditCategory()
         {
@@ -112,7 +115,7 @@ namespace Ee4v.Core.Tests
                         }
 
                         var title = card.Q<UiTextElement>(className: UiClassNames.InfoCardTitle);
-                        return title != null && title.Text == "Static Audit";
+                        return title != null && title.Text == "Localization";
                     });
 
                 var suiteEyebrow = visibleCard.Q<UiTextElement>(className: UiClassNames.InfoCardEyebrow);
@@ -122,7 +125,7 @@ namespace Ee4v.Core.Tests
                     .ToList();
 
                 Assert.That(visibleCard.Expanded, Is.True);
-                Assert.That(suiteEyebrow.Text, Does.Contain(I18N.Get("testing.category.staticAudit")));
+                Assert.That(suiteEyebrow.Text, Is.EqualTo("Ee4v.Localization.Tests.Editor"));
                 Assert.That(caseEyebrows.Any(item => item.Text == I18N.Get("testing.category.staticAudit")), Is.True);
             }
             finally
@@ -133,19 +136,23 @@ namespace Ee4v.Core.Tests
 
         [Test]
         [FeatureTestCase(
-            "Refresh 後に Static Audit suite が列挙される",
-            "FeatureTestRegistry.Refresh が Static Audit suite とその case を返すことを確認します。",
+            "Refresh 後に Localization suite が列挙される",
+            "FeatureTestRegistry.Refresh が Localization suite とその case を返すことを確認します。",
             order: 29)]
         public void FeatureTestRegistry_Refresh_ListsStaticAuditSuite()
         {
             Ee4vCoreTestReset.RecoverEditorState();
 
             var descriptors = FeatureTestRegistry.Refresh();
-            var staticAuditDescriptor = descriptors.Single(item => item.FeatureScope == "StaticAudit");
+            var staticAuditDescriptor = descriptors.Single(item => item.FeatureScope == "Localization");
+            var uiDescriptor = descriptors.Single(item => item.FeatureScope == "UI");
 
             Assert.That(staticAuditDescriptor.Category, Is.EqualTo(FeatureTestCategory.StaticAudit));
-            Assert.That(staticAuditDescriptor.TestCases.Count, Is.GreaterThanOrEqualTo(4));
+            Assert.That(staticAuditDescriptor.TestCases.Count, Is.EqualTo(3));
             Assert.That(staticAuditDescriptor.TestCases.All(item => item.Category == FeatureTestCategory.StaticAudit), Is.True);
+
+            Assert.That(uiDescriptor.Category, Is.EqualTo(FeatureTestCategory.Standard));
+            Assert.That(uiDescriptor.TestCases.Any(item => item.Category == FeatureTestCategory.Ui), Is.True);
         }
 
         private static object GetPrivateField(object target, string fieldName)

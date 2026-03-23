@@ -3,26 +3,10 @@ using Ee4v.Core.Testing;
 using Ee4v.Core.Testing.StaticAnalysis;
 using NUnit.Framework;
 
-namespace Ee4v.StaticAudit.Tests
+namespace Ee4v.Localization.Tests
 {
-    public sealed class StaticAuditTests
+    public sealed class LocalizationTests
     {
-        [Test]
-        [FeatureTestCase(
-            "direct Label 利用が許可対象だけに限定される",
-            "package 全体を走査し、UiTextFactory 実装以外に direct Label / Label 継承が存在しないことを確認します。",
-            order: 10,
-            category: FeatureTestCategory.StaticAudit)]
-        public void SourceLabelAuditService_Analyze_ReturnsNoViolations()
-        {
-            var report = SourceLabelAuditService.Analyze();
-
-            Assert.That(
-                report.Violations,
-                Is.Empty,
-                string.Join("\n", report.Violations.Select(violation => violation.RelativePath)));
-        }
-
         [Test]
         [FeatureTestCase(
             "ローカライズに重複キーがない",

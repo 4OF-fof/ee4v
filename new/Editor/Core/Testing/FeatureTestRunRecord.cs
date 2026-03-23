@@ -22,6 +22,7 @@ namespace Ee4v.Core.Testing
             DetailedResult = string.Empty;
             RunId = string.Empty;
             CaseStatuses = new Dictionary<string, FeatureTestRunStatus>(StringComparer.OrdinalIgnoreCase);
+            CaseDetails = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         }
 
         public FeatureTestRunStatus Status { get; set; }
@@ -45,5 +46,7 @@ namespace Ee4v.Core.Testing
         public DateTime? FinishedAtUtc { get; set; }
 
         public Dictionary<string, FeatureTestRunStatus> CaseStatuses { get; }
+
+        public Dictionary<string, string> CaseDetails { get; }
     }
 }

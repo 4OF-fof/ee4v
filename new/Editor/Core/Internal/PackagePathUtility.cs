@@ -11,6 +11,8 @@ namespace Ee4v.Core.Internal
         private const string Ee4vNamespacePrefix = "Ee4v.";
         private static readonly Regex NamespaceRegex =
             new Regex(@"^\s*namespace\s+([A-Za-z_][A-Za-z0-9_\.]*)\s*(?:\{|;)", RegexOptions.Multiline | RegexOptions.Compiled);
+        private static readonly Regex LocaleDirectoryNameRegex =
+            new Regex(@"^[a-z]{2}-[A-Z]{2}$", RegexOptions.Compiled);
 
         private static string _packageRootAssetPath;
         private static string _packageRootFullPath;
@@ -73,6 +75,7 @@ namespace Ee4v.Core.Internal
             }
 
             return Directory.GetDirectories(editorRoot, "Localization", SearchOption.AllDirectories)
+                .Where(IsLocalizationRootDirectory)
                 .OrderBy(path => path, System.StringComparer.OrdinalIgnoreCase)
                 .ToArray();
         }
@@ -114,6 +117,31 @@ namespace Ee4v.Core.Internal
             namespaceName = match.Success ? match.Groups[1].Value : null;
             SourceFileNamespaceCache[sourceFilePath] = namespaceName;
             return namespaceName;
+        }
+
+        private static bool IsLocalizationRootDirectory(string directoryPath)
+        {
+            if (string.IsNullOrWhiteSpace(directoryPath) || !Directory.Exists(directoryPath))
+            {
+                return false;
+            }
+
+            var localeDirectories = Directory.GetDirectories(directoryPath, "*", SearchOption.TopDirectoryOnly);
+            for (var i = 0; i < localeDirectories.Length; i++)
+            {
+                var localeDirectoryName = Path.GetFileName(localeDirectories[i]);
+                if (!LocaleDirectoryNameRegex.IsMatch(localeDirectoryName))
+                {
+                    continue;
+                }
+
+                if (Directory.GetFiles(localeDirectories[i], "*.jsonc", SearchOption.TopDirectoryOnly).Length > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public static string GetScopeNameForNamespace(string namespaceName)

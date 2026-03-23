@@ -19,11 +19,11 @@
     border-right-color: rgba(255, 255, 255, 0.09);
     border-bottom-color: rgba(255, 255, 255, 0.09);
     border-left-color: rgba(255, 255, 255, 0.09);
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
-    background-color: rgba(255, 255, 255, 0.045);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.055);
     color: rgba(224, 224, 224, 0.88);
     font-size: 9px;
     -unity-text-align: middle-center;
@@ -55,6 +55,12 @@
     align-self: stretch;
 }
 
-.ee4v-ui-copyable-text-area__field .unity-base-text-field__input {
+.ee4v-ui-copyable-text-area__field .unity-base-text-field__input,
+.ee4v-ui-copyable-text-area__field .unity-text-field__input,
+.ee4v-ui-copyable-text-area__field .unity-base-field__input {
     white-space: normal;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
 }

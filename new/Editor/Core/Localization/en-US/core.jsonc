@@ -22,7 +22,7 @@
       "searchPlaceholder": "Search by suite, description, or test case",
       "tests": "Tests",
       "testCasesMeta": "{0} items",
-      "detailsTitle": "Detailed Result",
+      "failureDetailsTitle": "Failure Details",
       "copy": "Copy",
       "countsFormat": "Pass {0}  Fail {1}  Skip {2}  Inc {3}  {4:0.00}s",
       "noSuites": "No feature test suites are registered.",
@@ -30,7 +30,8 @@
     },
     "category": {
       "standard": "Standard",
-      "staticAudit": "Static Audit"
+      "staticAudit": "Localization",
+      "ui": "UI"
     },
     "status": {
       "notRun": "Not run",

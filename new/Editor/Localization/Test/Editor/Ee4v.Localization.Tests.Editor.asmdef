@@ -1,6 +1,6 @@
 {
-  "name": "Ee4v.StaticAudit.Tests.Editor",
-  "rootNamespace": "Ee4v.StaticAudit.Tests",
+  "name": "Ee4v.Localization.Tests.Editor",
+  "rootNamespace": "Ee4v.Localization.Tests",
   "references": [
     "Ee4v.Editor"
   ],

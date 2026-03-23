@@ -10,12 +10,18 @@ namespace Ee4v.UI
             string title,
             string description = null,
             StatusBadgeState badgeState = null,
-            string eyebrow = null)
+            string eyebrow = null,
+            string detailsToggleText = null,
+            string detailsText = null,
+            string detailsCopyButtonText = null)
         {
             Title = title ?? string.Empty;
             Description = description ?? string.Empty;
             BadgeState = badgeState;
             Eyebrow = eyebrow ?? string.Empty;
+            DetailsToggleText = detailsToggleText ?? string.Empty;
+            DetailsText = detailsText ?? string.Empty;
+            DetailsCopyButtonText = detailsCopyButtonText ?? string.Empty;
         }
 
         public string Title { get; }
@@ -25,6 +31,12 @@ namespace Ee4v.UI
         public StatusBadgeState BadgeState { get; }
 
         public string Eyebrow { get; }
+
+        public string DetailsToggleText { get; }
+
+        public string DetailsText { get; }
+
+        public string DetailsCopyButtonText { get; }
     }
 
     internal sealed class TestResultGroupState
@@ -92,9 +104,6 @@ namespace Ee4v.UI
         private readonly UiTextElement _casesTitle;
         private readonly UiTextElement _casesMeta;
         private readonly VisualElement _casesBody;
-        private readonly VisualElement _detailsPanel;
-        private readonly UiTextElement _detailsTitle;
-        private readonly CopyableTextArea _detailsField;
         private TestResultGroupState _state;
 
         public TestResultGroup(TestResultGroupState state = null)
@@ -108,15 +117,6 @@ namespace Ee4v.UI
 
             _summaryAlert = new Alerts();
             _summaryAlert.AddToClassList(UiClassNames.TestResultGroupSummaryAlert);
-
-            _detailsPanel = new VisualElement();
-            _detailsPanel.AddToClassList(UiClassNames.TestResultGroupDetailsPanel);
-
-            _detailsTitle = UiTextFactory.Create(string.Empty, UiClassNames.TestResultGroupDetailsTitle);
-            _detailsField = new CopyableTextArea();
-            _detailsField.AddToClassList(UiClassNames.TestResultGroupDetailsField);
-            _detailsPanel.Add(_detailsTitle);
-            _detailsPanel.Add(_detailsField);
 
             _casesPanel = new VisualElement();
             _casesPanel.AddToClassList(UiClassNames.TestResultGroupCasesPanel);
@@ -144,7 +144,6 @@ namespace Ee4v.UI
             _casesBody.AddToClassList(UiClassNames.TestResultGroupCasesBody);
 
             Body.Add(_summaryAlert);
-            Body.Add(_detailsPanel);
             _casesPanel.Add(_casesToggle);
             _casesPanel.Add(_casesBody);
             Body.Add(_casesPanel);
@@ -170,11 +169,6 @@ namespace Ee4v.UI
 
             _summaryAlert.SetState(new AlertsState(_state.SummaryTone, string.Empty, _state.SummaryMessage));
             _summaryAlert.style.display = string.IsNullOrWhiteSpace(_state.SummaryMessage) ? DisplayStyle.None : DisplayStyle.Flex;
-
-            _detailsTitle.SetText(_state.DetailsTitle);
-            _detailsTitle.style.display = string.IsNullOrWhiteSpace(_state.DetailsTitle) ? DisplayStyle.None : DisplayStyle.Flex;
-            _detailsField.SetState(new CopyableTextAreaState(_state.DetailsText, _state.DetailsCopyButtonText));
-            _detailsPanel.style.display = string.IsNullOrWhiteSpace(_state.DetailsText) ? DisplayStyle.None : DisplayStyle.Flex;
 
             _casesTitle.SetText(_state.CasesTitle);
             _casesMeta.SetText(_state.CasesMeta);
@@ -214,8 +208,51 @@ namespace Ee4v.UI
                     testCase.Eyebrow,
                     testCase.BadgeState));
                 entry.AddToClassList(UiClassNames.TestResultGroupCaseCard);
+                AddCaseDetails(entry, testCase);
                 _casesBody.Add(entry);
             }
+        }
+
+        private static void AddCaseDetails(InfoCard entry, TestResultGroupCaseState testCase)
+        {
+            if (entry == null || testCase == null || string.IsNullOrWhiteSpace(testCase.DetailsText))
+            {
+                return;
+            }
+
+            var detailsPanel = new VisualElement();
+            detailsPanel.AddToClassList(UiClassNames.TestResultGroupCaseDetailsPanel);
+
+            var detailsToggle = new Button();
+            detailsToggle.AddToClassList(UiClassNames.TestResultGroupCaseDetailsToggle);
+
+            var chevron = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: 10f));
+            chevron.AddToClassList(UiClassNames.TestResultGroupCaseDetailsChevron);
+
+            var title = UiTextFactory.Create(testCase.DetailsToggleText, UiClassNames.TestResultGroupCaseDetailsTitle);
+            detailsToggle.Add(chevron);
+            detailsToggle.Add(title);
+
+            var detailsBody = new VisualElement();
+            detailsBody.AddToClassList(UiClassNames.TestResultGroupCaseDetailsBody);
+            detailsBody.style.display = DisplayStyle.None;
+
+            var detailsField = new CopyableTextArea(new CopyableTextAreaState(testCase.DetailsText, testCase.DetailsCopyButtonText));
+            detailsField.AddToClassList(UiClassNames.TestResultGroupCaseDetailsField);
+            detailsBody.Add(detailsField);
+
+            detailsToggle.clicked += () =>
+            {
+                var expanded = detailsBody.style.display != DisplayStyle.Flex;
+                detailsBody.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
+                chevron.SetState(IconState.FromBuiltinIcon(
+                    expanded ? UiBuiltinIcon.DisclosureOpen : UiBuiltinIcon.DisclosureClosed,
+                    size: 10f));
+            };
+
+            detailsPanel.Add(detailsToggle);
+            detailsPanel.Add(detailsBody);
+            entry.Body.Add(detailsPanel);
         }
 
         private void ToggleExpanded()

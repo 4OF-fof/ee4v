@@ -113,6 +113,7 @@ namespace Ee4v.Core.Testing
                 record.DurationSeconds = 0d;
                 record.FinishedAtUtc = null;
                 record.CaseStatuses.Clear();
+                record.CaseDetails.Clear();
             }
 
             var settings = new ExecutionSettings(new Filter
@@ -171,6 +172,7 @@ namespace Ee4v.Core.Testing
                         : "テスト実行は要求されましたが、この suite の開始通知が Unity Test Runner から返りませんでした。";
                     record.DetailedResult = record.Message;
                     record.FinishedAtUtc = DateTime.UtcNow;
+                    record.CaseDetails.Clear();
                     continue;
                 }
 
@@ -185,6 +187,7 @@ namespace Ee4v.Core.Testing
                     ? DateTime.UtcNow
                     : assemblyResult.EndTime.ToUniversalTime();
                 ApplyCaseStatuses(record, descriptor, assemblyResult);
+                ApplyCaseDetails(record, descriptor, assemblyResult);
                 record.DetailedResult = BuildDetailedResult(descriptor, record, assemblyResult);
             }
 
@@ -206,6 +209,7 @@ namespace Ee4v.Core.Testing
                 record.DetailedResult = record.Message;
                 record.FinishedAtUtc = DateTime.UtcNow;
                 record.CaseStatuses.Clear();
+                record.CaseDetails.Clear();
             }
 
             _activeRun = null;
@@ -357,6 +361,91 @@ namespace Ee4v.Core.Testing
             }
         }
 
+        private static void ApplyCaseDetails(FeatureTestRunRecord record, FeatureTestDescriptor descriptor, ITestResultAdaptor assemblyResult)
+        {
+            if (record == null)
+            {
+                return;
+            }
+
+            record.CaseDetails.Clear();
+            if (descriptor == null || descriptor.TestCases == null || descriptor.TestCases.Count == 0 || assemblyResult == null)
+            {
+                return;
+            }
+
+            var leafResults = new List<ITestResultAdaptor>();
+            CollectLeafResults(assemblyResult, leafResults);
+
+            var caseDetails = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            for (var i = 0; i < leafResults.Count; i++)
+            {
+                var leaf = leafResults[i];
+                if (leaf == null)
+                {
+                    continue;
+                }
+
+                var status = ToStatus(leaf);
+                if (!IsProblemStatus(status))
+                {
+                    continue;
+                }
+
+                var fullName = leaf.Test != null
+                    ? leaf.Test.FullName ?? string.Empty
+                    : string.Empty;
+                var detail = BuildCaseDetailEntry(leaf);
+                if (string.IsNullOrWhiteSpace(detail))
+                {
+                    continue;
+                }
+
+                var hasMatch = false;
+                for (var caseIndex = 0; caseIndex < descriptor.TestCases.Count; caseIndex++)
+                {
+                    var testCase = descriptor.TestCases[caseIndex];
+                    if (string.IsNullOrWhiteSpace(testCase.ResultKey) || !MatchesResultKey(fullName, testCase.ResultKey))
+                    {
+                        continue;
+                    }
+
+                    if (!caseDetails.TryGetValue(testCase.ResultKey, out var entries))
+                    {
+                        entries = new List<string>();
+                        caseDetails[testCase.ResultKey] = entries;
+                    }
+
+                    entries.Add(detail);
+                    hasMatch = true;
+                }
+
+                if (!hasMatch
+                    && descriptor.TestCases.Count == 1
+                    && !string.IsNullOrWhiteSpace(descriptor.TestCases[0].ResultKey))
+                {
+                    var onlyResultKey = descriptor.TestCases[0].ResultKey;
+                    if (!caseDetails.TryGetValue(onlyResultKey, out var entries))
+                    {
+                        entries = new List<string>();
+                        caseDetails[onlyResultKey] = entries;
+                    }
+
+                    entries.Add(detail);
+                }
+            }
+
+            foreach (var pair in caseDetails)
+            {
+                if (pair.Value == null || pair.Value.Count == 0)
+                {
+                    continue;
+                }
+
+                record.CaseDetails[pair.Key] = "Failure Details\n" + string.Join("\n\n", pair.Value);
+            }
+        }
+
         private static void CollectLeafResults(ITestResultAdaptor result, ICollection<ITestResultAdaptor> leafResults)
         {
             if (result == null || leafResults == null)
@@ -437,84 +526,13 @@ namespace Ee4v.Core.Testing
                 return string.Empty;
             }
 
-            var sections = new List<string>();
-
-            var caseResultsSection = BuildCaseResultsSection(descriptor, record);
-            if (!string.IsNullOrWhiteSpace(caseResultsSection))
-            {
-                sections.Add(caseResultsSection);
-            }
-
-            var failureDetailsSection = BuildFailureDetailsSection(descriptor, assemblyResult);
-            if (!string.IsNullOrWhiteSpace(failureDetailsSection))
-            {
-                sections.Add(failureDetailsSection);
-            }
-
-            var summarySection = BuildSummarySection(record, failureDetailsSection);
-            if (!string.IsNullOrWhiteSpace(summarySection))
-            {
-                sections.Add(summarySection);
-            }
-
-            if (sections.Count == 0)
-            {
-                var registeredCasesSection = BuildRegisteredCasesSection(descriptor);
-                if (!string.IsNullOrWhiteSpace(registeredCasesSection))
-                {
-                    sections.Add(registeredCasesSection);
-                }
-            }
-
-            return string.Join(
-                "\n\n",
-                sections.Where(section => !string.IsNullOrWhiteSpace(section)));
-        }
-
-        private static bool HasResultCounts(FeatureTestRunRecord record)
-        {
-            return record != null
-                && (record.PassCount > 0
-                    || record.FailCount > 0
-                    || record.SkipCount > 0
-                    || record.InconclusiveCount > 0
-                    || record.DurationSeconds > 0d);
+            return BuildFailureDetailsSection(descriptor, assemblyResult);
         }
 
         private static bool HasProblemResult(FeatureTestRunRecord record)
         {
             return record != null
                 && IsProblemStatus(record.Status);
-        }
-
-        private static string BuildCaseResultsSection(FeatureTestDescriptor descriptor, FeatureTestRunRecord record)
-        {
-            if (descriptor == null || descriptor.TestCases == null || descriptor.TestCases.Count == 0 || record == null)
-            {
-                return string.Empty;
-            }
-
-            var lines = new List<string>();
-            for (var i = 0; i < descriptor.TestCases.Count; i++)
-            {
-                var testCase = descriptor.TestCases[i];
-                if (string.IsNullOrWhiteSpace(testCase.ResultKey)
-                    || !record.CaseStatuses.TryGetValue(testCase.ResultKey, out var status))
-                {
-                    continue;
-                }
-
-                if (!IsProblemStatus(status))
-                {
-                    continue;
-                }
-
-                lines.Add("- " + testCase.Title + ": " + FormatStatusLabel(status));
-            }
-
-            return lines.Count == 0
-                ? string.Empty
-                : "Case Results\n" + string.Join("\n", lines);
         }
 
         private static string BuildFailureDetailsSection(FeatureTestDescriptor descriptor, ITestResultAdaptor assemblyResult)
@@ -560,29 +578,14 @@ namespace Ee4v.Core.Testing
                 : "Failure Details\n" + string.Join("\n\n", entries);
         }
 
-        private static string BuildSummarySection(FeatureTestRunRecord record, string failureDetailsSection)
+        private static string BuildCaseDetailEntry(ITestResultAdaptor leaf)
         {
-            if (record == null || string.IsNullOrWhiteSpace(record.Message))
+            if (leaf == null || string.IsNullOrWhiteSpace(leaf.Message))
             {
                 return string.Empty;
             }
 
-            var summary = record.Message.Trim();
-            if (!string.IsNullOrWhiteSpace(failureDetailsSection)
-                && failureDetailsSection.IndexOf(summary, StringComparison.Ordinal) >= 0)
-            {
-                return string.Empty;
-            }
-
-            return "Summary\n" + summary;
-        }
-
-        private static string BuildRegisteredCasesSection(FeatureTestDescriptor descriptor)
-        {
-            var registeredCases = BuildRegisteredCaseSummary(descriptor);
-            return string.IsNullOrWhiteSpace(registeredCases)
-                ? string.Empty
-                : "Registered Cases\n" + registeredCases;
+            return leaf.Message.Trim();
         }
 
         private static bool IsProblemStatus(FeatureTestRunStatus status)
@@ -664,6 +667,7 @@ namespace Ee4v.Core.Testing
                 record.Status = FeatureTestRunStatus.Running;
                 record.Message = "テストを実行中です。";
                 record.DetailedResult = string.Empty;
+                record.CaseDetails.Clear();
             }
 
             NotifyChanged();
@@ -688,6 +692,7 @@ namespace Ee4v.Core.Testing
                     ? "テストを実行中です。"
                     : "実行中: " + _activeRun.LastTestName;
                 record.DetailedResult = string.Empty;
+                record.CaseDetails.Clear();
             }
 
             NotifyChanged();
@@ -810,6 +815,7 @@ namespace Ee4v.Core.Testing
             public double durationSeconds;
             public long finishedAtUtcTicks;
             public PersistedCaseStatus[] caseStatuses;
+            public PersistedCaseDetail[] caseDetails;
         }
 
         [Serializable]
@@ -853,6 +859,13 @@ namespace Ee4v.Core.Testing
             public int status;
         }
 
+        [Serializable]
+        private sealed class PersistedCaseDetail
+        {
+            public string resultKey;
+            public string details;
+        }
+
         private void SaveState()
         {
             var state = new PersistedState
@@ -875,6 +888,13 @@ namespace Ee4v.Core.Testing
                         {
                             resultKey = caseStatus.Key,
                             status = (int)caseStatus.Value
+                        })
+                        .ToArray(),
+                    caseDetails = pair.Value.CaseDetails
+                        .Select(caseDetail => new PersistedCaseDetail
+                        {
+                            resultKey = caseDetail.Key,
+                            details = caseDetail.Value
                         })
                         .ToArray()
                 }).ToArray(),
@@ -948,21 +968,35 @@ namespace Ee4v.Core.Testing
                             : (DateTime?)null
                     };
 
-                    if (persisted.caseStatuses == null)
+                    var record = _records[persisted.featureScope];
+                    if (persisted.caseStatuses != null)
+                    {
+                        for (var caseIndex = 0; caseIndex < persisted.caseStatuses.Length; caseIndex++)
+                        {
+                            var caseStatus = persisted.caseStatuses[caseIndex];
+                            if (caseStatus == null || string.IsNullOrWhiteSpace(caseStatus.resultKey))
+                            {
+                                continue;
+                            }
+
+                            record.CaseStatuses[caseStatus.resultKey] = (FeatureTestRunStatus)caseStatus.status;
+                        }
+                    }
+
+                    if (persisted.caseDetails == null)
                     {
                         continue;
                     }
 
-                    var record = _records[persisted.featureScope];
-                    for (var caseIndex = 0; caseIndex < persisted.caseStatuses.Length; caseIndex++)
+                    for (var detailIndex = 0; detailIndex < persisted.caseDetails.Length; detailIndex++)
                     {
-                        var caseStatus = persisted.caseStatuses[caseIndex];
-                        if (caseStatus == null || string.IsNullOrWhiteSpace(caseStatus.resultKey))
+                        var caseDetail = persisted.caseDetails[detailIndex];
+                        if (caseDetail == null || string.IsNullOrWhiteSpace(caseDetail.resultKey) || string.IsNullOrWhiteSpace(caseDetail.details))
                         {
                             continue;
                         }
 
-                        record.CaseStatuses[caseStatus.resultKey] = (FeatureTestRunStatus)caseStatus.status;
+                        record.CaseDetails[caseDetail.resultKey] = caseDetail.details;
                     }
                 }
             }

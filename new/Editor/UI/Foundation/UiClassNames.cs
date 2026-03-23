@@ -92,6 +92,12 @@ namespace Ee4v.UI
         public const string TestResultGroupCaseCard = "ee4v-ui-test-result-group__case-card";
         public const string TestResultGroupCaseTitle = "ee4v-ui-test-result-group__case-title";
         public const string TestResultGroupCaseDescription = "ee4v-ui-test-result-group__case-description";
+        public const string TestResultGroupCaseDetailsPanel = "ee4v-ui-test-result-group__case-details-panel";
+        public const string TestResultGroupCaseDetailsToggle = "ee4v-ui-test-result-group__case-details-toggle";
+        public const string TestResultGroupCaseDetailsChevron = "ee4v-ui-test-result-group__case-details-chevron";
+        public const string TestResultGroupCaseDetailsTitle = "ee4v-ui-test-result-group__case-details-title";
+        public const string TestResultGroupCaseDetailsBody = "ee4v-ui-test-result-group__case-details-body";
+        public const string TestResultGroupCaseDetailsField = "ee4v-ui-test-result-group__case-details-field";
 
         public const string CatalogPageTitle = "ee4v-ui-catalog-page__title";
         public const string CatalogPageDescription = "ee4v-ui-catalog-page__description";

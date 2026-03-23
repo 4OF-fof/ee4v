@@ -22,7 +22,7 @@
       "searchPlaceholder": "suite 名、説明、テスト名で検索",
       "tests": "Tests",
       "testCasesMeta": "{0}件",
-      "detailsTitle": "詳細結果",
+      "failureDetailsTitle": "失敗詳細",
       "copy": "コピー",
       "countsFormat": "Pass {0}  Fail {1}  Skip {2}  Inc {3}  {4:0.00}s",
       "noSuites": "登録済みの feature テストがありません。",
@@ -30,7 +30,8 @@
     },
     "category": {
       "standard": "標準",
-      "staticAudit": "静的監査"
+      "staticAudit": "ローカライズ",
+      "ui": "UI"
     },
     "status": {
       "notRun": "未実行",

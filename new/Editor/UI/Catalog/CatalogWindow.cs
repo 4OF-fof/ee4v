@@ -471,7 +471,7 @@ namespace Ee4v.UI
 
         private void BuildCopyableTextAreaStory(VisualElement parent)
         {
-            var text = "ja-JP/Core: testing.window.detailsTitle (Editor/Core/Localization/ja-JP/core.jsonc)\n" +
+            var text = "ja-JP/Core: testing.window.failureDetailsTitle (Editor/Core/Localization/ja-JP/core.jsonc)\n" +
                        "en-US/Core: testing.window.copy (Editor/Core/Localization/en-US/core.jsonc)";
             var buttonText = "Copy";
             Action refresh = null;
@@ -899,7 +899,7 @@ namespace Ee4v.UI
         {
             var statusText = "成功";
             var message = "Pass 3  Fail 0  Skip 0  Inc 0  0.08s";
-            var details = "[Failed] ローカライズ未使用キーがない\nja-JP/Core: testing.window.copy (Editor/Core/Localization/ja-JP/core.jsonc)";
+            var details = "Test\n依存関係の初期化確認\n\nDescription\n実行前の static 状態が正しく復元されることを確認します。\n\nFailure Details\nja-JP/Core: testing.window.copy (Editor/Core/Localization/ja-JP/core.jsonc)";
             var expanded = false;
             var runEnabled = true;
             Action refresh = null;
@@ -970,14 +970,11 @@ namespace Ee4v.UI
                     summaryTone: UiBannerTone.Info,
                     casesTitle: "Tests",
                     casesMeta: "3 items",
-                    detailsTitle: "Detailed Result",
-                    detailsText: details,
-                    detailsCopyButtonText: "Copy",
                     expanded: expanded,
                     cases: new[]
                     {
                         new TestResultGroupCaseState("設定定義の登録確認", "必要な定義が不足なく登録されることを確認します。", new StatusBadgeState(statusText, UiStatusTone.Passed)),
-                        new TestResultGroupCaseState("依存関係の初期化確認", "実行前の static 状態が正しく復元されることを確認します。", new StatusBadgeState(statusText, UiStatusTone.Passed)),
+                        new TestResultGroupCaseState("依存関係の初期化確認", "実行前の static 状態が正しく復元されることを確認します。", new StatusBadgeState(statusText, UiStatusTone.Failed), detailsToggleText: "Failure Details", detailsText: details, detailsCopyButtonText: "Copy"),
                         new TestResultGroupCaseState("Unity Test Runner 連携確認", "suite 単位の実行要求が適切な assembly filter で送られることを確認します。", new StatusBadgeState(statusText, UiStatusTone.Passed))
                     }));
             };
