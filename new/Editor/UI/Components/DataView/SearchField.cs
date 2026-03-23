@@ -23,6 +23,7 @@ namespace Ee4v.UI
         private readonly TextField _input;
         private readonly UiTextElement _placeholderLabel;
         private readonly Button _clearButton;
+        private readonly Icon _clearIcon;
         private bool _isFocused;
 
         public SearchField(SearchFieldState state = null)
@@ -56,11 +57,10 @@ namespace Ee4v.UI
             _placeholderLabel = UiTextFactory.Create(string.Empty, UiClassNames.SearchFieldPlaceholder);
             _placeholderLabel.pickingMode = PickingMode.Ignore;
 
-            _clearButton = new Button(ClearValue)
-            {
-                text = "X"
-            };
+            _clearButton = new Button(ClearValue);
             _clearButton.AddToClassList(UiClassNames.SearchFieldClear);
+            _clearIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.Close, size: 10f, tooltip: "Clear"));
+            _clearButton.Add(_clearIcon);
 
             _inputHost.Add(_input);
             _inputHost.Add(_placeholderLabel);

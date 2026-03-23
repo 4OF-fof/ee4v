@@ -13,6 +13,7 @@ namespace Ee4v.UI
     internal enum UiBuiltinIcon
     {
         Search,
+        Close,
         DisclosureClosed,
         DisclosureOpen
     }
@@ -54,6 +55,14 @@ namespace Ee4v.UI
             {
                 case UiBuiltinIcon.Search:
                     return new[] { "Search Icon" };
+                case UiBuiltinIcon.Close:
+                    return new[]
+                    {
+                        "CrossIcon",
+                        "d_CrossIcon",
+                        "winbtn_win_close",
+                        "d_winbtn_win_close"
+                    };
                 case UiBuiltinIcon.DisclosureClosed:
                     return new[]
                     {

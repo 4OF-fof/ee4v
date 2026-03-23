@@ -7,6 +7,7 @@ using Ee4v.Core.Injector;
 using Ee4v.Core.Internal;
 using Ee4v.Core.Settings;
 using Ee4v.Core.Testing;
+using Ee4v.UI;
 using UnityEditor;
 
 namespace Ee4v.Core.Tests
@@ -22,6 +23,7 @@ namespace Ee4v.Core.Tests
             PackagePathUtilityReset.Reset();
             I18NReset.Reset();
             CoreLocalizationDefinitionsReset.Reset();
+            WindowToastReset.Reset();
         }
 
         public static void RecoverEditorState()
@@ -169,6 +171,14 @@ namespace Ee4v.Core.Tests
         public static void Reset()
         {
             ReflectionReset.SetStaticField(typeof(CoreLocalizationDefinitions), "_registered", false);
+        }
+    }
+
+    internal static class WindowToastReset
+    {
+        public static void Reset()
+        {
+            WindowToastApi.ResetAllHosts();
         }
     }
 

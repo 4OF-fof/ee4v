@@ -22,6 +22,14 @@ namespace Ee4v.UI
             Result
         }
 
+        private enum WindowToastStoryPreset
+        {
+            Info,
+            Success,
+            Warning,
+            Error
+        }
+
         private readonly List<StoryDefinition> _stories = new List<StoryDefinition>();
 
         private VisualElement _navigatorHost;
@@ -92,6 +100,16 @@ namespace Ee4v.UI
                 new string[0],
                 ComponentImplementationKind.UiToolkit,
                 BuildCopyableTextAreaStory));
+
+            _stories.Add(new StoryDefinition(
+                "window-toast",
+                "Overlay",
+                "WindowToast",
+                "ee4v 自前 EditorWindow に後付けできる、右上スタック型の toast 通知基盤です。",
+                "window root に absolute overlay host を追加し、info/success/warning/error の通知を縦に積みます。action button を持つ toast も同じ面の中で扱えます。",
+                new string[0],
+                ComponentImplementationKind.UiToolkit,
+                BuildWindowToastStory));
 
             _stories.Add(new StoryDefinition(
                 "test-result-group",
@@ -182,6 +200,7 @@ namespace Ee4v.UI
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/alerts.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/status-badge.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/copyable-text-area.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/window-toast.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/icon.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Catalog/catalog-window.uss");
 
@@ -197,6 +216,7 @@ namespace Ee4v.UI
             shell.Add(_navigatorHost);
             shell.Add(_contentHost);
             root.Add(shell);
+            WindowToastApi.EnsureHost(this);
 
             BuildNavigator();
             ShowStory(_selectedStory);
@@ -480,6 +500,121 @@ namespace Ee4v.UI
             };
 
             refresh();
+            FinalizeControlsSection(parent, controls);
+        }
+
+        private void BuildWindowToastStory(VisualElement parent)
+        {
+            var preset = WindowToastStoryPreset.Info;
+            var tone = WindowToastTone.Info;
+            var title = string.Empty;
+            var message = string.Empty;
+            var durationSeconds = 4d;
+            var dismissible = true;
+            var hasAction = false;
+            Action refresh = null;
+
+            Action<WindowToastStoryPreset> applyPreset = selectedPreset =>
+            {
+                preset = selectedPreset;
+                ApplyCatalogToastPreset(selectedPreset, out tone, out title, out message, out durationSeconds, out dismissible, out hasAction);
+                if (refresh != null)
+                {
+                    refresh();
+                }
+            };
+
+            var controls = CreateTabbedControlsSection(parent, "preset で tone と文面を切り替えながら、Catalog window 右上に積まれる toast を確認します。");
+            var toneField = AddEnumField(controls.Content, "Tone", tone, value =>
+            {
+                applyPreset((WindowToastStoryPreset)(int)value);
+            });
+            var titleField = AddTextField(controls.Content, "Title", title, value =>
+            {
+                title = value;
+                refresh();
+            });
+            var messageField = AddTextField(controls.Content, "Message", message, value =>
+            {
+                message = value;
+                refresh();
+            }, true);
+            var durationField = new FloatField("Duration")
+            {
+                value = (float)durationSeconds
+            };
+            durationField.RegisterValueChangedCallback(evt =>
+            {
+                durationSeconds = Math.Max(0d, evt.newValue);
+                refresh();
+            });
+            controls.Content.Add(durationField);
+
+            var dismissibleToggle = new Toggle("Dismissible")
+            {
+                value = dismissible
+            };
+            dismissibleToggle.RegisterValueChangedCallback(evt =>
+            {
+                dismissible = evt.newValue;
+                refresh();
+            });
+            controls.Content.Add(dismissibleToggle);
+
+            var actionToggle = new Toggle("Action")
+            {
+                value = hasAction
+            };
+            actionToggle.RegisterValueChangedCallback(evt =>
+            {
+                hasAction = evt.newValue;
+                refresh();
+            });
+            controls.Content.Add(actionToggle);
+
+            var buttonRow = new VisualElement();
+            buttonRow.style.flexDirection = FlexDirection.Row;
+            buttonRow.style.justifyContent = Justify.FlexEnd;
+            controls.Content.Add(buttonRow);
+
+            var pushButton = new Button(() =>
+            {
+                WindowToastApi.Show(this, CreateCatalogToastRequest(tone, title, message, durationSeconds, dismissible, hasAction));
+            })
+            {
+                text = "Push"
+            };
+            buttonRow.Add(pushButton);
+
+            var clearButton = new Button(() => WindowToastApi.Clear(this))
+            {
+                text = "Clear"
+            };
+            clearButton.style.marginLeft = 6f;
+            buttonRow.Add(clearButton);
+
+            refresh = () =>
+            {
+                controls.TabCard.SetState(
+                    new TabCardState(
+                        new[]
+                        {
+                            new TabCardTabState(WindowToastStoryPreset.Info.ToString(), "Info"),
+                            new TabCardTabState(WindowToastStoryPreset.Success.ToString(), "Success"),
+                            new TabCardTabState(WindowToastStoryPreset.Warning.ToString(), "Warning"),
+                            new TabCardTabState(WindowToastStoryPreset.Error.ToString(), "Error")
+                        },
+                        preset.ToString()),
+                    id => applyPreset((WindowToastStoryPreset)Enum.Parse(typeof(WindowToastStoryPreset), id)));
+                toneField.SetValueWithoutNotify((Enum)(object)tone);
+                titleField.SetValueWithoutNotify(title);
+                messageField.SetValueWithoutNotify(message);
+                durationField.SetValueWithoutNotify((float)durationSeconds);
+                dismissibleToggle.SetValueWithoutNotify(dismissible);
+                actionToggle.SetValueWithoutNotify(hasAction);
+            };
+
+            applyPreset(preset);
             FinalizeControlsSection(parent, controls);
         }
 
@@ -851,6 +986,83 @@ namespace Ee4v.UI
             FinalizeControlsSection(parent, controls);
         }
 
+        private static WindowToastRequest CreateCatalogToastRequest(
+            WindowToastTone tone,
+            string title,
+            string message,
+            double durationSeconds,
+            bool dismissible,
+            bool hasAction)
+        {
+            return new WindowToastRequest(
+                tone,
+                FormatCatalogToastTitle(title),
+                message,
+                durationSeconds: durationSeconds,
+                dismissible: dismissible,
+                actions: hasAction
+                    ? new[]
+                    {
+                        new WindowToastAction("Open", closesToast: true)
+                    }
+                    : Array.Empty<WindowToastAction>());
+        }
+
+        private static void ApplyCatalogToastPreset(
+            WindowToastStoryPreset preset,
+            out WindowToastTone tone,
+            out string title,
+            out string message,
+            out double durationSeconds,
+            out bool dismissible,
+            out bool hasAction)
+        {
+            dismissible = true;
+            hasAction = false;
+
+            switch (preset)
+            {
+                case WindowToastStoryPreset.Success:
+                    tone = WindowToastTone.Success;
+                    title = "Catalog Sync Completed";
+                    message = "UI Catalog の story metadata 更新が反映されました。";
+                    durationSeconds = 3d;
+                    return;
+                case WindowToastStoryPreset.Warning:
+                    tone = WindowToastTone.Warning;
+                    title = "Preview Requires Refresh";
+                    message = "現在の変更を反映するには Catalog window の再描画が必要です。";
+                    durationSeconds = 0d;
+                    hasAction = true;
+                    return;
+                case WindowToastStoryPreset.Error:
+                    tone = WindowToastTone.Error;
+                    title = "Feature Test Launch Failed";
+                    message = "Core の test run を開始できませんでした。詳細ログを確認してください。";
+                    durationSeconds = 0d;
+                    return;
+                default:
+                    tone = WindowToastTone.Info;
+                    title = "Overlay Preview Active";
+                    message = "Catalog window 自体に toast overlay を表示して挙動を確認します。";
+                    durationSeconds = 4d;
+                    return;
+            }
+        }
+
+        private static string FormatCatalogToastTitle(string title)
+        {
+            var normalized = (title ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(normalized))
+            {
+                return "[TEST]";
+            }
+
+            return normalized.StartsWith("[TEST]", StringComparison.Ordinal)
+                ? normalized
+                : "[TEST] " + normalized;
+        }
+
         private ControlsSectionContext CreateTabbedControlsSection(VisualElement parent, string description)
         {
             var card = new InfoCard(new InfoCardState("コントロール", description));
@@ -1099,44 +1311,55 @@ namespace Ee4v.UI
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
                     6,
+                    new SampleTreeNode("Overlay", string.Empty),
+                    "Overlay",
+                    new[]
+                    {
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            7,
+                            new SampleTreeNode("WindowToast", "Toast"),
+                            "WindowToast editor window overlay toast")
+                    }),
+                new SearchableTreeItemData<SampleTreeNode>(
+                    8,
                     new SampleTreeNode("Interactive", string.Empty),
                     "Interactive",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
-                            7,
+                            9,
                             new SampleTreeNode("TabCard", "Tabs"),
                             "TabCard Tabs switcher")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
-                    8,
+                    10,
                     new SampleTreeNode("DataView", string.Empty),
                     "DataView",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
-                            9,
+                            11,
                             new SampleTreeNode("SearchField", "Input"),
                             "SearchField input search"),
                         new SearchableTreeItemData<SampleTreeNode>(
-                            10,
+                            12,
                             new SampleTreeNode("SearchableTreeView", "Tree"),
                             "SearchableTreeView searchable tree")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
-                    11,
+                    13,
                     new SampleTreeNode("Domain", string.Empty),
                     "Domain",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
-                            12,
+                            14,
                             new SampleTreeNode("Testing", string.Empty),
                             "Testing",
                             new[]
                             {
                                 new SearchableTreeItemData<SampleTreeNode>(
-                                    13,
+                                    15,
                                     new SampleTreeNode("TestResultGroup", "Testing"),
                                     "TestResultGroup testing domain result")
                             })

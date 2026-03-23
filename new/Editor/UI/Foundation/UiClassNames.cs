@@ -35,6 +35,21 @@ namespace Ee4v.UI
         public const string CopyableTextAreaCopyButton = "ee4v-ui-copyable-text-area__copy-button";
         public const string CopyableTextAreaField = "ee4v-ui-copyable-text-area__field";
 
+        public const string WindowToastHost = "ee4v-ui-window-toast-host";
+        public const string WindowToast = "ee4v-ui-window-toast";
+        public const string WindowToastHeader = "ee4v-ui-window-toast__header";
+        public const string WindowToastHeaderText = "ee4v-ui-window-toast__header-text";
+        public const string WindowToastTitle = "ee4v-ui-window-toast__title";
+        public const string WindowToastMessage = "ee4v-ui-window-toast__message";
+        public const string WindowToastCloseButton = "ee4v-ui-window-toast__close";
+        public const string WindowToastActions = "ee4v-ui-window-toast__actions";
+        public const string WindowToastActionButton = "ee4v-ui-window-toast__action";
+        public const string WindowToastDismissing = "ee4v-ui-window-toast--dismissing";
+        public const string WindowToastToneInfo = "ee4v-ui-window-toast--info";
+        public const string WindowToastToneSuccess = "ee4v-ui-window-toast--success";
+        public const string WindowToastToneWarning = "ee4v-ui-window-toast--warning";
+        public const string WindowToastToneError = "ee4v-ui-window-toast--error";
+
         public const string TabCard = "ee4v-ui-tab-card";
         public const string TabCardTabs = "ee4v-ui-tab-card__tabs";
         public const string TabCardTab = "ee4v-ui-tab-card__tab";

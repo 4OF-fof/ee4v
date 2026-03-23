@@ -114,6 +114,8 @@ namespace Ee4v.Core.Testing
             shell.Add(_suiteScrollView);
             root.Add(shell);
 
+            WindowToastApi.EnsureHost(this);
+
             RebuildDescriptorViews();
         }
 
@@ -288,7 +290,10 @@ namespace Ee4v.Core.Testing
 
             if (!_runnerService.TryRun(descriptor, out var errorMessage))
             {
-                EditorUtility.DisplayDialog(I18N.Get("testing.window.title"), errorMessage, "OK");
+                WindowToastApi.Show(this, new WindowToastRequest(
+                    WindowToastTone.Error,
+                    I18N.Get("testing.window.title"),
+                    errorMessage));
                 return;
             }
 

@@ -132,11 +132,21 @@
     background-color: rgba(0, 0, 0, 0);
     color: rgba(210, 210, 210, 0.72);
     -unity-text-align: middle-center;
+    justify-content: center;
+    align-items: center;
+    opacity: 0.8;
+}
+
+.ee4v-ui-search-field__clear .ee4v-ui-icon {
     opacity: 0.8;
 }
 
 .ee4v-ui-search-field__clear:hover {
     background-color: rgba(255, 255, 255, 0.08);
     color: rgba(255, 255, 255, 0.92);
+    opacity: 1;
+}
+
+.ee4v-ui-search-field__clear:hover .ee4v-ui-icon {
     opacity: 1;
 }
