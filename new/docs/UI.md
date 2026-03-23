@@ -8,8 +8,10 @@ UI コンポーネントは責務ごとにカテゴリを分ける。
   - 情報表示が主目的の汎用UI
 - `Interactive`
   - ユーザー操作を伴う汎用UI
+  - 例: `SearchField`, `TabCard`
 - `DataView`
   - データソースの閲覧を扱うUI
+  - 例: `SearchableTreeView`
 - `Overlay`
   - 既存画面の上に重ねて出すUI
 - `Domain/<Feature>`
@@ -101,6 +103,8 @@ Unityのbuilt-in iconはバージョン差分があるため、`Icon` / `UiBuilt
 新規 UI を作ったら、原則 `Debug/UI Catalog` で触れるようにする。
 
 追加箇所は `Editor/UI/Catalog/CatalogWindow.cs`。
+
+また、新規 UI 実装前に `agent.md` から参照されるこの `docs/UI.md` を確認し、カテゴリ、text class、Catalog 追加ルールに沿って実装する。
 
 ### 5-1. `EnsureStories()` に story を追加する
 

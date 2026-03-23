@@ -68,7 +68,7 @@ namespace Ee4v.UI
 
             _stories.Add(new StoryDefinition(
                 "search-field",
-                "DataView",
+                "Interactive",
                 "SearchField",
                 "検索入力と clear 操作をまとめた単体利用向けの検索コンポーネントです。",
                 "一覧やカード列の絞り込みに使う軽量な検索入力です。placeholder と clear button を持ち、SearchableTreeView の検索 UI と同じ見た目・挙動を単体でも使えます。",
@@ -84,7 +84,7 @@ namespace Ee4v.UI
                 "DataView",
                 "SearchableTreeView",
                 "検索窓と tree view をまとめて提供する、絞り込み可能なツリーコンポーネントです。",
-                "呼び出し側は階層データと row 描画だけを渡し、検索文字列の状態管理や tree の絞り込みは component 側に任せます。検索欄は SearchField を内部利用し、tree 本体と同じ面の中で扱います。",
+                "呼び出し側は階層データと row 描画だけを渡し、検索文字列の状態管理や tree の絞り込みは component 側に任せます。検索欄は SearchField を内部利用し、tree 本体と同じ面の中で扱います。各 row 右側の短い文字列は component が自動生成するものではなく、bindItem で描画する row data 側の meta 表示です。",
                 new[]
                 {
                     "SearchField"
@@ -193,7 +193,7 @@ namespace Ee4v.UI
             root.Clear();
             root.AddToClassList(RootClassName);
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/search-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/search-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/searchable-tree-view.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/test-result-group.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
@@ -424,6 +424,11 @@ namespace Ee4v.UI
 
         private void BuildSearchableTreeViewStory(VisualElement parent)
         {
+            var note = new InfoCard(new InfoCardState(
+                "行右側の文字列について",
+                "story で右側に出ている \"Card\" や \"Tree\" は SearchableTreeView 固有の列ではありません。Catalog では bindItem が SampleTreeNode.Meta を 2 列目へ描画しており、実際の表示内容は呼び出し側の row data と bindItem 実装で決まります。"));
+            parent.Add(note);
+
             var preview = CreatePreviewSection(parent);
             var treeView = new SearchableTreeView<SampleTreeNode>(
                 CreateSampleTreeItem,
@@ -1326,19 +1331,19 @@ namespace Ee4v.UI
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
                             9,
+                            new SampleTreeNode("SearchField", "Input"),
+                            "SearchField input search"),
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            10,
                             new SampleTreeNode("TabCard", "Tabs"),
                             "TabCard Tabs switcher")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
-                    10,
+                    11,
                     new SampleTreeNode("DataView", string.Empty),
                     "DataView",
                     new[]
                     {
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            11,
-                            new SampleTreeNode("SearchField", "Input"),
-                            "SearchField input search"),
                         new SearchableTreeItemData<SampleTreeNode>(
                             12,
                             new SampleTreeNode("SearchableTreeView", "Tree"),
