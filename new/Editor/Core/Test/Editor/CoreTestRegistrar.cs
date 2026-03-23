@@ -10,7 +10,7 @@ namespace Ee4v.Core.Tests
                 "Core",
                 "Core",
                 "Ee4v.Core.Tests.Editor",
-                "Core の I18N スコープ解決を確認します。",
+                "Core の I18N スコープ解決と localization 監査ルールを確認します。",
                 order: -100);
         }
     }

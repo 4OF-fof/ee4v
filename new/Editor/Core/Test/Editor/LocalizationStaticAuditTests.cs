@@ -3,9 +3,9 @@ using Ee4v.Core.Testing;
 using Ee4v.Core.Testing.StaticAnalysis;
 using NUnit.Framework;
 
-namespace Ee4v.Localization.Tests
+namespace Ee4v.Core.Tests
 {
-    public sealed class LocalizationTests
+    public sealed class LocalizationStaticAuditTests
     {
         [Test]
         [FeatureTestCase(
