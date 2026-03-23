@@ -23,7 +23,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "I18N.Get が caller file から scope を解決する",
             "I18N.Get が Core.Tests 名前空間の呼び出し元から Core scope を解決し、キー文字列ではなく翻訳値を返すことを確認します。",
-            order: 4)]
+            order: 0)]
         public void I18N_Get_ResolvesScope_FromCallerFilePath()
         {
             Ee4vCoreTestReset.RecoverEditorState();
@@ -38,7 +38,7 @@ namespace Ee4v.Core.Tests
         [FeatureTestCase(
             "I18N.TryGet が caller file から scope を解決する",
             "I18N.TryGet が Core.Tests 名前空間の呼び出し元から Core scope を解決し、翻訳取得に成功することを確認します。",
-            order: 5)]
+            order: 1)]
         public void I18N_TryGet_ResolvesScope_FromCallerFilePath()
         {
             Ee4vCoreTestReset.RecoverEditorState();

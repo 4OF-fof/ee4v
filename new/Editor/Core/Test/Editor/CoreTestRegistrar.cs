@@ -10,7 +10,7 @@ namespace Ee4v.Core.Tests
                 "Core",
                 "Core",
                 "Ee4v.Core.Tests.Editor",
-                "Core 基盤とテスト管理機能の成立性を確認します。",
+                "Core の I18N スコープ解決を確認します。",
                 order: -100);
         }
     }

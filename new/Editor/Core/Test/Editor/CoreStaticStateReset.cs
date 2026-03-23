@@ -22,7 +22,7 @@ namespace Ee4v.Core.Tests
             InjectorApiReset.Reset();
             PackagePathUtilityReset.Reset();
             I18NReset.Reset();
-            CoreLocalizationDefinitionsReset.Reset();
+            Ee4vBootstrapFlagReset.Reset();
             WindowToastReset.Reset();
         }
 
@@ -166,11 +166,31 @@ namespace Ee4v.Core.Tests
         }
     }
 
-    internal static class CoreLocalizationDefinitionsReset
+    internal static class Ee4vBootstrapFlagReset
     {
         public static void Reset()
         {
-            ReflectionReset.SetStaticField(typeof(CoreLocalizationDefinitions), "_registered", false);
+            foreach (var type in typeof(SettingApi).Assembly.GetTypes())
+            {
+                if (type == null || string.IsNullOrWhiteSpace(type.Namespace) || !type.Namespace.StartsWith("Ee4v.", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                ResetFlag(type, "_initialized");
+                ResetFlag(type, "_registered");
+            }
+        }
+
+        private static void ResetFlag(Type type, string fieldName)
+        {
+            var field = type.GetField(fieldName, BindingFlags.Static | BindingFlags.NonPublic);
+            if (field == null || field.FieldType != typeof(bool))
+            {
+                return;
+            }
+
+            field.SetValue(null, false);
         }
     }
 
