@@ -33,6 +33,7 @@ namespace Ee4v.UI
 
         public const string CopyableTextArea = "ee4v-ui-copyable-text-area";
         public const string CopyableTextAreaCopyButton = "ee4v-ui-copyable-text-area__copy-button";
+        public const string CopyableTextAreaCopyButtonCopied = "ee4v-ui-copyable-text-area__copy-button--copied";
         public const string CopyableTextAreaField = "ee4v-ui-copyable-text-area__field";
 
         public const string WindowToastHost = "ee4v-ui-window-toast-host";

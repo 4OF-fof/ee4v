@@ -33,6 +33,19 @@
     background-color: rgba(255, 255, 255, 0.072);
 }
 
+.ee4v-ui-copyable-text-area__copy-button--copied {
+    border-top-color: rgba(112, 180, 96, 0.34);
+    border-right-color: rgba(112, 180, 96, 0.34);
+    border-bottom-color: rgba(112, 180, 96, 0.34);
+    border-left-color: rgba(112, 180, 96, 0.34);
+    background-color: rgba(112, 180, 96, 0.16);
+    color: rgba(226, 245, 222, 0.96);
+}
+
+.ee4v-ui-copyable-text-area__copy-button--copied:hover {
+    background-color: rgba(112, 180, 96, 0.2);
+}
+
 .ee4v-ui-copyable-text-area__copy-button:disabled {
     opacity: 0.45;
 }
