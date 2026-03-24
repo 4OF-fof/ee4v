@@ -2,20 +2,20 @@ using System;
 using UnityEditor;
 using UnityEngine;
 
-namespace Ee4v.AssetManager
+namespace Ee4v.AssetManager.BoothLibraryManager
 {
-    internal sealed class AssetManagerBoothItemLookupWindow : EditorWindow
+    internal sealed class BoothLibraryManagerItemLookupWindow : EditorWindow
     {
         private string _databasePath;
         private string _itemIdText = string.Empty;
         private string _statusMessage = string.Empty;
-        private BoothLibraryItemRecord _currentItem;
+        private BoothLibraryManagerItemRecord _currentItem;
         private Vector2 _scrollPosition;
 
-        [MenuItem("Debug/AssetManager/Booth Item Lookup")]
+        [MenuItem("Debug/AssetManager/Booth Library Manager Item Lookup")]
         private static void ShowWindow()
         {
-            var window = GetWindow<AssetManagerBoothItemLookupWindow>();
+            var window = GetWindow<BoothLibraryManagerItemLookupWindow>();
             window.titleContent = new GUIContent("BLM Item Lookup");
             window.minSize = new Vector2(520f, 360f);
             window.Show();
@@ -25,7 +25,7 @@ namespace Ee4v.AssetManager
         {
             if (string.IsNullOrWhiteSpace(_databasePath))
             {
-                _databasePath = AssetManagerApi.GetDefaultBoothLibraryDatabasePath();
+                _databasePath = BoothLibraryManagerApi.GetDefaultDatabasePath();
             }
         }
 
@@ -45,10 +45,10 @@ namespace Ee4v.AssetManager
             {
                 if (GUILayout.Button("Use Default", GUILayout.Width(100f)))
                 {
-                    _databasePath = AssetManagerApi.GetDefaultBoothLibraryDatabasePath();
+                    _databasePath = BoothLibraryManagerApi.GetDefaultDatabasePath();
                 }
 
-                var exists = AssetManagerApi.BoothLibraryDatabaseExists(_databasePath);
+                var exists = BoothLibraryManagerApi.DatabaseExists(_databasePath);
                 EditorGUILayout.LabelField(exists ? "Exists" : "Missing");
             }
 
@@ -108,7 +108,7 @@ namespace Ee4v.AssetManager
 
             try
             {
-                var item = AssetManagerApi.GetBoothLibraryItemById(boothItemId, _databasePath);
+                var item = BoothLibraryManagerApi.GetItemById(boothItemId, _databasePath);
                 if (item == null)
                 {
                     _statusMessage = "Item was not found in the current database.";

@@ -1,6 +1,6 @@
 {
-  "name": "Ee4v.AssetManager.Editor",
-  "rootNamespace": "Ee4v.AssetManager",
+  "name": "Ee4v.AssetManager.BoothLibraryManager.Editor",
+  "rootNamespace": "Ee4v.AssetManager.BoothLibraryManager",
   "references": [
     "Ee4v.SQLite.Editor"
   ],

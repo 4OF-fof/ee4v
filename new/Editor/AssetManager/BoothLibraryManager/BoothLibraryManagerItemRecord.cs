@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 
-namespace Ee4v.AssetManager
+namespace Ee4v.AssetManager.BoothLibraryManager
 {
-    public sealed class BoothLibraryItemRecord
+    public sealed class BoothLibraryManagerItemRecord
     {
-        public BoothLibraryItemRecord(
+        public BoothLibraryManagerItemRecord(
             long boothItemId,
             string name,
             string itemUrl,

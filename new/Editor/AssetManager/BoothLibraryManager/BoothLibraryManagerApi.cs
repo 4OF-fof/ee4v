@@ -5,42 +5,42 @@ using System.Linq;
 using Ee4v.SQLite;
 using SQLite;
 
-namespace Ee4v.AssetManager
+namespace Ee4v.AssetManager.BoothLibraryManager
 {
-    public static class AssetManagerApi
+    public static class BoothLibraryManagerApi
     {
         private const string BoothBaseUrlFormat = "https://{0}.booth.pm";
         private const string BoothItemUrlFormat = "https://{0}.booth.pm/items/{1}";
         private const string BoothLibraryRelativePath = "pm.booth.library-manager\\data.db";
 
-        public static string GetDefaultBoothLibraryDatabasePath()
+        public static string GetDefaultDatabasePath()
         {
             return Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 BoothLibraryRelativePath);
         }
 
-        public static string ResolveBoothLibraryDatabasePath(string databasePath = null)
+        private static string ResolveDatabasePath(string databasePath = null)
         {
             var candidate = string.IsNullOrWhiteSpace(databasePath)
-                ? GetDefaultBoothLibraryDatabasePath()
+                ? GetDefaultDatabasePath()
                 : Environment.ExpandEnvironmentVariables(databasePath);
 
             return Path.GetFullPath(candidate);
         }
 
-        public static bool BoothLibraryDatabaseExists(string databasePath = null)
+        public static bool DatabaseExists(string databasePath = null)
         {
-            return File.Exists(ResolveBoothLibraryDatabasePath(databasePath));
+            return File.Exists(ResolveDatabasePath(databasePath));
         }
 
-        public static BoothLibraryItemRecord GetBoothLibraryItemById(long boothItemId, string databasePath = null)
+        public static BoothLibraryManagerItemRecord GetItemById(long boothItemId, string databasePath = null)
         {
-            BoothLibraryItemRecord item;
-            return TryGetBoothLibraryItemById(boothItemId, out item, databasePath) ? item : null;
+            BoothLibraryManagerItemRecord item;
+            return TryGetItemById(boothItemId, out item, databasePath) ? item : null;
         }
 
-        public static bool TryGetBoothLibraryItemById(long boothItemId, out BoothLibraryItemRecord item, string databasePath = null)
+        public static bool TryGetItemById(long boothItemId, out BoothLibraryManagerItemRecord item, string databasePath = null)
         {
             item = null;
             if (boothItemId <= 0)
@@ -48,7 +48,7 @@ namespace Ee4v.AssetManager
                 return false;
             }
 
-            var resolvedPath = ResolveBoothLibraryDatabasePath(databasePath);
+            var resolvedPath = ResolveDatabasePath(databasePath);
             if (!File.Exists(resolvedPath))
             {
                 return false;
@@ -56,7 +56,7 @@ namespace Ee4v.AssetManager
 
             SqliteBootstrap.EnsureInitialized();
 
-            using (var snapshot = BoothLibraryDatabaseSnapshot.Create(resolvedPath))
+            using (var snapshot = BoothLibraryManagerDatabaseSnapshot.Create(resolvedPath))
             using (var connection = OpenReadOnlyConnection(snapshot.DatabasePath))
             {
                 var row = connection.Query<BoothItemQueryRow>(
@@ -84,7 +84,7 @@ namespace Ee4v.AssetManager
                 }
 
                 var tags = LoadTags(connection, boothItemId);
-                item = new BoothLibraryItemRecord(
+                item = new BoothLibraryManagerItemRecord(
                     row.BoothItemId,
                     row.Name,
                     string.Format(BoothItemUrlFormat, row.ShopSubdomain, row.BoothItemId),

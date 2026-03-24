@@ -1,13 +1,13 @@
 using System;
 using System.IO;
 
-namespace Ee4v.AssetManager
+namespace Ee4v.AssetManager.BoothLibraryManager
 {
-    internal sealed class BoothLibraryDatabaseSnapshot : IDisposable
+    internal sealed class BoothLibraryManagerDatabaseSnapshot : IDisposable
     {
         private readonly string _snapshotDirectoryPath;
 
-        private BoothLibraryDatabaseSnapshot(string snapshotDirectoryPath, string databasePath)
+        private BoothLibraryManagerDatabaseSnapshot(string snapshotDirectoryPath, string databasePath)
         {
             _snapshotDirectoryPath = snapshotDirectoryPath;
             DatabasePath = databasePath;
@@ -15,7 +15,7 @@ namespace Ee4v.AssetManager
 
         public string DatabasePath { get; private set; }
 
-        public static BoothLibraryDatabaseSnapshot Create(string sourceDatabasePath)
+        public static BoothLibraryManagerDatabaseSnapshot Create(string sourceDatabasePath)
         {
             if (string.IsNullOrWhiteSpace(sourceDatabasePath))
             {
@@ -41,7 +41,7 @@ namespace Ee4v.AssetManager
             CopySidecarFile(sourceDatabasePath + "-wal", snapshotDatabasePath + "-wal");
             CopySidecarFile(sourceDatabasePath + "-shm", snapshotDatabasePath + "-shm");
 
-            return new BoothLibraryDatabaseSnapshot(snapshotDirectoryPath, snapshotDatabasePath);
+            return new BoothLibraryManagerDatabaseSnapshot(snapshotDirectoryPath, snapshotDatabasePath);
         }
 
         public void Dispose()
