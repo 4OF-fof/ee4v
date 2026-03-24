@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>sqlite-net-base</id>
+    <version>1.9.172</version>
+    <authors>SQLite-net</authors>
+    <license type="file">LICENSE.txt</license>
+    <licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
+    <icon>Logo-low.png</icon>
+    <projectUrl>https://github.com/praeclarum/sqlite-net</projectUrl>
+    <description>This is a special version of SQLite-net-pcl that does not include a SQLitePCLRaw bundle.
+      It is meant to give you all the power of SQLite-net but with the freedom to choose your own provider.
+      Please use the package sqlite-net-pcl if you have no idea what any of this means.</description>
+    <tags>sqlite-net sqlite database orm</tags>
+    <repository type="git" url="https://github.com/praeclarum/sqlite-net.git" commit="5f72241035dd48f4305a7c811eba8e7c955e9840" />
+    <dependencies>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="SQLitePCLRaw.core" version="2.1.2" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>
