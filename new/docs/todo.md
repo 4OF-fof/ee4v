@@ -4,23 +4,23 @@
 
 # AssetManager
 
-- [] Database
-    - [] Booth Library Manager Helper
+- [x] Database
+    - [x] Booth Library Manager Helper
         - 公式クライアントであるBooth Library Managerとの連携を担うための実装
         - metadataは`%appdata%/pm.booth.library-manager/data.db`に保存されており、これを操作することによって連携を行う(`docs/blm_db_structure.md`を参照)
         - アセットの保存先はユーザーが指定
-        - [] `%appdata%/pm.booth.library-manager/data.db`の存在確認
-        - [] dbファイルにアクセスし、各種操作を行うAPIを実装
+        - [x] `%appdata%/pm.booth.library-manager/data.db`の存在確認
+        - [x] dbファイルにアクセスし、各種操作を行うAPIを実装
             - まずは読み取り操作のみ実装
-            - [] 商品情報
-                - [] 商品名
-                - [] 商品URL
-                - [] 商品説明
-                - [] 商品サムネイル(URL)
-                - [] ショップ名
-                - [] ショップURL
-                - [] ショップサムネイル(URL)
-                - [] タグ
+            - [x] 商品情報
+                - [x] 商品名
+                - [x] 商品URL
+                - [x] 商品説明
+                - [x] 商品サムネイル(URL)
+                - [x] ショップ名
+                - [x] ショップURL
+                - [x] ショップサムネイル(URL)
+                - [x] タグ
 
 # Injector
 

@@ -5,7 +5,7 @@ using UnityEditor;
 namespace Ee4v.SQLite
 {
     [InitializeOnLoad]
-    internal static class SqliteBootstrap
+    public static class SqliteBootstrap
     {
         private static bool _initialized;
 

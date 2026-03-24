@@ -1,0 +1,22 @@
+{
+  "name": "Ee4v.AssetManager.Editor",
+  "rootNamespace": "Ee4v.AssetManager",
+  "references": [
+    "Ee4v.SQLite.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "SQLitePCLRaw.core.dll",
+    "SQLitePCLRaw.provider.e_sqlite3.dll",
+    "SQLite-net.dll"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
