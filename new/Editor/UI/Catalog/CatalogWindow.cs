@@ -170,6 +170,16 @@ namespace Ee4v.UI
                 BuildAssetManagerWindowLayoutStory));
 
             _stories.Add(new StoryDefinition(
+                "asset-manager-toolbar",
+                "Domain/AssetManager",
+                "AssetManagerToolbar",
+                "AssetManager main view 上部に置く、横並びの toolbar コンテナです。",
+                "現時点では中身を持たない container-only component です。呼び出し側が search、filter、action button などを Content slot に追加して使う前提です。",
+                new string[0],
+                ComponentImplementationKind.UiToolkit,
+                BuildAssetManagerToolbarStory));
+
+            _stories.Add(new StoryDefinition(
                 "tab-card",
                 "Interactive",
                 "TabCard",
@@ -237,8 +247,9 @@ namespace Ee4v.UI
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/search-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/single-select-button-group.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/searchable-tree-view.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/test-result-group.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/asset-manager-window-layout.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/Testing/test-result-group.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/asset-manager-window-layout.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/toolbar.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/tab-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/alerts.uss");
@@ -1088,6 +1099,20 @@ namespace Ee4v.UI
                 default:
                     return null;
             }
+        }
+
+        private void BuildAssetManagerToolbarStory(VisualElement parent)
+        {
+            var preview = CreatePreviewSection(parent);
+            var surface = CreatePreviewSurface();
+            surface.style.paddingLeft = 12f;
+            surface.style.paddingRight = 12f;
+            surface.style.paddingTop = 12f;
+            surface.style.paddingBottom = 12f;
+
+            var toolbar = new AssetManagerToolbar();
+            surface.Add(toolbar);
+            preview.Body.Add(surface);
         }
 
         private void BuildAssetManagerWindowLayoutStory(VisualElement parent)

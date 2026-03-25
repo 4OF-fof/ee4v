@@ -63,7 +63,8 @@ namespace Ee4v.AssetManager
             root.AddToClassList(WindowClassName);
 
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/asset-manager-window-layout.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/asset-manager-window-layout.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/toolbar.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/asset-manager-window.uss");
 
@@ -146,7 +147,9 @@ namespace Ee4v.AssetManager
 
         private static void PopulatePane(VisualElement paneContent, params InfoCard[] cards)
         {
-            CreatePaneScroll(paneContent, out var list);
+            paneContent.Clear();
+            var scroll = CreatePaneScroll(out var list);
+            paneContent.Add(scroll);
 
             for (var i = 0; i < cards.Length; i++)
             {
@@ -178,11 +181,8 @@ namespace Ee4v.AssetManager
 
             return card;
         }
-
-        private static ScrollView CreatePaneScroll(VisualElement paneContent, out VisualElement list)
+        private static ScrollView CreatePaneScroll(out VisualElement list)
         {
-            paneContent.Clear();
-
             var scroll = new ScrollView();
             scroll.AddToClassList(PaneScrollClassName);
 
@@ -190,7 +190,6 @@ namespace Ee4v.AssetManager
             list.AddToClassList(PaneListClassName);
 
             scroll.Add(list);
-            paneContent.Add(scroll);
             return scroll;
         }
     }

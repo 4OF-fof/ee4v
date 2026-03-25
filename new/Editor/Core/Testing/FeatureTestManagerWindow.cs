@@ -90,7 +90,7 @@ namespace Ee4v.Core.Testing
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/alerts.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/status-badge.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/copyable-text-area.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/test-result-group.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/Testing/test-result-group.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/Testing/feature-test-manager-window.uss");
 
             var shell = new VisualElement();

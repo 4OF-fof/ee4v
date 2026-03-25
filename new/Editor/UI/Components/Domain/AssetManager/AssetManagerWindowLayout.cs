@@ -56,6 +56,9 @@ namespace Ee4v.UI
         private const string ContentPaneClassName = "ee4v-ui-asset-manager-window-layout__pane--content";
         private const string InspectorPaneClassName = "ee4v-ui-asset-manager-window-layout__pane--inspector";
         private const string PaneBodyClassName = "ee4v-ui-asset-manager-window-layout__pane-body";
+        private const string ContentPaneBodyClassName = "ee4v-ui-asset-manager-window-layout__content-pane-body";
+        private const string ContentToolbarClassName = "ee4v-ui-asset-manager-window-layout__content-toolbar";
+        private const string ContentHostClassName = "ee4v-ui-asset-manager-window-layout__content-host";
         private const string SplitterClassName = "ee4v-ui-asset-manager-window-layout__splitter";
         private const string SplitterCollapsedClassName = "ee4v-ui-asset-manager-window-layout__splitter--collapsed";
         private const string SplitterToggleClassName = "ee4v-ui-asset-manager-window-layout__splitter-toggle";
@@ -89,10 +92,11 @@ namespace Ee4v.UI
             AddToClassList(RootClassName);
 
             _navigationPane = CreatePane(NavigationPaneClassName, out var navigationBody);
-            _contentPane = CreatePane(ContentPaneClassName, out var contentBody);
+            _contentPane = CreateContentPane(out var mainToolbar, out var contentBody);
             _inspectorPane = CreatePane(InspectorPaneClassName, out var inspectorBody);
 
             NavigationPaneContent = navigationBody;
+            MainToolbar = mainToolbar;
             ContentPaneContent = contentBody;
             InspectorPaneContent = inspectorBody;
 
@@ -129,6 +133,8 @@ namespace Ee4v.UI
         }
 
         public VisualElement NavigationPaneContent { get; }
+
+        public AssetManagerToolbar MainToolbar { get; }
 
         public VisualElement ContentPaneContent { get; }
 
@@ -216,6 +222,28 @@ namespace Ee4v.UI
             body = new VisualElement();
             body.AddToClassList(PaneBodyClassName);
 
+            pane.Add(body);
+            return pane;
+        }
+
+        private static VisualElement CreateContentPane(out AssetManagerToolbar toolbar, out VisualElement contentHost)
+        {
+            var pane = new VisualElement();
+            pane.AddToClassList(PaneClassName);
+            pane.AddToClassList(ContentPaneClassName);
+
+            var body = new VisualElement();
+            body.AddToClassList(PaneBodyClassName);
+            body.AddToClassList(ContentPaneBodyClassName);
+
+            toolbar = new AssetManagerToolbar();
+            toolbar.AddToClassList(ContentToolbarClassName);
+
+            contentHost = new VisualElement();
+            contentHost.AddToClassList(ContentHostClassName);
+
+            body.Add(toolbar);
+            body.Add(contentHost);
             pane.Add(body);
             return pane;
         }
