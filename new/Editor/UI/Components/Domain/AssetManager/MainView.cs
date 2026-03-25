@@ -8,21 +8,44 @@ namespace Ee4v.UI
 
         public MainView()
         {
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            RefreshContent();
+        }
+
+        private void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            AssetManagerViewState.SelectedItemChanged += OnSelectedItemChanged;
+            RefreshContent();
+        }
+
+        private void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            AssetManagerViewState.SelectedItemChanged -= OnSelectedItemChanged;
+        }
+
+        private void OnSelectedItemChanged(string itemId)
+        {
+            RefreshContent();
+        }
+
+        private void RefreshContent()
+        {
+            var selectedItem = AssetManagerViewState.SelectedItem;
             AssetManagerPanelFactory.Populate(
                 this,
                 RootClassName,
                 AssetManagerPanelFactory.CreateCard(
-                    "AssetManager",
-                    "Assets",
-                    "検索、一覧、選択状態の主要導線を置く主領域です。",
-                    "検索バーとフィルタ",
-                    "グリッド / リスト切り替え",
-                    "一括操作と import/export 導線"),
+                    selectedItem.Eyebrow,
+                    selectedItem.Title,
+                    selectedItem.Description,
+                    selectedItem.Rows),
                 AssetManagerPanelFactory.CreateCard(
                     "Workflow",
                     "Main View",
-                    "ここに Asset 一覧や空状態、読み込み中表示を組み込みます。",
-                    "検索結果一覧",
+                    "Navigation で選択された要素に応じて主領域の文脈を切り替えます。",
+                    string.Format("Current Selection: {0}", selectedItem.Label),
+                    string.Format("Context: {0}", selectedItem.Meta),
                     "ドラッグ＆ドロップ導線",
                     "進行中タスクの状態表示"));
         }

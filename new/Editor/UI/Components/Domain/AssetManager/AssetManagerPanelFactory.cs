@@ -19,24 +19,37 @@ namespace Ee4v.UI
             }
 
             host.Clear();
+            PrepareHost(host, modifierClassName);
+            host.Add(CreateScroll(cards));
+        }
+
+        public static void PrepareHost(VisualElement host, string modifierClassName)
+        {
+            if (host == null)
+            {
+                return;
+            }
+
             host.AddToClassList(PanelRootClassName);
 
             if (!string.IsNullOrWhiteSpace(modifierClassName))
             {
                 host.AddToClassList(modifierClassName);
             }
+        }
 
+        public static ScrollView CreateScroll(params InfoCard[] cards)
+        {
             var scroll = new ScrollView();
             scroll.AddToClassList(PanelScrollClassName);
 
             var list = new VisualElement();
             list.AddToClassList(PanelListClassName);
             scroll.Add(list);
-            host.Add(scroll);
 
             if (cards == null)
             {
-                return;
+                return scroll;
             }
 
             for (var i = 0; i < cards.Length; i++)
@@ -49,6 +62,8 @@ namespace Ee4v.UI
                 cards[i].AddToClassList(PanelCardClassName);
                 list.Add(cards[i]);
             }
+
+            return scroll;
         }
 
         public static InfoCard CreateCard(string eyebrow, string title, string description, params string[] rows)
