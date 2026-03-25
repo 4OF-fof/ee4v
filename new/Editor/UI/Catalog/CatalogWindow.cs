@@ -138,6 +138,16 @@ namespace Ee4v.UI
                 BuildTestResultGroupStory));
 
             _stories.Add(new StoryDefinition(
+                "asset-manager-window-layout",
+                "Domain/AssetManager",
+                "AssetManagerWindowLayout",
+                "AssetManager 向けの 3 カラム window shell です。左右ペインは drag で幅変更でき、完全に折りたためます。",
+                "左に navigation、中央に一覧、右に inspector を置く前提の domain-specific layout です。左右の split bar は drag で幅変更し、bar 上の button で完全に折りたたみできます。ヘッダー表示は持たず、各ペイン内部の UI が自身の見出しを持つ前提です。",
+                new string[0],
+                ComponentImplementationKind.UiToolkit,
+                BuildAssetManagerWindowLayoutStory));
+
+            _stories.Add(new StoryDefinition(
                 "tab-card",
                 "Interactive",
                 "TabCard",
@@ -205,6 +215,7 @@ namespace Ee4v.UI
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/search-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/searchable-tree-view.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/test-result-group.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/asset-manager-window-layout.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/tab-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/alerts.uss");
@@ -925,6 +936,201 @@ namespace Ee4v.UI
             FinalizeControlsSection(parent, controls);
         }
 
+        private void BuildAssetManagerWindowLayoutStory(VisualElement parent)
+        {
+            var navigationWidth = 240f;
+            var inspectorWidth = 280f;
+            var navigationMinWidth = 180f;
+            var navigationMaxWidth = 320f;
+            var contentMinWidth = 360f;
+            var inspectorMinWidth = 220f;
+            var inspectorMaxWidth = 360f;
+            var navigationCollapsed = false;
+            var inspectorCollapsed = false;
+            Action refresh = null;
+
+            var controls = CreatePlainControlsSection(parent, "左右ペインは split bar の drag で幅を変えられ、button で完全に折りたためます。min/max を変えると drag 範囲も更新されます。");
+
+            var navigationWidthField = new FloatField("Navigation Width")
+            {
+                value = navigationWidth
+            };
+            navigationWidthField.RegisterValueChangedCallback(evt =>
+            {
+                navigationWidth = Mathf.Max(0f, evt.newValue);
+                refresh();
+            });
+            controls.Content.Add(navigationWidthField);
+
+            var navigationMinWidthField = new FloatField("Navigation Min")
+            {
+                value = navigationMinWidth
+            };
+            navigationMinWidthField.RegisterValueChangedCallback(evt =>
+            {
+                navigationMinWidth = Mathf.Max(0f, evt.newValue);
+                refresh();
+            });
+            controls.Content.Add(navigationMinWidthField);
+
+            var navigationMaxWidthField = new FloatField("Navigation Max")
+            {
+                value = navigationMaxWidth
+            };
+            navigationMaxWidthField.RegisterValueChangedCallback(evt =>
+            {
+                navigationMaxWidth = Mathf.Max(0f, evt.newValue);
+                refresh();
+            });
+            controls.Content.Add(navigationMaxWidthField);
+
+            var inspectorWidthField = new FloatField("Inspector Width")
+            {
+                value = inspectorWidth
+            };
+            inspectorWidthField.RegisterValueChangedCallback(evt =>
+            {
+                inspectorWidth = Mathf.Max(0f, evt.newValue);
+                refresh();
+            });
+            controls.Content.Add(inspectorWidthField);
+
+            var inspectorMinWidthField = new FloatField("Inspector Min")
+            {
+                value = inspectorMinWidth
+            };
+            inspectorMinWidthField.RegisterValueChangedCallback(evt =>
+            {
+                inspectorMinWidth = Mathf.Max(0f, evt.newValue);
+                refresh();
+            });
+            controls.Content.Add(inspectorMinWidthField);
+
+            var inspectorMaxWidthField = new FloatField("Inspector Max")
+            {
+                value = inspectorMaxWidth
+            };
+            inspectorMaxWidthField.RegisterValueChangedCallback(evt =>
+            {
+                inspectorMaxWidth = Mathf.Max(0f, evt.newValue);
+                refresh();
+            });
+            controls.Content.Add(inspectorMaxWidthField);
+
+            var contentMinWidthField = new FloatField("Content Min")
+            {
+                value = contentMinWidth
+            };
+            contentMinWidthField.RegisterValueChangedCallback(evt =>
+            {
+                contentMinWidth = Mathf.Max(0f, evt.newValue);
+                refresh();
+            });
+            controls.Content.Add(contentMinWidthField);
+
+            var navigationCollapsedToggle = new Toggle("Navigation Collapsed")
+            {
+                value = navigationCollapsed
+            };
+            navigationCollapsedToggle.RegisterValueChangedCallback(evt =>
+            {
+                navigationCollapsed = evt.newValue;
+                refresh();
+            });
+            controls.Content.Add(navigationCollapsedToggle);
+
+            var inspectorCollapsedToggle = new Toggle("Inspector Collapsed")
+            {
+                value = inspectorCollapsed
+            };
+            inspectorCollapsedToggle.RegisterValueChangedCallback(evt =>
+            {
+                inspectorCollapsed = evt.newValue;
+                refresh();
+            });
+            controls.Content.Add(inspectorCollapsedToggle);
+
+            var preview = CreatePreviewSection(parent);
+            var surface = CreatePreviewSurface();
+            surface.style.paddingLeft = 0f;
+            surface.style.paddingRight = 0f;
+            surface.style.paddingTop = 0f;
+            surface.style.paddingBottom = 0f;
+            surface.style.height = 360f;
+
+            var layout = new AssetManagerWindowLayout();
+            layout.style.flexGrow = 1f;
+            layout.NavigationPaneContent.Add(CreateAssetManagerLayoutPreviewCard(
+                "Folder Tree",
+                "左ペインはカテゴリやフォルダ移動の導線を置く想定です。",
+                "All Assets",
+                "Favorites",
+                "Avatar",
+                "World"));
+            layout.ContentPaneContent.Add(CreateAssetManagerLayoutPreviewCard(
+                "Asset Grid",
+                "中央ペインは一覧、検索、選択状態の主要導線を持ちます。",
+                "Selected: 12 items",
+                "Sort: Updated",
+                "Filter: booth"));
+            layout.InspectorPaneContent.Add(CreateAssetManagerLayoutPreviewCard(
+                "Selection Details",
+                "右ペインはタグ、依存関係、メタデータ編集の文脈を置く想定です。",
+                "Tags: avatar, toon",
+                "Files: 18",
+                "Dependencies: 3"));
+            layout.NavigationPaneWidthChanged += value =>
+            {
+                navigationWidth = value;
+                navigationWidthField.SetValueWithoutNotify(value);
+            };
+            layout.InspectorPaneWidthChanged += value =>
+            {
+                inspectorWidth = value;
+                inspectorWidthField.SetValueWithoutNotify(value);
+            };
+            layout.NavigationCollapsedChanged += value =>
+            {
+                navigationCollapsed = value;
+                navigationCollapsedToggle.SetValueWithoutNotify(value);
+            };
+            layout.InspectorCollapsedChanged += value =>
+            {
+                inspectorCollapsed = value;
+                inspectorCollapsedToggle.SetValueWithoutNotify(value);
+            };
+
+            surface.Add(layout);
+            preview.Body.Add(surface);
+
+            refresh = () =>
+            {
+                navigationWidthField.SetValueWithoutNotify(navigationWidth);
+                navigationMinWidthField.SetValueWithoutNotify(navigationMinWidth);
+                navigationMaxWidthField.SetValueWithoutNotify(navigationMaxWidth);
+                inspectorWidthField.SetValueWithoutNotify(inspectorWidth);
+                inspectorMinWidthField.SetValueWithoutNotify(inspectorMinWidth);
+                inspectorMaxWidthField.SetValueWithoutNotify(inspectorMaxWidth);
+                contentMinWidthField.SetValueWithoutNotify(contentMinWidth);
+                navigationCollapsedToggle.SetValueWithoutNotify(navigationCollapsed);
+                inspectorCollapsedToggle.SetValueWithoutNotify(inspectorCollapsed);
+
+                layout.SetState(new AssetManagerWindowLayoutState(
+                    navigationWidth,
+                    inspectorWidth,
+                    navigationMinWidth,
+                    navigationMaxWidth,
+                    contentMinWidth,
+                    inspectorMinWidth,
+                    inspectorMaxWidth,
+                    navigationCollapsed,
+                    inspectorCollapsed));
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
+        }
+
         private void BuildTestResultGroupStory(VisualElement parent)
         {
             var statusText = "成功";
@@ -1155,6 +1361,26 @@ namespace Ee4v.UI
             var surface = CreatePreviewSurface(compact);
             surface.Add(content);
             return surface;
+        }
+
+        private static InfoCard CreateAssetManagerLayoutPreviewCard(string title, string description, params string[] lines)
+        {
+            var card = new InfoCard(new InfoCardState(title, description));
+            card.AddToClassList("ee4v-ui-catalog-preview-card--flush");
+
+            for (var i = 0; i < lines.Length; i++)
+            {
+                var line = UiTextFactory.Create(lines[i]);
+                line.SetWhiteSpace(WhiteSpace.Normal);
+                if (i > 0)
+                {
+                    line.style.marginTop = 4f;
+                }
+
+                card.Body.Add(line);
+            }
+
+            return card;
         }
 
         private static TextField AddTextField(VisualElement parent, string label, string value, Action<string> onChanged, bool multiline = false)
