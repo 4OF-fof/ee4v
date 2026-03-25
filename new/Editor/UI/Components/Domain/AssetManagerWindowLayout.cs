@@ -65,6 +65,7 @@ namespace Ee4v.UI
         private readonly VisualElement _navigationPane;
         private readonly VisualElement _contentPane;
         private readonly VisualElement _inspectorPane;
+        private readonly IMGUIContainer _dragCursorOverlay;
         private readonly VisualElement _navigationSplitter;
         private readonly Button _navigationToggleButton;
         private readonly Icon _navigationToggleIcon;
@@ -105,12 +106,23 @@ namespace Ee4v.UI
                 out _inspectorToggleButton,
                 out _inspectorToggleIcon,
                 SplitterKind.Inspector);
+            _dragCursorOverlay = new IMGUIContainer(DrawDragCursorOverlay)
+            {
+                pickingMode = PickingMode.Ignore,
+                focusable = false
+            };
+            _dragCursorOverlay.style.position = Position.Absolute;
+            _dragCursorOverlay.style.left = 0f;
+            _dragCursorOverlay.style.right = 0f;
+            _dragCursorOverlay.style.top = 0f;
+            _dragCursorOverlay.style.bottom = 0f;
 
             Add(_navigationPane);
             Add(_navigationSplitter);
             Add(_contentPane);
             Add(_inspectorSplitter);
             Add(_inspectorPane);
+            Add(_dragCursorOverlay);
 
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             SetState(state ?? new AssetManagerWindowLayoutState());
@@ -233,7 +245,7 @@ namespace Ee4v.UI
 
             var cursorRectHost = new IMGUIContainer(() =>
             {
-                EditorGUIUtility.AddCursorRect(new Rect(0f, 0f, splitter.contentRect.width, splitter.contentRect.height), MouseCursor.ResizeHorizontal);
+                EditorGUIUtility.AddCursorRect(new Rect(0f, 0f, grip.contentRect.width, grip.contentRect.height), MouseCursor.ResizeHorizontal);
             })
             {
                 pickingMode = PickingMode.Ignore,
@@ -247,7 +259,7 @@ namespace Ee4v.UI
 
             splitter.Add(toggleButton);
             splitter.Add(grip);
-            splitter.Add(cursorRectHost);
+            grip.Add(cursorRectHost);
             return splitter;
         }
 
@@ -262,11 +274,25 @@ namespace Ee4v.UI
             RefreshLayout();
         }
 
+        private void DrawDragCursorOverlay()
+        {
+            if (!_draggingSplitter.HasValue)
+            {
+                return;
+            }
+
+            EditorGUIUtility.AddCursorRect(new Rect(0f, 0f, contentRect.width, contentRect.height), MouseCursor.ResizeHorizontal);
+        }
+
         private void RefreshLayout()
         {
+            var navigationBodyVisible = !_navigationCollapsed && _navigationWidth >= _navigationMinWidth;
+            var inspectorBodyVisible = !_inspectorCollapsed && _inspectorWidth >= _inspectorMinWidth;
+
             _navigationPane.style.display = _navigationCollapsed ? DisplayStyle.None : DisplayStyle.Flex;
             _navigationPane.style.width = _navigationCollapsed ? 0f : _navigationWidth;
             _navigationPane.style.minWidth = 0f;
+            NavigationPaneContent.style.display = navigationBodyVisible ? DisplayStyle.Flex : DisplayStyle.None;
 
             _contentPane.style.display = DisplayStyle.Flex;
             _contentPane.style.minWidth = 0f;
@@ -274,6 +300,7 @@ namespace Ee4v.UI
             _inspectorPane.style.display = _inspectorCollapsed ? DisplayStyle.None : DisplayStyle.Flex;
             _inspectorPane.style.width = _inspectorCollapsed ? 0f : _inspectorWidth;
             _inspectorPane.style.minWidth = 0f;
+            InspectorPaneContent.style.display = inspectorBodyVisible ? DisplayStyle.Flex : DisplayStyle.None;
 
             _navigationSplitter.EnableInClassList(SplitterCollapsedClassName, _navigationCollapsed);
             _inspectorSplitter.EnableInClassList(SplitterCollapsedClassName, _inspectorCollapsed);
@@ -310,17 +337,17 @@ namespace Ee4v.UI
 
             if (!_navigationCollapsed)
             {
-                _navigationWidth = ClampVisiblePaneWidth(_navigationWidth, _navigationMinWidth, ResolveNavigationMaxWidth(_inspectorCollapsed ? 0f : _inspectorWidth));
+                _navigationWidth = ClampPaneWidth(_navigationWidth, _navigationMinWidth, ResolveNavigationMaxWidth(_inspectorCollapsed ? 0f : _inspectorWidth), true);
             }
 
             if (!_inspectorCollapsed)
             {
-                _inspectorWidth = ClampVisiblePaneWidth(_inspectorWidth, _inspectorMinWidth, ResolveInspectorMaxWidth(_navigationCollapsed ? 0f : _navigationWidth));
+                _inspectorWidth = ClampPaneWidth(_inspectorWidth, _inspectorMinWidth, ResolveInspectorMaxWidth(_navigationCollapsed ? 0f : _navigationWidth), true);
             }
 
             if (!_navigationCollapsed)
             {
-                _navigationWidth = ClampVisiblePaneWidth(_navigationWidth, _navigationMinWidth, ResolveNavigationMaxWidth(_inspectorCollapsed ? 0f : _inspectorWidth));
+                _navigationWidth = ClampPaneWidth(_navigationWidth, _navigationMinWidth, ResolveNavigationMaxWidth(_inspectorCollapsed ? 0f : _inspectorWidth), true);
             }
         }
 
@@ -368,11 +395,16 @@ namespace Ee4v.UI
             return Mathf.Max(0f, totalWidth - (2f * SplitterWidth) - navigationWidth - _contentMinWidth);
         }
 
-        private static float ClampVisiblePaneWidth(float requestedWidth, float minWidth, float maxWidth)
+        private static float ClampPaneWidth(float requestedWidth, float minWidth, float maxWidth, bool enforceMin)
         {
             if (maxWidth <= 0f)
             {
                 return 0f;
+            }
+
+            if (!enforceMin)
+            {
+                return Mathf.Clamp(requestedWidth, 0f, maxWidth);
             }
 
             if (maxWidth < minWidth)
@@ -398,9 +430,9 @@ namespace Ee4v.UI
             switch (kind)
             {
                 case SplitterKind.Navigation:
-                    return !_navigationCollapsed;
+                    return ResolveNavigationMaxWidth(_inspectorCollapsed ? 0f : _inspectorWidth) > 0f;
                 case SplitterKind.Inspector:
-                    return !_inspectorCollapsed;
+                    return ResolveInspectorMaxWidth(_navigationCollapsed ? 0f : _navigationWidth) > 0f;
                 default:
                     return false;
             }
@@ -410,6 +442,7 @@ namespace Ee4v.UI
         {
             _draggingSplitter = kind;
             _dragBoundaryOffset = GetBoundaryPosition(kind) - pointerX;
+            _dragCursorOverlay.MarkDirtyRepaint();
         }
 
         private void UpdateDrag(SplitterKind kind, float pointerX)
@@ -424,7 +457,20 @@ namespace Ee4v.UI
 
         private void EndDrag()
         {
+            switch (_draggingSplitter)
+            {
+                case SplitterKind.Navigation:
+                    SetNavigationWidth(_navigationWidth, true, true);
+
+                    break;
+                case SplitterKind.Inspector:
+                    SetInspectorWidth(_inspectorWidth, true, true);
+
+                    break;
+            }
+
             _draggingSplitter = null;
+            _dragCursorOverlay.MarkDirtyRepaint();
         }
 
         private float GetBoundaryPosition(SplitterKind kind)
@@ -432,9 +478,11 @@ namespace Ee4v.UI
             switch (kind)
             {
                 case SplitterKind.Navigation:
-                    return _navigationWidth;
+                    return _navigationCollapsed ? 0f : _navigationWidth;
                 case SplitterKind.Inspector:
-                    return resolvedStyle.width - _inspectorWidth - SplitterWidth;
+                    return _inspectorCollapsed
+                        ? resolvedStyle.width - SplitterWidth
+                        : resolvedStyle.width - _inspectorWidth - SplitterWidth;
                 default:
                     return 0f;
             }
@@ -445,45 +493,83 @@ namespace Ee4v.UI
             switch (kind)
             {
                 case SplitterKind.Navigation:
-                    SetNavigationWidth(boundaryPosition, true);
+                    SetNavigationWidth(boundaryPosition, true, false);
                     break;
                 case SplitterKind.Inspector:
-                    SetInspectorWidth(resolvedStyle.width - boundaryPosition - SplitterWidth, true);
+                    SetInspectorWidth(resolvedStyle.width - boundaryPosition - SplitterWidth, true, false);
                     break;
             }
         }
 
-        private void SetNavigationWidth(float width, bool notify)
+        private void SetNavigationWidth(float width, bool notify, bool enforceMin)
         {
-            var clampedWidth = ClampVisiblePaneWidth(width, _navigationMinWidth, ResolveNavigationMaxWidth(_inspectorCollapsed ? 0f : _inspectorWidth));
-            if (Mathf.Approximately(clampedWidth, _navigationWidth))
+            var maxWidth = ResolveNavigationMaxWidth(_inspectorCollapsed ? 0f : _inspectorWidth);
+            var candidateWidth = ClampPaneWidth(width, _navigationMinWidth, maxWidth, false);
+            var nextCollapsed = candidateWidth < _navigationMinWidth || maxWidth < _navigationMinWidth;
+            var nextWidth = nextCollapsed
+                ? candidateWidth
+                : ClampPaneWidth(candidateWidth, _navigationMinWidth, maxWidth, enforceMin);
+
+            var collapsedChanged = _navigationCollapsed != nextCollapsed;
+            var widthChanged = !Mathf.Approximately(nextWidth, _navigationWidth);
+            if (!collapsedChanged && !widthChanged)
             {
                 return;
             }
 
-            _navigationWidth = clampedWidth;
-            NormalizePaneWidths();
+            _navigationCollapsed = nextCollapsed;
+            _navigationWidth = nextWidth;
+
+            if (enforceMin && !_navigationCollapsed)
+            {
+                NormalizePaneWidths();
+            }
+
             RefreshLayout();
 
-            if (notify)
+            if (collapsedChanged)
+            {
+                NavigationCollapsedChanged?.Invoke(_navigationCollapsed);
+            }
+
+            if (notify && widthChanged)
             {
                 NavigationPaneWidthChanged?.Invoke(_navigationWidth);
             }
         }
 
-        private void SetInspectorWidth(float width, bool notify)
+        private void SetInspectorWidth(float width, bool notify, bool enforceMin)
         {
-            var clampedWidth = ClampVisiblePaneWidth(width, _inspectorMinWidth, ResolveInspectorMaxWidth(_navigationCollapsed ? 0f : _navigationWidth));
-            if (Mathf.Approximately(clampedWidth, _inspectorWidth))
+            var maxWidth = ResolveInspectorMaxWidth(_navigationCollapsed ? 0f : _navigationWidth);
+            var candidateWidth = ClampPaneWidth(width, _inspectorMinWidth, maxWidth, false);
+            var nextCollapsed = candidateWidth < _inspectorMinWidth || maxWidth < _inspectorMinWidth;
+            var nextWidth = nextCollapsed
+                ? candidateWidth
+                : ClampPaneWidth(candidateWidth, _inspectorMinWidth, maxWidth, enforceMin);
+
+            var collapsedChanged = _inspectorCollapsed != nextCollapsed;
+            var widthChanged = !Mathf.Approximately(nextWidth, _inspectorWidth);
+            if (!collapsedChanged && !widthChanged)
             {
                 return;
             }
 
-            _inspectorWidth = clampedWidth;
-            NormalizePaneWidths();
+            _inspectorCollapsed = nextCollapsed;
+            _inspectorWidth = nextWidth;
+
+            if (enforceMin && !_inspectorCollapsed)
+            {
+                NormalizePaneWidths();
+            }
+
             RefreshLayout();
 
-            if (notify)
+            if (collapsedChanged)
+            {
+                InspectorCollapsedChanged?.Invoke(_inspectorCollapsed);
+            }
+
+            if (notify && widthChanged)
             {
                 InspectorPaneWidthChanged?.Invoke(_inspectorWidth);
             }

@@ -10,6 +10,7 @@
     min-width: 0;
     min-height: 0;
     flex-direction: column;
+    overflow: hidden;
     border-top-width: 1px;
     border-bottom-width: 1px;
     border-left-width: 1px;
@@ -29,6 +30,7 @@
     flex-grow: 1;
     min-width: 0;
     min-height: 0;
+    overflow: hidden;
     padding-left: 10px;
     padding-right: 10px;
     padding-top: 10px;
