@@ -146,13 +146,7 @@ namespace Ee4v.AssetManager
 
         private static void PopulatePane(VisualElement paneContent, params InfoCard[] cards)
         {
-            paneContent.Clear();
-
-            var scroll = new ScrollView();
-            scroll.AddToClassList(PaneScrollClassName);
-
-            var list = new VisualElement();
-            list.AddToClassList(PaneListClassName);
+            CreatePaneScroll(paneContent, out var list);
 
             for (var i = 0; i < cards.Length; i++)
             {
@@ -164,9 +158,6 @@ namespace Ee4v.AssetManager
                 cards[i].AddToClassList(PaneCardClassName);
                 list.Add(cards[i]);
             }
-
-            scroll.Add(list);
-            paneContent.Add(scroll);
         }
 
         private static InfoCard CreateCard(string eyebrow, string title, string description, params string[] rows)
@@ -186,6 +177,21 @@ namespace Ee4v.AssetManager
             }
 
             return card;
+        }
+
+        private static ScrollView CreatePaneScroll(VisualElement paneContent, out VisualElement list)
+        {
+            paneContent.Clear();
+
+            var scroll = new ScrollView();
+            scroll.AddToClassList(PaneScrollClassName);
+
+            list = new VisualElement();
+            list.AddToClassList(PaneListClassName);
+
+            scroll.Add(list);
+            paneContent.Add(scroll);
+            return scroll;
         }
     }
 }

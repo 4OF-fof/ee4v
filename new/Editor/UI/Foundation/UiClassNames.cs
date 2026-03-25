@@ -13,6 +13,7 @@ namespace Ee4v.UI
         public const string SearchFieldPlaceholder = "ee4v-ui-search-field__placeholder";
         public const string TestResultGroupCasesTitle = "ee4v-ui-test-result-group__cases-title";
         public const string TestResultGroupCasesMeta = "ee4v-ui-test-result-group__cases-meta";
+        public const string SingleSelectButtonGroupMeta = "ee4v-ui-single-select-button-group__meta";
 
         public const string CatalogPageTitle = "ee4v-ui-catalog-page__title";
         public const string CatalogPageDescription = "ee4v-ui-catalog-page__description";

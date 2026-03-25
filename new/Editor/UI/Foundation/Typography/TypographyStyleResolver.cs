@@ -82,6 +82,7 @@ namespace Ee4v.UI
                 { UiClassNames.SearchFieldPlaceholder, Create(false, 12, 170, 170, 170, 170, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.TestResultGroupCasesTitle, Create(true, 12, 230, 230, 230, 255, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.TestResultGroupCasesMeta, Create(false, 11, 210, 210, 210, 184, TextAnchor.MiddleRight, WhiteSpace.NoWrap) },
+                { UiClassNames.SingleSelectButtonGroupMeta, Create(false, 10, 210, 210, 210, 184, TextAnchor.MiddleRight, WhiteSpace.NoWrap, marginLeft: 8f) },
                 { UiClassNames.CatalogPageTitle, Create(true, 18, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 4f) },
                 { UiClassNames.CatalogPageDescription, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
                 { UiClassNames.CatalogDetailLabel, Create(true, 11, 220, 220, 220, 235, TextAnchor.UpperLeft, WhiteSpace.NoWrap, marginBottom: 2f) },
