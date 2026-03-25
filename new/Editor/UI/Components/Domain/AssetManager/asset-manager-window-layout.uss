@@ -7,23 +7,53 @@
 }
 
 .ee4v-ui-asset-manager-window-layout__pane {
+    position: relative;
     min-width: 0;
     min-height: 0;
     flex-direction: column;
     overflow: hidden;
     border-top-width: 1px;
     border-bottom-width: 1px;
-    border-left-width: 1px;
-    border-right-width: 1px;
+    border-left-width: 0;
+    border-right-width: 0;
     border-top-color: rgba(255, 255, 255, 0.06);
     border-bottom-color: rgba(255, 255, 255, 0.06);
-    border-left-color: rgba(255, 255, 255, 0.06);
-    border-right-color: rgba(255, 255, 255, 0.06);
     background-color: rgba(0, 0, 0, 0);
+}
+
+.ee4v-ui-asset-manager-window-layout__pane--navigation {
+    border-left-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.06);
 }
 
 .ee4v-ui-asset-manager-window-layout__pane--content {
     flex-grow: 1;
+}
+
+.ee4v-ui-asset-manager-window-layout__pane--inspector {
+    border-right-width: 1px;
+    border-right-color: rgba(255, 255, 255, 0.06);
+}
+
+.ee4v-ui-asset-manager-window-layout__pane-edge-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.ee4v-ui-asset-manager-window-layout__pane-edge-line--navigation {
+    right: 0;
+}
+
+.ee4v-ui-asset-manager-window-layout__pane-edge-line--inspector {
+    left: 0;
+}
+
+.ee4v-ui-asset-manager-window-layout__pane-edge-line--active {
+    width: 2px;
+    background-color: rgba(95, 155, 255, 0.9);
 }
 
 .ee4v-ui-asset-manager-window-layout__pane-body {
@@ -41,8 +71,23 @@
     flex-direction: column;
 }
 
-.ee4v-ui-asset-manager-window-layout__content-toolbar {
+.ee4v-ui-asset-manager-window-layout__content-toolbar-row {
+    flex-direction: row;
+    align-items: center;
     margin-bottom: 10px;
+}
+
+.ee4v-ui-asset-manager-window-layout__content-toolbar {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.ee4v-ui-asset-manager-window-layout__toolbar-toggle-slot {
+    width: 18px;
+    min-width: 18px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
 }
 
 .ee4v-ui-asset-manager-window-layout__content-host {
@@ -53,27 +98,26 @@
 }
 
 .ee4v-ui-asset-manager-window-layout__splitter {
-    min-width: 18px;
-    max-width: 18px;
+    min-width: 9px;
+    max-width: 9px;
     flex-shrink: 0;
     flex-direction: column;
     align-items: stretch;
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: rgba(0, 0, 0, 0);
 }
 
-.ee4v-ui-asset-manager-window-layout__splitter--collapsed {
-    background-color: rgba(255, 255, 255, 0.03);
+.ee4v-ui-asset-manager-window-layout__splitter-grip {
+    flex-grow: 1;
+    min-height: 0;
+    background-color: rgba(0, 0, 0, 0);
 }
 
-.ee4v-ui-asset-manager-window-layout__splitter-toggle {
-    min-width: 18px;
+.ee4v-ui-asset-manager-window-layout__toolbar-toggle {
     width: 18px;
-    max-width: 18px;
-    height: 20px;
+    min-width: 18px;
+    height: 18px;
+    min-height: 18px;
     flex-shrink: 0;
-    align-self: stretch;
-    align-items: center;
-    justify-content: center;
     margin-left: 0;
     margin-right: 0;
     margin-top: 0;
@@ -86,44 +130,30 @@
     border-bottom-width: 0;
     border-left-width: 0;
     border-right-width: 0;
+    align-items: center;
+    justify-content: center;
     background-color: rgba(0, 0, 0, 0);
+    background-image: none;
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
     border-bottom-left-radius: 4px;
     border-bottom-right-radius: 4px;
-    -unity-text-align: middle-center;
 }
 
-.ee4v-ui-asset-manager-window-layout__splitter-toggle:hover {
+.ee4v-ui-asset-manager-window-layout__toolbar-toggle--hover {
     background-color: rgba(255, 255, 255, 0.08);
 }
 
-.ee4v-ui-asset-manager-window-layout__splitter-toggle:active {
+.ee4v-ui-asset-manager-window-layout__toolbar-toggle--active {
     background-color: rgba(255, 255, 255, 0.13);
 }
 
-.ee4v-ui-asset-manager-window-layout__splitter-toggle .ee4v-ui-icon {
+.ee4v-ui-asset-manager-window-layout__toolbar-toggle .ee4v-ui-icon {
+    align-self: center;
     opacity: 0.78;
 }
 
-.ee4v-ui-asset-manager-window-layout__splitter-toggle:hover .ee4v-ui-icon,
-.ee4v-ui-asset-manager-window-layout__splitter-toggle:active .ee4v-ui-icon {
+.ee4v-ui-asset-manager-window-layout__toolbar-toggle--hover .ee4v-ui-icon,
+.ee4v-ui-asset-manager-window-layout__toolbar-toggle--active .ee4v-ui-icon {
     opacity: 1;
-}
-
-.ee4v-ui-asset-manager-window-layout__splitter-grip {
-    flex-grow: 1;
-    min-height: 0;
-    align-items: center;
-    justify-content: center;
-}
-
-.ee4v-ui-asset-manager-window-layout__splitter-handle {
-    width: 2px;
-    height: 32px;
-    border-top-left-radius: 1px;
-    border-top-right-radius: 1px;
-    border-bottom-left-radius: 1px;
-    border-bottom-right-radius: 1px;
-    background-color: rgba(255, 255, 255, 0.14);
 }

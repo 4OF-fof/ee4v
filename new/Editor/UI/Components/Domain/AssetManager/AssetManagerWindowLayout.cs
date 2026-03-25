@@ -57,23 +57,31 @@ namespace Ee4v.UI
         private const string InspectorPaneClassName = "ee4v-ui-asset-manager-window-layout__pane--inspector";
         private const string PaneBodyClassName = "ee4v-ui-asset-manager-window-layout__pane-body";
         private const string ContentPaneBodyClassName = "ee4v-ui-asset-manager-window-layout__content-pane-body";
+        private const string ContentToolbarRowClassName = "ee4v-ui-asset-manager-window-layout__content-toolbar-row";
         private const string ContentToolbarClassName = "ee4v-ui-asset-manager-window-layout__content-toolbar";
         private const string ContentHostClassName = "ee4v-ui-asset-manager-window-layout__content-host";
+        private const string PaneEdgeLineClassName = "ee4v-ui-asset-manager-window-layout__pane-edge-line";
+        private const string NavigationPaneEdgeLineClassName = "ee4v-ui-asset-manager-window-layout__pane-edge-line--navigation";
+        private const string InspectorPaneEdgeLineClassName = "ee4v-ui-asset-manager-window-layout__pane-edge-line--inspector";
+        private const string PaneEdgeLineActiveClassName = "ee4v-ui-asset-manager-window-layout__pane-edge-line--active";
         private const string SplitterClassName = "ee4v-ui-asset-manager-window-layout__splitter";
-        private const string SplitterCollapsedClassName = "ee4v-ui-asset-manager-window-layout__splitter--collapsed";
-        private const string SplitterToggleClassName = "ee4v-ui-asset-manager-window-layout__splitter-toggle";
         private const string SplitterGripClassName = "ee4v-ui-asset-manager-window-layout__splitter-grip";
-        private const string SplitterHandleClassName = "ee4v-ui-asset-manager-window-layout__splitter-handle";
-        private const float SplitterWidth = 18f;
+        private const string ToolbarToggleSlotClassName = "ee4v-ui-asset-manager-window-layout__toolbar-toggle-slot";
+        private const string ToolbarToggleClassName = "ee4v-ui-asset-manager-window-layout__toolbar-toggle";
+        private const string ToolbarToggleHoverClassName = "ee4v-ui-asset-manager-window-layout__toolbar-toggle--hover";
+        private const string ToolbarToggleActiveClassName = "ee4v-ui-asset-manager-window-layout__toolbar-toggle--active";
+        private const float SplitterWidth = 9f;
         private readonly VisualElement _navigationPane;
+        private readonly VisualElement _navigationPaneEdgeLine;
         private readonly VisualElement _contentPane;
         private readonly VisualElement _inspectorPane;
+        private readonly VisualElement _inspectorPaneEdgeLine;
         private readonly IMGUIContainer _dragCursorOverlay;
         private readonly VisualElement _navigationSplitter;
-        private readonly Button _navigationToggleButton;
+        private readonly VisualElement _navigationToggleButton;
         private readonly Icon _navigationToggleIcon;
         private readonly VisualElement _inspectorSplitter;
-        private readonly Button _inspectorToggleButton;
+        private readonly VisualElement _inspectorToggleButton;
         private readonly Icon _inspectorToggleIcon;
         private SplitterKind? _draggingSplitter;
         private float _dragBoundaryOffset;
@@ -86,30 +94,26 @@ namespace Ee4v.UI
         private float _inspectorMaxWidth;
         private bool _navigationCollapsed;
         private bool _inspectorCollapsed;
+        private bool _navigationSplitterHovered;
+        private bool _inspectorSplitterHovered;
 
         public AssetManagerWindowLayout(AssetManagerWindowLayoutState state = null)
         {
             AddToClassList(RootClassName);
 
-            _navigationPane = CreatePane(NavigationPaneClassName, out var navigationBody);
-            _contentPane = CreateContentPane(out var mainToolbar, out var contentBody);
-            _inspectorPane = CreatePane(InspectorPaneClassName, out var inspectorBody);
+            _navigationPane = CreatePane(NavigationPaneClassName, NavigationPaneEdgeLineClassName, out var navigationBody, out _navigationPaneEdgeLine);
+            _navigationToggleButton = CreateToolbarToggleButton(ToggleNavigationCollapsed, out _navigationToggleIcon);
+            _inspectorToggleButton = CreateToolbarToggleButton(ToggleInspectorCollapsed, out _inspectorToggleIcon);
+            _contentPane = CreateContentPane(_navigationToggleButton, out var mainToolbar, out var contentBody, _inspectorToggleButton);
+            _inspectorPane = CreatePane(InspectorPaneClassName, InspectorPaneEdgeLineClassName, out var inspectorBody, out _inspectorPaneEdgeLine);
 
             NavigationPaneContent = navigationBody;
             MainToolbar = mainToolbar;
             ContentPaneContent = contentBody;
             InspectorPaneContent = inspectorBody;
 
-            _navigationSplitter = CreateSplitter(
-                ToggleNavigationCollapsed,
-                out _navigationToggleButton,
-                out _navigationToggleIcon,
-                SplitterKind.Navigation);
-            _inspectorSplitter = CreateSplitter(
-                ToggleInspectorCollapsed,
-                out _inspectorToggleButton,
-                out _inspectorToggleIcon,
-                SplitterKind.Inspector);
+            _navigationSplitter = CreateSplitter(SplitterKind.Navigation);
+            _inspectorSplitter = CreateSplitter(SplitterKind.Inspector);
             _dragCursorOverlay = new IMGUIContainer(DrawDragCursorOverlay)
             {
                 pickingMode = PickingMode.Ignore,
@@ -213,7 +217,11 @@ namespace Ee4v.UI
             }
         }
 
-        private static VisualElement CreatePane(string paneModifierClassName, out VisualElement body)
+        private static VisualElement CreatePane(
+            string paneModifierClassName,
+            string edgeLineModifierClassName,
+            out VisualElement body,
+            out VisualElement edgeLine)
         {
             var pane = new VisualElement();
             pane.AddToClassList(PaneClassName);
@@ -223,10 +231,21 @@ namespace Ee4v.UI
             body.AddToClassList(PaneBodyClassName);
 
             pane.Add(body);
+            edgeLine = new VisualElement
+            {
+                pickingMode = PickingMode.Ignore
+            };
+            edgeLine.AddToClassList(PaneEdgeLineClassName);
+            edgeLine.AddToClassList(edgeLineModifierClassName);
+            pane.Add(edgeLine);
             return pane;
         }
 
-        private static VisualElement CreateContentPane(out AssetManagerToolbar toolbar, out VisualElement contentHost)
+        private static VisualElement CreateContentPane(
+            VisualElement leftToggleButton,
+            out AssetManagerToolbar toolbar,
+            out VisualElement contentHost,
+            VisualElement rightToggleButton)
         {
             var pane = new VisualElement();
             pane.AddToClassList(PaneClassName);
@@ -236,40 +255,74 @@ namespace Ee4v.UI
             body.AddToClassList(PaneBodyClassName);
             body.AddToClassList(ContentPaneBodyClassName);
 
+            var toolbarRow = new VisualElement();
+            toolbarRow.AddToClassList(ContentToolbarRowClassName);
+
+            var leftToggleSlot = new VisualElement();
+            leftToggleSlot.AddToClassList(ToolbarToggleSlotClassName);
+
+            var rightToggleSlot = new VisualElement();
+            rightToggleSlot.AddToClassList(ToolbarToggleSlotClassName);
+
             toolbar = new AssetManagerToolbar();
             toolbar.AddToClassList(ContentToolbarClassName);
 
             contentHost = new VisualElement();
             contentHost.AddToClassList(ContentHostClassName);
 
-            body.Add(toolbar);
+            leftToggleSlot.Add(leftToggleButton);
+            rightToggleSlot.Add(rightToggleButton);
+
+            toolbarRow.Add(leftToggleSlot);
+            toolbarRow.Add(toolbar);
+            toolbarRow.Add(rightToggleSlot);
+
+            body.Add(toolbarRow);
             body.Add(contentHost);
             pane.Add(body);
             return pane;
         }
 
-        private VisualElement CreateSplitter(Action toggleAction, out Button toggleButton, out Icon toggleIcon, SplitterKind kind)
+        private static VisualElement CreateToolbarToggleButton(Action toggleAction, out Icon toggleIcon)
+        {
+            var button = new VisualElement
+            {
+                focusable = false
+            };
+            button.AddToClassList(ToolbarToggleClassName);
+            button.AddManipulator(new Clickable(toggleAction));
+            button.RegisterCallback<PointerEnterEvent>(_ => button.EnableInClassList(ToolbarToggleHoverClassName, true));
+            button.RegisterCallback<PointerLeaveEvent>(_ =>
+            {
+                button.EnableInClassList(ToolbarToggleHoverClassName, false);
+                button.EnableInClassList(ToolbarToggleActiveClassName, false);
+            });
+            button.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button == (int)MouseButton.LeftMouse)
+                {
+                    button.EnableInClassList(ToolbarToggleActiveClassName, true);
+                }
+            });
+            button.RegisterCallback<PointerUpEvent>(_ => button.EnableInClassList(ToolbarToggleActiveClassName, false));
+            button.RegisterCallback<PointerCaptureOutEvent>(_ => button.EnableInClassList(ToolbarToggleActiveClassName, false));
+
+            toggleIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: 10f));
+            button.Add(toggleIcon);
+            return button;
+        }
+
+        private VisualElement CreateSplitter(SplitterKind kind)
         {
             var splitter = new VisualElement();
             splitter.AddToClassList(SplitterClassName);
             splitter.style.width = SplitterWidth;
 
-            toggleButton = new Button(toggleAction)
-            {
-                focusable = false
-            };
-            toggleButton.AddToClassList(SplitterToggleClassName);
-
-            toggleIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: 10f));
-            toggleButton.Add(toggleIcon);
-
             var grip = new VisualElement();
             grip.AddToClassList(SplitterGripClassName);
-            var handle = new VisualElement();
-            handle.AddToClassList(SplitterHandleClassName);
-            handle.pickingMode = PickingMode.Ignore;
-            grip.Add(handle);
             grip.AddManipulator(new SplitterDragManipulator(this, kind));
+            grip.RegisterCallback<PointerEnterEvent>(_ => SetSplitterHover(kind, true));
+            grip.RegisterCallback<PointerLeaveEvent>(_ => SetSplitterHover(kind, false));
 
             var cursorRectHost = new IMGUIContainer(() =>
             {
@@ -285,7 +338,6 @@ namespace Ee4v.UI
             cursorRectHost.style.top = 0f;
             cursorRectHost.style.bottom = 0f;
 
-            splitter.Add(toggleButton);
             splitter.Add(grip);
             grip.Add(cursorRectHost);
             return splitter;
@@ -314,13 +366,16 @@ namespace Ee4v.UI
 
         private void RefreshLayout()
         {
-            var navigationBodyVisible = !_navigationCollapsed && _navigationWidth >= _navigationMinWidth;
-            var inspectorBodyVisible = !_inspectorCollapsed && _inspectorWidth >= _inspectorMinWidth;
+            var navigationBodyVisible = !_navigationCollapsed;
+            var inspectorBodyVisible = !_inspectorCollapsed;
+            var navigationDragActive = !_navigationCollapsed && (_navigationSplitterHovered || _draggingSplitter == SplitterKind.Navigation);
+            var inspectorDragActive = !_inspectorCollapsed && (_inspectorSplitterHovered || _draggingSplitter == SplitterKind.Inspector);
 
             _navigationPane.style.display = _navigationCollapsed ? DisplayStyle.None : DisplayStyle.Flex;
             _navigationPane.style.width = _navigationCollapsed ? 0f : _navigationWidth;
             _navigationPane.style.minWidth = 0f;
             NavigationPaneContent.style.display = navigationBodyVisible ? DisplayStyle.Flex : DisplayStyle.None;
+            _navigationPaneEdgeLine.EnableInClassList(PaneEdgeLineActiveClassName, navigationDragActive);
 
             _contentPane.style.display = DisplayStyle.Flex;
             _contentPane.style.minWidth = 0f;
@@ -329,9 +384,10 @@ namespace Ee4v.UI
             _inspectorPane.style.width = _inspectorCollapsed ? 0f : _inspectorWidth;
             _inspectorPane.style.minWidth = 0f;
             InspectorPaneContent.style.display = inspectorBodyVisible ? DisplayStyle.Flex : DisplayStyle.None;
+            _inspectorPaneEdgeLine.EnableInClassList(PaneEdgeLineActiveClassName, inspectorDragActive);
 
-            _navigationSplitter.EnableInClassList(SplitterCollapsedClassName, _navigationCollapsed);
-            _inspectorSplitter.EnableInClassList(SplitterCollapsedClassName, _inspectorCollapsed);
+            _navigationSplitter.style.display = _navigationCollapsed ? DisplayStyle.None : DisplayStyle.Flex;
+            _inspectorSplitter.style.display = _inspectorCollapsed ? DisplayStyle.None : DisplayStyle.Flex;
 
             UpdateToggleIcon(_navigationToggleIcon, _navigationCollapsed ? 0f : 180f);
             UpdateToggleIcon(_inspectorToggleIcon, _inspectorCollapsed ? 180f : 0f);
@@ -480,6 +536,7 @@ namespace Ee4v.UI
         {
             _draggingSplitter = kind;
             _dragBoundaryOffset = GetBoundaryPosition(kind) - pointerX;
+            SetSplitterHover(kind, true);
             _dragCursorOverlay.MarkDirtyRepaint();
         }
 
@@ -507,8 +564,11 @@ namespace Ee4v.UI
                     break;
             }
 
+            SetSplitterHover(SplitterKind.Navigation, false);
+            SetSplitterHover(SplitterKind.Inspector, false);
             _draggingSplitter = null;
             _dragCursorOverlay.MarkDirtyRepaint();
+            RefreshLayout();
         }
 
         private float GetBoundaryPosition(SplitterKind kind)
@@ -587,6 +647,33 @@ namespace Ee4v.UI
             {
                 InspectorPaneWidthChanged?.Invoke(_inspectorWidth);
             }
+        }
+
+        private void SetSplitterHover(SplitterKind kind, bool hovered)
+        {
+            switch (kind)
+            {
+                case SplitterKind.Navigation:
+                    if (_navigationSplitterHovered == hovered)
+                    {
+                        return;
+                    }
+
+                    _navigationSplitterHovered = hovered;
+                    break;
+                case SplitterKind.Inspector:
+                    if (_inspectorSplitterHovered == hovered)
+                    {
+                        return;
+                    }
+
+                    _inspectorSplitterHovered = hovered;
+                    break;
+                default:
+                    return;
+            }
+
+            RefreshLayout();
         }
 
         private enum SplitterKind
