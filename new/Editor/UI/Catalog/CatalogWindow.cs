@@ -160,6 +160,45 @@ namespace Ee4v.UI
                 BuildTestResultGroupStory));
 
             _stories.Add(new StoryDefinition(
+                "asset-manager-navigation-panel",
+                "Domain/AssetManager",
+                "NavigationPanel",
+                "AssetManager 左ペイン用の navigation コンポーネントです。",
+                "カテゴリ、ソース、保存済みビューのような左側導線を単体で再利用できるようにした panel component です。AssetManagerWindowLayout の左ペインにも、単体 window にも同じものを載せます。",
+                new[]
+                {
+                    "InfoCard"
+                },
+                ComponentImplementationKind.UiToolkit,
+                BuildAssetManagerNavigationPanelStory));
+
+            _stories.Add(new StoryDefinition(
+                "asset-manager-main-view",
+                "Domain/AssetManager",
+                "MainView",
+                "AssetManager 中央領域の toolbar 以下だけを表す main view コンポーネントです。",
+                "layout 内では上部 toolbar の下に配置し、単体 window では toolbar と呼び出し側で合成する前提です。一覧、空状態、進行中タスク表示などを置くベース領域として扱います。",
+                new[]
+                {
+                    "InfoCard"
+                },
+                ComponentImplementationKind.UiToolkit,
+                BuildAssetManagerMainViewStory));
+
+            _stories.Add(new StoryDefinition(
+                "asset-manager-infomation-panel",
+                "Domain/AssetManager",
+                "InfomationPanel",
+                "AssetManager 右ペイン用の情報パネルコンポーネントです。",
+                "選択中アセットの詳細、プレビュー、検証結果の文脈を単体でも layout 内でも同じ構成で再利用する右ペイン component です。",
+                new[]
+                {
+                    "InfoCard"
+                },
+                ComponentImplementationKind.UiToolkit,
+                BuildAssetManagerInfomationPanelStory));
+
+            _stories.Add(new StoryDefinition(
                 "asset-manager-window-layout",
                 "Domain/AssetManager",
                 "AssetManagerWindowLayout",
@@ -249,6 +288,7 @@ namespace Ee4v.UI
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/searchable-tree-view.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/Testing/test-result-group.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/asset-manager-window-layout.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/panels.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/toolbar.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/tab-card.uss");
@@ -1115,6 +1155,54 @@ namespace Ee4v.UI
             preview.Body.Add(surface);
         }
 
+        private void BuildAssetManagerNavigationPanelStory(VisualElement parent)
+        {
+            var preview = CreatePreviewSection(parent);
+            var surface = CreatePreviewSurface();
+            surface.style.paddingLeft = 0f;
+            surface.style.paddingRight = 0f;
+            surface.style.paddingTop = 0f;
+            surface.style.paddingBottom = 0f;
+            surface.style.height = 360f;
+
+            var panel = new NavigationPanel();
+            panel.style.flexGrow = 1f;
+            surface.Add(panel);
+            preview.Body.Add(surface);
+        }
+
+        private void BuildAssetManagerMainViewStory(VisualElement parent)
+        {
+            var preview = CreatePreviewSection(parent);
+            var surface = CreatePreviewSurface();
+            surface.style.paddingLeft = 0f;
+            surface.style.paddingRight = 0f;
+            surface.style.paddingTop = 0f;
+            surface.style.paddingBottom = 0f;
+            surface.style.height = 360f;
+
+            var panel = new MainView();
+            panel.style.flexGrow = 1f;
+            surface.Add(panel);
+            preview.Body.Add(surface);
+        }
+
+        private void BuildAssetManagerInfomationPanelStory(VisualElement parent)
+        {
+            var preview = CreatePreviewSection(parent);
+            var surface = CreatePreviewSurface();
+            surface.style.paddingLeft = 0f;
+            surface.style.paddingRight = 0f;
+            surface.style.paddingTop = 0f;
+            surface.style.paddingBottom = 0f;
+            surface.style.height = 360f;
+
+            var panel = new InfomationPanel();
+            panel.style.flexGrow = 1f;
+            surface.Add(panel);
+            preview.Body.Add(surface);
+        }
+
         private void BuildAssetManagerWindowLayoutStory(VisualElement parent)
         {
             var navigationWidth = 240f;
@@ -1239,25 +1327,9 @@ namespace Ee4v.UI
 
             var layout = new AssetManagerWindowLayout();
             layout.style.flexGrow = 1f;
-            layout.NavigationPaneContent.Add(CreateAssetManagerLayoutPreviewCard(
-                "Folder Tree",
-                "左ペインはカテゴリやフォルダ移動の導線を置く想定です。",
-                "All Assets",
-                "Favorites",
-                "Avatar",
-                "World"));
-            layout.ContentPaneContent.Add(CreateAssetManagerLayoutPreviewCard(
-                "Asset Grid",
-                "中央ペインは一覧、検索、選択状態の主要導線を持ちます。",
-                "Selected: 12 items",
-                "Sort: Updated",
-                "Filter: booth"));
-            layout.InspectorPaneContent.Add(CreateAssetManagerLayoutPreviewCard(
-                "Selection Details",
-                "右ペインはタグ、依存関係、メタデータ編集の文脈を置く想定です。",
-                "Tags: avatar, toon",
-                "Files: 18",
-                "Dependencies: 3"));
+            layout.NavigationPaneContent.Add(new NavigationPanel());
+            layout.ContentPaneContent.Add(new MainView());
+            layout.InspectorPaneContent.Add(new InfomationPanel());
             layout.NavigationPaneWidthChanged += value =>
             {
                 navigationWidth = value;
@@ -1540,26 +1612,6 @@ namespace Ee4v.UI
             var surface = CreatePreviewSurface(compact);
             surface.Add(content);
             return surface;
-        }
-
-        private static InfoCard CreateAssetManagerLayoutPreviewCard(string title, string description, params string[] lines)
-        {
-            var card = new InfoCard(new InfoCardState(title, description));
-            card.AddToClassList("ee4v-ui-catalog-preview-card--flush");
-
-            for (var i = 0; i < lines.Length; i++)
-            {
-                var line = UiTextFactory.Create(lines[i]);
-                line.SetWhiteSpace(WhiteSpace.Normal);
-                if (i > 0)
-                {
-                    line.style.marginTop = 4f;
-                }
-
-                card.Body.Add(line);
-            }
-
-            return card;
         }
 
         private static TextField AddTextField(VisualElement parent, string label, string value, Action<string> onChanged, bool multiline = false)
