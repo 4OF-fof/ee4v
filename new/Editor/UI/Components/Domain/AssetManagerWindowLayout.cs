@@ -430,8 +430,18 @@ namespace Ee4v.UI
             switch (kind)
             {
                 case SplitterKind.Navigation:
+                    if (_navigationCollapsed)
+                    {
+                        return false;
+                    }
+
                     return ResolveNavigationMaxWidth(_inspectorCollapsed ? 0f : _inspectorWidth) > 0f;
                 case SplitterKind.Inspector:
+                    if (_inspectorCollapsed)
+                    {
+                        return false;
+                    }
+
                     return ResolveInspectorMaxWidth(_navigationCollapsed ? 0f : _navigationWidth) > 0f;
                 default:
                     return false;
@@ -493,10 +503,10 @@ namespace Ee4v.UI
             switch (kind)
             {
                 case SplitterKind.Navigation:
-                    SetNavigationWidth(boundaryPosition, true, false);
+                    SetNavigationWidth(boundaryPosition, true, true);
                     break;
                 case SplitterKind.Inspector:
-                    SetInspectorWidth(resolvedStyle.width - boundaryPosition - SplitterWidth, true, false);
+                    SetInspectorWidth(resolvedStyle.width - boundaryPosition - SplitterWidth, true, true);
                     break;
             }
         }
@@ -504,33 +514,21 @@ namespace Ee4v.UI
         private void SetNavigationWidth(float width, bool notify, bool enforceMin)
         {
             var maxWidth = ResolveNavigationMaxWidth(_inspectorCollapsed ? 0f : _inspectorWidth);
-            var candidateWidth = ClampPaneWidth(width, _navigationMinWidth, maxWidth, false);
-            var nextCollapsed = candidateWidth < _navigationMinWidth || maxWidth < _navigationMinWidth;
-            var nextWidth = nextCollapsed
-                ? candidateWidth
-                : ClampPaneWidth(candidateWidth, _navigationMinWidth, maxWidth, enforceMin);
-
-            var collapsedChanged = _navigationCollapsed != nextCollapsed;
+            var nextWidth = ClampPaneWidth(width, _navigationMinWidth, maxWidth, enforceMin);
             var widthChanged = !Mathf.Approximately(nextWidth, _navigationWidth);
-            if (!collapsedChanged && !widthChanged)
+            if (!widthChanged)
             {
                 return;
             }
 
-            _navigationCollapsed = nextCollapsed;
             _navigationWidth = nextWidth;
 
-            if (enforceMin && !_navigationCollapsed)
+            if (enforceMin)
             {
                 NormalizePaneWidths();
             }
 
             RefreshLayout();
-
-            if (collapsedChanged)
-            {
-                NavigationCollapsedChanged?.Invoke(_navigationCollapsed);
-            }
 
             if (notify && widthChanged)
             {
@@ -541,33 +539,21 @@ namespace Ee4v.UI
         private void SetInspectorWidth(float width, bool notify, bool enforceMin)
         {
             var maxWidth = ResolveInspectorMaxWidth(_navigationCollapsed ? 0f : _navigationWidth);
-            var candidateWidth = ClampPaneWidth(width, _inspectorMinWidth, maxWidth, false);
-            var nextCollapsed = candidateWidth < _inspectorMinWidth || maxWidth < _inspectorMinWidth;
-            var nextWidth = nextCollapsed
-                ? candidateWidth
-                : ClampPaneWidth(candidateWidth, _inspectorMinWidth, maxWidth, enforceMin);
-
-            var collapsedChanged = _inspectorCollapsed != nextCollapsed;
+            var nextWidth = ClampPaneWidth(width, _inspectorMinWidth, maxWidth, enforceMin);
             var widthChanged = !Mathf.Approximately(nextWidth, _inspectorWidth);
-            if (!collapsedChanged && !widthChanged)
+            if (!widthChanged)
             {
                 return;
             }
 
-            _inspectorCollapsed = nextCollapsed;
             _inspectorWidth = nextWidth;
 
-            if (enforceMin && !_inspectorCollapsed)
+            if (enforceMin)
             {
                 NormalizePaneWidths();
             }
 
             RefreshLayout();
-
-            if (collapsedChanged)
-            {
-                InspectorCollapsedChanged?.Invoke(_inspectorCollapsed);
-            }
 
             if (notify && widthChanged)
             {
