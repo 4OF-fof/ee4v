@@ -1,0 +1,32 @@
+.ee4v-asset-manager-window {
+    flex-grow: 1;
+}
+
+.ee4v-asset-manager-window__layout {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.ee4v-asset-manager-window__pane-scroll {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.ee4v-asset-manager-window__pane-list {
+    flex-direction: column;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.ee4v-asset-manager-window__pane-card {
+    margin-bottom: 12px;
+}
+
+.ee4v-asset-manager-window__pane-row {
+    padding-top: 6px;
+    padding-bottom: 6px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
