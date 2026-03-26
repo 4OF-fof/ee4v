@@ -33,8 +33,8 @@ namespace Ee4v.Phase1.Tests
             var definitions = SettingApi.GetDefinitions(SettingScope.User);
             var projectDefinitions = SettingApi.GetDefinitions(SettingScope.Project);
 
-            Assert.That(definitions.Count, Is.EqualTo(4));
-            Assert.That(projectDefinitions.Count, Is.EqualTo(6));
+            Assert.That(definitions.Count, Is.EqualTo(3));
+            Assert.That(projectDefinitions.Count, Is.EqualTo(5));
         }
 
         [Test]

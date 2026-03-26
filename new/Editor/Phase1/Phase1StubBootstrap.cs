@@ -28,13 +28,6 @@ namespace Ee4v.Phase1
                 priority: 100,
                 isEnabled: () => SettingApi.Get(Phase1Definitions.EnableHierarchyItemStub)));
 
-            InjectorApi.Register(new VisualElementInjectionRegistration(
-                "phase1.hierarchy.header.stub",
-                InjectionChannel.HierarchyHeader,
-                CreateHierarchyHeader,
-                priority: 100,
-                isEnabled: () => SettingApi.Get(Phase1Definitions.EnableHierarchyHeaderStub)));
-
             InjectorApi.Register(new ItemInjectionRegistration(
                 "phase1.project.item.stub",
                 InjectionChannel.ProjectItem,
@@ -56,13 +49,10 @@ namespace Ee4v.Phase1
         private static void OnSettingChanged(SettingDefinitionBase definition, object value)
         {
             if (definition == Phase1Definitions.EnableHierarchyItemStub ||
-                definition == Phase1Definitions.EnableHierarchyHeaderStub ||
                 definition == Phase1Definitions.HierarchyBadgeText ||
-                definition == Phase1Definitions.HierarchyHeaderText ||
                 definition == Phase1Definitions.HierarchyAccentColor)
             {
                 InjectorApi.Repaint(InjectionChannel.HierarchyItem);
-                InjectorApi.Repaint(InjectionChannel.HierarchyHeader);
             }
 
             if (definition == Phase1Definitions.EnableProjectItemStub ||
@@ -98,31 +88,6 @@ namespace Ee4v.Phase1
             EditorGUI.DrawRect(rect, new Color(accent.r, accent.g, accent.b, 0.12f));
             GUI.Label(rect, content, style);
             context.CurrentRect = new Rect(context.CurrentRect.x, context.CurrentRect.y, Mathf.Max(0f, rect.x - context.CurrentRect.x - 4f), context.CurrentRect.height);
-        }
-
-        private static VisualElement CreateHierarchyHeader(VisualHostContext context)
-        {
-            var row = new VisualElement();
-            row.style.flexDirection = FlexDirection.Row;
-            row.style.alignItems = Align.Center;
-            row.style.flexGrow = 1f;
-
-            var swatch = new VisualElement();
-            swatch.style.width = 10f;
-            swatch.style.height = 10f;
-            swatch.style.marginRight = 6f;
-            swatch.style.borderTopLeftRadius = 5f;
-            swatch.style.borderTopRightRadius = 5f;
-            swatch.style.borderBottomLeftRadius = 5f;
-            swatch.style.borderBottomRightRadius = 5f;
-            swatch.style.backgroundColor = SettingApi.Get(Phase1Definitions.HierarchyAccentColor);
-
-            var label = UiTextFactory.Create(SettingApi.Get(Phase1Definitions.HierarchyHeaderText), UiClassNames.Phase1StubLabel);
-            label.tooltip = I18N.Get("stubs.hierarchyHeader.tooltip");
-
-            row.Add(swatch);
-            row.Add(label);
-            return row;
         }
 
         private static void DrawProjectItem(ItemInjectionContext context)

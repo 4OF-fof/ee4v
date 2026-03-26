@@ -9,17 +9,13 @@ namespace Ee4v.Core.Injector
     [InitializeOnLoad]
     public static class InjectorApi
     {
-        private const string HierarchyHeaderHostName = "ee4v-hierarchy-header-host";
         private const string ProjectToolbarHostName = "ee4v-project-toolbar-host";
 
-        private static readonly Type HierarchyWindowType = typeof(Editor).Assembly.GetType("UnityEditor.SceneHierarchyWindow");
         private static readonly Type ProjectBrowserType = typeof(Editor).Assembly.GetType("UnityEditor.ProjectBrowser");
         private static readonly List<InjectionRegistration> Registrations = new List<InjectionRegistration>();
-        private static readonly Dictionary<int, int> HierarchyHostVersions = new Dictionary<int, int>();
         private static readonly Dictionary<int, int> ProjectHostVersions = new Dictionary<int, int>();
         private static ItemInjectionRegistration[] _hierarchyItemRegistrations = Array.Empty<ItemInjectionRegistration>();
         private static ItemInjectionRegistration[] _projectItemRegistrations = Array.Empty<ItemInjectionRegistration>();
-        private static VisualElementInjectionRegistration[] _hierarchyHeaderRegistrations = Array.Empty<VisualElementInjectionRegistration>();
         private static VisualElementInjectionRegistration[] _projectToolbarRegistrations = Array.Empty<VisualElementInjectionRegistration>();
 
         private static bool _hostsDirty = true;
@@ -63,12 +59,12 @@ namespace Ee4v.Core.Injector
 
         public static void Repaint(InjectionChannel channel)
         {
-            if (channel == InjectionChannel.HierarchyHeader || channel == InjectionChannel.ProjectToolbar)
+            if (channel == InjectionChannel.ProjectToolbar)
             {
                 MarkHostsDirty();
             }
 
-            if (channel == InjectionChannel.HierarchyItem || channel == InjectionChannel.HierarchyHeader)
+            if (channel == InjectionChannel.HierarchyItem)
             {
                 EditorApplication.RepaintHierarchyWindow();
             }
@@ -145,7 +141,6 @@ namespace Ee4v.Core.Injector
             _hostsDirty = false;
             _nextHostSyncAt = EditorApplication.timeSinceStartup + 1d;
 
-            SyncWindowHosts(HierarchyWindowType, HierarchyHeaderHostName, InjectionChannel.HierarchyHeader, HierarchyHostVersions);
             SyncWindowHosts(ProjectBrowserType, ProjectToolbarHostName, InjectionChannel.ProjectToolbar, ProjectHostVersions);
         }
 
@@ -176,8 +171,8 @@ namespace Ee4v.Core.Injector
                 var host = root.Q<VisualElement>(hostName);
                 if (host == null)
                 {
-                    host = CreateHost(hostName, channel);
-                    root.Insert(0, host);
+                    host = CreateHost(hostName);
+                    root.Add(host);
                 }
 
                 int currentVersion;
@@ -215,7 +210,7 @@ namespace Ee4v.Core.Injector
             }
         }
 
-        private static VisualElement CreateHost(string hostName, InjectionChannel channel)
+        private static VisualElement CreateHost(string hostName)
         {
             var host = new VisualElement
             {
@@ -223,14 +218,10 @@ namespace Ee4v.Core.Injector
             };
 
             host.style.flexDirection = FlexDirection.Row;
-            host.style.alignItems = Align.Center;
-            host.style.paddingLeft = 6f;
-            host.style.paddingRight = 6f;
-            host.style.marginBottom = 2f;
-            host.style.height = channel == InjectionChannel.HierarchyHeader ? 22f : 24f;
-            host.style.backgroundColor = channel == InjectionChannel.HierarchyHeader
-                ? new Color(0.16f, 0.18f, 0.22f, 0.95f)
-                : new Color(0.12f, 0.13f, 0.15f, 0.95f);
+            host.style.height = 20f;
+            host.style.marginLeft = 36f;
+            host.style.marginRight = 470f;
+            host.style.overflow = Overflow.Hidden;
 
             return host;
         }
@@ -276,7 +267,6 @@ namespace Ee4v.Core.Injector
         {
             var hierarchyItems = new List<ItemInjectionRegistration>();
             var projectItems = new List<ItemInjectionRegistration>();
-            var hierarchyHeaders = new List<VisualElementInjectionRegistration>();
             var projectToolbars = new List<VisualElementInjectionRegistration>();
 
             for (var i = 0; i < Registrations.Count; i++)
@@ -302,11 +292,7 @@ namespace Ee4v.Core.Injector
                     continue;
                 }
 
-                if (visualRegistration.Channel == InjectionChannel.HierarchyHeader)
-                {
-                    hierarchyHeaders.Add(visualRegistration);
-                }
-                else if (visualRegistration.Channel == InjectionChannel.ProjectToolbar)
+                if (visualRegistration.Channel == InjectionChannel.ProjectToolbar)
                 {
                     projectToolbars.Add(visualRegistration);
                 }
@@ -314,21 +300,14 @@ namespace Ee4v.Core.Injector
 
             _hierarchyItemRegistrations = hierarchyItems.ToArray();
             _projectItemRegistrations = projectItems.ToArray();
-            _hierarchyHeaderRegistrations = hierarchyHeaders.ToArray();
             _projectToolbarRegistrations = projectToolbars.ToArray();
         }
 
         private static VisualElementInjectionRegistration[] GetVisualRegistrations(InjectionChannel channel)
         {
-            switch (channel)
-            {
-                case InjectionChannel.HierarchyHeader:
-                    return _hierarchyHeaderRegistrations;
-                case InjectionChannel.ProjectToolbar:
-                    return _projectToolbarRegistrations;
-                default:
-                    return Array.Empty<VisualElementInjectionRegistration>();
-            }
+            return channel == InjectionChannel.ProjectToolbar
+                ? _projectToolbarRegistrations
+                : Array.Empty<VisualElementInjectionRegistration>();
         }
 
         private static int CompareRegistrations(InjectionRegistration left, InjectionRegistration right)

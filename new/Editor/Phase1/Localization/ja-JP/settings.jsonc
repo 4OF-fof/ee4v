@@ -8,10 +8,6 @@
       "label": "Hierarchy Item stub を有効化",
       "tooltip": "Hierarchy 行の右側に最小のバッジを描画します。"
     },
-    "hierarchyHeaderStub": {
-      "label": "Hierarchy Header stub を有効化",
-      "tooltip": "Hierarchy ウィンドウ上部に簡易ヘッダーを挿入します。"
-    },
     "projectItemStub": {
       "label": "Project Item stub を有効化",
       "tooltip": "Project 行にアクセントバーを描画します。"
@@ -23,10 +19,6 @@
     "hierarchyBadgeText": {
       "label": "Hierarchy バッジ文字列",
       "tooltip": "Hierarchy Item stub が描画する文字列です。"
-    },
-    "hierarchyHeaderText": {
-      "label": "Hierarchy ヘッダー文字列",
-      "tooltip": "Hierarchy Header stub に表示する文字列です。"
     },
     "projectToolbarText": {
       "label": "Project ツールバー文字列",

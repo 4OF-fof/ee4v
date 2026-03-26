@@ -1,8 +1,5 @@
 {
   "stubs": {
-    "hierarchyHeader": {
-      "tooltip": "InjectorAPI 経由で挿入された phase1 の stub です。"
-    },
     "projectToolbar": {
       "reload": "i18n 再読込",
       "settings": "Project Settings"

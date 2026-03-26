@@ -18,15 +18,6 @@ namespace Ee4v.Phase1
             true,
             order: 0);
 
-        public static readonly SettingDefinition<bool> EnableHierarchyHeaderStub = new SettingDefinition<bool>(
-            "phase1.injector.hierarchyHeader.enabled",
-            SettingScope.User,
-            "settings.section.injectorUser",
-            "settings.hierarchyHeaderStub.label",
-            "settings.hierarchyHeaderStub.tooltip",
-            true,
-            order: 1);
-
         public static readonly SettingDefinition<bool> EnableProjectItemStub = new SettingDefinition<bool>(
             "phase1.injector.projectItem.enabled",
             SettingScope.User,
@@ -34,7 +25,7 @@ namespace Ee4v.Phase1
             "settings.projectItemStub.label",
             "settings.projectItemStub.tooltip",
             true,
-            order: 2);
+            order: 1);
 
         public static readonly SettingDefinition<bool> EnableProjectToolbarStub = new SettingDefinition<bool>(
             "phase1.injector.projectToolbar.enabled",
@@ -43,7 +34,7 @@ namespace Ee4v.Phase1
             "settings.projectToolbarStub.label",
             "settings.projectToolbarStub.tooltip",
             true,
-            order: 3);
+            order: 2);
 
         public static readonly SettingDefinition<string> HierarchyBadgeText = new SettingDefinition<string>(
             "phase1.injector.hierarchyBadgeText",
@@ -55,16 +46,6 @@ namespace Ee4v.Phase1
             order: 0,
             validator: ValidateNonEmpty);
 
-        public static readonly SettingDefinition<string> HierarchyHeaderText = new SettingDefinition<string>(
-            "phase1.injector.hierarchyHeaderText",
-            SettingScope.Project,
-            "settings.section.injectorProject",
-            "settings.hierarchyHeaderText.label",
-            "settings.hierarchyHeaderText.tooltip",
-            "ee4v phase1 hierarchy",
-            order: 1,
-            validator: ValidateNonEmpty);
-
         public static readonly SettingDefinition<string> ProjectToolbarText = new SettingDefinition<string>(
             "phase1.injector.projectToolbarText",
             SettingScope.Project,
@@ -72,7 +53,7 @@ namespace Ee4v.Phase1
             "settings.projectToolbarText.label",
             "settings.projectToolbarText.tooltip",
             "ee4v phase1 toolbar",
-            order: 2,
+            order: 1,
             validator: ValidateNonEmpty);
 
         public static readonly SettingDefinition<int> ToolbarButtonWidth = new SettingDefinition<int>(
@@ -82,7 +63,7 @@ namespace Ee4v.Phase1
             "settings.toolbarButtonWidth.label",
             "settings.toolbarButtonWidth.tooltip",
             96,
-            order: 3,
+            order: 2,
             validator: value => value >= 60 ? SettingValidationResult.Success : SettingValidationResult.Error(I18N.Get("settings.validation.toolbarButtonWidth")));
 
         public static readonly SettingDefinition<Color> HierarchyAccentColor = new SettingDefinition<Color>(
@@ -92,7 +73,7 @@ namespace Ee4v.Phase1
             "settings.hierarchyAccentColor.label",
             "settings.hierarchyAccentColor.tooltip",
             new Color(0.25f, 0.72f, 0.92f, 1f),
-            order: 4);
+            order: 3);
 
         public static readonly SettingDefinition<Color> ProjectAccentColor = new SettingDefinition<Color>(
             "phase1.injector.projectAccentColor",
@@ -101,7 +82,7 @@ namespace Ee4v.Phase1
             "settings.projectAccentColor.label",
             "settings.projectAccentColor.tooltip",
             new Color(0.95f, 0.62f, 0.18f, 1f),
-            order: 5);
+            order: 4);
 
         public static void RegisterAll()
         {
@@ -113,11 +94,9 @@ namespace Ee4v.Phase1
             _registered = true;
 
             SettingApi.Register(EnableHierarchyItemStub);
-            SettingApi.Register(EnableHierarchyHeaderStub);
             SettingApi.Register(EnableProjectItemStub);
             SettingApi.Register(EnableProjectToolbarStub);
             SettingApi.Register(HierarchyBadgeText);
-            SettingApi.Register(HierarchyHeaderText);
             SettingApi.Register(ProjectToolbarText);
             SettingApi.Register(ToolbarButtonWidth);
             SettingApi.Register(HierarchyAccentColor);

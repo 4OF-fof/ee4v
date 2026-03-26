@@ -8,10 +8,6 @@
       "label": "Enable hierarchy item stub",
       "tooltip": "Draws a small badge on hierarchy rows."
     },
-    "hierarchyHeaderStub": {
-      "label": "Enable hierarchy header stub",
-      "tooltip": "Injects a simple header row into the hierarchy window."
-    },
     "projectItemStub": {
       "label": "Enable project item stub",
       "tooltip": "Draws a color marker on project rows."
@@ -23,10 +19,6 @@
     "hierarchyBadgeText": {
       "label": "Hierarchy badge text",
       "tooltip": "Text rendered by the hierarchy item stub."
-    },
-    "hierarchyHeaderText": {
-      "label": "Hierarchy header text",
-      "tooltip": "Text shown in the hierarchy header stub."
     },
     "projectToolbarText": {
       "label": "Project toolbar text",

@@ -101,7 +101,6 @@ namespace Ee4v.Core.I18n
             _catalogSnapshot = null;
             CallerNamespaceScopeCache.Clear();
             WarnedDuplicateKeys.Clear();
-            InjectorApi.Repaint(InjectionChannel.HierarchyHeader);
             InjectorApi.Repaint(InjectionChannel.ProjectToolbar);
             InternalEditorUtility.RepaintAllViews();
         }
