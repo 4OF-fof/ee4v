@@ -46,11 +46,20 @@ eagle.onPluginCreate(async () => {
 
 eagle.onPluginRun(() => {
   if (state.isPluginReady) {
-    resetForm();
-    centerPopupWindow().catch(console.error);
-    reloadState().catch(console.error);
+    handlePluginRun().catch(console.error);
   }
 });
+
+async function handlePluginRun() {
+  const didSyncSelectedItem = await trySyncSelectedBoothMetaItem();
+  if (didSyncSelectedItem) {
+    return;
+  }
+
+  resetForm();
+  await centerPopupWindow();
+  await reloadState();
+}
 
 function cacheElements() {
   elements.itemUrlInput = document.getElementById("item-url-input");
@@ -133,6 +142,41 @@ async function handleCreate() {
   });
 }
 
+async function trySyncSelectedBoothMetaItem() {
+  const selectedItems = await eagle.item.getSelected();
+  if (selectedItems.length !== 1) {
+    return false;
+  }
+
+  const item = await eagle.item.getById(selectedItems[0].id);
+  if (!isBoothMetaItem(item)) {
+    return false;
+  }
+
+  await eagle.window.hide();
+
+  return runBusy(async () => {
+    const syncedMeta = await syncBoothMetaItem(item);
+    await eagle.notification.show({
+      title: "Booth Sync",
+      body: syncedMeta.lastUpdatedAtUtc
+        ? `${item.name} を更新しました。`
+        : `${item.name} の更新対象が見つかりませんでした。`,
+      mute: true,
+      duration: 2500
+    });
+  }, false).then(() => true).catch(async error => {
+    console.error(error);
+    await eagle.notification.show({
+      title: "Booth Sync",
+      body: error.message || "Booth metadata の更新に失敗しました。",
+      mute: true,
+      duration: 3500
+    });
+    return true;
+  });
+}
+
 async function handleWindowKeydown(event) {
   if (event.key !== "Escape") {
     return;
@@ -199,6 +243,86 @@ async function createBoothMetaItem(folder, itemUrl, snapshot) {
   await item.save();
   await applyThumbnailToItem(item, snapshot.thumbnailUrl, tempDir);
   return itemId;
+}
+
+async function syncBoothMetaItem(item) {
+  const storedMeta = await loadMetaFromItem(item);
+  const itemUrl = normalizeItemUrl(item.url);
+  const syncBase = normalizeMeta({
+    ...storedMeta,
+    itemUrl,
+    name: safeString(item.name).trim(),
+    description: safeString(item.annotation)
+  });
+
+  const boothRef = parseBoothItemReference(itemUrl || syncBase.itemUrl);
+  if (!boothRef) {
+    throw new Error("選択 item に有効な Booth item URL がありません。");
+  }
+
+  const snapshot = await fetchBoothSnapshot(boothRef);
+  const nextItemName = safeString(snapshot.name).trim() || syncBase.name;
+  const nextItemUrl = snapshot.itemUrl || boothRef.normalizedUrl;
+  const nextItemDescription = safeString(snapshot.description);
+  const nextMeta = normalizeMeta({
+    ...syncBase,
+    ...snapshot,
+    itemUrl: nextItemUrl,
+    name: nextItemName,
+    description: nextItemDescription,
+    attachedAt: syncBase.attachedAt || new Date().toISOString()
+  });
+
+  const originalTags = Array.isArray(item.tags) ? item.tags : [];
+  const normalizedTags = ensureBoothMetaTag(originalTags);
+  let shouldSaveItem = false;
+
+  if (JSON.stringify(originalTags) !== JSON.stringify(normalizedTags)) {
+    item.tags = normalizedTags;
+    shouldSaveItem = true;
+  }
+
+  if (item.name !== nextItemName) {
+    item.name = nextItemName;
+    shouldSaveItem = true;
+  }
+
+  if (item.url !== nextItemUrl) {
+    item.url = nextItemUrl;
+    shouldSaveItem = true;
+  }
+
+  if (item.annotation !== nextItemDescription) {
+    item.annotation = nextItemDescription;
+    shouldSaveItem = true;
+  }
+
+  if (shouldSaveItem) {
+    await item.save();
+  }
+
+  if (!isMetaEquivalent(storedMeta, nextMeta)) {
+    await saveMetaToItem(item, nextMeta);
+  }
+
+  await applyThumbnailToItem(item, nextMeta.thumbnailUrl, await Promise.resolve(eagle.app.getPath("temp")));
+  return nextMeta;
+}
+
+async function loadMetaFromItem(item) {
+  try {
+    const raw = await fs.readFile(item.filePath, "utf8");
+    return normalizeMeta(JSON.parse(raw));
+  } catch (error) {
+    return { ...DEFAULT_META };
+  }
+}
+
+async function saveMetaToItem(item, meta) {
+  const normalized = normalizeMeta(meta);
+  const tempPath = path.join(await Promise.resolve(eagle.app.getPath("temp")), `${item.id}-boothsync.json`);
+  await fs.writeFile(tempPath, JSON.stringify(normalized, null, 2) + "\n", "utf8");
+  await item.replaceFile(tempPath);
 }
 
 async function applyThumbnailToItem(item, thumbnailUrl, tempDir) {
@@ -401,6 +525,18 @@ function ensureBoothMetaTag(tags) {
   return Array.from(new Set(normalized));
 }
 
+function isBoothMetaItem(item) {
+  return Boolean(item) && item.ext === "json" && hasBoothMetaTag(item.tags);
+}
+
+function hasBoothMetaTag(tags) {
+  return Array.isArray(tags) && tags.some(tag => safeString(typeof tag === "string" ? tag : tag && tag.name).trim() === BOOTH_META_TAG);
+}
+
+function isMetaEquivalent(left, right) {
+  return JSON.stringify(normalizeMeta(left || DEFAULT_META)) === JSON.stringify(normalizeMeta(right || DEFAULT_META));
+}
+
 function render() {
   const isInteractive = state.isPluginReady && !state.isBusy;
   const hasRootFolder = Boolean(state.rootFolder);
@@ -411,18 +547,20 @@ function render() {
 
 async function runBusy(action, surfaceErrors = true) {
   if (state.isBusy) {
-    return;
+    return false;
   }
 
   state.isBusy = true;
   render();
   try {
     await action();
+    return true;
   } catch (error) {
     console.error(error);
     if (surfaceErrors) {
       alert(error.message || "不明なエラーが発生しました。");
     }
+    throw error;
   } finally {
     state.isBusy = false;
     render();
@@ -462,6 +600,10 @@ function parseBoothItemReference(value) {
 function normalizeBoothItemUrl(value) {
   const parsed = parseBoothItemReference(value);
   return parsed ? parsed.normalizedUrl : "";
+}
+
+function normalizeItemUrl(value) {
+  return normalizeBoothItemUrl(value) || safeString(value).trim();
 }
 
 function normalizeCanonicalBoothItemUrl(value) {

@@ -97,13 +97,11 @@ async function loadMetaFromItem(item) {
 async function loadAndSyncMeta(item) {
   const storedMeta = await loadMetaFromItem(item);
   const itemUrl = normalizeItemUrl(item.url);
-  const itemName = safeString(item.name).trim();
-  const itemDescription = safeString(item.annotation);
   const syncBase = normalizeMeta({
     ...storedMeta,
     itemUrl,
-    name: itemName,
-    description: itemDescription
+    name: safeString(item.name).trim(),
+    description: safeString(item.annotation)
   });
 
   let nextMeta = syncBase;
@@ -112,17 +110,31 @@ async function loadAndSyncMeta(item) {
 
   if (itemUrl && (normalizeBoothItemUrl(itemUrl) !== normalizeBoothItemUrl(storedMeta.itemUrl) || !storedMeta.boothItemId)) {
     try {
-      const snapshot = await fetchBoothSnapshot(itemUrl, syncBase, itemName);
+      const snapshot = await fetchBoothSnapshot(itemUrl, syncBase, syncBase.name);
+      const nextItemName = safeString(snapshot.name).trim() || syncBase.name;
+      const nextItemUrl = snapshot.itemUrl || itemUrl;
+      const nextItemDescription = safeString(snapshot.description);
       nextMeta = normalizeMeta({
         ...syncBase,
         ...snapshot,
-        name: itemName,
-        description: itemDescription || snapshot.description
+        itemUrl: nextItemUrl,
+        name: nextItemName,
+        description: nextItemDescription
       });
       shouldSaveMeta = true;
 
-      if (!itemDescription && nextMeta.description) {
-        item.annotation = nextMeta.description;
+      if (item.name !== nextItemName) {
+        item.name = nextItemName;
+        shouldSaveItem = true;
+      }
+
+      if (item.url !== nextItemUrl) {
+        item.url = nextItemUrl;
+        shouldSaveItem = true;
+      }
+
+      if (item.annotation !== nextItemDescription) {
+        item.annotation = nextItemDescription;
         shouldSaveItem = true;
       }
     } catch (error) {
@@ -345,11 +357,11 @@ function normalizeTimestamp(value) {
 
 function normalizeBoothItemUrl(value) {
   const url = tryCreateUrl(value);
-  if (!url || !/\.booth\.pm$/i.test(url.hostname)) {
+  if (!url || !/(?:^|\.)booth\.pm$/i.test(url.hostname)) {
     return "";
   }
 
-  const match = url.pathname.match(/^\/items\/(\d+)/i);
+  const match = url.pathname.match(/^\/(?:(?:[a-z]{2,8}(?:[-_][a-z]{2,8})*)\/)?items\/(\d+)(?:\/)?$/i);
   if (!match) {
     return "";
   }

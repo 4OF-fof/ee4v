@@ -2,7 +2,7 @@
 
 `new/~External/Eagle` には Eagle 連携用 plugin を配置する。
 
-## ee4v BoothMeta Create
+## Booth Sync
 
 - plugin path: `new/~External/Eagle/ee4v-boothmeta-create`
 - window plugin として動作するが、見た目は frameless の疑似 popup
