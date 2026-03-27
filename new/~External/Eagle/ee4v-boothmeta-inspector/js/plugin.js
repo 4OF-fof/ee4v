@@ -273,13 +273,27 @@ function renderEditor() {
   elements.unsupportedCard.classList.add("hidden");
   elements.editorCard.classList.remove("hidden");
 
-  elements.boothItemIdValue.textContent = meta.boothItemId > 0 ? String(meta.boothItemId) : "-";
-  elements.thumbnailUrlValue.textContent = meta.thumbnailUrl || "-";
   elements.shopNameValue.textContent = meta.shopName || "-";
-  elements.shopUrlValue.textContent = meta.shopUrl || "-";
-  elements.shopThumbnailUrlValue.textContent = meta.shopThumbnailUrl || "-";
   elements.tagsValue.textContent = meta.tags.length > 0 ? meta.tags.join(", ") : "-";
-  elements.lastUpdatedValue.textContent = meta.lastUpdatedAtUtc || "-";
+  elements.boothItemIdValue.textContent = meta.boothItemId > 0 ? String(meta.boothItemId) : "-";
+  renderLinkValue(elements.shopUrlValue, meta.shopUrl);
+  renderLinkValue(elements.thumbnailUrlValue, meta.thumbnailUrl);
+  renderLinkValue(elements.shopThumbnailUrlValue, meta.shopThumbnailUrl);
+  elements.lastUpdatedValue.textContent = formatTokyoTimestamp(meta.lastUpdatedAtUtc);
+}
+
+function renderLinkValue(element, url) {
+  const normalizedUrl = normalizeUrl(url);
+  if (!normalizedUrl) {
+    element.textContent = "-";
+    element.href = "#";
+    element.classList.add("is-empty");
+    return;
+  }
+
+  element.textContent = normalizedUrl;
+  element.href = normalizedUrl;
+  element.classList.remove("is-empty");
 }
 
 function requireMetaItem() {
@@ -353,6 +367,26 @@ function normalizeTimestamp(value) {
 
   const date = new Date(trimmed);
   return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+}
+
+function formatTokyoTimestamp(value) {
+  const normalized = normalizeTimestamp(value);
+  if (!normalized) {
+    return "-";
+  }
+
+  const formatter = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+  const parts = formatter.formatToParts(new Date(normalized));
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return `${values.year}/${values.month}/${values.day} ${values.hour}:${values.minute}`;
 }
 
 function normalizeBoothItemUrl(value) {

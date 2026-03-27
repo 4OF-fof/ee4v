@@ -94,6 +94,20 @@ body[theme="DARK" i] {
   line-height: 1.5;
 }
 
+.value-link {
+  color: var(--field-focus);
+  text-decoration: none;
+}
+
+.value-link:hover {
+  text-decoration: underline;
+}
+
+.value-link.is-empty {
+  color: var(--text);
+  pointer-events: none;
+}
+
 .value-break,
 .value-multiline {
   word-break: break-word;
