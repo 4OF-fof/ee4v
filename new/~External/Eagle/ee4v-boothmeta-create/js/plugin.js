@@ -4,7 +4,7 @@ const https = require("https");
 
 const BOOTH_META_TAG = "BoothMeta";
 const POPUP_WIDTH = 380;
-const POPUP_HEIGHT = 164;
+const POPUP_HEIGHT = 136;
 
 const DEFAULT_META = {
   schemaVersion: 1,

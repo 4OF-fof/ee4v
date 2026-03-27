@@ -58,6 +58,7 @@ body[theme="DARK" i] {
   padding: 14px;
   display: grid;
   grid-template-rows: auto auto auto;
+  align-content: start;
   gap: 12px;
   background: var(--surface);
   border: 1px solid var(--border);
