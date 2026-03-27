@@ -1,0 +1,27 @@
+{
+  "id": "dev.4of.ee4v.eagle.boothmeta.create",
+  "version": "0.1.0",
+  "platform": "all",
+  "arch": "all",
+  "name": "ee4v BoothMeta Create",
+  "logo": "/logo.png",
+  "keywords": [
+    "ee4v",
+    "eagle",
+    "boothmeta",
+    "vrcasset"
+  ],
+  "devTools": true,
+  "main": {
+    "url": "index.html",
+    "width": 400,
+    "height": 340,
+    "minWidth": 360,
+    "minHeight": 300,
+    "resizable": true,
+    "maximizable": false,
+    "minimizable": true,
+    "fullscreenable": false,
+    "backgroundColor": "#3a3c42"
+  }
+}

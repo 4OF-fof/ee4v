@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ee4v BoothMeta Inspector</title>
+    <link rel="stylesheet" href="css/style.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section id="unsupported-card" class="card hidden">
+        <div class="empty">_boothmeta.json を選択すると ee4v Booth inspector を表示します。</div>
+      </section>
+
+      <section id="editor-card" class="card hidden">
+        <header class="header">
+          <div>
+            <p class="eyebrow">ee4v BoothMeta</p>
+            <h1>_boothmeta.json</h1>
+          </div>
+          <button id="reload-button" class="button button-ghost" type="button">Reload</button>
+        </header>
+
+        <label class="field">
+          <span>Booth item URL</span>
+          <input id="item-url-input" type="text" placeholder="https://sample.booth.pm/items/1234567">
+        </label>
+
+        <label class="field">
+          <span>Booth item ID</span>
+          <input id="booth-item-id-input" type="number" min="0" step="1" placeholder="1234567">
+        </label>
+
+        <label class="field">
+          <span>Name</span>
+          <input id="name-input" type="text">
+        </label>
+
+        <label class="field">
+          <span>Description</span>
+          <textarea id="description-input" rows="5"></textarea>
+        </label>
+
+        <label class="field">
+          <span>Thumbnail URL</span>
+          <input id="thumbnail-url-input" type="text">
+        </label>
+
+        <label class="field">
+          <span>Shop Name</span>
+          <input id="shop-name-input" type="text">
+        </label>
+
+        <label class="field">
+          <span>Shop URL</span>
+          <input id="shop-url-input" type="text">
+        </label>
+
+        <label class="field">
+          <span>Shop Thumbnail URL</span>
+          <input id="shop-thumbnail-url-input" type="text">
+        </label>
+
+        <label class="field">
+          <span>Tags (comma or newline separated)</span>
+          <textarea id="tags-input" rows="3"></textarea>
+        </label>
+
+        <div class="button-row">
+          <button id="save-button" class="button button-primary" type="button">Save</button>
+          <button id="refresh-button" class="button" type="button">Refresh Snapshot</button>
+          <button id="open-item-button" class="button button-ghost" type="button">Open Item</button>
+        </div>
+
+        <div id="meta-info" class="meta-info"></div>
+        <div id="status-banner" class="status-banner">Ready.</div>
+      </section>
+    </main>
+    <script src="js/plugin.js"></script>
+  </body>
+</html>

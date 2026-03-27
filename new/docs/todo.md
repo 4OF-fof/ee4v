@@ -22,11 +22,12 @@
                 - [x] ショップサムネイル(URL)
                 - [x] タグ
     - [] Eagle Data Source
-        - Eagle のローカル API と Eagle plugin の attachment JSON を組み合わせて連携する
+        - Eagle のローカル API と `_boothmeta.json` item を組み合わせて連携する
         - v1 は読み取りのみを前提とし、Eagle への書き戻しは行わない
-        - Booth 情報は folder 本体ではなく plugin 管理データに保持する
-        - Booth attachment 付き folder は同期対象とし、配下 item は `VRCAsset` タグ不要で扱う
-        - standalone item は `VRCAsset` タグ付きのみ同期対象とする
+        - Booth 情報は folder 本体ではなく `_boothmeta.json` 本文に保持する
+        - library 直下の `VRCAsset` 配下 item を構造ベースで同期対象とする
+        - `_boothmeta.json` を持つ folder 配下はその metadata を継承する
+        - `_boothmeta.json` を持たない subtree も対象には含めるが metadata は空扱いにする
         - 詳細設計は `docs/datasource/eagle/EagleDataSource.md` と `docs/datasource/eagle/EaglePlugin.md` を参照
 
 # Injector

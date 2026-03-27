@@ -1,154 +1,92 @@
 # Eagle Data Source
 
-`Editor/AssetManager/Eagle` には、Eagle が起動時に公開するローカル API と、Eagle プラグインが管理する Booth attachment 情報を読み取るための API を配置する。
-
-このドキュメントは **ee4v 側の read-only 連携仕様** を整理する。Eagle への書き戻しや UI 実装は対象外とする。
+`Editor/AssetManager/Eagle` には、Eagle が起動時に公開するローカル API と、`_boothmeta.json` item を読み取るための API を配置する想定である。  
+このドキュメントは **ee4v 側の read-only 連携仕様** を整理する。今回の実装対象は plugin と docs のみで、ee4v 側コードはまだ作らない。
 
 ## 前提
 
-- Eagle のローカル API エンドポイントは `http://localhost:41595` を既定値とする
-- Eagle は起動中のみ API を提供するため、未起動時はデータソースを無効扱いにする
-- Booth 情報は Eagle folder 本体には保存せず、Eagle プラグインが library ごとに管理する attachment JSON を唯一の参照元とする
-- v1 は BLM と同様に読み出しだけを実装し、ee4v から Eagle の folder / item を更新しない
+- Eagle のローカル API endpoint は `http://localhost:41595`
+- 同期ルートは library 直下の `VRCAsset`
+- 同期対象判定に tag や folder description は使わない
+- `VRCAsset` 配下の item は構造だけで対象を決める
+- Booth metadata の唯一の正本は `_boothmeta.json` 本文
 
-## 公開 API
+## 読み取りモデル
 
-### `EagleApi.GetDefaultEndpoint()`
+### `BoothMeta`
 
-- 戻り値: `string`
-- 既定の Eagle ローカル API endpoint を返す
-- 既定値は `http://localhost:41595`
-
-### `EagleApi.IsAvailable(string endpoint = null)`
-
-- 戻り値: `bool`
-- Eagle ローカル API へ接続できるかを返す
-- `GET /api/application/info` または同等の軽量 endpoint を用いて可用性を確認する
-- 接続失敗、タイムアウト、異常レスポンス時は `false`
-
-### `EagleApi.GetFolders(string endpoint = null)`
-
-- 戻り値: `IReadOnlyList<EagleFolderRecord>`
-- `GET /api/folder/list` を使って folder 一覧を取得する
-- Eagle の API レスポンスに含まれる `id`、`name`、`description`、`children`、`modificationTime` を正規化して返す
-- folder 階層はレスポンス構造を保ったまま返してよいが、ee4v 側で探索しやすいよう `ParentId` を持たせる
-
-### `EagleApi.GetItems(EagleItemQuery query, string endpoint = null)`
-
-- 戻り値: `IReadOnlyList<EagleItemRecord>`
-- `GET /api/item/list` を使って item 一覧を取得する
-- `folders` と `tags` を使った絞り込みをサポートする
-- v1 では以下の用途を満たせればよい
-  - Booth attachment 付き folder 配下の item 一覧取得
-  - standalone item のうち `VRCAsset` タグ付き item 一覧取得
-
-### `EagleApi.GetBoothAttachments(string libraryPath = null)`
-
-- 戻り値: `IReadOnlyList<EagleBoothAttachmentRecord>`
-- Eagle プラグインの管理 JSON から Booth attachment 一覧を取得する
-- attachment は Eagle library ごとに分離して保存する
-- `libraryPath` 未指定時は現在開いている library を基準に解決する
-
-### `EagleApi.GetImportCandidates(string endpoint = null, string libraryPath = null)`
-
-- 戻り値: `IReadOnlyList<EagleImportCandidateRecord>`
-- Eagle folder / item / Booth attachment を結合し、ee4v が実際に取り込む候補一覧を返す
-- v1 では以下のルールを実装対象とする
-  - Booth attachment が付いた folder は常に同期対象
-  - その folder 配下の item は `VRCAsset` タグがなくても同期対象
-  - folder に属さない standalone item は `VRCAsset` タグ付きのみ同期対象
-
-## 返却モデル
-
-### `EagleFolderRecord`
-
-- `FolderId`
-- `ParentId`
-- `Name`
-- `Description`
-- `Children`
-- `ModificationTime`
-
-### `EagleItemRecord`
-
-- `ItemId`
-- `Name`
-- `Url`
-- `Annotation`
-- `Tags`
-- `FolderIds`
-- `Extension`
-- `Size`
-- `Width`
-- `Height`
-- `ModificationTime`
-- `IsDeleted`
-
-### `EagleBoothAttachmentRecord`
-
-- `FolderId`
-- `BoothItemId`
-- `ItemUrl`
-- `Name`
-- `Description`
-- `ThumbnailUrl`
-- `ShopName`
-- `ShopUrl`
-- `ShopThumbnailUrl`
-- `Tags`
-- `AttachedAt`
-- `LastUpdatedAtUtc`
-- `SchemaVersion`
+- `_boothmeta.json` を正規化したモデル
+- 最低限以下を持つ
+  - `SchemaVersion`
+  - `BoothItemId`
+  - `ItemUrl`
+  - `Name`
+  - `Description`
+  - `ThumbnailUrl`
+  - `ShopName`
+  - `ShopUrl`
+  - `ShopThumbnailUrl`
+  - `Tags`
+  - `AttachedAt`
+  - `LastUpdatedAtUtc`
 
 ### `EagleImportCandidateRecord`
 
-- `SourceKind`
-  - `AttachedFolder`
-  - `FolderItem`
-  - `StandaloneItem`
-- `Folder`
+- `RootFolder`
+  - 最も近い祖先 `_boothmeta.json` root。無ければ `null`
 - `Item`
-- `BoothAttachment`
+  - 対象 Eagle item
+- `BoothMeta`
+  - `RootFolder` に対応する metadata。無ければ `null`
 
 ## 同期ルール
 
-### Folder ベース
+- `VRCAsset` 配下の item はすべて連携対象候補
+- `_boothmeta.json` item 自体は連携対象に含めない
+- `VRCAsset` 配下で、最も近い祖先 folder に `_boothmeta.json` があればその metadata を継承する
+- 祖先に `_boothmeta.json` が無い subtree も対象には含めるが、`BoothMeta` は `null`
+- nested `_boothmeta.json` は不正構成とし、親 root subtree を警告付きで除外する
 
-- Booth attachment が付いた folder は、Eagle 側のタグ有無に関係なく ee4v の同期対象とする
-- folder 自体の Booth 情報は attachment JSON を参照し、folder `description` などの文字列解析には依存しない
-- attachment が存在しても対応する folder が Eagle 上から削除されている場合、その attachment は stale として無視する
+## API 方向性
 
-### Item ベース
+### `EagleApi.GetDefaultEndpoint()`
 
-- Booth attachment 付き folder 配下の item は `VRCAsset` タグ不要で同期対象とする
-- standalone item は `VRCAsset` タグ付きのみ同期対象とする
-- item が複数 folder に所属する場合は、少なくとも 1 つの同期対象 folder に属していれば対象に含める
+- `string`
 
-### BLM との関係
+### `EagleApi.IsAvailable(string endpoint = null)`
 
-- BLM は Booth 情報の補助データソースとして扱う
-- read path は Eagle plugin の Booth attachment スナップショットだけで完結できるようにする
-- BLM が存在する場合のみ、Booth item の再確認や追加補完に利用できる設計に留める
+- `bool`
+
+### `EagleApi.GetFolders(string endpoint = null)`
+
+- `IReadOnlyList<EagleFolderRecord>`
+
+### `EagleApi.GetItems(EagleItemQuery query, string endpoint = null)`
+
+- `IReadOnlyList<EagleItemRecord>`
+- tag ベースの絞り込みは前提にしない
+
+### `EagleApi.GetBoothMetaItems(string endpoint = null)`
+
+- `IReadOnlyList<EagleBoothMetaRecord>`
+- `VRCAsset` 配下の `_boothmeta.json` item を収集して返す
+
+### `EagleApi.GetImportCandidates(string endpoint = null)`
+
+- `IReadOnlyList<EagleImportCandidateRecord>`
+- `VRCAsset` 配下 item と `_boothmeta.json` を結合して返す
 
 ## 異常系
 
-- Eagle 未起動、API 不達、HTTP エラー、JSON パース失敗時はデータソース無効として扱う
-- attachment JSON が壊れている場合は、その library の attachment 読み取りを失敗扱いにし、folder / item 取得だけは継続できるようにする
-- 再取得処理が失敗した場合、最後の正常な Booth attachment スナップショットは保持する
-- API レスポンスに存在する folder / item と attachment JSON の対応が取れない場合は警告対象とし、同期対象からは除外する
-
-## 実装メモ
-
-- HTTP client は read-only の `GET` のみを使用する
-- endpoint は setting 化を想定して引数で上書き可能にするが、公開 API の既定値は `GetDefaultEndpoint()` に寄せる
-- Eagle API の folder / item レスポンス形状は Eagle 側バージョン差分を吸収するため、内部 DTO と公開 record を分ける
-- attachment JSON の保存場所解決は Eagle plugin 側仕様に合わせるが、公開 API には storage path を露出しない
+- Eagle 未起動、API 不達、HTTP エラー時はデータソース無効
+- `_boothmeta.json` が壊れている場合はその root を失敗扱いにする
+- nested `_boothmeta.json` は warning 対象
+- `VRCAsset` が存在しない場合は対象 0 件
 
 ## テスト観点
 
-- Eagle 起動中は `IsAvailable()` が `true`、停止中は `false`
-- Booth attachment 付き folder はタグ不要で同期対象になる
-- attachment 付き folder 配下の item はタグなしでも取得対象になる
-- standalone item は `VRCAsset` タグ付きのみ取得対象になる
-- stale attachment を安全に無視できる
-- attachment JSON が壊れていても API 経由の folder / item 取得パスは独立して扱える
+- `VRCAsset/hoge/_boothmeta.json` の配下 item が metadata を継承する
+- `VRCAsset/hoge/fuga/_boothmeta.json` のような孫以降 root も許容される
+- `_boothmeta.json` が無い subtree も対象には含まれる
+- `_boothmeta.json` item 自体は対象から除外される
+- nested `_boothmeta.json` は不正構成として検出される
