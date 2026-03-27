@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using Ee4v.SQLite;
@@ -67,12 +68,15 @@ namespace Ee4v.AssetManager.BoothLibraryManager
                             COALESCE(overwritten_booth_items.description, booth_items.description) AS Description,
                             booth_items.thumbnail_url AS ThumbnailUrl,
                             shops.name AS ShopName,
-                            shops.thumbnail_url AS ShopThumbnailUrl
+                            shops.thumbnail_url AS ShopThumbnailUrl,
+                            booth_item_update_history.last_updated_at AS LastUpdatedAt
                         FROM booth_items
                         INNER JOIN shops
                             ON shops.subdomain = booth_items.shop_subdomain
                         LEFT JOIN overwritten_booth_items
                             ON overwritten_booth_items.booth_item_id = booth_items.id
+                        LEFT JOIN booth_item_update_history
+                            ON booth_item_update_history.booth_item_id = booth_items.id
                         WHERE booth_items.id = ?
                         LIMIT 1",
                         boothItemId)
@@ -93,7 +97,8 @@ namespace Ee4v.AssetManager.BoothLibraryManager
                     row.ShopName,
                     string.Format(BoothBaseUrlFormat, row.ShopSubdomain),
                     row.ShopThumbnailUrl,
-                    tags);
+                    tags,
+                    ParseUtcTimestamp(row.LastUpdatedAt));
                 return true;
             }
         }
@@ -133,6 +138,23 @@ namespace Ee4v.AssetManager.BoothLibraryManager
                 .ToArray();
         }
 
+        private static DateTime? ParseUtcTimestamp(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            DateTime parsed;
+            return DateTime.TryParse(
+                value,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal,
+                out parsed)
+                ? parsed
+                : null;
+        }
+
         private sealed class BoothItemQueryRow
         {
             public long BoothItemId { get; set; }
@@ -148,6 +170,8 @@ namespace Ee4v.AssetManager.BoothLibraryManager
             public string ShopName { get; set; }
 
             public string ShopThumbnailUrl { get; set; }
+
+            public string LastUpdatedAt { get; set; }
         }
 
         private sealed class TagQueryRow

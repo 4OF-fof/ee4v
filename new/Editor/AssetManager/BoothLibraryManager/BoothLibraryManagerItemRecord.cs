@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Ee4v.AssetManager.BoothLibraryManager
@@ -13,7 +14,8 @@ namespace Ee4v.AssetManager.BoothLibraryManager
             string shopName,
             string shopUrl,
             string shopThumbnailUrl,
-            IReadOnlyList<string> tags)
+            IReadOnlyList<string> tags,
+            DateTime? lastUpdatedAtUtc)
         {
             BoothItemId = boothItemId;
             Name = name ?? string.Empty;
@@ -24,6 +26,7 @@ namespace Ee4v.AssetManager.BoothLibraryManager
             ShopUrl = shopUrl ?? string.Empty;
             ShopThumbnailUrl = shopThumbnailUrl ?? string.Empty;
             Tags = tags ?? new string[0];
+            LastUpdatedAtUtc = lastUpdatedAtUtc;
         }
 
         public long BoothItemId { get; private set; }
@@ -43,5 +46,7 @@ namespace Ee4v.AssetManager.BoothLibraryManager
         public string ShopThumbnailUrl { get; private set; }
 
         public IReadOnlyList<string> Tags { get; private set; }
+
+        public DateTime? LastUpdatedAtUtc { get; private set; }
     }
 }

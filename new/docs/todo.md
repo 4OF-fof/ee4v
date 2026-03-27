@@ -21,6 +21,13 @@
                 - [x] ショップURL
                 - [x] ショップサムネイル(URL)
                 - [x] タグ
+    - [] Eagle Data Source
+        - Eagle のローカル API と Eagle plugin の attachment JSON を組み合わせて連携する
+        - v1 は読み取りのみを前提とし、Eagle への書き戻しは行わない
+        - Booth 情報は folder 本体ではなく plugin 管理データに保持する
+        - Booth attachment 付き folder は同期対象とし、配下 item は `VRCAsset` タグ不要で扱う
+        - standalone item は `VRCAsset` タグ付きのみ同期対象とする
+        - 詳細設計は `docs/datasource/eagle/EagleDataSource.md` と `docs/datasource/eagle/EaglePlugin.md` を参照
 
 # Injector
 

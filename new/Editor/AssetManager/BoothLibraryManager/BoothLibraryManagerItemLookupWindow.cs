@@ -90,6 +90,7 @@ namespace Ee4v.AssetManager.BoothLibraryManager
                 DrawReadOnlyField("Shop URL", _currentItem.ShopUrl);
                 DrawReadOnlyField("Shop Thumbnail URL", _currentItem.ShopThumbnailUrl);
                 DrawReadOnlyField("Tags", string.Join(", ", _currentItem.Tags ?? Array.Empty<string>()), minHeight: 48f);
+                DrawReadOnlyField("Last Updated At (UTC)", _currentItem.LastUpdatedAtUtc?.ToString("O") ?? string.Empty);
             }
 
             EditorGUILayout.EndScrollView();

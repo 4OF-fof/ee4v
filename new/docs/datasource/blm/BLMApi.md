@@ -41,6 +41,9 @@
 - `ShopUrl`
 - `ShopThumbnailUrl`
 - `Tags`
+- `LastUpdatedAtUtc`
+  - `booth_item_update_history.last_updated_at` に基づく、Booth 正本からの最終情報取得時刻
+  - `booth_item_update_history` に対象行が存在しない場合は `null`
 
 ## 実装メモ
 
