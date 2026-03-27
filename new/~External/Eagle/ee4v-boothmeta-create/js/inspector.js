@@ -277,12 +277,30 @@ function renderEditor() {
 
 function renderEditorValues(meta) {
   elements.shopNameValue.textContent = meta.shopName || "-";
-  elements.tagsValue.textContent = meta.tags.length > 0 ? meta.tags.join(", ") : "-";
+  renderTagsValue(elements.tagsValue, meta.tags);
   elements.boothItemIdValue.textContent = meta.boothItemId > 0 ? String(meta.boothItemId) : "-";
   renderLinkValue(elements.shopUrlValue, meta.shopUrl);
   renderLinkValue(elements.thumbnailUrlValue, meta.thumbnailUrl);
   renderLinkValue(elements.shopThumbnailUrlValue, meta.shopThumbnailUrl);
   elements.lastUpdatedValue.textContent = formatTokyoTimestamp(meta.lastUpdatedAtUtc);
+}
+
+function renderTagsValue(element, tags) {
+  element.replaceChildren();
+  const values = Array.isArray(tags) ? tags.filter(Boolean) : [];
+  element.classList.toggle("value-empty", values.length === 0);
+
+  if (values.length === 0) {
+    element.textContent = "-";
+    return;
+  }
+
+  values.forEach(tag => {
+    const chip = document.createElement("span");
+    chip.className = "tag-chip";
+    chip.textContent = tag;
+    element.appendChild(chip);
+  });
 }
 
 function renderLinkValue(element, url) {
