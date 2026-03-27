@@ -113,13 +113,13 @@ async function handleCreate() {
       throw new Error("有効な Booth item URL を入力してください。");
     }
 
-    const targetFolderName = String(boothRef.itemId);
+    const snapshot = await fetchBoothSnapshot(boothRef);
+    const targetFolderName = resolveBoothFolderName(snapshot.name, boothRef.itemId);
     const existingFolder = await findDirectChildFolder(rootFolder.id, targetFolderName);
     if (existingFolder) {
       throw new Error(`"${targetFolderName}" folder は既に存在します。`);
     }
 
-    const snapshot = await fetchBoothSnapshot(boothRef);
     const canonicalItemUrl = snapshot.itemUrl || boothRef.normalizedUrl;
     elements.itemUrlInput.value = canonicalItemUrl;
     const targetFolder = await eagle.folder.createSubfolder(rootFolder.id, {
@@ -543,6 +543,21 @@ function toPositiveInteger(value) {
 
 function safeString(value) {
   return typeof value === "string" ? value : "";
+}
+
+function resolveBoothFolderName(name, fallbackItemId) {
+  const trimmed = safeString(name).trim();
+  if (!trimmed) {
+    return String(fallbackItemId);
+  }
+
+  const sanitized = trimmed
+    .replace(/[\\/:*?"<>|]/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/[. ]+$/g, "")
+    .trim();
+
+  return sanitized || String(fallbackItemId);
 }
 
 function firstNonEmpty(values) {
