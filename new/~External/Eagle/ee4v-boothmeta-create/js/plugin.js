@@ -197,7 +197,24 @@ async function createBoothMetaItem(folder, itemUrl, snapshot) {
   item.annotation = snapshot.description || "";
   item.tags = ensureBoothMetaTag(item.tags);
   await item.save();
+  await applyThumbnailToItem(item, snapshot.thumbnailUrl, tempDir);
   return itemId;
+}
+
+async function applyThumbnailToItem(item, thumbnailUrl, tempDir) {
+  const normalizedThumbnailUrl = normalizeUrl(thumbnailUrl);
+  if (!normalizedThumbnailUrl) {
+    return;
+  }
+
+  try {
+    const extension = getFileExtensionFromUrl(normalizedThumbnailUrl) || ".jpg";
+    const thumbnailPath = path.join(tempDir, `boothmeta-thumb-${item.id}${extension}`);
+    await downloadFile(normalizedThumbnailUrl, thumbnailPath);
+    await item.setCustomThumbnail(thumbnailPath);
+  } catch (error) {
+    console.warn(`Failed to apply custom thumbnail: ${error.message}`);
+  }
 }
 
 async function fetchBoothSnapshot(boothRef) {
@@ -279,6 +296,53 @@ async function requestJson(url, redirectDepth = 0) {
 
     request.on("error", error => {
       reject(new Error(`Booth item JSON の取得に失敗しました: ${error.message}`));
+    });
+    request.setTimeout(15000, () => {
+      request.destroy(new Error("timeout"));
+    });
+  });
+}
+
+async function downloadFile(url, destinationPath, redirectDepth = 0) {
+  if (redirectDepth > 4) {
+    throw new Error("thumbnail image のリダイレクト回数が上限を超えました。");
+  }
+
+  return new Promise((resolve, reject) => {
+    const request = https.get(url, {
+      headers: {
+        "User-Agent": "ee4v-eagle-boothmeta-create/0.1.0"
+      }
+    }, response => {
+      const statusCode = response.statusCode || 0;
+      const location = response.headers.location;
+
+      if (statusCode >= 300 && statusCode < 400 && location) {
+        response.resume();
+        downloadFile(new URL(location, url).toString(), destinationPath, redirectDepth + 1).then(resolve, reject);
+        return;
+      }
+
+      if (statusCode < 200 || statusCode >= 300) {
+        response.resume();
+        reject(new Error(`thumbnail image の取得に失敗しました。HTTP ${statusCode}`));
+        return;
+      }
+
+      const chunks = [];
+      response.on("data", chunk => chunks.push(chunk));
+      response.on("end", async () => {
+        try {
+          await fs.writeFile(destinationPath, Buffer.concat(chunks));
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+
+    request.on("error", error => {
+      reject(new Error(`thumbnail image の取得に失敗しました: ${error.message}`));
     });
     request.setTimeout(15000, () => {
       request.destroy(new Error("timeout"));
@@ -427,6 +491,16 @@ function normalizeBoothShopUrl(value) {
 function normalizeUrl(value) {
   const url = tryCreateUrl(value);
   return url ? url.toString() : "";
+}
+
+function getFileExtensionFromUrl(value) {
+  const url = tryCreateUrl(value);
+  if (!url) {
+    return "";
+  }
+
+  const extension = path.extname(url.pathname || "").toLowerCase();
+  return extension && extension.length <= 5 ? extension : "";
 }
 
 function tryCreateUrl(value) {

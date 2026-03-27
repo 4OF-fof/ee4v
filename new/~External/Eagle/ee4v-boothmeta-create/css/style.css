@@ -120,7 +120,7 @@ body[theme="DARK" i] {
 .button-row {
   display: flex;
   gap: 8px;
-  justify-content: flex-start;
+  justify-content: flex-end;
 }
 
 .button {
@@ -134,10 +134,6 @@ body[theme="DARK" i] {
   padding: 8px 14px;
   cursor: pointer;
   justify-self: start;
-}
-
-#create-button {
-  margin-left: auto;
 }
 
 .button-secondary {
