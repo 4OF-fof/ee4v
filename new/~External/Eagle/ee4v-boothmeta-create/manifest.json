@@ -12,6 +12,15 @@
     "vrcasset"
   ],
   "devTools": true,
+  "preview": {
+    "json": {
+      "inspector": {
+        "path": "inspector.html",
+        "height": 520,
+        "multiSelect": false
+      }
+    }
+  },
   "main": {
     "frame": false,
     "url": "index.html",

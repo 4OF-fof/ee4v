@@ -157,6 +157,7 @@ async function loadAndSyncMeta(item) {
     await saveMetaToItem(item, nextMeta);
   }
 
+  renderEditorValues(nextMeta);
   return nextMeta;
 }
 
@@ -269,10 +270,12 @@ function renderUnsupported() {
 }
 
 function renderEditor() {
-  const meta = state.meta || DEFAULT_META;
   elements.unsupportedCard.classList.add("hidden");
   elements.editorCard.classList.remove("hidden");
+  renderEditorValues(state.meta || DEFAULT_META);
+}
 
+function renderEditorValues(meta) {
   elements.shopNameValue.textContent = meta.shopName || "-";
   elements.tagsValue.textContent = meta.tags.length > 0 ? meta.tags.join(", ") : "-";
   elements.boothItemIdValue.textContent = meta.boothItemId > 0 ? String(meta.boothItemId) : "-";
@@ -294,13 +297,6 @@ function renderLinkValue(element, url) {
   element.textContent = normalizedUrl;
   element.href = normalizedUrl;
   element.classList.remove("is-empty");
-}
-
-function requireMetaItem() {
-  if (!state.item) {
-    throw new Error("BoothMeta タグ付き JSON item を選択してください。");
-  }
-  return state.item;
 }
 
 function normalizeMeta(meta) {

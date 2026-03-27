@@ -18,22 +18,16 @@ Booth 情報の唯一の正本は Eagle item として保存された `_boothmet
 
 ## Plugin 構成
 
-### 1. Create Plugin
+### Booth Sync
 
-- window plugin として実装する
-- 見た目は frameless の疑似 popup にする
-- `frame: false`, 固定サイズ, `alwaysOnTop: true`, `blur` で `hide` を採用する
+- 1 つの plugin に `window plugin` と `json inspector` の両方を持たせる
+- window 側は frameless の疑似 popup として動作する
+- `frame: false`, 固定サイズ, `alwaysOnTop: true` を採用する
 - 起動時は現在カーソルがあるディスプレイ中央へ毎回再配置する
-- URL 入力から Booth item を取得し、商品名ベースの folder を `VRCAsset` 直下へ新規作成し、その直下へ `BoothMeta` タグ付き JSON item を作成する
-- 作成後は生成された folder を開いて item を選択し、以後の表示は inspector plugin に委譲する
-- これは Eagle 既存 UI にアンカーされたネイティブ popup ではない
-
-### 2. Inspector Plugin
-
-- inspector plugin として実装する
-- `_boothmeta.json` item を選択した時だけ専用 UI を表示する
-- Booth URL / item ID / snapshot fields を表示・編集・保存できる
-- `Refresh Snapshot` は Booth item URL を使って JSON を更新する
+- 選択 item が `BoothMeta` タグ付き JSON 1 件なら window を開かず、その item の Booth 情報を直接 sync する
+- それ以外で起動した場合は URL 入力 popup を表示し、Booth item を取得して商品名ベースの folder を `VRCAsset` 直下へ新規作成し、その直下へ `BoothMeta` タグ付き JSON item を作成する
+- 同じ plugin の inspector は `BoothMeta` タグ付き JSON item を選択した時だけ専用 UI を表示する
+- これは Eagle 既存 UI にアンカーされたネイティブ popover ではない
 
 ## `_boothmeta.json` 保存形式
 
