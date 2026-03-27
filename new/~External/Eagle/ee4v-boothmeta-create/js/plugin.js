@@ -1,5 +1,6 @@
 const fs = require("fs/promises");
 const path = require("path");
+const BOOTH_META_TAG = "BoothMeta";
 
 const DEFAULT_META = {
   schemaVersion: 1,
@@ -101,11 +102,15 @@ async function handleCreate() {
     await fs.writeFile(filePath, JSON.stringify(content, null, 2) + "\n", "utf8");
     const itemId = await eagle.item.addFromPath(filePath, {
       folders: [folder.id],
-      name: "_boothmeta"
+      name: folder.name,
+      tags: [BOOTH_META_TAG]
     });
 
+    const item = await eagle.item.getById(itemId);
+    item.tags = ensureBoothMetaTag(item.tags);
+    await item.save();
     await eagle.item.select([itemId]);
-    setStatus(`"${folder.name}" に _boothmeta.json を作成しました。`, "success");
+    setStatus(`"${folder.name}" に BoothMeta タグ付き JSON を作成しました。`, "success");
   });
 }
 
@@ -142,7 +147,7 @@ async function validateTargetFolder(folderId) {
   if (existing) {
     return {
       isValid: false,
-      message: "_boothmeta.json は既に存在します。"
+      message: "この folder には既に BoothMeta タグ付き JSON があります。"
     };
   }
 
@@ -152,7 +157,7 @@ async function validateTargetFolder(folderId) {
     if (ancestorItem) {
       return {
         isValid: false,
-        message: "祖先 folder に _boothmeta.json があるため、nested root は作成できません。"
+        message: "祖先 folder に BoothMeta タグ付き JSON があるため、nested root は作成できません。"
       };
     }
   }
@@ -161,7 +166,7 @@ async function validateTargetFolder(folderId) {
   if (descendantRoot) {
     return {
       isValid: false,
-      message: "子孫 folder に _boothmeta.json があるため、nested root は作成できません。"
+      message: "子孫 folder に BoothMeta タグ付き JSON があるため、nested root は作成できません。"
     };
   }
 
@@ -188,7 +193,7 @@ async function findBoothMetaItem(folderId) {
   const items = await eagle.item.get({
     folders: [folderId],
     ext: "json",
-    fields: ["id", "name", "ext", "folders", "filePath"]
+    fields: ["id", "name", "ext", "folders", "tags"]
   });
 
   return items.find(item => isBoothMetaItem(item) && Array.isArray(item.folders) && item.folders.includes(folderId)) || null;
@@ -229,8 +234,25 @@ function isBoothMetaItem(item) {
     return false;
   }
 
-  const fileName = item.filePath ? path.basename(item.filePath).toLowerCase() : "";
-  return item.ext === "json" && (item.name === "_boothmeta" || fileName === "_boothmeta.json");
+  return item.ext === "json" && hasBoothMetaTag(item.tags);
+}
+
+function hasBoothMetaTag(tags) {
+  return Array.isArray(tags) && tags.some(tag => String(typeof tag === "string" ? tag : tag && tag.name || "").trim() === BOOTH_META_TAG);
+}
+
+function ensureBoothMetaTag(tags) {
+  const normalized = Array.isArray(tags)
+    ? tags
+      .map(tag => String(typeof tag === "string" ? tag : tag && tag.name || "").trim())
+      .filter(Boolean)
+    : [];
+
+  if (!normalized.includes(BOOTH_META_TAG)) {
+    normalized.push(BOOTH_META_TAG);
+  }
+
+  return Array.from(new Set(normalized));
 }
 
 function requireActiveFolder(shouldThrow = true) {
@@ -261,7 +283,7 @@ function renderSelection() {
   elements.selectionCard.innerHTML = [
     `<strong>${escapeHtml(state.activeFolder.name)}</strong>`,
     `<div class="muted">ID: ${escapeHtml(state.activeFolder.id)}</div>`,
-    `<div class="muted">この folder 直下に _boothmeta.json を作成します。</div>`
+    `<div class="muted">この folder 直下に BoothMeta タグ付き JSON を作成します。</div>`
   ].join("");
 }
 

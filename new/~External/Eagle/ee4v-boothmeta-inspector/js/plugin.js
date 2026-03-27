@@ -2,6 +2,8 @@ const fs = require("fs/promises");
 const path = require("path");
 const https = require("https");
 
+const BOOTH_META_TAG = "BoothMeta";
+
 const DEFAULT_META = {
   schemaVersion: 1,
   boothItemId: 0,
@@ -28,115 +30,58 @@ const elements = {};
 
 window.addEventListener("DOMContentLoaded", () => {
   cacheElements();
-  bindEvents();
   renderUnsupported();
-  renderButtons();
-  setStatus("Eagle plugin の初期化を待っています。", "success");
 });
 
 eagle.onPluginCreate(async () => {
   state.isPluginReady = true;
   applyTheme(await Promise.resolve(eagle.app.theme));
   eagle.onThemeChanged(theme => applyTheme(theme));
-  await reloadState("Inspector を読み込みました。");
+  await reloadState();
 });
 
 eagle.onPluginShow(() => {
   if (state.isPluginReady) {
-    reloadState("状態を再読込しました。");
+    reloadState();
   }
 });
 
 function cacheElements() {
   elements.unsupportedCard = document.getElementById("unsupported-card");
   elements.editorCard = document.getElementById("editor-card");
-  elements.reloadButton = document.getElementById("reload-button");
-  elements.itemUrlInput = document.getElementById("item-url-input");
-  elements.boothItemIdInput = document.getElementById("booth-item-id-input");
-  elements.nameInput = document.getElementById("name-input");
-  elements.descriptionInput = document.getElementById("description-input");
-  elements.thumbnailUrlInput = document.getElementById("thumbnail-url-input");
-  elements.shopNameInput = document.getElementById("shop-name-input");
-  elements.shopUrlInput = document.getElementById("shop-url-input");
-  elements.shopThumbnailUrlInput = document.getElementById("shop-thumbnail-url-input");
-  elements.tagsInput = document.getElementById("tags-input");
-  elements.saveButton = document.getElementById("save-button");
-  elements.refreshButton = document.getElementById("refresh-button");
-  elements.openItemButton = document.getElementById("open-item-button");
-  elements.metaInfo = document.getElementById("meta-info");
-  elements.statusBanner = document.getElementById("status-banner");
-}
-
-function bindEvents() {
-  elements.reloadButton.addEventListener("click", () => reloadState("状態を再読込しました。"));
-  elements.saveButton.addEventListener("click", handleSave);
-  elements.refreshButton.addEventListener("click", handleRefreshSnapshot);
-  elements.openItemButton.addEventListener("click", async () => {
-    if (state.item) {
-      await state.item.open();
-    }
-  });
+  elements.boothItemIdValue = document.getElementById("booth-item-id-value");
+  elements.thumbnailUrlValue = document.getElementById("thumbnail-url-value");
+  elements.shopNameValue = document.getElementById("shop-name-value");
+  elements.shopUrlValue = document.getElementById("shop-url-value");
+  elements.shopThumbnailUrlValue = document.getElementById("shop-thumbnail-url-value");
+  elements.tagsValue = document.getElementById("tags-value");
+  elements.lastUpdatedValue = document.getElementById("last-updated-value");
 }
 
 function applyTheme(theme) {
   document.body.setAttribute("theme", theme || "LIGHT");
 }
 
-async function reloadState(message) {
+async function reloadState() {
   if (!state.isPluginReady) {
-    setStatus("Eagle plugin の初期化を待っています。", "success");
     return;
   }
 
   return runBusy(async () => {
     const selectedItems = await eagle.item.getSelected();
-    const item = selectedItems[0] || null;
+    const selectedItem = selectedItems[0] || null;
+    const item = selectedItem ? await eagle.item.getById(selectedItem.id) : null;
 
     if (!isBoothMetaItem(item)) {
       state.item = null;
       state.meta = null;
       renderUnsupported();
-      setStatus(message, "success");
       return;
     }
 
     state.item = item;
-    state.meta = await loadMetaFromItem(item);
+    state.meta = await loadAndSyncMeta(item);
     renderEditor();
-    setStatus(message, "success");
-  });
-}
-
-async function handleSave() {
-  return runBusy(async () => {
-    const item = requireMetaItem();
-    const nextMeta = collectMetaFromForm();
-    if (!nextMeta.attachedAt) {
-      nextMeta.attachedAt = state.meta && state.meta.attachedAt ? state.meta.attachedAt : new Date().toISOString();
-    }
-
-    await saveMetaToItem(item, nextMeta);
-    state.meta = nextMeta;
-    renderEditor();
-    setStatus("JSON を保存しました。", "success");
-  });
-}
-
-async function handleRefreshSnapshot() {
-  return runBusy(async () => {
-    const item = requireMetaItem();
-    const meta = collectMetaFromForm();
-    const snapshot = await fetchBoothSnapshot(meta);
-    const nextMeta = {
-      ...meta,
-      ...snapshot,
-      attachedAt: meta.attachedAt || (state.meta && state.meta.attachedAt) || new Date().toISOString()
-    };
-
-    await saveMetaToItem(item, nextMeta);
-    state.meta = nextMeta;
-    renderEditor();
-    setStatus("Booth snapshot を更新しました。", "success");
   });
 }
 
@@ -145,11 +90,62 @@ async function loadMetaFromItem(item) {
     const raw = await fs.readFile(item.filePath, "utf8");
     return normalizeMeta(JSON.parse(raw));
   } catch (error) {
-    return {
-      ...DEFAULT_META,
-      attachedAt: new Date().toISOString()
-    };
+    return { ...DEFAULT_META };
   }
+}
+
+async function loadAndSyncMeta(item) {
+  const storedMeta = await loadMetaFromItem(item);
+  const itemUrl = normalizeItemUrl(item.url);
+  const itemName = safeString(item.name).trim();
+  const itemDescription = safeString(item.annotation);
+  const syncBase = normalizeMeta({
+    ...storedMeta,
+    itemUrl,
+    name: itemName,
+    description: itemDescription
+  });
+
+  let nextMeta = syncBase;
+  let shouldSaveMeta = !isMetaEquivalent(storedMeta, syncBase);
+  let shouldSaveItem = false;
+
+  if (itemUrl && (normalizeBoothItemUrl(itemUrl) !== normalizeBoothItemUrl(storedMeta.itemUrl) || !storedMeta.boothItemId)) {
+    try {
+      const snapshot = await fetchBoothSnapshot(itemUrl, syncBase, itemName);
+      nextMeta = normalizeMeta({
+        ...syncBase,
+        ...snapshot,
+        name: itemName,
+        description: itemDescription || snapshot.description
+      });
+      shouldSaveMeta = true;
+
+      if (!itemDescription && nextMeta.description) {
+        item.annotation = nextMeta.description;
+        shouldSaveItem = true;
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  const originalTags = Array.isArray(item.tags) ? item.tags : [];
+  const normalizedTags = ensureBoothMetaTag(originalTags);
+  if (JSON.stringify(originalTags) !== JSON.stringify(normalizedTags)) {
+    item.tags = normalizedTags;
+    shouldSaveItem = true;
+  }
+
+  if (shouldSaveItem) {
+    await item.save();
+  }
+
+  if (shouldSaveMeta) {
+    await saveMetaToItem(item, nextMeta);
+  }
+
+  return nextMeta;
 }
 
 async function saveMetaToItem(item, meta) {
@@ -159,19 +155,19 @@ async function saveMetaToItem(item, meta) {
   await item.replaceFile(tempPath);
 }
 
-async function fetchBoothSnapshot(meta) {
-  const itemUrl = normalizeBoothItemUrl(meta.itemUrl);
-  if (!itemUrl) {
-    throw new Error("Refresh には有効な Booth item URL が必要です。");
+async function fetchBoothSnapshot(itemUrl, meta, fallbackName) {
+  const resolvedItemUrl = normalizeBoothItemUrl(itemUrl) || normalizeBoothItemUrl(meta.itemUrl);
+  if (!resolvedItemUrl) {
+    return {};
   }
 
-  const payload = await requestJson(`${itemUrl}.json`);
-  const boothItemId = toPositiveInteger(payload.id) || meta.boothItemId || extractBoothItemId(itemUrl);
+  const payload = await requestJson(`${resolvedItemUrl}.json`);
+  const boothItemId = toPositiveInteger(payload.id) || meta.boothItemId || extractBoothItemId(resolvedItemUrl);
   if (boothItemId <= 0) {
-    throw new Error("Booth item ID を解決できませんでした。");
+    return {};
   }
 
-  const itemUrlFromPayload = normalizeBoothItemUrl(payload.url) || itemUrl;
+  const itemUrlFromPayload = normalizeBoothItemUrl(payload.url) || resolvedItemUrl;
   const shopUrl = normalizeBoothShopUrl(firstNonEmpty([
     payload.shop && payload.shop.url,
     payload.shopUrl,
@@ -181,7 +177,7 @@ async function fetchBoothSnapshot(meta) {
   return {
     boothItemId,
     itemUrl: itemUrlFromPayload,
-    name: safeString(payload.name),
+    name: fallbackName || safeString(payload.name),
     description: safeString(payload.description),
     thumbnailUrl: normalizeUrl(firstNonEmpty([
       payload.thumbnailUrl,
@@ -202,6 +198,7 @@ async function fetchBoothSnapshot(meta) {
       payload.shopThumbnailUrl
     ])),
     tags: normalizeTags(payload.tags),
+    attachedAt: meta.attachedAt,
     lastUpdatedAtUtc: new Date().toISOString()
   };
 }
@@ -254,23 +251,6 @@ async function requestJson(url, redirectDepth = 0) {
   });
 }
 
-function collectMetaFromForm() {
-  return normalizeMeta({
-    schemaVersion: 1,
-    boothItemId: toPositiveInteger(elements.boothItemIdInput.value),
-    itemUrl: elements.itemUrlInput.value,
-    name: elements.nameInput.value,
-    description: elements.descriptionInput.value,
-    thumbnailUrl: elements.thumbnailUrlInput.value,
-    shopName: elements.shopNameInput.value,
-    shopUrl: elements.shopUrlInput.value,
-    shopThumbnailUrl: elements.shopThumbnailUrlInput.value,
-    tags: splitTags(elements.tagsInput.value),
-    attachedAt: state.meta ? state.meta.attachedAt : "",
-    lastUpdatedAtUtc: state.meta ? state.meta.lastUpdatedAtUtc : ""
-  });
-}
-
 function renderUnsupported() {
   elements.editorCard.classList.add("hidden");
   elements.unsupportedCard.classList.remove("hidden");
@@ -281,30 +261,18 @@ function renderEditor() {
   elements.unsupportedCard.classList.add("hidden");
   elements.editorCard.classList.remove("hidden");
 
-  elements.itemUrlInput.value = meta.itemUrl;
-  elements.boothItemIdInput.value = meta.boothItemId > 0 ? String(meta.boothItemId) : "";
-  elements.nameInput.value = meta.name;
-  elements.descriptionInput.value = meta.description;
-  elements.thumbnailUrlInput.value = meta.thumbnailUrl;
-  elements.shopNameInput.value = meta.shopName;
-  elements.shopUrlInput.value = meta.shopUrl;
-  elements.shopThumbnailUrlInput.value = meta.shopThumbnailUrl;
-  elements.tagsInput.value = meta.tags.join(", ");
-  elements.metaInfo.textContent = `attachedAt: ${meta.attachedAt || "-"} / lastUpdatedAtUtc: ${meta.lastUpdatedAtUtc || "-"}`;
-  renderButtons();
-}
-
-function renderButtons() {
-  const disabled = state.isBusy || !state.item || !state.isPluginReady;
-  elements.reloadButton.disabled = state.isBusy || !state.isPluginReady;
-  elements.saveButton.disabled = disabled;
-  elements.refreshButton.disabled = disabled;
-  elements.openItemButton.disabled = disabled;
+  elements.boothItemIdValue.textContent = meta.boothItemId > 0 ? String(meta.boothItemId) : "-";
+  elements.thumbnailUrlValue.textContent = meta.thumbnailUrl || "-";
+  elements.shopNameValue.textContent = meta.shopName || "-";
+  elements.shopUrlValue.textContent = meta.shopUrl || "-";
+  elements.shopThumbnailUrlValue.textContent = meta.shopThumbnailUrl || "-";
+  elements.tagsValue.textContent = meta.tags.length > 0 ? meta.tags.join(", ") : "-";
+  elements.lastUpdatedValue.textContent = meta.lastUpdatedAtUtc || "-";
 }
 
 function requireMetaItem() {
   if (!state.item) {
-    throw new Error("_boothmeta.json を選択してください。");
+    throw new Error("BoothMeta タグ付き JSON item を選択してください。");
   }
   return state.item;
 }
@@ -313,7 +281,7 @@ function normalizeMeta(meta) {
   return {
     schemaVersion: 1,
     boothItemId: toPositiveInteger(meta.boothItemId),
-    itemUrl: normalizeBoothItemUrl(meta.itemUrl) || safeString(meta.itemUrl).trim(),
+    itemUrl: normalizeItemUrl(meta.itemUrl),
     name: safeString(meta.name),
     description: safeString(meta.description),
     thumbnailUrl: normalizeUrl(meta.thumbnailUrl),
@@ -327,19 +295,29 @@ function normalizeMeta(meta) {
 }
 
 function isBoothMetaItem(item) {
-  if (!item) {
-    return false;
-  }
-
-  const fileName = item.filePath ? path.basename(item.filePath).toLowerCase() : "";
-  return item.ext === "json" && (item.name === "_boothmeta" || fileName === "_boothmeta.json");
+  return Boolean(item) && item.ext === "json" && hasBoothMetaTag(item.tags);
 }
 
-function splitTags(value) {
-  return String(value)
-    .split(/[\r\n,]+/)
-    .map(tag => tag.trim())
-    .filter(Boolean);
+function hasBoothMetaTag(tags) {
+  return Array.isArray(tags) && tags.some(tag => safeString(typeof tag === "string" ? tag : tag && tag.name).trim() === BOOTH_META_TAG);
+}
+
+function ensureBoothMetaTag(tags) {
+  const normalized = Array.isArray(tags)
+    ? tags
+      .map(tag => safeString(typeof tag === "string" ? tag : tag && tag.name).trim())
+      .filter(Boolean)
+    : [];
+
+  if (!normalized.includes(BOOTH_META_TAG)) {
+    normalized.push(BOOTH_META_TAG);
+  }
+
+  return Array.from(new Set(normalized));
+}
+
+function isMetaEquivalent(left, right) {
+  return JSON.stringify(normalizeMeta(left || DEFAULT_META)) === JSON.stringify(normalizeMeta(right || DEFAULT_META));
 }
 
 function normalizeTags(tags) {
@@ -393,6 +371,10 @@ function normalizeUrl(value) {
   return url ? url.toString() : "";
 }
 
+function normalizeItemUrl(value) {
+  return normalizeBoothItemUrl(value) || safeString(value).trim();
+}
+
 function tryCreateUrl(value) {
   const trimmed = safeString(value).trim();
   if (!trimmed) {
@@ -435,28 +417,17 @@ function firstNonEmpty(values) {
   return "";
 }
 
-function setStatus(message, kind) {
-  elements.statusBanner.textContent = message;
-  elements.statusBanner.className = "status-banner";
-  if (kind) {
-    elements.statusBanner.classList.add(`is-${kind}`);
-  }
-}
-
 async function runBusy(action) {
   if (state.isBusy) {
     return;
   }
 
   state.isBusy = true;
-  renderButtons();
   try {
     await action();
   } catch (error) {
     console.error(error);
-    setStatus(error.message || "不明なエラーが発生しました。", "error");
   } finally {
     state.isBusy = false;
-    renderButtons();
   }
 }
