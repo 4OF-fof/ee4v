@@ -21,9 +21,12 @@ Booth 情報の唯一の正本は Eagle item として保存された `_boothmet
 ### 1. Create Plugin
 
 - window plugin として実装する
-- 選択 folder が `VRCAsset` 配下の時だけ `_boothmeta.json` を作成する
-- 作成先は選択 folder 直下固定
-- 作成後は生成された item を選択し、以後の編集は inspector plugin に委譲する
+- 見た目は frameless の疑似 popup にする
+- `frame: false`, 固定サイズ, `alwaysOnTop: true`, `blur` で `hide` を採用する
+- 起動時は現在カーソルがあるディスプレイ中央へ毎回再配置する
+- URL 入力から `VRCAsset/<itemId>` folder を新規作成し、その直下へ `BoothMeta` タグ付き JSON item を作成する
+- 作成後は生成された folder を開いて item を選択し、以後の表示は inspector plugin に委譲する
+- これは Eagle 既存 UI にアンカーされたネイティブ popup ではない
 
 ### 2. Inspector Plugin
 

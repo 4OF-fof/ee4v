@@ -3,40 +3,23 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ee4v BoothMeta Create</title>
+    <title>Add Booth item</title>
     <link rel="stylesheet" href="css/style.css">
   </head>
   <body>
     <main class="shell">
-      <header class="card header">
-        <div>
-          <p class="eyebrow">ee4v BoothMeta</p>
-          <h1>Create BoothMeta Set</h1>
-        </div>
-        <button id="reload-button" class="button button-ghost" type="button">Reload</button>
+      <header class="header drag-region">
+        <p class="title">Add Booth item</p>
       </header>
 
-      <section class="card">
-        <label class="field">
-          <span>Booth item URL</span>
-          <input id="item-url-input" type="text" placeholder="https://sample.booth.pm/items/1234567">
-        </label>
-      </section>
+      <label class="field no-drag">
+        <input id="item-url-input" type="text" placeholder="https://booth.pm/ja/items/1234567" aria-label="Booth item URL">
+      </label>
 
-      <section class="card">
-        <div id="selection-card" class="panel is-empty">VRCAsset folder を確認中です。</div>
-      </section>
-
-      <section class="card">
-        <div class="button-row">
-          <button id="create-button" class="button button-primary" type="button">Create</button>
-          <button id="open-folder-button" class="button" type="button">Open VRCAsset</button>
-        </div>
-      </section>
-
-      <footer>
-        <div id="status-banner" class="status-banner">Ready.</div>
-      </footer>
+      <div class="button-row no-drag">
+        <button id="cancel-button" class="button button-secondary" type="button">Cancel</button>
+        <button id="create-button" class="button" type="button">Create</button>
+      </div>
     </main>
     <script src="js/plugin.js"></script>
   </body>

@@ -5,7 +5,11 @@
 ## ee4v BoothMeta Create
 
 - plugin path: `new/~External/Eagle/ee4v-boothmeta-create`
-- 選択中 folder が library 直下の `VRCAsset` 配下にある時、直下へ `_boothmeta.json` を作成する
+- window plugin として動作するが、見た目は frameless の疑似 popup
+- 起動時は現在カーソルがある画面の中央へ固定サイズで表示する
+- フォーカスを失うか `Esc` を押すと hide する
+- `Booth item URL` の入力から `VRCAsset/<itemId>` folder と `BoothMeta` タグ付き JSON item をまとめて作成する
+- Eagle UI へアンカーされたネイティブ popover ではない
 
 ## ee4v BoothMeta Inspector
 

@@ -3,6 +3,8 @@ const path = require("path");
 const https = require("https");
 
 const BOOTH_META_TAG = "BoothMeta";
+const POPUP_WIDTH = 380;
+const POPUP_HEIGHT = 164;
 
 const DEFAULT_META = {
   schemaVersion: 1,
@@ -31,96 +33,125 @@ window.addEventListener("DOMContentLoaded", () => {
   cacheElements();
   bindEvents();
   render();
-  setStatus("Eagle plugin の初期化を待っています。", "success");
 });
 
 eagle.onPluginCreate(async () => {
   state.isPluginReady = true;
   applyTheme(await Promise.resolve(eagle.app.theme));
   eagle.onThemeChanged(theme => applyTheme(theme));
-  await reloadState("VRCAsset folder を読み込みました。");
+  window.addEventListener("keydown", handleWindowKeydown);
+  await configurePopupWindow();
+  await reloadState();
 });
 
 eagle.onPluginRun(() => {
   if (state.isPluginReady) {
-    reloadState("VRCAsset folder を再読込しました。");
-  }
-});
-
-eagle.onPluginShow(() => {
-  if (state.isPluginReady) {
-    reloadState("VRCAsset folder を再読込しました。");
+    resetForm();
+    centerPopupWindow().catch(console.error);
+    reloadState().catch(console.error);
   }
 });
 
 function cacheElements() {
   elements.itemUrlInput = document.getElementById("item-url-input");
-  elements.selectionCard = document.getElementById("selection-card");
-  elements.reloadButton = document.getElementById("reload-button");
   elements.createButton = document.getElementById("create-button");
-  elements.openFolderButton = document.getElementById("open-folder-button");
-  elements.statusBanner = document.getElementById("status-banner");
+  elements.cancelButton = document.getElementById("cancel-button");
 }
 
 function bindEvents() {
-  elements.reloadButton.addEventListener("click", () => reloadState("VRCAsset folder を再読込しました。"));
   elements.createButton.addEventListener("click", handleCreate);
-  elements.openFolderButton.addEventListener("click", handleOpenFolder);
-  elements.itemUrlInput.addEventListener("input", () => renderButtons());
+  elements.cancelButton.addEventListener("click", closeWindow);
+  elements.itemUrlInput.addEventListener("input", render);
+  elements.itemUrlInput.addEventListener("keydown", event => {
+    if (event.key === "Enter" && !elements.createButton.disabled) {
+      event.preventDefault();
+      handleCreate();
+    }
+  });
 }
 
 function applyTheme(theme) {
   document.body.setAttribute("theme", theme || "LIGHT");
 }
 
-async function reloadState(message) {
+async function configurePopupWindow() {
+  await eagle.window.setAlwaysOnTop(true);
+  await eagle.window.setResizable(false);
+  await centerPopupWindow();
+}
+
+async function centerPopupWindow() {
+  const cursorPoint = await eagle.screen.getCursorScreenPoint();
+  const display = await eagle.screen.getDisplayNearestPoint(cursorPoint);
+  const bounds = display && display.workArea ? display.workArea : display.bounds;
+  const x = Math.round(bounds.x + ((bounds.width - POPUP_WIDTH) / 2));
+  const y = Math.round(bounds.y + ((bounds.height - POPUP_HEIGHT) / 2));
+  await eagle.window.setBounds({
+    x,
+    y,
+    width: POPUP_WIDTH,
+    height: POPUP_HEIGHT
+  });
+}
+
+async function reloadState() {
   if (!state.isPluginReady) {
-    setStatus("Eagle plugin の初期化を待っています。", "success");
     return;
   }
 
   return runBusy(async () => {
     state.rootFolder = await findVrcAssetRootFolder();
     render();
-    setStatus(message, "success");
-  });
+  }, false);
 }
 
 async function handleCreate() {
   return runBusy(async () => {
     const rootFolder = requireRootFolder();
-    const itemUrl = normalizeBoothItemUrl(elements.itemUrlInput.value);
-    const boothItemId = extractBoothItemId(itemUrl);
-    if (!itemUrl || boothItemId <= 0) {
+    const boothRef = parseBoothItemReference(elements.itemUrlInput.value);
+    if (!boothRef) {
       throw new Error("有効な Booth item URL を入力してください。");
     }
 
-    const targetFolderName = String(boothItemId);
+    const targetFolderName = String(boothRef.itemId);
     const existingFolder = await findDirectChildFolder(rootFolder.id, targetFolderName);
     if (existingFolder) {
       throw new Error(`"${targetFolderName}" folder は既に存在します。`);
     }
 
-    const snapshot = await fetchBoothSnapshot(itemUrl);
+    const snapshot = await fetchBoothSnapshot(boothRef);
+    const canonicalItemUrl = snapshot.itemUrl || boothRef.normalizedUrl;
+    elements.itemUrlInput.value = canonicalItemUrl;
     const targetFolder = await eagle.folder.createSubfolder(rootFolder.id, {
       name: targetFolderName
     });
 
-    const itemId = await createBoothMetaItem(targetFolder, itemUrl, snapshot);
+    const itemId = await createBoothMetaItem(targetFolder, canonicalItemUrl, snapshot);
     await targetFolder.open();
     await eagle.item.select([itemId]);
-    setStatus(`"${targetFolderName}" folder と BoothMeta を作成しました。`, "success");
+    await closeWindow();
   });
 }
 
-async function handleOpenFolder() {
-  const folder = state.rootFolder;
-  if (!folder) {
-    setStatus("VRCAsset folder が見つかりません。", "error");
+async function handleWindowKeydown(event) {
+  if (event.key !== "Escape") {
     return;
   }
 
-  await folder.open();
+  event.preventDefault();
+  await closeWindow();
+}
+
+async function closeWindow() {
+  resetForm();
+  await eagle.window.hide();
+}
+
+function resetForm() {
+  if (elements.itemUrlInput) {
+    elements.itemUrlInput.value = "";
+  }
+  render();
 }
 
 async function findVrcAssetRootFolder() {
@@ -169,10 +200,10 @@ async function createBoothMetaItem(folder, itemUrl, snapshot) {
   return itemId;
 }
 
-async function fetchBoothSnapshot(itemUrl) {
-  const payload = await requestJson(`${itemUrl}.json`);
-  const boothItemId = toPositiveInteger(payload.id) || extractBoothItemId(itemUrl);
-  const itemUrlFromPayload = normalizeBoothItemUrl(payload.url) || itemUrl;
+async function fetchBoothSnapshot(boothRef) {
+  const payload = await requestJson(`${boothRef.fetchUrl}.json`);
+  const boothItemId = toPositiveInteger(payload.id) || boothRef.itemId;
+  const itemUrlFromPayload = normalizeCanonicalBoothItemUrl(payload.url) || normalizeCanonicalBoothItemUrl(boothRef.normalizedUrl) || boothRef.normalizedUrl;
   const shopUrl = normalizeBoothShopUrl(firstNonEmpty([
     payload.shop && payload.shop.url,
     payload.shopUrl,
@@ -307,77 +338,81 @@ function ensureBoothMetaTag(tags) {
 }
 
 function render() {
-  renderSelection();
-  renderButtons();
-}
-
-function renderSelection() {
-  if (!state.rootFolder) {
-    elements.selectionCard.className = "panel is-empty";
-    elements.selectionCard.textContent = "VRCAsset folder が見つかりません。";
-    return;
-  }
-
-  const itemUrl = normalizeBoothItemUrl(elements.itemUrlInput.value);
-  const boothItemId = extractBoothItemId(itemUrl);
-  elements.selectionCard.className = "panel";
-  elements.selectionCard.innerHTML = [
-    `<strong>${escapeHtml(state.rootFolder.name)}</strong>`,
-    `<div class="muted">ID: ${escapeHtml(state.rootFolder.id)}</div>`,
-    boothItemId > 0
-      ? `<div class="muted">作成先: VRCAsset/${escapeHtml(String(boothItemId))}</div>`
-      : `<div class="muted">URL 末尾の itemId を folder 名に使います。</div>`
-  ].join("");
-}
-
-function renderButtons() {
-  renderSelection();
   const isInteractive = state.isPluginReady && !state.isBusy;
   const hasRootFolder = Boolean(state.rootFolder);
-  const hasValidUrl = extractBoothItemId(normalizeBoothItemUrl(elements.itemUrlInput.value)) > 0;
-  elements.reloadButton.disabled = !isInteractive;
+  const hasValidUrl = Boolean(parseBoothItemReference(elements.itemUrlInput.value));
   elements.createButton.disabled = !isInteractive || !hasRootFolder || !hasValidUrl;
-  elements.openFolderButton.disabled = !isInteractive || !hasRootFolder;
+  elements.cancelButton.disabled = !isInteractive;
 }
 
-function setStatus(message, kind) {
-  elements.statusBanner.textContent = message;
-  elements.statusBanner.className = "status-banner";
-  if (kind) {
-    elements.statusBanner.classList.add(`is-${kind}`);
-  }
-}
-
-async function runBusy(action) {
+async function runBusy(action, surfaceErrors = true) {
   if (state.isBusy) {
     return;
   }
 
   state.isBusy = true;
-  renderButtons();
+  render();
   try {
     await action();
   } catch (error) {
     console.error(error);
-    setStatus(error.message || "不明なエラーが発生しました。", "error");
+    if (surfaceErrors) {
+      alert(error.message || "不明なエラーが発生しました。");
+    }
   } finally {
     state.isBusy = false;
-    renderButtons();
+    render();
   }
 }
 
-function normalizeBoothItemUrl(value) {
+function parseBoothItemReference(value) {
   const url = tryCreateUrl(value);
-  if (!url || !/\.booth\.pm$/i.test(url.hostname)) {
-    return "";
+  if (!url || !/(?:^|\.)booth\.pm$/i.test(url.hostname)) {
+    return null;
   }
 
-  const match = url.pathname.match(/^\/items\/(\d+)/i);
+  const match = url.pathname.match(/^\/(?:(?:[a-z]{2,8}(?:[-_][a-z]{2,8})*)\/)?items\/(\d+)(?:\/)?$/i);
   if (!match) {
+    return null;
+  }
+
+  const itemId = parseInt(match[1], 10);
+  const host = url.hostname.toLowerCase();
+  if (host === "booth.pm") {
+    const localeMatch = url.pathname.match(/^\/([a-z]{2,8}(?:[-_][a-z]{2,8})*)\/items\/\d+(?:\/)?$/i);
+    const localePath = localeMatch ? `/${localeMatch[1].toLowerCase()}` : "";
+    return {
+      itemId,
+      fetchUrl: `https://booth.pm${localePath}/items/${itemId}`,
+      normalizedUrl: `https://booth.pm${localePath}/items/${itemId}`
+    };
+  }
+
+  return {
+    itemId,
+    fetchUrl: `https://${host}/items/${itemId}`,
+    normalizedUrl: `https://${host}/items/${itemId}`
+  };
+}
+
+function normalizeBoothItemUrl(value) {
+  const parsed = parseBoothItemReference(value);
+  return parsed ? parsed.normalizedUrl : "";
+}
+
+function normalizeCanonicalBoothItemUrl(value) {
+  const parsed = parseBoothItemReference(value);
+  if (!parsed) {
     return "";
   }
 
-  return `https://${url.hostname.toLowerCase()}/items/${match[1]}`;
+  const url = new URL(parsed.normalizedUrl);
+  const host = url.hostname.toLowerCase();
+  if (host === "booth.pm") {
+    return `https://booth.pm/items/${parsed.itemId}`;
+  }
+
+  return `https://${host}/items/${parsed.itemId}`;
 }
 
 function normalizeBoothShopUrl(value) {
@@ -444,13 +479,4 @@ function firstNonEmpty(values) {
     }
   }
   return "";
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }

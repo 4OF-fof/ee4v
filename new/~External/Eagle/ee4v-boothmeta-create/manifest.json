@@ -13,15 +13,20 @@
   ],
   "devTools": true,
   "main": {
+    "frame": false,
     "url": "index.html",
-    "width": 400,
-    "height": 340,
-    "minWidth": 360,
-    "minHeight": 300,
-    "resizable": true,
+    "width": 380,
+    "height": 164,
+    "minWidth": 380,
+    "minHeight": 164,
+    "maxWidth": 380,
+    "maxHeight": 164,
+    "resizable": false,
+    "alwaysOnTop": true,
     "maximizable": false,
-    "minimizable": true,
+    "minimizable": false,
     "fullscreenable": false,
+    "multiple": false,
     "backgroundColor": "#3a3c42"
   }
 }
