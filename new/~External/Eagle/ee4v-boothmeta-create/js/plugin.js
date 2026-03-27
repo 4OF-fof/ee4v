@@ -1,5 +1,7 @@
 const fs = require("fs/promises");
 const path = require("path");
+const https = require("https");
+
 const BOOTH_META_TAG = "BoothMeta";
 
 const DEFAULT_META = {
@@ -18,8 +20,7 @@ const DEFAULT_META = {
 };
 
 const state = {
-  selectedFolders: [],
-  activeFolder: null,
+  rootFolder: null,
   isBusy: false,
   isPluginReady: false
 };
@@ -37,22 +38,23 @@ eagle.onPluginCreate(async () => {
   state.isPluginReady = true;
   applyTheme(await Promise.resolve(eagle.app.theme));
   eagle.onThemeChanged(theme => applyTheme(theme));
-  await reloadSelection("選択 folder を読み込みました。");
+  await reloadState("VRCAsset folder を読み込みました。");
 });
 
 eagle.onPluginRun(() => {
   if (state.isPluginReady) {
-    reloadSelection("選択 folder を再読込しました。");
+    reloadState("VRCAsset folder を再読込しました。");
   }
 });
 
 eagle.onPluginShow(() => {
   if (state.isPluginReady) {
-    reloadSelection("選択 folder を再読込しました。");
+    reloadState("VRCAsset folder を再読込しました。");
   }
 });
 
 function cacheElements() {
+  elements.itemUrlInput = document.getElementById("item-url-input");
   elements.selectionCard = document.getElementById("selection-card");
   elements.reloadButton = document.getElementById("reload-button");
   elements.createButton = document.getElementById("create-button");
@@ -61,24 +63,24 @@ function cacheElements() {
 }
 
 function bindEvents() {
-  elements.reloadButton.addEventListener("click", () => reloadSelection("選択 folder を再読込しました。"));
+  elements.reloadButton.addEventListener("click", () => reloadState("VRCAsset folder を再読込しました。"));
   elements.createButton.addEventListener("click", handleCreate);
   elements.openFolderButton.addEventListener("click", handleOpenFolder);
+  elements.itemUrlInput.addEventListener("input", () => renderButtons());
 }
 
 function applyTheme(theme) {
   document.body.setAttribute("theme", theme || "LIGHT");
 }
 
-async function reloadSelection(message) {
+async function reloadState(message) {
   if (!state.isPluginReady) {
     setStatus("Eagle plugin の初期化を待っています。", "success");
     return;
   }
 
   return runBusy(async () => {
-    state.selectedFolders = await eagle.folder.getSelected();
-    state.activeFolder = state.selectedFolders.length === 1 ? state.selectedFolders[0] : null;
+    state.rootFolder = await findVrcAssetRootFolder();
     render();
     setStatus(message, "success");
   });
@@ -86,159 +88,208 @@ async function reloadSelection(message) {
 
 async function handleCreate() {
   return runBusy(async () => {
-    const folder = requireActiveFolder();
-    const validation = await validateTargetFolder(folder.id);
-    if (!validation.isValid) {
-      throw new Error(validation.message);
+    const rootFolder = requireRootFolder();
+    const itemUrl = normalizeBoothItemUrl(elements.itemUrlInput.value);
+    const boothItemId = extractBoothItemId(itemUrl);
+    if (!itemUrl || boothItemId <= 0) {
+      throw new Error("有効な Booth item URL を入力してください。");
     }
 
-    const tempDir = await Promise.resolve(eagle.app.getPath("temp"));
-    const filePath = path.join(tempDir, `_boothmeta-${folder.id}.json`);
-    const content = {
-      ...DEFAULT_META,
-      attachedAt: new Date().toISOString()
-    };
+    const targetFolderName = String(boothItemId);
+    const existingFolder = await findDirectChildFolder(rootFolder.id, targetFolderName);
+    if (existingFolder) {
+      throw new Error(`"${targetFolderName}" folder は既に存在します。`);
+    }
 
-    await fs.writeFile(filePath, JSON.stringify(content, null, 2) + "\n", "utf8");
-    const itemId = await eagle.item.addFromPath(filePath, {
-      folders: [folder.id],
-      name: folder.name,
-      tags: [BOOTH_META_TAG]
+    const snapshot = await fetchBoothSnapshot(itemUrl);
+    const targetFolder = await eagle.folder.createSubfolder(rootFolder.id, {
+      name: targetFolderName
     });
 
-    const item = await eagle.item.getById(itemId);
-    item.tags = ensureBoothMetaTag(item.tags);
-    await item.save();
+    const itemId = await createBoothMetaItem(targetFolder, itemUrl, snapshot);
+    await targetFolder.open();
     await eagle.item.select([itemId]);
-    setStatus(`"${folder.name}" に BoothMeta タグ付き JSON を作成しました。`, "success");
+    setStatus(`"${targetFolderName}" folder と BoothMeta を作成しました。`, "success");
   });
 }
 
 async function handleOpenFolder() {
-  const folder = requireActiveFolder(false);
+  const folder = state.rootFolder;
   if (!folder) {
-    setStatus("folder を 1 つ選択してください。", "error");
+    setStatus("VRCAsset folder が見つかりません。", "error");
     return;
   }
 
   await folder.open();
 }
 
-async function validateTargetFolder(folderId) {
-  const folderChain = await getFolderChain(folderId);
-  const rootFolder = folderChain[folderChain.length - 1];
-  const targetFolder = folderChain[0];
-
-  if (!rootFolder || rootFolder.name !== "VRCAsset") {
-    return {
-      isValid: false,
-      message: "選択 folder は library 直下の VRCAsset 配下である必要があります。"
-    };
+async function findVrcAssetRootFolder() {
+  const folders = await eagle.folder.getAll();
+  const matches = folders.filter(folder => folder.name === "VRCAsset" && !folder.parent);
+  if (matches.length === 0) {
+    throw new Error("library 直下の VRCAsset folder が見つかりません。");
   }
-
-  if (targetFolder.id === rootFolder.id) {
-    return {
-      isValid: false,
-      message: "VRCAsset 自体ではなく、その配下の folder を選択してください。"
-    };
+  if (matches.length > 1) {
+    throw new Error("library 直下の VRCAsset folder が複数あります。");
   }
+  return matches[0];
+}
 
-  const existing = await findBoothMetaItem(folderId);
-  if (existing) {
-    return {
-      isValid: false,
-      message: "この folder には既に BoothMeta タグ付き JSON があります。"
-    };
-  }
+async function findDirectChildFolder(parentId, name) {
+  const folders = await eagle.folder.getAll();
+  return folders.find(folder => folder.parent === parentId && folder.name === name) || null;
+}
 
-  const ancestorIds = folderChain.slice(1, folderChain.length - 1).map(folder => folder.id);
-  for (let index = 0; index < ancestorIds.length; index += 1) {
-    const ancestorItem = await findBoothMetaItem(ancestorIds[index]);
-    if (ancestorItem) {
-      return {
-        isValid: false,
-        message: "祖先 folder に BoothMeta タグ付き JSON があるため、nested root は作成できません。"
-      };
-    }
-  }
+async function createBoothMetaItem(folder, itemUrl, snapshot) {
+  const tempDir = await Promise.resolve(eagle.app.getPath("temp"));
+  const filePath = path.join(tempDir, `boothmeta-${folder.id}.json`);
+  const content = normalizeMeta({
+    ...DEFAULT_META,
+    ...snapshot,
+    boothItemId: snapshot.boothItemId || extractBoothItemId(itemUrl),
+    itemUrl,
+    name: snapshot.name || folder.name,
+    attachedAt: new Date().toISOString(),
+    lastUpdatedAtUtc: snapshot.lastUpdatedAtUtc || new Date().toISOString()
+  });
 
-  const descendantRoot = await findDescendantBoothMetaItem(folderId);
-  if (descendantRoot) {
-    return {
-      isValid: false,
-      message: "子孫 folder に BoothMeta タグ付き JSON があるため、nested root は作成できません。"
-    };
-  }
+  await fs.writeFile(filePath, JSON.stringify(content, null, 2) + "\n", "utf8");
+  const itemId = await eagle.item.addFromPath(filePath, {
+    folders: [folder.id],
+    name: snapshot.name || folder.name,
+    tags: [BOOTH_META_TAG]
+  });
+
+  const item = await eagle.item.getById(itemId);
+  item.name = snapshot.name || folder.name;
+  item.url = itemUrl;
+  item.annotation = snapshot.description || "";
+  item.tags = ensureBoothMetaTag(item.tags);
+  await item.save();
+  return itemId;
+}
+
+async function fetchBoothSnapshot(itemUrl) {
+  const payload = await requestJson(`${itemUrl}.json`);
+  const boothItemId = toPositiveInteger(payload.id) || extractBoothItemId(itemUrl);
+  const itemUrlFromPayload = normalizeBoothItemUrl(payload.url) || itemUrl;
+  const shopUrl = normalizeBoothShopUrl(firstNonEmpty([
+    payload.shop && payload.shop.url,
+    payload.shopUrl,
+    `${new URL(itemUrlFromPayload).origin}`
+  ]));
 
   return {
-    isValid: true,
-    message: ""
+    boothItemId,
+    itemUrl: itemUrlFromPayload,
+    name: safeString(payload.name),
+    description: safeString(payload.description),
+    thumbnailUrl: normalizeUrl(firstNonEmpty([
+      payload.thumbnailUrl,
+      payload.thumbnail_url,
+      payload.imageUrl,
+      payload.image_url,
+      payload.images && payload.images[0] && payload.images[0].original,
+      payload.images && payload.images[0] && payload.images[0].url
+    ])),
+    shopName: safeString(firstNonEmpty([
+      payload.shop && payload.shop.name,
+      payload.shopName
+    ])),
+    shopUrl,
+    shopThumbnailUrl: normalizeUrl(firstNonEmpty([
+      payload.shop && payload.shop.thumbnailUrl,
+      payload.shop && payload.shop.thumbnail_url,
+      payload.shopThumbnailUrl
+    ])),
+    tags: normalizeTags(payload.tags),
+    lastUpdatedAtUtc: new Date().toISOString()
   };
 }
 
-async function getFolderChain(folderId) {
-  const chain = [];
-  let current = await eagle.folder.getById(folderId);
-  while (current) {
-    chain.push(current);
-    if (!current.parent) {
-      break;
-    }
-    current = await eagle.folder.getById(current.parent);
+async function requestJson(url, redirectDepth = 0) {
+  if (redirectDepth > 4) {
+    throw new Error("Booth item JSON のリダイレクト回数が上限を超えました。");
   }
-  return chain;
-}
 
-async function findBoothMetaItem(folderId) {
-  const items = await eagle.item.get({
-    folders: [folderId],
-    ext: "json",
-    fields: ["id", "name", "ext", "folders", "tags"]
+  return new Promise((resolve, reject) => {
+    const request = https.get(url, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "ee4v-eagle-boothmeta-create/0.1.0"
+      }
+    }, response => {
+      const statusCode = response.statusCode || 0;
+      const location = response.headers.location;
+
+      if (statusCode >= 300 && statusCode < 400 && location) {
+        response.resume();
+        requestJson(new URL(location, url).toString(), redirectDepth + 1).then(resolve, reject);
+        return;
+      }
+
+      if (statusCode < 200 || statusCode >= 300) {
+        response.resume();
+        reject(new Error(`Booth item JSON の取得に失敗しました。HTTP ${statusCode}`));
+        return;
+      }
+
+      const chunks = [];
+      response.setEncoding("utf8");
+      response.on("data", chunk => chunks.push(chunk));
+      response.on("end", () => {
+        try {
+          resolve(JSON.parse(chunks.join("")));
+        } catch (error) {
+          reject(new Error("Booth item JSON の解析に失敗しました。"));
+        }
+      });
+    });
+
+    request.on("error", error => {
+      reject(new Error(`Booth item JSON の取得に失敗しました: ${error.message}`));
+    });
+    request.setTimeout(15000, () => {
+      request.destroy(new Error("timeout"));
+    });
   });
-
-  return items.find(item => isBoothMetaItem(item) && Array.isArray(item.folders) && item.folders.includes(folderId)) || null;
 }
 
-async function findDescendantBoothMetaItem(folderId) {
-  const allFolders = await eagle.folder.getAll();
-  const descendantIds = allFolders
-    .filter(folder => isDescendantFolder(folder, folderId, allFolders))
-    .map(folder => folder.id);
+function requireRootFolder() {
+  if (state.rootFolder) {
+    return state.rootFolder;
+  }
+  throw new Error("VRCAsset folder が見つかりません。");
+}
 
-  for (let index = 0; index < descendantIds.length; index += 1) {
-    const descendantItem = await findBoothMetaItem(descendantIds[index]);
-    if (descendantItem) {
-      return descendantItem;
-    }
+function normalizeMeta(meta) {
+  return {
+    schemaVersion: 1,
+    boothItemId: toPositiveInteger(meta.boothItemId),
+    itemUrl: normalizeBoothItemUrl(meta.itemUrl) || safeString(meta.itemUrl).trim(),
+    name: safeString(meta.name),
+    description: safeString(meta.description),
+    thumbnailUrl: normalizeUrl(meta.thumbnailUrl),
+    shopName: safeString(meta.shopName),
+    shopUrl: normalizeBoothShopUrl(meta.shopUrl) || normalizeUrl(meta.shopUrl),
+    shopThumbnailUrl: normalizeUrl(meta.shopThumbnailUrl),
+    tags: normalizeTags(meta.tags),
+    attachedAt: normalizeTimestamp(meta.attachedAt),
+    lastUpdatedAtUtc: normalizeTimestamp(meta.lastUpdatedAtUtc)
+  };
+}
+
+function normalizeTags(tags) {
+  if (!Array.isArray(tags)) {
+    return [];
   }
 
-  return null;
-}
+  const values = tags
+    .map(tag => safeString(typeof tag === "string" ? tag : tag && tag.name))
+    .map(tag => tag.trim())
+    .filter(Boolean);
 
-function isDescendantFolder(folder, ancestorId, allFolders) {
-  let currentParent = folder.parent;
-  while (currentParent) {
-    if (currentParent === ancestorId) {
-      return true;
-    }
-
-    const nextFolder = allFolders.find(candidate => candidate.id === currentParent);
-    currentParent = nextFolder ? nextFolder.parent : null;
-  }
-
-  return false;
-}
-
-function isBoothMetaItem(item) {
-  if (!item) {
-    return false;
-  }
-
-  return item.ext === "json" && hasBoothMetaTag(item.tags);
-}
-
-function hasBoothMetaTag(tags) {
-  return Array.isArray(tags) && tags.some(tag => String(typeof tag === "string" ? tag : tag && tag.name || "").trim() === BOOTH_META_TAG);
+  return Array.from(new Set(values)).sort((left, right) => left.localeCompare(right, "ja"));
 }
 
 function ensureBoothMetaTag(tags) {
@@ -255,44 +306,38 @@ function ensureBoothMetaTag(tags) {
   return Array.from(new Set(normalized));
 }
 
-function requireActiveFolder(shouldThrow = true) {
-  if (state.activeFolder) {
-    return state.activeFolder;
-  }
-  if (shouldThrow) {
-    throw new Error("folder を 1 つ選択してください。");
-  }
-  return null;
-}
-
 function render() {
   renderSelection();
   renderButtons();
 }
 
 function renderSelection() {
-  if (!state.activeFolder) {
+  if (!state.rootFolder) {
     elements.selectionCard.className = "panel is-empty";
-    elements.selectionCard.innerHTML = state.selectedFolders.length === 0
-      ? "folder を 1 つ選択してください。"
-      : "複数 folder が選択されています。1 つに絞ってください。";
+    elements.selectionCard.textContent = "VRCAsset folder が見つかりません。";
     return;
   }
 
+  const itemUrl = normalizeBoothItemUrl(elements.itemUrlInput.value);
+  const boothItemId = extractBoothItemId(itemUrl);
   elements.selectionCard.className = "panel";
   elements.selectionCard.innerHTML = [
-    `<strong>${escapeHtml(state.activeFolder.name)}</strong>`,
-    `<div class="muted">ID: ${escapeHtml(state.activeFolder.id)}</div>`,
-    `<div class="muted">この folder 直下に BoothMeta タグ付き JSON を作成します。</div>`
+    `<strong>${escapeHtml(state.rootFolder.name)}</strong>`,
+    `<div class="muted">ID: ${escapeHtml(state.rootFolder.id)}</div>`,
+    boothItemId > 0
+      ? `<div class="muted">作成先: VRCAsset/${escapeHtml(String(boothItemId))}</div>`
+      : `<div class="muted">URL 末尾の itemId を folder 名に使います。</div>`
   ].join("");
 }
 
 function renderButtons() {
+  renderSelection();
   const isInteractive = state.isPluginReady && !state.isBusy;
-  const hasActiveFolder = Boolean(state.activeFolder);
+  const hasRootFolder = Boolean(state.rootFolder);
+  const hasValidUrl = extractBoothItemId(normalizeBoothItemUrl(elements.itemUrlInput.value)) > 0;
   elements.reloadButton.disabled = !isInteractive;
-  elements.createButton.disabled = !isInteractive || !hasActiveFolder;
-  elements.openFolderButton.disabled = !isInteractive || !hasActiveFolder;
+  elements.createButton.disabled = !isInteractive || !hasRootFolder || !hasValidUrl;
+  elements.openFolderButton.disabled = !isInteractive || !hasRootFolder;
 }
 
 function setStatus(message, kind) {
@@ -319,6 +364,86 @@ async function runBusy(action) {
     state.isBusy = false;
     renderButtons();
   }
+}
+
+function normalizeBoothItemUrl(value) {
+  const url = tryCreateUrl(value);
+  if (!url || !/\.booth\.pm$/i.test(url.hostname)) {
+    return "";
+  }
+
+  const match = url.pathname.match(/^\/items\/(\d+)/i);
+  if (!match) {
+    return "";
+  }
+
+  return `https://${url.hostname.toLowerCase()}/items/${match[1]}`;
+}
+
+function normalizeBoothShopUrl(value) {
+  const url = tryCreateUrl(value);
+  if (!url || !/\.booth\.pm$/i.test(url.hostname)) {
+    return "";
+  }
+
+  return `https://${url.hostname.toLowerCase()}`;
+}
+
+function normalizeUrl(value) {
+  const url = tryCreateUrl(value);
+  return url ? url.toString() : "";
+}
+
+function tryCreateUrl(value) {
+  const trimmed = safeString(value).trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    return new URL(trimmed);
+  } catch (error) {
+    return null;
+  }
+}
+
+function extractBoothItemId(itemUrl) {
+  const normalized = normalizeBoothItemUrl(itemUrl);
+  if (!normalized) {
+    return 0;
+  }
+
+  const match = normalized.match(/\/items\/(\d+)$/);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+function normalizeTimestamp(value) {
+  const trimmed = safeString(value).trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  const date = new Date(trimmed);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+}
+
+function toPositiveInteger(value) {
+  const parsed = typeof value === "number" ? value : parseInt(String(value), 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function safeString(value) {
+  return typeof value === "string" ? value : "";
+}
+
+function firstNonEmpty(values) {
+  for (let index = 0; index < values.length; index += 1) {
+    const value = safeString(values[index]).trim();
+    if (value) {
+      return value;
+    }
+  }
+  return "";
 }
 
 function escapeHtml(value) {
