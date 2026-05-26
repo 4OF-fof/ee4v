@@ -1,9 +1,9 @@
 {
-  "id": "dev.4of.ee4v.eagle.boothmeta.create",
+  "id": "dev.4of.ee4v.eagle.boothcompat",
   "version": "0.1.0",
   "platform": "all",
   "arch": "all",
-  "name": "Booth Sync",
+  "name": "Booth Compat",
   "logo": "/logo.png",
   "keywords": [
     "ee4v",
@@ -22,6 +22,7 @@
     }
   },
   "main": {
+    "serviceMode": true,
     "frame": false,
     "url": "index.html",
     "width": 380,

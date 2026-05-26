@@ -18,7 +18,7 @@ Booth 情報の唯一の正本は Eagle item として保存された `_boothmet
 
 ## Plugin 構成
 
-### Booth Sync
+### Booth Compat
 
 - 1 つの plugin に `window plugin` と `json inspector` の両方を持たせる
 - window 側は frameless の疑似 popup として動作する
