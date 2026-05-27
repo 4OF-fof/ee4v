@@ -1,9 +1,9 @@
 {
-  "id": "dev.4of.ee4v.eagle.boothcompat",
+  "id": "dev.4of.ee4v.eagle.boothcompat.service",
   "version": "0.1.0",
   "platform": "all",
   "arch": "all",
-  "name": "Booth Compat",
+  "name": "Booth Compat Service",
   "logo": "/logo.png",
   "keywords": [
     "ee4v",
@@ -12,27 +12,18 @@
     "vrcasset"
   ],
   "devTools": true,
-  "preview": {
-    "json": {
-      "inspector": {
-        "path": "inspector.html",
-        "height": 520,
-        "multiSelect": false
-      }
-    }
-  },
   "main": {
     "serviceMode": true,
     "frame": false,
     "url": "index.html",
-    "width": 380,
-    "height": 136,
-    "minWidth": 380,
-    "minHeight": 136,
-    "maxWidth": 380,
-    "maxHeight": 136,
+    "width": 1,
+    "height": 1,
+    "minWidth": 1,
+    "minHeight": 1,
+    "maxWidth": 1,
+    "maxHeight": 1,
     "resizable": false,
-    "alwaysOnTop": true,
+    "alwaysOnTop": false,
     "maximizable": false,
     "minimizable": false,
     "fullscreenable": false,

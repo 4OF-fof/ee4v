@@ -1,13 +1,28 @@
+(function () {
+  "use strict";
+
 const POPUP_WIDTH = 380;
 const POPUP_HEIGHT = 136;
 
-const state = {
+interface PluginState {
+  rootFolder: EagleFolder | null;
+  isBusy: boolean;
+  isPluginReady: boolean;
+}
+
+interface PluginElements {
+  itemUrlInput: HTMLInputElement;
+  createButton: HTMLButtonElement;
+  cancelButton: HTMLButtonElement;
+}
+
+const state: PluginState = {
   rootFolder: null,
   isBusy: false,
   isPluginReady: false
 };
 
-const elements = {};
+const elements = {} as PluginElements;
 
 window.addEventListener("DOMContentLoaded", () => {
   cacheElements();
@@ -42,16 +57,16 @@ async function handlePluginRun() {
 }
 
 function cacheElements() {
-  elements.itemUrlInput = document.getElementById("item-url-input");
-  elements.createButton = document.getElementById("create-button");
-  elements.cancelButton = document.getElementById("cancel-button");
+  elements.itemUrlInput = requireElement("item-url-input", HTMLInputElement);
+  elements.createButton = requireElement("create-button", HTMLButtonElement);
+  elements.cancelButton = requireElement("cancel-button", HTMLButtonElement);
 }
 
 function bindEvents() {
   elements.createButton.addEventListener("click", handleCreate);
   elements.cancelButton.addEventListener("click", closeWindow);
   elements.itemUrlInput.addEventListener("input", render);
-  elements.itemUrlInput.addEventListener("keydown", event => {
+  elements.itemUrlInput.addEventListener("keydown", (event: KeyboardEvent) => {
     if (event.key === "Enter" && !elements.createButton.disabled) {
       event.preventDefault();
       handleCreate();
@@ -59,7 +74,7 @@ function bindEvents() {
   });
 }
 
-function applyTheme(theme) {
+function applyTheme(theme: EagleTheme) {
   document.body.setAttribute("theme", theme || "LIGHT");
 }
 
@@ -103,7 +118,9 @@ async function handleCreate() {
 
     const result = await window.BoothCompatCore.ensureBoothMetaForUrl(elements.itemUrlInput.value);
     elements.itemUrlInput.value = result.meta.itemUrl || boothRef.normalizedUrl;
-    await result.folder.open();
+    if (result.folder && result.folder.open) {
+      await result.folder.open();
+    }
     await eagle.item.select([result.item.id]);
     await closeWindow();
   });
@@ -119,16 +136,17 @@ async function trySyncSelectedBoothMetaItem() {
   if (!core().isBoothMetaItem(item)) {
     return false;
   }
+  const boothMetaItem = item;
 
   await eagle.window.hide();
 
   return runBusy(async () => {
-    const syncedMeta = await syncBoothMetaItem(item);
+    const syncedMeta = await syncBoothMetaItem(boothMetaItem);
     await eagle.notification.show({
       title: "Booth Compat",
       body: syncedMeta.lastUpdatedAtUtc
-        ? `${item.name} を更新しました。`
-        : `${item.name} の更新対象が見つかりませんでした。`,
+        ? `${boothMetaItem.name} を更新しました。`
+        : `${boothMetaItem.name} の更新対象が見つかりませんでした。`,
       mute: true,
       duration: 2500
     });
@@ -136,7 +154,7 @@ async function trySyncSelectedBoothMetaItem() {
     console.error(error);
     await eagle.notification.show({
       title: "Booth Compat",
-      body: error.message || "Booth metadata の更新に失敗しました。",
+      body: error instanceof Error ? error.message : "Booth metadata の更新に失敗しました。",
       mute: true,
       duration: 3500
     });
@@ -144,7 +162,7 @@ async function trySyncSelectedBoothMetaItem() {
   });
 }
 
-async function handleWindowKeydown(event) {
+async function handleWindowKeydown(event: KeyboardEvent) {
   if (event.key !== "Escape") {
     return;
   }
@@ -165,7 +183,7 @@ function resetForm() {
   render();
 }
 
-async function syncBoothMetaItem(item) {
+async function syncBoothMetaItem(item: EagleItem): Promise<BoothMeta> {
   const storedMeta = await core().loadMetaFromItem(item);
   const itemUrl = normalizeItemUrl(item.url);
   const syncBase = core().normalizeMeta({
@@ -237,7 +255,7 @@ function render() {
   elements.cancelButton.disabled = !isInteractive;
 }
 
-async function runBusy(action, surfaceErrors = true) {
+async function runBusy(action: () => Promise<void>, surfaceErrors = true): Promise<boolean> {
   if (state.isBusy) {
     return false;
   }
@@ -250,7 +268,7 @@ async function runBusy(action, surfaceErrors = true) {
   } catch (error) {
     console.error(error);
     if (surfaceErrors) {
-      alert(error.message || "不明なエラーが発生しました。");
+      alert(error instanceof Error ? error.message : "不明なエラーが発生しました。");
     }
     throw error;
   } finally {
@@ -259,10 +277,19 @@ async function runBusy(action, surfaceErrors = true) {
   }
 }
 
-function normalizeItemUrl(value) {
+function normalizeItemUrl(value: unknown): string {
   return core().normalizeBoothItemUrl(value) || core().safeString(value).trim();
 }
 
 function core() {
   return window.BoothCompatCore;
 }
+
+function requireElement<T extends HTMLElement>(id: string, constructor: { new(): T }): T {
+  const element = document.getElementById(id);
+  if (!(element instanceof constructor)) {
+    throw new Error(`Element #${id} was not found.`);
+  }
+  return element;
+}
+})();

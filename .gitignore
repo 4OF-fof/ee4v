@@ -1,2 +1,5 @@
 new/LICENSE.md.meta
 new/package.json.meta
+new/External~/Eagle/build/
+new/External~/Eagle/dist/
+new/External~/Eagle/node_modules/

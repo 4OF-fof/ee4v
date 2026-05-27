@@ -1,0 +1,42 @@
+{
+  "id": "dev.4of.ee4v.eagle.boothcompat",
+  "version": "0.1.0",
+  "platform": "all",
+  "arch": "all",
+  "name": "Booth Compat",
+  "logo": "/logo.png",
+  "keywords": [
+    "ee4v",
+    "eagle",
+    "boothmeta",
+    "vrcasset"
+  ],
+  "devTools": true,
+  "preview": {
+    "json": {
+      "inspector": {
+        "path": "inspector.html",
+        "height": 520,
+        "multiSelect": false
+      }
+    }
+  },
+  "main": {
+    "serviceMode": false,
+    "frame": false,
+    "url": "index.html",
+    "width": 380,
+    "height": 136,
+    "minWidth": 380,
+    "minHeight": 136,
+    "maxWidth": 380,
+    "maxHeight": 136,
+    "resizable": false,
+    "alwaysOnTop": true,
+    "maximizable": false,
+    "minimizable": false,
+    "fullscreenable": false,
+    "multiple": false,
+    "backgroundColor": "#3a3c42"
+  }
+}

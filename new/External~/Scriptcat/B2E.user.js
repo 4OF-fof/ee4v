@@ -24,7 +24,7 @@
   // import 要求後、Eagle 側の取込完了を反映するために追加で status 更新するタイミング。
   const FOLLOW_UP_STATUS_DELAYS_MS = [2000, 5000, 10000];
   // BOOTH の download tab を開いた後、自動で閉じるまでの待ち時間。
-  const DOWNLOAD_TAB_CLOSE_DELAY_MS = 500;
+  const DOWNLOAD_TAB_CLOSE_DELAY_MS = 1500;
   const OWNED_SELECTORS = {
     actionHost: ".ee4v-booth-inline-action-host",
     productBadgeHost: ".ee4v-booth-product-badge-host",
@@ -64,7 +64,6 @@
 
   function init() {
     injectStyles();
-    ensureToastHost();
     observeDomChanges();
     refreshBridgeHealth();
     state.healthTimerId = window.setInterval(
@@ -110,40 +109,13 @@
         color: #166534 !important;
       }
 
-      #ee4v-booth-toast-host {
-        position: fixed !important;
-        right: 16px !important;
-        bottom: 16px !important;
-        z-index: 2147483647 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 8px !important;
-        pointer-events: none !important;
-      }
-
-      .ee4v-booth-toast {
-        min-width: 220px !important;
-        max-width: 320px !important;
-        padding: 12px 14px !important;
-        border-radius: 14px !important;
-        background: rgba(17, 24, 39, 0.96) !important;
-        color: #fff !important;
-        font-size: 13px !important;
-        line-height: 1.5 !important;
-        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.24) !important;
+      .ee4v-booth-inline-action[data-state="pending"] {
+        border-color: #fde68a !important;
+        background: #fffbeb !important;
+        color: #92400e !important;
       }
     `;
     document.head.appendChild(style);
-  }
-
-  function ensureToastHost() {
-    if (document.getElementById("ee4v-booth-toast-host")) {
-      return;
-    }
-
-    const host = document.createElement("div");
-    host.id = "ee4v-booth-toast-host";
-    document.body.appendChild(host);
   }
 
   function observeDomChanges() {
@@ -277,17 +249,17 @@
         event.stopPropagation();
         handleImportClick(context, download).catch((error) => {
           console.error(error);
-          showToast(
-            error.message || "Eagle へのインポート要求に失敗しました。",
-          );
         });
       });
       host.appendChild(item);
     }
 
     const downloadKey = buildDownloadKey(download);
-    const imported = state.downloadStates.get(downloadKey)?.imported;
-    const pending = state.pendingDownloads.has(downloadKey);
+    const downloadState = state.downloadStates.get(downloadKey);
+    const imported = Boolean(downloadState && downloadState.imported);
+    const pending =
+      state.pendingDownloads.has(downloadKey) ||
+      Boolean(downloadState && downloadState.pending);
     const enabled =
       state.bridgeConnected &&
       state.rootFolderAvailable &&
@@ -296,7 +268,11 @@
     item.setAttribute("aria-disabled", enabled ? "false" : "true");
     item.disabled = !enabled;
     item.dataset.state = imported ? "imported" : pending ? "pending" : "ready";
-    item.textContent = imported ? "取込済み" : "Import Eagle";
+    item.textContent = imported
+      ? "取込済み"
+      : pending
+        ? "取込待ち"
+        : "Import Eagle";
   }
 
   function clearAddedElements() {
@@ -315,33 +291,39 @@
       throw new Error("Eagle library 直下に VRCAsset folder がありません。");
     }
 
-    const result = await bridgeRequest(
-      "POST",
-      "/v1/import",
-      buildImportPayload(context, download),
-    );
     const downloadKey = buildDownloadKey(download);
+    markDownloadPending(downloadKey, "");
+    openDownloadInNewTab(download.download.downloadUrl);
+
+    let result = null;
+    try {
+      result = await bridgeRequest(
+        "POST",
+        "/v1/import",
+        buildImportPayload(context, download),
+      );
+    } catch (error) {
+      state.pendingDownloads.delete(downloadKey);
+      renderContexts(collectCardContexts());
+      throw error;
+    }
 
     if (result && result.alreadyImported) {
       state.pendingDownloads.delete(downloadKey);
-      showToast("既に Eagle に取り込み済みです。");
+      renderContexts(collectCardContexts());
       scheduleStatusRefresh();
       return;
     }
 
-    state.pendingDownloads.set(downloadKey, {
-      jobId: result && result.jobId ? result.jobId : "",
-      startedAt: Date.now(),
-    });
-    showToast(
-      result && result.createdBoothMeta
-        ? "BoothMeta を作成して取込待ちにしました。"
-        : "Eagle への取込待ちを開始しました。",
-    );
-    openDownloadInNewTab(
-      result && result.downloadUrl
-        ? result.downloadUrl
-        : download.download.downloadUrl,
+    if (result && result.alreadyPending) {
+      markDownloadPending(downloadKey, result.jobId || "");
+      scheduleStatusRefresh();
+      return;
+    }
+
+    markDownloadPending(
+      downloadKey,
+      result && result.jobId ? result.jobId : "",
     );
     renderContexts(collectCardContexts());
     scheduleStatusRefresh();
@@ -352,6 +334,15 @@
     });
   }
 
+  function markDownloadPending(downloadKey, jobId) {
+    const existing = state.pendingDownloads.get(downloadKey);
+    state.pendingDownloads.set(downloadKey, {
+      jobId,
+      startedAt: existing ? existing.startedAt : Date.now(),
+    });
+    renderContexts(collectCardContexts());
+  }
+
   function openDownloadInNewTab(downloadUrl) {
     const normalized = normalizeDownloadUrl(downloadUrl);
     if (!normalized) {
@@ -360,7 +351,7 @@
 
     if (typeof GM_openInTab === "function") {
       const tab = GM_openInTab(normalized, {
-        active: true,
+        active: false,
         insert: true,
       });
       window.setTimeout(() => {
@@ -609,21 +600,6 @@
 
   function readText(element) {
     return element ? String(element.textContent || "").trim() : "";
-  }
-
-  function showToast(message) {
-    const host = document.getElementById("ee4v-booth-toast-host");
-    if (!host) {
-      return;
-    }
-
-    const toast = document.createElement("div");
-    toast.className = "ee4v-booth-toast";
-    toast.textContent = message;
-    host.appendChild(toast);
-    window.setTimeout(() => {
-      toast.remove();
-    }, 3200);
   }
 
   function bridgeRequest(method, path, payload) {

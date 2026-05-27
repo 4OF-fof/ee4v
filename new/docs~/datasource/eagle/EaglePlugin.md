@@ -20,13 +20,19 @@ Booth 情報の唯一の正本は Eagle item として保存された `_boothmet
 
 ### Booth Compat
 
-- 1 つの plugin に `window plugin` と `json inspector` の両方を持たせる
+- Eagle plugin は `BoothCompat` と `BoothCompatService` の 2 つに分離する
+- build 前の正本は `new/External~/Eagle/src` 配下の TypeScript とする
+- `npm run build` により `new/External~/Eagle/dist/BoothCompat` と `new/External~/Eagle/dist/BoothCompatService` を生成する
+- `src/shared/core.ts` は build 時に両 plugin の `js/core.js` へコピーする
+- `BoothCompat` は `serviceMode: false` の window / inspector plugin とする
+- `BoothCompatService` は `serviceMode: true` の background bridge plugin とする
 - window 側は frameless の疑似 popup として動作する
 - `frame: false`, 固定サイズ, `alwaysOnTop: true` を採用する
 - 起動時は現在カーソルがあるディスプレイ中央へ毎回再配置する
 - 選択 item が `BoothMeta` タグ付き JSON 1 件なら window を開かず、その item の Booth 情報を直接 sync する
 - それ以外で起動した場合は URL 入力 popup を表示し、Booth item を取得して商品名ベースの folder を `VRCAsset` 直下へ新規作成し、その直下へ `BoothMeta` タグ付き JSON item を作成する
-- 同じ plugin の inspector は `BoothMeta` タグ付き JSON item を選択した時だけ専用 UI を表示する
+- `BoothCompat` の inspector は `BoothMeta` タグ付き JSON item を選択した時だけ専用 UI を表示する
+- `BoothCompatService` は Scriptcat 連携用 bridge `http://127.0.0.1:41596` を公開する
 - これは Eagle 既存 UI にアンカーされたネイティブ popover ではない
 
 ## `_boothmeta.json` 保存形式

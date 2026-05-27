@@ -8,7 +8,7 @@
   const BOOTH_META_TAG = "BoothMeta";
   const BOOTH_META_TAGS = [BOOTH_META_TAG, "VRCMeta"];
 
-  const DEFAULT_META = {
+  const DEFAULT_META: BoothMeta = {
     schemaVersion: 1,
     boothItemId: 0,
     itemUrl: "",
@@ -24,7 +24,19 @@
     downloads: []
   };
 
-  async function ensureBoothMetaForUrl(itemUrl) {
+  function asRecord(value: unknown): JsonRecord {
+    return value && typeof value === "object" ? value as JsonRecord : {};
+  }
+
+  function errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : safeString(error);
+  }
+
+  function tagName(tag: unknown): string {
+    return safeString(typeof tag === "string" ? tag : asRecord(tag).name).trim();
+  }
+
+  async function ensureBoothMetaForUrl(itemUrl: string) {
     const boothRef = parseBoothItemReference(itemUrl);
     if (!boothRef) {
       throw new Error("有効な Booth item URL を入力してください。");
@@ -36,7 +48,7 @@
     });
   }
 
-  async function ensureBoothMetaForProduct(product, snapshotOverride) {
+  async function ensureBoothMetaForProduct(product: BoothProductInput, snapshotOverride?: Partial<BoothProductInput>) {
     const existing = findExistingBoothMeta(await loadBoothMetaItemsByTag(), product);
     if (existing) {
       return {
@@ -78,14 +90,18 @@
     const filePath = path.join(tempDir, `ee4v-boothmeta-${Date.now()}.json`);
     await fs.writeFile(filePath, JSON.stringify(meta, null, 2) + "\n", "utf8");
 
+    const itemName = resolveEagleItemName(meta.name || targetFolderName, targetFolderName);
     const itemId = await eagle.item.addFromPath(filePath, {
       folders: [targetFolder.id],
-      name: meta.name || targetFolderName,
+      name: itemName,
       tags: [BOOTH_META_TAG]
     });
 
     const item = await eagle.item.getById(itemId);
-    item.name = meta.name || targetFolderName;
+    if (!item) {
+      throw new Error("BoothMeta item could not be created.");
+    }
+    item.name = itemName;
     item.url = itemUrl;
     item.annotation = meta.description || "";
     item.tags = ensureBoothMetaTag(item.tags);
@@ -101,7 +117,7 @@
     };
   }
 
-  async function resolveBoothSnapshot(product, snapshotOverride) {
+  async function resolveBoothSnapshot(product: BoothProductInput, snapshotOverride?: Partial<BoothProductInput>): Promise<BoothSnapshot> {
     if (snapshotOverride) {
       return normalizeSnapshot(snapshotOverride);
     }
@@ -111,23 +127,23 @@
       return normalizeSnapshot(product || {});
     }
 
-    let fetched = null;
+    let fetched: BoothSnapshot | null = null;
     try {
       fetched = await fetchBoothSnapshot(boothRef);
     } catch (error) {
-      console.warn(`Failed to fetch Booth snapshot: ${error.message}`);
-      fetched = {};
+      console.warn(`Failed to fetch Booth snapshot: ${errorMessage(error)}`);
+      fetched = null;
     }
 
     return normalizeSnapshot({
       ...product,
-      ...fetched,
-      boothItemId: fetched.boothItemId || boothRef.itemId || product.boothItemId,
-      itemUrl: fetched.itemUrl || boothRef.normalizedUrl || product.itemUrl
+      ...(fetched || {}),
+      boothItemId: (fetched && fetched.boothItemId) || boothRef.itemId || product.boothItemId,
+      itemUrl: (fetched && fetched.itemUrl) || boothRef.normalizedUrl || product.itemUrl
     });
   }
 
-  function parseProductBoothReference(product) {
+  function parseProductBoothReference(product: BoothProductInput): BoothItemReference | null {
     const itemRef = parseBoothItemReference(product && product.itemUrl);
     const shopUrl = normalizeBoothShopUrl(product && product.shopUrl);
     if (!itemRef || !shopUrl) {
@@ -149,11 +165,11 @@
     return itemRef;
   }
 
-  async function loadBoothMetaItems(rootFolder) {
+  async function loadBoothMetaItems(rootFolder: EagleFolder): Promise<BoothMetaRecord[]> {
     const items = await getAllItems();
     const folders = await eagle.folder.getAll();
     const descendantFolderIds = new Set(findDescendantFolderIds(folders, rootFolder.id));
-    const records = [];
+    const records: BoothMetaRecord[] = [];
 
     for (let index = 0; index < items.length; index += 1) {
       const item = items[index];
@@ -182,10 +198,10 @@
     return records;
   }
 
-  async function loadBoothMetaItemsByTag() {
+  async function loadBoothMetaItemsByTag(): Promise<BoothMetaRecord[]> {
     const items = await getAllItems();
     const folders = await eagle.folder.getAll();
-    const records = [];
+    const records: BoothMetaRecord[] = [];
 
     for (let index = 0; index < items.length; index += 1) {
       const item = items[index];
@@ -209,7 +225,7 @@
     return records;
   }
 
-  function findExistingBoothMeta(records, product) {
+  function findExistingBoothMeta(records: BoothMetaRecord[], product: BoothProductInput): BoothMetaRecord | null {
     const boothItemId = toPositiveInteger(product && product.boothItemId);
     if (boothItemId > 0) {
       const matchById = records.find(record => toPositiveInteger(record.meta && record.meta.boothItemId) === boothItemId);
@@ -221,7 +237,7 @@
     return records.find(record => isSameProduct(record.meta, product)) || null;
   }
 
-  async function getAllItems() {
+  async function getAllItems(): Promise<EagleItem[]> {
     if (eagle.item && typeof eagle.item.getAll === "function") {
       return await eagle.item.getAll();
     }
@@ -233,7 +249,7 @@
     return [];
   }
 
-  async function requireVrcAssetRootFolder() {
+  async function requireVrcAssetRootFolder(): Promise<EagleFolder> {
     const rootFolder = await findVrcAssetRootFolder();
     if (!rootFolder) {
       throw new Error("library root VRCAsset folder was not found.");
@@ -242,7 +258,7 @@
     return rootFolder;
   }
 
-  async function findVrcAssetRootFolder() {
+  async function findVrcAssetRootFolder(): Promise<EagleFolder | null> {
     const folders = await eagle.folder.getAll();
     const matches = folders.filter(folder => folder.name === "VRCAsset" && !folder.parent);
     if (matches.length !== 1) {
@@ -252,27 +268,27 @@
     return matches[0];
   }
 
-  async function findDirectChildFolder(parentId, name) {
+  async function findDirectChildFolder(parentId: string, name: string): Promise<EagleFolder | null> {
     const folders = await eagle.folder.getAll();
     return folders.find(folder => folder.parent === parentId && folder.name === name) || null;
   }
 
-  async function loadMetaFromItem(item) {
+  async function loadMetaFromItem(item: EagleItem): Promise<BoothMeta> {
     try {
-      const raw = await fs.readFile(item.filePath, "utf8");
+      const raw = await fs.readFile(item.filePath || "", "utf8");
       return normalizeMeta(JSON.parse(raw));
     } catch (error) {
       return { ...DEFAULT_META };
     }
   }
 
-  async function saveMetaToItem(item, meta) {
+  async function saveMetaToItem(item: EagleItem, meta: Partial<BoothMeta>): Promise<void> {
     const tempPath = path.join(await Promise.resolve(eagle.app.getPath("temp")), `${item.id}-boothcompat.json`);
     await fs.writeFile(tempPath, JSON.stringify(normalizeMeta(meta), null, 2) + "\n", "utf8");
     await item.replaceFile(tempPath);
   }
 
-  async function applyThumbnailToItem(item, thumbnailUrl, tempDir) {
+  async function applyThumbnailToItem(item: EagleItem, thumbnailUrl: string, tempDir: string): Promise<void> {
     const normalizedThumbnailUrl = normalizeUrl(thumbnailUrl);
     if (!normalizedThumbnailUrl) {
       return;
@@ -284,16 +300,18 @@
       await downloadFile(normalizedThumbnailUrl, thumbnailPath);
       await item.setCustomThumbnail(thumbnailPath);
     } catch (error) {
-      console.warn(`Failed to apply custom thumbnail: ${error.message}`);
+      console.warn(`Failed to apply custom thumbnail: ${errorMessage(error)}`);
     }
   }
 
-  async function fetchBoothSnapshot(boothRef) {
+  async function fetchBoothSnapshot(boothRef: BoothItemReference): Promise<BoothSnapshot> {
     const payload = await requestJson(`${boothRef.fetchUrl}.json`);
+    const shop = asRecord(payload.shop);
+    const firstImage = Array.isArray(payload.images) ? asRecord(payload.images[0]) : {};
     const boothItemId = toPositiveInteger(payload.id) || boothRef.itemId;
     const itemUrlFromPayload = normalizeCanonicalBoothItemUrl(payload.url) || normalizeCanonicalBoothItemUrl(boothRef.normalizedUrl) || boothRef.normalizedUrl;
     const shopUrl = normalizeBoothShopUrl(firstNonEmpty([
-      payload.shop && payload.shop.url,
+      shop.url,
       payload.shopUrl,
       `${new URL(itemUrlFromPayload).origin}`
     ]));
@@ -308,17 +326,17 @@
         payload.thumbnail_url,
         payload.imageUrl,
         payload.image_url,
-        payload.images && payload.images[0] && payload.images[0].original,
-        payload.images && payload.images[0] && payload.images[0].url
+        firstImage.original,
+        firstImage.url
       ])),
       shopName: safeString(firstNonEmpty([
-        payload.shop && payload.shop.name,
+        shop.name,
         payload.shopName
       ])),
       shopUrl,
       shopThumbnailUrl: normalizeUrl(firstNonEmpty([
-        payload.shop && payload.shop.thumbnailUrl,
-        payload.shop && payload.shop.thumbnail_url,
+        shop.thumbnailUrl,
+        shop.thumbnail_url,
         payload.shopThumbnailUrl
       ])),
       tags: normalizeTags(payload.tags),
@@ -326,9 +344,9 @@
     };
   }
 
-  function findDescendantFolderIds(folders, rootId) {
-    const result = [rootId];
-    const queue = [rootId];
+  function findDescendantFolderIds(folders: EagleFolder[], rootId: string): string[] {
+    const result: string[] = [rootId];
+    const queue: string[] = [rootId];
     while (queue.length > 0) {
       const parentId = queue.shift();
       folders
@@ -342,7 +360,7 @@
     return result;
   }
 
-  function parseBoothItemReference(value) {
+  function parseBoothItemReference(value: unknown): BoothItemReference | null {
     const url = tryCreateUrl(value);
     if (!url || !/(?:^|\.)booth\.pm$/i.test(url.hostname)) {
       return null;
@@ -372,72 +390,77 @@
     };
   }
 
-  function normalizeMeta(meta) {
+  function normalizeMeta(meta: unknown): BoothMeta {
+    const source = asRecord(meta);
     return {
       schemaVersion: 1,
-      boothItemId: toPositiveInteger(meta && meta.boothItemId),
-      itemUrl: normalizeBoothItemUrl(meta && meta.itemUrl) || safeString(meta && meta.itemUrl).trim(),
-      name: safeString(meta && meta.name),
-      description: safeString(meta && meta.description),
-      thumbnailUrl: normalizeUrl(meta && meta.thumbnailUrl),
-      shopName: safeString(meta && meta.shopName),
-      shopUrl: normalizeBoothShopUrl(meta && meta.shopUrl) || normalizeUrl(meta && meta.shopUrl),
-      shopThumbnailUrl: normalizeUrl(meta && meta.shopThumbnailUrl),
-      tags: normalizeTags(meta && meta.tags),
-      attachedAt: normalizeTimestamp(meta && meta.attachedAt),
-      lastUpdatedAtUtc: normalizeTimestamp(meta && meta.lastUpdatedAtUtc),
-      downloads: normalizeDownloads(meta && meta.downloads)
+      boothItemId: toPositiveInteger(source.boothItemId),
+      itemUrl: normalizeBoothItemUrl(source.itemUrl) || safeString(source.itemUrl).trim(),
+      name: safeString(source.name),
+      description: safeString(source.description),
+      thumbnailUrl: normalizeUrl(source.thumbnailUrl),
+      shopName: safeString(source.shopName),
+      shopUrl: normalizeBoothShopUrl(source.shopUrl) || normalizeUrl(source.shopUrl),
+      shopThumbnailUrl: normalizeUrl(source.shopThumbnailUrl),
+      tags: normalizeTags(source.tags),
+      attachedAt: normalizeTimestamp(source.attachedAt),
+      lastUpdatedAtUtc: normalizeTimestamp(source.lastUpdatedAtUtc),
+      downloads: normalizeDownloads(source.downloads)
     };
   }
 
-  function normalizeDownloads(downloads) {
+  function normalizeDownloads(downloads: unknown): BoothDownloadMeta[] {
     if (!Array.isArray(downloads)) {
       return [];
     }
 
-    return downloads.map(download => ({
-      downloadUrl: normalizeDownloadUrl(download.downloadUrl),
-      downloadId: toPositiveInteger(download.downloadId) || extractDownloadId(download.downloadUrl),
-      filename: safeString(download.filename),
-      requestedAt: normalizeTimestamp(download.requestedAt),
-      importedAt: normalizeTimestamp(download.importedAt),
-      importedItemIds: Array.isArray(download.importedItemIds)
-        ? download.importedItemIds.map(value => safeString(value)).filter(Boolean)
+    return downloads.map(rawDownload => {
+      const download = asRecord(rawDownload);
+      return {
+        downloadUrl: normalizeDownloadUrl(download.downloadUrl),
+        downloadId: toPositiveInteger(download.downloadId) || extractDownloadId(download.downloadUrl),
+        filename: safeString(download.filename),
+        requestedAt: normalizeTimestamp(download.requestedAt),
+        importedAt: normalizeTimestamp(download.importedAt),
+        importedItemIds: Array.isArray(download.importedItemIds)
+        ? download.importedItemIds.map((value: unknown) => safeString(value)).filter(Boolean)
         : []
-    }));
+      };
+    });
   }
 
-  function normalizeSnapshot(value) {
+  function normalizeSnapshot(value: unknown): BoothSnapshot {
+    const source = asRecord(value);
     return {
-      boothItemId: toPositiveInteger(value.boothItemId),
-      itemUrl: normalizeBoothItemUrl(value.itemUrl),
-      name: safeString(value.name),
-      description: safeString(value.description),
-      thumbnailUrl: normalizeUrl(value.thumbnailUrl),
-      shopName: safeString(value.shopName),
-      shopUrl: normalizeBoothShopUrl(value.shopUrl) || normalizeUrl(value.shopUrl),
-      shopThumbnailUrl: normalizeUrl(value.shopThumbnailUrl),
-      tags: normalizeTags(value.tags),
-      lastUpdatedAtUtc: normalizeTimestamp(value.lastUpdatedAtUtc) || new Date().toISOString()
+      boothItemId: toPositiveInteger(source.boothItemId),
+      itemUrl: normalizeBoothItemUrl(source.itemUrl),
+      name: safeString(source.name),
+      description: safeString(source.description),
+      thumbnailUrl: normalizeUrl(source.thumbnailUrl),
+      shopName: safeString(source.shopName),
+      shopUrl: normalizeBoothShopUrl(source.shopUrl) || normalizeUrl(source.shopUrl),
+      shopThumbnailUrl: normalizeUrl(source.shopThumbnailUrl),
+      tags: normalizeTags(source.tags),
+      lastUpdatedAtUtc: normalizeTimestamp(source.lastUpdatedAtUtc) || new Date().toISOString()
     };
   }
 
-  function isSameProduct(meta, product) {
+  function isSameProduct(meta: Partial<BoothMeta>, product: BoothProductInput): boolean {
     const left = normalizeMeta(meta || DEFAULT_META);
     const rightItemId = toPositiveInteger(product.boothItemId);
     const rightUrl = normalizeBoothItemUrl(product.itemUrl);
     return (left.boothItemId > 0 && rightItemId > 0 && left.boothItemId === rightItemId)
-      || (left.itemUrl && rightUrl && left.itemUrl === rightUrl);
+      || Boolean(left.itemUrl && rightUrl && left.itemUrl === rightUrl);
   }
 
-  function isBoothMetaItem(item) {
-    return Boolean(item)
+  function isBoothMetaItem(item: EagleItem | null): item is EagleItem {
+    return item !== null
       && !item.isDeleted
       && isJsonLikeItem(item)
       && hasBoothMetaTag(item.tags);
   }
 
-  function isJsonLikeItem(item) {
+  function isJsonLikeItem(item: EagleItem | null): boolean {
     if (!item) {
       return false;
     }
@@ -450,21 +473,21 @@
       .some(value => safeString(value).toLowerCase().endsWith(".json"));
   }
 
-  function isBoothMetaMeta(meta) {
+  function isBoothMetaMeta(meta: Partial<BoothMeta>): boolean {
     const normalized = normalizeMeta(meta || DEFAULT_META);
     return normalized.schemaVersion === 1
       && normalized.boothItemId > 0
       && Boolean(normalized.itemUrl);
   }
 
-  function hasBoothMetaTag(tags) {
+  function hasBoothMetaTag(tags: unknown): boolean {
     return Array.isArray(tags)
-      && tags.some(tag => BOOTH_META_TAGS.includes(safeString(typeof tag === "string" ? tag : tag && tag.name).trim()));
+      && tags.some(tag => BOOTH_META_TAGS.includes(tagName(tag)));
   }
 
-  function ensureBoothMetaTag(tags) {
+  function ensureBoothMetaTag(tags: unknown): string[] {
     const normalized = Array.isArray(tags)
-      ? tags.map(tag => safeString(typeof tag === "string" ? tag : tag && tag.name).trim()).filter(Boolean)
+      ? tags.map(tagName).filter(Boolean)
       : [];
 
     if (!normalized.includes(BOOTH_META_TAG)) {
@@ -474,7 +497,7 @@
     return Array.from(new Set(normalized));
   }
 
-  function getItemFolderIds(item) {
+  function getItemFolderIds(item: Partial<EagleItem>): string[] {
     if (Array.isArray(item.folders)) {
       return item.folders;
     }
@@ -490,7 +513,7 @@
     return [];
   }
 
-  function buildDownloadKey(download) {
+  function buildDownloadKey(download: Partial<BoothDownloadInput>): string {
     const downloadId = toPositiveInteger(download.downloadId) || extractDownloadId(download.downloadUrl);
     if (downloadId > 0) {
       return `download:${downloadId}`;
@@ -504,18 +527,18 @@
     return `filename:${normalizeFilename(download.filename)}`;
   }
 
-  function extractDownloadId(downloadUrl) {
+  function extractDownloadId(downloadUrl: unknown): number {
     const normalized = normalizeDownloadUrl(downloadUrl);
     const match = normalized.match(/\/downloadables\/(\d+)$/);
     return match ? parseInt(match[1], 10) : 0;
   }
 
-  function normalizeBoothItemUrl(value) {
+  function normalizeBoothItemUrl(value: unknown): string {
     const parsed = parseBoothItemReference(value);
     return parsed ? parsed.normalizedUrl : "";
   }
 
-  function normalizeCanonicalBoothItemUrl(value) {
+  function normalizeCanonicalBoothItemUrl(value: unknown): string {
     const parsed = parseBoothItemReference(value);
     if (!parsed) {
       return "";
@@ -528,7 +551,7 @@
       : `https://${host}/items/${parsed.itemId}`;
   }
 
-  function normalizeDownloadUrl(value) {
+  function normalizeDownloadUrl(value: unknown): string {
     const url = tryCreateUrl(value);
     if (!url || url.hostname.toLowerCase() !== "booth.pm") {
       return "";
@@ -538,7 +561,7 @@
     return match ? `https://booth.pm/downloadables/${match[1]}` : "";
   }
 
-  function normalizeBoothShopUrl(value) {
+  function normalizeBoothShopUrl(value: unknown): string {
     const url = tryCreateUrl(value);
     if (!url || !/\.booth\.pm$/i.test(url.hostname)) {
       return "";
@@ -547,12 +570,12 @@
     return `https://${url.hostname.toLowerCase()}`;
   }
 
-  function normalizeUrl(value) {
+  function normalizeUrl(value: unknown): string {
     const url = tryCreateUrl(value);
     return url ? url.toString() : "";
   }
 
-  function tryCreateUrl(value) {
+  function tryCreateUrl(value: unknown): URL | null {
     const trimmed = safeString(value).trim();
     if (!trimmed) {
       return null;
@@ -565,18 +588,18 @@
     }
   }
 
-  function normalizeTags(tags) {
+  function normalizeTags(tags: unknown): string[] {
     if (!Array.isArray(tags)) {
       return [];
     }
 
     return Array.from(new Set(tags
-      .map(tag => safeString(typeof tag === "string" ? tag : tag && tag.name).trim())
+      .map(tagName)
       .filter(Boolean)))
       .sort((left, right) => left.localeCompare(right, "ja"));
   }
 
-  function normalizeTimestamp(value) {
+  function normalizeTimestamp(value: unknown): string {
     const trimmed = safeString(value).trim();
     if (!trimmed) {
       return "";
@@ -586,7 +609,7 @@
     return Number.isNaN(date.getTime()) ? "" : date.toISOString();
   }
 
-  function resolveBoothFolderName(name, fallbackItemId) {
+  function resolveBoothFolderName(name: unknown, fallbackItemId: unknown): string {
     const trimmed = safeString(name).trim();
     const fallback = toPositiveInteger(fallbackItemId) > 0 ? String(fallbackItemId) : "Booth Item";
     const sanitized = (trimmed || fallback)
@@ -598,20 +621,31 @@
     return sanitized || fallback;
   }
 
-  function normalizeFilename(value) {
+  function resolveEagleItemName(name: unknown, fallbackName: unknown): string {
+    const fallback = safeString(fallbackName).trim() || "Booth Item";
+    const sanitized = safeString(name)
+      .replace(/[\\/:*?"<>|]/g, " ")
+      .replace(/\s+/g, " ")
+      .replace(/[. ]+$/g, "")
+      .trim();
+
+    return sanitized || fallback;
+  }
+
+  function normalizeFilename(value: unknown): string {
     return safeString(value).trim().toLowerCase();
   }
 
-  function toPositiveInteger(value) {
+  function toPositiveInteger(value: unknown): number {
     const parsed = typeof value === "number" ? value : parseInt(String(value), 10);
     return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
   }
 
-  function safeString(value) {
+  function safeString(value: unknown): string {
     return typeof value === "string" ? value : "";
   }
 
-  function firstNonEmpty(values) {
+  function firstNonEmpty(values: unknown[]): string {
     for (let index = 0; index < values.length; index += 1) {
       const value = safeString(values[index]).trim();
       if (value) {
@@ -621,11 +655,11 @@
     return "";
   }
 
-  function isMetaEquivalent(left, right) {
+  function isMetaEquivalent(left: Partial<BoothMeta>, right: Partial<BoothMeta>): boolean {
     return JSON.stringify(normalizeMeta(left || DEFAULT_META)) === JSON.stringify(normalizeMeta(right || DEFAULT_META));
   }
 
-  async function requestJson(url, redirectDepth = 0) {
+  async function requestJson(url: string, redirectDepth = 0): Promise<JsonRecord> {
     if (redirectDepth > 4) {
       throw new Error("Booth item JSON のリダイレクト回数が上限を超えました。");
     }
@@ -652,9 +686,9 @@
           return;
         }
 
-        const chunks = [];
+        const chunks: string[] = [];
         response.setEncoding("utf8");
-        response.on("data", chunk => chunks.push(chunk));
+        response.on("data", chunk => chunks.push(String(chunk)));
         response.on("end", () => {
           try {
             resolve(JSON.parse(chunks.join("")));
@@ -673,7 +707,7 @@
     });
   }
 
-  async function downloadFile(url, destinationPath, redirectDepth = 0) {
+  async function downloadFile(url: string, destinationPath: string, redirectDepth = 0): Promise<void> {
     if (redirectDepth > 4) {
       throw new Error("thumbnail image のリダイレクト回数が上限を超えました。");
     }
@@ -699,8 +733,8 @@
           return;
         }
 
-        const chunks = [];
-        response.on("data", chunk => chunks.push(chunk));
+        const chunks: Uint8Array[] = [];
+        response.on("data", chunk => chunks.push(typeof chunk === "string" ? new TextEncoder().encode(chunk) : chunk));
         response.on("end", async () => {
           try {
             await fs.writeFile(destinationPath, Buffer.concat(chunks));
@@ -753,6 +787,7 @@
     normalizeTags,
     normalizeTimestamp,
     resolveBoothFolderName,
+    resolveEagleItemName,
     safeString,
     toPositiveInteger,
     firstNonEmpty,
