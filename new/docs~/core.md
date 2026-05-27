@@ -222,7 +222,7 @@ setting は `RegisterAll()` を用意して 1 回だけ `SettingApi.Register(...
 - `SettingScope.Project`
   - `ProjectSettings/ee4v.settings.json`
 
-そのため、ユーザーごとの差分にしたいものだけ `User` に置き、repo 共有したい設定は `Project` に置く。
+そのため、プロジェクトをまたいで同じ値を使いたいユーザー単位の設定は `User` に置き、プロジェクト固有の設定は `Project` に置く。
 
 ### 5-5. 設定画面
 
