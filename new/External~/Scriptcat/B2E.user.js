@@ -2,9 +2,12 @@
 // @name         Booth to Ealge
 // @namespace    https://4of.dev
 // @version      0.1.0
-// @description  Add Eagle import badges and actions to the BOOTH library.
+// @description  Add Eagle import badges and actions to the BOOTH library and item pages.
 // @match        https://accounts.booth.pm/library*
 // @match        https://accounts.booth.pm/library/gifts*
+// @match        https://booth.pm/items/*
+// @match        https://booth.pm/*/items/*
+// @match        https://*.booth.pm/items/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_openInTab
 // @connect      127.0.0.1
@@ -48,7 +51,22 @@
     downloadFilename: ".text-14",
     downloadActions: ".shrink-0.flex.items-center.gap-8",
   };
-  const pageAdapter = createBoothLibraryPageAdapter(BOOTH_LIBRARY_SELECTORS);
+  const BOOTH_ITEM_SELECTORS = {
+    root: ".market-item-detail",
+    productName: ".summary header h2, .market-item-detail h2",
+    shopLink:
+      '.summary header a[href*=".booth.pm/"]:not([href*="accounts.booth.pm"])',
+    variations: "#variations",
+    variationRow: ".variation-item",
+    variationName: ".variation-name",
+    freeDownloadTrigger:
+      'a[href*="booth.pm/downloadables/"].add-cart, a[href*="booth.pm/downloadables/"].btn',
+    otherDownloads: '.js-download-free-button[data-test="other-downloads-button"], .js-download-free-button',
+  };
+  const pageAdapter = createCompositePageAdapter([
+    createBoothLibraryPageAdapter(BOOTH_LIBRARY_SELECTORS),
+    createBoothItemPageAdapter(BOOTH_ITEM_SELECTORS),
+  ]);
 
   const state = {
     bridgeConnected: false,
@@ -82,6 +100,13 @@
         margin-right: 4px !important;
       }
 
+      .ee4v-booth-inline-action-host--block {
+        display: flex !important;
+        align-items: stretch !important;
+        width: 100% !important;
+        margin: 8px 0 0 !important;
+      }
+
       .ee4v-booth-inline-action {
         display: inline-flex !important;
         align-items: center !important;
@@ -96,6 +121,13 @@
         font-weight: 700 !important;
         white-space: nowrap !important;
         cursor: pointer !important;
+      }
+
+      .ee4v-booth-inline-action-host--block .ee4v-booth-inline-action {
+        justify-content: center !important;
+        width: 100% !important;
+        min-height: 32px !important;
+        border-radius: 8px !important;
       }
 
       .ee4v-booth-inline-action[aria-disabled="true"] {
@@ -230,7 +262,12 @@
     if (!host) {
       host = document.createElement("div");
       host.className = "ee4v-booth-inline-action-host";
-      download.actions.insertBefore(host, download.actions.firstChild);
+      if (download.actionLayout === "block") {
+        host.classList.add("ee4v-booth-inline-action-host--block");
+        download.actions.appendChild(host);
+      } else {
+        download.actions.insertBefore(host, download.actions.firstChild);
+      }
     }
 
     let item = host.querySelector(
@@ -484,6 +521,117 @@
     };
   }
 
+  function createBoothItemPageAdapter(selectors) {
+    return {
+      collectContexts(root) {
+        const product = this.readProduct(root);
+        if (!product) {
+          return [];
+        }
+
+        const variations = root.querySelector(selectors.variations);
+        if (!variations) {
+          return [];
+        }
+
+        const context = {
+          card: root.querySelector(selectors.root) || root.body || root,
+          header: root.querySelector(selectors.root) || root.body || root,
+          product,
+          downloads: this.readDownloads(variations, product),
+        };
+
+        return context.downloads.length > 0 ? [context] : [];
+      },
+
+      readProduct(root) {
+        const itemUrl =
+          normalizeItemUrl(window.location.href) ||
+          normalizeItemUrl(readLinkHref(root.querySelector('link[rel="canonical"]'))) ||
+          normalizeItemUrl(readMetaContent(root, 'meta[property="og:url"]'));
+        const boothItemId = extractItemId(itemUrl);
+        if (!itemUrl || !boothItemId) {
+          return null;
+        }
+
+        const shopLink = root.querySelector(selectors.shopLink);
+        const shopName =
+          readText(shopLink && shopLink.querySelector("span")) ||
+          (shopLink && shopLink.querySelector("img")
+            ? shopLink.querySelector("img").getAttribute("alt") || ""
+            : "");
+
+        return {
+          boothItemId,
+          itemUrl,
+          name:
+            readText(root.querySelector(selectors.productName)) ||
+            stripBoothTitleSuffix(readMetaContent(root, 'meta[property="og:title"]')) ||
+            stripBoothTitleSuffix(document.title),
+          thumbnailUrl:
+            readMetaContent(root, 'meta[property="og:image"]') ||
+            readMetaContent(root, 'meta[name="twitter:image"]'),
+          shopName,
+          shopUrl: normalizeShopUrl(shopLink ? shopLink.href : ""),
+        };
+      },
+
+      readDownloads(variations, product) {
+        const downloads = [];
+        variations
+          .querySelectorAll(selectors.freeDownloadTrigger)
+          .forEach((trigger) => {
+            const download = this.readDownload(trigger, product);
+            if (download) {
+              downloads.push(download);
+            }
+          });
+        return downloads;
+      },
+
+      readDownload(trigger, product) {
+        const downloadUrl = normalizeDownloadUrl(trigger.href);
+        const row = trigger.closest(selectors.variationRow);
+        if (!row || !downloadUrl) {
+          return null;
+        }
+
+        const otherDownloads = row.querySelector(selectors.otherDownloads);
+        const actions = otherDownloads ? otherDownloads.parentElement : trigger.parentElement;
+        if (!actions) {
+          return null;
+        }
+
+        const filename =
+          trigger.getAttribute("title") ||
+          readText(otherDownloads && otherDownloads.previousElementSibling) ||
+          readText(row.querySelector(selectors.variationName)) ||
+          `download-${extractDownloadId(downloadUrl)}`;
+
+        return {
+          row,
+          actions,
+          actionLayout: "block",
+          download: {
+            boothItemId: product.boothItemId,
+            itemUrl: product.itemUrl,
+            downloadUrl,
+            downloadId: extractDownloadId(downloadUrl),
+            filename,
+          },
+        };
+      },
+    };
+  }
+
+  function createCompositePageAdapter(adapters) {
+    return {
+      collectContexts(root) {
+        return adapters.flatMap((adapter) => adapter.collectContexts(root));
+      },
+    };
+  }
+
   function buildStatusPayload(contexts) {
     return {
       items: contexts.map((context) => ({
@@ -600,6 +748,22 @@
 
   function readText(element) {
     return element ? String(element.textContent || "").trim() : "";
+  }
+
+  function readLinkHref(element) {
+    return element ? String(element.getAttribute("href") || "").trim() : "";
+  }
+
+  function readMetaContent(root, selector) {
+    const element = root.querySelector(selector);
+    return element ? String(element.getAttribute("content") || "").trim() : "";
+  }
+
+  function stripBoothTitleSuffix(value) {
+    return String(value || "")
+      .replace(/\s+-\s+[^-]+?\s+-\s+BOOTH$/i, "")
+      .replace(/\s+-\s+BOOTH$/i, "")
+      .trim();
   }
 
   function bridgeRequest(method, path, payload) {
