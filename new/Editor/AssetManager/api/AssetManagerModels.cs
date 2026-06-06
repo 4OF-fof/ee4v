@@ -118,4 +118,11 @@ namespace Ee4v.AssetManager.Api
         public string DependentFileId { get; set; }
         public string DependencyFileId { get; set; }
     }
+
+    public sealed class AssetSyncInfo
+    {
+        public AssetSourceType SourceType { get; set; }
+        public DateTime? LastSyncAt { get; set; }
+        public AssetSyncState LastSyncState { get; set; }
+    }
 }

@@ -220,6 +220,22 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        public void RegisterFile_FirstFileBecomesPrimary()
+        {
+            var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
+            var firstPath = Path.Combine(_tempRoot, "first.txt");
+            var secondPath = Path.Combine(_tempRoot, "second.txt");
+            File.WriteAllText(firstPath, "first");
+            File.WriteAllText(secondPath, "second");
+
+            var first = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = firstPath, FileName = "first.txt" });
+            var second = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = secondPath, FileName = "second.txt" });
+
+            Assert.That(first.IsPrimary, Is.True);
+            Assert.That(second.IsPrimary, Is.False);
+        }
+
+        [Test]
         public void SyncEagle_CreatesItemsFromVrcAssetFolders_AndSkipsMetadataFiles()
         {
             var libraryPath = Path.Combine(_tempRoot, "library.library");
@@ -249,6 +265,146 @@ namespace Ee4v.AssetManager.Api.Tests
             Assert.That(secondResult.UpdatedCount, Is.EqualTo(0));
             Assert.That(secondResult.UnchangedCount, Is.EqualTo(2));
             Assert.That(secondResult.ErrorCount, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void SyncEagle_StoresDownloadIdFromBoothMetadata()
+        {
+            var libraryPath = Path.Combine(_tempRoot, "download-id.library");
+            var imagesPath = Path.Combine(libraryPath, "images");
+            Directory.CreateDirectory(imagesPath);
+            File.WriteAllText(
+                Path.Combine(libraryPath, "metadata.json"),
+                "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"Avatar\",\"children\":[]}]}]}");
+            CreateEagleEntry(
+                imagesPath,
+                "boothmeta-entry",
+                "avatar-folder",
+                "_boothmeta",
+                "json",
+                "{\"boothItemId\":123,\"name\":\"Booth Avatar\",\"description\":\"Booth Desc\",\"thumbnailUrl\":\"thumb\",\"shopName\":\"Shop\",\"shopUrl\":\"https://shop.booth.pm\",\"shopThumbnailUrl\":\"shopthumb\",\"downloads\":[{\"downloadId\":456,\"filename\":\"avatar-from-booth.zip\",\"importedItemIds\":[\"file-entry\"]}]}");
+            CreateEagleEntry(imagesPath, "file-entry", "avatar-folder", "avatar", "unitypackage", null);
+
+            AssetManagerApi.SyncEagle(new EagleSyncRequest(libraryPath));
+            var item = AssetManagerApi.SearchItems(new AssetItemQuery { Limit = 10 }).Items.Single();
+            var file = AssetManagerApi.GetFiles(item.Id).Single();
+
+            Assert.That(file.DownloadId, Is.EqualTo(456));
+            Assert.That(file.FileName, Is.EqualTo("avatar-from-booth.zip"));
+            Assert.That(file.Extension, Is.EqualTo("zip"));
+        }
+
+        [Test]
+        public void SyncEagle_StoresDownloadIdWhenImportedItemIdsAreMissingButFilenameMatches()
+        {
+            var libraryPath = Path.Combine(_tempRoot, "download-filename.library");
+            var imagesPath = Path.Combine(libraryPath, "images");
+            Directory.CreateDirectory(imagesPath);
+            File.WriteAllText(
+                Path.Combine(libraryPath, "metadata.json"),
+                "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"Avatar\",\"children\":[]}]}]}");
+            CreateEagleEntry(
+                imagesPath,
+                "boothmeta-entry",
+                "avatar-folder",
+                "_boothmeta",
+                "json",
+                "{\"boothItemId\":123,\"name\":\"Booth Avatar\",\"description\":\"Booth Desc\",\"thumbnailUrl\":\"thumb\",\"shopName\":\"Shop\",\"shopUrl\":\"https://shop.booth.pm\",\"shopThumbnailUrl\":\"shopthumb\",\"downloads\":[{\"downloadId\":456,\"filename\":\"avatar.zip\",\"importedItemIds\":[]}]}");
+            CreateEagleEntry(imagesPath, "file-entry", "avatar-folder", "avatar", "zip", null);
+
+            AssetManagerApi.SyncEagle(new EagleSyncRequest(libraryPath));
+            var item = AssetManagerApi.SearchItems(new AssetItemQuery { Limit = 10 }).Items.Single();
+            var file = AssetManagerApi.GetFiles(item.Id).Single();
+
+            Assert.That(file.DownloadId, Is.EqualTo(456));
+            Assert.That(file.Origins.Single().SourceId, Is.EqualTo("file-entry"));
+        }
+
+        [Test]
+        public void SyncEagle_CreatesDownloadOnlyFilesForUnmatchedBoothDownloads()
+        {
+            var libraryPath = Path.Combine(_tempRoot, "download-only.library");
+            var imagesPath = Path.Combine(libraryPath, "images");
+            Directory.CreateDirectory(imagesPath);
+            File.WriteAllText(
+                Path.Combine(libraryPath, "metadata.json"),
+                "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"Avatar\",\"children\":[]}]}]}");
+            CreateEagleEntry(
+                imagesPath,
+                "boothmeta-entry",
+                "avatar-folder",
+                "_boothmeta",
+                "json",
+                "{\"boothItemId\":123,\"name\":\"Booth Avatar\",\"description\":\"Booth Desc\",\"thumbnailUrl\":\"thumb\",\"shopName\":\"Shop\",\"shopUrl\":\"https://shop.booth.pm\",\"shopThumbnailUrl\":\"shopthumb\",\"downloads\":[{\"downloadId\":456,\"filename\":\"avatar.zip\",\"importedItemIds\":[\"file-entry\"]},{\"downloadId\":789,\"filename\":\"texture.zip\",\"importedItemIds\":[]}]}");
+            CreateEagleEntry(imagesPath, "file-entry", "avatar-folder", "avatar", "zip", null);
+
+            AssetManagerApi.SyncEagle(new EagleSyncRequest(libraryPath));
+            var item = AssetManagerApi.SearchItems(new AssetItemQuery { Limit = 10 }).Items.Single();
+            var files = AssetManagerApi.GetFiles(item.Id).OrderBy(file => file.DownloadId).ToArray();
+
+            Assert.That(files.Select(file => file.DownloadId).ToArray(), Is.EqualTo(new long?[] { 456, 789 }));
+            Assert.That(files.Single(file => file.DownloadId == 789).Origins, Is.Empty);
+        }
+
+        [Test]
+        public void SyncEagle_MissingLibrary_PersistsFailedSyncInfo()
+        {
+            var missingLibraryPath = Path.Combine(_tempRoot, "missing.library");
+
+            var result = AssetManagerApi.SyncEagle(new EagleSyncRequest(missingLibraryPath));
+            var syncInfo = AssetManagerApi.GetSyncInfo().Single(info => info.SourceType == AssetSourceType.Eagle);
+
+            Assert.That(result.State, Is.EqualTo(AssetSyncState.Failed));
+            Assert.That(syncInfo.LastSyncState, Is.EqualTo(AssetSyncState.Failed));
+            Assert.That(syncInfo.LastSyncAt, Is.Not.Null);
+        }
+
+        [Test]
+        public void SyncEagle_FileError_PersistsPartialSyncInfo()
+        {
+            var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Manual" });
+            var manualPath = Path.Combine(_tempRoot, "manual.txt");
+            File.WriteAllText(manualPath, "manual");
+            var file = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = manualPath, FileName = "manual.txt" });
+            using (var connection = new SQLiteConnection(GetDatabasePath()))
+            {
+                var now = DateTime.UtcNow.ToString("O");
+                connection.Execute(
+                    "INSERT INTO eagle_file_origin(file_info_id, eagle_item_id, file_path_cache, is_deleted, imported_at) VALUES (?, ?, ?, 0, ?)",
+                    file.Id,
+                    "file-entry",
+                    manualPath,
+                    now);
+                connection.Execute(
+                    @"INSERT INTO file_info(id, item_info_id, file_name, extension, size_bytes, download_id, is_primary, lifecycle, created_at, updated_at)
+                      VALUES (?, ?, 'conflict.zip', 'zip', NULL, 456, 0, 'active', ?, ?)",
+                    Guid.NewGuid().ToString("N"),
+                    item.Id,
+                    now,
+                    now);
+            }
+
+            var libraryPath = Path.Combine(_tempRoot, "partial.library");
+            var imagesPath = Path.Combine(libraryPath, "images");
+            Directory.CreateDirectory(imagesPath);
+            File.WriteAllText(
+                Path.Combine(libraryPath, "metadata.json"),
+                "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"Avatar\",\"children\":[]}]}]}");
+            CreateEagleEntry(
+                imagesPath,
+                "boothmeta-entry",
+                "avatar-folder",
+                "_boothmeta",
+                "json",
+                "{\"boothItemId\":123,\"name\":\"Booth Avatar\",\"description\":\"Booth Desc\",\"thumbnailUrl\":\"thumb\",\"shopName\":\"Shop\",\"shopUrl\":\"https://shop.booth.pm\",\"shopThumbnailUrl\":\"shopthumb\",\"downloads\":[{\"downloadId\":456,\"filename\":\"avatar-from-booth.zip\",\"importedItemIds\":[\"file-entry\"]}]}");
+            CreateEagleEntry(imagesPath, "file-entry", "avatar-folder", "avatar", "unitypackage", null);
+
+            var result = AssetManagerApi.SyncEagle(new EagleSyncRequest(libraryPath));
+            var syncInfo = AssetManagerApi.GetSyncInfo().Single(info => info.SourceType == AssetSourceType.Eagle);
+
+            Assert.That(result.State, Is.EqualTo(AssetSyncState.Partial));
+            Assert.That(result.ErrorCount, Is.EqualTo(1));
+            Assert.That(syncInfo.LastSyncState, Is.EqualTo(AssetSyncState.Partial));
         }
 
         [Test]

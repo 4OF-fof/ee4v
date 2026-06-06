@@ -21,7 +21,8 @@ namespace Ee4v.AssetManager.Api
             }
             catch (Exception)
             {
-                return new AssetSyncResult(0, 0, 0, 1);
+                RecordSyncInfoSafely("blm", AssetSyncState.Failed);
+                return new AssetSyncResult(0, 0, 0, 1, AssetSyncState.Failed);
             }
 
             using (var connection = OpenConnection())
@@ -56,8 +57,9 @@ namespace Ee4v.AssetManager.Api
                     }
                 }
 
-                UpsertSyncInfo(connection, "blm");
-                return new AssetSyncResult(created, updated, unchanged, error);
+                var state = ResolveSyncState(created, updated, unchanged, error);
+                UpsertSyncInfo(connection, "blm", state);
+                return new AssetSyncResult(created, updated, unchanged, error, state);
             }
         }
 
@@ -70,7 +72,8 @@ namespace Ee4v.AssetManager.Api
             }
             catch (Exception)
             {
-                return new AssetSyncResult(0, 0, 0, 1);
+                RecordSyncInfoSafely("eagle", AssetSyncState.Failed);
+                return new AssetSyncResult(0, 0, 0, 1, AssetSyncState.Failed);
             }
 
             using (var connection = OpenConnection())
@@ -106,8 +109,9 @@ namespace Ee4v.AssetManager.Api
                     }
                 }
 
-                UpsertSyncInfo(connection, "eagle");
-                return new AssetSyncResult(created, updated, unchanged, error);
+                var state = ResolveSyncState(created, updated, unchanged, error);
+                UpsertSyncInfo(connection, "eagle", state);
+                return new AssetSyncResult(created, updated, unchanged, error, state);
             }
         }
 
@@ -269,8 +273,16 @@ namespace Ee4v.AssetManager.Api
 
         private static AssetSyncStatus UpsertEagleFile(SQLiteConnection connection, string itemId, EagleFileRecord record)
         {
-            var origin = connection.Query<EagleOriginRow>("SELECT * FROM eagle_file_origin WHERE eagle_item_id = ?", record.EagleItemId).FirstOrDefault();
+            if (record == null || string.IsNullOrWhiteSpace(itemId))
+            {
+                return AssetSyncStatus.Error;
+            }
+
             var now = Now();
+            var hasEagleOrigin = !string.IsNullOrWhiteSpace(record.EagleItemId);
+            var origin = hasEagleOrigin
+                ? connection.Query<EagleOriginRow>("SELECT * FROM eagle_file_origin WHERE eagle_item_id = ?", record.EagleItemId).FirstOrDefault()
+                : null;
             if (origin != null)
             {
                 var isDeleted = record.IsDeleted ? 1 : 0;
@@ -294,6 +306,25 @@ namespace Ee4v.AssetManager.Api
             else
             {
                 status = UpdateFileInfoSnapshot(connection, fileId, record.Name, record.Extension, record.SizeBytes, record.DownloadId, now)
+                    ? AssetSyncStatus.Updated
+                    : AssetSyncStatus.Unchanged;
+            }
+
+            if (!hasEagleOrigin)
+            {
+                if (!record.DownloadId.HasValue)
+                {
+                    return AssetSyncStatus.Error;
+                }
+
+                var downloadOnlyFileId = GetFileInfoIdByDownloadId(connection, record.DownloadId);
+                if (downloadOnlyFileId == null)
+                {
+                    CreateFileInfo(connection, itemId, record.Name, record.Extension, record.SizeBytes, record.DownloadId, now);
+                    return AssetSyncStatus.Created;
+                }
+
+                return UpdateFileInfoSnapshot(connection, downloadOnlyFileId, record.Name, record.Extension, record.SizeBytes, record.DownloadId, now)
                     ? AssetSyncStatus.Updated
                     : AssetSyncStatus.Unchanged;
             }

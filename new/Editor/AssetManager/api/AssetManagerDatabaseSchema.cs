@@ -32,7 +32,8 @@ namespace Ee4v.AssetManager.Api
         {
             connection.Execute("PRAGMA foreign_keys = ON");
             connection.Execute("CREATE TABLE IF NOT EXISTS schema_version(version INTEGER PRIMARY KEY CHECK(version >= 1), created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
-            connection.Execute("CREATE TABLE IF NOT EXISTS sync_info(source_type TEXT PRIMARY KEY CHECK(source_type IN ('blm', 'eagle', 'ee4v')), last_sync_at TEXT)");
+            connection.Execute("CREATE TABLE IF NOT EXISTS sync_info(source_type TEXT PRIMARY KEY CHECK(source_type IN ('blm', 'eagle', 'ee4v')), last_sync_at TEXT, last_sync_status TEXT NOT NULL DEFAULT 'success' CHECK(last_sync_status IN ('success', 'failed', 'partial')))");
+            EnsureColumn(connection, "sync_info", "last_sync_status", "last_sync_status TEXT NOT NULL DEFAULT 'success' CHECK(last_sync_status IN ('success', 'failed', 'partial'))");
             connection.Execute("CREATE TABLE IF NOT EXISTS item_info(id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
             connection.Execute("CREATE TABLE IF NOT EXISTS shop_info(id TEXT PRIMARY KEY, name TEXT NOT NULL, subdomain TEXT NOT NULL UNIQUE, thumbnail_url TEXT)");
             connection.Execute("CREATE TABLE IF NOT EXISTS booth_info(id TEXT PRIMARY KEY, item_info_id TEXT NOT NULL UNIQUE REFERENCES item_info(id) ON DELETE CASCADE, booth_item_id INTEGER NOT NULL UNIQUE, shop_info_id TEXT NOT NULL REFERENCES shop_info(id), name TEXT NOT NULL, description TEXT NOT NULL, thumbnail_url TEXT, last_updated_at TEXT)");
@@ -54,6 +55,18 @@ namespace Ee4v.AssetManager.Api
             EnsureCollectionCycleTriggers(connection);
             var now = Now();
             connection.Execute("INSERT OR IGNORE INTO schema_version(version, created_at, updated_at) VALUES (?, ?, ?)", CurrentSchemaVersion, now, now);
+        }
+
+        private static void EnsureColumn(SQLiteConnection connection, string tableName, string columnName, string columnDefinition)
+        {
+            var exists = connection.Query<TableInfoRow>("PRAGMA table_info('" + tableName + "')")
+                .Any(row => string.Equals(row.name, columnName, StringComparison.Ordinal));
+            if (exists)
+            {
+                return;
+            }
+
+            connection.Execute("ALTER TABLE " + tableName + " ADD COLUMN " + columnDefinition);
         }
 
         private static void EnsureCollectionCycleTriggers(SQLiteConnection connection)

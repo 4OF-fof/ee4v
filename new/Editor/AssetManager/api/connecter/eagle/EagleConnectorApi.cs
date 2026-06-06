@@ -202,7 +202,7 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
                     ShopUrl = boothMetadata != null ? boothMetadata.shopUrl : null,
                     ShopThumbnailUrl = boothMetadata != null ? boothMetadata.shopThumbnailUrl : null,
                     BoothLastUpdatedAtUtc = boothMetadata != null ? ParseUtcTimestamp(boothMetadata.lastUpdatedAtUtc) : null,
-                    Files = BuildFolderFileRecords(fileEntries)
+                    Files = BuildFolderFileRecords(fileEntries, boothMetadata != null ? boothMetadata.downloads : null)
                 });
             }
 
@@ -283,10 +283,11 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
             return JsonUtility.FromJson<EagleBoothMetadata>(File.ReadAllText(boothMetadataPath));
         }
 
-        private static IReadOnlyList<EagleFileRecord> BuildFolderFileRecords(IReadOnlyList<EagleMetadataEntry> fileEntries)
+        private static IReadOnlyList<EagleFileRecord> BuildFolderFileRecords(IReadOnlyList<EagleMetadataEntry> fileEntries, IReadOnlyList<EagleBoothDownload> downloads)
         {
             var results = new List<EagleFileRecord>();
             var seenIds = new HashSet<string>(StringComparer.Ordinal);
+            var downloadLookup = new EagleDownloadLookup(downloads);
             for (var i = 0; i < fileEntries.Count; i++)
             {
                 var entry = fileEntries[i];
@@ -296,10 +297,38 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
                     continue;
                 }
 
-                results.Add(ToFileRecord(metadata, entry.DirectoryPath, GetFileName(metadata), null));
+                EagleBoothDownload download;
+                var hasDownload = downloadLookup.TryUse(metadata, out download);
+                var fileName = hasDownload && !string.IsNullOrWhiteSpace(download.filename)
+                    ? download.filename
+                    : GetFileName(metadata);
+                var downloadId = hasDownload && download.downloadId > 0
+                    ? download.downloadId
+                    : (long?)null;
+                results.Add(ToFileRecord(metadata, entry.DirectoryPath, fileName, downloadId));
+            }
+
+            var remainingDownloads = downloadLookup.GetUnusedDownloads();
+            for (var i = 0; i < remainingDownloads.Count; i++)
+            {
+                results.Add(ToDownloadOnlyFileRecord(remainingDownloads[i]));
             }
 
             return results;
+        }
+
+        private static EagleFileRecord ToDownloadOnlyFileRecord(EagleBoothDownload download)
+        {
+            var fileName = !string.IsNullOrWhiteSpace(download.filename)
+                ? download.filename
+                : "download-" + download.downloadId;
+            return new EagleFileRecord
+            {
+                DownloadId = download.downloadId,
+                Name = fileName,
+                Extension = GetExtension(fileName),
+                IsDeleted = false
+            };
         }
 
         private static string GetFileName(EagleItemMetadata metadata)
@@ -327,7 +356,7 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
                 DownloadId = downloadId,
                 Name = string.IsNullOrWhiteSpace(fileName) ? metadata.name : fileName,
                 SizeBytes = metadata.size,
-                Extension = string.IsNullOrWhiteSpace(metadata.ext) ? GetExtension(fileName) : metadata.ext,
+                Extension = string.IsNullOrWhiteSpace(fileName) ? metadata.ext : GetExtension(fileName),
                 IsDeleted = metadata.isDeleted,
                 FilePath = directoryPath
             };
@@ -675,6 +704,124 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
             public long downloadId;
             public string filename;
             public string[] importedItemIds;
+        }
+
+        private sealed class EagleDownloadLookup
+        {
+            private readonly IReadOnlyList<EagleBoothDownload> _downloads;
+            private readonly Dictionary<string, EagleBoothDownload> _byImportedItemId = new Dictionary<string, EagleBoothDownload>(StringComparer.Ordinal);
+            private readonly Dictionary<string, EagleBoothDownload> _byFileName = new Dictionary<string, EagleBoothDownload>(StringComparer.OrdinalIgnoreCase);
+            private readonly HashSet<string> _ambiguousFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            private readonly HashSet<EagleBoothDownload> _used = new HashSet<EagleBoothDownload>();
+
+            public EagleDownloadLookup(IReadOnlyList<EagleBoothDownload> downloads)
+            {
+                _downloads = downloads ?? Array.Empty<EagleBoothDownload>();
+                for (var i = 0; i < _downloads.Count; i++)
+                {
+                    var download = _downloads[i];
+                    if (download == null || download.downloadId <= 0)
+                    {
+                        continue;
+                    }
+
+                    AddImportedItemIds(download);
+                    AddFileName(download);
+                }
+            }
+
+            public bool TryUse(EagleItemMetadata metadata, out EagleBoothDownload download)
+            {
+                download = null;
+                if (metadata == null)
+                {
+                    return false;
+                }
+
+                if (!string.IsNullOrWhiteSpace(metadata.id) &&
+                    _byImportedItemId.TryGetValue(metadata.id, out download))
+                {
+                    _used.Add(download);
+                    return true;
+                }
+
+                var keys = new[] { GetFileName(metadata), metadata.name };
+                for (var i = 0; i < keys.Length; i++)
+                {
+                    var key = NormalizeDownloadFileName(keys[i]);
+                    if (string.IsNullOrWhiteSpace(key) ||
+                        _ambiguousFileNames.Contains(key) ||
+                        !_byFileName.TryGetValue(key, out download))
+                    {
+                        continue;
+                    }
+
+                    _used.Add(download);
+                    return true;
+                }
+
+                return false;
+            }
+
+            public IReadOnlyList<EagleBoothDownload> GetUnusedDownloads()
+            {
+                var results = new List<EagleBoothDownload>();
+                for (var i = 0; i < _downloads.Count; i++)
+                {
+                    var download = _downloads[i];
+                    if (download != null && download.downloadId > 0 && !_used.Contains(download))
+                    {
+                        results.Add(download);
+                    }
+                }
+
+                return results;
+            }
+
+            private void AddImportedItemIds(EagleBoothDownload download)
+            {
+                if (download.importedItemIds == null)
+                {
+                    return;
+                }
+
+                for (var i = 0; i < download.importedItemIds.Length; i++)
+                {
+                    var importedItemId = download.importedItemIds[i];
+                    if (!string.IsNullOrWhiteSpace(importedItemId) && !_byImportedItemId.ContainsKey(importedItemId))
+                    {
+                        _byImportedItemId.Add(importedItemId, download);
+                    }
+                }
+            }
+
+            private void AddFileName(EagleBoothDownload download)
+            {
+                var fileName = NormalizeDownloadFileName(download.filename);
+                if (string.IsNullOrWhiteSpace(fileName))
+                {
+                    return;
+                }
+
+                if (_byFileName.ContainsKey(fileName))
+                {
+                    _byFileName.Remove(fileName);
+                    _ambiguousFileNames.Add(fileName);
+                    return;
+                }
+
+                if (!_ambiguousFileNames.Contains(fileName))
+                {
+                    _byFileName.Add(fileName, download);
+                }
+            }
+
+            private static string NormalizeDownloadFileName(string fileName)
+            {
+                return string.IsNullOrWhiteSpace(fileName)
+                    ? string.Empty
+                    : Path.GetFileName(fileName.Trim());
+            }
         }
     }
 }

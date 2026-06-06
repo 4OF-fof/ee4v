@@ -130,5 +130,17 @@ namespace Ee4v.AssetManager.Api
             public string dependency_file_info_id { get; set; }
             public string dependency_type { get; set; }
         }
+
+        private sealed class SyncInfoRow
+        {
+            public string source_type { get; set; }
+            public string last_sync_at { get; set; }
+            public string last_sync_status { get; set; }
+        }
+
+        private sealed class TableInfoRow
+        {
+            public string name { get; set; }
+        }
     }
 }

@@ -49,4 +49,11 @@ namespace Ee4v.AssetManager.Api
         DatabaseError,
         DatasourceError
     }
+
+    public enum AssetSyncState
+    {
+        Success,
+        Failed,
+        Partial
+    }
 }

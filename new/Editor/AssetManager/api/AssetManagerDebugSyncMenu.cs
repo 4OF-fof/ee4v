@@ -15,11 +15,13 @@ namespace Ee4v.AssetManager.Api
             EditorUtility.DisplayDialog(
                 "AssetManager Debug Sync",
                 string.Format(
-                    "Datasource sync completed.\n\nBLM\nCreated: {0}\nUpdated: {1}\nUnchanged: {2}\nError: {3}\n\nEagle\nCreated: {4}\nUpdated: {5}\nUnchanged: {6}\nError: {7}",
+                    "Datasource sync completed.\n\nBLM\nState: {0}\nCreated: {1}\nUpdated: {2}\nUnchanged: {3}\nError: {4}\n\nEagle\nState: {5}\nCreated: {6}\nUpdated: {7}\nUnchanged: {8}\nError: {9}",
+                    blm.State,
                     blm.CreatedCount,
                     blm.UpdatedCount,
                     blm.UnchangedCount,
                     blm.ErrorCount,
+                    eagle.State,
                     eagle.CreatedCount,
                     eagle.UpdatedCount,
                     eagle.UnchangedCount,
@@ -49,8 +51,9 @@ namespace Ee4v.AssetManager.Api
                 EditorUtility.DisplayDialog(
                     "AssetManager Debug Sync",
                     string.Format(
-                        "{0} sync completed.\nCreated: {1}\nUpdated: {2}\nUnchanged: {3}\nError: {4}",
+                        "{0} sync completed.\nState: {1}\nCreated: {2}\nUpdated: {3}\nUnchanged: {4}\nError: {5}",
                         label,
+                        result.State,
                         result.CreatedCount,
                         result.UpdatedCount,
                         result.UnchangedCount,

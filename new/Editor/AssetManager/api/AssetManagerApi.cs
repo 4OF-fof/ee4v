@@ -121,6 +121,11 @@ namespace Ee4v.AssetManager.Api
             return Execute(() => AssetManagerDatabase.SyncEagle(request));
         }
 
+        public static IReadOnlyList<AssetSyncInfo> GetSyncInfo()
+        {
+            return Execute(() => AssetManagerDatabase.GetSyncInfo());
+        }
+
         private static T Execute<T>(Func<T> action)
         {
             try

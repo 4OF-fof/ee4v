@@ -8,6 +8,7 @@ AssetManager 独自 DB の schema です。Item / File / Collection を中心に
 
 ```sql
 CHECK (source_type IN ('blm', 'eagle', 'ee4v'))
+CHECK (last_sync_status IN ('success', 'failed', 'partial'))
 CHECK (file_lifecycle IN ('active', 'archived'))
 CHECK (file_dependency_type IN ('requires'))
 CHECK (smart_collection_match_mode IN ('all', 'any'))
@@ -50,6 +51,7 @@ erDiagram
 
     sync_info {
         source_type source_type PK
+        sync_status last_sync_status
     }
 
     tag_info {
@@ -322,9 +324,11 @@ Datasource 別 sync 状態。
 |---|---|---:|---|---|
 | `source_type` | source_type | Yes | Yes | sync 対象 datasource |
 | `last_sync_at` | DATETIME |  |  | 最後に sync した時刻。未 sync の場合は NULL |
+| `last_sync_status` | sync_status | Yes |  | 最後の sync 結果。`success` / `failed` / `partial` |
 
 ```sql
 CHECK (source_type IN ('blm', 'eagle', 'ee4v'))
+CHECK (last_sync_status IN ('success', 'failed', 'partial'))
 ```
 
 ## Booth Info

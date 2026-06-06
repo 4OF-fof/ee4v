@@ -178,6 +178,21 @@ public sealed class AssetSyncResult
     public int UpdatedCount { get; private set; }
     public int UnchangedCount { get; private set; }
     public int ErrorCount { get; private set; }
+    public AssetSyncState State { get; private set; }
+}
+
+public sealed class AssetSyncInfo
+{
+    public AssetSourceType SourceType { get; set; }
+    public DateTime? LastSyncAt { get; set; }
+    public AssetSyncState LastSyncState { get; set; }
+}
+
+public enum AssetSyncState
+{
+    Success,
+    Failed,
+    Partial
 }
 
 public enum AssetSyncStatus
@@ -531,7 +546,7 @@ Effects:
 
 - `file_info` を追加する。
 - `ee4v_file_origin` を追加する。
-- `IsPrimary` が `true` の場合、同一 Item 内の既存 primary を解除する。
+- `IsPrimary` が `true` の場合、または同一 Item に primary file が存在しない場合、同一 Item 内の既存 primary を解除して追加 file を primary にする。
 
 Notes:
 
@@ -888,13 +903,13 @@ Parameters:
 
 Returns:
 
-- 作成、更新、更新不要、error 件数を含む sync 結果。
+- 作成、更新、更新不要、error 件数、成功状態を含む sync 結果。
 
 Effects:
 
 - Booth item / shop snapshot を upsert する。
 - BLM registered item 配下の top-level entry ごとに `file_info` と `blm_file_origin` を upsert する。
-- `sync_info.last_sync_at` を更新する。
+- `sync_info.last_sync_at` と `sync_info.last_sync_status` を更新する。
 
 Notes:
 
@@ -917,20 +932,34 @@ Parameters:
 
 Returns:
 
-- 作成、更新、更新不要、error 件数を含む sync 結果。
+- 作成、更新、更新不要、error 件数、成功状態を含む sync 結果。
 
 Effects:
 
 - `TargetRoot` 自身は item 化せず、`TargetRoot` 配下の descendant Eagle folder を AssetManager item として upsert する。
 - 各 folder 内の通常 Eagle item を `file_info` と `eagle_file_origin` として upsert する。
 - folder 内に Booth metadata がある場合は item の Booth snapshot と表示情報として使う。
-- `sync_info.last_sync_at` を更新する。
+- `sync_info.last_sync_at` と `sync_info.last_sync_status` を更新する。
 
 Notes:
 
 - v1 は読み取りのみ。Eagle への書き戻しは行わない。
 - Booth metadata file は item 情報として使い、file としては登録しない。
+- Booth metadata の `downloads[].downloadId` を `file_info.download_id` に保存する。`importedItemIds[]` が Eagle item ID と一致する場合はその Eagle origin に紐付け、ID が欠けていても filename が一意に一致する場合は filename で補完する。
+- Eagle item に対応しない Booth download も `file_info` として作成する。この場合は origin を持たないため、実体 path 解決はできない。
 - Booth metadata を持たない folder も同期対象に含め、folder 名を item 名、説明を空文字として扱う。
+
+### `AssetManagerApi.GetSyncInfo`
+
+Datasource 別の最後の sync 状態を取得します。
+
+```csharp
+public static IReadOnlyList<AssetSyncInfo> GetSyncInfo()
+```
+
+Returns:
+
+- `source_type` ごとの `last_sync_at` と `last_sync_status`。
 
 ## Error Handling
 

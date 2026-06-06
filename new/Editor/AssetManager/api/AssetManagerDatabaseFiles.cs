@@ -71,8 +71,9 @@ namespace Ee4v.AssetManager.Api
                 var fileName = string.IsNullOrWhiteSpace(request.FileName)
                     ? Path.GetFileName(request.FilePath)
                     : request.FileName;
+                var isPrimary = request.IsPrimary || !HasPrimaryFile(connection, itemId);
 
-                if (request.IsPrimary)
+                if (isPrimary)
                 {
                     connection.Execute("UPDATE file_info SET is_primary = 0 WHERE item_info_id = ?", itemId);
                 }
@@ -85,7 +86,7 @@ namespace Ee4v.AssetManager.Api
                     fileName,
                     GetExtension(fileName),
                     request.SizeBytes,
-                    request.IsPrimary ? 1 : 0,
+                    isPrimary ? 1 : 0,
                     now,
                     now);
                 connection.Execute(

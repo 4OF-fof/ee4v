@@ -15,7 +15,39 @@ namespace Ee4v.AssetManager.Api
     {
         private static void UpsertSyncInfo(SQLiteConnection connection, string sourceType)
         {
-            connection.Execute("INSERT OR REPLACE INTO sync_info(source_type, last_sync_at) VALUES (?, ?)", sourceType, Now());
+            UpsertSyncInfo(connection, sourceType, AssetSyncState.Success);
+        }
+
+        private static void UpsertSyncInfo(SQLiteConnection connection, string sourceType, AssetSyncState state)
+        {
+            connection.Execute("INSERT OR REPLACE INTO sync_info(source_type, last_sync_at, last_sync_status) VALUES (?, ?, ?)", sourceType, Now(), ToDbSyncState(state));
+        }
+
+        private static void RecordSyncInfoSafely(string sourceType, AssetSyncState state)
+        {
+            try
+            {
+                using (var connection = OpenConnection())
+                {
+                    UpsertSyncInfo(connection, sourceType, state);
+                }
+            }
+            catch
+            {
+                // The sync result still reports the datasource failure when status persistence is unavailable.
+            }
+        }
+
+        private static AssetSyncState ResolveSyncState(int created, int updated, int unchanged, int error)
+        {
+            if (error <= 0)
+            {
+                return AssetSyncState.Success;
+            }
+
+            return created > 0 || updated > 0 || unchanged > 0
+                ? AssetSyncState.Partial
+                : AssetSyncState.Failed;
         }
 
         private static void CountStatus(AssetSyncStatus status, ref int created, ref int updated, ref int unchanged, ref int error)
@@ -239,6 +271,27 @@ namespace Ee4v.AssetManager.Api
         private static AssetFileLifecycle FromDbLifecycle(string lifecycle)
         {
             return lifecycle == "archived" ? AssetFileLifecycle.Archived : AssetFileLifecycle.Active;
+        }
+
+        private static AssetSourceType FromDbSourceType(string sourceType)
+        {
+            if (sourceType == "eagle") return AssetSourceType.Eagle;
+            if (sourceType == "ee4v") return AssetSourceType.Ee4v;
+            return AssetSourceType.Blm;
+        }
+
+        private static string ToDbSyncState(AssetSyncState state)
+        {
+            if (state == AssetSyncState.Failed) return "failed";
+            if (state == AssetSyncState.Partial) return "partial";
+            return "success";
+        }
+
+        private static AssetSyncState FromDbSyncState(string state)
+        {
+            if (state == "failed") return AssetSyncState.Failed;
+            if (state == "partial") return AssetSyncState.Partial;
+            return AssetSyncState.Success;
         }
 
         private static string ToDbSmartField(SmartCollectionConditionField field)

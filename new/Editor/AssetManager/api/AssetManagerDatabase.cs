@@ -184,5 +184,20 @@ namespace Ee4v.AssetManager.Api
 
             return GetItem(itemId);
         }
+
+        public static IReadOnlyList<AssetSyncInfo> GetSyncInfo()
+        {
+            using (var connection = OpenConnection())
+            {
+                return connection.Query<SyncInfoRow>("SELECT * FROM sync_info ORDER BY source_type")
+                    .Select(row => new AssetSyncInfo
+                    {
+                        SourceType = FromDbSourceType(row.source_type),
+                        LastSyncAt = ParseNullableDate(row.last_sync_at),
+                        LastSyncState = FromDbSyncState(row.last_sync_status)
+                    })
+                    .ToArray();
+            }
+        }
     }
 }
