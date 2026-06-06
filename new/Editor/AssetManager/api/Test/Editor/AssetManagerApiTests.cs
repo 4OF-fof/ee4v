@@ -251,6 +251,42 @@ namespace Ee4v.AssetManager.Api.Tests
             Assert.That(secondResult.ErrorCount, Is.EqualTo(0));
         }
 
+        [Test]
+        public void SyncEagle_NormalizesDatasourceTextBeforeSaving()
+        {
+            var libraryPath = Path.Combine(_tempRoot, "normalized.library");
+            var imagesPath = Path.Combine(libraryPath, "images");
+            Directory.CreateDirectory(imagesPath);
+            File.WriteAllText(
+                Path.Combine(libraryPath, "metadata.json"),
+                "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"Avatar\",\"children\":[]}]}]}");
+            CreateEagleEntry(imagesPath, "file-entry", "avatar-folder", "\\uD835\\uDC99ero", "unitypackage", null);
+
+            AssetManagerApi.SyncEagle(new EagleSyncRequest(libraryPath));
+            var item = AssetManagerApi.SearchItems(new AssetItemQuery { Limit = 10 }).Items.Single();
+
+            Assert.That(item.Name, Is.EqualTo("xero"));
+            Assert.That(item.Files.Single().FileName, Is.EqualTo("xero.unitypackage"));
+        }
+
+        [Test]
+        public void SyncEagle_MapsMathematicalLettersBeforeDroppingUnsupportedSurrogates()
+        {
+            var libraryPath = Path.Combine(_tempRoot, "mathematical.library");
+            var imagesPath = Path.Combine(libraryPath, "images");
+            Directory.CreateDirectory(imagesPath);
+            File.WriteAllText(
+                Path.Combine(libraryPath, "metadata.json"),
+                "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"Avatar\",\"children\":[]}]}]}");
+            CreateEagleEntry(imagesPath, "file-entry", "avatar-folder", "𝑵𝒐𝒊𝒓_𝑳𝒖𝒙𝒆", "unitypackage", null);
+
+            AssetManagerApi.SyncEagle(new EagleSyncRequest(libraryPath));
+            var item = AssetManagerApi.SearchItems(new AssetItemQuery { Limit = 10 }).Items.Single();
+
+            Assert.That(item.Name, Is.EqualTo("Noir_Luxe"));
+            Assert.That(item.Files.Single().FileName, Is.EqualTo("Noir_Luxe.unitypackage"));
+        }
+
         private string GetDatabasePath()
         {
             return Path.Combine(_tempRoot, "asset-manager.db");

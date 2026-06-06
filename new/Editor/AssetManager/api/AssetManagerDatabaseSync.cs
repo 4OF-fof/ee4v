@@ -124,30 +124,39 @@ namespace Ee4v.AssetManager.Api
         private static SyncItemUpsertResult UpsertBoothSnapshot(SQLiteConnection connection, long boothItemId, string name, string description, string thumbnailUrl, string shopName, string shopSubdomain, string shopThumbnailUrl, DateTime? lastUpdatedAt)
         {
             var now = Now();
+            var safeName = NormalizeDatasourceText(name);
+            if (string.IsNullOrWhiteSpace(safeName))
+            {
+                safeName = "Item";
+            }
+
+            var safeDescription = NormalizeDatasourceText(description);
             var shop = EnsureShop(connection, shopName, shopSubdomain, shopThumbnailUrl);
             var booth = connection.Query<BoothRow>("SELECT * FROM booth_info WHERE booth_item_id = ? LIMIT 1", boothItemId).FirstOrDefault();
             if (booth == null)
             {
                 var itemId = NewId();
-                connection.Execute("INSERT INTO item_info(id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)", itemId, name ?? string.Empty, description ?? string.Empty, now, now);
+                connection.Execute("INSERT INTO item_info(id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)", itemId, safeName, safeDescription, now, now);
                 connection.Execute(
                     "INSERT INTO booth_info(id, item_info_id, booth_item_id, shop_info_id, name, description, thumbnail_url, last_updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     NewId(),
                     itemId,
                     boothItemId,
                     shop.Row.id,
-                    name ?? string.Empty,
-                    description ?? string.Empty,
+                    safeName,
+                    safeDescription,
                     thumbnailUrl,
                     ToDbDate(lastUpdatedAt));
                 return new SyncItemUpsertResult(itemId, AssetSyncStatus.Created);
             }
 
             var nextLastUpdatedAt = ToDbDate(lastUpdatedAt);
+            var previousBoothName = booth.name;
+            var previousBoothDescription = booth.description;
             var changed = shop.Status != AssetSyncStatus.Unchanged ||
                           !StringEquals(booth.shop_info_id, shop.Row.id) ||
-                          !StringEquals(booth.name, name ?? string.Empty) ||
-                          !StringEquals(booth.description, description ?? string.Empty) ||
+                          !StringEquals(booth.name, safeName) ||
+                          !StringEquals(booth.description, safeDescription) ||
                           !StringEquals(booth.thumbnail_url, thumbnailUrl) ||
                           !StringEquals(booth.last_updated_at, nextLastUpdatedAt);
             if (changed)
@@ -155,20 +164,26 @@ namespace Ee4v.AssetManager.Api
                 connection.Execute(
                     "UPDATE booth_info SET shop_info_id = ?, name = ?, description = ?, thumbnail_url = ?, last_updated_at = ? WHERE id = ?",
                     shop.Row.id,
-                    name ?? string.Empty,
-                    description ?? string.Empty,
+                    safeName,
+                    safeDescription,
                     thumbnailUrl,
                     nextLastUpdatedAt,
                     booth.id);
             }
 
+            changed = NormalizeExistingItemInfoText(connection, booth.item_info_id, previousBoothName, previousBoothDescription, safeName, safeDescription) || changed;
             return new SyncItemUpsertResult(booth.item_info_id, changed ? AssetSyncStatus.Updated : AssetSyncStatus.Unchanged);
         }
 
         private static SyncItemUpsertResult UpsertPlainItem(SQLiteConnection connection, string name, string description)
         {
-            var safeName = string.IsNullOrWhiteSpace(name) ? "Item" : name;
-            var safeDescription = description ?? string.Empty;
+            var safeName = NormalizeDatasourceText(name);
+            if (string.IsNullOrWhiteSpace(safeName))
+            {
+                safeName = "Item";
+            }
+
+            var safeDescription = NormalizeDatasourceText(description);
             var existing = connection.Query<ItemRow>("SELECT * FROM item_info WHERE name = ? LIMIT 1", safeName).FirstOrDefault();
             if (existing != null)
             {
@@ -328,7 +343,12 @@ namespace Ee4v.AssetManager.Api
                 return false;
             }
 
-            var safeFileName = string.IsNullOrWhiteSpace(fileName) ? "file" : fileName;
+            var safeFileName = NormalizeDatasourceText(fileName);
+            if (string.IsNullOrWhiteSpace(safeFileName))
+            {
+                safeFileName = "file";
+            }
+
             var row = connection.Query<FileRow>("SELECT * FROM file_info WHERE id = ? LIMIT 1", fileId).FirstOrDefault();
             if (row == null)
             {
@@ -360,7 +380,12 @@ namespace Ee4v.AssetManager.Api
 
         private static string CreateFileInfo(SQLiteConnection connection, string itemId, string fileName, string extension, long? sizeBytes, long? downloadId, string now)
         {
-            var safeFileName = string.IsNullOrWhiteSpace(fileName) ? "file" : fileName;
+            var safeFileName = NormalizeDatasourceText(fileName);
+            if (string.IsNullOrWhiteSpace(safeFileName))
+            {
+                safeFileName = "file";
+            }
+
             var fileId = NewId();
             connection.Execute(
                 @"INSERT INTO file_info(id, item_info_id, file_name, extension, size_bytes, download_id, is_primary, lifecycle, created_at, updated_at)
@@ -377,13 +402,59 @@ namespace Ee4v.AssetManager.Api
             return fileId;
         }
 
+        private static bool NormalizeExistingItemInfoText(SQLiteConnection connection, string itemId, string previousSourceName, string previousSourceDescription, string nextSourceName, string nextSourceDescription)
+        {
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                return false;
+            }
+
+            var item = connection.Query<ItemRow>("SELECT * FROM item_info WHERE id = ? LIMIT 1", itemId).FirstOrDefault();
+            if (item == null)
+            {
+                return false;
+            }
+
+            var normalizedName = NormalizeDatasourceText(item.name);
+            if (string.IsNullOrWhiteSpace(normalizedName))
+            {
+                normalizedName = "Item";
+            }
+
+            var normalizedDescription = NormalizeDatasourceText(item.description);
+            if (StringEquals(item.name, previousSourceName))
+            {
+                normalizedName = nextSourceName;
+            }
+
+            if (StringEquals(item.description, previousSourceDescription))
+            {
+                normalizedDescription = nextSourceDescription;
+            }
+
+            if (StringEquals(item.name, normalizedName) &&
+                StringEquals(item.description, normalizedDescription))
+            {
+                return false;
+            }
+
+            connection.Execute(
+                "UPDATE item_info SET name = ?, description = ?, updated_at = ? WHERE id = ?",
+                normalizedName,
+                normalizedDescription,
+                Now(),
+                itemId);
+            return true;
+        }
+
         private static ShopUpsertResult EnsureShop(SQLiteConnection connection, string shopName, string subdomain, string thumbnailUrl)
         {
             var safeSubdomain = string.IsNullOrWhiteSpace(subdomain) ? "unknown-" + NewId() : subdomain;
+            var safeShopName = NormalizeDatasourceText(shopName);
             var existing = connection.Query<ShopRow>("SELECT * FROM shop_info WHERE subdomain = ? LIMIT 1", safeSubdomain).FirstOrDefault();
             if (existing != null)
             {
-                var nextName = shopName ?? string.Empty;
+                var nextName = safeShopName;
                 var changed = !StringEquals(existing.name, nextName) ||
                               !StringEquals(existing.thumbnail_url, thumbnailUrl);
                 if (changed)
@@ -397,7 +468,7 @@ namespace Ee4v.AssetManager.Api
             }
 
             var id = NewId();
-            connection.Execute("INSERT INTO shop_info(id, name, subdomain, thumbnail_url) VALUES (?, ?, ?, ?)", id, shopName ?? string.Empty, safeSubdomain, thumbnailUrl);
+            connection.Execute("INSERT INTO shop_info(id, name, subdomain, thumbnail_url) VALUES (?, ?, ?, ?)", id, safeShopName, safeSubdomain, thumbnailUrl);
             return new ShopUpsertResult(connection.Query<ShopRow>("SELECT * FROM shop_info WHERE id = ?", id).First(), AssetSyncStatus.Created);
         }
 

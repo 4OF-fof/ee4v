@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Ee4v.AssetManager.Api.Connecter.Blm;
 using Ee4v.AssetManager.Api.Connecter.Eagle;
 using Ee4v.SQLite;
@@ -100,6 +101,116 @@ namespace Ee4v.AssetManager.Api
         {
             var extension = Path.GetExtension(fileName);
             return string.IsNullOrWhiteSpace(extension) ? string.Empty : extension.TrimStart('.');
+        }
+
+        private static string NormalizeDatasourceText(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            var normalized = value.Normalize(NormalizationForm.FormKC);
+            var builder = new StringBuilder(normalized.Length);
+            for (var i = 0; i < normalized.Length; i++)
+            {
+                var current = normalized[i];
+                if (char.IsHighSurrogate(current) &&
+                    i + 1 < normalized.Length &&
+                    char.IsLowSurrogate(normalized[i + 1]))
+                {
+                    var codePoint = char.ConvertToUtf32(current, normalized[i + 1]);
+                    var mapped = TryMapMathematicalAlphanumericSymbol(codePoint);
+                    if (mapped.HasValue)
+                    {
+                        builder.Append(mapped.Value);
+                    }
+
+                    i++;
+                    continue;
+                }
+
+                if (current == '\uFE0E' ||
+                    current == '\uFE0F' ||
+                    current == '\u200D')
+                {
+                    continue;
+                }
+
+                if (char.IsControl(current) &&
+                    current != '\r' &&
+                    current != '\n' &&
+                    current != '\t')
+                {
+                    continue;
+                }
+
+                builder.Append(current);
+            }
+
+            return builder.ToString();
+        }
+
+        private static char? TryMapMathematicalAlphanumericSymbol(int codePoint)
+        {
+            var mapped = TryMapAlphabetRange(codePoint, 0x1D400, 26, 'A');
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapAlphabetRange(codePoint, 0x1D41A, 26, 'a');
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapAlphabetRange(codePoint, 0x1D434, 26, 'A');
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapAlphabetRange(codePoint, 0x1D44E, 26, 'a');
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapAlphabetRange(codePoint, 0x1D468, 26, 'A');
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapAlphabetRange(codePoint, 0x1D482, 26, 'a');
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapAlphabetRange(codePoint, 0x1D5A0, 26, 'A');
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapAlphabetRange(codePoint, 0x1D5BA, 26, 'a');
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapAlphabetRange(codePoint, 0x1D5D4, 26, 'A');
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapAlphabetRange(codePoint, 0x1D5EE, 26, 'a');
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapAlphabetRange(codePoint, 0x1D608, 26, 'A');
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapAlphabetRange(codePoint, 0x1D622, 26, 'a');
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapAlphabetRange(codePoint, 0x1D670, 26, 'A');
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapAlphabetRange(codePoint, 0x1D68A, 26, 'a');
+            if (mapped.HasValue) return mapped;
+
+            mapped = TryMapDigitRange(codePoint, 0x1D7CE);
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapDigitRange(codePoint, 0x1D7D8);
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapDigitRange(codePoint, 0x1D7E2);
+            if (mapped.HasValue) return mapped;
+            mapped = TryMapDigitRange(codePoint, 0x1D7EC);
+            if (mapped.HasValue) return mapped;
+            return TryMapDigitRange(codePoint, 0x1D7F6);
+        }
+
+        private static char? TryMapAlphabetRange(int codePoint, int start, int length, char asciiStart)
+        {
+            if (codePoint < start || codePoint >= start + length)
+            {
+                return null;
+            }
+
+            return (char)(asciiStart + codePoint - start);
+        }
+
+        private static char? TryMapDigitRange(int codePoint, int start)
+        {
+            if (codePoint < start || codePoint >= start + 10)
+            {
+                return null;
+            }
+
+            return (char)('0' + codePoint - start);
         }
 
         private static string GetSubdomainFromUrl(string shopUrl)
