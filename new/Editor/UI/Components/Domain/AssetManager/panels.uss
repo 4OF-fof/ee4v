@@ -41,3 +41,16 @@
     border-bottom-width: 1px;
     border-bottom-color: rgba(255, 255, 255, 0.08);
 }
+
+.ee4v-asset-manager-panel__main-content {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.ee4v-asset-manager-panel__main-status {
+    margin-left: 12px;
+    margin-right: 12px;
+    margin-top: 12px;
+    margin-bottom: 8px;
+    color: rgba(210, 210, 210, 0.78);
+}

@@ -87,6 +87,26 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        public void GetThumbnail_MissingItem_ThrowsNotFound()
+        {
+            var ex = Assert.Throws<AssetManagerException>(() => AssetManagerApi.GetThumbnail("missing-item"));
+
+            Assert.That(ex.Code, Is.EqualTo(AssetManagerErrorCode.NotFound));
+        }
+
+        [Test]
+        public void GetThumbnail_ItemWithoutThumbnailUrl_ReturnsMissing()
+        {
+            var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
+
+            var thumbnail = AssetManagerApi.GetThumbnail(item.Id);
+
+            Assert.That(thumbnail.Found, Is.False);
+            Assert.That(thumbnail.Data, Is.Empty);
+            Assert.That(thumbnail.MissingReason, Is.Not.Empty);
+        }
+
+        [Test]
         public void ArchiveFile_MissingFile_ThrowsNotFound()
         {
             var ex = Assert.Throws<AssetManagerException>(() => AssetManagerApi.ArchiveFile("missing-file"));

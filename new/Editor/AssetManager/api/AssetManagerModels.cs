@@ -29,6 +29,15 @@ namespace Ee4v.AssetManager.Api
         public DateTime? LastUpdatedAt { get; set; }
     }
 
+    public sealed class AssetThumbnail
+    {
+        public bool Found { get; set; }
+        public byte[] Data { get; set; }
+        public string Path { get; set; }
+        public string SourceUrl { get; set; }
+        public string MissingReason { get; set; }
+    }
+
     public sealed class AssetFile
     {
         public string Id { get; set; }

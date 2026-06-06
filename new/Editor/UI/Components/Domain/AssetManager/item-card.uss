@@ -1,0 +1,56 @@
+.ee4v-asset-manager-item-card {
+    width: 132px;
+    min-width: 132px;
+    max-width: 132px;
+    flex-direction: column;
+}
+
+.ee4v-asset-manager-item-card__thumbnail-frame {
+    width: 132px;
+    height: 132px;
+    min-width: 132px;
+    min-height: 132px;
+    max-width: 132px;
+    max-height: 132px;
+    overflow: hidden;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: rgba(255, 255, 255, 0.10);
+    border-right-color: rgba(255, 255, 255, 0.10);
+    border-bottom-color: rgba(255, 255, 255, 0.10);
+    border-left-color: rgba(255, 255, 255, 0.10);
+    background-color: rgba(255, 255, 255, 0.045);
+}
+
+.ee4v-asset-manager-item-card__thumbnail {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+.ee4v-asset-manager-item-card__thumbnail-placeholder {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.035);
+}
+
+.ee4v-asset-manager-item-card__name {
+    width: 132px;
+    min-width: 132px;
+    max-width: 132px;
+    margin-top: 7px;
+    min-height: 34px;
+    max-height: 38px;
+    overflow: hidden;
+}

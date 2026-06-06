@@ -38,6 +38,8 @@ namespace Ee4v.AssetManager
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/panels.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/toolbar.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/item-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/item-grid.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/asset-manager-window.uss");
 
@@ -45,7 +47,7 @@ namespace Ee4v.AssetManager
             body.AddToClassList(BodyClassName);
 
             var toolbar = new AssetManagerToolbar();
-            var mainView = new MainView();
+            var mainView = new MainView(AssetManagerItemListProviderRegistry.GetCurrent);
             mainView.AddToClassList(ContentClassName);
 
             body.Add(toolbar);

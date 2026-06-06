@@ -219,6 +219,29 @@ namespace Ee4v.UI
                 BuildAssetManagerToolbarStory));
 
             _stories.Add(new StoryDefinition(
+                "asset-manager-item-card",
+                "Domain/AssetManager",
+                "ItemCard",
+                "AssetManager の item 一覧で使う、サムネイルと item 名だけのカードコンポーネントです。",
+                "サムネイル解決やキャッシュ取得は外側の loader/service が担当し、ItemCard は Texture2D と item 名を受け取って表示するだけの薄い UI component として扱います。",
+                new string[0],
+                ComponentImplementationKind.UiToolkit,
+                BuildAssetManagerItemCardStory));
+
+            _stories.Add(new StoryDefinition(
+                "asset-manager-item-grid",
+                "Domain/AssetManager",
+                "ItemGrid",
+                "ItemCard を仮想スクロールで並べる、AssetManager item 一覧用のグリッドコンポーネントです。",
+                "UI Toolkit の ListView を行単位で使い、表示領域に必要な行だけを生成します。列数は available width から再計算し、各セルには ItemCard を配置します。",
+                new[]
+                {
+                    "ItemCard"
+                },
+                ComponentImplementationKind.UiToolkit,
+                BuildAssetManagerItemGridStory));
+
+            _stories.Add(new StoryDefinition(
                 "tab-card",
                 "Interactive",
                 "TabCard",
@@ -290,6 +313,8 @@ namespace Ee4v.UI
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/asset-manager-window-layout.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/panels.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/toolbar.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/item-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/item-grid.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/tab-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/alerts.uss");
@@ -1152,6 +1177,74 @@ namespace Ee4v.UI
 
             var toolbar = new AssetManagerToolbar();
             surface.Add(toolbar);
+            preview.Body.Add(surface);
+        }
+
+        private void BuildAssetManagerItemCardStory(VisualElement parent)
+        {
+            var preview = CreatePreviewSection(parent);
+            var surface = CreatePreviewSurface();
+            surface.style.flexDirection = FlexDirection.Row;
+            surface.style.alignItems = Align.FlexStart;
+            surface.style.paddingLeft = 12f;
+            surface.style.paddingRight = 12f;
+            surface.style.paddingTop = 12f;
+            surface.style.paddingBottom = 12f;
+
+            var thumbnail = CreateItemCardSampleThumbnail(132, 132);
+            var itemCard = new ItemCard(new ItemCardState("Sample Avatar Asset", thumbnail));
+            itemCard.style.marginRight = 16f;
+            surface.Add(itemCard);
+            surface.Add(new ItemCard(new ItemCardState("No Thumbnail Item")));
+
+            preview.Body.Add(surface);
+        }
+
+        private static Texture2D CreateItemCardSampleThumbnail(int width, int height)
+        {
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
+            {
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            var pixels = new Color32[width * height];
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var horizontal = (byte)Mathf.RoundToInt(Mathf.Lerp(72f, 42f, (float)x / Mathf.Max(1, width - 1)));
+                    var vertical = (byte)Mathf.RoundToInt(Mathf.Lerp(56f, 92f, (float)y / Mathf.Max(1, height - 1)));
+                    var accent = ((x / 16) + (y / 16)) % 2 == 0 ? (byte)125 : (byte)95;
+                    pixels[(y * width) + x] = new Color32(horizontal, vertical, accent, 255);
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply(false, true);
+            return texture;
+        }
+
+        private void BuildAssetManagerItemGridStory(VisualElement parent)
+        {
+            var preview = CreatePreviewSection(parent);
+            var surface = CreatePreviewSurface();
+            surface.style.paddingLeft = 12f;
+            surface.style.paddingRight = 12f;
+            surface.style.paddingTop = 12f;
+            surface.style.paddingBottom = 12f;
+            surface.style.height = 420f;
+
+            var thumbnail = CreateItemCardSampleThumbnail(132, 132);
+            var items = new List<ItemCardState>();
+            for (var i = 0; i < 80; i++)
+            {
+                items.Add(new ItemCardState(
+                    string.Format("Sample Item {0:00}", i + 1),
+                    i % 4 == 0 ? null : thumbnail));
+            }
+
+            var grid = new ItemGrid(new ItemGridState(items));
+            grid.style.flexGrow = 1f;
+            surface.Add(grid);
             preview.Body.Add(surface);
         }
 

@@ -1,0 +1,48 @@
+.ee4v-asset-manager-item-grid {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.ee4v-asset-manager-item-grid__list {
+    flex-grow: 1;
+    min-height: 0;
+    background-color: rgba(0, 0, 0, 0);
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
+}
+
+.ee4v-asset-manager-item-grid__list .unity-collection-view__scroll-view,
+.ee4v-asset-manager-item-grid__list .unity-scroll-view,
+.ee4v-asset-manager-item-grid__list .unity-scroll-view__content-container,
+.ee4v-asset-manager-item-grid__list .unity-collection-view__content-container {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.ee4v-asset-manager-item-grid__list .unity-collection-view__item,
+.ee4v-asset-manager-item-grid__list .unity-list-view__item {
+    height: 188px;
+    min-height: 188px;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.ee4v-asset-manager-item-grid__list .unity-collection-view__item:hover,
+.ee4v-asset-manager-item-grid__list .unity-list-view__item:hover {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.ee4v-asset-manager-item-grid__row {
+    height: 188px;
+    min-height: 188px;
+    flex-direction: row;
+    align-items: flex-start;
+    padding-top: 4px;
+}
+
+.ee4v-asset-manager-item-grid__row-slot {
+    width: 132px;
+    min-width: 132px;
+    max-width: 132px;
+    margin-right: 16px;
+}

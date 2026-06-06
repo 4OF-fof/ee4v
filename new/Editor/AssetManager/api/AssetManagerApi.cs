@@ -16,6 +16,11 @@ namespace Ee4v.AssetManager.Api
             return Execute(() => AssetManagerDatabase.GetItem(itemId));
         }
 
+        public static AssetThumbnail GetThumbnail(string itemId)
+        {
+            return Execute(() => AssetManagerDatabase.GetThumbnail(itemId));
+        }
+
         public static AssetItem CreateItem(CreateAssetItemRequest request)
         {
             return Execute(() => AssetManagerDatabase.CreateItem(request));
