@@ -23,7 +23,6 @@ namespace Ee4v.Phase1
             _initialized = true;
             FeatureBootstrapContract.Initialize(
                 "Phase1",
-                typeof(Phase1Definitions),
                 Phase1Definitions.RegisterAll,
                 Phase1StubBootstrap.RegisterAll);
         }

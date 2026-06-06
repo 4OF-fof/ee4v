@@ -1,0 +1,30 @@
+{
+  "settings": {
+    "section": {
+      "assetManager": {
+        "paths": "AssetManager パス設定",
+        "source": "AssetManager datasource 設定"
+      }
+    },
+    "ee4vGlobalPath": {
+      "label": "ee4v global path",
+      "tooltip": "AssetManager DB など ee4v 全体で使うデータの保存先です。既定値は Documents/ee4v です。"
+    },
+    "blmDatabasePath": {
+      "label": "BLM data.db path",
+      "tooltip": "Booth Library Manager の data.db パスです。"
+    },
+    "eagleLibraryPath": {
+      "label": "Eagle library path",
+      "tooltip": "Eagle の root.library パスです。"
+    },
+    "sourcePriority": {
+      "label": "Source priority",
+      "tooltip": "file origin の優先順です。例: ee4v,eagle,blm"
+    },
+    "validation": {
+      "required": "この項目は必須です。",
+      "sourcePriority": "Source priority には ee4v, eagle, blm をそれぞれ 1 回ずつ指定してください。"
+    }
+  }
+}

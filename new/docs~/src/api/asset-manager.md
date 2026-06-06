@@ -1,0 +1,954 @@
+# AssetManager API
+
+AssetManager API は [DB Schema](../asset-manager/schema.md) を直接触らずに、Item、File、Tag、Collection、Datasource origin を扱うための公開契約です。
+
+この API は AssetManager DB を正本として扱います。BLM / Eagle / ee4v origin は file 実体の参照元であり、UI 表示用の item 情報は `item_info` を優先します。
+
+## Data Contracts
+
+### `AssetItem`
+
+AssetManager 上の表示単位です。`item_info` を中心に、Booth snapshot、tag、file summary をまとめた読み取り model として扱います。
+
+```csharp
+public sealed class AssetItem
+{
+    public string Id { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public BoothSnapshot Booth { get; set; }
+    public IReadOnlyList<AssetTag> Tags { get; set; }
+    public IReadOnlyList<AssetFileSummary> Files { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+```
+
+Notes:
+
+- `Name` と `Description` は `item_info` のユーザー上書き可能な値を返す。
+- Booth 商品由来の固定 snapshot は `Booth` に分離する。
+- `Files` は一覧表示用 summary であり、origin の詳細解決は `AssetManagerApi.GetFiles(...)` または `AssetManagerApi.GetPrimaryFile(...)` を使う。
+
+### `AssetFile`
+
+Item に紐付く論理 file です。実体 path は origin から解決します。
+
+```csharp
+public sealed class AssetFile
+{
+    public string Id { get; set; }
+    public string ItemId { get; set; }
+    public string FileName { get; set; }
+    public string Extension { get; set; }
+    public long? SizeBytes { get; set; }
+    public long? DownloadId { get; set; }
+    public bool IsPrimary { get; set; }
+    public AssetFileLifecycle Lifecycle { get; set; }
+    public IReadOnlyList<AssetFileOrigin> Origins { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+```
+
+Notes:
+
+- 代表 origin は `assetManager.sourcePriority` 設定順で解決する。既定値は `ee4v,eagle,blm`。
+- `DownloadId` は Booth download ID。NULL でない場合だけ、datasource sync 時の同一 file 判定に使う。
+- `Lifecycle` は `Active` または `Archived`。
+- file を削除する API は物理 file を消さず、原則 `Archived` へ遷移させる。
+
+### `AssetFileSummary`
+
+Item 詳細に含める file 一覧用の summary です。origin 詳細や更新時刻は含めず、一覧表示に必要な file 情報だけを返します。
+
+```csharp
+public sealed class AssetFileSummary
+{
+    public string Id { get; set; }
+    public string FileName { get; set; }
+    public string Extension { get; set; }
+    public long? SizeBytes { get; set; }
+    public long? DownloadId { get; set; }
+    public bool IsPrimary { get; set; }
+    public AssetFileLifecycle Lifecycle { get; set; }
+}
+```
+
+Notes:
+
+- `DownloadId` の意味は `AssetFile.DownloadId` と同じ。
+- origin 詳細が必要な場合は `AssetManagerApi.GetFiles(...)` または `AssetManagerApi.GetPrimaryFile(...)` を使う。
+
+### `AssetCollection`
+
+通常 Collection と Smart Collection を同じ tree node として扱う model です。
+
+```csharp
+public sealed class AssetCollection
+{
+    public string Id { get; set; }
+    public string Name { get; set; }
+    public bool IsSmartCollection { get; set; }
+    public string ParentCollectionId { get; set; }
+    public SmartCollectionRule SmartRule { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+```
+
+Notes:
+
+- `ParentCollectionId` が `null` の場合は root collection。
+- 子 Collection は最大 1 つの親だけを持つ。
+- Smart Collection の rule は保存して返す。`SearchItems(...)` で Smart Collection を指定すると条件を評価して item を抽出する。
+
+### その他の model
+
+```csharp
+public sealed class BoothSnapshot
+{
+    public string Id { get; set; }
+    public long BoothItemId { get; set; }
+    public string ItemUrl { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public string ThumbnailUrl { get; set; }
+    public string ShopName { get; set; }
+    public string ShopUrl { get; set; }
+    public string ShopThumbnailUrl { get; set; }
+    public DateTime? LastUpdatedAt { get; set; }
+}
+
+public sealed class AssetFileOrigin
+{
+    public AssetSourceType SourceType { get; set; }
+    public string SourceId { get; set; }
+    public string FilePathCache { get; set; }
+    public DateTime? ImportedAt { get; set; }
+}
+
+public sealed class AssetFilePathResolution
+{
+    public bool Found { get; set; }
+    public string Path { get; set; }
+    public AssetSourceType? SourceType { get; set; }
+    public string MissingReason { get; set; }
+}
+
+public sealed class AssetTag
+{
+    public string Id { get; set; }
+    public string Name { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
+public sealed class SmartCollectionRule
+{
+    public SmartCollectionMatchMode MatchMode { get; set; }
+    public IReadOnlyList<SmartCollectionCondition> Conditions { get; set; }
+}
+
+public sealed class SmartCollectionCondition
+{
+    public string Id { get; set; }
+    public SmartCollectionConditionField Field { get; set; }
+    public SmartCollectionConditionOperator Operator { get; set; }
+    public string QueryText { get; set; }
+}
+
+public sealed class AssetFileDependency
+{
+    public string DependentFileId { get; set; }
+    public string DependencyFileId { get; set; }
+}
+
+public sealed class AssetSyncResult
+{
+    public AssetSyncResult(int createdCount, int updatedCount, int unchangedCount, int errorCount)
+    {
+        CreatedCount = createdCount;
+        UpdatedCount = updatedCount;
+        UnchangedCount = unchangedCount;
+        ErrorCount = errorCount;
+    }
+
+    public int CreatedCount { get; private set; }
+    public int UpdatedCount { get; private set; }
+    public int UnchangedCount { get; private set; }
+    public int ErrorCount { get; private set; }
+}
+
+public enum AssetSyncStatus
+{
+    Created,
+    Updated,
+    Unchanged,
+    Error
+}
+
+public enum AssetSourceType
+{
+    Blm,
+    Eagle,
+    Ee4v
+}
+
+public enum AssetFileLifecycle
+{
+    Active,
+    Archived
+}
+
+public enum SmartCollectionMatchMode
+{
+    All,
+    Any
+}
+
+public enum SmartCollectionConditionField
+{
+    Name,
+    Description,
+    Tag,
+    SourceType,
+    FileName,
+    Extension,
+    Lifecycle
+}
+
+public enum SmartCollectionConditionOperator
+{
+    Contains,
+    Equals,
+    In,
+    Exists
+}
+
+public enum AssetManagerErrorCode
+{
+    Unknown,
+    NotFound,
+    Duplicate,
+    InvalidRequest,
+    CollectionCycle,
+    InvalidSmartCollectionCondition,
+    DatabaseError,
+    DatasourceError
+}
+```
+
+### Query / Request contracts
+
+```csharp
+public sealed class AssetItemQuery
+{
+    public string Keyword { get; set; }
+    public string CollectionId { get; set; }
+    public IReadOnlyList<string> TagIds { get; set; }
+    public IReadOnlyList<AssetSourceType> SourceTypes { get; set; }
+    public AssetFileLifecycle? Lifecycle { get; set; }
+    public int Offset { get; set; }
+    public int Limit { get; set; }
+}
+
+public sealed class AssetSearchResult
+{
+    public IReadOnlyList<AssetItem> Items { get; set; }
+    public int TotalCount { get; set; }
+}
+
+public sealed class CreateAssetItemRequest
+{
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public IReadOnlyList<string> TagIds { get; set; }
+    public IReadOnlyList<string> CollectionIds { get; set; }
+}
+
+public sealed class UpdateAssetItemRequest
+{
+    public string Name { get; set; }
+    public string Description { get; set; }
+}
+
+public sealed class AssetFileQuery
+{
+    public AssetSourceType? SourceType { get; set; }
+    public AssetFileLifecycle? Lifecycle { get; set; }
+    public string Extension { get; set; }
+}
+
+public sealed class RegisterFileRequest
+{
+    public string FileName { get; set; }
+    public string FilePath { get; set; }
+    public long? SizeBytes { get; set; }
+    public bool IsPrimary { get; set; }
+}
+
+public sealed class CreateCollectionRequest
+{
+    public string Name { get; set; }
+    public string ParentCollectionId { get; set; }
+}
+
+public sealed class CreateSmartCollectionRequest
+{
+    public string Name { get; set; }
+    public string ParentCollectionId { get; set; }
+    public SmartCollectionMatchMode MatchMode { get; set; }
+    public IReadOnlyList<SmartCollectionCondition> Conditions { get; set; }
+}
+
+public sealed class BlmSyncRequest
+{
+    public BlmSyncRequest(string databasePath = null, string itemDirectoryPath = null)
+    {
+        DatabasePath = databasePath;
+        ItemDirectoryPath = itemDirectoryPath;
+    }
+
+    public string DatabasePath { get; private set; }
+    public string ItemDirectoryPath { get; private set; }
+}
+
+public sealed class EagleSyncRequest
+{
+    public EagleSyncRequest(string libraryPath = null, string targetRoot = null)
+    {
+        LibraryPath = libraryPath;
+        TargetRoot = targetRoot;
+    }
+
+    public string LibraryPath { get; private set; }
+    public string TargetRoot { get; private set; }
+}
+```
+
+Notes:
+
+- `BlmSyncRequest` と `EagleSyncRequest` は `Ee4v.AssetManager.Api` namespace に属する。connector 実装は公開 API ではなく、`AssetManagerApi.SyncBlm(...)` / `AssetManagerApi.SyncEagle(...)` からのみ呼び出す。
+
+## Item
+
+### `AssetManagerApi.SearchItems`
+
+Item 一覧を検索します。
+
+```csharp
+public static AssetSearchResult SearchItems(AssetItemQuery query)
+```
+
+Parameters:
+
+- `query`: keyword、tag、通常 collection、source type、file lifecycle、paging を含む検索条件。
+
+Returns:
+
+- 条件に一致する `AssetItem` の page。
+- `TotalCount` は paging 前の件数。
+
+Effects:
+
+- DB を読み取る。
+- `SourceTypes` は file origin の存在で絞り込む。代表 origin だけでなく、指定 datasource origin を持つ file があれば一致する。
+
+Notes:
+
+- keyword は `item_info.name`、`item_info.description`、`tag_info.name`、`file_info.file_name` を対象にする。
+- `CollectionId` に通常 Collection を指定した場合は `item_collection` で絞り込む。Smart Collection を指定した場合は `smart_collection_condition` を評価して絞り込む。
+
+```csharp
+var result = AssetManagerApi.SearchItems(new AssetItemQuery
+{
+    Keyword = "avatar",
+    SourceTypes = new[] { AssetSourceType.Blm, AssetSourceType.Eagle },
+    Lifecycle = AssetFileLifecycle.Active,
+    Offset = 0,
+    Limit = 50
+});
+```
+
+### `AssetManagerApi.GetItem`
+
+Item 詳細を取得します。
+
+```csharp
+public static AssetItem GetItem(string itemId)
+```
+
+Parameters:
+
+- `itemId`: `item_info.id`。
+
+Returns:
+
+- 対象 Item。
+- 見つからない場合は `null`。
+
+Effects:
+
+- DB を読み取る。
+
+Notes:
+
+- Booth snapshot、tag、file summary をまとめて返す。
+- file origin の解決済み path が必要な場合は `GetFiles(...)` / `GetPrimaryFile(...)` / `ResolveFilePath(...)` を使う。
+
+### `AssetManagerApi.CreateItem`
+
+手動管理 Item を作成します。
+
+```csharp
+public static AssetItem CreateItem(CreateAssetItemRequest request)
+```
+
+Parameters:
+
+- `request.Name`: 表示名。
+- `request.Description`: 表示用説明。空文字を許容する。
+- `request.TagIds`: 初期 tag。
+- `request.CollectionIds`: 初期所属 Collection。
+
+Returns:
+
+- 作成された Item。
+
+Effects:
+
+- `item_info` を追加する。
+- 指定があれば `item_tag` と `item_collection` を追加する。
+- `created_at` と `updated_at` を設定する。
+
+Notes:
+
+- Booth / Eagle / BLM 由来 item の作成は datasource sync API から行う。
+- 同一 name の Item は許容する。
+
+### `AssetManagerApi.UpdateItem`
+
+Item の表示情報を更新します。
+
+```csharp
+public static AssetItem UpdateItem(string itemId, UpdateAssetItemRequest request)
+```
+
+Parameters:
+
+- `itemId`: 更新対象 Item。
+- `request.Name`: 更新後の表示名。
+- `request.Description`: 更新後の表示用説明。
+
+Returns:
+
+- 更新後の Item。
+
+Effects:
+
+- `item_info.name`、`item_info.description`、`updated_at` を更新する。
+
+Notes:
+
+- Booth snapshot は更新しない。
+- datasource sync による Booth 情報更新があっても、ユーザー上書き済みの `item_info` は維持する。
+
+## File
+
+### `AssetManagerApi.GetFiles`
+
+Item に紐付く file 一覧を取得します。
+
+```csharp
+public static IReadOnlyList<AssetFile> GetFiles(string itemId, AssetFileQuery query = null)
+```
+
+Parameters:
+
+- `itemId`: 親 Item。
+- `query`: lifecycle、source type、extension の絞り込み。
+
+Returns:
+
+- 条件に一致する file 一覧。
+
+Effects:
+
+- DB を読み取る。
+
+Notes:
+
+- primary file が必要な場合は `GetPrimaryFile(...)` を使う。
+
+### `AssetManagerApi.GetPrimaryFile`
+
+Item の代表 file を取得します。
+
+```csharp
+public static AssetFile GetPrimaryFile(string itemId)
+```
+
+Parameters:
+
+- `itemId`: 親 Item。
+
+Returns:
+
+- `is_primary = true` の file。
+- primary file が存在しない場合は `id` 順の先頭 file。
+- file が存在しない場合は `null`。
+
+Effects:
+
+- DB を読み取る。
+
+Notes:
+
+- file origin の代表 datasource は `assetManager.sourcePriority` 設定順で解決する。
+
+### `AssetManagerApi.RegisterFile`
+
+Editor 操作で選択された file を Item に追加します。
+
+```csharp
+public static AssetFile RegisterFile(string itemId, RegisterFileRequest request)
+```
+
+Parameters:
+
+- `itemId`: 親 Item。
+- `request.FileName`: 表示 file 名。
+- `request.FilePath`: 追加する file の path。
+- `request.SizeBytes`: file size。
+- `request.IsPrimary`: primary file にするか。
+
+Returns:
+
+- 作成された `AssetFile`。
+
+Effects:
+
+- `file_info` を追加する。
+- `ee4v_file_origin` を追加する。
+- `IsPrimary` が `true` の場合、同一 Item 内の既存 primary を解除する。
+
+Notes:
+
+- Editor からの手動追加用 API として扱い、origin は常に `ee4v`。
+- BLM / Eagle 由来 file はこの API ではなく `SyncBlm(...)` / `SyncEagle(...)` から作成する。
+- `file_path_cache` は最後に解決できた path として保存する。
+
+### `AssetManagerApi.SetPrimaryFile`
+
+Item の primary file を変更します。
+
+```csharp
+public static void SetPrimaryFile(string itemId, string fileId)
+```
+
+Parameters:
+
+- `itemId`: 親 Item。
+- `fileId`: primary にする File。
+
+Returns:
+
+- `void`
+
+Effects:
+
+- 同一 Item 内の `is_primary` を 1 件だけに更新する。
+- `updated_at` を更新する。
+
+Notes:
+
+- `fileId` が `itemId` に属していない場合は例外。
+
+### `AssetManagerApi.ArchiveFile`
+
+file を archived にします。
+
+```csharp
+public static void ArchiveFile(string fileId)
+```
+
+Parameters:
+
+- `fileId`: 対象 File。
+
+Returns:
+
+- `void`
+
+Effects:
+
+- `file_info.lifecycle` を `Archived` に更新する。
+- `updated_at` を更新する。
+
+Notes:
+
+- 物理 file は削除しない。
+- dependency は残す。表示側で archived file を含めるかを選ぶ。
+
+### `AssetManagerApi.ResolveFilePath`
+
+file の代表 origin から実体 path を解決します。
+
+```csharp
+public static AssetFilePathResolution ResolveFilePath(string fileId)
+```
+
+Parameters:
+
+- `fileId`: 対象 File。
+
+Returns:
+
+- 解決できた file / folder path、使用した source type、missing 理由。
+
+Effects:
+
+- DB を読み取る。
+- v1 API では origin の `file_path_cache` を読み取り、file または folder の存在確認をして返す。
+
+Notes:
+
+- origin は `assetManager.sourcePriority` 設定順で確認する。既定値は `ee4v,eagle,blm`。
+- origin が 0 件の場合は missing として返す。
+
+## Tag
+
+### `AssetManagerApi.GetTags`
+
+AssetManager 独自 tag 一覧を取得します。
+
+```csharp
+public static IReadOnlyList<AssetTag> GetTags(string keyword = null)
+```
+
+Parameters:
+
+- `keyword`: tag 名の部分一致条件。不要なら `null`。
+
+Returns:
+
+- tag 名順の `AssetTag` 一覧。
+
+Effects:
+
+- DB を読み取る。
+
+### `AssetManagerApi.CreateTag`
+
+AssetManager 独自 tag を作成します。
+
+```csharp
+public static AssetTag CreateTag(string name)
+```
+
+Parameters:
+
+- `name`: tag 名。
+
+Returns:
+
+- 作成された tag。
+
+Effects:
+
+- `tag_info` を追加する。
+
+Notes:
+
+- tag 名は unique。
+- 既存 tag 名と一致する場合は既存 tag を返す。
+
+### `AssetManagerApi.SetItemTags`
+
+Item に付与する tag を置き換えます。
+
+```csharp
+public static void SetItemTags(string itemId, IReadOnlyList<string> tagIds)
+```
+
+Parameters:
+
+- `itemId`: 対象 Item。
+- `tagIds`: 付与後の tag ID 一覧。
+
+Returns:
+
+- `void`
+
+Effects:
+
+- `item_tag` を指定一覧に同期する。
+- 追加分には `created_at` を設定する。
+
+Notes:
+
+- Booth tag / Eagle tag は datasource snapshot であり、この API では変更しない。
+
+## Collection
+
+### `AssetManagerApi.GetCollections`
+
+Collection tree を取得します。
+
+```csharp
+public static IReadOnlyList<AssetCollection> GetCollections()
+```
+
+Parameters:
+
+- なし
+
+Returns:
+
+- root collection と子 collection を含む一覧。
+
+Effects:
+
+- DB を読み取る。
+
+Notes:
+
+- tree 表示側は `ParentCollectionId` で階層化する。
+- cycle は DB constraint で禁止する。
+
+### `AssetManagerApi.CreateCollection`
+
+通常 Collection を作成します。
+
+```csharp
+public static AssetCollection CreateCollection(CreateCollectionRequest request)
+```
+
+Parameters:
+
+- `request.Name`: collection 名。
+- `request.ParentCollectionId`: 親 Collection。root に置く場合は `null`。
+
+Returns:
+
+- 作成された Collection。
+
+Effects:
+
+- `collection_info` を追加する。
+- 親が指定されていれば `collection_collection` を追加する。
+
+### `AssetManagerApi.CreateSmartCollection`
+
+Smart Collection を作成します。
+
+```csharp
+public static AssetCollection CreateSmartCollection(CreateSmartCollectionRequest request)
+```
+
+Parameters:
+
+- `request.Name`: collection 名。
+- `request.ParentCollectionId`: 親 Collection。
+- `request.MatchMode`: `All` または `Any`。
+- `request.Conditions`: 評価条件。
+
+Returns:
+
+- 作成された Smart Collection。
+
+Effects:
+
+- `collection_info` を追加する。
+- `smart_collection_info` を追加する。
+- `smart_collection_condition` を追加する。
+- 親が指定されていれば `collection_collection` を追加する。
+
+Notes:
+
+- `exists` operator 以外では `query_text` が必須。
+- Smart Collection の item 所属は `item_collection` に保存しない。`SearchItems(...)` で Smart Collection を指定した場合に条件から item を抽出する。
+
+### `AssetManagerApi.MoveCollection`
+
+Collection の親を変更します。
+
+```csharp
+public static void MoveCollection(string collectionId, string parentCollectionId)
+```
+
+Parameters:
+
+- `collectionId`: 移動する Collection。
+- `parentCollectionId`: 移動先の親 Collection。root に移動する場合は `null`。
+
+Returns:
+
+- `void`
+
+Effects:
+
+- `collection_collection` を更新する。
+
+Notes:
+
+- 自分自身や子孫 Collection の下へ移動する操作は例外。
+- 子 Collection は最大 1 つの親だけを持つ。
+
+### `AssetManagerApi.SetItemCollections`
+
+Item の通常 Collection 所属を置き換えます。
+
+```csharp
+public static void SetItemCollections(string itemId, IReadOnlyList<string> collectionIds)
+```
+
+Parameters:
+
+- `itemId`: 対象 Item。
+- `collectionIds`: 所属させる通常 Collection ID 一覧。
+
+Returns:
+
+- `void`
+
+Effects:
+
+- `item_collection` を指定一覧に同期する。
+
+Notes:
+
+- Smart Collection は指定できない。
+
+## Dependency
+
+### `AssetManagerApi.GetFileDependencies`
+
+file の依存関係を取得します。
+
+```csharp
+public static IReadOnlyList<AssetFileDependency> GetFileDependencies(string fileId)
+```
+
+Parameters:
+
+- `fileId`: 対象 File。
+
+Returns:
+
+- `fileId` が依存している file 一覧。
+
+Effects:
+
+- DB を読み取る。
+
+### `AssetManagerApi.SetFileDependencies`
+
+file の依存関係を置き換えます。
+
+```csharp
+public static void SetFileDependencies(
+    string dependentFileId,
+    IReadOnlyList<string> dependencyFileIds)
+```
+
+Parameters:
+
+- `dependentFileId`: 依存している File。
+- `dependencyFileIds`: 依存先 File 一覧。
+
+Returns:
+
+- `void`
+
+Effects:
+
+- `file_dependency` を `requires` として同期する。
+
+Notes:
+
+- 自己依存は例外。
+- dependency type は v1 では `requires` のみ。
+
+## Datasource Sync
+
+### `AssetManagerApi.SyncBlm`
+
+BLM `data.db` から AssetManager DB へ snapshot を取り込みます。
+
+```csharp
+public static AssetSyncResult SyncBlm(BlmSyncRequest request)
+```
+
+Parameters:
+
+- `request.DatabasePath`: BLM `data.db` path。`null` の場合は既定 path。
+- `request.ItemDirectoryPath`: BLM registered item の実体 root。
+
+Returns:
+
+- 作成、更新、更新不要、error 件数を含む sync 結果。
+
+Effects:
+
+- Booth item / shop snapshot を upsert する。
+- BLM registered item 配下の top-level entry ごとに `file_info` と `blm_file_origin` を upsert する。
+- `sync_info.last_sync_at` を更新する。
+
+Notes:
+
+- BLM entry は他 datasource origin と自動統合しない。
+- BLM は Booth download ID を持たないため、`file_info.download_id` は NULL として扱う。
+- `booth_item_id` が同じ場合は同じ `item_info` に紐付ける。
+
+### `AssetManagerApi.SyncEagle`
+
+Eagle library から AssetManager DB へ snapshot を取り込みます。
+
+```csharp
+public static AssetSyncResult SyncEagle(EagleSyncRequest request)
+```
+
+Parameters:
+
+- `request.LibraryPath`: Eagle library path。
+- `request.TargetRoot`: 同期対象 root。未指定時は `VRCAsset`。
+
+Returns:
+
+- 作成、更新、更新不要、error 件数を含む sync 結果。
+
+Effects:
+
+- `TargetRoot` 自身は item 化せず、`TargetRoot` 配下の descendant Eagle folder を AssetManager item として upsert する。
+- 各 folder 内の通常 Eagle item を `file_info` と `eagle_file_origin` として upsert する。
+- folder 内に Booth metadata がある場合は item の Booth snapshot と表示情報として使う。
+- `sync_info.last_sync_at` を更新する。
+
+Notes:
+
+- v1 は読み取りのみ。Eagle への書き戻しは行わない。
+- Booth metadata file は item 情報として使い、file としては登録しない。
+- Booth metadata を持たない folder も同期対象に含め、folder 名を item 名、説明を空文字として扱う。
+
+## Error Handling
+
+### `AssetManagerException`
+
+AssetManager API の domain error を表します。
+
+```csharp
+public sealed class AssetManagerException : Exception
+{
+    public AssetManagerErrorCode Code { get; private set; }
+}
+```
+
+Notes:
+
+- DB constraint 違反、存在しない ID、cycle、invalid smart condition は `AssetManagerException` で返す。
+- ただし各 API の Returns に missing 時の戻り値が明記されている場合は、その記述を優先する。`GetItem(...)` は Item が見つからない場合に `null`、`ResolveFilePath(...)` は file が見つからない場合に `Found = false` を返す。
+- `GetPrimaryFile(...)` の `null` は、対象 Item が存在し、かつ file が 0 件の場合を表す。Item 自体が存在しない場合は `AssetManagerException`。
+- 置き換え系 API は、入力 ID や条件が不正な場合に既存の tag / collection / dependency 関連を変更しない。
+- datasource 読み取り失敗と個別 upsert 失敗は sync result の `ErrorCount` に集約する。

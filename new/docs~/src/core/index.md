@@ -42,7 +42,6 @@ internal static class SampleBootstrap
         _initialized = true;
         FeatureBootstrapContract.Initialize(
             "Sample",
-            typeof(SampleDefinitions),
             SampleDefinitions.RegisterAll,
             SampleFeatureBootstrap.RegisterAll);
     }
@@ -51,6 +50,7 @@ internal static class SampleBootstrap
 
 ## Pages
 
+- [Core API](../api/core.md)
 - [可視性と Internal](./internal.md)
 - [Injector](./injector.md)
 - [Settings](./settings.md)

@@ -6,7 +6,6 @@ namespace Ee4v.Core.Internal
     {
         public static void Initialize(
             string featureScope,
-            Type definitionsType,
             Action registerDefinitions,
             Action registerFeature)
         {
@@ -15,9 +14,15 @@ namespace Ee4v.Core.Internal
                 throw new ArgumentException("Feature scope is required.", nameof(featureScope));
             }
 
+            if (registerDefinitions == null)
+            {
+                throw new ArgumentNullException(nameof(registerDefinitions));
+            }
+
+            var definitionsType = registerDefinitions.Method.DeclaringType;
             if (definitionsType == null)
             {
-                throw new ArgumentNullException(nameof(definitionsType));
+                throw new InvalidOperationException("Definitions type could not be resolved from registerDefinitions.");
             }
 
             var expectedTypeName = featureScope + "Definitions";
@@ -33,11 +38,6 @@ namespace Ee4v.Core.Internal
                 throw new InvalidOperationException(
                     "Definitions namespace must resolve to scope '" + featureScope + "' but was '" +
                     (resolvedScope ?? "(null)") + "'.");
-            }
-
-            if (registerDefinitions == null)
-            {
-                throw new ArgumentNullException(nameof(registerDefinitions));
             }
 
             registerDefinitions();

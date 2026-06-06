@@ -11,7 +11,7 @@ AssetManager は Booth / Eagle / ee4v 管理ファイルを統合して扱うた
 
 ## Pages
 
+- [AssetManager API](../api/asset-manager.md)
 - [DB Schema](./schema.md)
 - [Datasource Data Elements](./data-elements.md)
-- [Roadmap](./roadmap.md)
 - [BLM data.db Structure](../datasource/blm_db_structure.md)

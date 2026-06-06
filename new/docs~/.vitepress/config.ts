@@ -27,14 +27,34 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: 'Overview', link: '/' },
+      { text: 'API', link: '/api/' },
       { text: 'Core', link: '/core/' },
       { text: 'UI', link: '/ui/' },
-      { text: 'AssetManager', link: '/asset-manager/' }
+      { text: 'AssetManager', link: '/asset-manager/' },
+      { text: 'Roadmap', link: '/roadmap' }
     ],
 
     sidebar: [
       {
+        text: 'Project',
+        collapsed: false,
+        items: [
+          { text: 'Overview', link: '/' },
+          { text: 'Roadmap', link: '/roadmap' }
+        ]
+      },
+      {
+        text: 'API',
+        collapsed: false,
+        items: [
+          { text: 'Overview', link: '/api/' },
+          { text: 'Core API', link: '/api/core' },
+          { text: 'AssetManager API', link: '/api/asset-manager' }
+        ]
+      },
+      {
         text: 'Core',
+        collapsed: false,
         items: [
           { text: 'Overview', link: '/core/' },
           { text: 'Internal', link: '/core/internal' },
@@ -47,6 +67,7 @@ export default defineConfig({
       },
       {
         text: 'UI',
+        collapsed: false,
         items: [
           { text: 'Overview', link: '/ui/' },
           { text: 'Rules', link: '/ui/rules' },
@@ -56,16 +77,17 @@ export default defineConfig({
       },
       {
         text: 'AssetManager',
+        collapsed: false,
         items: [
           { text: 'Overview', link: '/asset-manager/' },
           { text: 'DB Schema', link: '/asset-manager/schema' },
           { text: 'Data Elements', link: '/asset-manager/data-elements' },
-          { text: 'Roadmap', link: '/asset-manager/roadmap' },
           { text: 'BLM data.db', link: '/datasource/blm_db_structure' }
         ]
       },
       {
         text: 'Maintenance',
+        collapsed: false,
         items: [
           { text: 'Overview', link: '/maintenance/' },
           { text: 'Unity Upgrade', link: '/maintenance/unity-upgrade' }

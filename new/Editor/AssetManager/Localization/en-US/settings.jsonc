@@ -1,0 +1,30 @@
+{
+  "settings": {
+    "section": {
+      "assetManager": {
+        "paths": "AssetManager Paths",
+        "source": "AssetManager Datasources"
+      }
+    },
+    "ee4vGlobalPath": {
+      "label": "ee4v global path",
+      "tooltip": "Directory for ee4v-wide data such as the AssetManager database. The default is Documents/ee4v."
+    },
+    "blmDatabasePath": {
+      "label": "BLM data.db path",
+      "tooltip": "Path to Booth Library Manager data.db."
+    },
+    "eagleLibraryPath": {
+      "label": "Eagle library path",
+      "tooltip": "Path to Eagle root.library."
+    },
+    "sourcePriority": {
+      "label": "Source priority",
+      "tooltip": "Priority order for file origins. Example: ee4v,eagle,blm"
+    },
+    "validation": {
+      "required": "This field is required.",
+      "sourcePriority": "Source priority must contain ee4v, eagle and blm exactly once each."
+    }
+  }
+}

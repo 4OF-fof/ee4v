@@ -37,11 +37,11 @@ erDiagram
     collection_info ||--o| collection_collection : ""
 
     item_info {
-        ULID id PK
+        GUID string id PK
     }
 
     shop_info {
-        ULID id PK
+        GUID string id PK
     }
 
     schema_version {
@@ -53,66 +53,66 @@ erDiagram
     }
 
     tag_info {
-        ULID id PK
+        GUID string id PK
     }
 
     item_tag {
-        ULID item_info_id PK, FK
-        ULID tag_info_id PK, FK
+        GUID string item_info_id PK, FK
+        GUID string tag_info_id PK, FK
     }
 
     collection_info {
-        ULID id PK
+        GUID string id PK
     }
 
     smart_collection_info {
-        ULID collection_info_id PK, FK
+        GUID string collection_info_id PK, FK
         smart_collection_match_mode match_mode
     }
 
     smart_collection_condition {
-        ULID id PK
-        ULID collection_info_id FK
+        GUID string id PK
+        GUID string collection_info_id FK
     }
 
     collection_collection {
-        ULID parent_collection_id PK, FK
-        ULID child_collection_id PK, FK
+        GUID string parent_collection_id PK, FK
+        GUID string child_collection_id PK, FK
     }
 
     item_collection {
-        ULID item_info_id PK, FK
-        ULID collection_info_id PK, FK
+        GUID string item_info_id PK, FK
+        GUID string collection_info_id PK, FK
     }
 
     booth_info {
-        ULID id PK
-        ULID item_info_id FK
-        ULID shop_info_id FK
+        GUID string id PK
+        GUID string item_info_id FK
+        GUID string shop_info_id FK
     }
 
     file_info {
-        ULID id PK
-        ULID item_info_id FK
+        GUID string id PK
+        GUID string item_info_id FK
     }
 
     file_dependency {
-        ULID dependent_file_info_id PK, FK
-        ULID dependency_file_info_id PK, FK
+        GUID string dependent_file_info_id PK, FK
+        GUID string dependency_file_info_id PK, FK
         file_dependency_type dependency_type PK
     }
 
     eagle_file_origin {
-        ULID file_info_id PK, FK
+        GUID string file_info_id PK, FK
     }
 
     blm_file_origin {
-        ULID file_info_id PK, FK
+        GUID string file_info_id PK, FK
         TEXT registered_item_id
     }
 
     ee4v_file_origin {
-        ULID file_info_id PK, FK
+        GUID string file_info_id PK, FK
     }
 
 ```
@@ -125,7 +125,7 @@ Booth 由来 item の初回作成時は `booth_info.name` / `booth_info.descript
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `id` | ULID | Yes |  | Item Info の識別子 |
+| `id` | GUID string | Yes |  | Item Info の識別子 |
 | `name` | TEXT | Yes |  | 表示名。ユーザー上書き可能 |
 | `description` | TEXT | Yes |  | 表示用説明。ユーザー上書き可能。空文字を許容 |
 | `created_at` | DATETIME | Yes |  | 作成時刻 |
@@ -137,14 +137,13 @@ AssetManager 独自 tag の正本。Booth tag / Eagle tag とは完全に独立�
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `id` | ULID | Yes |  | Tag Info の識別子 |
+| `id` | GUID string | Yes |  | Tag Info の識別子 |
 | `name` | TEXT | Yes | Yes | tag 名 |
 | `created_at` | DATETIME | Yes |  | 作成時刻 |
 | `updated_at` | DATETIME | Yes |  | 更新時刻 |
 
 ```sql
-CREATE UNIQUE INDEX unique_tag_info_name
-ON tag_info(name);
+name TEXT NOT NULL UNIQUE
 ```
 
 ## Item Tag
@@ -153,8 +152,8 @@ Item と AssetManager 独自 tag の付与関係。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `item_info_id` | ULID | Yes | `(item_info_id, tag_info_id)` | 親 Item Info |
-| `tag_info_id` | ULID | Yes | `(item_info_id, tag_info_id)` | 付与 Tag Info |
+| `item_info_id` | GUID string | Yes | `(item_info_id, tag_info_id)` | 親 Item Info |
+| `tag_info_id` | GUID string | Yes | `(item_info_id, tag_info_id)` | 付与 Tag Info |
 | `created_at` | DATETIME | Yes |  | 付与作成時刻 |
 
 ```sql
@@ -168,7 +167,7 @@ AssetManager 独自 folder / collection。階層構造は `collection_collection
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `id` | ULID | Yes |  | Collection Info の識別子 |
+| `id` | GUID string | Yes |  | Collection Info の識別子 |
 | `name` | TEXT | Yes |  | collection 名 |
 | `created_at` | DATETIME | Yes |  | 作成時刻 |
 | `updated_at` | DATETIME | Yes |  | 更新時刻 |
@@ -179,11 +178,11 @@ AssetManager 独自 folder / collection。階層構造は `collection_collection
 
 通常 Collection と同じ `collection_info` として階層に配置し、条件定義だけを Smart Collection 固有情報として保持する。
 
-Smart Collection の所属 Item は永続化せず、表示時または必要時に条件から評価する。
+Smart Collection の所属 Item は永続化しない。条件評価による Item 抽出は `smart_collection_condition` から実行する。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `collection_info_id` | ULID | Yes | Yes | 対応する Collection Info |
+| `collection_info_id` | GUID string | Yes | Yes | 対応する Collection Info |
 | `match_mode` | smart_collection_match_mode | Yes |  | 複数条件の結合方法 |
 | `created_at` | DATETIME | Yes |  | 作成時刻 |
 | `updated_at` | DATETIME | Yes |  | 更新時刻 |
@@ -196,12 +195,12 @@ CHECK (match_mode IN ('all', 'any'))
 
 Smart Collection の検索条件。
 
-`collection_info_id` が示す Smart Collection に対して、`field` / `operator` / `query_text` の組を評価する。
+`collection_info_id` が示す Smart Collection に対して、`field` / `operator` / `query_text` の条件定義を表す。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `id` | ULID | Yes |  | Smart Collection Condition の識別子 |
-| `collection_info_id` | ULID | Yes |  | 親 Smart Collection Info |
+| `id` | GUID string | Yes |  | Smart Collection Condition の識別子 |
+| `collection_info_id` | GUID string | Yes |  | 親 Smart Collection Info |
 | `field` | smart_collection_condition_field | Yes |  | 評価対象 field |
 | `operator` | smart_collection_condition_operator | Yes |  | 評価方法 |
 | `query_text` | TEXT |  |  | 検索文字列。`exists` では NULL を許容 |
@@ -220,8 +219,8 @@ Collection 同士の親子関係。`parent_collection_id` が `child_collection_
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `parent_collection_id` | ULID | Yes | `(parent_collection_id, child_collection_id)` | 親 Collection Info |
-| `child_collection_id` | ULID | Yes | `(parent_collection_id, child_collection_id)`, `child_collection_id` | 子 Collection Info |
+| `parent_collection_id` | GUID string | Yes | `(parent_collection_id, child_collection_id)` | 親 Collection Info |
+| `child_collection_id` | GUID string | Yes | `(parent_collection_id, child_collection_id)`, `child_collection_id` | 子 Collection Info |
 | `created_at` | DATETIME | Yes |  | 親子関係の作成時刻 |
 
 ```sql
@@ -292,8 +291,8 @@ Item と Collection の所属関係。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `item_info_id` | ULID | Yes | `(item_info_id, collection_info_id)` | 親 Item Info |
-| `collection_info_id` | ULID | Yes | `(item_info_id, collection_info_id)` | 所属 Collection Info |
+| `item_info_id` | GUID string | Yes | `(item_info_id, collection_info_id)` | 親 Item Info |
+| `collection_info_id` | GUID string | Yes | `(item_info_id, collection_info_id)` | 所属 Collection Info |
 | `created_at` | DATETIME | Yes |  | 所属作成時刻 |
 
 ```sql
@@ -303,7 +302,7 @@ ON item_collection(item_info_id, collection_info_id);
 
 ## Schema Version
 
-AssetManager DB の schema version。
+AssetManager DB の schema version。開発段階では `1` 固定で、既存 DB の破棄や再作成は手動で行う。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
@@ -338,10 +337,10 @@ conflict は確認後上書きで対応。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `id` | ULID | Yes |  | Booth Info の識別子 |
-| `item_info_id` | ULID | Yes | Yes | 親 Item Info |
+| `id` | GUID string | Yes |  | Booth Info の識別子 |
+| `item_info_id` | GUID string | Yes | Yes | 親 Item Info |
 | `booth_item_id` | INTEGER | Yes | Yes | Booth item ID。BLM `booth_items.id` / Eagle `boothItemId` |
-| `shop_info_id` | ULID | Yes |  | Shop Info への参照 |
+| `shop_info_id` | GUID string | Yes |  | Shop Info への参照 |
 | `name` | TEXT | Yes |  | Booth 商品名 |
 | `description` | TEXT | Yes |  | Booth 商品説明。取得元に説明がない場合は空文字を保持 |
 | `thumbnail_url` | TEXT |  |  | 商品 thumbnail URL |
@@ -353,14 +352,13 @@ Booth shop 単位の情報。複数 Booth Info から共有する。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `id` | ULID | Yes |  | Shop Info の識別子 |
+| `id` | GUID string | Yes |  | Shop Info の識別子 |
 | `name` | TEXT | Yes |  | ショップ名 |
 | `subdomain` | TEXT | Yes | Yes | Booth shop subdomain |
 | `thumbnail_url` | TEXT |  |  | shop thumbnail URL |
 
 ```sql
-CREATE UNIQUE INDEX unique_shop_info_subdomain
-ON shop_info(subdomain);
+subdomain TEXT NOT NULL UNIQUE
 ```
 
 ## File Info
@@ -370,28 +368,33 @@ primary file は最大 1 件だけ保持し、存在しない場合は `id` 順�
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `id` | ULID | Yes |  | File Info の識別子 |
-| `item_info_id` | ULID | Yes |  | 親 Item Info |
+| `id` | GUID string | Yes |  | File Info の識別子 |
+| `item_info_id` | GUID string | Yes |  | 親 Item Info |
 | `file_name` | TEXT | Yes |  | ファイル名 |
 | `extension` | TEXT |  |  | 拡張子 |
 | `size_bytes` | INTEGER |  |  | サイズ |
-| `primary_source_type` | source_type |  |  | 代表 file origin として使う datasource。NULL の場合は fallback |
+| `download_id` | INTEGER |  | `download_id WHERE download_id IS NOT NULL` | Booth download ID。同一 file 判定に使う。BLM / 手動登録など download ID を持たない file は NULL |
 | `is_primary` | BOOLEAN | Yes | `item_info_id WHERE is_primary = 1` | 同一 Item 内の primary file |
 | `lifecycle` | file_lifecycle | Yes |  | file の管理状態 |
 | `created_at` | DATETIME | Yes |  | 作成時刻 |
 | `updated_at` | DATETIME | Yes |  | 更新時刻 |
 
 ```sql
-CHECK (primary_source_type IS NULL OR primary_source_type IN ('blm', 'eagle', 'ee4v'))
 CHECK (is_primary IN (0, 1))
 CHECK (lifecycle IN ('active', 'archived'))
+
+CREATE UNIQUE INDEX unique_file_info_download_id
+ON file_info(download_id)
+WHERE download_id IS NOT NULL;
 
 CREATE UNIQUE INDEX unique_file_info_primary
 ON file_info(item_info_id)
 WHERE is_primary = 1;
 ```
 
-代表 file origin は `primary_source_type` で指定する。指定された datasource origin が存在しない場合、または `primary_source_type` が NULL の場合は `ee4v`、`eagle`、`blm` の順で存在する origin に fallback する。origin が 0 件の場合は missing として扱う。
+同一 file 判定は `download_id` のみで行う。`download_id` が NULL の File Info は、同じ Item・同じ file name でも自動統合しない。
+
+代表 file origin は `assetManager.sourcePriority` 設定順で存在する origin に fallback する。既定値は `ee4v,eagle,blm`。origin が 0 件の場合は missing として扱う。
 
 ## File Dependency
 
@@ -399,8 +402,8 @@ File Info 同士の依存関係。`dependent_file_info_id` が `dependency_file_
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `dependent_file_info_id` | ULID | Yes | `(dependent_file_info_id, dependency_file_info_id, dependency_type)` | 依存している File Info |
-| `dependency_file_info_id` | ULID | Yes | `(dependent_file_info_id, dependency_file_info_id, dependency_type)` | 依存される File Info |
+| `dependent_file_info_id` | GUID string | Yes | `(dependent_file_info_id, dependency_file_info_id, dependency_type)` | 依存している File Info |
+| `dependency_file_info_id` | GUID string | Yes | `(dependent_file_info_id, dependency_file_info_id, dependency_type)` | 依存される File Info |
 | `dependency_type` | file_dependency_type | Yes | `(dependent_file_info_id, dependency_file_info_id, dependency_type)` | 依存種別 |
 | `created_at` | DATETIME | Yes |  | 依存関係の作成時刻 |
 
@@ -418,7 +421,7 @@ Eagle item として管理される file 実体の origin。Eagle 固有情報�
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `file_info_id` | ULID | Yes | Yes | 親 File Info |
+| `file_info_id` | GUID string | Yes | Yes | 親 File Info |
 | `eagle_item_id` | TEXT | Yes | Yes | Eagle item ID |
 | `file_path_cache` | TEXT |  |  | 最後に解決できた path。正本にはしない |
 | `is_deleted` | BOOLEAN |  |  | 最後に同期した Eagle 上の削除状態 |
@@ -437,7 +440,7 @@ BLM registered item 配下の file / directory entry を表す origin。実体�
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `file_info_id` | ULID | Yes | Yes | 親 File Info |
+| `file_info_id` | GUID string | Yes | Yes | 親 File Info |
 | `registered_item_id` | TEXT | Yes | `(registered_item_id, relative_path)` | BLM `registered_items.id` |
 | `relative_path` | TEXT | Yes | `(registered_item_id, relative_path)` | BLM registered item directory からの相対 path |
 | `file_path_cache` | TEXT |  |  | 最後に解決できた path。正本にはしない |
@@ -454,8 +457,8 @@ ee4v が管理する file 実体の origin。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `file_info_id` | ULID | Yes | Yes | 親 File Info |
-| `ee4v_file_id` | ULID | Yes | Yes | ee4v 管理 file ID |
+| `file_info_id` | GUID string | Yes | Yes | 親 File Info |
+| `ee4v_file_id` | GUID string | Yes | Yes | ee4v 管理 file ID |
 | `file_path_cache` | TEXT | Yes |  | 最後に解決できた path。正本にはしない |
 | `imported_at` | DATETIME |  |  | datasource から取り込んだ時刻 |
 

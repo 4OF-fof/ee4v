@@ -1,0 +1,27 @@
+{
+  "name": "Ee4v.AssetManager.Api.Tests.Editor",
+  "rootNamespace": "Ee4v.AssetManager.Api.Tests",
+  "references": [
+    "Ee4v.Editor",
+    "Ee4v.AssetManager.Api.Editor",
+    "Ee4v.SQLite.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "SQLitePCLRaw.core.dll",
+    "SQLitePCLRaw.provider.e_sqlite3.dll",
+    "SQLite-net.dll"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}
