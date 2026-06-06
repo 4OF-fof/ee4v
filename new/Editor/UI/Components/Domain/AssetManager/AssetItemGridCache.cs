@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Ee4v.UI
 {
-    internal static class ItemGridCache
+    internal static class AssetItemGridCache
     {
         private static readonly Dictionary<string, CachedGridState> Cache = new Dictionary<string, CachedGridState>(StringComparer.Ordinal);
         private static bool _cacheInvalidationRegistered;

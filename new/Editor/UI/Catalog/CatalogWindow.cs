@@ -219,20 +219,34 @@ namespace Ee4v.UI
                 BuildAssetManagerToolbarStory));
 
             _stories.Add(new StoryDefinition(
-                "asset-manager-item-card",
+                "asset-item-grid",
                 "Domain/AssetManager",
+                "AssetItemGrid",
+                "AssetManager item list を受け取り、汎用 ItemGrid に表示状態として流し込む domain component です。",
+                "AssetManagerItemList から Texture2D 付き ItemGridState への変換と cache 利用を内包し、MainView 側が ItemGridCache を直接意識しないための adapter として扱います。",
+                new[]
+                {
+                    "ItemGrid",
+                    "ItemCard"
+                },
+                ComponentImplementationKind.UiToolkit,
+                BuildAssetItemGridStory));
+
+            _stories.Add(new StoryDefinition(
+                "item-card",
+                "Display",
                 "ItemCard",
-                "AssetManager の item 一覧で使う、サムネイルと item 名だけのカードコンポーネントです。",
-                "サムネイル解決やキャッシュ取得は外側の loader/service が担当し、ItemCard は Texture2D と item 名を受け取って表示するだけの薄い UI component として扱います。",
+                "サムネイルと item 名だけの汎用カードコンポーネントです。",
+                "データ取得やキャッシュは外側の loader/service が担当し、ItemCard は Texture2D と item 名を受け取って表示するだけの薄い UI component として扱います。",
                 new string[0],
                 ComponentImplementationKind.UiToolkit,
                 BuildAssetManagerItemCardStory));
 
             _stories.Add(new StoryDefinition(
-                "asset-manager-item-grid",
-                "Domain/AssetManager",
+                "item-grid",
+                "DataView",
                 "ItemGrid",
-                "ItemCard を仮想スクロールで並べる、AssetManager item 一覧用のグリッドコンポーネントです。",
+                "ItemCard を仮想スクロールで並べる汎用グリッドコンポーネントです。",
                 "UI Toolkit の ListView を行単位で使い、表示領域に必要な行だけを生成します。列数は available width から再計算し、各セルには ItemCard を配置します。",
                 new[]
                 {
@@ -313,8 +327,8 @@ namespace Ee4v.UI
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/asset-manager-window-layout.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/panels.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/toolbar.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/item-card.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/item-grid.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/item-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/item-grid.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/tab-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/alerts.uss");
@@ -1289,6 +1303,84 @@ namespace Ee4v.UI
 
             refresh();
             FinalizeControlsSection(parent, controls);
+        }
+
+        private void BuildAssetItemGridStory(VisualElement parent)
+        {
+            var itemCount = 80;
+            var itemsPerRow = 6;
+            Action refresh = null;
+            var controls = CreatePlainControlsSection(parent, "AssetManagerItemList を流し込み、AssetItemGrid 側の変換と cache 利用を確認します。");
+
+            var itemCountField = new IntegerField("Item Count")
+            {
+                value = itemCount
+            };
+            itemCountField.RegisterValueChangedCallback(evt =>
+            {
+                itemCount = Mathf.Clamp(evt.newValue, 0, 500);
+                itemCountField.SetValueWithoutNotify(itemCount);
+                if (refresh != null)
+                {
+                    refresh();
+                }
+            });
+            controls.Content.Add(itemCountField);
+
+            var itemsPerRowField = new IntegerField("Items Per Row")
+            {
+                value = itemsPerRow
+            };
+            itemsPerRowField.RegisterValueChangedCallback(evt =>
+            {
+                itemsPerRow = Mathf.Clamp(evt.newValue, 1, 12);
+                itemsPerRowField.SetValueWithoutNotify(itemsPerRow);
+                if (refresh != null)
+                {
+                    refresh();
+                }
+            });
+            controls.Content.Add(itemsPerRowField);
+
+            var preview = CreatePreviewSection(parent);
+            var surface = CreatePreviewSurface();
+            surface.style.paddingLeft = 12f;
+            surface.style.paddingRight = 12f;
+            surface.style.paddingTop = 12f;
+            surface.style.paddingBottom = 12f;
+            surface.style.height = 420f;
+
+            var grid = new AssetItemGrid();
+            grid.style.flexGrow = 1f;
+            surface.Add(grid);
+            preview.Body.Add(surface);
+
+            refresh = () =>
+            {
+                var request = new AssetManagerItemListRequest("catalog-asset-item-grid");
+                string ignoredStatusText;
+                grid.SetAssetItems(request, CreateCatalogAssetItemList(itemCount, itemsPerRow), out ignoredStatusText);
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
+        }
+
+        private AssetManagerItemList CreateCatalogAssetItemList(int itemCount, int itemsPerRow)
+        {
+            var thumbnail = CreateItemCardSampleThumbnail(132, 132);
+            var thumbnailBytes = thumbnail.EncodeToPNG();
+            UnityEngine.Object.DestroyImmediate(thumbnail);
+
+            var items = new List<AssetManagerItemListItem>();
+            for (var i = 0; i < itemCount; i++)
+            {
+                items.Add(new AssetManagerItemListItem(
+                    string.Format("Asset Item {0:00}", i + 1),
+                    i % 4 == 0 ? null : thumbnailBytes));
+            }
+
+            return new AssetManagerItemList(items, "No asset items.", itemsPerRow);
         }
 
         private void BuildAssetManagerNavigationPanelStory(VisualElement parent)

@@ -11,15 +11,14 @@ namespace Ee4v.UI
         private const string ContentClassName = "ee4v-asset-manager-panel__main-content";
         private const string StatusClassName = "ee4v-asset-manager-panel__main-status";
         private readonly Func<IAssetManagerItemListProvider> _itemListProviderResolver;
-        private readonly ItemGrid _itemGrid;
+        private readonly AssetItemGrid _itemGrid;
         private readonly UiTextElement _statusLabel;
         private int _loadVersion;
 
         public MainView(Func<IAssetManagerItemListProvider> itemListProviderResolver = null)
         {
             _itemListProviderResolver = itemListProviderResolver ?? AssetManagerItemListProviderRegistry.GetCurrent;
-            ItemGridCache.EnsureCacheInvalidationRegistered();
-            _itemGrid = new ItemGrid();
+            _itemGrid = new AssetItemGrid();
             _itemGrid.AddToClassList(ContentClassName);
             _statusLabel = UiTextFactory.Create(string.Empty, StatusClassName);
             _statusLabel.SetWhiteSpace(WhiteSpace.Normal);
@@ -60,18 +59,16 @@ namespace Ee4v.UI
         {
             var selectedItem = AssetManagerViewState.SelectedItem;
             var request = new AssetManagerItemListRequest(selectedItem.Id);
-            ItemGridState cachedGridState;
             string cachedStatusText;
-            if (ItemGridCache.TryGet(request, out cachedGridState, out cachedStatusText))
+            if (_itemGrid.TrySetCachedItems(request, out cachedStatusText))
             {
-                _itemGrid.SetState(cachedGridState);
                 SetStatus(cachedStatusText);
                 return;
             }
 
             var version = ++_loadVersion;
             SetStatus("Loading assets...");
-            _itemGrid.SetState(new ItemGridState(null));
+            _itemGrid.SetLoading();
 
             Task.Run(() => ResolveItemListProvider().GetItems(request)).ContinueWith(task =>
             {
@@ -101,10 +98,8 @@ namespace Ee4v.UI
 
         private void ApplyItemList(AssetManagerItemListRequest request, AssetManagerItemList itemList)
         {
-            ItemGridState gridState;
             string statusText;
-            ItemGridCache.Store(request, itemList, out gridState, out statusText);
-            _itemGrid.SetState(gridState);
+            _itemGrid.SetAssetItems(request, itemList, out statusText);
             SetStatus(statusText);
         }
 

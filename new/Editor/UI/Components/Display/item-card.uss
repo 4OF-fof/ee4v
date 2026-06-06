@@ -1,8 +1,8 @@
-.ee4v-asset-manager-item-card {
+.ee4v-ui-item-card {
     flex-direction: column;
 }
 
-.ee4v-asset-manager-item-card__thumbnail-frame {
+.ee4v-ui-item-card__thumbnail-frame {
     overflow: hidden;
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
@@ -19,7 +19,7 @@
     background-color: rgba(255, 255, 255, 0.045);
 }
 
-.ee4v-asset-manager-item-card__thumbnail {
+.ee4v-ui-item-card__thumbnail {
     position: absolute;
     left: 0;
     right: 0;
@@ -27,7 +27,7 @@
     bottom: 0;
 }
 
-.ee4v-asset-manager-item-card__thumbnail-placeholder {
+.ee4v-ui-item-card__thumbnail-placeholder {
     position: absolute;
     left: 0;
     right: 0;
@@ -36,7 +36,7 @@
     background-color: rgba(255, 255, 255, 0.035);
 }
 
-.ee4v-asset-manager-item-card__name {
+.ee4v-ui-item-card__name {
     margin-top: 7px;
     height: 18px;
     min-height: 18px;
@@ -46,7 +46,7 @@
     white-space: nowrap;
 }
 
-.ee4v-asset-manager-item-card__name .unity-label {
+.ee4v-ui-item-card__name .unity-label {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

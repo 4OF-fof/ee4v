@@ -18,12 +18,12 @@ namespace Ee4v.UI
         public int ItemsPerRow { get; }
     }
 
-    internal sealed class ItemGrid : VisualElement
+    internal class ItemGrid : VisualElement
     {
-        private const string RootClassName = "ee4v-asset-manager-item-grid";
-        private const string ListClassName = "ee4v-asset-manager-item-grid__list";
-        private const string RowClassName = "ee4v-asset-manager-item-grid__row";
-        private const string RowSlotClassName = "ee4v-asset-manager-item-grid__row-slot";
+        private const string RootClassName = "ee4v-ui-item-grid";
+        private const string ListClassName = "ee4v-ui-item-grid__list";
+        private const string RowClassName = "ee4v-ui-item-grid__row";
+        private const string RowSlotClassName = "ee4v-ui-item-grid__row-slot";
         private const float ColumnGap = 16f;
         private const float RowVerticalPadding = 4f;
         private const float NameHeight = 25f;
@@ -145,12 +145,17 @@ namespace Ee4v.UI
             schedule.Execute(HideScrollbars);
         }
 
+        protected virtual ItemCard CreateItemCard()
+        {
+            return new ItemCard();
+        }
+
         private VisualElement CreateSlot(int index)
         {
             var slot = new VisualElement();
             slot.AddToClassList(RowSlotClassName);
             ApplySlotWidth(slot, index);
-            var itemCard = new ItemCard();
+            var itemCard = CreateItemCard();
             itemCard.SetWidth(_cardWidth);
             slot.Add(itemCard);
             return slot;

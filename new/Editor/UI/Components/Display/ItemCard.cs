@@ -16,12 +16,12 @@ namespace Ee4v.UI
         public Texture2D Thumbnail { get; }
     }
 
-    internal sealed class ItemCard : VisualElement
+    internal class ItemCard : VisualElement
     {
-        private const string RootClassName = "ee4v-asset-manager-item-card";
-        private const string ThumbnailFrameClassName = "ee4v-asset-manager-item-card__thumbnail-frame";
-        private const string ThumbnailClassName = "ee4v-asset-manager-item-card__thumbnail";
-        private const string ThumbnailPlaceholderClassName = "ee4v-asset-manager-item-card__thumbnail-placeholder";
+        private const string RootClassName = "ee4v-ui-item-card";
+        private const string ThumbnailFrameClassName = "ee4v-ui-item-card__thumbnail-frame";
+        private const string ThumbnailClassName = "ee4v-ui-item-card__thumbnail";
+        private const string ThumbnailPlaceholderClassName = "ee4v-ui-item-card__thumbnail-placeholder";
         private const float DefaultWidth = 132f;
         private readonly VisualElement _thumbnailFrame;
         private readonly Image _thumbnailImage;
