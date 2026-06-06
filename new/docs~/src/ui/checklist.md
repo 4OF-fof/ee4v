@@ -10,7 +10,9 @@
 - 文言を `I18N.Get(...)` に寄せたか
 - `Editor/UI/Localization` を更新したか
 - built-in icon を直接引かず `Icon` 経由にしたか
-- `CatalogWindow` に story と stylesheet を追加したか
+- `CatalogWindow.Stories.cs` に story を追加したか
+- `CatalogWindow.Styles.cs` に必要な stylesheet を追加したか
+- カテゴリ別の Catalog story ファイルに preview 実装を追加したか
 - Catalog 上で最低限の使い方が確認できるか
 
 ## 補足

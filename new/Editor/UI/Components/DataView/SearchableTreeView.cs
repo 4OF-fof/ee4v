@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -77,6 +78,9 @@ namespace Ee4v.UI
             _emptyLabel.SetWhiteSpace(WhiteSpace.Normal);
             Add(_emptyLabel);
 
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+
             SetEmptyText(emptyText);
             SetSearchState(string.Empty, _ => RefreshTree());
             SetItems(null);
@@ -149,6 +153,7 @@ namespace Ee4v.UI
             var hasItems = filteredItems.Count > 0;
             _treeView.style.display = hasItems ? DisplayStyle.Flex : DisplayStyle.None;
             _emptyLabel.style.display = hasItems ? DisplayStyle.None : DisplayStyle.Flex;
+            HideScrollbars();
         }
 
         private void SetSearchState(string value, Action<string> onValueChanged = null)
@@ -165,6 +170,34 @@ namespace Ee4v.UI
             }
 
             _searchField.ClearValue();
+        }
+
+        private void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            HideScrollbars();
+            schedule.Execute(HideScrollbars);
+        }
+
+        private void OnGeometryChanged(GeometryChangedEvent evt)
+        {
+            HideScrollbars();
+        }
+
+        private void HideScrollbars()
+        {
+            var scrollers = _treeView.Query<Scroller>().ToList();
+            for (var i = 0; i < scrollers.Count; i++)
+            {
+                scrollers[i].style.display = DisplayStyle.None;
+                scrollers[i].style.visibility = Visibility.Hidden;
+            }
+
+            var scrollViews = _treeView.Query<ScrollView>().ToList();
+            for (var i = 0; i < scrollViews.Count; i++)
+            {
+                scrollViews[i].verticalScrollerVisibility = ScrollerVisibility.Hidden;
+                scrollViews[i].horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            }
         }
 
         private static List<TreeViewItemData<SearchableTreeItemData<TData>>> FilterItems(IReadOnlyList<SearchableTreeItemData<TData>> sourceItems, string query)

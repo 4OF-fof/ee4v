@@ -11,8 +11,6 @@ namespace Ee4v.AssetManager.Api
     {
         private const string BoothLibraryRelativePath = "pm.booth.library-manager\\data.db";
 
-        private static bool _registered;
-
         static AssetManagerDefinitions()
         {
             RegisterAll();
@@ -74,7 +72,6 @@ namespace Ee4v.AssetManager.Api
             SettingApi.Register(EagleLibraryPath);
             SettingApi.Register(SourcePriority);
             SettingApi.Register(ItemGridItemsPerRow);
-            _registered = true;
         }
 
         private static SettingValidationResult ValidateNonEmpty(string value)
