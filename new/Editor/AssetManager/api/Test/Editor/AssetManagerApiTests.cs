@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Ee4v.Core.Settings;
+using Ee4v.Core.Testing;
 using NUnit.Framework;
 using SQLite;
 
@@ -37,12 +38,20 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "AssetFile は PrimarySourceType を公開しない",
+            "AssetFile の public API が origin 優先度を直接公開しないことを確認します。",
+            order: 300)]
         public void AssetFile_DoesNotExposePrimarySourceType()
         {
             Assert.That(typeof(AssetFile).GetProperty("PrimarySourceType"), Is.Null);
         }
 
         [Test]
+        [FeatureTestCase(
+            "schema version 1 の DB 制約を作成する",
+            "AssetManager DB が schema_version、file_info 制約、collection cycle trigger を作成することを確認します。",
+            order: 301)]
         public void Schema_CreatesVersion1Constraints()
         {
             var databasePath = GetDatabasePath();
@@ -59,6 +68,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "collection cycle を拒否する",
+            "親 collection を子 collection 配下へ移動しようとした場合に CollectionCycle として拒否することを確認します。",
+            order: 302)]
         public void MoveCollection_RejectsCycles()
         {
             var parent = AssetManagerApi.CreateCollection(new CreateCollectionRequest { Name = "Parent" });
@@ -70,6 +83,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "存在しない item の更新は NotFound",
+            "UpdateItem が missing item に対して NotFound を返すことを確認します。",
+            order: 303)]
         public void UpdateItem_MissingItem_ThrowsNotFound()
         {
             var ex = Assert.Throws<AssetManagerException>(() =>
@@ -79,6 +96,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "存在しない item の file 取得は NotFound",
+            "GetFiles が missing item に対して NotFound を返すことを確認します。",
+            order: 304)]
         public void GetFiles_MissingItem_ThrowsNotFound()
         {
             var ex = Assert.Throws<AssetManagerException>(() => AssetManagerApi.GetFiles("missing-item"));
@@ -87,6 +108,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "存在しない item の thumbnail 取得は NotFound",
+            "GetThumbnail が missing item に対して NotFound を返すことを確認します。",
+            order: 305)]
         public void GetThumbnail_MissingItem_ThrowsNotFound()
         {
             var ex = Assert.Throws<AssetManagerException>(() => AssetManagerApi.GetThumbnail("missing-item"));
@@ -95,6 +120,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "thumbnail URL がない item は missing thumbnail",
+            "thumbnail_url を持たない item の GetThumbnail が missing 結果を返すことを確認します。",
+            order: 306)]
         public void GetThumbnail_ItemWithoutThumbnailUrl_ReturnsMissing()
         {
             var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
@@ -107,6 +136,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "存在しない file の archive は NotFound",
+            "ArchiveFile が missing file に対して NotFound を返すことを確認します。",
+            order: 307)]
         public void ArchiveFile_MissingFile_ThrowsNotFound()
         {
             var ex = Assert.Throws<AssetManagerException>(() => AssetManagerApi.ArchiveFile("missing-file"));
@@ -115,6 +148,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "存在しない tag の設定は NotFound",
+            "SetItemTags が missing tag に対して NotFound を返すことを確認します。",
+            order: 308)]
         public void SetItemTags_MissingTag_ThrowsNotFound()
         {
             var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
@@ -125,6 +162,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "存在しない collection 指定では item を作成しない",
+            "CreateItem が missing collection を検出した場合に item_info を残さないことを確認します。",
+            order: 309)]
         public void CreateItem_MissingCollection_ThrowsNotFoundWithoutCreatingItem()
         {
             var ex = Assert.Throws<AssetManagerException>(() =>
@@ -135,6 +176,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "collection 設定失敗時に既存所属を保持する",
+            "SetItemCollections が missing collection で失敗しても既存 item_collection を削除しないことを確認します。",
+            order: 310)]
         public void SetItemCollections_MissingCollection_DoesNotClearExistingCollections()
         {
             var collection = AssetManagerApi.CreateCollection(new CreateCollectionRequest { Name = "Collection" });
@@ -148,6 +193,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "file dependency 設定失敗時に既存依存を保持する",
+            "SetFileDependencies が self dependency で失敗しても既存 dependency を削除しないことを確認します。",
+            order: 311)]
         public void SetFileDependencies_InvalidRequest_DoesNotClearExistingDependencies()
         {
             var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
@@ -167,6 +216,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "存在しない親 collection 指定では collection を作成しない",
+            "CreateCollection が missing parent を検出した場合に collection_info を残さないことを確認します。",
+            order: 312)]
         public void CreateCollection_MissingParent_ThrowsNotFoundWithoutCreatingCollection()
         {
             var ex = Assert.Throws<AssetManagerException>(() =>
@@ -177,6 +230,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "不正な smart collection 条件では collection を作成しない",
+            "CreateSmartCollection が query text のない条件を拒否し、collection_info を残さないことを確認します。",
+            order: 313)]
         public void CreateSmartCollection_InvalidCondition_ThrowsWithoutCreatingCollection()
         {
             var ex = Assert.Throws<AssetManagerException>(() =>
@@ -191,6 +248,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "source priority に従って file path を解決する",
+            "ResolveFilePath が assetManager.sourcePriority の順序で origin path を選ぶことを確認します。",
+            order: 314)]
         public void ResolveFilePath_UsesConfiguredSourcePriority()
         {
             var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
@@ -220,6 +281,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "最初の手動登録 file は primary になる",
+            "RegisterFile が primary 未設定 item の最初の file を自動的に primary にすることを確認します。",
+            order: 315)]
         public void RegisterFile_FirstFileBecomesPrimary()
         {
             var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
@@ -236,6 +301,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "Eagle sync は VRCAsset folder から item を作成する",
+            "SyncEagle が Booth metadata を item 情報として扱い、metadata file を通常 file から除外することを確認します。",
+            order: 316)]
         public void SyncEagle_CreatesItemsFromVrcAssetFolders_AndSkipsMetadataFiles()
         {
             var libraryPath = Path.Combine(_tempRoot, "library.library");
@@ -268,6 +337,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "Eagle sync は Booth metadata の downloadId を保存する",
+            "importedItemIds が一致する Booth download の downloadId、filename、extension を file_info に保存することを確認します。",
+            order: 317)]
         public void SyncEagle_StoresDownloadIdFromBoothMetadata()
         {
             var libraryPath = Path.Combine(_tempRoot, "download-id.library");
@@ -295,6 +368,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "Eagle sync は filename 一致で downloadId を補完する",
+            "importedItemIds が空でも Booth download filename が一意に一致する場合に downloadId を保存することを確認します。",
+            order: 318)]
         public void SyncEagle_StoresDownloadIdWhenImportedItemIdsAreMissingButFilenameMatches()
         {
             var libraryPath = Path.Combine(_tempRoot, "download-filename.library");
@@ -321,6 +398,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "Eagle sync は未対応 download も file_info に残す",
+            "Eagle item に対応しない Booth download も download_id 付きの file_info として作成することを確認します。",
+            order: 319)]
         public void SyncEagle_CreatesDownloadOnlyFilesForUnmatchedBoothDownloads()
         {
             var libraryPath = Path.Combine(_tempRoot, "download-only.library");
@@ -347,6 +428,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "Eagle sync 失敗は sync_info に failed として残る",
+            "存在しない Eagle library を同期した場合に AssetSyncResult と sync_info が Failed になることを確認します。",
+            order: 320)]
         public void SyncEagle_MissingLibrary_PersistsFailedSyncInfo()
         {
             var missingLibraryPath = Path.Combine(_tempRoot, "missing.library");
@@ -360,6 +445,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "Eagle sync の一部失敗は sync_info に partial として残る",
+            "file upsert の一部が失敗した場合に AssetSyncResult と sync_info が Partial になることを確認します。",
+            order: 321)]
         public void SyncEagle_FileError_PersistsPartialSyncInfo()
         {
             var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Manual" });
@@ -408,6 +497,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "Eagle sync は datasource text を正規化して保存する",
+            "数学英数字や制御文字を含む datasource text が正規化されて item/file 名に保存されることを確認します。",
+            order: 322)]
         public void SyncEagle_NormalizesDatasourceTextBeforeSaving()
         {
             var libraryPath = Path.Combine(_tempRoot, "normalized.library");
@@ -415,7 +508,7 @@ namespace Ee4v.AssetManager.Api.Tests
             Directory.CreateDirectory(imagesPath);
             File.WriteAllText(
                 Path.Combine(libraryPath, "metadata.json"),
-                "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"Avatar\",\"children\":[]}]}]}");
+                "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"𝒙ero\",\"children\":[]}]}]}");
             CreateEagleEntry(imagesPath, "file-entry", "avatar-folder", "\\uD835\\uDC99ero", "unitypackage", null);
 
             AssetManagerApi.SyncEagle(new EagleSyncRequest(libraryPath));
@@ -426,6 +519,10 @@ namespace Ee4v.AssetManager.Api.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "Eagle sync は数学英字を surrogate drop 前に ASCII 化する",
+            "数学英字の surrogate pair を落とす前に ASCII へ変換して item/file 名に保存することを確認します。",
+            order: 323)]
         public void SyncEagle_MapsMathematicalLettersBeforeDroppingUnsupportedSurrogates()
         {
             var libraryPath = Path.Combine(_tempRoot, "mathematical.library");
@@ -433,7 +530,7 @@ namespace Ee4v.AssetManager.Api.Tests
             Directory.CreateDirectory(imagesPath);
             File.WriteAllText(
                 Path.Combine(libraryPath, "metadata.json"),
-                "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"Avatar\",\"children\":[]}]}]}");
+                "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"𝑵𝒐𝒊𝒓_𝑳𝒖𝒙𝒆\",\"children\":[]}]}]}");
             CreateEagleEntry(imagesPath, "file-entry", "avatar-folder", "𝑵𝒐𝒊𝒓_𝑳𝒖𝒙𝒆", "unitypackage", null);
 
             AssetManagerApi.SyncEagle(new EagleSyncRequest(libraryPath));

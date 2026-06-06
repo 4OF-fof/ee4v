@@ -69,17 +69,12 @@ namespace Ee4v.AssetManager.Api
 
         public static void RegisterAll()
         {
-            if (_registered)
-            {
-                return;
-            }
-
-            _registered = true;
             SettingApi.Register(Ee4vGlobalPath);
             SettingApi.Register(BlmDatabasePath);
             SettingApi.Register(EagleLibraryPath);
             SettingApi.Register(SourcePriority);
             SettingApi.Register(ItemGridItemsPerRow);
+            _registered = true;
         }
 
         private static SettingValidationResult ValidateNonEmpty(string value)

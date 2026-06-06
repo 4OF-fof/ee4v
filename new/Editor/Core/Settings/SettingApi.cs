@@ -64,6 +64,7 @@ namespace Ee4v.Core.Settings
         {
             EnsureRegistered(definition);
             EnsureScopeLoaded(definition.Scope);
+            EnsureCachedValue(definition);
             return CachedValues[definition.Key];
         }
 
@@ -121,7 +122,7 @@ namespace Ee4v.Core.Settings
                 .Where(definition => definition.Scope == scope)
                 .ToDictionary(
                     definition => definition.Key,
-                    definition => definition.SerializeBoxed(CachedValues[definition.Key]));
+                    definition => definition.SerializeBoxed(GetCachedValue(definition)));
 
             Stores[scope].SaveAll(values);
             DirtyScopes.Remove(scope);
@@ -165,6 +166,24 @@ namespace Ee4v.Core.Settings
             {
                 Register(definition);
             }
+        }
+
+        private static object GetCachedValue(SettingDefinitionBase definition)
+        {
+            EnsureCachedValue(definition);
+            return CachedValues[definition.Key];
+        }
+
+        private static void EnsureCachedValue(SettingDefinitionBase definition)
+        {
+            if (CachedValues.ContainsKey(definition.Key))
+            {
+                return;
+            }
+
+            var persisted = Stores[definition.Scope].LoadAll();
+            CachedValues[definition.Key] = LoadValue(definition, persisted);
+            LoadedScopes.Add(definition.Scope);
         }
     }
 }

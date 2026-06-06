@@ -1,4 +1,5 @@
 using Ee4v.Core.I18n;
+using Ee4v.Core.Settings;
 using Ee4v.Core.Testing;
 using NUnit.Framework;
 
@@ -48,6 +49,23 @@ namespace Ee4v.Core.Tests
             Assert.That(found, Is.True);
             Assert.That(value, Is.Not.Null.And.Not.Empty);
             Assert.That(value, Is.Not.EqualTo("testing.window.searchPlaceholder"));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "SettingApi.Get は欠けた cached value を復元する",
+            "テスト reset 後のように定義と loaded scope だけが残り cached value が欠けた状態でも、SettingApi.Get が既定値を復元することを確認します。",
+            order: 2)]
+        public void SettingApi_Get_RecoversMissingCachedValue()
+        {
+            Ee4vCoreTestReset.RecoverEditorState();
+            SettingApi.Get(CoreLocalizationDefinitions.Language);
+
+            ReflectionReset.ClearCollectionField(typeof(SettingApi), "CachedValues");
+
+            var value = SettingApi.Get(CoreLocalizationDefinitions.Language);
+
+            Assert.That(value, Is.EqualTo("ja-JP"));
         }
     }
 }
