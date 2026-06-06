@@ -18,15 +18,18 @@ namespace Ee4v.UI
 
     internal sealed class AssetManagerItemList
     {
-        public AssetManagerItemList(IReadOnlyList<AssetManagerItemListItem> items, string emptyText = null)
+        public AssetManagerItemList(IReadOnlyList<AssetManagerItemListItem> items, string emptyText = null, int itemsPerRow = 6)
         {
             Items = items ?? Array.Empty<AssetManagerItemListItem>();
             EmptyText = emptyText ?? string.Empty;
+            ItemsPerRow = Math.Max(1, itemsPerRow);
         }
 
         public IReadOnlyList<AssetManagerItemListItem> Items { get; }
 
         public string EmptyText { get; }
+
+        public int ItemsPerRow { get; }
     }
 
     internal sealed class AssetManagerItemListItem

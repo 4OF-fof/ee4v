@@ -22,6 +22,8 @@ namespace Ee4v.UI
         private const string ThumbnailFrameClassName = "ee4v-asset-manager-item-card__thumbnail-frame";
         private const string ThumbnailClassName = "ee4v-asset-manager-item-card__thumbnail";
         private const string ThumbnailPlaceholderClassName = "ee4v-asset-manager-item-card__thumbnail-placeholder";
+        private const float DefaultWidth = 132f;
+        private readonly VisualElement _thumbnailFrame;
         private readonly Image _thumbnailImage;
         private readonly VisualElement _thumbnailPlaceholder;
         private readonly UiTextElement _nameLabel;
@@ -30,8 +32,8 @@ namespace Ee4v.UI
         {
             AddToClassList(RootClassName);
 
-            var thumbnailFrame = new VisualElement();
-            thumbnailFrame.AddToClassList(ThumbnailFrameClassName);
+            _thumbnailFrame = new VisualElement();
+            _thumbnailFrame.AddToClassList(ThumbnailFrameClassName);
 
             _thumbnailImage = new Image
             {
@@ -46,15 +48,16 @@ namespace Ee4v.UI
             };
             _thumbnailPlaceholder.AddToClassList(ThumbnailPlaceholderClassName);
 
-            thumbnailFrame.Add(_thumbnailPlaceholder);
-            thumbnailFrame.Add(_thumbnailImage);
+            _thumbnailFrame.Add(_thumbnailPlaceholder);
+            _thumbnailFrame.Add(_thumbnailImage);
 
             _nameLabel = UiTextFactory.Create(string.Empty, UiClassNames.ItemCardName);
-            _nameLabel.SetWhiteSpace(WhiteSpace.Normal);
+            _nameLabel.SetWhiteSpace(WhiteSpace.NoWrap);
 
-            Add(thumbnailFrame);
+            Add(_thumbnailFrame);
             Add(_nameLabel);
 
+            SetWidth(DefaultWidth);
             SetState(state ?? new ItemCardState(string.Empty));
         }
 
@@ -76,6 +79,25 @@ namespace Ee4v.UI
             var hasThumbnail = thumbnail != null;
             _thumbnailImage.style.display = hasThumbnail ? DisplayStyle.Flex : DisplayStyle.None;
             _thumbnailPlaceholder.style.display = hasThumbnail ? DisplayStyle.None : DisplayStyle.Flex;
+        }
+
+        public void SetWidth(float width)
+        {
+            var safeWidth = Mathf.Max(48f, width);
+            style.width = safeWidth;
+            style.minWidth = safeWidth;
+            style.maxWidth = safeWidth;
+
+            _thumbnailFrame.style.width = safeWidth;
+            _thumbnailFrame.style.height = safeWidth;
+            _thumbnailFrame.style.minWidth = safeWidth;
+            _thumbnailFrame.style.minHeight = safeWidth;
+            _thumbnailFrame.style.maxWidth = safeWidth;
+            _thumbnailFrame.style.maxHeight = safeWidth;
+
+            _nameLabel.style.width = safeWidth;
+            _nameLabel.style.minWidth = safeWidth;
+            _nameLabel.style.maxWidth = safeWidth;
         }
     }
 }

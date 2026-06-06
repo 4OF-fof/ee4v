@@ -3,7 +3,8 @@
     "section": {
       "assetManager": {
         "paths": "AssetManager Paths",
-        "source": "AssetManager Datasources"
+        "source": "AssetManager Datasources",
+        "view": "AssetManager View"
       }
     },
     "ee4vGlobalPath": {
@@ -22,9 +23,14 @@
       "label": "Source priority",
       "tooltip": "Priority order for file origins. Example: ee4v,eagle,blm"
     },
+    "itemGridItemsPerRow": {
+      "label": "Item grid items per row",
+      "tooltip": "Number of items shown per row in the AssetManager item grid."
+    },
     "validation": {
       "required": "This field is required.",
-      "sourcePriority": "Source priority must contain ee4v, eagle and blm exactly once each."
+      "sourcePriority": "Source priority must contain ee4v, eagle and blm exactly once each.",
+      "itemGridItemsPerRow": "Item grid items per row must be between 1 and 12."
     }
   }
 }

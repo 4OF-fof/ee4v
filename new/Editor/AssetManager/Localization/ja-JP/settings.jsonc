@@ -3,7 +3,8 @@
     "section": {
       "assetManager": {
         "paths": "AssetManager パス設定",
-        "source": "AssetManager datasource 設定"
+        "source": "AssetManager datasource 設定",
+        "view": "AssetManager 表示設定"
       }
     },
     "ee4vGlobalPath": {
@@ -22,9 +23,14 @@
       "label": "Source priority",
       "tooltip": "file origin の優先順です。例: ee4v,eagle,blm"
     },
+    "itemGridItemsPerRow": {
+      "label": "Item grid items per row",
+      "tooltip": "AssetManager の item grid で 1 行に表示する item 数です。"
+    },
     "validation": {
       "required": "この項目は必須です。",
-      "sourcePriority": "Source priority には ee4v, eagle, blm をそれぞれ 1 回ずつ指定してください。"
+      "sourcePriority": "Source priority には ee4v, eagle, blm をそれぞれ 1 回ずつ指定してください。",
+      "itemGridItemsPerRow": "Item grid items per row は 1 から 12 の範囲で指定してください。"
     }
   }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.Core.Settings;
 using Ee4v.UI;
 using UnityEditor;
 
@@ -11,6 +12,16 @@ namespace Ee4v.AssetManager.Api
         static AssetManagerDatabaseItemListProviderRegistration()
         {
             AssetManagerItemListProviderRegistry.SetProvider(new AssetManagerDatabaseItemListProvider());
+            SettingApi.Changed -= OnSettingChanged;
+            SettingApi.Changed += OnSettingChanged;
+        }
+
+        private static void OnSettingChanged(SettingDefinitionBase definition, object value)
+        {
+            if (definition == AssetManagerDefinitions.ItemGridItemsPerRow)
+            {
+                AssetManagerItemListProviderRegistry.ClearSessionCache();
+            }
         }
     }
 
@@ -21,7 +32,8 @@ namespace Ee4v.AssetManager.Api
 
         public AssetManagerItemList GetItems(AssetManagerItemListRequest request)
         {
-            var cacheKey = CreateCacheKey(request);
+            var itemsPerRow = GetItemsPerRow();
+            var cacheKey = CreateCacheKey(request, itemsPerRow);
             lock (_cacheLock)
             {
                 AssetManagerItemList cached;
@@ -36,7 +48,7 @@ namespace Ee4v.AssetManager.Api
             var items = new List<AssetManagerItemListItem>();
             if (result == null || result.Items == null)
             {
-                return Cache(cacheKey, new AssetManagerItemList(items, "No asset items."));
+                return Cache(cacheKey, new AssetManagerItemList(items, "No asset items.", itemsPerRow));
             }
 
             for (var i = 0; i < result.Items.Count; i++)
@@ -50,7 +62,7 @@ namespace Ee4v.AssetManager.Api
                 items.Add(new AssetManagerItemListItem(item.Name, LoadThumbnailData(item.Id)));
             }
 
-            return Cache(cacheKey, new AssetManagerItemList(items, "No asset items."));
+            return Cache(cacheKey, new AssetManagerItemList(items, "No asset items.", itemsPerRow));
         }
 
         public void ClearCache()
@@ -86,17 +98,22 @@ namespace Ee4v.AssetManager.Api
             return itemList;
         }
 
-        private static string CreateCacheKey(AssetManagerItemListRequest request)
+        private static string CreateCacheKey(AssetManagerItemListRequest request, int itemsPerRow)
         {
             var viewId = request != null ? request.ViewId : string.Empty;
             var limit = request != null ? request.Limit : 200;
-            return viewId + "|" + limit;
+            return viewId + "|" + limit + "|" + itemsPerRow;
         }
 
         private static byte[] LoadThumbnailData(string itemId)
         {
             var thumbnail = AssetManagerApi.GetThumbnail(itemId);
             return thumbnail != null && thumbnail.Found ? thumbnail.Data : Array.Empty<byte>();
+        }
+
+        private static int GetItemsPerRow()
+        {
+            return Math.Min(12, Math.Max(1, SettingApi.Get(AssetManagerDefinitions.ItemGridItemsPerRow)));
         }
     }
 }

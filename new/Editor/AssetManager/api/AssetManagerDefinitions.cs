@@ -57,6 +57,16 @@ namespace Ee4v.AssetManager.Api
             order: 0,
             validator: ValidateSourcePriority);
 
+        public static readonly SettingDefinition<int> ItemGridItemsPerRow = new SettingDefinition<int>(
+            "assetManager.itemGridItemsPerRow",
+            SettingScope.User,
+            "settings.section.assetManager.view",
+            "settings.itemGridItemsPerRow.label",
+            "settings.itemGridItemsPerRow.tooltip",
+            7,
+            order: 0,
+            validator: ValidateItemGridItemsPerRow);
+
         public static void RegisterAll()
         {
             if (_registered)
@@ -69,6 +79,7 @@ namespace Ee4v.AssetManager.Api
             SettingApi.Register(BlmDatabasePath);
             SettingApi.Register(EagleLibraryPath);
             SettingApi.Register(SourcePriority);
+            SettingApi.Register(ItemGridItemsPerRow);
         }
 
         private static SettingValidationResult ValidateNonEmpty(string value)
@@ -91,6 +102,13 @@ namespace Ee4v.AssetManager.Api
             return priorities.Count == 3
                 ? SettingValidationResult.Success
                 : SettingValidationResult.Error(I18N.Get("settings.validation.sourcePriority"));
+        }
+
+        private static SettingValidationResult ValidateItemGridItemsPerRow(int value)
+        {
+            return value >= 1 && value <= 12
+                ? SettingValidationResult.Success
+                : SettingValidationResult.Error(I18N.Get("settings.validation.itemGridItemsPerRow"));
         }
     }
 }

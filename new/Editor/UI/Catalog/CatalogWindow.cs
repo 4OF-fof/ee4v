@@ -1225,6 +1225,41 @@ namespace Ee4v.UI
 
         private void BuildAssetManagerItemGridStory(VisualElement parent)
         {
+            var itemCount = 80;
+            var itemsPerRow = 6;
+            Action refresh = null;
+            var controls = CreatePlainControlsSection(parent, "表示 item 数と 1 行あたりの個数を変えながら、仮想スクロールと可変 card 幅を確認します。");
+
+            var itemCountField = new IntegerField("Item Count")
+            {
+                value = itemCount
+            };
+            itemCountField.RegisterValueChangedCallback(evt =>
+            {
+                itemCount = Mathf.Clamp(evt.newValue, 0, 500);
+                itemCountField.SetValueWithoutNotify(itemCount);
+                if (refresh != null)
+                {
+                    refresh();
+                }
+            });
+            controls.Content.Add(itemCountField);
+
+            var itemsPerRowField = new IntegerField("Items Per Row")
+            {
+                value = itemsPerRow
+            };
+            itemsPerRowField.RegisterValueChangedCallback(evt =>
+            {
+                itemsPerRow = Mathf.Clamp(evt.newValue, 1, 12);
+                itemsPerRowField.SetValueWithoutNotify(itemsPerRow);
+                if (refresh != null)
+                {
+                    refresh();
+                }
+            });
+            controls.Content.Add(itemsPerRowField);
+
             var preview = CreatePreviewSection(parent);
             var surface = CreatePreviewSurface();
             surface.style.paddingLeft = 12f;
@@ -1234,18 +1269,26 @@ namespace Ee4v.UI
             surface.style.height = 420f;
 
             var thumbnail = CreateItemCardSampleThumbnail(132, 132);
-            var items = new List<ItemCardState>();
-            for (var i = 0; i < 80; i++)
-            {
-                items.Add(new ItemCardState(
-                    string.Format("Sample Item {0:00}", i + 1),
-                    i % 4 == 0 ? null : thumbnail));
-            }
-
-            var grid = new ItemGrid(new ItemGridState(items));
+            var grid = new ItemGrid();
             grid.style.flexGrow = 1f;
             surface.Add(grid);
             preview.Body.Add(surface);
+
+            refresh = () =>
+            {
+                var items = new List<ItemCardState>();
+                for (var i = 0; i < itemCount; i++)
+                {
+                    items.Add(new ItemCardState(
+                        string.Format("Sample Item {0:00}", i + 1),
+                        i % 4 == 0 ? null : thumbnail));
+                }
+
+                grid.SetState(new ItemGridState(items, itemsPerRow));
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
         }
 
         private void BuildAssetManagerNavigationPanelStory(VisualElement parent)

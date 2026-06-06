@@ -118,7 +118,7 @@ namespace Ee4v.UI
                 itemCardStates.Add(new ItemCardState(item.ItemName, CreateThumbnail(item.ThumbnailData)));
             }
 
-            var gridState = new ItemGridState(itemCardStates);
+            var gridState = new ItemGridState(itemCardStates, list.ItemsPerRow);
             var statusText = itemCardStates.Count == 0 ? list.EmptyText : string.Empty;
             GridCache[cacheKey] = new CachedGridState(gridState, statusText);
             _itemGrid.SetState(gridState);
