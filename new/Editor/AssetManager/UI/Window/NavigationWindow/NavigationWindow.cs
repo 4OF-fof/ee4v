@@ -5,26 +5,26 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager
 {
-    internal sealed class InfomationWindow : EditorWindow
+    internal sealed class NavigationWindow : EditorWindow
     {
-        private const string WindowTitle = "Infomation";
+        private const string WindowTitle = "Navigation";
         private const string RootClassName = "ee4v-ui";
         private const string WindowClassName = "ee4v-asset-manager-window";
         private const string BodyClassName = "ee4v-asset-manager-window__standalone-panel-body";
 
-        [MenuItem("ee4v/Asset Manager/Infomation", false, 2)]
+        [MenuItem("ee4v/Asset Manager/Navigation", false, 1)]
         private static void ShowWindow()
         {
-            var window = GetWindow<InfomationWindow>();
+            var window = GetWindow<NavigationWindow>();
             window.titleContent = new GUIContent(WindowTitle);
-            window.minSize = new Vector2(360f, 420f);
+            window.minSize = new Vector2(320f, 420f);
             window.Show();
         }
 
         private void OnEnable()
         {
             titleContent = new GUIContent(WindowTitle);
-            minSize = new Vector2(360f, 420f);
+            minSize = new Vector2(320f, 420f);
         }
 
         private void CreateGUI()
@@ -35,13 +35,14 @@ namespace Ee4v.AssetManager
             root.AddToClassList(WindowClassName);
 
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/panels.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/NavigationPanel/navigation-panel.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/InfoCard/info-card.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/asset-manager-window.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/SingleSelectButtonGroup/single-select-button-group.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Window/NavigationWindow/navigation-window.uss");
 
             var body = new VisualElement();
             body.AddToClassList(BodyClassName);
-            body.Add(new InfomationPanel());
+            body.Add(new NavigationPanel());
 
             root.Add(body);
             WindowToastApi.EnsureHost(this);

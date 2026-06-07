@@ -1,0 +1,8 @@
+.ee4v-asset-manager-window {
+    flex-grow: 1;
+}
+
+.ee4v-asset-manager-window__layout {
+    flex-grow: 1;
+    min-height: 0;
+}

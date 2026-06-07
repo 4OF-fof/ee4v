@@ -1,5 +1,4 @@
 using System;
-using UnityEditor;
 
 namespace Ee4v.UI
 {
@@ -44,7 +43,6 @@ namespace Ee4v.UI
 
     internal static class AssetManagerViewState
     {
-        private const string SelectedItemEditorPrefsKey = "ee4v.asset-manager.selected-item";
         private static readonly AssetManagerViewItemState[] ItemsInternal =
         {
             new AssetManagerViewItemState(
@@ -104,8 +102,7 @@ namespace Ee4v.UI
                 })
         };
 
-        private static string _selectedItemId;
-        private static bool _loaded;
+        private static string _selectedItemId = ItemsInternal[0].Id;
 
         public static event Action<string> SelectedItemChanged;
 
@@ -116,11 +113,7 @@ namespace Ee4v.UI
 
         public static string SelectedItemId
         {
-            get
-            {
-                EnsureLoaded();
-                return _selectedItemId;
-            }
+            get { return _selectedItemId; }
         }
 
         public static AssetManagerViewItemState SelectedItem
@@ -130,7 +123,6 @@ namespace Ee4v.UI
 
         public static AssetManagerViewItemState GetItem(string itemId)
         {
-            EnsureLoaded();
             var resolvedId = NormalizeSelectedItemId(itemId);
             for (var i = 0; i < ItemsInternal.Length; i++)
             {
@@ -145,7 +137,6 @@ namespace Ee4v.UI
 
         public static void SetSelectedItem(string itemId, bool notify = true)
         {
-            EnsureLoaded();
             var resolvedId = NormalizeSelectedItemId(itemId);
             if (string.Equals(_selectedItemId, resolvedId, StringComparison.Ordinal))
             {
@@ -153,23 +144,11 @@ namespace Ee4v.UI
             }
 
             _selectedItemId = resolvedId;
-            EditorPrefs.SetString(SelectedItemEditorPrefsKey, _selectedItemId);
 
             if (notify)
             {
                 SelectedItemChanged?.Invoke(_selectedItemId);
             }
-        }
-
-        private static void EnsureLoaded()
-        {
-            if (_loaded)
-            {
-                return;
-            }
-
-            _selectedItemId = NormalizeSelectedItemId(EditorPrefs.GetString(SelectedItemEditorPrefsKey, ItemsInternal[0].Id));
-            _loaded = true;
         }
 
         private static string NormalizeSelectedItemId(string itemId)

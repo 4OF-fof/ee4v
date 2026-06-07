@@ -5,26 +5,26 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager
 {
-    internal sealed class NavigationWindow : EditorWindow
+    internal sealed class InfomationWindow : EditorWindow
     {
-        private const string WindowTitle = "Navigation";
+        private const string WindowTitle = "Infomation";
         private const string RootClassName = "ee4v-ui";
         private const string WindowClassName = "ee4v-asset-manager-window";
         private const string BodyClassName = "ee4v-asset-manager-window__standalone-panel-body";
 
-        [MenuItem("ee4v/Asset Manager/Navigation", false, 1)]
+        [MenuItem("ee4v/Asset Manager/Infomation", false, 2)]
         private static void ShowWindow()
         {
-            var window = GetWindow<NavigationWindow>();
+            var window = GetWindow<InfomationWindow>();
             window.titleContent = new GUIContent(WindowTitle);
-            window.minSize = new Vector2(320f, 420f);
+            window.minSize = new Vector2(360f, 420f);
             window.Show();
         }
 
         private void OnEnable()
         {
             titleContent = new GUIContent(WindowTitle);
-            minSize = new Vector2(320f, 420f);
+            minSize = new Vector2(360f, 420f);
         }
 
         private void CreateGUI()
@@ -35,14 +35,13 @@ namespace Ee4v.AssetManager
             root.AddToClassList(WindowClassName);
 
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/panels.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/InfomationPanel/infomation-panel.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/InfoCard/info-card.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/SingleSelectButtonGroup/single-select-button-group.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/asset-manager-window.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Window/InfomationWindow/infomation-window.uss");
 
             var body = new VisualElement();
             body.AddToClassList(BodyClassName);
-            body.Add(new NavigationPanel());
+            body.Add(new InfomationPanel());
 
             root.Add(body);
             WindowToastApi.EnsureHost(this);
