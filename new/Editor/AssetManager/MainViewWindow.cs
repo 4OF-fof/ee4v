@@ -36,11 +36,11 @@ namespace Ee4v.AssetManager
             root.AddToClassList(WindowClassName);
 
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/panels.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/toolbar.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/item-card.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/item-grid.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/panels.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/toolbar.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/ItemCard/item-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/ItemGrid/item-grid.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/InfoCard/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/asset-manager-window.uss");
 
             var body = new VisualElement();

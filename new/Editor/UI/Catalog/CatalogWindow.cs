@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Ee4v.Core.I18n;
 using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -48,6 +47,10 @@ namespace Ee4v.UI
             DisclosureClosed,
             DisclosureOpen
         }
+
+        private static readonly List<StoryRegistration> RegisteredStories = new List<StoryRegistration>();
+        private static readonly List<string> RegisteredStyleSheetPaths = new List<string>();
+        private static bool _registrationsLoaded;
 
         private readonly List<StoryDefinition> _stories = new List<StoryDefinition>();
 
@@ -202,98 +205,7 @@ namespace Ee4v.UI
             _contentHost.Add(page);
         }
 
-        private InfoCard CreatePreviewSection(VisualElement parent)
-        {
-            var card = new InfoCard(new InfoCardState("プレビュー", "コントロールの変更はすぐにプレビューへ反映されます。"));
-            var inserted = false;
-            for (var i = 0; i < parent.childCount; i++)
-            {
-                var child = parent.ElementAt(i);
-                if (!Equals(child.userData, "catalog-controls-section"))
-                {
-                    continue;
-                }
-
-                parent.Insert(i, card);
-                inserted = true;
-                break;
-            }
-
-            if (!inserted)
-            {
-                parent.Add(card);
-            }
-
-            return card;
-        }
-
-        private VisualElement CreatePreviewSurface(bool compact = false)
-        {
-            var surface = new VisualElement();
-            surface.AddToClassList("ee4v-ui-catalog-preview-surface");
-            if (compact)
-            {
-                surface.AddToClassList("ee4v-ui-catalog-preview-surface--compact");
-            }
-
-            return surface;
-        }
-
-        private VisualElement CreatePreviewSurface(VisualElement content, bool compact = false)
-        {
-            var surface = CreatePreviewSurface(compact);
-            surface.Add(content);
-            return surface;
-        }
-
-        private static TextField AddTextField(VisualElement parent, string label, string value, Action<string> onChanged, bool multiline = false)
-        {
-            var field = new TextField(label);
-            field.multiline = multiline;
-            if (multiline)
-            {
-                field.style.minHeight = 72f;
-            }
-
-            field.value = value;
-            field.RegisterValueChangedCallback(evt => onChanged(evt.newValue));
-            parent.Add(field);
-            return field;
-        }
-
-        private static EnumField AddEnumField<TEnum>(VisualElement parent, string label, TEnum value, Action<TEnum> onChanged)
-            where TEnum : struct, Enum
-        {
-            var field = new EnumField(label, (Enum)(object)value);
-            field.RegisterValueChangedCallback(evt => onChanged((TEnum)(object)evt.newValue));
-            parent.Add(field);
-            return field;
-        }
-
-        private static ObjectField AddObjectField<TObject>(VisualElement parent, string label, TObject value, Action<TObject> onChanged)
-            where TObject : UnityEngine.Object
-        {
-            var field = new ObjectField(label)
-            {
-                objectType = typeof(TObject),
-                allowSceneObjects = false,
-                value = value
-            };
-            field.RegisterValueChangedCallback(evt => onChanged((TObject)evt.newValue));
-            parent.Add(field);
-            return field;
-        }
-
         private VisualElement CreateNavigatorTreeItem()
-        {
-            var row = new VisualElement();
-            row.AddToClassList("ee4v-ui-catalog-tree-item");
-            row.Add(UiTextFactory.Create(string.Empty, UiClassNames.CatalogTreeTitle));
-            row.Add(UiTextFactory.Create(string.Empty, UiClassNames.CatalogTreeImplementation));
-            return row;
-        }
-
-        private VisualElement CreateSampleTreeItem()
         {
             var row = new VisualElement();
             row.AddToClassList("ee4v-ui-catalog-tree-item");
@@ -334,23 +246,6 @@ namespace Ee4v.UI
                     SelectStory(node.Story);
                     return;
                 }
-            }
-        }
-
-        private void BindSampleTreeItem(VisualElement element, SampleTreeNode node)
-        {
-            var title = element.ElementAt(0) as UiTextElement;
-            var meta = element.ElementAt(1) as UiTextElement;
-
-            if (title != null)
-            {
-                title.SetText(node.Title);
-            }
-
-            if (meta != null)
-            {
-                meta.SetText(node.Meta);
-                meta.EnableInClassList("ee4v-ui-catalog-tree-item__implementation--hidden", string.IsNullOrWhiteSpace(node.Meta));
             }
         }
 
@@ -401,93 +296,6 @@ namespace Ee4v.UI
             return ConvertNavigatorTreeItems(roots);
         }
 
-        private static IReadOnlyList<SearchableTreeItemData<SampleTreeNode>> BuildSampleTreeItems(
-            string searchFieldMeta = "Input",
-            string searchableTreeViewMeta = "Tree")
-        {
-            return new[]
-            {
-                new SearchableTreeItemData<SampleTreeNode>(
-                    1,
-                    new SampleTreeNode("Display", string.Empty),
-                    "Display",
-                    new[]
-                    {
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            2,
-                            new SampleTreeNode("InfoCard", "Card"),
-                            "InfoCard Card information"),
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            3,
-                            new SampleTreeNode("Alerts", "Banner"),
-                            "Alerts Banner feedback"),
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            4,
-                            new SampleTreeNode("StatusBadge", "Pill"),
-                            "StatusBadge pill status"),
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            5,
-                            new SampleTreeNode("Icon", "Image"),
-                            "Icon image texture builtin")
-                    }),
-                new SearchableTreeItemData<SampleTreeNode>(
-                    6,
-                    new SampleTreeNode("DataView", string.Empty),
-                    "DataView",
-                    new[]
-                    {
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            7,
-                            new SampleTreeNode("SearchableTreeView", searchableTreeViewMeta),
-                            "SearchableTreeView searchable tree")
-                    }),
-                new SearchableTreeItemData<SampleTreeNode>(
-                    8,
-                    new SampleTreeNode("Interactive", string.Empty),
-                    "Interactive",
-                    new[]
-                    {
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            9,
-                            new SampleTreeNode("SearchField", searchFieldMeta),
-                            "SearchField input search"),
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            10,
-                            new SampleTreeNode("TabCard", "Tabs"),
-                            "TabCard Tabs switcher")
-                    }),
-                new SearchableTreeItemData<SampleTreeNode>(
-                    11,
-                    new SampleTreeNode("Overlay", string.Empty),
-                    "Overlay",
-                    new[]
-                    {
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            12,
-                            new SampleTreeNode("WindowToast", "Toast"),
-                            "WindowToast editor window overlay toast")
-                    }),
-                new SearchableTreeItemData<SampleTreeNode>(
-                    13,
-                    new SampleTreeNode("Domain", string.Empty),
-                    "Domain",
-                    new[]
-                    {
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            14,
-                            new SampleTreeNode("Testing", string.Empty),
-                            "Testing",
-                            new[]
-                            {
-                                new SearchableTreeItemData<SampleTreeNode>(
-                                    15,
-                                    new SampleTreeNode("TestResultGroup", "Testing"),
-                                    "TestResultGroup testing domain result")
-                            })
-                    })
-            };
-        }
-
         private static List<SearchableTreeItemData<NavigatorTreeNode>> ConvertNavigatorTreeItems(IReadOnlyList<NavigatorTreeNodeBuilder> builders)
         {
             var items = new List<SearchableTreeItemData<NavigatorTreeNode>>(builders.Count);
@@ -528,16 +336,6 @@ namespace Ee4v.UI
             item.Add(labelElement);
             item.Add(valueElement);
             return item;
-        }
-
-        private static void FinalizeControlsSection(VisualElement parent, ControlsSectionContext controls)
-        {
-            if (controls == null || controls.Content.childCount > 0)
-            {
-                return;
-            }
-
-            parent.Remove(controls.Card);
         }
 
         private static string GetImplementationShortLabel(ComponentImplementationKind implementation)
@@ -599,6 +397,129 @@ namespace Ee4v.UI
             public ComponentImplementationKind Implementation { get; }
 
             public Action<VisualElement> Build { get; }
+        }
+
+        private sealed class StoryRegistration
+        {
+            public StoryRegistration(
+                string id,
+                string group,
+                string title,
+                string description,
+                string details,
+                IReadOnlyList<string> dependencies,
+                ComponentImplementationKind implementation,
+                Action<CatalogWindow, VisualElement> build)
+            {
+                Id = id;
+                Group = group;
+                Title = title;
+                Description = description;
+                Details = details;
+                Dependencies = dependencies ?? new string[0];
+                Implementation = implementation;
+                Build = build;
+            }
+
+            public string Id { get; }
+
+            public string Group { get; }
+
+            public string Title { get; }
+
+            public string Description { get; }
+
+            public string Details { get; }
+
+            public IReadOnlyList<string> Dependencies { get; }
+
+            public ComponentImplementationKind Implementation { get; }
+
+            public Action<CatalogWindow, VisualElement> Build { get; }
+        }
+
+        private sealed class CatalogRegistry
+        {
+            public void RegisterStory(StoryRegistration story)
+            {
+                CatalogWindow.RegisterStory(story);
+            }
+
+            public void RegisterStyleSheet(string packageRelativePath)
+            {
+                CatalogWindow.RegisterStyleSheet(packageRelativePath);
+            }
+        }
+
+        private interface ICatalogRegistrar
+        {
+            int Order { get; }
+
+            void Register(CatalogRegistry registry);
+        }
+
+        private static void RegisterStory(StoryRegistration story)
+        {
+            if (story == null || string.IsNullOrWhiteSpace(story.Id))
+            {
+                return;
+            }
+
+            for (var i = 0; i < RegisteredStories.Count; i++)
+            {
+                if (string.Equals(RegisteredStories[i].Id, story.Id, StringComparison.Ordinal))
+                {
+                    RegisteredStories[i] = story;
+                    return;
+                }
+            }
+
+            RegisteredStories.Add(story);
+        }
+
+        private static void RegisterStyleSheet(string packageRelativePath)
+        {
+            if (string.IsNullOrWhiteSpace(packageRelativePath))
+            {
+                return;
+            }
+
+            if (RegisteredStyleSheetPaths.Contains(packageRelativePath))
+            {
+                return;
+            }
+
+            RegisteredStyleSheetPaths.Add(packageRelativePath);
+        }
+
+        private static void EnsureCatalogRegistrations()
+        {
+            if (_registrationsLoaded)
+            {
+                return;
+            }
+
+            _registrationsLoaded = true;
+            var registrarTypes = TypeCache.GetTypesDerivedFrom<ICatalogRegistrar>()
+                .Where(type => type != null && !type.IsAbstract && !type.IsInterface)
+                .OrderBy(type => type.FullName, StringComparer.Ordinal)
+                .ToArray();
+            var registrars = new List<ICatalogRegistrar>();
+
+            for (var i = 0; i < registrarTypes.Length; i++)
+            {
+                var registrar = Activator.CreateInstance(registrarTypes[i], true) as ICatalogRegistrar;
+                if (registrar != null)
+                {
+                    registrars.Add(registrar);
+                }
+            }
+
+            var registry = new CatalogRegistry();
+            foreach (var registrar in registrars.OrderBy(registrar => registrar.Order))
+            {
+                registrar.Register(registry);
+            }
         }
 
         private sealed class NavigatorTreeNode
@@ -721,33 +642,5 @@ namespace Ee4v.UI
             }
         }
 
-        private sealed class ControlsSectionContext
-        {
-            public ControlsSectionContext(InfoCard card, VisualElement content, TabCard tabCard)
-            {
-                Card = card;
-                Content = content;
-                TabCard = tabCard;
-            }
-
-            public InfoCard Card { get; }
-
-            public VisualElement Content { get; }
-
-            public TabCard TabCard { get; }
-        }
-
-        private sealed class SampleTreeNode
-        {
-            public SampleTreeNode(string title, string meta)
-            {
-                Title = title ?? string.Empty;
-                Meta = meta ?? string.Empty;
-            }
-
-            public string Title { get; }
-
-            public string Meta { get; }
-        }
     }
 }

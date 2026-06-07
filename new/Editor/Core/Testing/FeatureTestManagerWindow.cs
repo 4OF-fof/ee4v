@@ -85,12 +85,12 @@ namespace Ee4v.Core.Testing
             root.AddToClassList("ee4v-test-manager");
 
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/search-field.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/alerts.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/status-badge.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/copyable-text-area.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/Testing/test-result-group.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/SearchField/search-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/InfoCard/info-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/Alerts/alerts.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/StatusBadge/status-badge.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/CopyableTextArea/copyable-text-area.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/Testing/UI/test-result-group.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/Testing/feature-test-manager-window.uss");
 
             var shell = new VisualElement();

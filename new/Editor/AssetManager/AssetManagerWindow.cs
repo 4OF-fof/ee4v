@@ -58,42 +58,47 @@ namespace Ee4v.AssetManager
             root.AddToClassList(WindowClassName);
 
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/asset-manager-window-layout.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/panels.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/toolbar.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/item-card.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/item-grid.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/single-select-button-group.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Layout/ThreePaneLayout/three-pane-layout.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/panels.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/toolbar.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/ItemCard/item-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/ItemGrid/item-grid.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/InfoCard/info-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/SingleSelectButtonGroup/single-select-button-group.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/asset-manager-window.uss");
 
-            var layout = new AssetManagerWindowLayout(CreateLayoutState());
+            var layout = new ThreePaneLayout(CreateLayoutState());
             layout.AddToClassList(LayoutClassName);
-            layout.NavigationPaneWidthChanged += value => _navigationWidth = value;
-            layout.InspectorPaneWidthChanged += value => _inspectorWidth = value;
-            layout.NavigationCollapsedChanged += value => _navigationCollapsed = value;
-            layout.InspectorCollapsedChanged += value => _inspectorCollapsed = value;
+            layout.LeftPaneWidthChanged += value => _navigationWidth = value;
+            layout.RightPaneWidthChanged += value => _inspectorWidth = value;
+            layout.LeftCollapsedChanged += value => _navigationCollapsed = value;
+            layout.RightCollapsedChanged += value => _inspectorCollapsed = value;
 
-            layout.NavigationPaneContent.Add(new NavigationPanel());
-            layout.ContentPaneContent.Add(new MainView(AssetManagerItemListProviderRegistry.GetCurrent));
-            layout.InspectorPaneContent.Add(new InfomationPanel());
+            var toolbar = new AssetManagerToolbar();
+            toolbar.style.flexGrow = 1f;
+            toolbar.style.marginBottom = 10f;
+
+            layout.LeftPaneContent.Add(new NavigationPanel());
+            layout.MainContent.Add(toolbar);
+            layout.MainContent.Add(new MainView(AssetManagerItemListProviderRegistry.GetCurrent));
+            layout.RightPaneContent.Add(new InfomationPanel());
 
             root.Add(layout);
             WindowToastApi.EnsureHost(this);
         }
 
-        private AssetManagerWindowLayoutState CreateLayoutState()
+        private ThreePaneLayoutState CreateLayoutState()
         {
-            return new AssetManagerWindowLayoutState(
-                navigationWidth: Mathf.Max(0f, _navigationWidth),
-                inspectorWidth: Mathf.Max(0f, _inspectorWidth),
-                navigationMinWidth: NavigationMinWidth,
-                navigationMaxWidth: NavigationMaxWidth,
-                contentMinWidth: ContentMinWidth,
-                inspectorMinWidth: InspectorMinWidth,
-                inspectorMaxWidth: InspectorMaxWidth,
-                navigationCollapsed: _navigationCollapsed,
-                inspectorCollapsed: _inspectorCollapsed);
+            return new ThreePaneLayoutState(
+                leftWidth: Mathf.Max(0f, _navigationWidth),
+                rightWidth: Mathf.Max(0f, _inspectorWidth),
+                leftMinWidth: NavigationMinWidth,
+                leftMaxWidth: NavigationMaxWidth,
+                mainMinWidth: ContentMinWidth,
+                rightMinWidth: InspectorMinWidth,
+                rightMaxWidth: InspectorMaxWidth,
+                leftCollapsed: _navigationCollapsed,
+                rightCollapsed: _inspectorCollapsed);
         }
     }
 }

@@ -35,8 +35,8 @@ namespace Ee4v.AssetManager
             root.AddToClassList(WindowClassName);
 
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/panels.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/info-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/panels.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/InfoCard/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/asset-manager-window.uss");
 
             var body = new VisualElement();
