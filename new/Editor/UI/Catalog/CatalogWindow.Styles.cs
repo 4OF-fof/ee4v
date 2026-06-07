@@ -9,6 +9,7 @@ namespace Ee4v.UI
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/search-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/single-select-button-group.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/context-menu-window.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/searchable-tree-view.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/Testing/test-result-group.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Domain/AssetManager/asset-manager-window-layout.uss");

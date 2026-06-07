@@ -45,6 +45,19 @@ namespace Ee4v.UI
                 BuildSingleSelectButtonGroupStory));
 
             _stories.Add(new StoryDefinition(
+                "context-menu-window",
+                "Interactive",
+                "ContextMenuWindow",
+                "old AssetManager の GenericDropdownMenu に近い見た目を UI Toolkit と USS で再現したコンテキストメニューWindowです。",
+                "target VisualElement と panel/world position を渡して開きます。項目、区切り、disabled、icon、shortcut、選択 callback を扱い、幅は項目テキストを測定して決めます。",
+                new[]
+                {
+                    "Icon"
+                },
+                ComponentImplementationKind.UiToolkit,
+                BuildContextMenuWindowStory));
+
+            _stories.Add(new StoryDefinition(
                 "searchable-tree-view",
                 "DataView",
                 "SearchableTreeView",
