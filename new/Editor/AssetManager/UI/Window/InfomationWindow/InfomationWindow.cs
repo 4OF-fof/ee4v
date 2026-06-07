@@ -36,7 +36,6 @@ namespace Ee4v.AssetManager
 
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/InfomationPanel/infomation-panel.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/InfoCard/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Window/InfomationWindow/infomation-window.uss");
 
             var body = new VisualElement();

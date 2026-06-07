@@ -20,10 +20,7 @@ namespace Ee4v.UI
                     "MainView",
                     "AssetManager 中央領域の toolbar 以下だけを表す main view コンポーネントです。",
                     "layout 内では上部 toolbar の下に配置し、単体 window では toolbar と呼び出し側で合成する前提です。一覧、空状態、進行中タスク表示などを置くベース領域として扱います。",
-                    new[]
-                    {
-                        "InfoCard"
-                    },
+                    new[] { "AssetItemGrid" },
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildAssetManagerMainViewStory(parent)));
             }

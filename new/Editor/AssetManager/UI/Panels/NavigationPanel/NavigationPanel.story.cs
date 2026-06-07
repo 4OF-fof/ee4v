@@ -20,10 +20,7 @@ namespace Ee4v.UI
                     "NavigationPanel",
                     "AssetManager 左ペイン用の navigation コンポーネントです。",
                     "カテゴリ、ソース、保存済みビューのような左側導線を単体で再利用できるようにした panel component です。ThreePaneLayout の左ペインにも、単体 window にも同じものを載せます。",
-                    new[]
-                    {
-                        "InfoCard"
-                    },
+                    new[] { "SingleSelectButtonGroup" },
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildAssetManagerNavigationPanelStory(parent)));
             }

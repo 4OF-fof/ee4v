@@ -41,14 +41,13 @@ namespace Ee4v.AssetManager
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/ItemCard/item-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/ItemGrid/item-grid.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/DataView/AssetItemGrid/asset-item-grid.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/InfoCard/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Window/MainViewWindow/main-view-window.uss");
 
             var body = new VisualElement();
             body.AddToClassList(BodyClassName);
 
             var toolbar = new AssetManagerToolbar();
-            var mainView = new MainView(AssetManagerItemListProviderRegistry.GetCurrent);
+            var mainView = new MainView();
             mainView.AddToClassList(ContentClassName);
 
             body.Add(toolbar);

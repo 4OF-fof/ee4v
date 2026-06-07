@@ -20,10 +20,7 @@ namespace Ee4v.UI
                     "InfomationPanel",
                     "AssetManager 右ペイン用の情報パネルコンポーネントです。",
                     "選択中アセットの詳細、プレビュー、検証結果の文脈を単体でも layout 内でも同じ構成で再利用する右ペイン component です。",
-                    new[]
-                    {
-                        "InfoCard"
-                    },
+                    new string[0],
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildAssetManagerInfomationPanelStory(parent)));
             }

@@ -7,23 +7,11 @@ namespace Ee4v.UI
     internal static class AssetItemGridCache
     {
         private static readonly Dictionary<string, CachedGridState> Cache = new Dictionary<string, CachedGridState>(StringComparer.Ordinal);
-        private static bool _cacheInvalidationRegistered;
 
-        public static void EnsureCacheInvalidationRegistered()
-        {
-            if (_cacheInvalidationRegistered)
-            {
-                return;
-            }
-
-            _cacheInvalidationRegistered = true;
-            AssetManagerItemListProviderRegistry.SessionCacheCleared += Clear;
-        }
-
-        public static bool TryGet(AssetManagerItemListRequest request, out ItemGridState gridState, out string statusText)
+        public static bool TryGet(string cacheKey, out ItemGridState gridState, out string statusText)
         {
             CachedGridState cached;
-            if (Cache.TryGetValue(CreateCacheKey(request), out cached))
+            if (Cache.TryGetValue(cacheKey ?? string.Empty, out cached))
             {
                 gridState = cached.GridState;
                 statusText = cached.StatusText;
@@ -35,16 +23,16 @@ namespace Ee4v.UI
             return false;
         }
 
-        public static void Store(AssetManagerItemListRequest request, AssetManagerItemList itemList, out ItemGridState gridState, out string statusText)
+        public static void Store(string cacheKey, AssetItemGridList itemList, out ItemGridState gridState, out string statusText)
         {
-            var cacheKey = CreateCacheKey(request);
+            cacheKey = cacheKey ?? string.Empty;
             CachedGridState existing;
             if (Cache.TryGetValue(cacheKey, out existing))
             {
                 DestroyThumbnails(existing);
             }
 
-            var list = itemList ?? new AssetManagerItemList(null);
+            var list = itemList ?? new AssetItemGridList(null);
             var itemCardStates = new List<ItemCardState>(list.Items.Count);
             for (var i = 0; i < list.Items.Count; i++)
             {
@@ -60,13 +48,6 @@ namespace Ee4v.UI
             gridState = new ItemGridState(itemCardStates, list.ItemsPerRow);
             statusText = itemCardStates.Count == 0 ? list.EmptyText : string.Empty;
             Cache[cacheKey] = new CachedGridState(gridState, statusText);
-        }
-
-        private static string CreateCacheKey(AssetManagerItemListRequest request)
-        {
-            var viewId = request != null ? request.ViewId : string.Empty;
-            var limit = request != null ? request.Limit : 200;
-            return AssetManagerItemListProviderRegistry.CacheVersion + "|" + viewId + "|" + limit;
         }
 
         private static Texture2D CreateThumbnail(byte[] data)
@@ -89,7 +70,7 @@ namespace Ee4v.UI
             return null;
         }
 
-        private static void Clear()
+        public static void Clear()
         {
             foreach (var cached in Cache.Values)
             {

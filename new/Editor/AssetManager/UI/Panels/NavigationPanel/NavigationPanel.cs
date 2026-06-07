@@ -10,7 +10,8 @@ namespace Ee4v.UI
 
         public NavigationPanel()
         {
-            AssetManagerPanelFactory.PrepareHost(this, RootClassName);
+            AddToClassList("ee4v-asset-manager-panel");
+            AddToClassList(RootClassName);
 
             var pickerSection = new VisualElement();
             pickerSection.AddToClassList(PickerSectionClassName);
@@ -19,22 +20,6 @@ namespace Ee4v.UI
             pickerSection.Add(_group);
 
             Add(pickerSection);
-            Add(AssetManagerPanelFactory.CreateScroll(
-                AssetManagerPanelFactory.CreateCard(
-                    "AssetManager",
-                    "Navigation",
-                    "カテゴリ、ソース、保存済みコレクションを切り替える領域です。",
-                    "All Assets",
-                    "Favorites",
-                    "Booth Library",
-                    "Packages"),
-                AssetManagerPanelFactory.CreateCard(
-                    "Collections",
-                    "Saved Views",
-                    "よく使う絞り込みや作業セットをここに配置します。",
-                    "Recent Imports",
-                    "Needs Review",
-                    "Ready To Publish")));
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);

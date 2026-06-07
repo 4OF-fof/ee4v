@@ -22,8 +22,8 @@ namespace Ee4v.UI
                     "asset-item-grid",
                     "Domain/AssetManager",
                     "AssetItemGrid",
-                    "AssetManager item list を受け取り、汎用 ItemGrid に表示状態として流し込む domain component です。",
-                    "AssetManagerItemList から Texture2D 付き ItemGridState への変換と cache 利用を内包し、MainView 側が ItemGridCache を直接意識しないための adapter として扱います。",
+                    "AssetManager item grid list を受け取り、汎用 ItemGrid に表示状態として流し込む domain component です。",
+                    "AssetItemGridList から Texture2D 付き ItemGridState への変換と cache 利用を内包し、呼び出し側が ItemGridState を直接意識しないための adapter として扱います。",
                     new[]
                     {
                         "ItemGrid",
@@ -39,7 +39,7 @@ namespace Ee4v.UI
             var itemCount = 80;
             var itemsPerRow = 6;
             Action refresh = null;
-            var controls = CreatePlainControlsSection(parent, "AssetManagerItemList を流し込み、AssetItemGrid 側の変換と cache 利用を確認します。");
+            var controls = CreatePlainControlsSection(parent, "AssetItemGridList を流し込み、AssetItemGrid 側の変換と cache 利用を確認します。");
 
             var itemCountField = new IntegerField("Item Count")
             {
@@ -86,30 +86,29 @@ namespace Ee4v.UI
 
             refresh = () =>
             {
-                var request = new AssetManagerItemListRequest("catalog-asset-item-grid");
                 string ignoredStatusText;
-                grid.SetAssetItems(request, CreateCatalogAssetItemList(itemCount, itemsPerRow), out ignoredStatusText);
+                grid.SetAssetItems("catalog-asset-item-grid", CreateCatalogAssetItemList(itemCount, itemsPerRow), out ignoredStatusText);
             };
 
             refresh();
             FinalizeControlsSection(parent, controls);
         }
 
-        private AssetManagerItemList CreateCatalogAssetItemList(int itemCount, int itemsPerRow)
+        private AssetItemGridList CreateCatalogAssetItemList(int itemCount, int itemsPerRow)
         {
             var thumbnail = CreateItemCardSampleThumbnail(132, 132);
             var thumbnailBytes = thumbnail.EncodeToPNG();
             UnityEngine.Object.DestroyImmediate(thumbnail);
 
-            var items = new List<AssetManagerItemListItem>();
+            var items = new List<AssetItemGridListItem>();
             for (var i = 0; i < itemCount; i++)
             {
-                items.Add(new AssetManagerItemListItem(
+                items.Add(new AssetItemGridListItem(
                     string.Format("Asset Item {0:00}", i + 1),
                     i % 4 == 0 ? null : thumbnailBytes));
             }
 
-            return new AssetManagerItemList(items, "No asset items.", itemsPerRow);
+            return new AssetItemGridList(items, "No asset items.", itemsPerRow);
         }
     }
 }

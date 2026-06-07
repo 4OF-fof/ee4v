@@ -6,6 +6,8 @@ namespace Ee4v.AssetManager.Api
 {
     public static class AssetManagerApi
     {
+        public static event Action Changed;
+
         public static AssetSearchResult SearchItems(AssetItemQuery query)
         {
             return Execute(() => AssetManagerDatabase.SearchItems(query));
@@ -23,12 +25,12 @@ namespace Ee4v.AssetManager.Api
 
         public static AssetItem CreateItem(CreateAssetItemRequest request)
         {
-            return Execute(() => AssetManagerDatabase.CreateItem(request));
+            return ExecuteChanged(() => AssetManagerDatabase.CreateItem(request));
         }
 
         public static AssetItem UpdateItem(string itemId, UpdateAssetItemRequest request)
         {
-            return Execute(() => AssetManagerDatabase.UpdateItem(itemId, request));
+            return ExecuteChanged(() => AssetManagerDatabase.UpdateItem(itemId, request));
         }
 
         public static IReadOnlyList<AssetFile> GetFiles(string itemId, AssetFileQuery query = null)
@@ -43,17 +45,17 @@ namespace Ee4v.AssetManager.Api
 
         public static AssetFile RegisterFile(string itemId, RegisterFileRequest request)
         {
-            return Execute(() => AssetManagerDatabase.RegisterFile(itemId, request));
+            return ExecuteChanged(() => AssetManagerDatabase.RegisterFile(itemId, request));
         }
 
         public static void SetPrimaryFile(string itemId, string fileId)
         {
-            Execute(() => AssetManagerDatabase.SetPrimaryFile(itemId, fileId));
+            ExecuteChanged(() => AssetManagerDatabase.SetPrimaryFile(itemId, fileId));
         }
 
         public static void ArchiveFile(string fileId)
         {
-            Execute(() => AssetManagerDatabase.ArchiveFile(fileId));
+            ExecuteChanged(() => AssetManagerDatabase.ArchiveFile(fileId));
         }
 
         public static AssetFilePathResolution ResolveFilePath(string fileId)
@@ -68,12 +70,12 @@ namespace Ee4v.AssetManager.Api
 
         public static AssetTag CreateTag(string name)
         {
-            return Execute(() => AssetManagerDatabase.CreateTag(name));
+            return ExecuteChanged(() => AssetManagerDatabase.CreateTag(name));
         }
 
         public static void SetItemTags(string itemId, IReadOnlyList<string> tagIds)
         {
-            Execute(() => AssetManagerDatabase.SetItemTags(itemId, tagIds));
+            ExecuteChanged(() => AssetManagerDatabase.SetItemTags(itemId, tagIds));
         }
 
         public static IReadOnlyList<AssetCollection> GetCollections()
@@ -83,22 +85,22 @@ namespace Ee4v.AssetManager.Api
 
         public static AssetCollection CreateCollection(CreateCollectionRequest request)
         {
-            return Execute(() => AssetManagerDatabase.CreateCollection(request));
+            return ExecuteChanged(() => AssetManagerDatabase.CreateCollection(request));
         }
 
         public static AssetCollection CreateSmartCollection(CreateSmartCollectionRequest request)
         {
-            return Execute(() => AssetManagerDatabase.CreateSmartCollection(request));
+            return ExecuteChanged(() => AssetManagerDatabase.CreateSmartCollection(request));
         }
 
         public static void MoveCollection(string collectionId, string parentCollectionId)
         {
-            Execute(() => AssetManagerDatabase.MoveCollection(collectionId, parentCollectionId));
+            ExecuteChanged(() => AssetManagerDatabase.MoveCollection(collectionId, parentCollectionId));
         }
 
         public static void SetItemCollections(string itemId, IReadOnlyList<string> collectionIds)
         {
-            Execute(() => AssetManagerDatabase.SetItemCollections(itemId, collectionIds));
+            ExecuteChanged(() => AssetManagerDatabase.SetItemCollections(itemId, collectionIds));
         }
 
         public static IReadOnlyList<AssetFileDependency> GetFileDependencies(string fileId)
@@ -108,17 +110,17 @@ namespace Ee4v.AssetManager.Api
 
         public static void SetFileDependencies(string dependentFileId, IReadOnlyList<string> dependencyFileIds)
         {
-            Execute(() => AssetManagerDatabase.SetFileDependencies(dependentFileId, dependencyFileIds));
+            ExecuteChanged(() => AssetManagerDatabase.SetFileDependencies(dependentFileId, dependencyFileIds));
         }
 
         public static AssetSyncResult SyncBlm(BlmSyncRequest request)
         {
-            return Execute(() => AssetManagerDatabase.SyncBlm(request));
+            return ExecuteChanged(() => AssetManagerDatabase.SyncBlm(request));
         }
 
         public static AssetSyncResult SyncEagle(EagleSyncRequest request)
         {
-            return Execute(() => AssetManagerDatabase.SyncEagle(request));
+            return ExecuteChanged(() => AssetManagerDatabase.SyncEagle(request));
         }
 
         public static IReadOnlyList<AssetSyncInfo> GetSyncInfo()
@@ -140,6 +142,22 @@ namespace Ee4v.AssetManager.Api
             {
                 throw AssetManagerDatabase.ToAssetManagerException(exception);
             }
+        }
+
+        private static T ExecuteChanged<T>(Func<T> action)
+        {
+            var result = Execute(action);
+            Changed?.Invoke();
+            return result;
+        }
+
+        private static void ExecuteChanged(Action action)
+        {
+            ExecuteChanged(() =>
+            {
+                action();
+                return true;
+            });
         }
 
         private static void Execute(Action action)

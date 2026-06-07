@@ -36,7 +36,6 @@ namespace Ee4v.AssetManager
 
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/NavigationPanel/navigation-panel.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/InfoCard/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/SingleSelectButtonGroup/single-select-button-group.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Window/NavigationWindow/navigation-window.uss");
 

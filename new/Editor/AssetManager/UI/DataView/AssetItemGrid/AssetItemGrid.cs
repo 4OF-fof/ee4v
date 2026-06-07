@@ -4,13 +4,12 @@ namespace Ee4v.UI
     {
         public AssetItemGrid()
         {
-            AssetItemGridCache.EnsureCacheInvalidationRegistered();
         }
 
-        public bool TrySetCachedItems(AssetManagerItemListRequest request, out string statusText)
+        public bool TrySetCachedItems(string cacheKey, out string statusText)
         {
             ItemGridState gridState;
-            if (AssetItemGridCache.TryGet(request, out gridState, out statusText))
+            if (AssetItemGridCache.TryGet(cacheKey, out gridState, out statusText))
             {
                 SetState(gridState);
                 return true;
@@ -24,11 +23,16 @@ namespace Ee4v.UI
             SetState(new ItemGridState(null));
         }
 
-        public void SetAssetItems(AssetManagerItemListRequest request, AssetManagerItemList itemList, out string statusText)
+        public void SetAssetItems(string cacheKey, AssetItemGridList itemList, out string statusText)
         {
             ItemGridState gridState;
-            AssetItemGridCache.Store(request, itemList, out gridState, out statusText);
+            AssetItemGridCache.Store(cacheKey, itemList, out gridState, out statusText);
             SetState(gridState);
+        }
+
+        public void ClearCachedItems()
+        {
+            AssetItemGridCache.Clear();
         }
 
         protected override ItemCard CreateItemCard()

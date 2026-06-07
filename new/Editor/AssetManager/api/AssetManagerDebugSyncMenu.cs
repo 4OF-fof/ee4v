@@ -1,5 +1,4 @@
 using System;
-using Ee4v.UI;
 using UnityEditor;
 
 namespace Ee4v.AssetManager.Api
@@ -11,7 +10,6 @@ namespace Ee4v.AssetManager.Api
         {
             var blm = RunSyncWithoutDialog(() => AssetManagerApi.SyncBlm(new BlmSyncRequest()));
             var eagle = RunSyncWithoutDialog(() => AssetManagerApi.SyncEagle(new EagleSyncRequest()));
-            AssetManagerItemListProviderRegistry.ClearSessionCache();
             EditorUtility.DisplayDialog(
                 "AssetManager Debug Sync",
                 string.Format(
@@ -33,14 +31,12 @@ namespace Ee4v.AssetManager.Api
         private static void SyncBlm()
         {
             RunSync("BLM", () => AssetManagerApi.SyncBlm(new BlmSyncRequest()));
-            AssetManagerItemListProviderRegistry.ClearSessionCache();
         }
 
         [MenuItem("ee4v/Asset Manager/Debug/Sync Eagle", false, 1001)]
         private static void SyncEagle()
         {
             RunSync("Eagle", () => AssetManagerApi.SyncEagle(new EagleSyncRequest()));
-            AssetManagerItemListProviderRegistry.ClearSessionCache();
         }
 
         private static void RunSync(string label, Func<AssetSyncResult> sync)

@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine.UIElements;
@@ -10,20 +9,21 @@ namespace Ee4v.UI
         private const string RootClassName = "ee4v-asset-manager-panel--main-view";
         private const string ContentClassName = "ee4v-asset-manager-panel__main-content";
         private const string StatusClassName = "ee4v-asset-manager-panel__main-status";
-        private readonly Func<IAssetManagerItemListProvider> _itemListProviderResolver;
+        private readonly MainViewController _controller;
         private readonly AssetItemGrid _itemGrid;
         private readonly UiTextElement _statusLabel;
         private int _loadVersion;
 
-        public MainView(Func<IAssetManagerItemListProvider> itemListProviderResolver = null)
+        public MainView(MainViewController controller = null)
         {
-            _itemListProviderResolver = itemListProviderResolver ?? AssetManagerItemListProviderRegistry.GetCurrent;
+            _controller = controller ?? new MainViewController();
             _itemGrid = new AssetItemGrid();
             _itemGrid.AddToClassList(ContentClassName);
             _statusLabel = UiTextFactory.Create(string.Empty, StatusClassName);
             _statusLabel.SetWhiteSpace(WhiteSpace.Normal);
 
-            AssetManagerPanelFactory.PrepareHost(this, RootClassName);
+            AddToClassList("ee4v-asset-manager-panel");
+            AddToClassList(RootClassName);
             Add(_statusLabel);
             Add(_itemGrid);
 
@@ -34,14 +34,14 @@ namespace Ee4v.UI
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
             AssetManagerViewState.SelectedItemChanged += OnSelectedItemChanged;
-            AssetManagerItemListProviderRegistry.SessionCacheCleared += OnSessionCacheCleared;
+            MainViewController.ContentChanged += OnContentChanged;
             RefreshContent();
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             AssetManagerViewState.SelectedItemChanged -= OnSelectedItemChanged;
-            AssetManagerItemListProviderRegistry.SessionCacheCleared -= OnSessionCacheCleared;
+            MainViewController.ContentChanged -= OnContentChanged;
             _loadVersion++;
         }
 
@@ -50,17 +50,19 @@ namespace Ee4v.UI
             RefreshContent();
         }
 
-        private void OnSessionCacheCleared()
+        private void OnContentChanged()
         {
+            _itemGrid.ClearCachedItems();
             RefreshContent();
         }
 
         private void RefreshContent()
         {
             var selectedItem = AssetManagerViewState.SelectedItem;
-            var request = new AssetManagerItemListRequest(selectedItem.Id);
+            var request = _controller.CreateRequest(selectedItem.Id);
+            var cacheKey = _controller.CreateCacheKey(request);
             string cachedStatusText;
-            if (_itemGrid.TrySetCachedItems(request, out cachedStatusText))
+            if (_itemGrid.TrySetCachedItems(cacheKey, out cachedStatusText))
             {
                 SetStatus(cachedStatusText);
                 return;
@@ -70,7 +72,7 @@ namespace Ee4v.UI
             SetStatus("Loading assets...");
             _itemGrid.SetLoading();
 
-            Task.Run(() => ResolveItemListProvider().GetItems(request)).ContinueWith(task =>
+            Task.Run(() => _controller.LoadItems(request)).ContinueWith(task =>
             {
                 EditorApplication.delayCall += () =>
                 {
@@ -91,15 +93,15 @@ namespace Ee4v.UI
                         return;
                     }
 
-                    ApplyItemList(request, task.Result);
+                    ApplyItemList(cacheKey, task.Result);
                 };
             });
         }
 
-        private void ApplyItemList(AssetManagerItemListRequest request, AssetManagerItemList itemList)
+        private void ApplyItemList(string cacheKey, AssetItemGridList itemList)
         {
             string statusText;
-            _itemGrid.SetAssetItems(request, itemList, out statusText);
+            _itemGrid.SetAssetItems(cacheKey, itemList, out statusText);
             SetStatus(statusText);
         }
 
@@ -107,12 +109,6 @@ namespace Ee4v.UI
         {
             _statusLabel.SetText(message);
             _statusLabel.style.display = string.IsNullOrWhiteSpace(message) ? DisplayStyle.None : DisplayStyle.Flex;
-        }
-
-        private IAssetManagerItemListProvider ResolveItemListProvider()
-        {
-            var provider = _itemListProviderResolver != null ? _itemListProviderResolver() : null;
-            return provider ?? AssetManagerItemListProviderRegistry.Current;
         }
     }
 }

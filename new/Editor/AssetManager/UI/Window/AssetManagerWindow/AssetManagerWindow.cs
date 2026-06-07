@@ -66,7 +66,6 @@ namespace Ee4v.AssetManager
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/ItemCard/item-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/DataView/ItemGrid/item-grid.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/DataView/AssetItemGrid/asset-item-grid.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Display/InfoCard/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Interactive/SingleSelectButtonGroup/single-select-button-group.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Window/AssetManagerWindow/asset-manager-window.uss");
 
@@ -82,7 +81,7 @@ namespace Ee4v.AssetManager
 
             layout.MainToolbarContent.Add(toolbar);
             layout.LeftPaneContent.Add(new NavigationPanel());
-            layout.MainContent.Add(new MainView(AssetManagerItemListProviderRegistry.GetCurrent));
+            layout.MainContent.Add(new MainView());
             layout.RightPaneContent.Add(new InfomationPanel());
 
             root.Add(layout);
