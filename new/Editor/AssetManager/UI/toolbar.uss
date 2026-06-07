@@ -1,9 +1,11 @@
 .ee4v-ui-asset-manager-toolbar {
-    min-height: 32px;
+    height: 28px;
+    min-height: 28px;
+    max-height: 28px;
     padding-left: 8px;
     padding-right: 8px;
-    padding-top: 6px;
-    padding-bottom: 6px;
+    padding-top: 4px;
+    padding-bottom: 4px;
     background-color: rgba(255, 255, 255, 0.025);
 }
 
@@ -12,4 +14,5 @@
     align-items: center;
     min-width: 0;
     min-height: 20px;
+    max-height: 20px;
 }

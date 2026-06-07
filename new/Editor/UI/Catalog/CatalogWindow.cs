@@ -17,7 +17,8 @@ namespace Ee4v.UI
             { "DataView", 1 },
             { "Interactive", 2 },
             { "Overlay", 3 },
-            { "Domain", 4 }
+            { "Layout", 4 },
+            { "Domain", 5 }
         };
         private enum ComponentImplementationKind
         {

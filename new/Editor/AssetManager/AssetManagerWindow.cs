@@ -76,10 +76,9 @@ namespace Ee4v.AssetManager
 
             var toolbar = new AssetManagerToolbar();
             toolbar.style.flexGrow = 1f;
-            toolbar.style.marginBottom = 10f;
 
+            layout.MainToolbarContent.Add(toolbar);
             layout.LeftPaneContent.Add(new NavigationPanel());
-            layout.MainContent.Add(toolbar);
             layout.MainContent.Add(new MainView(AssetManagerItemListProviderRegistry.GetCurrent));
             layout.RightPaneContent.Add(new InfomationPanel());
 
