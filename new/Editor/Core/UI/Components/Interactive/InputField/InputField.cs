@@ -7,33 +7,33 @@ namespace Ee4v.UI
 {
     internal sealed class InputFieldState
     {
-        public InputFieldState(string value = null, string label = null, bool multiline = false, float maxHeight = 0f)
+        public InputFieldState(string value = null, bool multiline = false, float maxHeight = 0f, string placeholder = null)
         {
             Value = value ?? string.Empty;
-            Label = label ?? string.Empty;
             Multiline = multiline;
             MaxHeight = Mathf.Max(0f, maxHeight);
+            Placeholder = placeholder ?? string.Empty;
         }
 
         public string Value { get; }
 
-        public string Label { get; }
-
         public bool Multiline { get; }
 
         public float MaxHeight { get; }
+
+        public string Placeholder { get; }
     }
 
     internal sealed class InputField : VisualElement
     {
         private const string RootClassName = "ee4v-ui-input-field";
         private const string MultilineClassName = "ee4v-ui-input-field--multiline";
-        private const string LabelClassName = "ee4v-ui-input-field__label";
         private const string FieldContainerClassName = "ee4v-ui-input-field__field-container";
         private const string FieldContainerFocusedClassName = "ee4v-ui-input-field__field-container--focused";
         private const string FieldClassName = "ee4v-ui-input-field__field";
-        private readonly UiTextElement _label;
+        private const string PlaceholderClassName = "ee4v-ui-input-field__placeholder";
         private readonly VisualElement _fieldContainer;
+        private readonly UiTextElement _placeholderLabel;
         private readonly TextField _textField;
         private bool _isFocused;
         private bool _multiline;
@@ -43,16 +43,18 @@ namespace Ee4v.UI
         {
             AddToClassList(RootClassName);
 
-            _label = UiTextFactory.Create(string.Empty, LabelClassName);
-            _label.SetWhiteSpace(WhiteSpace.NoWrap);
-
             _fieldContainer = new VisualElement();
             _fieldContainer.AddToClassList(FieldContainerClassName);
+
+            _placeholderLabel = UiTextFactory.Create(string.Empty, UiClassNames.SearchFieldPlaceholder);
+            _placeholderLabel.AddToClassList(PlaceholderClassName);
+            _placeholderLabel.pickingMode = PickingMode.Ignore;
 
             _textField = new TextField();
             _textField.AddToClassList(FieldClassName);
             _textField.RegisterValueChangedCallback(evt =>
             {
+                RefreshVisualState();
                 ValueChanged?.Invoke(evt.newValue ?? string.Empty);
             });
             _textField.RegisterCallback<FocusInEvent>(_ =>
@@ -68,7 +70,7 @@ namespace Ee4v.UI
             _textField.RegisterCallback<GeometryChangedEvent>(_ => RefreshScrollView());
 
             _fieldContainer.Add(_textField);
-            Add(_label);
+            _fieldContainer.Add(_placeholderLabel);
             Add(_fieldContainer);
             RegisterCallback<AttachToPanelEvent>(_ => ScheduleScrollViewRefresh());
 
@@ -80,27 +82,31 @@ namespace Ee4v.UI
         public string Value
         {
             get { return _textField.value ?? string.Empty; }
-            set { _textField.value = value ?? string.Empty; }
+            set
+            {
+                _textField.value = value ?? string.Empty;
+                RefreshVisualState();
+            }
         }
 
         public void SetState(InputFieldState state)
         {
             state = state ?? new InputFieldState();
-            SetLabel(state.Label);
             SetMultiline(state.Multiline);
             SetMaxHeight(state.MaxHeight);
+            SetPlaceholder(state.Placeholder);
             SetValueWithoutNotify(state.Value);
-        }
-
-        public void SetLabel(string label)
-        {
-            _label.SetText(label);
-            _label.style.display = string.IsNullOrWhiteSpace(label) ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
         public void SetValueWithoutNotify(string value)
         {
             _textField.SetValueWithoutNotify(value ?? string.Empty);
+            RefreshVisualState();
+        }
+
+        public void SetPlaceholder(string placeholder)
+        {
+            _placeholderLabel.SetText(placeholder ?? string.Empty);
             RefreshVisualState();
         }
 
@@ -120,6 +126,11 @@ namespace Ee4v.UI
 
         private void SetMultiline(bool multiline)
         {
+            if (_multiline == multiline)
+            {
+                return;
+            }
+
             _multiline = multiline;
             _textField.multiline = multiline;
             EnableInClassList(MultilineClassName, multiline);
@@ -168,6 +179,10 @@ namespace Ee4v.UI
 
         private void RefreshVisualState()
         {
+            var hasValue = !string.IsNullOrEmpty(Value);
+            _placeholderLabel.style.display = !hasValue && !_isFocused && !string.IsNullOrWhiteSpace(_placeholderLabel.Text)
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
             _fieldContainer.EnableInClassList(FieldContainerFocusedClassName, _isFocused);
         }
     }

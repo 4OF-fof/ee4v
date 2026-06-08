@@ -11,6 +11,8 @@ namespace Ee4v.UI
 {
     internal sealed partial class CatalogWindow
     {
+        private const string CatalogControlLabelClassName = "ee4v-ui-catalog-control-label";
+
         private static string FormatCatalogToastTitle(string title)
         {
             var normalized = (title ?? string.Empty).Trim();
@@ -47,9 +49,16 @@ namespace Ee4v.UI
             return new ControlsSectionContext(card, content, null);
         }
 
-        internal static InputField AddTextField(VisualElement parent, string label, string value, Action<string> onChanged, bool multiline = false, float maxHeight = 0f)
+        internal static InputField AddTextField(VisualElement parent, string label, string value, Action<string> onChanged, bool multiline = false, float maxHeight = 0f, string placeholder = null)
         {
-            var field = new InputField(new InputFieldState(value, label, multiline, maxHeight));
+            if (!string.IsNullOrWhiteSpace(label))
+            {
+                var labelElement = UiTextFactory.Create(label, CatalogControlLabelClassName);
+                labelElement.SetWhiteSpace(WhiteSpace.NoWrap);
+                parent.Add(labelElement);
+            }
+
+            var field = new InputField(new InputFieldState(value, multiline, maxHeight, placeholder));
             field.ValueChanged += onChanged;
             parent.Add(field);
             return field;

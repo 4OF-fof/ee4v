@@ -1,3 +1,6 @@
+using System;
+using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -28,22 +31,53 @@ namespace Ee4v.UI
 
         private void BuildInputFieldStory(VisualElement parent)
         {
+            var placeholder = "Type text";
+            var maxHeight = 120f;
+            Action refresh = null;
+
+            var controls = CreatePlainControlsSection(parent, "InputField の表示パラメータを変更して、1行/複数行と placeholder の見た目を確認します。");
+            var placeholderField = AddTextField(controls.Content, "Placeholder", placeholder, nextValue =>
+            {
+                placeholder = nextValue;
+                refresh();
+            }, placeholder: "Placeholder text");
+
+            var maxHeightField = new FloatField("Max Height")
+            {
+                value = maxHeight
+            };
+            maxHeightField.RegisterValueChangedCallback(evt =>
+            {
+                maxHeight = Mathf.Max(0f, evt.newValue);
+                refresh();
+            });
+            controls.Content.Add(maxHeightField);
+
             var preview = CreatePreviewSection(parent);
             var surface = CreatePreviewSurface();
             surface.style.width = 360f;
 
-            var singleLine = new InputField(new InputFieldState("Sample text", "Single line"));
-            singleLine.style.marginBottom = 12f;
-            surface.Add(singleLine);
+            var singleLineInput = new InputField(new InputFieldState(string.Empty, false, maxHeight, placeholder));
+            singleLineInput.style.marginBottom = 12f;
+            surface.Add(singleLineInput);
 
-            var multiline = new InputField(new InputFieldState(
-                "1 行目のテキスト\n2 行目のテキスト\n3 行目のテキスト\n4 行目のテキスト\n5 行目のテキスト\n6 行目のテキスト\n7 行目のテキスト\n8 行目のテキスト",
-                "Multiline",
-                true,
-                120f));
-            surface.Add(multiline);
+            var multilineInput = new InputField(new InputFieldState(string.Empty, true, maxHeight, placeholder));
+            surface.Add(multilineInput);
 
             preview.Body.Add(surface);
+
+            refresh = () =>
+            {
+                placeholderField.SetValueWithoutNotify(placeholder);
+                maxHeightField.SetValueWithoutNotify(maxHeight);
+                singleLineInput.SetPlaceholder(placeholder);
+                multilineInput.SetPlaceholder(placeholder);
+                singleLineInput.SetMaxHeight(maxHeight);
+                multilineInput.SetMaxHeight(maxHeight);
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
         }
     }
 }

@@ -72,6 +72,12 @@
     margin-bottom: 8px;
 }
 
+.ee4v-ui-catalog-control-label {
+    margin-bottom: 4px;
+    color: rgba(210, 210, 210, 0.78);
+    font-size: 12px;
+}
+
 .ee4v-ui-catalog-detail-item {
     margin-bottom: 8px;
 }
