@@ -39,7 +39,7 @@ namespace Ee4v.UI
             {
                 text = nextValue;
                 refresh();
-            }, true);
+            }, true, 140f);
             var buttonField = AddTextField(controls.Content, "Button", buttonText, nextValue =>
             {
                 buttonText = nextValue;

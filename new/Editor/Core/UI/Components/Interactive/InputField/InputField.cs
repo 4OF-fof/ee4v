@@ -1,4 +1,5 @@
 using System;
+using Ee4v.Core.Internal.EditorAPI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -6,11 +7,12 @@ namespace Ee4v.UI
 {
     internal sealed class InputFieldState
     {
-        public InputFieldState(string value = null, string label = null, bool multiline = false)
+        public InputFieldState(string value = null, string label = null, bool multiline = false, float maxHeight = 0f)
         {
             Value = value ?? string.Empty;
             Label = label ?? string.Empty;
             Multiline = multiline;
+            MaxHeight = Mathf.Max(0f, maxHeight);
         }
 
         public string Value { get; }
@@ -18,6 +20,8 @@ namespace Ee4v.UI
         public string Label { get; }
 
         public bool Multiline { get; }
+
+        public float MaxHeight { get; }
     }
 
     internal sealed class InputField : VisualElement
@@ -32,6 +36,8 @@ namespace Ee4v.UI
         private readonly VisualElement _fieldContainer;
         private readonly TextField _textField;
         private bool _isFocused;
+        private bool _multiline;
+        private float _maxHeight;
 
         public InputField(InputFieldState state = null)
         {
@@ -59,10 +65,12 @@ namespace Ee4v.UI
                 _isFocused = false;
                 RefreshVisualState();
             });
+            _textField.RegisterCallback<GeometryChangedEvent>(_ => RefreshScrollView());
 
             _fieldContainer.Add(_textField);
             Add(_label);
             Add(_fieldContainer);
+            RegisterCallback<AttachToPanelEvent>(_ => ScheduleScrollViewRefresh());
 
             SetState(state ?? new InputFieldState());
         }
@@ -80,6 +88,7 @@ namespace Ee4v.UI
             state = state ?? new InputFieldState();
             SetLabel(state.Label);
             SetMultiline(state.Multiline);
+            SetMaxHeight(state.MaxHeight);
             SetValueWithoutNotify(state.Value);
         }
 
@@ -100,12 +109,61 @@ namespace Ee4v.UI
             var safeHeight = Mathf.Max(48f, minHeight);
             _fieldContainer.style.minHeight = safeHeight;
             _textField.style.minHeight = safeHeight - 2f;
+            ApplyHeightConstraints();
+        }
+
+        public void SetMaxHeight(float maxHeight)
+        {
+            _maxHeight = Mathf.Max(0f, maxHeight);
+            ApplyHeightConstraints();
         }
 
         private void SetMultiline(bool multiline)
         {
+            _multiline = multiline;
             _textField.multiline = multiline;
             EnableInClassList(MultilineClassName, multiline);
+            ApplyHeightConstraints();
+        }
+
+        private void ApplyHeightConstraints()
+        {
+            if (!_multiline || _maxHeight <= 0f)
+            {
+                _fieldContainer.style.maxHeight = new StyleLength(StyleKeyword.Null);
+                _textField.style.maxHeight = new StyleLength(StyleKeyword.Null);
+                if (_multiline)
+                {
+                    RefreshScrollView();
+                    ScheduleScrollViewRefresh();
+                }
+
+                return;
+            }
+
+            var safeHeight = Mathf.Max(48f, _maxHeight);
+            var contentMaxHeight = Mathf.Max(36f, safeHeight - 12f);
+            _fieldContainer.style.maxHeight = safeHeight;
+            _textField.style.maxHeight = contentMaxHeight;
+            RefreshScrollView();
+            ScheduleScrollViewRefresh();
+        }
+
+        private void ScheduleScrollViewRefresh()
+        {
+            schedule.Execute(RefreshScrollView);
+        }
+
+        private void RefreshScrollView()
+        {
+            if (!_multiline)
+            {
+                return;
+            }
+
+            var useVerticalScroll = _maxHeight > 0f;
+            var contentMaxHeight = Mathf.Max(36f, Mathf.Max(48f, _maxHeight) - 12f);
+            TextFieldMultilineScroll.Configure(_textField, useVerticalScroll, contentMaxHeight);
         }
 
         private void RefreshVisualState()

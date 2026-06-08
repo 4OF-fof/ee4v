@@ -47,9 +47,9 @@ namespace Ee4v.UI
             return new ControlsSectionContext(card, content, null);
         }
 
-        internal static InputField AddTextField(VisualElement parent, string label, string value, Action<string> onChanged, bool multiline = false)
+        internal static InputField AddTextField(VisualElement parent, string label, string value, Action<string> onChanged, bool multiline = false, float maxHeight = 0f)
         {
-            var field = new InputField(new InputFieldState(value, label, multiline));
+            var field = new InputField(new InputFieldState(value, label, multiline, maxHeight));
             field.ValueChanged += onChanged;
             parent.Add(field);
             return field;

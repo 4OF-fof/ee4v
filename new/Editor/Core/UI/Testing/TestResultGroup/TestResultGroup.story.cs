@@ -58,12 +58,12 @@ namespace Ee4v.UI
             {
                 message = nextValue;
                 refresh();
-            }, true);
+            }, true, 120f);
             var detailsField = CatalogWindow.AddTextField(controls.Content, "Details", details, nextValue =>
             {
                 details = nextValue;
                 refresh();
-            }, true);
+            }, true, 160f);
             var runEnabledToggle = new Toggle("Run enabled")
             {
                 value = runEnabled

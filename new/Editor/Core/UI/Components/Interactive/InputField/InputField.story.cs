@@ -37,9 +37,10 @@ namespace Ee4v.UI
             surface.Add(singleLine);
 
             var multiline = new InputField(new InputFieldState(
-                "1 行目のテキスト\n2 行目のテキスト\n3 行目のテキスト",
+                "1 行目のテキスト\n2 行目のテキスト\n3 行目のテキスト\n4 行目のテキスト\n5 行目のテキスト\n6 行目のテキスト\n7 行目のテキスト\n8 行目のテキスト",
                 "Multiline",
-                true));
+                true,
+                120f));
             surface.Add(multiline);
 
             preview.Body.Add(surface);

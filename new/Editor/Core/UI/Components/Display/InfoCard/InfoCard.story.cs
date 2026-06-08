@@ -90,7 +90,7 @@ namespace Ee4v.UI
             {
                 bodyText = value;
                 refresh();
-            }, true);
+            }, true, 140f);
 
             var preview = CreatePreviewSection(parent);
             var card = new InfoCard();
