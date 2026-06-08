@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Ee4v.UI
 {
@@ -26,11 +25,7 @@ namespace Ee4v.UI
         public static void Store(string cacheKey, AssetItemGridList itemList, out ItemGridState gridState, out string statusText)
         {
             cacheKey = cacheKey ?? string.Empty;
-            CachedGridState existing;
-            if (Cache.TryGetValue(cacheKey, out existing))
-            {
-                DestroyThumbnails(existing);
-            }
+            Cache.Remove(cacheKey);
 
             var list = itemList ?? new AssetItemGridList(null);
             var itemCardStates = new List<ItemCardState>(list.Items.Count);
@@ -42,7 +37,7 @@ namespace Ee4v.UI
                     continue;
                 }
 
-                itemCardStates.Add(new ItemCardState(item.ItemName, CreateThumbnail(item.ThumbnailData)));
+                itemCardStates.Add(new ItemCardState(item.ItemName, item.ImageState));
             }
 
             gridState = new ItemGridState(itemCardStates, list.ItemsPerRow);
@@ -50,51 +45,9 @@ namespace Ee4v.UI
             Cache[cacheKey] = new CachedGridState(gridState, statusText);
         }
 
-        private static Texture2D CreateThumbnail(byte[] data)
-        {
-            if (data == null || data.Length == 0)
-            {
-                return null;
-            }
-
-            var texture = new Texture2D(2, 2)
-            {
-                hideFlags = HideFlags.HideAndDontSave
-            };
-            if (texture.LoadImage(data))
-            {
-                return texture;
-            }
-
-            UnityEngine.Object.DestroyImmediate(texture);
-            return null;
-        }
-
         public static void Clear()
         {
-            foreach (var cached in Cache.Values)
-            {
-                DestroyThumbnails(cached);
-            }
-
             Cache.Clear();
-        }
-
-        private static void DestroyThumbnails(CachedGridState cached)
-        {
-            if (cached == null || cached.GridState == null || cached.GridState.Items == null)
-            {
-                return;
-            }
-
-            for (var i = 0; i < cached.GridState.Items.Count; i++)
-            {
-                var item = cached.GridState.Items[i];
-                if (item != null && item.Thumbnail != null)
-                {
-                    UnityEngine.Object.DestroyImmediate(item.Thumbnail);
-                }
-            }
         }
 
         private sealed class CachedGridState

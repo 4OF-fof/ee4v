@@ -1,3 +1,4 @@
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -20,7 +21,7 @@ namespace Ee4v.UI
                     "Display",
                     "ItemCard",
                     "サムネイルと item 名だけの汎用カードコンポーネントです。",
-                    "データ取得やキャッシュは外側の loader/service が担当し、ItemCard は Texture2D と item 名を受け取って表示するだけの薄い UI component として扱います。画像表示は ItemImage に委譲します。",
+                    "データ取得は外側の loader/service が担当し、ItemCard は byte[] と item 名を受け取って表示する薄い UI component として扱います。画像表示と Texture2D cache は ItemImage に委譲します。",
                     new[] { "ItemImage" },
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildItemCardStory(parent)));
@@ -39,7 +40,10 @@ namespace Ee4v.UI
             surface.style.paddingBottom = 12f;
 
             var thumbnail = CreateItemCardSampleThumbnail(132, 132);
-            var itemCard = new ItemCard(new ItemCardState("Sample Avatar Asset", thumbnail));
+            var thumbnailBytes = thumbnail.EncodeToPNG();
+            UnityEngine.Object.DestroyImmediate(thumbnail);
+
+            var itemCard = new ItemCard(new ItemCardState("Sample Avatar Asset", thumbnailBytes));
             itemCard.style.marginRight = 16f;
             surface.Add(itemCard);
             surface.Add(new ItemCard(new ItemCardState("No Thumbnail Item")));

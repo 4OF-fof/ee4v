@@ -23,11 +23,12 @@ namespace Ee4v.UI
                     "Domain/AssetManager",
                     "AssetItemGrid",
                     "AssetManager item grid list を受け取り、汎用 ItemGrid に表示状態として流し込む domain component です。",
-                    "AssetItemGridList から Texture2D 付き ItemGridState への変換と cache 利用を内包し、呼び出し側が ItemGridState を直接意識しないための adapter として扱います。",
+                    "AssetItemGridList から ItemImageState 付き ItemGridState への変換と grid state cache 利用を内包し、呼び出し側が ItemGridState を直接意識しないための adapter として扱います。",
                     new[]
                     {
                         "ItemGrid",
-                        "ItemCard"
+                        "ItemCard",
+                        "ItemImage"
                     },
                     CatalogWindow.ComponentImplementationKind.UiToolkit,
                     (window, parent) => BuildAssetItemGridStory(window, parent)));

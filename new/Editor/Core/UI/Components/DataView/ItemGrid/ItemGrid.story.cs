@@ -79,6 +79,8 @@ namespace Ee4v.UI
             surface.style.height = 420f;
 
             var thumbnail = CreateItemCardSampleThumbnail(132, 132);
+            var thumbnailBytes = thumbnail.EncodeToPNG();
+            UnityEngine.Object.DestroyImmediate(thumbnail);
             var grid = new ItemGrid();
             grid.style.flexGrow = 1f;
             surface.Add(grid);
@@ -91,7 +93,7 @@ namespace Ee4v.UI
                 {
                     items.Add(new ItemCardState(
                         string.Format("Sample Item {0:00}", i + 1),
-                        i % 4 == 0 ? null : thumbnail));
+                        i % 4 == 0 ? null : thumbnailBytes));
                 }
 
                 grid.SetState(new ItemGridState(items, itemsPerRow));

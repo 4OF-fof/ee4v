@@ -65,7 +65,7 @@ namespace Ee4v.UI
                     continue;
                 }
 
-                items.Add(new AssetItemGridListItem(item.Name, LoadThumbnailData(item.Id)));
+                items.Add(new AssetItemGridListItem(item.Name, LoadThumbnail(item.Id)));
             }
 
             return new AssetItemGridList(items, "No asset items.", itemsPerRow);
@@ -106,10 +106,17 @@ namespace Ee4v.UI
             return query;
         }
 
-        private static byte[] LoadThumbnailData(string itemId)
+        private static ItemImageState LoadThumbnail(string itemId)
         {
             var thumbnail = AssetManagerApi.GetThumbnail(itemId);
-            return thumbnail != null && thumbnail.Found ? thumbnail.Data : Array.Empty<byte>();
+            if (thumbnail == null || !thumbnail.Found)
+            {
+                return new ItemImageState();
+            }
+
+            return new ItemImageState(
+                string.IsNullOrWhiteSpace(thumbnail.Path) ? null : thumbnail.Path,
+                thumbnail.Data);
         }
 
         private static int GetItemsPerRow()

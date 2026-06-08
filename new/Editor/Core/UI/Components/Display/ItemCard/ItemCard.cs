@@ -5,15 +5,20 @@ namespace Ee4v.UI
 {
     internal sealed class ItemCardState
     {
-        public ItemCardState(string itemName, Texture2D thumbnail = null)
+        public ItemCardState(string itemName, byte[] thumbnailData = null)
+            : this(itemName, new ItemImageState(thumbnailData))
+        {
+        }
+
+        public ItemCardState(string itemName, ItemImageState imageState)
         {
             ItemName = itemName ?? string.Empty;
-            Thumbnail = thumbnail;
+            ImageState = imageState ?? new ItemImageState();
         }
 
         public string ItemName { get; }
 
-        public Texture2D Thumbnail { get; }
+        public ItemImageState ImageState { get; }
     }
 
     internal class ItemCard : VisualElement
@@ -42,18 +47,8 @@ namespace Ee4v.UI
         public void SetState(ItemCardState state)
         {
             var nextState = state ?? new ItemCardState(string.Empty);
-            SetThumbnail(nextState.Thumbnail);
-            SetItemName(nextState.ItemName);
-        }
-
-        public void SetItemName(string itemName)
-        {
-            _nameLabel.SetText(itemName);
-        }
-
-        public void SetThumbnail(Texture2D thumbnail)
-        {
-            _thumbnail.SetTexture(thumbnail);
+            _thumbnail.SetState(nextState.ImageState);
+            _nameLabel.SetText(nextState.ItemName);
         }
 
         public void SetWidth(float width)

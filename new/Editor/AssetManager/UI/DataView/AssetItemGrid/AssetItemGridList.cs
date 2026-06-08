@@ -22,13 +22,18 @@ namespace Ee4v.UI
     internal sealed class AssetItemGridListItem
     {
         public AssetItemGridListItem(string itemName, byte[] thumbnailData = null)
+            : this(itemName, new ItemImageState(thumbnailData))
+        {
+        }
+
+        public AssetItemGridListItem(string itemName, ItemImageState imageState)
         {
             ItemName = itemName ?? string.Empty;
-            ThumbnailData = thumbnailData ?? Array.Empty<byte>();
+            ImageState = imageState ?? new ItemImageState();
         }
 
         public string ItemName { get; }
 
-        public byte[] ThumbnailData { get; }
+        public ItemImageState ImageState { get; }
     }
 }

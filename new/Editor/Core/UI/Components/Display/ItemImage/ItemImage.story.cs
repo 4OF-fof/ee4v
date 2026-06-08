@@ -1,3 +1,4 @@
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -19,7 +20,7 @@ namespace Ee4v.UI
                     "Display",
                     "ItemImage",
                     "item のサムネイル画像を正方形で表示する基本コンポーネントです。",
-                    "Texture2D の表示、ScaleAndCrop、未設定時 placeholder、正方形サイズ制御を担当します。ItemCard などの上位コンポーネントはこのコンポーネントに画像表示を委譲します。",
+                    "byte[] からの Texture2D 解決、同一画像の自動 cache、ScaleAndCrop、未設定時 placeholder、正方形サイズ制御を担当します。ItemCard などの上位コンポーネントはこのコンポーネントに画像表示を委譲します。",
                     new string[0],
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildItemImageStory(parent)));
@@ -38,7 +39,10 @@ namespace Ee4v.UI
             surface.style.paddingBottom = 12f;
 
             var thumbnail = CreateItemCardSampleThumbnail(132, 132);
-            var itemImage = new ItemImage(new ItemImageState(thumbnail));
+            var thumbnailBytes = thumbnail.EncodeToPNG();
+            UnityEngine.Object.DestroyImmediate(thumbnail);
+
+            var itemImage = new ItemImage(new ItemImageState(thumbnailBytes));
             itemImage.SetSize(132f);
             itemImage.style.marginRight = 16f;
             surface.Add(itemImage);
