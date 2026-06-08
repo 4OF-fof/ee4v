@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Ee4v.UI
 {
     internal sealed class AssetItemGrid : ItemGrid
@@ -9,7 +11,7 @@ namespace Ee4v.UI
         public bool TrySetCachedItems(string cacheKey, out string statusText)
         {
             ItemGridState gridState;
-            if (AssetItemGridCache.TryGet(cacheKey, out gridState, out statusText))
+            if (ItemGridStateCache.TryGet(cacheKey, out gridState, out statusText))
             {
                 SetState(gridState);
                 return true;
@@ -25,19 +27,38 @@ namespace Ee4v.UI
 
         public void SetAssetItems(string cacheKey, AssetItemGridList itemList, out string statusText)
         {
-            ItemGridState gridState;
-            AssetItemGridCache.Store(cacheKey, itemList, out gridState, out statusText);
+            var gridState = CreateGridState(itemList, out statusText);
+            ItemGridStateCache.Store(cacheKey, gridState, statusText);
             SetState(gridState);
         }
 
         public void ClearCachedItems()
         {
-            AssetItemGridCache.Clear();
+            ItemGridStateCache.Clear();
         }
 
         protected override ItemCard CreateItemCard()
         {
             return new ItemCard();
+        }
+
+        private static ItemGridState CreateGridState(AssetItemGridList itemList, out string statusText)
+        {
+            var list = itemList ?? new AssetItemGridList(null);
+            var itemCardStates = new List<ItemCardState>(list.Items.Count);
+            for (var i = 0; i < list.Items.Count; i++)
+            {
+                var item = list.Items[i];
+                if (item == null)
+                {
+                    continue;
+                }
+
+                itemCardStates.Add(new ItemCardState(item.ItemName, item.ImageState));
+            }
+
+            statusText = itemCardStates.Count == 0 ? list.EmptyText : string.Empty;
+            return new ItemGridState(itemCardStates, list.ItemsPerRow);
         }
     }
 }

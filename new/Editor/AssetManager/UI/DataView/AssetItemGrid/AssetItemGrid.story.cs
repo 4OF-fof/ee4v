@@ -28,7 +28,8 @@ namespace Ee4v.UI
                     {
                         "ItemGrid",
                         "ItemCard",
-                        "ItemImage"
+                        "ItemImage",
+                        "ItemGridStateCache"
                     },
                     CatalogWindow.ComponentImplementationKind.UiToolkit,
                     (window, parent) => BuildAssetItemGridStory(window, parent)));
