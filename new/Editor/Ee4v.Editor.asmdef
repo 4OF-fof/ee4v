@@ -2,8 +2,13 @@
   "name": "Ee4v.Editor",
   "rootNamespace": "Ee4v",
   "references": [
-    "UnityEditor.TestRunner",
-    "UnityEngine.TestRunner",
+    "Ee4v.AssetManager.Api.Editor",
+    "Ee4v.AssetManager.UI.Editor",
+    "Ee4v.Core.Editor",
+    "Ee4v.Core.Testing.Editor",
+    "Ee4v.Core.UI.Testing.Editor",
+    "Ee4v.Phase1.Editor",
+    "Ee4v.UI.Editor",
     "Ee4v.SQLite.Editor"
   ],
   "includePlatforms": [

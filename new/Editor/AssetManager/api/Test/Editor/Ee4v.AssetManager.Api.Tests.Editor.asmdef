@@ -2,7 +2,9 @@
   "name": "Ee4v.AssetManager.Api.Tests.Editor",
   "rootNamespace": "Ee4v.AssetManager.Api.Tests",
   "references": [
-    "Ee4v.Editor",
+    "Ee4v.AssetManager.Api.Editor",
+    "Ee4v.Core.Editor",
+    "Ee4v.Core.Testing.Editor",
     "Ee4v.SQLite.Editor"
   ],
   "includePlatforms": [

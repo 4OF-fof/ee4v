@@ -1,0 +1,19 @@
+{
+  "name": "Ee4v.Core.UI.Testing.Editor",
+  "rootNamespace": "Ee4v.UI",
+  "references": [
+    "Ee4v.Core.Editor",
+    "Ee4v.UI.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

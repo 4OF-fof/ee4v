@@ -6,19 +6,19 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
-    internal sealed partial class CatalogWindow
+    internal static class AssetItemGridCatalogRegistrarStory
     {
-        private sealed class AssetItemGridCatalogRegistrar : ICatalogRegistrar
+        private sealed class AssetItemGridCatalogRegistrar : CatalogWindow.ICatalogRegistrar
         {
             public int Order
             {
                 get { return 104; }
             }
 
-            public void Register(CatalogRegistry registry)
+            public void Register(CatalogWindow.CatalogRegistry registry)
             {
                 registry.RegisterStyleSheet("Editor/AssetManager/UI/DataView/AssetItemGrid/asset-item-grid.uss");
-                registry.RegisterStory(new StoryRegistration(
+                registry.RegisterStory(new CatalogWindow.StoryRegistration(
                     "asset-item-grid",
                     "Domain/AssetManager",
                     "AssetItemGrid",
@@ -29,17 +29,17 @@ namespace Ee4v.UI
                         "ItemGrid",
                         "ItemCard"
                     },
-                    ComponentImplementationKind.UiToolkit,
-                    (window, parent) => window.BuildAssetItemGridStory(parent)));
+                    CatalogWindow.ComponentImplementationKind.UiToolkit,
+                    (window, parent) => BuildAssetItemGridStory(window, parent)));
             }
         }
 
-        private void BuildAssetItemGridStory(VisualElement parent)
+        private static void BuildAssetItemGridStory(CatalogWindow window, VisualElement parent)
         {
             var itemCount = 80;
             var itemsPerRow = 6;
             Action refresh = null;
-            var controls = CreatePlainControlsSection(parent, "AssetItemGridList を流し込み、AssetItemGrid 側の変換と cache 利用を確認します。");
+            var controls = window.CreatePlainControlsSection(parent, "AssetItemGridList を流し込み、AssetItemGrid 側の変換と cache 利用を確認します。");
 
             var itemCountField = new IntegerField("Item Count")
             {
@@ -71,8 +71,8 @@ namespace Ee4v.UI
             });
             controls.Content.Add(itemsPerRowField);
 
-            var preview = CreatePreviewSection(parent);
-            var surface = CreatePreviewSurface();
+            var preview = window.CreatePreviewSection(parent);
+            var surface = window.CreatePreviewSurface();
             surface.style.paddingLeft = 12f;
             surface.style.paddingRight = 12f;
             surface.style.paddingTop = 12f;
@@ -91,12 +91,12 @@ namespace Ee4v.UI
             };
 
             refresh();
-            FinalizeControlsSection(parent, controls);
+            CatalogWindow.FinalizeControlsSection(parent, controls);
         }
 
-        private AssetItemGridList CreateCatalogAssetItemList(int itemCount, int itemsPerRow)
+        private static AssetItemGridList CreateCatalogAssetItemList(int itemCount, int itemsPerRow)
         {
-            var thumbnail = CreateItemCardSampleThumbnail(132, 132);
+            var thumbnail = CatalogWindow.CreateItemCardSampleThumbnail(132, 132);
             var thumbnailBytes = thumbnail.EncodeToPNG();
             UnityEngine.Object.DestroyImmediate(thumbnail);
 

@@ -2,34 +2,34 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
-    internal sealed partial class CatalogWindow
+    internal static class AssetManagerInfomationPanelCatalogRegistrarStory
     {
-        private sealed class AssetManagerInfomationPanelCatalogRegistrar : ICatalogRegistrar
+        private sealed class AssetManagerInfomationPanelCatalogRegistrar : CatalogWindow.ICatalogRegistrar
         {
             public int Order
             {
                 get { return 102; }
             }
 
-            public void Register(CatalogRegistry registry)
+            public void Register(CatalogWindow.CatalogRegistry registry)
             {
                 registry.RegisterStyleSheet("Editor/AssetManager/UI/Panels/InfomationPanel/infomation-panel.uss");
-                registry.RegisterStory(new StoryRegistration(
+                registry.RegisterStory(new CatalogWindow.StoryRegistration(
                     "asset-manager-infomation-panel",
                     "Domain/AssetManager",
                     "InfomationPanel",
                     "AssetManager 右ペイン用の情報パネルコンポーネントです。",
                     "選択中アセットの詳細、プレビュー、検証結果の文脈を単体でも layout 内でも同じ構成で再利用する右ペイン component です。",
                     new string[0],
-                    ComponentImplementationKind.UiToolkit,
-                    (window, parent) => window.BuildAssetManagerInfomationPanelStory(parent)));
+                    CatalogWindow.ComponentImplementationKind.UiToolkit,
+                    (window, parent) => BuildAssetManagerInfomationPanelStory(window, parent)));
             }
         }
 
-        private void BuildAssetManagerInfomationPanelStory(VisualElement parent)
+        private static void BuildAssetManagerInfomationPanelStory(CatalogWindow window, VisualElement parent)
         {
-            var preview = CreatePreviewSection(parent);
-            var surface = CreatePreviewSurface();
+            var preview = window.CreatePreviewSection(parent);
+            var surface = window.CreatePreviewSurface();
             surface.style.paddingLeft = 0f;
             surface.style.paddingRight = 0f;
             surface.style.paddingTop = 0f;

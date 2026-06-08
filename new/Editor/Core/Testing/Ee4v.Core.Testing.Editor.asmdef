@@ -1,0 +1,22 @@
+{
+  "name": "Ee4v.Core.Testing.Editor",
+  "rootNamespace": "Ee4v.Core.Testing",
+  "references": [
+    "UnityEditor.TestRunner",
+    "UnityEngine.TestRunner",
+    "Ee4v.Core.Editor",
+    "Ee4v.Core.UI.Testing.Editor",
+    "Ee4v.UI.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

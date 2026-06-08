@@ -1,0 +1,20 @@
+{
+  "name": "Ee4v.AssetManager.UI.Editor",
+  "rootNamespace": "Ee4v.AssetManager",
+  "references": [
+    "Ee4v.AssetManager.Api.Editor",
+    "Ee4v.Core.Editor",
+    "Ee4v.UI.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
