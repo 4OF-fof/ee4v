@@ -1,0 +1,92 @@
+.ee4v-ui-numeric-slider {
+    flex-direction: row;
+    align-items: center;
+    width: 162px;
+    min-width: 72px;
+    height: 31px;
+    min-height: 31px;
+    max-height: 31px;
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+.ee4v-ui-numeric-slider__endpoint {
+    width: 11px;
+    min-width: 11px;
+    max-width: 11px;
+    height: 16px;
+    min-height: 16px;
+    max-height: 16px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    color: rgba(210, 210, 210, 0.72);
+    font-size: 13px;
+    -unity-text-align: middle-center;
+}
+
+.ee4v-ui-numeric-slider__endpoint:hover {
+    color: rgba(255, 255, 255, 0.96);
+}
+
+.ee4v-ui-numeric-slider__track-host {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 24px;
+    height: 20px;
+    margin-left: 8px;
+    margin-right: 8px;
+    justify-content: center;
+}
+
+.ee4v-ui-numeric-slider__track {
+    position: relative;
+    height: 2px;
+    min-height: 2px;
+    max-height: 2px;
+    align-self: stretch;
+    background-color: rgba(255, 255, 255, 0.26);
+}
+
+.ee4v-ui-numeric-slider__fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.62);
+}
+
+.ee4v-ui-numeric-slider__knob {
+    position: absolute;
+    top: -5px;
+    width: 11px;
+    min-width: 11px;
+    max-width: 11px;
+    height: 11px;
+    min-height: 11px;
+    max-height: 11px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    background-color: rgb(245, 245, 245);
+}
+
+.ee4v-ui-numeric-slider:hover .ee4v-ui-numeric-slider__track,
+.ee4v-ui-numeric-slider--dragging .ee4v-ui-numeric-slider__track {
+    background-color: rgba(255, 255, 255, 0.34);
+}
+
+.ee4v-ui-numeric-slider:hover .ee4v-ui-numeric-slider__knob,
+.ee4v-ui-numeric-slider--dragging .ee4v-ui-numeric-slider__knob {
+    background-color: rgb(255, 255, 255);
+}
+
+.ee4v-ui-numeric-slider--disabled {
+    opacity: 0.45;
+}
