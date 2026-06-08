@@ -19,12 +19,14 @@ namespace Ee4v.UI
         private const string PlaceholderText = "https://";
         private const string RootClassName = "ee4v-ui-url-input-field";
         private const string FieldContainerClassName = "ee4v-ui-url-input-field__field-container";
+        private const string FieldContainerFocusedClassName = "ee4v-ui-url-input-field__field-container--focused";
         private const string FieldClassName = "ee4v-ui-url-input-field__field";
         private const string PlaceholderClassName = "ee4v-ui-url-input-field__placeholder";
         private const string OpenButtonClassName = "ee4v-ui-url-input-field__open-button";
 
+        private readonly VisualElement _fieldContainer;
         private readonly Button _openButton;
-        private readonly Label _placeholderLabel;
+        private readonly UiTextElement _placeholderLabel;
         private readonly TextField _textField;
         private bool _isFocused;
 
@@ -32,8 +34,8 @@ namespace Ee4v.UI
         {
             AddToClassList(RootClassName);
 
-            var fieldContainer = new VisualElement();
-            fieldContainer.AddToClassList(FieldContainerClassName);
+            _fieldContainer = new VisualElement();
+            _fieldContainer.AddToClassList(FieldContainerClassName);
 
             _textField = new TextField();
             _textField.AddToClassList(FieldClassName);
@@ -55,7 +57,7 @@ namespace Ee4v.UI
                 ValueChanged?.Invoke(Value);
             });
 
-            _placeholderLabel = new Label();
+            _placeholderLabel = UiTextFactory.Create(string.Empty, UiClassNames.SearchFieldPlaceholder);
             _placeholderLabel.AddToClassList(PlaceholderClassName);
             _placeholderLabel.pickingMode = PickingMode.Ignore;
 
@@ -66,10 +68,10 @@ namespace Ee4v.UI
             };
             _openButton.AddToClassList(OpenButtonClassName);
 
-            fieldContainer.Add(_textField);
-            fieldContainer.Add(_placeholderLabel);
-            fieldContainer.Add(_openButton);
-            Add(fieldContainer);
+            _fieldContainer.Add(_textField);
+            _fieldContainer.Add(_placeholderLabel);
+            _fieldContainer.Add(_openButton);
+            Add(_fieldContainer);
 
             SetState(state ?? new UrlInputFieldState(string.Empty));
         }
@@ -85,7 +87,7 @@ namespace Ee4v.UI
         public void SetState(UrlInputFieldState state)
         {
             state = state ?? new UrlInputFieldState(string.Empty);
-            _placeholderLabel.text = PlaceholderText;
+            _placeholderLabel.SetText(PlaceholderText);
             _textField.SetValueWithoutNotify(NormalizeUrl(state.Value));
             RefreshVisualState();
         }
@@ -110,10 +112,11 @@ namespace Ee4v.UI
         private void RefreshVisualState()
         {
             var hasValue = !string.IsNullOrWhiteSpace(Value);
-            _placeholderLabel.style.display = !hasValue && !_isFocused && !string.IsNullOrWhiteSpace(_placeholderLabel.text)
+            _placeholderLabel.style.display = !hasValue && !_isFocused && !string.IsNullOrWhiteSpace(_placeholderLabel.Text)
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             _openButton.style.display = IsOpenableUrl(Value) ? DisplayStyle.Flex : DisplayStyle.None;
+            _fieldContainer.EnableInClassList(FieldContainerFocusedClassName, _isFocused);
         }
 
         private void NormalizeInputValue()

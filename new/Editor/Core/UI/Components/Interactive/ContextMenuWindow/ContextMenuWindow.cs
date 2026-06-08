@@ -275,12 +275,12 @@ namespace Ee4v.UI
 
     internal static class ContextMenuLayout
     {
-        private const float ItemHeight = 19f;
-        private const float SeparatorHeight = 6f;
-        private const float MenuPadding = 10f;
+        private const float ItemHeight = 24f;
+        private const float SeparatorHeight = 8f;
+        private const float MenuPadding = 12f;
         private const float MinimumWidth = 100f;
         private const float MaximumWidth = 360f;
-        private const float IconSlotWidth = 22f;
+        private const float IconSlotWidth = 24f;
         private const float LabelRightPadding = 24f;
         private const float ShortcutGap = 24f;
 
