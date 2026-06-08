@@ -4,7 +4,7 @@ namespace Ee4v.UI
 {
     internal sealed partial class CatalogWindow
     {
-        private sealed class ItemCardCatalogRegistrar : ICatalogRegistrar
+        private sealed class ItemImageCatalogRegistrar : ICatalogRegistrar
         {
             public int Order
             {
@@ -14,20 +14,19 @@ namespace Ee4v.UI
             public void Register(CatalogRegistry registry)
             {
                 registry.RegisterStyleSheet("Editor/Core/UI/Components/Display/ItemImage/item-image.uss");
-                registry.RegisterStyleSheet("Editor/Core/UI/Components/Display/ItemCard/item-card.uss");
                 registry.RegisterStory(new StoryRegistration(
-                    "item-card",
+                    "item-image",
                     "Display",
-                    "ItemCard",
-                    "サムネイルと item 名だけの汎用カードコンポーネントです。",
-                    "データ取得やキャッシュは外側の loader/service が担当し、ItemCard は Texture2D と item 名を受け取って表示するだけの薄い UI component として扱います。画像表示は ItemImage に委譲します。",
-                    new[] { "ItemImage" },
+                    "ItemImage",
+                    "item のサムネイル画像を正方形で表示する基本コンポーネントです。",
+                    "Texture2D の表示、ScaleAndCrop、未設定時 placeholder、正方形サイズ制御を担当します。ItemCard などの上位コンポーネントはこのコンポーネントに画像表示を委譲します。",
+                    new string[0],
                     ComponentImplementationKind.UiToolkit,
-                    (window, parent) => window.BuildItemCardStory(parent)));
+                    (window, parent) => window.BuildItemImageStory(parent)));
             }
         }
 
-        private void BuildItemCardStory(VisualElement parent)
+        private void BuildItemImageStory(VisualElement parent)
         {
             var preview = CreatePreviewSection(parent);
             var surface = CreatePreviewSurface();
@@ -39,10 +38,14 @@ namespace Ee4v.UI
             surface.style.paddingBottom = 12f;
 
             var thumbnail = CreateItemCardSampleThumbnail(132, 132);
-            var itemCard = new ItemCard(new ItemCardState("Sample Avatar Asset", thumbnail));
-            itemCard.style.marginRight = 16f;
-            surface.Add(itemCard);
-            surface.Add(new ItemCard(new ItemCardState("No Thumbnail Item")));
+            var itemImage = new ItemImage(new ItemImageState(thumbnail));
+            itemImage.SetSize(132f);
+            itemImage.style.marginRight = 16f;
+            surface.Add(itemImage);
+
+            var placeholder = new ItemImage();
+            placeholder.SetSize(132f);
+            surface.Add(placeholder);
 
             preview.Body.Add(surface);
         }

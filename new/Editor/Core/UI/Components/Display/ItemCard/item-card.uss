@@ -2,40 +2,6 @@
     flex-direction: column;
 }
 
-.ee4v-ui-item-card__thumbnail-frame {
-    overflow: hidden;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
-    border-top-width: 1px;
-    border-right-width: 1px;
-    border-bottom-width: 1px;
-    border-left-width: 1px;
-    border-top-color: rgba(255, 255, 255, 0.10);
-    border-right-color: rgba(255, 255, 255, 0.10);
-    border-bottom-color: rgba(255, 255, 255, 0.10);
-    border-left-color: rgba(255, 255, 255, 0.10);
-    background-color: rgba(255, 255, 255, 0.045);
-}
-
-.ee4v-ui-item-card__thumbnail {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-}
-
-.ee4v-ui-item-card__thumbnail-placeholder {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    background-color: rgba(255, 255, 255, 0.035);
-}
-
 .ee4v-ui-item-card__name {
     margin-top: 7px;
     height: 18px;
