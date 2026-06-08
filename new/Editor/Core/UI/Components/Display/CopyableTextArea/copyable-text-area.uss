@@ -55,10 +55,16 @@
     align-self: stretch;
 }
 
+.ee4v-ui-copyable-text-area__field .unity-base-field,
+.ee4v-ui-copyable-text-area__field .unity-text-field {
+    background-color: rgba(0, 0, 0, 0.18);
+}
+
 .ee4v-ui-copyable-text-area__field .unity-base-text-field__input,
 .ee4v-ui-copyable-text-area__field .unity-text-field__input,
 .ee4v-ui-copyable-text-area__field .unity-base-field__input {
     white-space: normal;
+    background-color: rgba(0, 0, 0, 0.18);
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
     border-bottom-left-radius: 8px;

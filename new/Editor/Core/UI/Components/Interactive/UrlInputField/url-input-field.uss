@@ -28,7 +28,7 @@
     border-top-right-radius: 6px;
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: rgba(0, 0, 0, 0.22);
 }
 
 .ee4v-ui-url-input-field__field-container--focused {
@@ -36,6 +36,7 @@
     border-right-color: rgba(86, 156, 214, 0.6);
     border-bottom-color: rgba(86, 156, 214, 0.6);
     border-left-color: rgba(86, 156, 214, 0.6);
+    background-color: rgba(0, 0, 0, 0.30);
 }
 
 .ee4v-ui-url-input-field__field {
