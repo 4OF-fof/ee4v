@@ -21,7 +21,7 @@ namespace Ee4v.UI
                     "Content",
                     "ImageStack",
                     "複数 item の画像を重ねて表示するコンポーネントです。",
-                    "最大 3 件の画像を中央基準で重ね、1 件目から基準位置、下レイヤ、上レイヤの順で表示します。選択数や説明テキストは外側の panel が担当します。",
+                    "最大 3 件の画像を中央基準で重ね、1 件目が最背面、2 件目、3 件目の順に上へ積み上がるように表示します。選択数や説明テキストは外側の panel が担当します。",
                     new[] { "ItemImage" },
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildImageStackStory(parent)));

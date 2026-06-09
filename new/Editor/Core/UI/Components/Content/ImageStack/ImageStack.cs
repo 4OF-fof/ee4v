@@ -9,16 +9,17 @@ namespace Ee4v.UI
         private const string ImageClassName = "ee4v-ui-image-stack__image";
         private const int MaxImageCount = 3;
         private const int BaseSlot = 1;
-        private static readonly int[] SlotOrder = { BaseSlot, 2, 0 };
+        private static readonly int[] SlotOrder = { 0, BaseSlot, 2 };
         private static readonly float[] SlotRotations = { -4.5f, 0.8f, 4.2f };
         private readonly ItemImage[] _images;
         private float _size;
+        private int _visibleCount;
 
         public ImageStack()
         {
             AddToClassList(RootClassName);
             _images = new ItemImage[MaxImageCount];
-            for (var i = _images.Length - 1; i >= 0; i--)
+            for (var i = 0; i < _images.Length; i++)
             {
                 var image = new ItemImage();
                 image.AddToClassList(ImageClassName);
@@ -37,6 +38,7 @@ namespace Ee4v.UI
             }
 
             var count = UnityEngine.Mathf.Min(MaxImageCount, states.Count);
+            _visibleCount = count;
             for (var i = 0; i < count; i++)
             {
                 var slot = SlotOrder[i];
@@ -44,6 +46,8 @@ namespace Ee4v.UI
                 image.style.display = DisplayStyle.Flex;
                 image.SetState(states[i]);
             }
+
+            UpdateImageLayout();
         }
 
         public void Clear()
@@ -53,6 +57,8 @@ namespace Ee4v.UI
                 _images[i].style.display = DisplayStyle.None;
                 _images[i].SetState(new ItemImageState());
             }
+
+            _visibleCount = 0;
         }
 
         public void SetSize(float size)
@@ -79,6 +85,14 @@ namespace Ee4v.UI
             var centerLeft = (_size - imageSize) * 0.5f;
             var centerTop = (_size - imageSize) * 0.5f;
 
+            if (_visibleCount == 1)
+            {
+                ApplySlotLayout(0, imageSize, centerLeft, centerTop, 0f);
+                ApplySlotLayout(BaseSlot, imageSize, centerLeft, centerTop, 0f);
+                ApplySlotLayout(2, imageSize, centerLeft, centerTop, 0f);
+                return;
+            }
+
             ApplySlotLayout(0, imageSize, centerLeft - (offset * 0.85f), centerTop - (offset * 0.55f));
             ApplySlotLayout(BaseSlot, imageSize, centerLeft, centerTop);
             ApplySlotLayout(2, imageSize, centerLeft + (offset * 0.85f), centerTop + (offset * 0.85f));
@@ -86,11 +100,16 @@ namespace Ee4v.UI
 
         private void ApplySlotLayout(int slot, float size, float left, float top)
         {
+            ApplySlotLayout(slot, size, left, top, SlotRotations[slot]);
+        }
+
+        private void ApplySlotLayout(int slot, float size, float left, float top, float rotation)
+        {
             var image = _images[slot];
             image.SetSize(size);
             image.style.left = left;
             image.style.top = top;
-            image.style.rotate = new Rotate(new Angle(SlotRotations[slot], AngleUnit.Degree));
+            image.style.rotate = new Rotate(new Angle(rotation, AngleUnit.Degree));
         }
     }
 }

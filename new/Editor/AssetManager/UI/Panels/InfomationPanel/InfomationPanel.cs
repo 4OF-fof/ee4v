@@ -7,20 +7,17 @@ namespace Ee4v.UI
     {
         private const string RootClassName = "ee4v-asset-manager-panel--infomation";
         private const string PreviewClassName = "ee4v-asset-manager-panel__infomation-preview";
-        private const string SinglePreviewClassName = "ee4v-asset-manager-panel__infomation-preview--single";
-        private const string MultiPreviewClassName = "ee4v-asset-manager-panel__infomation-preview--multi";
         private const string MultiPreviewTextRowClassName = "ee4v-asset-manager-panel__infomation-preview-text";
+        private const string NameInputClassName = "ee4v-asset-manager-panel__infomation-name-input";
+        private const string NameInputPlaceholder = "名前";
         private const float PreviewMaxSize = 360f;
         private const float HorizontalPadding = 24f;
-        private const float MultiPreviewTextHeight = 32f;
-        private const float MultiPreviewTextGap = 12f;
-        private readonly VisualElement _singlePreview;
-        private readonly ItemImage _previewImage;
-        private readonly VisualElement _multiPreview;
+        private readonly VisualElement _preview;
         private readonly ImageStack _imageStack;
         private readonly VisualElement _multiPreviewTextRow;
         private readonly UiTextElement _multiPreviewCountText;
         private readonly UiTextElement _multiPreviewSuffixText;
+        private readonly InputField _nameInput;
         private float _previewSize;
 
         public InfomationPanel()
@@ -28,18 +25,10 @@ namespace Ee4v.UI
             AddToClassList("ee4v-asset-manager-panel");
             AddToClassList(RootClassName);
 
-            _singlePreview = new VisualElement();
-            _singlePreview.AddToClassList(PreviewClassName);
-            _singlePreview.AddToClassList(SinglePreviewClassName);
-            _previewImage = new ItemImage();
-            _singlePreview.Add(_previewImage);
-            Add(_singlePreview);
-
-            _multiPreview = new VisualElement();
-            _multiPreview.AddToClassList(PreviewClassName);
-            _multiPreview.AddToClassList(MultiPreviewClassName);
+            _preview = new VisualElement();
+            _preview.AddToClassList(PreviewClassName);
             _imageStack = new ImageStack();
-            _multiPreview.Add(_imageStack);
+            _preview.Add(_imageStack);
 
             _multiPreviewTextRow = new VisualElement();
             _multiPreviewTextRow.AddToClassList(MultiPreviewTextRowClassName);
@@ -49,8 +38,12 @@ namespace Ee4v.UI
             _multiPreviewSuffixText.SetWhiteSpace(WhiteSpace.NoWrap);
             _multiPreviewTextRow.Add(_multiPreviewCountText);
             _multiPreviewTextRow.Add(_multiPreviewSuffixText);
-            _multiPreview.Add(_multiPreviewTextRow);
-            Add(_multiPreview);
+            _preview.Add(_multiPreviewTextRow);
+            Add(_preview);
+
+            _nameInput = new InputField(new InputFieldState(string.Empty, false, 0f, NameInputPlaceholder));
+            _nameInput.AddToClassList(NameInputClassName);
+            Add(_nameInput);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -73,25 +66,23 @@ namespace Ee4v.UI
         {
             if (items == null || items.Count == 0)
             {
-                _singlePreview.style.display = DisplayStyle.None;
-                _multiPreview.style.display = DisplayStyle.None;
-                _previewImage.SetState(new ItemImageState());
-                ClearMultiPreview();
+                _preview.style.display = DisplayStyle.None;
+                _nameInput.style.display = DisplayStyle.None;
+                ClearPreview();
                 return;
             }
 
             if (items.Count == 1)
             {
-                _singlePreview.style.display = DisplayStyle.Flex;
-                _multiPreview.style.display = DisplayStyle.None;
-                _previewImage.SetState(items[0].ImageState);
-                ClearMultiPreview();
+                _preview.style.display = DisplayStyle.Flex;
+                _nameInput.style.display = DisplayStyle.Flex;
+                SetPreview(items, false);
                 return;
             }
 
-            _singlePreview.style.display = DisplayStyle.None;
-            _previewImage.SetState(new ItemImageState());
-            SetMultiPreview(items);
+            _preview.style.display = DisplayStyle.Flex;
+            _nameInput.style.display = DisplayStyle.Flex;
+            SetPreview(items, true);
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
@@ -108,17 +99,15 @@ namespace Ee4v.UI
 
             var contentWidth = UnityEngine.Mathf.Max(0f, width - HorizontalPadding);
             _previewSize = UnityEngine.Mathf.Min(PreviewMaxSize, contentWidth);
-            SetPreviewRootSize(_singlePreview, _previewSize);
-            _previewImage.SetSize(_previewSize);
-            SetPreviewRootSize(_multiPreview, _previewSize);
-            UpdateMultiPreviewSizes();
+            UpdatePreviewSize();
+            UpdateNameInputSize();
         }
 
-        private void SetMultiPreview(IReadOnlyList<ItemCardState> items)
+        private void SetPreview(IReadOnlyList<ItemCardState> items, bool showCount)
         {
-            _multiPreview.style.display = DisplayStyle.Flex;
-            _multiPreviewCountText.SetText(items.Count.ToString());
-            _multiPreviewSuffixText.SetText("件のアイテムを選択中");
+            _multiPreviewTextRow.style.display = showCount ? DisplayStyle.Flex : DisplayStyle.None;
+            _multiPreviewCountText.SetText(showCount ? items.Count.ToString() : string.Empty);
+            _multiPreviewSuffixText.SetText(showCount ? "件のアイテムを選択中" : string.Empty);
 
             var imageStates = new List<ItemImageState>(items.Count);
             for (var i = 0; i < items.Count; i++)
@@ -127,35 +116,33 @@ namespace Ee4v.UI
             }
 
             _imageStack.SetStates(imageStates);
-            UpdateMultiPreviewSizes();
+            UpdatePreviewSize();
         }
 
-        private void ClearMultiPreview()
+        private void ClearPreview()
         {
             _imageStack.Clear();
             _multiPreviewCountText.SetText(string.Empty);
             _multiPreviewSuffixText.SetText(string.Empty);
+            _multiPreviewTextRow.style.display = DisplayStyle.None;
         }
 
-        private void UpdateMultiPreviewSizes()
+        private void UpdatePreviewSize()
         {
             _imageStack.SetSize(GetImageStackSize());
-            _multiPreviewTextRow.style.height = MultiPreviewTextHeight;
-        }
-
-        private void SetPreviewRootSize(VisualElement preview, float size)
-        {
-            preview.style.width = size;
-            preview.style.height = size;
-            preview.style.minWidth = size;
-            preview.style.minHeight = size;
-            preview.style.maxWidth = size;
-            preview.style.maxHeight = size;
         }
 
         private float GetImageStackSize()
         {
-            return UnityEngine.Mathf.Max(48f, _previewSize - MultiPreviewTextHeight - MultiPreviewTextGap);
+            return UnityEngine.Mathf.Max(48f, _previewSize);
+        }
+
+        private void UpdateNameInputSize()
+        {
+            var width = GetImageStackSize();
+            _nameInput.style.width = width;
+            _nameInput.style.minWidth = width;
+            _nameInput.style.maxWidth = width;
         }
     }
 }
