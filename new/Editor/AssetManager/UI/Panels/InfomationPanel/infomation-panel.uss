@@ -5,7 +5,7 @@
 }
 
 .ee4v-asset-manager-panel--infomation {
-    padding-top: 12px;
+    padding-top: 0;
     padding-right: 12px;
     padding-bottom: 12px;
     padding-left: 12px;
