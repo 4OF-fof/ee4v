@@ -36,7 +36,7 @@ namespace Ee4v.AssetManager
 
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/common.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/NavigationPanel/navigation-panel.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Interactive/SingleSelectButtonGroup/single-select-button-group.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/Selection/SingleSelectButtonGroup/single-select-button-group.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Window/NavigationWindow/navigation-window.uss");
 
             var body = new VisualElement();

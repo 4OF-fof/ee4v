@@ -40,8 +40,8 @@ namespace Ee4v.UI
             {
                 new SearchableTreeItemData<SampleTreeNode>(
                     1,
-                    new SampleTreeNode("Display", string.Empty),
-                    "Display",
+                    new SampleTreeNode("Content", string.Empty),
+                    "Content",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
@@ -50,68 +50,99 @@ namespace Ee4v.UI
                             "InfoCard Card information"),
                         new SearchableTreeItemData<SampleTreeNode>(
                             3,
-                            new SampleTreeNode("Alerts", "Banner"),
-                            "Alerts Banner feedback"),
+                            new SampleTreeNode("ItemImage", "Media"),
+                            "ItemImage media thumbnail"),
                         new SearchableTreeItemData<SampleTreeNode>(
                             4,
-                            new SampleTreeNode("StatusBadge", "Pill"),
-                            "StatusBadge pill status"),
+                            new SampleTreeNode("CopyableTextArea", "Text"),
+                            "CopyableTextArea readonly copy text"),
                         new SearchableTreeItemData<SampleTreeNode>(
                             5,
                             new SampleTreeNode("Icon", "Image"),
-                            "Icon image texture builtin")
+                            "Icon image texture builtin"),
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            6,
+                            new SampleTreeNode("Alerts", "Banner"),
+                            "Alerts Banner content"),
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            7,
+                            new SampleTreeNode("StatusBadge", "Pill"),
+                            "StatusBadge pill status"),
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            8,
+                            new SampleTreeNode("TabCard", "Interactive"),
+                            "TabCard interactive content switcher")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
-                    6,
-                    new SampleTreeNode("DataView", string.Empty),
-                    "DataView",
+                    9,
+                    new SampleTreeNode("Collections", string.Empty),
+                    "Collections",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
-                            7,
+                            10,
                             new SampleTreeNode("SearchableTreeView", searchableTreeViewMeta),
                             "SearchableTreeView searchable tree")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
-                    8,
-                    new SampleTreeNode("Interactive", string.Empty),
-                    "Interactive",
-                    new[]
-                    {
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            9,
-                            new SampleTreeNode("SearchField", searchFieldMeta),
-                            "SearchField input search"),
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            10,
-                            new SampleTreeNode("TabCard", "Tabs"),
-                            "TabCard Tabs switcher")
-                    }),
-                new SearchableTreeItemData<SampleTreeNode>(
                     11,
-                    new SampleTreeNode("Overlay", string.Empty),
-                    "Overlay",
+                    new SampleTreeNode("Inputs", string.Empty),
+                    "Inputs",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
                             12,
+                            new SampleTreeNode("SearchField", searchFieldMeta),
+                            "SearchField input search"),
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            13,
+                            new SampleTreeNode("SelectableItemGrid", "Selection"),
+                            "SelectableItemGrid input selection grid"),
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            14,
+                            new SampleTreeNode("SingleSelectButtonGroup", "Selection"),
+                            "SingleSelectButtonGroup input selection buttons")
+                    }),
+                new SearchableTreeItemData<SampleTreeNode>(
+                    15,
+                    new SampleTreeNode("Overlays", string.Empty),
+                    "Overlays",
+                    new[]
+                    {
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            16,
+                            new SampleTreeNode("ContextMenuWindow", "Menu"),
+                            "ContextMenuWindow overlay menu"),
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            17,
                             new SampleTreeNode("WindowToast", "Toast"),
                             "WindowToast editor window overlay toast")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
-                    13,
+                    18,
+                    new SampleTreeNode("Layout", string.Empty),
+                    "Layout",
+                    new[]
+                    {
+                        new SearchableTreeItemData<SampleTreeNode>(
+                            19,
+                            new SampleTreeNode("ThreePaneLayout", "Panes"),
+                            "ThreePaneLayout panes layout")
+                    }),
+                new SearchableTreeItemData<SampleTreeNode>(
+                    20,
                     new SampleTreeNode("Domain", string.Empty),
                     "Domain",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
-                            14,
+                            21,
                             new SampleTreeNode("Testing", string.Empty),
                             "Testing",
                             new[]
                             {
                                 new SearchableTreeItemData<SampleTreeNode>(
-                                    15,
+                                    22,
                                     new SampleTreeNode("TestResultGroup", "Testing"),
                                     "TestResultGroup testing domain result")
                             })

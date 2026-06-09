@@ -13,10 +13,10 @@ namespace Ee4v.UI
         private const string RootClassName = "ee4v-ui";
         private static readonly Dictionary<string, int> RootGroupOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
-            { "Display", 0 },
-            { "DataView", 1 },
-            { "Interactive", 2 },
-            { "Overlay", 3 },
+            { "Content", 0 },
+            { "Inputs", 1 },
+            { "Collections", 2 },
+            { "Overlays", 3 },
             { "Layout", 4 },
             { "Domain", 5 }
         };

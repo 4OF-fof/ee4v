@@ -21,10 +21,13 @@ Catalog は「存在確認」ではなく「使い方の見本」を置く場所
 
 `group` の例:
 
-- `Display`
-- `Interactive`
-- `DataView`
-- `Overlay`
+- `Content`
+- `Content/Interactive`
+- `Inputs`
+- `Inputs/Selection`
+- `Collections`
+- `Overlays`
+- `Layout`
 - `Domain/Testing`
 
 ## USS の追加

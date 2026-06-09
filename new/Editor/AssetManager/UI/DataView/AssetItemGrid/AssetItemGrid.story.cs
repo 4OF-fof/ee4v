@@ -17,7 +17,7 @@ namespace Ee4v.UI
 
             public void Register(CatalogWindow.CatalogRegistry registry)
             {
-                registry.RegisterStyleSheet("Editor/Core/UI/Components/DataView/ItemGrid/selectable-item-grid.uss");
+                registry.RegisterStyleSheet("Editor/Core/UI/Components/Inputs/Selection/SelectableItemGrid/selectable-item-grid.uss");
                 registry.RegisterStyleSheet("Editor/AssetManager/UI/DataView/AssetItemGrid/asset-item-grid.uss");
                 registry.RegisterStory(new CatalogWindow.StoryRegistration(
                     "asset-item-grid",
