@@ -65,7 +65,7 @@ namespace Ee4v.UI
                     continue;
                 }
 
-                items.Add(new AssetItemGridListItem(item.Name, LoadThumbnail(item.Id)));
+                items.Add(new AssetItemGridListItem(item.Id, item.Name, LoadThumbnail(item.Id)));
             }
 
             return new AssetItemGridList(items, "No asset items.", itemsPerRow);

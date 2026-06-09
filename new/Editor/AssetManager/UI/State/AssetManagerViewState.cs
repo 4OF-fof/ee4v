@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Ee4v.UI
 {
@@ -103,8 +104,13 @@ namespace Ee4v.UI
         };
 
         private static string _selectedItemId = ItemsInternal[0].Id;
+        private static ItemCardState[] _selectedAssetItems = Array.Empty<ItemCardState>();
 
         public static event Action<string> SelectedItemChanged;
+
+        public static event Action<ItemCardState> SelectedAssetItemChanged;
+
+        public static event Action<IReadOnlyList<ItemCardState>> SelectedAssetItemsChanged;
 
         public static AssetManagerViewItemState[] Items
         {
@@ -119,6 +125,16 @@ namespace Ee4v.UI
         public static AssetManagerViewItemState SelectedItem
         {
             get { return GetItem(SelectedItemId); }
+        }
+
+        public static ItemCardState SelectedAssetItem
+        {
+            get { return _selectedAssetItems.Length > 0 ? _selectedAssetItems[0] : null; }
+        }
+
+        public static IReadOnlyList<ItemCardState> SelectedAssetItems
+        {
+            get { return _selectedAssetItems; }
         }
 
         public static AssetManagerViewItemState GetItem(string itemId)
@@ -148,6 +164,38 @@ namespace Ee4v.UI
             if (notify)
             {
                 SelectedItemChanged?.Invoke(_selectedItemId);
+            }
+        }
+
+        public static void SetSelectedAssetItem(ItemCardState item, bool notify = true)
+        {
+            SetSelectedAssetItems(item != null ? new[] { item } : null, notify);
+        }
+
+        public static void SetSelectedAssetItems(IReadOnlyList<ItemCardState> items, bool notify = true)
+        {
+            if (items == null || items.Count == 0)
+            {
+                _selectedAssetItems = Array.Empty<ItemCardState>();
+            }
+            else
+            {
+                var nextItems = new List<ItemCardState>(items.Count);
+                for (var i = 0; i < items.Count; i++)
+                {
+                    if (items[i] != null)
+                    {
+                        nextItems.Add(items[i]);
+                    }
+                }
+
+                _selectedAssetItems = nextItems.ToArray();
+            }
+
+            if (notify)
+            {
+                SelectedAssetItemChanged?.Invoke(SelectedAssetItem);
+                SelectedAssetItemsChanged?.Invoke(_selectedAssetItems);
             }
         }
 

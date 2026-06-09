@@ -41,6 +41,7 @@ namespace Ee4v.AssetManager
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Display/ItemImage/item-image.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Display/ItemCard/item-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/DataView/ItemGrid/item-grid.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/DataView/ItemGrid/selectable-item-grid.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/DataView/AssetItemGrid/asset-item-grid.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Window/MainViewWindow/main-view-window.uss");
 

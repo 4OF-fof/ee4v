@@ -29,6 +29,7 @@ namespace Ee4v.UI
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            _itemGrid.SelectionChanged += OnGridSelectionChanged;
         }
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
@@ -47,13 +48,20 @@ namespace Ee4v.UI
 
         private void OnSelectedItemChanged(string itemId)
         {
+            ClearGridSelection();
             RefreshContent();
         }
 
         private void OnContentChanged()
         {
             _itemGrid.ClearCachedItems();
+            ClearGridSelection();
             RefreshContent();
+        }
+
+        private void OnGridSelectionChanged(System.Collections.Generic.IReadOnlyList<ItemCardState> items)
+        {
+            AssetManagerViewState.SetSelectedAssetItems(items);
         }
 
         private void RefreshContent()
@@ -109,6 +117,12 @@ namespace Ee4v.UI
         {
             _statusLabel.SetText(message);
             _statusLabel.style.display = string.IsNullOrWhiteSpace(message) ? DisplayStyle.None : DisplayStyle.Flex;
+        }
+
+        private void ClearGridSelection()
+        {
+            _itemGrid.ClearSelection(notify: false);
+            AssetManagerViewState.SetSelectedAssetItems(null);
         }
     }
 }

@@ -23,12 +23,12 @@ namespace Ee4v.UI
         private const string RootClassName = "ee4v-ui-item-grid";
         private const string ListClassName = "ee4v-ui-item-grid__list";
         private const string RowClassName = "ee4v-ui-item-grid__row";
-        private const string RowSlotClassName = "ee4v-ui-item-grid__row-slot";
+        protected const string RowSlotClassName = "ee4v-ui-item-grid__row-slot";
         private const float ColumnGap = 16f;
         private const float RowVerticalPadding = 4f;
         private const float NameHeight = 25f;
         private const int DefaultRowHeight = 161;
-        private readonly ListView _listView;
+        protected readonly ListView ListView;
         private readonly List<ItemGridRowState> _rows = new List<ItemGridRowState>();
         private IReadOnlyList<ItemCardState> _items = Array.Empty<ItemCardState>();
         private int _itemsPerRow = 6;
@@ -38,25 +38,36 @@ namespace Ee4v.UI
         {
             AddToClassList(RootClassName);
 
-            _listView = new ListView();
-            _listView.AddToClassList(ListClassName);
-            _listView.selectionType = SelectionType.None;
-            _listView.fixedItemHeight = DefaultRowHeight;
-            _listView.makeItem = MakeRow;
-            _listView.bindItem = BindRow;
-            _listView.itemsSource = _rows;
-            Add(_listView);
+            ListView = new ListView();
+            ListView.AddToClassList(ListClassName);
+            ListView.selectionType = SelectionType.None;
+            ListView.fixedItemHeight = DefaultRowHeight;
+            ListView.makeItem = MakeRow;
+            ListView.bindItem = BindRow;
+            ListView.itemsSource = _rows;
+            Add(ListView);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-            SetState(state ?? new ItemGridState(null));
+            ApplyState(state ?? new ItemGridState(null));
         }
 
-        public void SetState(ItemGridState state)
+        public IReadOnlyList<ItemCardState> Items
+        {
+            get { return _items; }
+        }
+
+        public virtual void SetState(ItemGridState state)
+        {
+            ApplyState(state);
+        }
+
+        private void ApplyState(ItemGridState state)
         {
             var nextState = state ?? new ItemGridState(null);
             _items = nextState.Items ?? Array.Empty<ItemCardState>();
             _itemsPerRow = Mathf.Max(1, nextState.ItemsPerRow);
+
             RecalculateCardWidth(resolvedStyle.width);
             RebuildRows();
         }
@@ -84,13 +95,17 @@ namespace Ee4v.UI
                 var slot = element.ElementAt(i);
                 var itemCard = slot.ElementAt(0) as ItemCard;
                 var hasItem = i < rowState.Items.Count && rowState.Items[i] != null;
+                var itemIndex = index * _itemsPerRow + i;
                 ApplySlotWidth(slot, i);
+                slot.userData = hasItem ? itemIndex : -1;
                 slot.style.visibility = hasItem ? Visibility.Visible : Visibility.Hidden;
                 if (hasItem && itemCard != null)
                 {
                     itemCard.SetWidth(_cardWidth);
                     itemCard.SetState(rowState.Items[i]);
                 }
+
+                OnBindSlot(slot, hasItem ? rowState.Items[i] : null, itemIndex, hasItem);
             }
         }
 
@@ -122,7 +137,7 @@ namespace Ee4v.UI
         {
             _rows.Clear();
             var rowHeight = Mathf.CeilToInt(_cardWidth + NameHeight + RowVerticalPadding);
-            _listView.fixedItemHeight = Mathf.Max(1, rowHeight);
+            ListView.fixedItemHeight = Mathf.Max(1, rowHeight);
             for (var i = 0; i < _items.Count; i += _itemsPerRow)
             {
                 var rowItems = new List<ItemCardState>(_itemsPerRow);
@@ -135,7 +150,7 @@ namespace Ee4v.UI
                 _rows.Add(new ItemGridRowState(rowItems));
             }
 
-            _listView.Rebuild();
+            ListView.Rebuild();
             HideScrollbars();
         }
 
@@ -150,11 +165,20 @@ namespace Ee4v.UI
             return new ItemCard();
         }
 
+        protected virtual void OnCreateSlot(VisualElement slot)
+        {
+        }
+
+        protected virtual void OnBindSlot(VisualElement slot, ItemCardState item, int itemIndex, bool hasItem)
+        {
+        }
+
         private VisualElement CreateSlot(int index)
         {
             var slot = new VisualElement();
             slot.AddToClassList(RowSlotClassName);
             ApplySlotWidth(slot, index);
+            OnCreateSlot(slot);
             var itemCard = CreateItemCard();
             itemCard.SetWidth(_cardWidth);
             slot.Add(itemCard);
@@ -189,14 +213,14 @@ namespace Ee4v.UI
 
         private void HideScrollbars()
         {
-            var scrollers = _listView.Query<Scroller>().ToList();
+            var scrollers = ListView.Query<Scroller>().ToList();
             for (var i = 0; i < scrollers.Count; i++)
             {
                 scrollers[i].style.display = DisplayStyle.None;
                 scrollers[i].style.visibility = Visibility.Hidden;
             }
 
-            var scrollViews = _listView.Query<ScrollView>().ToList();
+            var scrollViews = ListView.Query<ScrollView>().ToList();
             for (var i = 0; i < scrollViews.Count; i++)
             {
                 scrollViews[i].verticalScrollerVisibility = ScrollerVisibility.Hidden;

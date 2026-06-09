@@ -6,15 +6,23 @@ namespace Ee4v.UI
     internal sealed class ItemCardState
     {
         public ItemCardState(string itemName, byte[] thumbnailData = null)
-            : this(itemName, new ItemImageState(thumbnailData))
+            : this(string.Empty, itemName, new ItemImageState(thumbnailData))
         {
         }
 
         public ItemCardState(string itemName, ItemImageState imageState)
+            : this(string.Empty, itemName, imageState)
         {
+        }
+
+        public ItemCardState(string itemId, string itemName, ItemImageState imageState)
+        {
+            ItemId = itemId ?? string.Empty;
             ItemName = itemName ?? string.Empty;
             ImageState = imageState ?? new ItemImageState();
         }
+
+        public string ItemId { get; }
 
         public string ItemName { get; }
 

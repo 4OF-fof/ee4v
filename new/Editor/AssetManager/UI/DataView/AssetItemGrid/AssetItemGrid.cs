@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace Ee4v.UI
 {
-    internal sealed class AssetItemGrid : ItemGrid
+    internal sealed class AssetItemGrid : SelectableItemGrid
     {
         public AssetItemGrid()
         {
@@ -54,7 +54,7 @@ namespace Ee4v.UI
                     continue;
                 }
 
-                itemCardStates.Add(new ItemCardState(item.ItemName, item.ImageState));
+                itemCardStates.Add(new ItemCardState(item.ItemId, item.ItemName, item.ImageState));
             }
 
             statusText = itemCardStates.Count == 0 ? list.EmptyText : string.Empty;
