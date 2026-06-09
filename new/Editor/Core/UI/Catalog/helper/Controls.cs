@@ -28,7 +28,7 @@ namespace Ee4v.UI
 
         internal ControlsSectionContext CreateTabbedControlsSection(VisualElement parent, string description)
         {
-            var card = new InfoCard(new InfoCardState("コントロール", description));
+            var card = new InfoCard(new InfoCardState(I18N.Get("catalog.common.controls"), description));
             card.userData = "catalog-controls-section";
             var tabCard = new TabCard();
             tabCard.Content.AddToClassList("ee4v-ui-catalog-controls");
@@ -39,7 +39,7 @@ namespace Ee4v.UI
 
         internal ControlsSectionContext CreatePlainControlsSection(VisualElement parent, string description)
         {
-            var card = new InfoCard(new InfoCardState("コントロール", description));
+            var card = new InfoCard(new InfoCardState(I18N.Get("catalog.common.controls"), description));
             card.userData = "catalog-controls-section";
             var content = new VisualElement();
             content.AddToClassList("ee4v-ui-catalog-controls");

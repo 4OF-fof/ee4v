@@ -1,4 +1,5 @@
 using System;
+using Ee4v.Core.I18n;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -7,7 +8,9 @@ namespace Ee4v.UI
     {
         internal InfoCard CreatePreviewSection(VisualElement parent)
         {
-            var card = new InfoCard(new InfoCardState("プレビュー", "コントロールの変更はすぐにプレビューへ反映されます。"));
+            var card = new InfoCard(new InfoCardState(
+                I18N.Get("catalog.common.preview"),
+                I18N.Get("catalog.common.previewDescription")));
             var inserted = false;
             for (var i = 0; i < parent.childCount; i++)
             {

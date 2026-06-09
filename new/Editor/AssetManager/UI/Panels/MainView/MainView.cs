@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Ee4v.Core.I18n;
 using UnityEditor;
 using UnityEngine.UIElements;
 
@@ -77,7 +78,7 @@ namespace Ee4v.UI
             }
 
             var version = ++_loadVersion;
-            SetStatus("Loading assets...");
+            SetStatus(I18N.Get("assetManager.mainView.loading"));
             _itemGrid.SetLoading();
 
             Task.Run(() => _controller.LoadItems(request)).ContinueWith(task =>
@@ -91,13 +92,13 @@ namespace Ee4v.UI
 
                     if (task.IsFaulted)
                     {
-                        SetStatus(task.Exception != null ? task.Exception.GetBaseException().Message : "Failed to load assets.");
+                        SetStatus(task.Exception != null ? task.Exception.GetBaseException().Message : I18N.Get("assetManager.mainView.loadFailed"));
                         return;
                     }
 
                     if (task.IsCanceled)
                     {
-                        SetStatus("Asset loading was canceled.");
+                        SetStatus(I18N.Get("assetManager.mainView.loadCanceled"));
                         return;
                     }
 

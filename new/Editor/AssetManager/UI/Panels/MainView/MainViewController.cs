@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Ee4v.AssetManager.Api;
+using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using UnityEditor;
 
@@ -54,7 +55,7 @@ namespace Ee4v.UI
             var items = new List<AssetItemGridListItem>();
             if (result == null || result.Items == null)
             {
-                return new AssetItemGridList(items, "No asset items.", itemsPerRow);
+                return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noItems"), itemsPerRow);
             }
 
             for (var i = 0; i < result.Items.Count; i++)
@@ -68,7 +69,7 @@ namespace Ee4v.UI
                 items.Add(new AssetItemGridListItem(item.Id, item.Name, LoadThumbnail(item.Id)));
             }
 
-            return new AssetItemGridList(items, "No asset items.", itemsPerRow);
+            return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noItems"), itemsPerRow);
         }
 
         private static void OnAssetManagerChanged()

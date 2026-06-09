@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Ee4v.Core.I18n;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -9,7 +10,6 @@ namespace Ee4v.UI
         private const string PreviewClassName = "ee4v-asset-manager-panel__infomation-preview";
         private const string MultiPreviewTextRowClassName = "ee4v-asset-manager-panel__infomation-preview-text";
         private const string NameInputClassName = "ee4v-asset-manager-panel__infomation-name-input";
-        private const string NameInputPlaceholder = "名前";
         private const float PreviewMaxSize = 360f;
         private const float HorizontalPadding = 24f;
         private readonly VisualElement _preview;
@@ -41,7 +41,7 @@ namespace Ee4v.UI
             _preview.Add(_multiPreviewTextRow);
             Add(_preview);
 
-            _nameInput = new InputField(new InputFieldState(string.Empty, false, 0f, NameInputPlaceholder));
+            _nameInput = new InputField(new InputFieldState(string.Empty, false, 0f, I18N.Get("assetManager.infomationPanel.namePlaceholder")));
             _nameInput.AddToClassList(NameInputClassName);
             Add(_nameInput);
 
@@ -107,7 +107,7 @@ namespace Ee4v.UI
         {
             _multiPreviewTextRow.style.display = showCount ? DisplayStyle.Flex : DisplayStyle.None;
             _multiPreviewCountText.SetText(showCount ? items.Count.ToString() : string.Empty);
-            _multiPreviewSuffixText.SetText(showCount ? "件のアイテムを選択中" : string.Empty);
+            _multiPreviewSuffixText.SetText(showCount ? I18N.Get("assetManager.infomationPanel.selectedItemsSuffix") : string.Empty);
 
             var imageStates = new List<ItemImageState>(items.Count);
             for (var i = 0; i < items.Count; i++)

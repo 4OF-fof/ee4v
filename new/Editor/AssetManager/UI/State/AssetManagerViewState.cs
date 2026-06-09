@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.Core.I18n;
 
 namespace Ee4v.UI
 {
@@ -44,66 +45,15 @@ namespace Ee4v.UI
 
     internal static class AssetManagerViewState
     {
-        private static readonly AssetManagerViewItemState[] ItemsInternal =
+        private static readonly string[] ItemIds =
         {
-            new AssetManagerViewItemState(
-                "all-assets",
-                "All Assets",
-                "240 items",
-                "AssetManager",
-                "All Assets",
-                "プロジェクト全体を横断して検索、一覧、操作を行う標準ビューです。",
-                new[]
-                {
-                    "検索バーとフィルタ",
-                    "グリッド / リスト切り替え",
-                    "一括操作と import/export 導線"
-                },
-                IconState.FromBuiltinIcon(UiBuiltinIcon.Search, size: 12f)),
-            new AssetManagerViewItemState(
-                "favorites",
-                "Favorites",
-                "Pinned",
-                "Collections",
-                "Favorites",
-                "作業中に頻繁に触るアセットを優先表示するビューです。",
-                new[]
-                {
-                    "お気に入りの一覧",
-                    "最近の更新順ソート",
-                    "即時プレビュー導線"
-                },
-                IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureOpen, size: 12f)),
-            new AssetManagerViewItemState(
-                "booth-library",
-                "Booth Library",
-                "Store Sync",
-                "Source",
-                "Booth Library",
-                "Booth 連携済みライブラリと同期状態を扱うビューです。",
-                new[]
-                {
-                    "購入済みアセット一覧",
-                    "同期待ち / 更新待ちの確認",
-                    "ダウンロード導線"
-                },
-                IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: 12f)),
-            new AssetManagerViewItemState(
-                "packages",
-                "Packages",
-                "UPM",
-                "Source",
-                "Packages",
-                "Package Manager 由来のアセットと依存関係を確認するビューです。",
-                new[]
-                {
-                    "導入済み package 一覧",
-                    "依存関係の可視化",
-                    "更新確認"
-                })
+            "all-assets",
+            "favorites",
+            "booth-library",
+            "packages"
         };
 
-        private static string _selectedItemId = ItemsInternal[0].Id;
+        private static string _selectedItemId = ItemIds[0];
         private static ItemCardState[] _selectedAssetItems = Array.Empty<ItemCardState>();
 
         public static event Action<string> SelectedItemChanged;
@@ -114,7 +64,7 @@ namespace Ee4v.UI
 
         public static AssetManagerViewItemState[] Items
         {
-            get { return ItemsInternal; }
+            get { return CreateItems(); }
         }
 
         public static string SelectedItemId
@@ -140,15 +90,16 @@ namespace Ee4v.UI
         public static AssetManagerViewItemState GetItem(string itemId)
         {
             var resolvedId = NormalizeSelectedItemId(itemId);
-            for (var i = 0; i < ItemsInternal.Length; i++)
+            var items = CreateItems();
+            for (var i = 0; i < items.Length; i++)
             {
-                if (string.Equals(ItemsInternal[i].Id, resolvedId, StringComparison.Ordinal))
+                if (string.Equals(items[i].Id, resolvedId, StringComparison.Ordinal))
                 {
-                    return ItemsInternal[i];
+                    return items[i];
                 }
             }
 
-            return ItemsInternal[0];
+            return items[0];
         }
 
         public static void SetSelectedItem(string itemId, bool notify = true)
@@ -201,15 +152,77 @@ namespace Ee4v.UI
 
         private static string NormalizeSelectedItemId(string itemId)
         {
-            for (var i = 0; i < ItemsInternal.Length; i++)
+            for (var i = 0; i < ItemIds.Length; i++)
             {
-                if (string.Equals(ItemsInternal[i].Id, itemId, StringComparison.Ordinal))
+                if (string.Equals(ItemIds[i], itemId, StringComparison.Ordinal))
                 {
-                    return ItemsInternal[i].Id;
+                    return ItemIds[i];
                 }
             }
 
-            return ItemsInternal[0].Id;
+            return ItemIds[0];
+        }
+
+        private static AssetManagerViewItemState[] CreateItems()
+        {
+            return new[]
+            {
+                new AssetManagerViewItemState(
+                    "all-assets",
+                    I18N.Get("assetManager.navigation.allAssets.label"),
+                    I18N.Get("assetManager.navigation.allAssets.meta"),
+                    I18N.Get("assetManager.navigation.allAssets.eyebrow"),
+                    I18N.Get("assetManager.navigation.allAssets.title"),
+                    I18N.Get("assetManager.navigation.allAssets.description"),
+                    new[]
+                    {
+                        I18N.Get("assetManager.navigation.allAssets.row.search"),
+                        I18N.Get("assetManager.navigation.allAssets.row.viewMode"),
+                        I18N.Get("assetManager.navigation.allAssets.row.bulkActions")
+                    },
+                    IconState.FromBuiltinIcon(UiBuiltinIcon.Search, size: 12f)),
+                new AssetManagerViewItemState(
+                    "favorites",
+                    I18N.Get("assetManager.navigation.favorites.label"),
+                    I18N.Get("assetManager.navigation.favorites.meta"),
+                    I18N.Get("assetManager.navigation.favorites.eyebrow"),
+                    I18N.Get("assetManager.navigation.favorites.title"),
+                    I18N.Get("assetManager.navigation.favorites.description"),
+                    new[]
+                    {
+                        I18N.Get("assetManager.navigation.favorites.row.list"),
+                        I18N.Get("assetManager.navigation.favorites.row.recent"),
+                        I18N.Get("assetManager.navigation.favorites.row.preview")
+                    },
+                    IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureOpen, size: 12f)),
+                new AssetManagerViewItemState(
+                    "booth-library",
+                    I18N.Get("assetManager.navigation.boothLibrary.label"),
+                    I18N.Get("assetManager.navigation.boothLibrary.meta"),
+                    I18N.Get("assetManager.navigation.boothLibrary.eyebrow"),
+                    I18N.Get("assetManager.navigation.boothLibrary.title"),
+                    I18N.Get("assetManager.navigation.boothLibrary.description"),
+                    new[]
+                    {
+                        I18N.Get("assetManager.navigation.boothLibrary.row.purchases"),
+                        I18N.Get("assetManager.navigation.boothLibrary.row.sync"),
+                        I18N.Get("assetManager.navigation.boothLibrary.row.download")
+                    },
+                    IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: 12f)),
+                new AssetManagerViewItemState(
+                    "packages",
+                    I18N.Get("assetManager.navigation.packages.label"),
+                    I18N.Get("assetManager.navigation.packages.meta"),
+                    I18N.Get("assetManager.navigation.packages.eyebrow"),
+                    I18N.Get("assetManager.navigation.packages.title"),
+                    I18N.Get("assetManager.navigation.packages.description"),
+                    new[]
+                    {
+                        I18N.Get("assetManager.navigation.packages.row.installed"),
+                        I18N.Get("assetManager.navigation.packages.row.dependencies"),
+                        I18N.Get("assetManager.navigation.packages.row.updates")
+                    })
+            };
         }
     }
 }
