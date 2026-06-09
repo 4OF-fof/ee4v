@@ -26,6 +26,7 @@ namespace Ee4v.UI
             RegisterCallback<PointerMoveEvent>(OnPointerMove);
             RegisterCallback<PointerUpEvent>(OnPointerUp);
             RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
+            RegisterCallback<KeyDownEvent>(OnKeyDown);
         }
 
         public event Action<IReadOnlyList<ItemCardState>> SelectionChanged;
@@ -59,6 +60,7 @@ namespace Ee4v.UI
             }
 
             _selectedItemIndices.Clear();
+            _selectionAnchorIndex = -1;
             RefreshVisibleSelection();
             if (notify)
             {
@@ -190,6 +192,22 @@ namespace Ee4v.UI
             {
                 EndDragWithoutRelease();
             }
+        }
+
+        private void OnKeyDown(KeyDownEvent evt)
+        {
+            if (!enabledInHierarchy || evt.keyCode != KeyCode.Escape)
+            {
+                return;
+            }
+
+            if (_isDragging)
+            {
+                EndDrag();
+            }
+
+            ClearSelection();
+            evt.StopPropagation();
         }
 
         private void EndDrag()

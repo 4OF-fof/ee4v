@@ -1,5 +1,5 @@
-using UnityEngine.UIElements;
 using System.Collections.Generic;
+using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
@@ -39,6 +39,14 @@ namespace Ee4v.UI
 
         private void SetSelectedAssetItems(IReadOnlyList<ItemCardState> items)
         {
+            if (items == null || items.Count == 0)
+            {
+                _previewImage.style.display = DisplayStyle.None;
+                _previewImage.SetState(new ItemImageState());
+                return;
+            }
+
+            _previewImage.style.display = DisplayStyle.Flex;
             var item = items != null && items.Count == 1 ? items[0] : null;
             _previewImage.SetState(item != null ? item.ImageState : new ItemImageState());
         }
