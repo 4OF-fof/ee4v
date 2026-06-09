@@ -84,6 +84,8 @@ namespace Ee4v.UI
                 { UiClassNames.TestResultGroupCasesMeta, Create(false, 11, 210, 210, 210, 184, TextAnchor.MiddleRight, WhiteSpace.NoWrap) },
                 { UiClassNames.SingleSelectButtonGroupMeta, Create(false, 10, 210, 210, 210, 184, TextAnchor.MiddleRight, WhiteSpace.NoWrap, marginLeft: 8f) },
                 { UiClassNames.ItemCardName, Create(false, 12, 230, 230, 230, 235, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
+                { UiClassNames.InfomationPanelSelectionCount, Create(true, 16, 66, 166, 255, 255, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
+                { UiClassNames.InfomationPanelSelectionCountSuffix, Create(false, 13, 230, 230, 230, 220, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
                 { UiClassNames.CatalogPageTitle, Create(true, 18, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 4f) },
                 { UiClassNames.CatalogPageDescription, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
                 { UiClassNames.CatalogDetailLabel, Create(true, 11, 220, 220, 220, 235, TextAnchor.UpperLeft, WhiteSpace.NoWrap, marginBottom: 2f) },

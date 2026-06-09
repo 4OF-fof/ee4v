@@ -15,6 +15,8 @@ namespace Ee4v.UI
         public const string TestResultGroupCasesMeta = "ee4v-ui-test-result-group__cases-meta";
         public const string SingleSelectButtonGroupMeta = "ee4v-ui-single-select-button-group__meta";
         public const string ItemCardName = "ee4v-ui-item-card__name";
+        public const string InfomationPanelSelectionCount = "ee4v-asset-manager-panel__infomation-selection-count";
+        public const string InfomationPanelSelectionCountSuffix = "ee4v-asset-manager-panel__infomation-selection-count-suffix";
 
         public const string CatalogPageTitle = "ee4v-ui-catalog-page__title";
         public const string CatalogPageDescription = "ee4v-ui-catalog-page__description";

@@ -14,6 +14,7 @@ namespace Ee4v.UI
             public void Register(CatalogWindow.CatalogRegistry registry)
             {
                 registry.RegisterStyleSheet("Editor/Core/UI/Components/Content/ItemImage/item-image.uss");
+                registry.RegisterStyleSheet("Editor/Core/UI/Components/Content/ImageStack/image-stack.uss");
                 registry.RegisterStyleSheet("Editor/AssetManager/UI/Panels/InfomationPanel/infomation-panel.uss");
                 registry.RegisterStory(new CatalogWindow.StoryRegistration(
                     "asset-manager-infomation-panel",

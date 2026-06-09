@@ -64,6 +64,7 @@ namespace Ee4v.AssetManager
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/InfomationPanel/infomation-panel.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Toolbar/AssetManagerToolbar/asset-manager-toolbar.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/ItemImage/item-image.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/ImageStack/image-stack.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/ItemCard/item-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Collections/ItemGrid/item-grid.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/Selection/SelectableItemGrid/selectable-item-grid.uss");

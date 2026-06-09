@@ -16,3 +16,26 @@
     max-width: 360px;
     align-self: center;
 }
+
+.ee4v-asset-manager-panel__infomation-preview--single {
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+}
+
+.ee4v-asset-manager-panel__infomation-preview--multi {
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+}
+
+.ee4v-asset-manager-panel__infomation-preview-text {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-top: 12px;
+}
+
+.ee4v-asset-manager-panel__infomation-selection-count-suffix {
+    margin-left: 2px;
+}
