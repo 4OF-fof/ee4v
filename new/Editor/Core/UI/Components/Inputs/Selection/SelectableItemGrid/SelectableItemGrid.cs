@@ -9,6 +9,7 @@ namespace Ee4v.UI
     {
         private const string SelectedSlotClassName = "ee4v-ui-selectable-item-grid__row-slot--selected";
         private readonly HashSet<int> _selectedItemIndices = new HashSet<int>();
+        private readonly List<int> _selectedItemOrder = new List<int>();
         private readonly HashSet<int> _dragAppliedItemIndices = new HashSet<int>();
         private bool _isDragging;
         private bool _dragValue;
@@ -60,6 +61,7 @@ namespace Ee4v.UI
             }
 
             _selectedItemIndices.Clear();
+            _selectedItemOrder.Clear();
             _selectionAnchorIndex = -1;
             RefreshVisibleSelection();
             if (notify)
@@ -123,7 +125,9 @@ namespace Ee4v.UI
         {
             var changed = _selectedItemIndices.Count != 1 || !_selectedItemIndices.Contains(itemIndex);
             _selectedItemIndices.Clear();
+            _selectedItemOrder.Clear();
             _selectedItemIndices.Add(itemIndex);
+            _selectedItemOrder.Add(itemIndex);
             _selectionAnchorIndex = itemIndex;
 
             if (changed)
@@ -142,9 +146,11 @@ namespace Ee4v.UI
             var endIndex = Mathf.Max(anchorIndex, itemIndex);
 
             _selectedItemIndices.Clear();
+            _selectedItemOrder.Clear();
             for (var i = startIndex; i <= endIndex; i++)
             {
                 _selectedItemIndices.Add(i);
+                _selectedItemOrder.Add(i);
             }
 
             RefreshVisibleSelection();
@@ -249,9 +255,7 @@ namespace Ee4v.UI
         private void ApplyDraggedItem(int itemIndex)
         {
             _dragAppliedItemIndices.Add(itemIndex);
-            var changed = _dragValue
-                ? _selectedItemIndices.Add(itemIndex)
-                : _selectedItemIndices.Remove(itemIndex);
+            var changed = _dragValue ? AddSelectedItem(itemIndex) : RemoveSelectedItem(itemIndex);
 
             if (!changed)
             {
@@ -292,7 +296,7 @@ namespace Ee4v.UI
 
             for (var i = 0; i < staleIndices.Count; i++)
             {
-                removed |= _selectedItemIndices.Remove(staleIndices[i]);
+                removed |= RemoveSelectedItem(staleIndices[i]);
             }
 
             if (removed)
@@ -303,12 +307,10 @@ namespace Ee4v.UI
 
         private List<ItemCardState> CreateSelectedItems()
         {
-            var indices = new List<int>(_selectedItemIndices);
-            indices.Sort();
-            var items = new List<ItemCardState>(indices.Count);
-            for (var i = 0; i < indices.Count; i++)
+            var items = new List<ItemCardState>(_selectedItemOrder.Count);
+            for (var i = 0; i < _selectedItemOrder.Count; i++)
             {
-                var index = indices[i];
+                var index = _selectedItemOrder[i];
                 if (index >= 0 && index < Items.Count)
                 {
                     items.Add(Items[index]);
@@ -316,6 +318,28 @@ namespace Ee4v.UI
             }
 
             return items;
+        }
+
+        private bool AddSelectedItem(int itemIndex)
+        {
+            if (!_selectedItemIndices.Add(itemIndex))
+            {
+                return false;
+            }
+
+            _selectedItemOrder.Add(itemIndex);
+            return true;
+        }
+
+        private bool RemoveSelectedItem(int itemIndex)
+        {
+            if (!_selectedItemIndices.Remove(itemIndex))
+            {
+                return false;
+            }
+
+            _selectedItemOrder.Remove(itemIndex);
+            return true;
         }
 
         private void NotifySelectionChanged()

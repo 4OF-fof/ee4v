@@ -109,8 +109,9 @@ namespace Ee4v.UI
             _multiPreviewCountText.SetText(showCount ? items.Count.ToString() : string.Empty);
             _multiPreviewSuffixText.SetText(showCount ? I18N.Get("assetManager.infomationPanel.selectedItemsSuffix") : string.Empty);
 
-            var imageStates = new List<ItemImageState>(items.Count);
-            for (var i = 0; i < items.Count; i++)
+            var firstPreviewIndex = UnityEngine.Mathf.Max(0, items.Count - 3);
+            var imageStates = new List<ItemImageState>(items.Count - firstPreviewIndex);
+            for (var i = firstPreviewIndex; i < items.Count; i++)
             {
                 imageStates.Add(items[i].ImageState);
             }
