@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using Ee4v.AssetManager.Api;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
+using Ee4v.UI;
 using UnityEditor;
 
-namespace Ee4v.UI
+namespace Ee4v.AssetManager
 {
     internal sealed class MainViewRequest
     {

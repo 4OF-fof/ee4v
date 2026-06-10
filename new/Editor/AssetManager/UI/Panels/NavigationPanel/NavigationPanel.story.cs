@@ -1,6 +1,7 @@
+using Ee4v.UI;
 using UnityEngine.UIElements;
 
-namespace Ee4v.UI
+namespace Ee4v.AssetManager
 {
     internal static class AssetManagerNavigationPanelCatalogRegistrarStory
     {

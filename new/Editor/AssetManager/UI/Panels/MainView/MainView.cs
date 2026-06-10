@@ -1,9 +1,10 @@
 using System.Threading.Tasks;
 using Ee4v.Core.I18n;
+using Ee4v.UI;
 using UnityEditor;
 using UnityEngine.UIElements;
 
-namespace Ee4v.UI
+namespace Ee4v.AssetManager
 {
     internal sealed class MainView : VisualElement
     {

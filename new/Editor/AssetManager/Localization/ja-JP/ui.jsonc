@@ -1,0 +1,67 @@
+{
+  "assetManager": {
+    "infomationPanel": {
+      "selectedItemsSuffix": "件のアイテムを選択中",
+      "detailTabs": {
+        "assetInfo": "Asset Info",
+        "fileTree": "File Tree"
+      }
+    },
+    "mainView": {
+      "loading": "アセットを読み込み中...",
+      "loadFailed": "アセットの読み込みに失敗しました。",
+      "loadCanceled": "アセットの読み込みがキャンセルされました。",
+      "noItems": "アセット項目がありません。"
+    },
+    "navigation": {
+      "allAssets": {
+        "label": "All Assets",
+        "meta": "240 items",
+        "eyebrow": "AssetManager",
+        "title": "All Assets",
+        "description": "プロジェクト全体を横断して検索、一覧、操作を行う標準ビューです。",
+        "row": {
+          "search": "検索バーとフィルタ",
+          "viewMode": "グリッド / リスト切り替え",
+          "bulkActions": "一括操作と import/export 導線"
+        }
+      },
+      "favorites": {
+        "label": "Favorites",
+        "meta": "Pinned",
+        "eyebrow": "Collections",
+        "title": "Favorites",
+        "description": "作業中に頻繁に触るアセットを優先表示するビューです。",
+        "row": {
+          "list": "お気に入りの一覧",
+          "recent": "最近の更新順ソート",
+          "preview": "即時プレビュー導線"
+        }
+      },
+      "boothLibrary": {
+        "label": "Booth Library",
+        "meta": "Store Sync",
+        "eyebrow": "Source",
+        "title": "Booth Library",
+        "description": "Booth 連携済みライブラリと同期状態を扱うビューです。",
+        "row": {
+          "purchases": "購入済みアセット一覧",
+          "sync": "同期待ち / 更新待ちの確認",
+          "download": "ダウンロード導線"
+        }
+      },
+      "packages": {
+        "label": "Packages",
+        "meta": "UPM",
+        "eyebrow": "Source",
+        "title": "Packages",
+        "description": "Package Manager 由来のアセットと依存関係を確認するビューです。",
+        "row": {
+          "installed": "導入済み package 一覧",
+          "dependencies": "依存関係の可視化",
+          "updates": "更新確認"
+        }
+      }
+    }
+  }
+}

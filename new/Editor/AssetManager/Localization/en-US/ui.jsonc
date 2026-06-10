@@ -1,0 +1,67 @@
+{
+  "assetManager": {
+    "infomationPanel": {
+      "selectedItemsSuffix": " items selected",
+      "detailTabs": {
+        "assetInfo": "Asset Info",
+        "fileTree": "File Tree"
+      }
+    },
+    "mainView": {
+      "loading": "Loading assets...",
+      "loadFailed": "Failed to load assets.",
+      "loadCanceled": "Asset loading was canceled.",
+      "noItems": "No asset items."
+    },
+    "navigation": {
+      "allAssets": {
+        "label": "All Assets",
+        "meta": "240 items",
+        "eyebrow": "AssetManager",
+        "title": "All Assets",
+        "description": "The default view for searching, browsing, and managing assets across the project.",
+        "row": {
+          "search": "Search bar and filters",
+          "viewMode": "Grid / list switching",
+          "bulkActions": "Bulk actions and import/export entry points"
+        }
+      },
+      "favorites": {
+        "label": "Favorites",
+        "meta": "Pinned",
+        "eyebrow": "Collections",
+        "title": "Favorites",
+        "description": "A focused view for assets you use frequently while working.",
+        "row": {
+          "list": "Favorite assets",
+          "recent": "Recently updated sorting",
+          "preview": "Quick preview entry points"
+        }
+      },
+      "boothLibrary": {
+        "label": "Booth Library",
+        "meta": "Store Sync",
+        "eyebrow": "Source",
+        "title": "Booth Library",
+        "description": "A view for Booth-linked libraries and sync status.",
+        "row": {
+          "purchases": "Purchased asset list",
+          "sync": "Pending sync / update checks",
+          "download": "Download entry points"
+        }
+      },
+      "packages": {
+        "label": "Packages",
+        "meta": "UPM",
+        "eyebrow": "Source",
+        "title": "Packages",
+        "description": "A view for Package Manager assets and dependencies.",
+        "row": {
+          "installed": "Installed package list",
+          "dependencies": "Dependency visualization",
+          "updates": "Update checks"
+        }
+      }
+    }
+  }
+}

@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Ee4v.Core.I18n;
+using Ee4v.UI;
 
-namespace Ee4v.UI
+namespace Ee4v.AssetManager
 {
     internal sealed class AssetManagerViewItemState
     {

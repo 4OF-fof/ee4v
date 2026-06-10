@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.UI;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Ee4v.UI
+namespace Ee4v.AssetManager
 {
     internal static class AssetItemGridCatalogRegistrarStory
     {
