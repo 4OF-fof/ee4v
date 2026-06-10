@@ -1,4 +1,13 @@
 {
+  "ui": {
+    "search": {
+      "placeholder": "検索",
+      "tooltip": "検索"
+    },
+    "clear": {
+      "tooltip": "クリア"
+    }
+  },
   "catalog": {
     "window": {
       "title": "Catalog",

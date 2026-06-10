@@ -37,3 +37,39 @@
 .ee4v-asset-manager-panel__infomation-selection-count-suffix {
     margin-left: 2px;
 }
+
+.ee4v-asset-manager-panel__infomation-detail-content {
+    flex-grow: 1;
+    min-height: 0;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.ee4v-asset-manager-file-tree {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.ee4v-asset-manager-file-tree__row {
+    flex-direction: row;
+    align-items: center;
+    min-height: 20px;
+}
+
+.ee4v-asset-manager-file-tree__title {
+    flex-grow: 1;
+    min-width: 0;
+    color: rgba(225, 225, 225, 0.92);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ee4v-asset-manager-file-tree__meta {
+    flex-shrink: 0;
+    margin-left: 8px;
+    color: rgba(185, 185, 185, 0.68);
+}
+
+.ee4v-asset-manager-file-tree__meta--empty {
+    display: none;
+}

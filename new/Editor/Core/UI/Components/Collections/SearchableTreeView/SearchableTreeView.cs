@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.Core.I18n;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -42,7 +43,8 @@ namespace Ee4v.UI
             Func<VisualElement> makeItem,
             Action<VisualElement, TData> bindItem,
             Action<IReadOnlyList<TData>> onSelectionChanged = null,
-            string emptyText = "")
+            string emptyText = "",
+            string searchPlaceholder = null)
         {
             if (makeItem == null)
             {
@@ -82,7 +84,7 @@ namespace Ee4v.UI
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
             SetEmptyText(emptyText);
-            SetSearchState(string.Empty, _ => RefreshTree());
+            SetSearchState(string.Empty, searchPlaceholder, _ => RefreshTree());
             SetItems(null);
         }
 
@@ -156,10 +158,10 @@ namespace Ee4v.UI
             HideScrollbars();
         }
 
-        private void SetSearchState(string value, Action<string> onValueChanged = null)
+        private void SetSearchState(string value, string placeholder = null, Action<string> onValueChanged = null)
         {
             _onSearchValueChanged = onValueChanged;
-            _searchField.SetState(new SearchFieldState(value, "Search"));
+            _searchField.SetState(new SearchFieldState(value, placeholder ?? I18N.Get("ui.search.placeholder")));
         }
 
         private void ClearSearch()

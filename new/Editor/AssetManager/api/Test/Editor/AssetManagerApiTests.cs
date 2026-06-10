@@ -540,9 +540,83 @@ namespace Ee4v.AssetManager.Api.Tests
             Assert.That(item.Files.Single().FileName, Is.EqualTo("Noir_Luxe.unitypackage"));
         }
 
+        [Test]
+        [FeatureTestCase(
+            "Eagle sync は .info ではなく payload path を保存する",
+            "Eagle item の file_path_cache が .info directory ではなく内部 payload file を指すことを確認します。",
+            order: 324)]
+        public void SyncEagle_StoresPayloadFilePathInsteadOfInfoDirectory()
+        {
+            var libraryPath = Path.Combine(_tempRoot, "payload-path.library");
+            var imagesPath = Path.Combine(libraryPath, "images");
+            Directory.CreateDirectory(imagesPath);
+            File.WriteAllText(
+                Path.Combine(libraryPath, "metadata.json"),
+                "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"Avatar\",\"children\":[]}]}]}");
+            CreateEagleEntry(
+                imagesPath,
+                "boothmeta-entry",
+                "avatar-folder",
+                "_boothmeta",
+                "json",
+                "{\"boothItemId\":123,\"name\":\"Booth Avatar\",\"description\":\"Booth Desc\",\"thumbnailUrl\":\"thumb\",\"shopName\":\"Shop\",\"shopUrl\":\"https://shop.booth.pm\",\"shopThumbnailUrl\":\"shopthumb\",\"downloads\":[{\"downloadId\":456,\"filename\":\"avatar.zip\",\"importedItemIds\":[\"file-entry\"]}]}");
+            CreateEagleEntry(imagesPath, "file-entry", "avatar-folder", "avatar", "zip", null);
+            var payloadPath = Path.Combine(imagesPath, "file-entry.info", "avatar.zip");
+            File.WriteAllText(payloadPath, "payload");
+
+            AssetManagerApi.SyncEagle(new EagleSyncRequest(libraryPath));
+            var item = AssetManagerApi.SearchItems(new AssetItemQuery { Limit = 10 }).Items.Single();
+            var file = AssetManagerApi.GetFiles(item.Id).Single();
+            var resolved = AssetManagerApi.ResolveFilePath(file.Id);
+
+            Assert.That(file.Origins.Single().FilePathCache, Is.EqualTo(payloadPath));
+            Assert.That(resolved.Path, Is.EqualTo(payloadPath));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "BLM sync は同名 wrapper の内側 path を保存する",
+            "BLM item directory の top-level entry が同名 directory を 1 つだけ包む場合に file_path_cache が inner directory を指すことを確認します。",
+            order: 325)]
+        public void SyncBlm_StoresInnerDirectoryPathForSameNameWrapper()
+        {
+            var databasePath = Path.Combine(_tempRoot, "blm-data.db");
+            var itemDirectoryPath = Path.Combine(_tempRoot, "blm-items");
+            var registeredItemId = "registered-item";
+            var outerPath = Path.Combine(itemDirectoryPath, registeredItemId, "Avatar");
+            var innerPath = Path.Combine(outerPath, "Avatar");
+            Directory.CreateDirectory(innerPath);
+            File.WriteAllText(Path.Combine(innerPath, "avatar.unitypackage"), "payload");
+            CreateBlmDatabase(databasePath, registeredItemId);
+
+            AssetManagerApi.SyncBlm(new BlmSyncRequest(databasePath, itemDirectoryPath));
+            var item = AssetManagerApi.SearchItems(new AssetItemQuery { Limit = 10 }).Items.Single();
+            var file = AssetManagerApi.GetFiles(item.Id).Single();
+            var resolved = AssetManagerApi.ResolveFilePath(file.Id);
+
+            Assert.That(file.FileName, Is.EqualTo("Avatar"));
+            Assert.That(file.Origins.Single().FilePathCache, Is.EqualTo(innerPath));
+            Assert.That(resolved.Path, Is.EqualTo(innerPath));
+        }
+
         private string GetDatabasePath()
         {
             return Path.Combine(_tempRoot, "asset-manager.db");
+        }
+
+        private static void CreateBlmDatabase(string databasePath, string registeredItemId)
+        {
+            using (var connection = new SQLiteConnection(databasePath))
+            {
+                connection.Execute("CREATE TABLE registered_items(id TEXT PRIMARY KEY, booth_item_id INTEGER)");
+                connection.Execute("CREATE TABLE booth_items(id INTEGER PRIMARY KEY, name TEXT, shop_subdomain TEXT, thumbnail_url TEXT, description TEXT)");
+                connection.Execute("CREATE TABLE shops(subdomain TEXT PRIMARY KEY, name TEXT, thumbnail_url TEXT)");
+                connection.Execute("CREATE TABLE overwritten_booth_items(booth_item_id INTEGER, name TEXT, description TEXT)");
+                connection.Execute("CREATE TABLE booth_item_update_history(booth_item_id INTEGER, last_updated_at TEXT)");
+                connection.Execute("INSERT INTO shops(subdomain, name, thumbnail_url) VALUES ('shop', 'Shop', 'shopthumb')");
+                connection.Execute("INSERT INTO booth_items(id, name, shop_subdomain, thumbnail_url, description) VALUES (123, 'Booth Avatar', 'shop', 'thumb', 'desc')");
+                connection.Execute("INSERT INTO registered_items(id, booth_item_id) VALUES (?, 123)", registeredItemId);
+            }
         }
 
         private static void CreateEagleEntry(string imagesPath, string id, string folderId, string name, string ext, string boothJson)

@@ -10,6 +10,7 @@ namespace Ee4v.AssetManager
     {
         private const string RootClassName = "ee4v-asset-manager-panel--infomation";
         private const string PreviewClassName = "ee4v-asset-manager-panel__infomation-preview";
+        private const string DetailContentClassName = "ee4v-asset-manager-panel__infomation-detail-content";
         private const string SelectionModeRowClassName = "ee4v-asset-manager-panel__infomation-selection-mode";
         private const string MultiPreviewTextRowClassName = "ee4v-asset-manager-panel__infomation-preview-text";
         private const string AssetInfoTabId = "asset-info";
@@ -28,7 +29,10 @@ namespace Ee4v.AssetManager
         private readonly UiTextElement _multiPreviewCountText;
         private readonly UiTextElement _multiPreviewSuffixText;
         private readonly ViewToggleTabs _selectionDetailTabs;
+        private readonly VisualElement _detailContent;
+        private readonly SearchableFileTree _fileTree;
         private float _previewSize;
+        private IReadOnlyList<ItemCardState> _selectedItems;
 
         public InfomationPanel()
         {
@@ -58,6 +62,12 @@ namespace Ee4v.AssetManager
             _preview.Add(_selectionModeRow);
             Add(_preview);
 
+            _detailContent = new VisualElement();
+            _detailContent.AddToClassList(DetailContentClassName);
+            _fileTree = new SearchableFileTree();
+            _detailContent.Add(_fileTree);
+            Add(_detailContent);
+
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
@@ -80,10 +90,12 @@ namespace Ee4v.AssetManager
 
         private void SetSelectedAssetItems(IReadOnlyList<ItemCardState> items)
         {
+            _selectedItems = items;
             if (items == null || items.Count == 0)
             {
                 _preview.style.display = DisplayStyle.None;
                 ClearPreview();
+                UpdateDetailContent();
                 return;
             }
 
@@ -94,6 +106,7 @@ namespace Ee4v.AssetManager
                 _selectionModeRow.style.display = DisplayStyle.Flex;
                 _multiPreviewTextRow.style.display = DisplayStyle.None;
                 _selectionDetailTabs.style.display = DisplayStyle.Flex;
+                UpdateDetailContent();
                 return;
             }
 
@@ -101,6 +114,7 @@ namespace Ee4v.AssetManager
             SetPreview(items, true);
             _selectionModeRow.style.display = DisplayStyle.Flex;
             _selectionDetailTabs.style.display = DisplayStyle.None;
+            UpdateDetailContent();
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
@@ -151,6 +165,7 @@ namespace Ee4v.AssetManager
         private void SetSelectedAssetDetailTab(string tabId)
         {
             _selectionDetailTabs.SetSelectedTab(tabId, notify: false);
+            UpdateDetailContent();
         }
 
         private void ClearPreview()
@@ -161,6 +176,24 @@ namespace Ee4v.AssetManager
             _selectionModeRow.style.display = DisplayStyle.None;
             _multiPreviewTextRow.style.display = DisplayStyle.None;
             _selectionDetailTabs.style.display = DisplayStyle.None;
+            _fileTree.Clear();
+        }
+
+        private void UpdateDetailContent()
+        {
+            var hasSingleSelection = _selectedItems != null && _selectedItems.Count == 1;
+            var showFileTree = hasSingleSelection && string.Equals(AssetManagerViewState.SelectedAssetDetailTabId, FileTreeTabId, System.StringComparison.Ordinal);
+            _detailContent.style.display = showFileTree ? DisplayStyle.Flex : DisplayStyle.None;
+            _fileTree.style.display = showFileTree ? DisplayStyle.Flex : DisplayStyle.None;
+
+            if (showFileTree)
+            {
+                _fileTree.SetItemId(_selectedItems[0].ItemId);
+            }
+            else
+            {
+                _fileTree.Clear();
+            }
         }
 
         private void UpdatePreviewSize()

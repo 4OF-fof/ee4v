@@ -350,6 +350,7 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
 
         private static EagleFileRecord ToFileRecord(EagleItemMetadata metadata, string directoryPath, string fileName, long? downloadId)
         {
+            var filePath = ResolveFilePath(directoryPath, fileName, metadata);
             return new EagleFileRecord
             {
                 EagleItemId = metadata.id,
@@ -358,8 +359,79 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
                 SizeBytes = metadata.size,
                 Extension = string.IsNullOrWhiteSpace(fileName) ? metadata.ext : GetExtension(fileName),
                 IsDeleted = metadata.isDeleted,
-                FilePath = directoryPath
+                FilePath = filePath
             };
+        }
+
+        private static string ResolveFilePath(string directoryPath, string fileName, EagleItemMetadata metadata)
+        {
+            if (string.IsNullOrWhiteSpace(directoryPath))
+            {
+                return null;
+            }
+
+            var candidates = new List<string>();
+            AddCandidate(candidates, directoryPath, fileName);
+            AddCandidate(candidates, directoryPath, GetFileName(metadata));
+            AddCandidate(candidates, directoryPath, metadata != null ? metadata.name : null);
+
+            for (var i = 0; i < candidates.Count; i++)
+            {
+                if (File.Exists(candidates[i]) || Directory.Exists(candidates[i]))
+                {
+                    return candidates[i];
+                }
+            }
+
+            var extension = string.IsNullOrWhiteSpace(fileName)
+                ? (metadata != null ? metadata.ext : null)
+                : GetExtension(fileName);
+            var payload = FindSinglePayload(directoryPath, extension);
+            return string.IsNullOrWhiteSpace(payload) ? directoryPath : payload;
+        }
+
+        private static void AddCandidate(ICollection<string> candidates, string directoryPath, string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(directoryPath) || string.IsNullOrWhiteSpace(fileName))
+            {
+                return;
+            }
+
+            var candidate = Path.Combine(directoryPath, Path.GetFileName(fileName));
+            if (!candidates.Contains(candidate))
+            {
+                candidates.Add(candidate);
+            }
+        }
+
+        private static string FindSinglePayload(string directoryPath, string extension)
+        {
+            if (string.IsNullOrWhiteSpace(directoryPath) || !Directory.Exists(directoryPath))
+            {
+                return null;
+            }
+
+            var normalizedExtension = string.IsNullOrWhiteSpace(extension) ? string.Empty : extension.TrimStart('.');
+            var pattern = string.IsNullOrWhiteSpace(normalizedExtension) ? "*" : "*." + normalizedExtension;
+            try
+            {
+                var payloads = Directory.GetFiles(directoryPath, pattern, SearchOption.TopDirectoryOnly)
+                    .Where(path => !IsEagleMetadataFile(path))
+                    .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                return payloads.Length == 1 ? payloads[0] : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool IsEagleMetadataFile(string path)
+        {
+            var fileName = Path.GetFileName(path);
+            return string.Equals(fileName, "metadata.json", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(Path.GetExtension(path), ".json", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string GetExtension(string fileName)

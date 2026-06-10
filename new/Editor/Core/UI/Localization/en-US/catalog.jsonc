@@ -1,4 +1,13 @@
 {
+  "ui": {
+    "search": {
+      "placeholder": "Search",
+      "tooltip": "Search"
+    },
+    "clear": {
+      "tooltip": "Clear"
+    }
+  },
   "catalog": {
     "window": {
       "title": "Catalog",

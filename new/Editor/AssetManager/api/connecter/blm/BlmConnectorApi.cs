@@ -128,7 +128,8 @@ namespace Ee4v.AssetManager.Api.Connecter.Blm
                 .Select(entryPath =>
                 {
                     var relativePath = MakeRelativePath(registeredItemPath, entryPath);
-                    return new BlmFileRecord(relativePath, entryPath, GetEntrySizeBytes(entryPath));
+                    var filePath = ResolveFilePath(entryPath);
+                    return new BlmFileRecord(relativePath, filePath, GetEntrySizeBytes(filePath));
                 })
                 .Where(file => !string.IsNullOrWhiteSpace(file.RelativePath))
                 .OrderBy(file => file.RelativePath, StringComparer.OrdinalIgnoreCase)
@@ -195,6 +196,56 @@ namespace Ee4v.AssetManager.Api.Connecter.Blm
                 return null;
             }
             catch (UnauthorizedAccessException)
+            {
+                return null;
+            }
+        }
+
+        private static string ResolveFilePath(string entryPath)
+        {
+            if (string.IsNullOrWhiteSpace(entryPath) || !Directory.Exists(entryPath))
+            {
+                return entryPath;
+            }
+
+            var singleChildDirectory = GetSingleChildDirectory(entryPath);
+            if (string.IsNullOrWhiteSpace(singleChildDirectory))
+            {
+                return entryPath;
+            }
+
+            return string.Equals(
+                Path.GetFileName(entryPath),
+                Path.GetFileName(singleChildDirectory),
+                StringComparison.OrdinalIgnoreCase)
+                ? singleChildDirectory
+                : entryPath;
+        }
+
+        private static string GetSingleChildDirectory(string path)
+        {
+            try
+            {
+                using (var directories = Directory.EnumerateDirectories(path).GetEnumerator())
+                {
+                    if (!directories.MoveNext())
+                    {
+                        return null;
+                    }
+
+                    var first = directories.Current;
+                    if (directories.MoveNext())
+                    {
+                        return null;
+                    }
+
+                    using (var files = Directory.EnumerateFiles(path).GetEnumerator())
+                    {
+                        return files.MoveNext() ? null : first;
+                    }
+                }
+            }
+            catch
             {
                 return null;
             }

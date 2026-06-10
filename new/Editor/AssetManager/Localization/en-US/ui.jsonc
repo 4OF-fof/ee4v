@@ -5,6 +5,18 @@
       "detailTabs": {
         "assetInfo": "Asset Info",
         "fileTree": "File Tree"
+      },
+      "fileTree": {
+        "searchPlaceholder": "Search files",
+        "empty": "No files to display.",
+        "loadFailed": "Failed to load the file tree.",
+        "meta": {
+          "folder": "Folder",
+          "file": "File",
+          "zip": "ZIP",
+          "missing": "Missing",
+          "inaccessible": "Unreadable"
+        }
       }
     },
     "mainView": {

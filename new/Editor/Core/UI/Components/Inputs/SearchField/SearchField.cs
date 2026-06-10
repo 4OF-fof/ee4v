@@ -1,4 +1,5 @@
 using System;
+using Ee4v.Core.I18n;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -37,7 +38,7 @@ namespace Ee4v.UI
         {
             AddToClassList(RootClassName);
 
-            _searchIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.Search, size: 14f, tooltip: "Search"));
+            _searchIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.Search, size: 14f, tooltip: I18N.Get("ui.search.tooltip")));
             _searchIcon.AddToClassList(IconClassName);
 
             _inputHost = new VisualElement();
@@ -66,7 +67,7 @@ namespace Ee4v.UI
 
             _clearButton = new Button(ClearValue);
             _clearButton.AddToClassList(ClearClassName);
-            _clearIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.Close, size: 10f, tooltip: "Clear"));
+            _clearIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.Close, size: 10f, tooltip: I18N.Get("ui.clear.tooltip")));
             _clearButton.Add(_clearIcon);
 
             _inputHost.Add(_input);

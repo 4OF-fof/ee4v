@@ -16,7 +16,10 @@ namespace Ee4v.AssetManager
             {
                 registry.RegisterStyleSheet("Editor/Core/UI/Components/Content/ItemImage/item-image.uss");
                 registry.RegisterStyleSheet("Editor/Core/UI/Components/Content/ImageStack/image-stack.uss");
+                registry.RegisterStyleSheet("Editor/Core/UI/Components/Content/Icon/icon.uss");
                 registry.RegisterStyleSheet("Editor/Core/UI/Components/Inputs/InputField/input-field.uss");
+                registry.RegisterStyleSheet("Editor/Core/UI/Components/Inputs/SearchField/search-field.uss");
+                registry.RegisterStyleSheet("Editor/Core/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss");
                 registry.RegisterStyleSheet("Editor/Core/UI/Components/Content/Interactive/ViewToggleTabs/view-toggle-tabs.uss");
                 registry.RegisterStyleSheet("Editor/AssetManager/UI/Panels/InfomationPanel/infomation-panel.uss");
                 registry.RegisterStory(new CatalogWindow.StoryRegistration(
