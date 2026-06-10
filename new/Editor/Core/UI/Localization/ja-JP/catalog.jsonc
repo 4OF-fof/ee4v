@@ -1,7 +1,11 @@
 {
   "assetManager": {
     "infomationPanel": {
-      "selectedItemsSuffix": "件のアイテムを選択中"
+      "selectedItemsSuffix": "件のアイテムを選択中",
+      "detailTabs": {
+        "fileTree": "File Tree",
+        "assetInfo": "Asset Info"
+      }
     },
     "mainView": {
       "loading": "アセットを読み込み中...",

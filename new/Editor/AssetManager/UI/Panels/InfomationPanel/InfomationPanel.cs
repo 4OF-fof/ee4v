@@ -8,14 +8,19 @@ namespace Ee4v.UI
     {
         private const string RootClassName = "ee4v-asset-manager-panel--infomation";
         private const string PreviewClassName = "ee4v-asset-manager-panel__infomation-preview";
+        private const string SelectionModeRowClassName = "ee4v-asset-manager-panel__infomation-selection-mode";
         private const string MultiPreviewTextRowClassName = "ee4v-asset-manager-panel__infomation-preview-text";
+        private const string AssetInfoTabId = "asset-info";
+        private const string FileTreeTabId = "file-tree";
         private const float PreviewMaxSize = 360f;
         private const float HorizontalPadding = 24f;
         private readonly VisualElement _preview;
         private readonly ImageStack _imageStack;
+        private readonly VisualElement _selectionModeRow;
         private readonly VisualElement _multiPreviewTextRow;
         private readonly UiTextElement _multiPreviewCountText;
         private readonly UiTextElement _multiPreviewSuffixText;
+        private readonly ViewToggleTabs _selectionDetailTabs;
         private float _previewSize;
 
         public InfomationPanel()
@@ -28,6 +33,9 @@ namespace Ee4v.UI
             _imageStack = new ImageStack();
             _preview.Add(_imageStack);
 
+            _selectionModeRow = new VisualElement();
+            _selectionModeRow.AddToClassList(SelectionModeRowClassName);
+
             _multiPreviewTextRow = new VisualElement();
             _multiPreviewTextRow.AddToClassList(MultiPreviewTextRowClassName);
             _multiPreviewCountText = UiTextFactory.Create(string.Empty, UiClassNames.InfomationPanelSelectionCount);
@@ -36,7 +44,11 @@ namespace Ee4v.UI
             _multiPreviewSuffixText.SetWhiteSpace(WhiteSpace.NoWrap);
             _multiPreviewTextRow.Add(_multiPreviewCountText);
             _multiPreviewTextRow.Add(_multiPreviewSuffixText);
-            _preview.Add(_multiPreviewTextRow);
+            _selectionModeRow.Add(_multiPreviewTextRow);
+            _selectionDetailTabs = new ViewToggleTabs(CreateDetailTabsState(AssetManagerViewState.SelectedAssetDetailTabId));
+            _selectionDetailTabs.SelectionChanged += tabId => AssetManagerViewState.SetSelectedAssetDetailTab(tabId);
+            _selectionModeRow.Add(_selectionDetailTabs);
+            _preview.Add(_selectionModeRow);
             Add(_preview);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -48,12 +60,15 @@ namespace Ee4v.UI
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
             AssetManagerViewState.SelectedAssetItemsChanged += SetSelectedAssetItems;
+            AssetManagerViewState.SelectedAssetDetailTabChanged += SetSelectedAssetDetailTab;
+            SetSelectedAssetDetailTab(AssetManagerViewState.SelectedAssetDetailTabId);
             SetSelectedAssetItems(AssetManagerViewState.SelectedAssetItems);
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             AssetManagerViewState.SelectedAssetItemsChanged -= SetSelectedAssetItems;
+            AssetManagerViewState.SelectedAssetDetailTabChanged -= SetSelectedAssetDetailTab;
         }
 
         private void SetSelectedAssetItems(IReadOnlyList<ItemCardState> items)
@@ -69,11 +84,16 @@ namespace Ee4v.UI
             {
                 _preview.style.display = DisplayStyle.Flex;
                 SetPreview(items, false);
+                _selectionModeRow.style.display = DisplayStyle.Flex;
+                _multiPreviewTextRow.style.display = DisplayStyle.None;
+                _selectionDetailTabs.style.display = DisplayStyle.Flex;
                 return;
             }
 
             _preview.style.display = DisplayStyle.Flex;
             SetPreview(items, true);
+            _selectionModeRow.style.display = DisplayStyle.Flex;
+            _selectionDetailTabs.style.display = DisplayStyle.None;
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
@@ -110,12 +130,30 @@ namespace Ee4v.UI
             UpdatePreviewSize();
         }
 
+        private static ViewToggleTabsState CreateDetailTabsState(string selectedTabId)
+        {
+            return new ViewToggleTabsState(
+                new[]
+                {
+                    new ViewToggleTabState(AssetInfoTabId, I18N.Get("assetManager.infomationPanel.detailTabs.assetInfo")),
+                    new ViewToggleTabState(FileTreeTabId, I18N.Get("assetManager.infomationPanel.detailTabs.fileTree"))
+                },
+                selectedTabId);
+        }
+
+        private void SetSelectedAssetDetailTab(string tabId)
+        {
+            _selectionDetailTabs.SetSelectedTab(tabId, notify: false);
+        }
+
         private void ClearPreview()
         {
             _imageStack.Clear();
             _multiPreviewCountText.SetText(string.Empty);
             _multiPreviewSuffixText.SetText(string.Empty);
+            _selectionModeRow.style.display = DisplayStyle.None;
             _multiPreviewTextRow.style.display = DisplayStyle.None;
+            _selectionDetailTabs.style.display = DisplayStyle.None;
         }
 
         private void UpdatePreviewSize()

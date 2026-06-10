@@ -53,7 +53,10 @@ namespace Ee4v.UI
             "packages"
         };
 
+        private const string AssetInfoDetailTabId = "asset-info";
+        private const string FileTreeDetailTabId = "file-tree";
         private static string _selectedItemId = ItemIds[0];
+        private static string _selectedAssetDetailTabId = AssetInfoDetailTabId;
         private static ItemCardState[] _selectedAssetItems = Array.Empty<ItemCardState>();
 
         public static event Action<string> SelectedItemChanged;
@@ -61,6 +64,8 @@ namespace Ee4v.UI
         public static event Action<ItemCardState> SelectedAssetItemChanged;
 
         public static event Action<IReadOnlyList<ItemCardState>> SelectedAssetItemsChanged;
+
+        public static event Action<string> SelectedAssetDetailTabChanged;
 
         public static AssetManagerViewItemState[] Items
         {
@@ -85,6 +90,11 @@ namespace Ee4v.UI
         public static IReadOnlyList<ItemCardState> SelectedAssetItems
         {
             get { return _selectedAssetItems; }
+        }
+
+        public static string SelectedAssetDetailTabId
+        {
+            get { return _selectedAssetDetailTabId; }
         }
 
         public static AssetManagerViewItemState GetItem(string itemId)
@@ -148,6 +158,32 @@ namespace Ee4v.UI
                 SelectedAssetItemChanged?.Invoke(SelectedAssetItem);
                 SelectedAssetItemsChanged?.Invoke(_selectedAssetItems);
             }
+        }
+
+        public static void SetSelectedAssetDetailTab(string tabId, bool notify = true)
+        {
+            var resolvedTabId = NormalizeSelectedAssetDetailTabId(tabId);
+            if (string.Equals(_selectedAssetDetailTabId, resolvedTabId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _selectedAssetDetailTabId = resolvedTabId;
+
+            if (notify)
+            {
+                SelectedAssetDetailTabChanged?.Invoke(_selectedAssetDetailTabId);
+            }
+        }
+
+        private static string NormalizeSelectedAssetDetailTabId(string tabId)
+        {
+            if (string.Equals(tabId, FileTreeDetailTabId, StringComparison.Ordinal))
+            {
+                return FileTreeDetailTabId;
+            }
+
+            return AssetInfoDetailTabId;
         }
 
         private static string NormalizeSelectedItemId(string itemId)

@@ -16,6 +16,7 @@ namespace Ee4v.UI
                 registry.RegisterStyleSheet("Editor/Core/UI/Components/Content/ItemImage/item-image.uss");
                 registry.RegisterStyleSheet("Editor/Core/UI/Components/Content/ImageStack/image-stack.uss");
                 registry.RegisterStyleSheet("Editor/Core/UI/Components/Inputs/InputField/input-field.uss");
+                registry.RegisterStyleSheet("Editor/Core/UI/Components/Content/Interactive/ViewToggleTabs/view-toggle-tabs.uss");
                 registry.RegisterStyleSheet("Editor/AssetManager/UI/Panels/InfomationPanel/infomation-panel.uss");
                 registry.RegisterStory(new CatalogWindow.StoryRegistration(
                     "asset-manager-infomation-panel",

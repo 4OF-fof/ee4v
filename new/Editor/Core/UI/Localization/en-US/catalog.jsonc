@@ -1,7 +1,11 @@
 {
   "assetManager": {
     "infomationPanel": {
-      "selectedItemsSuffix": " items selected"
+      "selectedItemsSuffix": " items selected",
+      "detailTabs": {
+        "fileTree": "File Tree",
+        "assetInfo": "Asset Info"
+      }
     },
     "mainView": {
       "loading": "Loading assets...",
