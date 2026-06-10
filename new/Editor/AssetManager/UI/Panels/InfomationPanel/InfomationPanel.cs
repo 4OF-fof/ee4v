@@ -9,7 +9,6 @@ namespace Ee4v.UI
         private const string RootClassName = "ee4v-asset-manager-panel--infomation";
         private const string PreviewClassName = "ee4v-asset-manager-panel__infomation-preview";
         private const string MultiPreviewTextRowClassName = "ee4v-asset-manager-panel__infomation-preview-text";
-        private const string NameInputClassName = "ee4v-asset-manager-panel__infomation-name-input";
         private const float PreviewMaxSize = 360f;
         private const float HorizontalPadding = 24f;
         private readonly VisualElement _preview;
@@ -17,7 +16,6 @@ namespace Ee4v.UI
         private readonly VisualElement _multiPreviewTextRow;
         private readonly UiTextElement _multiPreviewCountText;
         private readonly UiTextElement _multiPreviewSuffixText;
-        private readonly InputField _nameInput;
         private float _previewSize;
 
         public InfomationPanel()
@@ -41,10 +39,6 @@ namespace Ee4v.UI
             _preview.Add(_multiPreviewTextRow);
             Add(_preview);
 
-            _nameInput = new InputField(new InputFieldState(string.Empty, false, 0f, I18N.Get("assetManager.infomationPanel.namePlaceholder")));
-            _nameInput.AddToClassList(NameInputClassName);
-            Add(_nameInput);
-
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
@@ -67,7 +61,6 @@ namespace Ee4v.UI
             if (items == null || items.Count == 0)
             {
                 _preview.style.display = DisplayStyle.None;
-                _nameInput.style.display = DisplayStyle.None;
                 ClearPreview();
                 return;
             }
@@ -75,13 +68,11 @@ namespace Ee4v.UI
             if (items.Count == 1)
             {
                 _preview.style.display = DisplayStyle.Flex;
-                _nameInput.style.display = DisplayStyle.Flex;
                 SetPreview(items, false);
                 return;
             }
 
             _preview.style.display = DisplayStyle.Flex;
-            _nameInput.style.display = DisplayStyle.Flex;
             SetPreview(items, true);
         }
 
@@ -100,7 +91,6 @@ namespace Ee4v.UI
             var contentWidth = UnityEngine.Mathf.Max(0f, width - HorizontalPadding);
             _previewSize = UnityEngine.Mathf.Min(PreviewMaxSize, contentWidth);
             UpdatePreviewSize();
-            UpdateNameInputSize();
         }
 
         private void SetPreview(IReadOnlyList<ItemCardState> items, bool showCount)
@@ -136,14 +126,6 @@ namespace Ee4v.UI
         private float GetImageStackSize()
         {
             return UnityEngine.Mathf.Max(48f, _previewSize);
-        }
-
-        private void UpdateNameInputSize()
-        {
-            var width = GetImageStackSize();
-            _nameInput.style.width = width;
-            _nameInput.style.minWidth = width;
-            _nameInput.style.maxWidth = width;
         }
     }
 }

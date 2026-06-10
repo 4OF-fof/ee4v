@@ -30,9 +30,3 @@
 .ee4v-asset-manager-panel__infomation-selection-count-suffix {
     margin-left: 2px;
 }
-
-.ee4v-asset-manager-panel__infomation-name-input {
-    align-self: center;
-    margin-top: 10px;
-    margin-bottom: 0;
-}

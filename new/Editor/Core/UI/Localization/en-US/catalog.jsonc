@@ -1,7 +1,6 @@
 {
   "assetManager": {
     "infomationPanel": {
-      "namePlaceholder": "Name",
       "selectedItemsSuffix": " items selected"
     },
     "mainView": {

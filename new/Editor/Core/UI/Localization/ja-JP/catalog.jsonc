@@ -1,7 +1,6 @@
 {
   "assetManager": {
     "infomationPanel": {
-      "namePlaceholder": "名前",
       "selectedItemsSuffix": "件のアイテムを選択中"
     },
     "mainView": {
