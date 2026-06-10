@@ -20,107 +20,160 @@ CHECK (smart_collection_condition_operator IN ('contains', 'equals', 'in', 'exis
 
 ```mermaid
 erDiagram
-    item_info ||--o{ file_info : ""
-    file_info ||--o{ file_dependency : ""
-    file_info ||--o{ file_dependency : ""
-    file_info ||--o{ file_import_target : ""
-    file_info ||--o| eagle_file_origin : ""
-    file_info ||--o| blm_file_origin : ""
-    file_info ||--o| ee4v_file_origin : ""
-    shop_info ||--o{ booth_info : ""
-    item_info ||--o| booth_info : ""
-    item_info ||--o{ item_tag : ""
-    tag_info ||--o{ item_tag : ""
-    item_info ||--o{ item_collection : ""
-    collection_info ||--o{ item_collection : ""
-    collection_info ||--o| smart_collection_info : ""
-    smart_collection_info ||--o{ smart_collection_condition : ""
-    collection_info ||--o{ collection_collection : ""
-    collection_info ||--o| collection_collection : ""
+    item_info ||--o{ file_info : owns
+    file_info ||--o{ file_dependency : dependent
+    file_info ||--o{ file_dependency : dependency
+    file_info ||--o{ file_import_target : has
+    file_info ||--o| eagle_file_origin : eagle_origin
+    file_info ||--o| blm_file_origin : blm_origin
+    file_info ||--o| ee4v_file_origin : ee4v_origin
+    shop_info ||--o{ booth_info : owns
+    item_info ||--o| booth_info : booth_identity
+    item_info ||--o{ item_tag : tagged
+    tag_info ||--o{ item_tag : assigned
+    item_info ||--o{ item_collection : belongs_to
+    collection_info ||--o{ item_collection : contains_item
+    collection_info ||--o| smart_collection_info : smart_definition
+    smart_collection_info ||--o{ smart_collection_condition : has_condition
+    collection_info ||--o{ collection_collection : parent
+    collection_info ||--o| collection_collection : child
 
     item_info {
-        GUID string id PK
+        TEXT id PK
+        TEXT name
+        TEXT description
+        TEXT created_at
+        TEXT updated_at
     }
 
     shop_info {
-        GUID string id PK
+        TEXT id PK
+        TEXT name
+        TEXT subdomain UK
+        TEXT thumbnail_url
     }
 
     schema_version {
         INTEGER version PK
+        TEXT created_at
+        TEXT updated_at
     }
 
     sync_info {
-        source_type source_type PK
-        sync_status last_sync_status
+        TEXT source_type PK
+        TEXT last_sync_at
+        TEXT last_sync_status
     }
 
     tag_info {
-        GUID string id PK
+        TEXT id PK
+        TEXT name UK
+        TEXT created_at
+        TEXT updated_at
     }
 
     item_tag {
-        GUID string item_info_id PK, FK
-        GUID string tag_info_id PK, FK
+        TEXT item_info_id PK, FK
+        TEXT tag_info_id PK, FK
+        TEXT created_at
     }
 
     collection_info {
-        GUID string id PK
+        TEXT id PK
+        TEXT name
+        TEXT created_at
+        TEXT updated_at
     }
 
     smart_collection_info {
-        GUID string collection_info_id PK, FK
-        smart_collection_match_mode match_mode
+        TEXT collection_info_id PK, FK
+        TEXT match_mode
+        TEXT created_at
+        TEXT updated_at
     }
 
     smart_collection_condition {
-        GUID string id PK
-        GUID string collection_info_id FK
+        TEXT id PK
+        TEXT collection_info_id FK
+        TEXT field
+        TEXT operator
+        TEXT query_text
+        TEXT created_at
+        TEXT updated_at
     }
 
     collection_collection {
-        GUID string parent_collection_id PK, FK
-        GUID string child_collection_id PK, FK
+        TEXT parent_collection_id PK, FK
+        TEXT child_collection_id PK, FK, UK
+        TEXT created_at
     }
 
     item_collection {
-        GUID string item_info_id PK, FK
-        GUID string collection_info_id PK, FK
+        TEXT item_info_id PK, FK
+        TEXT collection_info_id PK, FK
+        TEXT created_at
     }
 
     booth_info {
-        GUID string id PK
-        GUID string item_info_id FK
-        GUID string shop_info_id FK
+        TEXT id PK
+        TEXT item_info_id FK, UK
+        INTEGER booth_item_id UK
+        TEXT shop_info_id FK
+        TEXT name
+        TEXT description
+        TEXT thumbnail_url
+        TEXT last_updated_at
     }
 
     file_info {
-        GUID string id PK
-        GUID string item_info_id FK
+        TEXT id PK
+        TEXT item_info_id FK
+        TEXT file_name
+        TEXT extension
+        INTEGER size_bytes
+        INTEGER download_id UK
+        TEXT lifecycle
+        TEXT created_at
+        TEXT updated_at
     }
 
     file_dependency {
-        GUID string dependent_file_info_id PK, FK
-        GUID string dependency_file_info_id PK, FK
-        file_dependency_type dependency_type PK
+        TEXT dependent_file_info_id PK, FK
+        TEXT dependency_file_info_id PK, FK
+        TEXT dependency_type PK
+        TEXT created_at
     }
 
     file_import_target {
-        GUID string id PK
-        GUID string file_info_id FK
+        TEXT id PK
+        TEXT file_info_id FK
+        TEXT relative_path
+        INTEGER is_directory
+        TEXT created_at
+        TEXT updated_at
     }
 
     eagle_file_origin {
-        GUID string file_info_id PK, FK
+        TEXT file_info_id PK, FK
+        TEXT eagle_item_id UK
+        TEXT file_path_cache
+        INTEGER is_deleted
+        TEXT imported_at
     }
 
     blm_file_origin {
-        GUID string file_info_id PK, FK
+        TEXT file_info_id PK, FK
         TEXT registered_item_id
+        TEXT relative_path
+        TEXT file_path_cache
+        TEXT imported_at
     }
 
     ee4v_file_origin {
-        GUID string file_info_id PK, FK
+        TEXT file_info_id PK, FK
+        TEXT ee4v_file_id UK
+        TEXT file_path_cache
+        TEXT imported_at
     }
 
 ```
