@@ -60,7 +60,6 @@ namespace Ee4v.AssetManager.Api
             public string extension { get; set; }
             public long? size_bytes { get; set; }
             public long? download_id { get; set; }
-            public int is_primary { get; set; }
             public string lifecycle { get; set; }
             public string created_at { get; set; }
             public string updated_at { get; set; }

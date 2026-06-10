@@ -15,7 +15,6 @@ namespace Ee4v.AssetManager
     {
         private const string RootClassName = "ee4v-asset-manager-file-tree";
         private const string RowClassName = "ee4v-asset-manager-file-tree__row";
-        private const string RowPrimaryClassName = "ee4v-asset-manager-file-tree__row--primary";
         private const string RowImportTargetClassName = "ee4v-asset-manager-file-tree__row--import-target";
         private const string RowTitleClassName = "ee4v-asset-manager-file-tree__title";
         private const string RowMetaClassName = "ee4v-asset-manager-file-tree__meta";
@@ -170,7 +169,6 @@ namespace Ee4v.AssetManager
 
         private static void BindTreeItem(VisualElement element, FileTreeNode node)
         {
-            element.EnableInClassList(RowPrimaryClassName, node.IsPrimary);
             element.EnableInClassList(RowImportTargetClassName, node.IsImportTarget);
             var title = element.ElementAt(0) as UiTextElement;
             var meta = element.ElementAt(1) as UiTextElement;
@@ -192,29 +190,9 @@ namespace Ee4v.AssetManager
         private void OnTreeContextClick(VisualElement target, FileTreeNode item, IReadOnlyList<FileTreeNode> selectedItems, Vector2 panelPosition)
         {
             var selected = selectedItems ?? Array.Empty<FileTreeNode>();
-            var showSetPrimary = string.IsNullOrWhiteSpace(_fileId);
-            var canSetPrimary = showSetPrimary && selected.Count == 1 && selected[0] != null && selected[0].CanSetPrimary && !selected[0].IsPrimary;
-            var selectedFile = selected.Count == 1 ? selected[0] : null;
             var importTargetSelection = selected.Where(node => node != null && node.CanSetImportTarget).ToArray();
 
             var menuItems = new List<ContextMenuItemState>();
-            if (showSetPrimary)
-            {
-                menuItems.Add(new ContextMenuItemState(
-                    "set-primary",
-                    I18N.Get("assetManager.infomationPanel.fileTree.context.setPrimary"),
-                    () =>
-                    {
-                        if (selectedFile == null)
-                        {
-                            return;
-                        }
-
-                        AssetManagerApi.SetPrimaryFile(selectedFile.ItemId, selectedFile.FileId);
-                    },
-                    canSetPrimary));
-            }
-
             if (importTargetSelection.Length > 0)
             {
                 if (importTargetSelection.All(node => node.IsImportTarget))
@@ -293,9 +271,6 @@ namespace Ee4v.AssetManager
             string name,
             string meta,
             string path,
-            string fileId = null,
-            string itemId = null,
-            bool isPrimary = false,
             bool isImportTarget = false,
             bool hasAnyImportTarget = false,
             string relativePath = null,
@@ -305,9 +280,6 @@ namespace Ee4v.AssetManager
             Name = name ?? string.Empty;
             Meta = meta ?? string.Empty;
             Path = path ?? string.Empty;
-            FileId = fileId ?? string.Empty;
-            ItemId = itemId ?? string.Empty;
-            IsPrimary = isPrimary;
             IsImportTarget = isImportTarget;
             HasAnyImportTarget = hasAnyImportTarget;
             RelativePath = NormalizeRelativePath(relativePath);
@@ -321,12 +293,6 @@ namespace Ee4v.AssetManager
 
         public string Path { get; }
 
-        public string FileId { get; }
-
-        public string ItemId { get; }
-
-        public bool IsPrimary { get; }
-
         public bool IsImportTarget { get; }
 
         public bool HasAnyImportTarget { get; }
@@ -336,11 +302,6 @@ namespace Ee4v.AssetManager
         public bool IsDirectory { get; }
 
         public IReadOnlyList<FileTreeImportTargetEntry> ImportTargetEntries { get; }
-
-        public bool CanSetPrimary
-        {
-            get { return !string.IsNullOrWhiteSpace(FileId) && !string.IsNullOrWhiteSpace(ItemId); }
-        }
 
         public bool CanSetImportTarget
         {
@@ -534,9 +495,6 @@ namespace Ee4v.AssetManager
                 name,
                 meta,
                 searchPath,
-                assetFile != null ? assetFile.Id : null,
-                assetFile != null ? assetFile.ItemId : null,
-                assetFile != null && assetFile.IsPrimary,
                 IsImportTarget(targetPaths, targetPath, importTargetEntries),
                 HasAnyImportTarget(targetPaths, targetPath, importTargetEntries),
                 targetPath,
@@ -809,9 +767,6 @@ namespace Ee4v.AssetManager
                     Name,
                     meta,
                     targetPath,
-                    assetFile != null ? assetFile.Id : null,
-                    assetFile != null ? assetFile.ItemId : null,
-                    false,
                     IsImportTarget(importTargetPaths, targetPath, importTargetEntries),
                     HasAnyImportTarget(importTargetPaths, targetPath, importTargetEntries),
                     targetPath,

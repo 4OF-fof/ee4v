@@ -39,16 +39,6 @@ namespace Ee4v.AssetManager.Api.Tests
 
         [Test]
         [FeatureTestCase(
-            "AssetFile は PrimarySourceType を公開しない",
-            "AssetFile の public API が origin 優先度を直接公開しないことを確認します。",
-            order: 300)]
-        public void AssetFile_DoesNotExposePrimarySourceType()
-        {
-            Assert.That(typeof(AssetFile).GetProperty("PrimarySourceType"), Is.Null);
-        }
-
-        [Test]
-        [FeatureTestCase(
             "schema version 1 の DB 制約を作成する",
             "AssetManager DB が schema_version、file_info 制約、collection cycle trigger を作成することを確認します。",
             order: 301)]
@@ -61,7 +51,6 @@ namespace Ee4v.AssetManager.Api.Tests
             using (var connection = new SQLiteConnection(databasePath, SQLiteOpenFlags.ReadOnly | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.PrivateCache))
             {
                 Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(1));
-                Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM pragma_table_info('file_info') WHERE name = 'primary_source_type'"), Is.EqualTo(0));
                 Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'file_info'"), Does.Contain("CHECK"));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'file_import_target'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'unique_file_import_target_file_path'"), Is.EqualTo(1));
@@ -364,26 +353,6 @@ namespace Ee4v.AssetManager.Api.Tests
 
         [Test]
         [FeatureTestCase(
-            "最初の手動登録 file は primary になる",
-            "RegisterFile が primary 未設定 item の最初の file を自動的に primary にすることを確認します。",
-            order: 318)]
-        public void RegisterFile_FirstFileBecomesPrimary()
-        {
-            var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
-            var firstPath = Path.Combine(_tempRoot, "first.txt");
-            var secondPath = Path.Combine(_tempRoot, "second.txt");
-            File.WriteAllText(firstPath, "first");
-            File.WriteAllText(secondPath, "second");
-
-            var first = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = firstPath, FileName = "first.txt" });
-            var second = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = secondPath, FileName = "second.txt" });
-
-            Assert.That(first.IsPrimary, Is.True);
-            Assert.That(second.IsPrimary, Is.False);
-        }
-
-        [Test]
-        [FeatureTestCase(
             "Eagle sync は VRCAsset folder から item を作成する",
             "SyncEagle が Booth metadata を item 情報として扱い、metadata file を通常 file から除外することを確認します。",
             order: 319)]
@@ -547,8 +516,8 @@ namespace Ee4v.AssetManager.Api.Tests
                     manualPath,
                     now);
                 connection.Execute(
-                    @"INSERT INTO file_info(id, item_info_id, file_name, extension, size_bytes, download_id, is_primary, lifecycle, created_at, updated_at)
-                      VALUES (?, ?, 'conflict.zip', 'zip', NULL, 456, 0, 'active', ?, ?)",
+                    @"INSERT INTO file_info(id, item_info_id, file_name, extension, size_bytes, download_id, lifecycle, created_at, updated_at)
+                      VALUES (?, ?, 'conflict.zip', 'zip', NULL, 456, 'active', ?, ?)",
                     Guid.NewGuid().ToString("N"),
                     item.Id,
                     now,

@@ -29,7 +29,7 @@ namespace Ee4v.AssetManager.Api
                         row.id)
                     .Select(ToAssetTag)
                     .ToArray(),
-                Files = connection.Query<FileRow>("SELECT * FROM file_info WHERE item_info_id = ? ORDER BY is_primary DESC, file_name COLLATE NOCASE", row.id)
+                Files = connection.Query<FileRow>("SELECT * FROM file_info WHERE item_info_id = ? ORDER BY file_name COLLATE NOCASE, id", row.id)
                     .Select(ToAssetFileSummary)
                     .ToArray(),
                 CreatedAt = ParseDate(row.created_at),
@@ -76,7 +76,6 @@ namespace Ee4v.AssetManager.Api
                 Extension = row.extension,
                 SizeBytes = row.size_bytes,
                 DownloadId = row.download_id,
-                IsPrimary = row.is_primary != 0,
                 Lifecycle = FromDbLifecycle(row.lifecycle),
                 Origins = LoadOrigins(connection, row.id),
                 CreatedAt = ParseDate(row.created_at),
@@ -93,7 +92,6 @@ namespace Ee4v.AssetManager.Api
                 Extension = row.extension,
                 SizeBytes = row.size_bytes,
                 DownloadId = row.download_id,
-                IsPrimary = row.is_primary != 0,
                 Lifecycle = FromDbLifecycle(row.lifecycle)
             };
         }

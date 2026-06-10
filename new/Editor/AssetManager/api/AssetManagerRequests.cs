@@ -45,7 +45,6 @@ namespace Ee4v.AssetManager.Api
         public string FileName { get; set; }
         public string FilePath { get; set; }
         public long? SizeBytes { get; set; }
-        public bool IsPrimary { get; set; }
     }
 
     public sealed class AssetFileImportTargetRequest

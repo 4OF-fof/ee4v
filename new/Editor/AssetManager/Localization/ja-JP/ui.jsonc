@@ -15,7 +15,6 @@
           "inaccessible": "読み取れません"
         },
         "context": {
-          "setPrimary": "プライマリーファイルに設定",
           "markImportTarget": "Import 対象に追加",
           "unmarkImportTarget": "Import 対象から外す"
         }

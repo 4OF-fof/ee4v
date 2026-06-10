@@ -419,15 +419,14 @@ namespace Ee4v.AssetManager.Api
 
             var fileId = NewId();
             connection.Execute(
-                @"INSERT INTO file_info(id, item_info_id, file_name, extension, size_bytes, download_id, is_primary, lifecycle, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)",
+                @"INSERT INTO file_info(id, item_info_id, file_name, extension, size_bytes, download_id, lifecycle, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)",
                 fileId,
                 itemId,
                 safeFileName,
                 extension,
                 sizeBytes,
                 downloadId,
-                HasPrimaryFile(connection, itemId) ? 0 : 1,
                 now,
                 now);
             return fileId;

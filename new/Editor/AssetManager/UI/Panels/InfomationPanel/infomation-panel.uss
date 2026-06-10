@@ -63,7 +63,7 @@
     overflow: hidden;
 }
 
-.ee4v-asset-manager-file-tree__row--primary {
+.ee4v-asset-manager-file-tree__row--import-target {
     padding-left: 6px;
     padding-right: 4px;
     border-left-width: 2px;
@@ -73,18 +73,6 @@
     border-bottom-left-radius: 3px;
     border-bottom-right-radius: 3px;
     background-color: rgba(83, 188, 176, 0.055);
-}
-
-.ee4v-asset-manager-file-tree__row--import-target {
-    padding-left: 6px;
-    padding-right: 4px;
-    border-right-width: 2px;
-    border-right-color: rgba(178, 137, 255, 0.92);
-    border-top-left-radius: 3px;
-    border-top-right-radius: 3px;
-    border-bottom-left-radius: 3px;
-    border-bottom-right-radius: 3px;
-    background-color: rgba(178, 137, 255, 0.06);
 }
 
 .ee4v-asset-manager-file-tree__title {
@@ -109,13 +97,9 @@
     -unity-text-overflow-position: end;
 }
 
-.ee4v-asset-manager-file-tree__row--primary .ee4v-asset-manager-file-tree__title {
+.ee4v-asset-manager-file-tree__row--import-target .ee4v-asset-manager-file-tree__title {
     color: rgb(205, 238, 234);
     -unity-font-style: bold;
-}
-
-.ee4v-asset-manager-file-tree__row--import-target .ee4v-asset-manager-file-tree__title {
-    color: rgb(226, 212, 255);
 }
 
 .ee4v-asset-manager-file-tree__meta {
@@ -137,12 +121,8 @@
     -unity-text-overflow-position: end;
 }
 
-.ee4v-asset-manager-file-tree__row--primary .ee4v-asset-manager-file-tree__meta {
-    color: rgba(173, 222, 216, 0.82);
-}
-
 .ee4v-asset-manager-file-tree__row--import-target .ee4v-asset-manager-file-tree__meta {
-    color: rgba(214, 195, 255, 0.82);
+    color: rgba(173, 222, 216, 0.82);
 }
 
 .ee4v-asset-manager-file-tree__meta--empty {

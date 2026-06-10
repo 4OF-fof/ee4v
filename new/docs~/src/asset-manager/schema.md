@@ -373,8 +373,7 @@ subdomain TEXT NOT NULL UNIQUE
 
 ## File Info
 
-Item に紐付く論理 file。Item は複数 File Info を持てる。  
-primary file は最大 1 件だけ保持し、存在しない場合は `id` 順で fallback する。
+Item に紐付く論理 file。Item は複数 File Info を持てる。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
@@ -384,22 +383,16 @@ primary file は最大 1 件だけ保持し、存在しない場合は `id` 順�
 | `extension` | TEXT |  |  | 拡張子 |
 | `size_bytes` | INTEGER |  |  | サイズ |
 | `download_id` | INTEGER |  | `download_id WHERE download_id IS NOT NULL` | Booth download ID。同一 file 判定に使う。BLM / 手動登録など download ID を持たない file は NULL |
-| `is_primary` | BOOLEAN | Yes | `item_info_id WHERE is_primary = 1` | 同一 Item 内の primary file |
 | `lifecycle` | file_lifecycle | Yes |  | file の管理状態 |
 | `created_at` | DATETIME | Yes |  | 作成時刻 |
 | `updated_at` | DATETIME | Yes |  | 更新時刻 |
 
 ```sql
-CHECK (is_primary IN (0, 1))
 CHECK (lifecycle IN ('active', 'archived'))
 
 CREATE UNIQUE INDEX unique_file_info_download_id
 ON file_info(download_id)
 WHERE download_id IS NOT NULL;
-
-CREATE UNIQUE INDEX unique_file_info_primary
-ON file_info(item_info_id)
-WHERE is_primary = 1;
 ```
 
 同一 file 判定は `download_id` のみで行う。`download_id` が NULL の File Info は、同じ Item・同じ file name でも自動統合しない。

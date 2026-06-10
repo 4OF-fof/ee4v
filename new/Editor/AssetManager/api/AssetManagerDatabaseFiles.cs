@@ -38,21 +38,9 @@ namespace Ee4v.AssetManager.Api
                 }
 
                 var rows = connection.Query<FileRow>(
-                    "SELECT * FROM file_info WHERE " + string.Join(" AND ", where.ToArray()) + " ORDER BY is_primary DESC, file_name COLLATE NOCASE, id",
+                    "SELECT * FROM file_info WHERE " + string.Join(" AND ", where.ToArray()) + " ORDER BY file_name COLLATE NOCASE, id",
                     parameters.ToArray());
                 return rows.Select(row => ToAssetFile(connection, row)).ToArray();
-            }
-        }
-
-        public static AssetFile GetPrimaryFile(string itemId)
-        {
-            using (var connection = OpenConnection())
-            {
-                EnsureItemExists(connection, itemId);
-                var row = connection.Query<FileRow>(
-                    "SELECT * FROM file_info WHERE item_info_id = ? ORDER BY is_primary DESC, id LIMIT 1",
-                    itemId).FirstOrDefault();
-                return row == null ? null : ToAssetFile(connection, row);
             }
         }
 
@@ -71,22 +59,15 @@ namespace Ee4v.AssetManager.Api
                 var fileName = string.IsNullOrWhiteSpace(request.FileName)
                     ? Path.GetFileName(request.FilePath)
                     : request.FileName;
-                var isPrimary = request.IsPrimary || !HasPrimaryFile(connection, itemId);
-
-                if (isPrimary)
-                {
-                    connection.Execute("UPDATE file_info SET is_primary = 0 WHERE item_info_id = ?", itemId);
-                }
 
                 connection.Execute(
-                    @"INSERT INTO file_info(id, item_info_id, file_name, extension, size_bytes, download_id, is_primary, lifecycle, created_at, updated_at)
-                      VALUES (?, ?, ?, ?, ?, NULL, ?, 'active', ?, ?)",
+                    @"INSERT INTO file_info(id, item_info_id, file_name, extension, size_bytes, download_id, lifecycle, created_at, updated_at)
+                      VALUES (?, ?, ?, ?, ?, NULL, 'active', ?, ?)",
                     fileId,
                     itemId,
                     fileName,
                     GetExtension(fileName),
                     request.SizeBytes,
-                    isPrimary ? 1 : 0,
                     now,
                     now);
                 connection.Execute(
@@ -96,21 +77,6 @@ namespace Ee4v.AssetManager.Api
                     request.FilePath,
                     now);
                 return ToAssetFile(connection, connection.Query<FileRow>("SELECT * FROM file_info WHERE id = ?", fileId).First());
-            }
-        }
-
-        public static void SetPrimaryFile(string itemId, string fileId)
-        {
-            using (var connection = OpenConnection())
-            {
-                var file = connection.Query<FileRow>("SELECT * FROM file_info WHERE id = ? AND item_info_id = ?", fileId, itemId).FirstOrDefault();
-                if (file == null)
-                {
-                    throw new AssetManagerException(AssetManagerErrorCode.NotFound, "File was not found for item.");
-                }
-
-                connection.Execute("UPDATE file_info SET is_primary = 0 WHERE item_info_id = ?", itemId);
-                connection.Execute("UPDATE file_info SET is_primary = 1, updated_at = ? WHERE id = ?", Now(), fileId);
             }
         }
 
@@ -197,11 +163,6 @@ namespace Ee4v.AssetManager.Api
                         now);
                 }
             }
-        }
-
-        private static bool HasPrimaryFile(SQLiteConnection connection, string itemId)
-        {
-            return connection.ExecuteScalar<int>("SELECT COUNT(*) FROM file_info WHERE item_info_id = ? AND is_primary = 1", itemId) > 0;
         }
 
         private static string ItemHasSourceClause(AssetSourceType sourceType)

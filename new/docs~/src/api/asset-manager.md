@@ -28,7 +28,7 @@ Notes:
 
 - `Name` と `Description` は `item_info` のユーザー上書き可能な値を返す。
 - Booth 商品由来の固定 snapshot は `Booth` に分離する。
-- `Files` は一覧表示用 summary であり、origin の詳細解決は `AssetManagerApi.GetFiles(...)` または `AssetManagerApi.GetPrimaryFile(...)` を使う。
+- `Files` は一覧表示用 summary であり、origin の詳細解決は `AssetManagerApi.GetFiles(...)` を使う。
 
 ### `AssetFile`
 
@@ -43,7 +43,6 @@ public sealed class AssetFile
     public string Extension { get; set; }
     public long? SizeBytes { get; set; }
     public long? DownloadId { get; set; }
-    public bool IsPrimary { get; set; }
     public AssetFileLifecycle Lifecycle { get; set; }
     public IReadOnlyList<AssetFileOrigin> Origins { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -70,7 +69,6 @@ public sealed class AssetFileSummary
     public string Extension { get; set; }
     public long? SizeBytes { get; set; }
     public long? DownloadId { get; set; }
-    public bool IsPrimary { get; set; }
     public AssetFileLifecycle Lifecycle { get; set; }
 }
 ```
@@ -78,7 +76,7 @@ public sealed class AssetFileSummary
 Notes:
 
 - `DownloadId` の意味は `AssetFile.DownloadId` と同じ。
-- origin 詳細が必要な場合は `AssetManagerApi.GetFiles(...)` または `AssetManagerApi.GetPrimaryFile(...)` を使う。
+- origin 詳細が必要な場合は `AssetManagerApi.GetFiles(...)` を使う。
 
 ### `AssetCollection`
 
@@ -310,7 +308,6 @@ public sealed class RegisterFileRequest
     public string FileName { get; set; }
     public string FilePath { get; set; }
     public long? SizeBytes { get; set; }
-    public bool IsPrimary { get; set; }
 }
 
 public sealed class AssetFileImportTargetRequest
@@ -426,7 +423,7 @@ Effects:
 Notes:
 
 - Booth snapshot、tag、file summary をまとめて返す。
-- file origin の解決済み path が必要な場合は `GetFiles(...)` / `GetPrimaryFile(...)` / `ResolveFilePath(...)` を使う。
+- file origin の解決済み path が必要な場合は `GetFiles(...)` / `ResolveFilePath(...)` を使う。
 
 ### `AssetManagerApi.CreateItem`
 
@@ -510,32 +507,6 @@ Effects:
 
 Notes:
 
-- primary file が必要な場合は `GetPrimaryFile(...)` を使う。
-
-### `AssetManagerApi.GetPrimaryFile`
-
-Item の代表 file を取得します。
-
-```csharp
-public static AssetFile GetPrimaryFile(string itemId)
-```
-
-Parameters:
-
-- `itemId`: 親 Item。
-
-Returns:
-
-- `is_primary = true` の file。
-- primary file が存在しない場合は `id` 順の先頭 file。
-- file が存在しない場合は `null`。
-
-Effects:
-
-- DB を読み取る。
-
-Notes:
-
 - file origin の代表 datasource は `assetManager.sourcePriority` 設定順で解決する。
 
 ### `AssetManagerApi.RegisterFile`
@@ -552,7 +523,6 @@ Parameters:
 - `request.FileName`: 表示 file 名。
 - `request.FilePath`: 追加する file の path。
 - `request.SizeBytes`: file size。
-- `request.IsPrimary`: primary file にするか。
 
 Returns:
 
@@ -562,39 +532,12 @@ Effects:
 
 - `file_info` を追加する。
 - `ee4v_file_origin` を追加する。
-- `IsPrimary` が `true` の場合、または同一 Item に primary file が存在しない場合、同一 Item 内の既存 primary を解除して追加 file を primary にする。
 
 Notes:
 
 - Editor からの手動追加用 API として扱い、origin は常に `ee4v`。
 - BLM / Eagle 由来 file はこの API ではなく `SyncBlm(...)` / `SyncEagle(...)` から作成する。
 - `file_path_cache` は最後に解決できた path として保存する。
-
-### `AssetManagerApi.SetPrimaryFile`
-
-Item の primary file を変更します。
-
-```csharp
-public static void SetPrimaryFile(string itemId, string fileId)
-```
-
-Parameters:
-
-- `itemId`: 親 Item。
-- `fileId`: primary にする File。
-
-Returns:
-
-- `void`
-
-Effects:
-
-- 同一 Item 内の `is_primary` を 1 件だけに更新する。
-- `updated_at` を更新する。
-
-Notes:
-
-- `fileId` が `itemId` に属していない場合は例外。
 
 ### `AssetManagerApi.ArchiveFile`
 
@@ -1051,6 +994,5 @@ Notes:
 
 - DB constraint 違反、存在しない ID、cycle、invalid smart condition は `AssetManagerException` で返す。
 - ただし各 API の Returns に missing 時の戻り値が明記されている場合は、その記述を優先する。`GetItem(...)` は Item が見つからない場合に `null`、`ResolveFilePath(...)` は file が見つからない場合に `Found = false` を返す。
-- `GetPrimaryFile(...)` の `null` は、対象 Item が存在し、かつ file が 0 件の場合を表す。Item 自体が存在しない場合は `AssetManagerException`。
 - 置き換え系 API は、入力 ID や条件が不正な場合に既存の tag / collection / dependency 関連を変更しない。
 - datasource 読み取り失敗と個別 upsert 失敗は sync result の `ErrorCount` に集約する。

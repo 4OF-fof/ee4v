@@ -39,19 +39,9 @@ namespace Ee4v.AssetManager.Api
             return Execute(() => AssetManagerDatabase.GetFiles(itemId, query));
         }
 
-        public static AssetFile GetPrimaryFile(string itemId)
-        {
-            return Execute(() => AssetManagerDatabase.GetPrimaryFile(itemId));
-        }
-
         public static AssetFile RegisterFile(string itemId, RegisterFileRequest request)
         {
             return ExecuteChanged(() => AssetManagerDatabase.RegisterFile(itemId, request));
-        }
-
-        public static void SetPrimaryFile(string itemId, string fileId)
-        {
-            ExecuteFileTreeChanged(() => AssetManagerDatabase.SetPrimaryFile(itemId, fileId));
         }
 
         public static void ArchiveFile(string fileId)

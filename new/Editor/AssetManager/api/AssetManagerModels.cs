@@ -46,7 +46,6 @@ namespace Ee4v.AssetManager.Api
         public string Extension { get; set; }
         public long? SizeBytes { get; set; }
         public long? DownloadId { get; set; }
-        public bool IsPrimary { get; set; }
         public AssetFileLifecycle Lifecycle { get; set; }
         public IReadOnlyList<AssetFileOrigin> Origins { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -70,7 +69,6 @@ namespace Ee4v.AssetManager.Api
         public string Extension { get; set; }
         public long? SizeBytes { get; set; }
         public long? DownloadId { get; set; }
-        public bool IsPrimary { get; set; }
         public AssetFileLifecycle Lifecycle { get; set; }
     }
 

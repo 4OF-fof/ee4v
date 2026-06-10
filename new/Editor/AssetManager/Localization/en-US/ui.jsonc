@@ -15,7 +15,6 @@
           "inaccessible": "Unreadable"
         },
         "context": {
-          "setPrimary": "Set as primary file",
           "markImportTarget": "Mark as import target",
           "unmarkImportTarget": "Unmark import target"
         }
