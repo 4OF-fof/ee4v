@@ -245,7 +245,7 @@ namespace Ee4v.UI
             }
             else if (preserveExpansion)
             {
-                _treeView.ExpandAll();
+                // Leave the TreeView expansion state untouched while rebinding item data.
             }
             else
             {

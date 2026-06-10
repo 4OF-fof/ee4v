@@ -7,6 +7,7 @@ namespace Ee4v.AssetManager.Api
     public static class AssetManagerApi
     {
         public static event Action Changed;
+        public static event Action FileTreeChanged;
 
         public static AssetSearchResult SearchItems(AssetItemQuery query)
         {
@@ -50,7 +51,7 @@ namespace Ee4v.AssetManager.Api
 
         public static void SetPrimaryFile(string itemId, string fileId)
         {
-            Execute(() => AssetManagerDatabase.SetPrimaryFile(itemId, fileId));
+            ExecuteFileTreeChanged(() => AssetManagerDatabase.SetPrimaryFile(itemId, fileId));
         }
 
         public static void ArchiveFile(string fileId)
@@ -120,7 +121,7 @@ namespace Ee4v.AssetManager.Api
 
         public static void SetFileImportTargets(string fileId, IReadOnlyList<AssetFileImportTargetRequest> targets)
         {
-            Execute(() => AssetManagerDatabase.SetFileImportTargets(fileId, targets));
+            ExecuteFileTreeChanged(() => AssetManagerDatabase.SetFileImportTargets(fileId, targets));
         }
 
         public static AssetSyncResult SyncBlm(BlmSyncRequest request)
@@ -168,6 +169,16 @@ namespace Ee4v.AssetManager.Api
                 action();
                 return true;
             });
+        }
+
+        private static void ExecuteFileTreeChanged(Action action)
+        {
+            Execute(() =>
+            {
+                action();
+                return true;
+            });
+            FileTreeChanged?.Invoke();
         }
 
         private static void Execute(Action action)

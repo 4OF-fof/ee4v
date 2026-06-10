@@ -54,7 +54,7 @@ namespace Ee4v.AssetManager
             Reload();
         }
 
-        public void Clear()
+        public void ClearTree()
         {
             _itemId = string.Empty;
             _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.empty"));
@@ -65,15 +65,23 @@ namespace Ee4v.AssetManager
         {
             AssetManagerApi.Changed -= OnAssetManagerChanged;
             AssetManagerApi.Changed += OnAssetManagerChanged;
+            AssetManagerApi.FileTreeChanged -= OnFileTreeChanged;
+            AssetManagerApi.FileTreeChanged += OnFileTreeChanged;
             Reload(preserveTreeState: true);
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             AssetManagerApi.Changed -= OnAssetManagerChanged;
+            AssetManagerApi.FileTreeChanged -= OnFileTreeChanged;
         }
 
         private void OnAssetManagerChanged()
+        {
+            Reload(preserveTreeState: true);
+        }
+
+        private void OnFileTreeChanged()
         {
             Reload(preserveTreeState: true);
         }
@@ -82,7 +90,7 @@ namespace Ee4v.AssetManager
         {
             if (string.IsNullOrWhiteSpace(_itemId))
             {
-                Clear();
+                ClearTree();
                 return;
             }
 
@@ -163,7 +171,6 @@ namespace Ee4v.AssetManager
                             }
 
                             AssetManagerApi.SetPrimaryFile(selectedFile.ItemId, selectedFile.FileId);
-                            Reload(preserveTreeState: true);
                         },
                         canSetPrimary),
                     new ContextMenuItemState(
@@ -222,8 +229,6 @@ namespace Ee4v.AssetManager
                         })
                         .ToArray());
             }
-
-            Reload(preserveTreeState: true);
         }
     }
 

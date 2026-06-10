@@ -277,9 +277,12 @@ namespace Ee4v.AssetManager.Api.Tests
             File.WriteAllText(filePath, "zip");
             var file = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = filePath, FileName = "avatar.zip" });
             var changed = false;
+            var fileTreeChanged = false;
             Action handler = () => changed = true;
+            Action fileTreeHandler = () => fileTreeChanged = true;
 
             AssetManagerApi.Changed += handler;
+            AssetManagerApi.FileTreeChanged += fileTreeHandler;
             try
             {
                 AssetManagerApi.SetFileImportTargets(file.Id, new[] { new AssetFileImportTargetRequest { RelativePath = "Packages/avatar.unitypackage" } });
@@ -287,9 +290,11 @@ namespace Ee4v.AssetManager.Api.Tests
             finally
             {
                 AssetManagerApi.Changed -= handler;
+                AssetManagerApi.FileTreeChanged -= fileTreeHandler;
             }
 
             Assert.That(changed, Is.False);
+            Assert.That(fileTreeChanged, Is.True);
         }
 
         [Test]

@@ -176,7 +176,7 @@ namespace Ee4v.AssetManager
             _selectionModeRow.style.display = DisplayStyle.None;
             _multiPreviewTextRow.style.display = DisplayStyle.None;
             _selectionDetailTabs.style.display = DisplayStyle.None;
-            _fileTree.Clear();
+            _fileTree.ClearTree();
         }
 
         private void UpdateDetailContent()
@@ -192,7 +192,7 @@ namespace Ee4v.AssetManager
             }
             else
             {
-                _fileTree.Clear();
+                _fileTree.ClearTree();
             }
         }
 
