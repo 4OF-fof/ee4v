@@ -155,35 +155,43 @@ namespace Ee4v.AssetManager
             var canSetPrimary = selected.Count == 1 && selected[0] != null && selected[0].CanSetPrimary && !selected[0].IsPrimary;
             var selectedFile = selected.Count == 1 ? selected[0] : null;
             var importTargetSelection = selected.Where(node => node != null && node.CanSetImportTarget).ToArray();
-            var canMarkImportTarget = importTargetSelection.Length > 0 && importTargetSelection.Any(node => !node.IsImportTarget);
-            var canUnmarkImportTarget = importTargetSelection.Length > 0 && importTargetSelection.Any(node => node.HasAnyImportTarget);
-            var menu = new ContextMenuState(
-                new[]
-                {
-                    new ContextMenuItemState(
-                        "set-primary",
-                        I18N.Get("assetManager.infomationPanel.fileTree.context.setPrimary"),
-                        () =>
-                        {
-                            if (selectedFile == null)
-                            {
-                                return;
-                            }
 
-                            AssetManagerApi.SetPrimaryFile(selectedFile.ItemId, selectedFile.FileId);
-                        },
-                        canSetPrimary),
-                    new ContextMenuItemState(
-                        "mark-import-target",
-                        I18N.Get("assetManager.infomationPanel.fileTree.context.markImportTarget"),
-                        () => SetImportTargetSelection(importTargetSelection, true),
-                        canMarkImportTarget),
-                    new ContextMenuItemState(
+            var menuItems = new List<ContextMenuItemState>
+            {
+                new ContextMenuItemState(
+                    "set-primary",
+                    I18N.Get("assetManager.infomationPanel.fileTree.context.setPrimary"),
+                    () =>
+                    {
+                        if (selectedFile == null)
+                        {
+                            return;
+                        }
+
+                        AssetManagerApi.SetPrimaryFile(selectedFile.ItemId, selectedFile.FileId);
+                    },
+                    canSetPrimary)
+            };
+
+            if (importTargetSelection.Length > 0)
+            {
+                if (importTargetSelection.All(node => node.IsImportTarget))
+                {
+                    menuItems.Add(new ContextMenuItemState(
                         "unmark-import-target",
                         I18N.Get("assetManager.infomationPanel.fileTree.context.unmarkImportTarget"),
-                        () => SetImportTargetSelection(importTargetSelection, false),
-                        canUnmarkImportTarget)
-                });
+                        () => SetImportTargetSelection(importTargetSelection, false)));
+                }
+                else
+                {
+                    menuItems.Add(new ContextMenuItemState(
+                        "mark-import-target",
+                        I18N.Get("assetManager.infomationPanel.fileTree.context.markImportTarget"),
+                        () => SetImportTargetSelection(importTargetSelection, true)));
+                }
+            }
+
+            var menu = new ContextMenuState(menuItems);
             ContextMenuWindow.Show(target, panelPosition, menu);
         }
 
