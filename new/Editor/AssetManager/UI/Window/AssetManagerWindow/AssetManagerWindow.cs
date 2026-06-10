@@ -61,7 +61,7 @@ namespace Ee4v.AssetManager
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Layout/ThreePaneLayout/three-pane-layout.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/NavigationPanel/navigation-panel.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/MainView/main-view.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Toolbar/AssetManagerToolbar/asset-manager-toolbar.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Toolbar/MainToolbar/main-toolbar.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/ItemImage/item-image.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/ImageStack/image-stack.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/Icon/icon.uss");
@@ -84,12 +84,13 @@ namespace Ee4v.AssetManager
             layout.LeftCollapsedChanged += value => _navigationCollapsed = value;
             layout.RightCollapsedChanged += value => _inspectorCollapsed = value;
 
-            var toolbar = new AssetManagerToolbar();
+            var mainView = new MainView();
+            var toolbar = new MainToolbar(mainView);
             toolbar.style.flexGrow = 1f;
 
             layout.MainToolbarContent.Add(toolbar);
             layout.LeftPaneContent.Add(new NavigationPanel());
-            layout.MainContent.Add(new MainView());
+            layout.MainContent.Add(mainView);
             layout.RightPaneContent.Add(new InfomationPanel());
 
             root.Add(layout);

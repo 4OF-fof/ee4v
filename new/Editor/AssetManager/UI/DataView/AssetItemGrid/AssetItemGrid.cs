@@ -7,7 +7,10 @@ namespace Ee4v.AssetManager
     {
         public AssetItemGrid()
         {
+            History = new AssetItemGridHistory();
         }
+
+        public AssetItemGridHistory History { get; }
 
         public bool TrySetCachedItems(string cacheKey, out string statusText)
         {

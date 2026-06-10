@@ -29,6 +29,12 @@
       "noItems": "アセット項目がありません。",
       "noFiles": "このアイテムにファイルはありません。"
     },
+    "mainToolbar": {
+      "history": {
+        "back": "戻る",
+        "forward": "進む"
+      }
+    },
     "navigation": {
       "allAssets": {
         "label": "All Assets",

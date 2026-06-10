@@ -17,6 +17,7 @@ namespace Ee4v.AssetManager
         private int _loadVersion;
         private string _fileListItemId;
         private string _fileListItemName;
+        private bool _applyingHistory;
 
         public MainView(MainViewController controller = null)
         {
@@ -37,10 +38,16 @@ namespace Ee4v.AssetManager
             _itemGrid.ItemDoubleClicked += OnGridItemDoubleClicked;
         }
 
+        public AssetItemGridHistory History
+        {
+            get { return _itemGrid.History; }
+        }
+
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
             AssetManagerViewState.SelectedItemChanged += OnSelectedItemChanged;
             MainViewController.ContentChanged += OnContentChanged;
+            PushCurrentHistory();
             RefreshContent();
         }
 
@@ -53,8 +60,14 @@ namespace Ee4v.AssetManager
 
         private void OnSelectedItemChanged(string itemId)
         {
+            if (_applyingHistory)
+            {
+                return;
+            }
+
             ClearFileListMode();
             ClearGridSelection();
+            PushCurrentHistory();
             RefreshContent();
         }
 
@@ -63,6 +76,7 @@ namespace Ee4v.AssetManager
             _itemGrid.ClearCachedItems();
             ClearFileListMode();
             ClearGridSelection();
+            PushCurrentHistory();
             RefreshContent();
         }
 
@@ -86,7 +100,44 @@ namespace Ee4v.AssetManager
             _fileListItemName = item.ItemName;
             AssetManagerViewState.SetSelectedAssetDetailTab("file-tree");
             ClearGridSelection();
+            PushCurrentHistory();
             RefreshContent();
+        }
+
+        public void GoBack()
+        {
+            AssetItemGridHistoryEntry entry;
+            if (_itemGrid.History.TryGoBack(out entry))
+            {
+                ApplyHistoryEntry(entry);
+            }
+        }
+
+        public void GoForward()
+        {
+            AssetItemGridHistoryEntry entry;
+            if (_itemGrid.History.TryGoForward(out entry))
+            {
+                ApplyHistoryEntry(entry);
+            }
+        }
+
+        public void GoToBreadcrumb(int index)
+        {
+            var current = _itemGrid.History.State.Current;
+            if (current == null
+                || current.Kind != AssetItemGridHistoryEntryKind.FileList
+                || index != 0)
+            {
+                return;
+            }
+
+            var entry = new AssetItemGridHistoryEntry(
+                AssetItemGridHistoryEntryKind.View,
+                current.ViewId,
+                current.ViewLabel);
+            _itemGrid.History.SetCurrent(entry);
+            ApplyHistoryEntry(entry);
         }
 
         private void RefreshContent()
@@ -191,6 +242,67 @@ namespace Ee4v.AssetManager
         {
             _fileListItemId = string.Empty;
             _fileListItemName = string.Empty;
+        }
+
+        private void PushCurrentHistory()
+        {
+            if (_applyingHistory)
+            {
+                return;
+            }
+
+            _itemGrid.History.SetCurrent(CreateCurrentHistoryEntry());
+        }
+
+        private AssetItemGridHistoryEntry CreateCurrentHistoryEntry()
+        {
+            var selectedItem = AssetManagerViewState.SelectedItem;
+            if (IsFileListMode)
+            {
+                return new AssetItemGridHistoryEntry(
+                    AssetItemGridHistoryEntryKind.FileList,
+                    selectedItem.Id,
+                    selectedItem.Label,
+                    _fileListItemId,
+                    _fileListItemName);
+            }
+
+            return new AssetItemGridHistoryEntry(
+                AssetItemGridHistoryEntryKind.View,
+                selectedItem.Id,
+                selectedItem.Label);
+        }
+
+        private void ApplyHistoryEntry(AssetItemGridHistoryEntry entry)
+        {
+            if (entry == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _applyingHistory = true;
+                AssetManagerViewState.SetSelectedItem(entry.ViewId);
+                if (entry.Kind == AssetItemGridHistoryEntryKind.FileList)
+                {
+                    _fileListItemId = entry.ItemId;
+                    _fileListItemName = entry.ItemName;
+                    AssetManagerViewState.SetSelectedAssetDetailTab("file-tree");
+                }
+                else
+                {
+                    ClearFileListMode();
+                }
+
+                ClearGridSelection();
+            }
+            finally
+            {
+                _applyingHistory = false;
+            }
+
+            RefreshContent();
         }
     }
 }

@@ -29,6 +29,12 @@
       "noItems": "No asset items.",
       "noFiles": "This item has no files."
     },
+    "mainToolbar": {
+      "history": {
+        "back": "Back",
+        "forward": "Forward"
+      }
+    },
     "navigation": {
       "allAssets": {
         "label": "All Assets",
