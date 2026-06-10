@@ -113,6 +113,16 @@ namespace Ee4v.AssetManager.Api
             ExecuteChanged(() => AssetManagerDatabase.SetFileDependencies(dependentFileId, dependencyFileIds));
         }
 
+        public static IReadOnlyList<AssetFileImportTarget> GetFileImportTargets(string fileId)
+        {
+            return Execute(() => AssetManagerDatabase.GetFileImportTargets(fileId));
+        }
+
+        public static void SetFileImportTargets(string fileId, IReadOnlyList<AssetFileImportTargetRequest> targets)
+        {
+            Execute(() => AssetManagerDatabase.SetFileImportTargets(fileId, targets));
+        }
+
         public static AssetSyncResult SyncBlm(BlmSyncRequest request)
         {
             return ExecuteChanged(() => AssetManagerDatabase.SyncBlm(request));

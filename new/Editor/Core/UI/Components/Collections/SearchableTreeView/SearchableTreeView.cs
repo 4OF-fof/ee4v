@@ -104,9 +104,14 @@ namespace Ee4v.UI
 
         public void SetItems(IReadOnlyList<SearchableTreeItemData<TData>> items)
         {
+            SetItems(items, preserveExpansion: false);
+        }
+
+        public void SetItems(IReadOnlyList<SearchableTreeItemData<TData>> items, bool preserveExpansion)
+        {
             _sourceItems = items ?? new SearchableTreeItemData<TData>[0];
             _selectedTreeItems = Array.Empty<SearchableTreeItemData<TData>>();
-            RefreshTree();
+            RefreshTree(preserveExpansion);
         }
 
         public void SetEmptyText(string emptyText)
@@ -226,10 +231,19 @@ namespace Ee4v.UI
 
         private void RefreshTree()
         {
+            RefreshTree(preserveExpansion: false);
+        }
+
+        private void RefreshTree(bool preserveExpansion)
+        {
             var filteredItems = FilterItems(_sourceItems, _searchField.Value);
             _treeView.SetRootItems(filteredItems);
             _treeView.Rebuild();
             if (!string.IsNullOrWhiteSpace(_searchField.Value))
+            {
+                _treeView.ExpandAll();
+            }
+            else if (preserveExpansion)
             {
                 _treeView.ExpandAll();
             }

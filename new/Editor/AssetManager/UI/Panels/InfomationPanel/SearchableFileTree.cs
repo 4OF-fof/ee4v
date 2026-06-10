@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using Ee4v.AssetManager.Api;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
@@ -15,6 +16,7 @@ namespace Ee4v.AssetManager
         private const string RootClassName = "ee4v-asset-manager-file-tree";
         private const string RowClassName = "ee4v-asset-manager-file-tree__row";
         private const string RowPrimaryClassName = "ee4v-asset-manager-file-tree__row--primary";
+        private const string RowImportTargetClassName = "ee4v-asset-manager-file-tree__row--import-target";
         private const string RowTitleClassName = "ee4v-asset-manager-file-tree__title";
         private const string RowMetaClassName = "ee4v-asset-manager-file-tree__meta";
         private readonly SearchableTreeView<FileTreeNode> _treeView;
@@ -61,17 +63,22 @@ namespace Ee4v.AssetManager
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
-            AssetManagerApi.Changed -= Reload;
-            AssetManagerApi.Changed += Reload;
-            Reload();
+            AssetManagerApi.Changed -= OnAssetManagerChanged;
+            AssetManagerApi.Changed += OnAssetManagerChanged;
+            Reload(preserveTreeState: true);
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            AssetManagerApi.Changed -= Reload;
+            AssetManagerApi.Changed -= OnAssetManagerChanged;
         }
 
-        private void Reload()
+        private void OnAssetManagerChanged()
+        {
+            Reload(preserveTreeState: true);
+        }
+
+        private void Reload(bool preserveTreeState = false)
         {
             if (string.IsNullOrWhiteSpace(_itemId))
             {
@@ -82,8 +89,14 @@ namespace Ee4v.AssetManager
             try
             {
                 var files = AssetManagerApi.GetFiles(_itemId, new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active });
+                var importTargetsByFileId = new Dictionary<string, IReadOnlyList<AssetFileImportTarget>>(StringComparer.Ordinal);
+                for (var i = 0; i < files.Count; i++)
+                {
+                    importTargetsByFileId[files[i].Id] = AssetManagerApi.GetFileImportTargets(files[i].Id);
+                }
+
                 _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.empty"));
-                _treeView.SetItems(_builder.Build(files));
+                _treeView.SetItems(_builder.Build(files, importTargetsByFileId), preserveTreeState);
             }
             catch (Exception)
             {
@@ -110,6 +123,7 @@ namespace Ee4v.AssetManager
         private static void BindTreeItem(VisualElement element, FileTreeNode node)
         {
             element.EnableInClassList(RowPrimaryClassName, node.IsPrimary);
+            element.EnableInClassList(RowImportTargetClassName, node.IsImportTarget);
             var title = element.ElementAt(0) as UiTextElement;
             var meta = element.ElementAt(1) as UiTextElement;
 
@@ -132,6 +146,9 @@ namespace Ee4v.AssetManager
             var selected = selectedItems ?? Array.Empty<FileTreeNode>();
             var canSetPrimary = selected.Count == 1 && selected[0] != null && selected[0].CanSetPrimary && !selected[0].IsPrimary;
             var selectedFile = selected.Count == 1 ? selected[0] : null;
+            var importTargetSelection = selected.Where(node => node != null && node.CanSetImportTarget).ToArray();
+            var canMarkImportTarget = importTargetSelection.Length > 0 && importTargetSelection.Any(node => !node.IsImportTarget);
+            var canUnmarkImportTarget = importTargetSelection.Length > 0 && importTargetSelection.Any(node => node.HasAnyImportTarget);
             var menu = new ContextMenuState(
                 new[]
                 {
@@ -146,17 +163,84 @@ namespace Ee4v.AssetManager
                             }
 
                             AssetManagerApi.SetPrimaryFile(selectedFile.ItemId, selectedFile.FileId);
-                            Reload();
+                            Reload(preserveTreeState: true);
                         },
-                        canSetPrimary)
+                        canSetPrimary),
+                    new ContextMenuItemState(
+                        "mark-import-target",
+                        I18N.Get("assetManager.infomationPanel.fileTree.context.markImportTarget"),
+                        () => SetImportTargetSelection(importTargetSelection, true),
+                        canMarkImportTarget),
+                    new ContextMenuItemState(
+                        "unmark-import-target",
+                        I18N.Get("assetManager.infomationPanel.fileTree.context.unmarkImportTarget"),
+                        () => SetImportTargetSelection(importTargetSelection, false),
+                        canUnmarkImportTarget)
                 });
             ContextMenuWindow.Show(target, panelPosition, menu);
+        }
+
+        private void SetImportTargetSelection(IReadOnlyList<FileTreeNode> selectedNodes, bool isImportTarget)
+        {
+            var grouped = selectedNodes
+                .Where(node => node != null && node.CanSetImportTarget)
+                .SelectMany(node => node.ImportTargetEntries)
+                .GroupBy(entry => entry.FileId, StringComparer.Ordinal)
+                .ToArray();
+
+            for (var i = 0; i < grouped.Length; i++)
+            {
+                var fileId = grouped[i].Key;
+                var targets = AssetManagerApi.GetFileImportTargets(fileId)
+                    .ToDictionary(target => target.RelativePath ?? string.Empty, StringComparer.OrdinalIgnoreCase);
+
+                foreach (var entry in grouped[i])
+                {
+                    if (isImportTarget)
+                    {
+                        targets[entry.RelativePath] = new AssetFileImportTarget
+                        {
+                            FileId = fileId,
+                            RelativePath = entry.RelativePath,
+                            IsDirectory = entry.IsDirectory
+                        };
+                    }
+                    else
+                    {
+                        targets.Remove(entry.RelativePath);
+                    }
+                }
+
+                AssetManagerApi.SetFileImportTargets(
+                    fileId,
+                    targets.Values
+                        .OrderBy(target => target.RelativePath, StringComparer.OrdinalIgnoreCase)
+                        .Select(target => new AssetFileImportTargetRequest
+                        {
+                            RelativePath = target.RelativePath,
+                            IsDirectory = target.IsDirectory
+                        })
+                        .ToArray());
+            }
+
+            Reload(preserveTreeState: true);
         }
     }
 
     internal sealed class FileTreeNode
     {
-        public FileTreeNode(string name, string meta, string path, string fileId = null, string itemId = null, bool isPrimary = false)
+        public FileTreeNode(
+            string name,
+            string meta,
+            string path,
+            string fileId = null,
+            string itemId = null,
+            bool isPrimary = false,
+            bool isImportTarget = false,
+            bool hasAnyImportTarget = false,
+            string relativePath = null,
+            bool isDirectory = false,
+            IReadOnlyList<FileTreeImportTargetEntry> importTargetEntries = null)
         {
             Name = name ?? string.Empty;
             Meta = meta ?? string.Empty;
@@ -164,6 +248,11 @@ namespace Ee4v.AssetManager
             FileId = fileId ?? string.Empty;
             ItemId = itemId ?? string.Empty;
             IsPrimary = isPrimary;
+            IsImportTarget = isImportTarget;
+            HasAnyImportTarget = hasAnyImportTarget;
+            RelativePath = NormalizeRelativePath(relativePath);
+            IsDirectory = isDirectory;
+            ImportTargetEntries = importTargetEntries ?? Array.Empty<FileTreeImportTargetEntry>();
         }
 
         public string Name { get; }
@@ -178,20 +267,60 @@ namespace Ee4v.AssetManager
 
         public bool IsPrimary { get; }
 
+        public bool IsImportTarget { get; }
+
+        public bool HasAnyImportTarget { get; }
+
+        public string RelativePath { get; }
+
+        public bool IsDirectory { get; }
+
+        public IReadOnlyList<FileTreeImportTargetEntry> ImportTargetEntries { get; }
+
         public bool CanSetPrimary
         {
             get { return !string.IsNullOrWhiteSpace(FileId) && !string.IsNullOrWhiteSpace(ItemId); }
         }
+
+        public bool CanSetImportTarget
+        {
+            get { return ImportTargetEntries.Count > 0; }
+        }
+
+        private static string NormalizeRelativePath(string path)
+        {
+            return (path ?? string.Empty).Replace('\\', '/').Trim().TrimStart('/').TrimEnd('/');
+        }
+    }
+
+    internal sealed class FileTreeImportTargetEntry
+    {
+        public FileTreeImportTargetEntry(string fileId, string relativePath, bool isDirectory)
+        {
+            FileId = fileId ?? string.Empty;
+            RelativePath = (relativePath ?? string.Empty).Replace('\\', '/').Trim().TrimStart('/').TrimEnd('/');
+            IsDirectory = isDirectory;
+        }
+
+        public string FileId { get; }
+
+        public string RelativePath { get; }
+
+        public bool IsDirectory { get; }
     }
 
     internal sealed class FileTreeBuilder
     {
         private readonly ZipFileTreeReader _zipReader = new ZipFileTreeReader();
         private int _nextId;
+        private IReadOnlyDictionary<string, IReadOnlyList<AssetFileImportTarget>> _importTargetsByFileId;
 
-        public IReadOnlyList<SearchableTreeItemData<FileTreeNode>> Build(IReadOnlyList<AssetFile> files)
+        public IReadOnlyList<SearchableTreeItemData<FileTreeNode>> Build(
+            IReadOnlyList<AssetFile> files,
+            IReadOnlyDictionary<string, IReadOnlyList<AssetFileImportTarget>> importTargetsByFileId)
         {
             _nextId = 1;
+            _importTargetsByFileId = importTargetsByFileId ?? new Dictionary<string, IReadOnlyList<AssetFileImportTarget>>();
             var items = new List<SearchableTreeItemData<FileTreeNode>>();
             if (files == null)
             {
@@ -226,7 +355,7 @@ namespace Ee4v.AssetManager
             var path = resolution.Path;
             if (Directory.Exists(path))
             {
-                return CreateDirectoryItem(path, Path.GetFileName(path), path, file);
+                return CreateDirectoryItem(path, Path.GetFileName(path), path, file, path, string.Empty);
             }
 
             if (File.Exists(path) && IsZipFile(file, path))
@@ -237,25 +366,38 @@ namespace Ee4v.AssetManager
             return CreateFileItem(path, string.IsNullOrWhiteSpace(file.FileName) ? Path.GetFileName(path) : file.FileName, path, file);
         }
 
-        private SearchableTreeItemData<FileTreeNode> CreateDirectoryItem(string path, string name, string searchPath, AssetFile assetFile = null)
+        private SearchableTreeItemData<FileTreeNode> CreateDirectoryItem(
+            string path,
+            string name,
+            string searchPath,
+            AssetFile assetFile = null,
+            string rootPath = null,
+            string relativePath = null)
         {
             var children = new List<SearchableTreeItemData<FileTreeNode>>();
             try
             {
                 foreach (var childDirectory in Directory.EnumerateDirectories(path))
                 {
-                    children.Add(CreateDirectoryItem(childDirectory, Path.GetFileName(childDirectory), childDirectory));
+                    children.Add(CreateDirectoryItem(
+                        childDirectory,
+                        Path.GetFileName(childDirectory),
+                        childDirectory,
+                        assetFile,
+                        rootPath,
+                        GetRelativePath(rootPath, childDirectory)));
                 }
 
                 foreach (var childFile in Directory.EnumerateFiles(path))
                 {
+                    var childRelativePath = GetRelativePath(rootPath, childFile);
                     if (IsZipPath(childFile))
                     {
-                        children.Add(CreateZipItem(Path.GetFileName(childFile), childFile));
+                        children.Add(CreateZipItem(Path.GetFileName(childFile), childFile, assetFile, childRelativePath));
                     }
                     else
                     {
-                        children.Add(CreateFileItem(childFile, Path.GetFileName(childFile), childFile));
+                        children.Add(CreateFileItem(childFile, Path.GetFileName(childFile), childFile, assetFile, childRelativePath));
                     }
                 }
             }
@@ -272,15 +414,17 @@ namespace Ee4v.AssetManager
                 string.Empty,
                 searchPath,
                 assetFile,
+                relativePath,
+                true,
                 children);
         }
 
-        private SearchableTreeItemData<FileTreeNode> CreateZipItem(string name, string path, AssetFile assetFile = null)
+        private SearchableTreeItemData<FileTreeNode> CreateZipItem(string name, string path, AssetFile assetFile = null, string relativePath = null)
         {
             IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children;
             try
             {
-                children = _zipReader.Read(path, () => _nextId++);
+                children = _zipReader.Read(path, () => _nextId++, assetFile, GetTargetPathSet(assetFile), relativePath);
             }
             catch (Exception)
             {
@@ -298,16 +442,20 @@ namespace Ee4v.AssetManager
                 I18N.Get("assetManager.infomationPanel.fileTree.meta.zip"),
                 path,
                 assetFile,
+                relativePath,
+                false,
                 children);
         }
 
-        private SearchableTreeItemData<FileTreeNode> CreateFileItem(string path, string name, string searchPath, AssetFile assetFile = null)
+        private SearchableTreeItemData<FileTreeNode> CreateFileItem(string path, string name, string searchPath, AssetFile assetFile = null, string relativePath = null)
         {
             return CreateItem(
                 string.IsNullOrWhiteSpace(name) ? Path.GetFileName(path) : name,
                 string.Empty,
                 searchPath,
-                assetFile);
+                assetFile,
+                relativePath,
+                false);
         }
 
         private SearchableTreeItemData<FileTreeNode> CreateItem(
@@ -315,21 +463,135 @@ namespace Ee4v.AssetManager
             string meta,
             string searchPath,
             AssetFile assetFile = null,
+            string relativePath = null,
+            bool isDirectory = false,
             IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children = null)
         {
+            var targetPath = NormalizeRelativePath(relativePath);
+            var importTargetEntries = CreateImportTargetEntries(assetFile, targetPath, isDirectory, children);
+            var targetPaths = GetTargetPathSet(assetFile);
             var node = new FileTreeNode(
                 name,
                 meta,
                 searchPath,
                 assetFile != null ? assetFile.Id : null,
                 assetFile != null ? assetFile.ItemId : null,
-                assetFile != null && assetFile.IsPrimary);
+                assetFile != null && assetFile.IsPrimary,
+                IsImportTarget(targetPaths, targetPath, importTargetEntries),
+                HasAnyImportTarget(targetPaths, targetPath, importTargetEntries),
+                targetPath,
+                isDirectory,
+                importTargetEntries);
             return new SearchableTreeItemData<FileTreeNode>(
                 _nextId++,
                 node,
                 string.Join(" ", new[] { node.Name, node.Meta, node.Path }),
                 node.Name,
                 children);
+        }
+
+        private IReadOnlyList<FileTreeImportTargetEntry> CreateImportTargetEntries(
+            AssetFile assetFile,
+            string relativePath,
+            bool isDirectory,
+            IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children)
+        {
+            var entries = new List<FileTreeImportTargetEntry>();
+            if (children != null && children.Count > 0)
+            {
+                for (var i = 0; i < children.Count; i++)
+                {
+                    var childEntries = children[i].Data.ImportTargetEntries;
+                    for (var j = 0; j < childEntries.Count; j++)
+                    {
+                        entries.Add(childEntries[j]);
+                    }
+                }
+
+                return entries;
+            }
+
+            if (assetFile == null)
+            {
+                return entries;
+            }
+
+            entries.Add(new FileTreeImportTargetEntry(assetFile.Id, relativePath, isDirectory));
+            return entries;
+        }
+
+        private static bool IsImportTarget(
+            HashSet<string> targetPaths,
+            string relativePath,
+            IReadOnlyList<FileTreeImportTargetEntry> importTargetEntries)
+        {
+            if (targetPaths.Contains(NormalizeRelativePath(relativePath)))
+            {
+                return true;
+            }
+
+            if (importTargetEntries == null || importTargetEntries.Count == 0)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < importTargetEntries.Count; i++)
+            {
+                if (!targetPaths.Contains(NormalizeRelativePath(importTargetEntries[i].RelativePath)))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool HasAnyImportTarget(
+            HashSet<string> targetPaths,
+            string relativePath,
+            IReadOnlyList<FileTreeImportTargetEntry> importTargetEntries)
+        {
+            if (targetPaths.Contains(NormalizeRelativePath(relativePath)))
+            {
+                return true;
+            }
+
+            if (importTargetEntries == null || importTargetEntries.Count == 0)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < importTargetEntries.Count; i++)
+            {
+                if (targetPaths.Contains(NormalizeRelativePath(importTargetEntries[i].RelativePath)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private HashSet<string> GetTargetPathSet(AssetFile assetFile)
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (assetFile == null)
+            {
+                return set;
+            }
+
+            IReadOnlyList<AssetFileImportTarget> targets;
+            if (!_importTargetsByFileId.TryGetValue(assetFile.Id, out targets) || targets == null)
+            {
+                return set;
+            }
+
+            for (var i = 0; i < targets.Count; i++)
+            {
+                set.Add(NormalizeRelativePath(targets[i].RelativePath));
+            }
+
+            return set;
         }
 
         private static bool IsZipFile(AssetFile file, string path)
@@ -342,13 +604,32 @@ namespace Ee4v.AssetManager
             return string.Equals(Path.GetExtension(path), ".zip", StringComparison.OrdinalIgnoreCase);
         }
 
+        private static string GetRelativePath(string rootPath, string path)
+        {
+            if (string.IsNullOrWhiteSpace(rootPath) || string.IsNullOrWhiteSpace(path))
+            {
+                return string.Empty;
+            }
+
+            return NormalizeRelativePath(Path.GetRelativePath(rootPath, path));
+        }
+
+        private static string NormalizeRelativePath(string path)
+        {
+            return (path ?? string.Empty).Replace('\\', '/').Trim().TrimStart('/').TrimEnd('/');
+        }
     }
 
     internal sealed class ZipFileTreeReader
     {
         private readonly Dictionary<string, ZipTreeCacheEntry> _cache = new Dictionary<string, ZipTreeCacheEntry>(StringComparer.OrdinalIgnoreCase);
 
-        public IReadOnlyList<SearchableTreeItemData<FileTreeNode>> Read(string zipPath, Func<int> nextId)
+        public IReadOnlyList<SearchableTreeItemData<FileTreeNode>> Read(
+            string zipPath,
+            Func<int> nextId,
+            AssetFile assetFile,
+            HashSet<string> importTargetPaths,
+            string relativePathPrefix)
         {
             var fileInfo = new FileInfo(zipPath);
             var cacheKey = zipPath;
@@ -357,7 +638,7 @@ namespace Ee4v.AssetManager
                 cached.LastWriteTimeUtc == fileInfo.LastWriteTimeUtc &&
                 cached.Length == fileInfo.Length)
             {
-                return cached.CreateTree(nextId);
+                return cached.CreateTree(nextId, assetFile, importTargetPaths, relativePathPrefix);
             }
 
             var root = new ZipVirtualDirectory(string.Empty, string.Empty);
@@ -372,7 +653,7 @@ namespace Ee4v.AssetManager
 
             var snapshot = new ZipTreeCacheEntry(fileInfo.LastWriteTimeUtc, fileInfo.Length, root.Children);
             _cache[cacheKey] = snapshot;
-            return snapshot.CreateTree(nextId);
+            return snapshot.CreateTree(nextId, assetFile, importTargetPaths, relativePathPrefix);
         }
 
         private static void AddEntry(ZipVirtualDirectory root, ZipArchiveEntry entry)
@@ -419,12 +700,16 @@ namespace Ee4v.AssetManager
 
             public long Length { get; }
 
-            public IReadOnlyList<SearchableTreeItemData<FileTreeNode>> CreateTree(Func<int> nextId)
+            public IReadOnlyList<SearchableTreeItemData<FileTreeNode>> CreateTree(
+                Func<int> nextId,
+                AssetFile assetFile,
+                HashSet<string> importTargetPaths,
+                string relativePathPrefix)
             {
                 var items = new List<SearchableTreeItemData<FileTreeNode>>(_children.Count);
                 for (var i = 0; i < _children.Count; i++)
                 {
-                    items.Add(_children[i].CreateTreeItem(nextId));
+                    items.Add(_children[i].CreateTreeItem(nextId, assetFile, importTargetPaths, relativePathPrefix));
                 }
 
                 return items;
@@ -443,20 +728,145 @@ namespace Ee4v.AssetManager
 
             public string Path { get; }
 
-            public abstract SearchableTreeItemData<FileTreeNode> CreateTreeItem(Func<int> nextId);
+            public abstract SearchableTreeItemData<FileTreeNode> CreateTreeItem(
+                Func<int> nextId,
+                AssetFile assetFile,
+                HashSet<string> importTargetPaths,
+                string relativePathPrefix);
 
             protected SearchableTreeItemData<FileTreeNode> CreateItem(
                 Func<int> nextId,
                 string meta,
+                AssetFile assetFile,
+                bool isDirectory,
+                HashSet<string> importTargetPaths,
+                string relativePathPrefix,
                 IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children = null)
             {
-                var node = new FileTreeNode(Name, meta, Path);
+                var targetPath = CombineRelativePath(relativePathPrefix, Path);
+                var importTargetEntries = CreateImportTargetEntries(assetFile, targetPath, isDirectory, children);
+                var node = new FileTreeNode(
+                    Name,
+                    meta,
+                    targetPath,
+                    assetFile != null ? assetFile.Id : null,
+                    assetFile != null ? assetFile.ItemId : null,
+                    false,
+                    IsImportTarget(importTargetPaths, targetPath, importTargetEntries),
+                    HasAnyImportTarget(importTargetPaths, targetPath, importTargetEntries),
+                    targetPath,
+                    isDirectory,
+                    importTargetEntries);
                 return new SearchableTreeItemData<FileTreeNode>(
                     nextId(),
                     node,
                     string.Join(" ", new[] { node.Name, node.Meta, node.Path }),
                     node.Name,
                     children);
+            }
+
+            private static IReadOnlyList<FileTreeImportTargetEntry> CreateImportTargetEntries(
+                AssetFile assetFile,
+                string relativePath,
+                bool isDirectory,
+                IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children)
+            {
+                var entries = new List<FileTreeImportTargetEntry>();
+                if (children != null && children.Count > 0)
+                {
+                    for (var i = 0; i < children.Count; i++)
+                    {
+                        var childEntries = children[i].Data.ImportTargetEntries;
+                        for (var j = 0; j < childEntries.Count; j++)
+                        {
+                            entries.Add(childEntries[j]);
+                        }
+                    }
+
+                    return entries;
+                }
+
+                if (assetFile == null)
+                {
+                    return entries;
+                }
+
+                entries.Add(new FileTreeImportTargetEntry(assetFile.Id, relativePath, isDirectory));
+                return entries;
+            }
+
+            private static bool IsImportTarget(
+                HashSet<string> importTargetPaths,
+                string relativePath,
+                IReadOnlyList<FileTreeImportTargetEntry> importTargetEntries)
+            {
+                if (importTargetPaths == null || importTargetPaths.Count == 0)
+                {
+                    return false;
+                }
+
+                if (importTargetPaths.Contains(relativePath))
+                {
+                    return true;
+                }
+
+                if (importTargetEntries == null || importTargetEntries.Count == 0)
+                {
+                    return false;
+                }
+
+                for (var i = 0; i < importTargetEntries.Count; i++)
+                {
+                    if (!importTargetPaths.Contains(importTargetEntries[i].RelativePath))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            private static bool HasAnyImportTarget(
+                HashSet<string> importTargetPaths,
+                string relativePath,
+                IReadOnlyList<FileTreeImportTargetEntry> importTargetEntries)
+            {
+                if (importTargetPaths == null || importTargetPaths.Count == 0)
+                {
+                    return false;
+                }
+
+                if (importTargetPaths.Contains(relativePath))
+                {
+                    return true;
+                }
+
+                if (importTargetEntries == null || importTargetEntries.Count == 0)
+                {
+                    return false;
+                }
+
+                for (var i = 0; i < importTargetEntries.Count; i++)
+                {
+                    if (importTargetPaths.Contains(importTargetEntries[i].RelativePath))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            private static string CombineRelativePath(string prefix, string path)
+            {
+                prefix = (prefix ?? string.Empty).Replace('\\', '/').Trim().TrimStart('/').TrimEnd('/');
+                path = (path ?? string.Empty).Replace('\\', '/').Trim().TrimStart('/').TrimEnd('/');
+                if (string.IsNullOrEmpty(prefix))
+                {
+                    return path;
+                }
+
+                return string.IsNullOrEmpty(path) ? prefix : prefix + "/" + path;
             }
         }
 
@@ -494,15 +904,19 @@ namespace Ee4v.AssetManager
                 _children.Add(new ZipVirtualFile(name, path, length));
             }
 
-            public override SearchableTreeItemData<FileTreeNode> CreateTreeItem(Func<int> nextId)
+            public override SearchableTreeItemData<FileTreeNode> CreateTreeItem(
+                Func<int> nextId,
+                AssetFile assetFile,
+                HashSet<string> importTargetPaths,
+                string relativePathPrefix)
             {
                 var childItems = new List<SearchableTreeItemData<FileTreeNode>>(_children.Count);
                 for (var i = 0; i < _children.Count; i++)
                 {
-                    childItems.Add(_children[i].CreateTreeItem(nextId));
+                    childItems.Add(_children[i].CreateTreeItem(nextId, assetFile, importTargetPaths, relativePathPrefix));
                 }
 
-                return CreateItem(nextId, string.Empty, childItems);
+                return CreateItem(nextId, string.Empty, assetFile, true, importTargetPaths, relativePathPrefix, childItems);
             }
         }
 
@@ -516,9 +930,13 @@ namespace Ee4v.AssetManager
                 _length = length;
             }
 
-            public override SearchableTreeItemData<FileTreeNode> CreateTreeItem(Func<int> nextId)
+            public override SearchableTreeItemData<FileTreeNode> CreateTreeItem(
+                Func<int> nextId,
+                AssetFile assetFile,
+                HashSet<string> importTargetPaths,
+                string relativePathPrefix)
             {
-                return CreateItem(nextId, string.Empty);
+                return CreateItem(nextId, string.Empty, assetFile, false, importTargetPaths, relativePathPrefix);
             }
         }
     }

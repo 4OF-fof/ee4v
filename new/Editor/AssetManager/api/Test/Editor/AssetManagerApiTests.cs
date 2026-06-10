@@ -63,6 +63,8 @@ namespace Ee4v.AssetManager.Api.Tests
                 Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM pragma_table_info('file_info') WHERE name = 'primary_source_type'"), Is.EqualTo(0));
                 Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'file_info'"), Does.Contain("CHECK"));
+                Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'file_import_target'"), Is.EqualTo(1));
+                Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'unique_file_import_target_file_path'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'prevent_collection_collection_cycle_insert'"), Is.EqualTo(1));
             }
         }
@@ -217,9 +219,84 @@ namespace Ee4v.AssetManager.Api.Tests
 
         [Test]
         [FeatureTestCase(
+            "file import target を複数保持する",
+            "SetFileImportTargets が zip / directory 配下の複数 target を file 単位で保存することを確認します。",
+            order: 312)]
+        public void SetFileImportTargets_StoresMultipleTargetsForFile()
+        {
+            var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
+            var filePath = Path.Combine(_tempRoot, "avatar.zip");
+            File.WriteAllText(filePath, "zip");
+            var file = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = filePath, FileName = "avatar.zip" });
+
+            AssetManagerApi.SetFileImportTargets(
+                file.Id,
+                new[]
+                {
+                    new AssetFileImportTargetRequest { RelativePath = "Packages/avatar.unitypackage" },
+                    new AssetFileImportTargetRequest { RelativePath = "\\Textures\\", IsDirectory = true },
+                    new AssetFileImportTargetRequest { RelativePath = "Packages/avatar.unitypackage" }
+                });
+
+            var targets = AssetManagerApi.GetFileImportTargets(file.Id);
+
+            Assert.That(targets.Select(target => target.RelativePath).ToArray(), Is.EqualTo(new[] { "Packages/avatar.unitypackage", "Textures" }));
+            Assert.That(targets.Single(target => target.RelativePath == "Textures").IsDirectory, Is.True);
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "不正な import target path では既存 target を保持する",
+            "SetFileImportTargets が parent traversal を拒否し、既存 file_import_target を削除しないことを確認します。",
+            order: 313)]
+        public void SetFileImportTargets_InvalidPath_DoesNotClearExistingTargets()
+        {
+            var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
+            var filePath = Path.Combine(_tempRoot, "avatar.zip");
+            File.WriteAllText(filePath, "zip");
+            var file = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = filePath, FileName = "avatar.zip" });
+            AssetManagerApi.SetFileImportTargets(file.Id, new[] { new AssetFileImportTargetRequest { RelativePath = "Packages/avatar.unitypackage" } });
+
+            var ex = Assert.Throws<AssetManagerException>(() =>
+                AssetManagerApi.SetFileImportTargets(file.Id, new[] { new AssetFileImportTargetRequest { RelativePath = "../outside.unitypackage" } }));
+            var targets = AssetManagerApi.GetFileImportTargets(file.Id);
+
+            Assert.That(ex.Code, Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
+            Assert.That(targets.Select(target => target.RelativePath).ToArray(), Is.EqualTo(new[] { "Packages/avatar.unitypackage" }));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "file import target 設定は asset 一覧更新を通知しない",
+            "SetFileImportTargets が AssetManagerApi.Changed を発火せず、asset grid reload を誘発しないことを確認します。",
+            order: 314)]
+        public void SetFileImportTargets_DoesNotRaiseAssetManagerChanged()
+        {
+            var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
+            var filePath = Path.Combine(_tempRoot, "avatar.zip");
+            File.WriteAllText(filePath, "zip");
+            var file = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = filePath, FileName = "avatar.zip" });
+            var changed = false;
+            Action handler = () => changed = true;
+
+            AssetManagerApi.Changed += handler;
+            try
+            {
+                AssetManagerApi.SetFileImportTargets(file.Id, new[] { new AssetFileImportTargetRequest { RelativePath = "Packages/avatar.unitypackage" } });
+            }
+            finally
+            {
+                AssetManagerApi.Changed -= handler;
+            }
+
+            Assert.That(changed, Is.False);
+        }
+
+        [Test]
+        [FeatureTestCase(
             "存在しない親 collection 指定では collection を作成しない",
             "CreateCollection が missing parent を検出した場合に collection_info を残さないことを確認します。",
-            order: 312)]
+            order: 315)]
         public void CreateCollection_MissingParent_ThrowsNotFoundWithoutCreatingCollection()
         {
             var ex = Assert.Throws<AssetManagerException>(() =>
@@ -233,7 +310,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "不正な smart collection 条件では collection を作成しない",
             "CreateSmartCollection が query text のない条件を拒否し、collection_info を残さないことを確認します。",
-            order: 313)]
+            order: 316)]
         public void CreateSmartCollection_InvalidCondition_ThrowsWithoutCreatingCollection()
         {
             var ex = Assert.Throws<AssetManagerException>(() =>
@@ -251,7 +328,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "source priority に従って file path を解決する",
             "ResolveFilePath が assetManager.sourcePriority の順序で origin path を選ぶことを確認します。",
-            order: 314)]
+            order: 317)]
         public void ResolveFilePath_UsesConfiguredSourcePriority()
         {
             var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
@@ -284,7 +361,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "最初の手動登録 file は primary になる",
             "RegisterFile が primary 未設定 item の最初の file を自動的に primary にすることを確認します。",
-            order: 315)]
+            order: 318)]
         public void RegisterFile_FirstFileBecomesPrimary()
         {
             var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
@@ -304,7 +381,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "Eagle sync は VRCAsset folder から item を作成する",
             "SyncEagle が Booth metadata を item 情報として扱い、metadata file を通常 file から除外することを確認します。",
-            order: 316)]
+            order: 319)]
         public void SyncEagle_CreatesItemsFromVrcAssetFolders_AndSkipsMetadataFiles()
         {
             var libraryPath = Path.Combine(_tempRoot, "library.library");
@@ -340,7 +417,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "Eagle sync は Booth metadata の downloadId を保存する",
             "importedItemIds が一致する Booth download の downloadId、filename、extension を file_info に保存することを確認します。",
-            order: 317)]
+            order: 320)]
         public void SyncEagle_StoresDownloadIdFromBoothMetadata()
         {
             var libraryPath = Path.Combine(_tempRoot, "download-id.library");
@@ -371,7 +448,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "Eagle sync は filename 一致で downloadId を補完する",
             "importedItemIds が空でも Booth download filename が一意に一致する場合に downloadId を保存することを確認します。",
-            order: 318)]
+            order: 321)]
         public void SyncEagle_StoresDownloadIdWhenImportedItemIdsAreMissingButFilenameMatches()
         {
             var libraryPath = Path.Combine(_tempRoot, "download-filename.library");
@@ -401,7 +478,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "Eagle sync は未対応 download も file_info に残す",
             "Eagle item に対応しない Booth download も download_id 付きの file_info として作成することを確認します。",
-            order: 319)]
+            order: 322)]
         public void SyncEagle_CreatesDownloadOnlyFilesForUnmatchedBoothDownloads()
         {
             var libraryPath = Path.Combine(_tempRoot, "download-only.library");
@@ -431,7 +508,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "Eagle sync 失敗は sync_info に failed として残る",
             "存在しない Eagle library を同期した場合に AssetSyncResult と sync_info が Failed になることを確認します。",
-            order: 320)]
+            order: 323)]
         public void SyncEagle_MissingLibrary_PersistsFailedSyncInfo()
         {
             var missingLibraryPath = Path.Combine(_tempRoot, "missing.library");
@@ -448,7 +525,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "Eagle sync の一部失敗は sync_info に partial として残る",
             "file upsert の一部が失敗した場合に AssetSyncResult と sync_info が Partial になることを確認します。",
-            order: 321)]
+            order: 324)]
         public void SyncEagle_FileError_PersistsPartialSyncInfo()
         {
             var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Manual" });
@@ -500,7 +577,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "Eagle sync は datasource text を正規化して保存する",
             "数学英数字や制御文字を含む datasource text が正規化されて item/file 名に保存されることを確認します。",
-            order: 322)]
+            order: 325)]
         public void SyncEagle_NormalizesDatasourceTextBeforeSaving()
         {
             var libraryPath = Path.Combine(_tempRoot, "normalized.library");
@@ -522,7 +599,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "Eagle sync は数学英字を surrogate drop 前に ASCII 化する",
             "数学英字の surrogate pair を落とす前に ASCII へ変換して item/file 名に保存することを確認します。",
-            order: 323)]
+            order: 326)]
         public void SyncEagle_MapsMathematicalLettersBeforeDroppingUnsupportedSurrogates()
         {
             var libraryPath = Path.Combine(_tempRoot, "mathematical.library");
@@ -544,7 +621,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "Eagle sync は .info ではなく payload path を保存する",
             "Eagle item の file_path_cache が .info directory ではなく内部 payload file を指すことを確認します。",
-            order: 324)]
+            order: 327)]
         public void SyncEagle_StoresPayloadFilePathInsteadOfInfoDirectory()
         {
             var libraryPath = Path.Combine(_tempRoot, "payload-path.library");
@@ -577,7 +654,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "BLM sync は同名 wrapper の内側 path を保存する",
             "BLM item directory の top-level entry が同名 directory を 1 つだけ包む場合に file_path_cache が inner directory を指すことを確認します。",
-            order: 325)]
+            order: 328)]
         public void SyncBlm_StoresInnerDirectoryPathForSameNameWrapper()
         {
             var databasePath = Path.Combine(_tempRoot, "blm-data.db");

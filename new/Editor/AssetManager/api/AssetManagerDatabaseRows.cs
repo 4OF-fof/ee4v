@@ -131,6 +131,16 @@ namespace Ee4v.AssetManager.Api
             public string dependency_type { get; set; }
         }
 
+        private sealed class FileImportTargetRow
+        {
+            public string id { get; set; }
+            public string file_info_id { get; set; }
+            public string relative_path { get; set; }
+            public int is_directory { get; set; }
+            public string created_at { get; set; }
+            public string updated_at { get; set; }
+        }
+
         private sealed class SyncInfoRow
         {
             public string source_type { get; set; }

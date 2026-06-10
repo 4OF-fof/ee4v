@@ -136,6 +136,16 @@ public sealed class AssetFilePathResolution
     public string MissingReason { get; set; }
 }
 
+public sealed class AssetFileImportTarget
+{
+    public string Id { get; set; }
+    public string FileId { get; set; }
+    public string RelativePath { get; set; }
+    public bool IsDirectory { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
 public sealed class AssetTag
 {
     public string Id { get; set; }
@@ -301,6 +311,12 @@ public sealed class RegisterFileRequest
     public string FilePath { get; set; }
     public long? SizeBytes { get; set; }
     public bool IsPrimary { get; set; }
+}
+
+public sealed class AssetFileImportTargetRequest
+{
+    public string RelativePath { get; set; }
+    public bool IsDirectory { get; set; }
 }
 
 public sealed class CreateCollectionRequest
@@ -885,6 +901,63 @@ Notes:
 
 - 自己依存は例外。
 - dependency type は v1 では `requires` のみ。
+
+## Import Target
+
+### `AssetManagerApi.GetFileImportTargets`
+
+file に紐付く Unity import 対象を取得します。
+
+```csharp
+public static IReadOnlyList<AssetFileImportTarget> GetFileImportTargets(string fileId)
+```
+
+Parameters:
+
+- `fileId`: 対象 File。
+
+Returns:
+
+- `file_info` 実体または配下 entry の import 対象一覧。
+
+Effects:
+
+- DB を読み取る。
+
+Notes:
+
+- `RelativePath` は `ResolveFilePath(fileId)` で解決される実体 path からの相対 path。
+- `RelativePath` が空文字の場合は file 実体そのものを表す。
+- zip 内 entry も `/` 区切りの relative path として返す。
+
+### `AssetManagerApi.SetFileImportTargets`
+
+file に紐付く Unity import 対象を置き換えます。
+
+```csharp
+public static void SetFileImportTargets(
+    string fileId,
+    IReadOnlyList<AssetFileImportTargetRequest> targets)
+```
+
+Parameters:
+
+- `fileId`: 対象 File。
+- `targets`: import 対象の relative path 一覧。
+
+Returns:
+
+- `void`
+
+Effects:
+
+- `file_import_target` を指定一覧に同期する。
+
+Notes:
+
+- `RelativePath` は先頭 `/` と末尾 `/` を取り除き、`\` を `/` に正規化する。
+- `..` を含む path は拒否する。
+- 同一 file 内の重複 `RelativePath` は 1 件にまとめる。
 
 ## Datasource Sync
 

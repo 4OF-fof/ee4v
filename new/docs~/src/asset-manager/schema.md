@@ -23,6 +23,7 @@ erDiagram
     item_info ||--o{ file_info : ""
     file_info ||--o{ file_dependency : ""
     file_info ||--o{ file_dependency : ""
+    file_info ||--o{ file_import_target : ""
     file_info ||--o| eagle_file_origin : ""
     file_info ||--o| blm_file_origin : ""
     file_info ||--o| ee4v_file_origin : ""
@@ -102,6 +103,11 @@ erDiagram
         GUID string dependent_file_info_id PK, FK
         GUID string dependency_file_info_id PK, FK
         file_dependency_type dependency_type PK
+    }
+
+    file_import_target {
+        GUID string id PK
+        GUID string file_info_id FK
     }
 
     eagle_file_origin {
@@ -417,6 +423,26 @@ CHECK (dependency_type IN ('requires'))
 
 CREATE UNIQUE INDEX unique_file_dependency
 ON file_dependency(dependent_file_info_id, dependency_file_info_id, dependency_type);
+```
+
+## File Import Target
+
+Unity へ取り込む対象 file / directory entry。`file_info` の実体が directory または zip の場合、配下 entry を `relative_path` で保持する。`relative_path` が空文字の場合は `file_info` 実体そのものを import 対象にする。
+
+| column | type | required | unique | note |
+|---|---|---:|---|---|
+| `id` | GUID string | Yes |  | File Import Target の識別子 |
+| `file_info_id` | GUID string | Yes | `(file_info_id, relative_path)` | 親 File Info |
+| `relative_path` | TEXT | Yes | `(file_info_id, relative_path)` | file 実体からの相対 path。zip 内 entry も `/` 区切りで保持する |
+| `is_directory` | BOOLEAN | Yes |  | import 対象が directory entry か |
+| `created_at` | DATETIME | Yes |  | 作成時刻 |
+| `updated_at` | DATETIME | Yes |  | 更新時刻 |
+
+```sql
+CHECK (is_directory IN (0, 1))
+
+CREATE UNIQUE INDEX unique_file_import_target_file_path
+ON file_import_target(file_info_id, relative_path);
 ```
 
 ## Eagle File Origin

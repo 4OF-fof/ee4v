@@ -53,6 +53,16 @@ namespace Ee4v.AssetManager.Api
         public DateTime UpdatedAt { get; set; }
     }
 
+    public sealed class AssetFileImportTarget
+    {
+        public string Id { get; set; }
+        public string FileId { get; set; }
+        public string RelativePath { get; set; }
+        public bool IsDirectory { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+
     public sealed class AssetFileSummary
     {
         public string Id { get; set; }

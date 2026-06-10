@@ -98,6 +98,19 @@ namespace Ee4v.AssetManager.Api
             };
         }
 
+        private static AssetFileImportTarget ToAssetFileImportTarget(FileImportTargetRow row)
+        {
+            return new AssetFileImportTarget
+            {
+                Id = row.id,
+                FileId = row.file_info_id,
+                RelativePath = row.relative_path,
+                IsDirectory = row.is_directory != 0,
+                CreatedAt = ParseDate(row.created_at),
+                UpdatedAt = ParseDate(row.updated_at)
+            };
+        }
+
         private static IReadOnlyList<AssetFileOrigin> LoadOrigins(SQLiteConnection connection, string fileId)
         {
             var origins = new List<AssetFileOrigin>();
