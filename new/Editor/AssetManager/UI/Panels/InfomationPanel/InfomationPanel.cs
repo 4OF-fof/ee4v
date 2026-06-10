@@ -17,7 +17,7 @@ namespace Ee4v.AssetManager
         private const string FileTreeTabId = "file-tree";
         private const float PreviewMaxSize = 360f;
         private const float SelectionModeBaseHeight = 24f;
-        private const float SelectionModeBaseMarginTop = 4f;
+        private const float SelectionModeBaseMarginTop = 8f;
         private const float SelectionModeScaleStartSize = 260f;
         private const float SelectionModeScaleEndSize = 360f;
         private const float SelectionModeMaxScale = 1.28f;
@@ -212,7 +212,8 @@ namespace Ee4v.AssetManager
             var scale = GetSelectionModeScale();
             _selectionModeRow.transform.scale = new Vector3(scale, scale, 1f);
             _selectionModeRow.style.minHeight = SelectionModeBaseHeight * scale;
-            _selectionModeRow.style.marginTop = SelectionModeBaseMarginTop * scale;
+            _selectionModeRow.style.marginTop = SelectionModeBaseMarginTop;
+            _selectionModeRow.style.marginBottom = 0f;
         }
 
         private float GetSelectionModeScale()

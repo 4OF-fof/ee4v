@@ -87,9 +87,9 @@ namespace Ee4v.UI
 
             if (_visibleCount == 1)
             {
-                ApplySlotLayout(0, imageSize, centerLeft, centerTop, 0f);
-                ApplySlotLayout(BaseSlot, imageSize, centerLeft, centerTop, 0f);
-                ApplySlotLayout(2, imageSize, centerLeft, centerTop, 0f);
+                ApplySlotLayout(0, _size, 0f, 0f, 0f);
+                ApplySlotLayout(BaseSlot, _size, 0f, 0f, 0f);
+                ApplySlotLayout(2, _size, 0f, 0f, 0f);
                 return;
             }
 
