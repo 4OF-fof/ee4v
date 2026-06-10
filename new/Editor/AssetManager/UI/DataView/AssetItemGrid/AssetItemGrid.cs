@@ -55,7 +55,7 @@ namespace Ee4v.AssetManager
                     continue;
                 }
 
-                itemCardStates.Add(new ItemCardState(item.ItemId, item.ItemName, item.ImageState));
+                itemCardStates.Add(new ItemCardState(item.ItemId, item.ItemName, item.ImageState, item.IconState, item.ParentItemId));
             }
 
             statusText = itemCardStates.Count == 0 ? list.EmptyText : string.Empty;

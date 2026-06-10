@@ -141,13 +141,13 @@ namespace Ee4v.AssetManager
             _multiPreviewSuffixText.SetText(showCount ? I18N.Get("assetManager.infomationPanel.selectedItemsSuffix") : string.Empty);
 
             var firstPreviewIndex = UnityEngine.Mathf.Max(0, items.Count - 3);
-            var imageStates = new List<ItemImageState>(items.Count - firstPreviewIndex);
+            var previewStates = new List<ItemCardState>(items.Count - firstPreviewIndex);
             for (var i = firstPreviewIndex; i < items.Count; i++)
             {
-                imageStates.Add(items[i].ImageState);
+                previewStates.Add(items[i]);
             }
 
-            _imageStack.SetStates(imageStates);
+            _imageStack.SetItemStates(previewStates);
             UpdatePreviewSize();
         }
 
@@ -170,7 +170,7 @@ namespace Ee4v.AssetManager
 
         private void ClearPreview()
         {
-            _imageStack.Clear();
+            _imageStack.ClearImages();
             _multiPreviewCountText.SetText(string.Empty);
             _multiPreviewSuffixText.SetText(string.Empty);
             _selectionModeRow.style.display = DisplayStyle.None;
@@ -188,7 +188,14 @@ namespace Ee4v.AssetManager
 
             if (showFileTree)
             {
-                _fileTree.SetItemId(_selectedItems[0].ItemId);
+                if (AssetManagerViewState.SelectedAssetSelectionContentKind == AssetManagerViewState.AssetSelectionContentKind.AssetFile)
+                {
+                    _fileTree.SetFileId(_selectedItems[0].ParentItemId, _selectedItems[0].ItemId);
+                }
+                else
+                {
+                    _fileTree.SetItemId(_selectedItems[0].ItemId);
+                }
             }
             else
             {

@@ -33,10 +33,22 @@ namespace Ee4v.AssetManager
         }
 
         public AssetItemGridListItem(string itemId, string itemName, ItemImageState imageState)
+            : this(itemId, itemName, imageState, null)
+        {
+        }
+
+        public AssetItemGridListItem(string itemId, string itemName, ItemImageState imageState, IconState iconState)
+            : this(itemId, itemName, imageState, iconState, string.Empty)
+        {
+        }
+
+        public AssetItemGridListItem(string itemId, string itemName, ItemImageState imageState, IconState iconState, string parentItemId)
         {
             ItemId = itemId ?? string.Empty;
             ItemName = itemName ?? string.Empty;
             ImageState = imageState ?? new ItemImageState();
+            IconState = iconState;
+            ParentItemId = parentItemId ?? string.Empty;
         }
 
         public string ItemId { get; }
@@ -44,5 +56,9 @@ namespace Ee4v.AssetManager
         public string ItemName { get; }
 
         public ItemImageState ImageState { get; }
+
+        public IconState IconState { get; }
+
+        public string ParentItemId { get; }
     }
 }

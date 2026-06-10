@@ -15,6 +15,8 @@ namespace Ee4v.AssetManager
         private readonly AssetItemGrid _itemGrid;
         private readonly UiTextElement _statusLabel;
         private int _loadVersion;
+        private string _fileListItemId;
+        private string _fileListItemName;
 
         public MainView(MainViewController controller = null)
         {
@@ -32,6 +34,7 @@ namespace Ee4v.AssetManager
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             _itemGrid.SelectionChanged += OnGridSelectionChanged;
+            _itemGrid.ItemDoubleClicked += OnGridItemDoubleClicked;
         }
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
@@ -50,6 +53,7 @@ namespace Ee4v.AssetManager
 
         private void OnSelectedItemChanged(string itemId)
         {
+            ClearFileListMode();
             ClearGridSelection();
             RefreshContent();
         }
@@ -57,32 +61,51 @@ namespace Ee4v.AssetManager
         private void OnContentChanged()
         {
             _itemGrid.ClearCachedItems();
+            ClearFileListMode();
             ClearGridSelection();
             RefreshContent();
         }
 
         private void OnGridSelectionChanged(System.Collections.Generic.IReadOnlyList<ItemCardState> items)
         {
-            AssetManagerViewState.SetSelectedAssetItems(items);
+            AssetManagerViewState.SetSelectedAssetItems(
+                items,
+                contentKind: IsFileListMode
+                    ? AssetManagerViewState.AssetSelectionContentKind.AssetFile
+                    : AssetManagerViewState.AssetSelectionContentKind.AssetItem);
+        }
+
+        private void OnGridItemDoubleClicked(ItemCardState item)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(item.ItemId) || IsFileListMode)
+            {
+                return;
+            }
+
+            _fileListItemId = item.ItemId;
+            _fileListItemName = item.ItemName;
+            AssetManagerViewState.SetSelectedAssetDetailTab("file-tree");
+            ClearGridSelection();
+            RefreshContent();
         }
 
         private void RefreshContent()
         {
-            var selectedItem = AssetManagerViewState.SelectedItem;
-            var request = _controller.CreateRequest(selectedItem.Id);
-            var cacheKey = _controller.CreateCacheKey(request);
+            var cacheKey = CreateCurrentCacheKey();
             string cachedStatusText;
             if (_itemGrid.TrySetCachedItems(cacheKey, out cachedStatusText))
             {
-                SetStatus(cachedStatusText);
+                SetStatus(ResolveStatusText(cachedStatusText));
                 return;
             }
 
             var version = ++_loadVersion;
-            SetStatus(I18N.Get("assetManager.mainView.loading"));
+            SetStatus(IsFileListMode
+                ? I18N.Get("assetManager.mainView.loadingFiles")
+                : I18N.Get("assetManager.mainView.loading"));
             _itemGrid.SetLoading();
 
-            Task.Run(() => _controller.LoadItems(request)).ContinueWith(task =>
+            Task.Run(LoadCurrentGridItems).ContinueWith(task =>
             {
                 EditorApplication.delayCall += () =>
                 {
@@ -112,7 +135,7 @@ namespace Ee4v.AssetManager
         {
             string statusText;
             _itemGrid.SetAssetItems(cacheKey, itemList, out statusText);
-            SetStatus(statusText);
+            SetStatus(ResolveStatusText(statusText));
         }
 
         private void SetStatus(string message)
@@ -125,6 +148,49 @@ namespace Ee4v.AssetManager
         {
             _itemGrid.ClearSelection(notify: false);
             AssetManagerViewState.SetSelectedAssetItems(null);
+        }
+
+        private bool IsFileListMode
+        {
+            get { return !string.IsNullOrWhiteSpace(_fileListItemId); }
+        }
+
+        private AssetItemGridList LoadCurrentGridItems()
+        {
+            if (IsFileListMode)
+            {
+                return _controller.LoadFiles(_fileListItemId);
+            }
+
+            var selectedItem = AssetManagerViewState.SelectedItem;
+            return _controller.LoadItems(_controller.CreateRequest(selectedItem.Id));
+        }
+
+        private string CreateCurrentCacheKey()
+        {
+            if (IsFileListMode)
+            {
+                return "files|" + _fileListItemId;
+            }
+
+            var selectedItem = AssetManagerViewState.SelectedItem;
+            return _controller.CreateCacheKey(_controller.CreateRequest(selectedItem.Id));
+        }
+
+        private string ResolveStatusText(string statusText)
+        {
+            if (!IsFileListMode || !string.IsNullOrWhiteSpace(statusText))
+            {
+                return statusText;
+            }
+
+            return string.Empty;
+        }
+
+        private void ClearFileListMode()
+        {
+            _fileListItemId = string.Empty;
+            _fileListItemName = string.Empty;
         }
     }
 }

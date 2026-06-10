@@ -73,6 +73,29 @@ namespace Ee4v.AssetManager
             return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noItems"), itemsPerRow);
         }
 
+        public AssetItemGridList LoadFiles(string itemId)
+        {
+            var files = AssetManagerApi.GetFiles(itemId, new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active });
+            var items = new List<AssetItemGridListItem>();
+            for (var i = 0; i < files.Count; i++)
+            {
+                var file = files[i];
+                if (file == null)
+                {
+                    continue;
+                }
+
+                items.Add(new AssetItemGridListItem(
+                    file.Id,
+                    file.FileName,
+                    new ItemImageState(),
+                    CreateFileIcon(file.Extension),
+                    itemId));
+            }
+
+            return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noFiles"), GetItemsPerRow());
+        }
+
         private static void OnAssetManagerChanged()
         {
             InvalidateContent();
@@ -119,6 +142,68 @@ namespace Ee4v.AssetManager
             return new ItemImageState(
                 string.IsNullOrWhiteSpace(thumbnail.Path) ? null : thumbnail.Path,
                 thumbnail.Data);
+        }
+
+        private static IconState CreateFileIcon(string extension)
+        {
+            return IconState.FromBuiltinIcon(ResolveFileIcon(extension), size: 44f);
+        }
+
+        private static UiBuiltinIcon ResolveFileIcon(string extension)
+        {
+            switch ((extension ?? string.Empty).Trim().TrimStart('.').ToLowerInvariant())
+            {
+                case "zip":
+                case "rar":
+                case "7z":
+                case "tar":
+                case "gz":
+                case "unitypackage":
+                    return UiBuiltinIcon.ArchiveFile;
+                case "png":
+                case "jpg":
+                case "jpeg":
+                case "gif":
+                case "webp":
+                case "psd":
+                case "clip":
+                    return UiBuiltinIcon.ImageFile;
+                case "txt":
+                case "md":
+                case "json":
+                case "jsonc":
+                case "xml":
+                case "yaml":
+                case "yml":
+                    return UiBuiltinIcon.TextFile;
+                case "unity":
+                case "asset":
+                case "prefab":
+                case "mat":
+                case "controller":
+                case "anim":
+                    return UiBuiltinIcon.UnityFile;
+                case "fbx":
+                case "obj":
+                case "blend":
+                case "vrm":
+                case "glb":
+                case "gltf":
+                    return UiBuiltinIcon.ModelFile;
+                case "wav":
+                case "mp3":
+                case "ogg":
+                case "aiff":
+                    return UiBuiltinIcon.AudioFile;
+                case "cs":
+                case "js":
+                case "ts":
+                case "shader":
+                case "cginc":
+                    return UiBuiltinIcon.ScriptFile;
+                default:
+                    return UiBuiltinIcon.GenericFile;
+            }
         }
 
         private static int GetItemsPerRow()

@@ -2,6 +2,18 @@
     flex-direction: column;
 }
 
+.ee4v-ui-item-card__image-frame {
+    position: relative;
+}
+
+.ee4v-ui-item-card__icon {
+    position: absolute;
+}
+
+.ee4v-ui-item-card__icon .ee4v-ui-icon__image {
+    opacity: 0.84;
+}
+
 .ee4v-ui-item-card__name {
     margin-top: 7px;
     height: 18px;

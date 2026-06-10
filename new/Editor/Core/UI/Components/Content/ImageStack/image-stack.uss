@@ -16,3 +16,11 @@
     border-bottom-right-radius: 4px;
     background-color: rgb(35, 35, 35);
 }
+
+.ee4v-ui-image-stack__image.ee4v-ui-item-image--frameless {
+    background-color: transparent;
+}
+
+.ee4v-ui-image-stack__icon {
+    position: absolute;
+}

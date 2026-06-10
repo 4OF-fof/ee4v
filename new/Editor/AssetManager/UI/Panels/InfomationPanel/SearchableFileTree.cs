@@ -22,6 +22,7 @@ namespace Ee4v.AssetManager
         private readonly SearchableTreeView<FileTreeNode> _treeView;
         private readonly FileTreeBuilder _builder;
         private string _itemId;
+        private string _fileId;
 
         public SearchableFileTree()
         {
@@ -45,18 +46,36 @@ namespace Ee4v.AssetManager
         public void SetItemId(string itemId)
         {
             var nextItemId = itemId ?? string.Empty;
-            if (string.Equals(_itemId, nextItemId, StringComparison.Ordinal))
+            if (string.Equals(_itemId, nextItemId, StringComparison.Ordinal) &&
+                string.IsNullOrWhiteSpace(_fileId))
             {
                 return;
             }
 
             _itemId = nextItemId;
+            _fileId = string.Empty;
+            Reload();
+        }
+
+        public void SetFileId(string itemId, string fileId)
+        {
+            var nextItemId = itemId ?? string.Empty;
+            var nextFileId = fileId ?? string.Empty;
+            if (string.Equals(_itemId, nextItemId, StringComparison.Ordinal) &&
+                string.Equals(_fileId, nextFileId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _itemId = nextItemId;
+            _fileId = nextFileId;
             Reload();
         }
 
         public void ClearTree()
         {
             _itemId = string.Empty;
+            _fileId = string.Empty;
             _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.empty"));
             _treeView.SetItems(null);
         }
@@ -96,7 +115,7 @@ namespace Ee4v.AssetManager
 
             try
             {
-                var files = AssetManagerApi.GetFiles(_itemId, new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active });
+                var files = LoadFiles();
                 var importTargetsByFileId = new Dictionary<string, IReadOnlyList<AssetFileImportTarget>>(StringComparer.Ordinal);
                 for (var i = 0; i < files.Count; i++)
                 {
@@ -111,6 +130,27 @@ namespace Ee4v.AssetManager
                 _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.loadFailed"));
                 _treeView.SetItems(null);
             }
+        }
+
+        private IReadOnlyList<AssetFile> LoadFiles()
+        {
+            var files = AssetManagerApi.GetFiles(_itemId, new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active });
+            if (string.IsNullOrWhiteSpace(_fileId))
+            {
+                return files;
+            }
+
+            var selectedFiles = new List<AssetFile>(1);
+            for (var i = 0; i < files.Count; i++)
+            {
+                if (string.Equals(files[i].Id, _fileId, StringComparison.Ordinal))
+                {
+                    selectedFiles.Add(files[i]);
+                    break;
+                }
+            }
+
+            return selectedFiles;
         }
 
         private static VisualElement CreateTreeItem()

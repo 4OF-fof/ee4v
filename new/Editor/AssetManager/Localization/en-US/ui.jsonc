@@ -23,9 +23,11 @@
     },
     "mainView": {
       "loading": "Loading assets...",
+      "loadingFiles": "Loading files...",
       "loadFailed": "Failed to load assets.",
       "loadCanceled": "Asset loading was canceled.",
-      "noItems": "No asset items."
+      "noItems": "No asset items.",
+      "noFiles": "This item has no files."
     },
     "navigation": {
       "allAssets": {

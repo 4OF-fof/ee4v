@@ -15,7 +15,15 @@ namespace Ee4v.UI
         Search,
         Close,
         DisclosureClosed,
-        DisclosureOpen
+        DisclosureOpen,
+        GenericFile,
+        ArchiveFile,
+        ImageFile,
+        TextFile,
+        UnityFile,
+        ModelFile,
+        AudioFile,
+        ScriptFile
     }
 
     internal static class UiBuiltinIconResolver
@@ -79,6 +87,22 @@ namespace Ee4v.UI
                         "Foldout On",
                         "d_Foldout On"
                     };
+                case UiBuiltinIcon.GenericFile:
+                    return new[] { "DefaultAsset Icon", "d_DefaultAsset Icon" };
+                case UiBuiltinIcon.ArchiveFile:
+                    return new[] { "Package Manager", "d_Package Manager", "DefaultAsset Icon", "d_DefaultAsset Icon" };
+                case UiBuiltinIcon.ImageFile:
+                    return new[] { "Texture Icon", "d_Texture Icon", "RawImage Icon", "d_RawImage Icon", "DefaultAsset Icon" };
+                case UiBuiltinIcon.TextFile:
+                    return new[] { "TextAsset Icon", "d_TextAsset Icon", "TextScriptImporter Icon", "d_TextScriptImporter Icon", "DefaultAsset Icon" };
+                case UiBuiltinIcon.UnityFile:
+                    return new[] { "UnityLogo", "d_UnityLogo", "SceneAsset Icon", "d_SceneAsset Icon", "DefaultAsset Icon" };
+                case UiBuiltinIcon.ModelFile:
+                    return new[] { "Prefab Icon", "d_Prefab Icon", "Mesh Icon", "d_Mesh Icon", "DefaultAsset Icon" };
+                case UiBuiltinIcon.AudioFile:
+                    return new[] { "AudioClip Icon", "d_AudioClip Icon", "DefaultAsset Icon" };
+                case UiBuiltinIcon.ScriptFile:
+                    return new[] { "cs Script Icon", "d_cs Script Icon", "TextAsset Icon", "d_TextAsset Icon", "DefaultAsset Icon" };
                 default:
                     throw new System.ArgumentOutOfRangeException(nameof(icon), icon, null);
             }
@@ -102,7 +126,7 @@ namespace Ee4v.UI
             SourceKind = sourceKind;
             Texture = texture;
             BuiltinIcon = builtinIcon;
-            Size = Mathf.Max(0f, size);
+            Size = size < 0f ? 0f : size;
             Tooltip = tooltip ?? string.Empty;
         }
 
@@ -125,6 +149,7 @@ namespace Ee4v.UI
         {
             return new IconState(UiIconSourceKind.Builtin, builtinIcon: builtinIcon, size: size, tooltip: tooltip);
         }
+
     }
 
     internal sealed class Icon : VisualElement
@@ -136,6 +161,7 @@ namespace Ee4v.UI
         public Icon(IconState state = null)
         {
             AddToClassList(RootClassName);
+            pickingMode = PickingMode.Ignore;
 
             _image = new Image
             {
@@ -161,8 +187,16 @@ namespace Ee4v.UI
             style.display = DisplayStyle.Flex;
 
             _image.image = texture;
-            _image.style.width = size;
-            _image.style.height = size;
+            SetSize(size);
+        }
+
+        public void SetSize(float size)
+        {
+            var safeSize = Mathf.Max(0f, size);
+            style.width = safeSize;
+            style.height = safeSize;
+            _image.style.width = safeSize;
+            _image.style.height = safeSize;
         }
 
         private static Texture ResolveTexture(IconState state)

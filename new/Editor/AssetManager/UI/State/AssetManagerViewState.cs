@@ -46,6 +46,12 @@ namespace Ee4v.AssetManager
 
     internal static class AssetManagerViewState
     {
+        public enum AssetSelectionContentKind
+        {
+            AssetItem,
+            AssetFile
+        }
+
         private static readonly string[] ItemIds =
         {
             "all-assets",
@@ -59,6 +65,7 @@ namespace Ee4v.AssetManager
         private static string _selectedItemId = ItemIds[0];
         private static string _selectedAssetDetailTabId = AssetInfoDetailTabId;
         private static ItemCardState[] _selectedAssetItems = Array.Empty<ItemCardState>();
+        private static AssetSelectionContentKind _selectedAssetSelectionContentKind = AssetSelectionContentKind.AssetItem;
 
         public static event Action<string> SelectedItemChanged;
 
@@ -91,6 +98,11 @@ namespace Ee4v.AssetManager
         public static IReadOnlyList<ItemCardState> SelectedAssetItems
         {
             get { return _selectedAssetItems; }
+        }
+
+        public static AssetSelectionContentKind SelectedAssetSelectionContentKind
+        {
+            get { return _selectedAssetSelectionContentKind; }
         }
 
         public static string SelectedAssetDetailTabId
@@ -134,11 +146,15 @@ namespace Ee4v.AssetManager
             SetSelectedAssetItems(item != null ? new[] { item } : null, notify);
         }
 
-        public static void SetSelectedAssetItems(IReadOnlyList<ItemCardState> items, bool notify = true)
+        public static void SetSelectedAssetItems(
+            IReadOnlyList<ItemCardState> items,
+            bool notify = true,
+            AssetSelectionContentKind contentKind = AssetSelectionContentKind.AssetItem)
         {
             if (items == null || items.Count == 0)
             {
                 _selectedAssetItems = Array.Empty<ItemCardState>();
+                _selectedAssetSelectionContentKind = AssetSelectionContentKind.AssetItem;
             }
             else
             {
@@ -152,6 +168,7 @@ namespace Ee4v.AssetManager
                 }
 
                 _selectedAssetItems = nextItems.ToArray();
+                _selectedAssetSelectionContentKind = contentKind;
             }
 
             if (notify)

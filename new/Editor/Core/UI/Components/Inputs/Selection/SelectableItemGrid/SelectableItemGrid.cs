@@ -32,6 +32,8 @@ namespace Ee4v.UI
 
         public event Action<IReadOnlyList<ItemCardState>> SelectionChanged;
 
+        public event Action<ItemCardState> ItemDoubleClicked;
+
         public IReadOnlyList<ItemCardState> SelectedItems
         {
             get { return CreateSelectedItems(); }
@@ -118,6 +120,11 @@ namespace Ee4v.UI
             }
 
             SelectSingle(itemIndex);
+            if (evt.clickCount >= 2)
+            {
+                ItemDoubleClicked?.Invoke(Items[itemIndex]);
+            }
+
             evt.StopPropagation();
         }
 
