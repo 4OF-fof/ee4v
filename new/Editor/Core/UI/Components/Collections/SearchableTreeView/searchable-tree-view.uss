@@ -68,6 +68,15 @@
     background-color: rgba(255, 255, 255, 0.035);
 }
 
+.ee4v-ui-searchable-tree-view__tree .unity-collection-view__item--selected,
+.ee4v-ui-searchable-tree-view__tree .unity-collection-view__item--selected:hover,
+.ee4v-ui-searchable-tree-view__tree .unity-tree-view__item--selected,
+.ee4v-ui-searchable-tree-view__tree .unity-tree-view__item--selected:hover,
+.ee4v-ui-searchable-tree-view__tree .unity-list-view__item--selected,
+.ee4v-ui-searchable-tree-view__tree .unity-list-view__item--selected:hover {
+    background-color: rgba(62, 132, 210, 0.42);
+}
+
 .ee4v-ui-searchable-tree-view__empty {
     margin-top: 5px;
     padding-top: 6px;

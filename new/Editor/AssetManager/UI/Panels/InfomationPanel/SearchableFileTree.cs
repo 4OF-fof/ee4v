@@ -5,6 +5,7 @@ using System.IO.Compression;
 using Ee4v.AssetManager.Api;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager
@@ -13,6 +14,7 @@ namespace Ee4v.AssetManager
     {
         private const string RootClassName = "ee4v-asset-manager-file-tree";
         private const string RowClassName = "ee4v-asset-manager-file-tree__row";
+        private const string RowPrimaryClassName = "ee4v-asset-manager-file-tree__row--primary";
         private const string RowTitleClassName = "ee4v-asset-manager-file-tree__title";
         private const string RowMetaClassName = "ee4v-asset-manager-file-tree__meta";
         private readonly SearchableTreeView<FileTreeNode> _treeView;
@@ -28,7 +30,9 @@ namespace Ee4v.AssetManager
                 BindTreeItem,
                 null,
                 I18N.Get("assetManager.infomationPanel.fileTree.empty"),
-                I18N.Get("assetManager.infomationPanel.fileTree.searchPlaceholder"));
+                I18N.Get("assetManager.infomationPanel.fileTree.searchPlaceholder"),
+                SelectionType.Multiple,
+                OnTreeContextClick);
             _treeView.SetViewDataKey("ee4v-asset-manager-infomation-panel-file-tree");
             Add(_treeView);
 
@@ -105,6 +109,7 @@ namespace Ee4v.AssetManager
 
         private static void BindTreeItem(VisualElement element, FileTreeNode node)
         {
+            element.EnableInClassList(RowPrimaryClassName, node.IsPrimary);
             var title = element.ElementAt(0) as UiTextElement;
             var meta = element.ElementAt(1) as UiTextElement;
 
@@ -121,15 +126,44 @@ namespace Ee4v.AssetManager
                 meta.EnableInClassList("ee4v-asset-manager-file-tree__meta--empty", string.IsNullOrWhiteSpace(node.Meta));
             }
         }
+
+        private void OnTreeContextClick(VisualElement target, FileTreeNode item, IReadOnlyList<FileTreeNode> selectedItems, Vector2 panelPosition)
+        {
+            var selected = selectedItems ?? Array.Empty<FileTreeNode>();
+            var canSetPrimary = selected.Count == 1 && selected[0] != null && selected[0].CanSetPrimary && !selected[0].IsPrimary;
+            var selectedFile = selected.Count == 1 ? selected[0] : null;
+            var menu = new ContextMenuState(
+                new[]
+                {
+                    new ContextMenuItemState(
+                        "set-primary",
+                        I18N.Get("assetManager.infomationPanel.fileTree.context.setPrimary"),
+                        () =>
+                        {
+                            if (selectedFile == null)
+                            {
+                                return;
+                            }
+
+                            AssetManagerApi.SetPrimaryFile(selectedFile.ItemId, selectedFile.FileId);
+                            Reload();
+                        },
+                        canSetPrimary)
+                });
+            ContextMenuWindow.Show(target, panelPosition, menu);
+        }
     }
 
     internal sealed class FileTreeNode
     {
-        public FileTreeNode(string name, string meta, string path)
+        public FileTreeNode(string name, string meta, string path, string fileId = null, string itemId = null, bool isPrimary = false)
         {
             Name = name ?? string.Empty;
             Meta = meta ?? string.Empty;
             Path = path ?? string.Empty;
+            FileId = fileId ?? string.Empty;
+            ItemId = itemId ?? string.Empty;
+            IsPrimary = isPrimary;
         }
 
         public string Name { get; }
@@ -137,6 +171,17 @@ namespace Ee4v.AssetManager
         public string Meta { get; }
 
         public string Path { get; }
+
+        public string FileId { get; }
+
+        public string ItemId { get; }
+
+        public bool IsPrimary { get; }
+
+        public bool CanSetPrimary
+        {
+            get { return !string.IsNullOrWhiteSpace(FileId) && !string.IsNullOrWhiteSpace(ItemId); }
+        }
     }
 
     internal sealed class FileTreeBuilder
@@ -181,18 +226,18 @@ namespace Ee4v.AssetManager
             var path = resolution.Path;
             if (Directory.Exists(path))
             {
-                return CreateDirectoryItem(path, Path.GetFileName(path), path);
+                return CreateDirectoryItem(path, Path.GetFileName(path), path, file);
             }
 
             if (File.Exists(path) && IsZipFile(file, path))
             {
-                return CreateZipItem(file.FileName, path);
+                return CreateZipItem(file.FileName, path, file);
             }
 
-            return CreateFileItem(path, string.IsNullOrWhiteSpace(file.FileName) ? Path.GetFileName(path) : file.FileName, path);
+            return CreateFileItem(path, string.IsNullOrWhiteSpace(file.FileName) ? Path.GetFileName(path) : file.FileName, path, file);
         }
 
-        private SearchableTreeItemData<FileTreeNode> CreateDirectoryItem(string path, string name, string searchPath)
+        private SearchableTreeItemData<FileTreeNode> CreateDirectoryItem(string path, string name, string searchPath, AssetFile assetFile = null)
         {
             var children = new List<SearchableTreeItemData<FileTreeNode>>();
             try
@@ -226,10 +271,11 @@ namespace Ee4v.AssetManager
                 string.IsNullOrWhiteSpace(name) ? path : name,
                 string.Empty,
                 searchPath,
+                assetFile,
                 children);
         }
 
-        private SearchableTreeItemData<FileTreeNode> CreateZipItem(string name, string path)
+        private SearchableTreeItemData<FileTreeNode> CreateZipItem(string name, string path, AssetFile assetFile = null)
         {
             IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children;
             try
@@ -251,24 +297,33 @@ namespace Ee4v.AssetManager
                 string.IsNullOrWhiteSpace(name) ? Path.GetFileName(path) : name,
                 I18N.Get("assetManager.infomationPanel.fileTree.meta.zip"),
                 path,
+                assetFile,
                 children);
         }
 
-        private SearchableTreeItemData<FileTreeNode> CreateFileItem(string path, string name, string searchPath)
+        private SearchableTreeItemData<FileTreeNode> CreateFileItem(string path, string name, string searchPath, AssetFile assetFile = null)
         {
             return CreateItem(
                 string.IsNullOrWhiteSpace(name) ? Path.GetFileName(path) : name,
                 string.Empty,
-                searchPath);
+                searchPath,
+                assetFile);
         }
 
         private SearchableTreeItemData<FileTreeNode> CreateItem(
             string name,
             string meta,
             string searchPath,
+            AssetFile assetFile = null,
             IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children = null)
         {
-            var node = new FileTreeNode(name, meta, searchPath);
+            var node = new FileTreeNode(
+                name,
+                meta,
+                searchPath,
+                assetFile != null ? assetFile.Id : null,
+                assetFile != null ? assetFile.ItemId : null,
+                assetFile != null && assetFile.IsPrimary);
             return new SearchableTreeItemData<FileTreeNode>(
                 _nextId++,
                 node,

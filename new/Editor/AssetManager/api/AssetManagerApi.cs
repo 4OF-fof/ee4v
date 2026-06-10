@@ -50,7 +50,7 @@ namespace Ee4v.AssetManager.Api
 
         public static void SetPrimaryFile(string itemId, string fileId)
         {
-            ExecuteChanged(() => AssetManagerDatabase.SetPrimaryFile(itemId, fileId));
+            Execute(() => AssetManagerDatabase.SetPrimaryFile(itemId, fileId));
         }
 
         public static void ArchiveFile(string fileId)

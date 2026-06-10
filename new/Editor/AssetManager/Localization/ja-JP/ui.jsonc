@@ -13,6 +13,9 @@
         "meta": {
           "zip": "ZIP",
           "inaccessible": "読み取れません"
+        },
+        "context": {
+          "setPrimary": "プライマリーファイルに設定"
         }
       }
     },

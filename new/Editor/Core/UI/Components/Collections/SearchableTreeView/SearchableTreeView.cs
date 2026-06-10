@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Ee4v.Core.I18n;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -44,7 +45,9 @@ namespace Ee4v.UI
         private readonly UiTextElement _emptyLabel;
         private readonly Action<VisualElement, TData> _bindItem;
         private readonly Action<IReadOnlyList<TData>> _onSelectionChanged;
+        private readonly Action<VisualElement, TData, IReadOnlyList<TData>, Vector2> _onContextClick;
         private IReadOnlyList<SearchableTreeItemData<TData>> _sourceItems;
+        private IReadOnlyList<SearchableTreeItemData<TData>> _selectedTreeItems = Array.Empty<SearchableTreeItemData<TData>>();
         private Action<string> _onSearchValueChanged;
 
         public SearchableTreeView(
@@ -52,7 +55,9 @@ namespace Ee4v.UI
             Action<VisualElement, TData> bindItem,
             Action<IReadOnlyList<TData>> onSelectionChanged = null,
             string emptyText = "",
-            string searchPlaceholder = null)
+            string searchPlaceholder = null,
+            SelectionType selectionType = SelectionType.Single,
+            Action<VisualElement, TData, IReadOnlyList<TData>, Vector2> onContextClick = null)
         {
             if (makeItem == null)
             {
@@ -61,6 +66,7 @@ namespace Ee4v.UI
 
             _bindItem = bindItem ?? throw new ArgumentNullException(nameof(bindItem));
             _onSelectionChanged = onSelectionChanged;
+            _onContextClick = onContextClick;
 
             AddToClassList(RootClassName);
 
@@ -77,9 +83,9 @@ namespace Ee4v.UI
 
             _treeView = new TreeView();
             _treeView.AddToClassList(TreeClassName);
-            _treeView.selectionType = SelectionType.Single;
+            _treeView.selectionType = selectionType;
             _treeView.fixedItemHeight = 20;
-            _treeView.makeItem = makeItem;
+            _treeView.makeItem = () => CreateItemElement(makeItem);
             _treeView.bindItem = BindItem;
             _treeView.selectionChanged += OnSelectionChanged;
             Add(_treeView);
@@ -99,6 +105,7 @@ namespace Ee4v.UI
         public void SetItems(IReadOnlyList<SearchableTreeItemData<TData>> items)
         {
             _sourceItems = items ?? new SearchableTreeItemData<TData>[0];
+            _selectedTreeItems = Array.Empty<SearchableTreeItemData<TData>>();
             RefreshTree();
         }
 
@@ -121,6 +128,7 @@ namespace Ee4v.UI
         public void ClearSelection()
         {
             _treeView.ClearSelection();
+            _selectedTreeItems = Array.Empty<SearchableTreeItemData<TData>>();
         }
 
         public void SetViewDataKey(string viewDataKey)
@@ -131,27 +139,89 @@ namespace Ee4v.UI
         private void BindItem(VisualElement element, int index)
         {
             var item = _treeView.GetItemDataForIndex<SearchableTreeItemData<TData>>(index);
+            element.userData = item;
             element.tooltip = item.TooltipText;
             _bindItem(element, item.Data);
         }
 
         private void OnSelectionChanged(IEnumerable<object> items)
         {
-            if (_onSelectionChanged == null || items == null)
+            if (items == null)
             {
+                _selectedTreeItems = Array.Empty<SearchableTreeItemData<TData>>();
+                _onSelectionChanged?.Invoke(Array.Empty<TData>());
                 return;
             }
 
             var selected = new List<TData>();
+            var selectedTreeItems = new List<SearchableTreeItemData<TData>>();
             foreach (var item in items)
             {
                 if (item is SearchableTreeItemData<TData> treeItem)
                 {
+                    selectedTreeItems.Add(treeItem);
                     selected.Add(treeItem.Data);
                 }
             }
 
-            _onSelectionChanged(selected);
+            _selectedTreeItems = selectedTreeItems;
+            _onSelectionChanged?.Invoke(selected);
+        }
+
+        private VisualElement CreateItemElement(Func<VisualElement> makeItem)
+        {
+            var element = makeItem();
+            element.RegisterCallback<PointerUpEvent>(OnItemPointerUp);
+            return element;
+        }
+
+        private void OnItemPointerUp(PointerUpEvent evt)
+        {
+            if (evt.button != 1 || _onContextClick == null)
+            {
+                return;
+            }
+
+            var element = evt.currentTarget as VisualElement;
+            var item = element != null ? element.userData as SearchableTreeItemData<TData> : null;
+            if (element == null || item == null)
+            {
+                return;
+            }
+
+            var selected = ResolveContextSelection(item);
+            evt.StopPropagation();
+            _onContextClick(element, item.Data, selected, element.LocalToWorld(evt.localPosition));
+        }
+
+        private IReadOnlyList<TData> ResolveContextSelection(SearchableTreeItemData<TData> item)
+        {
+            if (_selectedTreeItems == null || _selectedTreeItems.Count == 0 || !ContainsSelectedItem(item))
+            {
+                _treeView.SetSelectionById(new[] { item.Id });
+                _selectedTreeItems = new[] { item };
+            }
+
+            var selected = new List<TData>(_selectedTreeItems.Count);
+            for (var i = 0; i < _selectedTreeItems.Count; i++)
+            {
+                selected.Add(_selectedTreeItems[i].Data);
+            }
+
+            return selected;
+        }
+
+        private bool ContainsSelectedItem(SearchableTreeItemData<TData> item)
+        {
+            for (var i = 0; i < _selectedTreeItems.Count; i++)
+            {
+                if (_selectedTreeItems[i].Id == item.Id)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void RefreshTree()

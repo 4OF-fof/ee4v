@@ -19,7 +19,6 @@ namespace Ee4v.UI
             string label,
             Action action = null,
             bool enabled = true,
-            IconState iconState = null,
             string shortcut = null)
         {
             Kind = ContextMenuItemKind.Action;
@@ -27,7 +26,6 @@ namespace Ee4v.UI
             Label = label ?? string.Empty;
             Action = action;
             Enabled = enabled;
-            IconState = iconState;
             Shortcut = shortcut ?? string.Empty;
         }
 
@@ -49,8 +47,6 @@ namespace Ee4v.UI
         public Action Action { get; }
 
         public bool Enabled { get; }
-
-        public IconState IconState { get; }
 
         public string Shortcut { get; }
 
@@ -79,7 +75,6 @@ namespace Ee4v.UI
         private const string ItemClassName = "ee4v-ui-context-menu__item";
         private const string ItemDisabledClassName = "ee4v-ui-context-menu__item--disabled";
         private const string SeparatorClassName = "ee4v-ui-context-menu__separator";
-        private const string IconSlotClassName = "ee4v-ui-context-menu__icon-slot";
         private const string LabelClassName = "ee4v-ui-context-menu__label";
         private const string ShortcutClassName = "ee4v-ui-context-menu__shortcut";
         private readonly Action<ContextMenuItemState> _onSelect;
@@ -115,13 +110,6 @@ namespace Ee4v.UI
             button.EnableInClassList(ItemDisabledClassName, !item.Enabled);
             button.SetEnabled(item.Enabled);
 
-            var iconSlot = new VisualElement();
-            iconSlot.AddToClassList(IconSlotClassName);
-            if (item.IconState != null)
-            {
-                iconSlot.Add(new Icon(item.IconState));
-            }
-
             var label = UiTextFactory.Create(item.Label);
             label.AddToClassList(LabelClassName);
             label.pickingMode = PickingMode.Ignore;
@@ -133,7 +121,6 @@ namespace Ee4v.UI
             shortcut.SetWhiteSpace(WhiteSpace.NoWrap);
             shortcut.style.display = string.IsNullOrWhiteSpace(item.Shortcut) ? DisplayStyle.None : DisplayStyle.Flex;
 
-            button.Add(iconSlot);
             button.Add(label);
             button.Add(shortcut);
             return button;
@@ -210,7 +197,6 @@ namespace Ee4v.UI
             root.RegisterCallback<KeyDownEvent>(OnKeyDown);
 
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/Icon/icon.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Overlays/ContextMenuWindow/context-menu-window.uss");
 
             root.Add(new ContextMenu(_state, Select));
@@ -280,7 +266,6 @@ namespace Ee4v.UI
         private const float MenuPadding = 12f;
         private const float MinimumWidth = 100f;
         private const float MaximumWidth = 360f;
-        private const float IconSlotWidth = 24f;
         private const float LabelRightPadding = 24f;
         private const float ShortcutGap = 24f;
 
@@ -326,7 +311,7 @@ namespace Ee4v.UI
                 var shortcutWidth = string.IsNullOrWhiteSpace(item.Shortcut)
                     ? 0f
                     : labelStyle.CalcSize(new GUIContent(item.Shortcut)).x + ShortcutGap;
-                width = Mathf.Max(width, MenuPadding + IconSlotWidth + labelWidth + LabelRightPadding + shortcutWidth + MenuPadding);
+                width = Mathf.Max(width, MenuPadding + labelWidth + LabelRightPadding + shortcutWidth + MenuPadding);
             }
 
             return Mathf.Clamp(width, MinimumWidth, MaximumWidth);
