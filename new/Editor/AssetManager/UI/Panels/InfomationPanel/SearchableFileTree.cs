@@ -192,13 +192,15 @@ namespace Ee4v.AssetManager
         private void OnTreeContextClick(VisualElement target, FileTreeNode item, IReadOnlyList<FileTreeNode> selectedItems, Vector2 panelPosition)
         {
             var selected = selectedItems ?? Array.Empty<FileTreeNode>();
-            var canSetPrimary = selected.Count == 1 && selected[0] != null && selected[0].CanSetPrimary && !selected[0].IsPrimary;
+            var showSetPrimary = string.IsNullOrWhiteSpace(_fileId);
+            var canSetPrimary = showSetPrimary && selected.Count == 1 && selected[0] != null && selected[0].CanSetPrimary && !selected[0].IsPrimary;
             var selectedFile = selected.Count == 1 ? selected[0] : null;
             var importTargetSelection = selected.Where(node => node != null && node.CanSetImportTarget).ToArray();
 
-            var menuItems = new List<ContextMenuItemState>
+            var menuItems = new List<ContextMenuItemState>();
+            if (showSetPrimary)
             {
-                new ContextMenuItemState(
+                menuItems.Add(new ContextMenuItemState(
                     "set-primary",
                     I18N.Get("assetManager.infomationPanel.fileTree.context.setPrimary"),
                     () =>
@@ -210,8 +212,8 @@ namespace Ee4v.AssetManager
 
                         AssetManagerApi.SetPrimaryFile(selectedFile.ItemId, selectedFile.FileId);
                     },
-                    canSetPrimary)
-            };
+                    canSetPrimary));
+            }
 
             if (importTargetSelection.Length > 0)
             {
@@ -229,6 +231,11 @@ namespace Ee4v.AssetManager
                         I18N.Get("assetManager.infomationPanel.fileTree.context.markImportTarget"),
                         () => SetImportTargetSelection(importTargetSelection, true)));
                 }
+            }
+
+            if (menuItems.Count == 0)
+            {
+                return;
             }
 
             var menu = new ContextMenuState(menuItems);
