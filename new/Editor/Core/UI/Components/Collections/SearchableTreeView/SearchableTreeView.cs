@@ -9,10 +9,16 @@ namespace Ee4v.UI
     internal sealed class SearchableTreeItemData<TData>
     {
         public SearchableTreeItemData(int id, TData data, string searchText = null, IReadOnlyList<SearchableTreeItemData<TData>> children = null)
+            : this(id, data, searchText, null, children)
+        {
+        }
+
+        public SearchableTreeItemData(int id, TData data, string searchText, string tooltipText, IReadOnlyList<SearchableTreeItemData<TData>> children = null)
         {
             Id = id;
             Data = data;
             SearchText = searchText ?? string.Empty;
+            TooltipText = tooltipText ?? SearchText;
             Children = children ?? new SearchableTreeItemData<TData>[0];
         }
 
@@ -21,6 +27,8 @@ namespace Ee4v.UI
         public TData Data { get; }
 
         public string SearchText { get; }
+
+        public string TooltipText { get; }
 
         public IReadOnlyList<SearchableTreeItemData<TData>> Children { get; }
     }
@@ -123,6 +131,7 @@ namespace Ee4v.UI
         private void BindItem(VisualElement element, int index)
         {
             var item = _treeView.GetItemDataForIndex<SearchableTreeItemData<TData>>(index);
+            element.tooltip = item.TooltipText;
             _bindItem(element, item.Data);
         }
 
@@ -150,7 +159,14 @@ namespace Ee4v.UI
             var filteredItems = FilterItems(_sourceItems, _searchField.Value);
             _treeView.SetRootItems(filteredItems);
             _treeView.Rebuild();
-            _treeView.ExpandAll();
+            if (!string.IsNullOrWhiteSpace(_searchField.Value))
+            {
+                _treeView.ExpandAll();
+            }
+            else
+            {
+                _treeView.CollapseAll();
+            }
 
             var hasItems = filteredItems.Count > 0;
             _treeView.style.display = hasItems ? DisplayStyle.Flex : DisplayStyle.None;

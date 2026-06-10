@@ -92,8 +92,14 @@ namespace Ee4v.AssetManager
         {
             var row = new VisualElement();
             row.AddToClassList(RowClassName);
-            row.Add(UiTextFactory.Create(string.Empty, RowTitleClassName));
-            row.Add(UiTextFactory.Create(string.Empty, RowMetaClassName));
+            var title = UiTextFactory.Create(string.Empty, RowTitleClassName);
+            title.SetWhiteSpace(WhiteSpace.NoWrap);
+            title.pickingMode = PickingMode.Ignore;
+            var meta = UiTextFactory.Create(string.Empty, RowMetaClassName);
+            meta.SetWhiteSpace(WhiteSpace.NoWrap);
+            meta.pickingMode = PickingMode.Ignore;
+            row.Add(title);
+            row.Add(meta);
             return row;
         }
 
@@ -105,11 +111,13 @@ namespace Ee4v.AssetManager
             if (title != null)
             {
                 title.SetText(node.Name);
+                title.tooltip = string.Empty;
             }
 
             if (meta != null)
             {
                 meta.SetText(node.Meta);
+                meta.tooltip = string.Empty;
                 meta.EnableInClassList("ee4v-asset-manager-file-tree__meta--empty", string.IsNullOrWhiteSpace(node.Meta));
             }
         }
@@ -166,7 +174,7 @@ namespace Ee4v.AssetManager
             {
                 return CreateItem(
                     file.FileName,
-                    I18N.Get("assetManager.infomationPanel.fileTree.meta.missing"),
+                    string.Empty,
                     file.FileName);
             }
 
@@ -216,7 +224,7 @@ namespace Ee4v.AssetManager
 
             return CreateItem(
                 string.IsNullOrWhiteSpace(name) ? path : name,
-                I18N.Get("assetManager.infomationPanel.fileTree.meta.folder"),
+                string.Empty,
                 searchPath,
                 children);
         }
@@ -250,7 +258,7 @@ namespace Ee4v.AssetManager
         {
             return CreateItem(
                 string.IsNullOrWhiteSpace(name) ? Path.GetFileName(path) : name,
-                FormatFileMeta(path),
+                string.Empty,
                 searchPath);
         }
 
@@ -265,6 +273,7 @@ namespace Ee4v.AssetManager
                 _nextId++,
                 node,
                 string.Join(" ", new[] { node.Name, node.Meta, node.Path }),
+                node.Name,
                 children);
         }
 
@@ -278,42 +287,6 @@ namespace Ee4v.AssetManager
             return string.Equals(Path.GetExtension(path), ".zip", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string FormatFileMeta(string path)
-        {
-            try
-            {
-                var info = new FileInfo(path);
-                if (info.Exists)
-                {
-                    return FormatBytes(info.Length);
-                }
-            }
-            catch (Exception)
-            {
-            }
-
-            return I18N.Get("assetManager.infomationPanel.fileTree.meta.file");
-        }
-
-        internal static string FormatBytes(long bytes)
-        {
-            if (bytes < 1024L)
-            {
-                return bytes + " B";
-            }
-
-            if (bytes < 1024L * 1024L)
-            {
-                return (bytes / 1024f).ToString("0.#") + " KB";
-            }
-
-            if (bytes < 1024L * 1024L * 1024L)
-            {
-                return (bytes / 1024f / 1024f).ToString("0.#") + " MB";
-            }
-
-            return (bytes / 1024f / 1024f / 1024f).ToString("0.#") + " GB";
-        }
     }
 
     internal sealed class ZipFileTreeReader
@@ -427,6 +400,7 @@ namespace Ee4v.AssetManager
                     nextId(),
                     node,
                     string.Join(" ", new[] { node.Name, node.Meta, node.Path }),
+                    node.Name,
                     children);
             }
         }
@@ -473,7 +447,7 @@ namespace Ee4v.AssetManager
                     childItems.Add(_children[i].CreateTreeItem(nextId));
                 }
 
-                return CreateItem(nextId, I18N.Get("assetManager.infomationPanel.fileTree.meta.folder"), childItems);
+                return CreateItem(nextId, string.Empty, childItems);
             }
         }
 
@@ -489,7 +463,7 @@ namespace Ee4v.AssetManager
 
             public override SearchableTreeItemData<FileTreeNode> CreateTreeItem(Func<int> nextId)
             {
-                return CreateItem(nextId, FileTreeBuilder.FormatBytes(_length));
+                return CreateItem(nextId, string.Empty);
             }
         }
     }

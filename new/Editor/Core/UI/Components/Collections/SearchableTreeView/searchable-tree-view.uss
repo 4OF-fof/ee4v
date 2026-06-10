@@ -1,6 +1,7 @@
 .ee4v-ui-searchable-tree-view {
     flex-grow: 1;
     min-height: 0;
+    overflow: hidden;
     padding-left: 6px;
     padding-right: 6px;
     padding-top: 5px;
@@ -27,7 +28,7 @@
 
 .ee4v-ui-searchable-tree-view__tree {
     flex-grow: 1;
-    min-height: 140px;
+    min-height: 0;
     margin-top: 5px;
     padding-top: 4px;
     border-top-width: 1px;
@@ -39,10 +40,26 @@
 }
 
 .ee4v-ui-searchable-tree-view__tree .unity-collection-view__scroll-view,
-.ee4v-ui-searchable-tree-view__tree .unity-scroll-view,
+.ee4v-ui-searchable-tree-view__tree .unity-scroll-view {
+    flex-grow: 1;
+    min-width: 0;
+    min-height: 0;
+    background-color: rgba(0, 0, 0, 0);
+}
+
 .ee4v-ui-searchable-tree-view__tree .unity-scroll-view__content-container,
 .ee4v-ui-searchable-tree-view__tree .unity-collection-view__content-container {
+    min-width: 0;
+    max-width: 100%;
     background-color: rgba(0, 0, 0, 0);
+}
+
+.ee4v-ui-searchable-tree-view__tree .unity-collection-view__item,
+.ee4v-ui-searchable-tree-view__tree .unity-tree-view__item,
+.ee4v-ui-searchable-tree-view__tree .unity-list-view__item {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .ee4v-ui-searchable-tree-view__tree .unity-collection-view__item:hover,

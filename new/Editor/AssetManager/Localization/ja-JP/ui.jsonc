@@ -11,10 +11,7 @@
         "empty": "表示できるファイルがありません。",
         "loadFailed": "ファイルツリーの読み込みに失敗しました。",
         "meta": {
-          "folder": "Folder",
-          "file": "File",
           "zip": "ZIP",
-          "missing": "Missing",
           "inaccessible": "読み取れません"
         }
       }
