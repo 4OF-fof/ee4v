@@ -25,7 +25,7 @@
     align-items: center;
     justify-content: center;
     min-height: 24px;
-    margin-top: 10px;
+    margin-top: 4px;
 }
 
 .ee4v-asset-manager-panel__infomation-preview-text {

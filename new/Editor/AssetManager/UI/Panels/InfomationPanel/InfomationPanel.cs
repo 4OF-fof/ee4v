@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager
@@ -14,6 +15,11 @@ namespace Ee4v.AssetManager
         private const string AssetInfoTabId = "asset-info";
         private const string FileTreeTabId = "file-tree";
         private const float PreviewMaxSize = 360f;
+        private const float SelectionModeBaseHeight = 24f;
+        private const float SelectionModeBaseMarginTop = 4f;
+        private const float SelectionModeScaleStartSize = 260f;
+        private const float SelectionModeScaleEndSize = 360f;
+        private const float SelectionModeMaxScale = 1.28f;
         private const float HorizontalPadding = 24f;
         private readonly VisualElement _preview;
         private readonly ImageStack _imageStack;
@@ -160,11 +166,31 @@ namespace Ee4v.AssetManager
         private void UpdatePreviewSize()
         {
             _imageStack.SetSize(GetImageStackSize());
+            UpdateSelectionModeScale();
         }
 
         private float GetImageStackSize()
         {
             return UnityEngine.Mathf.Max(48f, _previewSize);
+        }
+
+        private void UpdateSelectionModeScale()
+        {
+            var scale = GetSelectionModeScale();
+            _selectionModeRow.transform.scale = new Vector3(scale, scale, 1f);
+            _selectionModeRow.style.minHeight = SelectionModeBaseHeight * scale;
+            _selectionModeRow.style.marginTop = SelectionModeBaseMarginTop * scale;
+        }
+
+        private float GetSelectionModeScale()
+        {
+            if (_previewSize <= SelectionModeScaleStartSize)
+            {
+                return 1f;
+            }
+
+            var progress = Mathf.InverseLerp(SelectionModeScaleStartSize, SelectionModeScaleEndSize, _previewSize);
+            return Mathf.Lerp(1f, SelectionModeMaxScale, progress);
         }
     }
 }
