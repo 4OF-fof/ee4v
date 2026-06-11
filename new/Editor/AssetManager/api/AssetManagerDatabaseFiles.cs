@@ -65,8 +65,9 @@ namespace Ee4v.AssetManager.Api
                     ? Path.GetFileName(request.FilePath)
                     : request.FileName;
 
-                var parent = ResolveRegisterFileParent(connection, itemId, request);
+                var parent = ResolveRegisterFileParent(connection, itemId, request, fileName);
                 InsertFileInfo(connection, fileId, parent.ItemId, parent.VersionGroupId, parent.VariantGroupId, fileName, GetExtension(fileName), request.SizeBytes, null, now);
+                EnsureVersionGroupPrimaryIfMissing(connection, parent.VersionGroupId, fileId, now);
                 connection.Execute(
                     "INSERT INTO ee4v_file_origin(file_info_id, ee4v_file_id, file_path_cache, imported_at) VALUES (?, ?, ?, ?)",
                     fileId,
@@ -212,7 +213,7 @@ namespace Ee4v.AssetManager.Api
             });
         }
 
-        private static RegisterFileParent ResolveRegisterFileParent(SQLiteConnection connection, string itemId, RegisterFileRequest request)
+        private static ImportedFileParent ResolveRegisterFileParent(SQLiteConnection connection, string itemId, RegisterFileRequest request, string fileName)
         {
             var hasVersion = !string.IsNullOrWhiteSpace(request.VersionGroupId);
             var hasVariant = !string.IsNullOrWhiteSpace(request.VariantGroupId);
@@ -224,16 +225,16 @@ namespace Ee4v.AssetManager.Api
             if (hasVersion)
             {
                 EnsureVersionGroupBelongsToItem(connection, request.VersionGroupId, itemId);
-                return new RegisterFileParent(null, request.VersionGroupId, null);
+                return new ImportedFileParent(null, request.VersionGroupId, null);
             }
 
             if (hasVariant)
             {
                 EnsureVariantGroupBelongsToItem(connection, request.VariantGroupId, itemId);
-                return new RegisterFileParent(null, null, request.VariantGroupId);
+                return new ImportedFileParent(null, null, request.VariantGroupId);
             }
 
-            return new RegisterFileParent(itemId, null, null);
+            return ResolveImportedFileParent(connection, itemId, fileName, request.FilePath);
         }
 
         private static void InsertFileInfo(SQLiteConnection connection, string fileId, string itemId, string versionGroupId, string variantGroupId, string fileName, string extension, long? sizeBytes, long? downloadId, string now)
@@ -253,18 +254,5 @@ namespace Ee4v.AssetManager.Api
                 now);
         }
 
-        private sealed class RegisterFileParent
-        {
-            public RegisterFileParent(string itemId, string versionGroupId, string variantGroupId)
-            {
-                ItemId = itemId;
-                VersionGroupId = versionGroupId;
-                VariantGroupId = variantGroupId;
-            }
-
-            public string ItemId { get; private set; }
-            public string VersionGroupId { get; private set; }
-            public string VariantGroupId { get; private set; }
-        }
     }
 }

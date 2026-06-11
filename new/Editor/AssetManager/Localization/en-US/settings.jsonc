@@ -3,6 +3,7 @@
     "section": {
       "assetManager": {
         "paths": "AssetManager Paths",
+        "import": "AssetManager Import",
         "source": "AssetManager Datasources",
         "view": "AssetManager View"
       }
@@ -23,6 +24,14 @@
       "label": "Source priority",
       "tooltip": "Priority order for file origins. Example: ee4v,eagle,blm"
     },
+    "variantGroupRegex": {
+      "label": "Variant group regex",
+      "tooltip": "Regular expression used during import to extract a variant group name from the file name or datasource path. Empty disables it. The named group name, first capture group, or full match is used in that order."
+    },
+    "versionGroupRegex": {
+      "label": "Version group regex",
+      "tooltip": "Regular expression used during import to extract a version group name from the file name or datasource path. Empty disables it. The named group name, first capture group, or full match is used in that order."
+    },
     "itemGridItemsPerRow": {
       "label": "Item grid items per row",
       "tooltip": "Number of items shown per row in the AssetManager item grid."
@@ -30,6 +39,7 @@
     "validation": {
       "required": "This field is required.",
       "sourcePriority": "Source priority must contain ee4v, eagle and blm exactly once each.",
+      "regex": "Enter a valid regular expression.",
       "itemGridItemsPerRow": "Item grid items per row must be between 1 and 12."
     }
   }

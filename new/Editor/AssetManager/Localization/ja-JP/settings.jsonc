@@ -3,6 +3,7 @@
     "section": {
       "assetManager": {
         "paths": "AssetManager パス設定",
+        "import": "AssetManager 取り込み設定",
         "source": "AssetManager datasource 設定",
         "view": "AssetManager 表示設定"
       }
@@ -23,6 +24,14 @@
       "label": "Source priority",
       "tooltip": "file origin の優先順です。例: ee4v,eagle,blm"
     },
+    "variantGroupRegex": {
+      "label": "Variant group regex",
+      "tooltip": "取り込み時に file 名や datasource path から variant group 名を抽出する正規表現です。空なら無効です。名前付き group name、最初の capture group、match 全体の順で group 名に使います。"
+    },
+    "versionGroupRegex": {
+      "label": "Version group regex",
+      "tooltip": "取り込み時に file 名や datasource path から version group 名を抽出する正規表現です。空なら無効です。名前付き group name、最初の capture group、match 全体の順で group 名に使います。"
+    },
     "itemGridItemsPerRow": {
       "label": "Item grid items per row",
       "tooltip": "AssetManager の item grid で 1 行に表示する item 数です。"
@@ -30,6 +39,7 @@
     "validation": {
       "required": "この項目は必須です。",
       "sourcePriority": "Source priority には ee4v, eagle, blm をそれぞれ 1 回ずつ指定してください。",
+      "regex": "正しい正規表現を指定してください。",
       "itemGridItemsPerRow": "Item grid items per row は 1 から 12 の範囲で指定してください。"
     }
   }

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using UnityEditor;
@@ -10,6 +11,8 @@ namespace Ee4v.AssetManager.Api
     internal static class AssetManagerDefinitions
     {
         private const string BoothLibraryRelativePath = "pm.booth.library-manager\\data.db";
+        private const string DefaultVariantGroupRegex = @"(?i)(?:^|[\s_\-\.\[\(])(?<name>pc|quest|android|windows|full|lite)(?:$|[\s_\-\.\]\)])";
+        private const string DefaultVersionGroupRegex = @"(?i)(?:^|[\s_\-\.\[\(])(?:v|ver|version)[\s_\-]*(?<name>\d+(?:\.\d+){0,3})(?:$|[\s_\-\.\]\)])";
 
         static AssetManagerDefinitions()
         {
@@ -55,6 +58,26 @@ namespace Ee4v.AssetManager.Api
             order: 0,
             validator: ValidateSourcePriority);
 
+        public static readonly SettingDefinition<string> VariantGroupRegex = new SettingDefinition<string>(
+            "assetManager.variantGroupRegex",
+            SettingScope.User,
+            "settings.section.assetManager.import",
+            "settings.variantGroupRegex.label",
+            "settings.variantGroupRegex.tooltip",
+            DefaultVariantGroupRegex,
+            order: 0,
+            validator: ValidateRegexOrEmpty);
+
+        public static readonly SettingDefinition<string> VersionGroupRegex = new SettingDefinition<string>(
+            "assetManager.versionGroupRegex",
+            SettingScope.User,
+            "settings.section.assetManager.import",
+            "settings.versionGroupRegex.label",
+            "settings.versionGroupRegex.tooltip",
+            DefaultVersionGroupRegex,
+            order: 1,
+            validator: ValidateRegexOrEmpty);
+
         public static readonly SettingDefinition<int> ItemGridItemsPerRow = new SettingDefinition<int>(
             "assetManager.itemGridItemsPerRow",
             SettingScope.User,
@@ -71,6 +94,8 @@ namespace Ee4v.AssetManager.Api
             SettingApi.Register(BlmDatabasePath);
             SettingApi.Register(EagleLibraryPath);
             SettingApi.Register(SourcePriority);
+            SettingApi.Register(VariantGroupRegex);
+            SettingApi.Register(VersionGroupRegex);
             SettingApi.Register(ItemGridItemsPerRow);
         }
 
@@ -101,6 +126,24 @@ namespace Ee4v.AssetManager.Api
             return value >= 1 && value <= 12
                 ? SettingValidationResult.Success
                 : SettingValidationResult.Error(I18N.Get("settings.validation.itemGridItemsPerRow"));
+        }
+
+        private static SettingValidationResult ValidateRegexOrEmpty(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return SettingValidationResult.Success;
+            }
+
+            try
+            {
+                Regex.Match(string.Empty, value);
+                return SettingValidationResult.Success;
+            }
+            catch (ArgumentException)
+            {
+                return SettingValidationResult.Error(I18N.Get("settings.validation.regex"));
+            }
         }
     }
 }

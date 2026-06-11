@@ -229,6 +229,7 @@ namespace Ee4v.AssetManager.Api
             }
 
             var extension = Directory.Exists(record.FilePath) ? string.Empty : GetExtension(fileName);
+            var classifierText = (record.RelativePath ?? string.Empty) + " " + (record.FilePath ?? string.Empty);
             if (origin != null)
             {
                 var changed = !StringEquals(origin.file_path_cache, record.FilePath);
@@ -242,11 +243,14 @@ namespace Ee4v.AssetManager.Api
                         record.RelativePath);
                 }
 
+                var parent = ResolveImportedFileParent(connection, itemId, fileName, classifierText);
                 changed = UpdateFileInfoSnapshot(connection, origin.file_info_id, fileName, extension, record.SizeBytes, null, now) || changed;
+                changed = UpdateFileInfoParentSnapshot(connection, origin.file_info_id, parent, now) || changed;
+                EnsureVersionGroupPrimaryIfMissing(connection, parent.VersionGroupId, origin.file_info_id, now);
                 return changed ? AssetSyncStatus.Updated : AssetSyncStatus.Unchanged;
             }
 
-            var fileId = CreateFileInfo(connection, itemId, fileName, extension, record.SizeBytes, null, now);
+            var fileId = CreateFileInfo(connection, itemId, fileName, extension, record.SizeBytes, null, now, classifierText);
             connection.Execute(
                 "INSERT INTO blm_file_origin(file_info_id, registered_item_id, relative_path, file_path_cache, imported_at) VALUES (?, ?, ?, ?, ?)",
                 fileId,
@@ -283,6 +287,7 @@ namespace Ee4v.AssetManager.Api
             var origin = hasEagleOrigin
                 ? connection.Query<EagleOriginRow>("SELECT * FROM eagle_file_origin WHERE eagle_item_id = ?", record.EagleItemId).FirstOrDefault()
                 : null;
+            var classifierText = record.FilePath;
             if (origin != null)
             {
                 var isDeleted = record.IsDeleted ? 1 : 0;
@@ -293,21 +298,11 @@ namespace Ee4v.AssetManager.Api
                     connection.Execute("UPDATE eagle_file_origin SET file_path_cache = ?, is_deleted = ?, imported_at = ? WHERE eagle_item_id = ?", record.FilePath, isDeleted, now, record.EagleItemId);
                 }
 
+                var parent = ResolveImportedFileParent(connection, itemId, record.Name, classifierText);
                 changed = UpdateFileInfoSnapshot(connection, origin.file_info_id, record.Name, record.Extension, record.SizeBytes, record.DownloadId, now) || changed;
+                changed = UpdateFileInfoParentSnapshot(connection, origin.file_info_id, parent, now) || changed;
+                EnsureVersionGroupPrimaryIfMissing(connection, parent.VersionGroupId, origin.file_info_id, now);
                 return changed ? AssetSyncStatus.Updated : AssetSyncStatus.Unchanged;
-            }
-
-            var fileId = GetFileInfoIdByDownloadId(connection, record.DownloadId);
-            var status = AssetSyncStatus.Created;
-            if (fileId == null)
-            {
-                fileId = CreateFileInfo(connection, itemId, record.Name, record.Extension, record.SizeBytes, record.DownloadId, now);
-            }
-            else
-            {
-                status = UpdateFileInfoSnapshot(connection, fileId, record.Name, record.Extension, record.SizeBytes, record.DownloadId, now)
-                    ? AssetSyncStatus.Updated
-                    : AssetSyncStatus.Unchanged;
             }
 
             if (!hasEagleOrigin)
@@ -320,11 +315,32 @@ namespace Ee4v.AssetManager.Api
                 var downloadOnlyFileId = GetFileInfoIdByDownloadId(connection, record.DownloadId);
                 if (downloadOnlyFileId == null)
                 {
-                    CreateFileInfo(connection, itemId, record.Name, record.Extension, record.SizeBytes, record.DownloadId, now);
+                    CreateFileInfo(connection, itemId, record.Name, record.Extension, record.SizeBytes, record.DownloadId, now, classifierText);
                     return AssetSyncStatus.Created;
                 }
 
-                return UpdateFileInfoSnapshot(connection, downloadOnlyFileId, record.Name, record.Extension, record.SizeBytes, record.DownloadId, now)
+                var parent = ResolveImportedFileParent(connection, itemId, record.Name, classifierText);
+                var changed = UpdateFileInfoSnapshot(connection, downloadOnlyFileId, record.Name, record.Extension, record.SizeBytes, record.DownloadId, now);
+                changed = UpdateFileInfoParentSnapshot(connection, downloadOnlyFileId, parent, now) || changed;
+                EnsureVersionGroupPrimaryIfMissing(connection, parent.VersionGroupId, downloadOnlyFileId, now);
+                return changed
+                    ? AssetSyncStatus.Updated
+                    : AssetSyncStatus.Unchanged;
+            }
+
+            var fileId = GetFileInfoIdByDownloadId(connection, record.DownloadId);
+            var status = AssetSyncStatus.Created;
+            if (fileId == null)
+            {
+                fileId = CreateFileInfo(connection, itemId, record.Name, record.Extension, record.SizeBytes, record.DownloadId, now, classifierText);
+            }
+            else
+            {
+                var parent = ResolveImportedFileParent(connection, itemId, record.Name, classifierText);
+                var changed = UpdateFileInfoSnapshot(connection, fileId, record.Name, record.Extension, record.SizeBytes, record.DownloadId, now);
+                changed = UpdateFileInfoParentSnapshot(connection, fileId, parent, now) || changed;
+                EnsureVersionGroupPrimaryIfMissing(connection, parent.VersionGroupId, fileId, now);
+                status = changed
                     ? AssetSyncStatus.Updated
                     : AssetSyncStatus.Unchanged;
             }
@@ -409,7 +425,7 @@ namespace Ee4v.AssetManager.Api
             return changed;
         }
 
-        private static string CreateFileInfo(SQLiteConnection connection, string itemId, string fileName, string extension, long? sizeBytes, long? downloadId, string now)
+        private static string CreateFileInfo(SQLiteConnection connection, string itemId, string fileName, string extension, long? sizeBytes, long? downloadId, string now, string classifierText)
         {
             var safeFileName = NormalizeDatasourceText(fileName);
             if (string.IsNullOrWhiteSpace(safeFileName))
@@ -418,7 +434,9 @@ namespace Ee4v.AssetManager.Api
             }
 
             var fileId = NewId();
-            InsertFileInfo(connection, fileId, itemId, null, null, safeFileName, extension, sizeBytes, downloadId, now);
+            var parent = ResolveImportedFileParent(connection, itemId, safeFileName, classifierText);
+            InsertFileInfo(connection, fileId, parent.ItemId, parent.VersionGroupId, parent.VariantGroupId, safeFileName, extension, sizeBytes, downloadId, now);
+            EnsureVersionGroupPrimaryIfMissing(connection, parent.VersionGroupId, fileId, now);
             return fileId;
         }
 
