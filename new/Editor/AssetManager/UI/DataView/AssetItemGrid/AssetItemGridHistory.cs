@@ -9,6 +9,14 @@ namespace Ee4v.AssetManager
         FileList
     }
 
+    internal enum AssetItemGridNodeKind
+    {
+        Item,
+        VariantGroup,
+        VersionGroup,
+        File
+    }
+
     internal sealed class AssetItemGridHistoryEntry
     {
         public AssetItemGridHistoryEntry(
@@ -16,13 +24,19 @@ namespace Ee4v.AssetManager
             string viewId,
             string viewLabel,
             string itemId = null,
-            string itemName = null)
+            string itemName = null,
+            AssetItemGridNodeKind nodeKind = AssetItemGridNodeKind.Item,
+            string nodeId = null,
+            string nodeName = null)
         {
             Kind = kind;
             ViewId = viewId ?? string.Empty;
             ViewLabel = viewLabel ?? string.Empty;
             ItemId = itemId ?? string.Empty;
             ItemName = itemName ?? string.Empty;
+            NodeKind = nodeKind;
+            NodeId = nodeId ?? string.Empty;
+            NodeName = nodeName ?? string.Empty;
         }
 
         public AssetItemGridHistoryEntryKind Kind { get; }
@@ -35,12 +49,23 @@ namespace Ee4v.AssetManager
 
         public string ItemName { get; }
 
+        public AssetItemGridNodeKind NodeKind { get; }
+
+        public string NodeId { get; }
+
+        public string NodeName { get; }
+
         public IReadOnlyList<string> Breadcrumbs
         {
             get
             {
                 if (Kind == AssetItemGridHistoryEntryKind.FileList && !string.IsNullOrWhiteSpace(ItemName))
                 {
+                    if (!string.IsNullOrWhiteSpace(NodeName))
+                    {
+                        return new[] { ViewLabel, ItemName, NodeName };
+                    }
+
                     return new[] { ViewLabel, ItemName };
                 }
 
@@ -53,7 +78,9 @@ namespace Ee4v.AssetManager
             return other != null
                 && Kind == other.Kind
                 && string.Equals(ViewId, other.ViewId, StringComparison.Ordinal)
-                && string.Equals(ItemId, other.ItemId, StringComparison.Ordinal);
+                && string.Equals(ItemId, other.ItemId, StringComparison.Ordinal)
+                && NodeKind == other.NodeKind
+                && string.Equals(NodeId, other.NodeId, StringComparison.Ordinal);
         }
     }
 

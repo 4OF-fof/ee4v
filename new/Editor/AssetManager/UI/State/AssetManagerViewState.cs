@@ -49,7 +49,8 @@ namespace Ee4v.AssetManager
         public enum AssetSelectionContentKind
         {
             AssetItem,
-            AssetFile
+            AssetFile,
+            AssetGroup
         }
 
         private static readonly string[] ItemIds =

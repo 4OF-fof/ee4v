@@ -96,6 +96,56 @@ namespace Ee4v.AssetManager
             return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noFiles"), GetItemsPerRow());
         }
 
+        public AssetItemGridList LoadItemChildren(string itemId)
+        {
+            var items = new List<AssetItemGridListItem>();
+            var variants = AssetManagerApi.GetVariantGroups(itemId);
+            for (var i = 0; i < variants.Count; i++)
+            {
+                items.Add(CreateGroupListItem(AssetItemGridNodeKind.VariantGroup, variants[i].Id, variants[i].Name, itemId));
+            }
+
+            var versions = AssetManagerApi.GetVersionGroups(itemId);
+            for (var i = 0; i < versions.Count; i++)
+            {
+                if (string.IsNullOrWhiteSpace(versions[i].VariantGroupId))
+                {
+                    items.Add(CreateGroupListItem(AssetItemGridNodeKind.VersionGroup, versions[i].Id, versions[i].Name, itemId));
+                }
+            }
+
+            var files = AssetManagerApi.GetFiles(itemId, new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active });
+            AddFiles(items, files, itemId, file => !string.IsNullOrWhiteSpace(file.ItemId));
+            return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noChildren"), GetItemsPerRow());
+        }
+
+        public AssetItemGridList LoadGroupChildren(string itemId, AssetItemGridNodeKind groupKind, string groupId)
+        {
+            var items = new List<AssetItemGridListItem>();
+            var files = AssetManagerApi.GetFiles(itemId, new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active });
+            if (groupKind == AssetItemGridNodeKind.VariantGroup)
+            {
+                var versions = AssetManagerApi.GetVersionGroups(itemId);
+                for (var i = 0; i < versions.Count; i++)
+                {
+                    if (string.Equals(versions[i].VariantGroupId, groupId, StringComparison.Ordinal))
+                    {
+                        items.Add(CreateGroupListItem(AssetItemGridNodeKind.VersionGroup, versions[i].Id, versions[i].Name, itemId));
+                    }
+                }
+
+                AddFiles(items, files, itemId, file => string.Equals(file.VariantGroupId, groupId, StringComparison.Ordinal));
+                return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noChildren"), GetItemsPerRow());
+            }
+
+            if (groupKind == AssetItemGridNodeKind.VersionGroup)
+            {
+                AddFiles(items, files, itemId, file => string.Equals(file.VersionGroupId, groupId, StringComparison.Ordinal));
+            }
+
+            return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noChildren"), GetItemsPerRow());
+        }
+
         private static void OnAssetManagerChanged()
         {
             InvalidateContent();
@@ -147,6 +197,35 @@ namespace Ee4v.AssetManager
         private static IconState CreateFileIcon(string extension)
         {
             return IconState.FromBuiltinIcon(ResolveFileIcon(extension), size: 44f);
+        }
+
+        private static AssetItemGridListItem CreateGroupListItem(AssetItemGridNodeKind kind, string id, string name, string itemId)
+        {
+            return new AssetItemGridListItem(
+                AssetItemGridNodeKey.Encode(kind, id),
+                name,
+                new ItemImageState(),
+                IconState.FromBuiltinIcon(kind == AssetItemGridNodeKind.VariantGroup ? UiBuiltinIcon.DisclosureClosed : UiBuiltinIcon.DisclosureOpen, size: 44f),
+                itemId);
+        }
+
+        private static void AddFiles(ICollection<AssetItemGridListItem> items, IReadOnlyList<AssetFile> files, string itemId, Func<AssetFile, bool> predicate)
+        {
+            for (var i = 0; i < files.Count; i++)
+            {
+                var file = files[i];
+                if (file == null || !predicate(file))
+                {
+                    continue;
+                }
+
+                items.Add(new AssetItemGridListItem(
+                    AssetItemGridNodeKey.Encode(AssetItemGridNodeKind.File, file.Id),
+                    file.FileName,
+                    new ItemImageState(),
+                    CreateFileIcon(file.Extension),
+                    itemId));
+            }
         }
 
         private static UiBuiltinIcon ResolveFileIcon(string extension)

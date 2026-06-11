@@ -182,7 +182,12 @@ namespace Ee4v.AssetManager
         private void UpdateDetailContent()
         {
             var hasSingleSelection = _selectedItems != null && _selectedItems.Count == 1;
-            var showFileTree = hasSingleSelection && string.Equals(AssetManagerViewState.SelectedAssetDetailTabId, FileTreeTabId, System.StringComparison.Ordinal);
+            var canShowFileTree =
+                AssetManagerViewState.SelectedAssetSelectionContentKind == AssetManagerViewState.AssetSelectionContentKind.AssetFile ||
+                AssetManagerViewState.SelectedAssetSelectionContentKind == AssetManagerViewState.AssetSelectionContentKind.AssetItem;
+            var showFileTree = hasSingleSelection &&
+                               canShowFileTree &&
+                               string.Equals(AssetManagerViewState.SelectedAssetDetailTabId, FileTreeTabId, System.StringComparison.Ordinal);
             _detailContent.style.display = showFileTree ? DisplayStyle.Flex : DisplayStyle.None;
             _fileTree.style.display = showFileTree ? DisplayStyle.Flex : DisplayStyle.None;
 
@@ -192,9 +197,13 @@ namespace Ee4v.AssetManager
                 {
                     _fileTree.SetFileId(_selectedItems[0].ParentItemId, _selectedItems[0].ItemId);
                 }
-                else
+                else if (AssetManagerViewState.SelectedAssetSelectionContentKind == AssetManagerViewState.AssetSelectionContentKind.AssetItem)
                 {
                     _fileTree.SetItemId(_selectedItems[0].ItemId);
+                }
+                else
+                {
+                    _fileTree.ClearTree();
                 }
             }
             else
