@@ -10,7 +10,6 @@ AssetManager 独自 DB の schema です。Item / File / Collection を中心に
 CHECK (source_type IN ('blm', 'eagle', 'ee4v'))
 CHECK (last_sync_status IN ('success', 'failed', 'partial'))
 CHECK (file_lifecycle IN ('active', 'archived'))
-CHECK (file_dependency_type IN ('requires'))
 CHECK (smart_collection_match_mode IN ('all', 'any'))
 CHECK (smart_collection_condition_field IN ('name', 'description', 'tag', 'source_type', 'file_name', 'extension', 'lifecycle'))
 CHECK (smart_collection_condition_operator IN ('contains', 'equals', 'in', 'exists'))
@@ -21,8 +20,17 @@ CHECK (smart_collection_condition_operator IN ('contains', 'equals', 'in', 'exis
 ```mermaid
 erDiagram
     item_info ||--o{ file_info : owns
-    file_info ||--o{ file_dependency : dependent
-    file_info ||--o{ file_dependency : dependency
+    file_info ||--o{ dependency : source_file
+    version_group ||--o{ dependency : source_version
+    variant_group ||--o{ dependency : source_variant
+    file_info ||--o{ dependency : target_file
+    version_group ||--o{ dependency : target_version
+    item_info ||--o{ variant_group : owns
+    item_info ||--o{ version_group : owns
+    variant_group ||--o{ file_info : has
+    variant_group ||--o{ version_group : has
+    version_group ||--o{ file_info : has
+    version_group ||--o| file_info : primary_file
     file_info ||--o{ file_import_target : has
     file_info ||--o| eagle_file_origin : eagle_origin
     file_info ||--o| blm_file_origin : blm_origin
@@ -125,6 +133,8 @@ erDiagram
     file_info {
         TEXT id PK
         TEXT item_info_id FK
+        TEXT version_group_id FK
+        TEXT variant_group_id FK
         TEXT file_name
         TEXT extension
         INTEGER size_bytes
@@ -134,10 +144,30 @@ erDiagram
         TEXT updated_at
     }
 
-    file_dependency {
-        TEXT dependent_file_info_id PK, FK
-        TEXT dependency_file_info_id PK, FK
-        TEXT dependency_type PK
+    variant_group {
+        TEXT id PK
+        TEXT item_info_id FK
+        TEXT name
+        TEXT created_at
+        TEXT updated_at
+    }
+
+    version_group {
+        TEXT id PK
+        TEXT item_info_id FK
+        TEXT variant_group_id FK
+        TEXT name
+        TEXT primary_file_info_id FK
+        TEXT created_at
+        TEXT updated_at
+    }
+
+    dependency {
+        TEXT source_file_info_id FK
+        TEXT source_version_group_id FK
+        TEXT source_variant_group_id FK
+        TEXT target_file_info_id FK
+        TEXT target_version_group_id FK
     }
 
     file_import_target {
@@ -169,6 +199,10 @@ erDiagram
         TEXT imported_at
     }
 
+    classDef added fill:#1E3A5F,stroke:#93C5FD,stroke-width:2px,color:#FFFFFF
+    classDef modified fill:#3F2E12,stroke:#FBBF24,stroke-width:2px,color:#FFFFFF
+    class variant_group,version_group,dependency added
+    class file_info modified
 ```
 
 ## Item Info
@@ -416,12 +450,16 @@ subdomain TEXT NOT NULL UNIQUE
 
 ## File Info
 
-Item に紐付く論理 file。Item は複数 File Info を持てる。
+AssetManager 上の論理 file。File Info は Item、Version Group、Variant Group のいずれかの子として配置する。
+
+File は Item、Version Group、Variant Group のいずれか 1 つを親に持つ。複数の親は持たない。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
 | `id` | GUID string | Yes |  | File Info の識別子 |
-| `item_info_id` | GUID string | Yes |  | 親 Item Info |
+| `item_info_id` | GUID string |  |  | 親 Item Info。Item 直下 file の場合だけ設定 |
+| `version_group_id` | GUID string |  |  | 親 Version Group |
+| `variant_group_id` | GUID string |  |  | 親 Variant Group |
 | `file_name` | TEXT | Yes |  | ファイル名 |
 | `extension` | TEXT |  |  | 拡張子 |
 | `size_bytes` | INTEGER |  |  | サイズ |
@@ -432,32 +470,116 @@ Item に紐付く論理 file。Item は複数 File Info を持てる。
 
 ```sql
 CHECK (lifecycle IN ('active', 'archived'))
+CHECK (
+  (item_info_id IS NOT NULL AND version_group_id IS NULL AND variant_group_id IS NULL)
+  OR
+  (item_info_id IS NULL AND version_group_id IS NOT NULL AND variant_group_id IS NULL)
+  OR
+  (item_info_id IS NULL AND version_group_id IS NULL AND variant_group_id IS NOT NULL)
+)
 
 CREATE UNIQUE INDEX unique_file_info_download_id
 ON file_info(download_id)
 WHERE download_id IS NOT NULL;
 ```
 
+許可する親は次の 3 種類だけとする。`item -> variant_group -> version_group -> file` の file は Version Group を直接の親に持つ。
+
+| placement | `file_info.item_info_id` | `file_info.version_group_id` | `file_info.variant_group_id` |
+|---|---|---|---|
+| `item -> file` | NOT NULL | NULL | NULL |
+| `version_group -> file` | NULL | NOT NULL | NULL |
+| `variant_group -> file` | NULL | NULL | NOT NULL |
+
 同一 file 判定は `download_id` のみで行う。`download_id` が NULL の File Info は、同じ Item・同じ file name でも自動統合しない。
 
 代表 file origin は `assetManager.sourcePriority` 設定順で存在する origin に fallback する。既定値は `ee4v,eagle,blm`。origin が 0 件の場合は missing として扱う。
 
-## File Dependency
+## Variant Group
 
-File Info 同士の依存関係。`dependent_file_info_id` が `dependency_file_info_id` に依存する。
+Item 配下の file を variant 単位で束ねる group。Booth の variation やユーザー定義の差分パッケージを表す。
+
+Variant Group は file を直接持てるほか、配下に Version Group を持てる。Version Group を経由しない file は `file_info.variant_group_id` で直接参照する。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `dependent_file_info_id` | GUID string | Yes | `(dependent_file_info_id, dependency_file_info_id, dependency_type)` | 依存している File Info |
-| `dependency_file_info_id` | GUID string | Yes | `(dependent_file_info_id, dependency_file_info_id, dependency_type)` | 依存される File Info |
-| `dependency_type` | file_dependency_type | Yes | `(dependent_file_info_id, dependency_file_info_id, dependency_type)` | 依存種別 |
+| `id` | GUID string | Yes |  | Variant Group の識別子 |
+| `item_info_id` | GUID string | Yes |  | 親 Item Info |
+| `name` | TEXT | Yes |  | variant 名 |
+| `created_at` | DATETIME | Yes |  | 作成時刻 |
+| `updated_at` | DATETIME | Yes |  | 更新時刻 |
+
+同一 Item 内での `name` 重複は許可する。datasource 由来の variation 名が空の場合は import 時に安定した表示名を補完する。
+
+## Version Group
+
+Item または Variant Group 配下の file を version 単位で束ねる group。1 つの Version Group は複数 file を持てる。
+
+Version Group は primary file を 1 つ持つ。依存先として Version Group が指定された場合は、import / resolve 時に `primary_file_info_id` を実際の依存 file として解決する。primary file が未設定、削除済み、または同じ Version Group に属していない場合、その Version Group 依存は unresolved として扱う。
+
+| column | type | required | unique | note |
+|---|---|---:|---|---|
+| `id` | GUID string | Yes |  | Version Group の識別子 |
+| `item_info_id` | GUID string | Yes |  | 親 Item Info |
+| `variant_group_id` | GUID string |  |  | 親 Variant Group。NULL の場合は Item 直下の Version Group |
+| `name` | TEXT | Yes |  | version 名 |
+| `primary_file_info_id` | GUID string |  |  | primary File Info。NULL 可。参照先は同じ Version Group に属する File Info |
+| `created_at` | DATETIME | Yes |  | 作成時刻 |
+| `updated_at` | DATETIME | Yes |  | 更新時刻 |
+
+## Dependency
+
+File Info / Version Group / Variant Group の依存関係。依存元は File Info、Version Group、Variant Group のいずれか 1 つを指定する。依存先は File Info または Version Group のいずれか 1 つを指定する。
+
+依存元と依存先の ID をこの table に直接保持する。依存元は `source_*` のうち 1 つ、依存先は `target_*` のうち 1 つだけを設定する。Variant Group は依存元にはなれるが、依存先にはしない。
+
+| column | type | required | unique | note |
+|---|---|---:|---|---|
+| `source_file_info_id` | GUID string |  | partial unique index | 依存元 File Info |
+| `source_version_group_id` | GUID string |  | partial unique index | 依存元 Version Group |
+| `source_variant_group_id` | GUID string |  | partial unique index | 依存元 Variant Group |
+| `target_file_info_id` | GUID string |  | partial unique index | 依存先 File Info |
+| `target_version_group_id` | GUID string |  | partial unique index | 依存先 Version Group |
 
 ```sql
-CHECK (dependent_file_info_id != dependency_file_info_id)
-CHECK (dependency_type IN ('requires'))
+CHECK (
+  (source_file_info_id IS NOT NULL AND source_version_group_id IS NULL AND source_variant_group_id IS NULL)
+  OR
+  (source_file_info_id IS NULL AND source_version_group_id IS NOT NULL AND source_variant_group_id IS NULL)
+  OR
+  (source_file_info_id IS NULL AND source_version_group_id IS NULL AND source_variant_group_id IS NOT NULL)
+)
+CHECK (
+  (target_file_info_id IS NOT NULL AND target_version_group_id IS NULL)
+  OR
+  (target_file_info_id IS NULL AND target_version_group_id IS NOT NULL)
+)
+CHECK (source_file_info_id IS NULL OR target_file_info_id IS NULL OR source_file_info_id != target_file_info_id)
+CHECK (source_version_group_id IS NULL OR target_version_group_id IS NULL OR source_version_group_id != target_version_group_id)
 
-CREATE UNIQUE INDEX unique_file_dependency
-ON file_dependency(dependent_file_info_id, dependency_file_info_id, dependency_type);
+CREATE UNIQUE INDEX unique_dependency_file_to_file
+ON dependency(source_file_info_id, target_file_info_id)
+WHERE source_file_info_id IS NOT NULL AND target_file_info_id IS NOT NULL;
+
+CREATE UNIQUE INDEX unique_dependency_file_to_version
+ON dependency(source_file_info_id, target_version_group_id)
+WHERE source_file_info_id IS NOT NULL AND target_version_group_id IS NOT NULL;
+
+CREATE UNIQUE INDEX unique_dependency_version_to_file
+ON dependency(source_version_group_id, target_file_info_id)
+WHERE source_version_group_id IS NOT NULL AND target_file_info_id IS NOT NULL;
+
+CREATE UNIQUE INDEX unique_dependency_version_to_version
+ON dependency(source_version_group_id, target_version_group_id)
+WHERE source_version_group_id IS NOT NULL AND target_version_group_id IS NOT NULL;
+
+CREATE UNIQUE INDEX unique_dependency_variant_to_file
+ON dependency(source_variant_group_id, target_file_info_id)
+WHERE source_variant_group_id IS NOT NULL AND target_file_info_id IS NOT NULL;
+
+CREATE UNIQUE INDEX unique_dependency_variant_to_version
+ON dependency(source_variant_group_id, target_version_group_id)
+WHERE source_variant_group_id IS NOT NULL AND target_version_group_id IS NOT NULL;
 ```
 
 ## File Import Target
