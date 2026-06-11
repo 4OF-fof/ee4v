@@ -208,9 +208,43 @@ namespace Ee4v.AssetManager.Api.Tests
 
         [Test]
         [FeatureTestCase(
+            "version / variant group と依存を保存する",
+            "file が version / variant group を親にでき、variant から version への dependency を保存できることを確認します。",
+            order: 312)]
+        public void GroupsAndDependencies_StoreVersionVariantRelations()
+        {
+            var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
+            var variant = AssetManagerApi.CreateVariantGroup(item.Id, new CreateVariantGroupRequest { Name = "Quest" });
+            var version = AssetManagerApi.CreateVersionGroup(item.Id, new CreateVersionGroupRequest { Name = "1.0", VariantGroupId = variant.Id });
+            var versionFilePath = Path.Combine(_tempRoot, "version.zip");
+            var variantFilePath = Path.Combine(_tempRoot, "variant.zip");
+            File.WriteAllText(versionFilePath, "version");
+            File.WriteAllText(variantFilePath, "variant");
+
+            var versionFile = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = versionFilePath, FileName = "version.zip", VersionGroupId = version.Id });
+            var variantFile = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = variantFilePath, FileName = "variant.zip", VariantGroupId = variant.Id });
+            AssetManagerApi.SetVersionGroupPrimaryFile(version.Id, versionFile.Id);
+            AssetManagerApi.SetDependencies(
+                new DependencyEndpointRequest { Type = AssetDependencyEndpointType.VariantGroup, Id = variant.Id },
+                new[] { new DependencyEndpointRequest { Type = AssetDependencyEndpointType.VersionGroup, Id = version.Id } });
+
+            var files = AssetManagerApi.GetFiles(item.Id).OrderBy(file => file.FileName).ToArray();
+            var dependencies = AssetManagerApi.GetDependencies(new DependencyEndpointRequest { Type = AssetDependencyEndpointType.VariantGroup, Id = variant.Id });
+            var updatedVersion = AssetManagerApi.GetVersionGroups(item.Id).Single(group => group.Id == version.Id);
+
+            Assert.That(files.Select(file => file.Id).ToArray(), Is.EqualTo(new[] { variantFile.Id, versionFile.Id }));
+            Assert.That(versionFile.VersionGroupId, Is.EqualTo(version.Id));
+            Assert.That(variantFile.VariantGroupId, Is.EqualTo(variant.Id));
+            Assert.That(updatedVersion.PrimaryFileId, Is.EqualTo(versionFile.Id));
+            Assert.That(dependencies.Single().Target.Type, Is.EqualTo(AssetDependencyEndpointType.VersionGroup));
+            Assert.That(dependencies.Single().Target.Id, Is.EqualTo(version.Id));
+        }
+
+        [Test]
+        [FeatureTestCase(
             "file import target を複数保持する",
             "SetFileImportTargets が zip / directory 配下の複数 target を file 単位で保存することを確認します。",
-            order: 312)]
+            order: 313)]
         public void SetFileImportTargets_StoresMultipleTargetsForFile()
         {
             var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
@@ -236,7 +270,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "不正な import target path では既存 target を保持する",
             "SetFileImportTargets が parent traversal を拒否し、既存 file_import_target を削除しないことを確認します。",
-            order: 313)]
+            order: 314)]
         public void SetFileImportTargets_InvalidPath_DoesNotClearExistingTargets()
         {
             var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
@@ -257,7 +291,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "file import target 設定は asset 一覧更新を通知しない",
             "SetFileImportTargets が AssetManagerApi.Changed を発火せず、asset grid reload を誘発しないことを確認します。",
-            order: 314)]
+            order: 315)]
         public void SetFileImportTargets_DoesNotRaiseAssetManagerChanged()
         {
             var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
@@ -289,7 +323,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "存在しない親 collection 指定では collection を作成しない",
             "CreateCollection が missing parent を検出した場合に collection_info を残さないことを確認します。",
-            order: 315)]
+            order: 316)]
         public void CreateCollection_MissingParent_ThrowsNotFoundWithoutCreatingCollection()
         {
             var ex = Assert.Throws<AssetManagerException>(() =>
@@ -303,7 +337,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "不正な smart collection 条件では collection を作成しない",
             "CreateSmartCollection が query text のない条件を拒否し、collection_info を残さないことを確認します。",
-            order: 316)]
+            order: 317)]
         public void CreateSmartCollection_InvalidCondition_ThrowsWithoutCreatingCollection()
         {
             var ex = Assert.Throws<AssetManagerException>(() =>
@@ -321,7 +355,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [FeatureTestCase(
             "source priority に従って file path を解決する",
             "ResolveFilePath が assetManager.sourcePriority の順序で origin path を選ぶことを確認します。",
-            order: 317)]
+            order: 318)]
         public void ResolveFilePath_UsesConfiguredSourcePriority()
         {
             var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });

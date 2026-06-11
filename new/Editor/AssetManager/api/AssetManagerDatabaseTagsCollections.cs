@@ -422,23 +422,30 @@ namespace Ee4v.AssetManager.Api
             if (field == SmartCollectionConditionField.SourceType)
             {
                 var values = new List<string>();
-                if (connection.ExecuteScalar<int>("SELECT COUNT(*) FROM file_info INNER JOIN ee4v_file_origin ON ee4v_file_origin.file_info_id = file_info.id WHERE file_info.item_info_id = ?", itemId) > 0) values.Add("ee4v");
-                if (connection.ExecuteScalar<int>("SELECT COUNT(*) FROM file_info INNER JOIN eagle_file_origin ON eagle_file_origin.file_info_id = file_info.id WHERE file_info.item_info_id = ?", itemId) > 0) values.Add("eagle");
-                if (connection.ExecuteScalar<int>("SELECT COUNT(*) FROM file_info INNER JOIN blm_file_origin ON blm_file_origin.file_info_id = file_info.id WHERE file_info.item_info_id = ?", itemId) > 0) values.Add("blm");
+                if (connection.ExecuteScalar<int>("SELECT COUNT(*) FROM file_info INNER JOIN ee4v_file_origin ON ee4v_file_origin.file_info_id = file_info.id WHERE " + FileBelongsToItemWhereClause(), itemId, itemId, itemId) > 0) values.Add("ee4v");
+                if (connection.ExecuteScalar<int>("SELECT COUNT(*) FROM file_info INNER JOIN eagle_file_origin ON eagle_file_origin.file_info_id = file_info.id WHERE " + FileBelongsToItemWhereClause(), itemId, itemId, itemId) > 0) values.Add("eagle");
+                if (connection.ExecuteScalar<int>("SELECT COUNT(*) FROM file_info INNER JOIN blm_file_origin ON blm_file_origin.file_info_id = file_info.id WHERE " + FileBelongsToItemWhereClause(), itemId, itemId, itemId) > 0) values.Add("blm");
                 return values;
             }
 
             if (field == SmartCollectionConditionField.FileName)
             {
-                return connection.Query<FileRow>("SELECT file_name FROM file_info WHERE item_info_id = ?", itemId).Select(row => row.file_name).ToArray();
+                return connection.Query<FileRow>("SELECT file_name FROM file_info WHERE " + FileBelongsToItemWhereClause(), itemId, itemId, itemId).Select(row => row.file_name).ToArray();
             }
 
             if (field == SmartCollectionConditionField.Extension)
             {
-                return connection.Query<FileRow>("SELECT extension FROM file_info WHERE item_info_id = ?", itemId).Select(row => row.extension).ToArray();
+                return connection.Query<FileRow>("SELECT extension FROM file_info WHERE " + FileBelongsToItemWhereClause(), itemId, itemId, itemId).Select(row => row.extension).ToArray();
             }
 
-            return connection.Query<FileRow>("SELECT lifecycle FROM file_info WHERE item_info_id = ?", itemId).Select(row => row.lifecycle).ToArray();
+            return connection.Query<FileRow>("SELECT lifecycle FROM file_info WHERE " + FileBelongsToItemWhereClause(), itemId, itemId, itemId).Select(row => row.lifecycle).ToArray();
+        }
+
+        private static string FileBelongsToItemWhereClause()
+        {
+            return @"(file_info.item_info_id = ?
+                      OR file_info.variant_group_id IN (SELECT id FROM variant_group WHERE item_info_id = ?)
+                      OR file_info.version_group_id IN (SELECT id FROM version_group WHERE item_info_id = ?))";
         }
 
         private static string[] SplitQueryValues(string queryText)

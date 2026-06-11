@@ -35,10 +35,15 @@ namespace Ee4v.AssetManager.Api
                             INNER JOIN tag_info ON tag_info.id = item_tag.tag_info_id
                             WHERE tag_info.name LIKE ?
                         )
-                        OR item_info.id IN (
-                            SELECT file_info.item_info_id
+                        OR EXISTS (
+                            SELECT 1
                             FROM file_info
                             WHERE file_info.file_name LIKE ?
+                              AND (
+                                file_info.item_info_id = item_info.id
+                                OR file_info.variant_group_id IN (SELECT id FROM variant_group WHERE item_info_id = item_info.id)
+                                OR file_info.version_group_id IN (SELECT id FROM version_group WHERE item_info_id = item_info.id)
+                              )
                         )
                     )");
                     var keyword = "%" + query.Keyword + "%";
@@ -63,7 +68,15 @@ namespace Ee4v.AssetManager.Api
 
                 if (query != null && query.Lifecycle.HasValue)
                 {
-                    where.Add("item_info.id IN (SELECT item_info_id FROM file_info WHERE lifecycle = ?)");
+                    where.Add(@"EXISTS (
+                        SELECT 1
+                        FROM file_info
+                        WHERE lifecycle = ?
+                          AND (
+                            file_info.item_info_id = item_info.id
+                            OR file_info.variant_group_id IN (SELECT id FROM variant_group WHERE item_info_id = item_info.id)
+                            OR file_info.version_group_id IN (SELECT id FROM version_group WHERE item_info_id = item_info.id)
+                          ))");
                     parameters.Add(ToDbLifecycle(query.Lifecycle.Value));
                 }
 

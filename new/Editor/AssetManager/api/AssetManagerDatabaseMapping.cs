@@ -29,7 +29,7 @@ namespace Ee4v.AssetManager.Api
                         row.id)
                     .Select(ToAssetTag)
                     .ToArray(),
-                Files = connection.Query<FileRow>("SELECT * FROM file_info WHERE item_info_id = ? ORDER BY file_name COLLATE NOCASE, id", row.id)
+                Files = QueryFilesForItem(connection, row.id)
                     .Select(ToAssetFileSummary)
                     .ToArray(),
                 CreatedAt = ParseDate(row.created_at),
@@ -72,6 +72,8 @@ namespace Ee4v.AssetManager.Api
             {
                 Id = row.id,
                 ItemId = row.item_info_id,
+                VersionGroupId = row.version_group_id,
+                VariantGroupId = row.variant_group_id,
                 FileName = row.file_name,
                 Extension = row.extension,
                 SizeBytes = row.size_bytes,
@@ -88,11 +90,54 @@ namespace Ee4v.AssetManager.Api
             return new AssetFileSummary
             {
                 Id = row.id,
+                ItemId = row.item_info_id,
+                VersionGroupId = row.version_group_id,
+                VariantGroupId = row.variant_group_id,
                 FileName = row.file_name,
                 Extension = row.extension,
                 SizeBytes = row.size_bytes,
                 DownloadId = row.download_id,
                 Lifecycle = FromDbLifecycle(row.lifecycle)
+            };
+        }
+
+        private static IReadOnlyList<FileRow> QueryFilesForItem(SQLiteConnection connection, string itemId)
+        {
+            return connection.Query<FileRow>(
+                @"SELECT *
+                  FROM file_info
+                  WHERE item_info_id = ?
+                     OR variant_group_id IN (SELECT id FROM variant_group WHERE item_info_id = ?)
+                     OR version_group_id IN (SELECT id FROM version_group WHERE item_info_id = ?)
+                  ORDER BY file_name COLLATE NOCASE, id",
+                itemId,
+                itemId,
+                itemId);
+        }
+
+        private static AssetVariantGroup ToAssetVariantGroup(VariantGroupRow row)
+        {
+            return new AssetVariantGroup
+            {
+                Id = row.id,
+                ItemId = row.item_info_id,
+                Name = row.name,
+                CreatedAt = ParseDate(row.created_at),
+                UpdatedAt = ParseDate(row.updated_at)
+            };
+        }
+
+        private static AssetVersionGroup ToAssetVersionGroup(VersionGroupRow row)
+        {
+            return new AssetVersionGroup
+            {
+                Id = row.id,
+                ItemId = row.item_info_id,
+                VariantGroupId = row.variant_group_id,
+                Name = row.name,
+                PrimaryFileId = row.primary_file_info_id,
+                CreatedAt = ParseDate(row.created_at),
+                UpdatedAt = ParseDate(row.updated_at)
             };
         }
 

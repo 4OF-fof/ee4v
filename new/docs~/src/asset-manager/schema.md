@@ -199,10 +199,6 @@ erDiagram
         TEXT imported_at
     }
 
-    classDef added fill:#1E3A5F,stroke:#93C5FD,stroke-width:2px,color:#FFFFFF
-    classDef modified fill:#3F2E12,stroke:#FBBF24,stroke-width:2px,color:#FFFFFF
-    class variant_group,version_group,dependency added
-    class file_info modified
 ```
 
 ## Item Info

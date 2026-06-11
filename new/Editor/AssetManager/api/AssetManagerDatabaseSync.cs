@@ -265,7 +265,7 @@ namespace Ee4v.AssetManager.Api
                 connection.Execute("DELETE FROM blm_file_origin WHERE file_info_id = ?", origins[i].file_info_id);
                 if (OriginCount(connection, origins[i].file_info_id) == 0)
                 {
-                    connection.Execute("DELETE FROM file_dependency WHERE dependent_file_info_id = ? OR dependency_file_info_id = ?", origins[i].file_info_id, origins[i].file_info_id);
+                    connection.Execute("DELETE FROM dependency WHERE source_file_info_id = ? OR target_file_info_id = ?", origins[i].file_info_id, origins[i].file_info_id);
                     connection.Execute("DELETE FROM file_info WHERE id = ?", origins[i].file_info_id);
                 }
             }
@@ -418,17 +418,7 @@ namespace Ee4v.AssetManager.Api
             }
 
             var fileId = NewId();
-            connection.Execute(
-                @"INSERT INTO file_info(id, item_info_id, file_name, extension, size_bytes, download_id, lifecycle, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)",
-                fileId,
-                itemId,
-                safeFileName,
-                extension,
-                sizeBytes,
-                downloadId,
-                now,
-                now);
+            InsertFileInfo(connection, fileId, itemId, null, null, safeFileName, extension, sizeBytes, downloadId, now);
             return fileId;
         }
 

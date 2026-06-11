@@ -44,9 +44,56 @@ namespace Ee4v.AssetManager.Api
             connection.Execute("CREATE TABLE IF NOT EXISTS item_collection(item_info_id TEXT NOT NULL REFERENCES item_info(id) ON DELETE CASCADE, collection_info_id TEXT NOT NULL REFERENCES collection_info(id) ON DELETE CASCADE, PRIMARY KEY(item_info_id, collection_info_id))");
             connection.Execute("CREATE TABLE IF NOT EXISTS smart_collection_info(collection_info_id TEXT PRIMARY KEY REFERENCES collection_info(id) ON DELETE CASCADE, match_mode TEXT NOT NULL CHECK(match_mode IN ('all', 'any')), created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
             connection.Execute("CREATE TABLE IF NOT EXISTS smart_collection_condition(id TEXT PRIMARY KEY, collection_info_id TEXT NOT NULL REFERENCES smart_collection_info(collection_info_id) ON DELETE CASCADE, field TEXT NOT NULL CHECK(field IN ('name', 'description', 'tag', 'source_type', 'file_name', 'extension', 'lifecycle')), operator TEXT NOT NULL CHECK(operator IN ('contains', 'equals', 'in', 'exists')), query_text TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, CHECK(operator = 'exists' OR query_text IS NOT NULL))");
-            connection.Execute("CREATE TABLE IF NOT EXISTS file_info(id TEXT PRIMARY KEY, item_info_id TEXT NOT NULL REFERENCES item_info(id) ON DELETE CASCADE, file_name TEXT NOT NULL, extension TEXT, size_bytes INTEGER, download_id INTEGER, lifecycle TEXT NOT NULL CHECK(lifecycle IN ('active', 'archived')), created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
+            connection.Execute("CREATE TABLE IF NOT EXISTS variant_group(id TEXT PRIMARY KEY, item_info_id TEXT NOT NULL REFERENCES item_info(id) ON DELETE CASCADE, name TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
+            connection.Execute("CREATE TABLE IF NOT EXISTS version_group(id TEXT PRIMARY KEY, item_info_id TEXT NOT NULL REFERENCES item_info(id) ON DELETE CASCADE, variant_group_id TEXT REFERENCES variant_group(id) ON DELETE CASCADE, name TEXT NOT NULL, primary_file_info_id TEXT REFERENCES file_info(id) ON DELETE SET NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
+            connection.Execute(
+                @"CREATE TABLE IF NOT EXISTS file_info(
+                    id TEXT PRIMARY KEY,
+                    item_info_id TEXT REFERENCES item_info(id) ON DELETE CASCADE,
+                    version_group_id TEXT REFERENCES version_group(id) ON DELETE CASCADE,
+                    variant_group_id TEXT REFERENCES variant_group(id) ON DELETE CASCADE,
+                    file_name TEXT NOT NULL,
+                    extension TEXT,
+                    size_bytes INTEGER,
+                    download_id INTEGER,
+                    lifecycle TEXT NOT NULL CHECK(lifecycle IN ('active', 'archived')),
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    CHECK (
+                      (item_info_id IS NOT NULL AND version_group_id IS NULL AND variant_group_id IS NULL)
+                      OR
+                      (item_info_id IS NULL AND version_group_id IS NOT NULL AND variant_group_id IS NULL)
+                      OR
+                      (item_info_id IS NULL AND version_group_id IS NULL AND variant_group_id IS NOT NULL)
+                    ))");
             connection.Execute("CREATE UNIQUE INDEX IF NOT EXISTS unique_file_info_download_id ON file_info(download_id) WHERE download_id IS NOT NULL");
-            connection.Execute("CREATE TABLE IF NOT EXISTS file_dependency(dependent_file_info_id TEXT NOT NULL REFERENCES file_info(id) ON DELETE CASCADE, dependency_file_info_id TEXT NOT NULL REFERENCES file_info(id) ON DELETE CASCADE, dependency_type TEXT NOT NULL CHECK(dependency_type IN ('requires')), CHECK(dependent_file_info_id != dependency_file_info_id), PRIMARY KEY(dependent_file_info_id, dependency_file_info_id, dependency_type))");
+            connection.Execute(
+                @"CREATE TABLE IF NOT EXISTS dependency(
+                    source_file_info_id TEXT REFERENCES file_info(id) ON DELETE CASCADE,
+                    source_version_group_id TEXT REFERENCES version_group(id) ON DELETE CASCADE,
+                    source_variant_group_id TEXT REFERENCES variant_group(id) ON DELETE CASCADE,
+                    target_file_info_id TEXT REFERENCES file_info(id) ON DELETE CASCADE,
+                    target_version_group_id TEXT REFERENCES version_group(id) ON DELETE CASCADE,
+                    CHECK (
+                      (source_file_info_id IS NOT NULL AND source_version_group_id IS NULL AND source_variant_group_id IS NULL)
+                      OR
+                      (source_file_info_id IS NULL AND source_version_group_id IS NOT NULL AND source_variant_group_id IS NULL)
+                      OR
+                      (source_file_info_id IS NULL AND source_version_group_id IS NULL AND source_variant_group_id IS NOT NULL)
+                    ),
+                    CHECK (
+                      (target_file_info_id IS NOT NULL AND target_version_group_id IS NULL)
+                      OR
+                      (target_file_info_id IS NULL AND target_version_group_id IS NOT NULL)
+                    ),
+                    CHECK (source_file_info_id IS NULL OR target_file_info_id IS NULL OR source_file_info_id != target_file_info_id),
+                    CHECK (source_version_group_id IS NULL OR target_version_group_id IS NULL OR source_version_group_id != target_version_group_id))");
+            connection.Execute("CREATE UNIQUE INDEX IF NOT EXISTS unique_dependency_file_to_file ON dependency(source_file_info_id, target_file_info_id) WHERE source_file_info_id IS NOT NULL AND target_file_info_id IS NOT NULL");
+            connection.Execute("CREATE UNIQUE INDEX IF NOT EXISTS unique_dependency_file_to_version ON dependency(source_file_info_id, target_version_group_id) WHERE source_file_info_id IS NOT NULL AND target_version_group_id IS NOT NULL");
+            connection.Execute("CREATE UNIQUE INDEX IF NOT EXISTS unique_dependency_version_to_file ON dependency(source_version_group_id, target_file_info_id) WHERE source_version_group_id IS NOT NULL AND target_file_info_id IS NOT NULL");
+            connection.Execute("CREATE UNIQUE INDEX IF NOT EXISTS unique_dependency_version_to_version ON dependency(source_version_group_id, target_version_group_id) WHERE source_version_group_id IS NOT NULL AND target_version_group_id IS NOT NULL");
+            connection.Execute("CREATE UNIQUE INDEX IF NOT EXISTS unique_dependency_variant_to_file ON dependency(source_variant_group_id, target_file_info_id) WHERE source_variant_group_id IS NOT NULL AND target_file_info_id IS NOT NULL");
+            connection.Execute("CREATE UNIQUE INDEX IF NOT EXISTS unique_dependency_variant_to_version ON dependency(source_variant_group_id, target_version_group_id) WHERE source_variant_group_id IS NOT NULL AND target_version_group_id IS NOT NULL");
             connection.Execute("CREATE TABLE IF NOT EXISTS file_import_target(id TEXT PRIMARY KEY, file_info_id TEXT NOT NULL REFERENCES file_info(id) ON DELETE CASCADE, relative_path TEXT NOT NULL)");
             connection.Execute("CREATE UNIQUE INDEX IF NOT EXISTS unique_file_import_target_file_path ON file_import_target(file_info_id, relative_path)");
             connection.Execute("CREATE TABLE IF NOT EXISTS eagle_file_origin(file_info_id TEXT PRIMARY KEY REFERENCES file_info(id) ON DELETE CASCADE, eagle_item_id TEXT NOT NULL UNIQUE, file_path_cache TEXT, is_deleted INTEGER CHECK(is_deleted IS NULL OR is_deleted IN (0, 1)), imported_at TEXT)");

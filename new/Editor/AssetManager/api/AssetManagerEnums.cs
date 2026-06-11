@@ -13,6 +13,13 @@ namespace Ee4v.AssetManager.Api
         Archived
     }
 
+    public enum AssetDependencyEndpointType
+    {
+        File,
+        VersionGroup,
+        VariantGroup
+    }
+
     public enum SmartCollectionMatchMode
     {
         All,

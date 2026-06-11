@@ -42,6 +42,8 @@ namespace Ee4v.AssetManager.Api
     {
         public string Id { get; set; }
         public string ItemId { get; set; }
+        public string VersionGroupId { get; set; }
+        public string VariantGroupId { get; set; }
         public string FileName { get; set; }
         public string Extension { get; set; }
         public long? SizeBytes { get; set; }
@@ -62,6 +64,9 @@ namespace Ee4v.AssetManager.Api
     public sealed class AssetFileSummary
     {
         public string Id { get; set; }
+        public string ItemId { get; set; }
+        public string VersionGroupId { get; set; }
+        public string VariantGroupId { get; set; }
         public string FileName { get; set; }
         public string Extension { get; set; }
         public long? SizeBytes { get; set; }
@@ -75,6 +80,38 @@ namespace Ee4v.AssetManager.Api
         public string SourceId { get; set; }
         public string FilePathCache { get; set; }
         public DateTime? ImportedAt { get; set; }
+    }
+
+    public sealed class AssetVariantGroup
+    {
+        public string Id { get; set; }
+        public string ItemId { get; set; }
+        public string Name { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+
+    public sealed class AssetVersionGroup
+    {
+        public string Id { get; set; }
+        public string ItemId { get; set; }
+        public string VariantGroupId { get; set; }
+        public string Name { get; set; }
+        public string PrimaryFileId { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+
+    public sealed class AssetDependencyEndpoint
+    {
+        public AssetDependencyEndpointType Type { get; set; }
+        public string Id { get; set; }
+    }
+
+    public sealed class AssetDependency
+    {
+        public AssetDependencyEndpoint Source { get; set; }
+        public AssetDependencyEndpoint Target { get; set; }
     }
 
     public sealed class AssetFilePathResolution

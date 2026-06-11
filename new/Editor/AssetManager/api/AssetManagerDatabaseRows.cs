@@ -56,11 +56,33 @@ namespace Ee4v.AssetManager.Api
         {
             public string id { get; set; }
             public string item_info_id { get; set; }
+            public string version_group_id { get; set; }
+            public string variant_group_id { get; set; }
             public string file_name { get; set; }
             public string extension { get; set; }
             public long? size_bytes { get; set; }
             public long? download_id { get; set; }
             public string lifecycle { get; set; }
+            public string created_at { get; set; }
+            public string updated_at { get; set; }
+        }
+
+        private sealed class VariantGroupRow
+        {
+            public string id { get; set; }
+            public string item_info_id { get; set; }
+            public string name { get; set; }
+            public string created_at { get; set; }
+            public string updated_at { get; set; }
+        }
+
+        private sealed class VersionGroupRow
+        {
+            public string id { get; set; }
+            public string item_info_id { get; set; }
+            public string variant_group_id { get; set; }
+            public string name { get; set; }
+            public string primary_file_info_id { get; set; }
             public string created_at { get; set; }
             public string updated_at { get; set; }
         }
@@ -122,11 +144,13 @@ namespace Ee4v.AssetManager.Api
             public string query_text { get; set; }
         }
 
-        private sealed class FileDependencyRow
+        private sealed class DependencyRow
         {
-            public string dependent_file_info_id { get; set; }
-            public string dependency_file_info_id { get; set; }
-            public string dependency_type { get; set; }
+            public string source_file_info_id { get; set; }
+            public string source_version_group_id { get; set; }
+            public string source_variant_group_id { get; set; }
+            public string target_file_info_id { get; set; }
+            public string target_version_group_id { get; set; }
         }
 
         private sealed class FileImportTargetRow

@@ -17,8 +17,13 @@ namespace Ee4v.AssetManager.Api
             using (var connection = OpenConnection())
             {
                 EnsureItemExists(connection, itemId);
-                var where = new List<string> { "item_info_id = ?" };
-                var parameters = new List<object> { itemId };
+                var where = new List<string>
+                {
+                    @"(item_info_id = ?
+                       OR variant_group_id IN (SELECT id FROM variant_group WHERE item_info_id = ?)
+                       OR version_group_id IN (SELECT id FROM version_group WHERE item_info_id = ?))"
+                };
+                var parameters = new List<object> { itemId, itemId, itemId };
 
                 if (query != null && query.Lifecycle.HasValue)
                 {
@@ -60,16 +65,8 @@ namespace Ee4v.AssetManager.Api
                     ? Path.GetFileName(request.FilePath)
                     : request.FileName;
 
-                connection.Execute(
-                    @"INSERT INTO file_info(id, item_info_id, file_name, extension, size_bytes, download_id, lifecycle, created_at, updated_at)
-                      VALUES (?, ?, ?, ?, ?, NULL, 'active', ?, ?)",
-                    fileId,
-                    itemId,
-                    fileName,
-                    GetExtension(fileName),
-                    request.SizeBytes,
-                    now,
-                    now);
+                var parent = ResolveRegisterFileParent(connection, itemId, request);
+                InsertFileInfo(connection, fileId, parent.ItemId, parent.VersionGroupId, parent.VariantGroupId, fileName, GetExtension(fileName), request.SizeBytes, null, now);
                 connection.Execute(
                     "INSERT INTO ee4v_file_origin(file_info_id, ee4v_file_id, file_path_cache, imported_at) VALUES (?, ?, ?, ?)",
                     fileId,
@@ -124,13 +121,13 @@ namespace Ee4v.AssetManager.Api
             using (var connection = OpenConnection())
             {
                 EnsureFileExists(connection, fileId);
-                return connection.Query<FileDependencyRow>(
-                        "SELECT * FROM file_dependency WHERE dependent_file_info_id = ? ORDER BY dependency_file_info_id",
+                return connection.Query<DependencyRow>(
+                        "SELECT * FROM dependency WHERE source_file_info_id = ? AND target_file_info_id IS NOT NULL ORDER BY target_file_info_id",
                         fileId)
                     .Select(row => new AssetFileDependency
                     {
-                        DependentFileId = row.dependent_file_info_id,
-                        DependencyFileId = row.dependency_file_info_id
+                        DependentFileId = row.source_file_info_id,
+                        DependencyFileId = row.target_file_info_id
                     })
                     .ToArray();
             }
@@ -152,11 +149,11 @@ namespace Ee4v.AssetManager.Api
                     EnsureFileExists(connection, ids[i]);
                 }
 
-                connection.Execute("DELETE FROM file_dependency WHERE dependent_file_info_id = ?", dependentFileId);
+                connection.Execute("DELETE FROM dependency WHERE source_file_info_id = ?", dependentFileId);
                 for (var i = 0; i < ids.Count; i++)
                 {
                     connection.Execute(
-                        "INSERT OR IGNORE INTO file_dependency(dependent_file_info_id, dependency_file_info_id, dependency_type) VALUES (?, ?, 'requires')",
+                        "INSERT OR IGNORE INTO dependency(source_file_info_id, target_file_info_id) VALUES (?, ?)",
                         dependentFileId,
                         ids[i]);
                 }
@@ -165,7 +162,15 @@ namespace Ee4v.AssetManager.Api
 
         private static string ItemHasSourceClause(AssetSourceType sourceType)
         {
-            return "item_info.id IN (SELECT file_info.item_info_id FROM file_info WHERE " + FileHasSourceClause(sourceType) + ")";
+            return @"EXISTS (
+                SELECT 1
+                FROM file_info
+                WHERE " + FileHasSourceClause(sourceType) + @"
+                  AND (
+                    file_info.item_info_id = item_info.id
+                    OR file_info.variant_group_id IN (SELECT id FROM variant_group WHERE item_info_id = item_info.id)
+                    OR file_info.version_group_id IN (SELECT id FROM version_group WHERE item_info_id = item_info.id)
+                  ))";
         }
 
         private static string FileHasSourceClause(AssetSourceType sourceType)
@@ -205,6 +210,61 @@ namespace Ee4v.AssetManager.Api
 
                 return priorities.Count;
             });
+        }
+
+        private static RegisterFileParent ResolveRegisterFileParent(SQLiteConnection connection, string itemId, RegisterFileRequest request)
+        {
+            var hasVersion = !string.IsNullOrWhiteSpace(request.VersionGroupId);
+            var hasVariant = !string.IsNullOrWhiteSpace(request.VariantGroupId);
+            if (hasVersion && hasVariant)
+            {
+                throw new AssetManagerException(AssetManagerErrorCode.InvalidRequest, "File parent must be item, version group, or variant group.");
+            }
+
+            if (hasVersion)
+            {
+                EnsureVersionGroupBelongsToItem(connection, request.VersionGroupId, itemId);
+                return new RegisterFileParent(null, request.VersionGroupId, null);
+            }
+
+            if (hasVariant)
+            {
+                EnsureVariantGroupBelongsToItem(connection, request.VariantGroupId, itemId);
+                return new RegisterFileParent(null, null, request.VariantGroupId);
+            }
+
+            return new RegisterFileParent(itemId, null, null);
+        }
+
+        private static void InsertFileInfo(SQLiteConnection connection, string fileId, string itemId, string versionGroupId, string variantGroupId, string fileName, string extension, long? sizeBytes, long? downloadId, string now)
+        {
+            connection.Execute(
+                @"INSERT INTO file_info(id, item_info_id, version_group_id, variant_group_id, file_name, extension, size_bytes, download_id, lifecycle, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)",
+                fileId,
+                itemId,
+                versionGroupId,
+                variantGroupId,
+                fileName,
+                extension,
+                sizeBytes,
+                downloadId,
+                now,
+                now);
+        }
+
+        private sealed class RegisterFileParent
+        {
+            public RegisterFileParent(string itemId, string versionGroupId, string variantGroupId)
+            {
+                ItemId = itemId;
+                VersionGroupId = versionGroupId;
+                VariantGroupId = variantGroupId;
+            }
+
+            public string ItemId { get; private set; }
+            public string VersionGroupId { get; private set; }
+            public string VariantGroupId { get; private set; }
         }
     }
 }

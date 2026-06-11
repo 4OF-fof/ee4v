@@ -44,6 +44,31 @@ namespace Ee4v.AssetManager.Api
             return ExecuteChanged(() => AssetManagerDatabase.RegisterFile(itemId, request));
         }
 
+        public static IReadOnlyList<AssetVariantGroup> GetVariantGroups(string itemId)
+        {
+            return Execute(() => AssetManagerDatabase.GetVariantGroups(itemId));
+        }
+
+        public static AssetVariantGroup CreateVariantGroup(string itemId, CreateVariantGroupRequest request)
+        {
+            return ExecuteChanged(() => AssetManagerDatabase.CreateVariantGroup(itemId, request));
+        }
+
+        public static IReadOnlyList<AssetVersionGroup> GetVersionGroups(string itemId)
+        {
+            return Execute(() => AssetManagerDatabase.GetVersionGroups(itemId));
+        }
+
+        public static AssetVersionGroup CreateVersionGroup(string itemId, CreateVersionGroupRequest request)
+        {
+            return ExecuteChanged(() => AssetManagerDatabase.CreateVersionGroup(itemId, request));
+        }
+
+        public static void SetVersionGroupPrimaryFile(string versionGroupId, string fileId)
+        {
+            ExecuteChanged(() => AssetManagerDatabase.SetVersionGroupPrimaryFile(versionGroupId, fileId));
+        }
+
         public static void ArchiveFile(string fileId)
         {
             ExecuteChanged(() => AssetManagerDatabase.ArchiveFile(fileId));
@@ -102,6 +127,16 @@ namespace Ee4v.AssetManager.Api
         public static void SetFileDependencies(string dependentFileId, IReadOnlyList<string> dependencyFileIds)
         {
             ExecuteChanged(() => AssetManagerDatabase.SetFileDependencies(dependentFileId, dependencyFileIds));
+        }
+
+        public static IReadOnlyList<AssetDependency> GetDependencies(DependencyEndpointRequest source)
+        {
+            return Execute(() => AssetManagerDatabase.GetDependencies(source));
+        }
+
+        public static void SetDependencies(DependencyEndpointRequest source, IReadOnlyList<DependencyEndpointRequest> targets)
+        {
+            ExecuteChanged(() => AssetManagerDatabase.SetDependencies(source, targets));
         }
 
         public static IReadOnlyList<AssetFileImportTarget> GetFileImportTargets(string fileId)

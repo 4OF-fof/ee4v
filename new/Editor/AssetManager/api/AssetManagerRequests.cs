@@ -45,6 +45,25 @@ namespace Ee4v.AssetManager.Api
         public string FileName { get; set; }
         public string FilePath { get; set; }
         public long? SizeBytes { get; set; }
+        public string VersionGroupId { get; set; }
+        public string VariantGroupId { get; set; }
+    }
+
+    public sealed class CreateVariantGroupRequest
+    {
+        public string Name { get; set; }
+    }
+
+    public sealed class CreateVersionGroupRequest
+    {
+        public string Name { get; set; }
+        public string VariantGroupId { get; set; }
+    }
+
+    public sealed class DependencyEndpointRequest
+    {
+        public AssetDependencyEndpointType Type { get; set; }
+        public string Id { get; set; }
     }
 
     public sealed class AssetFileImportTargetRequest
