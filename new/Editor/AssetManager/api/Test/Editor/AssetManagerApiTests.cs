@@ -223,14 +223,13 @@ namespace Ee4v.AssetManager.Api.Tests
                 new[]
                 {
                     new AssetFileImportTargetRequest { RelativePath = "Packages/avatar.unitypackage" },
-                    new AssetFileImportTargetRequest { RelativePath = "\\Textures\\", IsDirectory = true },
+                    new AssetFileImportTargetRequest { RelativePath = "\\Textures\\albedo.png" },
                     new AssetFileImportTargetRequest { RelativePath = "Packages/avatar.unitypackage" }
                 });
 
             var targets = AssetManagerApi.GetFileImportTargets(file.Id);
 
-            Assert.That(targets.Select(target => target.RelativePath).ToArray(), Is.EqualTo(new[] { "Packages/avatar.unitypackage", "Textures" }));
-            Assert.That(targets.Single(target => target.RelativePath == "Textures").IsDirectory, Is.True);
+            Assert.That(targets.Select(target => target.RelativePath).ToArray(), Is.EqualTo(new[] { "Packages/avatar.unitypackage", "Textures/albedo.png" }));
         }
 
         [Test]

@@ -135,7 +135,6 @@ namespace Ee4v.AssetManager.Api
             public string id { get; set; }
             public string file_info_id { get; set; }
             public string relative_path { get; set; }
-            public int is_directory { get; set; }
             public string created_at { get; set; }
             public string updated_at { get; set; }
         }

@@ -241,8 +241,7 @@ namespace Ee4v.AssetManager
                         targets[entry.RelativePath] = new AssetFileImportTarget
                         {
                             FileId = fileId,
-                            RelativePath = entry.RelativePath,
-                            IsDirectory = entry.IsDirectory
+                            RelativePath = entry.RelativePath
                         };
                     }
                     else
@@ -257,8 +256,7 @@ namespace Ee4v.AssetManager
                         .OrderBy(target => target.RelativePath, StringComparer.OrdinalIgnoreCase)
                         .Select(target => new AssetFileImportTargetRequest
                         {
-                            RelativePath = target.RelativePath,
-                            IsDirectory = target.IsDirectory
+                            RelativePath = target.RelativePath
                         })
                         .ToArray());
             }
@@ -283,7 +281,6 @@ namespace Ee4v.AssetManager
             IsImportTarget = isImportTarget;
             HasAnyImportTarget = hasAnyImportTarget;
             RelativePath = NormalizeRelativePath(relativePath);
-            IsDirectory = isDirectory;
             ImportTargetEntries = importTargetEntries ?? Array.Empty<FileTreeImportTargetEntry>();
         }
 
@@ -298,8 +295,6 @@ namespace Ee4v.AssetManager
         public bool HasAnyImportTarget { get; }
 
         public string RelativePath { get; }
-
-        public bool IsDirectory { get; }
 
         public IReadOnlyList<FileTreeImportTargetEntry> ImportTargetEntries { get; }
 
@@ -316,18 +311,15 @@ namespace Ee4v.AssetManager
 
     internal sealed class FileTreeImportTargetEntry
     {
-        public FileTreeImportTargetEntry(string fileId, string relativePath, bool isDirectory)
+        public FileTreeImportTargetEntry(string fileId, string relativePath)
         {
             FileId = fileId ?? string.Empty;
             RelativePath = (relativePath ?? string.Empty).Replace('\\', '/').Trim().TrimStart('/').TrimEnd('/');
-            IsDirectory = isDirectory;
         }
 
         public string FileId { get; }
 
         public string RelativePath { get; }
-
-        public bool IsDirectory { get; }
     }
 
     internal sealed class FileTreeBuilder
@@ -515,7 +507,7 @@ namespace Ee4v.AssetManager
             IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children)
         {
             var entries = new List<FileTreeImportTargetEntry>();
-            if (children != null && children.Count > 0)
+            if (children != null)
             {
                 for (var i = 0; i < children.Count; i++)
                 {
@@ -529,12 +521,12 @@ namespace Ee4v.AssetManager
                 return entries;
             }
 
-            if (assetFile == null)
+            if (assetFile == null || isDirectory)
             {
                 return entries;
             }
 
-            entries.Add(new FileTreeImportTargetEntry(assetFile.Id, relativePath, isDirectory));
+            entries.Add(new FileTreeImportTargetEntry(assetFile.Id, relativePath));
             return entries;
         }
 
@@ -787,7 +779,7 @@ namespace Ee4v.AssetManager
                 IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children)
             {
                 var entries = new List<FileTreeImportTargetEntry>();
-                if (children != null && children.Count > 0)
+                if (children != null)
                 {
                     for (var i = 0; i < children.Count; i++)
                     {
@@ -801,12 +793,12 @@ namespace Ee4v.AssetManager
                     return entries;
                 }
 
-                if (assetFile == null)
+                if (assetFile == null || isDirectory)
                 {
                     return entries;
                 }
 
-                entries.Add(new FileTreeImportTargetEntry(assetFile.Id, relativePath, isDirectory));
+                entries.Add(new FileTreeImportTargetEntry(assetFile.Id, relativePath));
                 return entries;
             }
 

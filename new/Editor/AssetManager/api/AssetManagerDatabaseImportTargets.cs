@@ -31,12 +31,11 @@ namespace Ee4v.AssetManager.Api
                 for (var i = 0; i < normalizedTargets.Count; i++)
                 {
                     connection.Execute(
-                        @"INSERT INTO file_import_target(id, file_info_id, relative_path, is_directory, created_at, updated_at)
-                          VALUES (?, ?, ?, ?, ?, ?)",
+                        @"INSERT INTO file_import_target(id, file_info_id, relative_path, created_at, updated_at)
+                          VALUES (?, ?, ?, ?, ?)",
                         NewId(),
                         fileId,
                         normalizedTargets[i].RelativePath,
-                        normalizedTargets[i].IsDirectory ? 1 : 0,
                         now,
                         now);
                 }
@@ -68,8 +67,7 @@ namespace Ee4v.AssetManager.Api
 
                 results.Add(new AssetFileImportTargetRequest
                 {
-                    RelativePath = relativePath,
-                    IsDirectory = target.IsDirectory
+                    RelativePath = relativePath
                 });
             }
 

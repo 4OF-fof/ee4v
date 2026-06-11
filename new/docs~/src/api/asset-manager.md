@@ -139,7 +139,6 @@ public sealed class AssetFileImportTarget
     public string Id { get; set; }
     public string FileId { get; set; }
     public string RelativePath { get; set; }
-    public bool IsDirectory { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
@@ -313,7 +312,6 @@ public sealed class RegisterFileRequest
 public sealed class AssetFileImportTargetRequest
 {
     public string RelativePath { get; set; }
-    public bool IsDirectory { get; set; }
 }
 
 public sealed class CreateCollectionRequest

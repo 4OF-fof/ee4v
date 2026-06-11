@@ -148,7 +148,6 @@ erDiagram
         TEXT id PK
         TEXT file_info_id FK
         TEXT relative_path
-        INTEGER is_directory
         TEXT created_at
         TEXT updated_at
     }
@@ -473,20 +472,17 @@ ON file_dependency(dependent_file_info_id, dependency_file_info_id, dependency_t
 
 ## File Import Target
 
-Unity へ取り込む対象 file / directory entry。`file_info` の実体が directory または zip の場合、配下 entry を `relative_path` で保持する。`relative_path` が空文字の場合は `file_info` 実体そのものを import 対象にする。
+Unity へ取り込む対象 file entry。`file_info` の実体が directory または zip の場合、UI 側で選択された directory を配下 file entry の一覧へ展開し、各 entry を `relative_path` で保持する。`relative_path` が空文字の場合は `file_info` 実体そのものを import 対象にする。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
 | `id` | GUID string | Yes |  | File Import Target の識別子 |
 | `file_info_id` | GUID string | Yes | `(file_info_id, relative_path)` | 親 File Info |
 | `relative_path` | TEXT | Yes | `(file_info_id, relative_path)` | file 実体からの相対 path。zip 内 entry も `/` 区切りで保持する |
-| `is_directory` | BOOLEAN | Yes |  | import 対象が directory entry か |
 | `created_at` | DATETIME | Yes |  | 作成時刻 |
 | `updated_at` | DATETIME | Yes |  | 更新時刻 |
 
 ```sql
-CHECK (is_directory IN (0, 1))
-
 CREATE UNIQUE INDEX unique_file_import_target_file_path
 ON file_import_target(file_info_id, relative_path);
 ```

@@ -50,7 +50,6 @@ namespace Ee4v.AssetManager.Api
     public sealed class AssetFileImportTargetRequest
     {
         public string RelativePath { get; set; }
-        public bool IsDirectory { get; set; }
     }
 
     public sealed class CreateCollectionRequest
