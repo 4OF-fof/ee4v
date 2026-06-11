@@ -139,8 +139,6 @@ public sealed class AssetFileImportTarget
     public string Id { get; set; }
     public string FileId { get; set; }
     public string RelativePath { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
 }
 
 public sealed class AssetTag
@@ -656,7 +654,6 @@ Returns:
 Effects:
 
 - `item_tag` を指定一覧に同期する。
-- 追加分には `created_at` を設定する。
 
 Notes:
 

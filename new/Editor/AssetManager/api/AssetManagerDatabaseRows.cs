@@ -103,7 +103,6 @@ namespace Ee4v.AssetManager.Api
         {
             public string parent_collection_id { get; set; }
             public string child_collection_id { get; set; }
-            public string created_at { get; set; }
         }
 
         private sealed class SmartCollectionRow
@@ -135,8 +134,6 @@ namespace Ee4v.AssetManager.Api
             public string id { get; set; }
             public string file_info_id { get; set; }
             public string relative_path { get; set; }
-            public string created_at { get; set; }
-            public string updated_at { get; set; }
         }
 
         private sealed class SyncInfoRow

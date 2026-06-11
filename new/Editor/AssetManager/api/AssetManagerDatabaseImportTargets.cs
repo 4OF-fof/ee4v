@@ -27,17 +27,14 @@ namespace Ee4v.AssetManager.Api
                 var normalizedTargets = NormalizeImportTargets(targets);
                 connection.Execute("DELETE FROM file_import_target WHERE file_info_id = ?", fileId);
 
-                var now = Now();
                 for (var i = 0; i < normalizedTargets.Count; i++)
                 {
                     connection.Execute(
-                        @"INSERT INTO file_import_target(id, file_info_id, relative_path, created_at, updated_at)
-                          VALUES (?, ?, ?, ?, ?)",
+                        @"INSERT INTO file_import_target(id, file_info_id, relative_path)
+                          VALUES (?, ?, ?)",
                         NewId(),
                         fileId,
-                        normalizedTargets[i].RelativePath,
-                        now,
-                        now);
+                        normalizedTargets[i].RelativePath);
                 }
             }
         }

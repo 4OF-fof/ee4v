@@ -57,8 +57,6 @@ namespace Ee4v.AssetManager.Api
         public string Id { get; set; }
         public string FileId { get; set; }
         public string RelativePath { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
     }
 
     public sealed class AssetFileSummary

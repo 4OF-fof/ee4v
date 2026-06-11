@@ -102,9 +102,7 @@ namespace Ee4v.AssetManager.Api
             {
                 Id = row.id,
                 FileId = row.file_info_id,
-                RelativePath = row.relative_path,
-                CreatedAt = ParseDate(row.created_at),
-                UpdatedAt = ParseDate(row.updated_at)
+                RelativePath = row.relative_path
             };
         }
 

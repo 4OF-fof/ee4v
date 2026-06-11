@@ -153,14 +153,12 @@ namespace Ee4v.AssetManager.Api
                 }
 
                 connection.Execute("DELETE FROM file_dependency WHERE dependent_file_info_id = ?", dependentFileId);
-                var now = Now();
                 for (var i = 0; i < ids.Count; i++)
                 {
                     connection.Execute(
-                        "INSERT OR IGNORE INTO file_dependency(dependent_file_info_id, dependency_file_info_id, dependency_type, created_at) VALUES (?, ?, 'requires', ?)",
+                        "INSERT OR IGNORE INTO file_dependency(dependent_file_info_id, dependency_file_info_id, dependency_type) VALUES (?, ?, 'requires')",
                         dependentFileId,
-                        ids[i],
-                        now);
+                        ids[i]);
                 }
             }
         }

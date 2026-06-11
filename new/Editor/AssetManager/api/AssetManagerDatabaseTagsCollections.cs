@@ -154,10 +154,9 @@ namespace Ee4v.AssetManager.Api
             ValidateTagIds(connection, tagIds);
 
             connection.Execute("DELETE FROM item_tag WHERE item_info_id = ?", itemId);
-            var now = Now();
             for (var i = 0; i < tagIds.Count; i++)
             {
-                connection.Execute("INSERT OR IGNORE INTO item_tag(item_info_id, tag_info_id, created_at) VALUES (?, ?, ?)", itemId, tagIds[i], now);
+                connection.Execute("INSERT OR IGNORE INTO item_tag(item_info_id, tag_info_id) VALUES (?, ?)", itemId, tagIds[i]);
             }
         }
 
@@ -166,10 +165,9 @@ namespace Ee4v.AssetManager.Api
             ValidateRegularCollectionIds(connection, collectionIds);
 
             connection.Execute("DELETE FROM item_collection WHERE item_info_id = ?", itemId);
-            var now = Now();
             for (var i = 0; i < collectionIds.Count; i++)
             {
-                connection.Execute("INSERT OR IGNORE INTO item_collection(item_info_id, collection_info_id, created_at) VALUES (?, ?, ?)", itemId, collectionIds[i], now);
+                connection.Execute("INSERT OR IGNORE INTO item_collection(item_info_id, collection_info_id) VALUES (?, ?)", itemId, collectionIds[i]);
             }
         }
 
@@ -205,7 +203,7 @@ namespace Ee4v.AssetManager.Api
             }
 
             connection.Execute("DELETE FROM collection_collection WHERE child_collection_id = ?", collectionId);
-            connection.Execute("INSERT INTO collection_collection(parent_collection_id, child_collection_id, created_at) VALUES (?, ?, ?)", parentCollectionId, collectionId, Now());
+            connection.Execute("INSERT INTO collection_collection(parent_collection_id, child_collection_id) VALUES (?, ?)", parentCollectionId, collectionId);
         }
 
         private static bool IsCollectionDescendant(SQLiteConnection connection, string candidateChildId, string parentId)

@@ -75,7 +75,6 @@ erDiagram
     item_tag {
         TEXT item_info_id PK, FK
         TEXT tag_info_id PK, FK
-        TEXT created_at
     }
 
     collection_info {
@@ -105,13 +104,11 @@ erDiagram
     collection_collection {
         TEXT parent_collection_id PK, FK
         TEXT child_collection_id PK, FK, UK
-        TEXT created_at
     }
 
     item_collection {
         TEXT item_info_id PK, FK
         TEXT collection_info_id PK, FK
-        TEXT created_at
     }
 
     booth_info {
@@ -141,15 +138,12 @@ erDiagram
         TEXT dependent_file_info_id PK, FK
         TEXT dependency_file_info_id PK, FK
         TEXT dependency_type PK
-        TEXT created_at
     }
 
     file_import_target {
         TEXT id PK
         TEXT file_info_id FK
         TEXT relative_path
-        TEXT created_at
-        TEXT updated_at
     }
 
     eagle_file_origin {
@@ -214,7 +208,6 @@ Item と AssetManager 独自 tag の付与関係。
 |---|---|---:|---|---|
 | `item_info_id` | GUID string | Yes | `(item_info_id, tag_info_id)` | 親 Item Info |
 | `tag_info_id` | GUID string | Yes | `(item_info_id, tag_info_id)` | 付与 Tag Info |
-| `created_at` | DATETIME | Yes |  | 付与作成時刻 |
 
 ```sql
 CREATE UNIQUE INDEX unique_item_tag
@@ -281,7 +274,6 @@ Collection 同士の親子関係。`parent_collection_id` が `child_collection_
 |---|---|---:|---|---|
 | `parent_collection_id` | GUID string | Yes | `(parent_collection_id, child_collection_id)` | 親 Collection Info |
 | `child_collection_id` | GUID string | Yes | `(parent_collection_id, child_collection_id)`, `child_collection_id` | 子 Collection Info |
-| `created_at` | DATETIME | Yes |  | 親子関係の作成時刻 |
 
 ```sql
 CHECK (parent_collection_id != child_collection_id)
@@ -353,7 +345,6 @@ Item と Collection の所属関係。
 |---|---|---:|---|---|
 | `item_info_id` | GUID string | Yes | `(item_info_id, collection_info_id)` | 親 Item Info |
 | `collection_info_id` | GUID string | Yes | `(item_info_id, collection_info_id)` | 所属 Collection Info |
-| `created_at` | DATETIME | Yes |  | 所属作成時刻 |
 
 ```sql
 CREATE UNIQUE INDEX unique_item_collection
@@ -460,7 +451,6 @@ File Info 同士の依存関係。`dependent_file_info_id` が `dependency_file_
 | `dependent_file_info_id` | GUID string | Yes | `(dependent_file_info_id, dependency_file_info_id, dependency_type)` | 依存している File Info |
 | `dependency_file_info_id` | GUID string | Yes | `(dependent_file_info_id, dependency_file_info_id, dependency_type)` | 依存される File Info |
 | `dependency_type` | file_dependency_type | Yes | `(dependent_file_info_id, dependency_file_info_id, dependency_type)` | 依存種別 |
-| `created_at` | DATETIME | Yes |  | 依存関係の作成時刻 |
 
 ```sql
 CHECK (dependent_file_info_id != dependency_file_info_id)
@@ -479,8 +469,6 @@ Unity へ取り込む対象 file entry。`file_info` の実体が directory ま�
 | `id` | GUID string | Yes |  | File Import Target の識別子 |
 | `file_info_id` | GUID string | Yes | `(file_info_id, relative_path)` | 親 File Info |
 | `relative_path` | TEXT | Yes | `(file_info_id, relative_path)` | file 実体からの相対 path。zip 内 entry も `/` 区切りで保持する |
-| `created_at` | DATETIME | Yes |  | 作成時刻 |
-| `updated_at` | DATETIME | Yes |  | 更新時刻 |
 
 ```sql
 CREATE UNIQUE INDEX unique_file_import_target_file_path
