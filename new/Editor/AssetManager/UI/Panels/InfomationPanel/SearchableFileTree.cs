@@ -16,6 +16,7 @@ namespace Ee4v.AssetManager
         private const string RootClassName = "ee4v-asset-manager-file-tree";
         private const string RowClassName = "ee4v-asset-manager-file-tree__row";
         private const string RowImportTargetClassName = "ee4v-asset-manager-file-tree__row--import-target";
+        private const string RowGroupClassName = "ee4v-asset-manager-file-tree__row--group";
         private const string RowTitleClassName = "ee4v-asset-manager-file-tree__title";
         private const string RowMetaClassName = "ee4v-asset-manager-file-tree__meta";
         private readonly SearchableTreeView<FileTreeNode> _treeView;
@@ -34,7 +35,8 @@ namespace Ee4v.AssetManager
                 I18N.Get("assetManager.infomationPanel.fileTree.empty"),
                 I18N.Get("assetManager.infomationPanel.fileTree.searchPlaceholder"),
                 SelectionType.Multiple,
-                OnTreeContextClick);
+                OnTreeContextClick,
+                node => node == null || !node.IsGroup);
             _treeView.SetViewDataKey("ee4v-asset-manager-infomation-panel-file-tree");
             Add(_treeView);
 
@@ -115,6 +117,12 @@ namespace Ee4v.AssetManager
             try
             {
                 var files = LoadFiles();
+                var variants = string.IsNullOrWhiteSpace(_fileId)
+                    ? AssetManagerApi.GetVariantGroups(_itemId)
+                    : Array.Empty<AssetVariantGroup>();
+                var versions = string.IsNullOrWhiteSpace(_fileId)
+                    ? AssetManagerApi.GetVersionGroups(_itemId)
+                    : Array.Empty<AssetVersionGroup>();
                 var importTargetsByFileId = new Dictionary<string, IReadOnlyList<AssetFileImportTarget>>(StringComparer.Ordinal);
                 for (var i = 0; i < files.Count; i++)
                 {
@@ -122,7 +130,7 @@ namespace Ee4v.AssetManager
                 }
 
                 _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.empty"));
-                _treeView.SetItems(_builder.Build(files, importTargetsByFileId), preserveTreeState);
+                _treeView.SetItems(_builder.Build(files, variants, versions, importTargetsByFileId), preserveTreeState);
             }
             catch (Exception)
             {
@@ -170,6 +178,7 @@ namespace Ee4v.AssetManager
         private static void BindTreeItem(VisualElement element, FileTreeNode node)
         {
             element.EnableInClassList(RowImportTargetClassName, node.IsImportTarget);
+            element.EnableInClassList(RowGroupClassName, node.IsGroup);
             var title = element.ElementAt(0) as UiTextElement;
             var meta = element.ElementAt(1) as UiTextElement;
 
@@ -189,8 +198,13 @@ namespace Ee4v.AssetManager
 
         private void OnTreeContextClick(VisualElement target, FileTreeNode item, IReadOnlyList<FileTreeNode> selectedItems, Vector2 panelPosition)
         {
+            if (item == null || item.IsGroup)
+            {
+                return;
+            }
+
             var selected = selectedItems ?? Array.Empty<FileTreeNode>();
-            var importTargetSelection = selected.Where(node => node != null && node.CanSetImportTarget).ToArray();
+            var importTargetSelection = selected.Where(node => node != null && !node.IsGroup && node.CanSetImportTarget).ToArray();
 
             var menuItems = new List<ContextMenuItemState>();
             if (importTargetSelection.Length > 0)
@@ -273,6 +287,7 @@ namespace Ee4v.AssetManager
             bool hasAnyImportTarget = false,
             string relativePath = null,
             bool isDirectory = false,
+            bool isGroup = false,
             IReadOnlyList<FileTreeImportTargetEntry> importTargetEntries = null)
         {
             Name = name ?? string.Empty;
@@ -281,6 +296,7 @@ namespace Ee4v.AssetManager
             IsImportTarget = isImportTarget;
             HasAnyImportTarget = hasAnyImportTarget;
             RelativePath = NormalizeRelativePath(relativePath);
+            IsGroup = isGroup;
             ImportTargetEntries = importTargetEntries ?? Array.Empty<FileTreeImportTargetEntry>();
         }
 
@@ -295,6 +311,8 @@ namespace Ee4v.AssetManager
         public bool HasAnyImportTarget { get; }
 
         public string RelativePath { get; }
+
+        public bool IsGroup { get; }
 
         public IReadOnlyList<FileTreeImportTargetEntry> ImportTargetEntries { get; }
 
@@ -330,6 +348,8 @@ namespace Ee4v.AssetManager
 
         public IReadOnlyList<SearchableTreeItemData<FileTreeNode>> Build(
             IReadOnlyList<AssetFile> files,
+            IReadOnlyList<AssetVariantGroup> variantGroups,
+            IReadOnlyList<AssetVersionGroup> versionGroups,
             IReadOnlyDictionary<string, IReadOnlyList<AssetFileImportTarget>> importTargetsByFileId)
         {
             _nextId = 1;
@@ -340,18 +360,124 @@ namespace Ee4v.AssetManager
                 return items;
             }
 
+            variantGroups = variantGroups ?? Array.Empty<AssetVariantGroup>();
+            versionGroups = versionGroups ?? Array.Empty<AssetVersionGroup>();
+            var consumedFileIds = new HashSet<string>(StringComparer.Ordinal);
+
+            for (var i = 0; i < variantGroups.Count; i++)
+            {
+                var groupItem = BuildVariantGroupNode(variantGroups[i], versionGroups, files, consumedFileIds);
+                if (groupItem != null)
+                {
+                    items.Add(groupItem);
+                }
+            }
+
+            for (var i = 0; i < versionGroups.Count; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(versionGroups[i].VariantGroupId))
+                {
+                    continue;
+                }
+
+                var groupItem = BuildVersionGroupNode(versionGroups[i], files, consumedFileIds);
+                if (groupItem != null)
+                {
+                    items.Add(groupItem);
+                }
+            }
+
             for (var i = 0; i < files.Count; i++)
             {
                 var file = files[i];
-                if (file == null)
+                if (file != null && !consumedFileIds.Contains(file.Id))
+                {
+                    items.Add(BuildAssetFileNode(file));
+                }
+            }
+
+            return items;
+        }
+
+        private SearchableTreeItemData<FileTreeNode> BuildVariantGroupNode(
+            AssetVariantGroup variantGroup,
+            IReadOnlyList<AssetVersionGroup> versionGroups,
+            IReadOnlyList<AssetFile> files,
+            HashSet<string> consumedFileIds)
+        {
+            if (variantGroup == null)
+            {
+                return null;
+            }
+
+            var children = new List<SearchableTreeItemData<FileTreeNode>>();
+            for (var i = 0; i < versionGroups.Count; i++)
+            {
+                if (!string.Equals(versionGroups[i].VariantGroupId, variantGroup.Id, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                var versionItem = BuildVersionGroupNode(versionGroups[i], files, consumedFileIds);
+                if (versionItem != null)
+                {
+                    children.Add(versionItem);
+                }
+            }
+
+            AddFiles(children, files, consumedFileIds, file => string.Equals(file.VariantGroupId, variantGroup.Id, StringComparison.Ordinal));
+            return children.Count == 0 ? null : CreateGroupItem(variantGroup.Name, children);
+        }
+
+        private SearchableTreeItemData<FileTreeNode> BuildVersionGroupNode(
+            AssetVersionGroup versionGroup,
+            IReadOnlyList<AssetFile> files,
+            HashSet<string> consumedFileIds)
+        {
+            if (versionGroup == null)
+            {
+                return null;
+            }
+
+            var children = new List<SearchableTreeItemData<FileTreeNode>>();
+            AddFiles(children, files, consumedFileIds, file => string.Equals(file.VersionGroupId, versionGroup.Id, StringComparison.Ordinal));
+            return children.Count == 0 ? null : CreateGroupItem(versionGroup.Name, children);
+        }
+
+        private void AddFiles(
+            List<SearchableTreeItemData<FileTreeNode>> items,
+            IReadOnlyList<AssetFile> files,
+            HashSet<string> consumedFileIds,
+            Func<AssetFile, bool> predicate)
+        {
+            for (var i = 0; i < files.Count; i++)
+            {
+                var file = files[i];
+                if (file == null || consumedFileIds.Contains(file.Id) || !predicate(file))
                 {
                     continue;
                 }
 
                 items.Add(BuildAssetFileNode(file));
+                consumedFileIds.Add(file.Id);
             }
+        }
 
-            return items;
+        private SearchableTreeItemData<FileTreeNode> CreateGroupItem(
+            string name,
+            IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children)
+        {
+            var node = new FileTreeNode(
+                name,
+                string.Empty,
+                name,
+                isGroup: true);
+            return new SearchableTreeItemData<FileTreeNode>(
+                _nextId++,
+                node,
+                node.Name,
+                node.Name,
+                children);
         }
 
         private SearchableTreeItemData<FileTreeNode> BuildAssetFileNode(AssetFile file)
@@ -491,7 +617,7 @@ namespace Ee4v.AssetManager
                 HasAnyImportTarget(targetPaths, targetPath, importTargetEntries),
                 targetPath,
                 isDirectory,
-                importTargetEntries);
+                importTargetEntries: importTargetEntries);
             return new SearchableTreeItemData<FileTreeNode>(
                 _nextId++,
                 node,
@@ -763,7 +889,7 @@ namespace Ee4v.AssetManager
                     HasAnyImportTarget(importTargetPaths, targetPath, importTargetEntries),
                     targetPath,
                     isDirectory,
-                    importTargetEntries);
+                    importTargetEntries: importTargetEntries);
                 return new SearchableTreeItemData<FileTreeNode>(
                     nextId(),
                     node,

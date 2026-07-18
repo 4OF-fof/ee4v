@@ -24,9 +24,9 @@
       "label": "Source priority",
       "tooltip": "file origin の優先順です。例: ee4v,eagle,blm"
     },
-    "variantGroupRegex": {
-      "label": "Variant group regex",
-      "tooltip": "取り込み時に file 名や datasource path から variant group 名を抽出する正規表現です。空なら無効です。名前付き group name、最初の capture group、match 全体の順で group 名に使います。"
+    "avatarNames": {
+      "label": "Avatar names",
+      "tooltip": "variant group 自動判定に使うアバター名です。カンマ、セミコロン、改行区切りで指定します。アバター名以外の部分が一致する file 群を、検出したアバター名で group 化します。"
     },
     "versionGroupRegex": {
       "label": "Version group regex",

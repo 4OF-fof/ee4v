@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Ee4v.Core.Settings;
@@ -8,23 +9,13 @@ namespace Ee4v.AssetManager.Api
 {
     internal static partial class AssetManagerDatabase
     {
-        private static ImportedFileParent ResolveImportedFileParent(SQLiteConnection connection, string itemId, string fileName, string classifierText)
+        private static ImportedFileParent ResolveImportedFileParent(SQLiteConnection connection, string itemId, string fileName, string currentFileId = null)
         {
-            var text = BuildGroupingClassifierText(fileName, classifierText);
-            var variantName = ExtractRegexGroupName(SettingApi.Get(AssetManagerDefinitions.VariantGroupRegex), text);
-            var versionName = ExtractRegexGroupName(SettingApi.Get(AssetManagerDefinitions.VersionGroupRegex), text);
+            var variantName = ResolveAvatarVariantName(connection, itemId, fileName, SettingApi.Get(AssetManagerDefinitions.AvatarNames), currentFileId);
 
             var variantGroupId = string.IsNullOrWhiteSpace(variantName)
                 ? null
                 : EnsureImportedVariantGroup(connection, itemId, variantName);
-            var versionGroupId = string.IsNullOrWhiteSpace(versionName)
-                ? null
-                : EnsureImportedVersionGroup(connection, itemId, variantGroupId, versionName);
-
-            if (!string.IsNullOrWhiteSpace(versionGroupId))
-            {
-                return new ImportedFileParent(null, versionGroupId, null);
-            }
 
             if (!string.IsNullOrWhiteSpace(variantGroupId))
             {
@@ -32,6 +23,13 @@ namespace Ee4v.AssetManager.Api
             }
 
             return new ImportedFileParent(itemId, null, null);
+        }
+
+        private static void ReconcileImportedFileGroups(SQLiteConnection connection, string itemId, string now)
+        {
+            ReconcileImportedAvatarVariantGroups(connection, itemId, now);
+            ReconcileImportedVersionGroups(connection, itemId, now);
+            DeleteEmptyImportedGroups(connection, itemId);
         }
 
         private static bool UpdateFileInfoParentSnapshot(SQLiteConnection connection, string fileId, ImportedFileParent parent, string now)
@@ -89,14 +87,9 @@ namespace Ee4v.AssetManager.Api
             connection.Execute("UPDATE version_group SET primary_file_info_id = ?, updated_at = ? WHERE id = ?", fileId, now, versionGroupId);
         }
 
-        private static string BuildGroupingClassifierText(string fileName, string classifierText)
+        private static string ResolveVersionSeriesName(string fileName, string pattern, string avatarNamesText)
         {
-            return (fileName ?? string.Empty) + " " + (classifierText ?? string.Empty);
-        }
-
-        private static string ExtractRegexGroupName(string pattern, string text)
-        {
-            if (string.IsNullOrWhiteSpace(pattern) || string.IsNullOrWhiteSpace(text))
+            if (string.IsNullOrWhiteSpace(pattern) || string.IsNullOrWhiteSpace(fileName))
             {
                 return null;
             }
@@ -104,7 +97,235 @@ namespace Ee4v.AssetManager.Api
             Match match;
             try
             {
-                match = Regex.Match(text, pattern);
+                match = Regex.Match(fileName, pattern);
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+
+            if (!match.Success)
+            {
+                return null;
+            }
+
+            var baseName = RemoveExtension(fileName);
+            var removeIndex = Math.Min(match.Index, baseName.Length);
+            var removeLength = Math.Min(match.Length, baseName.Length - removeIndex);
+            var value = removeLength <= 0
+                ? baseName
+                : baseName.Remove(removeIndex, removeLength);
+            value = NormalizeVersionSeriesName(value);
+            value = RemoveConfiguredAvatarTokenFromSeriesName(value, avatarNamesText);
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        private static string RemoveConfiguredAvatarTokenFromSeriesName(string value, string avatarNamesText)
+        {
+            var normalizedValue = NormalizeGroupingText(value);
+            if (string.IsNullOrWhiteSpace(normalizedValue))
+            {
+                return value;
+            }
+
+            var matchedAvatarNames = FindContainedAvatarNames(normalizedValue, ParseAvatarNames(avatarNamesText));
+            if (matchedAvatarNames.Count == 0)
+            {
+                return value;
+            }
+
+            var nextValue = value ?? string.Empty;
+            for (var i = 0; i < matchedAvatarNames.Count; i++)
+            {
+                var avatarSeriesName = NormalizeVersionSeriesName(matchedAvatarNames[i].DisplayName);
+                nextValue = Regex.Replace(nextValue, @"(^|_)" + Regex.Escape(avatarSeriesName) + @"(?=$|_)", "_", RegexOptions.IgnoreCase);
+            }
+
+            nextValue = Regex.Replace(nextValue, "_+", "_").Trim('_');
+            return string.IsNullOrWhiteSpace(nextValue)
+                ? value
+                : NormalizeVersionSeriesName(nextValue);
+        }
+
+        private static string NormalizeVersionSeriesName(string value)
+        {
+            value = NormalizeDatasourceText(value);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            value = Regex.Replace(value, @"[\s_\-.]+", "_").Trim('_');
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value;
+        }
+
+        private static void ReconcileImportedAvatarVariantGroups(SQLiteConnection connection, string itemId, string now)
+        {
+            var avatarNamesText = SettingApi.Get(AssetManagerDefinitions.AvatarNames);
+            var avatarNames = ParseAvatarNames(avatarNamesText);
+            if (avatarNames.Count == 0)
+            {
+                return;
+            }
+
+            var rows = QueryFilesForItem(connection, itemId);
+            var candidates = rows
+                .Select(row => CreateAvatarGroupingCandidate(row, avatarNames))
+                .Where(candidate => candidate != null)
+                .ToArray();
+            var groupedSignatures = candidates
+                .GroupBy(candidate => candidate.Signature)
+                .Where(group => group.Count() >= 2)
+                .Select(group => group.Key)
+                .ToArray();
+
+            for (var i = 0; i < candidates.Length; i++)
+            {
+                if (!groupedSignatures.Any(signature => StringEquals(signature, candidates[i].Signature)))
+                {
+                    continue;
+                }
+
+                var variantGroupId = EnsureImportedVariantGroup(connection, itemId, candidates[i].GroupName);
+                if (!string.IsNullOrWhiteSpace(candidates[i].Row.version_group_id))
+                {
+                    MoveVersionGroupToVariantGroup(connection, candidates[i].Row.version_group_id, variantGroupId, now);
+                    continue;
+                }
+
+                UpdateFileInfoParentSnapshot(connection, candidates[i].Row.id, new ImportedFileParent(null, null, variantGroupId), now);
+            }
+        }
+
+        private static void ReconcileImportedVersionGroups(SQLiteConnection connection, string itemId, string now)
+        {
+            var pattern = SettingApi.Get(AssetManagerDefinitions.VersionGroupRegex);
+            var avatarNamesText = SettingApi.Get(AssetManagerDefinitions.AvatarNames);
+            if (string.IsNullOrWhiteSpace(pattern))
+            {
+                return;
+            }
+
+            var rows = QueryFilesForItem(connection, itemId);
+            var candidates = rows
+                .Select(row => CreateVersionGroupingCandidate(connection, row, pattern, avatarNamesText))
+                .Where(candidate => candidate != null)
+                .ToArray();
+            var groupedKeys = candidates
+                .GroupBy(candidate => candidate.Key)
+                .Where(group => group.Select(candidate => candidate.VersionValue).Distinct(StringComparer.OrdinalIgnoreCase).Count() >= 2)
+                .Select(group => group.Key)
+                .ToArray();
+
+            for (var i = 0; i < candidates.Length; i++)
+            {
+                var candidate = candidates[i];
+                if (!groupedKeys.Any(key => StringEquals(key, candidate.Key)))
+                {
+                    continue;
+                }
+
+                var versionGroupId = EnsureImportedVersionGroup(connection, itemId, candidate.VariantGroupId, candidate.SeriesName);
+                if (!string.IsNullOrWhiteSpace(candidate.Row.version_group_id))
+                {
+                    MergeVersionGroupInto(connection, candidate.Row.version_group_id, versionGroupId, now);
+                    EnsureVersionGroupPrimaryIfMissing(connection, versionGroupId, candidate.Row.id, now);
+                    continue;
+                }
+
+                UpdateFileInfoParentSnapshot(connection, candidate.Row.id, new ImportedFileParent(null, versionGroupId, null), now);
+                EnsureVersionGroupPrimaryIfMissing(connection, versionGroupId, candidate.Row.id, now);
+            }
+        }
+
+        private static string ResolveAvatarVariantName(SQLiteConnection connection, string itemId, string fileName, string avatarNamesText, string currentFileId)
+        {
+            var avatarNames = ParseAvatarNames(avatarNamesText);
+            if (avatarNames.Count == 0 || string.IsNullOrWhiteSpace(fileName))
+            {
+                return null;
+            }
+
+            var candidate = CreateAvatarGroupingCandidate(fileName, avatarNames);
+            if (candidate == null)
+            {
+                return null;
+            }
+
+            return HasMatchingAvatarGroupingSignature(connection, itemId, avatarNames, candidate.Signature, currentFileId)
+                ? candidate.GroupName
+                : null;
+        }
+
+        private static void MoveVersionGroupToVariantGroup(SQLiteConnection connection, string versionGroupId, string variantGroupId, string now)
+        {
+            var source = connection.Query<VersionGroupRow>("SELECT * FROM version_group WHERE id = ? LIMIT 1", versionGroupId).FirstOrDefault();
+            if (source == null || StringEquals(source.variant_group_id, variantGroupId))
+            {
+                return;
+            }
+
+            var target = connection.Query<VersionGroupRow>(
+                    "SELECT * FROM version_group WHERE item_info_id = ? AND variant_group_id = ? AND name = ? AND id != ? LIMIT 1",
+                    source.item_info_id,
+                    variantGroupId,
+                    source.name,
+                    source.id)
+                .FirstOrDefault();
+            if (target == null)
+            {
+                connection.Execute("UPDATE version_group SET variant_group_id = ?, updated_at = ? WHERE id = ?", variantGroupId, now, source.id);
+                return;
+            }
+
+            connection.Execute("UPDATE file_info SET version_group_id = ?, updated_at = ? WHERE version_group_id = ?", target.id, now, source.id);
+            connection.Execute("UPDATE OR IGNORE dependency SET source_version_group_id = ? WHERE source_version_group_id = ?", target.id, source.id);
+            connection.Execute("DELETE FROM dependency WHERE source_version_group_id = ?", source.id);
+            connection.Execute("UPDATE OR IGNORE dependency SET target_version_group_id = ? WHERE target_version_group_id = ?", target.id, source.id);
+            connection.Execute("DELETE FROM dependency WHERE target_version_group_id = ?", source.id);
+            if (string.IsNullOrWhiteSpace(target.primary_file_info_id) && !string.IsNullOrWhiteSpace(source.primary_file_info_id))
+            {
+                connection.Execute("UPDATE version_group SET primary_file_info_id = ?, updated_at = ? WHERE id = ?", source.primary_file_info_id, now, target.id);
+            }
+
+            connection.Execute("DELETE FROM version_group WHERE id = ?", source.id);
+        }
+
+        private static VersionGroupingCandidate CreateVersionGroupingCandidate(SQLiteConnection connection, FileRow row, string pattern, string avatarNamesText)
+        {
+            var seriesName = ResolveVersionSeriesName(row.file_name, pattern, avatarNamesText);
+            if (string.IsNullOrWhiteSpace(seriesName))
+            {
+                return null;
+            }
+
+            var versionValue = ResolveVersionValue(row.file_name, pattern);
+            if (string.IsNullOrWhiteSpace(versionValue))
+            {
+                return null;
+            }
+
+            var variantGroupId = row.variant_group_id;
+            if (!string.IsNullOrWhiteSpace(row.version_group_id))
+            {
+                var versionGroup = connection.Query<VersionGroupRow>("SELECT * FROM version_group WHERE id = ? LIMIT 1", row.version_group_id).FirstOrDefault();
+                variantGroupId = versionGroup == null ? variantGroupId : versionGroup.variant_group_id;
+            }
+
+            return new VersionGroupingCandidate(row, seriesName, versionValue, variantGroupId);
+        }
+
+        private static string ResolveVersionValue(string fileName, string pattern)
+        {
+            if (string.IsNullOrWhiteSpace(pattern) || string.IsNullOrWhiteSpace(fileName))
+            {
+                return null;
+            }
+
+            Match match;
+            try
+            {
+                match = Regex.Match(fileName, pattern);
             }
             catch (ArgumentException)
             {
@@ -118,26 +339,235 @@ namespace Ee4v.AssetManager.Api
 
             var value = match.Groups["name"] != null && match.Groups["name"].Success
                 ? match.Groups["name"].Value
-                : null;
-            if (string.IsNullOrWhiteSpace(value))
+                : match.Value;
+            value = NormalizeVersionSeriesName(value);
+            return string.IsNullOrWhiteSpace(value) ? null : value;
+        }
+
+        private static void MergeVersionGroupInto(SQLiteConnection connection, string sourceVersionGroupId, string targetVersionGroupId, string now)
+        {
+            if (string.IsNullOrWhiteSpace(sourceVersionGroupId) ||
+                string.IsNullOrWhiteSpace(targetVersionGroupId) ||
+                StringEquals(sourceVersionGroupId, targetVersionGroupId))
             {
-                for (var i = 1; i < match.Groups.Count; i++)
+                return;
+            }
+
+            var source = connection.Query<VersionGroupRow>("SELECT * FROM version_group WHERE id = ? LIMIT 1", sourceVersionGroupId).FirstOrDefault();
+            var target = connection.Query<VersionGroupRow>("SELECT * FROM version_group WHERE id = ? LIMIT 1", targetVersionGroupId).FirstOrDefault();
+            if (source == null || target == null)
+            {
+                return;
+            }
+
+            connection.Execute("UPDATE file_info SET version_group_id = ?, updated_at = ? WHERE version_group_id = ?", target.id, now, source.id);
+            connection.Execute("UPDATE OR IGNORE dependency SET source_version_group_id = ? WHERE source_version_group_id = ?", target.id, source.id);
+            connection.Execute("DELETE FROM dependency WHERE source_version_group_id = ?", source.id);
+            connection.Execute("UPDATE OR IGNORE dependency SET target_version_group_id = ? WHERE target_version_group_id = ?", target.id, source.id);
+            connection.Execute("DELETE FROM dependency WHERE target_version_group_id = ?", source.id);
+            if (string.IsNullOrWhiteSpace(target.primary_file_info_id) && !string.IsNullOrWhiteSpace(source.primary_file_info_id))
+            {
+                connection.Execute("UPDATE version_group SET primary_file_info_id = ?, updated_at = ? WHERE id = ?", source.primary_file_info_id, now, target.id);
+            }
+
+            connection.Execute("DELETE FROM version_group WHERE id = ?", source.id);
+        }
+
+        private static void DeleteEmptyImportedGroups(SQLiteConnection connection, string itemId)
+        {
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                return;
+            }
+
+            connection.Execute(
+                @"DELETE FROM version_group
+                  WHERE item_info_id = ?
+                    AND id NOT IN (
+                        SELECT DISTINCT version_group_id
+                        FROM file_info
+                        WHERE version_group_id IS NOT NULL
+                    )",
+                itemId);
+            connection.Execute(
+                @"DELETE FROM variant_group
+                  WHERE item_info_id = ?
+                    AND id NOT IN (
+                        SELECT DISTINCT variant_group_id
+                        FROM file_info
+                        WHERE variant_group_id IS NOT NULL
+                    )
+                    AND id NOT IN (
+                        SELECT DISTINCT variant_group_id
+                        FROM version_group
+                        WHERE variant_group_id IS NOT NULL
+                    )",
+                itemId);
+        }
+
+        private static IReadOnlyList<AvatarNameCandidate> ParseAvatarNames(string avatarNamesText)
+        {
+            if (string.IsNullOrWhiteSpace(avatarNamesText))
+            {
+                return Array.Empty<AvatarNameCandidate>();
+            }
+
+            var values = avatarNamesText.Split(new[] { ',', '\n', '\r', ';' }, StringSplitOptions.RemoveEmptyEntries);
+            var results = new List<AvatarNameCandidate>();
+            for (var i = 0; i < values.Length; i++)
+            {
+                var displayName = NormalizeDatasourceText(values[i]).Trim();
+                var normalizedName = NormalizeGroupingText(displayName);
+                if (string.IsNullOrWhiteSpace(displayName) ||
+                    string.IsNullOrWhiteSpace(normalizedName) ||
+                    results.Any(candidate => StringEquals(candidate.NormalizedName, normalizedName)))
                 {
-                    if (match.Groups[i].Success)
-                    {
-                        value = match.Groups[i].Value;
-                        break;
-                    }
+                    continue;
                 }
+
+                results.Add(new AvatarNameCandidate(displayName, normalizedName));
             }
 
+            return results;
+        }
+
+        private static bool ContainsGroupingToken(string text, string token)
+        {
+            var index = text.IndexOf(token, StringComparison.Ordinal);
+            while (index >= 0)
+            {
+                var beforeOk = index == 0 || text[index - 1] == '_';
+                var afterIndex = index + token.Length;
+                var afterOk = afterIndex >= text.Length || text[afterIndex] == '_';
+                if (beforeOk && afterOk)
+                {
+                    return true;
+                }
+
+                index = text.IndexOf(token, index + 1, StringComparison.Ordinal);
+            }
+
+            return false;
+        }
+
+        private static bool HasMatchingAvatarGroupingSignature(SQLiteConnection connection, string itemId, IReadOnlyList<AvatarNameCandidate> avatarNames, string signature, string currentFileId)
+        {
+            return QueryFilesForItem(connection, itemId)
+                .Where(row => string.IsNullOrWhiteSpace(currentFileId) || !StringEquals(row.id, currentFileId))
+                .Select(row => CreateAvatarGroupingCandidate(row.file_name, avatarNames))
+                .Any(candidate => candidate != null && StringEquals(candidate.Signature, signature));
+        }
+
+        private static AvatarGroupingCandidate CreateAvatarGroupingCandidate(FileRow row, IReadOnlyList<AvatarNameCandidate> avatarNames)
+        {
+            var candidate = CreateAvatarGroupingCandidate(row.file_name, avatarNames);
+            if (candidate == null)
+            {
+                return null;
+            }
+
+            candidate.Row = row;
+            return candidate;
+        }
+
+        private static AvatarGroupingCandidate CreateAvatarGroupingCandidate(string fileName, IReadOnlyList<AvatarNameCandidate> avatarNames)
+        {
+            var normalizedFileName = NormalizeGroupingText(RemoveExtension(fileName));
+            if (string.IsNullOrWhiteSpace(normalizedFileName))
+            {
+                return null;
+            }
+
+            var matchedAvatarNames = FindContainedAvatarNames(normalizedFileName, avatarNames);
+            if (matchedAvatarNames.Count == 0)
+            {
+                return null;
+            }
+
+            var signature = CreateNonAvatarGroupingSignature(normalizedFileName, matchedAvatarNames);
+            if (string.IsNullOrWhiteSpace(signature))
+            {
+                return null;
+            }
+
+            var groupName = CreateNonAvatarGroupingName(fileName, matchedAvatarNames);
+            if (string.IsNullOrWhiteSpace(groupName))
+            {
+                return null;
+            }
+
+            return new AvatarGroupingCandidate(groupName, signature);
+        }
+
+        private static IReadOnlyList<AvatarNameCandidate> FindContainedAvatarNames(string normalizedText, IReadOnlyList<AvatarNameCandidate> avatarNames)
+        {
+            return avatarNames
+                .Where(candidate => ContainsGroupingToken(normalizedText, candidate.NormalizedName))
+                .OrderByDescending(candidate => candidate.NormalizedName.Length)
+                .ToArray();
+        }
+
+        private static string CreateNonAvatarGroupingSignature(string text, IReadOnlyList<AvatarNameCandidate> avatarNames)
+        {
+            var signature = text ?? string.Empty;
+            for (var i = 0; i < avatarNames.Count; i++)
+            {
+                signature = RemoveGroupingToken(signature, avatarNames[i].NormalizedName);
+            }
+
+            signature = RemoveVersionLikeTokens(signature);
+            signature = Regex.Replace(signature, "_+", "_").Trim('_');
+            return signature;
+        }
+
+        private static string CreateNonAvatarGroupingName(string fileName, IReadOnlyList<AvatarNameCandidate> avatarNames)
+        {
+            var value = NormalizeVersionSeriesName(RemoveExtension(fileName));
+            for (var i = 0; i < avatarNames.Count; i++)
+            {
+                var avatarSeriesName = NormalizeVersionSeriesName(avatarNames[i].DisplayName);
+                value = Regex.Replace(value ?? string.Empty, @"(^|_)" + Regex.Escape(avatarSeriesName) + @"(?=$|_)", "_", RegexOptions.IgnoreCase);
+            }
+
+            value = RemoveVersionLikeTokens(value);
+            value = Regex.Replace(value, "_+", "_").Trim('_');
+            return string.IsNullOrWhiteSpace(value) ? null : NormalizeVersionSeriesName(value);
+        }
+
+        private static string RemoveGroupingToken(string text, string token)
+        {
+            return Regex.Replace(text ?? string.Empty, @"(^|_)" + Regex.Escape(token) + @"(?=$|_)", "_");
+        }
+
+        private static string RemoveVersionLikeTokens(string text)
+        {
+            return Regex.Replace(
+                text ?? string.Empty,
+                @"(?i)(?:^|_)(?:v|ver|version)?\d+(?:_\d+){0,3}(?=$|_)",
+                "_");
+        }
+
+        private static string RemoveExtension(string value)
+        {
             if (string.IsNullOrWhiteSpace(value))
             {
-                value = match.Value;
+                return string.Empty;
             }
 
+            var extensionIndex = value.LastIndexOf('.');
+            return extensionIndex <= 0 ? value : value.Substring(0, extensionIndex);
+        }
+
+        private static string NormalizeGroupingText(string value)
+        {
             value = NormalizeDatasourceText(value);
-            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var chars = value.ToLowerInvariant().Select(ch => char.IsLetterOrDigit(ch) ? ch : '_').ToArray();
+            return Regex.Replace(new string(chars), "_+", "_").Trim('_');
         }
 
         private static string EnsureImportedVariantGroup(SQLiteConnection connection, string itemId, string name)
@@ -203,6 +633,49 @@ namespace Ee4v.AssetManager.Api
             public string ItemId { get; private set; }
             public string VersionGroupId { get; private set; }
             public string VariantGroupId { get; private set; }
+        }
+
+        private sealed class AvatarNameCandidate
+        {
+            public AvatarNameCandidate(string displayName, string normalizedName)
+            {
+                DisplayName = displayName;
+                NormalizedName = normalizedName;
+            }
+
+            public string DisplayName { get; private set; }
+            public string NormalizedName { get; private set; }
+        }
+
+        private sealed class AvatarGroupingCandidate
+        {
+            public AvatarGroupingCandidate(string groupName, string signature)
+            {
+                GroupName = groupName;
+                Signature = signature;
+            }
+
+            public string GroupName { get; private set; }
+            public string Signature { get; private set; }
+            public FileRow Row { get; set; }
+        }
+
+        private sealed class VersionGroupingCandidate
+        {
+            public VersionGroupingCandidate(FileRow row, string seriesName, string versionValue, string variantGroupId)
+            {
+                Row = row;
+                SeriesName = seriesName;
+                VersionValue = versionValue;
+                VariantGroupId = variantGroupId;
+                Key = (variantGroupId ?? string.Empty) + "\n" + seriesName;
+            }
+
+            public FileRow Row { get; private set; }
+            public string SeriesName { get; private set; }
+            public string VersionValue { get; private set; }
+            public string VariantGroupId { get; private set; }
+            public string Key { get; private set; }
         }
     }
 }

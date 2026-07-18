@@ -75,6 +75,14 @@
     background-color: rgba(83, 188, 176, 0.055);
 }
 
+.ee4v-asset-manager-file-tree__row--group {
+    padding-left: 4px;
+    padding-right: 4px;
+    border-left-width: 2px;
+    border-left-color: rgba(196, 166, 92, 0.78);
+    background-color: rgba(196, 166, 92, 0.055);
+}
+
 .ee4v-asset-manager-file-tree__title {
     flex-grow: 1;
     flex-shrink: 1;
@@ -99,6 +107,11 @@
 
 .ee4v-asset-manager-file-tree__row--import-target .ee4v-asset-manager-file-tree__title {
     color: rgb(205, 238, 234);
+    -unity-font-style: bold;
+}
+
+.ee4v-asset-manager-file-tree__row--group .ee4v-asset-manager-file-tree__title {
+    color: rgba(231, 211, 164, 0.92);
     -unity-font-style: bold;
 }
 

@@ -68,6 +68,11 @@ namespace Ee4v.AssetManager.Api
                 var parent = ResolveRegisterFileParent(connection, itemId, request, fileName);
                 InsertFileInfo(connection, fileId, parent.ItemId, parent.VersionGroupId, parent.VariantGroupId, fileName, GetExtension(fileName), request.SizeBytes, null, now);
                 EnsureVersionGroupPrimaryIfMissing(connection, parent.VersionGroupId, fileId, now);
+                if (string.IsNullOrWhiteSpace(request.VersionGroupId) && string.IsNullOrWhiteSpace(request.VariantGroupId))
+                {
+                    ReconcileImportedFileGroups(connection, itemId, now);
+                }
+
                 connection.Execute(
                     "INSERT INTO ee4v_file_origin(file_info_id, ee4v_file_id, file_path_cache, imported_at) VALUES (?, ?, ?, ?)",
                     fileId,
@@ -234,7 +239,7 @@ namespace Ee4v.AssetManager.Api
                 return new ImportedFileParent(null, null, request.VariantGroupId);
             }
 
-            return ResolveImportedFileParent(connection, itemId, fileName, request.FilePath);
+            return ResolveImportedFileParent(connection, itemId, fileName);
         }
 
         private static void InsertFileInfo(SQLiteConnection connection, string fileId, string itemId, string versionGroupId, string variantGroupId, string fileName, string extension, long? sizeBytes, long? downloadId, string now)

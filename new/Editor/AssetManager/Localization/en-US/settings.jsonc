@@ -24,9 +24,9 @@
       "label": "Source priority",
       "tooltip": "Priority order for file origins. Example: ee4v,eagle,blm"
     },
-    "variantGroupRegex": {
-      "label": "Variant group regex",
-      "tooltip": "Regular expression used during import to extract a variant group name from the file name or datasource path. Empty disables it. The named group name, first capture group, or full match is used in that order."
+    "avatarNames": {
+      "label": "Avatar names",
+      "tooltip": "Avatar names used for automatic variant grouping. Separate names with commas, semicolons, or new lines. Files with the same non-avatar signature are grouped by the detected avatar name."
     },
     "versionGroupRegex": {
       "label": "Version group regex",

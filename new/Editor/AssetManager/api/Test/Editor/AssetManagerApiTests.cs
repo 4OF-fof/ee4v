@@ -13,7 +13,7 @@ namespace Ee4v.AssetManager.Api.Tests
         private string _tempRoot;
         private string _oldGlobalPath;
         private string _oldSourcePriority;
-        private string _oldVariantGroupRegex;
+        private string _oldAvatarNames;
         private string _oldVersionGroupRegex;
 
         [SetUp]
@@ -24,7 +24,7 @@ namespace Ee4v.AssetManager.Api.Tests
             AssetManagerDefinitions.RegisterAll();
             _oldGlobalPath = SettingApi.Get(AssetManagerDefinitions.Ee4vGlobalPath);
             _oldSourcePriority = SettingApi.Get(AssetManagerDefinitions.SourcePriority);
-            _oldVariantGroupRegex = SettingApi.Get(AssetManagerDefinitions.VariantGroupRegex);
+            _oldAvatarNames = SettingApi.Get(AssetManagerDefinitions.AvatarNames);
             _oldVersionGroupRegex = SettingApi.Get(AssetManagerDefinitions.VersionGroupRegex);
             SettingApi.Set(AssetManagerDefinitions.Ee4vGlobalPath, _tempRoot, saveImmediately: false);
             SettingApi.Set(AssetManagerDefinitions.SourcePriority, "ee4v,eagle,blm", saveImmediately: false);
@@ -35,7 +35,7 @@ namespace Ee4v.AssetManager.Api.Tests
         {
             SettingApi.Set(AssetManagerDefinitions.Ee4vGlobalPath, _oldGlobalPath, saveImmediately: false);
             SettingApi.Set(AssetManagerDefinitions.SourcePriority, _oldSourcePriority, saveImmediately: false);
-            SettingApi.Set(AssetManagerDefinitions.VariantGroupRegex, _oldVariantGroupRegex, saveImmediately: false);
+            SettingApi.Set(AssetManagerDefinitions.AvatarNames, _oldAvatarNames, saveImmediately: false);
             SettingApi.Set(AssetManagerDefinitions.VersionGroupRegex, _oldVersionGroupRegex, saveImmediately: false);
             if (!string.IsNullOrWhiteSpace(_tempRoot) && Directory.Exists(_tempRoot))
             {
@@ -248,30 +248,55 @@ namespace Ee4v.AssetManager.Api.Tests
 
         [Test]
         [FeatureTestCase(
-            "import regex で version / variant group を自動作成する",
-            "設定された正規表現で file 名から variant と version を抽出し、file を version group 配下へ登録することを確認します。",
+            "avatar names と version regex で group を自動作成する",
+            "設定されたアバター名と version 正規表現で file 名から variant と version を抽出し、file を version group 配下へ登録することを確認します。",
             order: 313)]
-        public void RegisterFile_AutoGroupsByConfiguredRegex()
+        public void RegisterFile_AutoGroupsByConfiguredAvatarNamesAndVersionRegex()
         {
-            SettingApi.Set(AssetManagerDefinitions.VariantGroupRegex, @"(?i)(?<name>quest)", saveImmediately: false);
+            SettingApi.Set(AssetManagerDefinitions.AvatarNames, "Chiffon,Lime,Manuka", saveImmediately: false);
             SettingApi.Set(AssetManagerDefinitions.VersionGroupRegex, @"(?i)v(?<name>\d+(?:\.\d+)*)", saveImmediately: false);
             var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
-            var filePath = Path.Combine(_tempRoot, "Avatar_Quest_v2.zip");
-            File.WriteAllText(filePath, "zip");
+            var chiffonLimeFilePath = Path.Combine(_tempRoot, "Avatar_Chiffon＿Lime_v2.zip");
+            var manukaFilePath = Path.Combine(_tempRoot, "Avatar_Manuka_v2.zip");
+            var nextVersionFilePath = Path.Combine(_tempRoot, "Avatar_Chiffon＿Lime_v3.zip");
+            File.WriteAllText(chiffonLimeFilePath, "zip");
+            File.WriteAllText(manukaFilePath, "zip");
+            File.WriteAllText(nextVersionFilePath, "zip");
 
-            var file = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = filePath, FileName = "Avatar_Quest_v2.zip" });
-            var variant = AssetManagerApi.GetVariantGroups(item.Id).Single();
-            var version = AssetManagerApi.GetVersionGroups(item.Id).Single();
-            var files = AssetManagerApi.GetFiles(item.Id);
+            var chiffonLimeFile = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = chiffonLimeFilePath, FileName = "Avatar_Chiffon＿Lime_v2.zip" });
+            var singleFile = AssetManagerApi.GetFiles(item.Id).Single();
 
-            Assert.That(variant.Name, Is.EqualTo("Quest"));
-            Assert.That(version.Name, Is.EqualTo("2"));
-            Assert.That(version.VariantGroupId, Is.EqualTo(variant.Id));
-            Assert.That(version.PrimaryFileId, Is.EqualTo(file.Id));
-            Assert.That(file.ItemId, Is.Null);
-            Assert.That(file.VersionGroupId, Is.EqualTo(version.Id));
-            Assert.That(file.VariantGroupId, Is.Null);
-            Assert.That(files.Single().Id, Is.EqualTo(file.Id));
+            Assert.That(AssetManagerApi.GetVariantGroups(item.Id), Is.Empty);
+            Assert.That(AssetManagerApi.GetVersionGroups(item.Id), Is.Empty);
+            Assert.That(singleFile.ItemId, Is.EqualTo(item.Id));
+            Assert.That(singleFile.VersionGroupId, Is.Null);
+            Assert.That(singleFile.VariantGroupId, Is.Null);
+
+            var manukaFile = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = manukaFilePath, FileName = "Avatar_Manuka_v2.zip" });
+            var variants = AssetManagerApi.GetVariantGroups(item.Id).OrderBy(group => group.Name).ToArray();
+            var files = AssetManagerApi.GetFiles(item.Id).OrderBy(file => file.FileName).ToArray();
+            var variant = variants.Single(group => group.Name == "Avatar");
+            var updatedChiffonLimeFile = files.Single(file => file.Id == chiffonLimeFile.Id);
+            var updatedManukaFile = files.Single(file => file.Id == manukaFile.Id);
+
+            Assert.That(variants.Select(group => group.Name).ToArray(), Is.EqualTo(new[] { "Avatar" }));
+            Assert.That(AssetManagerApi.GetVersionGroups(item.Id), Is.Empty);
+            Assert.That(updatedChiffonLimeFile.VariantGroupId, Is.EqualTo(variant.Id));
+            Assert.That(updatedManukaFile.VariantGroupId, Is.EqualTo(variant.Id));
+
+            var nextVersionFile = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = nextVersionFilePath, FileName = "Avatar_Chiffon＿Lime_v3.zip" });
+            var versions = AssetManagerApi.GetVersionGroups(item.Id).OrderBy(group => group.VariantGroupId).ToArray();
+            files = AssetManagerApi.GetFiles(item.Id).OrderBy(file => file.FileName).ToArray();
+            var version = versions.Single(group => group.VariantGroupId == variant.Id);
+            updatedChiffonLimeFile = files.Single(file => file.Id == chiffonLimeFile.Id);
+            updatedManukaFile = files.Single(file => file.Id == manukaFile.Id);
+            var updatedNextVersionFile = files.Single(file => file.Id == nextVersionFile.Id);
+
+            Assert.That(version.Name, Is.EqualTo("Avatar"));
+            Assert.That(version.PrimaryFileId, Is.EqualTo(chiffonLimeFile.Id));
+            Assert.That(updatedChiffonLimeFile.VersionGroupId, Is.EqualTo(version.Id));
+            Assert.That(updatedManukaFile.VersionGroupId, Is.EqualTo(version.Id));
+            Assert.That(updatedNextVersionFile.VersionGroupId, Is.EqualTo(version.Id));
         }
 
         [Test]

@@ -46,6 +46,7 @@ namespace Ee4v.UI
         private readonly Action<VisualElement, TData> _bindItem;
         private readonly Action<IReadOnlyList<TData>> _onSelectionChanged;
         private readonly Action<VisualElement, TData, IReadOnlyList<TData>, Vector2> _onContextClick;
+        private readonly Func<TData, bool> _canInteractWithItem;
         private IReadOnlyList<SearchableTreeItemData<TData>> _sourceItems;
         private IReadOnlyList<SearchableTreeItemData<TData>> _selectedTreeItems = Array.Empty<SearchableTreeItemData<TData>>();
         private Action<string> _onSearchValueChanged;
@@ -57,7 +58,8 @@ namespace Ee4v.UI
             string emptyText = "",
             string searchPlaceholder = null,
             SelectionType selectionType = SelectionType.Single,
-            Action<VisualElement, TData, IReadOnlyList<TData>, Vector2> onContextClick = null)
+            Action<VisualElement, TData, IReadOnlyList<TData>, Vector2> onContextClick = null,
+            Func<TData, bool> canInteractWithItem = null)
         {
             if (makeItem == null)
             {
@@ -67,6 +69,7 @@ namespace Ee4v.UI
             _bindItem = bindItem ?? throw new ArgumentNullException(nameof(bindItem));
             _onSelectionChanged = onSelectionChanged;
             _onContextClick = onContextClick;
+            _canInteractWithItem = canInteractWithItem;
 
             AddToClassList(RootClassName);
 
@@ -164,6 +167,14 @@ namespace Ee4v.UI
             {
                 if (item is SearchableTreeItemData<TData> treeItem)
                 {
+                    if (!CanInteractWithItem(treeItem))
+                    {
+                        _treeView.ClearSelection();
+                        _selectedTreeItems = Array.Empty<SearchableTreeItemData<TData>>();
+                        _onSelectionChanged?.Invoke(Array.Empty<TData>());
+                        return;
+                    }
+
                     selectedTreeItems.Add(treeItem);
                     selected.Add(treeItem.Data);
                 }
@@ -176,8 +187,26 @@ namespace Ee4v.UI
         private VisualElement CreateItemElement(Func<VisualElement> makeItem)
         {
             var element = makeItem();
+            element.RegisterCallback<PointerDownEvent>(OnItemPointerDown, TrickleDown.TrickleDown);
             element.RegisterCallback<PointerUpEvent>(OnItemPointerUp);
             return element;
+        }
+
+        private void OnItemPointerDown(PointerDownEvent evt)
+        {
+            if (evt.button != 0 && evt.button != 1)
+            {
+                return;
+            }
+
+            var element = evt.currentTarget as VisualElement;
+            var item = element != null ? element.userData as SearchableTreeItemData<TData> : null;
+            if (item == null || CanInteractWithItem(item))
+            {
+                return;
+            }
+
+            evt.StopImmediatePropagation();
         }
 
         private void OnItemPointerUp(PointerUpEvent evt)
@@ -191,6 +220,12 @@ namespace Ee4v.UI
             var item = element != null ? element.userData as SearchableTreeItemData<TData> : null;
             if (element == null || item == null)
             {
+                return;
+            }
+
+            if (!CanInteractWithItem(item))
+            {
+                evt.StopImmediatePropagation();
                 return;
             }
 
@@ -227,6 +262,11 @@ namespace Ee4v.UI
             }
 
             return false;
+        }
+
+        private bool CanInteractWithItem(SearchableTreeItemData<TData> item)
+        {
+            return item == null || _canInteractWithItem == null || _canInteractWithItem(item.Data);
         }
 
         private void RefreshTree()

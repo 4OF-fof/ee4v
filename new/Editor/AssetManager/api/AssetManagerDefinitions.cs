@@ -11,8 +11,8 @@ namespace Ee4v.AssetManager.Api
     internal static class AssetManagerDefinitions
     {
         private const string BoothLibraryRelativePath = "pm.booth.library-manager\\data.db";
-        private const string DefaultVariantGroupRegex = @"(?i)(?:^|[\s_\-\.\[\(])(?<name>pc|quest|android|windows|full|lite)(?:$|[\s_\-\.\]\)])";
-        private const string DefaultVersionGroupRegex = @"(?i)(?:^|[\s_\-\.\[\(])(?:v|ver|version)[\s_\-]*(?<name>\d+(?:\.\d+){0,3})(?:$|[\s_\-\.\]\)])";
+        private const string DefaultAvatarNames = "Airi,Alue,Bokusei,Chiffon,Chocolat,Eku,ELusion,Grus,Hanka,Ichigo,Kanata,Karin,Kikyo,Kipfel,Komano,Kumaly,Kuuta,Lapwing,Lasyusha,Lili,Lime,LowpolyKon,Luchika,Lumina,Mafuyu,Mamehinata,Manuka,Mao,Maon,Marycia,Maya,Mayo,Milfy,Milfy Eku,Milltina,Miltina,Millitina,Minase,Misaki,Moe,Nakiya,Plum,Ramune,Rei,Reien,Rindo,Riru,Rui,Rurune,Rurune Mizuki,Selestia,Shinano,Shinra,Shuan,Sio,Suiha,TubeRose,Ukon,Uzuki,Wendy,Yugi Miyo";
+        private const string DefaultVersionGroupRegex = @"(?i)(?:(?:v|ver|version)[\s_\-.]*(?<name>\d+(?:\.\d+){0,3})(?=$|[\s_\-.\]\)]|[^\d.])|(?:^|[\s_\-])(?<name>\d+\.\d+(?:\.\d+){0,2})(?=\.(?:zip|psd|mp4|unitypackage)(?:$|\s)|$|\s))";
 
         static AssetManagerDefinitions()
         {
@@ -58,15 +58,14 @@ namespace Ee4v.AssetManager.Api
             order: 0,
             validator: ValidateSourcePriority);
 
-        public static readonly SettingDefinition<string> VariantGroupRegex = new SettingDefinition<string>(
-            "assetManager.variantGroupRegex",
+        public static readonly SettingDefinition<string> AvatarNames = new SettingDefinition<string>(
+            "assetManager.avatarNames",
             SettingScope.User,
             "settings.section.assetManager.import",
-            "settings.variantGroupRegex.label",
-            "settings.variantGroupRegex.tooltip",
-            DefaultVariantGroupRegex,
-            order: 0,
-            validator: ValidateRegexOrEmpty);
+            "settings.avatarNames.label",
+            "settings.avatarNames.tooltip",
+            DefaultAvatarNames,
+            order: 0);
 
         public static readonly SettingDefinition<string> VersionGroupRegex = new SettingDefinition<string>(
             "assetManager.versionGroupRegex",
@@ -94,7 +93,7 @@ namespace Ee4v.AssetManager.Api
             SettingApi.Register(BlmDatabasePath);
             SettingApi.Register(EagleLibraryPath);
             SettingApi.Register(SourcePriority);
-            SettingApi.Register(VariantGroupRegex);
+            SettingApi.Register(AvatarNames);
             SettingApi.Register(VersionGroupRegex);
             SettingApi.Register(ItemGridItemsPerRow);
         }
