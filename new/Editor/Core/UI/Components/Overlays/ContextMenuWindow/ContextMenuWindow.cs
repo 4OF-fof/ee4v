@@ -280,8 +280,9 @@ namespace Ee4v.UI
     {
         private const float ItemHeight = 26f;
         private const float SeparatorHeight = 8f;
-        private const float MenuPadding = 8f;
+        private const float MenuPaddingY = 4f;
         private const float MenuPaddingX = 4f;
+        private const float MenuBorderWidth = 1f;
         private const float ItemPaddingX = 10f;
         private const float MinimumWidth = 100f;
         private const float MaximumWidth = 360f;
@@ -291,7 +292,7 @@ namespace Ee4v.UI
         {
             state = state ?? new ContextMenuState(null);
             var width = state.Width > 0f ? state.Width : CalculateAutoWidth(state);
-            var height = MenuPadding;
+            var height = (MenuPaddingY + MenuBorderWidth) * 2f;
 
             for (var i = 0; i < state.Items.Count; i++)
             {
@@ -329,7 +330,9 @@ namespace Ee4v.UI
                 var shortcutWidth = string.IsNullOrWhiteSpace(item.Shortcut)
                     ? 0f
                     : labelStyle.CalcSize(new GUIContent(item.Shortcut)).x + ShortcutGap;
-                width = Mathf.Max(width, MenuPaddingX + ItemPaddingX + labelWidth + shortcutWidth + ItemPaddingX + MenuPaddingX);
+                width = Mathf.Max(
+                    width,
+                    MenuBorderWidth + MenuPaddingX + ItemPaddingX + labelWidth + shortcutWidth + ItemPaddingX + MenuPaddingX + MenuBorderWidth);
             }
 
             return Mathf.Clamp(width, MinimumWidth, MaximumWidth);
