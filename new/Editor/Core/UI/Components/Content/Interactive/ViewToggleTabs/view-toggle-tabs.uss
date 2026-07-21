@@ -17,10 +17,10 @@
     border-right-color: var(--ee4v-color-border-default);
     border-bottom-color: var(--ee4v-color-border-default);
     border-left-color: var(--ee4v-color-border-default);
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
-    border-bottom-right-radius: 5px;
-    border-bottom-left-radius: 5px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-bottom-left-radius: 6px;
     background-color: var(--ee4v-color-surface-subtle);
 }
 
@@ -52,10 +52,12 @@
 
 .ee4v-ui-view-toggle-tabs__tab--selected {
     background-color: var(--ee4v-color-tool-active);
+    color: var(--ee4v-color-text-on-state);
 }
 
 .ee4v-ui-view-toggle-tabs__tab--selected:hover {
-    background-color: var(--ee4v-color-selection);
+    background-color: var(--ee4v-color-tool-active-hover);
+    color: var(--ee4v-color-text-on-state);
 }
 
 .ee4v-ui-view-toggle-tabs__tab-content {

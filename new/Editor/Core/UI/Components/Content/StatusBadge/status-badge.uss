@@ -1,23 +1,29 @@
 .ee4v-ui-status--idle {
     background-color: var(--ee4v-color-status-idle);
+    color: var(--ee4v-color-status-idle-text);
 }
 
 .ee4v-ui-status--running {
     background-color: var(--ee4v-color-status-running);
+    color: var(--ee4v-color-status-running-text);
 }
 
 .ee4v-ui-status--passed {
     background-color: var(--ee4v-color-status-passed);
+    color: var(--ee4v-color-status-passed-text);
 }
 
 .ee4v-ui-status--failed {
     background-color: var(--ee4v-color-status-failed);
+    color: var(--ee4v-color-status-failed-text);
 }
 
 .ee4v-ui-status--skipped {
     background-color: var(--ee4v-color-status-skipped);
+    color: var(--ee4v-color-status-skipped-text);
 }
 
 .ee4v-ui-status--inconclusive {
     background-color: var(--ee4v-color-status-inconclusive);
+    color: var(--ee4v-color-status-inconclusive-text);
 }

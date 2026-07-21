@@ -51,6 +51,9 @@
     max-height: 2px;
     align-self: stretch;
     background-color: var(--ee4v-color-slider-track);
+    transition-property: background-color;
+    transition-duration: 0.12s;
+    transition-timing-function: ease-out;
 }
 
 .ee4v-ui-numeric-slider__fill {
@@ -59,6 +62,9 @@
     top: 0;
     bottom: 0;
     background-color: var(--ee4v-color-slider-fill);
+    transition-property: background-color;
+    transition-duration: 0.12s;
+    transition-timing-function: ease-out;
 }
 
 .ee4v-ui-numeric-slider__knob {
@@ -75,6 +81,9 @@
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
     background-color: var(--ee4v-color-control-highlight);
+    transition-property: background-color;
+    transition-duration: 0.12s;
+    transition-timing-function: ease-out;
 }
 
 .ee4v-ui-numeric-slider:hover .ee4v-ui-numeric-slider__track,

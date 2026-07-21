@@ -34,17 +34,31 @@
     --ee4v-color-slider-track: rgba(194, 194, 194, 0.26);
     --ee4v-color-slider-fill: rgba(194, 194, 194, 0.62);
 
+    /* Interaction states for solid controls and active tools. */
+    --ee4v-color-control-hover: #646464;
+    --ee4v-color-control-pressed: #4E4E4E;
+    --ee4v-color-tool-active-hover: #547394;
+
     /* Semantic colors stay centralized because Unity has no success token. */
     --ee4v-color-info: #3A79BB;
     --ee4v-color-success: #70B460;
     --ee4v-color-warning: #DCB448;
     --ee4v-color-error: #DC5C5C;
+    --ee4v-color-info-surface-soft: rgba(58, 121, 187, 0.10);
+    --ee4v-color-warning-surface-soft: rgba(220, 180, 72, 0.10);
+    --ee4v-color-error-surface-soft: rgba(220, 92, 92, 0.10);
     --ee4v-color-status-idle: rgba(128, 128, 128, 0.35);
     --ee4v-color-status-running: rgba(220, 180, 72, 0.35);
     --ee4v-color-status-passed: rgba(96, 184, 126, 0.35);
     --ee4v-color-status-failed: rgba(220, 92, 92, 0.35);
     --ee4v-color-status-skipped: rgba(122, 148, 214, 0.35);
     --ee4v-color-status-inconclusive: rgba(167, 125, 214, 0.35);
+    --ee4v-color-status-idle-text: #D0D0D0;
+    --ee4v-color-status-running-text: #EAC96C;
+    --ee4v-color-status-passed-text: #8BD7A4;
+    --ee4v-color-status-failed-text: #E78A8A;
+    --ee4v-color-status-skipped-text: #A6B9EE;
+    --ee4v-color-status-inconclusive-text: #C6A2EC;
     --ee4v-color-success-border-soft: rgba(112, 180, 96, 0.34);
     --ee4v-color-success-surface-soft: rgba(112, 180, 96, 0.16);
     --ee4v-color-success-surface-hover: rgba(112, 180, 96, 0.20);

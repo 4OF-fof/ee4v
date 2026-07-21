@@ -21,10 +21,10 @@
     border-right-color: var(--ee4v-color-border-default);
     border-bottom-color: var(--ee4v-color-border-default);
     border-left-color: var(--ee4v-color-border-default);
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
     background-color: var(--ee4v-color-control);
     color: var(--ee4v-color-text-primary);
     -unity-text-align: middle-center;
@@ -32,7 +32,15 @@
 }
 
 .ee4v-ui-test-result-group__run-button:hover {
-    background-color: var(--ee4v-color-surface-hover-strong);
+    border-top-color: var(--ee4v-color-border-active);
+    border-right-color: var(--ee4v-color-border-active);
+    border-bottom-color: var(--ee4v-color-border-active);
+    border-left-color: var(--ee4v-color-border-active);
+    background-color: var(--ee4v-color-control-hover);
+}
+
+.ee4v-ui-test-result-group__run-button:active {
+    background-color: var(--ee4v-color-control-pressed);
 }
 
 .ee4v-ui-test-result-group__run-button:disabled {

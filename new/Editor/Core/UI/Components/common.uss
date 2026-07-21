@@ -10,6 +10,9 @@
 
 .ee4v-ui Button {
     color: var(--ee4v-color-text-primary);
+    transition-property: background-color, border-top-color, border-right-color, border-bottom-color, border-left-color, color, opacity;
+    transition-duration: 0.12s;
+    transition-timing-function: ease-out;
 }
 
 .ee4v-ui-status {

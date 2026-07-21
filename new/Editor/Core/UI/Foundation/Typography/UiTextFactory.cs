@@ -45,6 +45,11 @@ namespace Ee4v.UI
             {
                 _label.style.whiteSpace = whiteSpace;
             }
+
+            public override void SetColor(Color color)
+            {
+                _label.style.color = color;
+            }
         }
 
         private sealed class ImguiUiTextElement : UiTextElement
@@ -93,6 +98,12 @@ namespace Ee4v.UI
                 _guiStyle.wordWrap = whiteSpace == WhiteSpace.Normal;
                 _guiStyle.clipping = whiteSpace == WhiteSpace.Normal ? TextClipping.Clip : TextClipping.Overflow;
                 UpdateMeasure();
+                _container.MarkDirtyRepaint();
+            }
+
+            public override void SetColor(Color color)
+            {
+                _guiStyle.normal.textColor = color;
                 _container.MarkDirtyRepaint();
             }
 

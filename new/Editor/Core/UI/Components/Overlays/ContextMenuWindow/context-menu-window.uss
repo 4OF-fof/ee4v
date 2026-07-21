@@ -72,5 +72,5 @@
     margin-right: 6px;
     margin-top: 2px;
     border-top-width: 1px;
-    border-top-color: var(--ee4v-color-border-strong);
+    border-top-color: var(--ee4v-color-border-default);
 }

@@ -11,25 +11,28 @@
     border-top-right-radius: 8px;
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
+    overflow: hidden;
+    transition-property: background-color, border-top-color, border-right-color, border-bottom-color, border-left-color;
+    transition-duration: 0.12s;
+    transition-timing-function: ease-out;
 }
 
-.ee4v-ui-selectable-item-grid__row-slot--selected .ee4v-ui-item-image {
-    border-top-width: 3px;
-    border-right-width: 3px;
-    border-bottom-width: 3px;
-    border-left-width: 3px;
+.ee4v-ui-selectable-item-grid .ee4v-ui-item-grid__row-slot:hover {
+    border-top-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
+    border-bottom-color: var(--ee4v-color-border-default);
+    border-left-color: var(--ee4v-color-border-default);
+    background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-ui-selectable-item-grid .ee4v-ui-item-grid__row-slot.ee4v-ui-selectable-item-grid__row-slot--selected {
     border-top-color: var(--ee4v-color-focus);
     border-right-color: var(--ee4v-color-focus);
     border-bottom-color: var(--ee4v-color-focus);
     border-left-color: var(--ee4v-color-focus);
-    background-color: var(--ee4v-color-selection-soft);
+    background-color: var(--ee4v-color-selection);
 }
 
 .ee4v-ui-selectable-item-grid__row-slot--selected .ee4v-ui-item-card__name {
     color: var(--ee4v-color-text-on-state);
-    background-color: var(--ee4v-color-selection);
-    border-top-left-radius: 3px;
-    border-top-right-radius: 3px;
-    border-bottom-left-radius: 3px;
-    border-bottom-right-radius: 3px;
 }

@@ -36,13 +36,22 @@
     background-color: var(--ee4v-color-tab-idle);
     color: var(--ee4v-color-text-muted);
     align-self: flex-end;
+    transition-property: background-color, border-top-color, border-right-color, border-bottom-color, border-left-color, color;
+    transition-duration: 0.12s;
+    transition-timing-function: ease-out;
 }
 
-.ee4v-ui-tab-card__tab--selected {
+.ee4v-ui-tab-card__tab:hover {
+    background-color: var(--ee4v-color-surface-hover);
+    color: var(--ee4v-color-text-primary);
+}
+
+.ee4v-ui-tab-card__tab--selected,
+.ee4v-ui-tab-card__tab--selected:hover {
     background-color: var(--ee4v-color-surface-raised);
-    border-top-color: var(--ee4v-color-border-active);
-    border-left-color: var(--ee4v-color-border-active);
-    border-right-color: var(--ee4v-color-border-active);
+    border-top-color: var(--ee4v-color-border-default);
+    border-left-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
     border-bottom-color: var(--ee4v-color-surface-raised);
     color: var(--ee4v-color-text-on-state);
 }
@@ -61,7 +70,7 @@
     border-bottom-color: var(--ee4v-color-border-default);
     border-left-color: var(--ee4v-color-border-default);
     border-right-color: var(--ee4v-color-border-default);
-    background-color: var(--ee4v-color-surface-subtle);
+    background-color: var(--ee4v-color-surface-raised);
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
     border-bottom-left-radius: 8px;

@@ -1,3 +1,4 @@
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -38,6 +39,8 @@ namespace Ee4v.UI
         }
 
         public abstract void SetWhiteSpace(WhiteSpace whiteSpace);
+
+        public abstract void SetColor(Color color);
 
         private void ApplyRootStyle()
         {

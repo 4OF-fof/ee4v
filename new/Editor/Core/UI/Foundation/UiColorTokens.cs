@@ -18,5 +18,11 @@ namespace Ee4v.UI
         public static readonly Color32 TextMuted = new Color32(194, 194, 194, 184);
         public static readonly Color32 TextSoft = new Color32(194, 194, 194, 199);
         public static readonly Color32 TextOnState = new Color32(249, 249, 249, 255);
+        public static readonly Color32 StatusIdleText = new Color32(208, 208, 208, 255);
+        public static readonly Color32 StatusRunningText = new Color32(234, 201, 108, 255);
+        public static readonly Color32 StatusPassedText = new Color32(139, 215, 164, 255);
+        public static readonly Color32 StatusFailedText = new Color32(231, 138, 138, 255);
+        public static readonly Color32 StatusSkippedText = new Color32(166, 185, 238, 255);
+        public static readonly Color32 StatusInconclusiveText = new Color32(198, 162, 236, 255);
     }
 }

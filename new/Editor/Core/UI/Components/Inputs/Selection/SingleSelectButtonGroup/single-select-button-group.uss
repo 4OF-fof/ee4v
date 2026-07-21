@@ -49,5 +49,5 @@
 }
 
 .ee4v-ui-single-select-button-group__button--selected:hover {
-    background-color: var(--ee4v-color-selection);
+    background-color: var(--ee4v-color-tool-active-hover);
 }

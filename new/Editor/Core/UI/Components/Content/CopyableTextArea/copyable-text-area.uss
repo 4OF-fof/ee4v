@@ -19,18 +19,26 @@
     border-right-color: var(--ee4v-color-border-default);
     border-bottom-color: var(--ee4v-color-border-default);
     border-left-color: var(--ee4v-color-border-default);
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
     background-color: var(--ee4v-color-control);
     color: var(--ee4v-color-text-primary);
-    font-size: 9px;
+    font-size: 10px;
     -unity-text-align: middle-center;
 }
 
 .ee4v-ui-copyable-text-area__copy-button:hover {
-    background-color: var(--ee4v-color-surface-hover-strong);
+    border-top-color: var(--ee4v-color-border-active);
+    border-right-color: var(--ee4v-color-border-active);
+    border-bottom-color: var(--ee4v-color-border-active);
+    border-left-color: var(--ee4v-color-border-active);
+    background-color: var(--ee4v-color-control-hover);
+}
+
+.ee4v-ui-copyable-text-area__copy-button:active {
+    background-color: var(--ee4v-color-control-pressed);
 }
 
 .ee4v-ui-copyable-text-area__copy-button--copied {
@@ -43,6 +51,10 @@
 }
 
 .ee4v-ui-copyable-text-area__copy-button--copied:hover {
+    border-top-color: var(--ee4v-color-success-border-soft);
+    border-right-color: var(--ee4v-color-success-border-soft);
+    border-bottom-color: var(--ee4v-color-success-border-soft);
+    border-left-color: var(--ee4v-color-success-border-soft);
     background-color: var(--ee4v-color-success-surface-hover);
 }
 
@@ -65,8 +77,8 @@
 .ee4v-ui-copyable-text-area__field .unity-base-field__input {
     white-space: normal;
     background-color: var(--ee4v-color-field);
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
 }

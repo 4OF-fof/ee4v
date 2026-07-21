@@ -1,3 +1,4 @@
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -54,6 +55,26 @@ namespace Ee4v.UI
             _textElement.EnableInClassList(FailedClassName, state.Tone == UiStatusTone.Failed);
             _textElement.EnableInClassList(SkippedClassName, state.Tone == UiStatusTone.Skipped);
             _textElement.EnableInClassList(InconclusiveClassName, state.Tone == UiStatusTone.Inconclusive);
+            _textElement.SetColor(ToneTextColor(state.Tone));
+        }
+
+        private static Color ToneTextColor(UiStatusTone tone)
+        {
+            switch (tone)
+            {
+                case UiStatusTone.Running:
+                    return UiColorTokens.StatusRunningText;
+                case UiStatusTone.Passed:
+                    return UiColorTokens.StatusPassedText;
+                case UiStatusTone.Failed:
+                    return UiColorTokens.StatusFailedText;
+                case UiStatusTone.Skipped:
+                    return UiColorTokens.StatusSkippedText;
+                case UiStatusTone.Inconclusive:
+                    return UiColorTokens.StatusInconclusiveText;
+                default:
+                    return UiColorTokens.StatusIdleText;
+            }
         }
     }
 }

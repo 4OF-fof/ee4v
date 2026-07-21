@@ -22,12 +22,15 @@
 
 .ee4v-ui-banner--info {
     border-left-color: var(--ee4v-color-info);
+    background-color: var(--ee4v-color-info-surface-soft);
 }
 
 .ee4v-ui-banner--warning {
     border-left-color: var(--ee4v-color-warning);
+    background-color: var(--ee4v-color-warning-surface-soft);
 }
 
 .ee4v-ui-banner--error {
     border-left-color: var(--ee4v-color-error);
+    background-color: var(--ee4v-color-error-surface-soft);
 }
