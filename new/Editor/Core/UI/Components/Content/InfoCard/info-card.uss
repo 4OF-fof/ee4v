@@ -28,11 +28,11 @@
 .ee4v-ui-info-card__eyebrow {
     margin-bottom: 2px;
     font-size: 11px;
-    color: rgba(220, 220, 220, 0.92);
+    color: var(--ee4v-color-text-primary);
 }
 
 .ee4v-ui-info-card__description {
-    color: rgba(210, 210, 210, 0.82);
+    color: var(--ee4v-color-text-secondary);
     white-space: normal;
 }
 
@@ -58,11 +58,11 @@
     border-bottom-width: 1px;
     border-left-width: 1px;
     border-right-width: 1px;
-    border-top-color: rgba(255, 255, 255, 0.08);
-    border-bottom-color: rgba(255, 255, 255, 0.08);
-    border-left-color: rgba(255, 255, 255, 0.08);
-    border-right-color: rgba(255, 255, 255, 0.08);
-    background-color: rgba(255, 255, 255, 0.025);
+    border-top-color: var(--ee4v-color-border-default);
+    border-bottom-color: var(--ee4v-color-border-default);
+    border-left-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
+    background-color: var(--ee4v-color-surface-subtle);
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
     border-bottom-left-radius: 8px;

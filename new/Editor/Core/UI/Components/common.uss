@@ -1,13 +1,15 @@
+@import url("../Foundation/ui-color-tokens.uss");
+
 .ee4v-ui {
     flex-grow: 1;
 }
 
 .ee4v-ui Label {
-    color: rgb(230, 230, 230);
+    color: var(--ee4v-color-text-primary);
 }
 
 .ee4v-ui Button {
-    color: rgb(230, 230, 230);
+    color: var(--ee4v-color-text-primary);
 }
 
 .ee4v-ui-status {
@@ -21,7 +23,7 @@
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
     font-size: 11px;
-    background-color: rgba(120, 120, 120, 0.35);
+    background-color: var(--ee4v-color-status-idle);
     white-space: nowrap;
     -unity-text-align: middle-center;
     align-self: flex-start;

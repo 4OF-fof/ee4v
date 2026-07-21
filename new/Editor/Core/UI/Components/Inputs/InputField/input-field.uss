@@ -18,15 +18,15 @@
     border-right-width: 1px;
     border-bottom-width: 1px;
     border-left-width: 1px;
-    border-top-color: rgba(255, 255, 255, 0.08);
-    border-right-color: rgba(255, 255, 255, 0.08);
-    border-bottom-color: rgba(255, 255, 255, 0.08);
-    border-left-color: rgba(255, 255, 255, 0.08);
+    border-top-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
+    border-bottom-color: var(--ee4v-color-border-default);
+    border-left-color: var(--ee4v-color-border-default);
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
-    background-color: rgba(0, 0, 0, 0.22);
+    background-color: var(--ee4v-color-field);
 }
 
 .ee4v-ui-input-field--multiline .ee4v-ui-input-field__field-container {
@@ -38,11 +38,11 @@
 }
 
 .ee4v-ui-input-field__field-container--focused {
-    border-top-color: rgba(86, 156, 214, 0.6);
-    border-right-color: rgba(86, 156, 214, 0.6);
-    border-bottom-color: rgba(86, 156, 214, 0.6);
-    border-left-color: rgba(86, 156, 214, 0.6);
-    background-color: rgba(0, 0, 0, 0.30);
+    border-top-color: var(--ee4v-color-focus);
+    border-right-color: var(--ee4v-color-focus);
+    border-bottom-color: var(--ee4v-color-focus);
+    border-left-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-field);
 }
 
 .ee4v-ui-input-field__field {
@@ -84,8 +84,8 @@
     border-right-width: 0;
     border-bottom-width: 0;
     border-left-width: 0;
-    background-color: rgba(0, 0, 0, 0);
-    color: rgba(238, 238, 238, 0.92);
+    background-color: var(--ee4v-color-transparent);
+    color: var(--ee4v-color-text-primary);
     font-size: 12px;
     white-space: normal;
 }
@@ -107,7 +107,7 @@
     bottom: 0;
     flex-direction: row;
     align-items: center;
-    color: rgba(180, 180, 180, 0.72);
+    color: var(--ee4v-color-text-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -131,14 +131,14 @@
 
 .ee4v-ui-input-field--multiline .unity-scroll-view,
 .ee4v-ui-input-field--multiline .unity-scroll-view__content-container {
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-ui-input-field--multiline .unity-scroll-view__vertical-scroller,
 .ee4v-ui-input-field--multiline .unity-scroller {
     width: 8px;
     min-width: 8px;
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
     border-top-width: 0;
     border-right-width: 0;
     border-bottom-width: 0;
@@ -159,7 +159,7 @@
     flex-grow: 1;
     flex-shrink: 1;
     min-height: 0;
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
     border-top-width: 0;
     border-right-width: 0;
     border-bottom-width: 0;
@@ -181,5 +181,5 @@
     border-right-width: 0;
     border-bottom-width: 0;
     border-left-width: 0;
-    background-color: rgba(190, 190, 190, 0.44);
+    background-color: var(--ee4v-color-scroll-thumb);
 }

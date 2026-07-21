@@ -6,7 +6,7 @@
 .ee4v-ui-item-grid__list {
     flex-grow: 1;
     min-height: 0;
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
     border-top-width: 0;
     border-right-width: 0;
     border-bottom-width: 0;
@@ -15,22 +15,22 @@
 
 .ee4v-ui-item-grid__list .unity-collection-view__scroll-view,
 .ee4v-ui-item-grid__list .unity-scroll-view {
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-ui-item-grid__list .unity-scroll-view__content-container,
 .ee4v-ui-item-grid__list .unity-collection-view__content-container {
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-ui-item-grid__list .unity-collection-view__item,
 .ee4v-ui-item-grid__list .unity-list-view__item {
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-ui-item-grid__list .unity-collection-view__item:hover,
 .ee4v-ui-item-grid__list .unity-list-view__item:hover {
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-ui-item-grid__row {

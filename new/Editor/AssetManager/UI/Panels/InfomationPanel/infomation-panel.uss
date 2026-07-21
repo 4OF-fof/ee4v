@@ -17,7 +17,7 @@
     align-self: center;
     align-items: center;
     justify-content: center;
-    background-color: transparent;
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-asset-manager-panel__infomation-selection-mode {
@@ -67,20 +67,20 @@
     padding-left: 6px;
     padding-right: 4px;
     border-left-width: 2px;
-    border-left-color: rgba(83, 188, 176, 0.92);
+    border-left-color: var(--ee4v-color-import-target);
     border-top-left-radius: 3px;
     border-top-right-radius: 3px;
     border-bottom-left-radius: 3px;
     border-bottom-right-radius: 3px;
-    background-color: rgba(83, 188, 176, 0.055);
+    background-color: var(--ee4v-color-import-target-surface);
 }
 
 .ee4v-asset-manager-file-tree__row--group {
     padding-left: 4px;
     padding-right: 4px;
     border-left-width: 2px;
-    border-left-color: rgba(196, 166, 92, 0.78);
-    background-color: rgba(196, 166, 92, 0.055);
+    border-left-color: var(--ee4v-color-file-group);
+    background-color: var(--ee4v-color-file-group-surface);
 }
 
 .ee4v-asset-manager-file-tree__title {
@@ -90,7 +90,7 @@
     min-width: 0;
     width: 100%;
     max-width: 100%;
-    color: rgba(225, 225, 225, 0.92);
+    color: var(--ee4v-color-text-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     -unity-text-overflow-position: end;
@@ -106,12 +106,12 @@
 }
 
 .ee4v-asset-manager-file-tree__row--import-target .ee4v-asset-manager-file-tree__title {
-    color: rgb(205, 238, 234);
+    color: var(--ee4v-color-import-target-text);
     -unity-font-style: bold;
 }
 
 .ee4v-asset-manager-file-tree__row--group .ee4v-asset-manager-file-tree__title {
-    color: rgba(231, 211, 164, 0.92);
+    color: var(--ee4v-color-file-group-text);
     -unity-font-style: bold;
 }
 
@@ -119,7 +119,7 @@
     flex-shrink: 0;
     max-width: 36px;
     margin-left: 8px;
-    color: rgba(185, 185, 185, 0.68);
+    color: var(--ee4v-color-text-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     -unity-text-overflow-position: end;
@@ -135,7 +135,7 @@
 }
 
 .ee4v-asset-manager-file-tree__row--import-target .ee4v-asset-manager-file-tree__meta {
-    color: rgba(173, 222, 216, 0.82);
+    color: var(--ee4v-color-import-target-meta);
 }
 
 .ee4v-asset-manager-file-tree__meta--empty {

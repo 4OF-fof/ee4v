@@ -9,23 +9,23 @@
     border-right-width: 1px;
     border-bottom-width: 1px;
     border-left-width: 1px;
-    border-top-color: rgba(255, 255, 255, 0.08);
-    border-right-color: rgba(255, 255, 255, 0.08);
-    border-bottom-color: rgba(255, 255, 255, 0.08);
-    border-left-color: rgba(255, 255, 255, 0.08);
+    border-top-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
+    border-bottom-color: var(--ee4v-color-border-default);
+    border-left-color: var(--ee4v-color-border-default);
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
-    background-color: rgba(0, 0, 0, 0.22);
+    background-color: var(--ee4v-color-field);
 }
 
 .ee4v-ui-search-field--focused {
-    border-top-color: rgba(86, 156, 214, 0.6);
-    border-right-color: rgba(86, 156, 214, 0.6);
-    border-bottom-color: rgba(86, 156, 214, 0.6);
-    border-left-color: rgba(86, 156, 214, 0.6);
-    background-color: rgba(0, 0, 0, 0.30);
+    border-top-color: var(--ee4v-color-focus);
+    border-right-color: var(--ee4v-color-focus);
+    border-bottom-color: var(--ee4v-color-focus);
+    border-left-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-field);
 }
 
 .ee4v-ui-search-field__icon {
@@ -78,7 +78,7 @@
     font-size: 12px;
     padding-top: 4px;
     padding-bottom: 0;
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
     border-top-width: 0;
     border-right-width: 0;
     border-bottom-width: 0;
@@ -98,7 +98,7 @@
     bottom: 0;
     flex-direction: row;
     align-items: center;
-    color: rgba(180, 180, 180, 0.72);
+    color: var(--ee4v-color-text-muted);
 }
 
 .ee4v-ui-search-field__placeholder Label {
@@ -130,8 +130,8 @@
     border-top-right-radius: 0;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    background-color: rgba(0, 0, 0, 0);
-    color: rgba(210, 210, 210, 0.72);
+    background-color: var(--ee4v-color-transparent);
+    color: var(--ee4v-color-text-muted);
     -unity-text-align: middle-center;
     justify-content: center;
     align-items: center;
@@ -143,8 +143,8 @@
 }
 
 .ee4v-ui-search-field__clear:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.92);
+    background-color: var(--ee4v-color-surface-hover-strong);
+    color: var(--ee4v-color-text-on-state);
     opacity: 1;
 }
 

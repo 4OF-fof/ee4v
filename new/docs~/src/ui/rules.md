@@ -1,5 +1,17 @@
 # UI 実装ルール
 
+## 色は共通トークンを使う
+
+UI の配色は `Editor/Core/UI/Foundation/ui-color-tokens.uss` に集約し、component の USS では raw な `#...` / `rgb(...)` / `rgba(...)` を直接指定しません。`common.uss` が color token USS を import するため、`.ee4v-ui` を root class に持つ既存 window では `var(--ee4v-color-...)` をそのまま利用できます。
+
+- 基本 palette は `DESIGN.md` の Unity Editor 2022.3 Dark theme 測定値に合わせる
+- surface / text / border / state など、用途を表す token を選ぶ
+- selection、focus、active tool の青を同じ token にまとめない
+- module 固有の状態色が必要な場合も component 内へ直書きせず、用途が分かる名前で token を追加する
+- C# / IMGUI から色が必要な場合は `UiColorTokens` を使い、USS 側の同名 token と値を揃える
+
+色以外の寸法、余白、角丸、typography は color token に含めません。
+
 ## `Label` を直接使わない
 
 `new Label(...)` や `Label` 継承は禁止です。テキスト表示は `UiTextFactory.Create(...)` を使います。

@@ -3,10 +3,10 @@
     border-right-width: 1px;
     border-bottom-width: 1px;
     border-left-width: 1px;
-    border-top-color: rgba(0, 0, 0, 0);
-    border-right-color: rgba(0, 0, 0, 0);
-    border-bottom-color: rgba(0, 0, 0, 0);
-    border-left-color: rgba(0, 0, 0, 0);
+    border-top-color: var(--ee4v-color-transparent);
+    border-right-color: var(--ee4v-color-transparent);
+    border-bottom-color: var(--ee4v-color-transparent);
+    border-left-color: var(--ee4v-color-transparent);
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
     border-bottom-left-radius: 8px;
@@ -18,16 +18,16 @@
     border-right-width: 3px;
     border-bottom-width: 3px;
     border-left-width: 3px;
-    border-top-color: rgb(38, 150, 255);
-    border-right-color: rgb(38, 150, 255);
-    border-bottom-color: rgb(38, 150, 255);
-    border-left-color: rgb(38, 150, 255);
-    background-color: rgba(38, 150, 255, 0.16);
+    border-top-color: var(--ee4v-color-focus);
+    border-right-color: var(--ee4v-color-focus);
+    border-bottom-color: var(--ee4v-color-focus);
+    border-left-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-selection-soft);
 }
 
 .ee4v-ui-selectable-item-grid__row-slot--selected .ee4v-ui-item-card__name {
-    color: rgb(235, 248, 255);
-    background-color: rgb(38, 150, 255);
+    color: var(--ee4v-color-text-on-state);
+    background-color: var(--ee4v-color-selection);
     border-top-left-radius: 3px;
     border-top-right-radius: 3px;
     border-bottom-left-radius: 3px;

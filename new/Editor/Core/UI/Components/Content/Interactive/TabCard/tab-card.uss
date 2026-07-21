@@ -24,27 +24,27 @@
     border-top-width: 1px;
     border-left-width: 1px;
     border-right-width: 1px;
-    border-top-color: rgba(255, 255, 255, 0.08);
-    border-left-color: rgba(255, 255, 255, 0.08);
-    border-right-color: rgba(255, 255, 255, 0.08);
+    border-top-color: var(--ee4v-color-border-default);
+    border-left-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
     border-bottom-width: 1px;
-    border-bottom-color: rgba(255, 255, 255, 0.08);
-    background-color: rgba(255, 255, 255, 0.015);
-    color: rgba(210, 210, 210, 0.72);
+    border-bottom-color: var(--ee4v-color-border-default);
+    background-color: var(--ee4v-color-tab-idle);
+    color: var(--ee4v-color-text-muted);
     align-self: flex-end;
 }
 
 .ee4v-ui-tab-card__tab--selected {
-    background-color: rgba(255, 255, 255, 0.09);
-    border-top-color: rgba(255, 255, 255, 0.14);
-    border-left-color: rgba(255, 255, 255, 0.14);
-    border-right-color: rgba(255, 255, 255, 0.14);
-    border-bottom-color: rgba(255, 255, 255, 0.02);
-    color: rgb(240, 240, 240);
+    background-color: var(--ee4v-color-surface-raised);
+    border-top-color: var(--ee4v-color-border-active);
+    border-left-color: var(--ee4v-color-border-active);
+    border-right-color: var(--ee4v-color-border-active);
+    border-bottom-color: var(--ee4v-color-surface-raised);
+    color: var(--ee4v-color-text-on-state);
 }
 
 .ee4v-ui-tab-card__panel {
@@ -57,11 +57,11 @@
     border-bottom-width: 1px;
     border-left-width: 1px;
     border-right-width: 1px;
-    border-top-color: rgba(255, 255, 255, 0.08);
-    border-bottom-color: rgba(255, 255, 255, 0.08);
-    border-left-color: rgba(255, 255, 255, 0.08);
-    border-right-color: rgba(255, 255, 255, 0.08);
-    background-color: rgba(255, 255, 255, 0.025);
+    border-top-color: var(--ee4v-color-border-default);
+    border-bottom-color: var(--ee4v-color-border-default);
+    border-left-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
+    background-color: var(--ee4v-color-surface-subtle);
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
     border-bottom-left-radius: 8px;

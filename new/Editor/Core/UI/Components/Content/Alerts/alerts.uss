@@ -8,7 +8,7 @@
     border-top-right-radius: 6px;
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: var(--ee4v-color-surface-subtle);
 }
 
 .ee4v-ui-banner__title {
@@ -16,18 +16,18 @@
 }
 
 .ee4v-ui-banner__message {
-    color: rgba(210, 210, 210, 0.82);
+    color: var(--ee4v-color-text-secondary);
     white-space: normal;
 }
 
 .ee4v-ui-banner--info {
-    border-left-color: rgb(86, 156, 214);
+    border-left-color: var(--ee4v-color-info);
 }
 
 .ee4v-ui-banner--warning {
-    border-left-color: rgb(220, 180, 72);
+    border-left-color: var(--ee4v-color-warning);
 }
 
 .ee4v-ui-banner--error {
-    border-left-color: rgb(220, 92, 92);
+    border-left-color: var(--ee4v-color-error);
 }

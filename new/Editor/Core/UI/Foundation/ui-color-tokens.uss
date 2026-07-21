@@ -1,0 +1,61 @@
+:root {
+    /* Unity Editor 2022.3 Dark palette measured in DESIGN.md. */
+    --ee4v-color-chrome-deep: #191919;
+    --ee4v-color-tab-idle: #282828;
+    --ee4v-color-field: #2A2A2A;
+    --ee4v-color-panel: #383838;
+    --ee4v-color-surface-raised: #3C3C3C;
+    --ee4v-color-control: #585858;
+    --ee4v-color-tool-active: #46607C;
+    --ee4v-color-selection: #2C5D87;
+    --ee4v-color-focus: #3A79BB;
+    --ee4v-color-text-primary: #C2C2C2;
+    --ee4v-color-menu-native: #F9F9F9;
+
+    /* Shared derived roles. Keep component USS free of raw color values. */
+    --ee4v-color-transparent: rgba(0, 0, 0, 0);
+    --ee4v-color-surface-subtle: rgba(255, 255, 255, 0.025);
+    --ee4v-color-surface-soft: rgba(255, 255, 255, 0.035);
+    --ee4v-color-surface-hover: rgba(255, 255, 255, 0.05);
+    --ee4v-color-surface-hover-strong: rgba(255, 255, 255, 0.08);
+    --ee4v-color-surface-pressed: rgba(255, 255, 255, 0.13);
+    --ee4v-color-border-subtle: rgba(255, 255, 255, 0.06);
+    --ee4v-color-border-default: rgba(255, 255, 255, 0.08);
+    --ee4v-color-border-strong: rgba(255, 255, 255, 0.10);
+    --ee4v-color-border-active: rgba(255, 255, 255, 0.14);
+    --ee4v-color-text-secondary: rgba(194, 194, 194, 0.82);
+    --ee4v-color-text-muted: rgba(194, 194, 194, 0.72);
+    --ee4v-color-text-soft: rgba(194, 194, 194, 0.78);
+    --ee4v-color-text-disabled: rgba(194, 194, 194, 0.36);
+    --ee4v-color-text-on-state: #F9F9F9;
+    --ee4v-color-control-highlight: #F9F9F9;
+    --ee4v-color-selection-soft: rgba(44, 93, 135, 0.42);
+    --ee4v-color-scroll-thumb: rgba(194, 194, 194, 0.44);
+    --ee4v-color-slider-track: rgba(194, 194, 194, 0.26);
+    --ee4v-color-slider-fill: rgba(194, 194, 194, 0.62);
+
+    /* Semantic colors stay centralized because Unity has no success token. */
+    --ee4v-color-info: #3A79BB;
+    --ee4v-color-success: #70B460;
+    --ee4v-color-warning: #DCB448;
+    --ee4v-color-error: #DC5C5C;
+    --ee4v-color-status-idle: rgba(128, 128, 128, 0.35);
+    --ee4v-color-status-running: rgba(220, 180, 72, 0.35);
+    --ee4v-color-status-passed: rgba(96, 184, 126, 0.35);
+    --ee4v-color-status-failed: rgba(220, 92, 92, 0.35);
+    --ee4v-color-status-skipped: rgba(122, 148, 214, 0.35);
+    --ee4v-color-status-inconclusive: rgba(167, 125, 214, 0.35);
+    --ee4v-color-success-border-soft: rgba(112, 180, 96, 0.34);
+    --ee4v-color-success-surface-soft: rgba(112, 180, 96, 0.16);
+    --ee4v-color-success-surface-hover: rgba(112, 180, 96, 0.20);
+    --ee4v-color-success-text: rgba(226, 245, 222, 0.96);
+
+    /* Asset Manager domain states. */
+    --ee4v-color-import-target: rgba(83, 188, 176, 0.92);
+    --ee4v-color-import-target-surface: rgba(83, 188, 176, 0.055);
+    --ee4v-color-import-target-text: #CDEEEC;
+    --ee4v-color-import-target-meta: rgba(173, 222, 216, 0.82);
+    --ee4v-color-file-group: rgba(196, 166, 92, 0.78);
+    --ee4v-color-file-group-surface: rgba(196, 166, 92, 0.055);
+    --ee4v-color-file-group-text: rgba(231, 211, 164, 0.92);
+}

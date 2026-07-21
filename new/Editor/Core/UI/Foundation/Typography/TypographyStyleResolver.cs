@@ -10,7 +10,7 @@ namespace Ee4v.UI
         public static readonly TypographyStyleDefinition Default = new TypographyStyleDefinition(
             false,
             12,
-            new Color32(230, 230, 230, 255),
+            UiColorTokens.TextPrimary,
             TextAnchor.UpperLeft,
             WhiteSpace.NoWrap);
 
@@ -73,27 +73,27 @@ namespace Ee4v.UI
         private static readonly Dictionary<string, TypographyStyleDefinition> Styles =
             new Dictionary<string, TypographyStyleDefinition>(StringComparer.Ordinal)
             {
-                { UiClassNames.InfoCardEyebrow, Create(true, 11, 220, 220, 220, 235, TextAnchor.UpperLeft, WhiteSpace.NoWrap) },
-                { UiClassNames.InfoCardTitle, Create(true, 14, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.Normal) },
-                { UiClassNames.InfoCardDescription, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
-                { UiClassNames.BannerTitle, Create(true, 12, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 2f) },
-                { UiClassNames.BannerMessage, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
-                { UiClassNames.StatusBadge, Create(true, 11, 230, 230, 230, 255, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
-                { UiClassNames.SearchFieldPlaceholder, Create(false, 12, 170, 170, 170, 170, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
-                { UiClassNames.TestResultGroupCasesTitle, Create(true, 12, 230, 230, 230, 255, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
-                { UiClassNames.TestResultGroupCasesMeta, Create(false, 11, 210, 210, 210, 184, TextAnchor.MiddleRight, WhiteSpace.NoWrap) },
-                { UiClassNames.SingleSelectButtonGroupMeta, Create(false, 10, 210, 210, 210, 184, TextAnchor.MiddleRight, WhiteSpace.NoWrap, marginLeft: 8f) },
-                { UiClassNames.ItemCardName, Create(false, 12, 230, 230, 230, 235, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
-                { UiClassNames.InfomationPanelSelectionCount, Create(true, 16, 66, 166, 255, 255, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
-                { UiClassNames.InfomationPanelSelectionCountSuffix, Create(false, 13, 230, 230, 230, 220, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
-                { UiClassNames.CatalogPageTitle, Create(true, 18, 230, 230, 230, 255, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 4f) },
-                { UiClassNames.CatalogPageDescription, Create(false, 12, 210, 210, 210, 209, TextAnchor.UpperLeft, WhiteSpace.Normal) },
-                { UiClassNames.CatalogDetailLabel, Create(true, 11, 220, 220, 220, 235, TextAnchor.UpperLeft, WhiteSpace.NoWrap, marginBottom: 2f) },
-                { UiClassNames.CatalogDetailValue, Create(false, 12, 230, 230, 230, 235, TextAnchor.UpperLeft, WhiteSpace.Normal) },
-                { UiClassNames.CatalogNavigatorTitle, Create(false, 16, 230, 230, 230, 255, TextAnchor.MiddleCenter, WhiteSpace.NoWrap, marginBottom: 10f) },
-                { UiClassNames.CatalogTreeTitle, Create(false, 12, 230, 230, 230, 255, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
-                { UiClassNames.CatalogTreeImplementation, Create(false, 10, 210, 210, 210, 184, TextAnchor.MiddleRight, WhiteSpace.NoWrap, marginLeft: 8f) },
-                { UiClassNames.Phase1StubLabel, Create(true, 12, 255, 255, 255, 255, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
+                { UiClassNames.InfoCardEyebrow, Create(true, 11, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.NoWrap) },
+                { UiClassNames.InfoCardTitle, Create(true, 14, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal) },
+                { UiClassNames.InfoCardDescription, Create(false, 12, UiColorTokens.TextSecondary, TextAnchor.UpperLeft, WhiteSpace.Normal) },
+                { UiClassNames.BannerTitle, Create(true, 12, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 2f) },
+                { UiClassNames.BannerMessage, Create(false, 12, UiColorTokens.TextSecondary, TextAnchor.UpperLeft, WhiteSpace.Normal) },
+                { UiClassNames.StatusBadge, Create(true, 11, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
+                { UiClassNames.SearchFieldPlaceholder, Create(false, 12, UiColorTokens.TextMuted, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
+                { UiClassNames.TestResultGroupCasesTitle, Create(true, 12, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
+                { UiClassNames.TestResultGroupCasesMeta, Create(false, 11, UiColorTokens.TextMuted, TextAnchor.MiddleRight, WhiteSpace.NoWrap) },
+                { UiClassNames.SingleSelectButtonGroupMeta, Create(false, 10, UiColorTokens.TextMuted, TextAnchor.MiddleRight, WhiteSpace.NoWrap, marginLeft: 8f) },
+                { UiClassNames.ItemCardName, Create(false, 12, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
+                { UiClassNames.InfomationPanelSelectionCount, Create(true, 16, UiColorTokens.Focus, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
+                { UiClassNames.InfomationPanelSelectionCountSuffix, Create(false, 13, UiColorTokens.TextSoft, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
+                { UiClassNames.CatalogPageTitle, Create(true, 18, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 4f) },
+                { UiClassNames.CatalogPageDescription, Create(false, 12, UiColorTokens.TextSecondary, TextAnchor.UpperLeft, WhiteSpace.Normal) },
+                { UiClassNames.CatalogDetailLabel, Create(true, 11, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.NoWrap, marginBottom: 2f) },
+                { UiClassNames.CatalogDetailValue, Create(false, 12, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal) },
+                { UiClassNames.CatalogNavigatorTitle, Create(false, 16, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.NoWrap, marginBottom: 10f) },
+                { UiClassNames.CatalogTreeTitle, Create(false, 12, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
+                { UiClassNames.CatalogTreeImplementation, Create(false, 10, UiColorTokens.TextMuted, TextAnchor.MiddleRight, WhiteSpace.NoWrap, marginLeft: 8f) },
+                { UiClassNames.Phase1StubLabel, Create(true, 12, UiColorTokens.TextOnState, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
             };
 
         public static TypographyResolution Resolve(params string[] classNames)
@@ -135,10 +135,7 @@ namespace Ee4v.UI
         private static TypographyStyleDefinition Create(
             bool requiresImgui,
             int fontSize,
-            byte red,
-            byte green,
-            byte blue,
-            byte alpha,
+            Color color,
             TextAnchor alignment,
             WhiteSpace whiteSpace,
             float marginBottom = 0f,
@@ -149,7 +146,7 @@ namespace Ee4v.UI
             return new TypographyStyleDefinition(
                 requiresImgui,
                 fontSize,
-                new Color32(red, green, blue, alpha),
+                color,
                 alignment,
                 whiteSpace,
                 marginBottom,

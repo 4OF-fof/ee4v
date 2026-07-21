@@ -15,35 +15,35 @@
     border-right-width: 1px;
     border-bottom-width: 1px;
     border-left-width: 1px;
-    border-top-color: rgba(255, 255, 255, 0.09);
-    border-right-color: rgba(255, 255, 255, 0.09);
-    border-bottom-color: rgba(255, 255, 255, 0.09);
-    border-left-color: rgba(255, 255, 255, 0.09);
+    border-top-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
+    border-bottom-color: var(--ee4v-color-border-default);
+    border-left-color: var(--ee4v-color-border-default);
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
-    background-color: rgba(255, 255, 255, 0.055);
-    color: rgba(224, 224, 224, 0.88);
+    background-color: var(--ee4v-color-control);
+    color: var(--ee4v-color-text-primary);
     font-size: 9px;
     -unity-text-align: middle-center;
 }
 
 .ee4v-ui-copyable-text-area__copy-button:hover {
-    background-color: rgba(255, 255, 255, 0.072);
+    background-color: var(--ee4v-color-surface-hover-strong);
 }
 
 .ee4v-ui-copyable-text-area__copy-button--copied {
-    border-top-color: rgba(112, 180, 96, 0.34);
-    border-right-color: rgba(112, 180, 96, 0.34);
-    border-bottom-color: rgba(112, 180, 96, 0.34);
-    border-left-color: rgba(112, 180, 96, 0.34);
-    background-color: rgba(112, 180, 96, 0.16);
-    color: rgba(226, 245, 222, 0.96);
+    border-top-color: var(--ee4v-color-success-border-soft);
+    border-right-color: var(--ee4v-color-success-border-soft);
+    border-bottom-color: var(--ee4v-color-success-border-soft);
+    border-left-color: var(--ee4v-color-success-border-soft);
+    background-color: var(--ee4v-color-success-surface-soft);
+    color: var(--ee4v-color-success-text);
 }
 
 .ee4v-ui-copyable-text-area__copy-button--copied:hover {
-    background-color: rgba(112, 180, 96, 0.2);
+    background-color: var(--ee4v-color-success-surface-hover);
 }
 
 .ee4v-ui-copyable-text-area__copy-button:disabled {
@@ -57,14 +57,14 @@
 
 .ee4v-ui-copyable-text-area__field .unity-base-field,
 .ee4v-ui-copyable-text-area__field .unity-text-field {
-    background-color: rgba(0, 0, 0, 0.18);
+    background-color: var(--ee4v-color-field);
 }
 
 .ee4v-ui-copyable-text-area__field .unity-base-text-field__input,
 .ee4v-ui-copyable-text-area__field .unity-text-field__input,
 .ee4v-ui-copyable-text-area__field .unity-base-field__input {
     white-space: normal;
-    background-color: rgba(0, 0, 0, 0.18);
+    background-color: var(--ee4v-color-field);
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
     border-bottom-left-radius: 8px;

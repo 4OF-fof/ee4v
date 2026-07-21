@@ -25,13 +25,13 @@
     padding-right: 0;
     padding-top: 0;
     padding-bottom: 0;
-    color: rgba(210, 210, 210, 0.72);
+    color: var(--ee4v-color-text-muted);
     font-size: 13px;
     -unity-text-align: middle-center;
 }
 
 .ee4v-ui-numeric-slider__endpoint:hover {
-    color: rgba(255, 255, 255, 0.96);
+    color: var(--ee4v-color-text-on-state);
 }
 
 .ee4v-ui-numeric-slider__track-host {
@@ -50,7 +50,7 @@
     min-height: 2px;
     max-height: 2px;
     align-self: stretch;
-    background-color: rgba(255, 255, 255, 0.26);
+    background-color: var(--ee4v-color-slider-track);
 }
 
 .ee4v-ui-numeric-slider__fill {
@@ -58,7 +58,7 @@
     left: 0;
     top: 0;
     bottom: 0;
-    background-color: rgba(255, 255, 255, 0.62);
+    background-color: var(--ee4v-color-slider-fill);
 }
 
 .ee4v-ui-numeric-slider__knob {
@@ -74,17 +74,17 @@
     border-top-right-radius: 6px;
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
-    background-color: rgb(245, 245, 245);
+    background-color: var(--ee4v-color-control-highlight);
 }
 
 .ee4v-ui-numeric-slider:hover .ee4v-ui-numeric-slider__track,
 .ee4v-ui-numeric-slider--dragging .ee4v-ui-numeric-slider__track {
-    background-color: rgba(255, 255, 255, 0.34);
+    background-color: var(--ee4v-color-control);
 }
 
 .ee4v-ui-numeric-slider:hover .ee4v-ui-numeric-slider__knob,
 .ee4v-ui-numeric-slider--dragging .ee4v-ui-numeric-slider__knob {
-    background-color: rgb(255, 255, 255);
+    background-color: var(--ee4v-color-text-on-state);
 }
 
 .ee4v-ui-numeric-slider--disabled {

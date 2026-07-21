@@ -13,15 +13,15 @@
     border-right-width: 1px;
     border-bottom-width: 1px;
     border-left-width: 1px;
-    border-top-color: rgba(255, 255, 255, 0.08);
-    border-right-color: rgba(255, 255, 255, 0.08);
-    border-bottom-color: rgba(255, 255, 255, 0.08);
-    border-left-color: rgba(255, 255, 255, 0.08);
+    border-top-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
+    border-bottom-color: var(--ee4v-color-border-default);
+    border-left-color: var(--ee4v-color-border-default);
     border-top-left-radius: 5px;
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
     border-bottom-left-radius: 5px;
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: var(--ee4v-color-surface-subtle);
 }
 
 .ee4v-ui-view-toggle-tabs__tab {
@@ -43,19 +43,19 @@
     border-top-right-radius: 4px;
     border-bottom-right-radius: 4px;
     border-bottom-left-radius: 4px;
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-ui-view-toggle-tabs__tab:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--ee4v-color-surface-hover);
 }
 
 .ee4v-ui-view-toggle-tabs__tab--selected {
-    background-color: rgba(63, 127, 255, 0.26);
+    background-color: var(--ee4v-color-tool-active);
 }
 
 .ee4v-ui-view-toggle-tabs__tab--selected:hover {
-    background-color: rgba(63, 127, 255, 0.34);
+    background-color: var(--ee4v-color-selection);
 }
 
 .ee4v-ui-view-toggle-tabs__tab-content {

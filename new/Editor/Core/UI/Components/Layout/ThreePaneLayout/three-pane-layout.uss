@@ -3,7 +3,7 @@
     min-width: 0;
     min-height: 0;
     flex-direction: column;
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-ui-three-pane-layout__toolbar-row {
@@ -32,9 +32,9 @@
     border-bottom-width: 1px;
     border-left-width: 0;
     border-right-width: 0;
-    border-top-color: rgba(255, 255, 255, 0.06);
-    border-bottom-color: rgba(255, 255, 255, 0.06);
-    background-color: rgba(0, 0, 0, 0);
+    border-top-color: var(--ee4v-color-border-subtle);
+    border-bottom-color: var(--ee4v-color-border-subtle);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-ui-three-pane-layout__toolbar {
@@ -51,14 +51,14 @@
     border-bottom-width: 1px;
     border-left-width: 0;
     border-right-width: 0;
-    border-top-color: rgba(255, 255, 255, 0.06);
-    border-bottom-color: rgba(255, 255, 255, 0.06);
-    background-color: rgba(0, 0, 0, 0);
+    border-top-color: var(--ee4v-color-border-subtle);
+    border-bottom-color: var(--ee4v-color-border-subtle);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-ui-three-pane-layout__toolbar--left {
     border-left-width: 1px;
-    border-left-color: rgba(255, 255, 255, 0.06);
+    border-left-color: var(--ee4v-color-border-subtle);
 }
 
 .ee4v-ui-three-pane-layout__toolbar--main {
@@ -67,7 +67,7 @@
 
 .ee4v-ui-three-pane-layout__toolbar--right {
     border-right-width: 1px;
-    border-right-color: rgba(255, 255, 255, 0.06);
+    border-right-color: var(--ee4v-color-border-subtle);
 }
 
 .ee4v-ui-three-pane-layout__toolbar-content {
@@ -99,7 +99,7 @@
     top: 0;
     bottom: 0;
     width: 1px;
-    background-color: rgba(255, 255, 255, 0.06);
+    background-color: var(--ee4v-color-border-subtle);
 }
 
 .ee4v-ui-three-pane-layout__toolbar-edge-line--left {
@@ -112,12 +112,12 @@
 
 .ee4v-ui-three-pane-layout__toolbar-edge-line--active {
     width: 2px;
-    background-color: rgba(95, 155, 255, 0.9);
+    background-color: var(--ee4v-color-focus);
 }
 
 .ee4v-ui-three-pane-layout__pane--left {
     border-left-width: 1px;
-    border-left-color: rgba(255, 255, 255, 0.06);
+    border-left-color: var(--ee4v-color-border-subtle);
 }
 
 .ee4v-ui-three-pane-layout__pane--main {
@@ -126,7 +126,7 @@
 
 .ee4v-ui-three-pane-layout__pane--right {
     border-right-width: 1px;
-    border-right-color: rgba(255, 255, 255, 0.06);
+    border-right-color: var(--ee4v-color-border-subtle);
 }
 
 .ee4v-ui-three-pane-layout__pane-edge-line {
@@ -134,7 +134,7 @@
     top: 0;
     bottom: 0;
     width: 1px;
-    background-color: rgba(255, 255, 255, 0.06);
+    background-color: var(--ee4v-color-border-subtle);
 }
 
 .ee4v-ui-three-pane-layout__pane-edge-line--left {
@@ -147,7 +147,7 @@
 
 .ee4v-ui-three-pane-layout__pane-edge-line--active {
     width: 2px;
-    background-color: rgba(95, 155, 255, 0.9);
+    background-color: var(--ee4v-color-focus);
 }
 
 .ee4v-ui-three-pane-layout__pane-body {
@@ -172,13 +172,13 @@
     flex-shrink: 0;
     flex-direction: column;
     align-items: stretch;
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-ui-three-pane-layout__splitter-grip {
     flex-grow: 1;
     min-height: 0;
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-ui-three-pane-layout__pane-toggle {
@@ -203,7 +203,7 @@
     border-right-width: 0;
     align-items: center;
     justify-content: center;
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
     background-image: none;
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
@@ -228,11 +228,11 @@
 }
 
 .ee4v-ui-three-pane-layout__pane-toggle--hover {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: var(--ee4v-color-surface-hover-strong);
 }
 
 .ee4v-ui-three-pane-layout__pane-toggle--active {
-    background-color: rgba(255, 255, 255, 0.13);
+    background-color: var(--ee4v-color-surface-pressed);
 }
 
 .ee4v-ui-three-pane-layout__pane-toggle .ee4v-ui-icon {

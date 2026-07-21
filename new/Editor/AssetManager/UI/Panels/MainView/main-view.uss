@@ -14,5 +14,5 @@
     margin-right: 12px;
     margin-top: 12px;
     margin-bottom: 8px;
-    color: rgba(210, 210, 210, 0.78);
+    color: var(--ee4v-color-text-soft);
 }

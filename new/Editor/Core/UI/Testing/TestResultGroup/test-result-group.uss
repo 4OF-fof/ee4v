@@ -17,22 +17,22 @@
     border-right-width: 1px;
     border-bottom-width: 1px;
     border-left-width: 1px;
-    border-top-color: rgba(255, 255, 255, 0.08);
-    border-right-color: rgba(255, 255, 255, 0.08);
-    border-bottom-color: rgba(255, 255, 255, 0.08);
-    border-left-color: rgba(255, 255, 255, 0.08);
+    border-top-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
+    border-bottom-color: var(--ee4v-color-border-default);
+    border-left-color: var(--ee4v-color-border-default);
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
     border-bottom-left-radius: 12px;
     border-bottom-right-radius: 12px;
-    background-color: rgba(255, 255, 255, 0.05);
-    color: rgb(230, 230, 230);
+    background-color: var(--ee4v-color-control);
+    color: var(--ee4v-color-text-primary);
     -unity-text-align: middle-center;
     align-self: center;
 }
 
 .ee4v-ui-test-result-group__run-button:hover {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: var(--ee4v-color-surface-hover-strong);
 }
 
 .ee4v-ui-test-result-group__run-button:disabled {
@@ -47,15 +47,15 @@
     border-right-width: 1px;
     border-bottom-width: 1px;
     border-left-width: 1px;
-    border-top-color: rgba(255, 255, 255, 0.08);
-    border-right-color: rgba(255, 255, 255, 0.08);
-    border-bottom-color: rgba(255, 255, 255, 0.08);
-    border-left-color: rgba(255, 255, 255, 0.08);
+    border-top-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
+    border-bottom-color: var(--ee4v-color-border-default);
+    border-left-color: var(--ee4v-color-border-default);
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
-    background-color: rgba(255, 255, 255, 0.028);
+    background-color: var(--ee4v-color-surface-subtle);
 }
 
 .ee4v-ui-test-result-group__cases-toggle {
@@ -75,13 +75,13 @@
     border-top-right-radius: 0;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    background-color: rgba(0, 0, 0, 0);
-    color: rgb(230, 230, 230);
+    background-color: var(--ee4v-color-transparent);
+    color: var(--ee4v-color-text-primary);
     -unity-text-align: middle-left;
 }
 
 .ee4v-ui-test-result-group__cases-toggle:hover {
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: var(--ee4v-color-surface-soft);
 }
 
 .ee4v-ui-test-result-group__cases-chevron {
@@ -109,13 +109,13 @@
     border-top-right-radius: 0;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
     align-self: stretch;
 }
 
 .ee4v-ui-test-result-group--expanded .ee4v-ui-test-result-group__cases-toggle {
     border-bottom-width: 1px;
-    border-bottom-color: rgba(255, 255, 255, 0.08);
+    border-bottom-color: var(--ee4v-color-border-default);
 }
 
 .ee4v-ui-test-result-group--expanded .ee4v-ui-test-result-group__cases-body {
@@ -125,7 +125,7 @@
 .ee4v-ui-test-result-group__case-card {
     margin-top: 6px;
     margin-bottom: 0;
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: var(--ee4v-color-surface-subtle);
     align-self: stretch;
 }
 
@@ -148,13 +148,13 @@
     border-right-width: 0;
     border-bottom-width: 0;
     border-left-width: 0;
-    background-color: rgba(0, 0, 0, 0);
-    color: rgba(214, 214, 214, 0.92);
+    background-color: var(--ee4v-color-transparent);
+    color: var(--ee4v-color-text-primary);
     -unity-text-align: middle-left;
 }
 
 .ee4v-ui-test-result-group__case-details-toggle:hover {
-    background-color: rgba(0, 0, 0, 0);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-ui-test-result-group__case-details-chevron {
@@ -169,7 +169,7 @@
 
 .ee4v-ui-test-result-group__case-details-title {
     font-size: 11px;
-    color: rgba(214, 214, 214, 0.92);
+    color: var(--ee4v-color-text-primary);
 }
 
 .ee4v-ui-test-result-group__case-details-body {
