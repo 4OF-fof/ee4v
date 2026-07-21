@@ -72,6 +72,10 @@
     margin-bottom: 8px;
 }
 
+.ee4v-ui-catalog-controls .ee4v-ui-input-field__field {
+    margin-bottom: 0;
+}
+
 .ee4v-ui-catalog-control-label {
     margin-bottom: 4px;
     color: var(--ee4v-color-text-soft);

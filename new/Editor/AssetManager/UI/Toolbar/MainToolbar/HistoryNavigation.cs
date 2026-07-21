@@ -8,8 +8,6 @@ namespace Ee4v.AssetManager
     internal sealed class HistoryNavigation : VisualElement
     {
         private const string RootClassName = "ee4v-ui-history-navigation";
-        private const string NavGroupClassName = "ee4v-ui-history-navigation__nav-group";
-        private const string NavDividerClassName = "ee4v-ui-history-navigation__nav-divider";
         private const string IconButtonClassName = "ee4v-ui-history-navigation__icon-button";
         private const string BreadcrumbClassName = "ee4v-ui-history-navigation__breadcrumb";
         private const string BreadcrumbItemClassName = "ee4v-ui-history-navigation__breadcrumb-item";
@@ -25,22 +23,13 @@ namespace Ee4v.AssetManager
         {
             AddToClassList(RootClassName);
 
-            var navGroup = new VisualElement();
-            navGroup.AddToClassList(NavGroupClassName);
-
-            _backButton = CreateNavigationButton("‹", I18N.Get("assetManager.mainToolbar.history.back"));
+            _backButton = CreateNavigationButton("<", I18N.Get("assetManager.mainToolbar.history.back"));
             _backButton.clicked += () => BackClicked?.Invoke();
-            navGroup.Add(_backButton);
+            Add(_backButton);
 
-            var divider = new VisualElement();
-            divider.AddToClassList(NavDividerClassName);
-            navGroup.Add(divider);
-
-            _forwardButton = CreateNavigationButton("›", I18N.Get("assetManager.mainToolbar.history.forward"));
+            _forwardButton = CreateNavigationButton(">", I18N.Get("assetManager.mainToolbar.history.forward"));
             _forwardButton.clicked += () => ForwardClicked?.Invoke();
-            navGroup.Add(_forwardButton);
-
-            Add(navGroup);
+            Add(_forwardButton);
 
             _breadcrumb = new VisualElement();
             _breadcrumb.AddToClassList(BreadcrumbClassName);
@@ -113,7 +102,7 @@ namespace Ee4v.AssetManager
             label.pickingMode = PickingMode.Ignore;
             if (current)
             {
-                label.SetColor(UiColorTokens.TextOnState);
+                label.SetColor(UiColorTokens.TextSoft);
             }
 
             button.Add(label);

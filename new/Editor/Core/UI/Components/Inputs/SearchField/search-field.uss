@@ -93,7 +93,11 @@
     border-right-width: 0;
     border-bottom-width: 0;
     border-left-width: 0;
-    justify-content: center;
+    -unity-text-align: middle-left;
+}
+
+.ee4v-ui-search-field__input .unity-text-element {
+    -unity-text-align: middle-left;
 }
 
 .ee4v-ui-search-field__input .unity-base-field__label,

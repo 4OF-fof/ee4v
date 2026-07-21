@@ -104,7 +104,11 @@
     background-color: var(--ee4v-color-transparent);
     color: var(--ee4v-color-text-primary);
     font-size: 12px;
-    justify-content: center;
+    -unity-text-align: middle-left;
+}
+
+.ee4v-ui-input-field__field .unity-text-element {
+    -unity-text-align: middle-left;
 }
 
 .ee4v-ui-input-field--multiline .ee4v-ui-input-field__field .unity-base-text-field__input,
@@ -112,8 +116,12 @@
 .ee4v-ui-input-field--multiline .ee4v-ui-input-field__field .unity-base-field__input {
     min-height: 60px;
     max-height: 10000px;
-    justify-content: flex-start;
     white-space: normal;
+    -unity-text-align: upper-left;
+}
+
+.ee4v-ui-input-field--multiline .ee4v-ui-input-field__field .unity-text-element {
+    -unity-text-align: upper-left;
 }
 
 .ee4v-ui-input-field__placeholder {
