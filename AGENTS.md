@@ -14,3 +14,10 @@
 - 実装前にdocsを確認し、既存の手法に添うように実装を進めてください。
 - ユーザーに見える表示テキストはコードへ直書きせず、ローカライズ定義を追加して `I18N.Get("key")` など既存のローカライズ経由で表示してください。
 - DB に関する変更では、既存 DB との互換性やマイグレーションは原則考慮せず、DB の削除・再生成を前提として schema や取り込み処理を修正して構いません。
+
+## UI・Unity 依存の分離
+
+- UI は見た目の差し替えを容易にするため、state の表示と入力イベントの通知に責務を限定し、機能ロジックと分離してください。依存方向は `UI -> 機能ロジック` とします。
+- Unity のバージョン更新時に変更箇所を特定しやすくするため、Unity 依存部分は Core の adapter / wrapper に集約してください。
+- 特に Unity の非公開・internal API、reflection、内部フィールドへのアクセスは feature 側で直接行わず、原則 `Editor/Core/Internal/EditorAPI` の facade と `Backends` に分離してください。
+- 非公開 API が利用できない場合も機能全体を壊さないよう、facade は `Try...` や fallback を提供してください。変更時は関連テストと `docs~/src/maintenance/unity-upgrade.md` も更新してください。

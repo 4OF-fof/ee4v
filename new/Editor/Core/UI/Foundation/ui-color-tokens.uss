@@ -30,9 +30,14 @@
     --ee4v-color-text-on-state: #F9F9F9;
     --ee4v-color-control-highlight: #F9F9F9;
     --ee4v-color-selection-soft: rgba(44, 93, 135, 0.42);
+    --ee4v-color-selection-pressed: #254F73;
+    --ee4v-color-overlay-border: rgba(0, 0, 0, 0.45);
     --ee4v-color-scroll-thumb: rgba(194, 194, 194, 0.44);
     --ee4v-color-slider-track: rgba(194, 194, 194, 0.26);
+    --ee4v-color-slider-track-hover: rgba(194, 194, 194, 0.40);
     --ee4v-color-slider-fill: rgba(194, 194, 194, 0.62);
+    --ee4v-color-slider-fill-hover: rgba(194, 194, 194, 0.85);
+    --ee4v-color-slider-knob-hover: #FFFFFF;
 
     /* Interaction states for solid controls and active tools. */
     --ee4v-color-control-hover: #646464;

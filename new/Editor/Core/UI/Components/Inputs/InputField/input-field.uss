@@ -6,6 +6,8 @@
 
 .ee4v-ui-input-field__field-container {
     position: relative;
+    flex-direction: row;
+    align-items: stretch;
     align-self: stretch;
     min-width: 0;
     min-height: 24px;
@@ -61,9 +63,7 @@
     flex-shrink: 1;
     align-self: stretch;
     min-width: 0;
-    min-height: 16px;
-    height: 16px;
-    max-height: 16px;
+    min-height: 0;
     margin-left: 0;
     margin-right: 0;
     margin-top: 0;
@@ -84,12 +84,18 @@
 .ee4v-ui-input-field__field .unity-base-text-field__input,
 .ee4v-ui-input-field__field .unity-text-field__input,
 .ee4v-ui-input-field__field .unity-base-field__input {
-    min-height: 14px;
-    height: 14px;
-    max-height: 14px;
+    flex-grow: 1;
+    align-self: stretch;
+    min-height: 0;
+    height: auto;
+    max-height: 10000px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
     padding-left: 0;
     padding-right: 0;
-    padding-top: 4px;
+    padding-top: 0;
     padding-bottom: 0;
     border-top-width: 0;
     border-right-width: 0;
@@ -98,16 +104,16 @@
     background-color: var(--ee4v-color-transparent);
     color: var(--ee4v-color-text-primary);
     font-size: 12px;
-    white-space: normal;
+    justify-content: center;
 }
 
 .ee4v-ui-input-field--multiline .ee4v-ui-input-field__field .unity-base-text-field__input,
 .ee4v-ui-input-field--multiline .ee4v-ui-input-field__field .unity-text-field__input,
 .ee4v-ui-input-field--multiline .ee4v-ui-input-field__field .unity-base-field__input {
     min-height: 60px;
-    height: auto;
     max-height: 10000px;
-    padding-top: 0;
+    justify-content: flex-start;
+    white-space: normal;
 }
 
 .ee4v-ui-input-field__placeholder {
@@ -122,6 +128,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.ee4v-ui-input-field--has-trailing .ee4v-ui-input-field__placeholder {
+    right: 28px;
 }
 
 .ee4v-ui-input-field__placeholder Label {

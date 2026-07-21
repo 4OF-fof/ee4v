@@ -158,7 +158,10 @@ namespace Ee4v.UI
         private static UiTextElement CreateEndpointButton(string text, Action onClick)
         {
             var button = UiTextFactory.Create(text, EndpointClassName);
+            button.SetColor(UiColorTokens.TextMuted);
             button.AddManipulator(new Clickable(onClick));
+            button.RegisterCallback<PointerEnterEvent>(_ => button.SetColor(UiColorTokens.TextOnState));
+            button.RegisterCallback<PointerLeaveEvent>(_ => button.SetColor(UiColorTokens.TextMuted));
             return button;
         }
 

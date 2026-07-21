@@ -20,7 +20,7 @@ namespace Ee4v.UI
                     "context-menu-window",
                     "Overlays",
                     "ContextMenuWindow",
-                    "old AssetManager の GenericDropdownMenu に近い見た目を UI Toolkit と USS で再現したコンテキストメニューWindowです。",
+                    "浮遊する popup 面と selection 色のハイライト行で構成したコンテキストメニューWindowです。",
                     "target VisualElement と panel/world position を渡して開きます。項目、区切り、disabled、shortcut、選択 callback を扱い、幅は項目テキストを測定して決めます。",
                     null,
                     ComponentImplementationKind.UiToolkit,

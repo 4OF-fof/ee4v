@@ -15,52 +15,20 @@ namespace Ee4v.UI
         public string Value { get; }
     }
 
-    internal sealed class UrlInputField : VisualElement
+    internal sealed class UrlInputField : InputField
     {
         private const string PlaceholderText = "https://";
         private const string RootClassName = "ee4v-ui-url-input-field";
-        private const string FieldContainerClassName = "ee4v-ui-url-input-field__field-container";
-        private const string FieldContainerFocusedClassName = "ee4v-ui-url-input-field__field-container--focused";
-        private const string FieldClassName = "ee4v-ui-url-input-field__field";
-        private const string PlaceholderClassName = "ee4v-ui-url-input-field__placeholder";
+        private const string HasTrailingClassName = "ee4v-ui-input-field--has-trailing";
         private const string OpenButtonClassName = "ee4v-ui-url-input-field__open-button";
 
-        private readonly VisualElement _fieldContainer;
         private readonly Button _openButton;
-        private readonly UiTextElement _placeholderLabel;
-        private readonly TextField _textField;
-        private bool _isFocused;
 
         public UrlInputField(UrlInputFieldState state = null)
+            : base(new InputFieldState(null, false, 0f, PlaceholderText))
         {
             AddToClassList(RootClassName);
-
-            _fieldContainer = new VisualElement();
-            _fieldContainer.AddToClassList(FieldContainerClassName);
-
-            _textField = new TextField();
-            _textField.AddToClassList(FieldClassName);
-            _textField.RegisterValueChangedCallback(evt =>
-            {
-                RefreshVisualState();
-                ValueChanged?.Invoke(Value);
-            });
-            _textField.RegisterCallback<FocusInEvent>(_ =>
-            {
-                _isFocused = true;
-                RefreshVisualState();
-            });
-            _textField.RegisterCallback<FocusOutEvent>(_ =>
-            {
-                _isFocused = false;
-                NormalizeInputValue();
-                RefreshVisualState();
-                ValueChanged?.Invoke(Value);
-            });
-
-            _placeholderLabel = UiTextFactory.Create(string.Empty, UiClassNames.SearchFieldPlaceholder);
-            _placeholderLabel.AddToClassList(PlaceholderClassName);
-            _placeholderLabel.pickingMode = PickingMode.Ignore;
+            AddToClassList(HasTrailingClassName);
 
             _openButton = new Button(OpenCurrentUrl)
             {
@@ -68,35 +36,54 @@ namespace Ee4v.UI
                 tooltip = I18N.Get("ui.url.openTooltip")
             };
             _openButton.AddToClassList(OpenButtonClassName);
-
-            _fieldContainer.Add(_textField);
-            _fieldContainer.Add(_placeholderLabel);
-            _fieldContainer.Add(_openButton);
-            Add(_fieldContainer);
+            FieldContainer.Add(_openButton);
 
             SetState(state ?? new UrlInputFieldState(string.Empty));
         }
 
-        public event Action<string> ValueChanged;
-
-        public string Value
+        public override string Value
         {
-            get { return _textField.value ?? string.Empty; }
-            set { _textField.value = NormalizeUrl(value); }
+            get { return base.Value; }
+            set { base.Value = NormalizeUrl(value); }
         }
 
         public void SetState(UrlInputFieldState state)
         {
             state = state ?? new UrlInputFieldState(string.Empty);
-            _placeholderLabel.SetText(PlaceholderText);
-            _textField.SetValueWithoutNotify(NormalizeUrl(state.Value));
-            RefreshVisualState();
+            base.SetState(new InputFieldState(NormalizeUrl(state.Value), false, 0f, PlaceholderText));
+            RefreshOpenButton();
         }
 
-        public void SetValueWithoutNotify(string value)
+        public override void SetValueWithoutNotify(string value)
         {
-            _textField.SetValueWithoutNotify(NormalizeUrl(value));
-            RefreshVisualState();
+            base.SetValueWithoutNotify(NormalizeUrl(value));
+            RefreshOpenButton();
+        }
+
+        protected override void OnValueChanged(string value)
+        {
+            RefreshOpenButton();
+        }
+
+        protected override void OnFocusChanged(bool isFocused)
+        {
+            if (isFocused)
+            {
+                return;
+            }
+
+            SetValueWithoutNotify(Value);
+            NotifyValueChanged(Value);
+        }
+
+        private void RefreshOpenButton()
+        {
+            if (_openButton == null)
+            {
+                return;
+            }
+
+            _openButton.style.display = IsOpenableUrl(Value) ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private void OpenCurrentUrl()
@@ -108,27 +95,6 @@ namespace Ee4v.UI
             }
 
             Application.OpenURL(url);
-        }
-
-        private void RefreshVisualState()
-        {
-            var hasValue = !string.IsNullOrWhiteSpace(Value);
-            _placeholderLabel.style.display = !hasValue && !_isFocused && !string.IsNullOrWhiteSpace(_placeholderLabel.Text)
-                ? DisplayStyle.Flex
-                : DisplayStyle.None;
-            _openButton.style.display = IsOpenableUrl(Value) ? DisplayStyle.Flex : DisplayStyle.None;
-            _fieldContainer.EnableInClassList(FieldContainerFocusedClassName, _isFocused);
-        }
-
-        private void NormalizeInputValue()
-        {
-            var normalized = NormalizeUrl(_textField.value);
-            if (string.Equals(_textField.value ?? string.Empty, normalized, StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            _textField.SetValueWithoutNotify(normalized);
         }
 
         private static string NormalizeUrl(string value)

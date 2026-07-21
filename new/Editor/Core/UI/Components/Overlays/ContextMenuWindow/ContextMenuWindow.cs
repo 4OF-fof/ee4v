@@ -121,9 +121,26 @@ namespace Ee4v.UI
             shortcut.SetWhiteSpace(WhiteSpace.NoWrap);
             shortcut.style.display = string.IsNullOrWhiteSpace(item.Shortcut) ? DisplayStyle.None : DisplayStyle.Flex;
 
+            ApplyItemColors(item, label, shortcut, false);
+            button.RegisterCallback<PointerEnterEvent>(_ => ApplyItemColors(item, label, shortcut, true));
+            button.RegisterCallback<PointerLeaveEvent>(_ => ApplyItemColors(item, label, shortcut, false));
+
             button.Add(label);
             button.Add(shortcut);
             return button;
+        }
+
+        private static void ApplyItemColors(ContextMenuItemState item, UiTextElement label, UiTextElement shortcut, bool hovered)
+        {
+            if (!item.Enabled)
+            {
+                label.SetColor(UiColorTokens.TextDisabled);
+                shortcut.SetColor(UiColorTokens.TextDisabled);
+                return;
+            }
+
+            label.SetColor(hovered ? UiColorTokens.TextOnState : UiColorTokens.TextPrimary);
+            shortcut.SetColor(hovered ? UiColorTokens.TextOnState : UiColorTokens.TextMuted);
         }
 
         private static VisualElement CreateSeparator()
@@ -261,13 +278,14 @@ namespace Ee4v.UI
 
     internal static class ContextMenuLayout
     {
-        private const float ItemHeight = 24f;
+        private const float ItemHeight = 26f;
         private const float SeparatorHeight = 8f;
-        private const float MenuPadding = 12f;
+        private const float MenuPadding = 8f;
+        private const float MenuPaddingX = 4f;
+        private const float ItemPaddingX = 10f;
         private const float MinimumWidth = 100f;
         private const float MaximumWidth = 360f;
-        private const float LabelRightPadding = 24f;
-        private const float ShortcutGap = 24f;
+        private const float ShortcutGap = 16f;
 
         public static Vector2 CalculateSize(ContextMenuState state)
         {
@@ -311,7 +329,7 @@ namespace Ee4v.UI
                 var shortcutWidth = string.IsNullOrWhiteSpace(item.Shortcut)
                     ? 0f
                     : labelStyle.CalcSize(new GUIContent(item.Shortcut)).x + ShortcutGap;
-                width = Mathf.Max(width, MenuPadding + labelWidth + LabelRightPadding + shortcutWidth + MenuPadding);
+                width = Mathf.Max(width, MenuPaddingX + ItemPaddingX + labelWidth + shortcutWidth + ItemPaddingX + MenuPaddingX);
             }
 
             return Mathf.Clamp(width, MinimumWidth, MaximumWidth);

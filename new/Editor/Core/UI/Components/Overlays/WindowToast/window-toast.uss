@@ -18,14 +18,14 @@
     border-top-width: 1px;
     border-right-width: 1px;
     border-bottom-width: 1px;
-    border-top-color: var(--ee4v-color-border-default);
-    border-right-color: var(--ee4v-color-border-default);
-    border-bottom-color: var(--ee4v-color-border-default);
+    border-top-color: var(--ee4v-color-overlay-border);
+    border-right-color: var(--ee4v-color-overlay-border);
+    border-bottom-color: var(--ee4v-color-overlay-border);
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
-    background-color: var(--ee4v-color-chrome-deep);
+    background-color: var(--ee4v-color-surface-raised);
     opacity: 1;
     transition-property: opacity;
     transition-duration: 0.18s;

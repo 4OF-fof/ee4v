@@ -13,6 +13,7 @@ namespace Ee4v.UI
 
             public void Register(CatalogRegistry registry)
             {
+                registry.RegisterStyleSheet("Editor/Core/UI/Components/Inputs/InputField/input-field.uss");
                 registry.RegisterStyleSheet("Editor/Core/UI/Components/Inputs/UrlInputField/url-input-field.uss");
                 registry.RegisterStory(new StoryRegistration(
                     "url-input-field",

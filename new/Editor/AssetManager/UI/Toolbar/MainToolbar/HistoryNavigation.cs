@@ -8,6 +8,8 @@ namespace Ee4v.AssetManager
     internal sealed class HistoryNavigation : VisualElement
     {
         private const string RootClassName = "ee4v-ui-history-navigation";
+        private const string NavGroupClassName = "ee4v-ui-history-navigation__nav-group";
+        private const string NavDividerClassName = "ee4v-ui-history-navigation__nav-divider";
         private const string IconButtonClassName = "ee4v-ui-history-navigation__icon-button";
         private const string BreadcrumbClassName = "ee4v-ui-history-navigation__breadcrumb";
         private const string BreadcrumbItemClassName = "ee4v-ui-history-navigation__breadcrumb-item";
@@ -23,13 +25,22 @@ namespace Ee4v.AssetManager
         {
             AddToClassList(RootClassName);
 
-            _backButton = CreateNavigationButton("<", I18N.Get("assetManager.mainToolbar.history.back"));
-            _backButton.clicked += () => BackClicked?.Invoke();
-            Add(_backButton);
+            var navGroup = new VisualElement();
+            navGroup.AddToClassList(NavGroupClassName);
 
-            _forwardButton = CreateNavigationButton(">", I18N.Get("assetManager.mainToolbar.history.forward"));
+            _backButton = CreateNavigationButton("‹", I18N.Get("assetManager.mainToolbar.history.back"));
+            _backButton.clicked += () => BackClicked?.Invoke();
+            navGroup.Add(_backButton);
+
+            var divider = new VisualElement();
+            divider.AddToClassList(NavDividerClassName);
+            navGroup.Add(divider);
+
+            _forwardButton = CreateNavigationButton("›", I18N.Get("assetManager.mainToolbar.history.forward"));
             _forwardButton.clicked += () => ForwardClicked?.Invoke();
-            Add(_forwardButton);
+            navGroup.Add(_forwardButton);
+
+            Add(navGroup);
 
             _breadcrumb = new VisualElement();
             _breadcrumb.AddToClassList(BreadcrumbClassName);
@@ -64,6 +75,7 @@ namespace Ee4v.AssetManager
                 if (i > 0)
                 {
                     var separator = UiTextFactory.Create("/", BreadcrumbSeparatorClassName);
+                    separator.SetColor(UiColorTokens.TextMuted);
                     _breadcrumb.Add(separator);
                 }
 
@@ -99,6 +111,11 @@ namespace Ee4v.AssetManager
             label.EnableInClassList(BreadcrumbItemLabelCurrentClassName, current);
             label.SetWhiteSpace(WhiteSpace.NoWrap);
             label.pickingMode = PickingMode.Ignore;
+            if (current)
+            {
+                label.SetColor(UiColorTokens.TextOnState);
+            }
+
             button.Add(label);
             return button;
         }
