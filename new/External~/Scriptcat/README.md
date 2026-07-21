@@ -8,4 +8,5 @@
 - BOOTH library の商品カードと download 行に Eagle 連携状態 badge を追加する
 - Eagle plugin 側 bridge `http://127.0.0.1:41596` と通信する
 - `GET /health`, `POST /v1/status`, `POST /v1/import` を使う
+- `/health` で取得した session token を後続 POST の `X-EE4V-Bridge-Token` header に自動設定する
 - import action は bridge に BoothMeta / download request を登録してから BOOTH の通常 download button を発火する

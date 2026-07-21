@@ -255,7 +255,7 @@ interface NodeIncomingMessage {
   method?: string;
   url?: string;
   statusCode?: number;
-  headers: { location?: string };
+  headers: { [name: string]: string | undefined; location?: string };
   setEncoding(encoding: string): void;
   on(event: "data", callback: (chunk: string | Uint8Array) => void): void;
   on(event: "end", callback: () => void): void;
@@ -302,6 +302,7 @@ declare function require(name: "timers"): NodeTimers;
 declare function require(name: "os"): NodeOs;
 declare function require(name: "http"): NodeHttp;
 declare function require(name: "https"): NodeHttps;
+declare function require(name: "crypto"): { randomBytes(size: number): { toString(encoding: string): string } };
 declare function require(name: string): unknown;
 
 declare const eagle: EagleApi;

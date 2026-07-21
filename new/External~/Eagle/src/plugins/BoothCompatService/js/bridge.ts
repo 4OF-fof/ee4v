@@ -2,6 +2,7 @@
   "use strict";
 
   const http = require("http");
+  const crypto = require("crypto");
   const fs = require("fs/promises");
   const os = require("os");
   const path = require("path");
@@ -19,6 +20,8 @@
   const COPY_READY_RETRY_DELAY_MS = 1500;
   const MIN_IMPORT_FILE_SIZE_BYTES = 1;
   const PARTIAL_EXTENSIONS = [".crdownload", ".download", ".part", ".tmp"];
+  const MAX_REQUEST_BODY_BYTES = 1024 * 1024;
+  const BRIDGE_TOKEN = crypto.randomBytes(32).toString("hex");
 
   type BridgeProduct = BoothProductInput;
   type BridgeDownload = BoothDownloadInput;
@@ -104,6 +107,7 @@
   const importJobs = new Map<string, ImportJob>();
   const fileSnapshots = new Map<string, FileSnapshot>();
   const boothMetaLocks = new Map<string, Promise<void>>();
+  const responseOrigins = new WeakMap<NodeServerResponse, string>();
   const serviceElements = {} as ServiceElements;
 
   if (document.readyState === "loading") {
@@ -317,7 +321,10 @@
     server = http.createServer((request, response) => {
       handleRequest(request, response).catch(error => {
         console.error(error);
-        sendJson(response, 500, {
+        const statusCode = error && typeof error === "object" && "statusCode" in error
+          ? Number((error as { statusCode?: unknown }).statusCode) || 500
+          : 500;
+        sendJson(response, statusCode, {
           ok: false,
           error: errorMessage(error) || "Internal bridge error"
         });
@@ -351,6 +358,15 @@
   }
 
   async function handleRequest(request: NodeIncomingMessage, response: NodeServerResponse): Promise<void> {
+    const origin = headerValue(request.headers.origin);
+    if (origin && !isAllowedBoothOrigin(origin)) {
+      sendJson(response, 403, { ok: false, error: "Origin is not allowed" });
+      return;
+    }
+    if (origin) {
+      responseOrigins.set(response, origin);
+    }
+
     if (request.method === "OPTIONS") {
       sendJson(response, 204, {});
       return;
@@ -359,6 +375,11 @@
     const url = new URL(request.url || "/", `http://${HOST}:${PORT}`);
     if (request.method === "GET" && url.pathname === "/health") {
       await handleHealth(response);
+      return;
+    }
+
+    if (request.method === "POST" && headerValue(request.headers["x-ee4v-bridge-token"]) !== BRIDGE_TOKEN) {
+      sendJson(response, 401, { ok: false, error: "Bridge token is invalid" });
       return;
     }
 
@@ -382,7 +403,8 @@
     const rootFolder = isPluginReady ? await core().findVrcAssetRootFolder().catch(() => null) : null;
     sendJson(response, 200, {
       ok: isPluginReady,
-      rootFolderAvailable: Boolean(rootFolder)
+      rootFolderAvailable: Boolean(rootFolder),
+      token: BRIDGE_TOKEN
     });
     kickImportJobProcessing();
   }
@@ -1585,8 +1607,25 @@
   function readJson(request: NodeIncomingMessage): Promise<JsonRecord> {
     return new Promise((resolve, reject) => {
       const chunks: Uint8Array[] = [];
-      request.on("data", chunk => chunks.push(typeof chunk === "string" ? new TextEncoder().encode(chunk) : chunk));
+      let byteLength = 0;
+      let tooLarge = false;
+      request.on("data", chunk => {
+        const bytes = typeof chunk === "string" ? new TextEncoder().encode(chunk) : chunk;
+        byteLength += bytes.length;
+        if (byteLength > MAX_REQUEST_BODY_BYTES) {
+          tooLarge = true;
+          return;
+        }
+        chunks.push(bytes);
+      });
       request.on("end", () => {
+        if (tooLarge) {
+          const error = new Error("Request body is too large.") as Error & { statusCode?: number };
+          error.statusCode = 413;
+          reject(error);
+          return;
+        }
+
         if (chunks.length === 0) {
           resolve({});
           return;
@@ -1606,13 +1645,32 @@
 
   function sendJson(response: NodeServerResponse, statusCode: number, payload: unknown): void {
     const body = statusCode === 204 ? "" : JSON.stringify(payload || {});
-    response.writeHead(statusCode, {
-      "Access-Control-Allow-Origin": "*",
+    const headers: Record<string, string | number> = {
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, X-EE4V-Bridge-Token",
       "Content-Type": "application/json; charset=utf-8",
       "Content-Length": Buffer.byteLength(body)
-    });
+    };
+    const origin = responseOrigins.get(response);
+    if (origin) {
+      headers["Access-Control-Allow-Origin"] = origin;
+      headers.Vary = "Origin";
+    }
+    response.writeHead(statusCode, headers);
     response.end(body);
+  }
+
+  function headerValue(value: string | undefined): string {
+    return core().safeString(value);
+  }
+
+  function isAllowedBoothOrigin(origin: string): boolean {
+    try {
+      const url = new URL(origin);
+      const hostname = url.hostname.toLowerCase();
+      return url.protocol === "https:" && (hostname === "booth.pm" || hostname.endsWith(".booth.pm"));
+    } catch {
+      return false;
+    }
   }
 })();

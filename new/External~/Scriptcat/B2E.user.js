@@ -70,6 +70,7 @@
 
   const state = {
     bridgeConnected: false,
+    bridgeToken: "",
     rootFolderAvailable: false,
     healthTimerId: 0,
     statusTimerId: 0,
@@ -166,9 +167,11 @@
       const result = await bridgeRequest("GET", "/health");
       state.bridgeConnected = Boolean(result && result.ok);
       state.rootFolderAvailable = Boolean(result && result.rootFolderAvailable);
+      state.bridgeToken = String((result && result.token) || "");
     } catch (error) {
       state.bridgeConnected = false;
       state.rootFolderAvailable = false;
+      state.bridgeToken = "";
     }
 
     scheduleStatusRefresh();
@@ -772,7 +775,12 @@
         method,
         url: `${BRIDGE_BASE}${path}`,
         data: payload ? JSON.stringify(payload) : undefined,
-        headers: payload ? { "Content-Type": "application/json" } : undefined,
+        headers: payload
+          ? {
+              "Content-Type": "application/json",
+              "X-EE4V-Bridge-Token": state.bridgeToken,
+            }
+          : undefined,
         onload: (response) => {
           if (response.status < 200 || response.status >= 300) {
             reject(new Error(`HTTP ${response.status}`));

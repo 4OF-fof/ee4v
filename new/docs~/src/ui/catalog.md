@@ -41,4 +41,4 @@ Catalog がプレビューを正しく描画できるよう、対象コンポー
 - プロパティを触って見た目を確認できる control + preview
 - 最小構成の static preview
 
-Preview 実装は component フォルダの `<Component>.story.cs`、または各 module の `<name>.story.cs` に追加します。共通 UI は `Editor/UI/Catalog/helper` 配下の helper を使います。
+Preview 実装は component フォルダの `<Component>.story.cs`、または各 module の `<name>.story.cs` に追加します。共通 UI は `Editor/Core/UI/Catalog/helper` 配下の helper を使います。

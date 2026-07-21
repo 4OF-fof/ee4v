@@ -45,10 +45,10 @@ namespace Ee4v.AssetManager.Api.Tests
 
         [Test]
         [FeatureTestCase(
-            "schema version 1 の DB 制約を作成する",
-            "AssetManager DB が schema_version、file_info 制約、collection cycle trigger を作成することを確認します。",
+            "schema version 2 の DB 制約を作成する",
+            "AssetManager DB が source origin、availability、collection cycle trigger を作成することを確認します。",
             order: 301)]
-        public void Schema_CreatesVersion1Constraints()
+        public void Schema_CreatesVersion2Constraints()
         {
             var databasePath = GetDatabasePath();
 
@@ -56,8 +56,10 @@ namespace Ee4v.AssetManager.Api.Tests
 
             using (var connection = new SQLiteConnection(databasePath, SQLiteOpenFlags.ReadOnly | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.PrivateCache))
             {
-                Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(1));
+                Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(2));
                 Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'file_info'"), Does.Contain("CHECK"));
+                Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'item_source_origin'"), Is.EqualTo(1));
+                Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'datasource_tag'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'file_import_target'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'unique_file_import_target_file_path'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'prevent_collection_collection_cycle_insert'"), Is.EqualTo(1));
@@ -210,6 +212,34 @@ namespace Ee4v.AssetManager.Api.Tests
 
             Assert.That(ex.Code, Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
             Assert.That(dependencies.Select(itemDependency => itemDependency.DependencyFileId).ToArray(), Is.EqualTo(new[] { dependency.Id }));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "file dependency 置換で file-to-version を保持する",
+            "SetFileDependencies が同じ source file の version dependency を削除しないことを確認します。",
+            order: 312)]
+        public void SetFileDependencies_PreservesVersionDependency()
+        {
+            var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
+            var sourcePath = Path.Combine(_tempRoot, "source.zip");
+            var targetPath = Path.Combine(_tempRoot, "target.zip");
+            File.WriteAllText(sourcePath, "source");
+            File.WriteAllText(targetPath, "target");
+            var source = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = sourcePath, FileName = "source.zip" });
+            var target = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = targetPath, FileName = "target.zip" });
+            var version = AssetManagerApi.CreateVersionGroup(item.Id, new CreateVersionGroupRequest { Name = "1.0" });
+            var sourceEndpoint = new DependencyEndpointRequest { Type = AssetDependencyEndpointType.File, Id = source.Id };
+            AssetManagerApi.SetDependencies(
+                sourceEndpoint,
+                new[] { new DependencyEndpointRequest { Type = AssetDependencyEndpointType.VersionGroup, Id = version.Id } });
+
+            AssetManagerApi.SetFileDependencies(source.Id, new[] { target.Id });
+            var dependencies = AssetManagerApi.GetDependencies(sourceEndpoint);
+
+            Assert.That(dependencies.Count, Is.EqualTo(2));
+            Assert.That(dependencies.Any(dependency => dependency.Target.Type == AssetDependencyEndpointType.File && dependency.Target.Id == target.Id), Is.True);
+            Assert.That(dependencies.Any(dependency => dependency.Target.Type == AssetDependencyEndpointType.VersionGroup && dependency.Target.Id == version.Id), Is.True);
         }
 
         [Test]
@@ -477,6 +507,81 @@ namespace Ee4v.AssetManager.Api.Tests
             Assert.That(secondResult.UpdatedCount, Is.EqualTo(0));
             Assert.That(secondResult.UnchangedCount, Is.EqualTo(2));
             Assert.That(secondResult.ErrorCount, Is.EqualTo(0));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Eagle folder rename は同じ item を更新する",
+            "folder id を datasource identity として使い、folder 名変更で item が重複しないことを確認します。",
+            order: 330)]
+        public void SyncEagle_RenamedFolder_ReusesItemIdentity()
+        {
+            var libraryPath = Path.Combine(_tempRoot, "renamed.library");
+            var imagesPath = Path.Combine(libraryPath, "images");
+            Directory.CreateDirectory(imagesPath);
+            var metadataPath = Path.Combine(libraryPath, "metadata.json");
+            File.WriteAllText(metadataPath, "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"Before\",\"children\":[]}]}]}");
+            CreateEagleEntry(imagesPath, "file-entry", "avatar-folder", "avatar", "zip", null);
+
+            AssetManagerApi.SyncEagle(new EagleSyncRequest(libraryPath));
+            var before = AssetManagerApi.SearchItems(new AssetItemQuery { Limit = 10 }).Items.Single();
+            File.WriteAllText(metadataPath, "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"After\",\"children\":[]}]}]}");
+
+            AssetManagerApi.SyncEagle(new EagleSyncRequest(libraryPath));
+            var after = AssetManagerApi.SearchItems(new AssetItemQuery { Limit = 10 }).Items.Single();
+
+            Assert.That(after.Id, Is.EqualTo(before.Id));
+            Assert.That(after.Name, Is.EqualTo("After"));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Eagle snapshot から消えた file を unavailable にする",
+            "再同期で消えた Eagle origin を保持しつつ通常検索と path 解決から除外することを確認します。",
+            order: 331)]
+        public void SyncEagle_MissingFile_BecomesUnavailable()
+        {
+            var libraryPath = Path.Combine(_tempRoot, "missing-file.library");
+            var imagesPath = Path.Combine(libraryPath, "images");
+            Directory.CreateDirectory(imagesPath);
+            File.WriteAllText(Path.Combine(libraryPath, "metadata.json"), "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"Avatar\",\"children\":[]}]}]}");
+            CreateEagleEntry(imagesPath, "file-entry", "avatar-folder", "avatar", "zip", null);
+            var payloadPath = Path.Combine(imagesPath, "file-entry.info", "avatar.zip");
+            File.WriteAllText(payloadPath, "payload");
+
+            AssetManagerApi.SyncEagle(new EagleSyncRequest(libraryPath));
+            var item = AssetManagerApi.SearchItems(new AssetItemQuery { Limit = 10 }).Items.Single();
+            var file = AssetManagerApi.GetFiles(item.Id).Single();
+            Directory.Delete(Path.Combine(imagesPath, "file-entry.info"), true);
+
+            AssetManagerApi.SyncEagle(new EagleSyncRequest(libraryPath));
+            var unavailable = AssetManagerApi.GetFiles(item.Id, new AssetFileQuery { IncludeUnavailable = true }).Single();
+
+            Assert.That(AssetManagerApi.GetFiles(item.Id), Is.Empty);
+            Assert.That(unavailable.Id, Is.EqualTo(file.Id));
+            Assert.That(unavailable.IsAvailable, Is.False);
+            Assert.That(unavailable.Origins.Single().IsAvailable, Is.False);
+            Assert.That(AssetManagerApi.ResolveFilePath(file.Id).Found, Is.False);
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Eagle datasource tag を snapshot として保存する",
+            "Booth metadata の tags が user tag と分離された datasource tags として返ることを確認します。",
+            order: 332)]
+        public void SyncEagle_StoresDatasourceTags()
+        {
+            var libraryPath = Path.Combine(_tempRoot, "tags.library");
+            var imagesPath = Path.Combine(libraryPath, "images");
+            Directory.CreateDirectory(imagesPath);
+            File.WriteAllText(Path.Combine(libraryPath, "metadata.json"), "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"Avatar\",\"children\":[]}]}]}");
+            CreateEagleEntry(imagesPath, "boothmeta-entry", "avatar-folder", "_boothmeta", "json", "{\"boothItemId\":123,\"name\":\"Avatar\",\"description\":\"\",\"tags\":[\"avatar\",\"quest\"],\"downloads\":[]}");
+
+            AssetManagerApi.SyncEagle(new EagleSyncRequest(libraryPath));
+            var item = AssetManagerApi.SearchItems(new AssetItemQuery { Limit = 10 }).Items.Single();
+
+            Assert.That(item.Booth.DatasourceTags, Is.EqualTo(new[] { "avatar", "quest" }));
+            Assert.That(item.Tags, Is.Empty);
         }
 
         [Test]

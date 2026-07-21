@@ -6,7 +6,7 @@ setting 定義は原則 `Editor/<Feature>/<Feature>Definitions.cs` に置きま�
 
 | field | 内容 |
 |---|---|
-| `key` | 例: `phase1.injector.projectToolbar.enabled` |
+| `key` | 例: `injector.projectToolbar.enabled` |
 | `scope` | `User` または `Project` |
 | `sectionKey` | settings 画面のグループ見出し |
 | `displayNameKey` | 項目名 |
@@ -23,6 +23,9 @@ setting 定義は原則 `Editor/<Feature>/<Feature>Definitions.cs` に置きま�
 - bootstrap から `RegisterAll()` を呼ぶ
 - 値参照は `SettingApi.Get(...)`
 - 更新は `SettingApi.Set(...)`
+- background task から値を読む場合は、task を開始する前に main thread で `SettingApi.Preload(scope)` を呼ぶ
+
+同じ key に異なる `SettingDefinition` instance を登録した場合は例外になります。設定 cache と登録表は同期化されていますが、`EditorPrefs` や project file の初回読み込み自体は Unity main thread で行う前提です。
 
 ## 保存先
 
@@ -30,6 +33,8 @@ setting 定義は原則 `Editor/<Feature>/<Feature>Definitions.cs` に置きま�
 |---|---|---|
 | `SettingScope.User` | `EditorPrefs` | ユーザー単位の設定 |
 | `SettingScope.Project` | `ProjectSettings/ee4v.settings.json` | プロジェクト固有の設定 |
+
+保存 JSON が破損している場合は起動を止めず、該当 scope を空の設定として読み込み、各定義の default 値へ戻します。現在は破損ファイルの自動修復・退避は行いません。
 
 ## 設定画面
 

@@ -15,8 +15,10 @@ namespace Ee4v.AssetManager.Api.Connecter.Blm
             string shopUrl,
             string shopThumbnailUrl,
             DateTime? lastUpdatedAtUtc,
+            IReadOnlyList<string> tags = null,
             string registeredItemId = null,
-            IReadOnlyList<BlmFileRecord> files = null)
+            IReadOnlyList<BlmFileRecord> files = null,
+            bool fileSnapshotComplete = false)
         {
             BoothItemId = boothItemId;
             Name = name ?? string.Empty;
@@ -27,8 +29,10 @@ namespace Ee4v.AssetManager.Api.Connecter.Blm
             ShopUrl = shopUrl ?? string.Empty;
             ShopThumbnailUrl = shopThumbnailUrl ?? string.Empty;
             LastUpdatedAtUtc = lastUpdatedAtUtc;
+            Tags = tags ?? Array.Empty<string>();
             RegisteredItemId = registeredItemId;
             Files = files ?? new BlmFileRecord[0];
+            FileSnapshotComplete = fileSnapshotComplete;
         }
 
         internal long BoothItemId { get; private set; }
@@ -49,9 +53,13 @@ namespace Ee4v.AssetManager.Api.Connecter.Blm
 
         internal DateTime? LastUpdatedAtUtc { get; private set; }
 
+        internal IReadOnlyList<string> Tags { get; private set; }
+
         internal string RegisteredItemId { get; private set; }
 
         internal IReadOnlyList<BlmFileRecord> Files { get; private set; }
+
+        internal bool FileSnapshotComplete { get; private set; }
     }
 
     internal sealed class BlmFileRecord

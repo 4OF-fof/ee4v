@@ -23,19 +23,22 @@ namespace Ee4v.AssetManager.Api
         {
             using (var connection = OpenConnection())
             {
-                EnsureFileExists(connection, fileId);
-                var normalizedTargets = NormalizeImportTargets(targets);
-                connection.Execute("DELETE FROM file_import_target WHERE file_info_id = ?", fileId);
-
-                for (var i = 0; i < normalizedTargets.Count; i++)
+                InTransaction(connection, () =>
                 {
-                    connection.Execute(
-                        @"INSERT INTO file_import_target(id, file_info_id, relative_path)
-                          VALUES (?, ?, ?)",
-                        NewId(),
-                        fileId,
-                        normalizedTargets[i].RelativePath);
-                }
+                    EnsureFileExists(connection, fileId);
+                    var normalizedTargets = NormalizeImportTargets(targets);
+                    connection.Execute("DELETE FROM file_import_target WHERE file_info_id = ?", fileId);
+
+                    for (var i = 0; i < normalizedTargets.Count; i++)
+                    {
+                        connection.Execute(
+                            @"INSERT INTO file_import_target(id, file_info_id, relative_path)
+                              VALUES (?, ?, ?)",
+                            NewId(),
+                            fileId,
+                            normalizedTargets[i].RelativePath);
+                    }
+                });
             }
         }
 

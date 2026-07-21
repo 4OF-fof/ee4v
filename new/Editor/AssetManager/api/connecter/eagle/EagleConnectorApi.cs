@@ -202,6 +202,7 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
                     ShopUrl = boothMetadata != null ? boothMetadata.shopUrl : null,
                     ShopThumbnailUrl = boothMetadata != null ? boothMetadata.shopThumbnailUrl : null,
                     BoothLastUpdatedAtUtc = boothMetadata != null ? ParseUtcTimestamp(boothMetadata.lastUpdatedAtUtc) : null,
+                    Tags = boothMetadata != null ? boothMetadata.tags ?? Array.Empty<string>() : Array.Empty<string>(),
                     Files = BuildFolderFileRecords(fileEntries, boothMetadata != null ? boothMetadata.downloads : null)
                 });
             }
@@ -767,6 +768,7 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
             public string shopUrl;
             public string shopThumbnailUrl;
             public string lastUpdatedAtUtc;
+            public string[] tags;
             public EagleBoothDownload[] downloads;
         }
 

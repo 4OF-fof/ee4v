@@ -1,4 +1,5 @@
 using UnityEditor;
+using Ee4v.Core.I18n;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -83,7 +84,7 @@ namespace Ee4v.UI
         private void ShowCopyFeedback()
         {
             _copyFeedbackResetItem?.Pause();
-            _copyButton.text = "Copied";
+            _copyButton.text = I18N.Get("ui.copy.copied");
             _copyButton.EnableInClassList(CopyButtonCopiedClassName, true);
             _copyFeedbackResetItem = schedule.Execute(ClearCopyFeedback).StartingIn(CopyFeedbackDurationMs);
         }

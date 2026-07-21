@@ -6,6 +6,7 @@ namespace Ee4v.Core.Settings
 {
     public static class SettingApi
     {
+        private static readonly object SyncRoot = new object();
         private static readonly Dictionary<string, SettingDefinitionBase> Definitions = new Dictionary<string, SettingDefinitionBase>();
         private static readonly Dictionary<string, object> CachedValues = new Dictionary<string, object>();
         private static readonly HashSet<SettingScope> LoadedScopes = new HashSet<SettingScope>();
@@ -25,34 +26,48 @@ namespace Ee4v.Core.Settings
                 throw new ArgumentNullException(nameof(definition));
             }
 
-            SettingDefinitionBase existing;
-            if (Definitions.TryGetValue(definition.Key, out existing))
+            lock (SyncRoot)
             {
-                if (!ReferenceEquals(existing, definition))
+                SettingDefinitionBase existing;
+                if (Definitions.TryGetValue(definition.Key, out existing))
                 {
-                    throw new InvalidOperationException("Duplicate setting key: " + definition.Key);
+                    if (!ReferenceEquals(existing, definition))
+                    {
+                        throw new InvalidOperationException("Duplicate setting key: " + definition.Key);
+                    }
+
+                    return;
                 }
 
-                return;
-            }
+                Definitions.Add(definition.Key, definition);
 
-            Definitions.Add(definition.Key, definition);
-
-            if (LoadedScopes.Contains(definition.Scope))
-            {
-                CachedValues[definition.Key] = LoadValue(definition, Stores[definition.Scope].LoadAll());
+                if (LoadedScopes.Contains(definition.Scope))
+                {
+                    CachedValues[definition.Key] = LoadValue(definition, Stores[definition.Scope].LoadAll());
+                }
             }
         }
 
         public static IReadOnlyList<SettingDefinitionBase> GetDefinitions(SettingScope scope)
         {
-            EnsureScopeLoaded(scope);
-            return Definitions.Values
-                .Where(definition => definition.Scope == scope)
-                .OrderBy(definition => definition.SectionKey, StringComparer.Ordinal)
-                .ThenBy(definition => definition.Order)
-                .ThenBy(definition => definition.Key, StringComparer.Ordinal)
-                .ToArray();
+            lock (SyncRoot)
+            {
+                EnsureScopeLoaded(scope);
+                return Definitions.Values
+                    .Where(definition => definition.Scope == scope)
+                    .OrderBy(definition => definition.SectionKey, StringComparer.Ordinal)
+                    .ThenBy(definition => definition.Order)
+                    .ThenBy(definition => definition.Key, StringComparer.Ordinal)
+                    .ToArray();
+            }
+        }
+
+        public static void Preload(SettingScope scope)
+        {
+            lock (SyncRoot)
+            {
+                EnsureScopeLoaded(scope);
+            }
         }
 
         public static T Get<T>(SettingDefinition<T> definition)
@@ -62,10 +77,13 @@ namespace Ee4v.Core.Settings
 
         public static object GetBoxed(SettingDefinitionBase definition)
         {
-            EnsureRegistered(definition);
-            EnsureScopeLoaded(definition.Scope);
-            EnsureCachedValue(definition);
-            return CachedValues[definition.Key];
+            lock (SyncRoot)
+            {
+                EnsureRegistered(definition);
+                EnsureScopeLoaded(definition.Scope);
+                EnsureCachedValue(definition);
+                return CachedValues[definition.Key];
+            }
         }
 
         public static void Set<T>(SettingDefinition<T> definition, T value, bool saveImmediately = true)
@@ -75,21 +93,24 @@ namespace Ee4v.Core.Settings
 
         public static void SetBoxed(SettingDefinitionBase definition, object value, bool saveImmediately = true)
         {
-            EnsureRegistered(definition);
-            EnsureScopeLoaded(definition.Scope);
-
-            var validation = definition.ValidateBoxed(value);
-            if (!validation.IsValid)
+            lock (SyncRoot)
             {
-                throw new InvalidOperationException(validation.Message);
-            }
+                EnsureRegistered(definition);
+                EnsureScopeLoaded(definition.Scope);
 
-            CachedValues[definition.Key] = value;
-            DirtyScopes.Add(definition.Scope);
+                var validation = definition.ValidateBoxed(value);
+                if (!validation.IsValid)
+                {
+                    throw new InvalidOperationException(validation.Message);
+                }
 
-            if (saveImmediately)
-            {
-                Save(definition.Scope);
+                CachedValues[definition.Key] = value;
+                DirtyScopes.Add(definition.Scope);
+
+                if (saveImmediately)
+                {
+                    SaveScope(definition.Scope);
+                }
             }
 
             var handler = Changed;
@@ -101,16 +122,19 @@ namespace Ee4v.Core.Settings
 
         public static void Save(SettingScope? scope = null)
         {
-            if (scope.HasValue)
+            lock (SyncRoot)
             {
-                SaveScope(scope.Value);
-                return;
-            }
+                if (scope.HasValue)
+                {
+                    SaveScope(scope.Value);
+                    return;
+                }
 
-            var scopes = DirtyScopes.ToArray();
-            for (var i = 0; i < scopes.Length; i++)
-            {
-                SaveScope(scopes[i]);
+                var scopes = DirtyScopes.ToArray();
+                for (var i = 0; i < scopes.Length; i++)
+                {
+                    SaveScope(scopes[i]);
+                }
             }
         }
 
@@ -162,10 +186,18 @@ namespace Ee4v.Core.Settings
                 throw new ArgumentNullException(nameof(definition));
             }
 
-            if (!Definitions.ContainsKey(definition.Key))
+            SettingDefinitionBase existing;
+            if (Definitions.TryGetValue(definition.Key, out existing))
             {
-                Register(definition);
+                if (!ReferenceEquals(existing, definition))
+                {
+                    throw new InvalidOperationException("Duplicate setting key: " + definition.Key);
+                }
+
+                return;
             }
+
+            Register(definition);
         }
 
         private static object GetCachedValue(SettingDefinitionBase definition)

@@ -16,6 +16,7 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
         internal string ShopUrl { get; set; }
         internal string ShopThumbnailUrl { get; set; }
         internal DateTime? BoothLastUpdatedAtUtc { get; set; }
+        internal IReadOnlyList<string> Tags { get; set; }
         internal IReadOnlyList<EagleFileRecord> Files { get; set; }
     }
 

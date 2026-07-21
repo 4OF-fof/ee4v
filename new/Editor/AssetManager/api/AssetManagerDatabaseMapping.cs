@@ -19,6 +19,7 @@ namespace Ee4v.AssetManager.Api
                 Id = row.id,
                 Name = row.name,
                 Description = row.description,
+                IsAvailable = row.is_available != 0,
                 Booth = LoadBoothSnapshot(connection, row.id),
                 Tags = connection.Query<TagRow>(
                         @"SELECT tag_info.*
@@ -30,6 +31,7 @@ namespace Ee4v.AssetManager.Api
                     .Select(ToAssetTag)
                     .ToArray(),
                 Files = QueryFilesForItem(connection, row.id)
+                    .Where(file => file.is_available != 0)
                     .Select(ToAssetFileSummary)
                     .ToArray(),
                 CreatedAt = ParseDate(row.created_at),
@@ -62,7 +64,19 @@ namespace Ee4v.AssetManager.Api
                 ShopName = row.shop_name,
                 ShopUrl = string.IsNullOrWhiteSpace(row.shop_subdomain) ? string.Empty : "https://" + row.shop_subdomain + ".booth.pm",
                 ShopThumbnailUrl = row.shop_thumbnail_url,
-                LastUpdatedAt = string.IsNullOrWhiteSpace(row.last_updated_at) ? (DateTime?)null : ParseDate(row.last_updated_at)
+                LastUpdatedAt = string.IsNullOrWhiteSpace(row.last_updated_at) ? (DateTime?)null : ParseDate(row.last_updated_at),
+                DatasourceTags = connection.Query<DatasourceTagRow>(
+                        @"SELECT DISTINCT datasource_tag.name
+                          FROM datasource_tag
+                          INNER JOIN item_source_origin
+                            ON item_source_origin.source_type = datasource_tag.source_type
+                           AND item_source_origin.source_id = datasource_tag.source_id
+                          WHERE datasource_tag.item_info_id = ?
+                            AND item_source_origin.is_missing = 0
+                          ORDER BY datasource_tag.name COLLATE NOCASE",
+                        itemId)
+                    .Select(tag => tag.name)
+                    .ToArray()
             };
         }
 
@@ -79,6 +93,7 @@ namespace Ee4v.AssetManager.Api
                 SizeBytes = row.size_bytes,
                 DownloadId = row.download_id,
                 Lifecycle = FromDbLifecycle(row.lifecycle),
+                IsAvailable = row.is_available != 0,
                 Origins = LoadOrigins(connection, row.id),
                 CreatedAt = ParseDate(row.created_at),
                 UpdatedAt = ParseDate(row.updated_at)
@@ -97,7 +112,8 @@ namespace Ee4v.AssetManager.Api
                 Extension = row.extension,
                 SizeBytes = row.size_bytes,
                 DownloadId = row.download_id,
-                Lifecycle = FromDbLifecycle(row.lifecycle)
+                Lifecycle = FromDbLifecycle(row.lifecycle),
+                IsAvailable = row.is_available != 0
             };
         }
 
@@ -157,19 +173,19 @@ namespace Ee4v.AssetManager.Api
             var ee4v = connection.Query<Ee4vOriginRow>("SELECT * FROM ee4v_file_origin WHERE file_info_id = ?", fileId).FirstOrDefault();
             if (ee4v != null)
             {
-                origins.Add(new AssetFileOrigin { SourceType = AssetSourceType.Ee4v, SourceId = ee4v.ee4v_file_id, FilePathCache = ee4v.file_path_cache, ImportedAt = ParseNullableDate(ee4v.imported_at) });
+                origins.Add(new AssetFileOrigin { SourceType = AssetSourceType.Ee4v, SourceId = ee4v.ee4v_file_id, FilePathCache = ee4v.file_path_cache, ImportedAt = ParseNullableDate(ee4v.imported_at), IsAvailable = true });
             }
 
             var eagle = connection.Query<EagleOriginRow>("SELECT * FROM eagle_file_origin WHERE file_info_id = ?", fileId).FirstOrDefault();
             if (eagle != null)
             {
-                origins.Add(new AssetFileOrigin { SourceType = AssetSourceType.Eagle, SourceId = eagle.eagle_item_id, FilePathCache = eagle.file_path_cache, ImportedAt = ParseNullableDate(eagle.imported_at) });
+                origins.Add(new AssetFileOrigin { SourceType = AssetSourceType.Eagle, SourceId = eagle.eagle_item_id, FilePathCache = eagle.file_path_cache, ImportedAt = ParseNullableDate(eagle.imported_at), IsAvailable = eagle.is_deleted.GetValueOrDefault() == 0 });
             }
 
             var blm = connection.Query<BlmOriginRow>("SELECT * FROM blm_file_origin WHERE file_info_id = ?", fileId).FirstOrDefault();
             if (blm != null)
             {
-                origins.Add(new AssetFileOrigin { SourceType = AssetSourceType.Blm, SourceId = blm.registered_item_id, FilePathCache = blm.file_path_cache, ImportedAt = ParseNullableDate(blm.imported_at) });
+                origins.Add(new AssetFileOrigin { SourceType = AssetSourceType.Blm, SourceId = blm.registered_item_id, FilePathCache = blm.file_path_cache, ImportedAt = ParseNullableDate(blm.imported_at), IsAvailable = blm.is_missing == 0 });
             }
 
             return origins;

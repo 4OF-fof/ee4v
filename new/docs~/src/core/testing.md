@@ -57,5 +57,7 @@ Core 全体に効く監査や基盤テストは `Editor/Core/Test/Editor` に置
 
 - I18N scope 解決テスト
 - localization static audit
+- UI の direct `Label` 使用監査
+- setting、bootstrap、Injector の基盤契約テスト
 
 package 全体監査なのに feature 専用 suite を新設すると、scope や assembly 管理が散ります。まず Core へ寄せられないか確認します。

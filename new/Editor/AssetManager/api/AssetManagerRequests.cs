@@ -11,6 +11,7 @@ namespace Ee4v.AssetManager.Api
         public AssetFileLifecycle? Lifecycle { get; set; }
         public int Offset { get; set; }
         public int Limit { get; set; }
+        public bool IncludeUnavailable { get; set; }
     }
 
     public sealed class AssetSearchResult
@@ -38,6 +39,7 @@ namespace Ee4v.AssetManager.Api
         public AssetSourceType? SourceType { get; set; }
         public AssetFileLifecycle? Lifecycle { get; set; }
         public string Extension { get; set; }
+        public bool IncludeUnavailable { get; set; }
     }
 
     public sealed class RegisterFileRequest

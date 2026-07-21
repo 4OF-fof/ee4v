@@ -53,12 +53,12 @@ namespace Ee4v.UI
         private const string TrackClassName = "ee4v-ui-numeric-slider__track";
         private const string FillClassName = "ee4v-ui-numeric-slider__fill";
         private const string KnobClassName = "ee4v-ui-numeric-slider__knob";
-        private readonly Label _minusButton;
+        private readonly UiTextElement _minusButton;
         private readonly VisualElement _trackHost;
         private readonly VisualElement _track;
         private readonly VisualElement _fill;
         private readonly VisualElement _knob;
-        private readonly Label _plusButton;
+        private readonly UiTextElement _plusButton;
         private float _value;
         private float _minValue;
         private float _maxValue = 1f;
@@ -69,8 +69,8 @@ namespace Ee4v.UI
             AddToClassList(RootClassName);
             focusable = true;
 
-            _minusButton = CreateEndpointButton("-", () => AddValue(-1f));
-            _plusButton = CreateEndpointButton("+", () => AddValue(1f));
+            _minusButton = CreateEndpointButton("-", () => AddValue(-GetIncrement()));
+            _plusButton = CreateEndpointButton("+", () => AddValue(GetIncrement()));
 
             _trackHost = new VisualElement();
             _trackHost.AddToClassList(TrackHostClassName);
@@ -155,12 +155,22 @@ namespace Ee4v.UI
             EnableInClassList(DisabledClassName, !value);
         }
 
-        private static Label CreateEndpointButton(string text, Action onClick)
+        private static UiTextElement CreateEndpointButton(string text, Action onClick)
         {
-            var button = new Label(text);
-            button.AddToClassList(EndpointClassName);
+            var button = UiTextFactory.Create(text, EndpointClassName);
             button.AddManipulator(new Clickable(onClick));
             return button;
+        }
+
+        private float GetIncrement()
+        {
+            if (_step > 0f)
+            {
+                return _step;
+            }
+
+            var range = _maxValue - _minValue;
+            return Mathf.Approximately(range, 0f) ? 0f : range / 100f;
         }
 
         private void AddValue(float delta)
@@ -171,20 +181,7 @@ namespace Ee4v.UI
             }
 
             Focus();
-            SetRawValue(_value + delta);
-        }
-
-        private void SetRawValue(float value)
-        {
-            var nextValue = Mathf.Clamp(value, _minValue, _maxValue);
-            if (Mathf.Approximately(nextValue, _value))
-            {
-                return;
-            }
-
-            _value = nextValue;
-            RefreshVisuals();
-            ValueChanged?.Invoke(_value);
+            SetSteppedValue(_value + delta);
         }
 
         private float ClipValue(float value)
@@ -245,7 +242,7 @@ namespace Ee4v.UI
                 return;
             }
 
-            var increment = _step > 0f ? _step : (_maxValue - _minValue) / 100f;
+            var increment = GetIncrement();
             if (Mathf.Approximately(increment, 0f))
             {
                 return;

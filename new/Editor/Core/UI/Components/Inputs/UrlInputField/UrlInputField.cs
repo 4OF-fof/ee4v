@@ -1,4 +1,5 @@
 using System;
+using Ee4v.Core.I18n;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -64,7 +65,7 @@ namespace Ee4v.UI
             _openButton = new Button(OpenCurrentUrl)
             {
                 text = "↗",
-                tooltip = "Open URL"
+                tooltip = I18N.Get("ui.url.openTooltip")
             };
             _openButton.AddToClassList(OpenButtonClassName);
 

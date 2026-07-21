@@ -16,6 +16,7 @@ public sealed class AssetItem
     public string Id { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
+    public bool IsAvailable { get; set; }
     public BoothSnapshot Booth { get; set; }
     public IReadOnlyList<AssetTag> Tags { get; set; }
     public IReadOnlyList<AssetFileSummary> Files { get; set; }
@@ -29,6 +30,7 @@ Notes:
 - `Name` と `Description` は `item_info` のユーザー上書き可能な値を返す。
 - Booth 商品由来の固定 snapshot は `Booth` に分離する。
 - `Files` は一覧表示用 summary であり、origin の詳細解決は `AssetManagerApi.GetFiles(...)` を使う。
+- 通常 query は unavailable item を返さない。履歴・診断用途では `AssetItemQuery.IncludeUnavailable` を指定する。
 
 ### `AssetFile`
 
@@ -44,6 +46,7 @@ public sealed class AssetFile
     public long? SizeBytes { get; set; }
     public long? DownloadId { get; set; }
     public AssetFileLifecycle Lifecycle { get; set; }
+    public bool IsAvailable { get; set; }
     public IReadOnlyList<AssetFileOrigin> Origins { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
@@ -56,6 +59,7 @@ Notes:
 - `DownloadId` は Booth download ID。NULL でない場合だけ、datasource sync 時の同一 file 判定に使う。
 - `Lifecycle` は `Active` または `Archived`。
 - file を削除する API は物理 file を消さず、原則 `Archived` へ遷移させる。
+- `IsAvailable` は active な origin が存在するかを表し、`Lifecycle` とは独立している。
 
 ### `AssetFileSummary`
 
@@ -70,6 +74,7 @@ public sealed class AssetFileSummary
     public long? SizeBytes { get; set; }
     public long? DownloadId { get; set; }
     public AssetFileLifecycle Lifecycle { get; set; }
+    public bool IsAvailable { get; set; }
 }
 ```
 
@@ -116,6 +121,7 @@ public sealed class BoothSnapshot
     public string ShopUrl { get; set; }
     public string ShopThumbnailUrl { get; set; }
     public DateTime? LastUpdatedAt { get; set; }
+    public IReadOnlyList<string> DatasourceTags { get; set; }
 }
 
 public sealed class AssetFileOrigin
@@ -124,6 +130,7 @@ public sealed class AssetFileOrigin
     public string SourceId { get; set; }
     public string FilePathCache { get; set; }
     public DateTime? ImportedAt { get; set; }
+    public bool IsAvailable { get; set; }
 }
 
 public sealed class AssetFilePathResolution
@@ -269,6 +276,7 @@ public sealed class AssetItemQuery
     public IReadOnlyList<string> TagIds { get; set; }
     public IReadOnlyList<AssetSourceType> SourceTypes { get; set; }
     public AssetFileLifecycle? Lifecycle { get; set; }
+    public bool IncludeUnavailable { get; set; }
     public int Offset { get; set; }
     public int Limit { get; set; }
 }
@@ -298,6 +306,7 @@ public sealed class AssetFileQuery
     public AssetSourceType? SourceType { get; set; }
     public AssetFileLifecycle? Lifecycle { get; set; }
     public string Extension { get; set; }
+    public bool IncludeUnavailable { get; set; }
 }
 
 public sealed class RegisterFileRequest
@@ -580,7 +589,7 @@ Returns:
 Effects:
 
 - DB を読み取る。
-- v1 API では origin の `file_path_cache` を読み取り、file または folder の存在確認をして返す。
+- available origin の `file_path_cache` を読み取り、file または folder の存在確認をして返す。
 
 Notes:
 
@@ -833,12 +842,12 @@ Returns:
 
 Effects:
 
-- `file_dependency` を `requires` として同期する。
+- `dependency` の file-to-file 関係だけを同期する。file-to-version 関係は保持する。
 
 Notes:
 
 - 自己依存は例外。
-- dependency type は v1 では `requires` のみ。
+- 置換処理は transaction 内で実行され、検証失敗時は既存関係を維持する。
 
 ## Import Target
 
@@ -920,6 +929,8 @@ Effects:
 
 - Booth item / shop snapshot を upsert する。
 - BLM registered item 配下の top-level entry ごとに `file_info` と `blm_file_origin` を upsert する。
+- `(blm, registered_item_id)` を item identity として保存し、BLM tag を datasource snapshot として更新する。
+- item directory を完全に列挙できた同期では、消えた origin を unavailable にする。
 - `sync_info.last_sync_at` と `sync_info.last_sync_status` を更新する。
 
 Notes:
@@ -949,12 +960,15 @@ Effects:
 
 - `TargetRoot` 自身は item 化せず、`TargetRoot` 配下の descendant Eagle folder を AssetManager item として upsert する。
 - 各 folder 内の通常 Eagle item を `file_info` と `eagle_file_origin` として upsert する。
+- `(eagle, folder_id)` を item identity として保存し、folder rename では同じ Item を更新する。
+- 完全 snapshot から消えた folder / Eagle item は履歴を削除せず unavailable にする。
+- Booth metadata の tag を user tag と分離した datasource snapshot として更新する。
 - folder 内に Booth metadata がある場合は item の Booth snapshot と表示情報として使う。
 - `sync_info.last_sync_at` と `sync_info.last_sync_status` を更新する。
 
 Notes:
 
-- v1 は読み取りのみ。Eagle への書き戻しは行わない。
+- AssetManager sync は読み取りのみ。Eagle への書き戻しは行わない。
 - Booth metadata file は item 情報として使い、file としては登録しない。
 - Booth metadata の `downloads[].downloadId` を `file_info.download_id` に保存する。`importedItemIds[]` が Eagle item ID と一致する場合はその Eagle origin に紐付け、ID が欠けていても filename が一意に一致する場合は filename で補完する。
 - Eagle item に対応しない Booth download も `file_info` として作成する。この場合は origin を持たないため、実体 path 解決はできない。

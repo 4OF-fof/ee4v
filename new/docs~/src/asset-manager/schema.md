@@ -20,6 +20,8 @@ CHECK (smart_collection_condition_operator IN ('contains', 'equals', 'in', 'exis
 ```mermaid
 erDiagram
     item_info ||--o{ file_info : owns
+    item_info ||--o{ item_source_origin : imported_from
+    item_source_origin ||--o{ datasource_tag : snapshots
     file_info ||--o{ dependency : source_file
     version_group ||--o{ dependency : source_version
     variant_group ||--o{ dependency : source_variant
@@ -50,6 +52,7 @@ erDiagram
         TEXT id PK
         TEXT name
         TEXT description
+        INTEGER is_available
         TEXT created_at
         TEXT updated_at
     }
@@ -140,6 +143,7 @@ erDiagram
         INTEGER size_bytes
         INTEGER download_id UK
         TEXT lifecycle
+        INTEGER is_available
         TEXT created_at
         TEXT updated_at
     }
@@ -196,7 +200,25 @@ erDiagram
         TEXT file_info_id PK, FK
         TEXT ee4v_file_id UK
         TEXT file_path_cache
+        INTEGER is_missing
         TEXT imported_at
+    }
+
+    item_source_origin {
+        TEXT source_type PK
+        TEXT source_id PK
+        TEXT item_info_id FK
+        TEXT source_name
+        TEXT source_description
+        INTEGER is_missing
+        TEXT imported_at
+    }
+
+    datasource_tag {
+        TEXT source_type PK, FK
+        TEXT source_id PK, FK
+        TEXT item_info_id FK
+        TEXT name PK
     }
 
 ```
@@ -212,12 +234,15 @@ Booth 由来 item の初回作成時は `booth_info.name` / `booth_info.descript
 | `id` | GUID string | Yes |  | Item Info の識別子 |
 | `name` | TEXT | Yes |  | 表示名。ユーザー上書き可能 |
 | `description` | TEXT | Yes |  | 表示用説明。ユーザー上書き可能。空文字を許容 |
+| `is_available` | BOOLEAN | Yes |  | datasource item が現在の snapshot に存在するか。手動 item は常に available |
 | `created_at` | DATETIME | Yes |  | 作成時刻 |
 | `updated_at` | DATETIME | Yes |  | 更新時刻 |
 
 ## Tag Info
 
 AssetManager 独自 tag の正本。Booth tag / Eagle tag とは完全に独立して扱う。
+
+Datasource tag はこの table へ混ぜず、後述の `datasource_tag` に snapshot として保存する。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
@@ -383,7 +408,7 @@ ON item_collection(item_info_id, collection_info_id);
 
 ## Schema Version
 
-AssetManager DB の schema version。開発段階では `1` 固定で、既存 DB の破棄や再作成は手動で行う。
+AssetManager DB の schema version。現在は `2`。開発段階のため migration は提供せず、version 不一致時は既存 DB を削除して再作成する。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
@@ -461,6 +486,7 @@ File は Item、Version Group、Variant Group のいずれか 1 つを親に持�
 | `size_bytes` | INTEGER |  |  | サイズ |
 | `download_id` | INTEGER |  | `download_id WHERE download_id IS NOT NULL` | Booth download ID。同一 file 判定に使う。BLM / 手動登録など download ID を持たない file は NULL |
 | `lifecycle` | file_lifecycle | Yes |  | file の管理状態 |
+| `is_available` | BOOLEAN | Yes |  | latest datasource snapshot に存在するか。履歴保持用 file は false になり得る |
 | `created_at` | DATETIME | Yes |  | 作成時刻 |
 | `updated_at` | DATETIME | Yes |  | 更新時刻 |
 
@@ -489,7 +515,32 @@ WHERE download_id IS NOT NULL;
 
 同一 file 判定は `download_id` のみで行う。`download_id` が NULL の File Info は、同じ Item・同じ file name でも自動統合しない。
 
-代表 file origin は `assetManager.sourcePriority` 設定順で存在する origin に fallback する。既定値は `ee4v,eagle,blm`。origin が 0 件の場合は missing として扱う。
+代表 file origin は `assetManager.sourcePriority` 設定順で available な origin に fallback する。既定値は `ee4v,eagle,blm`。available origin が 0 件の場合は missing として扱う。通常の Item/File query は `is_available = 0` を除外し、診断・履歴表示時だけ `IncludeUnavailable` で含める。
+
+## Item Source Origin
+
+BLM registered item / Eagle folder と `item_info` の安定した対応を保持する。表示名ではなく `(source_type, source_id)` を identity に使うため、Eagle folder の rename で Item は増殖しない。
+
+| column | type | required | unique | note |
+|---|---|---:|---|---|
+| `source_type` | TEXT | Yes | `(source_type, source_id)` | `blm` または `eagle` |
+| `source_id` | TEXT | Yes | `(source_type, source_id)` | BLM registered item ID または Eagle folder ID |
+| `item_info_id` | GUID string | Yes |  | 対応する Item Info |
+| `source_name` | TEXT | Yes |  | 前回同期した datasource 表示名 |
+| `source_description` | TEXT | Yes |  | 前回同期した datasource 説明 |
+| `is_missing` | BOOLEAN | Yes |  | 最新の完全 snapshot から消えた場合に true |
+| `imported_at` | DATETIME |  |  | 最終同期時刻 |
+
+## Datasource Tag
+
+BLM / Eagle 由来 tag の snapshot。ユーザー編集する `tag_info` / `item_tag` とは分離する。
+
+| column | type | required | unique | note |
+|---|---|---:|---|---|
+| `source_type` | TEXT | Yes | `(source_type, source_id, name)` | origin source |
+| `source_id` | TEXT | Yes | `(source_type, source_id, name)` | origin identity |
+| `item_info_id` | GUID string | Yes |  | 対応 Item Info |
+| `name` | TEXT | Yes | `(source_type, source_id, name)` | datasource tag 名 |
 
 ## Variant Group
 
@@ -622,6 +673,7 @@ BLM registered item 配下の file / directory entry を表す origin。実体�
 | `registered_item_id` | TEXT | Yes | `(registered_item_id, relative_path)` | BLM `registered_items.id` |
 | `relative_path` | TEXT | Yes | `(registered_item_id, relative_path)` | BLM registered item directory からの相対 path |
 | `file_path_cache` | TEXT |  |  | 最後に解決できた path。正本にはしない |
+| `is_missing` | BOOLEAN | Yes |  | 最新の完全 snapshot に存在しない場合は true |
 | `imported_at` | DATETIME |  |  | datasource から取り込んだ時刻 |
 
 ```sql

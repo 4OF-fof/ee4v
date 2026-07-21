@@ -1,5 +1,7 @@
+using System.Threading;
 using System.Threading.Tasks;
 using Ee4v.Core.I18n;
+using Ee4v.Core.Settings;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine.UIElements;
@@ -15,6 +17,7 @@ namespace Ee4v.AssetManager
         private readonly AssetItemGrid _itemGrid;
         private readonly UiTextElement _statusLabel;
         private int _loadVersion;
+        private CancellationTokenSource _loadCancellation;
         private string _fileListItemId;
         private string _fileListItemName;
         private AssetItemGridNodeKind _browserNodeKind;
@@ -58,6 +61,7 @@ namespace Ee4v.AssetManager
         {
             AssetManagerViewState.SelectedItemChanged -= OnSelectedItemChanged;
             MainViewController.ContentChanged -= OnContentChanged;
+            CancelPendingLoad();
             _loadVersion++;
         }
 
@@ -178,6 +182,7 @@ namespace Ee4v.AssetManager
 
         private void RefreshContent()
         {
+            SettingApi.Preload(SettingScope.User);
             var cacheKey = CreateCurrentCacheKey();
             string cachedStatusText;
             if (_itemGrid.TrySetCachedItems(cacheKey, out cachedStatusText))
@@ -186,16 +191,26 @@ namespace Ee4v.AssetManager
                 return;
             }
 
+            CancelPendingLoad();
+            var loadCancellation = new CancellationTokenSource();
+            _loadCancellation = loadCancellation;
+            var cancellationToken = loadCancellation.Token;
             var version = ++_loadVersion;
             SetStatus(IsFileListMode
                 ? I18N.Get("assetManager.mainView.loadingChildren")
                 : I18N.Get("assetManager.mainView.loading"));
             _itemGrid.SetLoading();
 
-            Task.Run(LoadCurrentGridItems).ContinueWith(task =>
+            Task.Run(() => LoadCurrentGridItems(cancellationToken), cancellationToken).ContinueWith(task =>
             {
                 EditorApplication.delayCall += () =>
                 {
+                    loadCancellation.Dispose();
+                    if (ReferenceEquals(_loadCancellation, loadCancellation))
+                    {
+                        _loadCancellation = null;
+                    }
+
                     if (version != _loadVersion)
                     {
                         return;
@@ -242,8 +257,9 @@ namespace Ee4v.AssetManager
             get { return !string.IsNullOrWhiteSpace(_fileListItemId); }
         }
 
-        private AssetItemGridList LoadCurrentGridItems()
+        private AssetItemGridList LoadCurrentGridItems(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (IsFileListMode)
             {
                 if (_browserNodeKind == AssetItemGridNodeKind.Item)
@@ -255,7 +271,18 @@ namespace Ee4v.AssetManager
             }
 
             var selectedItem = AssetManagerViewState.SelectedItem;
-            return _controller.LoadItems(_controller.CreateRequest(selectedItem.Id));
+            return _controller.LoadItems(_controller.CreateRequest(selectedItem.Id), cancellationToken);
+        }
+
+        private void CancelPendingLoad()
+        {
+            if (_loadCancellation == null)
+            {
+                return;
+            }
+
+            _loadCancellation.Cancel();
+            _loadCancellation = null;
         }
 
         private string CreateCurrentCacheKey()

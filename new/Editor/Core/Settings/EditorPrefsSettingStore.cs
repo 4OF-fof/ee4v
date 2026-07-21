@@ -28,7 +28,14 @@ namespace Ee4v.Core.Settings
             }
 
             var raw = _editorPrefs.GetString(_storageKey, "{}");
-            return JsonConvert.DeserializeObject<Dictionary<string, string>>(raw) ?? new Dictionary<string, string>();
+            try
+            {
+                return JsonConvert.DeserializeObject<Dictionary<string, string>>(raw) ?? new Dictionary<string, string>();
+            }
+            catch (JsonException)
+            {
+                return new Dictionary<string, string>();
+            }
         }
 
         public void SaveAll(Dictionary<string, string> values)

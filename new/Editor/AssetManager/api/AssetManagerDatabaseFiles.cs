@@ -25,6 +25,11 @@ namespace Ee4v.AssetManager.Api
                 };
                 var parameters = new List<object> { itemId, itemId, itemId };
 
+                if (query == null || !query.IncludeUnavailable)
+                {
+                    where.Add("is_available = 1");
+                }
+
                 if (query != null && query.Lifecycle.HasValue)
                 {
                     where.Add("lifecycle = ?");
@@ -58,27 +63,31 @@ namespace Ee4v.AssetManager.Api
 
             using (var connection = OpenConnection())
             {
-                EnsureItemExists(connection, itemId);
-                var now = Now();
-                var fileId = NewId();
-                var fileName = string.IsNullOrWhiteSpace(request.FileName)
-                    ? Path.GetFileName(request.FilePath)
-                    : request.FileName;
-
-                var parent = ResolveRegisterFileParent(connection, itemId, request, fileName);
-                InsertFileInfo(connection, fileId, parent.ItemId, parent.VersionGroupId, parent.VariantGroupId, fileName, GetExtension(fileName), request.SizeBytes, null, now);
-                EnsureVersionGroupPrimaryIfMissing(connection, parent.VersionGroupId, fileId, now);
-                if (string.IsNullOrWhiteSpace(request.VersionGroupId) && string.IsNullOrWhiteSpace(request.VariantGroupId))
+                var fileId = InTransaction(connection, () =>
                 {
-                    ReconcileImportedFileGroups(connection, itemId, now);
-                }
+                    EnsureItemExists(connection, itemId);
+                    var now = Now();
+                    var id = NewId();
+                    var fileName = string.IsNullOrWhiteSpace(request.FileName)
+                        ? Path.GetFileName(request.FilePath)
+                        : request.FileName;
 
-                connection.Execute(
-                    "INSERT INTO ee4v_file_origin(file_info_id, ee4v_file_id, file_path_cache, imported_at) VALUES (?, ?, ?, ?)",
-                    fileId,
-                    NewId(),
-                    request.FilePath,
-                    now);
+                    var parent = ResolveRegisterFileParent(connection, itemId, request, fileName);
+                    InsertFileInfo(connection, id, parent.ItemId, parent.VersionGroupId, parent.VariantGroupId, fileName, GetExtension(fileName), request.SizeBytes, null, now);
+                    EnsureVersionGroupPrimaryIfMissing(connection, parent.VersionGroupId, id, now);
+                    if (string.IsNullOrWhiteSpace(request.VersionGroupId) && string.IsNullOrWhiteSpace(request.VariantGroupId))
+                    {
+                        ReconcileImportedFileGroups(connection, itemId, now);
+                    }
+
+                    connection.Execute(
+                        "INSERT INTO ee4v_file_origin(file_info_id, ee4v_file_id, file_path_cache, imported_at) VALUES (?, ?, ?, ?)",
+                        id,
+                        NewId(),
+                        request.FilePath,
+                        now);
+                    return id;
+                });
                 return ToAssetFile(connection, connection.Query<FileRow>("SELECT * FROM file_info WHERE id = ?", fileId).First());
             }
         }
@@ -102,11 +111,17 @@ namespace Ee4v.AssetManager.Api
                     return new AssetFilePathResolution { Found = false, MissingReason = "file not found" };
                 }
 
+                if (file.is_available == 0)
+                {
+                    return new AssetFilePathResolution { Found = false, MissingReason = "source is unavailable" };
+                }
+
                 var origins = LoadOrigins(connection, fileId).ToArray();
                 var ordered = OrderOrigins(origins).ToArray();
                 for (var i = 0; i < ordered.Length; i++)
                 {
-                    if (!string.IsNullOrWhiteSpace(ordered[i].FilePathCache) &&
+                    if (ordered[i].IsAvailable &&
+                        !string.IsNullOrWhiteSpace(ordered[i].FilePathCache) &&
                         (File.Exists(ordered[i].FilePathCache) || Directory.Exists(ordered[i].FilePathCache)))
                     {
                         return new AssetFilePathResolution
@@ -143,31 +158,42 @@ namespace Ee4v.AssetManager.Api
         {
             using (var connection = OpenConnection())
             {
-                EnsureFileExists(connection, dependentFileId);
-                var ids = dependencyFileIds ?? Array.Empty<string>();
-                for (var i = 0; i < ids.Count; i++)
+                InTransaction(connection, () =>
                 {
-                    if (dependentFileId == ids[i])
+                    EnsureFileExists(connection, dependentFileId);
+                    var ids = dependencyFileIds ?? Array.Empty<string>();
+                    for (var i = 0; i < ids.Count; i++)
                     {
-                        throw new AssetManagerException(AssetManagerErrorCode.InvalidRequest, "Self dependency is not allowed.");
+                        if (dependentFileId == ids[i])
+                        {
+                            throw new AssetManagerException(AssetManagerErrorCode.InvalidRequest, "Self dependency is not allowed.");
+                        }
+
+                        EnsureFileExists(connection, ids[i]);
                     }
 
-                    EnsureFileExists(connection, ids[i]);
-                }
-
-                connection.Execute("DELETE FROM dependency WHERE source_file_info_id = ?", dependentFileId);
-                for (var i = 0; i < ids.Count; i++)
-                {
                     connection.Execute(
-                        "INSERT OR IGNORE INTO dependency(source_file_info_id, target_file_info_id) VALUES (?, ?)",
-                        dependentFileId,
-                        ids[i]);
-                }
+                        "DELETE FROM dependency WHERE source_file_info_id = ? AND target_file_info_id IS NOT NULL",
+                        dependentFileId);
+                    for (var i = 0; i < ids.Count; i++)
+                    {
+                        connection.Execute(
+                            "INSERT OR IGNORE INTO dependency(source_file_info_id, target_file_info_id) VALUES (?, ?)",
+                            dependentFileId,
+                            ids[i]);
+                    }
+                });
             }
         }
 
         private static string ItemHasSourceClause(AssetSourceType sourceType)
         {
+            if (sourceType == AssetSourceType.Eagle || sourceType == AssetSourceType.Blm)
+            {
+                var source = sourceType == AssetSourceType.Eagle ? "eagle" : "blm";
+                return "EXISTS (SELECT 1 FROM item_source_origin WHERE item_source_origin.item_info_id = item_info.id AND item_source_origin.source_type = '" + source + "' AND item_source_origin.is_missing = 0)";
+            }
+
             return @"EXISTS (
                 SELECT 1
                 FROM file_info
@@ -188,10 +214,10 @@ namespace Ee4v.AssetManager.Api
 
             if (sourceType == AssetSourceType.Eagle)
             {
-                return "file_info.id IN (SELECT file_info_id FROM eagle_file_origin)";
+                return "file_info.id IN (SELECT file_info_id FROM eagle_file_origin WHERE COALESCE(is_deleted, 0) = 0)";
             }
 
-            return "file_info.id IN (SELECT file_info_id FROM blm_file_origin)";
+            return "file_info.id IN (SELECT file_info_id FROM blm_file_origin WHERE is_missing = 0)";
         }
 
         private static int OriginCount(SQLiteConnection connection, string fileId)

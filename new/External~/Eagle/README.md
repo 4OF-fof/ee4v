@@ -39,6 +39,9 @@ npm run check
 - status window は bridge、`VRCAsset`、保留 import 件数を表示する
 - `http://127.0.0.1:41596` を公開する
 - bridge は `GET /health`, `POST /v1/status`, `POST /v1/import` を受け、BOOTH library userscript へ BoothMeta / download 状態を返す
+- `127.0.0.1` のみに bind し、BOOTH HTTPS origin だけへ CORS を許可する
+- `/health` が返す session token を `X-EE4V-Bridge-Token` に付けた POST だけを受け付ける
+- request body は 1 MiB まで
 - library 切替時は旧 library の保留 import job と path cache を破棄し、別 library への誤取り込みを防ぐ
 
 ## Shared Source

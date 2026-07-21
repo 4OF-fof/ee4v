@@ -8,7 +8,7 @@
 - typography 不要な class を component 内に閉じたか
 - 必要なタイポグラフィ定義を `TypographyStyleResolver` に追加したか
 - 文言を `I18N.Get(...)` に寄せたか
-- `Editor/UI/Localization` を更新したか
+- `Editor/Core/UI/Localization` を更新したか
 - built-in icon を直接引かず `Icon` 経由にしたか
 - Catalog registrar で story を登録したか
 - Catalog registrar で必要な stylesheet を登録したか

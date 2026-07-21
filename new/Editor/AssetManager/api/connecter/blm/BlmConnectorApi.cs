@@ -62,9 +62,39 @@ namespace Ee4v.AssetManager.Api.Connecter.Blm
                         string.Format(BoothBaseUrlFormat, row.ShopSubdomain),
                         row.ShopThumbnailUrl,
                         ParseUtcTimestamp(row.LastUpdatedAt),
+                        ReadTags(connection, row.BoothItemId),
                         row.RegisteredItemId,
-                        ReadRegisteredItemFiles(itemDirectoryPath, row.RegisteredItemId)))
+                        ReadRegisteredItemFiles(itemDirectoryPath, row.RegisteredItemId),
+                        !string.IsNullOrWhiteSpace(itemDirectoryPath) && Directory.Exists(itemDirectoryPath)))
                     .ToArray();
+            }
+        }
+
+        private static IReadOnlyList<string> ReadTags(SQLiteConnection connection, long boothItemId)
+        {
+            try
+            {
+                var overwritten = connection.Query<TagQueryRow>(
+                    "SELECT tag AS Name FROM overwritten_booth_item_tags WHERE booth_item_id = ? ORDER BY tag COLLATE NOCASE",
+                    boothItemId)
+                    .Select(row => row.Name)
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .ToArray();
+                if (overwritten.Length > 0)
+                {
+                    return overwritten;
+                }
+
+                return connection.Query<TagQueryRow>(
+                    "SELECT tag AS Name FROM booth_item_tag_relations WHERE booth_item_id = ? ORDER BY tag COLLATE NOCASE",
+                    boothItemId)
+                    .Select(row => row.Name)
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .ToArray();
+            }
+            catch (SQLiteException)
+            {
+                return Array.Empty<string>();
             }
         }
 
@@ -292,6 +322,11 @@ namespace Ee4v.AssetManager.Api.Connecter.Blm
         private sealed class PreferenceBlobQueryRow
         {
             public byte[] ItemDirectoryPath { get; set; }
+        }
+
+        private sealed class TagQueryRow
+        {
+            public string Name { get; set; }
         }
 
     }

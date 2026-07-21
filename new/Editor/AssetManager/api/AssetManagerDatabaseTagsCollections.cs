@@ -40,8 +40,11 @@ namespace Ee4v.AssetManager.Api
         {
             using (var connection = OpenConnection())
             {
-                EnsureItemExists(connection, itemId);
-                SyncItemTags(connection, itemId, tagIds ?? Array.Empty<string>());
+                InTransaction(connection, () =>
+                {
+                    EnsureItemExists(connection, itemId);
+                    SyncItemTags(connection, itemId, tagIds ?? Array.Empty<string>());
+                });
             }
         }
 
@@ -69,10 +72,14 @@ namespace Ee4v.AssetManager.Api
                     EnsureCollectionExists(connection, request.ParentCollectionId);
                 }
 
-                var now = Now();
-                var id = NewId();
-                connection.Execute("INSERT INTO collection_info(id, name, created_at, updated_at) VALUES (?, ?, ?, ?)", id, request.Name, now, now);
-                SetCollectionParent(connection, id, request.ParentCollectionId);
+                var id = InTransaction(connection, () =>
+                {
+                    var now = Now();
+                    var nextId = NewId();
+                    connection.Execute("INSERT INTO collection_info(id, name, created_at, updated_at) VALUES (?, ?, ?, ?)", nextId, request.Name, now, now);
+                    SetCollectionParent(connection, nextId, request.ParentCollectionId);
+                    return nextId;
+                });
                 return ToAssetCollection(connection, connection.Query<CollectionRow>("SELECT * FROM collection_info WHERE id = ?", id).First());
             }
         }
@@ -97,21 +104,26 @@ namespace Ee4v.AssetManager.Api
                     ValidateSmartCondition(conditions[i]);
                 }
 
-                var now = Now();
-                var collectionId = NewId();
-                connection.Execute("INSERT INTO collection_info(id, name, created_at, updated_at) VALUES (?, ?, ?, ?)", collectionId, request.Name, now, now);
-                SetCollectionParent(connection, collectionId, request.ParentCollectionId);
-                connection.Execute(
-                    "INSERT INTO smart_collection_info(collection_info_id, match_mode, created_at, updated_at) VALUES (?, ?, ?, ?)",
-                    collectionId,
-                    request.MatchMode == SmartCollectionMatchMode.Any ? "any" : "all",
-                    now,
-                    now);
-
-                for (var i = 0; i < conditions.Count; i++)
+                var collectionId = InTransaction(connection, () =>
                 {
-                    InsertSmartCondition(connection, collectionId, conditions[i]);
-                }
+                    var now = Now();
+                    var nextId = NewId();
+                    connection.Execute("INSERT INTO collection_info(id, name, created_at, updated_at) VALUES (?, ?, ?, ?)", nextId, request.Name, now, now);
+                    SetCollectionParent(connection, nextId, request.ParentCollectionId);
+                    connection.Execute(
+                        "INSERT INTO smart_collection_info(collection_info_id, match_mode, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                        nextId,
+                        request.MatchMode == SmartCollectionMatchMode.Any ? "any" : "all",
+                        now,
+                        now);
+
+                    for (var i = 0; i < conditions.Count; i++)
+                    {
+                        InsertSmartCondition(connection, nextId, conditions[i]);
+                    }
+
+                    return nextId;
+                });
 
                 return ToAssetCollection(connection, connection.Query<CollectionRow>("SELECT * FROM collection_info WHERE id = ?", collectionId).First());
             }
@@ -121,8 +133,11 @@ namespace Ee4v.AssetManager.Api
         {
             using (var connection = OpenConnection())
             {
-                EnsureCollectionExists(connection, collectionId);
-                SetCollectionParent(connection, collectionId, parentCollectionId);
+                InTransaction(connection, () =>
+                {
+                    EnsureCollectionExists(connection, collectionId);
+                    SetCollectionParent(connection, collectionId, parentCollectionId);
+                });
             }
         }
 
@@ -130,8 +145,11 @@ namespace Ee4v.AssetManager.Api
         {
             using (var connection = OpenConnection())
             {
-                EnsureItemExists(connection, itemId);
-                SyncItemCollections(connection, itemId, collectionIds ?? Array.Empty<string>());
+                InTransaction(connection, () =>
+                {
+                    EnsureItemExists(connection, itemId);
+                    SyncItemCollections(connection, itemId, collectionIds ?? Array.Empty<string>());
+                });
             }
         }
 

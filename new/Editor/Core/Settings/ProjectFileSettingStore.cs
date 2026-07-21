@@ -30,7 +30,14 @@ namespace Ee4v.Core.Settings
             }
 
             var raw = _fileSystem.ReadAllText(_filePath);
-            return JsonConvert.DeserializeObject<Dictionary<string, string>>(raw) ?? new Dictionary<string, string>();
+            try
+            {
+                return JsonConvert.DeserializeObject<Dictionary<string, string>>(raw) ?? new Dictionary<string, string>();
+            }
+            catch (JsonException)
+            {
+                return new Dictionary<string, string>();
+            }
         }
 
         public void SaveAll(Dictionary<string, string> values)

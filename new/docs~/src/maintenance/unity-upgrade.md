@@ -2,6 +2,17 @@
 
 Unity バージョン更新時に確認する互換性メモです。UI Toolkit、built-in icon、Unity 内部 API はバージョン差分の影響を受けやすいため、更新後は関連テストを必ず確認します。
 
+## Package Dependencies
+
+`new/package.json` で Unity 2022.3 向けに次を明示しています。
+
+| package | version | 用途 |
+|---|---:|---|
+| `com.unity.nuget.newtonsoft-json` | `3.0.2` | JSON / JSONC 周辺実装 |
+| `com.unity.test-framework` | `1.1.33` | Editor test assembly と Test Runner |
+
+Unity 更新時は manifest の互換性に加え、Core と AssetManager の Editor tests、Eagle plugin の `npm run check`、docs build を再実行します。
+
 ## UiTextFactory
 
 Unity 2022.3.22f1 では UIElements のフォントキャッシュに問題があり、bold や italic などのスタイルを持つテキストを描画するとキャッシュが正しく更新されず、古いスタイルのまま描画される。

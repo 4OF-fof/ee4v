@@ -6,6 +6,12 @@
     },
     "clear": {
       "tooltip": "クリア"
+    },
+    "copy": {
+      "copied": "コピーしました"
+    },
+    "url": {
+      "openTooltip": "URLを開く"
     }
   },
   "catalog": {

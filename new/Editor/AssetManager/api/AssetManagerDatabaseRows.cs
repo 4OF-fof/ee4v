@@ -12,11 +12,17 @@ namespace Ee4v.AssetManager.Api
 {
     internal static partial class AssetManagerDatabase
     {
+        private sealed class SchemaVersionRow
+        {
+            public int version { get; set; }
+        }
+
         private sealed class ItemRow
         {
             public string id { get; set; }
             public string name { get; set; }
             public string description { get; set; }
+            public int is_available { get; set; }
             public string created_at { get; set; }
             public string updated_at { get; set; }
         }
@@ -63,6 +69,7 @@ namespace Ee4v.AssetManager.Api
             public long? size_bytes { get; set; }
             public long? download_id { get; set; }
             public string lifecycle { get; set; }
+            public int is_available { get; set; }
             public string created_at { get; set; }
             public string updated_at { get; set; }
         }
@@ -110,7 +117,27 @@ namespace Ee4v.AssetManager.Api
             public string registered_item_id { get; set; }
             public string relative_path { get; set; }
             public string file_path_cache { get; set; }
+            public int is_missing { get; set; }
             public string imported_at { get; set; }
+        }
+
+        private sealed class ItemSourceOriginRow
+        {
+            public string source_type { get; set; }
+            public string source_id { get; set; }
+            public string item_info_id { get; set; }
+            public string source_name { get; set; }
+            public string source_description { get; set; }
+            public int is_missing { get; set; }
+            public string imported_at { get; set; }
+        }
+
+        private sealed class DatasourceTagRow
+        {
+            public string source_type { get; set; }
+            public string source_id { get; set; }
+            public string item_info_id { get; set; }
+            public string name { get; set; }
         }
 
         private sealed class CollectionRow

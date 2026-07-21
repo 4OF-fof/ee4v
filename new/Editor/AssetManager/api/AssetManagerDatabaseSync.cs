@@ -31,19 +31,40 @@ namespace Ee4v.AssetManager.Api
                 var updated = 0;
                 var unchanged = 0;
                 var error = 0;
-                CleanupBlmItemDirectoryOrigins(connection);
+                var seenItemSourceIds = new HashSet<string>(
+                    records.Where(record => !string.IsNullOrWhiteSpace(record.RegisteredItemId)).Select(record => record.RegisteredItemId),
+                    StringComparer.Ordinal);
+                var seenFileSourceIds = BuildBlmFileSourceKeys(records);
+                var fileSnapshotComplete = records.All(record => record.FileSnapshotComplete);
+                InTransaction(connection, () => CleanupBlmItemDirectoryOrigins(connection));
                 foreach (var record in records)
                 {
                     try
                     {
-                        var item = UpsertBoothSnapshot(connection, record);
+                        var item = InTransaction(connection, () =>
+                        {
+                            var result = UpsertBoothSnapshot(connection, record);
+                            var originStatus = UpsertItemSourceOrigin(
+                                connection,
+                                "blm",
+                                record.RegisteredItemId,
+                                result.ItemId,
+                                record.Name,
+                                record.Description,
+                                record.Tags);
+                            result.Status = MergeStatus(result.Status, originStatus);
+                            return result;
+                        });
                         CountStatus(item.Status, ref created, ref updated, ref unchanged, ref error);
                         var files = record.Files ?? Array.Empty<BlmFileRecord>();
                         for (var i = 0; i < files.Count; i++)
                         {
                             try
                             {
-                                CountStatus(UpsertBlmFile(connection, item.ItemId, record.RegisteredItemId, files[i]), ref created, ref updated, ref unchanged, ref error);
+                                var fileStatus = InTransaction(
+                                    connection,
+                                    () => UpsertBlmFile(connection, item.ItemId, record.RegisteredItemId, files[i]));
+                                CountStatus(fileStatus, ref created, ref updated, ref unchanged, ref error);
                             }
                             catch (Exception)
                             {
@@ -51,13 +72,22 @@ namespace Ee4v.AssetManager.Api
                             }
                         }
 
-                        ReconcileImportedFileGroups(connection, item.ItemId, Now());
+                        InTransaction(connection, () => ReconcileImportedFileGroups(connection, item.ItemId, Now()));
                     }
                     catch (Exception)
                     {
                         error++;
                     }
                 }
+
+                InTransaction(connection, () =>
+                {
+                    ReconcileItemSourceOrigins(connection, "blm", seenItemSourceIds);
+                    if (fileSnapshotComplete)
+                    {
+                        ReconcileBlmFileOrigins(connection, seenFileSourceIds);
+                    }
+                });
 
                 var state = ResolveSyncState(created, updated, unchanged, error);
                 UpsertSyncInfo(connection, "blm", state);
@@ -84,20 +114,46 @@ namespace Ee4v.AssetManager.Api
                 var updated = 0;
                 var unchanged = 0;
                 var error = 0;
+                var seenItemSourceIds = new HashSet<string>(
+                    records.Where(record => !string.IsNullOrWhiteSpace(record.EagleItemId)).Select(record => record.EagleItemId),
+                    StringComparer.Ordinal);
+                var seenFileSourceIds = new HashSet<string>(
+                    records.SelectMany(record => record.Files ?? Array.Empty<EagleFileRecord>())
+                        .Where(file => !string.IsNullOrWhiteSpace(file.EagleItemId))
+                        .Select(file => file.EagleItemId),
+                    StringComparer.Ordinal);
+                var seenDownloadIds = new HashSet<long>(
+                    records.SelectMany(record => record.Files ?? Array.Empty<EagleFileRecord>())
+                        .Where(file => file.DownloadId.HasValue)
+                        .Select(file => file.DownloadId.Value));
                 foreach (var record in records)
                 {
                     try
                     {
-                        var item = record.BoothItemId.HasValue
-                            ? UpsertBoothSnapshot(connection, record)
-                            : UpsertPlainItem(connection, record.ItemName, record.ItemDescription);
+                        var item = InTransaction(connection, () =>
+                        {
+                            var result = record.BoothItemId.HasValue
+                                ? UpsertBoothSnapshot(connection, record)
+                                : UpsertPlainItem(connection, "eagle", record.EagleItemId, record.ItemName, record.ItemDescription);
+                            var originStatus = UpsertItemSourceOrigin(
+                                connection,
+                                "eagle",
+                                record.EagleItemId,
+                                result.ItemId,
+                                record.ItemName,
+                                record.ItemDescription,
+                                record.Tags);
+                            result.Status = MergeStatus(result.Status, originStatus);
+                            return result;
+                        });
                         CountStatus(item.Status, ref created, ref updated, ref unchanged, ref error);
                         var files = record.Files ?? Array.Empty<EagleFileRecord>();
                         for (var i = 0; i < files.Count; i++)
                         {
                             try
                             {
-                                CountStatus(UpsertEagleFile(connection, item.ItemId, files[i]), ref created, ref updated, ref unchanged, ref error);
+                                var fileStatus = InTransaction(connection, () => UpsertEagleFile(connection, item.ItemId, files[i]));
+                                CountStatus(fileStatus, ref created, ref updated, ref unchanged, ref error);
                             }
                             catch (Exception)
                             {
@@ -105,13 +161,20 @@ namespace Ee4v.AssetManager.Api
                             }
                         }
 
-                        ReconcileImportedFileGroups(connection, item.ItemId, Now());
+                        InTransaction(connection, () => ReconcileImportedFileGroups(connection, item.ItemId, Now()));
                     }
                     catch (Exception)
                     {
                         error++;
                     }
                 }
+
+                InTransaction(connection, () =>
+                {
+                    ReconcileItemSourceOrigins(connection, "eagle", seenItemSourceIds);
+                    ReconcileEagleFileOrigins(connection, seenFileSourceIds);
+                    ReconcileEagleDownloadOnlyFiles(connection, seenDownloadIds);
+                });
 
                 var state = ResolveSyncState(created, updated, unchanged, error);
                 UpsertSyncInfo(connection, "eagle", state);
@@ -183,7 +246,7 @@ namespace Ee4v.AssetManager.Api
             return new SyncItemUpsertResult(booth.item_info_id, changed ? AssetSyncStatus.Updated : AssetSyncStatus.Unchanged);
         }
 
-        private static SyncItemUpsertResult UpsertPlainItem(SQLiteConnection connection, string name, string description)
+        private static SyncItemUpsertResult UpsertPlainItem(SQLiteConnection connection, string sourceType, string sourceId, string name, string description)
         {
             var safeName = NormalizeDatasourceText(name);
             if (string.IsNullOrWhiteSpace(safeName))
@@ -192,15 +255,29 @@ namespace Ee4v.AssetManager.Api
             }
 
             var safeDescription = NormalizeDatasourceText(description);
-            var existing = connection.Query<ItemRow>("SELECT * FROM item_info WHERE name = ? LIMIT 1", safeName).FirstOrDefault();
-            if (existing != null)
+            var origin = connection.Query<ItemSourceOriginRow>(
+                "SELECT * FROM item_source_origin WHERE source_type = ? AND source_id = ? LIMIT 1",
+                sourceType,
+                sourceId).FirstOrDefault();
+            if (origin != null)
             {
-                if (StringEquals(existing.description, safeDescription))
+                var existing = connection.Query<ItemRow>("SELECT * FROM item_info WHERE id = ? LIMIT 1", origin.item_info_id).First();
+                var nextName = StringEquals(existing.name, origin.source_name) ? safeName : existing.name;
+                var nextDescription = StringEquals(existing.description, origin.source_description) ? safeDescription : existing.description;
+                var changed = !StringEquals(existing.name, nextName) ||
+                              !StringEquals(existing.description, nextDescription) ||
+                              existing.is_available == 0;
+                if (!changed)
                 {
                     return new SyncItemUpsertResult(existing.id, AssetSyncStatus.Unchanged);
                 }
 
-                connection.Execute("UPDATE item_info SET description = ?, updated_at = ? WHERE id = ?", safeDescription, Now(), existing.id);
+                connection.Execute(
+                    "UPDATE item_info SET name = ?, description = ?, is_available = 1, updated_at = ? WHERE id = ?",
+                    nextName,
+                    nextDescription,
+                    Now(),
+                    existing.id);
                 return new SyncItemUpsertResult(existing.id, AssetSyncStatus.Updated);
             }
 
@@ -235,11 +312,11 @@ namespace Ee4v.AssetManager.Api
             var extension = Directory.Exists(record.FilePath) ? string.Empty : GetExtension(fileName);
             if (origin != null)
             {
-                var changed = !StringEquals(origin.file_path_cache, record.FilePath);
+                var changed = !StringEquals(origin.file_path_cache, record.FilePath) || origin.is_missing != 0;
                 if (changed)
                 {
                     connection.Execute(
-                        "UPDATE blm_file_origin SET file_path_cache = ?, imported_at = ? WHERE registered_item_id = ? AND relative_path = ?",
+                        "UPDATE blm_file_origin SET file_path_cache = ?, is_missing = 0, imported_at = ? WHERE registered_item_id = ? AND relative_path = ?",
                         record.FilePath,
                         now,
                         registeredItemId,
@@ -250,17 +327,19 @@ namespace Ee4v.AssetManager.Api
                 changed = UpdateFileInfoSnapshot(connection, origin.file_info_id, fileName, extension, record.SizeBytes, null, now) || changed;
                 changed = UpdateFileInfoParentSnapshot(connection, origin.file_info_id, parent, now) || changed;
                 EnsureVersionGroupPrimaryIfMissing(connection, parent.VersionGroupId, origin.file_info_id, now);
+                RefreshFileAvailability(connection, origin.file_info_id);
                 return changed ? AssetSyncStatus.Updated : AssetSyncStatus.Unchanged;
             }
 
             var fileId = CreateFileInfo(connection, itemId, fileName, extension, record.SizeBytes, null, now);
             connection.Execute(
-                "INSERT INTO blm_file_origin(file_info_id, registered_item_id, relative_path, file_path_cache, imported_at) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO blm_file_origin(file_info_id, registered_item_id, relative_path, file_path_cache, is_missing, imported_at) VALUES (?, ?, ?, ?, 0, ?)",
                 fileId,
                 registeredItemId,
                 record.RelativePath,
                 record.FilePath,
                 now);
+            RefreshFileAvailability(connection, fileId);
             return AssetSyncStatus.Created;
         }
 
@@ -304,6 +383,7 @@ namespace Ee4v.AssetManager.Api
                 changed = UpdateFileInfoSnapshot(connection, origin.file_info_id, record.Name, record.Extension, record.SizeBytes, record.DownloadId, now) || changed;
                 changed = UpdateFileInfoParentSnapshot(connection, origin.file_info_id, parent, now) || changed;
                 EnsureVersionGroupPrimaryIfMissing(connection, parent.VersionGroupId, origin.file_info_id, now);
+                RefreshFileAvailability(connection, origin.file_info_id);
                 return changed ? AssetSyncStatus.Updated : AssetSyncStatus.Unchanged;
             }
 
@@ -322,9 +402,11 @@ namespace Ee4v.AssetManager.Api
                 }
 
                 var parent = ResolveImportedFileParent(connection, itemId, record.Name, downloadOnlyFileId);
-                var changed = UpdateFileInfoSnapshot(connection, downloadOnlyFileId, record.Name, record.Extension, record.SizeBytes, record.DownloadId, now);
+                var wasUnavailable = connection.ExecuteScalar<int>("SELECT is_available FROM file_info WHERE id = ?", downloadOnlyFileId) == 0;
+                var changed = UpdateFileInfoSnapshot(connection, downloadOnlyFileId, record.Name, record.Extension, record.SizeBytes, record.DownloadId, now) || wasUnavailable;
                 changed = UpdateFileInfoParentSnapshot(connection, downloadOnlyFileId, parent, now) || changed;
                 EnsureVersionGroupPrimaryIfMissing(connection, parent.VersionGroupId, downloadOnlyFileId, now);
+                connection.Execute("UPDATE file_info SET is_available = 1 WHERE id = ?", downloadOnlyFileId);
                 return changed
                     ? AssetSyncStatus.Updated
                     : AssetSyncStatus.Unchanged;
@@ -365,6 +447,7 @@ namespace Ee4v.AssetManager.Api
                         fileId);
                 }
 
+                RefreshFileAvailability(connection, fileId);
                 return MergeStatus(status, changed ? AssetSyncStatus.Updated : AssetSyncStatus.Unchanged);
             }
 
@@ -375,7 +458,294 @@ namespace Ee4v.AssetManager.Api
                 record.FilePath,
                 record.IsDeleted ? 1 : 0,
                 now);
+            RefreshFileAvailability(connection, fileId);
             return status == AssetSyncStatus.Unchanged ? AssetSyncStatus.Updated : status;
+        }
+
+        private static AssetSyncStatus UpsertItemSourceOrigin(
+            SQLiteConnection connection,
+            string sourceType,
+            string sourceId,
+            string itemId,
+            string sourceName,
+            string sourceDescription,
+            IReadOnlyList<string> tags)
+        {
+            if (string.IsNullOrWhiteSpace(sourceType) ||
+                string.IsNullOrWhiteSpace(sourceId) ||
+                string.IsNullOrWhiteSpace(itemId))
+            {
+                return AssetSyncStatus.Error;
+            }
+
+            var now = Now();
+            var safeName = NormalizeDatasourceText(sourceName);
+            var safeDescription = NormalizeDatasourceText(sourceDescription);
+            var existing = connection.Query<ItemSourceOriginRow>(
+                "SELECT * FROM item_source_origin WHERE source_type = ? AND source_id = ? LIMIT 1",
+                sourceType,
+                sourceId).FirstOrDefault();
+            var changed = existing == null ||
+                          !StringEquals(existing.item_info_id, itemId) ||
+                          !StringEquals(existing.source_name, safeName) ||
+                          !StringEquals(existing.source_description, safeDescription) ||
+                          existing.is_missing != 0;
+            if (existing == null)
+            {
+                connection.Execute(
+                    @"INSERT INTO item_source_origin(
+                        source_type, source_id, item_info_id, source_name, source_description, is_missing, imported_at)
+                      VALUES (?, ?, ?, ?, ?, 0, ?)",
+                    sourceType,
+                    sourceId,
+                    itemId,
+                    safeName,
+                    safeDescription,
+                    now);
+            }
+            else if (changed)
+            {
+                connection.Execute(
+                    @"UPDATE item_source_origin
+                      SET item_info_id = ?, source_name = ?, source_description = ?, is_missing = 0, imported_at = ?
+                      WHERE source_type = ? AND source_id = ?",
+                    itemId,
+                    safeName,
+                    safeDescription,
+                    now,
+                    sourceType,
+                    sourceId);
+            }
+
+            changed = SyncDatasourceTags(connection, sourceType, sourceId, itemId, tags) || changed;
+            connection.Execute("UPDATE item_info SET is_available = 1 WHERE id = ?", itemId);
+            if (existing != null && !StringEquals(existing.item_info_id, itemId))
+            {
+                ArchiveOrphanedManagedItem(connection, existing.item_info_id);
+            }
+
+            return existing == null
+                ? AssetSyncStatus.Created
+                : changed ? AssetSyncStatus.Updated : AssetSyncStatus.Unchanged;
+        }
+
+        private static bool SyncDatasourceTags(
+            SQLiteConnection connection,
+            string sourceType,
+            string sourceId,
+            string itemId,
+            IReadOnlyList<string> tags)
+        {
+            var normalizedTags = (tags ?? Array.Empty<string>())
+                .Select(NormalizeDatasourceText)
+                .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(tag => tag, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            var existingTags = connection.Query<DatasourceTagRow>(
+                    "SELECT * FROM datasource_tag WHERE source_type = ? AND source_id = ? ORDER BY name COLLATE NOCASE",
+                    sourceType,
+                    sourceId);
+            if (existingTags.All(tag => StringEquals(tag.item_info_id, itemId)) &&
+                existingTags.Select(tag => tag.name).SequenceEqual(normalizedTags, StringComparer.Ordinal))
+            {
+                return false;
+            }
+
+            connection.Execute(
+                "DELETE FROM datasource_tag WHERE source_type = ? AND source_id = ?",
+                sourceType,
+                sourceId);
+            for (var i = 0; i < normalizedTags.Length; i++)
+            {
+                connection.Execute(
+                    "INSERT INTO datasource_tag(source_type, source_id, item_info_id, name) VALUES (?, ?, ?, ?)",
+                    sourceType,
+                    sourceId,
+                    itemId,
+                    normalizedTags[i]);
+            }
+
+            return true;
+        }
+
+        private static void ReconcileItemSourceOrigins(
+            SQLiteConnection connection,
+            string sourceType,
+            ISet<string> seenSourceIds)
+        {
+            var origins = connection.Query<ItemSourceOriginRow>(
+                "SELECT * FROM item_source_origin WHERE source_type = ?",
+                sourceType);
+            for (var i = 0; i < origins.Count; i++)
+            {
+                var missing = seenSourceIds == null || !seenSourceIds.Contains(origins[i].source_id);
+                if (missing && origins[i].is_missing == 0)
+                {
+                    connection.Execute(
+                        "UPDATE item_source_origin SET is_missing = 1, imported_at = ? WHERE source_type = ? AND source_id = ?",
+                        Now(),
+                        sourceType,
+                        origins[i].source_id);
+                }
+
+                RefreshItemAvailability(connection, origins[i].item_info_id);
+            }
+        }
+
+        private static void RefreshItemAvailability(SQLiteConnection connection, string itemId)
+        {
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                return;
+            }
+
+            var originCount = connection.ExecuteScalar<int>(
+                "SELECT COUNT(*) FROM item_source_origin WHERE item_info_id = ?",
+                itemId);
+            if (originCount == 0)
+            {
+                return;
+            }
+
+            var activeCount = connection.ExecuteScalar<int>(
+                "SELECT COUNT(*) FROM item_source_origin WHERE item_info_id = ? AND is_missing = 0",
+                itemId);
+            connection.Execute(
+                "UPDATE item_info SET is_available = ?, updated_at = ? WHERE id = ?",
+                activeCount > 0 ? 1 : 0,
+                Now(),
+                itemId);
+        }
+
+        private static void ArchiveOrphanedManagedItem(SQLiteConnection connection, string itemId)
+        {
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                return;
+            }
+
+            var sourceCount = connection.ExecuteScalar<int>(
+                "SELECT COUNT(*) FROM item_source_origin WHERE item_info_id = ?",
+                itemId);
+            var boothCount = connection.ExecuteScalar<int>(
+                "SELECT COUNT(*) FROM booth_info WHERE item_info_id = ?",
+                itemId);
+            var ee4vFileCount = connection.ExecuteScalar<int>(
+                @"SELECT COUNT(*)
+                  FROM file_info
+                  INNER JOIN ee4v_file_origin ON ee4v_file_origin.file_info_id = file_info.id
+                  WHERE " + FileBelongsToItemWhereClause(),
+                itemId,
+                itemId,
+                itemId);
+            if (sourceCount == 0 && boothCount == 0 && ee4vFileCount == 0)
+            {
+                connection.Execute("UPDATE item_info SET is_available = 0, updated_at = ? WHERE id = ?", Now(), itemId);
+            }
+        }
+
+        private static string CreateBlmFileSourceKey(string registeredItemId, string relativePath)
+        {
+            return (registeredItemId ?? string.Empty) + "\n" + (relativePath ?? string.Empty);
+        }
+
+        private static HashSet<string> BuildBlmFileSourceKeys(IReadOnlyList<BlmItemRecord> records)
+        {
+            var keys = new HashSet<string>(StringComparer.Ordinal);
+            for (var recordIndex = 0; recordIndex < records.Count; recordIndex++)
+            {
+                var files = records[recordIndex].Files ?? Array.Empty<BlmFileRecord>();
+                for (var fileIndex = 0; fileIndex < files.Count; fileIndex++)
+                {
+                    keys.Add(CreateBlmFileSourceKey(records[recordIndex].RegisteredItemId, files[fileIndex].RelativePath));
+                }
+            }
+
+            return keys;
+        }
+
+        private static void ReconcileBlmFileOrigins(SQLiteConnection connection, ISet<string> seenSourceIds)
+        {
+            var origins = connection.Query<BlmOriginRow>("SELECT * FROM blm_file_origin");
+            for (var i = 0; i < origins.Count; i++)
+            {
+                var key = CreateBlmFileSourceKey(origins[i].registered_item_id, origins[i].relative_path);
+                if ((seenSourceIds == null || !seenSourceIds.Contains(key)) && origins[i].is_missing == 0)
+                {
+                    connection.Execute(
+                        "UPDATE blm_file_origin SET is_missing = 1, imported_at = ? WHERE file_info_id = ?",
+                        Now(),
+                        origins[i].file_info_id);
+                }
+
+                RefreshFileAvailability(connection, origins[i].file_info_id);
+            }
+        }
+
+        private static void ReconcileEagleFileOrigins(SQLiteConnection connection, ISet<string> seenSourceIds)
+        {
+            var origins = connection.Query<EagleOriginRow>("SELECT * FROM eagle_file_origin");
+            for (var i = 0; i < origins.Count; i++)
+            {
+                if ((seenSourceIds == null || !seenSourceIds.Contains(origins[i].eagle_item_id)) &&
+                    origins[i].is_deleted.GetValueOrDefault() == 0)
+                {
+                    connection.Execute(
+                        "UPDATE eagle_file_origin SET is_deleted = 1, imported_at = ? WHERE file_info_id = ?",
+                        Now(),
+                        origins[i].file_info_id);
+                }
+
+                RefreshFileAvailability(connection, origins[i].file_info_id);
+            }
+        }
+
+        private static void ReconcileEagleDownloadOnlyFiles(SQLiteConnection connection, ISet<long> seenDownloadIds)
+        {
+            var rows = connection.Query<FileRow>(
+                @"SELECT * FROM file_info
+                  WHERE download_id IS NOT NULL
+                    AND id NOT IN (SELECT file_info_id FROM ee4v_file_origin)
+                    AND id NOT IN (SELECT file_info_id FROM eagle_file_origin)
+                    AND id NOT IN (SELECT file_info_id FROM blm_file_origin)");
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var available = rows[i].download_id.HasValue &&
+                                seenDownloadIds != null &&
+                                seenDownloadIds.Contains(rows[i].download_id.Value);
+                if ((rows[i].is_available != 0) != available)
+                {
+                    connection.Execute(
+                        "UPDATE file_info SET is_available = ?, updated_at = ? WHERE id = ?",
+                        available ? 1 : 0,
+                        Now(),
+                        rows[i].id);
+                }
+            }
+        }
+
+        private static void RefreshFileAvailability(SQLiteConnection connection, string fileId)
+        {
+            if (string.IsNullOrWhiteSpace(fileId))
+            {
+                return;
+            }
+
+            var available = connection.ExecuteScalar<int>(
+                "SELECT COUNT(*) FROM ee4v_file_origin WHERE file_info_id = ?",
+                fileId) > 0 ||
+                connection.ExecuteScalar<int>(
+                    "SELECT COUNT(*) FROM eagle_file_origin WHERE file_info_id = ? AND COALESCE(is_deleted, 0) = 0",
+                    fileId) > 0 ||
+                connection.ExecuteScalar<int>(
+                    "SELECT COUNT(*) FROM blm_file_origin WHERE file_info_id = ? AND is_missing = 0",
+                    fileId) > 0;
+            connection.Execute(
+                "UPDATE file_info SET is_available = ?, updated_at = ? WHERE id = ?",
+                available ? 1 : 0,
+                Now(),
+                fileId);
         }
 
         private static string GetFileInfoIdByDownloadId(SQLiteConnection connection, long? downloadId)
@@ -522,7 +892,7 @@ namespace Ee4v.AssetManager.Api
 
             public string ItemId { get; private set; }
 
-            public AssetSyncStatus Status { get; private set; }
+            public AssetSyncStatus Status { get; set; }
         }
 
         private sealed class ShopUpsertResult

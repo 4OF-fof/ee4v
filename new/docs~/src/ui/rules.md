@@ -10,7 +10,7 @@
 - `UiLabelAuditTests` で direct `Label` 利用が監査されている
 - UI テキストの見た目は `UiTextFactory` + `UiClassNames` + `TypographyStyleResolver` の組み合わせで統一している
 
-許可されている例外実装は `Editor/UI/Foundation/Typography/UiTextFactory.cs` のみです。
+許可されている例外実装は `Editor/Core/UI/Foundation/Typography/UiTextFactory.cs` のみです。
 
 ## class 名は `UiClassNames` に寄せる
 
@@ -37,12 +37,12 @@ UI 要素の生成時に値を埋め込むより、state を差し替えて再�
 Unity の built-in icon はバージョン差分があるため、`Icon` / `UiBuiltinIcon` を使います。
 
 - 追加が必要なら `UiBuiltinIcon` と `UiBuiltinIconResolver` を更新する
-- `Editor/UI/Test/Editor/UiIconTests.cs` で解決可能か確認される
+- `Editor/Core/UI/Test/Editor/UiIconTests.cs` で解決可能か確認される
 
 ## ローカライズ
 
 永続的に表示される文言は `I18N.Get("key")` を使います。
 
 - `Ee4v.UI` namespace のコードは `UI` scope として解決される
-- 文言は `Editor/UI/Localization/<locale>/*.jsonc` に追加する
+- 文言は `Editor/Core/UI/Localization/<locale>/*.jsonc` に追加する
 - key の重複、未使用、未定義参照は静的監査の対象

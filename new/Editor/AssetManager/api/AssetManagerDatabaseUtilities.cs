@@ -13,6 +13,18 @@ namespace Ee4v.AssetManager.Api
 {
     internal static partial class AssetManagerDatabase
     {
+        private static T InTransaction<T>(SQLiteConnection connection, Func<T> action)
+        {
+            T result = default(T);
+            connection.RunInTransaction(() => { result = action(); });
+            return result;
+        }
+
+        private static void InTransaction(SQLiteConnection connection, Action action)
+        {
+            connection.RunInTransaction(action);
+        }
+
         private static void UpsertSyncInfo(SQLiteConnection connection, string sourceType)
         {
             UpsertSyncInfo(connection, sourceType, AssetSyncState.Success);

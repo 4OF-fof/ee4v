@@ -28,37 +28,40 @@ namespace Ee4v.AssetManager.Api
         {
             using (var connection = OpenConnection())
             {
-                var sourceColumns = ToSourceColumns(connection, source);
-                var targetColumns = (targets ?? Array.Empty<DependencyEndpointRequest>())
-                    .Select(target => ToTargetColumns(connection, target))
-                    .ToArray();
-                for (var i = 0; i < targetColumns.Length; i++)
+                InTransaction(connection, () =>
                 {
-                    if (sourceColumns.SameNode(targetColumns[i]))
+                    var sourceColumns = ToSourceColumns(connection, source);
+                    var targetColumns = (targets ?? Array.Empty<DependencyEndpointRequest>())
+                        .Select(target => ToTargetColumns(connection, target))
+                        .ToArray();
+                    for (var i = 0; i < targetColumns.Length; i++)
                     {
-                        throw new AssetManagerException(AssetManagerErrorCode.InvalidRequest, "Self dependency is not allowed.");
+                        if (sourceColumns.SameNode(targetColumns[i]))
+                        {
+                            throw new AssetManagerException(AssetManagerErrorCode.InvalidRequest, "Self dependency is not allowed.");
+                        }
                     }
-                }
 
-                var sourceWhere = BuildSourceWhereClause(sourceColumns);
-                connection.Execute("DELETE FROM dependency WHERE " + sourceWhere.Sql, sourceWhere.Parameters);
+                    var sourceWhere = BuildSourceWhereClause(sourceColumns);
+                    connection.Execute("DELETE FROM dependency WHERE " + sourceWhere.Sql, sourceWhere.Parameters);
 
-                for (var i = 0; i < targetColumns.Length; i++)
-                {
-                    connection.Execute(
-                        @"INSERT OR IGNORE INTO dependency(
-                            source_file_info_id,
-                            source_version_group_id,
-                            source_variant_group_id,
-                            target_file_info_id,
-                            target_version_group_id)
-                          VALUES (?, ?, ?, ?, ?)",
-                        sourceColumns.FileId,
-                        sourceColumns.VersionGroupId,
-                        sourceColumns.VariantGroupId,
-                        targetColumns[i].FileId,
-                        targetColumns[i].VersionGroupId);
-                }
+                    for (var i = 0; i < targetColumns.Length; i++)
+                    {
+                        connection.Execute(
+                            @"INSERT OR IGNORE INTO dependency(
+                                source_file_info_id,
+                                source_version_group_id,
+                                source_variant_group_id,
+                                target_file_info_id,
+                                target_version_group_id)
+                              VALUES (?, ?, ?, ?, ?)",
+                            sourceColumns.FileId,
+                            sourceColumns.VersionGroupId,
+                            sourceColumns.VariantGroupId,
+                            targetColumns[i].FileId,
+                            targetColumns[i].VersionGroupId);
+                    }
+                });
             }
         }
 

@@ -2,7 +2,7 @@ using System;
 
 namespace Ee4v.Core.Internal
 {
-    internal static class FeatureBootstrapContract
+    public static class FeatureBootstrapContract
     {
         public static void Initialize(
             string featureScope,

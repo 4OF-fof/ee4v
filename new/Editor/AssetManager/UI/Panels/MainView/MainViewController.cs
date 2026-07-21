@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Ee4v.AssetManager.Api;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
@@ -48,7 +51,7 @@ namespace Ee4v.AssetManager
             return _contentVersion + "|" + viewId + "|" + limit + "|" + GetItemsPerRow();
         }
 
-        public AssetItemGridList LoadItems(MainViewRequest request)
+        public AssetItemGridList LoadItems(MainViewRequest request, CancellationToken cancellationToken = default(CancellationToken))
         {
             var itemsPerRow = GetItemsPerRow();
             var query = CreateQuery(request);
@@ -59,16 +62,22 @@ namespace Ee4v.AssetManager
                 return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noItems"), itemsPerRow);
             }
 
-            for (var i = 0; i < result.Items.Count; i++)
+            var loadedItems = new AssetItemGridListItem[result.Items.Count];
+            Parallel.For(0, result.Items.Count, new ParallelOptions
+            {
+                CancellationToken = cancellationToken,
+                MaxDegreeOfParallelism = 4
+            }, i =>
             {
                 var item = result.Items[i];
                 if (item == null)
                 {
-                    continue;
+                    return;
                 }
 
-                items.Add(new AssetItemGridListItem(item.Id, item.Name, LoadThumbnail(item.Id)));
-            }
+                loadedItems[i] = new AssetItemGridListItem(item.Id, item.Name, LoadThumbnail(item.Id));
+            });
+            items.AddRange(loadedItems.Where(item => item != null));
 
             return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noItems"), itemsPerRow);
         }

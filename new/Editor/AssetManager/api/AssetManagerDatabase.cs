@@ -12,7 +12,7 @@ namespace Ee4v.AssetManager.Api
 {
     internal static partial class AssetManagerDatabase
     {
-        private const int CurrentSchemaVersion = 1;
+        private const int CurrentSchemaVersion = 2;
 
         private const string DatabaseFileName = "asset-manager.db";
 
@@ -23,6 +23,11 @@ namespace Ee4v.AssetManager.Api
                 var where = new List<string>();
                 var parameters = new List<object>();
                 SmartCollectionRow smartCollection = null;
+
+                if (query == null || !query.IncludeUnavailable)
+                {
+                    where.Add("item_info.is_available = 1");
+                }
 
                 if (query != null && !string.IsNullOrWhiteSpace(query.Keyword))
                 {
@@ -71,7 +76,7 @@ namespace Ee4v.AssetManager.Api
                     where.Add(@"EXISTS (
                         SELECT 1
                         FROM file_info
-                        WHERE lifecycle = ?
+                        WHERE lifecycle = ? AND is_available = 1
                           AND (
                             file_info.item_info_id = item_info.id
                             OR file_info.variant_group_id IN (SELECT id FROM variant_group WHERE item_info_id = item_info.id)
@@ -158,22 +163,26 @@ namespace Ee4v.AssetManager.Api
 
             using (var connection = OpenConnection())
             {
-                ValidateTagIds(connection, request.TagIds ?? Array.Empty<string>());
-                ValidateRegularCollectionIds(connection, request.CollectionIds ?? Array.Empty<string>());
+                var itemId = InTransaction(connection, () =>
+                {
+                    ValidateTagIds(connection, request.TagIds ?? Array.Empty<string>());
+                    ValidateRegularCollectionIds(connection, request.CollectionIds ?? Array.Empty<string>());
 
-                var now = Now();
-                var itemId = NewId();
-                connection.Execute(
-                    "INSERT INTO item_info(id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-                    itemId,
-                    request.Name,
-                    request.Description ?? string.Empty,
-                    now,
-                    now);
+                    var now = Now();
+                    var id = NewId();
+                    connection.Execute(
+                        "INSERT INTO item_info(id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+                        id,
+                        request.Name,
+                        request.Description ?? string.Empty,
+                        now,
+                        now);
 
-                SyncItemTags(connection, itemId, request.TagIds ?? Array.Empty<string>());
-                SyncItemCollections(connection, itemId, request.CollectionIds ?? Array.Empty<string>());
-                return GetItem(itemId);
+                    SyncItemTags(connection, id, request.TagIds ?? Array.Empty<string>());
+                    SyncItemCollections(connection, id, request.CollectionIds ?? Array.Empty<string>());
+                    return id;
+                });
+                return ToAssetItem(connection, connection.Query<ItemRow>("SELECT * FROM item_info WHERE id = ?", itemId).First());
             }
         }
 

@@ -8,6 +8,7 @@ namespace Ee4v.AssetManager.Api
         public string Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
+        public bool IsAvailable { get; set; }
         public BoothSnapshot Booth { get; set; }
         public IReadOnlyList<AssetTag> Tags { get; set; }
         public IReadOnlyList<AssetFileSummary> Files { get; set; }
@@ -27,6 +28,7 @@ namespace Ee4v.AssetManager.Api
         public string ShopUrl { get; set; }
         public string ShopThumbnailUrl { get; set; }
         public DateTime? LastUpdatedAt { get; set; }
+        public IReadOnlyList<string> DatasourceTags { get; set; }
     }
 
     public sealed class AssetThumbnail
@@ -49,6 +51,7 @@ namespace Ee4v.AssetManager.Api
         public long? SizeBytes { get; set; }
         public long? DownloadId { get; set; }
         public AssetFileLifecycle Lifecycle { get; set; }
+        public bool IsAvailable { get; set; }
         public IReadOnlyList<AssetFileOrigin> Origins { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
@@ -72,6 +75,7 @@ namespace Ee4v.AssetManager.Api
         public long? SizeBytes { get; set; }
         public long? DownloadId { get; set; }
         public AssetFileLifecycle Lifecycle { get; set; }
+        public bool IsAvailable { get; set; }
     }
 
     public sealed class AssetFileOrigin
@@ -80,6 +84,7 @@ namespace Ee4v.AssetManager.Api
         public string SourceId { get; set; }
         public string FilePathCache { get; set; }
         public DateTime? ImportedAt { get; set; }
+        public bool IsAvailable { get; set; }
     }
 
     public sealed class AssetVariantGroup
