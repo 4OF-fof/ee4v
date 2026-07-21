@@ -48,6 +48,8 @@ interface EagleItem {
 interface EagleApi {
   app: {
     theme: EagleTheme | Promise<EagleTheme>;
+    locale: string;
+    isDarkColors(): boolean | Promise<boolean>;
     getPath(name: "downloads" | "temp" | string): string | Promise<string>;
   };
   folder: {
@@ -74,12 +76,19 @@ interface EagleApi {
     setAlwaysOnTop(value: boolean): Promise<void>;
     setResizable(value: boolean): Promise<void>;
     setBounds(bounds: EagleBounds): Promise<void>;
+    show(): Promise<void>;
     hide(): Promise<void>;
   };
   onPluginCreate(callback: () => void | Promise<void>): void;
   onPluginRun(callback: () => void | Promise<void>): void;
   onPluginShow(callback: () => void | Promise<void>): void;
+  onPluginHide(callback: () => void | Promise<void>): void;
   onThemeChanged(callback: (theme: EagleTheme) => void): void;
+  onLibraryChanged(callback: (libraryPath: string) => void | Promise<void>): void;
+}
+
+interface I18nextApi {
+  t(key: string, options?: Record<string, unknown>): string;
 }
 
 interface BoothDownloadMeta {
@@ -158,6 +167,7 @@ interface BoothMetaRecord {
 interface BoothCompatCore {
   BOOTH_META_TAG: string;
   DEFAULT_META: BoothMeta;
+  t(key: string, fallback: string, options?: Record<string, unknown>): string;
   ensureBoothMetaForUrl(itemUrl: string): Promise<BoothMetaRecord & { rootFolder: EagleFolder | null; created: boolean }>;
   ensureBoothMetaForProduct(product: BoothProductInput, snapshotOverride?: Partial<BoothProductInput>): Promise<BoothMetaRecord & { rootFolder: EagleFolder | null; created: boolean }>;
   resolveBoothSnapshot(product: BoothProductInput, snapshotOverride?: Partial<BoothProductInput>): Promise<BoothSnapshot>;
@@ -295,6 +305,7 @@ declare function require(name: "https"): NodeHttps;
 declare function require(name: string): unknown;
 
 declare const eagle: EagleApi;
+declare const i18next: I18nextApi;
 declare const Buffer: NodeBufferConstructor;
 
 interface Window {

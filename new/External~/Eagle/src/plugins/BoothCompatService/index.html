@@ -1,10 +1,48 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
   <head>
     <meta charset="UTF-8">
-    <title>Booth Compat Service</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <link rel="stylesheet" href="css/service.css">
   </head>
   <body>
+    <main class="service-shell">
+      <header class="service-header drag-region">
+        <div class="service-heading">
+          <h1 id="service-title"></h1>
+          <p id="service-subtitle"></p>
+        </div>
+        <span id="running-chip" class="status-chip"></span>
+      </header>
+
+      <section class="service-content">
+        <dl class="status-list">
+          <div class="status-row">
+            <dt id="bridge-label"></dt>
+            <dd id="bridge-value" class="mono"></dd>
+          </div>
+          <div class="status-row">
+            <dt id="library-label"></dt>
+            <dd id="library-value"></dd>
+          </div>
+          <div class="status-row">
+            <dt id="pending-label"></dt>
+            <dd id="pending-value"></dd>
+          </div>
+          <div class="status-row">
+            <dt id="checked-label"></dt>
+            <dd id="checked-value"></dd>
+          </div>
+        </dl>
+        <p id="service-message" class="service-message" role="status" aria-live="polite"></p>
+      </section>
+
+      <footer class="service-footer no-drag">
+        <button id="close-button" class="button button-secondary" type="button"></button>
+        <button id="refresh-button" class="button button-primary" type="button"></button>
+      </footer>
+    </main>
     <script src="js/core.js"></script>
     <script src="js/bridge.js"></script>
   </body>

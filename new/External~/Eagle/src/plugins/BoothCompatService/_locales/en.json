@@ -1,0 +1,42 @@
+{
+  "manifest": {
+    "app": {
+      "name": "Booth Compat Service"
+    }
+  },
+  "notification": {
+    "title": "Booth Compat",
+    "importCompleted": "Imported {{name}} into Eagle."
+  },
+  "service": {
+    "title": "Booth Compat Service",
+    "subtitle": "BOOTH download bridge for Eagle",
+    "running": "Running",
+    "stopped": "Not running",
+    "bridge": "Bridge endpoint",
+    "library": "VRCAsset folder",
+    "libraryReady": "Ready",
+    "libraryMissing": "Not found",
+    "pending": "Pending imports",
+    "lastChecked": "Last checked",
+    "never": "Not checked yet",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "close": "Close",
+    "readyMessage": "The bridge is ready for BOOTH import requests.",
+    "missingMessage": "Create one VRCAsset folder at the library root.",
+    "checkFailed": "Service status could not be checked."
+  },
+  "error": {
+    "invalidItemUrl": "Enter a valid BOOTH item URL.",
+    "rootFolderMissing": "The VRCAsset folder was not found at the library root.",
+    "itemCreateFailed": "The BoothMeta item could not be created.",
+    "itemRedirectLimit": "The BOOTH item response exceeded the redirect limit.",
+    "itemFetchHttp": "The BOOTH item could not be fetched. HTTP {{status}}",
+    "itemParseFailed": "The BOOTH item response could not be read.",
+    "itemFetchFailed": "The BOOTH item could not be fetched: {{message}}",
+    "thumbnailRedirectLimit": "The thumbnail response exceeded the redirect limit.",
+    "thumbnailFetchHttp": "The thumbnail could not be fetched. HTTP {{status}}",
+    "thumbnailFetchFailed": "The thumbnail could not be fetched: {{message}}"
+  }
+}

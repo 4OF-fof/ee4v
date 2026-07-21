@@ -1,39 +1,44 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Booth Info</title>
+    <title></title>
     <link rel="stylesheet" href="css/inspector.css">
   </head>
   <body>
     <main class="shell">
+      <section id="loading-card" class="panel">
+        <div id="loading-message" class="empty" role="status" aria-live="polite"></div>
+      </section>
+
       <section id="unsupported-card" class="panel hidden">
-        <div class="empty">BoothMeta タグ付き JSON item を選択してください。</div>
+        <div id="unsupported-message" class="empty"></div>
       </section>
 
       <section id="editor-card" class="panel hidden">
         <section class="group">
           <div class="field">
-            <span>Shop Name</span>
+            <span id="shop-name-label"></span>
             <div id="shop-name-value" class="value"></div>
           </div>
 
           <div class="field">
-            <span>Tags</span>
+            <span id="tags-label"></span>
             <div id="tags-value" class="value value-multiline"></div>
           </div>
 
           <div class="field">
-            <span>Shop URL</span>
+            <span id="shop-url-label"></span>
             <a id="shop-url-value" class="value value-link value-break" href="#" target="_blank" rel="noreferrer noopener"></a>
           </div>
 
           <div class="field">
-            <span>Last Updated</span>
+            <span id="last-updated-label"></span>
             <div id="last-updated-value" class="value"></div>
           </div>
         </section>
+
       </section>
     </main>
     <script src="js/core.js"></script>

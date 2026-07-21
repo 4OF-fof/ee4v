@@ -70,16 +70,47 @@
     tags?: string;
     keyword?: string;
   }
+  interface ServiceElements {
+    title: HTMLElement;
+    subtitle: HTMLElement;
+    runningChip: HTMLElement;
+    bridgeLabel: HTMLElement;
+    bridgeValue: HTMLElement;
+    libraryLabel: HTMLElement;
+    libraryValue: HTMLElement;
+    pendingLabel: HTMLElement;
+    pendingValue: HTMLElement;
+    checkedLabel: HTMLElement;
+    checkedValue: HTMLElement;
+    message: HTMLElement;
+    closeButton: HTMLButtonElement;
+    refreshButton: HTMLButtonElement;
+  }
 
   let server: NodeServer | null = null;
   let isPluginReady = false;
   let pollTimer: NodeTimerHandle | null = null;
   let isProcessingImportJobs = false;
   let eagleLibraryPath = "";
+  let libraryRevision = 0;
+  let isServiceDomReady = false;
+  let isBridgeListening = false;
+  let isStatusRefreshing = false;
+  let isStatusWindowRequested = false;
+  let rootFolderAvailable = false;
+  let lastStatusCheck = "";
+  let serviceStatusError = "";
 
   const importJobs = new Map<string, ImportJob>();
   const fileSnapshots = new Map<string, FileSnapshot>();
   const boothMetaLocks = new Map<string, Promise<void>>();
+  const serviceElements = {} as ServiceElements;
+
+  if (document.readyState === "loading") {
+    window.addEventListener("DOMContentLoaded", initializeServiceUi);
+  } else {
+    initializeServiceUi();
+  }
 
   function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : core().safeString(error);
@@ -91,9 +122,192 @@
 
   eagle.onPluginCreate(async () => {
     isPluginReady = true;
+    await eagle.window.hide();
+    document.documentElement.lang = normalizeLocale(eagle.app.locale);
+    document.title = core().t("manifest.app.name", "Booth Compat Service");
+    localizeServiceUi();
+    await applyTheme(await Promise.resolve(eagle.app.theme));
+    eagle.onThemeChanged(theme => {
+      applyTheme(theme).catch(console.error);
+    });
+    eagle.onLibraryChanged(() => {
+      libraryRevision += 1;
+      eagleLibraryPath = "";
+      importJobs.clear();
+      fileSnapshots.clear();
+      boothMetaLocks.clear();
+      refreshServiceStatus().catch(console.error);
+    });
     await startBridge();
     startDownloadWatcher();
+    await refreshServiceStatus();
+    timers.setTimeout(() => {
+      hideUnrequestedStatusWindow();
+    }, 0);
   });
+
+  eagle.onPluginRun(async () => {
+    if (!isPluginReady) {
+      return;
+    }
+    isStatusWindowRequested = true;
+    await refreshServiceStatus();
+    await eagle.window.show();
+  });
+
+  eagle.onPluginShow(() => {
+    if (hideUnrequestedStatusWindow()) {
+      return;
+    }
+    if (!isPluginReady) {
+      return;
+    }
+    refreshServiceStatus().catch(console.error);
+  });
+
+  eagle.onPluginHide(() => {
+    isStatusWindowRequested = false;
+  });
+
+  function hideUnrequestedStatusWindow(): boolean {
+    if (isStatusWindowRequested) {
+      return false;
+    }
+
+    eagle.window.hide().catch(console.error);
+    return true;
+  }
+
+  function initializeServiceUi(): void {
+    if (isServiceDomReady) {
+      return;
+    }
+
+    serviceElements.title = requireElement("service-title", HTMLElement);
+    serviceElements.subtitle = requireElement("service-subtitle", HTMLElement);
+    serviceElements.runningChip = requireElement("running-chip", HTMLElement);
+    serviceElements.bridgeLabel = requireElement("bridge-label", HTMLElement);
+    serviceElements.bridgeValue = requireElement("bridge-value", HTMLElement);
+    serviceElements.libraryLabel = requireElement("library-label", HTMLElement);
+    serviceElements.libraryValue = requireElement("library-value", HTMLElement);
+    serviceElements.pendingLabel = requireElement("pending-label", HTMLElement);
+    serviceElements.pendingValue = requireElement("pending-value", HTMLElement);
+    serviceElements.checkedLabel = requireElement("checked-label", HTMLElement);
+    serviceElements.checkedValue = requireElement("checked-value", HTMLElement);
+    serviceElements.message = requireElement("service-message", HTMLElement);
+    serviceElements.closeButton = requireElement("close-button", HTMLButtonElement);
+    serviceElements.refreshButton = requireElement("refresh-button", HTMLButtonElement);
+    serviceElements.closeButton.addEventListener("click", () => {
+      eagle.window.hide().catch(console.error);
+    });
+    serviceElements.refreshButton.addEventListener("click", () => {
+      refreshServiceStatus().catch(console.error);
+    });
+    window.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        eagle.window.hide().catch(console.error);
+      }
+    });
+    isServiceDomReady = true;
+    localizeServiceUi();
+    renderServiceStatus();
+  }
+
+  function localizeServiceUi(): void {
+    if (!isServiceDomReady) {
+      return;
+    }
+
+    document.documentElement.lang = normalizeLocale(eagle.app.locale);
+    document.title = core().t("service.title", "Booth Compat Service");
+    serviceElements.title.textContent = core().t("service.title", "Booth Compat Service");
+    serviceElements.subtitle.textContent = core().t("service.subtitle", "BOOTH download bridge for Eagle");
+    serviceElements.bridgeLabel.textContent = core().t("service.bridge", "Bridge endpoint");
+    serviceElements.libraryLabel.textContent = core().t("service.library", "VRCAsset folder");
+    serviceElements.pendingLabel.textContent = core().t("service.pending", "Pending imports");
+    serviceElements.checkedLabel.textContent = core().t("service.lastChecked", "Last checked");
+    serviceElements.closeButton.textContent = core().t("service.close", "Close");
+    renderServiceStatus();
+  }
+
+  async function applyTheme(theme: EagleTheme): Promise<void> {
+    const normalizedTheme = core().safeString(theme).toUpperCase();
+    if (normalizedTheme === "LIGHT" || normalizedTheme === "LIGHTGRAY") {
+      document.body.setAttribute("theme", normalizedTheme);
+      return;
+    }
+
+    if (normalizedTheme === "AUTO") {
+      const isDark = await Promise.resolve(eagle.app.isDarkColors());
+      document.body.setAttribute("theme", isDark ? "DARK" : "LIGHT");
+      return;
+    }
+
+    document.body.setAttribute("theme", normalizedTheme || "DARK");
+  }
+
+  async function refreshServiceStatus(): Promise<void> {
+    if (isStatusRefreshing) {
+      return;
+    }
+
+    isStatusRefreshing = true;
+    serviceStatusError = "";
+    renderServiceStatus();
+    try {
+      rootFolderAvailable = Boolean(await core().findVrcAssetRootFolder());
+    } catch (error) {
+      console.error(error);
+      rootFolderAvailable = false;
+      serviceStatusError = errorMessage(error) || core().t("service.checkFailed", "Service status could not be checked.");
+    } finally {
+      lastStatusCheck = new Date().toISOString();
+      isStatusRefreshing = false;
+      renderServiceStatus();
+    }
+  }
+
+  function renderServiceStatus(): void {
+    if (!isServiceDomReady) {
+      return;
+    }
+
+    serviceElements.runningChip.textContent = isBridgeListening
+      ? core().t("service.running", "Running")
+      : core().t("service.stopped", "Not running");
+    serviceElements.runningChip.classList.toggle("is-error", !isBridgeListening);
+    serviceElements.bridgeValue.textContent = `http://${HOST}:${PORT}`;
+    serviceElements.libraryValue.textContent = rootFolderAvailable
+      ? core().t("service.libraryReady", "Ready")
+      : core().t("service.libraryMissing", "Not found");
+    serviceElements.pendingValue.textContent = String(importJobs.size);
+    serviceElements.checkedValue.textContent = lastStatusCheck
+      ? formatStatusTimestamp(lastStatusCheck)
+      : core().t("service.never", "Not checked yet");
+    serviceElements.refreshButton.textContent = isStatusRefreshing
+      ? core().t("service.refreshing", "Refreshing…")
+      : core().t("service.refresh", "Refresh");
+    serviceElements.refreshButton.disabled = isStatusRefreshing;
+    serviceElements.refreshButton.setAttribute("aria-busy", String(isStatusRefreshing));
+
+    serviceElements.message.textContent = serviceStatusError
+      || (rootFolderAvailable
+        ? core().t("service.readyMessage", "The bridge is ready for BOOTH import requests.")
+        : core().t("service.missingMessage", "Create one VRCAsset folder at the library root."));
+    serviceElements.message.classList.toggle("is-error", Boolean(serviceStatusError) || !rootFolderAvailable);
+  }
+
+  function formatStatusTimestamp(value: string): string {
+    return new Intl.DateTimeFormat(normalizeLocale(eagle.app.locale), {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    }).format(new Date(value));
+  }
 
   async function startBridge() {
     if (server) {
@@ -112,11 +326,17 @@
 
     server.on("error", error => {
       console.error(`EE4V Booth bridge failed: ${error.message}`);
+      isBridgeListening = false;
+      serviceStatusError = error.message;
       server = null;
+      renderServiceStatus();
     });
 
     server.listen(PORT, HOST, () => {
+      isBridgeListening = true;
+      serviceStatusError = "";
       console.log(`EE4V Booth bridge listening at http://${HOST}:${PORT}`);
+      renderServiceStatus();
     });
   }
 
@@ -159,7 +379,7 @@
   }
 
   async function handleHealth(response: NodeServerResponse): Promise<void> {
-    const rootFolder = isPluginReady ? await findVrcAssetRootFolderForBridge().catch(() => null) : null;
+    const rootFolder = isPluginReady ? await core().findVrcAssetRootFolder().catch(() => null) : null;
     sendJson(response, 200, {
       ok: isPluginReady,
       rootFolderAvailable: Boolean(rootFolder)
@@ -230,6 +450,7 @@
       createdBoothMeta: Boolean(result.boothMeta.created || result.boothMeta.shouldCreateAfterImport),
       downloadUrl: core().normalizeDownloadUrl(download.downloadUrl)
     });
+    renderServiceStatus();
     kickImportJobProcessing();
   }
 
@@ -292,12 +513,17 @@
     }
 
     isProcessingImportJobs = true;
+    const processingLibraryRevision = libraryRevision;
     try {
       const downloadsDir = await Promise.resolve(eagle.app.getPath("downloads"));
       const entries = await fs.readdir(downloadsDir).catch(() => []);
       const now = Date.now();
 
       for (const [jobId, job] of Array.from(importJobs.entries())) {
+        if (processingLibraryRevision !== libraryRevision) {
+          break;
+        }
+
         if (now - job.startedAt > JOB_TIMEOUT_MS) {
           job.status = "failed";
           importJobs.delete(jobId);
@@ -342,6 +568,7 @@
       }
     } finally {
       isProcessingImportJobs = false;
+      renderServiceStatus();
     }
   }
 
@@ -1318,8 +1545,10 @@
 
   function showImportCompletedNotification(filePath: string): void {
     Promise.resolve(eagle.notification.show({
-      title: "Booth Compat",
-      body: `${path.basename(filePath)} を Eagle に取り込みました。`,
+      title: core().t("notification.title", "Booth Compat"),
+      body: core().t("notification.importCompleted", "Imported {{name}} into Eagle.", {
+        name: path.basename(filePath)
+      }),
       mute: true,
       duration: 3000
     })).catch(error => {
@@ -1339,6 +1568,18 @@
 
   function core(): BoothCompatCore {
     return window.BoothCompatCore;
+  }
+
+  function normalizeLocale(locale: unknown): string {
+    return core().safeString(locale).replace("_", "-") || "en";
+  }
+
+  function requireElement<T extends HTMLElement>(id: string, constructor: { new(): T }): T {
+    const element = document.getElementById(id);
+    if (!(element instanceof constructor)) {
+      throw new Error(`Element #${id} was not found.`);
+    }
+    return element;
   }
 
   function readJson(request: NodeIncomingMessage): Promise<JsonRecord> {

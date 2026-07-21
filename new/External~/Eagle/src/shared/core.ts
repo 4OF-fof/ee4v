@@ -32,6 +32,27 @@
     return error instanceof Error ? error.message : safeString(error);
   }
 
+  function t(key: string, fallback: string, options: Record<string, unknown> = {}): string {
+    try {
+      if (typeof i18next !== "undefined" && i18next && typeof i18next.t === "function") {
+        const translated = i18next.t(key, {
+          defaultValue: fallback,
+          ...options
+        });
+        if (translated) {
+          return translated;
+        }
+      }
+    } catch (error) {
+      console.warn(`Translation failed for ${key}: ${errorMessage(error)}`);
+    }
+
+    return Object.entries(options).reduce(
+      (message, [name, value]) => message.split(`{{${name}}}`).join(String(value)),
+      fallback
+    );
+  }
+
   function tagName(tag: unknown): string {
     return safeString(typeof tag === "string" ? tag : asRecord(tag).name).trim();
   }
@@ -39,7 +60,7 @@
   async function ensureBoothMetaForUrl(itemUrl: string) {
     const boothRef = parseBoothItemReference(itemUrl);
     if (!boothRef) {
-      throw new Error("有効な Booth item URL を入力してください。");
+      throw new Error(t("error.invalidItemUrl", "Enter a valid BOOTH item URL."));
     }
 
     return ensureBoothMetaForProduct({
@@ -99,7 +120,7 @@
 
     const item = await eagle.item.getById(itemId);
     if (!item) {
-      throw new Error("BoothMeta item could not be created.");
+      throw new Error(t("error.itemCreateFailed", "The BoothMeta item could not be created."));
     }
     item.name = itemName;
     item.url = itemUrl;
@@ -252,7 +273,7 @@
   async function requireVrcAssetRootFolder(): Promise<EagleFolder> {
     const rootFolder = await findVrcAssetRootFolder();
     if (!rootFolder) {
-      throw new Error("library root VRCAsset folder was not found.");
+      throw new Error(t("error.rootFolderMissing", "The VRCAsset folder was not found at the library root."));
     }
 
     return rootFolder;
@@ -661,7 +682,7 @@
 
   async function requestJson(url: string, redirectDepth = 0): Promise<JsonRecord> {
     if (redirectDepth > 4) {
-      throw new Error("Booth item JSON のリダイレクト回数が上限を超えました。");
+      throw new Error(t("error.itemRedirectLimit", "The BOOTH item response exceeded the redirect limit."));
     }
 
     return new Promise((resolve, reject) => {
@@ -682,7 +703,7 @@
 
         if (statusCode < 200 || statusCode >= 300) {
           response.resume();
-          reject(new Error(`Booth item JSON の取得に失敗しました。HTTP ${statusCode}`));
+          reject(new Error(t("error.itemFetchHttp", "The BOOTH item could not be fetched. HTTP {{status}}", { status: statusCode })));
           return;
         }
 
@@ -693,13 +714,13 @@
           try {
             resolve(JSON.parse(chunks.join("")));
           } catch (error) {
-            reject(new Error("Booth item JSON の解析に失敗しました。"));
+            reject(new Error(t("error.itemParseFailed", "The BOOTH item response could not be read.")));
           }
         });
       });
 
       request.on("error", error => {
-        reject(new Error(`Booth item JSON の取得に失敗しました: ${error.message}`));
+        reject(new Error(t("error.itemFetchFailed", "The BOOTH item could not be fetched: {{message}}", { message: error.message })));
       });
       request.setTimeout(15000, () => {
         request.destroy(new Error("timeout"));
@@ -709,7 +730,7 @@
 
   async function downloadFile(url: string, destinationPath: string, redirectDepth = 0): Promise<void> {
     if (redirectDepth > 4) {
-      throw new Error("thumbnail image のリダイレクト回数が上限を超えました。");
+      throw new Error(t("error.thumbnailRedirectLimit", "The thumbnail response exceeded the redirect limit."));
     }
 
     return new Promise((resolve, reject) => {
@@ -729,7 +750,7 @@
 
         if (statusCode < 200 || statusCode >= 300) {
           response.resume();
-          reject(new Error(`thumbnail image の取得に失敗しました。HTTP ${statusCode}`));
+          reject(new Error(t("error.thumbnailFetchHttp", "The thumbnail could not be fetched. HTTP {{status}}", { status: statusCode })));
           return;
         }
 
@@ -746,7 +767,7 @@
       });
 
       request.on("error", error => {
-        reject(new Error(`thumbnail image の取得に失敗しました: ${error.message}`));
+        reject(new Error(t("error.thumbnailFetchFailed", "The thumbnail could not be fetched: {{message}}", { message: error.message })));
       });
       request.setTimeout(15000, () => {
         request.destroy(new Error("timeout"));
@@ -757,6 +778,7 @@
   window.BoothCompatCore = {
     BOOTH_META_TAG,
     DEFAULT_META,
+    t,
     ensureBoothMetaForUrl,
     ensureBoothMetaForProduct,
     resolveBoothSnapshot,

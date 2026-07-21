@@ -1,0 +1,41 @@
+{
+  "manifest": {
+    "app": {
+      "name": "Booth Compat"
+    }
+  },
+  "window": {
+    "title": "BOOTH アイテムを追加",
+    "itemUrl": "BOOTH アイテム URL",
+    "cancel": "キャンセル",
+    "create": "作成",
+    "creating": "作成中…",
+    "ready": "BOOTH の商品 URL を入力してください。",
+    "invalidUrl": "有効な booth.pm の商品 URL を入力してください。",
+    "rootFolderMissing": "ライブラリ直下に VRCAsset フォルダーを1つ作成してください。",
+    "unknownError": "予期しないエラーが発生しました。"
+  },
+  "inspector": {
+    "title": "BOOTH 情報",
+    "loading": "BOOTH メタデータを読み込んでいます…",
+    "unsupported": "BoothMeta タグ付き JSON アイテムを選択してください。",
+    "shopName": "ショップ名",
+    "tags": "タグ",
+    "shopUrl": "ショップ URL",
+    "lastUpdated": "最終更新",
+    "addTag": "{{tag}} を Eagle タグに追加",
+    "removeTag": "{{tag}} を Eagle タグから削除"
+  },
+  "error": {
+    "invalidItemUrl": "有効な BOOTH アイテム URL を入力してください。",
+    "rootFolderMissing": "ライブラリ直下に VRCAsset フォルダーが見つかりません。",
+    "itemCreateFailed": "BoothMeta アイテムを作成できませんでした。",
+    "itemRedirectLimit": "BOOTH アイテムのリダイレクト回数が上限を超えました。",
+    "itemFetchHttp": "BOOTH アイテムを取得できませんでした。HTTP {{status}}",
+    "itemParseFailed": "BOOTH アイテムの応答を読み取れませんでした。",
+    "itemFetchFailed": "BOOTH アイテムを取得できませんでした: {{message}}",
+    "thumbnailRedirectLimit": "サムネイルのリダイレクト回数が上限を超えました。",
+    "thumbnailFetchHttp": "サムネイルを取得できませんでした。HTTP {{status}}",
+    "thumbnailFetchFailed": "サムネイルを取得できませんでした: {{message}}"
+  }
+}

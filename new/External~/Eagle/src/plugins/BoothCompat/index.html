@@ -1,25 +1,29 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Booth item</title>
+    <title></title>
     <link rel="stylesheet" href="css/style.css">
   </head>
   <body>
     <main class="shell">
       <header class="header drag-region">
-        <p class="title">Add Booth item</p>
+        <p id="window-title" class="title"></p>
       </header>
 
-      <label class="field no-drag">
-        <input id="item-url-input" type="text" placeholder="https://booth.pm/ja/items/1234567" aria-label="Booth item URL">
-      </label>
+      <section class="content no-drag">
+        <label class="field" for="item-url-input">
+          <span id="item-url-label" class="field-label"></span>
+          <input id="item-url-input" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://booth.pm/ja/items/1234567">
+        </label>
+        <p id="status-message" class="status-message" role="status" aria-live="polite"></p>
+      </section>
 
-      <div class="button-row no-drag">
-        <button id="cancel-button" class="button button-secondary" type="button">Cancel</button>
-        <button id="create-button" class="button" type="button">Create</button>
-      </div>
+      <footer class="button-row no-drag">
+        <button id="cancel-button" class="button button-secondary" type="button"></button>
+        <button id="create-button" class="button" type="button"></button>
+      </footer>
     </main>
     <script src="js/core.js"></script>
     <script src="js/plugin.js"></script>

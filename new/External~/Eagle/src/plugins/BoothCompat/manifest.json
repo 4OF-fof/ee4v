@@ -3,7 +3,12 @@
   "version": "0.1.0",
   "platform": "all",
   "arch": "all",
-  "name": "Booth Compat",
+  "name": "{{manifest.app.name}}",
+  "fallbackLanguage": "en",
+  "languages": [
+    "en",
+    "ja_JP"
+  ],
   "logo": "/logo.png",
   "keywords": [
     "ee4v",
@@ -16,7 +21,7 @@
     "json": {
       "inspector": {
         "path": "inspector.html",
-        "height": 520,
+        "height": 300,
         "multiSelect": false
       }
     }
@@ -26,11 +31,11 @@
     "frame": false,
     "url": "index.html",
     "width": 380,
-    "height": 136,
+    "height": 196,
     "minWidth": 380,
-    "minHeight": 136,
+    "minHeight": 196,
     "maxWidth": 380,
-    "maxHeight": 136,
+    "maxHeight": 196,
     "resizable": false,
     "alwaysOnTop": true,
     "maximizable": false,

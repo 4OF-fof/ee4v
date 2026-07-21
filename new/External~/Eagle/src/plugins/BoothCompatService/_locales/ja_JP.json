@@ -1,0 +1,42 @@
+{
+  "manifest": {
+    "app": {
+      "name": "Booth Compat Service"
+    }
+  },
+  "notification": {
+    "title": "Booth Compat",
+    "importCompleted": "{{name}} を Eagle に取り込みました。"
+  },
+  "service": {
+    "title": "Booth Compat Service",
+    "subtitle": "Eagle 用 BOOTH ダウンロード Bridge",
+    "running": "稼働中",
+    "stopped": "停止中",
+    "bridge": "Bridge エンドポイント",
+    "library": "VRCAsset フォルダー",
+    "libraryReady": "利用可能",
+    "libraryMissing": "見つかりません",
+    "pending": "保留中の取り込み",
+    "lastChecked": "最終確認",
+    "never": "未確認",
+    "refresh": "更新",
+    "refreshing": "確認中…",
+    "close": "閉じる",
+    "readyMessage": "BOOTH からの取り込み要求を受け付けられます。",
+    "missingMessage": "ライブラリ直下に VRCAsset フォルダーを1つ作成してください。",
+    "checkFailed": "Service の状態を確認できませんでした。"
+  },
+  "error": {
+    "invalidItemUrl": "有効な BOOTH アイテム URL を入力してください。",
+    "rootFolderMissing": "ライブラリ直下に VRCAsset フォルダーが見つかりません。",
+    "itemCreateFailed": "BoothMeta アイテムを作成できませんでした。",
+    "itemRedirectLimit": "BOOTH アイテムのリダイレクト回数が上限を超えました。",
+    "itemFetchHttp": "BOOTH アイテムを取得できませんでした。HTTP {{status}}",
+    "itemParseFailed": "BOOTH アイテムの応答を読み取れませんでした。",
+    "itemFetchFailed": "BOOTH アイテムを取得できませんでした: {{message}}",
+    "thumbnailRedirectLimit": "サムネイルのリダイレクト回数が上限を超えました。",
+    "thumbnailFetchHttp": "サムネイルを取得できませんでした。HTTP {{status}}",
+    "thumbnailFetchFailed": "サムネイルを取得できませんでした: {{message}}"
+  }
+}

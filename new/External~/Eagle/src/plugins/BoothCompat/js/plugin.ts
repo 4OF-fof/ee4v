@@ -1,295 +1,306 @@
 (function () {
   "use strict";
 
-const POPUP_WIDTH = 380;
-const POPUP_HEIGHT = 136;
+  const POPUP_WIDTH = 380;
+  const POPUP_HEIGHT = 196;
 
-interface PluginState {
-  rootFolder: EagleFolder | null;
-  isBusy: boolean;
-  isPluginReady: boolean;
-}
-
-interface PluginElements {
-  itemUrlInput: HTMLInputElement;
-  createButton: HTMLButtonElement;
-  cancelButton: HTMLButtonElement;
-}
-
-const state: PluginState = {
-  rootFolder: null,
-  isBusy: false,
-  isPluginReady: false
-};
-
-const elements = {} as PluginElements;
-
-window.addEventListener("DOMContentLoaded", () => {
-  cacheElements();
-  bindEvents();
-  render();
-});
-
-eagle.onPluginCreate(async () => {
-  state.isPluginReady = true;
-  applyTheme(await Promise.resolve(eagle.app.theme));
-  eagle.onThemeChanged(theme => applyTheme(theme));
-  window.addEventListener("keydown", handleWindowKeydown);
-  await configurePopupWindow();
-  await reloadState();
-});
-
-eagle.onPluginRun(() => {
-  if (state.isPluginReady) {
-    handlePluginRun().catch(console.error);
-  }
-});
-
-async function handlePluginRun() {
-  const didSyncSelectedItem = await trySyncSelectedBoothMetaItem();
-  if (didSyncSelectedItem) {
-    return;
+  interface PluginState {
+    rootFolder: EagleFolder | null;
+    isBusy: boolean;
+    isDomReady: boolean;
+    isPluginReady: boolean;
+    errorMessage: string;
   }
 
-  resetForm();
-  await centerPopupWindow();
-  await reloadState();
-}
+  interface PluginElements {
+    windowTitle: HTMLElement;
+    itemUrlLabel: HTMLElement;
+    itemUrlInput: HTMLInputElement;
+    statusMessage: HTMLElement;
+    createButton: HTMLButtonElement;
+    cancelButton: HTMLButtonElement;
+  }
 
-function cacheElements() {
-  elements.itemUrlInput = requireElement("item-url-input", HTMLInputElement);
-  elements.createButton = requireElement("create-button", HTMLButtonElement);
-  elements.cancelButton = requireElement("cancel-button", HTMLButtonElement);
-}
+  const state: PluginState = {
+    rootFolder: null,
+    isBusy: false,
+    isDomReady: false,
+    isPluginReady: false,
+    errorMessage: ""
+  };
 
-function bindEvents() {
-  elements.createButton.addEventListener("click", handleCreate);
-  elements.cancelButton.addEventListener("click", closeWindow);
-  elements.itemUrlInput.addEventListener("input", render);
-  elements.itemUrlInput.addEventListener("keydown", (event: KeyboardEvent) => {
-    if (event.key === "Enter" && !elements.createButton.disabled) {
-      event.preventDefault();
-      handleCreate();
+  const elements = {} as PluginElements;
+
+  window.addEventListener("DOMContentLoaded", () => {
+    cacheElements();
+    state.isDomReady = true;
+    localizeDocument();
+    bindEvents();
+    render();
+  });
+
+  eagle.onPluginCreate(async () => {
+    state.isPluginReady = true;
+    localizeDocument();
+    await applyTheme(await Promise.resolve(eagle.app.theme));
+    eagle.onThemeChanged(theme => {
+      applyTheme(theme).catch(console.error);
+    });
+    eagle.onLibraryChanged(() => {
+      state.rootFolder = null;
+      state.errorMessage = "";
+      reloadState().catch(console.error);
+    });
+    window.addEventListener("keydown", handleWindowKeydown);
+    await configurePopupWindow();
+    await reloadState();
+  });
+
+  eagle.onPluginRun(() => {
+    if (state.isPluginReady) {
+      handlePluginRun().catch(console.error);
     }
   });
-}
 
-function applyTheme(theme: EagleTheme) {
-  document.body.setAttribute("theme", theme || "LIGHT");
-}
-
-async function configurePopupWindow() {
-  await eagle.window.setAlwaysOnTop(true);
-  await eagle.window.setResizable(false);
-  await centerPopupWindow();
-}
-
-async function centerPopupWindow() {
-  const cursorPoint = await eagle.screen.getCursorScreenPoint();
-  const display = await eagle.screen.getDisplayNearestPoint(cursorPoint);
-  const bounds = display && display.workArea ? display.workArea : display.bounds;
-  const x = Math.round(bounds.x + ((bounds.width - POPUP_WIDTH) / 2));
-  const y = Math.round(bounds.y + ((bounds.height - POPUP_HEIGHT) / 2));
-  await eagle.window.setBounds({
-    x,
-    y,
-    width: POPUP_WIDTH,
-    height: POPUP_HEIGHT
-  });
-}
-
-async function reloadState() {
-  if (!state.isPluginReady) {
-    return;
+  async function handlePluginRun(): Promise<void> {
+    resetForm();
+    await centerPopupWindow();
+    await reloadState();
+    await eagle.window.show();
+    focusUrlInput();
   }
 
-  return runBusy(async () => {
-    state.rootFolder = await core().requireVrcAssetRootFolder();
-    render();
-  }, false);
-}
+  function cacheElements(): void {
+    elements.windowTitle = requireElement("window-title", HTMLElement);
+    elements.itemUrlLabel = requireElement("item-url-label", HTMLElement);
+    elements.itemUrlInput = requireElement("item-url-input", HTMLInputElement);
+    elements.statusMessage = requireElement("status-message", HTMLElement);
+    elements.createButton = requireElement("create-button", HTMLButtonElement);
+    elements.cancelButton = requireElement("cancel-button", HTMLButtonElement);
+  }
 
-async function handleCreate() {
-  return runBusy(async () => {
+  function bindEvents(): void {
+    elements.createButton.addEventListener("click", () => {
+      handleCreate().catch(console.error);
+    });
+    elements.cancelButton.addEventListener("click", () => {
+      closeWindow().catch(console.error);
+    });
+    elements.itemUrlInput.addEventListener("input", () => {
+      state.errorMessage = "";
+      render();
+    });
+    elements.itemUrlInput.addEventListener("keydown", (event: KeyboardEvent) => {
+      if (event.key === "Enter" && !elements.createButton.disabled) {
+        event.preventDefault();
+        handleCreate().catch(console.error);
+      }
+    });
+  }
+
+  function localizeDocument(): void {
+    if (!state.isDomReady) {
+      return;
+    }
+
+    const locale = normalizeLocale(eagle.app.locale);
+    document.documentElement.lang = locale;
+    document.title = t("window.title", "Add BOOTH item");
+    elements.windowTitle.textContent = t("window.title", "Add BOOTH item");
+    elements.itemUrlLabel.textContent = t("window.itemUrl", "BOOTH item URL");
+    elements.itemUrlInput.setAttribute("aria-label", t("window.itemUrl", "BOOTH item URL"));
+    elements.cancelButton.textContent = t("window.cancel", "Cancel");
+    render();
+  }
+
+  async function applyTheme(theme: EagleTheme): Promise<void> {
+    const normalizedTheme = core().safeString(theme).toUpperCase();
+    if (normalizedTheme === "LIGHT" || normalizedTheme === "LIGHTGRAY") {
+      document.body.setAttribute("theme", normalizedTheme);
+      return;
+    }
+
+    if (normalizedTheme === "AUTO") {
+      const isDark = await Promise.resolve(eagle.app.isDarkColors());
+      document.body.setAttribute("theme", isDark ? "DARK" : "LIGHT");
+      return;
+    }
+
+    document.body.setAttribute("theme", normalizedTheme || "DARK");
+  }
+
+  async function configurePopupWindow(): Promise<void> {
+    await eagle.window.setAlwaysOnTop(true);
+    await eagle.window.setResizable(false);
+    await centerPopupWindow();
+  }
+
+  async function centerPopupWindow(): Promise<void> {
+    const cursorPoint = await eagle.screen.getCursorScreenPoint();
+    const display = await eagle.screen.getDisplayNearestPoint(cursorPoint);
+    const bounds = display && display.workArea ? display.workArea : display.bounds;
+    const x = Math.round(bounds.x + ((bounds.width - POPUP_WIDTH) / 2));
+    const y = Math.round(bounds.y + ((bounds.height - POPUP_HEIGHT) / 2));
+    await eagle.window.setBounds({
+      x,
+      y,
+      width: POPUP_WIDTH,
+      height: POPUP_HEIGHT
+    });
+  }
+
+  async function reloadState(): Promise<void> {
+    if (!state.isPluginReady || state.isBusy) {
+      return;
+    }
+
+    state.isBusy = true;
+    state.errorMessage = "";
+    render();
+    try {
+      state.rootFolder = await core().findVrcAssetRootFolder();
+    } catch (error) {
+      console.error(error);
+      state.rootFolder = null;
+      state.errorMessage = errorMessage(error);
+    } finally {
+      state.isBusy = false;
+      render();
+    }
+  }
+
+  async function handleCreate(): Promise<void> {
     const boothRef = core().parseBoothItemReference(elements.itemUrlInput.value);
     if (!boothRef) {
-      throw new Error("有効な Booth item URL を入力してください。");
+      state.errorMessage = t("error.invalidItemUrl", "Enter a valid BOOTH item URL.");
+      render();
+      return;
     }
 
-    const result = await window.BoothCompatCore.ensureBoothMetaForUrl(elements.itemUrlInput.value);
-    elements.itemUrlInput.value = result.meta.itemUrl || boothRef.normalizedUrl;
-    if (result.folder && result.folder.open) {
-      await result.folder.open();
+    if (!state.rootFolder) {
+      state.errorMessage = t("window.rootFolderMissing", "Create one VRCAsset folder at the library root first.");
+      render();
+      return;
     }
-    await eagle.item.select([result.item.id]);
+
+    await runBusy(async () => {
+      const result = await core().ensureBoothMetaForUrl(elements.itemUrlInput.value);
+      elements.itemUrlInput.value = result.meta.itemUrl || boothRef.normalizedUrl;
+      if (result.folder && result.folder.open) {
+        await result.folder.open();
+      }
+      await eagle.item.select([result.item.id]);
+      await closeWindow();
+    });
+  }
+
+  async function handleWindowKeydown(event: KeyboardEvent): Promise<void> {
+    if (event.key !== "Escape") {
+      return;
+    }
+
+    event.preventDefault();
     await closeWindow();
-  });
-}
-
-async function trySyncSelectedBoothMetaItem() {
-  const selectedItems = await eagle.item.getSelected();
-  if (selectedItems.length !== 1) {
-    return false;
   }
 
-  const item = await eagle.item.getById(selectedItems[0].id);
-  if (!core().isBoothMetaItem(item)) {
-    return false;
-  }
-  const boothMetaItem = item;
-
-  await eagle.window.hide();
-
-  return runBusy(async () => {
-    const syncedMeta = await syncBoothMetaItem(boothMetaItem);
-    await eagle.notification.show({
-      title: "Booth Compat",
-      body: syncedMeta.lastUpdatedAtUtc
-        ? `${boothMetaItem.name} を更新しました。`
-        : `${boothMetaItem.name} の更新対象が見つかりませんでした。`,
-      mute: true,
-      duration: 2500
-    });
-  }, false).then(() => true).catch(async error => {
-    console.error(error);
-    await eagle.notification.show({
-      title: "Booth Compat",
-      body: error instanceof Error ? error.message : "Booth metadata の更新に失敗しました。",
-      mute: true,
-      duration: 3500
-    });
-    return true;
-  });
-}
-
-async function handleWindowKeydown(event: KeyboardEvent) {
-  if (event.key !== "Escape") {
-    return;
+  async function closeWindow(): Promise<void> {
+    resetForm();
+    await eagle.window.hide();
   }
 
-  event.preventDefault();
-  await closeWindow();
-}
-
-async function closeWindow() {
-  resetForm();
-  await eagle.window.hide();
-}
-
-function resetForm() {
-  if (elements.itemUrlInput) {
-    elements.itemUrlInput.value = "";
-  }
-  render();
-}
-
-async function syncBoothMetaItem(item: EagleItem): Promise<BoothMeta> {
-  const storedMeta = await core().loadMetaFromItem(item);
-  const itemUrl = normalizeItemUrl(item.url);
-  const syncBase = core().normalizeMeta({
-    ...storedMeta,
-    itemUrl,
-    name: core().safeString(item.name).trim(),
-    description: core().safeString(item.annotation)
-  });
-
-  const boothRef = core().parseBoothItemReference(itemUrl || syncBase.itemUrl);
-  if (!boothRef) {
-    throw new Error("選択 item に有効な Booth item URL がありません。");
-  }
-
-  const snapshot = await core().fetchBoothSnapshot(boothRef);
-  const nextItemName = core().safeString(snapshot.name).trim() || syncBase.name;
-  const nextItemUrl = snapshot.itemUrl || boothRef.normalizedUrl;
-  const nextItemDescription = core().safeString(snapshot.description);
-  const nextMeta = core().normalizeMeta({
-    ...syncBase,
-    ...snapshot,
-    itemUrl: nextItemUrl,
-    name: nextItemName,
-    description: nextItemDescription,
-    attachedAt: syncBase.attachedAt || new Date().toISOString()
-  });
-
-  const originalTags = Array.isArray(item.tags) ? item.tags : [];
-  const normalizedTags = core().ensureBoothMetaTag(originalTags);
-  let shouldSaveItem = false;
-
-  if (JSON.stringify(originalTags) !== JSON.stringify(normalizedTags)) {
-    item.tags = normalizedTags;
-    shouldSaveItem = true;
-  }
-
-  if (item.name !== nextItemName) {
-    item.name = nextItemName;
-    shouldSaveItem = true;
-  }
-
-  if (item.url !== nextItemUrl) {
-    item.url = nextItemUrl;
-    shouldSaveItem = true;
-  }
-
-  if (item.annotation !== nextItemDescription) {
-    item.annotation = nextItemDescription;
-    shouldSaveItem = true;
-  }
-
-  if (shouldSaveItem) {
-    await item.save();
-  }
-
-  if (!core().isMetaEquivalent(storedMeta, nextMeta)) {
-    await core().saveMetaToItem(item, nextMeta);
-  }
-
-  await core().applyThumbnailToItem(item, nextMeta.thumbnailUrl, await Promise.resolve(eagle.app.getPath("temp")));
-  return nextMeta;
-}
-
-function render() {
-  const isInteractive = state.isPluginReady && !state.isBusy;
-  const hasRootFolder = Boolean(state.rootFolder);
-  const hasValidUrl = Boolean(core().parseBoothItemReference(elements.itemUrlInput.value));
-  elements.createButton.disabled = !isInteractive || !hasRootFolder || !hasValidUrl;
-  elements.cancelButton.disabled = !isInteractive;
-}
-
-async function runBusy(action: () => Promise<void>, surfaceErrors = true): Promise<boolean> {
-  if (state.isBusy) {
-    return false;
-  }
-
-  state.isBusy = true;
-  render();
-  try {
-    await action();
-    return true;
-  } catch (error) {
-    console.error(error);
-    if (surfaceErrors) {
-      alert(error instanceof Error ? error.message : "不明なエラーが発生しました。");
+  function resetForm(): void {
+    if (state.isDomReady) {
+      elements.itemUrlInput.value = "";
     }
-    throw error;
-  } finally {
-    state.isBusy = false;
+    state.errorMessage = "";
     render();
   }
-}
 
-function normalizeItemUrl(value: unknown): string {
-  return core().normalizeBoothItemUrl(value) || core().safeString(value).trim();
-}
+  function render(): void {
+    if (!state.isDomReady) {
+      return;
+    }
 
-function core() {
-  return window.BoothCompatCore;
-}
+    const hasRootFolder = Boolean(state.rootFolder);
+    const inputValue = elements.itemUrlInput.value.trim();
+    const hasValidUrl = Boolean(core().parseBoothItemReference(inputValue));
+    const isInteractive = state.isPluginReady && !state.isBusy;
 
-function requireElement<T extends HTMLElement>(id: string, constructor: { new(): T }): T {
-  const element = document.getElementById(id);
-  if (!(element instanceof constructor)) {
-    throw new Error(`Element #${id} was not found.`);
+    elements.createButton.textContent = state.isBusy
+      ? t("window.creating", "Creating…")
+      : t("window.create", "Create");
+    elements.createButton.disabled = !isInteractive || !hasRootFolder || !hasValidUrl;
+    elements.createButton.setAttribute("aria-busy", String(state.isBusy));
+    elements.cancelButton.disabled = !isInteractive;
+
+    let status = "";
+    let isError = false;
+    if (state.errorMessage) {
+      status = state.errorMessage;
+      isError = true;
+    } else if (!state.isBusy && !hasRootFolder) {
+      status = t("window.rootFolderMissing", "Create one VRCAsset folder at the library root first.");
+      isError = true;
+    } else if (!inputValue) {
+      status = t("window.ready", "Enter the URL of a BOOTH item.");
+    } else if (!hasValidUrl) {
+      status = t("window.invalidUrl", "Use a valid booth.pm item URL.");
+      isError = true;
+    }
+
+    elements.statusMessage.textContent = status;
+    elements.statusMessage.classList.toggle("is-error", isError);
   }
-  return element;
-}
+
+  async function runBusy(action: () => Promise<void>): Promise<boolean> {
+    if (state.isBusy) {
+      return false;
+    }
+
+    state.isBusy = true;
+    state.errorMessage = "";
+    render();
+    try {
+      await action();
+      return true;
+    } catch (error) {
+      console.error(error);
+      state.errorMessage = errorMessage(error) || t("window.unknownError", "An unexpected error occurred.");
+      return false;
+    } finally {
+      state.isBusy = false;
+      render();
+    }
+  }
+
+  function focusUrlInput(): void {
+    if (!state.isDomReady) {
+      return;
+    }
+    window.requestAnimationFrame(() => elements.itemUrlInput.focus());
+  }
+
+  function normalizeLocale(locale: unknown): string {
+    return core().safeString(locale).replace("_", "-") || "en";
+  }
+
+  function errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : core().safeString(error);
+  }
+
+  function t(key: string, fallback: string, options?: Record<string, unknown>): string {
+    return core().t(key, fallback, options);
+  }
+
+  function core(): BoothCompatCore {
+    return window.BoothCompatCore;
+  }
+
+  function requireElement<T extends HTMLElement>(id: string, constructor: { new(): T }): T {
+    const element = document.getElementById(id);
+    if (!(element instanceof constructor)) {
+      throw new Error(`Element #${id} was not found.`);
+    }
+    return element;
+  }
 })();

@@ -1,0 +1,41 @@
+{
+  "manifest": {
+    "app": {
+      "name": "Booth Compat"
+    }
+  },
+  "window": {
+    "title": "Add BOOTH item",
+    "itemUrl": "BOOTH item URL",
+    "cancel": "Cancel",
+    "create": "Create",
+    "creating": "Creating…",
+    "ready": "Enter the URL of a BOOTH item.",
+    "invalidUrl": "Use a valid booth.pm item URL.",
+    "rootFolderMissing": "Create one VRCAsset folder at the library root first.",
+    "unknownError": "An unexpected error occurred."
+  },
+  "inspector": {
+    "title": "BOOTH info",
+    "loading": "Loading BOOTH metadata…",
+    "unsupported": "Select a JSON item tagged BoothMeta.",
+    "shopName": "Shop name",
+    "tags": "Tags",
+    "shopUrl": "Shop URL",
+    "lastUpdated": "Last updated",
+    "addTag": "Add {{tag}} to Eagle tags",
+    "removeTag": "Remove {{tag}} from Eagle tags"
+  },
+  "error": {
+    "invalidItemUrl": "Enter a valid BOOTH item URL.",
+    "rootFolderMissing": "The VRCAsset folder was not found at the library root.",
+    "itemCreateFailed": "The BoothMeta item could not be created.",
+    "itemRedirectLimit": "The BOOTH item response exceeded the redirect limit.",
+    "itemFetchHttp": "The BOOTH item could not be fetched. HTTP {{status}}",
+    "itemParseFailed": "The BOOTH item response could not be read.",
+    "itemFetchFailed": "The BOOTH item could not be fetched: {{message}}",
+    "thumbnailRedirectLimit": "The thumbnail response exceeded the redirect limit.",
+    "thumbnailFetchHttp": "The thumbnail could not be fetched. HTTP {{status}}",
+    "thumbnailFetchFailed": "The thumbnail could not be fetched: {{message}}"
+  }
+}

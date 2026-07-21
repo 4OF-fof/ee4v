@@ -1,13 +1,15 @@
 :root {
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --radius: 8px;
-  --bg: #2f3136;
-  --surface: #3a3c42;
-  --surface-soft: #34363b;
-  --border: rgba(255, 255, 255, 0.12);
-  --text: #f3f4f6;
-  --muted: #a8acb3;
-  --accent: #60a5fa;
+  color-scheme: dark;
+  --font: "SF Pro Text", -apple-system, Roboto, system-ui, "Segoe UI", "Helvetica Neue", "Hiragino Sans", "Noto Sans", Meiryo, sans-serif;
+  --radius: 6px;
+  --bg: #37383c;
+  --surface: #3d3e42;
+  --surface-soft: rgba(0, 0, 0, 0.2);
+  --border: rgba(255, 255, 255, 0.1);
+  --text: #f8f9fb;
+  --muted: rgba(248, 249, 251, 0.7);
+  --accent: #3297ff;
+  --danger: #ff6667;
 }
 
 * {
@@ -16,7 +18,7 @@
 
 html {
   height: 100%;
-  font-size: 12px;
+  font-size: 13px;
   background: var(--bg);
 }
 
@@ -31,13 +33,15 @@ body {
 
 body[theme="LIGHT" i],
 body[theme="LIGHTGRAY" i] {
+  color-scheme: light;
   --bg: #f3f4f6;
   --surface: #ffffff;
   --surface-soft: #f7f7f8;
   --border: rgba(15, 23, 42, 0.1);
   --text: #111827;
   --muted: #6b7280;
-  --accent: #2563eb;
+  --accent: #1877d2;
+  --danger: #c93637;
 }
 
 body[theme="GRAY" i],
@@ -55,14 +59,12 @@ body[theme="DARK" i] {
 
 .shell {
   height: 100%;
-  padding: 14px;
   display: grid;
-  grid-template-rows: auto auto auto;
-  align-content: start;
-  gap: 12px;
-  background: var(--surface);
+  grid-template-rows: 48px minmax(0, 1fr) 52px;
+  background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .drag-region {
@@ -74,25 +76,37 @@ body[theme="DARK" i] {
 }
 
 .header {
-  min-height: 18px;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
 }
 
 .title {
   margin: 0;
   color: var(--text);
-  font-size: 14px;
+  overflow: hidden;
+  font-size: 16px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.content {
+  min-height: 0;
+  padding: 8px 16px 6px;
 }
 
 .field {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
-.field span {
+.field-label {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .field input {
@@ -103,7 +117,9 @@ body[theme="DARK" i] {
   color: var(--text);
   -webkit-text-fill-color: var(--text);
   font: inherit;
-  padding: 8px 10px;
+  height: 36px;
+  padding: 0 10px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
   outline: none;
 }
 
@@ -117,23 +133,46 @@ body[theme="DARK" i] {
   box-shadow: 0 0 0 1px var(--accent);
 }
 
+.status-message {
+  min-height: 17px;
+  margin: 4px 0 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-message.is-error {
+  color: var(--danger);
+}
+
 .button-row {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+  align-items: center;
+  min-width: 0;
+  padding: 0 12px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
 }
 
 .button {
   appearance: none;
   border: 0;
-  border-radius: 999px;
+  min-width: 76px;
+  height: 36px;
+  border-radius: var(--radius);
   background: var(--accent);
   color: #fff;
   font: inherit;
   font-weight: 600;
-  padding: 8px 14px;
+  padding: 0 16px;
   cursor: pointer;
   justify-self: start;
+  transition: filter 150ms ease, opacity 150ms ease;
 }
 
 .button-secondary {
@@ -142,7 +181,23 @@ body[theme="DARK" i] {
   border: 1px solid var(--border);
 }
 
+.button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .button:disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .field input {
+    transition: none;
+  }
 }

@@ -1,5 +1,6 @@
 :root {
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color-scheme: dark;
+  --font: "SF Pro Text", -apple-system, Roboto, system-ui, "Segoe UI", "Helvetica Neue", "Hiragino Sans", "Noto Sans", Meiryo, sans-serif;
   --radius: 6px;
   --field-surface: #303237;
   --field-surface-focus: #303237;
@@ -15,7 +16,7 @@
 }
 
 html {
-  font-size: 12px;
+  font-size: 13px;
   background: transparent;
 }
 
@@ -29,6 +30,7 @@ body {
 
 body[theme="LIGHT" i],
 body[theme="LIGHTGRAY" i] {
+  color-scheme: light;
   --field-surface: #f4f4f7;
   --field-surface-focus: #f4f4f7;
   --field-border: rgba(24, 24, 28, 0.05);
@@ -65,7 +67,8 @@ body[theme="DARK" i] {
 
 .empty {
   color: var(--muted);
-  padding: 10px 2px 2px;
+  padding: 10px 2px;
+  font-size: 12px;
 }
 
 .group {
@@ -127,6 +130,11 @@ button.tag-chip {
   cursor: pointer;
 }
 
+button.tag-chip:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
 .tag-chip:hover,
 .tag-chip:focus-visible {
   border-color: var(--field-focus);
@@ -157,6 +165,12 @@ body[theme="LIGHTGRAY" i] .tag-chip.is-promoted {
 
 .value-link:hover {
   text-decoration: underline;
+}
+
+.value-link:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid var(--field-focus);
+  outline-offset: 2px;
 }
 
 .value-link.is-empty {
