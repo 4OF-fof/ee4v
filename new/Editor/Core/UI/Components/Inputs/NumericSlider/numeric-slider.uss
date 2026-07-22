@@ -40,16 +40,12 @@
     background-color: var(--ee4v-color-transparent);
     justify-content: center;
     align-items: center;
-    transition-property: background-color, border-top-color, border-right-color, border-bottom-color, border-left-color;
+    transition-property: background-color;
     transition-duration: 0.12s;
     transition-timing-function: ease-out;
 }
 
 .ee4v-ui-numeric-slider__endpoint:hover {
-    border-top-color: var(--ee4v-color-border-default);
-    border-right-color: var(--ee4v-color-border-default);
-    border-bottom-color: var(--ee4v-color-border-default);
-    border-left-color: var(--ee4v-color-border-default);
     background-color: var(--ee4v-color-surface-hover);
 }
 

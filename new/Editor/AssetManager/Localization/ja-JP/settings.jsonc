@@ -52,11 +52,16 @@
       "label": "File Tree で画像プレビューを表示",
       "tooltip": "有効にすると画像 file の hover 時に画像と file 名を表示します。無効にすると通常のテキスト tooltip を表示します。"
     },
+    "historyOverlayMaximumItems": {
+      "label": "履歴オーバーレイの最大表示件数",
+      "tooltip": "戻る・進むボタンの履歴オーバーレイに表示する最大件数です。"
+    },
     "validation": {
       "required": "この項目は必須です。",
       "sourcePriority": "Source priority には ee4v, eagle, blm をそれぞれ 1 回ずつ指定してください。",
       "regex": "正しい正規表現を指定してください。",
-      "itemGridItemsPerRow": "Item grid items per row は 1 から 12 の範囲で指定してください。"
+      "itemGridItemsPerRow": "Item grid items per row は 1 から 12 の範囲で指定してください。",
+      "historyOverlayMaximumItems": "履歴オーバーレイの最大表示件数は 1 から 20 の範囲で指定してください。"
     }
   }
 }

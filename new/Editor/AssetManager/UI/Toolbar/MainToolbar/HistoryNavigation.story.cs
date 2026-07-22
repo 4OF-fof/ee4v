@@ -20,7 +20,7 @@ namespace Ee4v.AssetManager
                     "Domain/AssetManager",
                     "HistoryNavigation",
                     "AssetManager の history stack を操作する navigation component です。",
-                    "戻る、進む、クリック可能な breadcrumb を横並びで表示し、MainToolbar などの toolbar 先頭に配置して使います。",
+                    "通常時は末尾の breadcrumb だけを表示し、breadcrumb と戻る・進むボタンの hover 時に全階層または履歴を overlay 表示します。",
                     new string[0],
                     CatalogWindow.ComponentImplementationKind.UiToolkit,
                     (window, parent) => BuildHistoryNavigationStory(window, parent)));
@@ -45,7 +45,25 @@ namespace Ee4v.AssetManager
                     "sample-item",
                     "Sample Avatar Pack"),
                 canGoBack: true,
-                canGoForward: true));
+                canGoForward: true,
+                backEntries: new[]
+                {
+                    new AssetItemGridHistoryEntry(
+                        AssetItemGridHistoryEntryKind.View,
+                        "all-assets",
+                        "All Assets")
+                },
+                forwardEntries: new[]
+                {
+                    new AssetItemGridHistoryEntry(
+                        AssetItemGridHistoryEntryKind.FileDetail,
+                        "booth-library",
+                        "Booth Library",
+                        "sample-item",
+                        "Sample Avatar Pack",
+                        detailId: "sample-file",
+                        detailName: "avatar.unitypackage")
+                }));
 
             surface.Add(historyNavigation);
             preview.Body.Add(surface);

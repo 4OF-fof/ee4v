@@ -50,6 +50,10 @@
       "noChildren": "表示できる子要素がありません。"
     },
     "mainToolbar": {
+      "gridSize": "グリッドサイズ",
+      "filter": "フィルタ",
+      "sort": "ソート順",
+      "searchPlaceholder": "アセットを検索",
       "history": {
         "back": "戻る",
         "forward": "進む"

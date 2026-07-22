@@ -25,6 +25,7 @@ namespace Ee4v.AssetManager
         private string _browserNodeId;
         private string _browserNodeName;
         private FileTreeDetailState _fileDetailState;
+        private string _searchText = string.Empty;
         private bool _applyingHistory;
 
         public MainView(MainViewController controller = null)
@@ -52,6 +53,23 @@ namespace Ee4v.AssetManager
         public AssetItemGridHistory History
         {
             get { return _itemGrid.History; }
+        }
+
+        public int GridSize
+        {
+            get { return _controller.ItemsPerRow; }
+        }
+
+        public int HistoryOverlayMaximumItems
+        {
+            get { return _controller.HistoryOverlayMaximumItems; }
+        }
+
+        public event System.Action<int> HistoryOverlayMaximumItemsChanged;
+
+        public void SetGridSize(int value)
+        {
+            _controller.SetItemsPerRow(value);
         }
 
         public void ShowFileDetail(FileTreeDetailState state)
@@ -83,10 +101,26 @@ namespace Ee4v.AssetManager
             RefreshContent();
         }
 
+        public void SetSearchText(string value)
+        {
+            var nextValue = value ?? string.Empty;
+            if (string.Equals(_searchText, nextValue, System.StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _searchText = nextValue;
+            _itemGrid.ClearCachedItems();
+            ClearGridSelection();
+            RefreshContent();
+        }
+
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
             AssetManagerViewState.SelectedItemChanged += OnSelectedItemChanged;
             MainViewController.ContentChanged += OnContentChanged;
+            MainViewController.LayoutChanged += OnLayoutChanged;
+            MainViewController.HistoryOverlayMaximumItemsChanged += OnHistoryOverlayMaximumItemsChanged;
             PushCurrentHistory();
             RefreshContent();
         }
@@ -95,6 +129,8 @@ namespace Ee4v.AssetManager
         {
             AssetManagerViewState.SelectedItemChanged -= OnSelectedItemChanged;
             MainViewController.ContentChanged -= OnContentChanged;
+            MainViewController.LayoutChanged -= OnLayoutChanged;
+            MainViewController.HistoryOverlayMaximumItemsChanged -= OnHistoryOverlayMaximumItemsChanged;
             CancelPendingLoad();
             _loadVersion++;
         }
@@ -121,6 +157,17 @@ namespace Ee4v.AssetManager
             ClearGridSelection();
             PushCurrentHistory();
             RefreshContent();
+        }
+
+        private void OnLayoutChanged()
+        {
+            _itemGrid.ClearCachedItems();
+            RefreshContent();
+        }
+
+        private void OnHistoryOverlayMaximumItemsChanged(int value)
+        {
+            HistoryOverlayMaximumItemsChanged?.Invoke(value);
         }
 
         private void OnGridSelectionChanged(System.Collections.Generic.IReadOnlyList<ItemCardState> items)
@@ -167,8 +214,13 @@ namespace Ee4v.AssetManager
 
         public void GoBack()
         {
+            GoBack(1);
+        }
+
+        public void GoBack(int steps)
+        {
             AssetItemGridHistoryEntry entry;
-            if (_itemGrid.History.TryGoBack(out entry))
+            if (_itemGrid.History.TryGoBack(steps, out entry))
             {
                 ApplyHistoryEntry(entry);
             }
@@ -176,8 +228,13 @@ namespace Ee4v.AssetManager
 
         public void GoForward()
         {
+            GoForward(1);
+        }
+
+        public void GoForward(int steps)
+        {
             AssetItemGridHistoryEntry entry;
-            if (_itemGrid.History.TryGoForward(out entry))
+            if (_itemGrid.History.TryGoForward(steps, out entry))
             {
                 ApplyHistoryEntry(entry);
             }
@@ -335,7 +392,7 @@ namespace Ee4v.AssetManager
             }
 
             var selectedItem = AssetManagerViewState.SelectedItem;
-            return _controller.LoadItems(_controller.CreateRequest(selectedItem.Id), cancellationToken);
+            return _controller.LoadItems(_controller.CreateRequest(selectedItem.Id, _searchText), cancellationToken);
         }
 
         private void CancelPendingLoad()
@@ -357,7 +414,7 @@ namespace Ee4v.AssetManager
             }
 
             var selectedItem = AssetManagerViewState.SelectedItem;
-            return _controller.CreateCacheKey(_controller.CreateRequest(selectedItem.Id));
+            return _controller.CreateCacheKey(_controller.CreateRequest(selectedItem.Id, _searchText));
         }
 
         private string ResolveStatusText(string statusText)

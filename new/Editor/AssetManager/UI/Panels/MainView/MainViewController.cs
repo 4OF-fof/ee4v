@@ -13,13 +13,16 @@ namespace Ee4v.AssetManager
 {
     internal sealed class MainViewRequest
     {
-        public MainViewRequest(string viewId, int limit = 200)
+        public MainViewRequest(string viewId, string keyword = null, int limit = 200)
         {
             ViewId = viewId ?? string.Empty;
+            Keyword = keyword ?? string.Empty;
             Limit = limit <= 0 ? 200 : limit;
         }
 
         public string ViewId { get; }
+
+        public string Keyword { get; }
 
         public int Limit { get; }
     }
@@ -39,16 +42,36 @@ namespace Ee4v.AssetManager
 
         public static event Action ContentChanged;
 
-        public MainViewRequest CreateRequest(string viewId)
+        public static event Action LayoutChanged;
+
+        public static event Action<int> HistoryOverlayMaximumItemsChanged;
+
+        public int ItemsPerRow
         {
-            return new MainViewRequest(viewId);
+            get { return GetItemsPerRow(); }
+        }
+
+        public int HistoryOverlayMaximumItems
+        {
+            get { return GetHistoryOverlayMaximumItems(); }
+        }
+
+        public void SetItemsPerRow(int value)
+        {
+            SettingApi.Set(AssetManagerDefinitions.ItemGridItemsPerRow, Math.Min(12, Math.Max(1, value)));
+        }
+
+        public MainViewRequest CreateRequest(string viewId, string keyword = null)
+        {
+            return new MainViewRequest(viewId, keyword);
         }
 
         public string CreateCacheKey(MainViewRequest request)
         {
             var viewId = request != null ? request.ViewId : string.Empty;
+            var keyword = request != null ? request.Keyword : string.Empty;
             var limit = request != null ? request.Limit : 200;
-            return _contentVersion + "|" + viewId + "|" + limit + "|" + GetItemsPerRow();
+            return _contentVersion + "|" + viewId + "|" + keyword + "|" + limit + "|" + GetItemsPerRow();
         }
 
         public AssetItemGridList LoadItems(MainViewRequest request, CancellationToken cancellationToken = default(CancellationToken))
@@ -164,7 +187,12 @@ namespace Ee4v.AssetManager
         {
             if (definition == AssetManagerDefinitions.ItemGridItemsPerRow)
             {
-                InvalidateContent();
+                _contentVersion++;
+                LayoutChanged?.Invoke();
+            }
+            else if (definition == AssetManagerDefinitions.HistoryOverlayMaximumItems)
+            {
+                HistoryOverlayMaximumItemsChanged?.Invoke(GetHistoryOverlayMaximumItems());
             }
         }
 
@@ -179,6 +207,7 @@ namespace Ee4v.AssetManager
             var viewId = request != null ? request.ViewId : string.Empty;
             var query = new AssetItemQuery
             {
+                Keyword = request != null ? request.Keyword : string.Empty,
                 Limit = request != null ? request.Limit : 200
             };
 
@@ -297,6 +326,11 @@ namespace Ee4v.AssetManager
         private static int GetItemsPerRow()
         {
             return Math.Min(12, Math.Max(1, SettingApi.Get(AssetManagerDefinitions.ItemGridItemsPerRow)));
+        }
+
+        private static int GetHistoryOverlayMaximumItems()
+        {
+            return Math.Min(20, Math.Max(1, SettingApi.Get(AssetManagerDefinitions.HistoryOverlayMaximumItems)));
         }
     }
 }

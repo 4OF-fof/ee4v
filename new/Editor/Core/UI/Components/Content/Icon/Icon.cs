@@ -13,6 +13,8 @@ namespace Ee4v.UI
     internal enum UiBuiltinIcon
     {
         Search,
+        Filter,
+        Sort,
         Close,
         DisclosureClosed,
         DisclosureOpen,
@@ -63,6 +65,20 @@ namespace Ee4v.UI
             {
                 case UiBuiltinIcon.Search:
                     return new[] { "Search Icon" };
+                case UiBuiltinIcon.Filter:
+                    return new[]
+                    {
+                        "FilterByType",
+                        "d_FilterByType",
+                        "Search Icon"
+                    };
+                case UiBuiltinIcon.Sort:
+                    return new[]
+                    {
+                        "AlphabeticalSorting",
+                        "d_AlphabeticalSorting",
+                        "Search Icon"
+                    };
                 case UiBuiltinIcon.Close:
                     return new[]
                     {

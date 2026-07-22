@@ -60,6 +60,8 @@ namespace Ee4v.AssetManager.Tests
             history.SetCurrent(list);
             history.SetCurrent(detail);
 
+            Assert.That(history.State.BackEntries, Is.EqualTo(new[] { list }));
+            Assert.That(history.State.ForwardEntries, Is.Empty);
             Assert.That(history.State.Current.Breadcrumbs, Is.EqualTo(new[]
             {
                 "All Assets",
@@ -69,10 +71,65 @@ namespace Ee4v.AssetManager.Tests
             }));
             Assert.That(history.TryGoBack(out var previous), Is.True);
             Assert.That(previous.Kind, Is.EqualTo(AssetItemGridHistoryEntryKind.FileList));
+            Assert.That(history.State.ForwardEntries, Is.EqualTo(new[] { detail }));
             Assert.That(history.TryGoForward(out var next), Is.True);
             Assert.That(next.Kind, Is.EqualTo(AssetItemGridHistoryEntryKind.FileDetail));
             Assert.That(next.DetailName, Is.EqualTo("preview.png"));
             Assert.That(next.DetailParentName, Is.EqualTo("archive.zip"));
+        }
+
+        [Test]
+        public void History_CanMoveToSelectedOverlayEntry()
+        {
+            var history = new AssetItemGridHistory();
+            var root = new AssetItemGridHistoryEntry(
+                AssetItemGridHistoryEntryKind.View,
+                "all-assets",
+                "All Assets");
+            var list = new AssetItemGridHistoryEntry(
+                AssetItemGridHistoryEntryKind.FileList,
+                "all-assets",
+                "All Assets",
+                "item-1",
+                "Avatar");
+            var detail = new AssetItemGridHistoryEntry(
+                AssetItemGridHistoryEntryKind.FileDetail,
+                "all-assets",
+                "All Assets",
+                "item-1",
+                "Avatar",
+                detailId: "file-1",
+                detailName: "preview.png");
+
+            history.SetCurrent(root);
+            history.SetCurrent(list);
+            history.SetCurrent(detail);
+
+            Assert.That(history.TryGoBack(2, out var selected), Is.True);
+            Assert.That(selected, Is.SameAs(root));
+            Assert.That(history.State.ForwardEntries, Is.EqualTo(new[] { list, detail }));
+        }
+
+        [Test]
+        public void HistoryOverlay_DefaultsToFiveVisibleEntriesAndCanBeConfigured()
+        {
+            var rows = new[]
+            {
+                new HistoryNavigationOverlayRowState("1", () => { }),
+                new HistoryNavigationOverlayRowState("2", () => { }),
+                new HistoryNavigationOverlayRowState("3", () => { }),
+                new HistoryNavigationOverlayRowState("4", () => { }),
+                new HistoryNavigationOverlayRowState("5", () => { }),
+                new HistoryNavigationOverlayRowState("6", () => { })
+            };
+            var overlay = new HistoryNavigationOverlay();
+
+            overlay.SetRows(rows);
+            Assert.That(overlay.childCount, Is.EqualTo(6));
+
+            overlay.SetMaximumVisibleRows(2);
+            overlay.SetRows(rows);
+            Assert.That(overlay.childCount, Is.EqualTo(3));
         }
     }
 }

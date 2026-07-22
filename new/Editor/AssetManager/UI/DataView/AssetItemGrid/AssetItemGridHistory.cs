@@ -125,11 +125,15 @@ namespace Ee4v.AssetManager
         public AssetItemGridHistoryState(
             AssetItemGridHistoryEntry current,
             bool canGoBack,
-            bool canGoForward)
+            bool canGoForward,
+            IReadOnlyList<AssetItemGridHistoryEntry> backEntries = null,
+            IReadOnlyList<AssetItemGridHistoryEntry> forwardEntries = null)
         {
             Current = current;
             CanGoBack = canGoBack;
             CanGoForward = canGoForward;
+            BackEntries = backEntries ?? Array.Empty<AssetItemGridHistoryEntry>();
+            ForwardEntries = forwardEntries ?? Array.Empty<AssetItemGridHistoryEntry>();
         }
 
         public AssetItemGridHistoryEntry Current { get; }
@@ -137,6 +141,10 @@ namespace Ee4v.AssetManager
         public bool CanGoBack { get; }
 
         public bool CanGoForward { get; }
+
+        public IReadOnlyList<AssetItemGridHistoryEntry> BackEntries { get; }
+
+        public IReadOnlyList<AssetItemGridHistoryEntry> ForwardEntries { get; }
     }
 
     internal sealed class AssetItemGridHistory
@@ -171,14 +179,25 @@ namespace Ee4v.AssetManager
 
         public bool TryGoBack(out AssetItemGridHistoryEntry entry)
         {
+            return TryGoBack(1, out entry);
+        }
+
+        public bool TryGoBack(int steps, out AssetItemGridHistoryEntry entry)
+        {
             entry = null;
-            if (_backStack.Count == 0 || _current == null)
+            if (steps <= 0 || _backStack.Count == 0 || _current == null)
             {
                 return false;
             }
 
-            _forwardStack.Push(_current);
-            _current = _backStack.Pop();
+            var moved = 0;
+            while (moved < steps && _backStack.Count > 0)
+            {
+                _forwardStack.Push(_current);
+                _current = _backStack.Pop();
+                moved++;
+            }
+
             entry = _current;
             NotifyChanged();
             return true;
@@ -186,14 +205,25 @@ namespace Ee4v.AssetManager
 
         public bool TryGoForward(out AssetItemGridHistoryEntry entry)
         {
+            return TryGoForward(1, out entry);
+        }
+
+        public bool TryGoForward(int steps, out AssetItemGridHistoryEntry entry)
+        {
             entry = null;
-            if (_forwardStack.Count == 0 || _current == null)
+            if (steps <= 0 || _forwardStack.Count == 0 || _current == null)
             {
                 return false;
             }
 
-            _backStack.Push(_current);
-            _current = _forwardStack.Pop();
+            var moved = 0;
+            while (moved < steps && _forwardStack.Count > 0)
+            {
+                _backStack.Push(_current);
+                _current = _forwardStack.Pop();
+                moved++;
+            }
+
             entry = _current;
             NotifyChanged();
             return true;
@@ -201,7 +231,12 @@ namespace Ee4v.AssetManager
 
         private AssetItemGridHistoryState CreateState()
         {
-            return new AssetItemGridHistoryState(_current, _backStack.Count > 0, _forwardStack.Count > 0);
+            return new AssetItemGridHistoryState(
+                _current,
+                _backStack.Count > 0,
+                _forwardStack.Count > 0,
+                _backStack.ToArray(),
+                _forwardStack.ToArray());
         }
 
         private void NotifyChanged()

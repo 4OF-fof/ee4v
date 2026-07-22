@@ -124,6 +124,16 @@ namespace Ee4v.AssetManager.Api
             true,
             order: 1);
 
+        public static readonly SettingDefinition<int> HistoryOverlayMaximumItems = new SettingDefinition<int>(
+            "assetManager.historyOverlayMaximumItems",
+            SettingScope.User,
+            "settings.section.assetManager.view",
+            "settings.historyOverlayMaximumItems.label",
+            "settings.historyOverlayMaximumItems.tooltip",
+            5,
+            order: 2,
+            validator: ValidateHistoryOverlayMaximumItems);
+
         public static void RegisterAll()
         {
             if (_registered)
@@ -143,6 +153,7 @@ namespace Ee4v.AssetManager.Api
             SettingApi.Register(ShowUnityPackageImportDialog);
             SettingApi.Register(ItemGridItemsPerRow);
             SettingApi.Register(ShowFileTreeImageTooltip);
+            SettingApi.Register(HistoryOverlayMaximumItems);
         }
 
         private static SettingValidationResult ValidateNonEmpty(string value)
@@ -172,6 +183,13 @@ namespace Ee4v.AssetManager.Api
             return value >= 1 && value <= 12
                 ? SettingValidationResult.Success
                 : SettingValidationResult.Error(I18N.Get("settings.validation.itemGridItemsPerRow"));
+        }
+
+        private static SettingValidationResult ValidateHistoryOverlayMaximumItems(int value)
+        {
+            return value >= 1 && value <= 20
+                ? SettingValidationResult.Success
+                : SettingValidationResult.Error(I18N.Get("settings.validation.historyOverlayMaximumItems"));
         }
 
         private static SettingValidationResult ValidateRegexOrEmpty(string value)

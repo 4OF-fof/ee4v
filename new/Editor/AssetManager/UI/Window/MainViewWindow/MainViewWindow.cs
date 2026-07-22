@@ -57,6 +57,8 @@ namespace Ee4v.AssetManager
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Toolbar/MainToolbar/main-toolbar.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/ItemImage/item-image.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/Icon/icon.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/SearchField/search-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/NumericSlider/numeric-slider.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/ItemCard/item-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Collections/ItemGrid/item-grid.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/Selection/SelectableItemGrid/selectable-item-grid.uss");
@@ -67,7 +69,12 @@ namespace Ee4v.AssetManager
             body.AddToClassList(BodyClassName);
 
             _mainView = new MainView();
-            var toolbar = new MainToolbar(_mainView);
+            var toolbar = new MainToolbar(
+                _mainView,
+                _mainView.GridSize,
+                _mainView.HistoryOverlayMaximumItems);
+            toolbar.GridSizeChanged += _mainView.SetGridSize;
+            toolbar.SearchTextChanged += _mainView.SetSearchText;
             _mainView.AddToClassList(ContentClassName);
 
             body.Add(toolbar);

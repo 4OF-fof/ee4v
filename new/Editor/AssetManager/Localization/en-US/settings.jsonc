@@ -52,11 +52,16 @@
       "label": "Show image previews in File Tree",
       "tooltip": "Show the image and file name when hovering over an image file. Disable this to use the standard text tooltip."
     },
+    "historyOverlayMaximumItems": {
+      "label": "Maximum history overlay items",
+      "tooltip": "Maximum number of entries shown in the back and forward history overlays."
+    },
     "validation": {
       "required": "This field is required.",
       "sourcePriority": "Source priority must contain ee4v, eagle and blm exactly once each.",
       "regex": "Enter a valid regular expression.",
-      "itemGridItemsPerRow": "Item grid items per row must be between 1 and 12."
+      "itemGridItemsPerRow": "Item grid items per row must be between 1 and 12.",
+      "historyOverlayMaximumItems": "Maximum history overlay items must be between 1 and 20."
     }
   }
 }

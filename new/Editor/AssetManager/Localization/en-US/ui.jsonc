@@ -50,6 +50,10 @@
       "noChildren": "No child items to display."
     },
     "mainToolbar": {
+      "gridSize": "Grid size",
+      "filter": "Filter",
+      "sort": "Sort order",
+      "searchPlaceholder": "Search assets",
       "history": {
         "back": "Back",
         "forward": "Forward"

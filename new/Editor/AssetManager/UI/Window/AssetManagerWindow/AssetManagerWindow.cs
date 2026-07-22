@@ -67,6 +67,7 @@ namespace Ee4v.AssetManager
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/Icon/icon.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/InputField/input-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/SearchField/search-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/NumericSlider/numeric-slider.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/Interactive/ViewToggleTabs/view-toggle-tabs.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/InfomationPanel/infomation-panel.uss");
@@ -85,7 +86,12 @@ namespace Ee4v.AssetManager
             layout.RightCollapsedChanged += value => _inspectorCollapsed = value;
 
             var mainView = new MainView();
-            var toolbar = new MainToolbar(mainView);
+            var toolbar = new MainToolbar(
+                mainView,
+                mainView.GridSize,
+                mainView.HistoryOverlayMaximumItems);
+            toolbar.GridSizeChanged += mainView.SetGridSize;
+            toolbar.SearchTextChanged += mainView.SetSearchText;
             var infomationPanel = new InfomationPanel();
             infomationPanel.FileDetailRequested += mainView.ShowFileDetail;
             toolbar.style.flexGrow = 1f;
