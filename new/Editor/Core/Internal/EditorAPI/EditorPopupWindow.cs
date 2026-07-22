@@ -15,5 +15,10 @@ namespace Ee4v.Core.Internal.EditorAPI
         {
             return EditorPopupWindowBackend.TrySetBackgroundColor(window, color);
         }
+
+        public static bool TryReadScreenPixels(Rect screenRect, out Color[] pixels, out int width, out int height)
+        {
+            return EditorPopupWindowBackend.TryReadScreenPixels(screenRect, out pixels, out width, out height);
+        }
     }
 }

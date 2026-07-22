@@ -326,12 +326,40 @@ namespace Ee4v.AssetManager.Api.Tests
             var manukaVersion = versions.Single(group => group.Name == "Manuka");
 
             Assert.That(versions.All(group => group.VariantGroupId == variant.Id), Is.True);
-            Assert.That(mafuyuVersion.PrimaryFileId, Is.EqualTo(mafuyuV2.Id));
-            Assert.That(manukaVersion.PrimaryFileId, Is.EqualTo(manukaV2.Id));
+            Assert.That(mafuyuVersion.PrimaryFileId, Is.EqualTo(mafuyuV3.Id));
+            Assert.That(manukaVersion.PrimaryFileId, Is.EqualTo(manukaV3.Id));
             Assert.That(files.Single(file => file.Id == mafuyuV2.Id).VersionGroupId, Is.EqualTo(mafuyuVersion.Id));
             Assert.That(files.Single(file => file.Id == mafuyuV3.Id).VersionGroupId, Is.EqualTo(mafuyuVersion.Id));
             Assert.That(files.Single(file => file.Id == manukaV2.Id).VersionGroupId, Is.EqualTo(manukaVersion.Id));
             Assert.That(files.Single(file => file.Id == manukaV3.Id).VersionGroupId, Is.EqualTo(manukaVersion.Id));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "version group の代表を SemVer で自動選択する",
+            "代表が未設定の version group では、文字列順ではなく SemVer の最大値を primary file に設定することを確認します。",
+            order: 313)]
+        public void RegisterFile_AutoGroupSelectsHighestSemanticVersionAsPrimary()
+        {
+            SettingApi.Set(AssetManagerDefinitions.AvatarNames, string.Empty, saveImmediately: false);
+            SettingApi.Set(AssetManagerDefinitions.VersionGroupRegex, @"(?i)(?:v|ver)(?<name>\d+(?:\.\d+)*)", saveImmediately: false);
+            var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
+            var v29Path = Path.Combine(_tempRoot, "Avatar_ver2.9.zip");
+            var v210Path = Path.Combine(_tempRoot, "Avatar_ver2.10.zip");
+            var v211Path = Path.Combine(_tempRoot, "Avatar_ver2.11.zip");
+            File.WriteAllText(v29Path, "zip");
+            File.WriteAllText(v210Path, "zip");
+            File.WriteAllText(v211Path, "zip");
+
+            AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = v29Path, FileName = "Avatar_ver2.9.zip" });
+            var v210 = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = v210Path, FileName = "Avatar_ver2.10.zip" });
+
+            var version = AssetManagerApi.GetVersionGroups(item.Id).Single();
+            Assert.That(version.PrimaryFileId, Is.EqualTo(v210.Id));
+
+            AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = v211Path, FileName = "Avatar_ver2.11.zip" });
+            version = AssetManagerApi.GetVersionGroups(item.Id).Single();
+            Assert.That(version.PrimaryFileId, Is.EqualTo(v210.Id), "既存の代表は後続の分類で上書きしない");
         }
 
         [Test]
@@ -363,7 +391,7 @@ namespace Ee4v.AssetManager.Api.Tests
         [Test]
         [FeatureTestCase(
             "不正な import target path では既存 target を保持する",
-            "SetFileImportTargets が parent traversal を拒否し、既存 file_import_target を削除しないことを確認します。",
+            "SetFileImportTargets が file root と parent traversal を拒否し、既存 file_import_target を削除しないことを確認します。",
             order: 315)]
         public void SetFileImportTargets_InvalidPath_DoesNotClearExistingTargets()
         {
@@ -373,11 +401,14 @@ namespace Ee4v.AssetManager.Api.Tests
             var file = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = filePath, FileName = "avatar.zip" });
             AssetManagerApi.SetFileImportTargets(file.Id, new[] { new AssetFileImportTargetRequest { RelativePath = "Packages/avatar.unitypackage" } });
 
-            var ex = Assert.Throws<AssetManagerException>(() =>
+            var rootEx = Assert.Throws<AssetManagerException>(() =>
+                AssetManagerApi.SetFileImportTargets(file.Id, new[] { new AssetFileImportTargetRequest { RelativePath = string.Empty } }));
+            var traversalEx = Assert.Throws<AssetManagerException>(() =>
                 AssetManagerApi.SetFileImportTargets(file.Id, new[] { new AssetFileImportTargetRequest { RelativePath = "../outside.unitypackage" } }));
             var targets = AssetManagerApi.GetFileImportTargets(file.Id);
 
-            Assert.That(ex.Code, Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
+            Assert.That(rootEx.Code, Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
+            Assert.That(traversalEx.Code, Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
             Assert.That(targets.Select(target => target.RelativePath).ToArray(), Is.EqualTo(new[] { "Packages/avatar.unitypackage" }));
         }
 

@@ -76,8 +76,8 @@ namespace Ee4v.UI
         private const string ItemClassName = "ee4v-ui-context-menu__item";
         private const string ItemDisabledClassName = "ee4v-ui-context-menu__item--disabled";
         private const string SeparatorClassName = "ee4v-ui-context-menu__separator";
-        private const string LabelClassName = "ee4v-ui-context-menu__label";
-        private const string ShortcutClassName = "ee4v-ui-context-menu__shortcut";
+        private const string LabelClassName = UiClassNames.ContextMenuLabel;
+        private const string ShortcutClassName = UiClassNames.ContextMenuShortcut;
         private readonly Action<ContextMenuItemState> _onSelect;
 
         public ContextMenu(ContextMenuState state, Action<ContextMenuItemState> onSelect)
@@ -164,6 +164,7 @@ namespace Ee4v.UI
 
     internal sealed class ContextMenuWindow : EditorWindow
     {
+        private Texture2D _backgroundSnapshot;
         private ContextMenuState _state;
         private Vector2 _size;
         private bool _closeOnLostFocus = true;
@@ -195,10 +196,32 @@ namespace Ee4v.UI
             window.position = hasDesktopBounds
                 ? ContextMenuLayout.CalculateWindowRect(screenPosition, window._size, desktopBounds)
                 : ContextMenuLayout.CalculateWindowRect(screenPosition, window._size);
+            window.CaptureBackgroundSnapshot();
             window.ShowPopup();
-            EditorPopupWindow.TrySetBackgroundColor(window, UiColorTokens.Transparent);
             window.Focus();
+            window.SetNativeBackground(UiColorTokens.Transparent);
             return window;
+        }
+
+        private void CaptureBackgroundSnapshot()
+        {
+            if (!EditorPopupWindow.TryReadScreenPixels(position, out var pixels, out var width, out var height))
+            {
+                return;
+            }
+
+            _backgroundSnapshot = new Texture2D(width, height, TextureFormat.RGBA32, false)
+            {
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            _backgroundSnapshot.SetPixels(pixels);
+            _backgroundSnapshot.Apply(false, true);
+        }
+
+        private void SetNativeBackground(Color color)
+        {
+            rootVisualElement.style.backgroundColor = new StyleColor(color);
+            EditorPopupWindow.TrySetBackgroundColor(this, color);
         }
 
         private void Initialize(ContextMenuState state, float maximumWidth)
@@ -217,6 +240,12 @@ namespace Ee4v.UI
             root.style.width = _size.x;
             root.style.height = _size.y;
             root.style.backgroundColor = new StyleColor((Color)UiColorTokens.Transparent);
+            if (_backgroundSnapshot != null)
+            {
+                root.style.backgroundImage = new StyleBackground(_backgroundSnapshot);
+                root.style.unityBackgroundScaleMode = ScaleMode.StretchToFill;
+            }
+
             root.focusable = true;
             root.RegisterCallback<KeyDownEvent>(OnKeyDown);
 
@@ -280,6 +309,17 @@ namespace Ee4v.UI
             return EditorWindow.mouseOverWindow != null
                 ? EditorWindow.mouseOverWindow
                 : EditorWindow.focusedWindow;
+        }
+
+        private void OnDisable()
+        {
+            if (_backgroundSnapshot == null)
+            {
+                return;
+            }
+
+            DestroyImmediate(_backgroundSnapshot);
+            _backgroundSnapshot = null;
         }
     }
 

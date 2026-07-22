@@ -19,7 +19,8 @@
         },
         "context": {
           "markImportTarget": "Mark as import target",
-          "unmarkImportTarget": "Unmark import target"
+          "unmarkImportTarget": "Unmark import target",
+          "setPrimaryFile": "Set as primary file"
         }
       }
     },

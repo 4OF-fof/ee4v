@@ -85,6 +85,11 @@ namespace Ee4v.AssetManager.Api
                 normalized = normalized.Substring(1);
             }
 
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                throw new AssetManagerException(AssetManagerErrorCode.InvalidRequest, "Import target must identify a child entry of the file.");
+            }
+
             if (normalized.IndexOf('\0') >= 0 ||
                 normalized == "." ||
                 normalized == ".." ||

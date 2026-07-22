@@ -874,7 +874,7 @@ Effects:
 Notes:
 
 - `RelativePath` は `ResolveFilePath(fileId)` で解決される実体 path からの相対 path。
-- `RelativePath` が空文字の場合は file 実体そのものを表す。
+- `RelativePath` は空文字にならず、file root 自体は import 対象にしない。
 - zip 内 entry も `/` 区切りの relative path として返す。
 
 ### `AssetManagerApi.SetFileImportTargets`
@@ -903,6 +903,7 @@ Effects:
 Notes:
 
 - `RelativePath` は先頭 `/` と末尾 `/` を取り除き、`\` を `/` に正規化する。
+- 空の `RelativePath` は file root を指すため拒否する。
 - `..` を含む path は拒否する。
 - 同一 file 内の重複 `RelativePath` は 1 件にまとめる。
 

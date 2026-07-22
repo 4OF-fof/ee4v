@@ -20,6 +20,7 @@ namespace Ee4v.UI
             Color color,
             TextAnchor alignment,
             WhiteSpace whiteSpace,
+            FontStyle fontStyle = FontStyle.Normal,
             float marginBottom = 0f,
             float marginTop = 0f,
             float marginLeft = 0f,
@@ -30,6 +31,7 @@ namespace Ee4v.UI
             Color = color;
             Alignment = alignment;
             WhiteSpace = whiteSpace;
+            FontStyle = fontStyle;
             MarginBottom = marginBottom;
             MarginTop = marginTop;
             MarginLeft = marginLeft;
@@ -45,6 +47,8 @@ namespace Ee4v.UI
         public TextAnchor Alignment { get; }
 
         public WhiteSpace WhiteSpace { get; }
+
+        public FontStyle FontStyle { get; }
 
         public float MarginBottom { get; }
 
@@ -73,27 +77,29 @@ namespace Ee4v.UI
         private static readonly Dictionary<string, TypographyStyleDefinition> Styles =
             new Dictionary<string, TypographyStyleDefinition>(StringComparer.Ordinal)
             {
-                { UiClassNames.InfoCardEyebrow, Create(true, 11, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.NoWrap) },
-                { UiClassNames.InfoCardTitle, Create(true, 14, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal) },
+                { UiClassNames.InfoCardEyebrow, Create(true, 11, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
+                { UiClassNames.InfoCardTitle, Create(true, 14, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal, fontStyle: FontStyle.Bold) },
                 { UiClassNames.InfoCardDescription, Create(false, 12, UiColorTokens.TextSecondary, TextAnchor.UpperLeft, WhiteSpace.Normal) },
-                { UiClassNames.BannerTitle, Create(true, 12, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 2f) },
+                { UiClassNames.BannerTitle, Create(true, 12, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal, fontStyle: FontStyle.Bold, marginBottom: 2f) },
                 { UiClassNames.BannerMessage, Create(false, 12, UiColorTokens.TextSecondary, TextAnchor.UpperLeft, WhiteSpace.Normal) },
-                { UiClassNames.StatusBadge, Create(true, 11, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
+                { UiClassNames.StatusBadge, Create(true, 11, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
                 { UiClassNames.SearchFieldPlaceholder, Create(false, 12, UiColorTokens.TextMuted, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
-                { UiClassNames.TestResultGroupCasesTitle, Create(true, 12, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
+                { UiClassNames.TestResultGroupCasesTitle, Create(true, 12, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
                 { UiClassNames.TestResultGroupCasesMeta, Create(false, 11, UiColorTokens.TextMuted, TextAnchor.MiddleRight, WhiteSpace.NoWrap) },
                 { UiClassNames.SingleSelectButtonGroupMeta, Create(false, 10, UiColorTokens.TextMuted, TextAnchor.MiddleRight, WhiteSpace.NoWrap, marginLeft: 8f) },
                 { UiClassNames.ItemCardName, Create(false, 12, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
-                { UiClassNames.InfomationPanelSelectionCount, Create(true, 16, UiColorTokens.Focus, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
+                { UiClassNames.ContextMenuLabel, Create(true, 12, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
+                { UiClassNames.ContextMenuShortcut, Create(true, 12, UiColorTokens.TextMuted, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
+                { UiClassNames.InfomationPanelSelectionCount, Create(true, 16, UiColorTokens.Focus, TextAnchor.MiddleCenter, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
                 { UiClassNames.InfomationPanelSelectionCountSuffix, Create(false, 13, UiColorTokens.TextSoft, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
-                { UiClassNames.CatalogPageTitle, Create(true, 18, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal, marginBottom: 4f) },
+                { UiClassNames.CatalogPageTitle, Create(true, 18, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal, fontStyle: FontStyle.Bold, marginBottom: 4f) },
                 { UiClassNames.CatalogPageDescription, Create(false, 12, UiColorTokens.TextSecondary, TextAnchor.UpperLeft, WhiteSpace.Normal) },
-                { UiClassNames.CatalogDetailLabel, Create(true, 11, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.NoWrap, marginBottom: 2f) },
+                { UiClassNames.CatalogDetailLabel, Create(true, 11, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold, marginBottom: 2f) },
                 { UiClassNames.CatalogDetailValue, Create(false, 12, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal) },
                 { UiClassNames.CatalogNavigatorTitle, Create(false, 16, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.NoWrap, marginBottom: 10f) },
                 { UiClassNames.CatalogTreeTitle, Create(false, 12, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.CatalogTreeImplementation, Create(false, 10, UiColorTokens.TextMuted, TextAnchor.MiddleRight, WhiteSpace.NoWrap, marginLeft: 8f) },
-                { UiClassNames.Phase1StubLabel, Create(true, 12, UiColorTokens.TextOnState, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
+                { UiClassNames.Phase1StubLabel, Create(true, 12, UiColorTokens.TextOnState, TextAnchor.MiddleLeft, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
             };
 
         public static TypographyResolution Resolve(params string[] classNames)
@@ -138,6 +144,7 @@ namespace Ee4v.UI
             Color color,
             TextAnchor alignment,
             WhiteSpace whiteSpace,
+            FontStyle fontStyle = FontStyle.Normal,
             float marginBottom = 0f,
             float marginTop = 0f,
             float marginLeft = 0f,
@@ -149,6 +156,7 @@ namespace Ee4v.UI
                 color,
                 alignment,
                 whiteSpace,
+                fontStyle,
                 marginBottom,
                 marginTop,
                 marginLeft,

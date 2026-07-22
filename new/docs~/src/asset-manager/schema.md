@@ -564,7 +564,7 @@ file 名からの自動 group 化では、設定された avatar 名と version 
 
 Item または Variant Group 配下の file を version 単位で束ねる group。1 つの Version Group は複数 file を持てる。
 
-Version Group は primary file を 1 つ持つ。依存先として Version Group が指定された場合は、import / resolve 時に `primary_file_info_id` を実際の依存 file として解決する。primary file が未設定、削除済み、または同じ Version Group に属していない場合、その Version Group 依存は unresolved として扱う。
+file を持つ Version Group は primary file を 1 つ持つ。自動分類時に `primary_file_info_id` が空の場合、file 名から検出した version を SemVer として数値比較し、最大 version の file を設定する。既に値がある場合は分類・同期で上書きしない。依存先として Version Group が指定された場合は、import / resolve 時に `primary_file_info_id` を実際の依存 file として解決する。primary file が未設定、削除済み、または同じ Version Group に属していない場合、その Version Group 依存は unresolved として扱う。
 
 自動作成された Variant Group 配下では、version 表記と親 Variant Group 名を除いた部分を Version Group 名にする。たとえば `Chibi` Variant Group 配下の `Chibi_Manuka_ver2.01.zip` / `Chibi_Manuka_ver3.00.zip` は `Manuka` Version Group にまとめ、File Tree は `Chibi -> Manuka -> file` と表示する。
 
@@ -635,7 +635,7 @@ WHERE source_variant_group_id IS NOT NULL AND target_version_group_id IS NOT NUL
 
 ## File Import Target
 
-Unity へ取り込む対象 file entry。`file_info` の実体が directory または zip の場合、UI 側で選択された directory を配下 file entry の一覧へ展開し、各 entry を `relative_path` で保持する。`relative_path` が空文字の場合は `file_info` 実体そのものを import 対象にする。
+Unity へ取り込む対象 file entry。`file_info` の実体が directory または zip の場合、UI 側で選択された directory を配下 file entry の一覧へ展開し、各 entry を `relative_path` で保持する。File Tree の file root 自体は import 対象にできず、`relative_path` は空文字を許可しない。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|

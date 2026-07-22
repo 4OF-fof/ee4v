@@ -19,7 +19,8 @@
         },
         "context": {
           "markImportTarget": "Import 対象に追加",
-          "unmarkImportTarget": "Import 対象から外す"
+          "unmarkImportTarget": "Import 対象から外す",
+          "setPrimaryFile": "代表ファイルに設定"
         }
       }
     },

@@ -97,6 +97,7 @@ namespace Ee4v.AssetManager.Api
             if (string.IsNullOrWhiteSpace(fileId))
             {
                 connection.Execute("UPDATE version_group SET primary_file_info_id = NULL, updated_at = ? WHERE id = ?", Now(), versionGroupId);
+                SelectAutomaticVersionGroupPrimary(connection, versionGroupId, Now());
                 return;
             }
 

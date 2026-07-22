@@ -102,5 +102,17 @@ namespace Ee4v.UI.Tests
 
             Assert.That(rect, Is.EqualTo(new Rect(-260f, 540f, 260f, 100f)));
         }
+
+        [Test]
+        public void ContextMenuTypography_UsesImguiWithNormalFontStyle()
+        {
+            var labelStyle = TypographyStyleResolver.Resolve(UiClassNames.ContextMenuLabel).Style;
+            var shortcutStyle = TypographyStyleResolver.Resolve(UiClassNames.ContextMenuShortcut).Style;
+
+            Assert.That(labelStyle.RequiresImgui, Is.True);
+            Assert.That(labelStyle.FontStyle, Is.EqualTo(FontStyle.Normal));
+            Assert.That(shortcutStyle.RequiresImgui, Is.True);
+            Assert.That(shortcutStyle.FontStyle, Is.EqualTo(FontStyle.Normal));
+        }
     }
 }

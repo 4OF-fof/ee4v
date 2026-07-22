@@ -64,7 +64,7 @@ namespace Ee4v.UI
                 _whiteSpace = StyleDefinition.WhiteSpace;
                 _guiStyle = new GUIStyle
                 {
-                    fontStyle = FontStyle.Bold,
+                    fontStyle = StyleDefinition.FontStyle,
                     fontSize = StyleDefinition.FontSize,
                     alignment = StyleDefinition.Alignment,
                     wordWrap = _whiteSpace == WhiteSpace.Normal,

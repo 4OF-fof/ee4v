@@ -60,5 +60,29 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
                 return false;
             }
         }
+
+        public static bool TryReadScreenPixels(Rect screenRect, out Color[] pixels, out int width, out int height)
+        {
+            pixels = null;
+            width = Mathf.CeilToInt(screenRect.width);
+            height = Mathf.CeilToInt(screenRect.height);
+            if (width <= 0 || height <= 0)
+            {
+                return false;
+            }
+
+            try
+            {
+                pixels = InternalEditorUtility.ReadScreenPixel(screenRect.position, width, height);
+                return pixels != null && pixels.Length == width * height;
+            }
+            catch (Exception)
+            {
+                pixels = null;
+                width = 0;
+                height = 0;
+                return false;
+            }
+        }
     }
 }

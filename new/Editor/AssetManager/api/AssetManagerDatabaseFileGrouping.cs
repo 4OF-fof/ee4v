@@ -30,6 +30,29 @@ namespace Ee4v.AssetManager.Api
             ReconcileImportedAvatarVariantGroups(connection, itemId, now);
             ReconcileImportedVersionGroups(connection, itemId, now);
             DeleteEmptyImportedGroups(connection, itemId);
+            EnsureMissingVersionGroupPrimaries(connection, itemId, now);
+        }
+
+        private static void EnsureMissingVersionGroupPrimaries(SQLiteConnection connection, string itemId, string now)
+        {
+            var groupIds = connection.Query<VersionGroupRow>(
+                    @"SELECT *
+                      FROM version_group
+                      WHERE item_info_id = ?
+                        AND primary_file_info_id IS NULL
+                        AND EXISTS (
+                            SELECT 1
+                            FROM file_info
+                            WHERE file_info.version_group_id = version_group.id
+                              AND file_info.lifecycle = 'active'
+                        )",
+                    itemId)
+                .Select(group => group.id)
+                .ToArray();
+            for (var i = 0; i < groupIds.Length; i++)
+            {
+                SelectAutomaticVersionGroupPrimary(connection, groupIds[i], now);
+            }
         }
 
         private static bool UpdateFileInfoParentSnapshot(SQLiteConnection connection, string fileId, ImportedFileParent parent, string now)
@@ -73,7 +96,7 @@ namespace Ee4v.AssetManager.Api
 
         private static void EnsureVersionGroupPrimaryIfMissing(SQLiteConnection connection, string versionGroupId, string fileId, string now)
         {
-            if (string.IsNullOrWhiteSpace(versionGroupId) || string.IsNullOrWhiteSpace(fileId))
+            if (string.IsNullOrWhiteSpace(versionGroupId))
             {
                 return;
             }
@@ -84,7 +107,129 @@ namespace Ee4v.AssetManager.Api
                 return;
             }
 
-            connection.Execute("UPDATE version_group SET primary_file_info_id = ?, updated_at = ? WHERE id = ?", fileId, now, versionGroupId);
+            SelectAutomaticVersionGroupPrimary(connection, versionGroupId, now, fileId);
+        }
+
+        private static void SelectAutomaticVersionGroupPrimary(SQLiteConnection connection, string versionGroupId, string now, string fallbackFileId = null)
+        {
+            if (string.IsNullOrWhiteSpace(versionGroupId))
+            {
+                return;
+            }
+
+            var files = connection.Query<FileRow>(
+                "SELECT * FROM file_info WHERE version_group_id = ? AND lifecycle = 'active' ORDER BY file_name COLLATE NOCASE, id",
+                versionGroupId);
+            var selectedFileId = SelectHighestSemanticVersionFile(files);
+            if (string.IsNullOrWhiteSpace(selectedFileId))
+            {
+                selectedFileId = fallbackFileId;
+            }
+
+            connection.Execute(
+                "UPDATE version_group SET primary_file_info_id = ?, updated_at = ? WHERE id = ?",
+                selectedFileId,
+                now,
+                versionGroupId);
+        }
+
+        private static string SelectHighestSemanticVersionFile(IReadOnlyList<FileRow> files)
+        {
+            if (files == null || files.Count == 0)
+            {
+                return null;
+            }
+
+            var pattern = SettingApi.Get(AssetManagerDefinitions.VersionGroupRegex);
+            FileRow selected = null;
+            int[] selectedVersion = null;
+            for (var i = 0; i < files.Count; i++)
+            {
+                var file = files[i];
+                int[] version;
+                var hasVersion = TryParseSemanticVersion(ResolveSemanticVersionValue(file.file_name, pattern), out version);
+                if (selected == null ||
+                    (hasVersion && selectedVersion == null) ||
+                    (hasVersion && selectedVersion != null && CompareSemanticVersions(version, selectedVersion) > 0))
+                {
+                    selected = file;
+                    selectedVersion = hasVersion ? version : null;
+                }
+            }
+
+            return selected == null ? null : selected.id;
+        }
+
+        private static bool TryParseSemanticVersion(string value, out int[] version)
+        {
+            version = null;
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            var parts = value.Split('.');
+            if (parts.Length == 0 || parts.Length > 4)
+            {
+                return false;
+            }
+
+            var parsed = new int[4];
+            for (var i = 0; i < parts.Length; i++)
+            {
+                if (!int.TryParse(parts[i], out parsed[i]) || parsed[i] < 0)
+                {
+                    return false;
+                }
+            }
+
+            version = parsed;
+            return true;
+        }
+
+        private static int CompareSemanticVersions(IReadOnlyList<int> left, IReadOnlyList<int> right)
+        {
+            for (var i = 0; i < 4; i++)
+            {
+                var comparison = left[i].CompareTo(right[i]);
+                if (comparison != 0)
+                {
+                    return comparison;
+                }
+            }
+
+            return 0;
+        }
+
+        private static string ResolveSemanticVersionValue(string fileName, string pattern)
+        {
+            if (string.IsNullOrWhiteSpace(pattern) || string.IsNullOrWhiteSpace(fileName))
+            {
+                return null;
+            }
+
+            Match match;
+            try
+            {
+                match = Regex.Match(fileName, pattern);
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+
+            if (!match.Success)
+            {
+                return null;
+            }
+
+            if (match.Groups["name"] != null && match.Groups["name"].Success)
+            {
+                return match.Groups["name"].Value.Trim();
+            }
+
+            var numericMatch = Regex.Match(match.Value, @"\d+(?:\.\d+){0,3}");
+            return numericMatch.Success ? numericMatch.Value : null;
         }
 
         private static string ResolveVersionSeriesName(string fileName, string pattern, string avatarNamesText, string variantGroupName)
@@ -248,12 +393,10 @@ namespace Ee4v.AssetManager.Api
                 if (!string.IsNullOrWhiteSpace(candidate.Row.version_group_id))
                 {
                     MergeVersionGroupInto(connection, candidate.Row.version_group_id, versionGroupId, now);
-                    EnsureVersionGroupPrimaryIfMissing(connection, versionGroupId, candidate.Row.id, now);
                     continue;
                 }
 
                 UpdateFileInfoParentSnapshot(connection, candidate.Row.id, new ImportedFileParent(null, versionGroupId, null), now);
-                EnsureVersionGroupPrimaryIfMissing(connection, versionGroupId, candidate.Row.id, now);
             }
         }
 

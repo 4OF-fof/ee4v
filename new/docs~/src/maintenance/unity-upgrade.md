@@ -17,7 +17,7 @@ Unity 更新時は manifest の互換性に加え、Core と AssetManager の Ed
 
 Unity 2022.3.22f1 では UIElements のフォントキャッシュに問題があり、bold や italic などのスタイルを持つテキストを描画するとキャッシュが正しく更新されず、古いスタイルのまま描画される。
 
-この問題を解決するために、`UiTextFactory` を使用している。テキストに関する UI 要素を生成する際に IMGUI を使用することで、UIElements のフォントキャッシュの問題を回避し、正しいスタイルでテキストを描画できるようにしている。
+この問題を解決するために、`UiTextFactory` を使用している。`TypographyStyleResolver` で `RequiresImgui` が有効なテキストは IMGUI で描画し、UIElements のフォントキャッシュ問題を回避する。ContextMenu の label / shortcut も、直前に選択行の bold テキストを描画する場合があるため、normal font style のままこの経路を使用する。
 
 これはバグ回避のための暫定措置であり、Unity のバージョン更新時に UIElements のフォントキャッシュ問題が解決されていれば、`UiTextFactory` を廃止して UIElements に完全移行することが望ましい。
 
@@ -35,6 +35,6 @@ Unity の内部 API はバージョンによって利用できる API や挙動�
 
 ### ContextMenuWindow popup chrome
 
-`ContextMenuWindow` は、角丸の外側を透過するため `EditorPopupWindow.TrySetBackgroundColor` を通して native `ContainerWindow.SetBackgroundColor` を呼び出す。reflection は `Editor/Core/Internal/EditorAPI/Backends/EditorPopupWindowBackend.cs` に閉じてあり、API を解決できない場合は通常の popup 背景へ fallback する。
+`ContextMenuWindow` の native popup は矩形であり、Unity 2022.3 では透明化や OS の window region だけで滑らかな角丸を安定して作れない。このため表示直前に `EditorPopupWindow.TryReadScreenPixels` で popup 背面を取得し、UI root の背景へ一時 texture として設定する。USS の角丸外側には実際の背面が描かれるため、選択色など通常と異なる背景でも境界が一致する。右クリックによって TreeView の選択が変わる場合は、選択背景が画面へ反映される次フレームまで popup 表示を遅延させてから取得する。screen read は `Editor/Core/Internal/EditorAPI/Backends/EditorPopupWindowBackend.cs` に閉じ、取得できない場合は透明背景へ fallback する。
 
 popup の最大幅と配置には `UnityEditorInternal.InternalEditorUtility.GetBoundsOfDesktopAtPoint` から得た表示中モニターの bounds を使う。この API を利用できない場合は従来どおり希望サイズと起点位置で表示する。Unity 更新時は、角丸外側の透過、複数モニター上での配置、長いラベルがモニター幅まで省略されないことを Catalog の `ContextMenuWindow` story でも確認する。

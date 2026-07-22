@@ -22,6 +22,7 @@ namespace Ee4v.AssetManager
         private const string RowGroupClassName = "ee4v-asset-manager-file-tree__row--group";
         private const string RowVariantGroupClassName = "ee4v-asset-manager-file-tree__row--variant-group";
         private const string RowVersionGroupClassName = "ee4v-asset-manager-file-tree__row--version-group";
+        private const string RowPrimaryFileClassName = "ee4v-asset-manager-file-tree__row--primary-file";
         private const string RowTitleClassName = "ee4v-asset-manager-file-tree__title";
         private const string RowMetaClassName = "ee4v-asset-manager-file-tree__meta";
         private const string RowGroupMetaClassName = "ee4v-asset-manager-file-tree__meta--group";
@@ -280,6 +281,7 @@ namespace Ee4v.AssetManager
             element.EnableInClassList(RowGroupClassName, node.IsGroup);
             element.EnableInClassList(RowVariantGroupClassName, node.GroupKind == FileTreeGroupKind.Variant);
             element.EnableInClassList(RowVersionGroupClassName, node.GroupKind == FileTreeGroupKind.Version);
+            element.EnableInClassList(RowPrimaryFileClassName, node.IsPrimaryFile);
             var title = element.ElementAt(0) as UiTextElement;
             var meta = element.ElementAt(1) as UiTextElement;
 
@@ -325,6 +327,14 @@ namespace Ee4v.AssetManager
             var importTargetSelection = selected.Where(node => node != null && !node.IsGroup && node.CanSetImportTarget).ToArray();
 
             var menuItems = new List<ContextMenuItemState>();
+            if (item.CanSetAsVersionGroupPrimary)
+            {
+                menuItems.Add(new ContextMenuItemState(
+                    "set-version-group-primary",
+                    I18N.Get("assetManager.infomationPanel.fileTree.context.setPrimaryFile"),
+                    () => AssetManagerApi.SetVersionGroupPrimaryFile(item.VersionGroupId, item.AssetFileId)));
+            }
+
             if (importTargetSelection.Length > 0)
             {
                 if (importTargetSelection.All(node => node.IsImportTarget))
@@ -517,6 +527,10 @@ namespace Ee4v.AssetManager
             bool isDirectory = false,
             bool isGroup = false,
             FileTreeGroupKind groupKind = FileTreeGroupKind.None,
+            bool isAssetFileRoot = false,
+            string assetFileId = null,
+            string versionGroupId = null,
+            bool isPrimaryFile = false,
             IReadOnlyList<FileTreeImportTargetEntry> importTargetEntries = null)
         {
             Name = name ?? string.Empty;
@@ -527,6 +541,10 @@ namespace Ee4v.AssetManager
             RelativePath = NormalizeRelativePath(relativePath);
             IsGroup = isGroup;
             GroupKind = groupKind;
+            IsAssetFileRoot = isAssetFileRoot;
+            AssetFileId = assetFileId ?? string.Empty;
+            VersionGroupId = versionGroupId ?? string.Empty;
+            IsPrimaryFile = isPrimaryFile;
             ImportTargetEntries = importTargetEntries ?? Array.Empty<FileTreeImportTargetEntry>();
         }
 
@@ -546,11 +564,30 @@ namespace Ee4v.AssetManager
 
         public FileTreeGroupKind GroupKind { get; }
 
+        public bool IsAssetFileRoot { get; }
+
+        public string AssetFileId { get; }
+
+        public string VersionGroupId { get; }
+
+        public bool IsPrimaryFile { get; }
+
         public IReadOnlyList<FileTreeImportTargetEntry> ImportTargetEntries { get; }
 
         public bool CanSetImportTarget
         {
-            get { return ImportTargetEntries.Count > 0; }
+            get { return !IsAssetFileRoot && ImportTargetEntries.Count > 0; }
+        }
+
+        public bool CanSetAsVersionGroupPrimary
+        {
+            get
+            {
+                return IsAssetFileRoot &&
+                       !IsPrimaryFile &&
+                       !string.IsNullOrWhiteSpace(AssetFileId) &&
+                       !string.IsNullOrWhiteSpace(VersionGroupId);
+            }
         }
 
         private static string NormalizeRelativePath(string path)
@@ -692,7 +729,12 @@ namespace Ee4v.AssetManager
             }
 
             var children = new List<SearchableTreeItemData<FileTreeNode>>();
-            AddFiles(children, files, consumedFileIds, file => string.Equals(file.VersionGroupId, versionGroup.Id, StringComparison.Ordinal));
+            AddFiles(
+                children,
+                files,
+                consumedFileIds,
+                file => string.Equals(file.VersionGroupId, versionGroup.Id, StringComparison.Ordinal),
+                versionGroup.PrimaryFileId);
             return children.Count == 0
                 ? null
                 : CreateGroupItem(versionGroup.Name, FileTreeGroupKind.Version, children);
@@ -702,7 +744,8 @@ namespace Ee4v.AssetManager
             List<SearchableTreeItemData<FileTreeNode>> items,
             IReadOnlyList<AssetFile> files,
             HashSet<string> consumedFileIds,
-            Func<AssetFile, bool> predicate)
+            Func<AssetFile, bool> predicate,
+            string primaryFileId = null)
         {
             for (var i = 0; i < files.Count; i++)
             {
@@ -712,7 +755,7 @@ namespace Ee4v.AssetManager
                     continue;
                 }
 
-                items.Add(BuildAssetFileNode(file));
+                items.Add(BuildAssetFileNode(file, string.Equals(file.Id, primaryFileId, StringComparison.Ordinal)));
                 consumedFileIds.Add(file.Id);
             }
         }
@@ -736,7 +779,7 @@ namespace Ee4v.AssetManager
                 children);
         }
 
-        private SearchableTreeItemData<FileTreeNode> BuildAssetFileNode(AssetFile file)
+        private SearchableTreeItemData<FileTreeNode> BuildAssetFileNode(AssetFile file, bool isPrimaryFile = false)
         {
             var resolution = AssetManagerApi.ResolveFilePath(file.Id);
             if (resolution == null || !resolution.Found || string.IsNullOrWhiteSpace(resolution.Path))
@@ -744,21 +787,24 @@ namespace Ee4v.AssetManager
                 return CreateItem(
                     file.FileName,
                     string.Empty,
-                    file.FileName);
+                    file.FileName,
+                    file,
+                    isAssetFileRoot: true,
+                    isPrimaryFile: isPrimaryFile);
             }
 
             var path = resolution.Path;
             if (Directory.Exists(path))
             {
-                return CreateDirectoryItem(path, Path.GetFileName(path), path, file, path, string.Empty);
+                return CreateDirectoryItem(path, Path.GetFileName(path), path, file, path, string.Empty, isAssetFileRoot: true, isPrimaryFile: isPrimaryFile);
             }
 
             if (File.Exists(path) && IsZipFile(file, path))
             {
-                return CreateZipItem(file.FileName, path, file);
+                return CreateZipItem(file.FileName, path, file, isAssetFileRoot: true, isPrimaryFile: isPrimaryFile);
             }
 
-            return CreateFileItem(path, string.IsNullOrWhiteSpace(file.FileName) ? Path.GetFileName(path) : file.FileName, path, file);
+            return CreateFileItem(path, string.IsNullOrWhiteSpace(file.FileName) ? Path.GetFileName(path) : file.FileName, path, file, isAssetFileRoot: true, isPrimaryFile: isPrimaryFile);
         }
 
         private SearchableTreeItemData<FileTreeNode> CreateDirectoryItem(
@@ -767,7 +813,9 @@ namespace Ee4v.AssetManager
             string searchPath,
             AssetFile assetFile = null,
             string rootPath = null,
-            string relativePath = null)
+            string relativePath = null,
+            bool isAssetFileRoot = false,
+            bool isPrimaryFile = false)
         {
             var children = new List<SearchableTreeItemData<FileTreeNode>>();
             try
@@ -817,10 +865,18 @@ namespace Ee4v.AssetManager
                 assetFile,
                 relativePath,
                 true,
-                children);
+                children,
+                isAssetFileRoot,
+                isPrimaryFile);
         }
 
-        private SearchableTreeItemData<FileTreeNode> CreateZipItem(string name, string path, AssetFile assetFile = null, string relativePath = null)
+        private SearchableTreeItemData<FileTreeNode> CreateZipItem(
+            string name,
+            string path,
+            AssetFile assetFile = null,
+            string relativePath = null,
+            bool isAssetFileRoot = false,
+            bool isPrimaryFile = false)
         {
             IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children;
             try
@@ -849,10 +905,19 @@ namespace Ee4v.AssetManager
                 assetFile,
                 relativePath,
                 false,
-                children);
+                children,
+                isAssetFileRoot,
+                isPrimaryFile);
         }
 
-        private SearchableTreeItemData<FileTreeNode> CreateFileItem(string path, string name, string searchPath, AssetFile assetFile = null, string relativePath = null)
+        private SearchableTreeItemData<FileTreeNode> CreateFileItem(
+            string path,
+            string name,
+            string searchPath,
+            AssetFile assetFile = null,
+            string relativePath = null,
+            bool isAssetFileRoot = false,
+            bool isPrimaryFile = false)
         {
             return CreateItem(
                 string.IsNullOrWhiteSpace(name) ? Path.GetFileName(path) : name,
@@ -860,7 +925,9 @@ namespace Ee4v.AssetManager
                 searchPath,
                 assetFile,
                 relativePath,
-                false);
+                false,
+                isAssetFileRoot: isAssetFileRoot,
+                isPrimaryFile: isPrimaryFile);
         }
 
         private SearchableTreeItemData<FileTreeNode> CreateItem(
@@ -870,7 +937,9 @@ namespace Ee4v.AssetManager
             AssetFile assetFile = null,
             string relativePath = null,
             bool isDirectory = false,
-            IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children = null)
+            IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children = null,
+            bool isAssetFileRoot = false,
+            bool isPrimaryFile = false)
         {
             var targetPath = NormalizeRelativePath(relativePath);
             var importTargetEntries = CreateImportTargetEntries(assetFile, targetPath, isDirectory, children);
@@ -879,10 +948,14 @@ namespace Ee4v.AssetManager
                 name,
                 meta,
                 searchPath,
-                IsImportTarget(targetPaths, targetPath, importTargetEntries),
-                HasAnyImportTarget(targetPaths, targetPath, importTargetEntries),
+                !isAssetFileRoot && IsImportTarget(targetPaths, targetPath, importTargetEntries),
+                !isAssetFileRoot && HasAnyImportTarget(targetPaths, targetPath, importTargetEntries),
                 targetPath,
                 isDirectory,
+                isAssetFileRoot: isAssetFileRoot,
+                assetFileId: assetFile == null ? null : assetFile.Id,
+                versionGroupId: assetFile == null ? null : assetFile.VersionGroupId,
+                isPrimaryFile: isPrimaryFile,
                 importTargetEntries: importTargetEntries);
             return new SearchableTreeItemData<FileTreeNode>(
                 _nextId++,

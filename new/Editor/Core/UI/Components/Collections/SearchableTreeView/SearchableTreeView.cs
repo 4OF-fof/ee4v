@@ -229,9 +229,44 @@ namespace Ee4v.UI
                 return;
             }
 
+            var selectionChanged = _selectedTreeItems == null ||
+                                   _selectedTreeItems.Count == 0 ||
+                                   !ContainsSelectedItem(item);
             var selected = ResolveContextSelection(item);
+            var panelPosition = element.LocalToWorld(evt.localPosition);
             evt.StopPropagation();
-            _onContextClick(element, item.Data, selected, element.LocalToWorld(evt.localPosition));
+            if (selectionChanged)
+            {
+                ScheduleContextClickAfterSelectionRepaint(element, item.Data, selected, panelPosition);
+                return;
+            }
+
+            _onContextClick(element, item.Data, selected, panelPosition);
+        }
+
+        private void ScheduleContextClickAfterSelectionRepaint(
+            VisualElement element,
+            TData item,
+            IReadOnlyList<TData> selected,
+            Vector2 panelPosition)
+        {
+            _treeView.MarkDirtyRepaint();
+            element.schedule.Execute(() =>
+            {
+                if (element.panel == null)
+                {
+                    return;
+                }
+
+                _treeView.MarkDirtyRepaint();
+                element.schedule.Execute(() =>
+                {
+                    if (element.panel != null)
+                    {
+                        _onContextClick(element, item, selected, panelPosition);
+                    }
+                }).StartingIn(1);
+            });
         }
 
         private IReadOnlyList<TData> ResolveContextSelection(SearchableTreeItemData<TData> item)
