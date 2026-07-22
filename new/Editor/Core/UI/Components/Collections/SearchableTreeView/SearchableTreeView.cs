@@ -47,6 +47,7 @@ namespace Ee4v.UI
         private readonly Action<IReadOnlyList<TData>> _onSelectionChanged;
         private readonly Action<VisualElement, TData, IReadOnlyList<TData>, Vector2> _onContextClick;
         private readonly Func<TData, bool> _canInteractWithItem;
+        private readonly Action<TData> _onItemDoubleClicked;
         private IReadOnlyList<SearchableTreeItemData<TData>> _sourceItems;
         private IReadOnlyList<SearchableTreeItemData<TData>> _selectedTreeItems = Array.Empty<SearchableTreeItemData<TData>>();
         private Action<string> _onSearchValueChanged;
@@ -59,7 +60,8 @@ namespace Ee4v.UI
             string searchPlaceholder = null,
             SelectionType selectionType = SelectionType.Single,
             Action<VisualElement, TData, IReadOnlyList<TData>, Vector2> onContextClick = null,
-            Func<TData, bool> canInteractWithItem = null)
+            Func<TData, bool> canInteractWithItem = null,
+            Action<TData> onItemDoubleClicked = null)
         {
             if (makeItem == null)
             {
@@ -70,6 +72,7 @@ namespace Ee4v.UI
             _onSelectionChanged = onSelectionChanged;
             _onContextClick = onContextClick;
             _canInteractWithItem = canInteractWithItem;
+            _onItemDoubleClicked = onItemDoubleClicked;
 
             AddToClassList(RootClassName);
 
@@ -206,6 +209,16 @@ namespace Ee4v.UI
 
             var element = evt.currentTarget as VisualElement;
             var item = element != null ? element.userData as SearchableTreeItemData<TData> : null;
+            if (evt.button == (int)MouseButton.LeftMouse &&
+                evt.clickCount >= 2 &&
+                item != null &&
+                _onItemDoubleClicked != null)
+            {
+                _onItemDoubleClicked(item.Data);
+                evt.StopPropagation();
+                return;
+            }
+
             if (item == null || CanInteractWithItem(item))
             {
                 return;

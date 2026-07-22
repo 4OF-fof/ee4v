@@ -12,6 +12,8 @@ namespace Ee4v.AssetManager
         private const string WindowClassName = "ee4v-asset-manager-window";
         private const string BodyClassName = "ee4v-asset-manager-window__main-view-window-body";
         private const string ContentClassName = "ee4v-asset-manager-window__main-view-window-content";
+        private MainView _mainView;
+        private FileTreeDetailState _pendingFileDetailState;
 
         [MenuItem("ee4v/Asset Manager/Main View", false, 3)]
         private static void ShowWindow()
@@ -20,6 +22,21 @@ namespace Ee4v.AssetManager
             window.titleContent = new GUIContent(WindowTitle);
             window.minSize = new Vector2(640f, 420f);
             window.Show();
+        }
+
+        public static void ShowFileDetail(FileTreeDetailState state)
+        {
+            if (state == null)
+            {
+                return;
+            }
+
+            var window = GetWindow<MainViewWindow>();
+            window._pendingFileDetailState = state;
+            window.titleContent = new GUIContent(WindowTitle);
+            window.minSize = new Vector2(640f, 420f);
+            window.Show();
+            window.ApplyPendingFileDetail();
         }
 
         private void OnEnable()
@@ -49,16 +66,29 @@ namespace Ee4v.AssetManager
             var body = new VisualElement();
             body.AddToClassList(BodyClassName);
 
-            var mainView = new MainView();
-            var toolbar = new MainToolbar(mainView);
-            mainView.AddToClassList(ContentClassName);
+            _mainView = new MainView();
+            var toolbar = new MainToolbar(_mainView);
+            _mainView.AddToClassList(ContentClassName);
 
             body.Add(toolbar);
-            body.Add(mainView);
+            body.Add(_mainView);
 
             root.Add(body);
             WindowToastApi.EnsureHost(this);
             StatusOverlayApi.EnsureHost(this);
+            ApplyPendingFileDetail();
+        }
+
+        private void ApplyPendingFileDetail()
+        {
+            if (_mainView == null || _pendingFileDetailState == null)
+            {
+                return;
+            }
+
+            var state = _pendingFileDetailState;
+            _pendingFileDetailState = null;
+            _mainView.ShowFileDetail(state);
         }
     }
 }

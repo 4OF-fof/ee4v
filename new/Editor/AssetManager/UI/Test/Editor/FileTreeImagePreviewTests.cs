@@ -21,6 +21,16 @@ namespace Ee4v.AssetManager.Tests
             Assert.That(FileTreeImageSource.IsSupported(fileName), Is.True);
         }
 
+        [Test]
+        public void CancelImagePreview_ClearsDisposedCancellationSource()
+        {
+            var cancellation = new CancellationTokenSource();
+            cancellation.Dispose();
+
+            Assert.DoesNotThrow(() => SearchableFileTree.CancelImagePreview(ref cancellation));
+            Assert.That(cancellation, Is.Null);
+        }
+
         [TestCase(false)]
         [TestCase(true)]
         public void PsdDecoder_ReadsRgbCompositeImage(bool useRleCompression)

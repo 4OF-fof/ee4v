@@ -47,7 +47,9 @@ namespace Ee4v.AssetManager
 
             var body = new VisualElement();
             body.AddToClassList(BodyClassName);
-            body.Add(new InfomationPanel());
+            var infomationPanel = new InfomationPanel();
+            infomationPanel.FileDetailRequested += MainViewWindow.ShowFileDetail;
+            body.Add(infomationPanel);
 
             root.Add(body);
             WindowToastApi.EnsureHost(this);

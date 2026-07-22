@@ -86,12 +86,14 @@ namespace Ee4v.AssetManager
 
             var mainView = new MainView();
             var toolbar = new MainToolbar(mainView);
+            var infomationPanel = new InfomationPanel();
+            infomationPanel.FileDetailRequested += mainView.ShowFileDetail;
             toolbar.style.flexGrow = 1f;
 
             layout.MainToolbarContent.Add(toolbar);
             layout.LeftPaneContent.Add(new NavigationPanel());
             layout.MainContent.Add(mainView);
-            layout.RightPaneContent.Add(new InfomationPanel());
+            layout.RightPaneContent.Add(infomationPanel);
 
             root.Add(layout);
             WindowToastApi.EnsureHost(this);

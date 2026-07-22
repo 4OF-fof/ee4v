@@ -6,7 +6,8 @@ namespace Ee4v.AssetManager
     internal enum AssetItemGridHistoryEntryKind
     {
         View,
-        FileList
+        FileList,
+        FileDetail
     }
 
     internal enum AssetItemGridNodeKind
@@ -27,7 +28,10 @@ namespace Ee4v.AssetManager
             string itemName = null,
             AssetItemGridNodeKind nodeKind = AssetItemGridNodeKind.Item,
             string nodeId = null,
-            string nodeName = null)
+            string nodeName = null,
+            string detailId = null,
+            string detailName = null,
+            string detailParentName = null)
         {
             Kind = kind;
             ViewId = viewId ?? string.Empty;
@@ -37,6 +41,9 @@ namespace Ee4v.AssetManager
             NodeKind = nodeKind;
             NodeId = nodeId ?? string.Empty;
             NodeName = nodeName ?? string.Empty;
+            DetailId = detailId ?? string.Empty;
+            DetailName = detailName ?? string.Empty;
+            DetailParentName = detailParentName ?? string.Empty;
         }
 
         public AssetItemGridHistoryEntryKind Kind { get; }
@@ -55,18 +62,45 @@ namespace Ee4v.AssetManager
 
         public string NodeName { get; }
 
+        public string DetailId { get; }
+
+        public string DetailName { get; }
+
+        public string DetailParentName { get; }
+
         public IReadOnlyList<string> Breadcrumbs
         {
             get
             {
-                if (Kind == AssetItemGridHistoryEntryKind.FileList && !string.IsNullOrWhiteSpace(ItemName))
+                if ((Kind == AssetItemGridHistoryEntryKind.FileList || Kind == AssetItemGridHistoryEntryKind.FileDetail) &&
+                    !string.IsNullOrWhiteSpace(ItemName))
                 {
+                    if (Kind == AssetItemGridHistoryEntryKind.FileDetail && !string.IsNullOrWhiteSpace(DetailName))
+                    {
+                        if (!string.IsNullOrWhiteSpace(DetailParentName))
+                        {
+                            return new[] { ViewLabel, ItemName, DetailParentName, DetailName };
+                        }
+
+                        return new[] { ViewLabel, ItemName, DetailName };
+                    }
+
                     if (!string.IsNullOrWhiteSpace(NodeName))
                     {
                         return new[] { ViewLabel, ItemName, NodeName };
                     }
 
                     return new[] { ViewLabel, ItemName };
+                }
+
+                if (Kind == AssetItemGridHistoryEntryKind.FileDetail && !string.IsNullOrWhiteSpace(DetailName))
+                {
+                    if (!string.IsNullOrWhiteSpace(DetailParentName))
+                    {
+                        return new[] { ViewLabel, DetailParentName, DetailName };
+                    }
+
+                    return new[] { ViewLabel, DetailName };
                 }
 
                 return new[] { ViewLabel };
@@ -80,7 +114,9 @@ namespace Ee4v.AssetManager
                 && string.Equals(ViewId, other.ViewId, StringComparison.Ordinal)
                 && string.Equals(ItemId, other.ItemId, StringComparison.Ordinal)
                 && NodeKind == other.NodeKind
-                && string.Equals(NodeId, other.NodeId, StringComparison.Ordinal);
+                && string.Equals(NodeId, other.NodeId, StringComparison.Ordinal)
+                && string.Equals(DetailId, other.DetailId, StringComparison.Ordinal)
+                && string.Equals(DetailParentName, other.DetailParentName, StringComparison.Ordinal);
         }
     }
 

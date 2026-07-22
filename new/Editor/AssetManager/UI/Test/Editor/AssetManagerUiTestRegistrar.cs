@@ -10,7 +10,7 @@ namespace Ee4v.AssetManager.Tests
                 "AssetManager UI",
                 "AssetManager",
                 "Ee4v.AssetManager.UI.Tests.Editor",
-                "AssetManager UI の File Tree 画像 preview と表示用データ変換を確認します。",
+                "AssetManager UI の File Tree 画像 preview、詳細表示、表示用データ変換を確認します。",
                 order: 400);
         }
     }

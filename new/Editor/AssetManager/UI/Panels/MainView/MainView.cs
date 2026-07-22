@@ -16,6 +16,7 @@ namespace Ee4v.AssetManager
         private readonly MainViewController _controller;
         private readonly AssetItemGrid _itemGrid;
         private readonly UiTextElement _statusLabel;
+        private readonly FileTreeDetailView _fileDetailView;
         private int _loadVersion;
         private CancellationTokenSource _loadCancellation;
         private string _fileListItemId;
@@ -23,6 +24,7 @@ namespace Ee4v.AssetManager
         private AssetItemGridNodeKind _browserNodeKind;
         private string _browserNodeId;
         private string _browserNodeName;
+        private FileTreeDetailState _fileDetailState;
         private bool _applyingHistory;
 
         public MainView(MainViewController controller = null)
@@ -32,10 +34,13 @@ namespace Ee4v.AssetManager
             _itemGrid.AddToClassList(ContentClassName);
             _statusLabel = UiTextFactory.Create(string.Empty, StatusClassName);
             _statusLabel.SetWhiteSpace(WhiteSpace.Normal);
+            _fileDetailView = new FileTreeDetailView();
+            _fileDetailView.style.display = DisplayStyle.None;
 
             AddToClassList("ee4v-asset-manager-panel");
             AddToClassList(RootClassName);
             Add(_statusLabel);
+            Add(_fileDetailView);
             Add(_itemGrid);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -47,6 +52,35 @@ namespace Ee4v.AssetManager
         public AssetItemGridHistory History
         {
             get { return _itemGrid.History; }
+        }
+
+        public void ShowFileDetail(FileTreeDetailState state)
+        {
+            if (state == null)
+            {
+                return;
+            }
+
+            if (_itemGrid.History.State.Current == null)
+            {
+                _itemGrid.History.SetCurrent(CreateCurrentHistoryEntry());
+            }
+
+            var selectedItem = AssetManagerViewState.SelectedAssetItem;
+            if (!IsFileListMode &&
+                selectedItem != null &&
+                AssetManagerViewState.SelectedAssetSelectionContentKind == AssetManagerViewState.AssetSelectionContentKind.AssetItem)
+            {
+                _fileListItemId = selectedItem.ItemId;
+                _fileListItemName = selectedItem.ItemName;
+                _browserNodeKind = AssetItemGridNodeKind.Item;
+                _browserNodeId = string.Empty;
+                _browserNodeName = string.Empty;
+            }
+
+            _fileDetailState = state;
+            PushCurrentHistory();
+            RefreshContent();
         }
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
@@ -73,6 +107,7 @@ namespace Ee4v.AssetManager
             }
 
             ClearFileListMode();
+            ClearFileDetailMode();
             ClearGridSelection();
             PushCurrentHistory();
             RefreshContent();
@@ -82,6 +117,7 @@ namespace Ee4v.AssetManager
         {
             _itemGrid.ClearCachedItems();
             ClearFileListMode();
+            ClearFileDetailMode();
             ClearGridSelection();
             PushCurrentHistory();
             RefreshContent();
@@ -98,6 +134,8 @@ namespace Ee4v.AssetManager
             {
                 return;
             }
+
+            ClearFileDetailMode();
 
             AssetItemGridNodeKind kind;
             string rawId;
@@ -148,7 +186,8 @@ namespace Ee4v.AssetManager
         {
             var current = _itemGrid.History.State.Current;
             if (current == null
-                || current.Kind != AssetItemGridHistoryEntryKind.FileList
+                || (current.Kind != AssetItemGridHistoryEntryKind.FileList &&
+                    current.Kind != AssetItemGridHistoryEntryKind.FileDetail)
                 || index < 0)
             {
                 return;
@@ -164,6 +203,11 @@ namespace Ee4v.AssetManager
             }
             else if (index == 1)
             {
+                if (string.IsNullOrWhiteSpace(current.ItemId))
+                {
+                    return;
+                }
+
                 entry = new AssetItemGridHistoryEntry(
                     AssetItemGridHistoryEntryKind.FileList,
                     current.ViewId,
@@ -182,6 +226,20 @@ namespace Ee4v.AssetManager
 
         private void RefreshContent()
         {
+            if (IsFileDetailMode)
+            {
+                CancelPendingLoad();
+                _loadVersion++;
+                SetStatus(string.Empty);
+                _itemGrid.style.display = DisplayStyle.None;
+                _fileDetailView.style.display = DisplayStyle.Flex;
+                _fileDetailView.SetState(_fileDetailState);
+                return;
+            }
+
+            _fileDetailView.SetState(null);
+            _fileDetailView.style.display = DisplayStyle.None;
+            _itemGrid.style.display = DisplayStyle.Flex;
             SettingApi.Preload(SettingScope.User);
             var cacheKey = CreateCurrentCacheKey();
             string cachedStatusText;
@@ -257,6 +315,11 @@ namespace Ee4v.AssetManager
             get { return !string.IsNullOrWhiteSpace(_fileListItemId); }
         }
 
+        private bool IsFileDetailMode
+        {
+            get { return _fileDetailState != null; }
+        }
+
         private AssetItemGridList LoadCurrentGridItems(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -315,6 +378,11 @@ namespace Ee4v.AssetManager
             _browserNodeName = string.Empty;
         }
 
+        private void ClearFileDetailMode()
+        {
+            _fileDetailState = null;
+        }
+
         private void PushCurrentHistory()
         {
             if (_applyingHistory)
@@ -328,6 +396,22 @@ namespace Ee4v.AssetManager
         private AssetItemGridHistoryEntry CreateCurrentHistoryEntry()
         {
             var selectedItem = AssetManagerViewState.SelectedItem;
+            if (IsFileDetailMode)
+            {
+                return new AssetItemGridHistoryEntry(
+                    AssetItemGridHistoryEntryKind.FileDetail,
+                    selectedItem.Id,
+                    selectedItem.Label,
+                    _fileListItemId,
+                    _fileListItemName,
+                    _browserNodeKind,
+                    _browserNodeId,
+                    _browserNodeName,
+                    _fileDetailState.Id,
+                    _fileDetailState.Name,
+                    _fileDetailState.ParentName);
+            }
+
             if (IsFileListMode)
             {
                 return new AssetItemGridHistoryEntry(
@@ -358,7 +442,8 @@ namespace Ee4v.AssetManager
             {
                 _applyingHistory = true;
                 AssetManagerViewState.SetSelectedItem(entry.ViewId);
-                if (entry.Kind == AssetItemGridHistoryEntryKind.FileList)
+                if (entry.Kind == AssetItemGridHistoryEntryKind.FileList ||
+                    entry.Kind == AssetItemGridHistoryEntryKind.FileDetail)
                 {
                     _fileListItemId = entry.ItemId;
                     _fileListItemName = entry.ItemName;
@@ -366,10 +451,14 @@ namespace Ee4v.AssetManager
                     _browserNodeId = entry.NodeId;
                     _browserNodeName = entry.NodeName;
                     AssetManagerViewState.SetSelectedAssetDetailTab("file-tree");
+                    _fileDetailState = entry.Kind == AssetItemGridHistoryEntryKind.FileDetail
+                        ? new FileTreeDetailState(entry.DetailId, entry.DetailName, entry.DetailParentName)
+                        : null;
                 }
                 else
                 {
                     ClearFileListMode();
+                    ClearFileDetailMode();
                 }
 
                 ClearGridSelection();

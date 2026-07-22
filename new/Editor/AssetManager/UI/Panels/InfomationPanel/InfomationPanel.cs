@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
@@ -65,6 +66,7 @@ namespace Ee4v.AssetManager
             _detailContent = new VisualElement();
             _detailContent.AddToClassList(DetailContentClassName);
             _fileTree = new SearchableFileTree();
+            _fileTree.FileDetailRequested += state => FileDetailRequested?.Invoke(state);
             _detailContent.Add(_fileTree);
             Add(_detailContent);
 
@@ -73,6 +75,8 @@ namespace Ee4v.AssetManager
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             SetSelectedAssetItems(AssetManagerViewState.SelectedAssetItems);
         }
+
+        public event Action<FileTreeDetailState> FileDetailRequested;
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {

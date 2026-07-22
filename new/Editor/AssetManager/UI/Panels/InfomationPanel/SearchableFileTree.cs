@@ -52,12 +52,25 @@ namespace Ee4v.AssetManager
                 I18N.Get("assetManager.infomationPanel.fileTree.searchPlaceholder"),
                 SelectionType.Multiple,
                 OnTreeContextClick,
-                node => node == null || !node.IsGroup || node.GroupKind == FileTreeGroupKind.Version);
+                node => node == null || !node.IsGroup || node.GroupKind == FileTreeGroupKind.Version,
+                OnTreeItemDoubleClicked);
             _treeView.SetViewDataKey("ee4v-asset-manager-infomation-panel-file-tree");
             Add(_treeView);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+        }
+
+        public event Action<FileTreeDetailState> FileDetailRequested;
+
+        private void OnTreeItemDoubleClicked(FileTreeNode node)
+        {
+            if (node == null)
+            {
+                return;
+            }
+
+            FileDetailRequested?.Invoke(node.CreateDetailState(_itemId));
         }
 
         public void SetItemId(string itemId)
@@ -380,6 +393,11 @@ namespace Ee4v.AssetManager
             {
                 EditorApplication.delayCall += () =>
                 {
+                    if (ReferenceEquals(_imagePreviewCancellation, cancellation))
+                    {
+                        _imagePreviewCancellation = null;
+                    }
+
                     if (previewVersion != _imagePreviewVersion ||
                         cancellation.IsCancellationRequested ||
                         task.IsCanceled ||
@@ -391,11 +409,6 @@ namespace Ee4v.AssetManager
                     {
                         cancellation.Dispose();
                         return;
-                    }
-
-                    if (ReferenceEquals(_imagePreviewCancellation, cancellation))
-                    {
-                        _imagePreviewCancellation = null;
                     }
 
                     cancellation.Dispose();
@@ -450,11 +463,7 @@ namespace Ee4v.AssetManager
         private void HideImageTooltip()
         {
             _imagePreviewVersion++;
-            if (_imagePreviewCancellation != null)
-            {
-                _imagePreviewCancellation.Cancel();
-                _imagePreviewCancellation = null;
-            }
+            CancelImagePreview(ref _imagePreviewCancellation);
 
             if (_imageTooltipWindow != null)
             {
@@ -464,6 +473,25 @@ namespace Ee4v.AssetManager
 
             _hoveredImageRow = null;
             _hoveredImageNode = null;
+        }
+
+        internal static void CancelImagePreview(ref CancellationTokenSource cancellation)
+        {
+            var current = cancellation;
+            cancellation = null;
+            if (current == null)
+            {
+                return;
+            }
+
+            try
+            {
+                current.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Completion may have disposed the source before its delayed cleanup reached the Editor thread.
+            }
         }
 
         private void CacheImagePreview(string key, Texture2D texture)
@@ -836,7 +864,8 @@ namespace Ee4v.AssetManager
             string versionGroupId = null,
             bool isPrimaryFile = false,
             IReadOnlyList<FileTreeImportTargetEntry> importTargetEntries = null,
-            FileTreeImageSource imageSource = null)
+            FileTreeImageSource imageSource = null,
+            string detailParentName = null)
         {
             Name = name ?? string.Empty;
             Meta = meta ?? string.Empty;
@@ -853,6 +882,7 @@ namespace Ee4v.AssetManager
             IsPrimaryFile = isPrimaryFile;
             ImportTargetEntries = importTargetEntries ?? Array.Empty<FileTreeImportTargetEntry>();
             ImageSource = imageSource;
+            DetailParentName = detailParentName ?? string.Empty;
         }
 
         public string Name { get; }
@@ -885,6 +915,8 @@ namespace Ee4v.AssetManager
 
         public FileTreeImageSource ImageSource { get; }
 
+        public string DetailParentName { get; }
+
         public bool CanSetImportTarget
         {
             get { return !IsAssetFileRoot && ImportTargetEntries.Count > 0; }
@@ -899,6 +931,18 @@ namespace Ee4v.AssetManager
                        !string.IsNullOrWhiteSpace(AssetFileId) &&
                        !string.IsNullOrWhiteSpace(VersionGroupId);
             }
+        }
+
+        public FileTreeDetailState CreateDetailState(string itemId)
+        {
+            var detailId = string.Join("|", new[]
+            {
+                itemId ?? string.Empty,
+                AssetFileId ?? string.Empty,
+                Path ?? string.Empty,
+                Name ?? string.Empty
+            });
+            return new FileTreeDetailState(detailId, Name, DetailParentName);
         }
 
         public void SetImportTargetState(string fileId, HashSet<string> targetPaths)
@@ -1595,7 +1639,8 @@ namespace Ee4v.AssetManager
                     importTargetEntries: importTargetEntries,
                     imageSource: isDirectory
                         ? null
-                        : FileTreeImageSource.FromArchive(Name, archivePath, archiveEntryPath));
+                        : FileTreeImageSource.FromArchive(Name, archivePath, archiveEntryPath),
+                    detailParentName: System.IO.Path.GetFileName(archivePath));
                 return new SearchableTreeItemData<FileTreeNode>(
                     nextId(),
                     node,

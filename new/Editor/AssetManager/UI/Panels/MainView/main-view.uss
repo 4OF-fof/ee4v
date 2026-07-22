@@ -16,3 +16,17 @@
     margin-bottom: 8px;
     color: var(--ee4v-color-text-soft);
 }
+
+.ee4v-asset-manager-file-detail {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.ee4v-asset-manager-file-detail__name {
+    color: var(--ee4v-color-text-primary);
+    font-size: 20px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
