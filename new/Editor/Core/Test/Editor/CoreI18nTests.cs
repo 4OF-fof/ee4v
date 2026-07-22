@@ -2,6 +2,7 @@ using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using Ee4v.Core.Testing;
 using NUnit.Framework;
+using UnityEngine.UIElements;
 
 namespace Ee4v.Core.Tests
 {
@@ -66,6 +67,47 @@ namespace Ee4v.Core.Tests
             var value = SettingApi.Get(CoreLocalizationDefinitions.Language);
 
             Assert.That(value, Is.EqualTo("ja-JP"));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "設定 field は UI Toolkit で値変更を通知する",
+            "標準の設定 field が IMGUI ではなく UI Toolkit の field を生成し、変更値を callback へ通知することを確認します。",
+            order: 3)]
+        public void SettingFieldRenderer_Create_UsesUiToolkitField()
+        {
+            object changedValue = null;
+
+            var element = SettingFieldRenderer.Create(
+                typeof(int),
+                "Count",
+                "Item count",
+                3,
+                value => changedValue = value);
+
+            var field = element as IntegerField;
+            Assert.That(field, Is.Not.Null);
+            Assert.That(field.value, Is.EqualTo(3));
+
+            field.value = 7;
+
+            Assert.That(changedValue, Is.EqualTo(7));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "設定画面は UI Toolkit のみで構築する",
+            "SettingsUiRenderer が設定画面を VisualElement で構築し、IMGUIContainer を含めないことを確認します。",
+            order: 4)]
+        public void SettingsUiRenderer_BuildScope_DoesNotCreateImguiContainer()
+        {
+            Ee4vCoreTestReset.RecoverEditorState();
+            var root = new VisualElement();
+
+            SettingsUiRenderer.BuildScope(root, SettingScope.User, string.Empty);
+
+            Assert.That(root.childCount, Is.GreaterThan(0));
+            Assert.That(root.Query<IMGUIContainer>().ToList(), Is.Empty);
         }
     }
 }

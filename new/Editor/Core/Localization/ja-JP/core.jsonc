@@ -11,6 +11,7 @@
       "label": "フォールバック言語",
       "tooltip": "en-US に落ちる前に参照する第2言語です。"
     },
+    "unsupportedType": "未対応の設定型です: {0}",
     "validation": {
       "locale": "言語コードは必須です。"
     }

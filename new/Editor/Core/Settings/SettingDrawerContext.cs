@@ -1,20 +1,36 @@
-using UnityEngine;
+using System;
 
 namespace Ee4v.Core.Settings
 {
     public struct SettingDrawerContext<T>
     {
-        public SettingDrawerContext(GUIContent label, T value, string searchContext)
+        private readonly Action<T> _onValueChanged;
+
+        public SettingDrawerContext(
+            string label,
+            string tooltip,
+            T value,
+            string searchContext,
+            Action<T> onValueChanged)
         {
-            Label = label;
+            Label = label ?? string.Empty;
+            Tooltip = tooltip ?? string.Empty;
             Value = value;
-            SearchContext = searchContext;
+            SearchContext = searchContext ?? string.Empty;
+            _onValueChanged = onValueChanged;
         }
 
-        public GUIContent Label { get; }
+        public string Label { get; }
+
+        public string Tooltip { get; }
 
         public T Value { get; }
 
         public string SearchContext { get; }
+
+        public void NotifyValueChanged(T value)
+        {
+            _onValueChanged?.Invoke(value);
+        }
     }
 }

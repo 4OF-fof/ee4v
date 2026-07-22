@@ -21,6 +21,14 @@ Unity 2022.3.22f1 では UIElements のフォントキャッシュに問題が�
 
 これはバグ回避のための暫定措置であり、Unity のバージョン更新時に UIElements のフォントキャッシュ問題が解決されていれば、`UiTextFactory` を廃止して UIElements に完全移行することが望ましい。
 
+## ThreePaneLayout resize cursor
+
+`ThreePaneLayout` の pane splitter と drag 中の領域では、Unity Editor 標準の `MouseCursor.ResizeHorizontal` を表示するために `IMGUIContainer` と `EditorGUIUtility.AddCursorRect` を使用している。
+
+Unity 2022.3 の UI Toolkit は `VisualElement.style.cursor` で custom cursor texture を指定できる一方、Editor 組み込み cursor を選ぶ `Cursor.defaultCursorId` を public API として公開していない。このため native の resize cursor を UI Toolkit のみで指定できず、cursor 表示に限定して IMGUI を使用する。pane の layout、pointer event、drag 処理は引き続き UI Toolkit で実装する。
+
+Unity のバージョン更新時に UI Toolkit の public API から Editor 組み込み cursor を指定できるようになった場合は、`ThreePaneLayout` の `IMGUIContainer` を削除して UI Toolkit に移行する。
+
 ## Builtin Icon
 
 Unity の組み込みアイコンは、バージョンによって利用できるアイコンの種類や名前が異なるため、`Icon` コンポーネントを使用して存在が検証されたアイコンのみを描画する。

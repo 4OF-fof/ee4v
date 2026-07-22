@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Ee4v.Core.Internal;
 using Newtonsoft.Json;
-using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Ee4v.Core.Settings
 {
@@ -51,7 +51,12 @@ namespace Ee4v.Core.Settings
 
         internal abstract SettingValidationResult ValidateBoxed(object value);
 
-        internal abstract object DrawField(GUIContent label, object currentValue, string searchContext);
+        internal abstract VisualElement CreateField(
+            string label,
+            string tooltip,
+            object currentValue,
+            string searchContext,
+            Action<object> onValueChanged);
 
         internal abstract string SerializeBoxed(object value);
 
@@ -61,7 +66,7 @@ namespace Ee4v.Core.Settings
     public sealed class SettingDefinition<T> : SettingDefinitionBase
     {
         private readonly Func<T, SettingValidationResult> _validator;
-        private readonly Func<SettingDrawerContext<T>, T> _customDrawer;
+        private readonly Func<SettingDrawerContext<T>, VisualElement> _customDrawer;
         private readonly T _defaultValue;
 
         public SettingDefinition(
@@ -73,7 +78,7 @@ namespace Ee4v.Core.Settings
             T defaultValue,
             int order = 0,
             Func<T, SettingValidationResult> validator = null,
-            Func<SettingDrawerContext<T>, T> customDrawer = null,
+            Func<SettingDrawerContext<T>, VisualElement> customDrawer = null,
             IReadOnlyList<string> keywords = null,
             [CallerFilePath] string definitionSourceFilePath = "")
             : base(
@@ -112,14 +117,24 @@ namespace Ee4v.Core.Settings
             return _validator(value != null ? (T)value : default(T));
         }
 
-        internal override object DrawField(GUIContent label, object currentValue, string searchContext)
+        internal override VisualElement CreateField(
+            string label,
+            string tooltip,
+            object currentValue,
+            string searchContext,
+            Action<object> onValueChanged)
         {
             if (_customDrawer != null)
             {
-                return _customDrawer(new SettingDrawerContext<T>(label, currentValue != null ? (T)currentValue : default(T), searchContext));
+                return _customDrawer(new SettingDrawerContext<T>(
+                    label,
+                    tooltip,
+                    currentValue != null ? (T)currentValue : default(T),
+                    searchContext,
+                    value => onValueChanged?.Invoke(value)));
             }
 
-            return SettingFieldRenderer.Draw(typeof(T), label, currentValue);
+            return SettingFieldRenderer.Create(typeof(T), label, tooltip, currentValue, onValueChanged);
         }
 
         internal override string SerializeBoxed(object value)

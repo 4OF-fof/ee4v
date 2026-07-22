@@ -262,7 +262,7 @@ public SettingDefinition(
     T defaultValue,
     int order = 0,
     Func<T, SettingValidationResult> validator = null,
-    Func<SettingDrawerContext<T>, T> customDrawer = null,
+    Func<SettingDrawerContext<T>, VisualElement> customDrawer = null,
     IReadOnlyList<string> keywords = null,
     [CallerFilePath] string definitionSourceFilePath = "")
 ```
@@ -277,7 +277,7 @@ Parameters:
 - `defaultValue`: 未保存時、deserialize 失敗時、invalid 保存値の fallback。
 - `order`: section 内の並び順。
 - `validator`: 値検証 callback。
-- `customDrawer`: 標準 field で足りない場合の描画 callback。
+- `customDrawer`: 標準 field で足りない場合に UI Toolkit の `VisualElement` を生成する callback。値の変更は `SettingDrawerContext<T>.NotifyValueChanged(...)` で通知する。
 - `keywords`: settings 検索用 keyword。
 - `definitionSourceFilePath`: scope 解決用。通常は指定しない。
 
@@ -294,6 +294,7 @@ Notes:
 
 - 定義は原則 `Editor/<Feature>/<Feature>Definitions.cs` に置く。
 - localization scope を崩さないため、別 namespace の util file に逃がさない。
+- `customDrawer` でも IMGUI を使用せず、UI Toolkit の field と event callback で実装する。
 
 ```csharp
 internal static class SampleDefinitions

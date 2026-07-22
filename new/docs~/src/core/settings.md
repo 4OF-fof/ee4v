@@ -14,7 +14,7 @@ setting 定義は原則 `Editor/<Feature>/<Feature>Definitions.cs` に置きま�
 | `defaultValue` | 既定値 |
 | `order` | section 内並び順 |
 | `validator` | 入力制約 |
-| `customDrawer` | 標準 field で足りない場合のみ |
+| `customDrawer` | 標準 field で足りない場合に UI Toolkit の `VisualElement` を生成する callback |
 | `keywords` | settings 検索補助 |
 
 ## 登録と参照
@@ -41,6 +41,8 @@ setting 定義は原則 `Editor/<Feature>/<Feature>Definitions.cs` に置きま�
 `Preferences/4OF/ee4v` と `Project/4OF/ee4v` は `RegisteredSettingsProviders` が提供します。通常の feature 実装では provider を追加せず、`SettingApi.Register(...)` した定義を既存 provider に載せます。
 
 grouping は `localizationScope + sectionKey` 単位です。section を増やす場合は localization key も揃えます。
+
+設定画面は `SettingsProvider.activateHandler` から UI Toolkit で構築します。`customDrawer` は `VisualElement` を返し、値の変更を `SettingDrawerContext<T>.NotifyValueChanged(...)` で通知してください。IMGUI drawer は使用しません。
 
 ## バリデーション
 

@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Ee4v.Core.I18n;
-using UnityEditor;
-using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Ee4v.Core.Settings
 {
@@ -11,8 +10,19 @@ namespace Ee4v.Core.Settings
     {
         private static readonly Dictionary<string, string> ValidationMessages = new Dictionary<string, string>();
 
-        public static void DrawScope(SettingScope scope, string searchContext)
+        public static void BuildScope(VisualElement root, SettingScope scope, string searchContext)
         {
+            if (root == null)
+            {
+                throw new ArgumentNullException(nameof(root));
+            }
+
+            root.Clear();
+            root.style.paddingLeft = 8f;
+            root.style.paddingRight = 8f;
+            root.style.paddingTop = 8f;
+            root.style.paddingBottom = 8f;
+
             var definitions = SettingApi.GetDefinitions(scope);
             var grouped = definitions
                 .GroupBy(definition => GetGroupKey(definition))
@@ -27,20 +37,23 @@ namespace Ee4v.Core.Settings
                 }
 
                 var firstDefinition = visibleDefinitions[0];
-                EditorGUILayout.LabelField(Translate(firstDefinition.SectionKey, firstDefinition.LocalizationScope), EditorStyles.boldLabel);
-                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                var section = new Foldout
                 {
-                    for (var i = 0; i < visibleDefinitions.Length; i++)
-                    {
-                        DrawDefinition(visibleDefinitions[i], searchContext);
-                    }
+                    text = Translate(firstDefinition.SectionKey, firstDefinition.LocalizationScope),
+                    value = true
+                };
+                section.style.marginBottom = 8f;
+
+                for (var i = 0; i < visibleDefinitions.Length; i++)
+                {
+                    section.Add(CreateDefinition(visibleDefinitions[i], searchContext));
                 }
 
-                EditorGUILayout.Space(8f);
+                root.Add(section);
             }
         }
 
-        private static void DrawDefinition(SettingDefinitionBase definition, string searchContext)
+        private static VisualElement CreateDefinition(SettingDefinitionBase definition, string searchContext)
         {
             var tooltip = string.Empty;
             string translatedTooltip;
@@ -49,30 +62,63 @@ namespace Ee4v.Core.Settings
                 tooltip = translatedTooltip;
             }
 
-            var label = new GUIContent(Translate(definition.DisplayNameKey, definition.LocalizationScope), tooltip);
-            var currentValue = SettingApi.GetBoxed(definition);
+            var row = new VisualElement();
+            row.style.marginTop = 2f;
+            row.style.marginBottom = 2f;
 
-            EditorGUI.BeginChangeCheck();
-            var newValue = definition.DrawField(label, currentValue, searchContext);
-            if (EditorGUI.EndChangeCheck())
-            {
-                var validation = definition.ValidateBoxed(newValue);
-                if (validation.IsValid)
-                {
-                    ValidationMessages.Remove(definition.Key);
-                    SettingApi.SetBoxed(definition, newValue);
-                }
-                else
-                {
-                    ValidationMessages[definition.Key] = validation.Message;
-                }
-            }
+            var errorBox = new HelpBox(string.Empty, HelpBoxMessageType.Error);
+            errorBox.style.marginTop = 2f;
+
+            var label = Translate(definition.DisplayNameKey, definition.LocalizationScope);
+            var currentValue = SettingApi.GetBoxed(definition);
+            var field = definition.CreateField(
+                label,
+                tooltip,
+                currentValue,
+                searchContext,
+                value => ApplyValue(definition, value, errorBox));
+
+            row.Add(field);
+            row.Add(errorBox);
 
             string error;
             if (ValidationMessages.TryGetValue(definition.Key, out error))
             {
-                EditorGUILayout.HelpBox(error, MessageType.Error);
+                ShowError(errorBox, error);
             }
+            else
+            {
+                HideError(errorBox);
+            }
+
+            return row;
+        }
+
+        private static void ApplyValue(SettingDefinitionBase definition, object value, HelpBox errorBox)
+        {
+            var validation = definition.ValidateBoxed(value);
+            if (!validation.IsValid)
+            {
+                ValidationMessages[definition.Key] = validation.Message;
+                ShowError(errorBox, validation.Message);
+                return;
+            }
+
+            ValidationMessages.Remove(definition.Key);
+            HideError(errorBox);
+            SettingApi.SetBoxed(definition, value);
+        }
+
+        private static void ShowError(HelpBox errorBox, string error)
+        {
+            errorBox.text = error ?? string.Empty;
+            errorBox.style.display = DisplayStyle.Flex;
+        }
+
+        private static void HideError(HelpBox errorBox)
+        {
+            errorBox.text = string.Empty;
+            errorBox.style.display = DisplayStyle.None;
         }
 
         private static bool MatchesSearch(SettingDefinitionBase definition, string searchContext)

@@ -19,6 +19,8 @@ namespace Ee4v.Core.I18n
         private static readonly HashSet<string> WarnedDuplicateKeys = new HashSet<string>(StringComparer.Ordinal);
         private static LocalizationCatalogSnapshot _catalogSnapshot;
 
+        internal static event Action Reloaded;
+
         public static string CurrentLanguage
         {
             get { return SettingApi.Get(CoreLocalizationDefinitions.Language); }
@@ -103,6 +105,7 @@ namespace Ee4v.Core.I18n
             WarnedDuplicateKeys.Clear();
             InjectorApi.Repaint(InjectionChannel.ProjectToolbar);
             InternalEditorUtility.RepaintAllViews();
+            Reloaded?.Invoke();
         }
 
         private static IEnumerable<string> GetFallbackSequence()

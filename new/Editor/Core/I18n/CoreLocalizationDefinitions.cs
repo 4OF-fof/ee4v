@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Ee4v.Core.Settings;
 using UnityEditor;
+using UnityEngine.UIElements;
 
 namespace Ee4v.Core.I18n
 {
@@ -67,20 +68,30 @@ namespace Ee4v.Core.I18n
                 : SettingValidationResult.Success;
         }
 
-        private static Func<SettingDrawerContext<string>, string> DrawLocaleField()
+        private static Func<SettingDrawerContext<string>, VisualElement> DrawLocaleField()
         {
             return context =>
             {
                 var languages = I18N.GetAvailableLanguages();
                 if (languages.Count == 0)
                 {
-                    return EditorGUILayout.TextField(context.Label, context.Value ?? string.Empty);
+                    var textField = new TextField(context.Label)
+                    {
+                        tooltip = context.Tooltip,
+                        value = context.Value ?? string.Empty
+                    };
+                    textField.RegisterValueChangedCallback(evt => context.NotifyValueChanged(evt.newValue));
+                    return textField;
                 }
 
-                var options = languages.ToArray();
-                var currentIndex = Math.Max(0, Array.IndexOf(options, context.Value));
-                var nextIndex = EditorGUILayout.Popup(context.Label, currentIndex, options);
-                return options[nextIndex];
+                var options = languages.ToList();
+                var currentIndex = Math.Max(0, options.IndexOf(context.Value));
+                var popup = new PopupField<string>(context.Label, options, currentIndex)
+                {
+                    tooltip = context.Tooltip
+                };
+                popup.RegisterValueChangedCallback(evt => context.NotifyValueChanged(evt.newValue));
+                return popup;
             };
         }
     }

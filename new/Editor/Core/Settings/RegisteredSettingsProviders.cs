@@ -1,5 +1,6 @@
 using Ee4v.Core.I18n;
 using UnityEditor;
+using UnityEngine.UIElements;
 
 namespace Ee4v.Core.Settings
 {
@@ -34,9 +35,22 @@ namespace Ee4v.Core.Settings
             return new SettingsProvider(path, settingsScope)
             {
                 label = "ee4v",
-                guiHandler = searchContext => { SettingsUiRenderer.DrawScope(settingScope, searchContext); },
+                activateHandler = (searchContext, root) => Activate(root, settingScope, searchContext),
                 keywords = keywords
             };
+        }
+
+        private static void Activate(VisualElement root, SettingScope settingScope, string searchContext)
+        {
+            SettingsUiRenderer.BuildScope(root, settingScope, searchContext);
+
+            void OnLocalizationReloaded()
+            {
+                root.schedule.Execute(() => SettingsUiRenderer.BuildScope(root, settingScope, searchContext));
+            }
+
+            I18N.Reloaded += OnLocalizationReloaded;
+            root.RegisterCallback<DetachFromPanelEvent>(_ => I18N.Reloaded -= OnLocalizationReloaded);
         }
     }
 }
