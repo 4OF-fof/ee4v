@@ -13,6 +13,7 @@ namespace Ee4v.AssetManager.Api
         private const string BoothLibraryRelativePath = "pm.booth.library-manager\\data.db";
         private const string DefaultAvatarNames = "Airi,Alue,Bokusei,Chiffon,Chocolat,Eku,ELusion,Grus,Hanka,Ichigo,Kanata,Karin,Kikyo,Kipfel,Komano,Kumaly,Kuuta,Lapwing,Lasyusha,Lili,Lime,LowpolyKon,Luchika,Lumina,Mafuyu,Mamehinata,Manuka,Mao,Maon,Marycia,Maya,Mayo,Milfy,Milfy Eku,Milltina,Miltina,Millitina,Minase,Misaki,Moe,Nakiya,Plum,Ramune,Rei,Reien,Rindo,Riru,Rui,Rurune,Rurune Mizuki,Selestia,Shinano,Shinra,Shuan,Sio,Suiha,TubeRose,Ukon,Uzuki,Wendy,Yugi Miyo";
         private const string DefaultVersionGroupRegex = @"(?i)(?:(?:v|ver|version)[\s_\-.]*(?<name>\d+(?:\.\d+){0,3})(?=$|[\s_\-.\]\)]|[^\d.])|(?:^|[\s_\-])(?<name>\d+\.\d+(?:\.\d+){0,2})(?=\.(?:zip|psd|mp4|unitypackage)(?:$|\s)|$|\s))";
+        private static bool _registered;
 
         static AssetManagerDefinitions()
         {
@@ -58,6 +59,24 @@ namespace Ee4v.AssetManager.Api
             order: 0,
             validator: ValidateSourcePriority);
 
+        public static readonly SettingDefinition<bool> AutoSyncBlmOnStartup = new SettingDefinition<bool>(
+            "assetManager.autoSyncBlmOnStartup",
+            SettingScope.User,
+            "settings.section.assetManager.source",
+            "settings.autoSyncBlmOnStartup.label",
+            "settings.autoSyncBlmOnStartup.tooltip",
+            true,
+            order: 1);
+
+        public static readonly SettingDefinition<bool> AutoSyncEagleOnStartup = new SettingDefinition<bool>(
+            "assetManager.autoSyncEagleOnStartup",
+            SettingScope.User,
+            "settings.section.assetManager.source",
+            "settings.autoSyncEagleOnStartup.label",
+            "settings.autoSyncEagleOnStartup.tooltip",
+            true,
+            order: 2);
+
         public static readonly SettingDefinition<string> AvatarNames = new SettingDefinition<string>(
             "assetManager.avatarNames",
             SettingScope.User,
@@ -89,10 +108,18 @@ namespace Ee4v.AssetManager.Api
 
         public static void RegisterAll()
         {
+            if (_registered)
+            {
+                return;
+            }
+
+            _registered = true;
             SettingApi.Register(Ee4vGlobalPath);
             SettingApi.Register(BlmDatabasePath);
             SettingApi.Register(EagleLibraryPath);
             SettingApi.Register(SourcePriority);
+            SettingApi.Register(AutoSyncBlmOnStartup);
+            SettingApi.Register(AutoSyncEagleOnStartup);
             SettingApi.Register(AvatarNames);
             SettingApi.Register(VersionGroupRegex);
             SettingApi.Register(ItemGridItemsPerRow);

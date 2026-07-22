@@ -37,7 +37,11 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
                 throw new AssetManagerException(AssetManagerErrorCode.DatasourceError, "Eagle target folder was not found: " + targetRoot);
             }
 
-            return ReadTargetItems(imagesPath, targetFolders);
+            var folderMetadataPath = Path.Combine(libraryPath, "metadata.json");
+            var folderMetadataUpdatedAtUtc = File.Exists(folderMetadataPath)
+                ? (DateTime?)File.GetLastWriteTimeUtc(folderMetadataPath)
+                : null;
+            return ReadTargetItems(imagesPath, targetFolders, folderMetadataUpdatedAtUtc);
         }
 
         private static string ResolveLibraryPath(EagleSyncRequest request)
@@ -160,7 +164,7 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
             }
         }
 
-        private static IReadOnlyList<EagleItemRecord> ReadTargetItems(string imagesPath, IReadOnlyList<EagleFolderTarget> targetFolders)
+        private static IReadOnlyList<EagleItemRecord> ReadTargetItems(string imagesPath, IReadOnlyList<EagleFolderTarget> targetFolders, DateTime? folderMetadataUpdatedAtUtc)
         {
             var metadataPaths = Directory.GetFiles(imagesPath, "metadata.json", SearchOption.AllDirectories);
             var results = new List<EagleItemRecord>();
@@ -182,6 +186,7 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
                 var boothMetadata = metadataEntries
                     .Select(entry => entry.BoothMetadata)
                     .FirstOrDefault(metadata => metadata != null);
+                var boothLastUpdatedAtUtc = boothMetadata != null ? ParseUtcTimestamp(boothMetadata.lastUpdatedAtUtc) : null;
                 var fileEntries = metadataEntries
                     .Where(entry => entry.BoothMetadata == null)
                     .Select(entry => entry.Entry)
@@ -201,7 +206,8 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
                     ShopName = boothMetadata != null ? boothMetadata.shopName : null,
                     ShopUrl = boothMetadata != null ? boothMetadata.shopUrl : null,
                     ShopThumbnailUrl = boothMetadata != null ? boothMetadata.shopThumbnailUrl : null,
-                    BoothLastUpdatedAtUtc = boothMetadata != null ? ParseUtcTimestamp(boothMetadata.lastUpdatedAtUtc) : null,
+                    BoothLastUpdatedAtUtc = boothLastUpdatedAtUtc,
+                    SourceUpdatedAtUtc = ResolveSourceUpdatedAtUtc(metadataEntries.Select(entry => entry.Entry), Latest(boothLastUpdatedAtUtc, folderMetadataUpdatedAtUtc)),
                     Tags = boothMetadata != null ? boothMetadata.tags ?? Array.Empty<string>() : Array.Empty<string>(),
                     Files = BuildFolderFileRecords(fileEntries, boothMetadata != null ? boothMetadata.downloads : null)
                 });
@@ -224,7 +230,8 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
                 results[metadata.id] = new EagleMetadataEntry
                 {
                     Metadata = metadata,
-                    DirectoryPath = Path.GetDirectoryName(metadataPath)
+                    DirectoryPath = Path.GetDirectoryName(metadataPath),
+                    MetadataPath = metadataPath
                 };
             }
 
@@ -331,6 +338,66 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
                 IsDeleted = false
             };
         }
+
+        private static DateTime? ResolveSourceUpdatedAtUtc(IEnumerable<EagleMetadataEntry> entries, DateTime? boothLastUpdatedAtUtc)
+        {
+            var latest = boothLastUpdatedAtUtc;
+            foreach (var entry in entries ?? Array.Empty<EagleMetadataEntry>())
+            {
+                if (entry == null || entry.Metadata == null)
+                {
+                    continue;
+                }
+
+                var metadataTimestamp = FromUnixTimestamp(Math.Max(entry.Metadata.mtime, entry.Metadata.modificationTime));
+                if ((!latest.HasValue || metadataTimestamp > latest.Value) && metadataTimestamp > UnixEpochUtc)
+                {
+                    latest = metadataTimestamp;
+                }
+
+                if (!string.IsNullOrWhiteSpace(entry.MetadataPath) && File.Exists(entry.MetadataPath))
+                {
+                    var fileTimestamp = File.GetLastWriteTimeUtc(entry.MetadataPath);
+                    if (!latest.HasValue || fileTimestamp > latest.Value)
+                    {
+                        latest = fileTimestamp;
+                    }
+                }
+            }
+
+            return latest;
+        }
+
+        private static DateTime? Latest(DateTime? left, DateTime? right)
+        {
+            if (!left.HasValue)
+            {
+                return right;
+            }
+
+            return !right.HasValue || left.Value >= right.Value ? left : right;
+        }
+
+        private static DateTime FromUnixTimestamp(long timestamp)
+        {
+            if (timestamp <= 0)
+            {
+                return UnixEpochUtc;
+            }
+
+            try
+            {
+                return timestamp > 9999999999L
+                    ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp).UtcDateTime
+                    : DateTimeOffset.FromUnixTimeSeconds(timestamp).UtcDateTime;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return UnixEpochUtc;
+            }
+        }
+
+        private static readonly DateTime UnixEpochUtc = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         private static string GetFileName(EagleItemMetadata metadata)
         {
@@ -746,6 +813,8 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
             public string id;
             public string name;
             public long size;
+            public long mtime;
+            public long modificationTime;
             public string ext;
             public string[] folders;
             public bool isDeleted;
@@ -755,6 +824,7 @@ namespace Ee4v.AssetManager.Api.Connecter.Eagle
         {
             public EagleItemMetadata Metadata;
             public string DirectoryPath;
+            public string MetadataPath;
         }
 
         [Serializable]

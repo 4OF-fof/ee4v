@@ -127,8 +127,8 @@ namespace Ee4v.AssetManager.Api.Connecter.Blm
                 CultureInfo.InvariantCulture,
                 DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal,
                 out parsed)
-                ? parsed
-                : null;
+                ? (DateTime?)parsed
+                : (DateTime?)null;
         }
 
         private static string ResolveItemDirectoryPath(BlmSyncRequest request, SQLiteConnection connection)

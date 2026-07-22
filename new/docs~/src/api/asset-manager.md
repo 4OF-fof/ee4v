@@ -974,6 +974,27 @@ Notes:
 - Eagle item に対応しない Booth download も `file_info` として作成する。この場合は origin を持たないため、実体 path 解決はできない。
 - Booth metadata を持たない folder も同期対象に含め、folder 名を item 名、説明を空文字として扱う。
 
+### 起動時の自動同期
+
+Unity Editor session の開始時に、設定で有効な datasource の変更確認を background で行い、変更がある source だけを順番に同期します。同じ session 内の domain reload では再実行しません。
+
+- `assetManager.autoSyncBlmOnStartup`: BLM `data.db` と item directory を同期する
+- `assetManager.autoSyncEagleOnStartup`: Eagle library を同期する
+- datasource path が未設定または存在しない source は skip する
+- BLM / Eagle の同期対象 record を正規化した fingerprint は `<ee4v global path>/cache/sync` に保存する
+- fingerprint が前回成功時と一致する場合は DB sync と `AssetManagerApi.Changed` 通知を行わない
+- 外部の item 情報に差分があり、Unity の `item_info.updated_at` が datasource update time（取得できない場合は前回 `imported_at`）より新しい場合は競合として扱う
+- 競合時は AssetManager window を開き、`DiffConfirmationOverlay` で名前・説明の現在値と同期元値を表示する
+- `上書き` は差分を同期元の値で上書きして同期を続行し、`キャンセル` は今回の起動時同期全体を中止する
+- 実際に同期を実行した場合だけ、完了後の `AssetManagerApi.Changed` を main thread で通知する
+- background activity は統合 AssetManager の Main View と単独 Main View window の `StatusOverlay` に表示する
+
+File Tree の完成済み表示データは Unity Editor のメモリ上に最大 64 件共有します。同一 item / file の再表示ではこの memory cache をそのまま利用し、filesystem / ZIP の再確認と loading text の表示を行いません。AssetManager の変更または Import Target の変更通知で全件を破棄し、Unity 終了または domain reload で揮発します。
+
+File Tree の構築中は File Tree 内の loading text だけを表示し、`BackgroundActivityApi` には登録しないため `StatusOverlay` は表示しません。
+
+File Tree の ZIP metadata cache は、thumbnail と同じ cache root の `<ee4v global path>/cache/file-tree` に保存します。cache は source ZIP の更新日時と file size が一致する場合だけ利用し、不一致時は background task で再生成します。これは memory cache と異なり Unity を終了しても保持されます。
+
 ### `AssetManagerApi.GetSyncInfo`
 
 Datasource 別の最後の sync 状態を取得します。

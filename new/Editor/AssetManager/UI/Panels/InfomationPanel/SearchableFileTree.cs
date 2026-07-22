@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Ee4v.AssetManager.Api;
 using Ee4v.Core.I18n;
+using Ee4v.Core.Settings;
 using Ee4v.UI;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -20,14 +23,15 @@ namespace Ee4v.AssetManager
         private const string RowTitleClassName = "ee4v-asset-manager-file-tree__title";
         private const string RowMetaClassName = "ee4v-asset-manager-file-tree__meta";
         private readonly SearchableTreeView<FileTreeNode> _treeView;
-        private readonly FileTreeBuilder _builder;
+        private CancellationTokenSource _reloadCancellation;
+        private int _reloadVersion;
+        private bool _isAttached;
         private string _itemId;
         private string _fileId;
 
         public SearchableFileTree()
         {
             AddToClassList(RootClassName);
-            _builder = new FileTreeBuilder();
             _treeView = new SearchableTreeView<FileTreeNode>(
                 CreateTreeItem,
                 BindTreeItem,
@@ -55,7 +59,10 @@ namespace Ee4v.AssetManager
 
             _itemId = nextItemId;
             _fileId = string.Empty;
-            Reload();
+            if (_isAttached)
+            {
+                Reload();
+            }
         }
 
         public void SetFileId(string itemId, string fileId)
@@ -70,11 +77,15 @@ namespace Ee4v.AssetManager
 
             _itemId = nextItemId;
             _fileId = nextFileId;
-            Reload();
+            if (_isAttached)
+            {
+                Reload();
+            }
         }
 
         public void ClearTree()
         {
+            CancelPendingReload();
             _itemId = string.Empty;
             _fileId = string.Empty;
             _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.empty"));
@@ -83,6 +94,7 @@ namespace Ee4v.AssetManager
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
+            _isAttached = true;
             AssetManagerApi.Changed -= OnAssetManagerChanged;
             AssetManagerApi.Changed += OnAssetManagerChanged;
             AssetManagerApi.FileTreeChanged -= OnFileTreeChanged;
@@ -92,57 +104,129 @@ namespace Ee4v.AssetManager
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
+            _isAttached = false;
+            CancelPendingReload();
             AssetManagerApi.Changed -= OnAssetManagerChanged;
             AssetManagerApi.FileTreeChanged -= OnFileTreeChanged;
         }
 
         private void OnAssetManagerChanged()
         {
+            FileTreeMemoryCache.Clear();
             Reload(preserveTreeState: true);
         }
 
         private void OnFileTreeChanged()
         {
+            FileTreeMemoryCache.Clear();
             Reload(preserveTreeState: true);
         }
 
         private void Reload(bool preserveTreeState = false)
         {
+            CancelPendingReload();
             if (string.IsNullOrWhiteSpace(_itemId))
             {
-                ClearTree();
+                _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.empty"));
+                _treeView.SetItems(null);
                 return;
             }
 
-            try
+            SettingApi.Preload(SettingScope.User);
+            var itemId = _itemId;
+            var fileId = _fileId;
+            var cacheDirectory = AssetFileTreeCache.ResolveCacheDirectory();
+            var inaccessibleText = I18N.Get("assetManager.infomationPanel.fileTree.meta.inaccessible");
+            var zipText = I18N.Get("assetManager.infomationPanel.fileTree.meta.zip");
+            var memoryCacheKey = new FileTreeMemoryCacheKey(
+                itemId,
+                fileId,
+                cacheDirectory,
+                inaccessibleText,
+                zipText);
+            IReadOnlyList<SearchableTreeItemData<FileTreeNode>> cachedItems;
+            if (FileTreeMemoryCache.TryGet(memoryCacheKey, out cachedItems))
             {
-                var files = LoadFiles();
-                var variants = string.IsNullOrWhiteSpace(_fileId)
-                    ? AssetManagerApi.GetVariantGroups(_itemId)
-                    : Array.Empty<AssetVariantGroup>();
-                var versions = string.IsNullOrWhiteSpace(_fileId)
-                    ? AssetManagerApi.GetVersionGroups(_itemId)
-                    : Array.Empty<AssetVersionGroup>();
-                var importTargetsByFileId = new Dictionary<string, IReadOnlyList<AssetFileImportTarget>>(StringComparer.Ordinal);
-                for (var i = 0; i < files.Count; i++)
-                {
-                    importTargetsByFileId[files[i].Id] = AssetManagerApi.GetFileImportTargets(files[i].Id);
-                }
-
                 _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.empty"));
-                _treeView.SetItems(_builder.Build(files, variants, versions, importTargetsByFileId), preserveTreeState);
+                _treeView.SetItems(cachedItems, preserveTreeState);
+                return;
             }
-            catch (Exception)
+
+            var cancellation = new CancellationTokenSource();
+            _reloadCancellation = cancellation;
+            var reloadVersion = ++_reloadVersion;
+
+            _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.loading"));
+            _treeView.SetItems(null);
+
+            Task.Run(
+                () => LoadTree(itemId, fileId, cacheDirectory, inaccessibleText, zipText, cancellation.Token),
+                cancellation.Token).ContinueWith(task =>
             {
-                _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.loadFailed"));
-                _treeView.SetItems(null);
-            }
+                EditorApplication.delayCall += () =>
+                {
+                    if (reloadVersion != _reloadVersion || cancellation.IsCancellationRequested || task.IsCanceled)
+                    {
+                        cancellation.Dispose();
+                        return;
+                    }
+
+                    if (ReferenceEquals(_reloadCancellation, cancellation))
+                    {
+                        _reloadCancellation = null;
+                    }
+
+                    cancellation.Dispose();
+                    if (task.IsFaulted)
+                    {
+                        if (task.Exception != null)
+                        {
+                            Debug.LogException(task.Exception.GetBaseException());
+                        }
+
+                        _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.loadFailed"));
+                        _treeView.SetItems(null);
+                        return;
+                    }
+
+                    FileTreeMemoryCache.Set(memoryCacheKey, task.Result);
+                    _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.empty"));
+                    _treeView.SetItems(task.Result, preserveTreeState);
+                };
+            });
         }
 
-        private IReadOnlyList<AssetFile> LoadFiles()
+        private static IReadOnlyList<SearchableTreeItemData<FileTreeNode>> LoadTree(
+            string itemId,
+            string fileId,
+            string cacheDirectory,
+            string inaccessibleText,
+            string zipText,
+            CancellationToken cancellationToken)
         {
-            var files = AssetManagerApi.GetFiles(_itemId, new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active });
-            if (string.IsNullOrWhiteSpace(_fileId))
+            var files = LoadFiles(itemId, fileId);
+            cancellationToken.ThrowIfCancellationRequested();
+            var variants = string.IsNullOrWhiteSpace(fileId)
+                ? AssetManagerApi.GetVariantGroups(itemId)
+                : Array.Empty<AssetVariantGroup>();
+            var versions = string.IsNullOrWhiteSpace(fileId)
+                ? AssetManagerApi.GetVersionGroups(itemId)
+                : Array.Empty<AssetVersionGroup>();
+            var importTargetsByFileId = new Dictionary<string, IReadOnlyList<AssetFileImportTarget>>(StringComparer.Ordinal);
+            for (var i = 0; i < files.Count; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                importTargetsByFileId[files[i].Id] = AssetManagerApi.GetFileImportTargets(files[i].Id);
+            }
+
+            var builder = new FileTreeBuilder(cacheDirectory, inaccessibleText, zipText, cancellationToken);
+            return builder.Build(files, variants, versions, importTargetsByFileId);
+        }
+
+        private static IReadOnlyList<AssetFile> LoadFiles(string itemId, string fileId)
+        {
+            var files = AssetManagerApi.GetFiles(itemId, new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active });
+            if (string.IsNullOrWhiteSpace(fileId))
             {
                 return files;
             }
@@ -150,7 +234,7 @@ namespace Ee4v.AssetManager
             var selectedFiles = new List<AssetFile>(1);
             for (var i = 0; i < files.Count; i++)
             {
-                if (string.Equals(files[i].Id, _fileId, StringComparison.Ordinal))
+                if (string.Equals(files[i].Id, fileId, StringComparison.Ordinal))
                 {
                     selectedFiles.Add(files[i]);
                     break;
@@ -158,6 +242,18 @@ namespace Ee4v.AssetManager
             }
 
             return selectedFiles;
+        }
+
+        private void CancelPendingReload()
+        {
+            _reloadVersion++;
+            if (_reloadCancellation == null)
+            {
+                return;
+            }
+
+            _reloadCancellation.Cancel();
+            _reloadCancellation = null;
         }
 
         private static VisualElement CreateTreeItem()
@@ -277,6 +373,109 @@ namespace Ee4v.AssetManager
         }
     }
 
+    internal readonly struct FileTreeMemoryCacheKey : IEquatable<FileTreeMemoryCacheKey>
+    {
+        public FileTreeMemoryCacheKey(
+            string itemId,
+            string fileId,
+            string cacheDirectory,
+            string inaccessibleText,
+            string zipText)
+        {
+            ItemId = itemId ?? string.Empty;
+            FileId = fileId ?? string.Empty;
+            CacheDirectory = cacheDirectory ?? string.Empty;
+            InaccessibleText = inaccessibleText ?? string.Empty;
+            ZipText = zipText ?? string.Empty;
+        }
+
+        private string ItemId { get; }
+
+        private string FileId { get; }
+
+        private string CacheDirectory { get; }
+
+        private string InaccessibleText { get; }
+
+        private string ZipText { get; }
+
+        public bool Equals(FileTreeMemoryCacheKey other)
+        {
+            return string.Equals(ItemId, other.ItemId, StringComparison.Ordinal) &&
+                   string.Equals(FileId, other.FileId, StringComparison.Ordinal) &&
+                   string.Equals(CacheDirectory, other.CacheDirectory, StringComparison.Ordinal) &&
+                   string.Equals(InaccessibleText, other.InaccessibleText, StringComparison.Ordinal) &&
+                   string.Equals(ZipText, other.ZipText, StringComparison.Ordinal);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is FileTreeMemoryCacheKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = StringComparer.Ordinal.GetHashCode(ItemId);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(FileId);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(CacheDirectory);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(InaccessibleText);
+                return (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ZipText);
+            }
+        }
+    }
+
+    internal static class FileTreeMemoryCache
+    {
+        private const int MaxEntryCount = 64;
+        private static readonly object Gate = new object();
+        private static readonly Dictionary<FileTreeMemoryCacheKey, IReadOnlyList<SearchableTreeItemData<FileTreeNode>>> Entries =
+            new Dictionary<FileTreeMemoryCacheKey, IReadOnlyList<SearchableTreeItemData<FileTreeNode>>>();
+        private static readonly Queue<FileTreeMemoryCacheKey> InsertionOrder = new Queue<FileTreeMemoryCacheKey>();
+
+        public static bool TryGet(
+            FileTreeMemoryCacheKey key,
+            out IReadOnlyList<SearchableTreeItemData<FileTreeNode>> items)
+        {
+            lock (Gate)
+            {
+                return Entries.TryGetValue(key, out items);
+            }
+        }
+
+        public static void Set(
+            FileTreeMemoryCacheKey key,
+            IReadOnlyList<SearchableTreeItemData<FileTreeNode>> items)
+        {
+            lock (Gate)
+            {
+                if (Entries.ContainsKey(key))
+                {
+                    Entries[key] = items ?? Array.Empty<SearchableTreeItemData<FileTreeNode>>();
+                    return;
+                }
+
+                while (Entries.Count >= MaxEntryCount && InsertionOrder.Count > 0)
+                {
+                    Entries.Remove(InsertionOrder.Dequeue());
+                }
+
+                Entries[key] = items ?? Array.Empty<SearchableTreeItemData<FileTreeNode>>();
+                InsertionOrder.Enqueue(key);
+            }
+        }
+
+        public static void Clear()
+        {
+            lock (Gate)
+            {
+                Entries.Clear();
+                InsertionOrder.Clear();
+            }
+        }
+    }
+
     internal sealed class FileTreeNode
     {
         public FileTreeNode(
@@ -342,9 +541,24 @@ namespace Ee4v.AssetManager
 
     internal sealed class FileTreeBuilder
     {
-        private readonly ZipFileTreeReader _zipReader = new ZipFileTreeReader();
+        private readonly ZipFileTreeReader _zipReader;
+        private readonly string _inaccessibleText;
+        private readonly string _zipText;
+        private readonly CancellationToken _cancellationToken;
         private int _nextId;
         private IReadOnlyDictionary<string, IReadOnlyList<AssetFileImportTarget>> _importTargetsByFileId;
+
+        public FileTreeBuilder(
+            string cacheDirectory,
+            string inaccessibleText,
+            string zipText,
+            CancellationToken cancellationToken)
+        {
+            _zipReader = new ZipFileTreeReader(cacheDirectory, cancellationToken);
+            _inaccessibleText = inaccessibleText ?? string.Empty;
+            _zipText = zipText ?? string.Empty;
+            _cancellationToken = cancellationToken;
+        }
 
         public IReadOnlyList<SearchableTreeItemData<FileTreeNode>> Build(
             IReadOnlyList<AssetFile> files,
@@ -366,6 +580,7 @@ namespace Ee4v.AssetManager
 
             for (var i = 0; i < variantGroups.Count; i++)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 var groupItem = BuildVariantGroupNode(variantGroups[i], versionGroups, files, consumedFileIds);
                 if (groupItem != null)
                 {
@@ -375,6 +590,7 @@ namespace Ee4v.AssetManager
 
             for (var i = 0; i < versionGroups.Count; i++)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 if (!string.IsNullOrWhiteSpace(versionGroups[i].VariantGroupId))
                 {
                     continue;
@@ -389,6 +605,7 @@ namespace Ee4v.AssetManager
 
             for (var i = 0; i < files.Count; i++)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 var file = files[i];
                 if (file != null && !consumedFileIds.Contains(file.Id))
                 {
@@ -518,6 +735,7 @@ namespace Ee4v.AssetManager
             {
                 foreach (var childDirectory in Directory.EnumerateDirectories(path))
                 {
+                    _cancellationToken.ThrowIfCancellationRequested();
                     children.Add(CreateDirectoryItem(
                         childDirectory,
                         Path.GetFileName(childDirectory),
@@ -529,6 +747,7 @@ namespace Ee4v.AssetManager
 
                 foreach (var childFile in Directory.EnumerateFiles(path))
                 {
+                    _cancellationToken.ThrowIfCancellationRequested();
                     var childRelativePath = GetRelativePath(rootPath, childFile);
                     if (IsZipPath(childFile))
                     {
@@ -540,10 +759,14 @@ namespace Ee4v.AssetManager
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception)
             {
                 children.Add(CreateItem(
-                    I18N.Get("assetManager.infomationPanel.fileTree.meta.inaccessible"),
+                    _inaccessibleText,
                     string.Empty,
                     searchPath));
             }
@@ -565,12 +788,16 @@ namespace Ee4v.AssetManager
             {
                 children = _zipReader.Read(path, () => _nextId++, assetFile, GetTargetPathSet(assetFile), relativePath);
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception)
             {
                 children = new[]
                 {
                     CreateItem(
-                        I18N.Get("assetManager.infomationPanel.fileTree.meta.inaccessible"),
+                        _inaccessibleText,
                         string.Empty,
                         path)
                 };
@@ -578,7 +805,7 @@ namespace Ee4v.AssetManager
 
             return CreateItem(
                 string.IsNullOrWhiteSpace(name) ? Path.GetFileName(path) : name,
-                I18N.Get("assetManager.infomationPanel.fileTree.meta.zip"),
+                _zipText,
                 path,
                 assetFile,
                 relativePath,
@@ -758,7 +985,14 @@ namespace Ee4v.AssetManager
 
     internal sealed class ZipFileTreeReader
     {
-        private readonly Dictionary<string, ZipTreeCacheEntry> _cache = new Dictionary<string, ZipTreeCacheEntry>(StringComparer.OrdinalIgnoreCase);
+        private readonly string _cacheDirectory;
+        private readonly CancellationToken _cancellationToken;
+
+        public ZipFileTreeReader(string cacheDirectory, CancellationToken cancellationToken)
+        {
+            _cacheDirectory = cacheDirectory;
+            _cancellationToken = cancellationToken;
+        }
 
         public IReadOnlyList<SearchableTreeItemData<FileTreeNode>> Read(
             string zipPath,
@@ -767,32 +1001,19 @@ namespace Ee4v.AssetManager
             HashSet<string> importTargetPaths,
             string relativePathPrefix)
         {
-            var fileInfo = new FileInfo(zipPath);
-            var cacheKey = zipPath;
-            ZipTreeCacheEntry cached;
-            if (_cache.TryGetValue(cacheKey, out cached) &&
-                cached.LastWriteTimeUtc == fileInfo.LastWriteTimeUtc &&
-                cached.Length == fileInfo.Length)
-            {
-                return cached.CreateTree(nextId, assetFile, importTargetPaths, relativePathPrefix);
-            }
-
             var root = new ZipVirtualDirectory(string.Empty, string.Empty);
-            using (var stream = File.OpenRead(zipPath))
-            using (var archive = new ZipArchive(stream, ZipArchiveMode.Read))
+            var entries = AssetFileTreeCache.ReadZipEntries(_cacheDirectory, zipPath, _cancellationToken);
+            for (var i = 0; i < entries.Count; i++)
             {
-                for (var i = 0; i < archive.Entries.Count; i++)
-                {
-                    AddEntry(root, archive.Entries[i]);
-                }
+                _cancellationToken.ThrowIfCancellationRequested();
+                AddEntry(root, entries[i]);
             }
 
-            var snapshot = new ZipTreeCacheEntry(fileInfo.LastWriteTimeUtc, fileInfo.Length, root.Children);
-            _cache[cacheKey] = snapshot;
+            var snapshot = new ZipTreeCacheEntry(root.Children);
             return snapshot.CreateTree(nextId, assetFile, importTargetPaths, relativePathPrefix);
         }
 
-        private static void AddEntry(ZipVirtualDirectory root, ZipArchiveEntry entry)
+        private static void AddEntry(ZipVirtualDirectory root, AssetFileTreeArchiveEntry entry)
         {
             if (entry == null || string.IsNullOrWhiteSpace(entry.FullName))
             {
@@ -825,16 +1046,10 @@ namespace Ee4v.AssetManager
         {
             private readonly IReadOnlyList<ZipVirtualNode> _children;
 
-            public ZipTreeCacheEntry(DateTime lastWriteTimeUtc, long length, IReadOnlyList<ZipVirtualNode> children)
+            public ZipTreeCacheEntry(IReadOnlyList<ZipVirtualNode> children)
             {
-                LastWriteTimeUtc = lastWriteTimeUtc;
-                Length = length;
                 _children = children ?? Array.Empty<ZipVirtualNode>();
             }
-
-            public DateTime LastWriteTimeUtc { get; }
-
-            public long Length { get; }
 
             public IReadOnlyList<SearchableTreeItemData<FileTreeNode>> CreateTree(
                 Func<int> nextId,

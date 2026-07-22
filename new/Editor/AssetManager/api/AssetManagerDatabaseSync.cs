@@ -25,6 +25,11 @@ namespace Ee4v.AssetManager.Api
                 return new AssetSyncResult(0, 0, 0, 1, AssetSyncState.Failed);
             }
 
+            return SyncBlm(records, AssetSyncFingerprint.CreateBlm(records), false);
+        }
+
+        private static AssetSyncResult SyncBlm(IReadOnlyList<BlmItemRecord> records, string fingerprint, bool overwriteItemText)
+        {
             using (var connection = OpenConnection())
             {
                 var created = 0;
@@ -43,7 +48,7 @@ namespace Ee4v.AssetManager.Api
                     {
                         var item = InTransaction(connection, () =>
                         {
-                            var result = UpsertBoothSnapshot(connection, record);
+                            var result = UpsertBoothSnapshot(connection, record, overwriteItemText);
                             var originStatus = UpsertItemSourceOrigin(
                                 connection,
                                 "blm",
@@ -91,6 +96,11 @@ namespace Ee4v.AssetManager.Api
 
                 var state = ResolveSyncState(created, updated, unchanged, error);
                 UpsertSyncInfo(connection, "blm", state);
+                if (state == AssetSyncState.Success)
+                {
+                    AssetSyncFingerprintCache.Save(AssetSourceType.Blm, fingerprint);
+                }
+
                 return new AssetSyncResult(created, updated, unchanged, error, state);
             }
         }
@@ -108,6 +118,11 @@ namespace Ee4v.AssetManager.Api
                 return new AssetSyncResult(0, 0, 0, 1, AssetSyncState.Failed);
             }
 
+            return SyncEagle(records, AssetSyncFingerprint.CreateEagle(records), false);
+        }
+
+        private static AssetSyncResult SyncEagle(IReadOnlyList<EagleItemRecord> records, string fingerprint, bool overwriteItemText)
+        {
             using (var connection = OpenConnection())
             {
                 var created = 0;
@@ -133,8 +148,8 @@ namespace Ee4v.AssetManager.Api
                         var item = InTransaction(connection, () =>
                         {
                             var result = record.BoothItemId.HasValue
-                                ? UpsertBoothSnapshot(connection, record)
-                                : UpsertPlainItem(connection, "eagle", record.EagleItemId, record.ItemName, record.ItemDescription);
+                                ? UpsertBoothSnapshot(connection, record, overwriteItemText)
+                                : UpsertPlainItem(connection, "eagle", record.EagleItemId, record.ItemName, record.ItemDescription, overwriteItemText);
                             var originStatus = UpsertItemSourceOrigin(
                                 connection,
                                 "eagle",
@@ -178,21 +193,26 @@ namespace Ee4v.AssetManager.Api
 
                 var state = ResolveSyncState(created, updated, unchanged, error);
                 UpsertSyncInfo(connection, "eagle", state);
+                if (state == AssetSyncState.Success)
+                {
+                    AssetSyncFingerprintCache.Save(AssetSourceType.Eagle, fingerprint);
+                }
+
                 return new AssetSyncResult(created, updated, unchanged, error, state);
             }
         }
 
-        private static SyncItemUpsertResult UpsertBoothSnapshot(SQLiteConnection connection, BlmItemRecord record)
+        private static SyncItemUpsertResult UpsertBoothSnapshot(SQLiteConnection connection, BlmItemRecord record, bool overwriteItemText)
         {
-            return UpsertBoothSnapshot(connection, record.BoothItemId, record.Name, record.Description, record.ThumbnailUrl, record.ShopName, GetSubdomainFromUrl(record.ShopUrl), record.ShopThumbnailUrl, record.LastUpdatedAtUtc);
+            return UpsertBoothSnapshot(connection, record.BoothItemId, record.Name, record.Description, record.ThumbnailUrl, record.ShopName, GetSubdomainFromUrl(record.ShopUrl), record.ShopThumbnailUrl, record.LastUpdatedAtUtc, overwriteItemText);
         }
 
-        private static SyncItemUpsertResult UpsertBoothSnapshot(SQLiteConnection connection, EagleItemRecord record)
+        private static SyncItemUpsertResult UpsertBoothSnapshot(SQLiteConnection connection, EagleItemRecord record, bool overwriteItemText)
         {
-            return UpsertBoothSnapshot(connection, record.BoothItemId.Value, record.BoothName, record.BoothDescription, record.BoothThumbnailUrl, record.ShopName, GetSubdomainFromUrl(record.ShopUrl), record.ShopThumbnailUrl, record.BoothLastUpdatedAtUtc);
+            return UpsertBoothSnapshot(connection, record.BoothItemId.Value, record.BoothName, record.BoothDescription, record.BoothThumbnailUrl, record.ShopName, GetSubdomainFromUrl(record.ShopUrl), record.ShopThumbnailUrl, record.BoothLastUpdatedAtUtc, overwriteItemText);
         }
 
-        private static SyncItemUpsertResult UpsertBoothSnapshot(SQLiteConnection connection, long boothItemId, string name, string description, string thumbnailUrl, string shopName, string shopSubdomain, string shopThumbnailUrl, DateTime? lastUpdatedAt)
+        private static SyncItemUpsertResult UpsertBoothSnapshot(SQLiteConnection connection, long boothItemId, string name, string description, string thumbnailUrl, string shopName, string shopSubdomain, string shopThumbnailUrl, DateTime? lastUpdatedAt, bool overwriteItemText)
         {
             var now = Now();
             var safeName = NormalizeDatasourceText(name);
@@ -242,11 +262,11 @@ namespace Ee4v.AssetManager.Api
                     booth.id);
             }
 
-            changed = NormalizeExistingItemInfoText(connection, booth.item_info_id, previousBoothName, previousBoothDescription, safeName, safeDescription) || changed;
+            changed = NormalizeExistingItemInfoText(connection, booth.item_info_id, previousBoothName, previousBoothDescription, safeName, safeDescription, overwriteItemText) || changed;
             return new SyncItemUpsertResult(booth.item_info_id, changed ? AssetSyncStatus.Updated : AssetSyncStatus.Unchanged);
         }
 
-        private static SyncItemUpsertResult UpsertPlainItem(SQLiteConnection connection, string sourceType, string sourceId, string name, string description)
+        private static SyncItemUpsertResult UpsertPlainItem(SQLiteConnection connection, string sourceType, string sourceId, string name, string description, bool overwriteItemText)
         {
             var safeName = NormalizeDatasourceText(name);
             if (string.IsNullOrWhiteSpace(safeName))
@@ -262,8 +282,8 @@ namespace Ee4v.AssetManager.Api
             if (origin != null)
             {
                 var existing = connection.Query<ItemRow>("SELECT * FROM item_info WHERE id = ? LIMIT 1", origin.item_info_id).First();
-                var nextName = StringEquals(existing.name, origin.source_name) ? safeName : existing.name;
-                var nextDescription = StringEquals(existing.description, origin.source_description) ? safeDescription : existing.description;
+                var nextName = overwriteItemText || StringEquals(existing.name, origin.source_name) ? safeName : existing.name;
+                var nextDescription = overwriteItemText || StringEquals(existing.description, origin.source_description) ? safeDescription : existing.description;
                 var changed = !StringEquals(existing.name, nextName) ||
                               !StringEquals(existing.description, nextDescription) ||
                               existing.is_available == 0;
@@ -812,7 +832,7 @@ namespace Ee4v.AssetManager.Api
             return fileId;
         }
 
-        private static bool NormalizeExistingItemInfoText(SQLiteConnection connection, string itemId, string previousSourceName, string previousSourceDescription, string nextSourceName, string nextSourceDescription)
+        private static bool NormalizeExistingItemInfoText(SQLiteConnection connection, string itemId, string previousSourceName, string previousSourceDescription, string nextSourceName, string nextSourceDescription, bool overwriteItemText)
         {
             if (string.IsNullOrWhiteSpace(itemId))
             {
@@ -832,12 +852,12 @@ namespace Ee4v.AssetManager.Api
             }
 
             var normalizedDescription = NormalizeDatasourceText(item.description);
-            if (StringEquals(item.name, previousSourceName))
+            if (overwriteItemText || StringEquals(item.name, previousSourceName))
             {
                 normalizedName = nextSourceName;
             }
 
-            if (StringEquals(item.description, previousSourceDescription))
+            if (overwriteItemText || StringEquals(item.description, previousSourceDescription))
             {
                 normalizedDescription = nextSourceDescription;
             }

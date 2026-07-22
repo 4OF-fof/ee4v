@@ -8,6 +8,7 @@
       },
       "fileTree": {
         "searchPlaceholder": "Search files",
+        "loading": "Checking the file tree...",
         "empty": "No files to display.",
         "loadFailed": "Failed to load the file tree.",
         "meta": {
@@ -19,6 +20,20 @@
           "unmarkImportTarget": "Unmark import target"
         }
       }
+    },
+    "background": {
+      "datasourceCheck": "Checking library changes...",
+      "datasourceSync": "Synchronizing the AssetManager library..."
+    },
+    "syncConflict": {
+      "title": "Review synchronization changes",
+      "message": "Some Unity-side item information is newer than its source. Review the differences before overwriting it. Cancel stops this startup synchronization.",
+      "current": "Unity",
+      "incoming": "Source",
+      "overwrite": "Overwrite",
+      "cancel": "Cancel",
+      "unknownTime": "Unknown",
+      "metadata": "{0} · Unity updated: {1} / source updated: {2}"
     },
     "mainView": {
       "loading": "Loading assets...",

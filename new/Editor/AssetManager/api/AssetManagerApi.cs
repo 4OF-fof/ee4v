@@ -214,5 +214,10 @@ namespace Ee4v.AssetManager.Api
                 return true;
             });
         }
+
+        internal static void NotifyChanged()
+        {
+            Changed?.Invoke();
+        }
     }
 }

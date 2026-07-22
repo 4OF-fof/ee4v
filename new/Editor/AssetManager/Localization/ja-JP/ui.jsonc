@@ -8,6 +8,7 @@
       },
       "fileTree": {
         "searchPlaceholder": "ファイルを検索",
+        "loading": "ファイルツリーを確認中...",
         "empty": "表示できるファイルがありません。",
         "loadFailed": "ファイルツリーの読み込みに失敗しました。",
         "meta": {
@@ -19,6 +20,20 @@
           "unmarkImportTarget": "Import 対象から外す"
         }
       }
+    },
+    "background": {
+      "datasourceCheck": "ライブラリの変更を確認中...",
+      "datasourceSync": "AssetManager ライブラリを同期中..."
+    },
+    "syncConflict": {
+      "title": "同期内容の確認",
+      "message": "Unity側の情報が同期元より新しいアイテムがあります。差分を確認してから上書きしてください。キャンセルすると今回の起動時同期を中止します。",
+      "current": "Unity側",
+      "incoming": "同期元",
+      "overwrite": "上書き",
+      "cancel": "キャンセル",
+      "unknownTime": "不明",
+      "metadata": "{0} · Unity更新: {1} / 同期元更新: {2}"
     },
     "mainView": {
       "loading": "アセットを読み込み中...",

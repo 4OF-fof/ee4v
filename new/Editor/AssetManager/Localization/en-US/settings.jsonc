@@ -24,6 +24,14 @@
       "label": "Source priority",
       "tooltip": "Priority order for file origins. Example: ee4v,eagle,blm"
     },
+    "autoSyncBlmOnStartup": {
+      "label": "Auto-sync BLM on startup",
+      "tooltip": "Synchronize the local Booth Library Manager library in the background when the Unity Editor session starts."
+    },
+    "autoSyncEagleOnStartup": {
+      "label": "Auto-sync Eagle on startup",
+      "tooltip": "Synchronize the Eagle library in the background when the Unity Editor session starts."
+    },
     "avatarNames": {
       "label": "Avatar names",
       "tooltip": "Avatar names used for automatic variant grouping. Separate names with commas, semicolons, or new lines. Files with the same non-avatar signature are grouped by the detected avatar name."

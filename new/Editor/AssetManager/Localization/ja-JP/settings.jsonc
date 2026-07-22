@@ -24,6 +24,14 @@
       "label": "Source priority",
       "tooltip": "file origin の優先順です。例: ee4v,eagle,blm"
     },
+    "autoSyncBlmOnStartup": {
+      "label": "起動時に BLM を自動同期",
+      "tooltip": "Unity Editor セッションの開始時に Booth Library Manager のローカルライブラリをバックグラウンド同期します。"
+    },
+    "autoSyncEagleOnStartup": {
+      "label": "起動時に Eagle を自動同期",
+      "tooltip": "Unity Editor セッションの開始時に Eagle library をバックグラウンド同期します。"
+    },
     "avatarNames": {
       "label": "Avatar names",
       "tooltip": "variant group 自動判定に使うアバター名です。カンマ、セミコロン、改行区切りで指定します。アバター名以外の部分が一致する file 群を、検出したアバター名で group 化します。"

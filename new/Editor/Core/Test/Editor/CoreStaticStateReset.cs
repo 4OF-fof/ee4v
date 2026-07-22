@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using Ee4v.Core.I18n;
+using Ee4v.Core.Background;
 using Ee4v.Core.Injector;
 using Ee4v.Core.Internal;
 using Ee4v.Core.Settings;
@@ -24,6 +25,8 @@ namespace Ee4v.Core.Tests
             I18NReset.Reset();
             Ee4vBootstrapFlagReset.Reset();
             WindowToastReset.Reset();
+            StatusOverlayReset.Reset();
+            BackgroundActivityApi.Reset();
         }
 
         public static void RecoverEditorState()
@@ -197,6 +200,14 @@ namespace Ee4v.Core.Tests
         public static void Reset()
         {
             WindowToastApi.ResetAllHosts();
+        }
+    }
+
+    internal static class StatusOverlayReset
+    {
+        public static void Reset()
+        {
+            StatusOverlayApi.ResetAllHosts();
         }
     }
 

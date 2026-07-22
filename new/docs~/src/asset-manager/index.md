@@ -14,7 +14,15 @@ AssetManager は Booth / Eagle / ee4v 管理ファイルを統合して扱うた
 
 - schema v2、Item/File/Tag/Collection/Dependency/Import Target API を実装済み
 - BLM `data.db` と Eagle library の読み取り同期、安定した source identity、datasource tag、欠落 origin の reconciliation を実装済み
-- Main View は DB 読み込みを background で行い、前回 load の cancellation と thumbnail の最大 4 並列取得に対応
+- Main View と File Tree は DB / filesystem 読み込みを background で行い、前回 load の cancellation に対応
+- File Tree は完成済みツリーを Unity Editor のメモリ上に最大 64 件共有し、同一 item / file の再表示では background 確認と loading 表示を省略する。AssetManager または Import Target の変更時に破棄し、Unity 終了または domain reload で揮発する
+- File Tree の ZIP metadata は、thumbnail と同じ cache root の `<ee4v global path>/cache/file-tree` に永続化し、更新日時と file size の検証を background で行う
+- Unity Editor session 開始時の BLM / Eagle datasource sync は background で変更確認を先行し、`cache/sync` の前回成功 fingerprint と一致する source は DB sync と UI reload を省略する
+- Unity側の item 情報が同期元より新しい競合は `DiffConfirmationOverlay` で現在値と同期元値を比較し、上書きまたは今回の同期キャンセルを選択できる
+- 起動時に自動同期する source は user setting から個別に有効・無効を選択できる
+- background activity 中は統合 AssetManager の Main View と単独 Main View window の右下だけに `StatusOverlay` を表示する
+- File Tree の構築状況は File Tree 内の loading message だけで表示し、`StatusOverlay` には追加しない
+- thumbnail は最大 4 並列取得に対応
 - Eagle Booth bridge は loopback bind、BOOTH origin 制限、session token、1 MiB request body 上限を適用
 
 未完了なのは UI からの import 実行、全件を辿る pagination、toolbar 検索・絞り込みの接続です。Smart Collection は現状 Item ごとの条件評価を含むため、大規模 DB 向けの query 一括化も今後の課題です。

@@ -1,6 +1,8 @@
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Threading;
 using Ee4v.Core.Settings;
 using Ee4v.Core.Testing;
 using NUnit.Framework;
@@ -511,6 +513,98 @@ namespace Ee4v.AssetManager.Api.Tests
 
         [Test]
         [FeatureTestCase(
+            "Eagle 起動時同期は fingerprint が一致すれば再同期しない",
+            "成功時の fingerprint を library cache に保存し、同じ datasource snapshot の事前確認が無変更になることを確認します。",
+            order: 321)]
+        public void PrepareEagleSync_UnchangedFingerprintSkipsSynchronization()
+        {
+            var libraryPath = CreateEagleLibrary("fingerprint.library", "Avatar");
+            var first = AssetManagerDatabase.PrepareEagleSync(new EagleSyncRequest(libraryPath));
+
+            Assert.That(first.Preview.HasChanges, Is.True);
+            Assert.That(AssetManagerDatabase.ApplyPreparedEagleSync(first, true).State, Is.EqualTo(AssetSyncState.Success));
+
+            var second = AssetManagerDatabase.PrepareEagleSync(new EagleSyncRequest(libraryPath));
+
+            Assert.That(second.Preview.HasChanges, Is.False);
+            Assert.That(second.Preview.Conflicts, Is.Empty);
+            Assert.That(AssetSyncFingerprintCache.GetPath(AssetSourceType.Eagle), Does.StartWith(Path.Combine(_tempRoot, "cache", "sync")));
+            Assert.That(File.Exists(AssetSyncFingerprintCache.GetPath(AssetSourceType.Eagle)), Is.True);
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Eagle 同期は新しい Unity item を競合として検出する",
+            "前回取り込み後に Unity item が更新され、Eagle の名前も変わった場合に差分を返し、承認後は同期元の値で上書きすることを確認します。",
+            order: 322)]
+        public void PrepareEagleSync_NewerUnityItemRequiresOverwriteConfirmation()
+        {
+            var libraryPath = CreateEagleLibrary("conflict.library", "Before");
+            AssetManagerApi.SyncEagle(new EagleSyncRequest(libraryPath));
+            var item = AssetManagerApi.SearchItems(new AssetItemQuery { Limit = 10 }).Items.Single();
+            File.WriteAllText(
+                Path.Combine(libraryPath, "metadata.json"),
+                "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"From Eagle\",\"children\":[]}]}]}");
+            using (var connection = new SQLiteConnection(GetDatabasePath()))
+            {
+                connection.Execute(
+                    "UPDATE item_info SET name = ?, updated_at = ? WHERE id = ?",
+                    "From Unity",
+                    DateTime.UtcNow.AddDays(1).ToString("O"),
+                    item.Id);
+            }
+
+            var prepared = AssetManagerDatabase.PrepareEagleSync(new EagleSyncRequest(libraryPath));
+
+            Assert.That(prepared.Preview.HasChanges, Is.True);
+            Assert.That(prepared.Preview.Conflicts.Count, Is.EqualTo(1));
+            Assert.That(prepared.Preview.Conflicts[0].Fields.Single().UnityValue, Is.EqualTo("From Unity"));
+            Assert.That(prepared.Preview.Conflicts[0].Fields.Single().DatasourceValue, Is.EqualTo("From Eagle"));
+
+            AssetManagerDatabase.ApplyPreparedEagleSync(prepared, true);
+
+            Assert.That(AssetManagerApi.GetItem(item.Id).Name, Is.EqualTo("From Eagle"));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "BLM 同期は新しい Unity item を競合として検出する",
+            "Unity item の更新時刻が BLM の更新時刻より新しい場合に差分を返し、承認後は BLM の値で上書きすることを確認します。",
+            order: 323)]
+        public void PrepareBlmSync_NewerUnityItemRequiresOverwriteConfirmation()
+        {
+            var databasePath = Path.Combine(_tempRoot, "blm-conflict.db");
+            CreateBlmDatabase(databasePath, "registered-item");
+            AssetManagerApi.SyncBlm(new BlmSyncRequest(databasePath));
+            var item = AssetManagerApi.SearchItems(new AssetItemQuery { Limit = 10 }).Items.Single();
+            using (var source = new SQLiteConnection(databasePath))
+            {
+                source.Execute("INSERT INTO overwritten_booth_items(booth_item_id, name, description) VALUES (123, 'From BLM', 'desc')");
+                source.Execute("INSERT INTO booth_item_update_history(booth_item_id, last_updated_at) VALUES (123, ?)", DateTime.UtcNow.AddDays(-1).ToString("O"));
+            }
+
+            using (var connection = new SQLiteConnection(GetDatabasePath()))
+            {
+                connection.Execute(
+                    "UPDATE item_info SET name = ?, updated_at = ? WHERE id = ?",
+                    "From Unity",
+                    DateTime.UtcNow.AddDays(1).ToString("O"),
+                    item.Id);
+            }
+
+            var prepared = AssetManagerDatabase.PrepareBlmSync(new BlmSyncRequest(databasePath));
+
+            Assert.That(prepared.Preview.HasChanges, Is.True);
+            Assert.That(prepared.Preview.Conflicts.Count, Is.EqualTo(1));
+            Assert.That(prepared.Preview.Conflicts[0].Fields.Single().DatasourceValue, Is.EqualTo("From BLM"));
+
+            AssetManagerDatabase.ApplyPreparedBlmSync(prepared, true);
+
+            Assert.That(AssetManagerApi.GetItem(item.Id).Name, Is.EqualTo("From BLM"));
+        }
+
+        [Test]
+        [FeatureTestCase(
             "Eagle folder rename は同じ item を更新する",
             "folder id を datasource identity として使い、folder 名変更で item が重複しないことを確認します。",
             order: 330)]
@@ -847,6 +941,32 @@ namespace Ee4v.AssetManager.Api.Tests
             Assert.That(resolved.Path, Is.EqualTo(innerPath));
         }
 
+        [Test]
+        [FeatureTestCase(
+            "file tree archive cache を library の cache に保存する",
+            "ZIP metadata cache を永続化し、source 更新時に非同期読み込み用snapshotを再生成できることを確認します。",
+            order: 330)]
+        public void FileTreeCache_PersistsAndInvalidatesArchiveEntries()
+        {
+            var zipPath = Path.Combine(_tempRoot, "archive.zip");
+            CreateZip(zipPath, "Assets/first.txt");
+            var originalWriteTime = File.GetLastWriteTimeUtc(zipPath);
+            var cacheDirectory = AssetFileTreeCache.ResolveCacheDirectory();
+
+            var first = AssetFileTreeCache.ReadZipEntries(cacheDirectory, zipPath, CancellationToken.None);
+            var second = AssetFileTreeCache.ReadZipEntries(cacheDirectory, zipPath, CancellationToken.None);
+
+            Assert.That(first.Select(entry => entry.FullName), Is.EqualTo(new[] { "Assets/first.txt" }));
+            Assert.That(second.Select(entry => entry.FullName), Is.EqualTo(new[] { "Assets/first.txt" }));
+            Assert.That(Directory.GetFiles(cacheDirectory, "*.ftc").Length, Is.EqualTo(1));
+
+            CreateZip(zipPath, "Assets/first.txt", "Assets/second.txt");
+            File.SetLastWriteTimeUtc(zipPath, originalWriteTime.AddSeconds(2));
+            var updated = AssetFileTreeCache.ReadZipEntries(cacheDirectory, zipPath, CancellationToken.None);
+
+            Assert.That(updated.Select(entry => entry.FullName), Is.EqualTo(new[] { "Assets/first.txt", "Assets/second.txt" }));
+        }
+
         private string GetDatabasePath()
         {
             return Path.Combine(_tempRoot, "asset-manager.db");
@@ -877,6 +997,33 @@ namespace Ee4v.AssetManager.Api.Tests
             if (boothJson != null)
             {
                 File.WriteAllText(Path.Combine(entryPath, "_boothmeta.json"), boothJson);
+            }
+        }
+
+        private string CreateEagleLibrary(string directoryName, string folderName)
+        {
+            var libraryPath = Path.Combine(_tempRoot, directoryName);
+            var imagesPath = Path.Combine(libraryPath, "images");
+            Directory.CreateDirectory(imagesPath);
+            File.WriteAllText(
+                Path.Combine(libraryPath, "metadata.json"),
+                "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"" + folderName + "\",\"children\":[]}]}]}");
+            CreateEagleEntry(imagesPath, "file-entry", "avatar-folder", "avatar", "zip", null);
+            return libraryPath;
+        }
+
+        private static void CreateZip(string path, params string[] entryNames)
+        {
+            using (var stream = File.Create(path))
+            using (var archive = new ZipArchive(stream, ZipArchiveMode.Create))
+            {
+                for (var i = 0; i < entryNames.Length; i++)
+                {
+                    using (var writer = new StreamWriter(archive.CreateEntry(entryNames[i]).Open()))
+                    {
+                        writer.Write(entryNames[i]);
+                    }
+                }
             }
         }
     }

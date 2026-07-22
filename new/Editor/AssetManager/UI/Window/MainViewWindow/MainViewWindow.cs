@@ -58,6 +58,7 @@ namespace Ee4v.AssetManager
 
             root.Add(body);
             WindowToastApi.EnsureHost(this);
+            StatusOverlayApi.EnsureHost(this);
         }
     }
 }

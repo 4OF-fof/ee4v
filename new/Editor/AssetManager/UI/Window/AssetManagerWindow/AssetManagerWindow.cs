@@ -95,6 +95,7 @@ namespace Ee4v.AssetManager
 
             root.Add(layout);
             WindowToastApi.EnsureHost(this);
+            StatusOverlayApi.EnsureHost(this);
         }
 
         private ThreePaneLayoutState CreateLayoutState()
