@@ -1059,6 +1059,48 @@ namespace Ee4v.AssetManager.Api.Tests
             Assert.That(updated.Select(entry => entry.FullName), Is.EqualTo(new[] { "Assets/first.txt", "Assets/second.txt" }));
         }
 
+        [Test]
+        [FeatureTestCase(
+            "ZIP と同名の単一 root folder を file tree から省略する",
+            "archive 全体が ZIP 名と同じ folder に包まれている場合だけ、cache の表示 path から先頭 folder を除くことを確認します。",
+            order: 334)]
+        public void FileTreeCache_IgnoresSingleRootFolderMatchingZipName()
+        {
+            var zipPath = Path.Combine(_tempRoot, "Avatar.zip");
+            CreateZip(zipPath, "Avatar/Textures/albedo.png", "Avatar/Models/avatar.fbx");
+            var cacheDirectory = AssetFileTreeCache.ResolveCacheDirectory();
+
+            var entries = AssetFileTreeCache.ReadZipEntries(cacheDirectory, zipPath, CancellationToken.None);
+            var cachedEntries = AssetFileTreeCache.ReadZipEntries(cacheDirectory, zipPath, CancellationToken.None);
+
+            Assert.That(
+                entries.Select(entry => entry.FullName),
+                Is.EqualTo(new[] { "Textures/albedo.png", "Models/avatar.fbx" }));
+            Assert.That(
+                cachedEntries.Select(entry => entry.FullName),
+                Is.EqualTo(new[] { "Textures/albedo.png", "Models/avatar.fbx" }));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "ZIP root に兄弟 entry がある場合は同名 folder を維持する",
+            "ZIP と同名の folder 以外にも root entry がある archive では階層を省略しないことを確認します。",
+            order: 335)]
+        public void FileTreeCache_KeepsMatchingFolderWhenArchiveHasRootSibling()
+        {
+            var zipPath = Path.Combine(_tempRoot, "Avatar.zip");
+            CreateZip(zipPath, "Avatar/Textures/albedo.png", "README.txt");
+
+            var entries = AssetFileTreeCache.ReadZipEntries(
+                AssetFileTreeCache.ResolveCacheDirectory(),
+                zipPath,
+                CancellationToken.None);
+
+            Assert.That(
+                entries.Select(entry => entry.FullName),
+                Is.EqualTo(new[] { "Avatar/Textures/albedo.png", "README.txt" }));
+        }
+
         private string GetDatabasePath()
         {
             return Path.Combine(_tempRoot, "asset-manager.db");

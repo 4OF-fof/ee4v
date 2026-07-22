@@ -876,6 +876,7 @@ Notes:
 - `RelativePath` は `ResolveFilePath(fileId)` で解決される実体 path からの相対 path。
 - `RelativePath` は空文字にならず、file root 自体は import 対象にしない。
 - zip 内 entry も `/` 区切りの relative path として返す。
+- ZIP 全体が ZIP file と同名の単一 root folder 配下にある場合、その root folder は `RelativePath` から省略する。root に兄弟 entry がある場合は省略しない。
 
 ### `AssetManagerApi.SetFileImportTargets`
 
@@ -918,7 +919,7 @@ public static void ImportFileTargets(string itemId, string fileId)
 ```
 
 - File Tree の file root と Version Group から実行する。Version Group は代表 file の target を使う。
-- `.unitypackage` は Unity の package import dialog へ渡す。
+- `.unitypackage` は Unity の package import へ渡す。user setting `assetManager.showUnityPackageImportDialog` は既定で `true` とし、`false` の場合は内容選択画面を表示せず package 全体を直接 import する。
 - それ以外は `Assets/<asset name>/<file name>/` 配下へ target の相対 path を維持して copy し、最後に AssetDatabase を refresh する。
 - Import Target がない file root では標準 File Tree の context menu に表示しない。
 
@@ -932,7 +933,7 @@ public static void ImportFileEntry(string itemId, string fileId, string relative
 
 - Import Target への登録有無にかかわらず、標準 File Tree の実 file context menu から実行できる。
 - directory 行には表示しない。
-- ZIP entry は必要な entry だけを読み出す。path traversal を含む relative path は拒否する。
+- ZIP entry は必要な entry だけを読み出す。File Tree で同名 root folder を省略した ZIP は、import 時に実 entry path へ戻して解決し、destination には省略した folder を作らない。path traversal を含む relative path は拒否する。
 - `.unitypackage` とそれ以外の取り扱いは `ImportFileTargets` と同じ。
 
 ## Change Notifications
@@ -1037,7 +1038,7 @@ File Tree の完成済み表示データは Unity Editor のメモリ上に最�
 
 File Tree の構築中は File Tree 内の loading text だけを表示し、`BackgroundActivityApi` には登録しないため `StatusOverlay` は表示しません。
 
-File Tree の ZIP metadata cache は、thumbnail と同じ cache root の `<ee4v global path>/cache/file-tree` に保存します。cache は source ZIP の更新日時と file size が一致する場合だけ利用し、不一致時は background task で再生成します。これは memory cache と異なり Unity を終了しても保持されます。
+File Tree の ZIP metadata cache は、thumbnail と同じ cache root の `<ee4v global path>/cache/file-tree` に保存します。cache は source ZIP の更新日時と file size が一致する場合だけ利用し、不一致時は background task で再生成します。これは memory cache と異なり Unity を終了しても保持されます。cache には archive 内の実 path を保持し、読み出し時に ZIP と同名の単一 root folder を表示 path から省略します。
 
 ### `AssetManagerApi.GetSyncInfo`
 

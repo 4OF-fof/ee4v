@@ -96,6 +96,15 @@ namespace Ee4v.AssetManager.Api
             order: 1,
             validator: ValidateRegexOrEmpty);
 
+        public static readonly SettingDefinition<bool> ShowUnityPackageImportDialog = new SettingDefinition<bool>(
+            "assetManager.showUnityPackageImportDialog",
+            SettingScope.User,
+            "settings.section.assetManager.import",
+            "settings.showUnityPackageImportDialog.label",
+            "settings.showUnityPackageImportDialog.tooltip",
+            true,
+            order: 2);
+
         public static readonly SettingDefinition<int> ItemGridItemsPerRow = new SettingDefinition<int>(
             "assetManager.itemGridItemsPerRow",
             SettingScope.User,
@@ -122,6 +131,7 @@ namespace Ee4v.AssetManager.Api
             SettingApi.Register(AutoSyncEagleOnStartup);
             SettingApi.Register(AvatarNames);
             SettingApi.Register(VersionGroupRegex);
+            SettingApi.Register(ShowUnityPackageImportDialog);
             SettingApi.Register(ItemGridItemsPerRow);
         }
 

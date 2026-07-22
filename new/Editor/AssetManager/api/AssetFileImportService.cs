@@ -11,7 +11,7 @@ namespace Ee4v.AssetManager.Api
     {
         string AssetsDirectory { get; }
 
-        void ImportPackage(string packagePath, Action onFinished);
+        void ImportPackage(string packagePath, bool interactive, Action onFinished);
 
         void Refresh();
     }
@@ -23,9 +23,9 @@ namespace Ee4v.AssetManager.Api
             get { return AssetImport.AssetsDirectory; }
         }
 
-        public void ImportPackage(string packagePath, Action onFinished)
+        public void ImportPackage(string packagePath, bool interactive, Action onFinished)
         {
-            AssetImport.ImportPackage(packagePath, onFinished);
+            AssetImport.ImportPackage(packagePath, interactive, onFinished);
         }
 
         public void Refresh()
@@ -43,7 +43,8 @@ namespace Ee4v.AssetManager.Api
             string assetFileName,
             string sourcePath,
             IReadOnlyList<string> relativePaths,
-            IAssetFileImportEnvironment environment)
+            IAssetFileImportEnvironment environment,
+            bool showUnityPackageImportDialog)
         {
             if (string.IsNullOrWhiteSpace(sourcePath) || (!File.Exists(sourcePath) && !Directory.Exists(sourcePath)))
             {
@@ -74,7 +75,7 @@ namespace Ee4v.AssetManager.Api
                 var relativePath = paths[i];
                 if (IsUnityPackage(relativePath))
                 {
-                    ImportUnityPackage(sourcePath, relativePath, environment);
+                    ImportUnityPackage(sourcePath, relativePath, environment, showUnityPackageImportDialog);
                     continue;
                 }
 
@@ -91,12 +92,13 @@ namespace Ee4v.AssetManager.Api
         private static void ImportUnityPackage(
             string sourcePath,
             string relativePath,
-            IAssetFileImportEnvironment environment)
+            IAssetFileImportEnvironment environment,
+            bool showUnityPackageImportDialog)
         {
             string filePath;
             if (TryResolveFile(sourcePath, relativePath, out filePath))
             {
-                environment.ImportPackage(filePath, null);
+                environment.ImportPackage(filePath, showUnityPackageImportDialog, null);
                 return;
             }
 
@@ -111,7 +113,10 @@ namespace Ee4v.AssetManager.Api
                     source.CopyTo(destination);
                 }
 
-                environment.ImportPackage(temporaryPackage, () => TryDeleteDirectory(temporaryDirectory));
+                environment.ImportPackage(
+                    temporaryPackage,
+                    showUnityPackageImportDialog,
+                    () => TryDeleteDirectory(temporaryDirectory));
             }
             catch
             {
@@ -173,10 +178,14 @@ namespace Ee4v.AssetManager.Api
             try
             {
                 archive = new ZipArchive(archiveStream, ZipArchiveMode.Read);
+                var ignoredRoot = AssetArchivePathUtility.ResolveIgnoredRootFolder(
+                    archivePath,
+                    archive.Entries.Select(candidate => candidate.FullName));
+                var archiveEntryPath = AssetArchivePathUtility.ToArchiveEntryPath(entryPath, ignoredRoot);
                 var entry = archive.Entries.FirstOrDefault(candidate =>
                     string.Equals(
                         NormalizeArchiveEntryPath(candidate.FullName),
-                        NormalizeArchiveEntryPath(entryPath),
+                        NormalizeArchiveEntryPath(archiveEntryPath),
                         StringComparison.OrdinalIgnoreCase));
                 if (entry == null || string.IsNullOrEmpty(entry.Name))
                 {

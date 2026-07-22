@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -59,7 +60,7 @@ namespace Ee4v.AssetManager.Api
 
                 if (TryReadCache(cachePath, source, cancellationToken, out var cachedEntries))
                 {
-                    return cachedEntries;
+                    return CreateDisplayEntries(fullPath, cachedEntries);
                 }
 
                 var entries = ReadArchive(fullPath, cancellationToken);
@@ -76,8 +77,33 @@ namespace Ee4v.AssetManager.Api
                     // Cache persistence is best-effort; a writable cache is not required to display the archive.
                 }
 
+                return CreateDisplayEntries(fullPath, entries);
+            }
+        }
+
+        private static IReadOnlyList<AssetFileTreeArchiveEntry> CreateDisplayEntries(
+            string zipPath,
+            IReadOnlyList<AssetFileTreeArchiveEntry> entries)
+        {
+            var ignoredRoot = AssetArchivePathUtility.ResolveIgnoredRootFolder(
+                zipPath,
+                entries.Select(entry => entry.FullName));
+            if (string.IsNullOrEmpty(ignoredRoot))
+            {
                 return entries;
             }
+
+            var displayEntries = new List<AssetFileTreeArchiveEntry>(entries.Count);
+            for (var i = 0; i < entries.Count; i++)
+            {
+                var displayPath = AssetArchivePathUtility.ToDisplayPath(entries[i].FullName, ignoredRoot);
+                if (!string.IsNullOrEmpty(displayPath))
+                {
+                    displayEntries.Add(new AssetFileTreeArchiveEntry(displayPath, entries[i].Length));
+                }
+            }
+
+            return displayEntries;
         }
 
         private static IReadOnlyList<AssetFileTreeArchiveEntry> ReadArchive(string zipPath, CancellationToken cancellationToken)

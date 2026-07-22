@@ -40,6 +40,10 @@
       "label": "Version group regex",
       "tooltip": "取り込み時に file 名や datasource path から version group 名を抽出する正規表現です。空なら無効です。名前付き group name、最初の capture group、match 全体の順で group 名に使います。"
     },
+    "showUnityPackageImportDialog": {
+      "label": "UnityPackage の Import 確認画面を表示",
+      "tooltip": "有効にすると UnityPackage の内容を選択する確認画面を表示します。無効にすると確認画面を表示せず、Package の全内容を直接 Import します。"
+    },
     "itemGridItemsPerRow": {
       "label": "Item grid items per row",
       "tooltip": "AssetManager の item grid で 1 行に表示する item 数です。"

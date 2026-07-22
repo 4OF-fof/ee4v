@@ -40,6 +40,10 @@
       "label": "Version group regex",
       "tooltip": "Regular expression used during import to extract a version group name from the file name or datasource path. Empty disables it. The named group name, first capture group, or full match is used in that order."
     },
+    "showUnityPackageImportDialog": {
+      "label": "Show UnityPackage import confirmation",
+      "tooltip": "Show Unity's content selection dialog when importing a UnityPackage. Disable this to import the entire package directly without showing the dialog."
+    },
     "itemGridItemsPerRow": {
       "label": "Item grid items per row",
       "tooltip": "Number of items shown per row in the AssetManager item grid."

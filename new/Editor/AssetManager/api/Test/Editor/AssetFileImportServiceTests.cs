@@ -47,7 +47,8 @@ namespace Ee4v.AssetManager.Api.Tests
                 "avatar.zip",
                 source,
                 new[] { "Textures/albedo.png" },
-                environment);
+                environment,
+                showUnityPackageImportDialog: true);
 
             var imported = Path.Combine(_assetsDirectory, "Fancy Asset", "avatar", "Textures", "albedo.png");
             Assert.That(File.ReadAllText(imported), Is.EqualTo("texture"));
@@ -57,15 +58,15 @@ namespace Ee4v.AssetManager.Api.Tests
 
         [Test]
         [FeatureTestCase(
-            "ZIP 内 unitypackage を通常 import へ渡す",
-            "ZIP entry を一時展開し、Unity package import 完了後に一時 file を削除することを確認します。",
+            "ZIP 内 unitypackage を確認画面なしの import へ渡す",
+            "ZIP entry を一時展開し、interactive=false を渡して import 完了後に一時 file を削除することを確認します。",
             order: 332)]
         public void Import_ExtractsUnityPackageAndUsesPackageImporter()
         {
             var zipPath = Path.Combine(_tempRoot, "avatar.zip");
             using (var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
             {
-                var entry = archive.CreateEntry("Packages/avatar.unitypackage");
+                var entry = archive.CreateEntry("avatar/Packages/avatar.unitypackage");
                 using (var writer = new StreamWriter(entry.Open()))
                 {
                     writer.Write("package");
@@ -78,18 +79,52 @@ namespace Ee4v.AssetManager.Api.Tests
                 "avatar.zip",
                 zipPath,
                 new[] { "Packages/avatar.unitypackage" },
-                environment);
+                environment,
+                showUnityPackageImportDialog: false);
 
             Assert.That(environment.ImportedPackages, Is.EqualTo(new[] { "package" }));
+            Assert.That(environment.PackageInteractiveValues, Is.EqualTo(new[] { false }));
             Assert.That(File.Exists(environment.PackagePaths[0]), Is.False);
             Assert.That(environment.RefreshCount, Is.Zero);
         }
 
         [Test]
         [FeatureTestCase(
+            "ZIP と同名の root folder を除いて通常 file を import する",
+            "File Tree で省略された relative path から実 entry を解決し、同名 folder を destination に作らないことを確認します。",
+            order: 334)]
+        public void Import_CopiesArchiveEntryWithoutMatchingRootFolder()
+        {
+            var zipPath = Path.Combine(_tempRoot, "avatar.zip");
+            using (var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry("avatar/Textures/albedo.png");
+                using (var writer = new StreamWriter(entry.Open()))
+                {
+                    writer.Write("texture");
+                }
+            }
+
+            var environment = new RecordingImportEnvironment(_assetsDirectory);
+            AssetFileImportService.Import(
+                "Fancy Asset",
+                "avatar.zip",
+                zipPath,
+                new[] { "Textures/albedo.png" },
+                environment,
+                showUnityPackageImportDialog: true);
+
+            var imported = Path.Combine(_assetsDirectory, "Fancy Asset", "avatar", "Textures", "albedo.png");
+            Assert.That(File.ReadAllText(imported), Is.EqualTo("texture"));
+            Assert.That(Directory.Exists(Path.Combine(_assetsDirectory, "Fancy Asset", "avatar", "avatar")), Is.False);
+            Assert.That(environment.RefreshCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        [FeatureTestCase(
             "Import entry の path traversal を拒否する",
             "File Tree 外を指す相対 path が Assets や source の外へ copy されないことを確認します。",
-            order: 333)]
+            order: 335)]
         public void Import_RejectsTraversalPath()
         {
             var source = Path.Combine(_tempRoot, "source");
@@ -102,7 +137,8 @@ namespace Ee4v.AssetManager.Api.Tests
                     "file.zip",
                     source,
                     new[] { "../outside.txt" },
-                    environment));
+                    environment,
+                    showUnityPackageImportDialog: true));
 
             Assert.That(exception.Code, Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
             Assert.That(environment.RefreshCount, Is.Zero);
@@ -121,11 +157,14 @@ namespace Ee4v.AssetManager.Api.Tests
 
             public List<string> PackagePaths { get; } = new List<string>();
 
+            public List<bool> PackageInteractiveValues { get; } = new List<bool>();
+
             public int RefreshCount { get; private set; }
 
-            public void ImportPackage(string packagePath, Action onFinished)
+            public void ImportPackage(string packagePath, bool interactive, Action onFinished)
             {
                 PackagePaths.Add(packagePath);
+                PackageInteractiveValues.Add(interactive);
                 ImportedPackages.Add(File.ReadAllText(packagePath));
                 onFinished?.Invoke();
             }

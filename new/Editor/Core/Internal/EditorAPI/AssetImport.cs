@@ -11,6 +11,8 @@ namespace Ee4v.Core.Internal.EditorAPI
         {
             public string Path { get; set; }
 
+            public bool Interactive { get; set; }
+
             public Action OnFinished { get; set; }
         }
 
@@ -22,7 +24,7 @@ namespace Ee4v.Core.Internal.EditorAPI
             get { return Application.dataPath; }
         }
 
-        public static void ImportPackage(string packagePath, Action onFinished = null)
+        public static void ImportPackage(string packagePath, bool interactive, Action onFinished = null)
         {
             if (string.IsNullOrWhiteSpace(packagePath))
             {
@@ -32,6 +34,7 @@ namespace Ee4v.Core.Internal.EditorAPI
             PackageQueue.Enqueue(new PackageImportRequest
             {
                 Path = packagePath,
+                Interactive = interactive,
                 OnFinished = onFinished
             });
             TryStartNextPackage();
@@ -73,7 +76,7 @@ namespace Ee4v.Core.Internal.EditorAPI
 
             try
             {
-                AssetDatabase.ImportPackage(request.Path, true);
+                AssetDatabase.ImportPackage(request.Path, request.Interactive);
             }
             catch
             {

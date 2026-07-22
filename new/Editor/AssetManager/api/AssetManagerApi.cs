@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.Core.Settings;
 using SQLite;
 
 namespace Ee4v.AssetManager.Api
@@ -263,7 +264,8 @@ namespace Ee4v.AssetManager.Api
                 file.FileName,
                 resolution.Path,
                 relativePaths,
-                new UnityAssetFileImportEnvironment());
+                new UnityAssetFileImportEnvironment(),
+                SettingApi.Get(AssetManagerDefinitions.ShowUnityPackageImportDialog));
         }
     }
 }
