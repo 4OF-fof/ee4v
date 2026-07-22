@@ -14,5 +14,10 @@ namespace Ee4v.AssetManager
         public string Name { get; }
 
         public string ParentName { get; }
+
+        public static FileTreeDetailState FromAssetFile(string fileId, string name)
+        {
+            return new FileTreeDetailState("asset-file|" + (fileId ?? string.Empty), name);
+        }
     }
 }

@@ -28,6 +28,16 @@ namespace Ee4v.AssetManager.Tests
         }
 
         [Test]
+        public void AssetFile_CreatesFileDetailState()
+        {
+            var state = FileTreeDetailState.FromAssetFile("file-1", "avatar.zip");
+
+            Assert.That(state.Id, Is.EqualTo("asset-file|file-1"));
+            Assert.That(state.Name, Is.EqualTo("avatar.zip"));
+            Assert.That(state.ParentName, Is.Empty);
+        }
+
+        [Test]
         public void FileDetailHistory_SupportsBackAndForward()
         {
             var history = new AssetItemGridHistory();

@@ -149,6 +149,7 @@ namespace Ee4v.AssetManager
             }
             else if (kind == AssetItemGridNodeKind.File)
             {
+                ShowFileDetail(FileTreeDetailState.FromAssetFile(rawId, item.ItemName));
                 return;
             }
             else
