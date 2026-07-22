@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -364,6 +365,52 @@ namespace Ee4v.AssetManager.Api.Tests
 
         [Test]
         [FeatureTestCase(
+            "version group 代表設定は file tree だけへ通知する",
+            "SetVersionGroupPrimaryFile が asset 一覧更新を通知せず、変更対象を file tree へ通知することを確認します。",
+            order: 313)]
+        public void SetVersionGroupPrimaryFile_RaisesOnlyGranularFileTreeChange()
+        {
+            var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
+            var version = AssetManagerApi.CreateVersionGroup(item.Id, new CreateVersionGroupRequest { Name = "1.0" });
+            var filePath = Path.Combine(_tempRoot, "avatar.zip");
+            File.WriteAllText(filePath, "zip");
+            var file = AssetManagerApi.RegisterFile(
+                item.Id,
+                new RegisterFileRequest { FilePath = filePath, FileName = "avatar.zip", VersionGroupId = version.Id });
+            var changed = false;
+            var fileTreeChanged = false;
+            string notifiedVersionGroupId = null;
+            string notifiedPrimaryFileId = null;
+            Action changedHandler = () => changed = true;
+            Action fileTreeHandler = () => fileTreeChanged = true;
+            Action<string, string> primaryHandler = (versionGroupId, primaryFileId) =>
+            {
+                notifiedVersionGroupId = versionGroupId;
+                notifiedPrimaryFileId = primaryFileId;
+            };
+
+            AssetManagerApi.Changed += changedHandler;
+            AssetManagerApi.FileTreeChanged += fileTreeHandler;
+            AssetManagerApi.VersionGroupPrimaryFileChanged += primaryHandler;
+            try
+            {
+                AssetManagerApi.SetVersionGroupPrimaryFile(version.Id, file.Id);
+            }
+            finally
+            {
+                AssetManagerApi.Changed -= changedHandler;
+                AssetManagerApi.FileTreeChanged -= fileTreeHandler;
+                AssetManagerApi.VersionGroupPrimaryFileChanged -= primaryHandler;
+            }
+
+            Assert.That(changed, Is.False);
+            Assert.That(fileTreeChanged, Is.True);
+            Assert.That(notifiedVersionGroupId, Is.EqualTo(version.Id));
+            Assert.That(notifiedPrimaryFileId, Is.EqualTo(file.Id));
+        }
+
+        [Test]
+        [FeatureTestCase(
             "file import target を複数保持する",
             "SetFileImportTargets が zip / directory 配下の複数 target を file 単位で保存することを確認します。",
             order: 314)]
@@ -425,11 +472,19 @@ namespace Ee4v.AssetManager.Api.Tests
             var file = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = filePath, FileName = "avatar.zip" });
             var changed = false;
             var fileTreeChanged = false;
+            string notifiedFileId = null;
+            IReadOnlyList<AssetFileImportTarget> notifiedTargets = null;
             Action handler = () => changed = true;
             Action fileTreeHandler = () => fileTreeChanged = true;
+            Action<string, IReadOnlyList<AssetFileImportTarget>> importTargetsHandler = (changedFileId, targets) =>
+            {
+                notifiedFileId = changedFileId;
+                notifiedTargets = targets;
+            };
 
             AssetManagerApi.Changed += handler;
             AssetManagerApi.FileTreeChanged += fileTreeHandler;
+            AssetManagerApi.FileImportTargetsChanged += importTargetsHandler;
             try
             {
                 AssetManagerApi.SetFileImportTargets(file.Id, new[] { new AssetFileImportTargetRequest { RelativePath = "Packages/avatar.unitypackage" } });
@@ -438,10 +493,13 @@ namespace Ee4v.AssetManager.Api.Tests
             {
                 AssetManagerApi.Changed -= handler;
                 AssetManagerApi.FileTreeChanged -= fileTreeHandler;
+                AssetManagerApi.FileImportTargetsChanged -= importTargetsHandler;
             }
 
             Assert.That(changed, Is.False);
             Assert.That(fileTreeChanged, Is.True);
+            Assert.That(notifiedFileId, Is.EqualTo(file.Id));
+            Assert.That(notifiedTargets.Select(target => target.RelativePath).ToArray(), Is.EqualTo(new[] { "Packages/avatar.unitypackage" }));
         }
 
         [Test]

@@ -122,6 +122,11 @@ namespace Ee4v.UI
             _emptyLabel.SetText(emptyText ?? string.Empty);
         }
 
+        public void RefreshItems()
+        {
+            _treeView.RefreshItems();
+        }
+
         public void SetSelectionById(IEnumerable<int> itemIds)
         {
             if (itemIds == null)

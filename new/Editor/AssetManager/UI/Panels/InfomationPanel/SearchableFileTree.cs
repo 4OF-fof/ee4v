@@ -101,8 +101,10 @@ namespace Ee4v.AssetManager
             _isAttached = true;
             AssetManagerApi.Changed -= OnAssetManagerChanged;
             AssetManagerApi.Changed += OnAssetManagerChanged;
-            AssetManagerApi.FileTreeChanged -= OnFileTreeChanged;
-            AssetManagerApi.FileTreeChanged += OnFileTreeChanged;
+            AssetManagerApi.FileImportTargetsChanged -= OnFileImportTargetsChanged;
+            AssetManagerApi.FileImportTargetsChanged += OnFileImportTargetsChanged;
+            AssetManagerApi.VersionGroupPrimaryFileChanged -= OnVersionGroupPrimaryFileChanged;
+            AssetManagerApi.VersionGroupPrimaryFileChanged += OnVersionGroupPrimaryFileChanged;
             Reload(preserveTreeState: true);
         }
 
@@ -111,7 +113,8 @@ namespace Ee4v.AssetManager
             _isAttached = false;
             CancelPendingReload();
             AssetManagerApi.Changed -= OnAssetManagerChanged;
-            AssetManagerApi.FileTreeChanged -= OnFileTreeChanged;
+            AssetManagerApi.FileImportTargetsChanged -= OnFileImportTargetsChanged;
+            AssetManagerApi.VersionGroupPrimaryFileChanged -= OnVersionGroupPrimaryFileChanged;
         }
 
         private void OnAssetManagerChanged()
@@ -120,10 +123,16 @@ namespace Ee4v.AssetManager
             Reload(preserveTreeState: true);
         }
 
-        private void OnFileTreeChanged()
+        private void OnFileImportTargetsChanged(string fileId, IReadOnlyList<AssetFileImportTarget> targets)
         {
-            FileTreeMemoryCache.Clear();
-            Reload(preserveTreeState: true);
+            FileTreeMemoryCache.SetImportTargets(fileId, targets);
+            _treeView.RefreshItems();
+        }
+
+        private void OnVersionGroupPrimaryFileChanged(string versionGroupId, string primaryFileId)
+        {
+            FileTreeMemoryCache.SetVersionGroupPrimaryFile(versionGroupId, primaryFileId);
+            _treeView.RefreshItems();
         }
 
         private void Reload(bool preserveTreeState = false)
@@ -466,6 +475,13 @@ namespace Ee4v.AssetManager
             new Dictionary<FileTreeMemoryCacheKey, IReadOnlyList<SearchableTreeItemData<FileTreeNode>>>();
         private static readonly Queue<FileTreeMemoryCacheKey> InsertionOrder = new Queue<FileTreeMemoryCacheKey>();
 
+        static FileTreeMemoryCache()
+        {
+            AssetManagerApi.Changed += Clear;
+            AssetManagerApi.FileImportTargetsChanged += SetImportTargets;
+            AssetManagerApi.VersionGroupPrimaryFileChanged += SetVersionGroupPrimaryFile;
+        }
+
         public static bool TryGet(
             FileTreeMemoryCacheKey key,
             out IReadOnlyList<SearchableTreeItemData<FileTreeNode>> items)
@@ -505,6 +521,59 @@ namespace Ee4v.AssetManager
                 Entries.Clear();
                 InsertionOrder.Clear();
             }
+        }
+
+        public static void SetImportTargets(string fileId, IReadOnlyList<AssetFileImportTarget> targets)
+        {
+            var targetPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (targets != null)
+            {
+                for (var i = 0; i < targets.Count; i++)
+                {
+                    if (targets[i] != null)
+                    {
+                        targetPaths.Add(NormalizeRelativePath(targets[i].RelativePath));
+                    }
+                }
+            }
+
+            lock (Gate)
+            {
+                foreach (var entry in Entries.Values)
+                {
+                    Visit(entry, node => node.SetImportTargetState(fileId, targetPaths));
+                }
+            }
+        }
+
+        public static void SetVersionGroupPrimaryFile(string versionGroupId, string primaryFileId)
+        {
+            lock (Gate)
+            {
+                foreach (var entry in Entries.Values)
+                {
+                    Visit(entry, node => node.SetVersionGroupPrimaryFile(versionGroupId, primaryFileId));
+                }
+            }
+        }
+
+        private static void Visit(IReadOnlyList<SearchableTreeItemData<FileTreeNode>> items, Action<FileTreeNode> visitor)
+        {
+            if (items == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < items.Count; i++)
+            {
+                visitor(items[i].Data);
+                Visit(items[i].Children, visitor);
+            }
+        }
+
+        private static string NormalizeRelativePath(string path)
+        {
+            return (path ?? string.Empty).Replace('\\', '/').Trim().TrimStart('/').TrimEnd('/');
         }
     }
 
@@ -554,9 +623,9 @@ namespace Ee4v.AssetManager
 
         public string Path { get; }
 
-        public bool IsImportTarget { get; }
+        public bool IsImportTarget { get; private set; }
 
-        public bool HasAnyImportTarget { get; }
+        public bool HasAnyImportTarget { get; private set; }
 
         public string RelativePath { get; }
 
@@ -570,7 +639,7 @@ namespace Ee4v.AssetManager
 
         public string VersionGroupId { get; }
 
-        public bool IsPrimaryFile { get; }
+        public bool IsPrimaryFile { get; private set; }
 
         public IReadOnlyList<FileTreeImportTargetEntry> ImportTargetEntries { get; }
 
@@ -588,6 +657,46 @@ namespace Ee4v.AssetManager
                        !string.IsNullOrWhiteSpace(AssetFileId) &&
                        !string.IsNullOrWhiteSpace(VersionGroupId);
             }
+        }
+
+        public void SetImportTargetState(string fileId, HashSet<string> targetPaths)
+        {
+            var appliesToFile = string.Equals(AssetFileId, fileId, StringComparison.Ordinal);
+            var hasAnyEntry = false;
+            var hasMatchingEntry = false;
+            var hasAllEntries = true;
+            for (var i = 0; i < ImportTargetEntries.Count; i++)
+            {
+                if (!string.Equals(ImportTargetEntries[i].FileId, fileId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                appliesToFile = true;
+                hasMatchingEntry = true;
+                var isTarget = targetPaths.Contains(ImportTargetEntries[i].RelativePath);
+                hasAnyEntry |= isTarget;
+                hasAllEntries &= isTarget;
+            }
+
+            if (!appliesToFile)
+            {
+                return;
+            }
+
+            var isExactTarget = targetPaths.Contains(RelativePath);
+            IsImportTarget = !IsAssetFileRoot && (isExactTarget || (hasMatchingEntry && hasAllEntries));
+            HasAnyImportTarget = !IsAssetFileRoot && (isExactTarget || hasAnyEntry);
+        }
+
+        public void SetVersionGroupPrimaryFile(string versionGroupId, string primaryFileId)
+        {
+            if (!IsAssetFileRoot || !string.Equals(VersionGroupId, versionGroupId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            IsPrimaryFile = string.Equals(AssetFileId, primaryFileId, StringComparison.Ordinal);
         }
 
         private static string NormalizeRelativePath(string path)

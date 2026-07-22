@@ -899,6 +899,7 @@ Returns:
 Effects:
 
 - `file_import_target` を指定一覧に同期する。
+- `FileImportTargetsChanged` と `FileTreeChanged` を通知する。`Changed` は通知しない。
 
 Notes:
 
@@ -906,6 +907,22 @@ Notes:
 - 空の `RelativePath` は file root を指すため拒否する。
 - `..` を含む path は拒否する。
 - 同一 file 内の重複 `RelativePath` は 1 件にまとめる。
+- 標準 File Tree UI は `FileImportTargetsChanged` の変更内容を memory cache と表示中の行へ反映し、filesystem / ZIP を再走査しない。
+
+## Change Notifications
+
+```csharp
+public static event Action Changed;
+public static event Action FileTreeChanged;
+public static event Action<string, IReadOnlyList<AssetFileImportTarget>> FileImportTargetsChanged;
+public static event Action<string, string> VersionGroupPrimaryFileChanged;
+```
+
+- `Changed` は item 一覧や file tree の構造・内容を再取得する必要がある変更を通知する。
+- `FileTreeChanged` は File Tree に関係する変更の互換用通知で、Import Target と Version Group の代表変更でも発火する。
+- `FileImportTargetsChanged` は変更した file ID と正規化・保存後の Import Target 一覧を通知する。
+- `VersionGroupPrimaryFileChanged` は変更した Version Group ID と保存後の代表 file ID を通知する。
+- `SetFileImportTargets(...)` と `SetVersionGroupPrimaryFile(...)` は `Changed` を発火しない。標準 UI は詳細通知から既存の File Tree 行 state だけを更新するため、Main View の再検索や File Tree の再構築を行わない。
 
 ## Datasource Sync
 
@@ -990,7 +1007,7 @@ Unity Editor session の開始時に、設定で有効な datasource の変更�
 - 実際に同期を実行した場合だけ、完了後の `AssetManagerApi.Changed` を main thread で通知する
 - background activity は統合 AssetManager の Main View と単独 Main View window の `StatusOverlay` に表示する
 
-File Tree の完成済み表示データは Unity Editor のメモリ上に最大 64 件共有します。同一 item / file の再表示ではこの memory cache をそのまま利用し、filesystem / ZIP の再確認と loading text の表示を行いません。AssetManager の変更または Import Target の変更通知で全件を破棄し、Unity 終了または domain reload で揮発します。
+File Tree の完成済み表示データは Unity Editor のメモリ上に最大 64 件共有します。同一 item / file の再表示ではこの memory cache をそのまま利用し、filesystem / ZIP の再確認と loading text の表示を行いません。Import Target と Version Group の代表変更は cache 上の node state を更新し、構造を含む `AssetManagerApi.Changed` 通知で全件を破棄します。cache は Unity 終了または domain reload で揮発します。
 
 File Tree の構築中は File Tree 内の loading text だけを表示し、`BackgroundActivityApi` には登録しないため `StatusOverlay` は表示しません。
 

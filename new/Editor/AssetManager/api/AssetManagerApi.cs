@@ -8,6 +8,8 @@ namespace Ee4v.AssetManager.Api
     {
         public static event Action Changed;
         public static event Action FileTreeChanged;
+        public static event Action<string, IReadOnlyList<AssetFileImportTarget>> FileImportTargetsChanged;
+        public static event Action<string, string> VersionGroupPrimaryFileChanged;
 
         public static AssetSearchResult SearchItems(AssetItemQuery query)
         {
@@ -66,7 +68,9 @@ namespace Ee4v.AssetManager.Api
 
         public static void SetVersionGroupPrimaryFile(string versionGroupId, string fileId)
         {
-            ExecuteChanged(() => AssetManagerDatabase.SetVersionGroupPrimaryFile(versionGroupId, fileId));
+            var primaryFileId = Execute(() => AssetManagerDatabase.SetVersionGroupPrimaryFile(versionGroupId, fileId));
+            VersionGroupPrimaryFileChanged?.Invoke(versionGroupId, primaryFileId);
+            FileTreeChanged?.Invoke();
         }
 
         public static void ArchiveFile(string fileId)
@@ -146,7 +150,13 @@ namespace Ee4v.AssetManager.Api
 
         public static void SetFileImportTargets(string fileId, IReadOnlyList<AssetFileImportTargetRequest> targets)
         {
-            ExecuteFileTreeChanged(() => AssetManagerDatabase.SetFileImportTargets(fileId, targets));
+            var updatedTargets = Execute(() =>
+            {
+                AssetManagerDatabase.SetFileImportTargets(fileId, targets);
+                return AssetManagerDatabase.GetFileImportTargets(fileId);
+            });
+            FileImportTargetsChanged?.Invoke(fileId, updatedTargets);
+            FileTreeChanged?.Invoke();
         }
 
         public static AssetSyncResult SyncBlm(BlmSyncRequest request)
@@ -194,16 +204,6 @@ namespace Ee4v.AssetManager.Api
                 action();
                 return true;
             });
-        }
-
-        private static void ExecuteFileTreeChanged(Action action)
-        {
-            Execute(() =>
-            {
-                action();
-                return true;
-            });
-            FileTreeChanged?.Invoke();
         }
 
         private static void Execute(Action action)

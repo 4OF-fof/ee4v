@@ -15,9 +15,9 @@ AssetManager は Booth / Eagle / ee4v 管理ファイルを統合して扱うた
 - schema v2、Item/File/Tag/Collection/Dependency/Import Target API を実装済み
 - BLM `data.db` と Eagle library の読み取り同期、安定した source identity、datasource tag、欠落 origin の reconciliation を実装済み
 - Main View と File Tree は DB / filesystem 読み込みを background で行い、前回 load の cancellation に対応
-- File Tree は完成済みツリーを Unity Editor のメモリ上に最大 64 件共有し、同一 item / file の再表示では background 確認と loading 表示を省略する。AssetManager または Import Target の変更時に破棄し、Unity 終了または domain reload で揮発する
+- File Tree は完成済みツリーを Unity Editor のメモリ上に最大 64 件共有し、同一 item / file の再表示では background 確認と loading 表示を省略する。Import Target と Version Group の代表変更は cache 上の表示 state へ反映して再構築せず、構造を含む AssetManager の変更時だけ全件を破棄する。cache は Unity 終了または domain reload で揮発する
 - File Tree の Variant Group と Version Group は異なる accent で表示し、行末の localized meta label で group 種別を識別できる
-- Version Group 配下の file root は context menu から代表ファイルに設定でき、現在の代表は Import Target と同じ配色で識別できる。file root 自体は Import Target にできない
+- Version Group 配下の file root は context menu から代表ファイルに設定でき、現在の代表は Import Target と同じ配色で識別できる。設定後は Main View 全体を再読み込みせず File Tree の行 state だけを更新する。file root 自体は Import Target にできない
 - File Tree の ZIP metadata は、thumbnail と同じ cache root の `<ee4v global path>/cache/file-tree` に永続化し、更新日時と file size の検証を background で行う
 - Unity Editor session 開始時の BLM / Eagle datasource sync は background で変更確認を先行し、`cache/sync` の前回成功 fingerprint と一致する source は DB sync と UI reload を省略する
 - Unity側の item 情報が同期元より新しい競合は `DiffConfirmationOverlay` で現在値と同期元値を比較し、上書きまたは今回の同期キャンセルを選択できる

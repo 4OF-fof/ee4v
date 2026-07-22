@@ -83,11 +83,12 @@ namespace Ee4v.AssetManager.Api
             }
         }
 
-        public static void SetVersionGroupPrimaryFile(string versionGroupId, string fileId)
+        public static string SetVersionGroupPrimaryFile(string versionGroupId, string fileId)
         {
             using (var connection = OpenConnection())
             {
                 SetVersionGroupPrimaryFile(connection, versionGroupId, fileId);
+                return connection.ExecuteScalar<string>("SELECT primary_file_info_id FROM version_group WHERE id = ?", versionGroupId);
             }
         }
 
