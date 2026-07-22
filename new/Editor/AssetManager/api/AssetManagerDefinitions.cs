@@ -115,6 +115,15 @@ namespace Ee4v.AssetManager.Api
             order: 0,
             validator: ValidateItemGridItemsPerRow);
 
+        public static readonly SettingDefinition<bool> ShowFileTreeImageTooltip = new SettingDefinition<bool>(
+            "assetManager.showFileTreeImageTooltip",
+            SettingScope.User,
+            "settings.section.assetManager.view",
+            "settings.showFileTreeImageTooltip.label",
+            "settings.showFileTreeImageTooltip.tooltip",
+            true,
+            order: 1);
+
         public static void RegisterAll()
         {
             if (_registered)
@@ -133,6 +142,7 @@ namespace Ee4v.AssetManager.Api
             SettingApi.Register(VersionGroupRegex);
             SettingApi.Register(ShowUnityPackageImportDialog);
             SettingApi.Register(ItemGridItemsPerRow);
+            SettingApi.Register(ShowFileTreeImageTooltip);
         }
 
         private static SettingValidationResult ValidateNonEmpty(string value)

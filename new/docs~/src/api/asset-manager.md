@@ -1040,6 +1040,8 @@ File Tree の構築中は File Tree 内の loading text だけを表示し、`Ba
 
 File Tree の ZIP metadata cache は、thumbnail と同じ cache root の `<ee4v global path>/cache/file-tree` に保存します。cache は source ZIP の更新日時と file size が一致する場合だけ利用し、不一致時は background task で再生成します。これは memory cache と異なり Unity を終了しても保持されます。cache には archive 内の実 path を保持し、読み出し時に ZIP と同名の単一 root folder を表示 path から省略します。
 
+File Tree の画像 file hover は user setting `assetManager.showFileTreeImageTooltip` で切り替えます。既定値は `true` で `ImageTooltip` に画像 preview と file 名を表示し、`false` では Unity 標準の text tooltip に戻します。設定変更は開いている File Tree へ即時反映します。
+
 ### `AssetManagerApi.GetSyncInfo`
 
 Datasource 別の最後の sync 状態を取得します。

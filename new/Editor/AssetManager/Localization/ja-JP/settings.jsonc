@@ -48,6 +48,10 @@
       "label": "Item grid items per row",
       "tooltip": "AssetManager の item grid で 1 行に表示する item 数です。"
     },
+    "showFileTreeImageTooltip": {
+      "label": "File Tree で画像プレビューを表示",
+      "tooltip": "有効にすると画像 file の hover 時に画像と file 名を表示します。無効にすると通常のテキスト tooltip を表示します。"
+    },
     "validation": {
       "required": "この項目は必須です。",
       "sourcePriority": "Source priority には ee4v, eagle, blm をそれぞれ 1 回ずつ指定してください。",

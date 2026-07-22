@@ -114,6 +114,8 @@ namespace Ee4v.AssetManager
             AssetManagerApi.FileImportTargetsChanged += OnFileImportTargetsChanged;
             AssetManagerApi.VersionGroupPrimaryFileChanged -= OnVersionGroupPrimaryFileChanged;
             AssetManagerApi.VersionGroupPrimaryFileChanged += OnVersionGroupPrimaryFileChanged;
+            SettingApi.Changed -= OnSettingChanged;
+            SettingApi.Changed += OnSettingChanged;
             Reload(preserveTreeState: true);
         }
 
@@ -126,6 +128,7 @@ namespace Ee4v.AssetManager
             AssetManagerApi.Changed -= OnAssetManagerChanged;
             AssetManagerApi.FileImportTargetsChanged -= OnFileImportTargetsChanged;
             AssetManagerApi.VersionGroupPrimaryFileChanged -= OnVersionGroupPrimaryFileChanged;
+            SettingApi.Changed -= OnSettingChanged;
         }
 
         private void OnAssetManagerChanged()
@@ -145,6 +148,17 @@ namespace Ee4v.AssetManager
         private void OnVersionGroupPrimaryFileChanged(string versionGroupId, string primaryFileId)
         {
             FileTreeMemoryCache.SetVersionGroupPrimaryFile(versionGroupId, primaryFileId);
+            _treeView.RefreshItems();
+        }
+
+        private void OnSettingChanged(SettingDefinitionBase definition, object value)
+        {
+            if (!ReferenceEquals(definition, AssetManagerDefinitions.ShowFileTreeImageTooltip))
+            {
+                return;
+            }
+
+            HideImageTooltip();
             _treeView.RefreshItems();
         }
 
@@ -313,7 +327,8 @@ namespace Ee4v.AssetManager
             element.EnableInClassList(RowVariantGroupClassName, node.GroupKind == FileTreeGroupKind.Variant);
             element.EnableInClassList(RowVersionGroupClassName, node.GroupKind == FileTreeGroupKind.Version);
             element.EnableInClassList(RowPrimaryFileClassName, node.IsPrimaryFile);
-            element.tooltip = node.ImageSource == null ? node.Name : string.Empty;
+            var useImageTooltip = node.ImageSource != null && SettingApi.Get(AssetManagerDefinitions.ShowFileTreeImageTooltip);
+            element.tooltip = useImageTooltip ? string.Empty : node.Name;
             var title = element.ElementAt(0) as UiTextElement;
             var meta = element.ElementAt(1) as UiTextElement;
 
@@ -337,7 +352,10 @@ namespace Ee4v.AssetManager
         {
             var row = evt.currentTarget as VisualElement;
             var node = ResolveBoundNode(row);
-            if (row == null || node == null || node.ImageSource == null)
+            if (row == null ||
+                node == null ||
+                node.ImageSource == null ||
+                !SettingApi.Get(AssetManagerDefinitions.ShowFileTreeImageTooltip))
             {
                 return;
             }

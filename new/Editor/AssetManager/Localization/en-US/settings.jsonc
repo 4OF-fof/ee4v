@@ -48,6 +48,10 @@
       "label": "Item grid items per row",
       "tooltip": "Number of items shown per row in the AssetManager item grid."
     },
+    "showFileTreeImageTooltip": {
+      "label": "Show image previews in File Tree",
+      "tooltip": "Show the image and file name when hovering over an image file. Disable this to use the standard text tooltip."
+    },
     "validation": {
       "required": "This field is required.",
       "sourcePriority": "Source priority must contain ee4v, eagle and blm exactly once each.",

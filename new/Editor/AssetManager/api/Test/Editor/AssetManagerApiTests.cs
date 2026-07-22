@@ -18,6 +18,7 @@ namespace Ee4v.AssetManager.Api.Tests
         private string _oldSourcePriority;
         private string _oldAvatarNames;
         private string _oldVersionGroupRegex;
+        private bool _oldShowFileTreeImageTooltip;
 
         [SetUp]
         public void SetUp()
@@ -29,6 +30,7 @@ namespace Ee4v.AssetManager.Api.Tests
             _oldSourcePriority = SettingApi.Get(AssetManagerDefinitions.SourcePriority);
             _oldAvatarNames = SettingApi.Get(AssetManagerDefinitions.AvatarNames);
             _oldVersionGroupRegex = SettingApi.Get(AssetManagerDefinitions.VersionGroupRegex);
+            _oldShowFileTreeImageTooltip = SettingApi.Get(AssetManagerDefinitions.ShowFileTreeImageTooltip);
             SettingApi.Set(AssetManagerDefinitions.Ee4vGlobalPath, _tempRoot, saveImmediately: false);
             SettingApi.Set(AssetManagerDefinitions.SourcePriority, "ee4v,eagle,blm", saveImmediately: false);
         }
@@ -40,6 +42,7 @@ namespace Ee4v.AssetManager.Api.Tests
             SettingApi.Set(AssetManagerDefinitions.SourcePriority, _oldSourcePriority, saveImmediately: false);
             SettingApi.Set(AssetManagerDefinitions.AvatarNames, _oldAvatarNames, saveImmediately: false);
             SettingApi.Set(AssetManagerDefinitions.VersionGroupRegex, _oldVersionGroupRegex, saveImmediately: false);
+            SettingApi.Set(AssetManagerDefinitions.ShowFileTreeImageTooltip, _oldShowFileTreeImageTooltip, saveImmediately: false);
             if (!string.IsNullOrWhiteSpace(_tempRoot) && Directory.Exists(_tempRoot))
             {
                 Directory.Delete(_tempRoot, recursive: true);
@@ -215,6 +218,20 @@ namespace Ee4v.AssetManager.Api.Tests
 
             Assert.That(ex.Code, Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
             Assert.That(dependencies.Select(itemDependency => itemDependency.DependencyFileId).ToArray(), Is.EqualTo(new[] { dependency.Id }));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "File Tree の画像 tooltip 表示設定を切り替える",
+            "画像 preview tooltip と通常の text tooltip を選ぶ user setting が登録され、変更を保持することを確認します。",
+            order: 300)]
+        public void ShowFileTreeImageTooltip_CanBeChanged()
+        {
+            SettingApi.Set(AssetManagerDefinitions.ShowFileTreeImageTooltip, false, saveImmediately: false);
+            Assert.That(SettingApi.Get(AssetManagerDefinitions.ShowFileTreeImageTooltip), Is.False);
+
+            SettingApi.Set(AssetManagerDefinitions.ShowFileTreeImageTooltip, true, saveImmediately: false);
+            Assert.That(SettingApi.Get(AssetManagerDefinitions.ShowFileTreeImageTooltip), Is.True);
         }
 
         [Test]
