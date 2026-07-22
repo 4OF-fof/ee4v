@@ -131,5 +131,6 @@ namespace Ee4v.AssetManager.Tests
             overlay.SetRows(rows);
             Assert.That(overlay.childCount, Is.EqualTo(3));
         }
+
     }
 }

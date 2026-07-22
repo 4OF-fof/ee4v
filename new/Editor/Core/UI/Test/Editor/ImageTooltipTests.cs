@@ -47,5 +47,17 @@ namespace Ee4v.UI.Tests
             Assert.That(style.Alignment, Is.EqualTo(TextAnchor.MiddleCenter));
             Assert.That(style.WhiteSpace, Is.EqualTo(UnityEngine.UIElements.WhiteSpace.NoWrap));
         }
+
+        [Test]
+        public void HistoryNavigationOverlayTypography_IsVerticallyCentered()
+        {
+            var breadcrumbStyle = TypographyStyleResolver.Resolve(UiClassNames.HistoryNavigationBreadcrumbItemLabel).Style;
+            var rowStyle = TypographyStyleResolver.Resolve(UiClassNames.HistoryNavigationOverlayRow).Style;
+            var separatorStyle = TypographyStyleResolver.Resolve(UiClassNames.HistoryNavigationOverlaySeparator).Style;
+
+            Assert.That(breadcrumbStyle.Alignment, Is.EqualTo(TextAnchor.MiddleLeft));
+            Assert.That(rowStyle.Alignment, Is.EqualTo(TextAnchor.MiddleLeft));
+            Assert.That(separatorStyle.Alignment, Is.EqualTo(TextAnchor.MiddleCenter));
+        }
     }
 }

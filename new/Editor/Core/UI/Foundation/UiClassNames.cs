@@ -18,6 +18,9 @@ namespace Ee4v.UI
         public const string ContextMenuLabel = "ee4v-ui-context-menu__label";
         public const string ContextMenuShortcut = "ee4v-ui-context-menu__shortcut";
         public const string ImageTooltipFileName = "ee4v-ui-image-tooltip__file-name";
+        public const string HistoryNavigationBreadcrumbItemLabel = "ee4v-ui-history-navigation__breadcrumb-item-label";
+        public const string HistoryNavigationOverlayRow = "ee4v-ui-history-navigation-overlay__row";
+        public const string HistoryNavigationOverlaySeparator = "ee4v-ui-history-navigation-overlay__separator";
         public const string InfomationPanelSelectionCount = "ee4v-asset-manager-panel__infomation-selection-count";
         public const string InfomationPanelSelectionCountSuffix = "ee4v-asset-manager-panel__infomation-selection-count-suffix";
 

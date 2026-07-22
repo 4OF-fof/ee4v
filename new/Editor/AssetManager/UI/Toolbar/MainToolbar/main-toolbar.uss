@@ -84,6 +84,8 @@
 }
 
 .ee4v-ui-history-navigation {
+    position: relative;
+    top: 2px;
     flex-direction: row;
     align-items: center;
     min-width: 0;
@@ -101,7 +103,7 @@
     padding-left: 0;
     padding-right: 0;
     padding-top: 0;
-    padding-bottom: 0;
+    padding-bottom: 5px;
     margin-left: 0;
     margin-right: 2px;
     font-size: 12px;
@@ -176,8 +178,6 @@
 
 .ee4v-ui-history-navigation-overlay {
     position: absolute;
-    width: 320px;
-    max-width: 420px;
     padding-left: 6px;
     padding-right: 6px;
     padding-top: 5px;
@@ -222,7 +222,7 @@
 }
 
 .ee4v-ui-history-navigation-overlay__item {
-    width: 100%;
+    width: auto;
     height: 22px;
     min-height: 22px;
     margin-left: 0;
