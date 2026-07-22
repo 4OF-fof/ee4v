@@ -22,6 +22,15 @@ namespace Ee4v.AssetManager.Tests
         }
 
         [Test]
+        public void PreviewLoader_AllowsLargeStreamingPsdFiles()
+        {
+            const long gravityPsdBytes = 224765944L;
+
+            Assert.That(FileTreeImagePreviewLoader.ResolveMaximumSourceBytes("Gravity.psd"), Is.GreaterThan(gravityPsdBytes));
+            Assert.That(FileTreeImagePreviewLoader.ResolveMaximumSourceBytes("preview.png"), Is.EqualTo(64L * 1024L * 1024L));
+        }
+
+        [Test]
         public void CancelImagePreview_ClearsDisposedCancellationSource()
         {
             var cancellation = new CancellationTokenSource();

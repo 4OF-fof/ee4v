@@ -182,7 +182,8 @@ namespace Ee4v.AssetManager
 
     internal static class FileTreeImagePreviewLoader
     {
-        private const long MaximumEncodedBytes = 64L * 1024L * 1024L;
+        internal const long MaximumEncodedBytes = 64L * 1024L * 1024L;
+        internal const long MaximumPsdBytes = 1024L * 1024L * 1024L;
 
         public static FileTreeImagePreviewData Load(FileTreeImageSource source, CancellationToken cancellationToken)
         {
@@ -210,10 +211,11 @@ namespace Ee4v.AssetManager
 
         private static Stream OpenSource(FileTreeImageSource source)
         {
+            var maximumSourceBytes = ResolveMaximumSourceBytes(source.FileName);
             if (string.IsNullOrWhiteSpace(source.ArchivePath))
             {
                 var file = new FileInfo(source.FilePath);
-                return file.Exists && file.Length <= MaximumEncodedBytes
+                return file.Exists && file.Length <= maximumSourceBytes
                     ? file.OpenRead()
                     : null;
             }
@@ -233,7 +235,7 @@ namespace Ee4v.AssetManager
                     }
                 }
 
-                if (matched == null || matched.Length > MaximumEncodedBytes)
+                if (matched == null || matched.Length > maximumSourceBytes)
                 {
                     archive.Dispose();
                     return null;
@@ -254,6 +256,13 @@ namespace Ee4v.AssetManager
 
                 throw;
             }
+        }
+
+        internal static long ResolveMaximumSourceBytes(string fileName)
+        {
+            return string.Equals(Path.GetExtension(fileName ?? string.Empty), ".psd", StringComparison.OrdinalIgnoreCase)
+                ? MaximumPsdBytes
+                : MaximumEncodedBytes;
         }
 
         private static byte[] ReadAllBytes(Stream stream, CancellationToken cancellationToken)
