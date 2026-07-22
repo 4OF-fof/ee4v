@@ -20,8 +20,11 @@ namespace Ee4v.AssetManager
         private const string RowClassName = "ee4v-asset-manager-file-tree__row";
         private const string RowImportTargetClassName = "ee4v-asset-manager-file-tree__row--import-target";
         private const string RowGroupClassName = "ee4v-asset-manager-file-tree__row--group";
+        private const string RowVariantGroupClassName = "ee4v-asset-manager-file-tree__row--variant-group";
+        private const string RowVersionGroupClassName = "ee4v-asset-manager-file-tree__row--version-group";
         private const string RowTitleClassName = "ee4v-asset-manager-file-tree__title";
         private const string RowMetaClassName = "ee4v-asset-manager-file-tree__meta";
+        private const string RowGroupMetaClassName = "ee4v-asset-manager-file-tree__meta--group";
         private readonly SearchableTreeView<FileTreeNode> _treeView;
         private CancellationTokenSource _reloadCancellation;
         private int _reloadVersion;
@@ -275,6 +278,8 @@ namespace Ee4v.AssetManager
         {
             element.EnableInClassList(RowImportTargetClassName, node.IsImportTarget);
             element.EnableInClassList(RowGroupClassName, node.IsGroup);
+            element.EnableInClassList(RowVariantGroupClassName, node.GroupKind == FileTreeGroupKind.Variant);
+            element.EnableInClassList(RowVersionGroupClassName, node.GroupKind == FileTreeGroupKind.Version);
             var title = element.ElementAt(0) as UiTextElement;
             var meta = element.ElementAt(1) as UiTextElement;
 
@@ -286,10 +291,27 @@ namespace Ee4v.AssetManager
 
             if (meta != null)
             {
-                meta.SetText(node.Meta);
+                var metaText = ResolveMetaText(node);
+                meta.SetText(metaText);
                 meta.tooltip = string.Empty;
-                meta.EnableInClassList("ee4v-asset-manager-file-tree__meta--empty", string.IsNullOrWhiteSpace(node.Meta));
+                meta.EnableInClassList(RowGroupMetaClassName, node.IsGroup);
+                meta.EnableInClassList("ee4v-asset-manager-file-tree__meta--empty", string.IsNullOrWhiteSpace(metaText));
             }
+        }
+
+        private static string ResolveMetaText(FileTreeNode node)
+        {
+            if (node.GroupKind == FileTreeGroupKind.Variant)
+            {
+                return I18N.Get("assetManager.infomationPanel.fileTree.meta.variantGroup");
+            }
+
+            if (node.GroupKind == FileTreeGroupKind.Version)
+            {
+                return I18N.Get("assetManager.infomationPanel.fileTree.meta.versionGroup");
+            }
+
+            return node.Meta;
         }
 
         private void OnTreeContextClick(VisualElement target, FileTreeNode item, IReadOnlyList<FileTreeNode> selectedItems, Vector2 panelPosition)
@@ -476,6 +498,13 @@ namespace Ee4v.AssetManager
         }
     }
 
+    internal enum FileTreeGroupKind
+    {
+        None,
+        Variant,
+        Version
+    }
+
     internal sealed class FileTreeNode
     {
         public FileTreeNode(
@@ -487,6 +516,7 @@ namespace Ee4v.AssetManager
             string relativePath = null,
             bool isDirectory = false,
             bool isGroup = false,
+            FileTreeGroupKind groupKind = FileTreeGroupKind.None,
             IReadOnlyList<FileTreeImportTargetEntry> importTargetEntries = null)
         {
             Name = name ?? string.Empty;
@@ -496,6 +526,7 @@ namespace Ee4v.AssetManager
             HasAnyImportTarget = hasAnyImportTarget;
             RelativePath = NormalizeRelativePath(relativePath);
             IsGroup = isGroup;
+            GroupKind = groupKind;
             ImportTargetEntries = importTargetEntries ?? Array.Empty<FileTreeImportTargetEntry>();
         }
 
@@ -512,6 +543,8 @@ namespace Ee4v.AssetManager
         public string RelativePath { get; }
 
         public bool IsGroup { get; }
+
+        public FileTreeGroupKind GroupKind { get; }
 
         public IReadOnlyList<FileTreeImportTargetEntry> ImportTargetEntries { get; }
 
@@ -643,7 +676,9 @@ namespace Ee4v.AssetManager
             }
 
             AddFiles(children, files, consumedFileIds, file => string.Equals(file.VariantGroupId, variantGroup.Id, StringComparison.Ordinal));
-            return children.Count == 0 ? null : CreateGroupItem(variantGroup.Name, children);
+            return children.Count == 0
+                ? null
+                : CreateGroupItem(variantGroup.Name, FileTreeGroupKind.Variant, children);
         }
 
         private SearchableTreeItemData<FileTreeNode> BuildVersionGroupNode(
@@ -658,7 +693,9 @@ namespace Ee4v.AssetManager
 
             var children = new List<SearchableTreeItemData<FileTreeNode>>();
             AddFiles(children, files, consumedFileIds, file => string.Equals(file.VersionGroupId, versionGroup.Id, StringComparison.Ordinal));
-            return children.Count == 0 ? null : CreateGroupItem(versionGroup.Name, children);
+            return children.Count == 0
+                ? null
+                : CreateGroupItem(versionGroup.Name, FileTreeGroupKind.Version, children);
         }
 
         private void AddFiles(
@@ -682,13 +719,15 @@ namespace Ee4v.AssetManager
 
         private SearchableTreeItemData<FileTreeNode> CreateGroupItem(
             string name,
+            FileTreeGroupKind groupKind,
             IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children)
         {
             var node = new FileTreeNode(
                 name,
                 string.Empty,
                 name,
-                isGroup: true);
+                isGroup: true,
+                groupKind: groupKind);
             return new SearchableTreeItemData<FileTreeNode>(
                 _nextId++,
                 node,

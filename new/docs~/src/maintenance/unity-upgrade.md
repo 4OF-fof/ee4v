@@ -32,3 +32,9 @@ Unity の組み込みアイコンは、バージョンによって利用でき�
 Unity の内部 API はバージョンによって利用できる API や挙動が異なるため、Core 配下に `InternalEditorAPI` を設けて Unity 内部 API へのアクセスを一元管理している。
 
 `InternalEditorAPI` は、テストによって利用可能な API が検証されており、利用できない API は例外を投げるのではなく失敗を返す。Unity のバージョン更新時はテストの実行結果を参照し、利用できなくなった API があった場合は実装を更新する。
+
+### ContextMenuWindow popup chrome
+
+`ContextMenuWindow` は、角丸の外側を透過するため `EditorPopupWindow.TrySetBackgroundColor` を通して native `ContainerWindow.SetBackgroundColor` を呼び出す。reflection は `Editor/Core/Internal/EditorAPI/Backends/EditorPopupWindowBackend.cs` に閉じてあり、API を解決できない場合は通常の popup 背景へ fallback する。
+
+popup の最大幅と配置には `UnityEditorInternal.InternalEditorUtility.GetBoundsOfDesktopAtPoint` から得た表示中モニターの bounds を使う。この API を利用できない場合は従来どおり希望サイズと起点位置で表示する。Unity 更新時は、角丸外側の透過、複数モニター上での配置、長いラベルがモニター幅まで省略されないことを Catalog の `ContextMenuWindow` story でも確認する。

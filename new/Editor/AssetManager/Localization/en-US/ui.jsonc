@@ -13,7 +13,9 @@
         "loadFailed": "Failed to load the file tree.",
         "meta": {
           "zip": "ZIP",
-          "inaccessible": "Unreadable"
+          "inaccessible": "Unreadable",
+          "variantGroup": "Variant",
+          "versionGroup": "Version"
         },
         "context": {
           "markImportTarget": "Mark as import target",

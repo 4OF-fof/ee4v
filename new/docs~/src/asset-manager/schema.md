@@ -558,11 +558,15 @@ Variant Group は file を直接持てるほか、配下に Version Group を持
 
 同一 Item 内での `name` 重複は許可する。datasource 由来の variation 名が空の場合は import 時に安定した表示名を補完する。
 
+file 名からの自動 group 化では、設定された avatar 名と version 表記を除いた共通部分を Variant Group 名にする。たとえば `Chibi_Manuka_ver2.01.zip` と `Chibi_Mafuyu_ver2.01.zip` は `Chibi` Variant Group にまとめる。
+
 ## Version Group
 
 Item または Variant Group 配下の file を version 単位で束ねる group。1 つの Version Group は複数 file を持てる。
 
 Version Group は primary file を 1 つ持つ。依存先として Version Group が指定された場合は、import / resolve 時に `primary_file_info_id` を実際の依存 file として解決する。primary file が未設定、削除済み、または同じ Version Group に属していない場合、その Version Group 依存は unresolved として扱う。
+
+自動作成された Variant Group 配下では、version 表記と親 Variant Group 名を除いた部分を Version Group 名にする。たとえば `Chibi` Variant Group 配下の `Chibi_Manuka_ver2.01.zip` / `Chibi_Manuka_ver3.00.zip` は `Manuka` Version Group にまとめ、File Tree は `Chibi -> Manuka -> file` と表示する。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|

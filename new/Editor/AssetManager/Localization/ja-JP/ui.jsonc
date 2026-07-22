@@ -13,7 +13,9 @@
         "loadFailed": "ファイルツリーの読み込みに失敗しました。",
         "meta": {
           "zip": "ZIP",
-          "inaccessible": "読み取れません"
+          "inaccessible": "読み取れません",
+          "variantGroup": "Variant",
+          "versionGroup": "Version"
         },
         "context": {
           "markImportTarget": "Import 対象に追加",

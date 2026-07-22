@@ -87,7 +87,7 @@ namespace Ee4v.AssetManager.Api
             connection.Execute("UPDATE version_group SET primary_file_info_id = ?, updated_at = ? WHERE id = ?", fileId, now, versionGroupId);
         }
 
-        private static string ResolveVersionSeriesName(string fileName, string pattern, string avatarNamesText)
+        private static string ResolveVersionSeriesName(string fileName, string pattern, string avatarNamesText, string variantGroupName)
         {
             if (string.IsNullOrWhiteSpace(pattern) || string.IsNullOrWhiteSpace(fileName))
             {
@@ -116,8 +116,27 @@ namespace Ee4v.AssetManager.Api
                 ? baseName
                 : baseName.Remove(removeIndex, removeLength);
             value = NormalizeVersionSeriesName(value);
-            value = RemoveConfiguredAvatarTokenFromSeriesName(value, avatarNamesText);
+            value = string.IsNullOrWhiteSpace(variantGroupName)
+                ? RemoveConfiguredAvatarTokenFromSeriesName(value, avatarNamesText)
+                : RemoveVariantGroupTokenFromSeriesName(value, variantGroupName);
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        private static string RemoveVariantGroupTokenFromSeriesName(string value, string variantGroupName)
+        {
+            var normalizedVariantGroupName = NormalizeVersionSeriesName(variantGroupName);
+            if (string.IsNullOrWhiteSpace(value) || string.IsNullOrWhiteSpace(normalizedVariantGroupName))
+            {
+                return value;
+            }
+
+            var nextValue = Regex.Replace(
+                value,
+                @"(^|_)" + Regex.Escape(normalizedVariantGroupName) + @"(?=$|_)",
+                "_",
+                RegexOptions.IgnoreCase);
+            nextValue = Regex.Replace(nextValue, "_+", "_").Trim('_');
+            return NormalizeVersionSeriesName(nextValue);
         }
 
         private static string RemoveConfiguredAvatarTokenFromSeriesName(string value, string avatarNamesText)
@@ -293,7 +312,17 @@ namespace Ee4v.AssetManager.Api
 
         private static VersionGroupingCandidate CreateVersionGroupingCandidate(SQLiteConnection connection, FileRow row, string pattern, string avatarNamesText)
         {
-            var seriesName = ResolveVersionSeriesName(row.file_name, pattern, avatarNamesText);
+            var variantGroupId = row.variant_group_id;
+            if (!string.IsNullOrWhiteSpace(row.version_group_id))
+            {
+                var versionGroup = connection.Query<VersionGroupRow>("SELECT * FROM version_group WHERE id = ? LIMIT 1", row.version_group_id).FirstOrDefault();
+                variantGroupId = versionGroup == null ? variantGroupId : versionGroup.variant_group_id;
+            }
+
+            var variantGroupName = string.IsNullOrWhiteSpace(variantGroupId)
+                ? null
+                : connection.ExecuteScalar<string>("SELECT name FROM variant_group WHERE id = ? LIMIT 1", variantGroupId);
+            var seriesName = ResolveVersionSeriesName(row.file_name, pattern, avatarNamesText, variantGroupName);
             if (string.IsNullOrWhiteSpace(seriesName))
             {
                 return null;
@@ -303,13 +332,6 @@ namespace Ee4v.AssetManager.Api
             if (string.IsNullOrWhiteSpace(versionValue))
             {
                 return null;
-            }
-
-            var variantGroupId = row.variant_group_id;
-            if (!string.IsNullOrWhiteSpace(row.version_group_id))
-            {
-                var versionGroup = connection.Query<VersionGroupRow>("SELECT * FROM version_group WHERE id = ? LIMIT 1", row.version_group_id).FirstOrDefault();
-                variantGroupId = versionGroup == null ? variantGroupId : versionGroup.variant_group_id;
             }
 
             return new VersionGroupingCandidate(row, seriesName, versionValue, variantGroupId);

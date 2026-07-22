@@ -79,6 +79,14 @@
     padding-left: 4px;
     padding-right: 4px;
     border-left-width: 2px;
+}
+
+.ee4v-asset-manager-file-tree__row--variant-group {
+    border-left-color: var(--ee4v-color-info);
+    background-color: var(--ee4v-color-info-surface-soft);
+}
+
+.ee4v-asset-manager-file-tree__row--version-group {
     border-left-color: var(--ee4v-color-file-group);
     background-color: var(--ee4v-color-file-group-surface);
 }
@@ -110,14 +118,19 @@
     -unity-font-style: bold;
 }
 
-.ee4v-asset-manager-file-tree__row--group .ee4v-asset-manager-file-tree__title {
+.ee4v-asset-manager-file-tree__row--variant-group .ee4v-asset-manager-file-tree__title {
+    color: var(--ee4v-color-status-skipped-text);
+    -unity-font-style: bold;
+}
+
+.ee4v-asset-manager-file-tree__row--version-group .ee4v-asset-manager-file-tree__title {
     color: var(--ee4v-color-file-group-text);
     -unity-font-style: bold;
 }
 
 .ee4v-asset-manager-file-tree__meta {
     flex-shrink: 0;
-    max-width: 36px;
+    max-width: 88px;
     margin-left: 8px;
     color: var(--ee4v-color-text-muted);
     overflow: hidden;
@@ -136,6 +149,26 @@
 
 .ee4v-asset-manager-file-tree__row--import-target .ee4v-asset-manager-file-tree__meta {
     color: var(--ee4v-color-import-target-meta);
+}
+
+.ee4v-asset-manager-file-tree__meta--group {
+    padding-left: 5px;
+    padding-right: 5px;
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+    -unity-font-style: bold;
+}
+
+.ee4v-asset-manager-file-tree__row--variant-group .ee4v-asset-manager-file-tree__meta {
+    color: var(--ee4v-color-status-skipped-text);
+    background-color: var(--ee4v-color-info-surface-soft);
+}
+
+.ee4v-asset-manager-file-tree__row--version-group .ee4v-asset-manager-file-tree__meta {
+    color: var(--ee4v-color-status-running-text);
+    background-color: var(--ee4v-color-warning-surface-soft);
 }
 
 .ee4v-asset-manager-file-tree__meta--empty {

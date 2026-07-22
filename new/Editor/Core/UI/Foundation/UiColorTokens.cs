@@ -4,6 +4,7 @@ namespace Ee4v.UI
 {
     internal static class UiColorTokens
     {
+        public static readonly Color32 Transparent = new Color32(0, 0, 0, 0);
         public static readonly Color32 ChromeDeep = new Color32(25, 25, 25, 255);
         public static readonly Color32 TabIdle = new Color32(40, 40, 40, 255);
         public static readonly Color32 Field = new Color32(42, 42, 42, 255);

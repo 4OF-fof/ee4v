@@ -285,17 +285,19 @@ namespace Ee4v.AssetManager.Api.Tests
             order: 313)]
         public void RegisterFile_AutoGroupsByConfiguredAvatarNamesAndVersionRegex()
         {
-            SettingApi.Set(AssetManagerDefinitions.AvatarNames, "Chiffon,Lime,Manuka", saveImmediately: false);
-            SettingApi.Set(AssetManagerDefinitions.VersionGroupRegex, @"(?i)v(?<name>\d+(?:\.\d+)*)", saveImmediately: false);
+            SettingApi.Set(AssetManagerDefinitions.AvatarNames, "Mafuyu,Manuka", saveImmediately: false);
+            SettingApi.Set(AssetManagerDefinitions.VersionGroupRegex, @"(?i)(?:v|ver)(?<name>\d+(?:\.\d+)*)", saveImmediately: false);
             var item = AssetManagerApi.CreateItem(new CreateAssetItemRequest { Name = "Item" });
-            var chiffonLimeFilePath = Path.Combine(_tempRoot, "Avatar_Chiffon＿Lime_v2.zip");
-            var manukaFilePath = Path.Combine(_tempRoot, "Avatar_Manuka_v2.zip");
-            var nextVersionFilePath = Path.Combine(_tempRoot, "Avatar_Chiffon＿Lime_v3.zip");
-            File.WriteAllText(chiffonLimeFilePath, "zip");
-            File.WriteAllText(manukaFilePath, "zip");
-            File.WriteAllText(nextVersionFilePath, "zip");
+            var manukaV2Path = Path.Combine(_tempRoot, "Chibi_Manuka_ver2.01.zip");
+            var mafuyuV2Path = Path.Combine(_tempRoot, "Chibi_Mafuyu_ver2.01.zip");
+            var manukaV3Path = Path.Combine(_tempRoot, "Chibi_Manuka_ver3.00.zip");
+            var mafuyuV3Path = Path.Combine(_tempRoot, "Chibi_Mafuyu_ver3.00.zip");
+            File.WriteAllText(manukaV2Path, "zip");
+            File.WriteAllText(mafuyuV2Path, "zip");
+            File.WriteAllText(manukaV3Path, "zip");
+            File.WriteAllText(mafuyuV3Path, "zip");
 
-            var chiffonLimeFile = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = chiffonLimeFilePath, FileName = "Avatar_Chiffon＿Lime_v2.zip" });
+            var manukaV2 = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = manukaV2Path, FileName = "Chibi_Manuka_ver2.01.zip" });
             var singleFile = AssetManagerApi.GetFiles(item.Id).Single();
 
             Assert.That(AssetManagerApi.GetVariantGroups(item.Id), Is.Empty);
@@ -304,31 +306,32 @@ namespace Ee4v.AssetManager.Api.Tests
             Assert.That(singleFile.VersionGroupId, Is.Null);
             Assert.That(singleFile.VariantGroupId, Is.Null);
 
-            var manukaFile = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = manukaFilePath, FileName = "Avatar_Manuka_v2.zip" });
+            var mafuyuV2 = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = mafuyuV2Path, FileName = "Chibi_Mafuyu_ver2.01.zip" });
             var variants = AssetManagerApi.GetVariantGroups(item.Id).OrderBy(group => group.Name).ToArray();
             var files = AssetManagerApi.GetFiles(item.Id).OrderBy(file => file.FileName).ToArray();
-            var variant = variants.Single(group => group.Name == "Avatar");
-            var updatedChiffonLimeFile = files.Single(file => file.Id == chiffonLimeFile.Id);
-            var updatedManukaFile = files.Single(file => file.Id == manukaFile.Id);
+            var variant = variants.Single(group => group.Name == "Chibi");
+            var updatedManukaV2 = files.Single(file => file.Id == manukaV2.Id);
+            var updatedMafuyuV2 = files.Single(file => file.Id == mafuyuV2.Id);
 
-            Assert.That(variants.Select(group => group.Name).ToArray(), Is.EqualTo(new[] { "Avatar" }));
+            Assert.That(variants.Select(group => group.Name).ToArray(), Is.EqualTo(new[] { "Chibi" }));
             Assert.That(AssetManagerApi.GetVersionGroups(item.Id), Is.Empty);
-            Assert.That(updatedChiffonLimeFile.VariantGroupId, Is.EqualTo(variant.Id));
-            Assert.That(updatedManukaFile.VariantGroupId, Is.EqualTo(variant.Id));
+            Assert.That(updatedManukaV2.VariantGroupId, Is.EqualTo(variant.Id));
+            Assert.That(updatedMafuyuV2.VariantGroupId, Is.EqualTo(variant.Id));
 
-            var nextVersionFile = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = nextVersionFilePath, FileName = "Avatar_Chiffon＿Lime_v3.zip" });
-            var versions = AssetManagerApi.GetVersionGroups(item.Id).OrderBy(group => group.VariantGroupId).ToArray();
+            var manukaV3 = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = manukaV3Path, FileName = "Chibi_Manuka_ver3.00.zip" });
+            var mafuyuV3 = AssetManagerApi.RegisterFile(item.Id, new RegisterFileRequest { FilePath = mafuyuV3Path, FileName = "Chibi_Mafuyu_ver3.00.zip" });
+            var versions = AssetManagerApi.GetVersionGroups(item.Id).OrderBy(group => group.Name).ToArray();
             files = AssetManagerApi.GetFiles(item.Id).OrderBy(file => file.FileName).ToArray();
-            var version = versions.Single(group => group.VariantGroupId == variant.Id);
-            updatedChiffonLimeFile = files.Single(file => file.Id == chiffonLimeFile.Id);
-            updatedManukaFile = files.Single(file => file.Id == manukaFile.Id);
-            var updatedNextVersionFile = files.Single(file => file.Id == nextVersionFile.Id);
+            var mafuyuVersion = versions.Single(group => group.Name == "Mafuyu");
+            var manukaVersion = versions.Single(group => group.Name == "Manuka");
 
-            Assert.That(version.Name, Is.EqualTo("Avatar"));
-            Assert.That(version.PrimaryFileId, Is.EqualTo(chiffonLimeFile.Id));
-            Assert.That(updatedChiffonLimeFile.VersionGroupId, Is.EqualTo(version.Id));
-            Assert.That(updatedManukaFile.VersionGroupId, Is.EqualTo(version.Id));
-            Assert.That(updatedNextVersionFile.VersionGroupId, Is.EqualTo(version.Id));
+            Assert.That(versions.All(group => group.VariantGroupId == variant.Id), Is.True);
+            Assert.That(mafuyuVersion.PrimaryFileId, Is.EqualTo(mafuyuV2.Id));
+            Assert.That(manukaVersion.PrimaryFileId, Is.EqualTo(manukaV2.Id));
+            Assert.That(files.Single(file => file.Id == mafuyuV2.Id).VersionGroupId, Is.EqualTo(mafuyuVersion.Id));
+            Assert.That(files.Single(file => file.Id == mafuyuV3.Id).VersionGroupId, Is.EqualTo(mafuyuVersion.Id));
+            Assert.That(files.Single(file => file.Id == manukaV2.Id).VersionGroupId, Is.EqualTo(manukaVersion.Id));
+            Assert.That(files.Single(file => file.Id == manukaV3.Id).VersionGroupId, Is.EqualTo(manukaVersion.Id));
         }
 
         [Test]

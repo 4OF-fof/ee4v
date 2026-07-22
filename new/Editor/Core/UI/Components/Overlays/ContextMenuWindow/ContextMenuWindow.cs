@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.Core.Internal.EditorAPI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -187,18 +188,23 @@ namespace Ee4v.UI
         public static ContextMenuWindow Show(Vector2 screenPosition, ContextMenuState state)
         {
             state = state ?? new ContextMenuState(null);
+            var hasDesktopBounds = EditorPopupWindow.TryGetDesktopBounds(screenPosition, out var desktopBounds);
+            var maximumWidth = hasDesktopBounds ? desktopBounds.width : float.PositiveInfinity;
             var window = CreateInstance<ContextMenuWindow>();
-            window.Initialize(state);
-            window.position = ContextMenuLayout.CalculateWindowRect(screenPosition, window._size);
+            window.Initialize(state, maximumWidth);
+            window.position = hasDesktopBounds
+                ? ContextMenuLayout.CalculateWindowRect(screenPosition, window._size, desktopBounds)
+                : ContextMenuLayout.CalculateWindowRect(screenPosition, window._size);
             window.ShowPopup();
+            EditorPopupWindow.TrySetBackgroundColor(window, UiColorTokens.Transparent);
             window.Focus();
             return window;
         }
 
-        private void Initialize(ContextMenuState state)
+        private void Initialize(ContextMenuState state, float maximumWidth)
         {
             _state = state;
-            _size = ContextMenuLayout.CalculateSize(state);
+            _size = ContextMenuLayout.CalculateSize(state, maximumWidth);
             minSize = _size;
             maxSize = _size;
         }
@@ -210,6 +216,7 @@ namespace Ee4v.UI
             root.AddToClassList("ee4v-ui");
             root.style.width = _size.x;
             root.style.height = _size.y;
+            root.style.backgroundColor = new StyleColor((Color)UiColorTokens.Transparent);
             root.focusable = true;
             root.RegisterCallback<KeyDownEvent>(OnKeyDown);
 
@@ -285,13 +292,18 @@ namespace Ee4v.UI
         private const float MenuBorderWidth = 1f;
         private const float ItemPaddingX = 10f;
         private const float MinimumWidth = 100f;
-        private const float MaximumWidth = 360f;
         private const float ShortcutGap = 16f;
+        private const float TextMeasurementAllowance = 12f;
 
-        public static Vector2 CalculateSize(ContextMenuState state)
+        public static Vector2 CalculateSize(ContextMenuState state, float maximumWidth = float.PositiveInfinity)
         {
             state = state ?? new ContextMenuState(null);
             var width = state.Width > 0f ? state.Width : CalculateAutoWidth(state);
+            if (!float.IsNaN(maximumWidth) && maximumWidth > 0f)
+            {
+                width = Mathf.Min(width, maximumWidth);
+            }
+
             var height = (MenuPaddingY + MenuBorderWidth) * 2f;
 
             for (var i = 0; i < state.Items.Count; i++)
@@ -313,10 +325,25 @@ namespace Ee4v.UI
             return new Rect(screenPosition, size);
         }
 
+        public static Rect CalculateWindowRect(Vector2 screenPosition, Vector2 size, Rect desktopBounds)
+        {
+            if (desktopBounds.width <= 0f || desktopBounds.height <= 0f)
+            {
+                return CalculateWindowRect(screenPosition, size);
+            }
+
+            var maximumX = Mathf.Max(desktopBounds.xMin, desktopBounds.xMax - size.x);
+            var maximumY = Mathf.Max(desktopBounds.yMin, desktopBounds.yMax - size.y);
+            var x = Mathf.Clamp(screenPosition.x, desktopBounds.xMin, maximumX);
+            var y = Mathf.Clamp(screenPosition.y, desktopBounds.yMin, maximumY);
+            return new Rect(new Vector2(x, y), size);
+        }
+
         private static float CalculateAutoWidth(ContextMenuState state)
         {
             var width = MinimumWidth;
-            var labelStyle = EditorStyles.label;
+            var editorSkin = EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector);
+            var labelStyle = editorSkin != null ? editorSkin.label : GUIStyle.none;
 
             for (var i = 0; i < state.Items.Count; i++)
             {
@@ -332,10 +359,11 @@ namespace Ee4v.UI
                     : labelStyle.CalcSize(new GUIContent(item.Shortcut)).x + ShortcutGap;
                 width = Mathf.Max(
                     width,
-                    MenuBorderWidth + MenuPaddingX + ItemPaddingX + labelWidth + shortcutWidth + ItemPaddingX + MenuPaddingX + MenuBorderWidth);
+                    MenuBorderWidth + MenuPaddingX + ItemPaddingX + labelWidth + shortcutWidth +
+                    TextMeasurementAllowance + ItemPaddingX + MenuPaddingX + MenuBorderWidth);
             }
 
-            return Mathf.Clamp(width, MinimumWidth, MaximumWidth);
+            return Mathf.Max(width, MinimumWidth);
         }
     }
 }
