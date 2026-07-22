@@ -10,6 +10,7 @@ namespace Ee4v.UI
         private const string IconClassName = "ee4v-ui-image-stack__icon";
         private const int MaxImageCount = 3;
         private const int BaseSlot = 1;
+        private const float MultiImageInsetMultiplier = 2f;
         private static readonly int[] SlotOrder = { 0, BaseSlot, 2 };
         private static readonly float[] SlotRotations = { -4.5f, 0.8f, 4.2f };
         private readonly ItemImage[] _images;
@@ -121,7 +122,7 @@ namespace Ee4v.UI
             }
 
             var offset = UnityEngine.Mathf.Clamp(_size * 0.065f, 6f, 18f);
-            var imageSize = UnityEngine.Mathf.Max(48f, _size - (offset * 4f));
+            var imageSize = UnityEngine.Mathf.Max(48f, _size - (offset * MultiImageInsetMultiplier));
             var centerLeft = (_size - imageSize) * 0.5f;
             var centerTop = (_size - imageSize) * 0.5f;
 

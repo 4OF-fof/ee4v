@@ -18,6 +18,7 @@ AssetManager は Booth / Eagle / ee4v 管理ファイルを統合して扱うた
 - File Tree は完成済みツリーを Unity Editor のメモリ上に最大 64 件共有し、同一 item / file の再表示では background 確認と loading 表示を省略する。Import Target と Version Group の代表変更は cache 上の表示 state へ反映して再構築せず、構造を含む AssetManager の変更時だけ全件を破棄する。cache は Unity 終了または domain reload で揮発する
 - File Tree の Variant Group と Version Group は異なる accent で表示し、行末の localized meta label で group 種別を識別できる
 - Version Group 配下の file root は context menu から代表ファイルに設定でき、現在の代表は Import Target と同じ配色で識別できる。設定後は Main View 全体を再読み込みせず File Tree の行 state だけを更新する。file root 自体は Import Target にできない
+- File Tree の context menu から Import Target、または個別の実 file を Unity へ取り込める。Version Group は代表 file root と同じ対象を使う。`.unitypackage` は Unity package import を開き、それ以外は `Assets/<asset name>/<file name>/` 配下へ相対 path を維持して copy する
 - File Tree の ZIP metadata は、thumbnail と同じ cache root の `<ee4v global path>/cache/file-tree` に永続化し、更新日時と file size の検証を background で行う
 - Unity Editor session 開始時の BLM / Eagle datasource sync は background で変更確認を先行し、`cache/sync` の前回成功 fingerprint と一致する source は DB sync と UI reload を省略する
 - Unity側の item 情報が同期元より新しい競合は `DiffConfirmationOverlay` で現在値と同期元値を比較し、上書きまたは今回の同期キャンセルを選択できる
@@ -27,7 +28,7 @@ AssetManager は Booth / Eagle / ee4v 管理ファイルを統合して扱うた
 - thumbnail は最大 4 並列取得に対応
 - Eagle Booth bridge は loopback bind、BOOTH origin 制限、session token、1 MiB request body 上限を適用
 
-未完了なのは UI からの import 実行、全件を辿る pagination、toolbar 検索・絞り込みの接続です。Smart Collection は現状 Item ごとの条件評価を含むため、大規模 DB 向けの query 一括化も今後の課題です。
+未完了なのは全件を辿る pagination、toolbar 検索・絞り込みの接続です。Smart Collection は現状 Item ごとの条件評価を含むため、大規模 DB 向けの query 一括化も今後の課題です。
 
 ## Pages
 

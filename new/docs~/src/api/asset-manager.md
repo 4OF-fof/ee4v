@@ -909,6 +909,32 @@ Notes:
 - 同一 file 内の重複 `RelativePath` は 1 件にまとめる。
 - 標準 File Tree UI は `FileImportTargetsChanged` の変更内容を memory cache と表示中の行へ反映し、filesystem / ZIP を再走査しない。
 
+### `AssetManagerApi.ImportFileTargets`
+
+file に設定済みの Import Target を Unity project へ取り込みます。
+
+```csharp
+public static void ImportFileTargets(string itemId, string fileId)
+```
+
+- File Tree の file root と Version Group から実行する。Version Group は代表 file の target を使う。
+- `.unitypackage` は Unity の package import dialog へ渡す。
+- それ以外は `Assets/<asset name>/<file name>/` 配下へ target の相対 path を維持して copy し、最後に AssetDatabase を refresh する。
+- Import Target がない file root では標準 File Tree の context menu に表示しない。
+
+### `AssetManagerApi.ImportFileEntry`
+
+file root 配下の実 file 1 件を Unity project へ取り込みます。
+
+```csharp
+public static void ImportFileEntry(string itemId, string fileId, string relativePath)
+```
+
+- Import Target への登録有無にかかわらず、標準 File Tree の実 file context menu から実行できる。
+- directory 行には表示しない。
+- ZIP entry は必要な entry だけを読み出す。path traversal を含む relative path は拒否する。
+- `.unitypackage` とそれ以外の取り扱いは `ImportFileTargets` と同じ。
+
 ## Change Notifications
 
 ```csharp

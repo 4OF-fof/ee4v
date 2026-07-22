@@ -38,7 +38,7 @@ phase 1 は `old` のリファクタや段階移植ではなく、`new` の再�
     - [ ] AssetManager UI completion
         - [ ] toolbar search / filter を API query に接続する
         - [ ] 200 件を超える一覧の pagination を追加する
-        - [ ] import target に基づく Unity import 実行を追加する
+        - [x] import target に基づく Unity import 実行を追加する
         - [ ] Smart Collection の Item ごとの query を一括化する
 
 ## Injector

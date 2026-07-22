@@ -44,7 +44,7 @@ namespace Ee4v.AssetManager
                 I18N.Get("assetManager.infomationPanel.fileTree.searchPlaceholder"),
                 SelectionType.Multiple,
                 OnTreeContextClick,
-                node => node == null || !node.IsGroup);
+                node => node == null || !node.IsGroup || node.GroupKind == FileTreeGroupKind.Version);
             _treeView.SetViewDataKey("ee4v-asset-manager-infomation-panel-file-tree");
             Add(_treeView);
 
@@ -327,7 +327,7 @@ namespace Ee4v.AssetManager
 
         private void OnTreeContextClick(VisualElement target, FileTreeNode item, IReadOnlyList<FileTreeNode> selectedItems, Vector2 panelPosition)
         {
-            if (item == null || item.IsGroup)
+            if (item == null || item.GroupKind == FileTreeGroupKind.Variant)
             {
                 return;
             }
@@ -336,6 +336,15 @@ namespace Ee4v.AssetManager
             var importTargetSelection = selected.Where(node => node != null && !node.IsGroup && node.CanSetImportTarget).ToArray();
 
             var menuItems = new List<ContextMenuItemState>();
+            Action importAction;
+            if (TryCreateImportAction(item, out importAction))
+            {
+                menuItems.Add(new ContextMenuItemState(
+                    "import",
+                    I18N.Get("assetManager.infomationPanel.fileTree.context.import"),
+                    importAction));
+            }
+
             if (item.CanSetAsVersionGroupPrimary)
             {
                 menuItems.Add(new ContextMenuItemState(
@@ -369,6 +378,42 @@ namespace Ee4v.AssetManager
 
             var menu = new ContextMenuState(menuItems);
             ContextMenuWindow.Show(target, panelPosition, menu);
+        }
+
+        private bool TryCreateImportAction(FileTreeNode item, out Action importAction)
+        {
+            importAction = null;
+            if (item == null || string.IsNullOrWhiteSpace(_itemId))
+            {
+                return false;
+            }
+
+            var itemId = _itemId;
+            if (item.IsAssetFileRoot || item.GroupKind == FileTreeGroupKind.Version)
+            {
+                var fileId = item.AssetFileId;
+                if (string.IsNullOrWhiteSpace(fileId) || AssetManagerApi.GetFileImportTargets(fileId).Count == 0)
+                {
+                    return false;
+                }
+
+                importAction = () => AssetManagerApi.ImportFileTargets(itemId, fileId);
+                return true;
+            }
+
+            if (item.IsGroup || item.IsDirectory || item.ImportTargetEntries.Count != 1)
+            {
+                return false;
+            }
+
+            var entry = item.ImportTargetEntries[0];
+            if (string.IsNullOrWhiteSpace(entry.FileId) || string.IsNullOrWhiteSpace(entry.RelativePath))
+            {
+                return false;
+            }
+
+            importAction = () => AssetManagerApi.ImportFileEntry(itemId, entry.FileId, entry.RelativePath);
+            return true;
         }
 
         private void SetImportTargetSelection(IReadOnlyList<FileTreeNode> selectedNodes, bool isImportTarget)
@@ -608,6 +653,7 @@ namespace Ee4v.AssetManager
             IsImportTarget = isImportTarget;
             HasAnyImportTarget = hasAnyImportTarget;
             RelativePath = NormalizeRelativePath(relativePath);
+            IsDirectory = isDirectory;
             IsGroup = isGroup;
             GroupKind = groupKind;
             IsAssetFileRoot = isAssetFileRoot;
@@ -629,13 +675,15 @@ namespace Ee4v.AssetManager
 
         public string RelativePath { get; }
 
+        public bool IsDirectory { get; }
+
         public bool IsGroup { get; }
 
         public FileTreeGroupKind GroupKind { get; }
 
         public bool IsAssetFileRoot { get; }
 
-        public string AssetFileId { get; }
+        public string AssetFileId { get; private set; }
 
         public string VersionGroupId { get; }
 
@@ -691,7 +739,18 @@ namespace Ee4v.AssetManager
 
         public void SetVersionGroupPrimaryFile(string versionGroupId, string primaryFileId)
         {
-            if (!IsAssetFileRoot || !string.Equals(VersionGroupId, versionGroupId, StringComparison.Ordinal))
+            if (!string.Equals(VersionGroupId, versionGroupId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (GroupKind == FileTreeGroupKind.Version)
+            {
+                AssetFileId = primaryFileId ?? string.Empty;
+                return;
+            }
+
+            if (!IsAssetFileRoot)
             {
                 return;
             }
@@ -846,7 +905,12 @@ namespace Ee4v.AssetManager
                 versionGroup.PrimaryFileId);
             return children.Count == 0
                 ? null
-                : CreateGroupItem(versionGroup.Name, FileTreeGroupKind.Version, children);
+                : CreateGroupItem(
+                    versionGroup.Name,
+                    FileTreeGroupKind.Version,
+                    children,
+                    versionGroup.Id,
+                    versionGroup.PrimaryFileId);
         }
 
         private void AddFiles(
@@ -872,14 +936,18 @@ namespace Ee4v.AssetManager
         private SearchableTreeItemData<FileTreeNode> CreateGroupItem(
             string name,
             FileTreeGroupKind groupKind,
-            IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children)
+            IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children,
+            string versionGroupId = null,
+            string primaryFileId = null)
         {
             var node = new FileTreeNode(
                 name,
                 string.Empty,
                 name,
                 isGroup: true,
-                groupKind: groupKind);
+                groupKind: groupKind,
+                assetFileId: primaryFileId,
+                versionGroupId: versionGroupId);
             return new SearchableTreeItemData<FileTreeNode>(
                 _nextId++,
                 node,

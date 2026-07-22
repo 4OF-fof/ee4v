@@ -18,6 +18,7 @@
           "versionGroup": "Version"
         },
         "context": {
+          "import": "Import",
           "markImportTarget": "Mark as import target",
           "unmarkImportTarget": "Unmark import target",
           "setPrimaryFile": "Set as primary file"

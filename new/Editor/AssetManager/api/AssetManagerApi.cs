@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SQLite;
 
 namespace Ee4v.AssetManager.Api
@@ -159,6 +160,19 @@ namespace Ee4v.AssetManager.Api
             FileTreeChanged?.Invoke();
         }
 
+        public static void ImportFileTargets(string itemId, string fileId)
+        {
+            var relativePaths = GetFileImportTargets(fileId)
+                .Select(target => target.RelativePath)
+                .ToArray();
+            ImportFileEntries(itemId, fileId, relativePaths);
+        }
+
+        public static void ImportFileEntry(string itemId, string fileId, string relativePath)
+        {
+            ImportFileEntries(itemId, fileId, new[] { relativePath });
+        }
+
         public static AssetSyncResult SyncBlm(BlmSyncRequest request)
         {
             return ExecuteChanged(() => AssetManagerDatabase.SyncBlm(request));
@@ -218,6 +232,38 @@ namespace Ee4v.AssetManager.Api
         internal static void NotifyChanged()
         {
             Changed?.Invoke();
+        }
+
+        private static void ImportFileEntries(string itemId, string fileId, IReadOnlyList<string> relativePaths)
+        {
+            if (string.IsNullOrWhiteSpace(itemId) || string.IsNullOrWhiteSpace(fileId))
+            {
+                throw new AssetManagerException(AssetManagerErrorCode.InvalidRequest, "Item id and file id are required.");
+            }
+
+            var item = GetItem(itemId);
+            var file = GetFiles(itemId, new AssetFileQuery
+                {
+                    Lifecycle = AssetFileLifecycle.Active
+                })
+                .FirstOrDefault(candidate => string.Equals(candidate.Id, fileId, StringComparison.Ordinal));
+            if (file == null)
+            {
+                throw new AssetManagerException(AssetManagerErrorCode.NotFound, "The file was not found in the item.");
+            }
+
+            var resolution = ResolveFilePath(fileId);
+            if (resolution == null || !resolution.Found || string.IsNullOrWhiteSpace(resolution.Path))
+            {
+                throw new AssetManagerException(AssetManagerErrorCode.NotFound, "The file path could not be resolved.");
+            }
+
+            AssetFileImportService.Import(
+                item.Name,
+                file.FileName,
+                resolution.Path,
+                relativePaths,
+                new UnityAssetFileImportEnvironment());
         }
     }
 }

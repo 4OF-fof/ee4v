@@ -42,6 +42,25 @@ namespace Ee4v.UI.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "短い1項目のコンテキストメニューを詰めて表示する",
+            "Import だけのメニューが不要な右余白を持たず、80px の最小幅で表示されることを確認します。",
+            order: 222,
+            category: FeatureTestCategory.Ui)]
+        public void CalculateSize_SingleShortItemUsesCompactMinimumWidth()
+        {
+            var state = new ContextMenuState(
+                new[]
+                {
+                    new ContextMenuItemState("import", "Import")
+                });
+
+            var size = ContextMenuLayout.CalculateSize(state);
+
+            Assert.That(size, Is.EqualTo(new Vector2(80f, 36f)));
+        }
+
+        [Test]
         public void CalculateSize_AutoWidthIsNotLimitedToLegacyFixedMaximum()
         {
             var state = new ContextMenuState(

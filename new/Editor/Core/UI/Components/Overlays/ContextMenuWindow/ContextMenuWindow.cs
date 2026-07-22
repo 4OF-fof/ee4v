@@ -331,7 +331,7 @@ namespace Ee4v.UI
         private const float MenuPaddingX = 4f;
         private const float MenuBorderWidth = 1f;
         private const float ItemPaddingX = 10f;
-        private const float MinimumWidth = 100f;
+        private const float MinimumWidth = 80f;
         private const float ShortcutGap = 16f;
         private const float TextMeasurementAllowance = 12f;
 
