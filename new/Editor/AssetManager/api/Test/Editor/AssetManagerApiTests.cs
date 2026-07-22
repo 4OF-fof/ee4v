@@ -1079,6 +1079,12 @@ namespace Ee4v.AssetManager.Api.Tests
             Assert.That(
                 cachedEntries.Select(entry => entry.FullName),
                 Is.EqualTo(new[] { "Textures/albedo.png", "Models/avatar.fbx" }));
+            Assert.That(
+                entries.Select(entry => entry.ArchiveFullName),
+                Is.EqualTo(new[] { "Avatar/Textures/albedo.png", "Avatar/Models/avatar.fbx" }));
+            Assert.That(
+                cachedEntries.Select(entry => entry.ArchiveFullName),
+                Is.EqualTo(new[] { "Avatar/Textures/albedo.png", "Avatar/Models/avatar.fbx" }));
         }
 
         [Test]

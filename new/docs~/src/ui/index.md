@@ -22,6 +22,8 @@ UI は Unity Editor 上で使う共通 UI コンポーネントと、その実�
 
 `DiffConfirmationOverlay` は現在値と入力される値を等幅の2 column gridで差分行ごとに並べ、item thumbnail とともに表示し、`Overwrite` / `Cancel` の結果だけを通知する汎用 component です。AssetManager の競合判定や同期処理には依存せず、表示文字列、thumbnail、差分 state は呼び出し側から受け取ります。
 
+`ImageTooltip` は画像とファイル名を縦に並べる汎用 preview component です。画像取得や hover 判定には依存せず、`ImageTooltipState` で受け取った texture の下へファイル名を中央揃えで表示します。desktop 端では `ImageTooltipWindow` が pointer の反対側へ表示位置を補正します。
+
 ## 新規コンポーネント
 
 新規コンポーネントは基本的に以下を揃えます。

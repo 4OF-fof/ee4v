@@ -17,6 +17,7 @@ namespace Ee4v.UI
         public const string ItemCardName = "ee4v-ui-item-card__name";
         public const string ContextMenuLabel = "ee4v-ui-context-menu__label";
         public const string ContextMenuShortcut = "ee4v-ui-context-menu__shortcut";
+        public const string ImageTooltipFileName = "ee4v-ui-image-tooltip__file-name";
         public const string InfomationPanelSelectionCount = "ee4v-asset-manager-panel__infomation-selection-count";
         public const string InfomationPanelSelectionCountSuffix = "ee4v-asset-manager-panel__infomation-selection-count-suffix";
 

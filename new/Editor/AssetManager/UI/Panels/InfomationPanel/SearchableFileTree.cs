@@ -26,8 +26,16 @@ namespace Ee4v.AssetManager
         private const string RowTitleClassName = "ee4v-asset-manager-file-tree__title";
         private const string RowMetaClassName = "ee4v-asset-manager-file-tree__meta";
         private const string RowGroupMetaClassName = "ee4v-asset-manager-file-tree__meta--group";
+        private const int MaximumCachedImagePreviews = 24;
         private readonly SearchableTreeView<FileTreeNode> _treeView;
+        private readonly Dictionary<string, Texture2D> _imagePreviewCache = new Dictionary<string, Texture2D>(StringComparer.OrdinalIgnoreCase);
         private CancellationTokenSource _reloadCancellation;
+        private CancellationTokenSource _imagePreviewCancellation;
+        private ImageTooltipWindow _imageTooltipWindow;
+        private VisualElement _hoveredImageRow;
+        private FileTreeNode _hoveredImageNode;
+        private Vector2 _hoveredPanelPosition;
+        private int _imagePreviewVersion;
         private int _reloadVersion;
         private bool _isAttached;
         private string _itemId;
@@ -89,6 +97,7 @@ namespace Ee4v.AssetManager
 
         public void ClearTree()
         {
+            HideImageTooltip();
             CancelPendingReload();
             _itemId = string.Empty;
             _fileId = string.Empty;
@@ -111,6 +120,8 @@ namespace Ee4v.AssetManager
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             _isAttached = false;
+            HideImageTooltip();
+            ClearImagePreviewCache();
             CancelPendingReload();
             AssetManagerApi.Changed -= OnAssetManagerChanged;
             AssetManagerApi.FileImportTargetsChanged -= OnFileImportTargetsChanged;
@@ -119,6 +130,8 @@ namespace Ee4v.AssetManager
 
         private void OnAssetManagerChanged()
         {
+            HideImageTooltip();
+            ClearImagePreviewCache();
             FileTreeMemoryCache.Clear();
             Reload(preserveTreeState: true);
         }
@@ -137,6 +150,7 @@ namespace Ee4v.AssetManager
 
         private void Reload(bool preserveTreeState = false)
         {
+            HideImageTooltip();
             CancelPendingReload();
             if (string.IsNullOrWhiteSpace(_itemId))
             {
@@ -269,10 +283,13 @@ namespace Ee4v.AssetManager
             _reloadCancellation = null;
         }
 
-        private static VisualElement CreateTreeItem()
+        private VisualElement CreateTreeItem()
         {
             var row = new VisualElement();
             row.AddToClassList(RowClassName);
+            row.RegisterCallback<PointerEnterEvent>(OnImageRowPointerEnter);
+            row.RegisterCallback<PointerMoveEvent>(OnImageRowPointerMove);
+            row.RegisterCallback<PointerLeaveEvent>(OnImageRowPointerLeave);
             var title = UiTextFactory.Create(string.Empty, RowTitleClassName);
             title.SetWhiteSpace(WhiteSpace.NoWrap);
             title.pickingMode = PickingMode.Ignore;
@@ -284,13 +301,19 @@ namespace Ee4v.AssetManager
             return row;
         }
 
-        private static void BindTreeItem(VisualElement element, FileTreeNode node)
+        private void BindTreeItem(VisualElement element, FileTreeNode node)
         {
+            if (ReferenceEquals(element, _hoveredImageRow) && !ReferenceEquals(node, _hoveredImageNode))
+            {
+                HideImageTooltip();
+            }
+
             element.EnableInClassList(RowImportTargetClassName, node.IsImportTarget);
             element.EnableInClassList(RowGroupClassName, node.IsGroup);
             element.EnableInClassList(RowVariantGroupClassName, node.GroupKind == FileTreeGroupKind.Variant);
             element.EnableInClassList(RowVersionGroupClassName, node.GroupKind == FileTreeGroupKind.Version);
             element.EnableInClassList(RowPrimaryFileClassName, node.IsPrimaryFile);
+            element.tooltip = node.ImageSource == null ? node.Name : string.Empty;
             var title = element.ElementAt(0) as UiTextElement;
             var meta = element.ElementAt(1) as UiTextElement;
 
@@ -308,6 +331,155 @@ namespace Ee4v.AssetManager
                 meta.EnableInClassList(RowGroupMetaClassName, node.IsGroup);
                 meta.EnableInClassList("ee4v-asset-manager-file-tree__meta--empty", string.IsNullOrWhiteSpace(metaText));
             }
+        }
+
+        private void OnImageRowPointerEnter(PointerEnterEvent evt)
+        {
+            var row = evt.currentTarget as VisualElement;
+            var node = ResolveBoundNode(row);
+            if (row == null || node == null || node.ImageSource == null)
+            {
+                return;
+            }
+
+            HideImageTooltip();
+            _hoveredImageRow = row;
+            _hoveredImageNode = node;
+            _hoveredPanelPosition = row.LocalToWorld(evt.localPosition);
+
+            Texture2D cachedTexture;
+            if (_imagePreviewCache.TryGetValue(node.ImageSource.CacheKey, out cachedTexture) && cachedTexture != null)
+            {
+                ShowImageTooltip(row, node, cachedTexture);
+                return;
+            }
+
+            var cancellation = new CancellationTokenSource();
+            _imagePreviewCancellation = cancellation;
+            var previewVersion = ++_imagePreviewVersion;
+            var source = node.ImageSource;
+            Task.Run(() => FileTreeImagePreviewLoader.Load(source, cancellation.Token), cancellation.Token).ContinueWith(task =>
+            {
+                EditorApplication.delayCall += () =>
+                {
+                    if (previewVersion != _imagePreviewVersion ||
+                        cancellation.IsCancellationRequested ||
+                        task.IsCanceled ||
+                        task.IsFaulted ||
+                        task.Result == null ||
+                        !ReferenceEquals(_hoveredImageRow, row) ||
+                        !ReferenceEquals(_hoveredImageNode, node) ||
+                        row.panel == null)
+                    {
+                        cancellation.Dispose();
+                        return;
+                    }
+
+                    if (ReferenceEquals(_imagePreviewCancellation, cancellation))
+                    {
+                        _imagePreviewCancellation = null;
+                    }
+
+                    cancellation.Dispose();
+                    var texture = task.Result.CreateTexture();
+                    if (texture == null)
+                    {
+                        return;
+                    }
+
+                    CacheImagePreview(source.CacheKey, texture);
+                    ShowImageTooltip(row, node, texture);
+                };
+            });
+        }
+
+        private void OnImageRowPointerMove(PointerMoveEvent evt)
+        {
+            var row = evt.currentTarget as VisualElement;
+            if (row == null || !ReferenceEquals(row, _hoveredImageRow))
+            {
+                return;
+            }
+
+            _hoveredPanelPosition = row.LocalToWorld(evt.localPosition);
+            if (_imageTooltipWindow != null)
+            {
+                _imageTooltipWindow.SetPointerPosition(row, _hoveredPanelPosition);
+            }
+        }
+
+        private void OnImageRowPointerLeave(PointerLeaveEvent evt)
+        {
+            if (ReferenceEquals(evt.currentTarget, _hoveredImageRow))
+            {
+                HideImageTooltip();
+            }
+        }
+
+        private void ShowImageTooltip(VisualElement row, FileTreeNode node, Texture2D texture)
+        {
+            if (row == null || node == null || texture == null || row.panel == null)
+            {
+                return;
+            }
+
+            _imageTooltipWindow = ImageTooltipWindow.Show(
+                row,
+                _hoveredPanelPosition,
+                new ImageTooltipState(texture, node.Name));
+        }
+
+        private void HideImageTooltip()
+        {
+            _imagePreviewVersion++;
+            if (_imagePreviewCancellation != null)
+            {
+                _imagePreviewCancellation.Cancel();
+                _imagePreviewCancellation = null;
+            }
+
+            if (_imageTooltipWindow != null)
+            {
+                _imageTooltipWindow.Close();
+                _imageTooltipWindow = null;
+            }
+
+            _hoveredImageRow = null;
+            _hoveredImageNode = null;
+        }
+
+        private void CacheImagePreview(string key, Texture2D texture)
+        {
+            if (string.IsNullOrWhiteSpace(key) || texture == null)
+            {
+                return;
+            }
+
+            if (_imagePreviewCache.Count >= MaximumCachedImagePreviews)
+            {
+                ClearImagePreviewCache();
+            }
+
+            _imagePreviewCache[key] = texture;
+        }
+
+        private void ClearImagePreviewCache()
+        {
+            foreach (var texture in _imagePreviewCache.Values)
+            {
+                if (texture != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(texture);
+                }
+            }
+
+            _imagePreviewCache.Clear();
+        }
+
+        private static FileTreeNode ResolveBoundNode(VisualElement row)
+        {
+            var item = row != null ? row.userData as SearchableTreeItemData<FileTreeNode> : null;
+            return item != null ? item.Data : null;
         }
 
         private static string ResolveMetaText(FileTreeNode node)
@@ -645,7 +817,8 @@ namespace Ee4v.AssetManager
             string assetFileId = null,
             string versionGroupId = null,
             bool isPrimaryFile = false,
-            IReadOnlyList<FileTreeImportTargetEntry> importTargetEntries = null)
+            IReadOnlyList<FileTreeImportTargetEntry> importTargetEntries = null,
+            FileTreeImageSource imageSource = null)
         {
             Name = name ?? string.Empty;
             Meta = meta ?? string.Empty;
@@ -661,6 +834,7 @@ namespace Ee4v.AssetManager
             VersionGroupId = versionGroupId ?? string.Empty;
             IsPrimaryFile = isPrimaryFile;
             ImportTargetEntries = importTargetEntries ?? Array.Empty<FileTreeImportTargetEntry>();
+            ImageSource = imageSource;
         }
 
         public string Name { get; }
@@ -690,6 +864,8 @@ namespace Ee4v.AssetManager
         public bool IsPrimaryFile { get; private set; }
 
         public IReadOnlyList<FileTreeImportTargetEntry> ImportTargetEntries { get; }
+
+        public FileTreeImageSource ImageSource { get; }
 
         public bool CanSetImportTarget
         {
@@ -1133,7 +1309,8 @@ namespace Ee4v.AssetManager
                 assetFileId: assetFile == null ? null : assetFile.Id,
                 versionGroupId: assetFile == null ? null : assetFile.VersionGroupId,
                 isPrimaryFile: isPrimaryFile,
-                importTargetEntries: importTargetEntries);
+                importTargetEntries: importTargetEntries,
+                imageSource: isDirectory ? null : FileTreeImageSource.FromFile(name, searchPath));
             return new SearchableTreeItemData<FileTreeNode>(
                 _nextId++,
                 node,
@@ -1299,7 +1476,7 @@ namespace Ee4v.AssetManager
             }
 
             var snapshot = new ZipTreeCacheEntry(root.Children);
-            return snapshot.CreateTree(nextId, assetFile, importTargetPaths, relativePathPrefix);
+            return snapshot.CreateTree(nextId, assetFile, importTargetPaths, relativePathPrefix, zipPath);
         }
 
         private static void AddEntry(ZipVirtualDirectory root, AssetFileTreeArchiveEntry entry)
@@ -1327,7 +1504,7 @@ namespace Ee4v.AssetManager
                     continue;
                 }
 
-                current.AddFile(parts[i], childPath, entry.Length);
+                current.AddFile(parts[i], childPath, entry.Length, entry.ArchiveFullName);
             }
         }
 
@@ -1344,12 +1521,13 @@ namespace Ee4v.AssetManager
                 Func<int> nextId,
                 AssetFile assetFile,
                 HashSet<string> importTargetPaths,
-                string relativePathPrefix)
+                string relativePathPrefix,
+                string archivePath)
             {
                 var items = new List<SearchableTreeItemData<FileTreeNode>>(_children.Count);
                 for (var i = 0; i < _children.Count; i++)
                 {
-                    items.Add(_children[i].CreateTreeItem(nextId, assetFile, importTargetPaths, relativePathPrefix));
+                    items.Add(_children[i].CreateTreeItem(nextId, assetFile, importTargetPaths, relativePathPrefix, archivePath));
                 }
 
                 return items;
@@ -1372,7 +1550,8 @@ namespace Ee4v.AssetManager
                 Func<int> nextId,
                 AssetFile assetFile,
                 HashSet<string> importTargetPaths,
-                string relativePathPrefix);
+                string relativePathPrefix,
+                string archivePath);
 
             protected SearchableTreeItemData<FileTreeNode> CreateItem(
                 Func<int> nextId,
@@ -1381,6 +1560,8 @@ namespace Ee4v.AssetManager
                 bool isDirectory,
                 HashSet<string> importTargetPaths,
                 string relativePathPrefix,
+                string archivePath,
+                string archiveEntryPath = null,
                 IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children = null)
             {
                 var targetPath = CombineRelativePath(relativePathPrefix, Path);
@@ -1393,7 +1574,10 @@ namespace Ee4v.AssetManager
                     HasAnyImportTarget(importTargetPaths, targetPath, importTargetEntries),
                     targetPath,
                     isDirectory,
-                    importTargetEntries: importTargetEntries);
+                    importTargetEntries: importTargetEntries,
+                    imageSource: isDirectory
+                        ? null
+                        : FileTreeImageSource.FromArchive(Name, archivePath, archiveEntryPath));
                 return new SearchableTreeItemData<FileTreeNode>(
                     nextId(),
                     node,
@@ -1536,44 +1720,56 @@ namespace Ee4v.AssetManager
                 return directory;
             }
 
-            public void AddFile(string name, string path, long length)
+            public void AddFile(string name, string path, long length, string archiveFullName)
             {
-                _children.Add(new ZipVirtualFile(name, path, length));
+                _children.Add(new ZipVirtualFile(name, path, length, archiveFullName));
             }
 
             public override SearchableTreeItemData<FileTreeNode> CreateTreeItem(
                 Func<int> nextId,
                 AssetFile assetFile,
                 HashSet<string> importTargetPaths,
-                string relativePathPrefix)
+                string relativePathPrefix,
+                string archivePath)
             {
                 var childItems = new List<SearchableTreeItemData<FileTreeNode>>(_children.Count);
                 for (var i = 0; i < _children.Count; i++)
                 {
-                    childItems.Add(_children[i].CreateTreeItem(nextId, assetFile, importTargetPaths, relativePathPrefix));
+                    childItems.Add(_children[i].CreateTreeItem(nextId, assetFile, importTargetPaths, relativePathPrefix, archivePath));
                 }
 
-                return CreateItem(nextId, string.Empty, assetFile, true, importTargetPaths, relativePathPrefix, childItems);
+                return CreateItem(nextId, string.Empty, assetFile, true, importTargetPaths, relativePathPrefix, archivePath, children: childItems);
             }
         }
 
         private sealed class ZipVirtualFile : ZipVirtualNode
         {
             private readonly long _length;
+            private readonly string _archiveFullName;
 
-            public ZipVirtualFile(string name, string path, long length)
+            public ZipVirtualFile(string name, string path, long length, string archiveFullName)
                 : base(name, path)
             {
                 _length = length;
+                _archiveFullName = archiveFullName ?? string.Empty;
             }
 
             public override SearchableTreeItemData<FileTreeNode> CreateTreeItem(
                 Func<int> nextId,
                 AssetFile assetFile,
                 HashSet<string> importTargetPaths,
-                string relativePathPrefix)
+                string relativePathPrefix,
+                string archivePath)
             {
-                return CreateItem(nextId, string.Empty, assetFile, false, importTargetPaths, relativePathPrefix);
+                return CreateItem(
+                    nextId,
+                    string.Empty,
+                    assetFile,
+                    false,
+                    importTargetPaths,
+                    relativePathPrefix,
+                    archivePath,
+                    _archiveFullName);
             }
         }
     }

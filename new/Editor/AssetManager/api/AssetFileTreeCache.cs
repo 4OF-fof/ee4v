@@ -12,15 +12,18 @@ namespace Ee4v.AssetManager.Api
 {
     internal sealed class AssetFileTreeArchiveEntry
     {
-        public AssetFileTreeArchiveEntry(string fullName, long length)
+        public AssetFileTreeArchiveEntry(string fullName, long length, string archiveFullName = null)
         {
             FullName = fullName ?? string.Empty;
             Length = length;
+            ArchiveFullName = string.IsNullOrWhiteSpace(archiveFullName) ? FullName : archiveFullName;
         }
 
         public string FullName { get; }
 
         public long Length { get; }
+
+        public string ArchiveFullName { get; }
     }
 
     internal static class AssetFileTreeCache
@@ -99,7 +102,7 @@ namespace Ee4v.AssetManager.Api
                 var displayPath = AssetArchivePathUtility.ToDisplayPath(entries[i].FullName, ignoredRoot);
                 if (!string.IsNullOrEmpty(displayPath))
                 {
-                    displayEntries.Add(new AssetFileTreeArchiveEntry(displayPath, entries[i].Length));
+                    displayEntries.Add(new AssetFileTreeArchiveEntry(displayPath, entries[i].Length, entries[i].ArchiveFullName));
                 }
             }
 

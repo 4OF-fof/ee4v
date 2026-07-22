@@ -90,6 +90,7 @@ namespace Ee4v.UI
                 { UiClassNames.ItemCardName, Create(false, 12, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
                 { UiClassNames.ContextMenuLabel, Create(true, 12, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.ContextMenuShortcut, Create(true, 12, UiColorTokens.TextMuted, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
+                { UiClassNames.ImageTooltipFileName, Create(false, 12, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
                 { UiClassNames.InfomationPanelSelectionCount, Create(true, 16, UiColorTokens.Focus, TextAnchor.MiddleCenter, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
                 { UiClassNames.InfomationPanelSelectionCountSuffix, Create(false, 13, UiColorTokens.TextSoft, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
                 { UiClassNames.CatalogPageTitle, Create(true, 18, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal, fontStyle: FontStyle.Bold, marginBottom: 4f) },
