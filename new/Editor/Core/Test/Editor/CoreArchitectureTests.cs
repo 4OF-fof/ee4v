@@ -124,6 +124,43 @@ namespace Ee4v.Core.Tests
                 Is.True);
         }
 
+        [Test]
+        [FeatureTestCase(
+            "Injector registryとUnity presentationを分離する",
+            "登録規則はServices、Unity callbackとhost同期はUI assemblyへ配置されることを確認します。",
+            order: 35,
+            category: FeatureTestCategory.StaticAudit)]
+        public void InjectorRegistry_IsSeparatedFromUnityPresentation()
+        {
+            var coreRoot = GetCoreRoot();
+            Assert.That(
+                Directory.Exists(Path.Combine(coreRoot, "Injector")),
+                Is.False);
+            Assert.That(
+                File.Exists(Path.Combine(
+                    coreRoot,
+                    "Services",
+                    "Injector",
+                    "InjectionRegistry.cs")),
+                Is.True);
+            Assert.That(
+                File.Exists(Path.Combine(
+                    coreRoot,
+                    "UI",
+                    "Injector",
+                    "InjectionPresenter.cs")),
+                Is.True);
+
+            var presenterSource = File.ReadAllText(Path.Combine(
+                coreRoot,
+                "UI",
+                "Injector",
+                "InjectionPresenter.cs"));
+            Assert.That(
+                presenterSource,
+                Does.Not.Contain("GetType(\"UnityEditor.ProjectBrowser\")"));
+        }
+
         private static void AssertAsmdef(
             string relativePath,
             IReadOnlyCollection<string> expectedReferences,

@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using Ee4v.Core.Internal.EditorAPI.Backends;
+using UnityEditor;
 using UnityEngine;
 
 namespace Ee4v.Core.Internal.EditorAPI
@@ -73,6 +75,12 @@ namespace Ee4v.Core.Internal.EditorAPI
         internal static bool TryGetSnapshot(Rect selectionRect, out ProjectBrowserSnapshot snapshot)
         {
             return ProjectBrowserBackend.TryGetSnapshot(selectionRect, out snapshot);
+        }
+
+        internal static bool TryGetOpenWindows(
+            out IReadOnlyList<EditorWindow> windows)
+        {
+            return ProjectBrowserBackend.TryGetOpenWindows(out windows);
         }
     }
 }

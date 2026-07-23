@@ -1,6 +1,7 @@
 # Injector
 
-`InjectorApi` は Unity Editor の以下 3 箇所へ差し込めます。
+`InjectorApi` は Unity Editor の以下 3 箇所へ差し込むための
+presentation facadeです。
 
 - `HierarchyItem`
 - `ProjectItem`
@@ -21,6 +22,12 @@
 | `isEnabled` | Setting 連動などの有効条件 |
 
 `InjectorApi.Register(...)` は同じ `id + channel` があれば上書きします。複数登録で押し込む用途ではないため、`id` は安定させます。
+戻り値の `IDisposable` を破棄すると、そのregistrationが現在も有効な場合だけ解除します。
+明示的に解除する場合は `InjectorApi.Unregister(registration)` も利用できます。
+
+登録、置換、priority順のsnapshot、解除はUnity非依存の
+`IInjectionRegistry` / `InjectionRegistry` が担当します。`InjectorApi` はregistryへ
+登録した後、`InjectionPresenter` にEditor描画を委譲します。
 
 ## `ItemInjectionContext`
 
@@ -45,7 +52,9 @@
 - 返した `VisualElement` は host にそのまま追加される
 - `null` を返すと何も追加しない
 
-host 自体の生成や再構築は `InjectorApi` 側が管理します。feature 側で host を探して差し込む実装は避けます。
+host 自体の生成や再構築は `InjectionPresenter` が管理します。feature 側で host を探して差し込む実装は避けます。
+ProjectBrowserの非公開型探索は `Editor/Core/Internal/EditorAPI/Backends` に隔離し、
+presenterはfallback付きfacadeだけを使用します。
 
 ## 再描画
 
@@ -62,3 +71,4 @@ setting 変更監視は注入された `ISettingsService.Changed` に乗せま�
 - callback 内で registration を再登録しない
 - feature の有効 / 無効は `isEnabled` に寄せる
 - channel ごとの描画差を `ItemInjectionContext` で吸収する
+- 一時的な登録は `Register` の戻り値を所有して確実に `Dispose` する

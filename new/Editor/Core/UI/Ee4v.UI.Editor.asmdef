@@ -4,6 +4,7 @@
   "references": [
     "Ee4v.Core.Contracts.Editor",
     "Ee4v.Core.Editor",
+    "Ee4v.Core.Services.Editor",
     "Ee4v.Core.Unity.Editor"
   ],
   "includePlatforms": [

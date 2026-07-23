@@ -46,14 +46,7 @@ namespace Ee4v.Phase1.Tests
         {
             CoreSettings.ResetForTests();
 
-            ReflectionReset.ClearCollectionField(typeof(InjectorApi), "Registrations");
-            ReflectionReset.ClearCollectionField(typeof(InjectorApi), "ProjectHostVersions");
-            ReflectionReset.SetStaticField(typeof(InjectorApi), "_hierarchyItemRegistrations", Array.Empty<ItemInjectionRegistration>());
-            ReflectionReset.SetStaticField(typeof(InjectorApi), "_projectItemRegistrations", Array.Empty<ItemInjectionRegistration>());
-            ReflectionReset.SetStaticField(typeof(InjectorApi), "_projectToolbarRegistrations", Array.Empty<VisualElementInjectionRegistration>());
-            ReflectionReset.SetStaticField(typeof(InjectorApi), "_hostsDirty", true);
-            ReflectionReset.SetStaticField(typeof(InjectorApi), "_hostVersion", 0);
-            ReflectionReset.SetStaticField(typeof(InjectorApi), "_nextHostSyncAt", 0d);
+            InjectorApi.ResetForTests();
 
             ReflectionReset.SetStaticField(typeof(PackagePathUtility), "_packageRootAssetPath", null);
             ReflectionReset.SetStaticField(typeof(PackagePathUtility), "_packageRootFullPath", null);

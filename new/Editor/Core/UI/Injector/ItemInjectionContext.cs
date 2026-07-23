@@ -1,7 +1,7 @@
+using Ee4v.Core.Internal.EditorAPI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Ee4v.Core.Internal.EditorAPI;
 
 namespace Ee4v.Core.Injector
 {
@@ -28,7 +28,11 @@ namespace Ee4v.Core.Injector
 
     public sealed class ItemInjectionContext
     {
-        internal ItemInjectionContext(InjectionChannel channel, int instanceId, string guid, Rect selectionRect)
+        internal ItemInjectionContext(
+            InjectionChannel channel,
+            int instanceId,
+            string guid,
+            Rect selectionRect)
         {
             Channel = channel;
             InstanceId = instanceId;
@@ -36,10 +40,17 @@ namespace Ee4v.Core.Injector
             SelectionRect = selectionRect;
             CurrentRect = selectionRect;
             Target = ResolveTarget(instanceId, guid);
-            HierarchyItemKind = ResolveHierarchyItemKind(channel, instanceId, Target, out var scene);
+            HierarchyItemKind = ResolveHierarchyItemKind(
+                channel,
+                instanceId,
+                Target,
+                out var scene);
             HierarchyScene = scene;
             ProjectViewMode = ResolveProjectViewMode(channel);
-            ProjectOrientation = ResolveProjectOrientation(channel, selectionRect, ProjectViewMode);
+            ProjectOrientation = ResolveProjectOrientation(
+                channel,
+                selectionRect,
+                ProjectViewMode);
         }
 
         public InjectionChannel Channel { get; }
@@ -62,15 +73,11 @@ namespace Ee4v.Core.Injector
 
         public ProjectItemOrientation ProjectOrientation { get; }
 
-        public bool IsHierarchySceneHeader
-        {
-            get { return HierarchyItemKind == HierarchyItemKind.SceneHeader; }
-        }
+        public bool IsHierarchySceneHeader =>
+            HierarchyItemKind == HierarchyItemKind.SceneHeader;
 
-        public bool IsHierarchyGameObject
-        {
-            get { return HierarchyItemKind == HierarchyItemKind.GameObject; }
-        }
+        public bool IsHierarchyGameObject =>
+            HierarchyItemKind == HierarchyItemKind.GameObject;
 
         private static Object ResolveTarget(int instanceId, string guid)
         {
@@ -79,22 +86,24 @@ namespace Ee4v.Core.Injector
                 return EditorUtility.InstanceIDToObject(instanceId);
             }
 
-            if (!string.IsNullOrEmpty(guid))
+            if (string.IsNullOrEmpty(guid))
             {
-                var assetPath = AssetDatabase.GUIDToAssetPath(guid);
-                if (!string.IsNullOrEmpty(assetPath))
-                {
-                    return AssetDatabase.LoadMainAssetAtPath(assetPath);
-                }
+                return null;
             }
 
-            return null;
+            var assetPath = AssetDatabase.GUIDToAssetPath(guid);
+            return string.IsNullOrEmpty(assetPath)
+                ? null
+                : AssetDatabase.LoadMainAssetAtPath(assetPath);
         }
 
-        private static HierarchyItemKind ResolveHierarchyItemKind(InjectionChannel channel, int instanceId, Object target, out Scene scene)
+        private static HierarchyItemKind ResolveHierarchyItemKind(
+            InjectionChannel channel,
+            int instanceId,
+            Object target,
+            out Scene scene)
         {
             scene = default(Scene);
-
             if (channel != InjectionChannel.HierarchyItem)
             {
                 return HierarchyItemKind.Unknown;
@@ -106,7 +115,9 @@ namespace Ee4v.Core.Injector
             }
 
             scene = ResolveSceneByHandle(instanceId);
-            return scene.IsValid() ? HierarchyItemKind.SceneHeader : HierarchyItemKind.Unknown;
+            return scene.IsValid()
+                ? HierarchyItemKind.SceneHeader
+                : HierarchyItemKind.Unknown;
         }
 
         private static Scene ResolveSceneByHandle(int handle)
@@ -123,15 +134,15 @@ namespace Ee4v.Core.Injector
             return default(Scene);
         }
 
-        private static ProjectItemViewMode ResolveProjectViewMode(InjectionChannel channel)
+        private static ProjectItemViewMode ResolveProjectViewMode(
+            InjectionChannel channel)
         {
             if (channel != InjectionChannel.ProjectItem)
             {
                 return ProjectItemViewMode.Unknown;
             }
 
-            ProjectBrowserSnapshot snapshot;
-            return ProjectBrowser.TryGetSnapshot(out snapshot)
+            return ProjectBrowser.TryGetSnapshot(out var snapshot)
                 ? ToProjectItemViewMode(snapshot.ViewMode)
                 : ProjectItemViewMode.Unknown;
         }
@@ -146,8 +157,9 @@ namespace Ee4v.Core.Injector
                 return ProjectItemOrientation.Unknown;
             }
 
-            ProjectBrowserSnapshot snapshot;
-            if (ProjectBrowser.TryGetSnapshot(selectionRect, out snapshot))
+            if (ProjectBrowser.TryGetSnapshot(
+                    selectionRect,
+                    out var snapshot))
             {
                 return ToProjectItemOrientation(snapshot.Orientation);
             }
@@ -157,12 +169,14 @@ namespace Ee4v.Core.Injector
                 return ProjectItemOrientation.Horizontal;
             }
 
-            return selectionRect.height > EditorGUIUtility.singleLineHeight * 1.5f
-                ? ProjectItemOrientation.Vertical
-                : ProjectItemOrientation.Horizontal;
+            return selectionRect.height >
+                EditorGUIUtility.singleLineHeight * 1.5f
+                    ? ProjectItemOrientation.Vertical
+                    : ProjectItemOrientation.Horizontal;
         }
 
-        private static ProjectItemViewMode ToProjectItemViewMode(ProjectBrowserViewMode viewMode)
+        private static ProjectItemViewMode ToProjectItemViewMode(
+            ProjectBrowserViewMode viewMode)
         {
             switch (viewMode)
             {
@@ -175,7 +189,8 @@ namespace Ee4v.Core.Injector
             }
         }
 
-        private static ProjectItemOrientation ToProjectItemOrientation(ProjectBrowserOrientation orientation)
+        private static ProjectItemOrientation ToProjectItemOrientation(
+            ProjectBrowserOrientation orientation)
         {
             switch (orientation)
             {

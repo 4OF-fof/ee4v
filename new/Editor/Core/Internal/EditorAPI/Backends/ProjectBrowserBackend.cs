@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
@@ -156,6 +157,22 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
             {
                 return false;
             }
+        }
+
+        public static bool TryGetOpenWindows(
+            out IReadOnlyList<EditorWindow> windows)
+        {
+            if (ProjectBrowserType == null)
+            {
+                windows = Array.Empty<EditorWindow>();
+                return false;
+            }
+
+            windows = Resources
+                .FindObjectsOfTypeAll(ProjectBrowserType)
+                .OfType<EditorWindow>()
+                .ToArray();
+            return true;
         }
 
         private static EditorWindow ResolveTargetWindow()

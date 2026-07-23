@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Reflection;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Background;
@@ -99,14 +98,7 @@ namespace Ee4v.Core.Tests
     {
         public static void Reset()
         {
-            ReflectionReset.ClearCollectionField(typeof(InjectorApi), "Registrations");
-            ReflectionReset.ClearCollectionField(typeof(InjectorApi), "ProjectHostVersions");
-            ReflectionReset.SetStaticField(typeof(InjectorApi), "_hierarchyItemRegistrations", Array.Empty<ItemInjectionRegistration>());
-            ReflectionReset.SetStaticField(typeof(InjectorApi), "_projectItemRegistrations", Array.Empty<ItemInjectionRegistration>());
-            ReflectionReset.SetStaticField(typeof(InjectorApi), "_projectToolbarRegistrations", Array.Empty<VisualElementInjectionRegistration>());
-            ReflectionReset.SetStaticField(typeof(InjectorApi), "_hostsDirty", true);
-            ReflectionReset.SetStaticField(typeof(InjectorApi), "_hostVersion", 0);
-            ReflectionReset.SetStaticField(typeof(InjectorApi), "_nextHostSyncAt", 0d);
+            InjectorApi.ResetForTests();
         }
     }
 

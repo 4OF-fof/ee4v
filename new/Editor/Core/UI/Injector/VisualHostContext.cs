@@ -4,7 +4,9 @@ namespace Ee4v.Core.Injector
 {
     public sealed class VisualHostContext
     {
-        internal VisualHostContext(InjectionChannel channel, EditorWindow window)
+        internal VisualHostContext(
+            InjectionChannel channel,
+            EditorWindow window)
         {
             Channel = channel;
             Window = window;

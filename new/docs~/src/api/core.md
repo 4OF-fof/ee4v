@@ -79,7 +79,7 @@ internal static class SampleBootstrap
 Hierarchy / Project / ProjectToolbar への描画 registration を登録します。
 
 ```csharp
-public static void Register(InjectionRegistration registration)
+public static IDisposable Register(InjectionRegistration registration)
 ```
 
 Parameters:
@@ -88,14 +88,14 @@ Parameters:
 
 Returns:
 
-- `void`
+- 登録解除に使う `IDisposable`。同じ `Id + Channel` の新しい登録に置換済みなら、
+  古い戻り値を破棄しても新しい登録は解除しない。
 
 Effects:
 
 - `registration.Id + registration.Channel` をキーに registration を追加または上書きする。
-- registration cache を更新する。
-- ProjectToolbar host を dirty にする。
-- 登録対象 channel を再描画する。
+- Unity非依存の `IInjectionRegistry` がregistration snapshotを更新する。
+- `InjectionPresenter` が対象channelのcacheとhostを更新して再描画する。
 
 Notes:
 
@@ -127,6 +127,23 @@ InjectorApi.Register(new ItemInjectionRegistration(
     priority: 10,
     isEnabled: () => settings.Get(SampleDefinitions.HierarchyBadgeEnabled)));
 ```
+
+### `InjectorApi.Unregister`
+
+指定したregistration instanceが現在登録中なら解除します。
+
+```csharp
+public static bool Unregister(InjectionRegistration registration)
+```
+
+Returns:
+
+- 解除した場合は `true`。同じkeyの別instanceへ置換済み、または未登録なら `false`。
+
+Notes:
+
+- 一時登録では `Register` が返す `IDisposable` の利用を優先する。
+- instance単位の解除なので、古い所有者が新しい登録を誤って解除しない。
 
 ### `InjectorApi.Repaint`
 
@@ -231,7 +248,8 @@ Effects:
 Notes:
 
 - `createElement` が `null` を返した場合は何も追加しない。
-- host 自体の生成、再構築、window 追跡は `InjectorApi` が管理する。
+- host 自体の生成、再構築、window 追跡は `InjectionPresenter` が管理する。
+- Unityの非公開ProjectBrowser型へのaccessは `EditorAPI/Backends` に隔離される。
 
 ```csharp
 InjectorApi.Register(new VisualElementInjectionRegistration(

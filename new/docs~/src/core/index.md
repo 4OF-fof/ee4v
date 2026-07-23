@@ -4,7 +4,7 @@ Core は feature 横断で使う基盤を置く領域です。feature 固有の�
 
 ## 責務
 
-- `Injector`: Hierarchy / Project への描画差し込み
+- `Injector`: Unity非依存registryとHierarchy / Project presentationへの描画差し込み
 - `I18N`: scope 解決、localization 読み込み、再読込
 - `Settings`: 定義登録、保存、Preferences / Project Settings 表示
 - `Testing`: `Test List` への suite 登録と実行状態管理
