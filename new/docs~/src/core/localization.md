@@ -2,7 +2,7 @@
 
 永続表示文言は `I18N.Get("key")` を使います。
 
-`I18N` は `Ee4v.UI.Editor` に置くpresentation向け短縮APIです。解決本体はUnity非依存の
+`I18N` は `Ee4v.Core.Presentation.Editor` に置くpresentation向け短縮APIです。解決本体はUnity非依存の
 `LocalizationService` instanceであり、Core内側やfeatureのDomain / Applicationから
 `I18N`を呼びません。
 
@@ -31,13 +31,13 @@ Core には localization 静的監査があり、duplicate / missing / unused �
 
 `Localization` 配下のasset変更時は `LocalizationAssetPostprocessor` が
 `CoreLocalization.Current.Reload()` を呼びます。serviceはcatalog cacheの破棄とevent通知だけを行い、
-Injectorや全Viewの再描画はUI assemblyがeventを購読して実行します。
+Injectorや全Viewの再描画はCore Presentation assemblyがeventを購読して実行します。
 
 ## assembly境界
 
 - `Ee4v.Core.Contracts.Editor`: catalog model、`ILocalizer`、service/source/language/diagnostics契約
 - `Ee4v.Core.Services.Editor`: scope、fallback、format、cache、reloadを扱う `LocalizationService`
 - `Ee4v.Core.Editor`: package JSONC source、Settings language provider、Unity diagnostics、AssetPostprocessor
-- `Ee4v.UI.Editor`: caller scope adapter、`I18N`、reload後の再描画
+- `Ee4v.Core.Presentation.Editor`: caller scope adapter、`I18N`、reload後の再描画
 
 `LocalizationService` はfilesystem、Newtonsoft、Settings、Unity APIを参照しません。

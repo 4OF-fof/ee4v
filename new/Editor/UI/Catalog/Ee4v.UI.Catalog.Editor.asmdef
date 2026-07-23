@@ -1,0 +1,25 @@
+{
+  "name": "Ee4v.UI.Catalog.Editor",
+  "rootNamespace": "Ee4v.UI",
+  "references": [
+    "Ee4v.AssetManager.Contracts.Editor",
+    "Ee4v.AssetManager.UI.Editor",
+    "Ee4v.Core.Contracts.Editor",
+    "Ee4v.Core.Editor",
+    "Ee4v.Core.Presentation.Editor",
+    "Ee4v.Testing.Contracts.Editor",
+    "Ee4v.Testing.UI.Editor",
+    "Ee4v.UI.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

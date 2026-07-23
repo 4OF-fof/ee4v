@@ -3,6 +3,7 @@
   "rootNamespace": "Ee4v.Testing.UI",
   "references": [
     "Ee4v.Core.Editor",
+    "Ee4v.Core.Presentation.Editor",
     "Ee4v.Testing.Application.Editor",
     "Ee4v.Testing.Contracts.Editor",
     "Ee4v.Testing.Infrastructure.Unity.Editor",

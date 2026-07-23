@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.Core.I18n;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -252,7 +253,10 @@ namespace Ee4v.UI
             detailsBody.AddToClassList(CaseDetailsBodyClassName);
             detailsBody.style.display = DisplayStyle.None;
 
-            var detailsField = new CopyableTextArea(new CopyableTextAreaState(testCase.DetailsText, testCase.DetailsCopyButtonText));
+            var detailsField = new CopyableTextArea(new CopyableTextAreaState(
+                testCase.DetailsText,
+                testCase.DetailsCopyButtonText,
+                I18N.Get("ui.copy.copied")));
             detailsField.AddToClassList(CaseDetailsFieldClassName);
             detailsBody.Add(detailsField);
 

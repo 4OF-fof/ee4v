@@ -87,19 +87,23 @@ namespace Ee4v.Testing.UI
             root.AddToClassList(RootClassName);
             root.AddToClassList("ee4v-test-manager");
 
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/SearchField/search-field.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/InfoCard/info-card.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/Alerts/alerts.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/StatusBadge/status-badge.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/CopyableTextArea/copyable-text-area.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/SearchField/search-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/InfoCard/info-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/Alerts/alerts.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/StatusBadge/status-badge.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/CopyableTextArea/copyable-text-area.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Testing/UI/TestResultGroup/test-result-group.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/Testing/UI/feature-test-manager-window.uss");
 
             var shell = new VisualElement();
             shell.AddToClassList("ee4v-test-manager__shell");
 
-            _searchField = new SearchField(new SearchFieldState(_searchQuery, I18N.Get("testing.window.searchPlaceholder")));
+            _searchField = new SearchField(new SearchFieldState(
+                _searchQuery,
+                I18N.Get("testing.window.searchPlaceholder"),
+                I18N.GetForScope("UI", "ui.search.tooltip"),
+                I18N.GetForScope("UI", "ui.clear.tooltip")));
             _searchField.AddToClassList("ee4v-test-manager__search");
             _searchField.ValueChanged += ApplySearchQuery;
 

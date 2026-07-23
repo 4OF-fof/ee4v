@@ -6,16 +6,34 @@ ee4v は機能単位のModule分離を維持し、その内側をClean Architect
 ```text
 AssetManager.Composition
   -> AssetManager.UI
+       -> Ee4v.UI
+  -> Core.Presentation
   -> AssetManager.Infrastructure
        -> AssetManager.Application
             -> AssetManager.Domain
             -> AssetManager.Contracts
 
-Testing.UI / Testing.Infrastructure
+Testing.UI
+  -> Ee4v.UI / Core.Presentation
+
+Testing.Infrastructure
   -> Testing.Application
        -> Testing.Contracts
 
-Core.Unity / Ee4v.UI / Core.Editor adapters
+UI.Catalog
+  -> Ee4v.UI / AssetManager.UI / Testing.UI
+  -> Core.Presentation
+
+Core.Presentation
+  -> Ee4v.UI
+  -> Core.Unity / Core.Editor adapters
+       -> Core.Services
+            -> Core.Contracts
+
+Ee4v.UI
+  -> Core.Editor facade
+
+Core.Unity / Core.Editor
   -> Core.Services
        -> Core.Contracts
 ```
@@ -29,7 +47,8 @@ filesystem、Editor lifecycle、UI Toolkitは外側の `Infrastructure`、`Unity
 | Module | 役割 |
 |---|---|
 | `AssetManager` | asset catalog、datasource同期、import、専用UIを所有する業務Module |
-| `Core` | Settings、Localization、Injector、background activity、Unity internal facadeなどfeature横断のfoundation |
+| `Core` | Settings、Localization、Injector、background activity、Unity internal facadeと、それらをEditor UIへ接続するPresentation |
+| `UI` | feature非依存のUI Toolkit component、state、resource。Catalogは開発支援用の別assembly |
 | `Testing` | test metadata、descriptor構築、Unity Test Runner adapter、静的監査、Test List UIを所有する独立Module |
 | `ThirdParty/SQLite` | SQLite配布物と初期化だけを隔離する外部技術adapter |
 
@@ -57,12 +76,12 @@ filesystem、Editor lifecycle、UI Toolkitは外側の `Infrastructure`、`Unity
 ## Core namespace
 
 Coreではnamespaceを機能境界、asmdefとdirectoryを依存レイヤ境界として使います。
-たとえば `Ee4v.Core.Settings` はContracts、Services、Unity adapter、UI adapterに
-またがりますが、依存方向はasmdefで固定されます。
+たとえば `Ee4v.Core.Settings` はContracts、Services、Unity adapter、
+Presentationにまたがります。依存方向はasmdefで固定されます。
 
 | namespace | 役割 |
 |---|---|
-| `Ee4v.Core.Settings` | setting定義・service契約、instance service、永続化adapter、Settings UI |
+| `Ee4v.Core.Settings` | setting定義・service契約、instance service、永続化adapter、Settings UI adapter |
 | `Ee4v.Core.Localization` | catalog model、localizer契約、Unity非依存resolver |
 | `Ee4v.Core.I18n` | catalog sourceとcomposition、UI向け `I18N` presentation facade |
 | `Ee4v.Core.Injector` | registry契約、登録順service、Hierarchy / Project presentation |
@@ -71,6 +90,24 @@ Coreではnamespaceを機能境界、asmdefとdirectoryを依存レイヤ境界�
 | `Ee4v.Core.Internal.EditorAPI` | Unity internal APIのfallback付きfacade |
 | `Ee4v.Core.Internal.EditorAPI.Backends` | reflection、SerializedObject、非公開型access |
 | `Ee4v.UI` | feature非依存のUI Toolkit component、state、overlay |
+
+`Ee4v.Core.Settings`、`Ee4v.Core.I18n`、`Ee4v.Core.Injector` のpresentation実装は
+namespaceを機能境界として維持しつつ、物理配置とassemblyは
+`Editor/Core/Presentation` / `Ee4v.Core.Presentation.Editor` に分離します。
+Presentationだけが `Ee4v.UI.Editor` を参照し、CoreのContracts、Services、
+Unity adapterはUIを参照しません。
+
+## UI assembly
+
+| assembly | 配置 | 役割 |
+|---|---|---|
+| `Ee4v.UI.Editor` | `Editor/UI` | Foundation、共通Component、resource。Core固有presentationやstoryを持たない |
+| `Ee4v.Core.Presentation.Editor` | `Editor/Core/Presentation` | Settings UI、`I18N` facade、Injector presenter、background overlay host |
+| `Ee4v.UI.Catalog.Editor` | `Editor/UI/Catalog` | Catalog window、helper、共通・module固有Componentのstory |
+
+`StatusOverlay` のstateと表示Componentは `Ee4v.UI.Editor`、background activityを
+監視するhostは `Ee4v.Core.Presentation.Editor` に置きます。共通Componentは
+ローカライズserviceを直接呼ばず、表示文言をstateまたはconstructor引数で受け取ります。
 
 ## Testing namespace
 
@@ -89,6 +126,9 @@ Coreではnamespaceを機能境界、asmdefとdirectoryを依存レイヤ境界�
 
 - Domain / Application / ServicesからUnity、UI、SQLite、filesystemを参照しない
 - UIはview stateの表示と入力通知に限定し、use caseをContracts経由で呼ぶ
+- 共通UIはCore固有のI18N、Settings、Injector、background serviceを参照しない
+- Catalogとstoryは本番の共通UI assemblyへ含めない
+- AssetManager.UIとTesting.UIはCatalogを参照せず、Catalogが外側から各UIを参照する
 - InfrastructureはUIを参照せず、Compositionだけが具象を組み立てる
 - Unity internal APIは `Core.Internal.EditorAPI.Backends` 以外からreflectionしない
 - static facadeはpresentationまたはcomposition入口に限定し、状態はinstance serviceが所有する

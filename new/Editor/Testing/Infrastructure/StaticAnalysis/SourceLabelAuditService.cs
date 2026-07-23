@@ -65,7 +65,7 @@ namespace Ee4v.Testing.Infrastructure.StaticAnalysis
         {
             return string.Equals(
                 relativePath,
-                NormalizeRelativePath(Path.Combine("Core", "UI", "Foundation", "Typography", "UiTextFactory.cs")),
+                NormalizeRelativePath(Path.Combine("UI", "Foundation", "Typography", "UiTextFactory.cs")),
                 StringComparison.OrdinalIgnoreCase);
         }
 

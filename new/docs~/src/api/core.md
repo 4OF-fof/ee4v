@@ -375,7 +375,7 @@ var adapter = new SamplePreferencesAdapter(settings);
 
 ## I18N
 
-`I18N` は `Ee4v.UI.Editor` に置くpresentation adapterです。scope解決後は
+`I18N` は `Ee4v.Core.Presentation.Editor` に置くpresentation adapterです。scope解決後は
 `CoreLocalization.Current.ForScope(scope)` が返す `ILocalizer` へ委譲します。
 解決本体の `LocalizationService` はUnity非依存です。
 

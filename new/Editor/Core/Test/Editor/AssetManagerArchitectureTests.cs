@@ -51,6 +51,7 @@ namespace Ee4v.Core.Tests
                 {
                     "Ee4v.AssetManager.Contracts.Editor",
                     "Ee4v.Core.Editor",
+                    "Ee4v.Core.Presentation.Editor",
                     "Ee4v.UI.Editor"
                 },
                 requireNoEngineReferences: false);
@@ -74,6 +75,7 @@ namespace Ee4v.Core.Tests
                     "Ee4v.AssetManager.UI.Editor",
                     "Ee4v.Core.Contracts.Editor",
                     "Ee4v.Core.Editor",
+                    "Ee4v.Core.Presentation.Editor",
                     "Ee4v.Core.Unity.Editor",
                     "Ee4v.UI.Editor"
                 },
@@ -142,7 +144,7 @@ namespace Ee4v.Core.Tests
         [Test]
         [FeatureTestCase(
             "AssetManager UI と Module 外部は実装 assembly に依存しない",
-            "UI に storage/settings/datasource 依存がなく、AssetManager 外部の asmdef が Contracts 以外を参照しないことを確認します。",
+            "UI に storage/settings/datasource 依存がなく、開発用Catalog以外の外部asmdefがContracts以外を参照しないことを確認します。",
             order: 26,
             category: FeatureTestCategory.StaticAudit)]
         public void UiAndExternalAssemblies_ReferenceOnlyAllowedBoundaries()
@@ -179,6 +181,10 @@ namespace Ee4v.Core.Tests
                     SearchOption.AllDirectories)
                 .Where(path => !path.StartsWith(
                     assetManagerRoot,
+                    StringComparison.OrdinalIgnoreCase))
+                .Where(path => !string.Equals(
+                    Path.GetFileName(path),
+                    "Ee4v.UI.Catalog.Editor.asmdef",
                     StringComparison.OrdinalIgnoreCase))
                 .Where(path =>
                 {

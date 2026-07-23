@@ -68,7 +68,9 @@ namespace Ee4v.AssetManager.UI
                 () => SortClicked?.Invoke()));
 
             _searchField = new SearchField(new SearchFieldState(
-                placeholder: I18N.Get("assetManager.mainToolbar.searchPlaceholder")));
+                placeholder: I18N.Get("assetManager.mainToolbar.searchPlaceholder"),
+                searchTooltip: I18N.GetForScope("UI", "ui.search.tooltip"),
+                clearTooltip: I18N.GetForScope("UI", "ui.clear.tooltip")));
             _searchField.AddToClassList(SearchClassName);
             _searchField.ValueChanged += value =>
             {

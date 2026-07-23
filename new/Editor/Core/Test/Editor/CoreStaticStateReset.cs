@@ -166,7 +166,7 @@ namespace Ee4v.Core.Tests
     {
         public static void Reset()
         {
-            StatusOverlayApi.ResetAllHosts();
+            BackgroundStatusOverlayApi.ResetAllHosts();
         }
     }
 

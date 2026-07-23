@@ -6,7 +6,7 @@ Catalog は「存在確認」ではなく「使い方の見本」を置く場所
 
 ## Story の追加
 
-`ICatalogRegistrar` を実装し、`CatalogRegistry.RegisterStory(...)` で story を 1 件追加します。汎用 UI は component フォルダ、module 専用 UI は各 module の `UI` 配下に registrar と preview 実装を置きます。
+`ICatalogRegistrar` を実装し、`CatalogRegistry.RegisterStory(...)` で story を 1 件追加します。汎用 UI は `Editor/UI/Catalog/Stories`、module 専用 UI は `Editor/UI/Catalog/Stories/Modules/<Module>` に registrar と preview 実装を置きます。
 
 | field | 内容 |
 |---|---|
@@ -41,4 +41,4 @@ Catalog がプレビューを正しく描画できるよう、対象コンポー
 - プロパティを触って見た目を確認できる control + preview
 - 最小構成の static preview
 
-Preview 実装は component フォルダの `<Component>.story.cs`、または各 module の `<name>.story.cs` に追加します。共通 UI は `Editor/Core/UI/Catalog/helper` 配下の helper を使います。
+Preview 実装は `Editor/UI/Catalog/Stories` の `<Component>.story.cs`、または `Stories/Modules/<Module>` の `<name>.story.cs` に追加します。共通 UI は `Editor/UI/Catalog/helper` 配下の helper を使います。

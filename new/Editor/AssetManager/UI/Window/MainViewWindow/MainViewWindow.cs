@@ -1,3 +1,4 @@
+using Ee4v.Core.Background;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -60,16 +61,16 @@ namespace Ee4v.AssetManager.UI
             root.AddToClassList(RootClassName);
             root.AddToClassList(WindowClassName);
 
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/common.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/MainView/main-view.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Toolbar/MainToolbar/main-toolbar.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/ItemImage/item-image.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/Icon/icon.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/SearchField/search-field.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/NumericSlider/numeric-slider.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/ItemCard/item-card.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Collections/ItemGrid/item-grid.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/Selection/SelectableItemGrid/selectable-item-grid.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/ItemImage/item-image.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/Icon/icon.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/SearchField/search-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/NumericSlider/numeric-slider.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/ItemCard/item-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Collections/ItemGrid/item-grid.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/Selection/SelectableItemGrid/selectable-item-grid.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/DataView/AssetItemGrid/asset-item-grid.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Window/MainViewWindow/main-view-window.uss");
 
@@ -87,7 +88,7 @@ namespace Ee4v.AssetManager.UI
 
             root.Add(body);
             WindowToastApi.EnsureHost(this);
-            StatusOverlayApi.EnsureHost(this);
+            BackgroundStatusOverlayApi.EnsureHost(this);
             ApplyPendingFileDetail();
         }
 

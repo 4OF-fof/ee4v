@@ -1,6 +1,6 @@
 # UI
 
-UI は Unity Editor 上で使う共通 UI コンポーネントと、その実装ルールをまとめる領域です。再利用可能な部品は `Editor/Core/UI/Components` に置き、特定 feature に閉じる UI は各 module の `UI` 配下に置きます。
+UI は Unity Editor 上で使う共通 UI コンポーネントと、その実装ルールをまとめる領域です。再利用可能な部品は `Editor/UI/Components` に置き、特定 feature に閉じる UI は各 module の `UI` 配下に置きます。
 
 ## カテゴリ
 
@@ -28,16 +28,16 @@ UI は Unity Editor 上で使う共通 UI コンポーネントと、その実�
 
 新規コンポーネントは基本的に以下を揃えます。
 
-- `Editor/Core/UI/Components/<Category>/<Component>/<Component>.cs`
-- `Editor/Core/UI/Components/<Category>/<Component>/<component>.uss`
-- `Editor/Core/UI/Components/<Category>/<Component>/<Component>.story.cs`
+- `Editor/UI/Components/<Category>/<Component>/<Component>.cs`
+- `Editor/UI/Components/<Category>/<Component>/<component>.uss`
+- `Editor/UI/Catalog/Stories/<Category>/<Component>/<Component>.story.cs`
 
 必要に応じて以下も更新します。
 
-- `Editor/Core/UI/Foundation/UiClassNames.cs`
-- `Editor/Core/UI/Foundation/Typography/TypographyStyleResolver.cs`
+- `Editor/UI/Foundation/UiClassNames.cs`
+- `Editor/UI/Foundation/Typography/TypographyStyleResolver.cs`
 - Catalog registrar
-- `Editor/Core/UI/Localization/<locale>/*.jsonc`
+- `Editor/UI/Localization/<locale>/*.jsonc`
 
 namespace は `Ee4v.UI` を使います。
 

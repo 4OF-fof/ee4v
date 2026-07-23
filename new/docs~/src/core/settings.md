@@ -45,14 +45,14 @@ feature の Domain / Application / UI は `CoreSettings.Current` を直接参照
 
 grouping は `localizationScope + sectionKey` 単位です。section を増やす場合は localization key も揃えます。
 
-設定画面は `SettingsProvider.activateHandler` から UI Toolkit で構築します。標準fieldで足りないdrawerは `Core/UI/Settings` の `SettingDrawerRegistry` へpresentation側から登録し、`SettingDefinition<T>` にはUI型を持たせません。IMGUI drawerは使用しません。
+設定画面は `SettingsProvider.activateHandler` から UI Toolkit で構築します。標準fieldで足りないdrawerは `Editor/Core/Presentation/Settings` の `SettingDrawerRegistry` へpresentation側から登録し、`SettingDefinition<T>` にはUI型を持たせません。IMGUI drawerは使用しません。
 
 ## assembly 境界
 
 - `Ee4v.Core.Contracts.Editor`: 定義と `ISettingsService`。Unity非依存
 - `Ee4v.Core.Services.Editor`: `SettingsService` とstore/serializer port。Unity非依存
 - `Ee4v.Core.Unity.Editor`: EditorPrefs、project file、Newtonsoft adapterと `CoreSettings`
-- `Ee4v.UI.Editor`: SettingsProvider、drawer、field renderer
+- `Ee4v.Core.Presentation.Editor`: SettingsProvider、drawer、field renderer
 
 ## バリデーション
 

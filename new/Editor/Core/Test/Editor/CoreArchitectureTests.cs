@@ -99,12 +99,13 @@ namespace Ee4v.Core.Tests
         [Test]
         [FeatureTestCase(
             "Localization解決とpresentation adapterを分離する",
-            "旧配置を廃止し、Unity非依存のserviceとUI assembly上のI18N adapterが存在することを確認します。",
+            "旧配置を廃止し、Unity非依存のserviceとCore Presentation assembly上のI18N adapterが存在することを確認します。",
             order: 31,
             category: FeatureTestCategory.StaticAudit)]
         public void LocalizationService_IsSeparatedFromPresentationAdapter()
         {
             var coreRoot = GetCoreRoot();
+            var presentationRoot = GetPresentationRoot();
             Assert.That(
                 File.Exists(Path.Combine(coreRoot, "I18n", "I18N.cs")),
                 Is.False);
@@ -117,8 +118,7 @@ namespace Ee4v.Core.Tests
                 Is.True);
             Assert.That(
                 File.Exists(Path.Combine(
-                    coreRoot,
-                    "UI",
+                    presentationRoot,
                     "Localization",
                     "I18N.cs")),
                 Is.True);
@@ -127,12 +127,13 @@ namespace Ee4v.Core.Tests
         [Test]
         [FeatureTestCase(
             "Injector registryとUnity presentationを分離する",
-            "登録規則はServices、Unity callbackとhost同期はUI assemblyへ配置されることを確認します。",
+            "登録規則はServices、Unity callbackとhost同期はCore Presentation assemblyへ配置されることを確認します。",
             order: 35,
             category: FeatureTestCategory.StaticAudit)]
         public void InjectorRegistry_IsSeparatedFromUnityPresentation()
         {
             var coreRoot = GetCoreRoot();
+            var presentationRoot = GetPresentationRoot();
             Assert.That(
                 Directory.Exists(Path.Combine(coreRoot, "Injector")),
                 Is.False);
@@ -145,15 +146,13 @@ namespace Ee4v.Core.Tests
                 Is.True);
             Assert.That(
                 File.Exists(Path.Combine(
-                    coreRoot,
-                    "UI",
+                    presentationRoot,
                     "Injector",
                     "InjectionPresenter.cs")),
                 Is.True);
 
             var presenterSource = File.ReadAllText(Path.Combine(
-                coreRoot,
-                "UI",
+                presentationRoot,
                 "Injector",
                 "InjectionPresenter.cs"));
             Assert.That(
@@ -232,6 +231,131 @@ namespace Ee4v.Core.Tests
                 violations,
                 Is.Empty,
                 string.Join("\n", violations));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "共通UI、Core Presentation、Catalogを独立境界へ分離する",
+            "共有componentはCore固有presentationへ依存せず、Core adapterと開発用Catalogが別assemblyからUIを参照することを確認します。",
+            order: 38,
+            category: FeatureTestCategory.StaticAudit)]
+        public void SharedUiModule_IsSeparatedFromCore()
+        {
+            var coreRoot = GetCoreRoot();
+            var uiRoot = GetUiRoot();
+
+            Assert.That(
+                Directory.Exists(Path.Combine(coreRoot, "UI")),
+                Is.False);
+            Assert.That(
+                Directory.Exists(uiRoot),
+                Is.True);
+            AssertAsmdefAt(
+                Path.Combine(uiRoot, "Ee4v.UI.Editor.asmdef"),
+                new[] { "Ee4v.Core.Editor" },
+                requireNoEngineReferences: false);
+            AssertAsmdefAt(
+                Path.Combine(
+                    GetPresentationRoot(),
+                    "Ee4v.Core.Presentation.Editor.asmdef"),
+                new[]
+                {
+                    "Ee4v.Core.Contracts.Editor",
+                    "Ee4v.Core.Editor",
+                    "Ee4v.Core.Services.Editor",
+                    "Ee4v.Core.Unity.Editor",
+                    "Ee4v.UI.Editor"
+                },
+                requireNoEngineReferences: false);
+            AssertAsmdefAt(
+                Path.Combine(
+                    uiRoot,
+                    "Catalog",
+                    "Ee4v.UI.Catalog.Editor.asmdef"),
+                new[]
+                {
+                    "Ee4v.AssetManager.Contracts.Editor",
+                    "Ee4v.AssetManager.UI.Editor",
+                    "Ee4v.Core.Contracts.Editor",
+                    "Ee4v.Core.Editor",
+                    "Ee4v.Core.Presentation.Editor",
+                    "Ee4v.Testing.Contracts.Editor",
+                    "Ee4v.Testing.UI.Editor",
+                    "Ee4v.UI.Editor"
+                },
+                requireNoEngineReferences: false);
+
+            var componentRoot = Path.Combine(uiRoot, "Components");
+            Assert.That(
+                Directory.GetFiles(
+                    componentRoot,
+                    "*.story.cs",
+                    SearchOption.AllDirectories),
+                Is.Empty);
+            Assert.That(
+                Directory.GetFiles(
+                    Path.Combine(uiRoot, "Catalog", "Stories"),
+                    "*.story.cs",
+                    SearchOption.AllDirectories),
+                Is.Not.Empty);
+            Assert.That(
+                Directory.GetFiles(
+                    Path.Combine(
+                        Directory.GetParent(coreRoot).FullName,
+                        "AssetManager",
+                        "UI"),
+                    "*.story.cs",
+                    SearchOption.AllDirectories),
+                Is.Empty);
+            Assert.That(
+                Directory.GetFiles(
+                    Path.Combine(
+                        Directory.GetParent(coreRoot).FullName,
+                        "Testing",
+                        "UI"),
+                    "*.story.cs",
+                    SearchOption.AllDirectories),
+                Is.Empty);
+
+            var sharedUiViolations = Directory.GetFiles(
+                    componentRoot,
+                    "*.cs",
+                    SearchOption.AllDirectories)
+                .Concat(Directory.GetFiles(
+                    Path.Combine(uiRoot, "Foundation"),
+                    "*.cs",
+                    SearchOption.AllDirectories))
+                .Select(path => new
+                {
+                    Path = path,
+                    Source = File.ReadAllText(path)
+                })
+                .Where(item =>
+                    item.Source.Contains("Ee4v.Core.I18n") ||
+                    item.Source.Contains("Ee4v.Core.Background") ||
+                    item.Source.Contains("Ee4v.Core.Injector") ||
+                    item.Source.Contains("Ee4v.Core.Settings"))
+                .Select(item => ToPackageRelativePath(item.Path))
+                .ToArray();
+            Assert.That(
+                sharedUiViolations,
+                Is.Empty,
+                string.Join("\n", sharedUiViolations));
+
+            var overlaySource = File.ReadAllText(Path.Combine(
+                componentRoot,
+                "Overlays",
+                "StatusOverlay",
+                "StatusOverlay.cs"));
+            Assert.That(
+                overlaySource,
+                Does.Not.Contain("CoreBackgroundActivities"));
+            Assert.That(
+                File.Exists(Path.Combine(
+                    GetPresentationRoot(),
+                    "Background",
+                    "BackgroundStatusOverlayHost.cs")),
+                Is.True);
         }
 
         [Test]
@@ -355,6 +479,21 @@ namespace Ee4v.Core.Tests
                 PackagePathUtility.GetPackageRootFullPath(),
                 "Editor",
                 "Core");
+        }
+
+        private static string GetUiRoot()
+        {
+            return Path.Combine(
+                PackagePathUtility.GetPackageRootFullPath(),
+                "Editor",
+                "UI");
+        }
+
+        private static string GetPresentationRoot()
+        {
+            return Path.Combine(
+                GetCoreRoot(),
+                "Presentation");
         }
 
         private static string ToPackageRelativePath(string path)

@@ -8,11 +8,11 @@
 - typography 不要な class を component 内に閉じたか
 - 必要なタイポグラフィ定義を `TypographyStyleResolver` に追加したか
 - 文言を `I18N.Get(...)` に寄せたか
-- `Editor/Core/UI/Localization` を更新したか
+- `Editor/UI/Localization` を更新したか
 - built-in icon を直接引かず `Icon` 経由にしたか
 - Catalog registrar で story を登録したか
 - Catalog registrar で必要な stylesheet を登録したか
-- `<name>.story.cs` に preview 実装を追加したか
+- `Editor/UI/Catalog/Stories` の `<name>.story.cs` に preview 実装を追加したか
 - Catalog 上で最低限の使い方が確認できるか
 
 ## 補足

@@ -2,7 +2,7 @@
 
 ## 色は共通トークンを使う
 
-UI の配色は `Editor/Core/UI/Foundation/ui-color-tokens.uss` に集約し、component の USS では raw な `#...` / `rgb(...)` / `rgba(...)` を直接指定しません。`common.uss` が color token USS を import するため、`.ee4v-ui` を root class に持つ既存 window では `var(--ee4v-color-...)` をそのまま利用できます。
+UI の配色は `Editor/UI/Foundation/ui-color-tokens.uss` に集約し、component の USS では raw な `#...` / `rgb(...)` / `rgba(...)` を直接指定しません。`common.uss` が color token USS を import するため、`.ee4v-ui` を root class に持つ既存 window では `var(--ee4v-color-...)` をそのまま利用できます。
 
 - 基本 palette は `DESIGN.md` の Unity Editor 2022.3 Dark theme 測定値に合わせる
 - surface / text / border / state など、用途を表す token を選ぶ
@@ -22,7 +22,7 @@ UI の配色は `Editor/Core/UI/Foundation/ui-color-tokens.uss` に集約し、c
 - `UiLabelAuditTests` で direct `Label` 利用が監査されている
 - UI テキストの見た目は `UiTextFactory` + `UiClassNames` + `TypographyStyleResolver` の組み合わせで統一している
 
-許可されている例外実装は `Editor/Core/UI/Foundation/Typography/UiTextFactory.cs` のみです。
+許可されている例外実装は `Editor/UI/Foundation/Typography/UiTextFactory.cs` のみです。
 
 ## class 名は `UiClassNames` に寄せる
 
@@ -56,12 +56,12 @@ UI 要素の生成時に値を埋め込むより、state を差し替えて再�
 Unity の built-in icon はバージョン差分があるため、`Icon` / `UiBuiltinIcon` を使います。
 
 - 追加が必要なら `UiBuiltinIcon` と `UiBuiltinIconResolver` を更新する
-- `Editor/Core/UI/Test/Editor/UiIconTests.cs` で解決可能か確認される
+- `Editor/UI/Test/Editor/UiIconTests.cs` で解決可能か確認される
 
 ## ローカライズ
 
 永続的に表示される文言は `I18N.Get("key")` を使います。
 
 - `Ee4v.UI` namespace のコードは `UI` scope として解決される
-- 文言は `Editor/Core/UI/Localization/<locale>/*.jsonc` に追加する
+- 文言は `Editor/UI/Localization/<locale>/*.jsonc` に追加する
 - key の重複、未使用、未定義参照は静的監査の対象

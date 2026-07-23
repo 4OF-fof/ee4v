@@ -34,14 +34,14 @@ namespace Ee4v.AssetManager.UI
             root.AddToClassList(RootClassName);
             root.AddToClassList(WindowClassName);
 
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/ItemImage/item-image.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/ImageStack/image-stack.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/Icon/icon.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/InputField/input-field.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/SearchField/search-field.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/Interactive/ViewToggleTabs/view-toggle-tabs.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/ItemImage/item-image.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/ImageStack/image-stack.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/Icon/icon.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/InputField/input-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/SearchField/search-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/Interactive/ViewToggleTabs/view-toggle-tabs.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/InfomationPanel/infomation-panel.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Window/InfomationWindow/infomation-window.uss");
 

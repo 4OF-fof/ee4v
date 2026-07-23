@@ -62,7 +62,9 @@ namespace Ee4v.AssetManager.UI
                 SelectionType.Multiple,
                 OnTreeContextClick,
                 node => node == null || !node.IsGroup || node.GroupKind == FileTreeGroupKind.Version,
-                OnTreeItemDoubleClicked);
+                OnTreeItemDoubleClicked,
+                I18N.GetForScope("UI", "ui.search.tooltip"),
+                I18N.GetForScope("UI", "ui.clear.tooltip"));
             _treeView.SetViewDataKey("ee4v-asset-manager-infomation-panel-file-tree");
             Add(_treeView);
 

@@ -1,3 +1,4 @@
+using Ee4v.Core.Background;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -64,25 +65,25 @@ namespace Ee4v.AssetManager.UI
             root.AddToClassList(RootClassName);
             root.AddToClassList(WindowClassName);
 
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Layout/ThreePaneLayout/three-pane-layout.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Layout/ThreePaneLayout/three-pane-layout.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/NavigationPanel/navigation-panel.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/MainView/main-view.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Toolbar/MainToolbar/main-toolbar.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/ItemImage/item-image.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/ImageStack/image-stack.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/Icon/icon.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/InputField/input-field.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/SearchField/search-field.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/NumericSlider/numeric-slider.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/Interactive/ViewToggleTabs/view-toggle-tabs.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/ItemImage/item-image.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/ImageStack/image-stack.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/Icon/icon.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/InputField/input-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/SearchField/search-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/NumericSlider/numeric-slider.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/Interactive/ViewToggleTabs/view-toggle-tabs.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/InfomationPanel/infomation-panel.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Content/ItemCard/item-card.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Collections/ItemGrid/item-grid.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/Selection/SelectableItemGrid/selectable-item-grid.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/ItemCard/item-card.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Collections/ItemGrid/item-grid.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/Selection/SelectableItemGrid/selectable-item-grid.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/DataView/AssetItemGrid/asset-item-grid.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/Core/UI/Components/Inputs/Selection/SingleSelectButtonGroup/single-select-button-group.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/Selection/SingleSelectButtonGroup/single-select-button-group.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Window/AssetManagerWindow/asset-manager-window.uss");
 
             var layout = new ThreePaneLayout(CreateLayoutState());
@@ -109,7 +110,7 @@ namespace Ee4v.AssetManager.UI
 
             root.Add(layout);
             WindowToastApi.EnsureHost(this);
-            StatusOverlayApi.EnsureHost(this);
+            BackgroundStatusOverlayApi.EnsureHost(this);
         }
 
         private ThreePaneLayoutState CreateLayoutState()
