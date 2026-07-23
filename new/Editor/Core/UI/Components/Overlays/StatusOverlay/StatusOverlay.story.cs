@@ -21,7 +21,7 @@ namespace Ee4v.UI
                     "Overlays",
                     "Status Overlay",
                     "background activity が存在する間、window右下にspinnerと状態を表示します。",
-                    "BackgroundActivityApiの状態だけを描画し、同期処理そのものには依存しない汎用overlayです。",
+                    "IBackgroundActivityTrackerの状態だけを描画し、同期処理そのものには依存しない汎用overlayです。",
                     new string[0],
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildStatusOverlayStory(parent)));
@@ -35,7 +35,8 @@ namespace Ee4v.UI
             var start = new Button(() =>
             {
                 activity?.Dispose();
-                activity = BackgroundActivityApi.Begin("Synchronizing library...");
+                activity = CoreBackgroundActivities.Current.Begin(
+                    "Synchronizing library...");
                 StatusOverlayApi.EnsureHost(this);
             }) { text = "Start" };
             var stop = new Button(() =>

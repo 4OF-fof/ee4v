@@ -1,7 +1,7 @@
 using System;
 using Ee4v.UI;
 
-namespace Ee4v.AssetManager
+namespace Ee4v.AssetManager.UI
 {
     internal sealed class AssetManagerViewItemState
     {

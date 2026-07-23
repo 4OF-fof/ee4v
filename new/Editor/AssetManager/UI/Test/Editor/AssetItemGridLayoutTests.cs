@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-namespace Ee4v.AssetManager.Tests
+namespace Ee4v.AssetManager.UI.Tests
 {
     public sealed class AssetItemGridLayoutTests
     {

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Ee4v.UI;
 
-namespace Ee4v.AssetManager
+namespace Ee4v.AssetManager.UI
 {
     internal sealed class AssetItemGridList
     {

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Ee4v.AssetManager
+namespace Ee4v.AssetManager.UI
 {
     internal enum AssetItemGridHistoryEntryKind
     {

@@ -1,6 +1,6 @@
 {
   "name": "Ee4v.AssetManager.UI.Editor",
-  "rootNamespace": "Ee4v.AssetManager",
+  "rootNamespace": "Ee4v.AssetManager.UI",
   "references": [
     "Ee4v.AssetManager.Contracts.Editor",
     "Ee4v.Core.Editor",

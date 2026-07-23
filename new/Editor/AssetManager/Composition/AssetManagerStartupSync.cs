@@ -59,7 +59,8 @@ namespace Ee4v.AssetManager.Composition
                 return;
             }
 
-            var activity = BackgroundActivityApi.Begin(I18N.Get("assetManager.background.datasourceCheck"));
+            var activity = CoreBackgroundActivities.Current.Begin(
+                I18N.Get("assetManager.background.datasourceCheck"));
             Task.Run(() => Prepare(checkBlm, blmPath, checkEagle, eaglePath)).ContinueWith(task =>
             {
                 EditorApplication.delayCall += () => HandlePrepared(task, activity);
@@ -129,7 +130,8 @@ namespace Ee4v.AssetManager.Composition
         private static void Apply(PreparedStartupSync prepared, IDisposable activity)
         {
             activity.Dispose();
-            var syncActivity = BackgroundActivityApi.Begin(I18N.Get("assetManager.background.datasourceSync"));
+            var syncActivity = CoreBackgroundActivities.Current.Begin(
+                I18N.Get("assetManager.background.datasourceSync"));
             Task.Run(() =>
             {
                 var results = new List<AssetSyncResult>();

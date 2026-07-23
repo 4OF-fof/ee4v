@@ -38,7 +38,7 @@ namespace Ee4v.AssetManager.Composition
                 new AssetManagerInfrastructureSettingsAdapter(settings));
             _assetManager = AssetManagerInfrastructure.CreateDefaultService();
             _uiPreferences = new AssetManagerUiPreferencesAdapter(settings);
-            global::Ee4v.AssetManager.AssetManagerUiDependencies.Configure(
+            global::Ee4v.AssetManager.UI.AssetManagerUiDependencies.Configure(
                 _assetManager,
                 _uiPreferences,
                 AssetManagerInfrastructure.CreateArchiveReader(),

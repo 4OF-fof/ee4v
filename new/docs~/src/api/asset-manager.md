@@ -1047,7 +1047,7 @@ Unity Editor session の開始時に、設定で有効な datasource の変更�
 
 File Tree の完成済み表示データは Unity Editor のメモリ上に最大 64 件共有します。同一 item / file の再表示ではこの memory cache をそのまま利用し、filesystem / ZIP の再確認と loading text の表示を行いません。Import Target と Version Group の代表変更は cache 上の node state を更新し、構造を含む `Catalog` change で全件を破棄します。cache は Unity 終了または domain reload で揮発します。
 
-File Tree の構築中は File Tree 内の loading text だけを表示し、`BackgroundActivityApi` には登録しないため `StatusOverlay` は表示しません。
+File Tree の構築中は File Tree 内の loading text だけを表示し、`IBackgroundActivityTracker` には登録しないため `StatusOverlay` は表示しません。
 
 File Tree の ZIP metadata cache は、thumbnail と同じ cache root の `<ee4v global path>/cache/file-tree` に保存します。cache は source ZIP の更新日時と file size が一致する場合だけ利用し、不一致時は background task で再生成します。これは memory cache と異なり Unity を終了しても保持されます。cache には archive 内の実 path を保持し、読み出し時に ZIP と同名の単一 root folder を表示 path から省略します。
 

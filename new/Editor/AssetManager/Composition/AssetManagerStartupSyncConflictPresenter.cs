@@ -108,25 +108,25 @@ namespace Ee4v.AssetManager.Composition
                 return focused;
             }
 
-            var assetManager = Resources.FindObjectsOfTypeAll<global::Ee4v.AssetManager.AssetManagerWindow>().FirstOrDefault();
+            var assetManager = Resources.FindObjectsOfTypeAll<global::Ee4v.AssetManager.UI.AssetManagerWindow>().FirstOrDefault();
             if (assetManager != null)
             {
                 return assetManager;
             }
 
-            var mainView = Resources.FindObjectsOfTypeAll<global::Ee4v.AssetManager.MainViewWindow>().FirstOrDefault();
+            var mainView = Resources.FindObjectsOfTypeAll<global::Ee4v.AssetManager.UI.MainViewWindow>().FirstOrDefault();
             if (mainView != null)
             {
                 return mainView;
             }
 
-            return EditorWindow.GetWindow<global::Ee4v.AssetManager.AssetManagerWindow>();
+            return EditorWindow.GetWindow<global::Ee4v.AssetManager.UI.AssetManagerWindow>();
         }
 
         private static bool IsAssetManagerWindow(EditorWindow window)
         {
-            return window is global::Ee4v.AssetManager.AssetManagerWindow ||
-                   window is global::Ee4v.AssetManager.MainViewWindow;
+            return window is global::Ee4v.AssetManager.UI.AssetManagerWindow ||
+                   window is global::Ee4v.AssetManager.UI.MainViewWindow;
         }
 
         private static DiffConfirmationState CreateState(IReadOnlyList<AssetSyncConflict> conflicts)

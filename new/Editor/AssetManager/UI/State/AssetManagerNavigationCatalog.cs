@@ -2,7 +2,7 @@ using System;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 
-namespace Ee4v.AssetManager
+namespace Ee4v.AssetManager.UI
 {
     internal static class AssetManagerNavigationCatalog
     {

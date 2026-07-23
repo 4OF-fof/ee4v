@@ -6,7 +6,7 @@ using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 
-namespace Ee4v.AssetManager
+namespace Ee4v.AssetManager.UI
 {
     internal sealed class MainViewRequest
     {

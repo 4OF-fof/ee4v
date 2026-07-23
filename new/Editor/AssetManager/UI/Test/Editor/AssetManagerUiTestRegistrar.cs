@@ -1,6 +1,6 @@
 using Ee4v.Testing.Contracts;
 
-namespace Ee4v.AssetManager.Tests
+namespace Ee4v.AssetManager.UI.Tests
 {
     public sealed class AssetManagerUiTestRegistrar : IFeatureTestRegistrar
     {

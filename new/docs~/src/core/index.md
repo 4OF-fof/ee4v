@@ -7,10 +7,11 @@ Core は feature 横断で使う基盤を置く領域です。feature 固有の�
 - `Injector`: Unity非依存registryとHierarchy / Project presentationへの描画差し込み
 - `I18N`: scope 解決、localization 読み込み、再読込
 - `Settings`: 定義登録、保存、Preferences / Project Settings 表示
-- `Testing`: 独立Moduleとしてのsuite契約、Unity Test Runner adapter、Test List UI
 - `Internal`: package ルート解決や Unity 内部 API への薄いラッパー
+- `Background`: Unity非依存activity trackerと共有composition
 
-SettingsとLocalizationは `Contracts -> Services <- Unity/UI` の依存方向へ分割されています。
+Settings、Localization、Injector registry、Background trackerは
+`Contracts -> Services <- Unity/UI` の依存方向へ分割されています。
 `Contracts` と `Services` は `noEngineReferences: true` とし、外部I/Oと再描画は外側adapterへ限定します。
 featureはCompositionでserviceを受け渡し、Domain / ApplicationからSettingsやI18Nを参照しません。
 
@@ -62,4 +63,5 @@ internal static class SampleBootstrap
 - [Settings](./settings.md)
 - [I18N / Localization](./localization.md)
 - [Test 登録](./testing.md)
+- [全体Architectureとnamespace](../architecture.md)
 - [実装チェックリスト](./checklist.md)

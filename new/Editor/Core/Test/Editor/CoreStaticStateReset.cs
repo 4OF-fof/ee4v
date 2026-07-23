@@ -28,7 +28,7 @@ namespace Ee4v.Core.Tests
             Ee4vBootstrapFlagReset.Reset();
             WindowToastReset.Reset();
             StatusOverlayReset.Reset();
-            BackgroundActivityApi.Reset();
+            CoreBackgroundActivities.ResetForTests();
         }
 
         public static void RecoverEditorState()

@@ -2,7 +2,7 @@ using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
 
-namespace Ee4v.AssetManager
+namespace Ee4v.AssetManager.UI
 {
     internal sealed class AssetManagerWindow : EditorWindow
     {

@@ -234,6 +234,75 @@ namespace Ee4v.Core.Tests
                 string.Join("\n", violations));
         }
 
+        [Test]
+        [FeatureTestCase(
+            "不要なstubと空集約assemblyを残さない",
+            "Phase1、Ee4v.Editor、旧Background static APIを廃止し、AssetManager UI namespaceをレイヤ名へ一致させます。",
+            order: 37,
+            category: FeatureTestCategory.StaticAudit)]
+        public void FinalModuleLayout_HasNoLegacyShells()
+        {
+            var editorRoot = Directory.GetParent(GetCoreRoot()).FullName;
+            Assert.That(
+                Directory.Exists(Path.Combine(editorRoot, "Phase1")),
+                Is.False);
+            Assert.That(
+                File.Exists(Path.Combine(
+                    editorRoot,
+                    "Ee4v.Editor.asmdef")),
+                Is.False);
+            Assert.That(
+                File.Exists(Path.Combine(
+                    GetCoreRoot(),
+                    "Background",
+                    "BackgroundActivityApi.cs")),
+                Is.False);
+            Assert.That(
+                File.Exists(Path.Combine(
+                    GetCoreRoot(),
+                    "Services",
+                    "Background",
+                    "BackgroundActivityTracker.cs")),
+                Is.True);
+
+            var uiRoot = Path.Combine(
+                editorRoot,
+                "AssetManager",
+                "UI");
+            var violations = Directory.GetFiles(
+                    uiRoot,
+                    "*.cs",
+                    SearchOption.AllDirectories)
+                .Where(path => !string.Equals(
+                    Path.GetFileName(path),
+                    "AssemblyInfo.cs",
+                    StringComparison.OrdinalIgnoreCase))
+                .Select(path => new
+                {
+                    Path = path,
+                    Namespace = PackagePathUtility.GetDeclaredNamespace(path)
+                })
+                .Where(item =>
+                    !string.Equals(
+                        item.Namespace,
+                        "Ee4v.AssetManager.UI",
+                        StringComparison.Ordinal) &&
+                    !string.Equals(
+                        item.Namespace,
+                        "Ee4v.AssetManager.UI.Tests",
+                        StringComparison.Ordinal))
+                .Select(item =>
+                    ToPackageRelativePath(item.Path) +
+                    ": " +
+                    item.Namespace)
+                .ToArray();
+
+            Assert.That(
+                violations,
+                Is.Empty,
+                string.Join("\n", violations));
+        }
+
         private static void AssertAsmdef(
             string relativePath,
             IReadOnlyCollection<string> expectedReferences,

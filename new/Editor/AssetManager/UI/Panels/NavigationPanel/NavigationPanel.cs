@@ -2,7 +2,7 @@ using System;
 using Ee4v.UI;
 using UnityEngine.UIElements;
 
-namespace Ee4v.AssetManager
+namespace Ee4v.AssetManager.UI
 {
     internal sealed class NavigationPanel : VisualElement
     {

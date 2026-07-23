@@ -82,7 +82,7 @@ namespace Ee4v.UI
 
         internal void Refresh()
         {
-            var activity = BackgroundActivityApi.GetState();
+            var activity = CoreBackgroundActivities.Current.GetState();
             _overlay.SetState(new StatusOverlayState(activity.IsActive, activity.Message));
         }
     }

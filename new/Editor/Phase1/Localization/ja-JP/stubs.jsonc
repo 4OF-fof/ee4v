@@ -1,8 +1,0 @@
-{
-  "stubs": {
-    "projectToolbar": {
-      "reload": "i18n 再読込",
-      "settings": "Project Settings"
-    }
-  }
-}

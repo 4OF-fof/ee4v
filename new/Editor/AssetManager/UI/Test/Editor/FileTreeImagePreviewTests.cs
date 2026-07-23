@@ -3,7 +3,7 @@ using System.Threading;
 using Ee4v.Testing.Contracts;
 using NUnit.Framework;
 
-namespace Ee4v.AssetManager.Tests
+namespace Ee4v.AssetManager.UI.Tests
 {
     public sealed class FileTreeImagePreviewTests
     {

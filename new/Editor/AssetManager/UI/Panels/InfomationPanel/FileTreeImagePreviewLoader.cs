@@ -4,7 +4,7 @@ using System.IO.Compression;
 using System.Threading;
 using UnityEngine;
 
-namespace Ee4v.AssetManager
+namespace Ee4v.AssetManager.UI
 {
     internal sealed class FileTreeImageSource
     {

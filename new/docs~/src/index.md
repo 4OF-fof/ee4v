@@ -6,6 +6,7 @@ ee4v は VRChat 向け Unity Editor 拡張の再実装プロジェクトです�
 
 | section | 内容 |
 |---|---|
+| [Architecture](./architecture.md) | Module、依存方向、namespaceごとの責務 |
 | [API](./api/) | Core などの公開 API 契約、引数、返り値、副作用 |
 | [Core](./core/) | feature bootstrap、Injector、Settings、I18N、Test 登録の共通ルール |
 | [UI](./ui/) | UI Toolkit コンポーネントの分類、実装制約、Catalog 追加手順 |
@@ -22,6 +23,7 @@ ee4v は VRChat 向け Unity Editor 拡張の再実装プロジェクトです�
 
 ## よく見るページ
 
+- [Architecture](./architecture.md)
 - [Core 実装チェックリスト](./core/checklist.md)
 - [Core API](./api/core.md)
 - [AssetManager API](./api/asset-manager.md)

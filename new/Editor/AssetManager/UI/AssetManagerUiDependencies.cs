@@ -1,7 +1,7 @@
 using System;
 using Ee4v.AssetManager.Contracts;
 
-namespace Ee4v.AssetManager
+namespace Ee4v.AssetManager.UI
 {
     internal static class AssetManagerUiDependencies
     {

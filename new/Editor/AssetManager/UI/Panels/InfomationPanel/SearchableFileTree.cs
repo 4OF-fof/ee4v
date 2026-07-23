@@ -9,7 +9,7 @@ using Ee4v.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Ee4v.AssetManager
+namespace Ee4v.AssetManager.UI
 {
     internal sealed class SearchableFileTree : VisualElement
     {

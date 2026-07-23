@@ -18,7 +18,7 @@ UI は Unity Editor 上で使う共通 UI コンポーネントと、その実�
 - 他画面でも再利用できるなら `Display` / `Interactive` / `DataView` / `Layout` / `Overlay`
 - 特定機能の文脈がないと成立しないなら、その module の `UI`
 
-`StatusOverlay` は `BackgroundActivityApi` の active state を描画する汎用 component です。background activity が存在する間だけ window 右下に spinner と message を表示し、処理ロジックや datasource には依存しません。
+`StatusOverlay` は `IBackgroundActivityTracker` の active state を描画する汎用 component です。background activity が存在する間だけ window 右下に spinner と message を表示し、処理ロジックや datasource には依存しません。
 
 `DiffConfirmationOverlay` は現在値と入力される値を等幅の2 column gridで差分行ごとに並べ、item thumbnail とともに表示し、`Overwrite` / `Cancel` の結果だけを通知する汎用 component です。AssetManager の競合判定や同期処理には依存せず、表示文字列、thumbnail、差分 state は呼び出し側から受け取ります。
 
