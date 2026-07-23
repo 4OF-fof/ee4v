@@ -5,9 +5,9 @@
     "Ee4v.Core.Contracts.Editor",
     "Ee4v.Core.Editor",
     "Ee4v.Core.Services.Editor",
-    "Ee4v.Core.Testing.Editor",
     "Ee4v.Core.Unity.Editor",
     "Ee4v.Phase1.Editor",
+    "Ee4v.Testing.Contracts.Editor",
     "Ee4v.UI.Editor"
   ],
   "includePlatforms": [

@@ -1,6 +1,6 @@
 using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
-using Ee4v.Core.Testing;
+using Ee4v.Testing.Contracts;
 using NUnit.Framework;
 using UnityEngine.UIElements;
 
@@ -30,10 +30,10 @@ namespace Ee4v.Core.Tests
         {
             Ee4vCoreTestReset.RecoverEditorState();
 
-            var value = I18N.Get("testing.window.title");
+            var value = I18N.Get("settings.language.label");
 
             Assert.That(value, Is.Not.Null.And.Not.Empty);
-            Assert.That(value, Is.Not.EqualTo("testing.window.title"));
+            Assert.That(value, Is.Not.EqualTo("settings.language.label"));
         }
 
         [Test]
@@ -45,11 +45,15 @@ namespace Ee4v.Core.Tests
         {
             Ee4vCoreTestReset.RecoverEditorState();
 
-            var found = I18N.TryGet("testing.window.searchPlaceholder", out var value);
+            var found = I18N.TryGet(
+                "settings.fallbackLanguage.label",
+                out var value);
 
             Assert.That(found, Is.True);
             Assert.That(value, Is.Not.Null.And.Not.Empty);
-            Assert.That(value, Is.Not.EqualTo("testing.window.searchPlaceholder"));
+            Assert.That(
+                value,
+                Is.Not.EqualTo("settings.fallbackLanguage.label"));
         }
 
         [Test]

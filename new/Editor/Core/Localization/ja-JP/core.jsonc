@@ -15,32 +15,5 @@
     "validation": {
       "locale": "言語コードは必須です。"
     }
-  },
-  "testing": {
-    "window": {
-      "title": "Test List",
-      "run": "実行",
-      "searchPlaceholder": "suite 名、説明、テスト名で検索",
-      "tests": "Tests",
-      "testCasesMeta": "{0}件",
-      "failureDetailsTitle": "失敗詳細",
-      "copy": "コピー",
-      "countsFormat": "Pass {0}  Fail {1}  Skip {2}  Inc {3}  {4:0.00}s",
-      "noSuites": "登録済みの feature テストがありません。",
-      "noMatches": "検索条件に一致する feature テストがありません。"
-    },
-    "category": {
-      "standard": "標準",
-      "staticAudit": "ローカライズ",
-      "ui": "UI"
-    },
-    "status": {
-      "notRun": "未実行",
-      "running": "実行中",
-      "passed": "成功",
-      "failed": "失敗",
-      "skipped": "スキップ",
-      "inconclusive": "未確定"
-    }
   }
 }

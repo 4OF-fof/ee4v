@@ -1,0 +1,19 @@
+{
+  "name": "Ee4v.Testing.Infrastructure.StaticAnalysis.Editor",
+  "rootNamespace": "Ee4v.Testing.Infrastructure.StaticAnalysis",
+  "references": [
+    "Ee4v.Core.Contracts.Editor",
+    "Ee4v.Core.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

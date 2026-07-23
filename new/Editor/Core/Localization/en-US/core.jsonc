@@ -15,32 +15,5 @@
     "validation": {
       "locale": "Locale is required."
     }
-  },
-  "testing": {
-    "window": {
-      "title": "Test List",
-      "run": "Run",
-      "searchPlaceholder": "Search by suite, description, or test case",
-      "tests": "Tests",
-      "testCasesMeta": "{0} items",
-      "failureDetailsTitle": "Failure Details",
-      "copy": "Copy",
-      "countsFormat": "Pass {0}  Fail {1}  Skip {2}  Inc {3}  {4:0.00}s",
-      "noSuites": "No feature test suites are registered.",
-      "noMatches": "No feature test suites match the current search."
-    },
-    "category": {
-      "standard": "Standard",
-      "staticAudit": "Localization",
-      "ui": "UI"
-    },
-    "status": {
-      "notRun": "Not run",
-      "running": "Running",
-      "passed": "Passed",
-      "failed": "Failed",
-      "skipped": "Skipped",
-      "inconclusive": "Inconclusive"
-    }
   }
 }

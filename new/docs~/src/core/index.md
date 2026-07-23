@@ -7,7 +7,7 @@ Core は feature 横断で使う基盤を置く領域です。feature 固有の�
 - `Injector`: Unity非依存registryとHierarchy / Project presentationへの描画差し込み
 - `I18N`: scope 解決、localization 読み込み、再読込
 - `Settings`: 定義登録、保存、Preferences / Project Settings 表示
-- `Testing`: `Test List` への suite 登録と実行状態管理
+- `Testing`: 独立Moduleとしてのsuite契約、Unity Test Runner adapter、Test List UI
 - `Internal`: package ルート解決や Unity 内部 API への薄いラッパー
 
 SettingsとLocalizationは `Contracts -> Services <- Unity/UI` の依存方向へ分割されています。

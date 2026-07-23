@@ -1,6 +1,6 @@
 using System.Linq;
-using Ee4v.Core.Testing;
-using Ee4v.Core.Testing.StaticAnalysis;
+using Ee4v.Testing.Contracts;
+using Ee4v.Testing.Infrastructure.StaticAnalysis;
 using NUnit.Framework;
 
 namespace Ee4v.Core.Tests

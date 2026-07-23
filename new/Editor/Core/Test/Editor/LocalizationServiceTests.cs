@@ -28,7 +28,7 @@ namespace Ee4v.Core.Tests
         public void Reload_DropsCatalogCacheAndRaisesEvent()
         {
             var source = new StubSource(CreateCatalog(
-                ("en-US", "Core", "testing.window.title", "first")));
+                ("en-US", "Core", "settings.language.label", "first")));
             var service = new LocalizationService(
                 source,
                 new StubLanguages("en-US", "en-US"),
@@ -37,14 +37,14 @@ namespace Ee4v.Core.Tests
             service.Reloaded += (_, __) => reloadCount++;
 
             Assert.That(
-                service.ForScope("Core").Get("testing.window.title"),
+                service.ForScope("Core").Get("settings.language.label"),
                 Is.EqualTo("first"));
             source.Catalog = CreateCatalog(
-                ("en-US", "Core", "testing.window.title", "second"));
+                ("en-US", "Core", "settings.language.label", "second"));
             service.Reload();
 
             Assert.That(
-                service.ForScope("Core").Get("testing.window.title"),
+                service.ForScope("Core").Get("settings.language.label"),
                 Is.EqualTo("second"));
             Assert.That(source.LoadCount, Is.EqualTo(2));
             Assert.That(reloadCount, Is.EqualTo(1));

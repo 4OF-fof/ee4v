@@ -1,5 +1,18 @@
 # Test 登録
 
+Testing は `Editor/Testing` に置く独立Moduleです。Coreの内部機能ではありません。
+
+| assembly | namespace | 役割 |
+|---|---|---|
+| `Ee4v.Testing.Contracts.Editor` | `Ee4v.Testing.Contracts` | suite / case metadataとregistrar契約 |
+| `Ee4v.Testing.Application.Editor` | `Ee4v.Testing.Application` | test case発見とdescriptor構築規則 |
+| `Ee4v.Testing.Infrastructure.Unity.Editor` | `Ee4v.Testing.Infrastructure.Unity` | TypeCache、Unity Test Runner、SessionState adapter |
+| `Ee4v.Testing.Infrastructure.StaticAnalysis.Editor` | `Ee4v.Testing.Infrastructure.StaticAnalysis` | source / localization監査 |
+| `Ee4v.Testing.UI.Editor` | `Ee4v.Testing.UI` | Test List windowと結果presentation |
+
+依存方向は `UI / Infrastructure -> Application -> Contracts` です。
+通常のfeature test assemblyは `Ee4v.Testing.Contracts.Editor` だけを参照します。
+
 feature test は原則 `Editor/<Scope>/Test/Editor` に置きます。
 
 必要になるもの:
@@ -11,7 +24,10 @@ feature test は原則 `Editor/<Scope>/Test/Editor` に置きます。
 
 ## Registrar
 
-`Test List` に suite を出すには `IFeatureTestRegistrar` を実装します。クラス名は `*TestRegistrar` で終わる必要があります。`FeatureTestRegistry` はこの命名で自動発見します。
+`Test List` に suite を出すには `Ee4v.Testing.Contracts.IFeatureTestRegistrar`
+を実装します。クラス名は `*TestRegistrar` で終わる必要があります。
+Unity adapterの `FeatureTestRegistry` がこの命名で自動発見し、
+Applicationの `FeatureTestDescriptorBuilder` へ渡します。
 
 `FeatureTestDescriptor` では以下を決めます。
 
@@ -59,6 +75,6 @@ Core 全体に効く監査や基盤テストは `Editor/Core/Test/Editor` に置
 - localization static audit
 - AssetManager の asmdef 依存方向、内側レイヤーの技術非依存、composition root 一意性、SQLite / filesystem / Unity adapter の配置を確認する architecture static audit
 - UI の direct `Label` 使用監査
-- setting、bootstrap、Injector の基盤契約テスト
+- setting、bootstrap、Injector registry、Testing境界の基盤契約テスト
 
 package 全体監査なのに feature 専用 suite を新設すると、scope や assembly 管理が散ります。まず Core へ寄せられないか確認します。

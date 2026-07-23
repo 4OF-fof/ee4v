@@ -5,7 +5,7 @@
     "Ee4v.AssetManager.Contracts.Editor",
     "Ee4v.AssetManager.UI.Editor",
     "Ee4v.Core.Editor",
-    "Ee4v.Core.Testing.Editor",
+    "Ee4v.Testing.Contracts.Editor",
     "Ee4v.UI.Editor"
   ],
   "includePlatforms": [

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using Ee4v.AssetManager.Infrastructure.Files;
-using Ee4v.Core.Testing;
+using Ee4v.Testing.Contracts;
 using NUnit.Framework;
 
 namespace Ee4v.AssetManager.Infrastructure.Tests

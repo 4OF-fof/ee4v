@@ -5,7 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Threading;
-using Ee4v.Core.Testing;
+using Ee4v.Testing.Contracts;
 using Ee4v.AssetManager.Infrastructure.Files;
 using Ee4v.AssetManager.Infrastructure.Persistence.SQLite;
 using NUnit.Framework;

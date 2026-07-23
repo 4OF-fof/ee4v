@@ -3,7 +3,9 @@
   "rootNamespace": "Ee4v.UI.Tests",
   "references": [
     "Ee4v.Core.Editor",
-    "Ee4v.Core.Testing.Editor",
+    "Ee4v.Testing.Contracts.Editor",
+    "Ee4v.Testing.Infrastructure.StaticAnalysis.Editor",
+    "Ee4v.Testing.UI.Editor",
     "Ee4v.UI.Editor"
   ],
   "includePlatforms": [

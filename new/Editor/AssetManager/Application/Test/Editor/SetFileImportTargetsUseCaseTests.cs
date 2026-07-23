@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Ee4v.AssetManager.Application.Ports;
 using Ee4v.AssetManager.Contracts;
-using Ee4v.Core.Testing;
+using Ee4v.Testing.Contracts;
 using NUnit.Framework;
 
 namespace Ee4v.AssetManager.Application.Tests

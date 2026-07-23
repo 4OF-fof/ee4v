@@ -5,9 +5,9 @@
     "Ee4v.AssetManager.Contracts.Editor",
     "Ee4v.Core.Contracts.Editor",
     "Ee4v.Core.Editor",
-    "Ee4v.Core.Testing.Editor",
-    "Ee4v.Core.UI.Testing.Editor",
     "Ee4v.Phase1.Editor",
+    "Ee4v.Testing.Contracts.Editor",
+    "Ee4v.Testing.UI.Editor",
     "Ee4v.UI.Editor",
     "Ee4v.SQLite.Editor"
   ],

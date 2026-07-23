@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Ee4v.Core.Internal;
-using Ee4v.Core.Testing;
+using Ee4v.Testing.Contracts;
 using NUnit.Framework;
 
 namespace Ee4v.Core.Tests
@@ -161,6 +161,79 @@ namespace Ee4v.Core.Tests
                 Does.Not.Contain("GetType(\"UnityEditor.ProjectBrowser\")"));
         }
 
+        [Test]
+        [FeatureTestCase(
+            "Testingを独立Moduleと依存レイヤへ分離する",
+            "Core配下の旧Testingを廃止し、Contracts/ApplicationがUnity非依存であることを確認します。",
+            order: 36,
+            category: FeatureTestCategory.StaticAudit)]
+        public void TestingModule_HasIndependentLayerBoundaries()
+        {
+            var coreRoot = GetCoreRoot();
+            var testingRoot = Path.Combine(
+                Directory.GetParent(coreRoot).FullName,
+                "Testing");
+
+            Assert.That(
+                Directory.Exists(Path.Combine(coreRoot, "Testing")),
+                Is.False);
+            Assert.That(
+                Directory.Exists(Path.Combine(
+                    coreRoot,
+                    "UI",
+                    "Testing")),
+                Is.False);
+
+            AssertAsmdefAt(
+                Path.Combine(
+                    testingRoot,
+                    "Contracts",
+                    "Ee4v.Testing.Contracts.Editor.asmdef"),
+                Array.Empty<string>(),
+                requireNoEngineReferences: true);
+            AssertAsmdefAt(
+                Path.Combine(
+                    testingRoot,
+                    "Application",
+                    "Ee4v.Testing.Application.Editor.asmdef"),
+                new[] { "Ee4v.Testing.Contracts.Editor" },
+                requireNoEngineReferences: true);
+
+            var violations = new List<string>();
+            foreach (var layer in new[] { "Contracts", "Application" })
+            {
+                var layerRoot = Path.Combine(testingRoot, layer);
+                foreach (var sourcePath in Directory.GetFiles(
+                    layerRoot,
+                    "*.cs",
+                    SearchOption.AllDirectories))
+                {
+                    var source = File.ReadAllText(sourcePath);
+                    foreach (var token in new[]
+                    {
+                        "UnityEngine",
+                        "UnityEditor",
+                        "SessionState",
+                        "JsonUtility"
+                    })
+                    {
+                        if (source.Contains(token))
+                        {
+                            violations.Add(
+                                ToPackageRelativePath(sourcePath) +
+                                ": " +
+                                token);
+                        }
+                    }
+                }
+            }
+
+            Assert.That(
+                violations,
+                Is.Empty,
+                string.Join("\n", violations));
+        }
+
         private static void AssertAsmdef(
             string relativePath,
             IReadOnlyCollection<string> expectedReferences,
@@ -169,6 +242,17 @@ namespace Ee4v.Core.Tests
             var path = Path.Combine(
                 GetCoreRoot(),
                 relativePath.Replace('/', Path.DirectorySeparatorChar));
+            AssertAsmdefAt(
+                path,
+                expectedReferences,
+                requireNoEngineReferences);
+        }
+
+        private static void AssertAsmdefAt(
+            string path,
+            IReadOnlyCollection<string> expectedReferences,
+            bool requireNoEngineReferences)
+        {
             var content = File.ReadAllText(path);
             var referencesMatch = Regex.Match(
                 content,

@@ -1,5 +1,5 @@
 using Ee4v.AssetManager.Contracts;
-using Ee4v.Core.Testing;
+using Ee4v.Testing.Contracts;
 
 namespace Ee4v.AssetManager.Infrastructure.Tests
 {

@@ -6,7 +6,10 @@ using Ee4v.Core.Background;
 using Ee4v.Core.Injector;
 using Ee4v.Core.Internal;
 using Ee4v.Core.Settings;
-using Ee4v.Core.Testing;
+using Ee4v.Testing.Application;
+using Ee4v.Testing.Contracts;
+using Ee4v.Testing.Infrastructure.Unity;
+using Ee4v.Testing.UI;
 using Ee4v.UI;
 using UnityEditor;
 

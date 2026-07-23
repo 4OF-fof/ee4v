@@ -4,7 +4,7 @@
   "references": [
     "Ee4v.AssetManager.Application.Editor",
     "Ee4v.AssetManager.Contracts.Editor",
-    "Ee4v.Core.Testing.Editor"
+    "Ee4v.Testing.Contracts.Editor"
   ],
   "includePlatforms": [
     "Editor"

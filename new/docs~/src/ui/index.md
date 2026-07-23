@@ -11,7 +11,7 @@ UI は Unity Editor 上で使う共通 UI コンポーネントと、その実�
 | `DataView` | データソースの閲覧を扱う UI | `SearchableTreeView` |
 | `Layout` | 複数領域の配置や resize を扱う汎用 UI | `ThreePaneLayout` |
 | `Overlay` | 既存画面の上に重ねて出す UI | `WindowToast`, `StatusOverlay`, `DiffConfirmationOverlay`, popup |
-| `<Module>/UI` | 特定ドメイン専用 UI | `Editor/Core/Testing/UI`, `Editor/AssetManager/UI` |
+| `<Module>/UI` | 特定ドメイン専用 UI | `Editor/Testing/UI`, `Editor/AssetManager/UI` |
 
 判断基準:
 

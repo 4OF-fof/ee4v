@@ -3,7 +3,7 @@
   "rootNamespace": "Ee4v.AssetManager.Domain.Tests",
   "references": [
     "Ee4v.AssetManager.Domain.Editor",
-    "Ee4v.Core.Testing.Editor"
+    "Ee4v.Testing.Contracts.Editor"
   ],
   "includePlatforms": [
     "Editor"

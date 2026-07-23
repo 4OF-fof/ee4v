@@ -539,6 +539,11 @@ Notes:
 
 ## Testing
 
+Testing API はCore assemblyではなく、Unity非依存の
+`Ee4v.Testing.Contracts.Editor` / `Ee4v.Testing.Contracts` にあります。
+featureのtest assemblyはこのContractsだけを参照し、Application、
+Unity Test Runner adapter、UIを直接参照しません。
+
 ### `IFeatureTestRegistrar.CreateDescriptor`
 
 Feature test suite の metadata を `Test List` に提供します。

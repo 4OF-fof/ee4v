@@ -1,0 +1,48 @@
+{
+  "testing": {
+    "window": {
+      "title": "Test List",
+      "run": "Run",
+      "searchPlaceholder": "Search by suite, description, or test case",
+      "tests": "Tests",
+      "testCasesMeta": "{0} items",
+      "failureDetailsTitle": "Failure Details",
+      "copy": "Copy",
+      "countsFormat": "Pass {0}  Fail {1}  Skip {2}  Inc {3}  {4:0.00}s",
+      "noSuites": "No feature test suites are registered.",
+      "noMatches": "No feature test suites match the current search."
+    },
+    "category": {
+      "standard": "Standard",
+      "staticAudit": "Localization",
+      "ui": "UI"
+    },
+    "status": {
+      "notRun": "Not run",
+      "running": "Running",
+      "passed": "Passed",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "inconclusive": "Inconclusive"
+    },
+    "runner": {
+      "requested": "Test run requested. Waiting for Unity Test Runner to start.",
+      "pending": "The request was sent, but Unity Test Runner has not reported a start yet.",
+      "running": "Running tests.",
+      "runningTest": "Running: {0}",
+      "missingResult": "Unity Test Runner finished without returning this suite's assembly result.",
+      "missingStart": "Unity Test Runner did not report that this suite started.",
+      "startTimeout": "Timed out while waiting for Unity Test Runner to start.",
+      "heartbeatTimeout": "Unity Test Runner stopped reporting progress; this run is treated as failed.",
+      "passed": "All registered tests passed.",
+      "failed": "This suite failed.",
+      "skipped": "This suite was skipped.",
+      "inconclusive": "This suite finished with an inconclusive result.",
+      "error": {
+        "descriptorRequired": "A test suite descriptor is required.",
+        "noSuites": "No test suites are registered.",
+        "alreadyRunning": "A test run is already in progress."
+      }
+    }
+  }
+}

@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Ee4v.Core.Internal;
-using Ee4v.Core.Testing;
+using Ee4v.Testing.Contracts;
 using NUnit.Framework;
 
 namespace Ee4v.Core.Tests
