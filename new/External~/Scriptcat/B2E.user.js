@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Booth to Ealge
 // @namespace    https://4of.dev
-// @version      0.1.0
+// @version      0.1.1
 // @description  Add Eagle import badges and actions to the BOOTH library and item pages.
 // @match        https://accounts.booth.pm/library*
 // @match        https://accounts.booth.pm/library/gifts*
@@ -50,6 +50,7 @@
       "div.mt-16.desktop\\:flex.desktop\\:justify-between.desktop\\:items-center",
     downloadFilename: ".text-14",
     downloadActions: ".shrink-0.flex.items-center.gap-8",
+    otherDownloads: '[data-test="other-downloads-button"]',
   };
   const BOOTH_ITEM_SELECTORS = {
     root: ".market-item-detail",
@@ -425,7 +426,7 @@
       },
 
       buildProductContext(thumbnail) {
-        const card = thumbnail.closest(selectors.cardFromThumbnail);
+        const card = this.findCard(thumbnail);
         if (!card) {
           return null;
         }
@@ -443,6 +444,23 @@
           product,
           downloads: this.readDownloads(card, product),
         };
+      },
+
+      findCard(thumbnail) {
+        // 色や余白の class は BOOTH のデザイン変更で変わりやすいため、
+        // 商品 URL と download action を一緒に含む最小の祖先をカードとみなす。
+        let current = thumbnail.parentElement;
+        while (current && current !== document.body) {
+          if (
+            current.querySelector(selectors.productLink) &&
+            current.querySelector(selectors.downloadTrigger)
+          ) {
+            return current;
+          }
+          current = current.parentElement;
+        }
+
+        return thumbnail.closest(selectors.cardFromThumbnail);
       },
 
       readProduct(card, thumbnail, productLink) {
@@ -483,18 +501,19 @@
 
       readDownload(trigger, product) {
         const downloadUrl = normalizeDownloadUrl(
-          trigger.getAttribute("data-href"),
+          trigger.getAttribute("data-href") ||
+            trigger.getAttribute("href") ||
+            trigger.href,
         );
-        const row = this.findDownloadRow(trigger);
-        if (!row || !downloadUrl) {
+        const actions = this.findDownloadActions(trigger);
+        const row = this.findDownloadRow(trigger, actions);
+        if (!row || !actions || !downloadUrl) {
           return null;
         }
 
-        const filename = readText(
-          row.querySelector(selectors.downloadFilename),
-        );
-        const actions = row.querySelector(selectors.downloadActions);
-        if (!filename || !actions) {
+        const filenameElement = this.findDownloadFilename(row, actions);
+        const filename = readText(filenameElement);
+        if (!filename) {
           return null;
         }
 
@@ -511,15 +530,58 @@
         };
       },
 
-      findDownloadRow(trigger) {
-        let current = trigger;
+      findDownloadActions(trigger) {
+        // 新しい library DOM では通常 download と「その他のDL方法」が
+        // wrapper を挟んだ兄弟になっている。両方を含む最小の祖先を使う。
+        let current = trigger.parentElement;
         while (current && current !== document.body) {
-          if (current.matches(selectors.downloadRow)) {
+          if (current.querySelector(selectors.otherDownloads)) {
             return current;
           }
           current = current.parentElement;
         }
-        return null;
+
+        return (
+          trigger.closest(selectors.downloadActions) ||
+          trigger.parentElement
+        );
+      },
+
+      findDownloadFilename(row, actions) {
+        // 新しい DOM では filename block と actions が兄弟になっている。
+        // actions 内の dropdown label を filename と誤認しないよう外側だけを見る。
+        let current = actions;
+        while (current && current !== row) {
+          let sibling = current.previousElementSibling;
+          while (sibling) {
+            if (readText(sibling)) {
+              return sibling;
+            }
+            sibling = sibling.previousElementSibling;
+          }
+          current = current.parentElement;
+        }
+
+        return Array.from(
+          row.querySelectorAll(selectors.downloadFilename),
+        ).find((element) => !actions.contains(element));
+      },
+
+      findDownloadRow(trigger, actions) {
+        // filename block と actions が兄弟になっている最小の祖先を探す。
+        let current = actions;
+        while (current && current !== document.body) {
+          let sibling = current.previousElementSibling;
+          while (sibling) {
+            if (readText(sibling)) {
+              return current.parentElement;
+            }
+            sibling = sibling.previousElementSibling;
+          }
+          current = current.parentElement;
+        }
+
+        return trigger.closest(selectors.downloadRow);
       },
     };
   }

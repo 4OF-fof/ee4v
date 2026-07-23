@@ -10,3 +10,4 @@
 - `GET /health`, `POST /v1/status`, `POST /v1/import` を使う
 - `/health` で取得した session token を後続 POST の `X-EE4V-Bridge-Token` header に自動設定する
 - import action は bridge に BoothMeta / download request を登録してから BOOTH の通常 download button を発火する
+- library の解析は `data-test` と商品・download action の包含関係を優先し、BOOTH の utility class 変更時は既存 class selector を fallback として扱う
