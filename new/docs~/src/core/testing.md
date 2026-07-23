@@ -5,12 +5,15 @@ Testing は `Editor/Testing` に置く独立Moduleです。Coreの内部機能�
 | assembly | namespace | 役割 |
 |---|---|---|
 | `Ee4v.Testing.Contracts.Editor` | `Ee4v.Testing.Contracts` | suite / case metadataとregistrar契約 |
-| `Ee4v.Testing.Application.Editor` | `Ee4v.Testing.Application` | test case発見とdescriptor構築規則 |
+| `Ee4v.Testing.Application.Editor` | `Ee4v.Testing.Application` | test case発見、descriptor構築規則、catalog / runner port |
 | `Ee4v.Testing.Infrastructure.Unity.Editor` | `Ee4v.Testing.Infrastructure.Unity` | TypeCache、Unity Test Runner、SessionState adapter |
 | `Ee4v.Testing.Infrastructure.StaticAnalysis.Editor` | `Ee4v.Testing.Infrastructure.StaticAnalysis` | source / localization監査 |
 | `Ee4v.Testing.UI.Editor` | `Ee4v.Testing.UI` | Test List windowと結果presentation |
+| `Ee4v.Testing.Composition.Editor` | `Ee4v.Testing.Composition` | Unity adapterをApplicationのportとしてUIへ注入 |
 
-依存方向は `UI / Infrastructure -> Application -> Contracts` です。
+依存方向は `Composition -> UI / Infrastructure -> Application -> Contracts` です。
+UIはInfrastructureの具象を参照せず、Applicationの
+`IFeatureTestCatalog` / `IFeatureTestRunner` だけを利用します。
 通常のfeature test assemblyは `Ee4v.Testing.Contracts.Editor` だけを参照します。
 
 feature test は原則 `Editor/<Scope>/Test/Editor` に置きます。

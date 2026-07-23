@@ -163,7 +163,7 @@ namespace Ee4v.Core.Tests
         [Test]
         [FeatureTestCase(
             "Testingを独立Moduleと依存レイヤへ分離する",
-            "Core配下の旧Testingを廃止し、Contracts/ApplicationがUnity非依存であることを確認します。",
+            "Contracts/ApplicationをUnity非依存に保ち、UIとUnity InfrastructureがApplicationの抽象を介してCompositionで接続されることを確認します。",
             order: 36,
             category: FeatureTestCategory.StaticAudit)]
         public void TestingModule_HasIndependentLayerBoundaries()
@@ -197,6 +197,46 @@ namespace Ee4v.Core.Tests
                     "Ee4v.Testing.Application.Editor.asmdef"),
                 new[] { "Ee4v.Testing.Contracts.Editor" },
                 requireNoEngineReferences: true);
+            AssertAsmdefAt(
+                Path.Combine(
+                    testingRoot,
+                    "Infrastructure",
+                    "Unity",
+                    "Ee4v.Testing.Infrastructure.Unity.Editor.asmdef"),
+                new[]
+                {
+                    "Ee4v.Testing.Application.Editor",
+                    "Ee4v.Testing.Contracts.Editor",
+                    "UnityEditor.TestRunner",
+                    "UnityEngine.TestRunner"
+                },
+                requireNoEngineReferences: false);
+            AssertAsmdefAt(
+                Path.Combine(
+                    testingRoot,
+                    "UI",
+                    "Ee4v.Testing.UI.Editor.asmdef"),
+                new[]
+                {
+                    "Ee4v.Core.Editor",
+                    "Ee4v.Core.Presentation.Editor",
+                    "Ee4v.Testing.Application.Editor",
+                    "Ee4v.Testing.Contracts.Editor",
+                    "Ee4v.UI.Editor"
+                },
+                requireNoEngineReferences: false);
+            AssertAsmdefAt(
+                Path.Combine(
+                    testingRoot,
+                    "Composition",
+                    "Ee4v.Testing.Composition.Editor.asmdef"),
+                new[]
+                {
+                    "Ee4v.Testing.Application.Editor",
+                    "Ee4v.Testing.Infrastructure.Unity.Editor",
+                    "Ee4v.Testing.UI.Editor"
+                },
+                requireNoEngineReferences: false);
 
             var violations = new List<string>();
             foreach (var layer in new[] { "Contracts", "Application" })
@@ -231,6 +271,31 @@ namespace Ee4v.Core.Tests
                 violations,
                 Is.Empty,
                 string.Join("\n", violations));
+
+            var testingUiRoot = Path.Combine(testingRoot, "UI");
+            var uiInfrastructureReferences = Directory.GetFiles(
+                    testingUiRoot,
+                    "*.cs",
+                    SearchOption.AllDirectories)
+                .Where(path => File.ReadAllText(path).Contains(
+                    "Ee4v.Testing.Infrastructure"))
+                .Select(ToPackageRelativePath)
+                .ToArray();
+            Assert.That(
+                uiInfrastructureReferences,
+                Is.Empty,
+                string.Join("\n", uiInfrastructureReferences));
+
+            var testResultGroupSource = File.ReadAllText(Path.Combine(
+                testingUiRoot,
+                "TestResultGroup",
+                "TestResultGroup.cs"));
+            Assert.That(
+                testResultGroupSource,
+                Does.Contain("namespace Ee4v.Testing.UI"));
+            Assert.That(
+                testResultGroupSource,
+                Does.Not.Contain("namespace Ee4v.UI"));
         }
 
         [Test]

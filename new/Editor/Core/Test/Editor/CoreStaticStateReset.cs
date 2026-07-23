@@ -86,13 +86,22 @@ namespace Ee4v.Core.Tests
     {
         public static void Reset()
         {
-            var activeRunner = ReflectionReset.GetStaticField(typeof(FeatureTestManagerWindow), "_runnerService") as FeatureTestRunnerService;
+            var activeRunner = ReflectionReset.GetStaticField(
+                typeof(FeatureTestManagerWindow),
+                "_runnerService") as IFeatureTestRunner;
             if (activeRunner != null && activeRunner.IsRunInProgress)
             {
                 return;
             }
 
-            ReflectionReset.SetStaticField(typeof(FeatureTestManagerWindow), "_runnerService", null);
+            FeatureTestManagerWindow.ResetForTests();
+            var unityRunner = activeRunner as FeatureTestRunnerService;
+            if (unityRunner != null)
+            {
+                unityRunner.ResetForTests();
+                return;
+            }
+
             FeatureTestRunnerService.ClearPersistedState();
         }
     }

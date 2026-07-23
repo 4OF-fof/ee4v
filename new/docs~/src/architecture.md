@@ -14,11 +14,14 @@ AssetManager.Composition
             -> AssetManager.Contracts
 
 Testing.UI
+  -> Testing.Application / Testing.Contracts
   -> Ee4v.UI / Core.Presentation
 
-Testing.Infrastructure
-  -> Testing.Application
-       -> Testing.Contracts
+Testing.Composition
+  -> Testing.UI
+  -> Testing.Infrastructure.Unity
+       -> Testing.Application
+            -> Testing.Contracts
 
 UI.Catalog
   -> Ee4v.UI / AssetManager.UI / Testing.UI
@@ -114,13 +117,18 @@ Unity adapterはUIを参照しません。
 | namespace | 役割 |
 |---|---|
 | `Ee4v.Testing.Contracts` | registrar、suite / case metadata、category |
-| `Ee4v.Testing.Application` | test case発見、descriptor構築、run state model |
+| `Ee4v.Testing.Application` | test case発見、descriptor構築、run state model、catalog / runner port |
 | `Ee4v.Testing.Infrastructure.Unity` | TypeCache、Unity Test Runner、SessionState |
 | `Ee4v.Testing.Infrastructure.StaticAnalysis` | localizationとUI sourceの監査 |
 | `Ee4v.Testing.UI` | Test List window、run stateのlocalizationと表示 |
+| `Ee4v.Testing.Composition` | Unity実装をApplicationのportとしてUIへ注入するcomposition root |
 
 各featureのtest namespaceは対応レイヤの末尾を `.Tests` とし、原則
 `Ee4v.Testing.Contracts.Editor` だけを追加参照します。
+
+`Testing.UI` は `Testing.Infrastructure.Unity` を直接参照しません。
+catalogとrunnerは `Testing.Application` のportとして受け取り、具象の生成と注入は
+`Testing.Composition` だけが行います。
 
 ## 依存ルール
 

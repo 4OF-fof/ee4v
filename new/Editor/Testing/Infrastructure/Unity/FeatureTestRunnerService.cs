@@ -9,7 +9,9 @@ using UnityEngine;
 
 namespace Ee4v.Testing.Infrastructure.Unity
 {
-    internal sealed class FeatureTestRunnerService : IDisposable
+    internal sealed class FeatureTestRunnerService :
+        IFeatureTestRunner,
+        IDisposable
     {
         private const string SessionStateKey = "ee4v.core.testing.runner-service.state";
         private static readonly TimeSpan RunStartTimeout = TimeSpan.FromSeconds(15d);
@@ -91,6 +93,17 @@ namespace Ee4v.Testing.Infrastructure.Unity
         internal static void ClearPersistedState()
         {
             SessionState.SetString(SessionStateKey, string.Empty);
+        }
+
+        internal void ResetForTests()
+        {
+            if (IsRunInProgress)
+            {
+                return;
+            }
+
+            _records.Clear();
+            ClearPersistedState();
         }
 
         private bool TryStartRun(IReadOnlyList<FeatureTestDescriptor> descriptors, out string errorMessage)

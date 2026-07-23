@@ -10,7 +10,8 @@
       "copy": "コピー",
       "countsFormat": "Pass {0}  Fail {1}  Skip {2}  Inc {3}  {4:0.00}s",
       "noSuites": "登録済みの feature テストがありません。",
-      "noMatches": "検索条件に一致する feature テストがありません。"
+      "noMatches": "検索条件に一致する feature テストがありません。",
+      "dependenciesNotConfigured": "Test List の依存関係が構成されていません。"
     },
     "category": {
       "standard": "標準",

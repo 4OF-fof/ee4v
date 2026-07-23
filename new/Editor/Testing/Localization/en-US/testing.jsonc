@@ -10,7 +10,8 @@
       "copy": "Copy",
       "countsFormat": "Pass {0}  Fail {1}  Skip {2}  Inc {3}  {4:0.00}s",
       "noSuites": "No feature test suites are registered.",
-      "noMatches": "No feature test suites match the current search."
+      "noMatches": "No feature test suites match the current search.",
+      "dependenciesNotConfigured": "Test List dependencies are not configured."
     },
     "category": {
       "standard": "Standard",

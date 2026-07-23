@@ -1,12 +1,10 @@
 {
-  "name": "Ee4v.Testing.UI.Editor",
-  "rootNamespace": "Ee4v.Testing.UI",
+  "name": "Ee4v.Testing.Composition.Editor",
+  "rootNamespace": "Ee4v.Testing.Composition",
   "references": [
-    "Ee4v.Core.Editor",
-    "Ee4v.Core.Presentation.Editor",
     "Ee4v.Testing.Application.Editor",
-    "Ee4v.Testing.Contracts.Editor",
-    "Ee4v.UI.Editor"
+    "Ee4v.Testing.Infrastructure.Unity.Editor",
+    "Ee4v.Testing.UI.Editor"
   ],
   "includePlatforms": [
     "Editor"

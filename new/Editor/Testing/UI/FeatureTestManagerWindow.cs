@@ -4,7 +4,6 @@ using System.Linq;
 using Ee4v.Core.I18n;
 using Ee4v.Testing.Application;
 using Ee4v.Testing.Contracts;
-using Ee4v.Testing.Infrastructure.Unity;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -36,7 +35,7 @@ namespace Ee4v.Testing.UI
             public bool UserExpanded { get; set; }
         }
 
-        private static FeatureTestRunnerService _runnerService;
+        private static IFeatureTestRunner _runnerService;
 
         private readonly List<FeatureTestDescriptor> _descriptors = new List<FeatureTestDescriptor>();
         private readonly List<DescriptorView> _descriptorViews = new List<DescriptorView>();
@@ -135,7 +134,7 @@ namespace Ee4v.Testing.UI
 
             try
             {
-                _descriptors.AddRange(FeatureTestRegistry.Refresh());
+                _descriptors.AddRange(TestingUiDependencies.Catalog.Refresh());
             }
             catch (Exception exception)
             {
@@ -698,8 +697,20 @@ namespace Ee4v.Testing.UI
                 return;
             }
 
-            _runnerService = new FeatureTestRunnerService();
+            _runnerService = TestingUiDependencies.Runner;
             _runnerService.Changed += RefreshAllOpenWindows;
+        }
+
+        internal static void ResetForTests()
+        {
+            if (_runnerService == null ||
+                _runnerService.IsRunInProgress)
+            {
+                return;
+            }
+
+            _runnerService.Changed -= RefreshAllOpenWindows;
+            _runnerService = null;
         }
 
         private static void RefreshAllOpenWindows()
