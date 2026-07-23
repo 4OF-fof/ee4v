@@ -6,14 +6,14 @@
     flex-grow: 1;
     min-height: 0;
     flex-direction: column;
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-top: 10px;
-    padding-bottom: 10px;
+    padding-left: var(--ee4v-space-lg);
+    padding-right: var(--ee4v-space-lg);
+    padding-top: var(--ee4v-space-lg);
+    padding-bottom: var(--ee4v-space-lg);
 }
 
 .ee4v-asset-manager-window__main-view-window-content {
     flex-grow: 1;
     min-height: 0;
-    margin-top: 10px;
+    margin-top: var(--ee4v-space-lg);
 }

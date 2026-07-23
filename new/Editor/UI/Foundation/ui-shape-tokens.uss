@@ -1,0 +1,14 @@
+:root {
+    --ee4v-border-hairline: 1px;
+    --ee4v-border-emphasis: 2px;
+    --ee4v-border-strong: 3px;
+
+    --ee4v-radius-xs: 3px;
+    --ee4v-radius-sm: 4px;
+    --ee4v-radius-md: 5px;
+    --ee4v-radius-lg: 6px;
+    --ee4v-radius-xl: 7px;
+    --ee4v-radius-2xl: 8px;
+    --ee4v-radius-3xl: 10px;
+    --ee4v-radius-pill: 15px;
+}

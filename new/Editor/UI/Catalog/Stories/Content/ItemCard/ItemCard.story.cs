@@ -34,17 +34,17 @@ namespace Ee4v.UI
             var surface = CreatePreviewSurface();
             surface.style.flexDirection = FlexDirection.Row;
             surface.style.alignItems = Align.FlexStart;
-            surface.style.paddingLeft = 12f;
-            surface.style.paddingRight = 12f;
-            surface.style.paddingTop = 12f;
-            surface.style.paddingBottom = 12f;
+            surface.style.paddingLeft = UiSpacingTokens.Xl;
+            surface.style.paddingRight = UiSpacingTokens.Xl;
+            surface.style.paddingTop = UiSpacingTokens.Xl;
+            surface.style.paddingBottom = UiSpacingTokens.Xl;
 
             var thumbnail = CreateItemCardSampleThumbnail(132, 132);
             var thumbnailBytes = thumbnail.EncodeToPNG();
             UnityEngine.Object.DestroyImmediate(thumbnail);
 
             var itemCard = new ItemCard(new ItemCardState("Sample Avatar Asset", thumbnailBytes));
-            itemCard.style.marginRight = 16f;
+            itemCard.style.marginRight = UiSpacingTokens.Xxl;
             surface.Add(itemCard);
             surface.Add(new ItemCard(new ItemCardState("No Thumbnail Item")));
 

@@ -21,11 +21,11 @@ namespace Ee4v.UI
         private const string ListClassName = "ee4v-ui-item-grid__list";
         private const string RowClassName = "ee4v-ui-item-grid__row";
         protected const string RowSlotClassName = "ee4v-ui-item-grid__row-slot";
-        private const float PreferredColumnGap = 16f;
-        private const float MinimumCardWidth = 1f;
-        private const float RowVerticalPadding = 4f;
+        private const float PreferredColumnGap = UiSpacingTokens.Xxl;
+        private const float MinimumCardWidth = UiSizeTokens.Size1;
+        private const float RowVerticalPadding = UiSpacingTokens.Xs;
         private const float NameHeight = 25f;
-        private const float ViewportSafetyMargin = 1f;
+        private const float ViewportSafetyMargin = UiSizeTokens.Size1;
         private const int DefaultRowHeight = 161;
         protected readonly ListView ListView;
         private readonly List<ItemGridRowState> _rows = new List<ItemGridRowState>();

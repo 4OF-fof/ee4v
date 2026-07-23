@@ -161,7 +161,10 @@ namespace Ee4v.UI
             return new IconState(UiIconSourceKind.Texture, texture, size: size, tooltip: tooltip);
         }
 
-        public static IconState FromBuiltinIcon(UiBuiltinIcon builtinIcon, float size = 16f, string tooltip = null)
+        public static IconState FromBuiltinIcon(
+            UiBuiltinIcon builtinIcon,
+            float size = UiSizeTokens.Size16,
+            string tooltip = null)
         {
             return new IconState(UiIconSourceKind.Builtin, builtinIcon: builtinIcon, size: size, tooltip: tooltip);
         }

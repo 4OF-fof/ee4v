@@ -58,7 +58,7 @@ namespace Ee4v.UI
             surface.style.width = 360f;
 
             var singleLineInput = new InputField(new InputFieldState(string.Empty, false, maxHeight, placeholder));
-            singleLineInput.style.marginBottom = 12f;
+            singleLineInput.style.marginBottom = UiSpacingTokens.Xl;
             surface.Add(singleLineInput);
 
             var multilineInput = new InputField(new InputFieldState(string.Empty, true, maxHeight, placeholder));

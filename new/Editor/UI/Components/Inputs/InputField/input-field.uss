@@ -1,7 +1,7 @@
 .ee4v-ui-input-field {
     align-self: stretch;
     min-width: 0;
-    margin-bottom: 10px;
+    margin-bottom: var(--ee4v-space-lg);
 }
 
 .ee4v-ui-input-field__field-container {
@@ -10,24 +10,24 @@
     align-items: stretch;
     align-self: stretch;
     min-width: 0;
-    min-height: 24px;
-    height: 24px;
-    padding-left: 6px;
-    padding-right: 6px;
-    padding-top: 0;
-    padding-bottom: 0;
-    border-top-width: 1px;
-    border-right-width: 1px;
-    border-bottom-width: 1px;
-    border-left-width: 1px;
+    min-height: var(--ee4v-size-24);
+    height: var(--ee4v-size-24);
+    padding-left: var(--ee4v-space-sm);
+    padding-right: var(--ee4v-space-sm);
+    padding-top: var(--ee4v-space-none);
+    padding-bottom: var(--ee4v-space-none);
+    border-top-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-left-width: var(--ee4v-border-hairline);
     border-top-color: var(--ee4v-color-border-default);
     border-right-color: var(--ee4v-color-border-default);
     border-bottom-color: var(--ee4v-color-border-default);
     border-left-color: var(--ee4v-color-border-default);
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
+    border-top-left-radius: var(--ee4v-radius-lg);
+    border-top-right-radius: var(--ee4v-radius-lg);
+    border-bottom-left-radius: var(--ee4v-radius-lg);
+    border-bottom-right-radius: var(--ee4v-radius-lg);
     background-color: var(--ee4v-color-field);
     transition-property: border-top-color, border-right-color, border-bottom-color, border-left-color, background-color;
     transition-duration: 0.12s;
@@ -64,10 +64,10 @@
     align-self: stretch;
     min-width: 0;
     min-height: 0;
-    margin-left: 0;
-    margin-right: 0;
-    margin-top: 0;
-    margin-bottom: 0;
+    margin-left: var(--ee4v-space-none);
+    margin-right: var(--ee4v-space-none);
+    margin-top: var(--ee4v-space-none);
+    margin-bottom: var(--ee4v-space-none);
 }
 
 .ee4v-ui-input-field--multiline .ee4v-ui-input-field__field {
@@ -89,21 +89,21 @@
     min-height: 0;
     height: auto;
     max-height: 10000px;
-    margin-left: 0;
-    margin-right: 0;
-    margin-top: 0;
-    margin-bottom: 0;
-    padding-left: 0;
-    padding-right: 0;
-    padding-top: 0;
-    padding-bottom: 0;
+    margin-left: var(--ee4v-space-none);
+    margin-right: var(--ee4v-space-none);
+    margin-top: var(--ee4v-space-none);
+    margin-bottom: var(--ee4v-space-none);
+    padding-left: var(--ee4v-space-none);
+    padding-right: var(--ee4v-space-none);
+    padding-top: var(--ee4v-space-none);
+    padding-bottom: var(--ee4v-space-none);
     border-top-width: 0;
     border-right-width: 0;
     border-bottom-width: 0;
     border-left-width: 0;
     background-color: var(--ee4v-color-transparent);
     color: var(--ee4v-color-text-primary);
-    font-size: 12px;
+    font-size: var(--ee4v-font-size-body);
     -unity-text-align: middle-left;
 }
 
@@ -144,7 +144,7 @@
 
 .ee4v-ui-input-field__placeholder Label {
     flex-grow: 1;
-    min-height: 16px;
+    min-height: var(--ee4v-size-16);
     -unity-text-align: middle-left;
 }
 
@@ -165,8 +165,8 @@
 
 .ee4v-ui-input-field--multiline .unity-scroll-view__vertical-scroller,
 .ee4v-ui-input-field--multiline .unity-scroller {
-    width: 8px;
-    min-width: 8px;
+    width: var(--ee4v-size-8);
+    min-width: var(--ee4v-size-8);
     background-color: var(--ee4v-color-transparent);
     border-top-width: 0;
     border-right-width: 0;
@@ -198,14 +198,14 @@
 .ee4v-ui-input-field--multiline .unity-base-slider__dragger,
 .ee4v-ui-input-field--multiline .unity-base-slider__dragger-border,
 .ee4v-ui-input-field--multiline .unity-scroller__slider .unity-dragger {
-    width: 4px;
-    min-width: 4px;
-    margin-left: 2px;
-    margin-right: 2px;
-    border-top-left-radius: 3px;
-    border-top-right-radius: 3px;
-    border-bottom-left-radius: 3px;
-    border-bottom-right-radius: 3px;
+    width: var(--ee4v-size-4);
+    min-width: var(--ee4v-size-4);
+    margin-left: var(--ee4v-space-xxs);
+    margin-right: var(--ee4v-space-xxs);
+    border-top-left-radius: var(--ee4v-radius-xs);
+    border-top-right-radius: var(--ee4v-radius-xs);
+    border-bottom-left-radius: var(--ee4v-radius-xs);
+    border-bottom-right-radius: var(--ee4v-radius-xs);
     border-top-width: 0;
     border-right-width: 0;
     border-bottom-width: 0;

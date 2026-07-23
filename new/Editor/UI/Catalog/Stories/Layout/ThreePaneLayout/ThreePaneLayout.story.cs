@@ -117,10 +117,10 @@ namespace Ee4v.UI
 
             var preview = CreatePreviewSection(parent);
             var surface = CreatePreviewSurface();
-            surface.style.paddingLeft = 0f;
-            surface.style.paddingRight = 0f;
-            surface.style.paddingTop = 0f;
-            surface.style.paddingBottom = 0f;
+            surface.style.paddingLeft = UiSpacingTokens.None;
+            surface.style.paddingRight = UiSpacingTokens.None;
+            surface.style.paddingTop = UiSpacingTokens.None;
+            surface.style.paddingBottom = UiSpacingTokens.None;
             surface.style.height = 360f;
 
             var layout = new ThreePaneLayout();
@@ -202,7 +202,7 @@ namespace Ee4v.UI
 
             var titleLabel = UiTextFactory.Create(title);
             titleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            titleLabel.style.marginBottom = 8f;
+            titleLabel.style.marginBottom = UiSpacingTokens.Medium;
             container.Add(titleLabel);
 
             var bodyLabel = UiTextFactory.Create(body);

@@ -1,16 +1,16 @@
 .ee4v-ui-selectable-item-grid .ee4v-ui-item-grid__row-slot {
-    border-top-width: 1px;
-    border-right-width: 1px;
-    border-bottom-width: 1px;
-    border-left-width: 1px;
+    border-top-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-left-width: var(--ee4v-border-hairline);
     border-top-color: var(--ee4v-color-transparent);
     border-right-color: var(--ee4v-color-transparent);
     border-bottom-color: var(--ee4v-color-transparent);
     border-left-color: var(--ee4v-color-transparent);
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
+    border-top-left-radius: var(--ee4v-radius-2xl);
+    border-top-right-radius: var(--ee4v-radius-2xl);
+    border-bottom-left-radius: var(--ee4v-radius-2xl);
+    border-bottom-right-radius: var(--ee4v-radius-2xl);
     overflow: hidden;
     transition-property: background-color, border-top-color, border-right-color, border-bottom-color, border-left-color;
     transition-duration: 0.12s;

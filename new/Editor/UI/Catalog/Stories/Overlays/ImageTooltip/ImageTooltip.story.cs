@@ -32,8 +32,8 @@ namespace Ee4v.UI
             var preview = CreatePreviewSection(parent);
             var surface = CreatePreviewSurface();
             surface.style.alignItems = Align.Center;
-            surface.style.paddingTop = 16f;
-            surface.style.paddingBottom = 16f;
+            surface.style.paddingTop = UiSpacingTokens.Xxl;
+            surface.style.paddingBottom = UiSpacingTokens.Xxl;
 
             var texture = CreateItemCardSampleThumbnail(240, 160);
             texture.hideFlags = HideFlags.HideAndDontSave;

@@ -1,16 +1,34 @@
 # UI 実装ルール
 
-## 色は共通トークンを使う
+## 見た目の共通値は design token を使う
 
-UI の配色は `Editor/UI/Foundation/ui-color-tokens.uss` に集約し、component の USS では raw な `#...` / `rgb(...)` / `rgba(...)` を直接指定しません。`common.uss` が color token USS を import するため、`.ee4v-ui` を root class に持つ既存 window では `var(--ee4v-color-...)` をそのまま利用できます。
+`Editor/UI/Foundation/ui-design-tokens.uss` が design token の入口です。`common.uss` がこのファイルを import するため、`.ee4v-ui` を root class に持つ window では各 token を利用できます。
+
+| 定義 | 用途 | C# |
+|---|---|---|
+| `ui-color-tokens.uss` | surface、text、border、state の意味を持つ色 | `UiColorTokens` |
+| `ui-spacing-tokens.uss` | padding、margin、gap | `UiSpacingTokens` |
+| `ui-shape-tokens.uss` | border 幅、角丸 | `UiBorderTokens` / `UiShapeTokens` |
+| `ui-typography-tokens.uss` | font size | `UiTypographyTokens` |
+| `ui-size-tokens.uss` | icon、control、compact geometry | `UiSizeTokens` |
+
+実装時は次を守ります。
+
+- USS では、共通 scale に存在する値を raw 値で再指定せず `var(--ee4v-...)` を使う
+- C# で同じ値が必要な場合は `UiDesignTokens.cs` の対応する定数を使う
+- control height など用途が決まった値は、primitive size より semantic alias を優先する
+- 新しい共通値を追加するときは USS と C# の両方を更新する
+- `UiDesignTokenTests` が USS / C# の値の一致と、標準値の直書き再混入を監査する
+
+画面固有の大きな window 幅、preview サイズ、内容から計算される可変寸法は component 固有の layout 値として残して構いません。既存名を残すための互換 alias は追加せず、利用側を新しい token へ移行します。
+
+### 色 token
 
 - 基本 palette は `DESIGN.md` の Unity Editor 2022.3 Dark theme 測定値に合わせる
 - surface / text / border / state など、用途を表す token を選ぶ
 - selection、focus、active tool の青を同じ token にまとめない
 - module 固有の状態色が必要な場合も component 内へ直書きせず、用途が分かる名前で token を追加する
-- C# / IMGUI から色が必要な場合は `UiColorTokens` を使い、USS 側の同名 token と値を揃える
-
-色以外の寸法、余白、角丸、typography は color token に含めません。
+- component の USS では raw な `#...` / `rgb(...)` / `rgba(...)` を直接指定しない
 
 ## `Label` を直接使わない
 

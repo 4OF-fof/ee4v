@@ -115,7 +115,7 @@ namespace Ee4v.UI
             {
                 text = "Clear"
             };
-            clearButton.style.marginLeft = 6f;
+            clearButton.style.marginLeft = UiSpacingTokens.Small;
             buttonRow.Add(clearButton);
 
             refresh = () =>

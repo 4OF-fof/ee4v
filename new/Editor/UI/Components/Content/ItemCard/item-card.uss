@@ -16,9 +16,9 @@
 
 .ee4v-ui-item-card__name {
     margin-top: 7px;
-    height: 18px;
-    min-height: 18px;
-    max-height: 18px;
+    height: var(--ee4v-size-18);
+    min-height: var(--ee4v-size-18);
+    max-height: var(--ee4v-size-18);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

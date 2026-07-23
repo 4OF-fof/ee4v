@@ -129,7 +129,7 @@ namespace Ee4v.AssetManager.UI
                 focusable = false
             };
             button.AddToClassList(IconButtonClassName);
-            button.Add(new Icon(IconState.FromBuiltinIcon(builtinIcon, size: 14f, tooltip: tooltip)));
+            button.Add(new Icon(IconState.FromBuiltinIcon(builtinIcon, size: UiSizeTokens.Size14, tooltip: tooltip)));
             return button;
         }
     }

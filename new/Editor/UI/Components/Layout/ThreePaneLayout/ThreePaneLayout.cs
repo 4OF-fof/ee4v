@@ -357,7 +357,7 @@ namespace Ee4v.UI
             button.RegisterCallback<PointerUpEvent>(_ => button.EnableInClassList(PaneToggleActiveClassName, false));
             button.RegisterCallback<PointerCaptureOutEvent>(_ => button.EnableInClassList(PaneToggleActiveClassName, false));
 
-            toggleIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: 10f));
+            toggleIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: UiSizeTokens.Size10));
             button.Add(toggleIcon);
             return button;
         }
@@ -478,7 +478,7 @@ namespace Ee4v.UI
                 return;
             }
 
-            icon.SetState(IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: 10f));
+            icon.SetState(IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: UiSizeTokens.Size10));
             icon.style.rotate = new Rotate(new Angle(rotationDegrees, AngleUnit.Degree));
         }
 

@@ -10,10 +10,10 @@
 
 .ee4v-asset-manager-panel__navigation-picker {
     flex-shrink: 0;
-    padding-left: 12px;
-    padding-right: 12px;
-    padding-top: 12px;
-    padding-bottom: 10px;
-    border-bottom-width: 1px;
+    padding-left: var(--ee4v-space-xl);
+    padding-right: var(--ee4v-space-xl);
+    padding-top: var(--ee4v-space-xl);
+    padding-bottom: var(--ee4v-space-lg);
+    border-bottom-width: var(--ee4v-border-hairline);
     border-bottom-color: var(--ee4v-color-border-subtle);
 }

@@ -2,6 +2,8 @@
 
 UI は Unity Editor 上で使う共通 UI コンポーネントと、その実装ルールをまとめる領域です。再利用可能な部品は `Editor/UI/Components` に置き、特定 feature に閉じる UI は各 module の `UI` 配下に置きます。
 
+`Editor/UI/Foundation` は component が共有する土台です。design token、typography、built-in icon の解決、共通 resource 読み込みをここへ集約し、module 固有の機能ロジックは置きません。USS は `ui-design-tokens.uss`、C# は `UiDesignTokens.cs` を共通値の入口にします。
+
 ## カテゴリ
 
 | category | 用途 | 例 |
@@ -35,6 +37,7 @@ UI は Unity Editor 上で使う共通 UI コンポーネントと、その実�
 必要に応じて以下も更新します。
 
 - `Editor/UI/Foundation/UiClassNames.cs`
+- `Editor/UI/Foundation/UiDesignTokens.cs` と対応する `ui-*-tokens.uss`
 - `Editor/UI/Foundation/Typography/TypographyStyleResolver.cs`
 - Catalog registrar
 - `Editor/UI/Localization/<locale>/*.jsonc`

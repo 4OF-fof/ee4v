@@ -26,10 +26,10 @@
 .ee4v-ui-item-grid__list .unity-collection-view__item,
 .ee4v-ui-item-grid__list .unity-list-view__item {
     background-color: var(--ee4v-color-transparent);
-    margin-left: 0;
-    margin-right: 0;
-    padding-left: 0;
-    padding-right: 0;
+    margin-left: var(--ee4v-space-none);
+    margin-right: var(--ee4v-space-none);
+    padding-left: var(--ee4v-space-none);
+    padding-right: var(--ee4v-space-none);
 }
 
 .ee4v-ui-item-grid__list .unity-collection-view__item:hover,
@@ -40,7 +40,7 @@
 .ee4v-ui-item-grid__row {
     flex-direction: row;
     align-items: flex-start;
-    padding-top: 4px;
+    padding-top: var(--ee4v-space-xs);
 }
 
 .ee4v-ui-item-grid__list .unity-scroller {

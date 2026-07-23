@@ -1,6 +1,6 @@
 /* Testing UI module. */
 .ee4v-ui-test-result-group__summary-alert {
-    margin-bottom: 8px;
+    margin-bottom: var(--ee4v-space-md);
 }
 
 .ee4v-ui-test-result-group__summary-alert .ee4v-ui-banner__message {
@@ -9,23 +9,23 @@
 }
 
 .ee4v-ui-test-result-group__run-button {
-    margin-left: 6px;
+    margin-left: var(--ee4v-space-sm);
     min-width: 72px;
-    height: 24px;
-    padding-left: 10px;
-    padding-right: 10px;
-    border-top-width: 1px;
-    border-right-width: 1px;
-    border-bottom-width: 1px;
-    border-left-width: 1px;
+    height: var(--ee4v-size-24);
+    padding-left: var(--ee4v-space-lg);
+    padding-right: var(--ee4v-space-lg);
+    border-top-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-left-width: var(--ee4v-border-hairline);
     border-top-color: var(--ee4v-color-border-default);
     border-right-color: var(--ee4v-color-border-default);
     border-bottom-color: var(--ee4v-color-border-default);
     border-left-color: var(--ee4v-color-border-default);
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
+    border-top-left-radius: var(--ee4v-radius-lg);
+    border-top-right-radius: var(--ee4v-radius-lg);
+    border-bottom-left-radius: var(--ee4v-radius-lg);
+    border-bottom-right-radius: var(--ee4v-radius-lg);
     background-color: var(--ee4v-color-control);
     color: var(--ee4v-color-text-primary);
     -unity-text-align: middle-center;
@@ -49,21 +49,21 @@
 }
 
 .ee4v-ui-test-result-group__cases-panel {
-    margin-top: 8px;
+    margin-top: var(--ee4v-space-md);
     flex-direction: column;
     align-self: stretch;
-    border-top-width: 1px;
-    border-right-width: 1px;
-    border-bottom-width: 1px;
-    border-left-width: 1px;
+    border-top-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-left-width: var(--ee4v-border-hairline);
     border-top-color: var(--ee4v-color-border-default);
     border-right-color: var(--ee4v-color-border-default);
     border-bottom-color: var(--ee4v-color-border-default);
     border-left-color: var(--ee4v-color-border-default);
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
+    border-top-left-radius: var(--ee4v-radius-lg);
+    border-top-right-radius: var(--ee4v-radius-lg);
+    border-bottom-left-radius: var(--ee4v-radius-lg);
+    border-bottom-right-radius: var(--ee4v-radius-lg);
     background-color: var(--ee4v-color-surface-subtle);
 }
 
@@ -71,9 +71,9 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    margin-top: 0;
-    padding-left: 10px;
-    padding-right: 10px;
+    margin-top: var(--ee4v-space-none);
+    padding-left: var(--ee4v-space-lg);
+    padding-right: var(--ee4v-space-lg);
     padding-top: 7px;
     padding-bottom: 7px;
     border-top-width: 0;
@@ -94,21 +94,21 @@
 }
 
 .ee4v-ui-test-result-group__cases-chevron {
-    width: 18px;
-    min-width: 18px;
-    max-width: 18px;
-    height: 18px;
-    margin-right: 8px;
+    width: var(--ee4v-size-18);
+    min-width: var(--ee4v-size-18);
+    max-width: var(--ee4v-size-18);
+    height: var(--ee4v-size-18);
+    margin-right: var(--ee4v-space-md);
     align-items: center;
     justify-content: center;
 }
 
 .ee4v-ui-test-result-group__cases-body {
-    margin-top: 0;
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-top: 10px;
-    padding-bottom: 10px;
+    margin-top: var(--ee4v-space-none);
+    padding-left: var(--ee4v-space-lg);
+    padding-right: var(--ee4v-space-lg);
+    padding-top: var(--ee4v-space-lg);
+    padding-bottom: var(--ee4v-space-lg);
     flex-direction: column;
     border-top-width: 0;
     border-right-width: 0;
@@ -123,23 +123,23 @@
 }
 
 .ee4v-ui-test-result-group--expanded .ee4v-ui-test-result-group__cases-toggle {
-    border-bottom-width: 1px;
+    border-bottom-width: var(--ee4v-border-hairline);
     border-bottom-color: var(--ee4v-color-border-default);
 }
 
 .ee4v-ui-test-result-group--expanded .ee4v-ui-test-result-group__cases-body {
-    margin-top: 0;
+    margin-top: var(--ee4v-space-none);
 }
 
 .ee4v-ui-test-result-group__case-card {
-    margin-top: 6px;
-    margin-bottom: 0;
+    margin-top: var(--ee4v-space-sm);
+    margin-bottom: var(--ee4v-space-none);
     background-color: var(--ee4v-color-surface-subtle);
     align-self: stretch;
 }
 
 .ee4v-ui-test-result-group__case-details-panel {
-    margin-top: 8px;
+    margin-top: var(--ee4v-space-md);
     flex-direction: column;
     align-self: stretch;
 }
@@ -148,11 +148,11 @@
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
-    margin-top: 0;
-    padding-left: 0;
-    padding-right: 0;
-    padding-top: 0;
-    padding-bottom: 0;
+    margin-top: var(--ee4v-space-none);
+    padding-left: var(--ee4v-space-none);
+    padding-right: var(--ee4v-space-none);
+    padding-top: var(--ee4v-space-none);
+    padding-bottom: var(--ee4v-space-none);
     border-top-width: 0;
     border-right-width: 0;
     border-bottom-width: 0;
@@ -167,22 +167,22 @@
 }
 
 .ee4v-ui-test-result-group__case-details-chevron {
-    width: 14px;
-    min-width: 14px;
-    max-width: 14px;
-    height: 14px;
-    margin-right: 4px;
+    width: var(--ee4v-size-14);
+    min-width: var(--ee4v-size-14);
+    max-width: var(--ee4v-size-14);
+    height: var(--ee4v-size-14);
+    margin-right: var(--ee4v-space-xs);
     align-items: center;
     justify-content: center;
 }
 
 .ee4v-ui-test-result-group__case-details-title {
-    font-size: 11px;
+    font-size: var(--ee4v-font-size-small);
     color: var(--ee4v-color-text-primary);
 }
 
 .ee4v-ui-test-result-group__case-details-body {
-    margin-top: 6px;
+    margin-top: var(--ee4v-space-sm);
     flex-direction: column;
     align-self: stretch;
 }

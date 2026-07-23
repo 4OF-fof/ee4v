@@ -5,8 +5,8 @@
 .ee4v-asset-manager-window__standalone-panel-body {
     flex-grow: 1;
     min-height: 0;
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-top: 10px;
-    padding-bottom: 10px;
+    padding-left: var(--ee4v-space-lg);
+    padding-right: var(--ee4v-space-lg);
+    padding-top: var(--ee4v-space-lg);
+    padding-bottom: var(--ee4v-space-lg);
 }

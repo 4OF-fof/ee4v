@@ -38,10 +38,10 @@ namespace Ee4v.AssetManager.UI
         {
             var preview = window.CreatePreviewSection(parent);
             var surface = window.CreatePreviewSurface();
-            surface.style.paddingLeft = 0f;
-            surface.style.paddingRight = 0f;
-            surface.style.paddingTop = 0f;
-            surface.style.paddingBottom = 0f;
+            surface.style.paddingLeft = UiSpacingTokens.None;
+            surface.style.paddingRight = UiSpacingTokens.None;
+            surface.style.paddingTop = UiSpacingTokens.None;
+            surface.style.paddingBottom = UiSpacingTokens.None;
             surface.style.height = 360f;
 
             var panel = new InfomationPanel();

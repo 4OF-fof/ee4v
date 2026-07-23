@@ -325,15 +325,15 @@ namespace Ee4v.UI
 
     internal static class ContextMenuLayout
     {
-        private const float ItemHeight = 26f;
-        private const float SeparatorHeight = 8f;
-        private const float MenuPaddingY = 4f;
-        private const float MenuPaddingX = 4f;
-        private const float MenuBorderWidth = 1f;
-        private const float ItemPaddingX = 10f;
+        private const float ItemHeight = UiSizeTokens.Size26;
+        private const float SeparatorHeight = UiSizeTokens.Size8;
+        private const float MenuPaddingY = UiSpacingTokens.Xs;
+        private const float MenuPaddingX = UiSpacingTokens.Xs;
+        private const float MenuBorderWidth = UiBorderTokens.Hairline;
+        private const float ItemPaddingX = UiSpacingTokens.Large;
         private const float MinimumWidth = 80f;
-        private const float ShortcutGap = 16f;
-        private const float TextMeasurementAllowance = 12f;
+        private const float ShortcutGap = UiSpacingTokens.Xxl;
+        private const float TextMeasurementAllowance = UiSpacingTokens.Xl;
 
         public static Vector2 CalculateSize(ContextMenuState state, float maximumWidth = float.PositiveInfinity)
         {

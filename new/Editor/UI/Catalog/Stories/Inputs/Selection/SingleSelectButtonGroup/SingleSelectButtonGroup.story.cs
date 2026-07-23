@@ -149,13 +149,13 @@ namespace Ee4v.UI
             switch (option)
             {
                 case SingleSelectButtonGroupStoryIconOption.Search:
-                    return IconState.FromBuiltinIcon(UiBuiltinIcon.Search, size: 12f);
+                    return IconState.FromBuiltinIcon(UiBuiltinIcon.Search, size: UiSizeTokens.Size12);
                 case SingleSelectButtonGroupStoryIconOption.Close:
-                    return IconState.FromBuiltinIcon(UiBuiltinIcon.Close, size: 12f);
+                    return IconState.FromBuiltinIcon(UiBuiltinIcon.Close, size: UiSizeTokens.Size12);
                 case SingleSelectButtonGroupStoryIconOption.DisclosureClosed:
-                    return IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: 12f);
+                    return IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: UiSizeTokens.Size12);
                 case SingleSelectButtonGroupStoryIconOption.DisclosureOpen:
-                    return IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureOpen, size: 12f);
+                    return IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureOpen, size: UiSizeTokens.Size12);
                 default:
                     return null;
             }

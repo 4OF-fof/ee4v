@@ -50,7 +50,7 @@ namespace Ee4v.UI
 
             _searchIcon = new Icon(IconState.FromBuiltinIcon(
                 UiBuiltinIcon.Search,
-                size: 14f,
+                size: UiSizeTokens.Size14,
                 tooltip: state.SearchTooltip));
             _searchIcon.AddToClassList(IconClassName);
 
@@ -82,7 +82,7 @@ namespace Ee4v.UI
             _clearButton.AddToClassList(ClearClassName);
             _clearIcon = new Icon(IconState.FromBuiltinIcon(
                 UiBuiltinIcon.Close,
-                size: 10f,
+                size: UiSizeTokens.Size10,
                 tooltip: state.ClearTooltip));
             _clearButton.Add(_clearIcon);
 
@@ -109,11 +109,11 @@ namespace Ee4v.UI
             state = state ?? new SearchFieldState();
             _searchIcon.SetState(IconState.FromBuiltinIcon(
                 UiBuiltinIcon.Search,
-                size: 14f,
+                size: UiSizeTokens.Size14,
                 tooltip: state.SearchTooltip));
             _clearIcon.SetState(IconState.FromBuiltinIcon(
                 UiBuiltinIcon.Close,
-                size: 10f,
+                size: UiSizeTokens.Size10,
                 tooltip: state.ClearTooltip));
             SetValueWithoutNotify(state.Value);
             SetPlaceholder(state.Placeholder);

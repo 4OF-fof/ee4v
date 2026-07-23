@@ -17,12 +17,12 @@ namespace Ee4v.AssetManager.UI
         private const string AssetInfoTabId = "asset-info";
         private const string FileTreeTabId = "file-tree";
         private const float PreviewMaxSize = 360f;
-        private const float SelectionModeBaseHeight = 24f;
-        private const float SelectionModeBaseMarginTop = 8f;
+        private const float SelectionModeBaseHeight = UiSizeTokens.ControlHeightDefault;
+        private const float SelectionModeBaseMarginTop = UiSpacingTokens.Medium;
         private const float SelectionModeScaleStartSize = 260f;
         private const float SelectionModeScaleEndSize = 360f;
         private const float SelectionModeMaxScale = 1.28f;
-        private const float HorizontalPadding = 24f;
+        private const float HorizontalPadding = UiSpacingTokens.Xxxl;
         private readonly VisualElement _preview;
         private readonly ImageStack _imageStack;
         private readonly VisualElement _selectionModeRow;
@@ -225,7 +225,7 @@ namespace Ee4v.AssetManager.UI
             _selectionModeRow.transform.scale = new Vector3(scale, scale, 1f);
             _selectionModeRow.style.minHeight = SelectionModeBaseHeight * scale;
             _selectionModeRow.style.marginTop = SelectionModeBaseMarginTop;
-            _selectionModeRow.style.marginBottom = 0f;
+            _selectionModeRow.style.marginBottom = UiSpacingTokens.None;
         }
 
         private float GetSelectionModeScale()

@@ -7,6 +7,9 @@
 - typography が必要な class 名だけを `UiClassNames` に追加したか
 - typography 不要な class を component 内に閉じたか
 - 必要なタイポグラフィ定義を `TypographyStyleResolver` に追加したか
+- 色、余白、角丸、font size、共通 control size を design token 経由にしたか
+- USS と C# の両方で使う token は `UiDesignTokenTests` の対応表へ追加したか
+- 画面固有の寸法を、再利用される共通 size token と混同していないか
 - 文言を `I18N.Get(...)` に寄せたか
 - `Editor/UI/Localization` を更新したか
 - built-in icon を直接引かず `Icon` 経由にしたか

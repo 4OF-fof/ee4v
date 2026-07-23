@@ -167,12 +167,12 @@ namespace Ee4v.UI
         internal const float MaximumImageWidth = 300f;
         internal const float MaximumImageHeight = 240f;
         private const float MinimumWidth = 140f;
-        private const float HorizontalPadding = 8f;
-        private const float VerticalPadding = 8f;
-        private const float FileNameHeight = 22f;
-        private const float ImageToFileNameGap = 6f;
-        private const float PointerOffset = 16f;
-        private const float OppositeSideGap = 12f;
+        private const float HorizontalPadding = UiSpacingTokens.Medium;
+        private const float VerticalPadding = UiSpacingTokens.Medium;
+        private const float FileNameHeight = UiSizeTokens.ControlHeightSmall;
+        private const float ImageToFileNameGap = UiSpacingTokens.Small;
+        private const float PointerOffset = UiSpacingTokens.Xxl;
+        private const float OppositeSideGap = UiSpacingTokens.Xl;
 
         public static Vector2 CalculateImageSize(Texture texture)
         {

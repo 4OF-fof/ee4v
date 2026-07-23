@@ -1,18 +1,18 @@
 .ee4v-ui-banner {
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-top: 8px;
-    padding-bottom: 8px;
-    border-left-width: 3px;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
+    padding-left: var(--ee4v-space-lg);
+    padding-right: var(--ee4v-space-lg);
+    padding-top: var(--ee4v-space-md);
+    padding-bottom: var(--ee4v-space-md);
+    border-left-width: var(--ee4v-border-strong);
+    border-top-left-radius: var(--ee4v-radius-lg);
+    border-top-right-radius: var(--ee4v-radius-lg);
+    border-bottom-left-radius: var(--ee4v-radius-lg);
+    border-bottom-right-radius: var(--ee4v-radius-lg);
     background-color: var(--ee4v-color-surface-subtle);
 }
 
 .ee4v-ui-banner__title {
-    margin-bottom: 2px;
+    margin-bottom: var(--ee4v-space-xxs);
 }
 
 .ee4v-ui-banner__message {

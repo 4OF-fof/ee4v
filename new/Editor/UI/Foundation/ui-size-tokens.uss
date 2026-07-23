@@ -1,0 +1,26 @@
+:root {
+    /* Primitive geometry scale used by icons, controls and compact editor chrome. */
+    --ee4v-size-1: 1px;
+    --ee4v-size-2: 2px;
+    --ee4v-size-4: 4px;
+    --ee4v-size-8: 8px;
+    --ee4v-size-9: 9px;
+    --ee4v-size-10: 10px;
+    --ee4v-size-11: 11px;
+    --ee4v-size-12: 12px;
+    --ee4v-size-14: 14px;
+    --ee4v-size-16: 16px;
+    --ee4v-size-18: 18px;
+    --ee4v-size-20: 20px;
+    --ee4v-size-22: 22px;
+    --ee4v-size-24: 24px;
+    --ee4v-size-26: 26px;
+    --ee4v-size-28: 28px;
+    --ee4v-size-31: 31px;
+
+    /* Semantic aliases for commonly reused control geometry. */
+    --ee4v-control-height-compact: var(--ee4v-size-20);
+    --ee4v-control-height-small: var(--ee4v-size-22);
+    --ee4v-control-height-default: var(--ee4v-size-24);
+    --ee4v-control-height-toolbar: var(--ee4v-size-28);
+}

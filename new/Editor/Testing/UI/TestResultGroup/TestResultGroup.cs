@@ -140,7 +140,7 @@ namespace Ee4v.UI
             _casesToggle = new Button(ToggleExpanded);
             _casesToggle.AddToClassList(CasesToggleClassName);
 
-            _casesChevron = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: 12f));
+            _casesChevron = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: UiSizeTokens.Size12));
             _casesChevron.AddToClassList(CasesChevronClassName);
             _casesTitle = UiTextFactory.Create(string.Empty, UiClassNames.TestResultGroupCasesTitle);
             _casesMeta = UiTextFactory.Create(string.Empty, UiClassNames.TestResultGroupCasesMeta);
@@ -202,7 +202,7 @@ namespace Ee4v.UI
             EnableInClassList(ExpandedClassName, expanded);
             _casesChevron.SetState(IconState.FromBuiltinIcon(
                 expanded ? UiBuiltinIcon.DisclosureOpen : UiBuiltinIcon.DisclosureClosed,
-                size: 12f));
+                size: UiSizeTokens.Size12));
             _casesBody.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             RefreshLayout();
 
@@ -242,7 +242,7 @@ namespace Ee4v.UI
             var detailsToggle = new Button();
             detailsToggle.AddToClassList(CaseDetailsToggleClassName);
 
-            var chevron = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: 10f));
+            var chevron = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: UiSizeTokens.Size10));
             chevron.AddToClassList(CaseDetailsChevronClassName);
 
             var title = UiTextFactory.Create(testCase.DetailsToggleText, CaseDetailsTitleClassName);
@@ -266,7 +266,7 @@ namespace Ee4v.UI
                 detailsBody.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
                 chevron.SetState(IconState.FromBuiltinIcon(
                     expanded ? UiBuiltinIcon.DisclosureOpen : UiBuiltinIcon.DisclosureClosed,
-                    size: 10f));
+                    size: UiSizeTokens.Size10));
             };
 
             detailsPanel.Add(detailsToggle);

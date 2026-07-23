@@ -1,0 +1,15 @@
+:root {
+    /* Primitive spacing scale. Prefer semantic component aliases when one exists. */
+    --ee4v-space-none: 0;
+    --ee4v-space-xxs: 2px;
+    --ee4v-space-xs: 4px;
+    --ee4v-space-sm: 6px;
+    --ee4v-space-md: 8px;
+    --ee4v-space-lg: 10px;
+    --ee4v-space-xl: 12px;
+    --ee4v-space-2xl: 16px;
+    --ee4v-space-3xl: 24px;
+    --ee4v-space-4xl: 28px;
+    --ee4v-space-negative-xxs: -2px;
+    --ee4v-space-negative-xs: -4px;
+}

@@ -66,7 +66,9 @@ namespace Ee4v.UI
         private static void ShowWindow()
         {
             var window = GetWindow<CatalogWindow>();
-            window.minSize = new Vector2(UiTokens.WindowMinWidth, UiTokens.WindowMinHeight);
+            window.minSize = new Vector2(
+                UiSizeTokens.WindowMinWidth,
+                UiSizeTokens.WindowMinHeight);
             window.Show();
         }
 

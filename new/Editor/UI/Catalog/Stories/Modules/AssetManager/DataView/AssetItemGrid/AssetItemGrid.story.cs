@@ -82,10 +82,10 @@ namespace Ee4v.AssetManager.UI
 
             var preview = window.CreatePreviewSection(parent);
             var surface = window.CreatePreviewSurface();
-            surface.style.paddingLeft = 12f;
-            surface.style.paddingRight = 12f;
-            surface.style.paddingTop = 12f;
-            surface.style.paddingBottom = 12f;
+            surface.style.paddingLeft = UiSpacingTokens.Xl;
+            surface.style.paddingRight = UiSpacingTokens.Xl;
+            surface.style.paddingTop = UiSpacingTokens.Xl;
+            surface.style.paddingBottom = UiSpacingTokens.Xl;
             surface.style.height = 420f;
 
             var grid = new AssetItemGrid();

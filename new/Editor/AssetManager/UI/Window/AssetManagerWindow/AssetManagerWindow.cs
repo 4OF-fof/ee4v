@@ -37,14 +37,18 @@ namespace Ee4v.AssetManager.UI
         {
             var window = GetWindow<AssetManagerWindow>();
             window.titleContent = new GUIContent(WindowTitle);
-            window.minSize = new Vector2(UiTokens.WindowMinWidth, UiTokens.WindowMinHeight);
+            window.minSize = new Vector2(
+                UiSizeTokens.WindowMinWidth,
+                UiSizeTokens.WindowMinHeight);
             window.Show();
         }
 
         private void OnEnable()
         {
             titleContent = new GUIContent(WindowTitle);
-            minSize = new Vector2(UiTokens.WindowMinWidth, UiTokens.WindowMinHeight);
+            minSize = new Vector2(
+                UiSizeTokens.WindowMinWidth,
+                UiSizeTokens.WindowMinHeight);
         }
 
         private void OnDisable()

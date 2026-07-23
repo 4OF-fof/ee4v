@@ -69,7 +69,7 @@ namespace Ee4v.AssetManager.UI
                         I18N.Get("assetManager.navigation.allAssets.row.viewMode"),
                         I18N.Get("assetManager.navigation.allAssets.row.bulkActions")
                     },
-                    IconState.FromBuiltinIcon(UiBuiltinIcon.Search, size: 12f)),
+                    IconState.FromBuiltinIcon(UiBuiltinIcon.Search, size: UiSizeTokens.Size12)),
                 new AssetManagerViewItemState(
                     "favorites",
                     I18N.Get("assetManager.navigation.favorites.label"),
@@ -83,7 +83,7 @@ namespace Ee4v.AssetManager.UI
                         I18N.Get("assetManager.navigation.favorites.row.recent"),
                         I18N.Get("assetManager.navigation.favorites.row.preview")
                     },
-                    IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureOpen, size: 12f)),
+                    IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureOpen, size: UiSizeTokens.Size12)),
                 new AssetManagerViewItemState(
                     "booth-library",
                     I18N.Get("assetManager.navigation.boothLibrary.label"),
@@ -97,7 +97,7 @@ namespace Ee4v.AssetManager.UI
                         I18N.Get("assetManager.navigation.boothLibrary.row.sync"),
                         I18N.Get("assetManager.navigation.boothLibrary.row.download")
                     },
-                    IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: 12f)),
+                    IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: UiSizeTokens.Size12)),
                 new AssetManagerViewItemState(
                     "packages",
                     I18N.Get("assetManager.navigation.packages.label"),

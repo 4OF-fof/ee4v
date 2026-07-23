@@ -128,7 +128,7 @@ namespace Ee4v.UI
 
             _closeButton = new Button(RequestDismiss);
             _closeButton.AddToClassList(CloseButtonClassName);
-            _closeIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.Close, size: 10f, tooltip: "Dismiss"));
+            _closeIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.Close, size: UiSizeTokens.Size10, tooltip: "Dismiss"));
             _closeButton.Add(_closeIcon);
             header.Add(_closeButton);
 

@@ -72,10 +72,10 @@ namespace Ee4v.UI
 
             var preview = CreatePreviewSection(parent);
             var surface = CreatePreviewSurface();
-            surface.style.paddingLeft = 12f;
-            surface.style.paddingRight = 12f;
-            surface.style.paddingTop = 12f;
-            surface.style.paddingBottom = 12f;
+            surface.style.paddingLeft = UiSpacingTokens.Xl;
+            surface.style.paddingRight = UiSpacingTokens.Xl;
+            surface.style.paddingTop = UiSpacingTokens.Xl;
+            surface.style.paddingBottom = UiSpacingTokens.Xl;
             surface.style.height = 420f;
 
             var thumbnail = CreateItemCardSampleThumbnail(132, 132);

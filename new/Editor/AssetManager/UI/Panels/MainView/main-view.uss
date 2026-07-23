@@ -10,10 +10,10 @@
 }
 
 .ee4v-asset-manager-panel__main-status {
-    margin-left: 12px;
-    margin-right: 12px;
-    margin-top: 12px;
-    margin-bottom: 8px;
+    margin-left: var(--ee4v-space-xl);
+    margin-right: var(--ee4v-space-xl);
+    margin-top: var(--ee4v-space-xl);
+    margin-bottom: var(--ee4v-space-md);
     color: var(--ee4v-color-text-soft);
 }
 
@@ -21,12 +21,12 @@
     flex-grow: 1;
     align-items: center;
     justify-content: center;
-    padding: 24px;
+    padding: var(--ee4v-space-3xl);
 }
 
 .ee4v-asset-manager-file-detail__name {
     color: var(--ee4v-color-text-primary);
-    font-size: 20px;
+    font-size: var(--ee4v-font-size-display);
     -unity-font-style: bold;
     -unity-text-align: middle-center;
 }

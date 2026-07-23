@@ -1,4 +1,4 @@
-@import url("../Foundation/ui-color-tokens.uss");
+@import url("../Foundation/ui-design-tokens.uss");
 
 .ee4v-ui {
     flex-grow: 1;
@@ -16,16 +16,16 @@
 }
 
 .ee4v-ui-status {
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-top: 4px;
-    padding-bottom: 4px;
-    min-height: 20px;
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
-    font-size: 11px;
+    padding-left: var(--ee4v-space-lg);
+    padding-right: var(--ee4v-space-lg);
+    padding-top: var(--ee4v-space-xs);
+    padding-bottom: var(--ee4v-space-xs);
+    min-height: var(--ee4v-size-20);
+    border-top-left-radius: var(--ee4v-radius-3xl);
+    border-top-right-radius: var(--ee4v-radius-3xl);
+    border-bottom-left-radius: var(--ee4v-radius-3xl);
+    border-bottom-right-radius: var(--ee4v-radius-3xl);
+    font-size: var(--ee4v-font-size-small);
     background-color: var(--ee4v-color-status-idle);
     white-space: nowrap;
     -unity-text-align: middle-center;

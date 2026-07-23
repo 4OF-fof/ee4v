@@ -34,10 +34,10 @@ namespace Ee4v.UI
             var surface = CreatePreviewSurface();
             surface.style.flexDirection = FlexDirection.Row;
             surface.style.alignItems = Align.FlexStart;
-            surface.style.paddingLeft = 12f;
-            surface.style.paddingRight = 12f;
-            surface.style.paddingTop = 12f;
-            surface.style.paddingBottom = 12f;
+            surface.style.paddingLeft = UiSpacingTokens.Xl;
+            surface.style.paddingRight = UiSpacingTokens.Xl;
+            surface.style.paddingTop = UiSpacingTokens.Xl;
+            surface.style.paddingBottom = UiSpacingTokens.Xl;
 
             var states = CreateImageStackSampleStates();
             for (var count = 1; count <= 3; count++)
@@ -45,7 +45,7 @@ namespace Ee4v.UI
                 var stack = new ImageStack();
                 stack.SetSize(150f);
                 stack.SetStates(CreateImageStackStoryStates(states, count));
-                stack.style.marginRight = 16f;
+                stack.style.marginRight = UiSpacingTokens.Xxl;
                 surface.Add(stack);
             }
 
