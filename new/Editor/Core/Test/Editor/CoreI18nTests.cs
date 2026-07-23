@@ -54,23 +54,6 @@ namespace Ee4v.Core.Tests
 
         [Test]
         [FeatureTestCase(
-            "SettingApi.Get は欠けた cached value を復元する",
-            "テスト reset 後のように定義と loaded scope だけが残り cached value が欠けた状態でも、SettingApi.Get が既定値を復元することを確認します。",
-            order: 2)]
-        public void SettingApi_Get_RecoversMissingCachedValue()
-        {
-            Ee4vCoreTestReset.RecoverEditorState();
-            SettingApi.Get(CoreLocalizationDefinitions.Language);
-
-            ReflectionReset.ClearCollectionField(typeof(SettingApi), "CachedValues");
-
-            var value = SettingApi.Get(CoreLocalizationDefinitions.Language);
-
-            Assert.That(value, Is.EqualTo("ja-JP"));
-        }
-
-        [Test]
-        [FeatureTestCase(
             "設定 field は UI Toolkit で値変更を通知する",
             "標準の設定 field が IMGUI ではなく UI Toolkit の field を生成し、変更値を callback へ通知することを確認します。",
             order: 3)]
@@ -114,7 +97,11 @@ namespace Ee4v.Core.Tests
             Ee4vCoreTestReset.RecoverEditorState();
             var root = new VisualElement();
 
-            SettingsUiRenderer.BuildScope(root, SettingScope.User, string.Empty);
+            SettingsUiRenderer.BuildScope(
+                root,
+                CoreSettings.Current,
+                SettingScope.User,
+                string.Empty);
 
             Assert.That(root.childCount, Is.GreaterThan(0));
             Assert.That(root.Query<IMGUIContainer>().ToList(), Is.Empty);

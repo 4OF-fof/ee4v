@@ -7,17 +7,20 @@ namespace Ee4v.AssetManager.Composition
 {
     internal sealed class AssetManagerUiPreferencesAdapter : IAssetManagerUiPreferences
     {
-        internal AssetManagerUiPreferencesAdapter()
+        private readonly ISettingsService _settings;
+
+        internal AssetManagerUiPreferencesAdapter(ISettingsService settings)
         {
-            SettingApi.Changed += OnSettingChanged;
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _settings.Changed += OnSettingChanged;
         }
 
         public event Action<AssetManagerUiPreference> Changed;
 
         public int ItemsPerRow
         {
-            get { return SettingApi.Get(AssetManagerDefinitions.ItemGridItemsPerRow); }
-            set { SettingApi.Set(AssetManagerDefinitions.ItemGridItemsPerRow, value); }
+            get { return _settings.Get(AssetManagerDefinitions.ItemGridItemsPerRow); }
+            set { _settings.Set(AssetManagerDefinitions.ItemGridItemsPerRow, value); }
         }
 
         public int MinimumItemsPerRow =>
@@ -31,30 +34,30 @@ namespace Ee4v.AssetManager.Composition
                 20,
                 Math.Max(
                     1,
-                    SettingApi.Get(AssetManagerDefinitions.HistoryOverlayMaximumItems)));
+                    _settings.Get(AssetManagerDefinitions.HistoryOverlayMaximumItems)));
 
         public bool ShowFileTreeImageTooltip =>
-            SettingApi.Get(AssetManagerDefinitions.ShowFileTreeImageTooltip);
+            _settings.Get(AssetManagerDefinitions.ShowFileTreeImageTooltip);
 
         public void Preload()
         {
-            SettingApi.Preload(SettingScope.User);
+            _settings.Preload(SettingScope.User);
         }
 
-        private void OnSettingChanged(SettingDefinitionBase definition, object value)
+        private void OnSettingChanged(object sender, SettingChangedEventArgs args)
         {
-            if (ReferenceEquals(definition, AssetManagerDefinitions.ItemGridItemsPerRow))
+            if (ReferenceEquals(args.Definition, AssetManagerDefinitions.ItemGridItemsPerRow))
             {
                 Changed?.Invoke(AssetManagerUiPreference.ItemsPerRow);
             }
             else if (ReferenceEquals(
-                         definition,
+                         args.Definition,
                          AssetManagerDefinitions.HistoryOverlayMaximumItems))
             {
                 Changed?.Invoke(AssetManagerUiPreference.HistoryOverlayMaximumItems);
             }
             else if (ReferenceEquals(
-                         definition,
+                         args.Definition,
                          AssetManagerDefinitions.ShowFileTreeImageTooltip))
             {
                 Changed?.Invoke(AssetManagerUiPreference.ShowFileTreeImageTooltip);

@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using Ee4v.Core.Settings;
 using Ee4v.Core.Testing;
 using NUnit.Framework;
@@ -28,10 +27,11 @@ namespace Ee4v.Phase1.Tests
             order: 20)]
         public void Phase1Definitions_RegisterAll_RegistersExpectedSettings()
         {
-            Phase1Definitions.RegisterAll();
+            var settings = CoreSettings.Current;
+            Phase1Definitions.RegisterAll(settings);
 
-            var definitions = SettingApi.GetDefinitions(SettingScope.User);
-            var projectDefinitions = SettingApi.GetDefinitions(SettingScope.Project);
+            var definitions = settings.GetDefinitions(SettingScope.User);
+            var projectDefinitions = settings.GetDefinitions(SettingScope.Project);
 
             Assert.That(definitions.Count, Is.EqualTo(3));
             Assert.That(projectDefinitions.Count, Is.EqualTo(5));
@@ -40,15 +40,16 @@ namespace Ee4v.Phase1.Tests
         [Test]
         [FeatureTestCase(
             "Phase1 のデフォルト値を取得できる",
-            "Phase1 の代表的な設定値を SettingApi 経由で既定値として取得できることを確認します。",
+            "Phase1 の代表的な設定値をISettingsService経由で既定値として取得できることを確認します。",
             order: 21)]
-        public void Phase1Definitions_DefaultValues_AreAvailableThroughSettingApi()
+        public void Phase1Definitions_DefaultValues_AreAvailableThroughSettingsService()
         {
-            Phase1Definitions.RegisterAll();
+            var settings = CoreSettings.Current;
+            Phase1Definitions.RegisterAll(settings);
 
-            Assert.That(SettingApi.Get(Phase1Definitions.EnableHierarchyItemStub), Is.True);
-            Assert.That(SettingApi.Get(Phase1Definitions.HierarchyBadgeText), Is.EqualTo("stub"));
-            Assert.That(SettingApi.Get(Phase1Definitions.ToolbarButtonWidth), Is.EqualTo(96));
+            Assert.That(settings.Get(Phase1Definitions.EnableHierarchyItemStub), Is.True);
+            Assert.That(settings.Get(Phase1Definitions.HierarchyBadgeText), Is.EqualTo("stub"));
+            Assert.That(settings.Get(Phase1Definitions.ToolbarButtonWidth), Is.EqualTo(96));
         }
 
         [Test]
@@ -58,10 +59,11 @@ namespace Ee4v.Phase1.Tests
             order: 22)]
         public void Phase1Definitions_InvalidProjectValue_ThrowsValidationError()
         {
-            Phase1Definitions.RegisterAll();
+            var settings = CoreSettings.Current;
+            Phase1Definitions.RegisterAll(settings);
 
             var exception = Assert.Throws<InvalidOperationException>(() =>
-                SettingApi.Set(Phase1Definitions.HierarchyBadgeText, string.Empty, saveImmediately: false));
+                settings.Set(Phase1Definitions.HierarchyBadgeText, string.Empty, saveImmediately: false));
 
             Assert.That(exception.Message, Is.Not.Empty);
         }
@@ -74,13 +76,16 @@ namespace Ee4v.Phase1.Tests
         public void Ee4vPhase1TestReset_AllowsBootstrapToRunAgain()
         {
             Phase1Bootstrap.EnsureInitialized();
-            Assert.That(((IDictionary)ReflectionReset.GetStaticField(typeof(SettingApi), "Definitions")).Count, Is.GreaterThan(0));
+            Assert.That(
+                CoreSettings.Current.GetDefinitions(SettingScope.User).Count,
+                Is.GreaterThan(0));
 
             Ee4vPhase1TestReset.ResetAll();
 
-            Assert.That(((IDictionary)ReflectionReset.GetStaticField(typeof(SettingApi), "Definitions")).Count, Is.EqualTo(0));
+            Assert.That(
+                CoreSettings.Current.GetDefinitions(SettingScope.User).Count,
+                Is.EqualTo(0));
             Assert.That((bool)ReflectionReset.GetStaticField(typeof(Phase1Bootstrap), "_initialized"), Is.False);
-            Assert.That((bool)ReflectionReset.GetStaticField(typeof(Phase1Definitions), "_registered"), Is.False);
         }
     }
 }

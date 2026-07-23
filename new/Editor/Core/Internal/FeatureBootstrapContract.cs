@@ -6,6 +6,7 @@ namespace Ee4v.Core.Internal
     {
         public static void Initialize(
             string featureScope,
+            Type definitionsType,
             Action registerDefinitions,
             Action registerFeature)
         {
@@ -19,10 +20,9 @@ namespace Ee4v.Core.Internal
                 throw new ArgumentNullException(nameof(registerDefinitions));
             }
 
-            var definitionsType = registerDefinitions.Method.DeclaringType;
             if (definitionsType == null)
             {
-                throw new InvalidOperationException("Definitions type could not be resolved from registerDefinitions.");
+                throw new ArgumentNullException(nameof(definitionsType));
             }
 
             var expectedTypeName = featureScope + "Definitions";

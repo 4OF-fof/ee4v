@@ -3,6 +3,7 @@
   "rootNamespace": "Ee4v",
   "references": [
     "Ee4v.AssetManager.Contracts.Editor",
+    "Ee4v.Core.Contracts.Editor",
     "Ee4v.Core.Editor",
     "Ee4v.Core.Testing.Editor",
     "Ee4v.Core.UI.Testing.Editor",

@@ -2,7 +2,9 @@
   "name": "Ee4v.Phase1.Editor",
   "rootNamespace": "Ee4v.Phase1",
   "references": [
+    "Ee4v.Core.Contracts.Editor",
     "Ee4v.Core.Editor",
+    "Ee4v.Core.Unity.Editor",
     "Ee4v.UI.Editor"
   ],
   "includePlatforms": [

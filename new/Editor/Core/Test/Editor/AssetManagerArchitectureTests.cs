@@ -18,6 +18,8 @@ namespace Ee4v.Core.Tests
             "SQLite",
             "System.IO",
             "System.Net",
+            "CoreSettings",
+            "ISettingsService",
             "SettingApi",
             "I18N"
         };
@@ -70,7 +72,9 @@ namespace Ee4v.Core.Tests
                     "Ee4v.AssetManager.Contracts.Editor",
                     "Ee4v.AssetManager.Infrastructure.Editor",
                     "Ee4v.AssetManager.UI.Editor",
+                    "Ee4v.Core.Contracts.Editor",
                     "Ee4v.Core.Editor",
+                    "Ee4v.Core.Unity.Editor",
                     "Ee4v.UI.Editor"
                 },
                 requireNoEngineReferences: false);
@@ -149,6 +153,8 @@ namespace Ee4v.Core.Tests
                 "Ee4v.AssetManager.Infrastructure",
                 "SQLite",
                 "Datasources",
+                "CoreSettings",
+                "ISettingsService",
                 "SettingApi",
                 "Task.Run(",
                 "EditorApplication.delayCall"

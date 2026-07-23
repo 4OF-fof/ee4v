@@ -23,12 +23,20 @@ namespace Ee4v.Core.I18n
 
         public static string CurrentLanguage
         {
-            get { return SettingApi.Get(CoreLocalizationDefinitions.Language); }
+            get
+            {
+                CoreLocalizationDefinitions.RegisterAll(CoreSettings.Current);
+                return CoreSettings.Current.Get(CoreLocalizationDefinitions.Language);
+            }
         }
 
         public static string FallbackLanguage
         {
-            get { return SettingApi.Get(CoreLocalizationDefinitions.FallbackLanguage); }
+            get
+            {
+                CoreLocalizationDefinitions.RegisterAll(CoreSettings.Current);
+                return CoreSettings.Current.Get(CoreLocalizationDefinitions.FallbackLanguage);
+            }
         }
 
         public static string Get(string key, [CallerFilePath] string callerFilePath = null)

@@ -19,12 +19,16 @@ namespace Ee4v.AssetManager.Composition
         private const string SessionKey = "ee4v.assetManager.startupSync.started";
         private static bool _scheduled;
         private static AssetManagerService _assetManager;
+        private static ISettingsService _settings;
 
         internal static event Action<IReadOnlyList<AssetSyncConflict>, Action<bool>> ConfirmationRequested;
 
-        internal static void EnsureInitialized(AssetManagerService assetManager)
+        internal static void EnsureInitialized(
+            AssetManagerService assetManager,
+            ISettingsService settings)
         {
             _assetManager = assetManager ?? throw new ArgumentNullException(nameof(assetManager));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             if (_scheduled)
             {
                 return;
@@ -44,12 +48,12 @@ namespace Ee4v.AssetManager.Composition
             }
 
             SessionState.SetBool(SessionKey, true);
-            SettingApi.Preload(SettingScope.User);
+            _settings.Preload(SettingScope.User);
 
-            var blmPath = ResolvePath(SettingApi.Get(AssetManagerDefinitions.BlmDatabasePath));
-            var eaglePath = ResolvePath(SettingApi.Get(AssetManagerDefinitions.EagleLibraryPath));
-            var checkBlm = SettingApi.Get(AssetManagerDefinitions.AutoSyncBlmOnStartup) && File.Exists(blmPath);
-            var checkEagle = SettingApi.Get(AssetManagerDefinitions.AutoSyncEagleOnStartup) && Directory.Exists(eaglePath);
+            var blmPath = ResolvePath(_settings.Get(AssetManagerDefinitions.BlmDatabasePath));
+            var eaglePath = ResolvePath(_settings.Get(AssetManagerDefinitions.EagleLibraryPath));
+            var checkBlm = _settings.Get(AssetManagerDefinitions.AutoSyncBlmOnStartup) && File.Exists(blmPath);
+            var checkEagle = _settings.Get(AssetManagerDefinitions.AutoSyncEagleOnStartup) && Directory.Exists(eaglePath);
             if (!checkBlm && !checkEagle)
             {
                 return;

@@ -54,7 +54,7 @@ Injector 表示に影響する setting を変えたら、該当 channel に対�
 - `HierarchyItem` が変わるなら `HierarchyItem`
 - `Project` 側だけなら `ProjectItem` / `ProjectToolbar`
 
-setting 変更監視は `SettingApi.Changed` に乗せます。
+setting 変更監視は注入された `ISettingsService.Changed` に乗せます。`CoreSettings.Current` の取得はfeatureのCompositionに限定します。
 
 ## ルール
 

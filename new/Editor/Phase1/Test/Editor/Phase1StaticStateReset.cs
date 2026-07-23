@@ -13,14 +13,14 @@ namespace Ee4v.Phase1.Tests
         public static void ResetAll()
         {
             ResetCore();
-            ReflectionReset.SetStaticField(typeof(Phase1Definitions), "_registered", false);
             ReflectionReset.SetStaticField(typeof(Phase1Bootstrap), "_initialized", false);
             ReflectionReset.SetStaticField(typeof(Phase1StubBootstrap), "_registered", false);
+            ReflectionReset.SetStaticField(typeof(Phase1StubBootstrap), "_settings", null);
         }
 
         public static void RecoverEditorState()
         {
-            InvokeConventionMethod("Ee4v.Core.I18n.CoreLocalizationDefinitions", "RegisterAll");
+            CoreLocalizationDefinitions.RegisterAll(CoreSettings.Current);
 
             foreach (var type in TypeCache.GetTypesWithAttribute<InitializeOnLoadAttribute>())
             {
@@ -44,16 +44,7 @@ namespace Ee4v.Phase1.Tests
 
         private static void ResetCore()
         {
-            ReflectionReset.ClearCollectionField(typeof(SettingApi), "Definitions");
-            ReflectionReset.ClearCollectionField(typeof(SettingApi), "CachedValues");
-            ReflectionReset.ClearCollectionField(typeof(SettingApi), "LoadedScopes");
-            ReflectionReset.ClearCollectionField(typeof(SettingApi), "DirtyScopes");
-            ReflectionReset.SetStaticField(typeof(SettingApi), "Changed", null);
-
-            var stores = (System.Collections.IDictionary)ReflectionReset.GetStaticField(typeof(SettingApi), "Stores");
-            stores.Clear();
-            stores.Add(SettingScope.User, new EditorPrefsSettingStore());
-            stores.Add(SettingScope.Project, new ProjectFileSettingStore());
+            CoreSettings.ResetForTests();
 
             ReflectionReset.ClearCollectionField(typeof(InjectorApi), "Registrations");
             ReflectionReset.ClearCollectionField(typeof(InjectorApi), "ProjectHostVersions");
@@ -73,27 +64,6 @@ namespace Ee4v.Phase1.Tests
             ReflectionReset.ClearCollectionField(typeof(I18N), "WarnedDuplicateKeys");
             ReflectionReset.SetStaticField(typeof(I18N), "_catalogSnapshot", null);
 
-            ReflectionReset.SetStaticField(typeof(CoreLocalizationDefinitions), "_registered", false);
-        }
-
-        private static void InvokeConventionMethod(string fullTypeName, string methodName)
-        {
-            var type = typeof(SettingApi).Assembly.GetType(fullTypeName);
-            if (type == null)
-            {
-                return;
-            }
-
-            var method = type.GetMethod(
-                methodName,
-                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
-                null,
-                Type.EmptyTypes,
-                null);
-            if (method != null)
-            {
-                method.Invoke(null, null);
-            }
         }
     }
 

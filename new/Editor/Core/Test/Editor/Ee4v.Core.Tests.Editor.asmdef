@@ -2,8 +2,11 @@
   "name": "Ee4v.Core.Tests.Editor",
   "rootNamespace": "Ee4v.Core.Tests",
   "references": [
+    "Ee4v.Core.Contracts.Editor",
     "Ee4v.Core.Editor",
+    "Ee4v.Core.Services.Editor",
     "Ee4v.Core.Testing.Editor",
+    "Ee4v.Core.Unity.Editor",
     "Ee4v.UI.Editor"
   ],
   "includePlatforms": [

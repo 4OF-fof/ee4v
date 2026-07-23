@@ -101,7 +101,7 @@ namespace Ee4v.Core.Testing.StaticAnalysis
             new Regex(@"I18N\.(Get|TryGet)\s*\(\s*""([^""]+)""", RegexOptions.Compiled);
         private static readonly Regex SettingDefinitionRegex =
             new Regex(
-                @"new\s+SettingDefinition<[^>]+>\s*\(\s*""[^""]+""\s*,\s*[^,]+,\s*""([^""]+)""\s*,\s*""([^""]+)""\s*,\s*""([^""]+)""",
+                @"new\s+SettingDefinition<[^>]+>\s*\(\s*""[^""]+""\s*,\s*[^,]+,\s*""([^""]+)""\s*,\s*""([^""]+)""\s*,\s*""([^""]+)""\s*,\s*""([^""]+)""",
                 RegexOptions.Compiled | RegexOptions.Singleline);
 
         public static LocalizationStaticAuditReport Analyze()
@@ -233,15 +233,16 @@ namespace Ee4v.Core.Testing.StaticAnalysis
                 var definitionMatches = SettingDefinitionRegex.Matches(content);
                 foreach (Match match in definitionMatches)
                 {
-                    if (!match.Success || match.Groups.Count < 4)
+                    if (!match.Success || match.Groups.Count < 5)
                     {
                         continue;
                     }
 
                     var lineNumber = GetLineNumber(content, match.Index);
-                    results.Add(new CodeReference(scope, match.Groups[1].Value, relativePath, lineNumber));
-                    results.Add(new CodeReference(scope, match.Groups[2].Value, relativePath, lineNumber));
-                    results.Add(new CodeReference(scope, match.Groups[3].Value, relativePath, lineNumber));
+                    var definitionScope = match.Groups[1].Value;
+                    results.Add(new CodeReference(definitionScope, match.Groups[2].Value, relativePath, lineNumber));
+                    results.Add(new CodeReference(definitionScope, match.Groups[3].Value, relativePath, lineNumber));
+                    results.Add(new CodeReference(definitionScope, match.Groups[4].Value, relativePath, lineNumber));
                 }
             }
 

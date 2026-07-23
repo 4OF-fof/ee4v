@@ -19,7 +19,7 @@ namespace Ee4v.Core.Tests
         {
             FeatureTestRegistryReset.Reset();
             FeatureTestRunnerStateReset.Reset();
-            SettingApiReset.Reset();
+            CoreSettings.ResetForTests();
             InjectorApiReset.Reset();
             PackagePathUtilityReset.Reset();
             I18NReset.Reset();
@@ -31,7 +31,7 @@ namespace Ee4v.Core.Tests
 
         public static void RecoverEditorState()
         {
-            InvokeConventionMethod("Ee4v.Core.I18n.CoreLocalizationDefinitions", "RegisterAll");
+            CoreLocalizationDefinitions.RegisterAll(CoreSettings.Current);
             InvokeAllFeatureBootstraps();
             FeatureTestRegistry.Refresh();
         }
@@ -70,25 +70,6 @@ namespace Ee4v.Core.Tests
             }
         }
 
-        private static void InvokeConventionMethod(string fullTypeName, string methodName)
-        {
-            var type = typeof(SettingApi).Assembly.GetType(fullTypeName);
-            if (type == null)
-            {
-                return;
-            }
-
-            var method = type.GetMethod(
-                methodName,
-                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
-                null,
-                Type.EmptyTypes,
-                null);
-            if (method != null)
-            {
-                method.Invoke(null, null);
-            }
-        }
     }
 
     internal static class FeatureTestRegistryReset
@@ -111,23 +92,6 @@ namespace Ee4v.Core.Tests
 
             ReflectionReset.SetStaticField(typeof(FeatureTestManagerWindow), "_runnerService", null);
             FeatureTestRunnerService.ClearPersistedState();
-        }
-    }
-
-    internal static class SettingApiReset
-    {
-        public static void Reset()
-        {
-            ReflectionReset.ClearCollectionField(typeof(SettingApi), "Definitions");
-            ReflectionReset.ClearCollectionField(typeof(SettingApi), "CachedValues");
-            ReflectionReset.ClearCollectionField(typeof(SettingApi), "LoadedScopes");
-            ReflectionReset.ClearCollectionField(typeof(SettingApi), "DirtyScopes");
-            ReflectionReset.SetStaticField(typeof(SettingApi), "Changed", null);
-
-            var stores = (IDictionary)ReflectionReset.GetStaticField(typeof(SettingApi), "Stores");
-            stores.Clear();
-            stores.Add(SettingScope.User, new EditorPrefsSettingStore());
-            stores.Add(SettingScope.Project, new ProjectFileSettingStore());
         }
     }
 
@@ -172,7 +136,7 @@ namespace Ee4v.Core.Tests
     {
         public static void Reset()
         {
-            foreach (var type in typeof(SettingApi).Assembly.GetTypes())
+            foreach (var type in typeof(I18N).Assembly.GetTypes())
             {
                 if (type == null || string.IsNullOrWhiteSpace(type.Namespace) || !type.Namespace.StartsWith("Ee4v.", StringComparison.Ordinal))
                 {

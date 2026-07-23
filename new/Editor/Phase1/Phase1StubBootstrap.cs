@@ -11,55 +11,62 @@ namespace Ee4v.Phase1
     internal static class Phase1StubBootstrap
     {
         private static bool _registered;
+        private static ISettingsService _settings;
 
-        public static void RegisterAll()
+        public static void RegisterAll(ISettingsService settings)
         {
+            if (settings == null)
+            {
+                throw new System.ArgumentNullException(nameof(settings));
+            }
+
             if (_registered)
             {
                 return;
             }
 
             _registered = true;
+            _settings = settings;
 
             InjectorApi.Register(new ItemInjectionRegistration(
                 "phase1.hierarchy.item.stub",
                 InjectionChannel.HierarchyItem,
                 DrawHierarchyItem,
                 priority: 100,
-                isEnabled: () => SettingApi.Get(Phase1Definitions.EnableHierarchyItemStub)));
+                isEnabled: () => _settings.Get(Phase1Definitions.EnableHierarchyItemStub)));
 
             InjectorApi.Register(new ItemInjectionRegistration(
                 "phase1.project.item.stub",
                 InjectionChannel.ProjectItem,
                 DrawProjectItem,
                 priority: 100,
-                isEnabled: () => SettingApi.Get(Phase1Definitions.EnableProjectItemStub)));
+                isEnabled: () => _settings.Get(Phase1Definitions.EnableProjectItemStub)));
 
             InjectorApi.Register(new VisualElementInjectionRegistration(
                 "phase1.project.toolbar.stub",
                 InjectionChannel.ProjectToolbar,
                 CreateProjectToolbar,
                 priority: 100,
-                isEnabled: () => SettingApi.Get(Phase1Definitions.EnableProjectToolbarStub)));
+                isEnabled: () => _settings.Get(Phase1Definitions.EnableProjectToolbarStub)));
 
-            SettingApi.Changed -= OnSettingChanged;
-            SettingApi.Changed += OnSettingChanged;
+            _settings.Changed -= OnSettingChanged;
+            _settings.Changed += OnSettingChanged;
         }
 
-        private static void OnSettingChanged(SettingDefinitionBase definition, object value)
+        private static void OnSettingChanged(object sender, SettingChangedEventArgs args)
         {
-            if (definition == Phase1Definitions.EnableHierarchyItemStub ||
-                definition == Phase1Definitions.HierarchyBadgeText ||
-                definition == Phase1Definitions.HierarchyAccentColor)
+            if (args.Definition == Phase1Definitions.EnableHierarchyItemStub ||
+                args.Definition == Phase1Definitions.HierarchyBadgeText ||
+                args.Definition == Phase1Definitions.HierarchyAccentColor)
             {
                 InjectorApi.Repaint(InjectionChannel.HierarchyItem);
             }
 
-            if (definition == Phase1Definitions.EnableProjectItemStub ||
-                definition == Phase1Definitions.EnableProjectToolbarStub ||
-                definition == Phase1Definitions.ProjectToolbarText ||
-                definition == Phase1Definitions.ProjectAccentColor ||
-                definition == Phase1Definitions.ToolbarButtonWidth)
+            if (args.Definition == Phase1Definitions.EnableProjectItemStub ||
+                args.Definition == Phase1Definitions.EnableProjectToolbarStub ||
+                args.Definition == Phase1Definitions.ProjectToolbarText ||
+                args.Definition == Phase1Definitions.ProjectAccentColor ||
+                args.Definition == Phase1Definitions.ToolbarButtonWidth)
             {
                 InjectorApi.Repaint(InjectionChannel.ProjectItem);
                 InjectorApi.Repaint(InjectionChannel.ProjectToolbar);
@@ -70,8 +77,8 @@ namespace Ee4v.Phase1
         {
             var badgeText = Phase1ContextVerification.GetHierarchyBadge(
                 context,
-                SettingApi.Get(Phase1Definitions.HierarchyBadgeText));
-            var accent = SettingApi.Get(Phase1Definitions.HierarchyAccentColor);
+                _settings.Get(Phase1Definitions.HierarchyBadgeText));
+            var accent = _settings.Get(Phase1Definitions.HierarchyAccentColor);
 
             var style = new GUIStyle(EditorStyles.miniLabel)
             {
@@ -92,7 +99,7 @@ namespace Ee4v.Phase1
 
         private static void DrawProjectItem(ItemInjectionContext context)
         {
-            var accent = SettingApi.Get(Phase1Definitions.ProjectAccentColor);
+            var accent = _settings.Get(Phase1Definitions.ProjectAccentColor);
             var barRect = new Rect(context.SelectionRect.x + 2f, context.SelectionRect.y + 2f, 3f, Mathf.Max(0f, context.SelectionRect.height - 4f));
             EditorGUI.DrawRect(barRect, accent);
 
@@ -125,7 +132,7 @@ namespace Ee4v.Phase1
             row.style.alignItems = Align.Center;
             row.style.flexGrow = 1f;
 
-            var label = UiTextFactory.Create(SettingApi.Get(Phase1Definitions.ProjectToolbarText), UiClassNames.Phase1StubLabel);
+            var label = UiTextFactory.Create(_settings.Get(Phase1Definitions.ProjectToolbarText), UiClassNames.Phase1StubLabel);
             label.style.flexGrow = 1f;
             label.style.marginRight = 6f;
 
@@ -133,14 +140,14 @@ namespace Ee4v.Phase1
             {
                 text = I18N.Get("stubs.projectToolbar.reload")
             };
-            reloadButton.style.width = SettingApi.Get(Phase1Definitions.ToolbarButtonWidth);
+            reloadButton.style.width = _settings.Get(Phase1Definitions.ToolbarButtonWidth);
             reloadButton.style.marginRight = 6f;
 
             var settingsButton = new Button(() => SettingsService.OpenProjectSettings("Project/4OF/ee4v"))
             {
                 text = I18N.Get("stubs.projectToolbar.settings")
             };
-            settingsButton.style.width = SettingApi.Get(Phase1Definitions.ToolbarButtonWidth);
+            settingsButton.style.width = _settings.Get(Phase1Definitions.ToolbarButtonWidth);
 
             row.Add(label);
             row.Add(reloadButton);

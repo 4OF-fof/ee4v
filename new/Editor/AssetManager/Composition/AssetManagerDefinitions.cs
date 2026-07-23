@@ -13,8 +13,6 @@ namespace Ee4v.AssetManager.Composition
         private const string BoothLibraryRelativePath = "pm.booth.library-manager\\data.db";
         private const string DefaultAvatarNames = "Airi,Alue,Bokusei,Chiffon,Chocolat,Eku,ELusion,Grus,Hanka,Ichigo,Kaguya,Kanata,Karin,Kikyo,Kipfel,Komano,Kumaly,Kuuta,Lapwing,Lasyusha,Lili,Lime,LowpolyKon,Luchika,Lumina,Mafuyu,Mamehinata,Manuka,Mao,Maon,Marycia,Maya,Mayo,Milfy,Milfy Eku,Milltina,Miltina,Millitina,Minase,Misaki,Moe,Nakiya,Plum,Ramune,Rei,Reien,Rindo,Riru,Rui,Rurune,Rurune Mizuki,Selestia,Shinano,Shinra,Shuan,Sio,Suiha,TubeRose,Ukon,Uzuki,Wendy,Yugi Miyo";
         private const string DefaultVersionGroupRegex = @"(?i)(?:(?:v|ver|version)[\s_\-.]*(?<name>\d+(?:\.\d+){0,3})(?=$|[\s_\-.\]\)]|[^\d.])|(?:^|[\s_\-])(?<name>\d+\.\d+(?:\.\d+){0,2})(?=\.(?:zip|psd|mp4|unitypackage)(?:$|\s)|$|\s))";
-        private static bool _registered;
-
         public static readonly SettingRange<int> ItemGridItemsPerRowRange = new SettingRange<int>(
             1,
             12,
@@ -23,6 +21,7 @@ namespace Ee4v.AssetManager.Composition
         public static readonly SettingDefinition<string> Ee4vGlobalPath = new SettingDefinition<string>(
             "assetManager.ee4vGlobalPath",
             SettingScope.User,
+            "AssetManager",
             "settings.section.assetManager.paths",
             "settings.ee4vGlobalPath.label",
             "settings.ee4vGlobalPath.tooltip",
@@ -33,6 +32,7 @@ namespace Ee4v.AssetManager.Composition
         public static readonly SettingDefinition<string> BlmDatabasePath = new SettingDefinition<string>(
             "assetManager.blmDatabasePath",
             SettingScope.User,
+            "AssetManager",
             "settings.section.assetManager.paths",
             "settings.blmDatabasePath.label",
             "settings.blmDatabasePath.tooltip",
@@ -43,6 +43,7 @@ namespace Ee4v.AssetManager.Composition
         public static readonly SettingDefinition<string> EagleLibraryPath = new SettingDefinition<string>(
             "assetManager.eagleLibraryPath",
             SettingScope.User,
+            "AssetManager",
             "settings.section.assetManager.paths",
             "settings.eagleLibraryPath.label",
             "settings.eagleLibraryPath.tooltip",
@@ -52,6 +53,7 @@ namespace Ee4v.AssetManager.Composition
         public static readonly SettingDefinition<string> SourcePriority = new SettingDefinition<string>(
             "assetManager.sourcePriority",
             SettingScope.User,
+            "AssetManager",
             "settings.section.assetManager.source",
             "settings.sourcePriority.label",
             "settings.sourcePriority.tooltip",
@@ -62,6 +64,7 @@ namespace Ee4v.AssetManager.Composition
         public static readonly SettingDefinition<bool> AutoSyncBlmOnStartup = new SettingDefinition<bool>(
             "assetManager.autoSyncBlmOnStartup",
             SettingScope.User,
+            "AssetManager",
             "settings.section.assetManager.source",
             "settings.autoSyncBlmOnStartup.label",
             "settings.autoSyncBlmOnStartup.tooltip",
@@ -71,6 +74,7 @@ namespace Ee4v.AssetManager.Composition
         public static readonly SettingDefinition<bool> AutoSyncEagleOnStartup = new SettingDefinition<bool>(
             "assetManager.autoSyncEagleOnStartup",
             SettingScope.User,
+            "AssetManager",
             "settings.section.assetManager.source",
             "settings.autoSyncEagleOnStartup.label",
             "settings.autoSyncEagleOnStartup.tooltip",
@@ -80,6 +84,7 @@ namespace Ee4v.AssetManager.Composition
         public static readonly SettingDefinition<string> AvatarNames = new SettingDefinition<string>(
             "assetManager.avatarNames",
             SettingScope.User,
+            "AssetManager",
             "settings.section.assetManager.import",
             "settings.avatarNames.label",
             "settings.avatarNames.tooltip",
@@ -89,6 +94,7 @@ namespace Ee4v.AssetManager.Composition
         public static readonly SettingDefinition<string> VersionGroupRegex = new SettingDefinition<string>(
             "assetManager.versionGroupRegex",
             SettingScope.User,
+            "AssetManager",
             "settings.section.assetManager.import",
             "settings.versionGroupRegex.label",
             "settings.versionGroupRegex.tooltip",
@@ -99,6 +105,7 @@ namespace Ee4v.AssetManager.Composition
         public static readonly SettingDefinition<bool> ShowUnityPackageImportDialog = new SettingDefinition<bool>(
             "assetManager.showUnityPackageImportDialog",
             SettingScope.User,
+            "AssetManager",
             "settings.section.assetManager.import",
             "settings.showUnityPackageImportDialog.label",
             "settings.showUnityPackageImportDialog.tooltip",
@@ -108,6 +115,7 @@ namespace Ee4v.AssetManager.Composition
         public static readonly SettingDefinition<int> ItemGridItemsPerRow = new SettingDefinition<int>(
             "assetManager.itemGridItemsPerRow",
             SettingScope.User,
+            "AssetManager",
             "settings.section.assetManager.view",
             "settings.itemGridItemsPerRow.label",
             "settings.itemGridItemsPerRow.tooltip",
@@ -118,6 +126,7 @@ namespace Ee4v.AssetManager.Composition
         public static readonly SettingDefinition<bool> ShowFileTreeImageTooltip = new SettingDefinition<bool>(
             "assetManager.showFileTreeImageTooltip",
             SettingScope.User,
+            "AssetManager",
             "settings.section.assetManager.view",
             "settings.showFileTreeImageTooltip.label",
             "settings.showFileTreeImageTooltip.tooltip",
@@ -127,6 +136,7 @@ namespace Ee4v.AssetManager.Composition
         public static readonly SettingDefinition<int> HistoryOverlayMaximumItems = new SettingDefinition<int>(
             "assetManager.historyOverlayMaximumItems",
             SettingScope.User,
+            "AssetManager",
             "settings.section.assetManager.view",
             "settings.historyOverlayMaximumItems.label",
             "settings.historyOverlayMaximumItems.tooltip",
@@ -134,26 +144,20 @@ namespace Ee4v.AssetManager.Composition
             order: 2,
             validator: ValidateHistoryOverlayMaximumItems);
 
-        public static void RegisterAll()
+        public static void RegisterAll(ISettingsService settings)
         {
-            if (_registered)
-            {
-                return;
-            }
-
-            _registered = true;
-            SettingApi.Register(Ee4vGlobalPath);
-            SettingApi.Register(BlmDatabasePath);
-            SettingApi.Register(EagleLibraryPath);
-            SettingApi.Register(SourcePriority);
-            SettingApi.Register(AutoSyncBlmOnStartup);
-            SettingApi.Register(AutoSyncEagleOnStartup);
-            SettingApi.Register(AvatarNames);
-            SettingApi.Register(VersionGroupRegex);
-            SettingApi.Register(ShowUnityPackageImportDialog);
-            SettingApi.Register(ItemGridItemsPerRow);
-            SettingApi.Register(ShowFileTreeImageTooltip);
-            SettingApi.Register(HistoryOverlayMaximumItems);
+            settings.Register(Ee4vGlobalPath);
+            settings.Register(BlmDatabasePath);
+            settings.Register(EagleLibraryPath);
+            settings.Register(SourcePriority);
+            settings.Register(AutoSyncBlmOnStartup);
+            settings.Register(AutoSyncEagleOnStartup);
+            settings.Register(AvatarNames);
+            settings.Register(VersionGroupRegex);
+            settings.Register(ShowUnityPackageImportDialog);
+            settings.Register(ItemGridItemsPerRow);
+            settings.Register(ShowFileTreeImageTooltip);
+            settings.Register(HistoryOverlayMaximumItems);
         }
 
         private static SettingValidationResult ValidateNonEmpty(string value)

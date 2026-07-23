@@ -6,25 +6,32 @@ namespace Ee4v.AssetManager.Composition
     internal sealed class AssetManagerInfrastructureSettingsAdapter :
         IAssetManagerInfrastructureSettings
     {
+        private readonly ISettingsService _settings;
+
+        internal AssetManagerInfrastructureSettingsAdapter(ISettingsService settings)
+        {
+            _settings = settings ?? throw new System.ArgumentNullException(nameof(settings));
+        }
+
         public string GlobalPath =>
-            SettingApi.Get(AssetManagerDefinitions.Ee4vGlobalPath);
+            _settings.Get(AssetManagerDefinitions.Ee4vGlobalPath);
 
         public string BlmDatabasePath =>
-            SettingApi.Get(AssetManagerDefinitions.BlmDatabasePath);
+            _settings.Get(AssetManagerDefinitions.BlmDatabasePath);
 
         public string EagleLibraryPath =>
-            SettingApi.Get(AssetManagerDefinitions.EagleLibraryPath);
+            _settings.Get(AssetManagerDefinitions.EagleLibraryPath);
 
         public string SourcePriority =>
-            SettingApi.Get(AssetManagerDefinitions.SourcePriority);
+            _settings.Get(AssetManagerDefinitions.SourcePriority);
 
         public string AvatarNames =>
-            SettingApi.Get(AssetManagerDefinitions.AvatarNames);
+            _settings.Get(AssetManagerDefinitions.AvatarNames);
 
         public string VersionGroupRegex =>
-            SettingApi.Get(AssetManagerDefinitions.VersionGroupRegex);
+            _settings.Get(AssetManagerDefinitions.VersionGroupRegex);
 
         public bool ShowUnityPackageImportDialog =>
-            SettingApi.Get(AssetManagerDefinitions.ShowUnityPackageImportDialog);
+            _settings.Get(AssetManagerDefinitions.ShowUnityPackageImportDialog);
     }
 }

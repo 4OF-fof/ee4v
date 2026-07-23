@@ -1,6 +1,7 @@
 using Ee4v.AssetManager.Infrastructure;
 using Ee4v.AssetManager.Application;
 using Ee4v.Core.Internal;
+using Ee4v.Core.Settings;
 using UnityEditor;
 
 namespace Ee4v.AssetManager.Composition
@@ -23,18 +24,20 @@ namespace Ee4v.AssetManager.Composition
                 return;
             }
 
+            var settings = CoreSettings.Current;
             FeatureBootstrapContract.Initialize(
                 "AssetManager",
-                AssetManagerDefinitions.RegisterAll,
-                InitializeModule);
+                typeof(AssetManagerDefinitions),
+                () => AssetManagerDefinitions.RegisterAll(settings),
+                () => InitializeModule(settings));
         }
 
-        private static void InitializeModule()
+        private static void InitializeModule(ISettingsService settings)
         {
             AssetManagerInfrastructure.ConfigureSettings(
-                new AssetManagerInfrastructureSettingsAdapter());
+                new AssetManagerInfrastructureSettingsAdapter(settings));
             _assetManager = AssetManagerInfrastructure.CreateDefaultService();
-            _uiPreferences = new AssetManagerUiPreferencesAdapter();
+            _uiPreferences = new AssetManagerUiPreferencesAdapter(settings);
             global::Ee4v.AssetManager.AssetManagerUiDependencies.Configure(
                 _assetManager,
                 _uiPreferences,
@@ -42,7 +45,7 @@ namespace Ee4v.AssetManager.Composition
                 new AssetManagerUiSchedulerAdapter());
             AssetManagerStartupSyncConflictPresenter.Initialize(_assetManager);
             AssetManagerDebugSyncMenu.Initialize(_assetManager);
-            AssetManagerStartupSync.EnsureInitialized(_assetManager);
+            AssetManagerStartupSync.EnsureInitialized(_assetManager, settings);
         }
     }
 }

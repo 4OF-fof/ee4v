@@ -2,6 +2,8 @@
 
 - namespace は `Ee4v.<Scope>` になっているか
 - bootstrap は `FeatureBootstrapContract.Initialize(...)` を通しているか
+- definitions 型を明示し、Compositionから `ISettingsService` を渡しているか
+- Domain / Application / UI が `CoreSettings.Current` を直接参照していないか
 - definitions 型名が `<Scope>Definitions` になっているか
 - 共通 API でない型を `public` にしていないか
 - Unity internal API を feature 側で直接 reflection していないか

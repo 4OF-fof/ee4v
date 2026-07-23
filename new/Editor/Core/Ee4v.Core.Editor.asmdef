@@ -1,7 +1,10 @@
 {
   "name": "Ee4v.Core.Editor",
   "rootNamespace": "Ee4v.Core",
-  "references": [],
+  "references": [
+    "Ee4v.Core.Contracts.Editor",
+    "Ee4v.Core.Unity.Editor"
+  ],
   "includePlatforms": [
     "Editor"
   ],

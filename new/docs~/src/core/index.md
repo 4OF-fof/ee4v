@@ -10,6 +10,8 @@ Core は feature 横断で使う基盤を置く領域です。feature 固有の�
 - `Testing`: `Test List` への suite 登録と実行状態管理
 - `Internal`: package ルート解決や Unity 内部 API への薄いラッパー
 
+Settings は `Contracts -> Services <- Unity/UI` の依存方向へ分割されています。`Contracts` と `Services` は `noEngineReferences: true` とし、feature はCompositionで `ISettingsService` を受け渡します。
+
 ## Feature 実装の入口
 
 Core 前提で feature を作る場合は、まず以下を揃えます。
@@ -40,10 +42,12 @@ internal static class SampleBootstrap
         }
 
         _initialized = true;
+        var settings = CoreSettings.Current;
         FeatureBootstrapContract.Initialize(
             "Sample",
-            SampleDefinitions.RegisterAll,
-            SampleFeatureBootstrap.RegisterAll);
+            typeof(SampleDefinitions),
+            () => SampleDefinitions.RegisterAll(settings),
+            () => SampleFeatureBootstrap.RegisterAll(settings));
     }
 }
 ```

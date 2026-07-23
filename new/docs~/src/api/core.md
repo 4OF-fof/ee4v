@@ -13,6 +13,7 @@ Feature の定義登録と初期化処理を Core の前提に沿って実行し
 ```csharp
 public static void Initialize(
     string featureScope,
+    Type definitionsType,
     Action registerDefinitions,
     Action registerFeature)
 ```
@@ -20,6 +21,7 @@ public static void Initialize(
 Parameters:
 
 - `featureScope`: feature の scope 名。`Sample` のような単一 scope 名を渡す。
+- `definitionsType`: `<featureScope>Definitions` 型。
 - `registerDefinitions`: settings、localization、test descriptor など feature 定義を登録する callback。
 - `registerFeature`: Injector など runtime feature を登録する callback。不要なら `null` を渡せる。
 
@@ -37,7 +39,6 @@ Notes:
 
 - `featureScope` は空白不可。
 - `registerDefinitions` は空不可。
-- `registerDefinitions` は `SampleDefinitions.RegisterAll` のように definitions 型の method group を渡す。
 - definitions 型名は `<featureScope>Definitions` にする。
 - definitions 型は `Ee4v.<featureScope>` namespace に置く。
 - 呼び出し側は `_initialized` guard を置き、domain reload 後の重複初期化を防ぐ。
@@ -61,10 +62,12 @@ internal static class SampleBootstrap
         }
 
         _initialized = true;
+        var settings = CoreSettings.Current;
         FeatureBootstrapContract.Initialize(
             "Sample",
-            SampleDefinitions.RegisterAll,
-            SampleFeatureBootstrap.RegisterAll);
+            typeof(SampleDefinitions),
+            () => SampleDefinitions.RegisterAll(settings),
+            () => SampleFeatureBootstrap.RegisterAll(settings));
     }
 }
 ```
@@ -122,7 +125,7 @@ InjectorApi.Register(new ItemInjectionRegistration(
             context.CurrentRect.height);
     },
     priority: 10,
-    isEnabled: () => SettingApi.Get(SampleDefinitions.HierarchyBadgeEnabled)));
+    isEnabled: () => settings.Get(SampleDefinitions.HierarchyBadgeEnabled)));
 ```
 
 ### `InjectorApi.Repaint`
@@ -149,13 +152,13 @@ Effects:
 
 Notes:
 
-- setting 変更に伴う再描画は `SettingApi.Changed` から呼ぶ。
+- setting 変更に伴う再描画は注入された `ISettingsService.Changed` から呼ぶ。
 - feature 側で host window を直接探して再構築しない。
 
 ```csharp
-SettingApi.Changed += (definition, _) =>
+settings.Changed += (_, args) =>
 {
-    if (ReferenceEquals(definition, SampleDefinitions.HierarchyBadgeEnabled))
+    if (ReferenceEquals(args.Definition, SampleDefinitions.HierarchyBadgeEnabled))
     {
         InjectorApi.Repaint(InjectionChannel.HierarchyItem);
     }
@@ -243,43 +246,44 @@ InjectorApi.Register(new VisualElementInjectionRegistration(
         return button;
     },
     priority: 0,
-    isEnabled: () => SettingApi.Get(SampleDefinitions.ProjectToolbarEnabled)));
+    isEnabled: () => settings.Get(SampleDefinitions.ProjectToolbarEnabled)));
 ```
 
 ## Settings
 
 ### `SettingDefinition<T>`
 
-Setting の定義を作成します。
+Unity非依存のSetting定義を作成します。
 
 ```csharp
 public SettingDefinition(
     string key,
     SettingScope scope,
+    string localizationScope,
     string sectionKey,
     string displayNameKey,
     string descriptionKey,
     T defaultValue,
     int order = 0,
     Func<T, SettingValidationResult> validator = null,
-    Func<SettingDrawerContext<T>, VisualElement> customDrawer = null,
+    SettingRange<T> range = null,
     IReadOnlyList<string> keywords = null,
-    [CallerFilePath] string definitionSourceFilePath = "")
+)
 ```
 
 Parameters:
 
 - `key`: 永続化に使う setting key。
 - `scope`: `SettingScope.User` または `SettingScope.Project`。
+- `localizationScope`: 表示keyを解決するscope。`Sample` などを明示する。
 - `sectionKey`: settings 画面の section localization key。
 - `displayNameKey`: 項目名 localization key。
 - `descriptionKey`: tooltip localization key。
 - `defaultValue`: 未保存時、deserialize 失敗時、invalid 保存値の fallback。
 - `order`: section 内の並び順。
 - `validator`: 値検証 callback。
-- `customDrawer`: 標準 field で足りない場合に UI Toolkit の `VisualElement` を生成する callback。値の変更は `SettingDrawerContext<T>.NotifyValueChanged(...)` で通知する。
+- `range`: 値の最小値と最大値。
 - `keywords`: settings 検索用 keyword。
-- `definitionSourceFilePath`: scope 解決用。通常は指定しない。
 
 Returns:
 
@@ -288,13 +292,12 @@ Returns:
 Effects:
 
 - constructor 自体は登録も保存もしない。
-- `definitionSourceFilePath` から localization scope を解決して保持する。
 
 Notes:
 
 - 定義は原則 `Editor/<Feature>/<Feature>Definitions.cs` に置く。
-- localization scope を崩さないため、別 namespace の util file に逃がさない。
-- `customDrawer` でも IMGUI を使用せず、UI Toolkit の field と event callback で実装する。
+- `SettingDefinition<T>` はUnity、UI Toolkit、JSON、filesystemを参照しない。
+- custom drawerはpresentation側の `SettingDrawerRegistry` に登録する。
 
 ```csharp
 internal static class SampleDefinitions
@@ -303,6 +306,7 @@ internal static class SampleDefinitions
         new SettingDefinition<bool>(
             key: "sample.projectToolbar.enabled",
             scope: SettingScope.User,
+            localizationScope: "Sample",
             sectionKey: "settings.section.projectToolbar",
             displayNameKey: "settings.projectToolbar.enabled.name",
             descriptionKey: "settings.projectToolbar.enabled.description",
@@ -310,147 +314,45 @@ internal static class SampleDefinitions
             order: 10,
             keywords: new[] { "project", "toolbar" });
 
-    private static bool _registered;
-
-    public static void RegisterAll()
+    public static void RegisterAll(ISettingsService settings)
     {
-        if (_registered)
-        {
-            return;
-        }
-
-        _registered = true;
-        SettingApi.Register(ProjectToolbarEnabled);
+        settings.Register(ProjectToolbarEnabled);
     }
 }
 ```
 
-### `SettingApi.Register`
+### `ISettingsService`
 
-Setting 定義を登録します。
-
-```csharp
-public static void Register(SettingDefinitionBase definition)
-```
-
-Parameters:
-
-- `definition`: 登録する setting 定義。
-
-Returns:
-
-- `void`
-
-Effects:
-
-- key が未登録なら定義を追加する。
-- scope がすでに load 済みの場合は、その定義の値も cache に読み込む。
-
-Notes:
-
-- `definition` が `null` の場合は `ArgumentNullException`。
-- 同じ key で別 instance を登録すると `InvalidOperationException`。
-- 同じ instance の再登録は no-op。
-
-### `SettingApi.Get<T>`
-
-登録済み setting の現在値を取得します。
+設定の登録、取得、更新、保存を表すinstance契約です。
 
 ```csharp
-public static T Get<T>(SettingDefinition<T> definition)
-```
-
-Parameters:
-
-- `definition`: 取得対象の setting 定義。
-
-Returns:
-
-- 保存済みの値。
-- 保存値がない、deserialize に失敗した、または validator が invalid を返した場合は `definition` の default value。
-
-Effects:
-
-- 未登録の definition は自動登録される。
-- scope が未 load の場合は store から値を読み込んで cache する。
-
-Notes:
-
-- feature 側で `EditorPrefs` や `ProjectSettings/ee4v.settings.json` を直接読まない。
-
-```csharp
-if (SettingApi.Get(SampleDefinitions.ProjectToolbarEnabled))
+public interface ISettingsService
 {
-    InjectorApi.Repaint(InjectionChannel.ProjectToolbar);
+    event EventHandler<SettingChangedEventArgs> Changed;
+
+    void Register(SettingDefinitionBase definition);
+    IReadOnlyList<SettingDefinitionBase> GetDefinitions(SettingScope scope);
+    void Preload(SettingScope scope);
+    T Get<T>(SettingDefinition<T> definition);
+    object Get(SettingDefinitionBase definition);
+    void Set<T>(SettingDefinition<T> definition, T value, bool saveImmediately = true);
+    void Set(SettingDefinitionBase definition, object value, bool saveImmediately = true);
+    void Save(SettingScope? scope = null);
 }
 ```
 
-### `SettingApi.Set<T>`
-
-登録済み setting の値を更新します。
-
-```csharp
-public static void Set<T>(
-    SettingDefinition<T> definition,
-    T value,
-    bool saveImmediately = true)
-```
-
-Parameters:
-
-- `definition`: 更新対象の setting 定義。
-- `value`: 保存する値。
-- `saveImmediately`: `true` の場合は即座に store へ保存する。
-
-Returns:
-
-- `void`
-
-Effects:
-
-- 未登録の definition は自動登録される。
-- validator が invalid を返した場合は `InvalidOperationException`。
-- cache を更新し、scope を dirty にする。
-- `saveImmediately` が `true` の場合は保存する。
-- `SettingApi.Changed` を発火する。
-
 Notes:
 
-- `User` scope は `EditorPrefs` に保存される。
-- `Project` scope は `ProjectSettings/ee4v.settings.json` に保存される。
+- 同じkeyで別instanceを登録すると `InvalidOperationException`。
+- 保存値がない、deserialize失敗、validation失敗の場合はdefault値を返す。
+- `Changed` は更新成功後に呼ばれ、`SettingChangedEventArgs.Definition` と `Value` を持つ。
+- featureのDomain / Application / UIは `CoreSettings.Current` を直接参照しない。
+- Compositionで現在のserviceを取得し、adapterへconstructor injectionする。
 
 ```csharp
-SettingApi.Set(SampleDefinitions.ProjectToolbarEnabled, false);
-```
-
-### `SettingApi.Save`
-
-dirty な setting cache を store へ保存します。
-
-```csharp
-public static void Save(SettingScope? scope = null)
-```
-
-Parameters:
-
-- `scope`: 保存対象 scope。`null` の場合は dirty な全 scope を保存する。
-
-Returns:
-
-- `void`
-
-Effects:
-
-- 対象 scope の値を serialize して store へ保存する。
-- 保存済み scope を dirty から外す。
-
-Notes:
-
-- `SettingApi.Set(..., saveImmediately: false)` を使った場合は、後で `Save(...)` を呼ぶ。
-
-```csharp
-SettingApi.Set(SampleDefinitions.ProjectToolbarEnabled, true, saveImmediately: false);
-SettingApi.Save(SettingScope.User);
+var settings = CoreSettings.Current;
+SampleDefinitions.RegisterAll(settings);
+var adapter = new SamplePreferencesAdapter(settings);
 ```
 
 ## I18N

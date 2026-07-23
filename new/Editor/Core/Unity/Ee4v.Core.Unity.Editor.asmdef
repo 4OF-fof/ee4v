@@ -1,0 +1,19 @@
+{
+  "name": "Ee4v.Core.Unity.Editor",
+  "rootNamespace": "Ee4v.Core",
+  "references": [
+    "Ee4v.Core.Contracts.Editor",
+    "Ee4v.Core.Services.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

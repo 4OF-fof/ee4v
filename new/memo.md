@@ -287,7 +287,7 @@ resource の scope が引き続き `AssetManager` になることを移動時の
 - UI から Application implementation、Infrastructure、SQLite への参照
 - Module 間の Contracts 以外への参照
 - Core から feature Module への参照
-- `Domain` / `Application` 内の `Unity*`、`SQLite`、`SettingApi`、`I18N` の使用
+- `Domain` / `Application` 内の `Unity*`、`SQLite`、Core Settings、`I18N` の使用
 
 ## command と query
 
@@ -337,7 +337,7 @@ outer layer の scheduler に集約する。
 ## settings と localization
 
 - `AssetManagerDefinitions` は Composition に置く
-- Infrastructure の settings adapter が `SettingApi` を読み、Application へ typed settings snapshot を渡す
+- Composition が `ISettingsService` をsettings adapterへ注入し、Applicationへtyped settings snapshotを渡す
 - Domain は `SettingDefinition` を受け取らず、`SourcePriority` などの value object を受け取る
 - Application / Domain は `I18N.Get(...)` を呼ばない
 - UI は error code と context を localization key へ mapping する
@@ -355,6 +355,18 @@ feature 横断の foundation と Unity adapter の集合である。
 - `Core/UI` は Core contract だけに依存し、feature を参照しない
 - feature 固有 port や model を Core へ置かない
 
+### Core 移行状況
+
+- [x] Settings contractを `Ee4v.Core.Contracts.Editor` へ分離し、Unity非依存化
+- [x] `SettingsService` をinstance化し、store / serializerをport化
+- [x] EditorPrefs、project file、Newtonsoftを `Ee4v.Core.Unity.Editor` へ分離
+- [x] SettingsProvider、field、drawerを `Ee4v.UI.Editor` へ分離
+- [x] feature Compositionから `ISettingsService` をadapterへ注入
+- [ ] I18Nのresolver、catalog source、reload/repaintを分離
+- [ ] Injectorのregistry、host lifecycle、Unity内部API accessを分離
+- [ ] Testingを独立Moduleへ分離
+- [ ] Core移行完了時に、この `memo.md` と `memo.md.meta` を削除
+
 ## 現行コードからの対応
 
 | 現在 | 移行先 | 分離する内容 |
@@ -370,7 +382,7 @@ feature 横断の foundation と Unity adapter の集合である。
 | `AssetFileTreeCache.cs` | Infrastructure/Files | persistent cache。window session cache は UI に残す |
 | `AssetManagerDefinitions.cs` | Composition | setting 定義と登録 |
 | `AssetManagerStartupSync.cs` | Application/Sync + Composition/Startup | sync use case と Editor lifecycle / scheduler を分離 |
-| `UI/*Controller.cs` | UI presenter / controller | static API、SettingApi、EditorApplication を注入 port へ置換 |
+| `UI/*Controller.cs` | UI presenter / controller | static API、Core Settings、EditorApplication を注入 port へ置換 |
 
 ## 移行戦略
 
@@ -458,7 +470,7 @@ Application test から SQLite を開かず、Infrastructure test から Unity w
 
 - Module の外から参照できるのは Contracts と明示した Core API だけ
 - Domain / Application asmdef が `noEngineReferences: true` で compile できる
-- Domain / Application に Unity、SQLite、filesystem、network、SettingApi、I18N 参照がない
+- Domain / Application に Unity、SQLite、filesystem、network、Core Settings、I18N 参照がない
 - UI に DB row、SQLite、datasource connector 参照がない
 - `[InitializeOnLoad]` による AssetManager の組み立てが一か所に集約されている
 - static `AssetManagerApi` と static event の参照が残っていない

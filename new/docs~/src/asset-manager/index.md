@@ -65,11 +65,11 @@ conflict preview と overwrite 判断の契約は Application が所有し、通
 UI の表示設定と ZIP 読み取りは Contracts の `IAssetManagerUiPreferences`、
 `IAssetArchiveReader` として注入します。background 実行と Unity main thread への復帰も
 `IAssetManagerUiScheduler` を Composition が注入します。UI assembly は Infrastructure、
-Application 実装、SQLite、`SettingApi`、`Task.Run`、`EditorApplication.delayCall` を参照しません。
+Application 実装、SQLite、Core Settings、`Task.Run`、`EditorApplication.delayCall` を参照しません。
 
 setting の定義と登録は Composition が所有します。Infrastructure は
 `IAssetManagerInfrastructureSettings` の typed snapshot provider を受け取り、
-`SettingApi` や Composition の setting 定義を直接参照しません。
+`CoreSettings`、`ISettingsService`、Composition の setting 定義を直接参照しません。
 
 ## UI の責務
 
