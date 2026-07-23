@@ -4,6 +4,10 @@ AssetManager API は [DB Schema](../asset-manager/schema.md) を直接触らず�
 
 この API は AssetManager DB を正本として扱います。BLM / Eagle / ee4v origin は file 実体の参照元であり、UI 表示用の item 情報は `item_info` を優先します。
 
+契約は `Ee4v.AssetManager.Contracts.Editor` の `IAssetManager` と DTO に定義します。instance は
+`AssetManager` Module の composition root が生成し、UI や他の利用側へ constructor / factory
+経由で渡します。static API や global event から取得しません。
+
 ## Data Contracts
 
 ### `AssetItem`
@@ -29,7 +33,7 @@ Notes:
 
 - `Name` と `Description` は `item_info` のユーザー上書き可能な値を返す。
 - Booth 商品由来の固定 snapshot は `Booth` に分離する。
-- `Files` は一覧表示用 summary であり、origin の詳細解決は `AssetManagerApi.GetFiles(...)` を使う。
+- `Files` は一覧表示用 summary であり、origin の詳細解決は `IAssetManager.GetFiles(...)` を使う。
 - 通常 query は unavailable item を返さない。履歴・診断用途では `AssetItemQuery.IncludeUnavailable` を指定する。
 
 ### `AssetFile`
@@ -81,7 +85,7 @@ public sealed class AssetFileSummary
 Notes:
 
 - `DownloadId` の意味は `AssetFile.DownloadId` と同じ。
-- origin 詳細が必要な場合は `AssetManagerApi.GetFiles(...)` を使う。
+- origin 詳細が必要な場合は `IAssetManager.GetFiles(...)` を使う。
 
 ### `AssetCollection`
 
@@ -362,16 +366,16 @@ public sealed class EagleSyncRequest
 
 Notes:
 
-- `BlmSyncRequest` と `EagleSyncRequest` は `Ee4v.AssetManager.Api` namespace に属する。connector 実装は公開 API ではなく、`AssetManagerApi.SyncBlm(...)` / `AssetManagerApi.SyncEagle(...)` からのみ呼び出す。
+- `BlmSyncRequest` と `EagleSyncRequest` は `Ee4v.AssetManager.Contracts` namespace に属する。connector 実装は公開 API ではなく、`IAssetManager.SyncBlm(...)` / `IAssetManager.SyncEagle(...)` からのみ呼び出す。
 
 ## Item
 
-### `AssetManagerApi.SearchItems`
+### `IAssetManager.SearchItems`
 
 Item 一覧を検索します。
 
 ```csharp
-public static AssetSearchResult SearchItems(AssetItemQuery query)
+public AssetSearchResult SearchItems(AssetItemQuery query)
 ```
 
 Parameters:
@@ -394,7 +398,7 @@ Notes:
 - `CollectionId` に通常 Collection を指定した場合は `item_collection` で絞り込む。Smart Collection を指定した場合は `smart_collection_condition` を評価して絞り込む。
 
 ```csharp
-var result = AssetManagerApi.SearchItems(new AssetItemQuery
+var result = assetManager.SearchItems(new AssetItemQuery
 {
     Keyword = "avatar",
     SourceTypes = new[] { AssetSourceType.Blm, AssetSourceType.Eagle },
@@ -404,12 +408,12 @@ var result = AssetManagerApi.SearchItems(new AssetItemQuery
 });
 ```
 
-### `AssetManagerApi.GetItem`
+### `IAssetManager.GetItem`
 
 Item 詳細を取得します。
 
 ```csharp
-public static AssetItem GetItem(string itemId)
+public AssetItem GetItem(string itemId)
 ```
 
 Parameters:
@@ -430,12 +434,12 @@ Notes:
 - Booth snapshot、tag、file summary をまとめて返す。
 - file origin の解決済み path が必要な場合は `GetFiles(...)` / `ResolveFilePath(...)` を使う。
 
-### `AssetManagerApi.CreateItem`
+### `IAssetManager.CreateItem`
 
 手動管理 Item を作成します。
 
 ```csharp
-public static AssetItem CreateItem(CreateAssetItemRequest request)
+public AssetItem CreateItem(CreateAssetItemRequest request)
 ```
 
 Parameters:
@@ -460,12 +464,12 @@ Notes:
 - Booth / Eagle / BLM 由来 item の作成は datasource sync API から行う。
 - 同一 name の Item は許容する。
 
-### `AssetManagerApi.UpdateItem`
+### `IAssetManager.UpdateItem`
 
 Item の表示情報を更新します。
 
 ```csharp
-public static AssetItem UpdateItem(string itemId, UpdateAssetItemRequest request)
+public AssetItem UpdateItem(string itemId, UpdateAssetItemRequest request)
 ```
 
 Parameters:
@@ -489,12 +493,12 @@ Notes:
 
 ## File
 
-### `AssetManagerApi.GetFiles`
+### `IAssetManager.GetFiles`
 
 Item に紐付く file 一覧を取得します。
 
 ```csharp
-public static IReadOnlyList<AssetFile> GetFiles(string itemId, AssetFileQuery query = null)
+public IReadOnlyList<AssetFile> GetFiles(string itemId, AssetFileQuery query = null)
 ```
 
 Parameters:
@@ -514,12 +518,12 @@ Notes:
 
 - file origin の代表 datasource は `assetManager.sourcePriority` 設定順で解決する。
 
-### `AssetManagerApi.RegisterFile`
+### `IAssetManager.RegisterFile`
 
 Editor 操作で選択された file を Item に追加します。
 
 ```csharp
-public static AssetFile RegisterFile(string itemId, RegisterFileRequest request)
+public AssetFile RegisterFile(string itemId, RegisterFileRequest request)
 ```
 
 Parameters:
@@ -544,12 +548,12 @@ Notes:
 - BLM / Eagle 由来 file はこの API ではなく `SyncBlm(...)` / `SyncEagle(...)` から作成する。
 - `file_path_cache` は最後に解決できた path として保存する。
 
-### `AssetManagerApi.ArchiveFile`
+### `IAssetManager.ArchiveFile`
 
 file を archived にします。
 
 ```csharp
-public static void ArchiveFile(string fileId)
+public void ArchiveFile(string fileId)
 ```
 
 Parameters:
@@ -570,12 +574,12 @@ Notes:
 - 物理 file は削除しない。
 - dependency は残す。表示側で archived file を含めるかを選ぶ。
 
-### `AssetManagerApi.ResolveFilePath`
+### `IAssetManager.ResolveFilePath`
 
 file の代表 origin から実体 path を解決します。
 
 ```csharp
-public static AssetFilePathResolution ResolveFilePath(string fileId)
+public AssetFilePathResolution ResolveFilePath(string fileId)
 ```
 
 Parameters:
@@ -598,12 +602,12 @@ Notes:
 
 ## Tag
 
-### `AssetManagerApi.GetTags`
+### `IAssetManager.GetTags`
 
 AssetManager 独自 tag 一覧を取得します。
 
 ```csharp
-public static IReadOnlyList<AssetTag> GetTags(string keyword = null)
+public IReadOnlyList<AssetTag> GetTags(string keyword = null)
 ```
 
 Parameters:
@@ -618,12 +622,12 @@ Effects:
 
 - DB を読み取る。
 
-### `AssetManagerApi.CreateTag`
+### `IAssetManager.CreateTag`
 
 AssetManager 独自 tag を作成します。
 
 ```csharp
-public static AssetTag CreateTag(string name)
+public AssetTag CreateTag(string name)
 ```
 
 Parameters:
@@ -643,12 +647,12 @@ Notes:
 - tag 名は unique。
 - 既存 tag 名と一致する場合は既存 tag を返す。
 
-### `AssetManagerApi.SetItemTags`
+### `IAssetManager.SetItemTags`
 
 Item に付与する tag を置き換えます。
 
 ```csharp
-public static void SetItemTags(string itemId, IReadOnlyList<string> tagIds)
+public void SetItemTags(string itemId, IReadOnlyList<string> tagIds)
 ```
 
 Parameters:
@@ -670,12 +674,12 @@ Notes:
 
 ## Collection
 
-### `AssetManagerApi.GetCollections`
+### `IAssetManager.GetCollections`
 
 Collection tree を取得します。
 
 ```csharp
-public static IReadOnlyList<AssetCollection> GetCollections()
+public IReadOnlyList<AssetCollection> GetCollections()
 ```
 
 Parameters:
@@ -695,12 +699,12 @@ Notes:
 - tree 表示側は `ParentCollectionId` で階層化する。
 - cycle は DB constraint で禁止する。
 
-### `AssetManagerApi.CreateCollection`
+### `IAssetManager.CreateCollection`
 
 通常 Collection を作成します。
 
 ```csharp
-public static AssetCollection CreateCollection(CreateCollectionRequest request)
+public AssetCollection CreateCollection(CreateCollectionRequest request)
 ```
 
 Parameters:
@@ -717,12 +721,12 @@ Effects:
 - `collection_info` を追加する。
 - 親が指定されていれば `collection_collection` を追加する。
 
-### `AssetManagerApi.CreateSmartCollection`
+### `IAssetManager.CreateSmartCollection`
 
 Smart Collection を作成します。
 
 ```csharp
-public static AssetCollection CreateSmartCollection(CreateSmartCollectionRequest request)
+public AssetCollection CreateSmartCollection(CreateSmartCollectionRequest request)
 ```
 
 Parameters:
@@ -748,12 +752,12 @@ Notes:
 - `exists` operator 以外では `query_text` が必須。
 - Smart Collection の item 所属は `item_collection` に保存しない。`SearchItems(...)` で Smart Collection を指定した場合に条件から item を抽出する。
 
-### `AssetManagerApi.MoveCollection`
+### `IAssetManager.MoveCollection`
 
 Collection の親を変更します。
 
 ```csharp
-public static void MoveCollection(string collectionId, string parentCollectionId)
+public void MoveCollection(string collectionId, string parentCollectionId)
 ```
 
 Parameters:
@@ -774,12 +778,12 @@ Notes:
 - 自分自身や子孫 Collection の下へ移動する操作は例外。
 - 子 Collection は最大 1 つの親だけを持つ。
 
-### `AssetManagerApi.SetItemCollections`
+### `IAssetManager.SetItemCollections`
 
 Item の通常 Collection 所属を置き換えます。
 
 ```csharp
-public static void SetItemCollections(string itemId, IReadOnlyList<string> collectionIds)
+public void SetItemCollections(string itemId, IReadOnlyList<string> collectionIds)
 ```
 
 Parameters:
@@ -801,12 +805,12 @@ Notes:
 
 ## Dependency
 
-### `AssetManagerApi.GetFileDependencies`
+### `IAssetManager.GetFileDependencies`
 
 file の依存関係を取得します。
 
 ```csharp
-public static IReadOnlyList<AssetFileDependency> GetFileDependencies(string fileId)
+public IReadOnlyList<AssetFileDependency> GetFileDependencies(string fileId)
 ```
 
 Parameters:
@@ -821,12 +825,12 @@ Effects:
 
 - DB を読み取る。
 
-### `AssetManagerApi.SetFileDependencies`
+### `IAssetManager.SetFileDependencies`
 
 file の依存関係を置き換えます。
 
 ```csharp
-public static void SetFileDependencies(
+public void SetFileDependencies(
     string dependentFileId,
     IReadOnlyList<string> dependencyFileIds)
 ```
@@ -851,12 +855,12 @@ Notes:
 
 ## Import Target
 
-### `AssetManagerApi.GetFileImportTargets`
+### `IAssetManager.GetFileImportTargets`
 
 file に紐付く Unity import 対象を取得します。
 
 ```csharp
-public static IReadOnlyList<AssetFileImportTarget> GetFileImportTargets(string fileId)
+public IReadOnlyList<AssetFileImportTarget> GetFileImportTargets(string fileId)
 ```
 
 Parameters:
@@ -878,12 +882,12 @@ Notes:
 - zip 内 entry も `/` 区切りの relative path として返す。
 - ZIP 全体が ZIP file と同名の単一 root folder 配下にある場合、その root folder は `RelativePath` から省略する。root に兄弟 entry がある場合は省略しない。
 
-### `AssetManagerApi.SetFileImportTargets`
+### `IAssetManager.SetFileImportTargets`
 
 file に紐付く Unity import 対象を置き換えます。
 
 ```csharp
-public static void SetFileImportTargets(
+public void SetFileImportTargets(
     string fileId,
     IReadOnlyList<AssetFileImportTargetRequest> targets)
 ```
@@ -899,8 +903,10 @@ Returns:
 
 Effects:
 
-- `file_import_target` を指定一覧に同期する。
-- `FileImportTargetsChanged` と `FileTreeChanged` を通知する。`Changed` は通知しない。
+- Application use case が Domain policy で全 path を検証・正規化した後、Infrastructure の
+  transactional store が `file_import_target` を指定一覧へ一括置換する。
+- `FileImportTargets` と `FileTree` の change を順に通知する。`Catalog` change は通知しない。
+- 永続化に失敗した場合は読み戻しと change 通知を行わない。
 
 Notes:
 
@@ -908,14 +914,15 @@ Notes:
 - 空の `RelativePath` は file root を指すため拒否する。
 - `..` を含む path は拒否する。
 - 同一 file 内の重複 `RelativePath` は 1 件にまとめる。
-- 標準 File Tree UI は `FileImportTargetsChanged` の変更内容を memory cache と表示中の行へ反映し、filesystem / ZIP を再走査しない。
+- 検証に失敗した場合は store を呼ばないため、既存の Import Target は変更しない。
+- 標準 File Tree UI は `FileImportTargets` change の変更内容を memory cache と表示中の行へ反映し、filesystem / ZIP を再走査しない。
 
-### `AssetManagerApi.ImportFileTargets`
+### `IAssetManager.ImportFileTargets`
 
 file に設定済みの Import Target を Unity project へ取り込みます。
 
 ```csharp
-public static void ImportFileTargets(string itemId, string fileId)
+public void ImportFileTargets(string itemId, string fileId)
 ```
 
 - File Tree の file root と Version Group から実行する。Version Group は代表 file の target を使う。
@@ -923,12 +930,12 @@ public static void ImportFileTargets(string itemId, string fileId)
 - それ以外は `Assets/<asset name>/<file name>/` 配下へ target の相対 path を維持して copy し、最後に AssetDatabase を refresh する。
 - Import Target がない file root では標準 File Tree の context menu に表示しない。
 
-### `AssetManagerApi.ImportFileEntry`
+### `IAssetManager.ImportFileEntry`
 
 file root 配下の実 file 1 件を Unity project へ取り込みます。
 
 ```csharp
-public static void ImportFileEntry(string itemId, string fileId, string relativePath)
+public void ImportFileEntry(string itemId, string fileId, string relativePath)
 ```
 
 - Import Target への登録有無にかかわらず、標準 File Tree の実 file context menu から実行できる。
@@ -939,26 +946,30 @@ public static void ImportFileEntry(string itemId, string fileId, string relative
 ## Change Notifications
 
 ```csharp
-public static event Action Changed;
-public static event Action FileTreeChanged;
-public static event Action<string, IReadOnlyList<AssetFileImportTarget>> FileImportTargetsChanged;
-public static event Action<string, string> VersionGroupPrimaryFileChanged;
+public event Action<AssetManagerChange> Changed;
 ```
 
-- `Changed` は item 一覧や file tree の構造・内容を再取得する必要がある変更を通知する。
-- `FileTreeChanged` は File Tree に関係する変更の互換用通知で、Import Target と Version Group の代表変更でも発火する。
-- `FileImportTargetsChanged` は変更した file ID と正規化・保存後の Import Target 一覧を通知する。
-- `VersionGroupPrimaryFileChanged` は変更した Version Group ID と保存後の代表 file ID を通知する。
-- `SetFileImportTargets(...)` と `SetVersionGroupPrimaryFile(...)` は `Changed` を発火しない。標準 UI は詳細通知から既存の File Tree 行 state だけを更新するため、Main View の再検索や File Tree の再構築を行わない。
+`AssetManagerChange.Kind` は次を取ります。
+
+| kind | `SubjectId` | `RelatedId` / `ImportTargets` | 用途 |
+|---|---|---|---|
+| `Catalog` | 空 | 空 | item 一覧や file tree の構造・内容を再取得する |
+| `FileTree` | 空 | 空 | File Tree に関係する変更を知らせる |
+| `FileImportTargets` | file ID | 保存後の `ImportTargets` | cache 上の target state だけを更新する |
+| `VersionGroupPrimaryFile` | Version Group ID | `RelatedId` に代表 file ID | cache 上の代表 state だけを更新する |
+
+`SetFileImportTargets(...)` と `SetVersionGroupPrimaryFile(...)` は `Catalog` change を発行しません。
+標準 UI は詳細 change から既存の File Tree 行 state だけを更新し、Main View の再検索や File Tree の
+再構築を行いません。
 
 ## Datasource Sync
 
-### `AssetManagerApi.SyncBlm`
+### `IAssetManager.SyncBlm`
 
 BLM `data.db` から AssetManager DB へ snapshot を取り込みます。
 
 ```csharp
-public static AssetSyncResult SyncBlm(BlmSyncRequest request)
+public AssetSyncResult SyncBlm(BlmSyncRequest request)
 ```
 
 Parameters:
@@ -984,12 +995,12 @@ Notes:
 - BLM は Booth download ID を持たないため、`file_info.download_id` は NULL として扱う。
 - `booth_item_id` が同じ場合は同じ `item_info` に紐付ける。
 
-### `AssetManagerApi.SyncEagle`
+### `IAssetManager.SyncEagle`
 
 Eagle library から AssetManager DB へ snapshot を取り込みます。
 
 ```csharp
-public static AssetSyncResult SyncEagle(EagleSyncRequest request)
+public AssetSyncResult SyncEagle(EagleSyncRequest request)
 ```
 
 Parameters:
@@ -1027,14 +1038,14 @@ Unity Editor session の開始時に、設定で有効な datasource の変更�
 - `assetManager.autoSyncEagleOnStartup`: Eagle library を同期する
 - datasource path が未設定または存在しない source は skip する
 - BLM / Eagle の同期対象 record を正規化した fingerprint は `<ee4v global path>/cache/sync` に保存する
-- fingerprint が前回成功時と一致する場合は DB sync と `AssetManagerApi.Changed` 通知を行わない
+- fingerprint が前回成功時と一致する場合は DB sync と `Catalog` change 通知を行わない
 - 外部の item 情報に差分があり、Unity の `item_info.updated_at` が datasource update time（取得できない場合は前回 `imported_at`）より新しい場合は競合として扱う
 - 競合時は AssetManager window を開き、`DiffConfirmationOverlay` で名前・説明の現在値と同期元値を表示する
 - `上書き` は差分を同期元の値で上書きして同期を続行し、`キャンセル` は今回の起動時同期全体を中止する
-- 実際に同期を実行した場合だけ、完了後の `AssetManagerApi.Changed` を main thread で通知する
+- 実際に同期を実行した場合だけ、完了後の `Catalog` change を main thread で通知する
 - background activity は統合 AssetManager の Main View と単独 Main View window の `StatusOverlay` に表示する
 
-File Tree の完成済み表示データは Unity Editor のメモリ上に最大 64 件共有します。同一 item / file の再表示ではこの memory cache をそのまま利用し、filesystem / ZIP の再確認と loading text の表示を行いません。Import Target と Version Group の代表変更は cache 上の node state を更新し、構造を含む `AssetManagerApi.Changed` 通知で全件を破棄します。cache は Unity 終了または domain reload で揮発します。
+File Tree の完成済み表示データは Unity Editor のメモリ上に最大 64 件共有します。同一 item / file の再表示ではこの memory cache をそのまま利用し、filesystem / ZIP の再確認と loading text の表示を行いません。Import Target と Version Group の代表変更は cache 上の node state を更新し、構造を含む `Catalog` change で全件を破棄します。cache は Unity 終了または domain reload で揮発します。
 
 File Tree の構築中は File Tree 内の loading text だけを表示し、`BackgroundActivityApi` には登録しないため `StatusOverlay` は表示しません。
 
@@ -1042,12 +1053,12 @@ File Tree の ZIP metadata cache は、thumbnail と同じ cache root の `<ee4v
 
 File Tree の画像 file hover は user setting `assetManager.showFileTreeImageTooltip` で切り替えます。既定値は `true` で `ImageTooltip` に画像 preview と file 名を表示し、`false` では Unity 標準の text tooltip に戻します。設定変更は開いている File Tree へ即時反映します。
 
-### `AssetManagerApi.GetSyncInfo`
+### `IAssetManager.GetSyncInfo`
 
 Datasource 別の最後の sync 状態を取得します。
 
 ```csharp
-public static IReadOnlyList<AssetSyncInfo> GetSyncInfo()
+public IReadOnlyList<AssetSyncInfo> GetSyncInfo()
 ```
 
 Returns:

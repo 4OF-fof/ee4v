@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Ee4v.AssetManager.Api;
+using Ee4v.AssetManager.Contracts;
 using Ee4v.UI;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -67,7 +67,11 @@ namespace Ee4v.AssetManager
             };
             itemsPerRowField.RegisterValueChangedCallback(evt =>
             {
-                itemsPerRow = AssetManagerDefinitions.ItemGridItemsPerRow.Range.Clip(evt.newValue);
+                var preferences = AssetManagerUiDependencies.Preferences;
+                itemsPerRow = Mathf.Clamp(
+                    evt.newValue,
+                    preferences.MinimumItemsPerRow,
+                    preferences.MaximumItemsPerRow);
                 itemsPerRowField.SetValueWithoutNotify(itemsPerRow);
                 if (refresh != null)
                 {

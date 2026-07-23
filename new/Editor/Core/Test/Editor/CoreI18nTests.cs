@@ -89,7 +89,17 @@ namespace Ee4v.Core.Tests
             Assert.That(field, Is.Not.Null);
             Assert.That(field.value, Is.EqualTo(3));
 
-            field.value = 7;
+            var window = UnityEngine.ScriptableObject.CreateInstance<UnityEditor.EditorWindow>();
+            try
+            {
+                window.Show();
+                window.rootVisualElement.Add(field);
+                field.value = 7;
+            }
+            finally
+            {
+                window.Close();
+            }
 
             Assert.That(changedValue, Is.EqualTo(7));
         }

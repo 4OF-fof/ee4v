@@ -10,6 +10,67 @@ AssetManager は Booth / Eagle / ee4v 管理ファイルを統合して扱うた
 - file 実体の解決は origin ごとに行い、Item とは論理的に分離する
 - file は Item 配下の論理要素として扱い、必要に応じて Version Group / Variant Group で束ねる
 
+## Module 構造
+
+- `Contracts`: Unity 非依存の `IAssetManager`、request / response、change contract
+- `Domain`: Unity・SQLite・Core に依存しない invariant と policy
+- `Application`: use case と use case 単位の port。`IAssetManager` の instance 実装
+- `Infrastructure`: SQLite、datasource、filesystem、network、Unity adapter
+- `UI`: 注入された `IAssetManager` と UI state だけを扱う Presentation adapter
+- `Composition`: Module の依存を組み立てる唯一の `[InitializeOnLoad]`
+
+依存方向は `Composition -> UI / Infrastructure -> Application -> Domain` とし、UI は
+Contracts 経由で Application facade を利用します。Contracts、Domain、Application は
+`noEngineReferences: true` であり、UI と Infrastructure は互いを参照しません。
+
+static `AssetManagerApi` と static change event は使用しません。composition root が生成した
+`IAssetManager` instance を controller / presenter へ注入します。
+旧 `api` directory、`Ee4v.AssetManager.Api` namespace、Api asmdef は残さず、
+外部技術の実装は `Infrastructure`、BLM / Eagle reader は `Infrastructure/Datasources` に置きます。
+SQLite は `Infrastructure/Persistence/SQLite`、filesystem / ZIP / persistent cache は
+`Infrastructure/Files`、Unity package import は `Infrastructure/Unity` に分離します。
+
+## 互換性
+
+Clean Architecture 移行前の実装との後方互換は提供しません。
+
+- 旧 `AssetManagerApi` の signature、namespace、型名、asmdef 名を維持しない
+- 旧 static API / event や `api` directory 向けの互換 facade を置かない
+- 既存 DB、cache、Module 固有 setting の migration を行わず、削除・再生成または既定値からの再作成を前提とする
+
+現在の契約と機能要件は本ページ、[AssetManager API](../api/asset-manager.md)、
+[DB Schema](./schema.md) を正本とします。
+
+Import Target の path 正規化・file 配下制約・重複排除は `Domain` が所有します。
+`Application` use case は検証後に transactional store へ一括置換を依頼し、commit 成功後だけ
+`FileImportTargets`、`FileTree` の順で change を発行します。SQLite はこの規則を判断しません。
+
+Item / Tag / Collection / Group の必須値、Dependency の自己参照・target 種別、
+Smart Collection condition の成立条件も Domain policy が所有します。Application は
+command port を呼ぶ前に policy を適用し、失敗を Contracts の安定した error code へ変換します。
+
+Application port は read/query と command/write を分離しています。検索・thumbnail・file tree は
+read store から read model を直接受け取り、command は atomic な write store の成功後だけ
+notification を発行します。全面的な CQRS や汎用 repository は導入しません。
+
+Unity への file import は Application の `ImportFileUseCase` が item/file の所属、path 解決、
+Import Target の Domain policy を確認して `AssetImportPlan` を生成します。Infrastructure は
+plan に従って filesystem / ZIP / Unity package import を実行します。
+
+起動時 sync も Composition から SQLite helper を直接呼びません。Application の
+prepare/apply use case を通し、Infrastructure の prepared state は opaque token として保持します。
+conflict preview と overwrite 判断の契約は Application が所有し、通常 sync と起動時 sync は
+同じ sync port を使用します。
+
+UI の表示設定と ZIP 読み取りは Contracts の `IAssetManagerUiPreferences`、
+`IAssetArchiveReader` として注入します。background 実行と Unity main thread への復帰も
+`IAssetManagerUiScheduler` を Composition が注入します。UI assembly は Infrastructure、
+Application 実装、SQLite、`SettingApi`、`Task.Run`、`EditorApplication.delayCall` を参照しません。
+
+setting の定義と登録は Composition が所有します。Infrastructure は
+`IAssetManagerInfrastructureSettings` の typed snapshot provider を受け取り、
+`SettingApi` や Composition の setting 定義を直接参照しません。
+
 ## UI の責務
 
 - `MainViewController` は `MainViewHost` ごとに生成し、その表示セッションの navigation、履歴、取得済み一覧 cache、非同期 load と cancellation を所有する。統合 window と単独 window の controller instance は共有しない
@@ -23,6 +84,7 @@ AssetManager は Booth / Eagle / ee4v 管理ファイルを統合して扱うた
 
 - schema v2、Item/File/Tag/Collection/Dependency/Import Target API を実装済み
 - BLM `data.db` と Eagle library の読み取り同期、安定した source identity、datasource tag、欠落 origin の reconciliation を実装済み
+- BLM snapshot に任意の `preferences` table がない場合も item metadata の同期を継続し、item directory path だけを未設定として扱う
 - Main View と File Tree は DB / filesystem 読み込みを background で行い、前回 load の cancellation に対応
 - Main View のグリッドサイズ変更は取得済み item state の再配置だけを行い、DB と thumbnail の再読み込みや表示 cache の破棄を行わない。列数の範囲は `ItemGridItemsPerRow` 設定の `SettingRange<int>`（1〜12）だけが所有し、toolbar slider はその範囲へ入力を clip する。取得データと Core UI state は列数を保持しない。狭い表示領域では column gap と card 幅を縮め、高さが不足する場合は card 幅と行高を抑える fallback により、設定列数を維持したまま表示領域へ収める
 - File Tree は完成済みツリーを Unity Editor のメモリ上に最大 64 件共有し、同一 item / file の再表示では background 確認と loading 表示を省略する。Import Target と Version Group の代表変更は cache 上の表示 state へ反映して再構築せず、構造を含む AssetManager の変更時だけ全件を破棄する。cache は Unity 終了または domain reload で揮発する

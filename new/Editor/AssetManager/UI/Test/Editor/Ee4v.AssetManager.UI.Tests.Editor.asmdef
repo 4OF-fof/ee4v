@@ -2,7 +2,7 @@
   "name": "Ee4v.AssetManager.UI.Tests.Editor",
   "rootNamespace": "Ee4v.AssetManager.Tests",
   "references": [
-    "Ee4v.AssetManager.Api.Editor",
+    "Ee4v.AssetManager.Contracts.Editor",
     "Ee4v.AssetManager.UI.Editor",
     "Ee4v.Core.Editor",
     "Ee4v.Core.Testing.Editor",

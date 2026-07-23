@@ -41,9 +41,7 @@
     },
     "mainView": {
       "loading": "Loading assets...",
-      "loadingFiles": "Loading files...",
       "loadingChildren": "Loading children...",
-      "loadFailed": "Failed to load assets.",
       "loadCanceled": "Asset loading was canceled.",
       "noItems": "No asset items.",
       "noFiles": "This item has no files.",

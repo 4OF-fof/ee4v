@@ -1,5 +1,5 @@
 using System.Threading;
-using Ee4v.AssetManager.Api;
+using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEngine.UIElements;

@@ -3,12 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
-using Ee4v.AssetManager.Api;
+using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
-using Ee4v.Core.Settings;
 using Ee4v.UI;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -27,6 +24,10 @@ namespace Ee4v.AssetManager
         private const string RowMetaClassName = "ee4v-asset-manager-file-tree__meta";
         private const string RowGroupMetaClassName = "ee4v-asset-manager-file-tree__meta--group";
         private const int MaximumCachedImagePreviews = 24;
+        private readonly IAssetManager _assetManager;
+        private readonly IAssetManagerUiPreferences _preferences;
+        private readonly IAssetArchiveReader _archiveReader;
+        private readonly IAssetManagerUiScheduler _scheduler;
         private readonly SearchableTreeView<FileTreeNode> _treeView;
         private readonly Dictionary<string, Texture2D> _imagePreviewCache = new Dictionary<string, Texture2D>(StringComparer.OrdinalIgnoreCase);
         private CancellationTokenSource _reloadCancellation;
@@ -41,8 +42,16 @@ namespace Ee4v.AssetManager
         private string _itemId;
         private string _fileId;
 
-        public SearchableFileTree()
+        public SearchableFileTree(
+            IAssetManager assetManager = null,
+            IAssetManagerUiPreferences preferences = null,
+            IAssetArchiveReader archiveReader = null,
+            IAssetManagerUiScheduler scheduler = null)
         {
+            _assetManager = assetManager ?? AssetManagerUiDependencies.AssetManager;
+            _preferences = preferences ?? AssetManagerUiDependencies.Preferences;
+            _archiveReader = archiveReader ?? AssetManagerUiDependencies.ArchiveReader;
+            _scheduler = scheduler ?? AssetManagerUiDependencies.Scheduler;
             AddToClassList(RootClassName);
             _treeView = new SearchableTreeView<FileTreeNode>(
                 CreateTreeItem,
@@ -121,14 +130,10 @@ namespace Ee4v.AssetManager
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
             _isAttached = true;
-            AssetManagerApi.Changed -= OnAssetManagerChanged;
-            AssetManagerApi.Changed += OnAssetManagerChanged;
-            AssetManagerApi.FileImportTargetsChanged -= OnFileImportTargetsChanged;
-            AssetManagerApi.FileImportTargetsChanged += OnFileImportTargetsChanged;
-            AssetManagerApi.VersionGroupPrimaryFileChanged -= OnVersionGroupPrimaryFileChanged;
-            AssetManagerApi.VersionGroupPrimaryFileChanged += OnVersionGroupPrimaryFileChanged;
-            SettingApi.Changed -= OnSettingChanged;
-            SettingApi.Changed += OnSettingChanged;
+            _assetManager.Changed -= OnAssetManagerChanged;
+            _assetManager.Changed += OnAssetManagerChanged;
+            _preferences.Changed -= OnSettingChanged;
+            _preferences.Changed += OnSettingChanged;
             Reload(preserveTreeState: true);
         }
 
@@ -138,35 +143,41 @@ namespace Ee4v.AssetManager
             HideImageTooltip();
             ClearImagePreviewCache();
             CancelPendingReload();
-            AssetManagerApi.Changed -= OnAssetManagerChanged;
-            AssetManagerApi.FileImportTargetsChanged -= OnFileImportTargetsChanged;
-            AssetManagerApi.VersionGroupPrimaryFileChanged -= OnVersionGroupPrimaryFileChanged;
-            SettingApi.Changed -= OnSettingChanged;
+            _assetManager.Changed -= OnAssetManagerChanged;
+            _preferences.Changed -= OnSettingChanged;
         }
 
-        private void OnAssetManagerChanged()
+        private void OnAssetManagerChanged(AssetManagerChange change)
         {
-            HideImageTooltip();
-            ClearImagePreviewCache();
-            FileTreeMemoryCache.Clear();
-            Reload(preserveTreeState: true);
+            if (change == null)
+            {
+                return;
+            }
+
+            switch (change.Kind)
+            {
+                case AssetManagerChangeKind.Catalog:
+                    HideImageTooltip();
+                    ClearImagePreviewCache();
+                    FileTreeMemoryCache.Clear();
+                    Reload(preserveTreeState: true);
+                    break;
+                case AssetManagerChangeKind.FileImportTargets:
+                    FileTreeMemoryCache.SetImportTargets(change.SubjectId, change.ImportTargets);
+                    _treeView.RefreshItems();
+                    break;
+                case AssetManagerChangeKind.VersionGroupPrimaryFile:
+                    FileTreeMemoryCache.SetVersionGroupPrimaryFile(
+                        change.SubjectId,
+                        change.RelatedId);
+                    _treeView.RefreshItems();
+                    break;
+            }
         }
 
-        private void OnFileImportTargetsChanged(string fileId, IReadOnlyList<AssetFileImportTarget> targets)
+        private void OnSettingChanged(AssetManagerUiPreference preference)
         {
-            FileTreeMemoryCache.SetImportTargets(fileId, targets);
-            _treeView.RefreshItems();
-        }
-
-        private void OnVersionGroupPrimaryFileChanged(string versionGroupId, string primaryFileId)
-        {
-            FileTreeMemoryCache.SetVersionGroupPrimaryFile(versionGroupId, primaryFileId);
-            _treeView.RefreshItems();
-        }
-
-        private void OnSettingChanged(SettingDefinitionBase definition, object value)
-        {
-            if (!ReferenceEquals(definition, AssetManagerDefinitions.ShowFileTreeImageTooltip))
+            if (preference != AssetManagerUiPreference.ShowFileTreeImageTooltip)
             {
                 return;
             }
@@ -186,10 +197,10 @@ namespace Ee4v.AssetManager
                 return;
             }
 
-            SettingApi.Preload(SettingScope.User);
+            _preferences.Preload();
             var itemId = _itemId;
             var fileId = _fileId;
-            var cacheDirectory = AssetFileTreeCache.ResolveCacheDirectory();
+            var cacheDirectory = _archiveReader.CacheDirectory;
             var inaccessibleText = I18N.Get("assetManager.infomationPanel.fileTree.meta.inaccessible");
             var zipText = I18N.Get("assetManager.infomationPanel.fileTree.meta.zip");
             var memoryCacheKey = new FileTreeMemoryCacheKey(
@@ -213,44 +224,38 @@ namespace Ee4v.AssetManager
             _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.loading"));
             _treeView.SetItems(null);
 
-            Task.Run(
-                () => LoadTree(itemId, fileId, cacheDirectory, inaccessibleText, zipText, cancellation.Token),
-                cancellation.Token).ContinueWith(task =>
+            _scheduler.RunInBackground(
+                token => LoadTree(itemId, fileId, cacheDirectory, inaccessibleText, zipText, token),
+                cancellation.Token,
+                result =>
             {
-                EditorApplication.delayCall += () =>
+                if (reloadVersion != _reloadVersion || cancellation.IsCancellationRequested || result.Canceled)
                 {
-                    if (reloadVersion != _reloadVersion || cancellation.IsCancellationRequested || task.IsCanceled)
-                    {
-                        cancellation.Dispose();
-                        return;
-                    }
-
-                    if (ReferenceEquals(_reloadCancellation, cancellation))
-                    {
-                        _reloadCancellation = null;
-                    }
-
                     cancellation.Dispose();
-                    if (task.IsFaulted)
-                    {
-                        if (task.Exception != null)
-                        {
-                            Debug.LogException(task.Exception.GetBaseException());
-                        }
+                    return;
+                }
 
-                        _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.loadFailed"));
-                        _treeView.SetItems(null);
-                        return;
-                    }
+                if (ReferenceEquals(_reloadCancellation, cancellation))
+                {
+                    _reloadCancellation = null;
+                }
 
-                    FileTreeMemoryCache.Set(memoryCacheKey, task.Result);
-                    _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.empty"));
-                    _treeView.SetItems(task.Result, preserveTreeState);
-                };
+                cancellation.Dispose();
+                if (result.Error != null)
+                {
+                    Debug.LogException(result.Error);
+                    _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.loadFailed"));
+                    _treeView.SetItems(null);
+                    return;
+                }
+
+                FileTreeMemoryCache.Set(memoryCacheKey, result.Value);
+                _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.empty"));
+                _treeView.SetItems(result.Value, preserveTreeState);
             });
         }
 
-        private static IReadOnlyList<SearchableTreeItemData<FileTreeNode>> LoadTree(
+        private IReadOnlyList<SearchableTreeItemData<FileTreeNode>> LoadTree(
             string itemId,
             string fileId,
             string cacheDirectory,
@@ -261,25 +266,30 @@ namespace Ee4v.AssetManager
             var files = LoadFiles(itemId, fileId);
             cancellationToken.ThrowIfCancellationRequested();
             var variants = string.IsNullOrWhiteSpace(fileId)
-                ? AssetManagerApi.GetVariantGroups(itemId)
+                ? _assetManager.GetVariantGroups(itemId)
                 : Array.Empty<AssetVariantGroup>();
             var versions = string.IsNullOrWhiteSpace(fileId)
-                ? AssetManagerApi.GetVersionGroups(itemId)
+                ? _assetManager.GetVersionGroups(itemId)
                 : Array.Empty<AssetVersionGroup>();
             var importTargetsByFileId = new Dictionary<string, IReadOnlyList<AssetFileImportTarget>>(StringComparer.Ordinal);
             for (var i = 0; i < files.Count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                importTargetsByFileId[files[i].Id] = AssetManagerApi.GetFileImportTargets(files[i].Id);
+                importTargetsByFileId[files[i].Id] = _assetManager.GetFileImportTargets(files[i].Id);
             }
 
-            var builder = new FileTreeBuilder(cacheDirectory, inaccessibleText, zipText, cancellationToken);
+            var builder = new FileTreeBuilder(
+                _assetManager,
+                _archiveReader,
+                inaccessibleText,
+                zipText,
+                cancellationToken);
             return builder.Build(files, variants, versions, importTargetsByFileId);
         }
 
-        private static IReadOnlyList<AssetFile> LoadFiles(string itemId, string fileId)
+        private IReadOnlyList<AssetFile> LoadFiles(string itemId, string fileId)
         {
-            var files = AssetManagerApi.GetFiles(itemId, new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active });
+            var files = _assetManager.GetFiles(itemId, new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active });
             if (string.IsNullOrWhiteSpace(fileId))
             {
                 return files;
@@ -340,7 +350,7 @@ namespace Ee4v.AssetManager
             element.EnableInClassList(RowVariantGroupClassName, node.GroupKind == FileTreeGroupKind.Variant);
             element.EnableInClassList(RowVersionGroupClassName, node.GroupKind == FileTreeGroupKind.Version);
             element.EnableInClassList(RowPrimaryFileClassName, node.IsPrimaryFile);
-            var useImageTooltip = node.ImageSource != null && SettingApi.Get(AssetManagerDefinitions.ShowFileTreeImageTooltip);
+            var useImageTooltip = node.ImageSource != null && _preferences.ShowFileTreeImageTooltip;
             element.tooltip = useImageTooltip ? string.Empty : node.Name;
             var title = element.ElementAt(0) as UiTextElement;
             var meta = element.ElementAt(1) as UiTextElement;
@@ -368,7 +378,7 @@ namespace Ee4v.AssetManager
             if (row == null ||
                 node == null ||
                 node.ImageSource == null ||
-                !SettingApi.Get(AssetManagerDefinitions.ShowFileTreeImageTooltip))
+                !_preferences.ShowFileTreeImageTooltip)
             {
                 return;
             }
@@ -389,38 +399,38 @@ namespace Ee4v.AssetManager
             _imagePreviewCancellation = cancellation;
             var previewVersion = ++_imagePreviewVersion;
             var source = node.ImageSource;
-            Task.Run(() => FileTreeImagePreviewLoader.Load(source, cancellation.Token), cancellation.Token).ContinueWith(task =>
+            _scheduler.RunInBackground(
+                token => FileTreeImagePreviewLoader.Load(source, token),
+                cancellation.Token,
+                result =>
             {
-                EditorApplication.delayCall += () =>
+                if (ReferenceEquals(_imagePreviewCancellation, cancellation))
                 {
-                    if (ReferenceEquals(_imagePreviewCancellation, cancellation))
-                    {
-                        _imagePreviewCancellation = null;
-                    }
+                    _imagePreviewCancellation = null;
+                }
 
-                    if (previewVersion != _imagePreviewVersion ||
-                        cancellation.IsCancellationRequested ||
-                        task.IsCanceled ||
-                        task.IsFaulted ||
-                        task.Result == null ||
-                        !ReferenceEquals(_hoveredImageRow, row) ||
-                        !ReferenceEquals(_hoveredImageNode, node) ||
-                        row.panel == null)
-                    {
-                        cancellation.Dispose();
-                        return;
-                    }
-
+                if (previewVersion != _imagePreviewVersion ||
+                    cancellation.IsCancellationRequested ||
+                    result.Canceled ||
+                    result.Error != null ||
+                    result.Value == null ||
+                    !ReferenceEquals(_hoveredImageRow, row) ||
+                    !ReferenceEquals(_hoveredImageNode, node) ||
+                    row.panel == null)
+                {
                     cancellation.Dispose();
-                    var texture = task.Result.CreateTexture();
-                    if (texture == null)
-                    {
-                        return;
-                    }
+                    return;
+                }
 
-                    CacheImagePreview(source.CacheKey, texture);
-                    ShowImageTooltip(row, node, texture);
-                };
+                cancellation.Dispose();
+                var texture = result.Value.CreateTexture();
+                if (texture == null)
+                {
+                    return;
+                }
+
+                CacheImagePreview(source.CacheKey, texture);
+                ShowImageTooltip(row, node, texture);
             });
         }
 
@@ -568,7 +578,7 @@ namespace Ee4v.AssetManager
                 menuItems.Add(new ContextMenuItemState(
                     "set-version-group-primary",
                     I18N.Get("assetManager.infomationPanel.fileTree.context.setPrimaryFile"),
-                    () => AssetManagerApi.SetVersionGroupPrimaryFile(item.VersionGroupId, item.AssetFileId)));
+                    () => _assetManager.SetVersionGroupPrimaryFile(item.VersionGroupId, item.AssetFileId)));
             }
 
             if (importTargetSelection.Length > 0)
@@ -610,12 +620,12 @@ namespace Ee4v.AssetManager
             if (item.IsAssetFileRoot || item.GroupKind == FileTreeGroupKind.Version)
             {
                 var fileId = item.AssetFileId;
-                if (string.IsNullOrWhiteSpace(fileId) || AssetManagerApi.GetFileImportTargets(fileId).Count == 0)
+                if (string.IsNullOrWhiteSpace(fileId) || _assetManager.GetFileImportTargets(fileId).Count == 0)
                 {
                     return false;
                 }
 
-                importAction = () => AssetManagerApi.ImportFileTargets(itemId, fileId);
+                importAction = () => _assetManager.ImportFileTargets(itemId, fileId);
                 return true;
             }
 
@@ -630,7 +640,7 @@ namespace Ee4v.AssetManager
                 return false;
             }
 
-            importAction = () => AssetManagerApi.ImportFileEntry(itemId, entry.FileId, entry.RelativePath);
+            importAction = () => _assetManager.ImportFileEntry(itemId, entry.FileId, entry.RelativePath);
             return true;
         }
 
@@ -645,7 +655,7 @@ namespace Ee4v.AssetManager
             for (var i = 0; i < grouped.Length; i++)
             {
                 var fileId = grouped[i].Key;
-                var targets = AssetManagerApi.GetFileImportTargets(fileId)
+                var targets = _assetManager.GetFileImportTargets(fileId)
                     .ToDictionary(target => target.RelativePath ?? string.Empty, StringComparer.OrdinalIgnoreCase);
 
                 foreach (var entry in grouped[i])
@@ -664,7 +674,7 @@ namespace Ee4v.AssetManager
                     }
                 }
 
-                AssetManagerApi.SetFileImportTargets(
+                _assetManager.SetFileImportTargets(
                     fileId,
                     targets.Values
                         .OrderBy(target => target.RelativePath, StringComparer.OrdinalIgnoreCase)
@@ -737,13 +747,6 @@ namespace Ee4v.AssetManager
         private static readonly Dictionary<FileTreeMemoryCacheKey, IReadOnlyList<SearchableTreeItemData<FileTreeNode>>> Entries =
             new Dictionary<FileTreeMemoryCacheKey, IReadOnlyList<SearchableTreeItemData<FileTreeNode>>>();
         private static readonly Queue<FileTreeMemoryCacheKey> InsertionOrder = new Queue<FileTreeMemoryCacheKey>();
-
-        static FileTreeMemoryCache()
-        {
-            AssetManagerApi.Changed += Clear;
-            AssetManagerApi.FileImportTargetsChanged += SetImportTargets;
-            AssetManagerApi.VersionGroupPrimaryFileChanged += SetVersionGroupPrimaryFile;
-        }
 
         public static bool TryGet(
             FileTreeMemoryCacheKey key,
@@ -1017,6 +1020,7 @@ namespace Ee4v.AssetManager
 
     internal sealed class FileTreeBuilder
     {
+        private readonly IAssetManager _assetManager;
         private readonly ZipFileTreeReader _zipReader;
         private readonly string _inaccessibleText;
         private readonly string _zipText;
@@ -1025,12 +1029,14 @@ namespace Ee4v.AssetManager
         private IReadOnlyDictionary<string, IReadOnlyList<AssetFileImportTarget>> _importTargetsByFileId;
 
         public FileTreeBuilder(
-            string cacheDirectory,
+            IAssetManager assetManager,
+            IAssetArchiveReader archiveReader,
             string inaccessibleText,
             string zipText,
             CancellationToken cancellationToken)
         {
-            _zipReader = new ZipFileTreeReader(cacheDirectory, cancellationToken);
+            _assetManager = assetManager ?? throw new ArgumentNullException(nameof(assetManager));
+            _zipReader = new ZipFileTreeReader(archiveReader, cancellationToken);
             _inaccessibleText = inaccessibleText ?? string.Empty;
             _zipText = zipText ?? string.Empty;
             _cancellationToken = cancellationToken;
@@ -1196,7 +1202,7 @@ namespace Ee4v.AssetManager
 
         private SearchableTreeItemData<FileTreeNode> BuildAssetFileNode(AssetFile file, bool isPrimaryFile = false)
         {
-            var resolution = AssetManagerApi.ResolveFilePath(file.Id);
+            var resolution = _assetManager.ResolveFilePath(file.Id);
             if (resolution == null || !resolution.Found || string.IsNullOrWhiteSpace(resolution.Path))
             {
                 return CreateItem(
@@ -1513,12 +1519,14 @@ namespace Ee4v.AssetManager
 
     internal sealed class ZipFileTreeReader
     {
-        private readonly string _cacheDirectory;
+        private readonly IAssetArchiveReader _archiveReader;
         private readonly CancellationToken _cancellationToken;
 
-        public ZipFileTreeReader(string cacheDirectory, CancellationToken cancellationToken)
+        public ZipFileTreeReader(
+            IAssetArchiveReader archiveReader,
+            CancellationToken cancellationToken)
         {
-            _cacheDirectory = cacheDirectory;
+            _archiveReader = archiveReader ?? throw new ArgumentNullException(nameof(archiveReader));
             _cancellationToken = cancellationToken;
         }
 
@@ -1530,7 +1538,7 @@ namespace Ee4v.AssetManager
             string relativePathPrefix)
         {
             var root = new ZipVirtualDirectory(string.Empty, string.Empty);
-            var entries = AssetFileTreeCache.ReadZipEntries(_cacheDirectory, zipPath, _cancellationToken);
+            var entries = _archiveReader.ReadZipEntries(zipPath, _cancellationToken);
             for (var i = 0; i < entries.Count; i++)
             {
                 _cancellationToken.ThrowIfCancellationRequested();
@@ -1541,7 +1549,7 @@ namespace Ee4v.AssetManager
             return snapshot.CreateTree(nextId, assetFile, importTargetPaths, relativePathPrefix, zipPath);
         }
 
-        private static void AddEntry(ZipVirtualDirectory root, AssetFileTreeArchiveEntry entry)
+        private static void AddEntry(ZipVirtualDirectory root, AssetArchiveEntry entry)
         {
             if (entry == null || string.IsNullOrWhiteSpace(entry.FullName))
             {

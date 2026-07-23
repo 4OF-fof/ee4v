@@ -1,0 +1,22 @@
+{
+  "name": "Ee4v.AssetManager.Domain.Tests.Editor",
+  "rootNamespace": "Ee4v.AssetManager.Domain.Tests",
+  "references": [
+    "Ee4v.AssetManager.Domain.Editor",
+    "Ee4v.Core.Testing.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

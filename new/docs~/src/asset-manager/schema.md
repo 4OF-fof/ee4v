@@ -1,5 +1,9 @@
 # AssetManager DB Schema
 
+SQLite の connection、schema、row、mapping、query、transaction 実装は
+`Editor/AssetManager/Infrastructure/Persistence/SQLite` に閉じています。
+Application/UI/Contracts/Domain は SQLite assembly と DB row を参照しません。
+
 AssetManager 独自 DB の schema です。Item / File / Collection を中心に、Booth・Eagle・ee4v の origin を分離して保持します。
 
 関連する datasource の元データは [Datasource Data Elements](./data-elements.md) を参照してください。

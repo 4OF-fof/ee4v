@@ -1,5 +1,5 @@
 using System;
-using Ee4v.AssetManager.Api;
+using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEngine;
@@ -43,9 +43,9 @@ namespace Ee4v.AssetManager
             leading.Add(_historyNavigation);
             Content.Add(leading);
 
-            var range = AssetManagerDefinitions.ItemGridItemsPerRow.Range;
-            var minimumGridSize = range.Minimum;
-            var maximumGridSize = range.Maximum;
+            var preferences = AssetManagerUiDependencies.Preferences;
+            var minimumGridSize = preferences.MinimumItemsPerRow;
+            var maximumGridSize = preferences.MaximumItemsPerRow;
             _itemSizeSlider = new NumericSlider(new NumericSliderState(initialGridSize, minimumGridSize, maximumGridSize, 1f));
             _itemSizeSlider.AddToClassList(SliderClassName);
             _itemSizeSlider.tooltip = I18N.Get("assetManager.mainToolbar.gridSize");

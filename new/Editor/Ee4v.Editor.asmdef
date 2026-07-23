@@ -2,8 +2,7 @@
   "name": "Ee4v.Editor",
   "rootNamespace": "Ee4v",
   "references": [
-    "Ee4v.AssetManager.Api.Editor",
-    "Ee4v.AssetManager.UI.Editor",
+    "Ee4v.AssetManager.Contracts.Editor",
     "Ee4v.Core.Editor",
     "Ee4v.Core.Testing.Editor",
     "Ee4v.Core.UI.Testing.Editor",

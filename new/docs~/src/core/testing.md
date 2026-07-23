@@ -57,6 +57,7 @@ Core 全体に効く監査や基盤テストは `Editor/Core/Test/Editor` に置
 
 - I18N scope 解決テスト
 - localization static audit
+- AssetManager の asmdef 依存方向、内側レイヤーの技術非依存、composition root 一意性、SQLite / filesystem / Unity adapter の配置を確認する architecture static audit
 - UI の direct `Label` 使用監査
 - setting、bootstrap、Injector の基盤契約テスト
 
