@@ -68,6 +68,7 @@ namespace Ee4v.Core.Settings
         private readonly Func<T, SettingValidationResult> _validator;
         private readonly Func<SettingDrawerContext<T>, VisualElement> _customDrawer;
         private readonly T _defaultValue;
+        private readonly SettingRange<T> _range;
 
         public SettingDefinition(
             string key,
@@ -79,6 +80,7 @@ namespace Ee4v.Core.Settings
             int order = 0,
             Func<T, SettingValidationResult> validator = null,
             Func<SettingDrawerContext<T>, VisualElement> customDrawer = null,
+            SettingRange<T> range = null,
             IReadOnlyList<string> keywords = null,
             [CallerFilePath] string definitionSourceFilePath = "")
             : base(
@@ -95,6 +97,16 @@ namespace Ee4v.Core.Settings
             _defaultValue = defaultValue;
             _validator = validator;
             _customDrawer = customDrawer;
+            _range = range;
+            if (_range != null && !_range.Contains(_defaultValue))
+            {
+                throw new ArgumentOutOfRangeException(nameof(defaultValue));
+            }
+        }
+
+        public SettingRange<T> Range
+        {
+            get { return _range; }
         }
 
         public override Type ValueType
@@ -109,12 +121,18 @@ namespace Ee4v.Core.Settings
 
         internal override SettingValidationResult ValidateBoxed(object value)
         {
+            var typedValue = value != null ? (T)value : default(T);
+            if (_range != null && !_range.Contains(typedValue))
+            {
+                return _range.CreateOutOfRangeResult();
+            }
+
             if (_validator == null)
             {
                 return SettingValidationResult.Success;
             }
 
-            return _validator(value != null ? (T)value : default(T));
+            return _validator(typedValue);
         }
 
         internal override VisualElement CreateField(

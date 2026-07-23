@@ -26,6 +26,10 @@
 .ee4v-ui-item-grid__list .unity-collection-view__item,
 .ee4v-ui-item-grid__list .unity-list-view__item {
     background-color: var(--ee4v-color-transparent);
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
 }
 
 .ee4v-ui-item-grid__list .unity-collection-view__item:hover,

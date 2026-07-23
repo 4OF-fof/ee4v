@@ -100,7 +100,8 @@ namespace Ee4v.UI
 
             refresh = () =>
             {
-                grid.SetState(new ItemGridState(CreateSelectableItemGridItems(itemCount, thumbnailBytes), itemsPerRow));
+                grid.SetItemsPerRow(itemsPerRow);
+                grid.SetState(new ItemGridState(CreateSelectableItemGridItems(itemCount, thumbnailBytes)));
                 selectedCard.SetState(CreateSelectableItemGridSelectionState(grid.SelectedItems));
             };
 

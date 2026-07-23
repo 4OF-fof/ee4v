@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
@@ -21,7 +20,7 @@ namespace Ee4v.UI
                 ? string.Empty
                 : string.IsNullOrWhiteSpace(cacheKey)
                     ? CreateDataCacheKey(TextureData)
-                    : cacheKey;
+                    : cacheKey + ":" + CreateDataCacheKey(TextureData);
         }
 
         public byte[] TextureData { get; }
@@ -54,7 +53,7 @@ namespace Ee4v.UI
         private const string RootClassName = "ee4v-ui-item-image";
         private const string ImageClassName = "ee4v-ui-item-image__image";
         private const string PlaceholderClassName = "ee4v-ui-item-image__placeholder";
-        private const float MinSize = 48f;
+        private const float MinSize = 1f;
         private readonly Image _image;
         private readonly VisualElement _placeholder;
 
@@ -83,7 +82,7 @@ namespace Ee4v.UI
 
         public void SetState(ItemImageState state)
         {
-            SetTexture(ItemImageCache.GetTexture(state));
+            SetTexture(ItemImageTextureCache.GetTexture(state));
         }
 
         private void SetTexture(Texture2D texture)
@@ -106,66 +105,4 @@ namespace Ee4v.UI
         }
     }
 
-    internal static class ItemImageCache
-    {
-        private static readonly Dictionary<string, Texture2D> Textures = new Dictionary<string, Texture2D>(StringComparer.Ordinal);
-
-        public static Texture2D GetTexture(ItemImageState state)
-        {
-            if (state == null)
-            {
-                return null;
-            }
-
-            var data = state.TextureData;
-            if (data == null || data.Length == 0)
-            {
-                return null;
-            }
-
-            Texture2D cached;
-            if (Textures.TryGetValue(state.CacheKey, out cached) && cached != null)
-            {
-                return cached;
-            }
-
-            var texture = CreateTexture(data);
-            if (texture == null)
-            {
-                return null;
-            }
-
-            Textures[state.CacheKey] = texture;
-            return texture;
-        }
-
-        public static void Clear()
-        {
-            foreach (var texture in Textures.Values)
-            {
-                if (texture != null)
-                {
-                    UnityEngine.Object.DestroyImmediate(texture);
-                }
-            }
-
-            Textures.Clear();
-        }
-
-        private static Texture2D CreateTexture(byte[] data)
-        {
-            var texture = new Texture2D(2, 2)
-            {
-                hideFlags = HideFlags.HideAndDontSave
-            };
-
-            if (texture.LoadImage(data))
-            {
-                return texture;
-            }
-
-            UnityEngine.Object.DestroyImmediate(texture);
-            return null;
-        }
-    }
 }

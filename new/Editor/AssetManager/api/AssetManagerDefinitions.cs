@@ -15,6 +15,11 @@ namespace Ee4v.AssetManager.Api
         private const string DefaultVersionGroupRegex = @"(?i)(?:(?:v|ver|version)[\s_\-.]*(?<name>\d+(?:\.\d+){0,3})(?=$|[\s_\-.\]\)]|[^\d.])|(?:^|[\s_\-])(?<name>\d+\.\d+(?:\.\d+){0,2})(?=\.(?:zip|psd|mp4|unitypackage)(?:$|\s)|$|\s))";
         private static bool _registered;
 
+        public static readonly SettingRange<int> ItemGridItemsPerRowRange = new SettingRange<int>(
+            1,
+            12,
+            () => SettingValidationResult.Error(I18N.Get("settings.validation.itemGridItemsPerRow")));
+
         static AssetManagerDefinitions()
         {
             RegisterAll();
@@ -113,7 +118,7 @@ namespace Ee4v.AssetManager.Api
             "settings.itemGridItemsPerRow.tooltip",
             7,
             order: 0,
-            validator: ValidateItemGridItemsPerRow);
+            range: ItemGridItemsPerRowRange);
 
         public static readonly SettingDefinition<bool> ShowFileTreeImageTooltip = new SettingDefinition<bool>(
             "assetManager.showFileTreeImageTooltip",
@@ -176,13 +181,6 @@ namespace Ee4v.AssetManager.Api
             return priorities.Count == 3
                 ? SettingValidationResult.Success
                 : SettingValidationResult.Error(I18N.Get("settings.validation.sourcePriority"));
-        }
-
-        private static SettingValidationResult ValidateItemGridItemsPerRow(int value)
-        {
-            return value >= 1 && value <= 12
-                ? SettingValidationResult.Success
-                : SettingValidationResult.Error(I18N.Get("settings.validation.itemGridItemsPerRow"));
         }
 
         private static SettingValidationResult ValidateHistoryOverlayMaximumItems(int value)

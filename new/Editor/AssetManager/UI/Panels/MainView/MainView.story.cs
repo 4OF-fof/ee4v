@@ -37,7 +37,9 @@ namespace Ee4v.AssetManager
             surface.style.paddingBottom = 0f;
             surface.style.height = 360f;
 
-            var panel = new MainView();
+            var host = new MainViewHost();
+            var panel = host.MainView;
+            panel.RegisterCallback<DetachFromPanelEvent>(_ => host.Dispose());
             panel.style.flexGrow = 1f;
             surface.Add(panel);
             preview.Body.Add(surface);

@@ -14,6 +14,7 @@ setting 定義は原則 `Editor/<Feature>/<Feature>Definitions.cs` に置きま�
 | `defaultValue` | 既定値 |
 | `order` | section 内並び順 |
 | `validator` | 入力制約 |
+| `range` | 数値など順序付け可能な設定値の最小値・最大値 |
 | `customDrawer` | 標準 field で足りない場合に UI Toolkit の `VisualElement` を生成する callback |
 | `keywords` | settings 検索補助 |
 
@@ -47,5 +48,6 @@ grouping は `localizationScope + sectionKey` 単位です。section を増や�
 ## バリデーション
 
 - invalid 値は `validator` で弾く
+- 最小値・最大値を持つ設定は `SettingRange<T>` を定義へ持たせる。範囲を使う UI は同じ `range` を参照し、別の制約値を持たない
 - エラーメッセージは `SettingValidationResult.Error(...)`
 - validation 文言も `I18N.Get(...)` 経由にする

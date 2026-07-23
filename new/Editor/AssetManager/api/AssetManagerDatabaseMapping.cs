@@ -39,6 +39,22 @@ namespace Ee4v.AssetManager.Api
             };
         }
 
+        private static AssetItem ToAssetItemSummary(ItemRow row)
+        {
+            return new AssetItem
+            {
+                Id = row.id,
+                Name = row.name,
+                Description = row.description,
+                IsAvailable = row.is_available != 0,
+                Booth = null,
+                Tags = Array.Empty<AssetTag>(),
+                Files = Array.Empty<AssetFileSummary>(),
+                CreatedAt = ParseDate(row.created_at),
+                UpdatedAt = ParseDate(row.updated_at)
+            };
+        }
+
         private static BoothSnapshot LoadBoothSnapshot(SQLiteConnection connection, string itemId)
         {
             var row = connection.Query<BoothRow>(

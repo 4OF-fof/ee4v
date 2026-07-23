@@ -47,6 +47,8 @@ namespace Ee4v.UI
 
     internal class ItemCard : VisualElement
     {
+        internal const float PreferredMinimumWidth = 48f;
+        private const float AbsoluteMinimumWidth = 1f;
         private const string RootClassName = "ee4v-ui-item-card";
         private const float DefaultWidth = 132f;
         private const float DefaultIconSize = 44f;
@@ -54,6 +56,7 @@ namespace Ee4v.UI
         private readonly ItemImage _thumbnail;
         private readonly Icon _icon;
         private readonly UiTextElement _nameLabel;
+        private float _width = DefaultWidth;
 
         public ItemCard(ItemCardState state = null)
         {
@@ -87,6 +90,7 @@ namespace Ee4v.UI
             if (showIcon)
             {
                 _icon.SetState(nextState.IconState);
+                ApplyIconSize();
             }
 
             _nameLabel.SetText(nextState.ItemName);
@@ -94,7 +98,8 @@ namespace Ee4v.UI
 
         public void SetWidth(float width)
         {
-            var safeWidth = Mathf.Max(48f, width);
+            var safeWidth = Mathf.Max(AbsoluteMinimumWidth, width);
+            _width = safeWidth;
             style.width = safeWidth;
             style.minWidth = safeWidth;
             style.maxWidth = safeWidth;
@@ -107,12 +112,19 @@ namespace Ee4v.UI
             _imageFrame.style.maxHeight = safeWidth;
 
             _thumbnail.SetSize(safeWidth);
-            _icon.style.left = (safeWidth - DefaultIconSize) * 0.5f;
-            _icon.style.top = (safeWidth - DefaultIconSize) * 0.5f;
+            ApplyIconSize();
 
             _nameLabel.style.width = safeWidth;
             _nameLabel.style.minWidth = safeWidth;
             _nameLabel.style.maxWidth = safeWidth;
+        }
+
+        private void ApplyIconSize()
+        {
+            var iconSize = Mathf.Min(DefaultIconSize, _width);
+            _icon.SetSize(iconSize);
+            _icon.style.left = (_width - iconSize) * 0.5f;
+            _icon.style.top = (_width - iconSize) * 0.5f;
         }
     }
 }

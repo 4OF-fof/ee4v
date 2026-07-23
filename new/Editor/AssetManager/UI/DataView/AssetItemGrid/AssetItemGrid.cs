@@ -5,40 +5,15 @@ namespace Ee4v.AssetManager
 {
     internal sealed class AssetItemGrid : SelectableItemGrid
     {
-        public AssetItemGrid()
-        {
-            History = new AssetItemGridHistory();
-        }
-
-        public AssetItemGridHistory History { get; }
-
-        public bool TrySetCachedItems(string cacheKey, out string statusText)
-        {
-            ItemGridState gridState;
-            if (ItemGridStateCache.TryGet(cacheKey, out gridState, out statusText))
-            {
-                SetState(gridState);
-                return true;
-            }
-
-            return false;
-        }
-
         public void SetLoading()
         {
             SetState(new ItemGridState(null));
         }
 
-        public void SetAssetItems(string cacheKey, AssetItemGridList itemList, out string statusText)
+        public void SetAssetItems(AssetItemGridList itemList, out string statusText)
         {
             var gridState = CreateGridState(itemList, out statusText);
-            ItemGridStateCache.Store(cacheKey, gridState, statusText);
             SetState(gridState);
-        }
-
-        public void ClearCachedItems()
-        {
-            ItemGridStateCache.Clear();
         }
 
         protected override ItemCard CreateItemCard()
@@ -62,7 +37,7 @@ namespace Ee4v.AssetManager
             }
 
             statusText = itemCardStates.Count == 0 ? list.EmptyText : string.Empty;
-            return new ItemGridState(itemCardStates, list.ItemsPerRow);
+            return new ItemGridState(itemCardStates);
         }
     }
 }

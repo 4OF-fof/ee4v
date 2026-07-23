@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.AssetManager.Api;
 using Ee4v.UI;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -26,13 +27,12 @@ namespace Ee4v.AssetManager
                     "Domain/AssetManager",
                     "AssetItemGrid",
                     "AssetManager item grid list を受け取り、汎用 ItemGrid に表示状態として流し込む domain component です。",
-                    "AssetItemGridList から ItemImageState 付き ItemGridState への変換と grid state cache 利用を内包し、呼び出し側が ItemGridState を直接意識しないための adapter として扱います。",
+                    "AssetItemGridList から ItemImageState 付き ItemGridState への変換だけを行い、呼び出し側が ItemGridState を直接意識しないための adapter として扱います。",
                     new[]
                     {
                         "ItemGrid",
                         "ItemCard",
-                        "ItemImage",
-                        "ItemGridStateCache"
+                        "ItemImage"
                     },
                     CatalogWindow.ComponentImplementationKind.UiToolkit,
                     (window, parent) => BuildAssetItemGridStory(window, parent)));
@@ -44,7 +44,7 @@ namespace Ee4v.AssetManager
             var itemCount = 80;
             var itemsPerRow = 6;
             Action refresh = null;
-            var controls = window.CreatePlainControlsSection(parent, "AssetItemGridList を流し込み、AssetItemGrid 側の変換と cache 利用を確認します。");
+            var controls = window.CreatePlainControlsSection(parent, "AssetItemGridList を流し込み、AssetItemGrid 側の描画 state 変換を確認します。");
 
             var itemCountField = new IntegerField("Item Count")
             {
@@ -67,7 +67,7 @@ namespace Ee4v.AssetManager
             };
             itemsPerRowField.RegisterValueChangedCallback(evt =>
             {
-                itemsPerRow = Mathf.Clamp(evt.newValue, 1, 12);
+                itemsPerRow = AssetManagerDefinitions.ItemGridItemsPerRow.Range.Clip(evt.newValue);
                 itemsPerRowField.SetValueWithoutNotify(itemsPerRow);
                 if (refresh != null)
                 {
@@ -92,14 +92,15 @@ namespace Ee4v.AssetManager
             refresh = () =>
             {
                 string ignoredStatusText;
-                grid.SetAssetItems("catalog-asset-item-grid", CreateCatalogAssetItemList(itemCount, itemsPerRow), out ignoredStatusText);
+                grid.SetItemsPerRow(itemsPerRow);
+                grid.SetAssetItems(CreateCatalogAssetItemList(itemCount), out ignoredStatusText);
             };
 
             refresh();
             CatalogWindow.FinalizeControlsSection(parent, controls);
         }
 
-        private static AssetItemGridList CreateCatalogAssetItemList(int itemCount, int itemsPerRow)
+        private static AssetItemGridList CreateCatalogAssetItemList(int itemCount)
         {
             var thumbnail = CatalogWindow.CreateItemCardSampleThumbnail(132, 132);
             var thumbnailBytes = thumbnail.EncodeToPNG();
@@ -113,7 +114,7 @@ namespace Ee4v.AssetManager
                     i % 4 == 0 ? null : thumbnailBytes));
             }
 
-            return new AssetItemGridList(items, "No asset items.", itemsPerRow);
+            return new AssetItemGridList(items, "No asset items.");
         }
     }
 }

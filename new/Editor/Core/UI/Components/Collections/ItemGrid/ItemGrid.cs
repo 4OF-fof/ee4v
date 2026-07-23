@@ -7,15 +7,12 @@ namespace Ee4v.UI
 {
     internal sealed class ItemGridState
     {
-        public ItemGridState(IReadOnlyList<ItemCardState> items, int itemsPerRow = 6)
+        public ItemGridState(IReadOnlyList<ItemCardState> items)
         {
             Items = items ?? Array.Empty<ItemCardState>();
-            ItemsPerRow = Mathf.Max(1, itemsPerRow);
         }
 
         public IReadOnlyList<ItemCardState> Items { get; }
-
-        public int ItemsPerRow { get; }
     }
 
     internal class ItemGrid : VisualElement
@@ -24,15 +21,21 @@ namespace Ee4v.UI
         private const string ListClassName = "ee4v-ui-item-grid__list";
         private const string RowClassName = "ee4v-ui-item-grid__row";
         protected const string RowSlotClassName = "ee4v-ui-item-grid__row-slot";
-        private const float ColumnGap = 16f;
+        private const float PreferredColumnGap = 16f;
+        private const float MinimumCardWidth = 1f;
         private const float RowVerticalPadding = 4f;
         private const float NameHeight = 25f;
+        private const float ViewportSafetyMargin = 1f;
         private const int DefaultRowHeight = 161;
         protected readonly ListView ListView;
         private readonly List<ItemGridRowState> _rows = new List<ItemGridRowState>();
         private IReadOnlyList<ItemCardState> _items = Array.Empty<ItemCardState>();
         private int _itemsPerRow = 6;
         private float _cardWidth = 132f;
+        private float _columnGap = PreferredColumnGap;
+        private int _rowHeight = DefaultRowHeight;
+        private float _viewportWidth;
+        private float _viewportHeight;
 
         public ItemGrid(ItemGridState state = null)
         {
@@ -45,10 +48,10 @@ namespace Ee4v.UI
             ListView.makeItem = MakeRow;
             ListView.bindItem = BindRow;
             ListView.itemsSource = _rows;
+            ListView.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             Add(ListView);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-            RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             ApplyState(state ?? new ItemGridState(null));
         }
 
@@ -57,18 +60,35 @@ namespace Ee4v.UI
             get { return _items; }
         }
 
+        public int ItemsPerRow
+        {
+            get { return _itemsPerRow; }
+        }
+
         public virtual void SetState(ItemGridState state)
         {
             ApplyState(state);
+        }
+
+        public void SetItemsPerRow(int value)
+        {
+            var nextValue = Mathf.Max(1, value);
+            if (_itemsPerRow == nextValue)
+            {
+                return;
+            }
+
+            _itemsPerRow = nextValue;
+            RecalculateLayout(_viewportWidth, _viewportHeight);
+            RebuildRows();
         }
 
         private void ApplyState(ItemGridState state)
         {
             var nextState = state ?? new ItemGridState(null);
             _items = nextState.Items ?? Array.Empty<ItemCardState>();
-            _itemsPerRow = Mathf.Max(1, nextState.ItemsPerRow);
 
-            RecalculateCardWidth(resolvedStyle.width);
+            RecalculateLayout(_viewportWidth, _viewportHeight);
             RebuildRows();
         }
 
@@ -125,19 +145,18 @@ namespace Ee4v.UI
         private void OnGeometryChanged(GeometryChangedEvent evt)
         {
             HideScrollbars();
-            if (!RecalculateCardWidth(evt.newRect.width))
+            _viewportWidth = evt.newRect.width;
+            _viewportHeight = evt.newRect.height;
+            if (RecalculateLayout(_viewportWidth, _viewportHeight))
             {
-                return;
+                RebuildRows();
             }
-
-            RebuildRows();
         }
 
         private void RebuildRows()
         {
             _rows.Clear();
-            var rowHeight = Mathf.CeilToInt(_cardWidth + NameHeight + RowVerticalPadding);
-            ListView.fixedItemHeight = Mathf.Max(1, rowHeight);
+            ListView.fixedItemHeight = _rowHeight;
             for (var i = 0; i < _items.Count; i += _itemsPerRow)
             {
                 var rowItems = new List<ItemCardState>(_itemsPerRow);
@@ -190,25 +209,83 @@ namespace Ee4v.UI
             slot.style.width = _cardWidth;
             slot.style.minWidth = _cardWidth;
             slot.style.maxWidth = _cardWidth;
-            slot.style.marginRight = index + 1 < _itemsPerRow ? ColumnGap : 0f;
+            slot.style.marginRight = index + 1 < _itemsPerRow ? _columnGap : 0f;
         }
 
-        private bool RecalculateCardWidth(float width)
+        private bool RecalculateLayout(float width, float height)
         {
             if (float.IsNaN(width) || width <= 0f)
             {
                 return false;
             }
 
-            var availableWidth = Mathf.Max(1f, width - (ColumnGap * (_itemsPerRow - 1)));
-            var nextCardWidth = Mathf.Floor(availableWidth / _itemsPerRow);
-            if (Mathf.Approximately(nextCardWidth, _cardWidth))
+            var nextColumnGap = CalculateColumnGap(width, _itemsPerRow);
+            var nextCardWidth = CalculateCardWidth(width, height, _itemsPerRow, nextColumnGap);
+            var nextRowHeight = CalculateRowHeight(nextCardWidth, height);
+            if (Mathf.Approximately(nextCardWidth, _cardWidth) &&
+                Mathf.Approximately(nextColumnGap, _columnGap) &&
+                nextRowHeight == _rowHeight)
             {
                 return false;
             }
 
-            _cardWidth = Mathf.Max(48f, nextCardWidth);
+            _cardWidth = nextCardWidth;
+            _columnGap = nextColumnGap;
+            _rowHeight = nextRowHeight;
             return true;
+        }
+
+        internal static float CalculateColumnGap(float width, int itemsPerRow)
+        {
+            var safeItemsPerRow = Mathf.Max(1, itemsPerRow);
+            if (!IsValidDimension(width) || safeItemsPerRow == 1)
+            {
+                return 0f;
+            }
+
+            var fittingGap =
+                (width - ViewportSafetyMargin - (ItemCard.PreferredMinimumWidth * safeItemsPerRow)) /
+                (safeItemsPerRow - 1);
+            return Mathf.Clamp(fittingGap, 0f, PreferredColumnGap);
+        }
+
+        internal static float CalculateCardWidth(float width, float height, int itemsPerRow)
+        {
+            return CalculateCardWidth(width, height, itemsPerRow, CalculateColumnGap(width, itemsPerRow));
+        }
+
+        private static float CalculateCardWidth(float width, float height, int itemsPerRow, float columnGap)
+        {
+            var naturalWidth = CalculateNaturalCardWidth(width, itemsPerRow, columnGap);
+            if (!IsValidDimension(height))
+            {
+                return naturalWidth;
+            }
+
+            var fallbackWidth = Mathf.Max(MinimumCardWidth, Mathf.Floor(height - NameHeight - RowVerticalPadding - ViewportSafetyMargin));
+            return Mathf.Min(naturalWidth, fallbackWidth);
+        }
+
+        internal static int CalculateRowHeight(float cardWidth, float viewportHeight)
+        {
+            var naturalHeight = Mathf.Max(1, Mathf.CeilToInt(cardWidth + NameHeight + RowVerticalPadding));
+            return IsValidDimension(viewportHeight)
+                ? Mathf.Max(1, Mathf.Min(naturalHeight, Mathf.FloorToInt(viewportHeight - ViewportSafetyMargin)))
+                : naturalHeight;
+        }
+
+        private static float CalculateNaturalCardWidth(float width, int itemsPerRow, float columnGap)
+        {
+            var safeItemsPerRow = Mathf.Max(1, itemsPerRow);
+            var availableWidth = Mathf.Max(
+                MinimumCardWidth,
+                width - ViewportSafetyMargin - (columnGap * (safeItemsPerRow - 1)));
+            return Mathf.Max(MinimumCardWidth, Mathf.Floor(availableWidth / safeItemsPerRow));
+        }
+
+        private static bool IsValidDimension(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value) && value > 0f;
         }
 
         private void HideScrollbars()

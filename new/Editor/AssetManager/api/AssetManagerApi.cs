@@ -18,6 +18,11 @@ namespace Ee4v.AssetManager.Api
             return Execute(() => AssetManagerDatabase.SearchItems(query));
         }
 
+        public static AssetSearchResult SearchItemSummaries(AssetItemQuery query)
+        {
+            return Execute(() => AssetManagerDatabase.SearchItemSummaries(query));
+        }
+
         public static AssetItem GetItem(string itemId)
         {
             return Execute(() => AssetManagerDatabase.GetItem(itemId));
@@ -26,6 +31,11 @@ namespace Ee4v.AssetManager.Api
         public static AssetThumbnail GetThumbnail(string itemId)
         {
             return Execute(() => AssetManagerDatabase.GetThumbnail(itemId));
+        }
+
+        public static IReadOnlyDictionary<string, AssetThumbnail> GetThumbnails(IReadOnlyList<string> itemIds)
+        {
+            return Execute(() => AssetManagerDatabase.GetThumbnails(itemIds));
         }
 
         public static AssetItem CreateItem(CreateAssetItemRequest request)

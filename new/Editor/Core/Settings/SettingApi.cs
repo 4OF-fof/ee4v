@@ -93,6 +93,7 @@ namespace Ee4v.Core.Settings
 
         public static void SetBoxed(SettingDefinitionBase definition, object value, bool saveImmediately = true)
         {
+            var changed = false;
             lock (SyncRoot)
             {
                 EnsureRegistered(definition);
@@ -104,8 +105,21 @@ namespace Ee4v.Core.Settings
                     throw new InvalidOperationException(validation.Message);
                 }
 
+                object currentValue;
+                if (CachedValues.TryGetValue(definition.Key, out currentValue) &&
+                    Equals(currentValue, value))
+                {
+                    if (saveImmediately && DirtyScopes.Contains(definition.Scope))
+                    {
+                        SaveScope(definition.Scope);
+                    }
+
+                    return;
+                }
+
                 CachedValues[definition.Key] = value;
                 DirtyScopes.Add(definition.Scope);
+                changed = true;
 
                 if (saveImmediately)
                 {
@@ -114,7 +128,7 @@ namespace Ee4v.Core.Settings
             }
 
             var handler = Changed;
-            if (handler != null)
+            if (changed && handler != null)
             {
                 handler(definition, value);
             }

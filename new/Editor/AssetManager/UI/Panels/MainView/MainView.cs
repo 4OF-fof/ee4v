@@ -1,9 +1,7 @@
 using System.Threading;
-using System.Threading.Tasks;
+using Ee4v.AssetManager.Api;
 using Ee4v.Core.I18n;
-using Ee4v.Core.Settings;
 using Ee4v.UI;
-using UnityEditor;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager
@@ -17,8 +15,6 @@ namespace Ee4v.AssetManager
         private readonly AssetItemGrid _itemGrid;
         private readonly UiTextElement _statusLabel;
         private readonly FileTreeDetailView _fileDetailView;
-        private int _loadVersion;
-        private CancellationTokenSource _loadCancellation;
         private string _fileListItemId;
         private string _fileListItemName;
         private AssetItemGridNodeKind _browserNodeKind;
@@ -27,11 +23,14 @@ namespace Ee4v.AssetManager
         private FileTreeDetailState _fileDetailState;
         private string _searchText = string.Empty;
         private bool _applyingHistory;
+        private ItemCardState[] _selectedAssetItems = System.Array.Empty<ItemCardState>();
+        private AssetSelectionContentKind _selectionContentKind = AssetSelectionContentKind.AssetItem;
 
-        public MainView(MainViewController controller = null)
+        public MainView(MainViewController controller)
         {
-            _controller = controller ?? new MainViewController();
+            _controller = controller ?? throw new System.ArgumentNullException(nameof(controller));
             _itemGrid = new AssetItemGrid();
+            ApplyGridSize(_controller.ItemsPerRow);
             _itemGrid.AddToClassList(ContentClassName);
             _statusLabel = UiTextFactory.Create(string.Empty, StatusClassName);
             _statusLabel.SetWhiteSpace(WhiteSpace.Normal);
@@ -52,12 +51,17 @@ namespace Ee4v.AssetManager
 
         public AssetItemGridHistory History
         {
-            get { return _itemGrid.History; }
+            get { return _controller.History; }
         }
 
         public int GridSize
         {
             get { return _controller.ItemsPerRow; }
+        }
+
+        internal int DisplayedGridSize
+        {
+            get { return _itemGrid.ItemsPerRow; }
         }
 
         public int HistoryOverlayMaximumItems
@@ -66,6 +70,12 @@ namespace Ee4v.AssetManager
         }
 
         public event System.Action<int> HistoryOverlayMaximumItemsChanged;
+
+        public event System.Action<int> GridSizeChanged;
+
+        public event System.Action<System.Collections.Generic.IReadOnlyList<ItemCardState>, AssetSelectionContentKind> SelectionChanged;
+
+        public event System.Action<string> DetailTabRequested;
 
         public void SetGridSize(int value)
         {
@@ -79,15 +89,15 @@ namespace Ee4v.AssetManager
                 return;
             }
 
-            if (_itemGrid.History.State.Current == null)
+            if (_controller.History.State.Current == null)
             {
-                _itemGrid.History.SetCurrent(CreateCurrentHistoryEntry());
+                _controller.History.SetCurrent(CreateCurrentHistoryEntry());
             }
 
-            var selectedItem = AssetManagerViewState.SelectedAssetItem;
+            var selectedItem = SelectedAssetItem;
             if (!IsFileListMode &&
                 selectedItem != null &&
-                AssetManagerViewState.SelectedAssetSelectionContentKind == AssetManagerViewState.AssetSelectionContentKind.AssetItem)
+                _selectionContentKind == AssetSelectionContentKind.AssetItem)
             {
                 _fileListItemId = selectedItem.ItemId;
                 _fileListItemName = selectedItem.ItemName;
@@ -110,29 +120,32 @@ namespace Ee4v.AssetManager
             }
 
             _searchText = nextValue;
-            _itemGrid.ClearCachedItems();
+            _controller.ClearCachedItems();
             ClearGridSelection();
             RefreshContent();
         }
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
-            AssetManagerViewState.SelectedItemChanged += OnSelectedItemChanged;
-            MainViewController.ContentChanged += OnContentChanged;
-            MainViewController.LayoutChanged += OnLayoutChanged;
-            MainViewController.HistoryOverlayMaximumItemsChanged += OnHistoryOverlayMaximumItemsChanged;
+            _controller.Activate();
+            _controller.NavigationChanged += OnSelectedItemChanged;
+            _controller.ContentChanged += OnContentChanged;
+            _controller.LayoutChanged += OnLayoutChanged;
+            _controller.HistoryOverlayMaximumItemsChanged += OnHistoryOverlayMaximumItemsChanged;
+            _controller.LoadCompleted += OnLoadCompleted;
             PushCurrentHistory();
             RefreshContent();
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            AssetManagerViewState.SelectedItemChanged -= OnSelectedItemChanged;
-            MainViewController.ContentChanged -= OnContentChanged;
-            MainViewController.LayoutChanged -= OnLayoutChanged;
-            MainViewController.HistoryOverlayMaximumItemsChanged -= OnHistoryOverlayMaximumItemsChanged;
-            CancelPendingLoad();
-            _loadVersion++;
+            _controller.NavigationChanged -= OnSelectedItemChanged;
+            _controller.ContentChanged -= OnContentChanged;
+            _controller.LayoutChanged -= OnLayoutChanged;
+            _controller.HistoryOverlayMaximumItemsChanged -= OnHistoryOverlayMaximumItemsChanged;
+            _controller.LoadCompleted -= OnLoadCompleted;
+            _controller.Deactivate();
+            _controller.CancelPendingLoad();
         }
 
         private void OnSelectedItemChanged(string itemId)
@@ -151,7 +164,7 @@ namespace Ee4v.AssetManager
 
         private void OnContentChanged()
         {
-            _itemGrid.ClearCachedItems();
+            _controller.ClearCachedItems();
             ClearFileListMode();
             ClearFileDetailMode();
             ClearGridSelection();
@@ -161,8 +174,13 @@ namespace Ee4v.AssetManager
 
         private void OnLayoutChanged()
         {
-            _itemGrid.ClearCachedItems();
-            RefreshContent();
+            ApplyGridSize(_controller.ItemsPerRow);
+        }
+
+        private void ApplyGridSize(int settingValue)
+        {
+            _itemGrid.SetItemsPerRow(settingValue);
+            GridSizeChanged?.Invoke(settingValue);
         }
 
         private void OnHistoryOverlayMaximumItemsChanged(int value)
@@ -172,7 +190,7 @@ namespace Ee4v.AssetManager
 
         private void OnGridSelectionChanged(System.Collections.Generic.IReadOnlyList<ItemCardState> items)
         {
-            AssetManagerViewState.SetSelectedAssetItems(CreateSelectionItems(items), contentKind: ResolveSelectionContentKind(items));
+            SetSelection(CreateSelectionItems(items), ResolveSelectionContentKind(items));
         }
 
         private void OnGridItemDoubleClicked(ItemCardState item)
@@ -206,7 +224,7 @@ namespace Ee4v.AssetManager
                 _browserNodeName = item.ItemName;
             }
 
-            AssetManagerViewState.SetSelectedAssetDetailTab("file-tree");
+            DetailTabRequested?.Invoke("file-tree");
             ClearGridSelection();
             PushCurrentHistory();
             RefreshContent();
@@ -220,7 +238,7 @@ namespace Ee4v.AssetManager
         public void GoBack(int steps)
         {
             AssetItemGridHistoryEntry entry;
-            if (_itemGrid.History.TryGoBack(steps, out entry))
+            if (_controller.History.TryGoBack(steps, out entry))
             {
                 ApplyHistoryEntry(entry);
             }
@@ -234,7 +252,7 @@ namespace Ee4v.AssetManager
         public void GoForward(int steps)
         {
             AssetItemGridHistoryEntry entry;
-            if (_itemGrid.History.TryGoForward(steps, out entry))
+            if (_controller.History.TryGoForward(steps, out entry))
             {
                 ApplyHistoryEntry(entry);
             }
@@ -242,7 +260,7 @@ namespace Ee4v.AssetManager
 
         public void GoToBreadcrumb(int index)
         {
-            var current = _itemGrid.History.State.Current;
+            var current = _controller.History.State.Current;
             if (current == null
                 || (current.Kind != AssetItemGridHistoryEntryKind.FileList &&
                     current.Kind != AssetItemGridHistoryEntryKind.FileDetail)
@@ -278,7 +296,7 @@ namespace Ee4v.AssetManager
                 return;
             }
 
-            _itemGrid.History.SetCurrent(entry);
+            _controller.History.SetCurrent(entry);
             ApplyHistoryEntry(entry);
         }
 
@@ -286,8 +304,7 @@ namespace Ee4v.AssetManager
         {
             if (IsFileDetailMode)
             {
-                CancelPendingLoad();
-                _loadVersion++;
+                _controller.CancelPendingLoad();
                 SetStatus(string.Empty);
                 _itemGrid.style.display = DisplayStyle.None;
                 _fileDetailView.style.display = DisplayStyle.Flex;
@@ -298,61 +315,48 @@ namespace Ee4v.AssetManager
             _fileDetailView.SetState(null);
             _fileDetailView.style.display = DisplayStyle.None;
             _itemGrid.style.display = DisplayStyle.Flex;
-            SettingApi.Preload(SettingScope.User);
             var cacheKey = CreateCurrentCacheKey();
-            string cachedStatusText;
-            if (_itemGrid.TrySetCachedItems(cacheKey, out cachedStatusText))
+            AssetItemGridList cachedItems;
+            if (_controller.TryGetCachedItems(cacheKey, out cachedItems))
             {
-                SetStatus(ResolveStatusText(cachedStatusText));
+                ApplyItemList(cacheKey, cachedItems);
                 return;
             }
 
-            CancelPendingLoad();
-            var loadCancellation = new CancellationTokenSource();
-            _loadCancellation = loadCancellation;
-            var cancellationToken = loadCancellation.Token;
-            var version = ++_loadVersion;
             SetStatus(IsFileListMode
                 ? I18N.Get("assetManager.mainView.loadingChildren")
                 : I18N.Get("assetManager.mainView.loading"));
             _itemGrid.SetLoading();
+            _controller.StartLoad(cacheKey, LoadCurrentGridItems);
+        }
 
-            Task.Run(() => LoadCurrentGridItems(cancellationToken), cancellationToken).ContinueWith(task =>
+        private void OnLoadCompleted(MainViewLoadResult result)
+        {
+            if (result == null)
             {
-                EditorApplication.delayCall += () =>
-                {
-                    loadCancellation.Dispose();
-                    if (ReferenceEquals(_loadCancellation, loadCancellation))
-                    {
-                        _loadCancellation = null;
-                    }
+                return;
+            }
 
-                    if (version != _loadVersion)
-                    {
-                        return;
-                    }
+            if (result.Error != null)
+            {
+                SetStatus(result.Error.Message);
+                return;
+            }
 
-                    if (task.IsFaulted)
-                    {
-                        SetStatus(task.Exception != null ? task.Exception.GetBaseException().Message : I18N.Get("assetManager.mainView.loadFailed"));
-                        return;
-                    }
+            if (result.Canceled)
+            {
+                SetStatus(I18N.Get("assetManager.mainView.loadCanceled"));
+                return;
+            }
 
-                    if (task.IsCanceled)
-                    {
-                        SetStatus(I18N.Get("assetManager.mainView.loadCanceled"));
-                        return;
-                    }
-
-                    ApplyItemList(cacheKey, task.Result);
-                };
-            });
+            ApplyItemList(result.CacheKey, result.Items);
         }
 
         private void ApplyItemList(string cacheKey, AssetItemGridList itemList)
         {
+            _controller.StoreCachedItems(cacheKey, itemList);
             string statusText;
-            _itemGrid.SetAssetItems(cacheKey, itemList, out statusText);
+            _itemGrid.SetAssetItems(itemList, out statusText);
             SetStatus(ResolveStatusText(statusText));
         }
 
@@ -365,7 +369,7 @@ namespace Ee4v.AssetManager
         private void ClearGridSelection()
         {
             _itemGrid.ClearSelection(notify: false);
-            AssetManagerViewState.SetSelectedAssetItems(null);
+            SetSelection(null, AssetSelectionContentKind.AssetItem);
         }
 
         private bool IsFileListMode
@@ -391,19 +395,8 @@ namespace Ee4v.AssetManager
                 return _controller.LoadGroupChildren(_fileListItemId, _browserNodeKind, _browserNodeId);
             }
 
-            var selectedItem = AssetManagerViewState.SelectedItem;
+            var selectedItem = _controller.SelectedNavigationItem;
             return _controller.LoadItems(_controller.CreateRequest(selectedItem.Id, _searchText), cancellationToken);
-        }
-
-        private void CancelPendingLoad()
-        {
-            if (_loadCancellation == null)
-            {
-                return;
-            }
-
-            _loadCancellation.Cancel();
-            _loadCancellation = null;
         }
 
         private string CreateCurrentCacheKey()
@@ -413,7 +406,7 @@ namespace Ee4v.AssetManager
                 return "children|" + _fileListItemId + "|" + _browserNodeKind + "|" + _browserNodeId;
             }
 
-            var selectedItem = AssetManagerViewState.SelectedItem;
+            var selectedItem = _controller.SelectedNavigationItem;
             return _controller.CreateCacheKey(_controller.CreateRequest(selectedItem.Id, _searchText));
         }
 
@@ -448,12 +441,12 @@ namespace Ee4v.AssetManager
                 return;
             }
 
-            _itemGrid.History.SetCurrent(CreateCurrentHistoryEntry());
+            _controller.History.SetCurrent(CreateCurrentHistoryEntry());
         }
 
         private AssetItemGridHistoryEntry CreateCurrentHistoryEntry()
         {
-            var selectedItem = AssetManagerViewState.SelectedItem;
+            var selectedItem = _controller.SelectedNavigationItem;
             if (IsFileDetailMode)
             {
                 return new AssetItemGridHistoryEntry(
@@ -499,7 +492,7 @@ namespace Ee4v.AssetManager
             try
             {
                 _applyingHistory = true;
-                AssetManagerViewState.SetSelectedItem(entry.ViewId);
+                _controller.SetSelectedNavigationItem(entry.ViewId);
                 if (entry.Kind == AssetItemGridHistoryEntryKind.FileList ||
                     entry.Kind == AssetItemGridHistoryEntryKind.FileDetail)
                 {
@@ -508,7 +501,7 @@ namespace Ee4v.AssetManager
                     _browserNodeKind = entry.NodeKind;
                     _browserNodeId = entry.NodeId;
                     _browserNodeName = entry.NodeName;
-                    AssetManagerViewState.SetSelectedAssetDetailTab("file-tree");
+                    DetailTabRequested?.Invoke("file-tree");
                     _fileDetailState = entry.Kind == AssetItemGridHistoryEntryKind.FileDetail
                         ? new FileTreeDetailState(entry.DetailId, entry.DetailName, entry.DetailParentName)
                         : null;
@@ -555,11 +548,43 @@ namespace Ee4v.AssetManager
             return result;
         }
 
-        private static AssetManagerViewState.AssetSelectionContentKind ResolveSelectionContentKind(System.Collections.Generic.IReadOnlyList<ItemCardState> items)
+        private ItemCardState SelectedAssetItem
+        {
+            get { return _selectedAssetItems.Length > 0 ? _selectedAssetItems[0] : null; }
+        }
+
+        private void SetSelection(
+            System.Collections.Generic.IReadOnlyList<ItemCardState> items,
+            AssetSelectionContentKind contentKind)
         {
             if (items == null || items.Count == 0)
             {
-                return AssetManagerViewState.AssetSelectionContentKind.AssetItem;
+                _selectedAssetItems = System.Array.Empty<ItemCardState>();
+                _selectionContentKind = AssetSelectionContentKind.AssetItem;
+            }
+            else
+            {
+                var nextItems = new System.Collections.Generic.List<ItemCardState>(items.Count);
+                for (var i = 0; i < items.Count; i++)
+                {
+                    if (items[i] != null)
+                    {
+                        nextItems.Add(items[i]);
+                    }
+                }
+
+                _selectedAssetItems = nextItems.ToArray();
+                _selectionContentKind = contentKind;
+            }
+
+            SelectionChanged?.Invoke(_selectedAssetItems, _selectionContentKind);
+        }
+
+        private static AssetSelectionContentKind ResolveSelectionContentKind(System.Collections.Generic.IReadOnlyList<ItemCardState> items)
+        {
+            if (items == null || items.Count == 0)
+            {
+                return AssetSelectionContentKind.AssetItem;
             }
 
             var hasFile = false;
@@ -590,12 +615,12 @@ namespace Ee4v.AssetManager
 
             if (hasFile && !hasGroup)
             {
-                return AssetManagerViewState.AssetSelectionContentKind.AssetFile;
+                return AssetSelectionContentKind.AssetFile;
             }
 
             return hasGroup
-                ? AssetManagerViewState.AssetSelectionContentKind.AssetGroup
-                : AssetManagerViewState.AssetSelectionContentKind.AssetItem;
+                ? AssetSelectionContentKind.AssetGroup
+                : AssetSelectionContentKind.AssetItem;
         }
     }
 }

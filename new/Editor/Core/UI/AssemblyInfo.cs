@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Ee4v.AssetManager.UI.Editor")]
+[assembly: InternalsVisibleTo("Ee4v.AssetManager.UI.Tests.Editor")]
 [assembly: InternalsVisibleTo("Ee4v.Core.UI.Testing.Editor")]
 [assembly: InternalsVisibleTo("Ee4v.Core.Testing.Editor")]
 [assembly: InternalsVisibleTo("Ee4v.Core.Tests.Editor")]

@@ -18,6 +18,16 @@ namespace Ee4v.AssetManager.Api
 
         public static AssetSearchResult SearchItems(AssetItemQuery query)
         {
+            return SearchItems(query, true);
+        }
+
+        public static AssetSearchResult SearchItemSummaries(AssetItemQuery query)
+        {
+            return SearchItems(query, false);
+        }
+
+        private static AssetSearchResult SearchItems(AssetItemQuery query, bool includeDetails)
+        {
             using (var connection = OpenConnection())
             {
                 var where = new List<string>();
@@ -134,7 +144,9 @@ namespace Ee4v.AssetManager.Api
 
                 return new AssetSearchResult
                 {
-                    Items = rows.Select(row => ToAssetItem(connection, row)).ToArray(),
+                    Items = includeDetails
+                        ? rows.Select(row => ToAssetItem(connection, row)).ToArray()
+                        : rows.Select(ToAssetItemSummary).ToArray(),
                     TotalCount = total
                 };
             }

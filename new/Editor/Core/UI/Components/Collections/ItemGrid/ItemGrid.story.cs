@@ -23,7 +23,7 @@ namespace Ee4v.UI
                     "Collections",
                     "ItemGrid",
                     "ItemCard を仮想スクロールで並べる汎用グリッドコンポーネントです。",
-                    "UI Toolkit の ListView を行単位で使い、表示領域に必要な行だけを生成します。列数は available width から再計算し、各セルには ItemCard を配置します。",
+                    "UI Toolkit の ListView を行単位で使い、表示領域に必要な行だけを生成します。指定された列数を維持し、表示領域に収まる card 幅と行高へ調整します。",
                     new[]
                     {
                         "ItemCard"
@@ -96,7 +96,8 @@ namespace Ee4v.UI
                         i % 4 == 0 ? null : thumbnailBytes));
                 }
 
-                grid.SetState(new ItemGridState(items, itemsPerRow));
+                grid.SetItemsPerRow(itemsPerRow);
+                grid.SetState(new ItemGridState(items));
             };
 
             refresh();

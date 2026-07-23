@@ -1,3 +1,4 @@
+using System;
 using Ee4v.UI;
 using UnityEngine.UIElements;
 
@@ -9,7 +10,9 @@ namespace Ee4v.AssetManager
         private const string PickerSectionClassName = "ee4v-asset-manager-panel__navigation-picker";
         private readonly SingleSelectButtonGroup _group;
 
-        public NavigationPanel()
+        public NavigationPanel(
+            AssetManagerViewItemState[] items = null,
+            string selectedItemId = null)
         {
             AddToClassList("ee4v-asset-manager-panel");
             AddToClassList(RootClassName);
@@ -17,32 +20,31 @@ namespace Ee4v.AssetManager
             var pickerSection = new VisualElement();
             pickerSection.AddToClassList(PickerSectionClassName);
 
-            _group = new SingleSelectButtonGroup(CreateGroupState(), OnGroupSelectionChanged);
+            _group = new SingleSelectButtonGroup(
+                CreateGroupState(
+                    items ?? AssetManagerNavigationCatalog.Items,
+                    selectedItemId ?? AssetManagerNavigationCatalog.DefaultItemId),
+                itemId => SelectionChanged?.Invoke(itemId));
             pickerSection.Add(_group);
 
             Add(pickerSection);
-
-            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
-        private void OnAttachToPanel(AttachToPanelEvent evt)
+        public event Action<string> SelectionChanged;
+
+        public void SetSelectedItem(string itemId)
         {
-            AssetManagerViewState.SelectedItemChanged += OnSelectedItemChanged;
-            RefreshSelectionVisuals();
+            _group.SetSelectedItem(itemId, notify: false);
         }
 
-        private void OnDetachFromPanel(DetachFromPanelEvent evt)
+        private static SingleSelectButtonGroupState CreateGroupState(
+            AssetManagerViewItemState[] navigationItems,
+            string selectedItemId)
         {
-            AssetManagerViewState.SelectedItemChanged -= OnSelectedItemChanged;
-        }
-
-        private static SingleSelectButtonGroupState CreateGroupState()
-        {
-            var items = new SingleSelectButtonGroupItemState[AssetManagerViewState.Items.Length];
-            for (var i = 0; i < AssetManagerViewState.Items.Length; i++)
+            var items = new SingleSelectButtonGroupItemState[navigationItems.Length];
+            for (var i = 0; i < navigationItems.Length; i++)
             {
-                var item = AssetManagerViewState.Items[i];
+                var item = navigationItems[i];
                 items[i] = new SingleSelectButtonGroupItemState(
                     item.Id,
                     item.Label,
@@ -51,22 +53,7 @@ namespace Ee4v.AssetManager
                     item.IconState);
             }
 
-            return new SingleSelectButtonGroupState(items, AssetManagerViewState.SelectedItemId);
-        }
-
-        private void OnGroupSelectionChanged(string itemId)
-        {
-            AssetManagerViewState.SetSelectedItem(itemId);
-        }
-
-        private void OnSelectedItemChanged(string itemId)
-        {
-            RefreshSelectionVisuals();
-        }
-
-        private void RefreshSelectionVisuals()
-        {
-            _group.SetSelectedItem(AssetManagerViewState.SelectedItemId, notify: false);
+            return new SingleSelectButtonGroupState(items, selectedItemId);
         }
     }
 }

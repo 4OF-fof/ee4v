@@ -44,6 +44,13 @@ UI の配色は `Editor/Core/UI/Foundation/ui-color-tokens.uss` に集約し、c
 
 UI 要素の生成時に値を埋め込むより、state を差し替えて再描画できる形を優先します。
 
+ここでいう `*State` は描画 snapshot であり、Core UI component が機能上の state 管理責務を持つことを意味しません。
+
+- Core UI component は渡された snapshot の描画と入力 event の通知に限定する
+- cache、履歴、非同期処理、永続設定、画面遷移は feature 側の controller または module UI が所有する
+- 複数 component の event 配線は window または feature の host で行い、共通 component 同士を直接参照させない
+- window ごとに独立すべき表示セッション state は static にしない。複数 window で共有する値は setting や domain API など、共有元を明示する
+
 ## 組み込みアイコンを直参照しない
 
 Unity の built-in icon はバージョン差分があるため、`Icon` / `UiBuiltinIcon` を使います。

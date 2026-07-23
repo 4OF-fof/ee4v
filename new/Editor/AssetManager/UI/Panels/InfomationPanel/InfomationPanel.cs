@@ -34,6 +34,8 @@ namespace Ee4v.AssetManager
         private readonly SearchableFileTree _fileTree;
         private float _previewSize;
         private IReadOnlyList<ItemCardState> _selectedItems;
+        private AssetSelectionContentKind _selectionContentKind = AssetSelectionContentKind.AssetItem;
+        private string _selectedDetailTabId = AssetInfoTabId;
 
         public InfomationPanel()
         {
@@ -57,8 +59,8 @@ namespace Ee4v.AssetManager
             _multiPreviewTextRow.Add(_multiPreviewCountText);
             _multiPreviewTextRow.Add(_multiPreviewSuffixText);
             _selectionModeRow.Add(_multiPreviewTextRow);
-            _selectionDetailTabs = new ViewToggleTabs(CreateDetailTabsState(AssetManagerViewState.SelectedAssetDetailTabId));
-            _selectionDetailTabs.SelectionChanged += tabId => AssetManagerViewState.SetSelectedAssetDetailTab(tabId);
+            _selectionDetailTabs = new ViewToggleTabs(CreateDetailTabsState(_selectedDetailTabId));
+            _selectionDetailTabs.SelectionChanged += SetSelectedAssetDetailTab;
             _selectionModeRow.Add(_selectionDetailTabs);
             _preview.Add(_selectionModeRow);
             Add(_preview);
@@ -70,31 +72,18 @@ namespace Ee4v.AssetManager
             _detailContent.Add(_fileTree);
             Add(_detailContent);
 
-            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-            SetSelectedAssetItems(AssetManagerViewState.SelectedAssetItems);
+            SetSelectedAssetItems(null, AssetSelectionContentKind.AssetItem);
         }
 
         public event Action<FileTreeDetailState> FileDetailRequested;
 
-        private void OnAttachToPanel(AttachToPanelEvent evt)
-        {
-            AssetManagerViewState.SelectedAssetItemsChanged += SetSelectedAssetItems;
-            AssetManagerViewState.SelectedAssetDetailTabChanged += SetSelectedAssetDetailTab;
-            SetSelectedAssetDetailTab(AssetManagerViewState.SelectedAssetDetailTabId);
-            SetSelectedAssetItems(AssetManagerViewState.SelectedAssetItems);
-        }
-
-        private void OnDetachFromPanel(DetachFromPanelEvent evt)
-        {
-            AssetManagerViewState.SelectedAssetItemsChanged -= SetSelectedAssetItems;
-            AssetManagerViewState.SelectedAssetDetailTabChanged -= SetSelectedAssetDetailTab;
-        }
-
-        private void SetSelectedAssetItems(IReadOnlyList<ItemCardState> items)
+        internal void SetSelectedAssetItems(
+            IReadOnlyList<ItemCardState> items,
+            AssetSelectionContentKind contentKind)
         {
             _selectedItems = items;
+            _selectionContentKind = contentKind;
             if (items == null || items.Count == 0)
             {
                 _preview.style.display = DisplayStyle.None;
@@ -166,9 +155,12 @@ namespace Ee4v.AssetManager
                 selectedTabId);
         }
 
-        private void SetSelectedAssetDetailTab(string tabId)
+        internal void SetSelectedAssetDetailTab(string tabId)
         {
-            _selectionDetailTabs.SetSelectedTab(tabId, notify: false);
+            _selectedDetailTabId = string.Equals(tabId, FileTreeTabId, StringComparison.Ordinal)
+                ? FileTreeTabId
+                : AssetInfoTabId;
+            _selectionDetailTabs.SetSelectedTab(_selectedDetailTabId, notify: false);
             UpdateDetailContent();
         }
 
@@ -187,21 +179,21 @@ namespace Ee4v.AssetManager
         {
             var hasSingleSelection = _selectedItems != null && _selectedItems.Count == 1;
             var canShowFileTree =
-                AssetManagerViewState.SelectedAssetSelectionContentKind == AssetManagerViewState.AssetSelectionContentKind.AssetFile ||
-                AssetManagerViewState.SelectedAssetSelectionContentKind == AssetManagerViewState.AssetSelectionContentKind.AssetItem;
+                _selectionContentKind == AssetSelectionContentKind.AssetFile ||
+                _selectionContentKind == AssetSelectionContentKind.AssetItem;
             var showFileTree = hasSingleSelection &&
                                canShowFileTree &&
-                               string.Equals(AssetManagerViewState.SelectedAssetDetailTabId, FileTreeTabId, System.StringComparison.Ordinal);
+                               string.Equals(_selectedDetailTabId, FileTreeTabId, StringComparison.Ordinal);
             _detailContent.style.display = showFileTree ? DisplayStyle.Flex : DisplayStyle.None;
             _fileTree.style.display = showFileTree ? DisplayStyle.Flex : DisplayStyle.None;
 
             if (showFileTree)
             {
-                if (AssetManagerViewState.SelectedAssetSelectionContentKind == AssetManagerViewState.AssetSelectionContentKind.AssetFile)
+                if (_selectionContentKind == AssetSelectionContentKind.AssetFile)
                 {
                     _fileTree.SetFileId(_selectedItems[0].ParentItemId, _selectedItems[0].ItemId);
                 }
-                else if (AssetManagerViewState.SelectedAssetSelectionContentKind == AssetManagerViewState.AssetSelectionContentKind.AssetItem)
+                else if (_selectionContentKind == AssetSelectionContentKind.AssetItem)
                 {
                     _fileTree.SetItemId(_selectedItems[0].ItemId);
                 }

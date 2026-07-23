@@ -13,6 +13,7 @@ namespace Ee4v.AssetManager
         private const string BodyClassName = "ee4v-asset-manager-window__main-view-window-body";
         private const string ContentClassName = "ee4v-asset-manager-window__main-view-window-content";
         private MainView _mainView;
+        private MainViewHost _mainViewHost;
         private FileTreeDetailState _pendingFileDetailState;
 
         [MenuItem("ee4v/Asset Manager/Main View", false, 3)]
@@ -45,6 +46,13 @@ namespace Ee4v.AssetManager
             minSize = new Vector2(640f, 420f);
         }
 
+        private void OnDisable()
+        {
+            _mainViewHost?.Dispose();
+            _mainViewHost = null;
+            _mainView = null;
+        }
+
         private void CreateGUI()
         {
             var root = rootVisualElement;
@@ -68,13 +76,10 @@ namespace Ee4v.AssetManager
             var body = new VisualElement();
             body.AddToClassList(BodyClassName);
 
-            _mainView = new MainView();
-            var toolbar = new MainToolbar(
-                _mainView,
-                _mainView.GridSize,
-                _mainView.HistoryOverlayMaximumItems);
-            toolbar.GridSizeChanged += _mainView.SetGridSize;
-            toolbar.SearchTextChanged += _mainView.SetSearchText;
+            _mainViewHost?.Dispose();
+            _mainViewHost = new MainViewHost();
+            _mainView = _mainViewHost.MainView;
+            var toolbar = _mainViewHost.Toolbar;
             _mainView.AddToClassList(ContentClassName);
 
             body.Add(toolbar);

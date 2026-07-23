@@ -29,6 +29,7 @@ namespace Ee4v.AssetManager
 
         [SerializeField]
         private bool _inspectorCollapsed;
+        private MainViewHost _mainViewHost;
 
         [MenuItem("ee4v/Asset Manager", false, 0)]
         private static void ShowWindow()
@@ -43,6 +44,12 @@ namespace Ee4v.AssetManager
         {
             titleContent = new GUIContent(WindowTitle);
             minSize = new Vector2(UiTokens.WindowMinWidth, UiTokens.WindowMinHeight);
+        }
+
+        private void OnDisable()
+        {
+            _mainViewHost?.Dispose();
+            _mainViewHost = null;
         }
 
         private void CreateGUI()
@@ -85,19 +92,18 @@ namespace Ee4v.AssetManager
             layout.LeftCollapsedChanged += value => _navigationCollapsed = value;
             layout.RightCollapsedChanged += value => _inspectorCollapsed = value;
 
-            var mainView = new MainView();
-            var toolbar = new MainToolbar(
-                mainView,
-                mainView.GridSize,
-                mainView.HistoryOverlayMaximumItems);
-            toolbar.GridSizeChanged += mainView.SetGridSize;
-            toolbar.SearchTextChanged += mainView.SetSearchText;
+            _mainViewHost?.Dispose();
+            _mainViewHost = new MainViewHost();
+            var mainView = _mainViewHost.MainView;
+            var toolbar = _mainViewHost.Toolbar;
             var infomationPanel = new InfomationPanel();
             infomationPanel.FileDetailRequested += mainView.ShowFileDetail;
+            mainView.SelectionChanged += infomationPanel.SetSelectedAssetItems;
+            mainView.DetailTabRequested += infomationPanel.SetSelectedAssetDetailTab;
             toolbar.style.flexGrow = 1f;
 
             layout.MainToolbarContent.Add(toolbar);
-            layout.LeftPaneContent.Add(new NavigationPanel());
+            layout.LeftPaneContent.Add(_mainViewHost.NavigationPanel);
             layout.MainContent.Add(mainView);
             layout.RightPaneContent.Add(infomationPanel);
 

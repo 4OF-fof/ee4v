@@ -1,6 +1,8 @@
 using System;
+using Ee4v.AssetManager.Api;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager
@@ -14,13 +16,14 @@ namespace Ee4v.AssetManager
         private const string SliderClassName = "ee4v-ui-main-toolbar__slider";
         private const string IconButtonClassName = "ee4v-ui-main-toolbar__icon-button";
         private const string SearchClassName = "ee4v-ui-main-toolbar__search";
+        private readonly HistoryNavigation _historyNavigation;
         private readonly NumericSlider _itemSizeSlider;
         private readonly SearchField _searchField;
 
         public MainToolbar(
-            MainView mainView = null,
             int initialGridSize = 7,
-            int historyOverlayMaximumItems = 5)
+            int historyOverlayMaximumItems = 5,
+            AssetItemGridHistoryState historyState = null)
         {
             AddToClassList(RootClassName);
 
@@ -30,22 +33,20 @@ namespace Ee4v.AssetManager
 
             var leading = new VisualElement();
             leading.AddToClassList(LeadingClassName);
-            if (mainView != null)
-            {
-                var historyNavigation = new HistoryNavigation(historyOverlayMaximumItems);
-                historyNavigation.BackClicked += mainView.GoBack;
-                historyNavigation.ForwardClicked += mainView.GoForward;
-                historyNavigation.BackHistoryClicked += steps => mainView.GoBack(steps);
-                historyNavigation.ForwardHistoryClicked += steps => mainView.GoForward(steps);
-                historyNavigation.BreadcrumbClicked += mainView.GoToBreadcrumb;
-                mainView.History.Changed += historyNavigation.SetState;
-                mainView.HistoryOverlayMaximumItemsChanged += historyNavigation.SetMaximumVisibleRows;
-                historyNavigation.SetState(mainView.History.State);
-                leading.Add(historyNavigation);
-            }
+            _historyNavigation = new HistoryNavigation(historyOverlayMaximumItems);
+            _historyNavigation.BackClicked += () => BackClicked?.Invoke();
+            _historyNavigation.ForwardClicked += () => ForwardClicked?.Invoke();
+            _historyNavigation.BackHistoryClicked += steps => BackHistoryClicked?.Invoke(steps);
+            _historyNavigation.ForwardHistoryClicked += steps => ForwardHistoryClicked?.Invoke(steps);
+            _historyNavigation.BreadcrumbClicked += index => BreadcrumbClicked?.Invoke(index);
+            _historyNavigation.SetState(historyState);
+            leading.Add(_historyNavigation);
             Content.Add(leading);
 
-            _itemSizeSlider = new NumericSlider(new NumericSliderState(initialGridSize, 1f, 12f, 1f));
+            var range = AssetManagerDefinitions.ItemGridItemsPerRow.Range;
+            var minimumGridSize = range.Minimum;
+            var maximumGridSize = range.Maximum;
+            _itemSizeSlider = new NumericSlider(new NumericSliderState(initialGridSize, minimumGridSize, maximumGridSize, 1f));
             _itemSizeSlider.AddToClassList(SliderClassName);
             _itemSizeSlider.tooltip = I18N.Get("assetManager.mainToolbar.gridSize");
             _itemSizeSlider.ValueChanged += value =>
@@ -87,6 +88,36 @@ namespace Ee4v.AssetManager
         public event Action SortClicked;
 
         public event Action<string> SearchTextChanged;
+
+        public event Action BackClicked;
+
+        public event Action ForwardClicked;
+
+        public event Action<int> BackHistoryClicked;
+
+        public event Action<int> ForwardHistoryClicked;
+
+        public event Action<int> BreadcrumbClicked;
+
+        internal int GridSizeValue
+        {
+            get { return Mathf.RoundToInt(_itemSizeSlider.Value); }
+        }
+
+        internal void SetGridSizeValue(int value)
+        {
+            _itemSizeSlider.SetValueWithoutNotify(value);
+        }
+
+        internal void SetHistoryState(AssetItemGridHistoryState state)
+        {
+            _historyNavigation.SetState(state);
+        }
+
+        internal void SetHistoryOverlayMaximumItems(int value)
+        {
+            _historyNavigation.SetMaximumVisibleRows(value);
+        }
 
         private static Button CreateIconButton(UiBuiltinIcon builtinIcon, string tooltip, Action clicked)
         {

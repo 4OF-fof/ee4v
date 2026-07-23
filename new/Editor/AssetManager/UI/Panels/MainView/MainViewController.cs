@@ -27,24 +27,51 @@ namespace Ee4v.AssetManager
         public int Limit { get; }
     }
 
-    [InitializeOnLoad]
-    internal sealed class MainViewController
+    internal sealed class MainViewLoadResult
     {
-        private static int _contentVersion;
-
-        static MainViewController()
+        public MainViewLoadResult(string cacheKey, AssetItemGridList items, Exception error, bool canceled)
         {
-            AssetManagerApi.Changed -= OnAssetManagerChanged;
-            AssetManagerApi.Changed += OnAssetManagerChanged;
-            SettingApi.Changed -= OnSettingChanged;
-            SettingApi.Changed += OnSettingChanged;
+            CacheKey = cacheKey ?? string.Empty;
+            Items = items;
+            Error = error;
+            Canceled = canceled;
         }
 
-        public static event Action ContentChanged;
+        public string CacheKey { get; }
 
-        public static event Action LayoutChanged;
+        public AssetItemGridList Items { get; }
 
-        public static event Action<int> HistoryOverlayMaximumItemsChanged;
+        public Exception Error { get; }
+
+        public bool Canceled { get; }
+    }
+
+    internal sealed class MainViewController : IDisposable
+    {
+        private readonly Dictionary<string, AssetItemGridList> _itemCache =
+            new Dictionary<string, AssetItemGridList>(StringComparer.Ordinal);
+        private int _contentVersion;
+        private int _activationCount;
+        private int _loadVersion;
+        private CancellationTokenSource _loadCancellation;
+        private string _selectedNavigationItemId = AssetManagerNavigationCatalog.DefaultItemId;
+
+        public MainViewController()
+        {
+            History = new AssetItemGridHistory();
+        }
+
+        public event Action ContentChanged;
+
+        public event Action LayoutChanged;
+
+        public event Action<int> HistoryOverlayMaximumItemsChanged;
+
+        public event Action<MainViewLoadResult> LoadCompleted;
+
+        public event Action<string> NavigationChanged;
+
+        public AssetItemGridHistory History { get; }
 
         public int ItemsPerRow
         {
@@ -56,9 +83,140 @@ namespace Ee4v.AssetManager
             get { return GetHistoryOverlayMaximumItems(); }
         }
 
+        public AssetManagerViewItemState[] NavigationItems
+        {
+            get { return AssetManagerNavigationCatalog.Items; }
+        }
+
+        public string SelectedNavigationItemId
+        {
+            get { return _selectedNavigationItemId; }
+        }
+
+        public AssetManagerViewItemState SelectedNavigationItem
+        {
+            get { return AssetManagerNavigationCatalog.GetItem(_selectedNavigationItemId); }
+        }
+
         public void SetItemsPerRow(int value)
         {
-            SettingApi.Set(AssetManagerDefinitions.ItemGridItemsPerRow, Math.Min(12, Math.Max(1, value)));
+            SettingApi.Set(AssetManagerDefinitions.ItemGridItemsPerRow, value);
+        }
+
+        public void SetSelectedNavigationItem(string itemId)
+        {
+            var resolvedId = AssetManagerNavigationCatalog.NormalizeItemId(itemId);
+            if (string.Equals(_selectedNavigationItemId, resolvedId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _selectedNavigationItemId = resolvedId;
+            NavigationChanged?.Invoke(_selectedNavigationItemId);
+        }
+
+        public void Activate()
+        {
+            _activationCount++;
+            if (_activationCount != 1)
+            {
+                return;
+            }
+
+            AssetManagerApi.Changed += OnAssetManagerChanged;
+            SettingApi.Changed += OnSettingChanged;
+        }
+
+        public void Deactivate()
+        {
+            if (_activationCount == 0)
+            {
+                return;
+            }
+
+            _activationCount--;
+            if (_activationCount != 0)
+            {
+                return;
+            }
+
+            AssetManagerApi.Changed -= OnAssetManagerChanged;
+            SettingApi.Changed -= OnSettingChanged;
+        }
+
+        public void Dispose()
+        {
+            CancelPendingLoad();
+            _activationCount = 1;
+            Deactivate();
+            _itemCache.Clear();
+        }
+
+        public void StartLoad(
+            string cacheKey,
+            Func<CancellationToken, AssetItemGridList> load)
+        {
+            if (load == null)
+            {
+                throw new ArgumentNullException(nameof(load));
+            }
+
+            SettingApi.Preload(SettingScope.User);
+            CancelPendingLoad();
+            var loadCancellation = new CancellationTokenSource();
+            _loadCancellation = loadCancellation;
+            var cancellationToken = loadCancellation.Token;
+            var version = ++_loadVersion;
+
+            Task.Run(() => load(cancellationToken), cancellationToken).ContinueWith(task =>
+            {
+                EditorApplication.delayCall += () =>
+                {
+                    loadCancellation.Dispose();
+                    if (ReferenceEquals(_loadCancellation, loadCancellation))
+                    {
+                        _loadCancellation = null;
+                    }
+
+                    if (version != _loadVersion)
+                    {
+                        return;
+                    }
+
+                    LoadCompleted?.Invoke(new MainViewLoadResult(
+                        cacheKey,
+                        task.Status == TaskStatus.RanToCompletion ? task.Result : null,
+                        task.IsFaulted && task.Exception != null ? task.Exception.GetBaseException() : null,
+                        task.IsCanceled));
+                };
+            });
+        }
+
+        public void CancelPendingLoad()
+        {
+            _loadVersion++;
+            if (_loadCancellation == null)
+            {
+                return;
+            }
+
+            _loadCancellation.Cancel();
+            _loadCancellation = null;
+        }
+
+        public bool TryGetCachedItems(string cacheKey, out AssetItemGridList itemList)
+        {
+            return _itemCache.TryGetValue(cacheKey ?? string.Empty, out itemList);
+        }
+
+        public void StoreCachedItems(string cacheKey, AssetItemGridList itemList)
+        {
+            _itemCache[cacheKey ?? string.Empty] = itemList ?? new AssetItemGridList(null);
+        }
+
+        public void ClearCachedItems()
+        {
+            _itemCache.Clear();
         }
 
         public MainViewRequest CreateRequest(string viewId, string keyword = null)
@@ -71,38 +229,39 @@ namespace Ee4v.AssetManager
             var viewId = request != null ? request.ViewId : string.Empty;
             var keyword = request != null ? request.Keyword : string.Empty;
             var limit = request != null ? request.Limit : 200;
-            return _contentVersion + "|" + viewId + "|" + keyword + "|" + limit + "|" + GetItemsPerRow();
+            return _contentVersion + "|" + viewId + "|" + keyword + "|" + limit;
         }
 
         public AssetItemGridList LoadItems(MainViewRequest request, CancellationToken cancellationToken = default(CancellationToken))
         {
-            var itemsPerRow = GetItemsPerRow();
             var query = CreateQuery(request);
-            var result = AssetManagerApi.SearchItems(query);
+            var result = AssetManagerApi.SearchItemSummaries(query);
             var items = new List<AssetItemGridListItem>();
             if (result == null || result.Items == null)
             {
-                return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noItems"), itemsPerRow);
+                return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noItems"));
             }
 
-            var loadedItems = new AssetItemGridListItem[result.Items.Count];
-            Parallel.For(0, result.Items.Count, new ParallelOptions
+            cancellationToken.ThrowIfCancellationRequested();
+            var thumbnails = AssetManagerApi.GetThumbnails(result.Items
+                .Where(item => item != null)
+                .Select(item => item.Id)
+                .ToArray());
+            for (var i = 0; i < result.Items.Count; i++)
             {
-                CancellationToken = cancellationToken,
-                MaxDegreeOfParallelism = 4
-            }, i =>
-            {
+                cancellationToken.ThrowIfCancellationRequested();
                 var item = result.Items[i];
                 if (item == null)
                 {
-                    return;
+                    continue;
                 }
 
-                loadedItems[i] = new AssetItemGridListItem(item.Id, item.Name, LoadThumbnail(item.Id));
-            });
-            items.AddRange(loadedItems.Where(item => item != null));
+                AssetThumbnail thumbnail;
+                thumbnails.TryGetValue(item.Id, out thumbnail);
+                items.Add(new AssetItemGridListItem(item.Id, item.Name, CreateThumbnailState(thumbnail)));
+            }
 
-            return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noItems"), itemsPerRow);
+            return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noItems"));
         }
 
         public AssetItemGridList LoadFiles(string itemId)
@@ -125,7 +284,7 @@ namespace Ee4v.AssetManager
                     itemId));
             }
 
-            return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noFiles"), GetItemsPerRow());
+            return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noFiles"));
         }
 
         public AssetItemGridList LoadItemChildren(string itemId)
@@ -148,7 +307,7 @@ namespace Ee4v.AssetManager
 
             var files = AssetManagerApi.GetFiles(itemId, new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active });
             AddFiles(items, files, itemId, file => !string.IsNullOrWhiteSpace(file.ItemId));
-            return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noChildren"), GetItemsPerRow());
+            return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noChildren"));
         }
 
         public AssetItemGridList LoadGroupChildren(string itemId, AssetItemGridNodeKind groupKind, string groupId)
@@ -167,7 +326,7 @@ namespace Ee4v.AssetManager
                 }
 
                 AddFiles(items, files, itemId, file => string.Equals(file.VariantGroupId, groupId, StringComparison.Ordinal));
-                return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noChildren"), GetItemsPerRow());
+                return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noChildren"));
             }
 
             if (groupKind == AssetItemGridNodeKind.VersionGroup)
@@ -175,19 +334,18 @@ namespace Ee4v.AssetManager
                 AddFiles(items, files, itemId, file => string.Equals(file.VersionGroupId, groupId, StringComparison.Ordinal));
             }
 
-            return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noChildren"), GetItemsPerRow());
+            return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noChildren"));
         }
 
-        private static void OnAssetManagerChanged()
+        private void OnAssetManagerChanged()
         {
             InvalidateContent();
         }
 
-        private static void OnSettingChanged(SettingDefinitionBase definition, object value)
+        private void OnSettingChanged(SettingDefinitionBase definition, object value)
         {
             if (definition == AssetManagerDefinitions.ItemGridItemsPerRow)
             {
-                _contentVersion++;
                 LayoutChanged?.Invoke();
             }
             else if (definition == AssetManagerDefinitions.HistoryOverlayMaximumItems)
@@ -196,9 +354,10 @@ namespace Ee4v.AssetManager
             }
         }
 
-        private static void InvalidateContent()
+        private void InvalidateContent()
         {
             _contentVersion++;
+            _itemCache.Clear();
             ContentChanged?.Invoke();
         }
 
@@ -219,9 +378,8 @@ namespace Ee4v.AssetManager
             return query;
         }
 
-        private static ItemImageState LoadThumbnail(string itemId)
+        private static ItemImageState CreateThumbnailState(AssetThumbnail thumbnail)
         {
-            var thumbnail = AssetManagerApi.GetThumbnail(itemId);
             if (thumbnail == null || !thumbnail.Found)
             {
                 return new ItemImageState();
@@ -325,7 +483,7 @@ namespace Ee4v.AssetManager
 
         private static int GetItemsPerRow()
         {
-            return Math.Min(12, Math.Max(1, SettingApi.Get(AssetManagerDefinitions.ItemGridItemsPerRow)));
+            return SettingApi.Get(AssetManagerDefinitions.ItemGridItemsPerRow);
         }
 
         private static int GetHistoryOverlayMaximumItems()

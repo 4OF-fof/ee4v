@@ -39,7 +39,7 @@ namespace Ee4v.AssetManager
             surface.style.paddingTop = 12f;
             surface.style.paddingBottom = 12f;
 
-            var toolbar = new MainToolbar(new MainView());
+            var toolbar = new MainToolbar();
             surface.Add(toolbar);
             preview.Body.Add(surface);
         }

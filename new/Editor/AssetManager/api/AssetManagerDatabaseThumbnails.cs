@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -16,59 +17,110 @@ namespace Ee4v.AssetManager.Api
 
         public static AssetThumbnail GetThumbnail(string itemId)
         {
+            string thumbnailUrl;
             using (var connection = OpenConnection())
             {
                 EnsureItemExists(connection, itemId);
-                var thumbnailUrl = connection.ExecuteScalar<string>(
+                thumbnailUrl = connection.ExecuteScalar<string>(
                     "SELECT thumbnail_url FROM booth_info WHERE item_info_id = ? LIMIT 1",
                     itemId);
+            }
 
-                if (string.IsNullOrWhiteSpace(thumbnailUrl))
+            return GetThumbnail(itemId, thumbnailUrl);
+        }
+
+        public static IReadOnlyDictionary<string, AssetThumbnail> GetThumbnails(IReadOnlyList<string> itemIds)
+        {
+            var distinctIds = (itemIds ?? Array.Empty<string>())
+                .Where(itemId => !string.IsNullOrWhiteSpace(itemId))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            if (distinctIds.Length == 0)
+            {
+                return new Dictionary<string, AssetThumbnail>(StringComparer.Ordinal);
+            }
+
+            Dictionary<string, string> thumbnailUrls;
+            using (var connection = OpenConnection())
+            {
+                var placeholders = string.Join(",", Enumerable.Repeat("?", distinctIds.Length).ToArray());
+                thumbnailUrls = connection.Query<ThumbnailSourceRow>(
+                        @"SELECT item_info.id AS item_id, booth_info.thumbnail_url
+                          FROM item_info
+                          LEFT JOIN booth_info ON booth_info.item_info_id = item_info.id
+                          WHERE item_info.id IN (" + placeholders + ")",
+                        distinctIds.Cast<object>().ToArray())
+                    .ToDictionary(row => row.item_id, row => row.thumbnail_url, StringComparer.Ordinal);
+            }
+
+            var thumbnails = new AssetThumbnail[distinctIds.Length];
+            System.Threading.Tasks.Parallel.For(
+                0,
+                distinctIds.Length,
+                new System.Threading.Tasks.ParallelOptions { MaxDegreeOfParallelism = 4 },
+                index =>
                 {
-                    return MissingThumbnail("Thumbnail URL was not found.");
-                }
+                    string thumbnailUrl;
+                    thumbnailUrls.TryGetValue(distinctIds[index], out thumbnailUrl);
+                    thumbnails[index] = GetThumbnail(distinctIds[index], thumbnailUrl);
+                });
 
-                var cachePath = GetThumbnailCachePath(itemId, thumbnailUrl);
-                if (File.Exists(cachePath))
-                {
-                    try
-                    {
-                        var cachedData = File.ReadAllBytes(cachePath);
-                        if (cachedData.Length > 0)
-                        {
-                            return FoundThumbnail(cachedData, cachePath, thumbnailUrl);
-                        }
-                    }
-                    catch
-                    {
-                        // Ignore unreadable cache files and attempt a fresh download.
-                    }
-                }
+            var result = new Dictionary<string, AssetThumbnail>(distinctIds.Length, StringComparer.Ordinal);
+            for (var i = 0; i < distinctIds.Length; i++)
+            {
+                result[distinctIds[i]] = thumbnails[i];
+            }
 
+            return result;
+        }
+
+        private static AssetThumbnail GetThumbnail(string itemId, string thumbnailUrl)
+        {
+            if (string.IsNullOrWhiteSpace(thumbnailUrl))
+            {
+                return MissingThumbnail("Thumbnail URL was not found.");
+            }
+
+            var cachePath = GetThumbnailCachePath(itemId, thumbnailUrl);
+            if (File.Exists(cachePath))
+            {
                 try
                 {
-                    using (var response = ThumbnailHttpClient.GetAsync(thumbnailUrl).GetAwaiter().GetResult())
+                    var cachedData = File.ReadAllBytes(cachePath);
+                    if (cachedData.Length > 0)
                     {
-                        if (!response.IsSuccessStatusCode)
-                        {
-                            return MissingThumbnail("Thumbnail download failed: " + response.StatusCode, cachePath, thumbnailUrl);
-                        }
-
-                        var data = response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
-                        if (data == null || data.Length == 0)
-                        {
-                            return MissingThumbnail("Thumbnail download returned empty data.", cachePath, thumbnailUrl);
-                        }
-
-                        Directory.CreateDirectory(Path.GetDirectoryName(cachePath));
-                        File.WriteAllBytes(cachePath, data);
-                        return FoundThumbnail(data, cachePath, thumbnailUrl);
+                        return FoundThumbnail(cachedData, cachePath, thumbnailUrl);
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    return MissingThumbnail("Thumbnail download failed: " + exception.Message, cachePath, thumbnailUrl);
+                    // Ignore unreadable cache files and attempt a fresh download.
                 }
+            }
+
+            try
+            {
+                using (var response = ThumbnailHttpClient.GetAsync(thumbnailUrl).GetAwaiter().GetResult())
+                {
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        return MissingThumbnail("Thumbnail download failed: " + response.StatusCode, cachePath, thumbnailUrl);
+                    }
+
+                    var data = response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
+                    if (data == null || data.Length == 0)
+                    {
+                        return MissingThumbnail("Thumbnail download returned empty data.", cachePath, thumbnailUrl);
+                    }
+
+                    Directory.CreateDirectory(Path.GetDirectoryName(cachePath));
+                    File.WriteAllBytes(cachePath, data);
+                    return FoundThumbnail(data, cachePath, thumbnailUrl);
+                }
+            }
+            catch (Exception exception)
+            {
+                return MissingThumbnail("Thumbnail download failed: " + exception.Message, cachePath, thumbnailUrl);
             }
         }
 
@@ -139,6 +191,13 @@ namespace Ee4v.AssetManager.Api
                    normalized == ".jpg" ||
                    normalized == ".jpeg" ||
                    normalized == ".webp";
+        }
+
+        private sealed class ThumbnailSourceRow
+        {
+            public string item_id { get; set; }
+
+            public string thumbnail_url { get; set; }
         }
     }
 }
