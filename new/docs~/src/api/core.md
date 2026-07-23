@@ -357,6 +357,10 @@ var adapter = new SamplePreferencesAdapter(settings);
 
 ## I18N
 
+`I18N` は `Ee4v.UI.Editor` に置くpresentation adapterです。scope解決後は
+`CoreLocalization.Current.ForScope(scope)` が返す `ILocalizer` へ委譲します。
+解決本体の `LocalizationService` はUnity非依存です。
+
 ### `I18N.Get`
 
 caller の source file から scope を解決し、localization 文言を取得します。
@@ -380,8 +384,8 @@ Returns:
 
 Effects:
 
-- 初回取得時に localization catalog を読み込む。
-- duplicate key があれば Unity console に error を出す。
+- 初回取得時に `ILocalizationCatalogSource` からcatalogを読み込む。
+- diagnostics adapterがduplicate keyを報告する。
 
 Notes:
 
@@ -488,7 +492,7 @@ Notes:
 
 ### `I18N.Reload`
 
-localization catalog と scope cache を破棄し、表示を再描画します。
+localization serviceへreloadを通知します。
 
 ```csharp
 public static void Reload()
@@ -506,12 +510,13 @@ Effects:
 
 - localization catalog cache を破棄する。
 - caller namespace scope cache を消す。
-- duplicate key warning 状態を消す。
-- ProjectToolbar と Unity view 全体を再描画する。
+- serviceのreload eventをpresentation adapterが受け取る。
+- presentation adapterがProjectToolbarとUnity view全体を再描画する。
 
 Notes:
 
-- `Localization` 配下の asset 変更時は `LocalizationAssetPostprocessor` が呼び出す。
+- `Localization` 配下のasset変更時は `LocalizationAssetPostprocessor` が
+  `CoreLocalization.Current.Reload()` を呼ぶ。
 - feature 側で独自の localization reload 実装を持たない。
 
 ## Testing

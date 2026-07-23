@@ -13,11 +13,11 @@ namespace Ee4v.Core.Tests
     {
         [Test]
         [FeatureTestCase(
-            "Core Settingsの依存方向をasmdefで固定する",
-            "ContractsとServicesがUnity非依存で、Unity adapterが内側のassemblyだけを参照することを確認します。",
+            "Core内層の依存方向をasmdefで固定する",
+            "SettingsとLocalizationのContracts/ServicesがUnity非依存で、Unity adapterが内側のassemblyだけを参照することを確認します。",
             order: 28,
             category: FeatureTestCategory.StaticAudit)]
-        public void SettingsAsmdefs_HaveOnlyAllowedDependencies()
+        public void CoreLayerAsmdefs_HaveOnlyAllowedDependencies()
         {
             AssertAsmdef(
                 "Contracts/Ee4v.Core.Contracts.Editor.asmdef",
@@ -39,11 +39,11 @@ namespace Ee4v.Core.Tests
 
         [Test]
         [FeatureTestCase(
-            "Core Settingsの内側はUnityと保存技術に依存しない",
+            "Coreの内側はUnityと保存技術に依存しない",
             "ContractsとServicesからUnity、Newtonsoft、filesystem、EditorPrefs依存が排除されていることを確認します。",
             order: 29,
             category: FeatureTestCategory.StaticAudit)]
-        public void SettingsInnerSources_DoNotReferenceOuterTechnologies()
+        public void CoreInnerSources_DoNotReferenceOuterTechnologies()
         {
             var forbiddenTokens = new[]
             {
@@ -94,6 +94,34 @@ namespace Ee4v.Core.Tests
                 .ToArray();
 
             Assert.That(violations, Is.Empty, string.Join("\n", violations));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Localization解決とpresentation adapterを分離する",
+            "旧配置を廃止し、Unity非依存のserviceとUI assembly上のI18N adapterが存在することを確認します。",
+            order: 31,
+            category: FeatureTestCategory.StaticAudit)]
+        public void LocalizationService_IsSeparatedFromPresentationAdapter()
+        {
+            var coreRoot = GetCoreRoot();
+            Assert.That(
+                File.Exists(Path.Combine(coreRoot, "I18n", "I18N.cs")),
+                Is.False);
+            Assert.That(
+                File.Exists(Path.Combine(
+                    coreRoot,
+                    "Services",
+                    "Localization",
+                    "LocalizationService.cs")),
+                Is.True);
+            Assert.That(
+                File.Exists(Path.Combine(
+                    coreRoot,
+                    "UI",
+                    "Localization",
+                    "I18N.cs")),
+                Is.True);
         }
 
         private static void AssertAsmdef(

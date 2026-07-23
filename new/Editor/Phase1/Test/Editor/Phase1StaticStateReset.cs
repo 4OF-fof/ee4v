@@ -61,8 +61,8 @@ namespace Ee4v.Phase1.Tests
 
             ReflectionReset.ClearCollectionField(typeof(I18N), "CallerNamespaceScopeCache");
             ReflectionReset.ClearCollectionField(typeof(I18N), "WarnedCallerSites");
-            ReflectionReset.ClearCollectionField(typeof(I18N), "WarnedDuplicateKeys");
-            ReflectionReset.SetStaticField(typeof(I18N), "_catalogSnapshot", null);
+            ReflectionReset.SetStaticField(typeof(I18N), "Reloaded", null);
+            CoreLocalization.ResetForTests();
 
         }
     }

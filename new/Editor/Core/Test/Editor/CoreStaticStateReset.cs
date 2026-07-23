@@ -126,9 +126,8 @@ namespace Ee4v.Core.Tests
         {
             ReflectionReset.ClearCollectionField(typeof(I18N), "CallerNamespaceScopeCache");
             ReflectionReset.ClearCollectionField(typeof(I18N), "WarnedCallerSites");
-            ReflectionReset.ClearCollectionField(typeof(I18N), "WarnedDuplicateKeys");
-            ReflectionReset.SetStaticField(typeof(I18N), "_catalogSnapshot", null);
             ReflectionReset.SetStaticField(typeof(I18N), "Reloaded", null);
+            CoreLocalization.ResetForTests();
         }
     }
 
@@ -136,7 +135,7 @@ namespace Ee4v.Core.Tests
     {
         public static void Reset()
         {
-            foreach (var type in typeof(I18N).Assembly.GetTypes())
+            foreach (var type in typeof(CoreLocalization).Assembly.GetTypes())
             {
                 if (type == null || string.IsNullOrWhiteSpace(type.Namespace) || !type.Namespace.StartsWith("Ee4v.", StringComparison.Ordinal))
                 {

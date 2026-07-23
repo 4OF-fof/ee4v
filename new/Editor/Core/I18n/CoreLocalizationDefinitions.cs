@@ -46,14 +46,15 @@ namespace Ee4v.Core.I18n
         {
             if (args.Definition == Language || args.Definition == FallbackLanguage)
             {
-                I18N.Reload();
+                CoreLocalization.Current.Reload();
             }
         }
 
         private static SettingValidationResult ValidateLocale(string locale)
         {
             return string.IsNullOrWhiteSpace(locale)
-                ? SettingValidationResult.Error(I18N.Get("settings.validation.locale"))
+                ? SettingValidationResult.Error(
+                    CoreLocalization.Current.ForScope("Core").Get("settings.validation.locale"))
                 : SettingValidationResult.Success;
         }
     }

@@ -22,7 +22,7 @@ namespace Ee4v.Core.I18n
                 TouchesLocalization(movedAssets, root) ||
                 TouchesLocalization(movedFromAssetPaths, root))
             {
-                I18N.Reload();
+                CoreLocalization.Current.Reload();
             }
         }
 

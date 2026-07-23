@@ -362,7 +362,9 @@ feature 横断の foundation と Unity adapter の集合である。
 - [x] EditorPrefs、project file、Newtonsoftを `Ee4v.Core.Unity.Editor` へ分離
 - [x] SettingsProvider、field、drawerを `Ee4v.UI.Editor` へ分離
 - [x] feature Compositionから `ISettingsService` をadapterへ注入
-- [ ] I18Nのresolver、catalog source、reload/repaintを分離
+- [x] I18Nのresolverを `LocalizationService` としてinstance化・Unity非依存化
+- [x] catalog source、Settings language provider、diagnosticsを外側adapterへ分離
+- [x] reloadとInjector/全View再描画をserviceとpresentationへ分離
 - [ ] Injectorのregistry、host lifecycle、Unity内部API accessを分離
 - [ ] Testingを独立Moduleへ分離
 - [ ] Core移行完了時に、この `memo.md` と `memo.md.meta` を削除

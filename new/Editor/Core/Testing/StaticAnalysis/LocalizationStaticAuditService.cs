@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Internal;
+using Ee4v.Core.Localization;
 
 namespace Ee4v.Core.Testing.StaticAnalysis
 {
@@ -99,6 +100,10 @@ namespace Ee4v.Core.Testing.StaticAnalysis
     {
         private static readonly Regex TranslationCallRegex =
             new Regex(@"I18N\.(Get|TryGet)\s*\(\s*""([^""]+)""", RegexOptions.Compiled);
+        private static readonly Regex ScopedTranslationCallRegex =
+            new Regex(
+                @"ForScope\s*\(\s*""([^""]+)""\s*\)\s*\.\s*(Get|TryGet)\s*\(\s*""([^""]+)""",
+                RegexOptions.Compiled);
         private static readonly Regex SettingDefinitionRegex =
             new Regex(
                 @"new\s+SettingDefinition<[^>]+>\s*\(\s*""[^""]+""\s*,\s*[^,]+,\s*""([^""]+)""\s*,\s*""([^""]+)""\s*,\s*""([^""]+)""\s*,\s*""([^""]+)""",
@@ -123,7 +128,7 @@ namespace Ee4v.Core.Testing.StaticAnalysis
         }
 
         private static IReadOnlyList<LocalizationCodeIssue> BuildMissing(
-            LocalizationCatalogSnapshot snapshot,
+            LocalizationCatalog snapshot,
             IReadOnlyList<CodeReference> references)
         {
             var issues = new List<LocalizationCodeIssue>();
@@ -158,7 +163,7 @@ namespace Ee4v.Core.Testing.StaticAnalysis
         }
 
         private static IReadOnlyList<LocalizationUnusedKeyIssue> BuildUnused(
-            LocalizationCatalogSnapshot snapshot,
+            LocalizationCatalog snapshot,
             IReadOnlyList<CodeReference> references)
         {
             var issues = new List<LocalizationUnusedKeyIssue>();
@@ -227,6 +232,21 @@ namespace Ee4v.Core.Testing.StaticAnalysis
                         }
 
                         results.Add(new CodeReference(scope, match.Groups[2].Value, relativePath, lineIndex + 1));
+                    }
+
+                    var scopedMatches = ScopedTranslationCallRegex.Matches(lines[lineIndex]);
+                    foreach (Match match in scopedMatches)
+                    {
+                        if (!match.Success || match.Groups.Count < 4)
+                        {
+                            continue;
+                        }
+
+                        results.Add(new CodeReference(
+                            match.Groups[1].Value,
+                            match.Groups[3].Value,
+                            relativePath,
+                            lineIndex + 1));
                     }
                 }
 
