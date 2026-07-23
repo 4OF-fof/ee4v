@@ -8,6 +8,7 @@ namespace Ee4v.AssetManager.UI
         private static IAssetManager _assetManager;
         private static IAssetManagerUiPreferences _preferences;
         private static IAssetArchiveReader _archiveReader;
+        private static IAssetFileSystemReader _fileSystemReader;
         private static IAssetManagerUiScheduler _scheduler;
 
         internal static IAssetManager AssetManager
@@ -32,6 +33,10 @@ namespace Ee4v.AssetManager.UI
             _archiveReader ?? throw new InvalidOperationException(
                 "AssetManager archive reader has not been configured.");
 
+        internal static IAssetFileSystemReader FileSystemReader =>
+            _fileSystemReader ?? throw new InvalidOperationException(
+                "AssetManager filesystem reader has not been configured.");
+
         internal static IAssetManagerUiScheduler Scheduler =>
             _scheduler ?? throw new InvalidOperationException(
                 "AssetManager UI scheduler has not been configured.");
@@ -40,11 +45,13 @@ namespace Ee4v.AssetManager.UI
             IAssetManager assetManager,
             IAssetManagerUiPreferences preferences,
             IAssetArchiveReader archiveReader,
+            IAssetFileSystemReader fileSystemReader,
             IAssetManagerUiScheduler scheduler)
         {
             _assetManager = assetManager ?? throw new ArgumentNullException(nameof(assetManager));
             _preferences = preferences ?? throw new ArgumentNullException(nameof(preferences));
             _archiveReader = archiveReader ?? throw new ArgumentNullException(nameof(archiveReader));
+            _fileSystemReader = fileSystemReader ?? throw new ArgumentNullException(nameof(fileSystemReader));
             _scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
         }
     }

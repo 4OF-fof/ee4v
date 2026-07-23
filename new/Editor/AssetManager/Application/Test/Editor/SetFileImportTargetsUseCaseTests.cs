@@ -145,6 +145,44 @@ namespace Ee4v.AssetManager.Application.Tests
         }
     }
 
+    public sealed class AssetManagerChangePublisherTests
+    {
+        [Test]
+        [FeatureTestCase(
+            "Change subscriber の失敗を command から隔離する",
+            "一つの subscriber が例外を投げても後続 subscriber へ通知し、診断 port へ失敗を報告することを確認します。",
+            order: 4)]
+        public void Publish_SubscriberFailure_DoesNotStopOtherSubscribers()
+        {
+            var diagnostics = new RecordingDiagnostics();
+            var publisher = new AssetManagerChangePublisher(diagnostics);
+            var observed = 0;
+            publisher.Changed += _ =>
+                throw new InvalidOperationException("broken view");
+            publisher.Changed += _ => observed++;
+
+            Assert.DoesNotThrow(() => publisher.Publish(
+                new AssetManagerChange(AssetManagerChangeKind.Catalog)));
+            Assert.That(observed, Is.EqualTo(1));
+            Assert.That(diagnostics.Failures.Count, Is.EqualTo(1));
+            Assert.That(
+                diagnostics.Failures[0].Message,
+                Is.EqualTo("broken view"));
+        }
+
+        private sealed class RecordingDiagnostics
+            : IAssetManagerDiagnostics
+        {
+            internal List<Exception> Failures { get; } =
+                new List<Exception>();
+
+            public void ReportChangeSubscriberFailure(Exception exception)
+            {
+                Failures.Add(exception);
+            }
+        }
+    }
+
     public sealed class AssetManagerApplicationTestRegistrar : IFeatureTestRegistrar
     {
         public FeatureTestDescriptor CreateDescriptor()

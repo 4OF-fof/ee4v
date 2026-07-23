@@ -631,9 +631,35 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
+            "DB 再生成後は保存済み fingerprint を無効化する",
+            "同期成功後に AssetManager DB だけを削除した場合、同じ datasource でも再取り込みが必要と判定されることを確認します。",
+            order: 322)]
+        public void PrepareEagleSync_RecreatedDatabaseRequiresSynchronization()
+        {
+            var libraryPath = CreateEagleLibrary(
+                "recreated-database.library",
+                "Avatar");
+            var first = AssetManagerDatabase.PrepareEagleSync(
+                new EagleSyncRequest(libraryPath));
+            AssetManagerDatabase.ApplyPreparedEagleSync(first, true);
+            Assert.That(
+                File.Exists(AssetSyncFingerprintCache.GetPath(
+                    AssetSourceType.Eagle)),
+                Is.True);
+
+            File.Delete(GetDatabasePath());
+
+            var prepared = AssetManagerDatabase.PrepareEagleSync(
+                new EagleSyncRequest(libraryPath));
+
+            Assert.That(prepared.Preview.HasChanges, Is.True);
+        }
+
+        [Test]
+        [FeatureTestCase(
             "Eagle 同期は新しい Unity item を競合として検出する",
             "前回取り込み後に Unity item が更新され、Eagle の名前も変わった場合に差分を返し、承認後は同期元の値で上書きすることを確認します。",
-            order: 322)]
+            order: 323)]
         public void PrepareEagleSync_NewerUnityItemRequiresOverwriteConfirmation()
         {
             var libraryPath = CreateEagleLibrary("conflict.library", "Before");
@@ -1040,9 +1066,45 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
+            "file tree の filesystem access を adapter に隔離する",
+            "directory列挙とZIP entryのstream取得をInfrastructure adapterが提供することを確認します。",
+            order: 330)]
+        public void FileSystemReader_ProvidesDirectoryAndArchiveAccess()
+        {
+            var directoryPath = Path.Combine(_tempRoot, "tree");
+            var childDirectory = Path.Combine(directoryPath, "Folder");
+            Directory.CreateDirectory(childDirectory);
+            File.WriteAllText(
+                Path.Combine(directoryPath, "preview.png"),
+                "preview");
+            var zipPath = Path.Combine(_tempRoot, "archive.zip");
+            CreateZip(zipPath, "Images/preview.png");
+            var reader = new AssetFileSystemReader();
+
+            var entries = reader.GetDirectoryEntries(
+                directoryPath,
+                CancellationToken.None);
+
+            Assert.That(
+                entries.Select(entry => entry.Name),
+                Is.EquivalentTo(new[] { "Folder", "preview.png" }));
+            using (var stream = reader.OpenZipEntry(
+                       zipPath,
+                       "Images/preview.png",
+                       1024))
+            using (var textReader = new StreamReader(stream))
+            {
+                Assert.That(
+                    textReader.ReadToEnd(),
+                    Is.EqualTo("Images/preview.png"));
+            }
+        }
+
+        [Test]
+        [FeatureTestCase(
             "file tree archive cache を library の cache に保存する",
             "ZIP metadata cache を永続化し、source 更新時に非同期読み込み用snapshotを再生成できることを確認します。",
-            order: 330)]
+            order: 331)]
         public void FileTreeCache_PersistsAndInvalidatesArchiveEntries()
         {
             var zipPath = Path.Combine(_tempRoot, "archive.zip");

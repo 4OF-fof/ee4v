@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using Ee4v.AssetManager.Contracts;
 using Ee4v.Testing.Contracts;
 using NUnit.Framework;
 
@@ -28,6 +30,29 @@ namespace Ee4v.AssetManager.UI.Tests
 
             Assert.That(FileTreeImagePreviewLoader.ResolveMaximumSourceBytes("Gravity.psd"), Is.GreaterThan(gravityPsdBytes));
             Assert.That(FileTreeImagePreviewLoader.ResolveMaximumSourceBytes("preview.png"), Is.EqualTo(64L * 1024L * 1024L));
+        }
+
+        [Test]
+        public void PreviewLoader_ReadsSourceThroughInjectedFileSystemPort()
+        {
+            var reader = new RecordingFileSystemReader
+            {
+                FileContent = new byte[] { 1, 2, 3, 4 }
+            };
+            var source = FileTreeImageSource.FromFile(
+                "preview.png",
+                "virtual/preview.png");
+
+            var result = FileTreeImagePreviewLoader.Load(
+                source,
+                reader,
+                CancellationToken.None);
+
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.EncodedData, Is.EqualTo(reader.FileContent));
+            Assert.That(
+                reader.OpenedPath,
+                Is.EqualTo("virtual/preview.png"));
         }
 
         [Test]
@@ -113,6 +138,35 @@ namespace Ee4v.AssetManager.UI.Tests
             writer.Write((byte)(value >> 16));
             writer.Write((byte)(value >> 8));
             writer.Write((byte)value);
+        }
+
+        private sealed class RecordingFileSystemReader
+            : IAssetFileSystemReader
+        {
+            internal byte[] FileContent { get; set; }
+            internal string OpenedPath { get; private set; }
+
+            public bool FileExists(string path) => false;
+            public bool DirectoryExists(string path) => false;
+
+            public IReadOnlyList<AssetFileSystemEntry> GetDirectoryEntries(
+                string path,
+                CancellationToken cancellationToken) =>
+                new AssetFileSystemEntry[0];
+
+            public Stream OpenFile(string path, long maximumBytes)
+            {
+                OpenedPath = path;
+                return new MemoryStream(
+                    FileContent ?? new byte[0],
+                    false);
+            }
+
+            public Stream OpenZipEntry(
+                string archivePath,
+                string entryPath,
+                long maximumBytes) =>
+                null;
         }
     }
 }

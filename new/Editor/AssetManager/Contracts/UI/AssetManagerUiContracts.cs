@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 
 namespace Ee4v.AssetManager.Contracts
@@ -47,6 +48,46 @@ namespace Ee4v.AssetManager.Contracts
         IReadOnlyList<AssetArchiveEntry> ReadZipEntries(
             string zipPath,
             CancellationToken cancellationToken);
+    }
+
+    public enum AssetFileSystemEntryKind
+    {
+        File,
+        Directory
+    }
+
+    public sealed class AssetFileSystemEntry
+    {
+        public AssetFileSystemEntry(
+            string fullPath,
+            string name,
+            AssetFileSystemEntryKind kind)
+        {
+            FullPath = fullPath ?? string.Empty;
+            Name = name ?? string.Empty;
+            Kind = kind;
+        }
+
+        public string FullPath { get; }
+        public string Name { get; }
+        public AssetFileSystemEntryKind Kind { get; }
+    }
+
+    public interface IAssetFileSystemReader
+    {
+        bool FileExists(string path);
+        bool DirectoryExists(string path);
+
+        IReadOnlyList<AssetFileSystemEntry> GetDirectoryEntries(
+            string path,
+            CancellationToken cancellationToken);
+
+        Stream OpenFile(string path, long maximumBytes);
+
+        Stream OpenZipEntry(
+            string archivePath,
+            string entryPath,
+            long maximumBytes);
     }
 
     public sealed class AssetManagerBackgroundResult<T>

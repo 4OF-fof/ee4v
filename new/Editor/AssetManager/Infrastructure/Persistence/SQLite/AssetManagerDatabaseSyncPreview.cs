@@ -17,7 +17,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             {
                 var records = BlmConnectorApi.ReadItems(request);
                 var fingerprint = AssetSyncFingerprint.CreateBlm(records);
-                var hasChanges = !AssetSyncFingerprintCache.Matches(AssetSourceType.Blm, fingerprint);
+                var hasChanges =
+                    !HasSuccessfulSyncState("blm") ||
+                    !AssetSyncFingerprintCache.Matches(
+                        AssetSourceType.Blm,
+                        fingerprint);
                 return new PreparedBlmSync(
                     records,
                     new AssetSyncPreview(
@@ -39,7 +43,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             {
                 var records = EagleConnectorApi.ReadItems(request);
                 var fingerprint = AssetSyncFingerprint.CreateEagle(records);
-                var hasChanges = !AssetSyncFingerprintCache.Matches(AssetSourceType.Eagle, fingerprint);
+                var hasChanges =
+                    !HasSuccessfulSyncState("eagle") ||
+                    !AssetSyncFingerprintCache.Matches(
+                        AssetSourceType.Eagle,
+                        fingerprint);
                 return new PreparedEagleSync(
                     records,
                     new AssetSyncPreview(
@@ -73,6 +81,21 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             }
 
             return SyncEagle(prepared.Records, prepared.Preview.Fingerprint, overwriteItemText);
+        }
+
+        private static bool HasSuccessfulSyncState(string sourceType)
+        {
+            using (var connection = OpenConnection())
+            {
+                var syncInfo = connection.Query<SyncInfoRow>(
+                    "SELECT * FROM sync_info WHERE source_type = ? LIMIT 1",
+                    sourceType).FirstOrDefault();
+                return syncInfo != null &&
+                       string.Equals(
+                           syncInfo.last_sync_status,
+                           "success",
+                           StringComparison.Ordinal);
+            }
         }
 
         private static IReadOnlyList<AssetSyncConflict> FindBlmConflicts(IReadOnlyList<BlmItemRecord> records)

@@ -37,6 +37,8 @@ namespace Ee4v.Core.Background
         private static readonly Dictionary<int, HostRegistration> Hosts =
             new Dictionary<int, HostRegistration>();
 
+        internal static int HostCount => Hosts.Count;
+
         public static void EnsureHost(EditorWindow window)
         {
             if (window == null || window.rootVisualElement == null)
@@ -57,6 +59,10 @@ namespace Ee4v.Core.Background
             if (host == null)
             {
                 host = new BackgroundStatusOverlayHost();
+                var windowId = window.GetInstanceID();
+                var registeredHost = host;
+                host.RegisterCallback<DetachFromPanelEvent>(
+                    _ => RemoveHost(windowId, registeredHost));
                 root.Add(host);
             }
 
@@ -64,18 +70,50 @@ namespace Ee4v.Core.Background
             host.Refresh();
         }
 
+        internal static void ReleaseHost(EditorWindow window)
+        {
+            if (window == null)
+            {
+                return;
+            }
+
+            var windowId = window.GetInstanceID();
+            if (!Hosts.TryGetValue(windowId, out var registration))
+            {
+                return;
+            }
+
+            Hosts.Remove(windowId);
+            var host = registration.Host;
+            if (host != null && host.parent != null)
+            {
+                host.RemoveFromHierarchy();
+            }
+        }
+
         internal static void ResetAllHosts()
         {
-            foreach (var pair in Hosts)
+            var registrations = new List<HostRegistration>(Hosts.Values);
+            Hosts.Clear();
+            for (var i = 0; i < registrations.Count; i++)
             {
-                var host = pair.Value.Host;
+                var host = registrations[i].Host;
                 if (host != null && host.parent != null)
                 {
                     host.RemoveFromHierarchy();
                 }
             }
+        }
 
-            Hosts.Clear();
+        private static void RemoveHost(
+            int windowId,
+            BackgroundStatusOverlayHost host)
+        {
+            if (Hosts.TryGetValue(windowId, out var registration) &&
+                ReferenceEquals(registration.Host, host))
+            {
+                Hosts.Remove(windowId);
+            }
         }
 
         private sealed class HostRegistration

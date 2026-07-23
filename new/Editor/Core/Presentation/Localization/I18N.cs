@@ -49,24 +49,25 @@ namespace Ee4v.Core.I18n
             }
         }
 
-        public static string Get(
-            string key,
-            [CallerFilePath] string callerFilePath = null)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static string Get(string key)
         {
-            return GetForScope(ResolveCallerScope(callerFilePath), key);
+            return GetForScope(ResolveCallerScopeFromStack(2), key);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static string Get(string key, params object[] arguments)
         {
             return GetForScope(ResolveCallerScopeFromStack(2), key, arguments);
         }
 
-        public static bool TryGet(
-            string key,
-            out string value,
-            [CallerFilePath] string callerFilePath = null)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool TryGet(string key, out string value)
         {
-            return TryGetForScope(ResolveCallerScope(callerFilePath), key, out value);
+            return TryGetForScope(
+                ResolveCallerScopeFromStack(2),
+                key,
+                out value);
         }
 
         internal static string GetForScope(
@@ -117,17 +118,6 @@ namespace Ee4v.Core.I18n
             }
 
             return scope;
-        }
-
-        private static string ResolveCallerScope(string callerFilePath)
-        {
-            var scope = string.IsNullOrWhiteSpace(callerFilePath)
-                ? null
-                : ResolveScopeForNamespace(
-                    PackagePathUtility.GetDeclaredNamespace(callerFilePath));
-            return !string.IsNullOrWhiteSpace(scope)
-                ? scope
-                : ResolveCallerScopeFromStack(3);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

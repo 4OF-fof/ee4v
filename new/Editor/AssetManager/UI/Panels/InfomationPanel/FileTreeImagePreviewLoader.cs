@@ -1,7 +1,7 @@
 using System;
 using System.IO;
-using System.IO.Compression;
 using System.Threading;
+using Ee4v.AssetManager.Contracts;
 using UnityEngine;
 
 namespace Ee4v.AssetManager.UI
@@ -185,15 +185,23 @@ namespace Ee4v.AssetManager.UI
         internal const long MaximumEncodedBytes = 64L * 1024L * 1024L;
         internal const long MaximumPsdBytes = 1024L * 1024L * 1024L;
 
-        public static FileTreeImagePreviewData Load(FileTreeImageSource source, CancellationToken cancellationToken)
+        public static FileTreeImagePreviewData Load(
+            FileTreeImageSource source,
+            IAssetFileSystemReader fileSystemReader,
+            CancellationToken cancellationToken)
         {
             if (source == null)
             {
                 return null;
             }
 
+            if (fileSystemReader == null)
+            {
+                throw new ArgumentNullException(nameof(fileSystemReader));
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
-            using (var stream = OpenSource(source))
+            using (var stream = OpenSource(source, fileSystemReader))
             {
                 if (stream == null)
                 {
@@ -209,53 +217,22 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private static Stream OpenSource(FileTreeImageSource source)
+        private static Stream OpenSource(
+            FileTreeImageSource source,
+            IAssetFileSystemReader fileSystemReader)
         {
             var maximumSourceBytes = ResolveMaximumSourceBytes(source.FileName);
             if (string.IsNullOrWhiteSpace(source.ArchivePath))
             {
-                var file = new FileInfo(source.FilePath);
-                return file.Exists && file.Length <= maximumSourceBytes
-                    ? file.OpenRead()
-                    : null;
+                return fileSystemReader.OpenFile(
+                    source.FilePath,
+                    maximumSourceBytes);
             }
 
-            var archiveStream = File.OpenRead(source.ArchivePath);
-            ZipArchive archive = null;
-            try
-            {
-                archive = new ZipArchive(archiveStream, ZipArchiveMode.Read, false);
-                ZipArchiveEntry matched = null;
-                for (var i = 0; i < archive.Entries.Count; i++)
-                {
-                    if (string.Equals(archive.Entries[i].FullName, source.ArchiveEntryPath, StringComparison.OrdinalIgnoreCase))
-                    {
-                        matched = archive.Entries[i];
-                        break;
-                    }
-                }
-
-                if (matched == null || matched.Length > maximumSourceBytes)
-                {
-                    archive.Dispose();
-                    return null;
-                }
-
-                return new OwnedArchiveEntryStream(archive, matched.Open());
-            }
-            catch
-            {
-                if (archive != null)
-                {
-                    archive.Dispose();
-                }
-                else
-                {
-                    archiveStream.Dispose();
-                }
-
-                throw;
-            }
+            return fileSystemReader.OpenZipEntry(
+                source.ArchivePath,
+                source.ArchiveEntryPath,
+                maximumSourceBytes);
         }
 
         internal static long ResolveMaximumSourceBytes(string fileName)
@@ -291,39 +268,6 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private sealed class OwnedArchiveEntryStream : Stream
-        {
-            private readonly ZipArchive _archive;
-            private readonly Stream _entryStream;
-
-            public OwnedArchiveEntryStream(ZipArchive archive, Stream entryStream)
-            {
-                _archive = archive;
-                _entryStream = entryStream;
-            }
-
-            public override bool CanRead => _entryStream.CanRead;
-            public override bool CanSeek => _entryStream.CanSeek;
-            public override bool CanWrite => false;
-            public override long Length => _entryStream.Length;
-            public override long Position { get => _entryStream.Position; set => _entryStream.Position = value; }
-            public override void Flush() => _entryStream.Flush();
-            public override int Read(byte[] buffer, int offset, int count) => _entryStream.Read(buffer, offset, count);
-            public override long Seek(long offset, SeekOrigin origin) => _entryStream.Seek(offset, origin);
-            public override void SetLength(long value) => throw new NotSupportedException();
-            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    _entryStream.Dispose();
-                    _archive.Dispose();
-                }
-
-                base.Dispose(disposing);
-            }
-        }
     }
 
     internal static class PsdCompositeImageDecoder

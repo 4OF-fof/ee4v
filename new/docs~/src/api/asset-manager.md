@@ -1038,7 +1038,7 @@ Unity Editor session の開始時に、設定で有効な datasource の変更�
 - `assetManager.autoSyncEagleOnStartup`: Eagle library を同期する
 - datasource path が未設定または存在しない source は skip する
 - BLM / Eagle の同期対象 record を正規化した fingerprint は `<ee4v global path>/cache/sync` に保存する
-- fingerprint が前回成功時と一致する場合は DB sync と `Catalog` change 通知を行わない
+- DB 内に同じ source の成功した `sync_info` があり、fingerprint も前回成功時と一致する場合は DB sync と `Catalog` change 通知を行わない。DB を削除・再生成した場合は fingerprint が残っていても再同期する
 - 外部の item 情報に差分があり、Unity の `item_info.updated_at` が datasource update time（取得できない場合は前回 `imported_at`）より新しい場合は競合として扱う
 - 競合時は AssetManager window を開き、`DiffConfirmationOverlay` で名前・説明の現在値と同期元値を表示する
 - `上書き` は差分を同期元の値で上書きして同期を続行し、`キャンセル` は今回の起動時同期全体を中止する

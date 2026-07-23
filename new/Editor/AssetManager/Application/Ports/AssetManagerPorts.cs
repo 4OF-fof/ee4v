@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Ee4v.AssetManager.Contracts;
 
@@ -88,5 +89,10 @@ namespace Ee4v.AssetManager.Application.Ports
     internal interface IAssetImportGateway
     {
         void Import(AssetImportPlan plan);
+    }
+
+    internal interface IAssetManagerDiagnostics
+    {
+        void ReportChangeSubscriberFailure(Exception exception);
     }
 }

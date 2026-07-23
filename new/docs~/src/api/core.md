@@ -381,18 +381,17 @@ var adapter = new SamplePreferencesAdapter(settings);
 
 ### `I18N.Get`
 
-caller の source file から scope を解決し、localization 文言を取得します。
+caller の namespace を call stack から解決し、localization 文言を取得します。
 
 ```csharp
-public static string Get(
-    string key,
-    [CallerFilePath] string callerFilePath = null)
+public static string Get(string key)
+public static string Get(string key, params object[] arguments)
 ```
 
 Parameters:
 
 - `key`: localization key。
-- `callerFilePath`: scope 解決用。通常は指定しない。
+- `arguments`: `string.Format` に渡す任意の書式引数。
 
 Returns:
 
@@ -454,15 +453,13 @@ localization 文言を取得できるか試します。未定義 key を UI に�
 ```csharp
 public static bool TryGet(
     string key,
-    out string value,
-    [CallerFilePath] string callerFilePath = null)
+    out string value)
 ```
 
 Parameters:
 
 - `key`: localization key。
 - `value`: 取得に成功した文言。失敗時は `null`。
-- `callerFilePath`: scope 解決用。通常は指定しない。
 
 Returns:
 

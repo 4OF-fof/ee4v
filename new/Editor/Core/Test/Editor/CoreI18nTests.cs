@@ -23,10 +23,10 @@ namespace Ee4v.Core.Tests
 
         [Test]
         [FeatureTestCase(
-            "I18N.Get が caller file から scope を解決する",
-            "I18N.Get が Core.Tests 名前空間の呼び出し元から Core scope を解決し、キー文字列ではなく翻訳値を返すことを確認します。",
+            "I18N.Get が caller namespace から scope を解決する",
+            "I18N.Get が Core.Tests 名前空間の call stack から Core scope を解決し、キー文字列ではなく翻訳値を返すことを確認します。",
             order: 0)]
-        public void I18N_Get_ResolvesScope_FromCallerFilePath()
+        public void I18N_Get_ResolvesScope_FromCallerNamespace()
         {
             Ee4vCoreTestReset.RecoverEditorState();
 
@@ -38,10 +38,10 @@ namespace Ee4v.Core.Tests
 
         [Test]
         [FeatureTestCase(
-            "I18N.TryGet が caller file から scope を解決する",
-            "I18N.TryGet が Core.Tests 名前空間の呼び出し元から Core scope を解決し、翻訳取得に成功することを確認します。",
+            "I18N.TryGet が caller namespace から scope を解決する",
+            "I18N.TryGet が Core.Tests 名前空間の call stack から Core scope を解決し、翻訳取得に成功することを確認します。",
             order: 1)]
-        public void I18N_TryGet_ResolvesScope_FromCallerFilePath()
+        public void I18N_TryGet_ResolvesScope_FromCallerNamespace()
         {
             Ee4vCoreTestReset.RecoverEditorState();
 
@@ -54,6 +54,21 @@ namespace Ee4v.Core.Tests
             Assert.That(
                 value,
                 Is.Not.EqualTo("settings.fallbackLanguage.label"));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "I18N.Get は string 引数を書式展開する",
+            "string の書式引数が scope 解決用引数として誤解釈されず、翻訳文へ埋め込まれることを確認します。",
+            order: 2)]
+        public void I18N_Get_FormatsStringArgument()
+        {
+            Ee4vCoreTestReset.RecoverEditorState();
+
+            var value = I18N.Get("settings.unsupportedType", "SampleType");
+
+            Assert.That(value, Does.Contain("SampleType"));
+            Assert.That(value, Does.Not.Contain("{0}"));
         }
 
         [Test]

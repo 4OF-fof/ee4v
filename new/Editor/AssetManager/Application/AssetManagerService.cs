@@ -20,6 +20,7 @@ namespace Ee4v.AssetManager.Application
         private readonly IAssetImportTargetCommandStore _importTargetWriter;
         private readonly IAssetSyncStore _sync;
         private readonly IAssetImportGateway _importGateway;
+        private readonly AssetManagerChangePublisher _changePublisher;
         private readonly SetFileImportTargetsUseCase _setFileImportTargets;
         private readonly ImportFileUseCase _importFile;
 
@@ -35,7 +36,8 @@ namespace Ee4v.AssetManager.Application
             IAssetImportTargetReadStore importTargetReader,
             IAssetImportTargetCommandStore importTargetWriter,
             IAssetSyncStore sync,
-            IAssetImportGateway importGateway)
+            IAssetImportGateway importGateway,
+            IAssetManagerDiagnostics diagnostics)
         {
             _catalogReader = catalogReader ?? throw new ArgumentNullException(nameof(catalogReader));
             _catalogWriter = catalogWriter ?? throw new ArgumentNullException(nameof(catalogWriter));
@@ -49,6 +51,7 @@ namespace Ee4v.AssetManager.Application
             _importTargetWriter = importTargetWriter ?? throw new ArgumentNullException(nameof(importTargetWriter));
             _sync = sync ?? throw new ArgumentNullException(nameof(sync));
             _importGateway = importGateway ?? throw new ArgumentNullException(nameof(importGateway));
+            _changePublisher = new AssetManagerChangePublisher(diagnostics);
             _setFileImportTargets = new SetFileImportTargetsUseCase(
                 _importTargetReader,
                 _importTargetWriter,
@@ -60,7 +63,11 @@ namespace Ee4v.AssetManager.Application
                 _importGateway);
         }
 
-        public event Action<AssetManagerChange> Changed;
+        public event Action<AssetManagerChange> Changed
+        {
+            add { _changePublisher.Changed += value; }
+            remove { _changePublisher.Changed -= value; }
+        }
 
         public AssetSearchResult SearchItems(AssetItemQuery query) => _catalogReader.SearchItems(query);
         public AssetSearchResult SearchItemSummaries(AssetItemQuery query) => _catalogReader.SearchItemSummaries(query);
@@ -256,7 +263,7 @@ namespace Ee4v.AssetManager.Application
 
         private void Publish(AssetManagerChange change)
         {
-            Changed?.Invoke(change);
+            _changePublisher.Publish(change);
         }
     }
 }

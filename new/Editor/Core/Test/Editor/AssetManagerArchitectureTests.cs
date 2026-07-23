@@ -159,7 +159,14 @@ namespace Ee4v.Core.Tests
                 "ISettingsService",
                 "SettingApi",
                 "Task.Run(",
-                "EditorApplication.delayCall"
+                "EditorApplication.delayCall",
+                "System.IO.Compression",
+                "File.Open",
+                "File.Exists(",
+                "Directory.Exists(",
+                "Directory.Enumerate",
+                "new FileInfo(",
+                "ZipArchive"
             };
             var uiViolations = GetAssetManagerSourceFiles("UI")
                 .Where(path => !IsTestSource(path))

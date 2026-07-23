@@ -248,12 +248,18 @@ namespace Ee4v.AssetManager.Infrastructure
                 store,
                 store,
                 store,
-                new UnityAssetImportGateway());
+                new UnityAssetImportGateway(),
+                new UnityAssetManagerDiagnostics());
         }
 
         internal static IAssetArchiveReader CreateArchiveReader()
         {
             return new CachedAssetArchiveReader();
+        }
+
+        internal static IAssetFileSystemReader CreateFileSystemReader()
+        {
+            return new AssetFileSystemReader();
         }
     }
 }

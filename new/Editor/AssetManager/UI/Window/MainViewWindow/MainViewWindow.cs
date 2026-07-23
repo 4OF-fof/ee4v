@@ -49,6 +49,7 @@ namespace Ee4v.AssetManager.UI
 
         private void OnDisable()
         {
+            BackgroundStatusOverlayApi.ReleaseHost(this);
             _mainViewHost?.Dispose();
             _mainViewHost = null;
             _mainView = null;

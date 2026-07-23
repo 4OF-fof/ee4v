@@ -42,6 +42,7 @@ namespace Ee4v.AssetManager.Composition
                 _assetManager,
                 _uiPreferences,
                 AssetManagerInfrastructure.CreateArchiveReader(),
+                AssetManagerInfrastructure.CreateFileSystemReader(),
                 new AssetManagerUiSchedulerAdapter());
             AssetManagerStartupSyncConflictPresenter.Initialize(_assetManager);
             AssetManagerDebugSyncMenu.Initialize(_assetManager);

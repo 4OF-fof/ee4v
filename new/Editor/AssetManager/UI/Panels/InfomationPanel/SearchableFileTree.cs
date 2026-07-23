@@ -27,6 +27,7 @@ namespace Ee4v.AssetManager.UI
         private readonly IAssetManager _assetManager;
         private readonly IAssetManagerUiPreferences _preferences;
         private readonly IAssetArchiveReader _archiveReader;
+        private readonly IAssetFileSystemReader _fileSystemReader;
         private readonly IAssetManagerUiScheduler _scheduler;
         private readonly SearchableTreeView<FileTreeNode> _treeView;
         private readonly Dictionary<string, Texture2D> _imagePreviewCache = new Dictionary<string, Texture2D>(StringComparer.OrdinalIgnoreCase);
@@ -46,11 +47,14 @@ namespace Ee4v.AssetManager.UI
             IAssetManager assetManager = null,
             IAssetManagerUiPreferences preferences = null,
             IAssetArchiveReader archiveReader = null,
+            IAssetFileSystemReader fileSystemReader = null,
             IAssetManagerUiScheduler scheduler = null)
         {
             _assetManager = assetManager ?? AssetManagerUiDependencies.AssetManager;
             _preferences = preferences ?? AssetManagerUiDependencies.Preferences;
             _archiveReader = archiveReader ?? AssetManagerUiDependencies.ArchiveReader;
+            _fileSystemReader = fileSystemReader ??
+                                AssetManagerUiDependencies.FileSystemReader;
             _scheduler = scheduler ?? AssetManagerUiDependencies.Scheduler;
             AddToClassList(RootClassName);
             _treeView = new SearchableTreeView<FileTreeNode>(
@@ -283,6 +287,7 @@ namespace Ee4v.AssetManager.UI
             var builder = new FileTreeBuilder(
                 _assetManager,
                 _archiveReader,
+                _fileSystemReader,
                 inaccessibleText,
                 zipText,
                 cancellationToken);
@@ -402,7 +407,10 @@ namespace Ee4v.AssetManager.UI
             var previewVersion = ++_imagePreviewVersion;
             var source = node.ImageSource;
             _scheduler.RunInBackground(
-                token => FileTreeImagePreviewLoader.Load(source, token),
+                token => FileTreeImagePreviewLoader.Load(
+                    source,
+                    _fileSystemReader,
+                    token),
                 cancellation.Token,
                 result =>
             {
@@ -1024,6 +1032,7 @@ namespace Ee4v.AssetManager.UI
     {
         private readonly IAssetManager _assetManager;
         private readonly ZipFileTreeReader _zipReader;
+        private readonly IAssetFileSystemReader _fileSystemReader;
         private readonly string _inaccessibleText;
         private readonly string _zipText;
         private readonly CancellationToken _cancellationToken;
@@ -1033,12 +1042,16 @@ namespace Ee4v.AssetManager.UI
         public FileTreeBuilder(
             IAssetManager assetManager,
             IAssetArchiveReader archiveReader,
+            IAssetFileSystemReader fileSystemReader,
             string inaccessibleText,
             string zipText,
             CancellationToken cancellationToken)
         {
             _assetManager = assetManager ?? throw new ArgumentNullException(nameof(assetManager));
             _zipReader = new ZipFileTreeReader(archiveReader, cancellationToken);
+            _fileSystemReader = fileSystemReader ??
+                                throw new ArgumentNullException(
+                                    nameof(fileSystemReader));
             _inaccessibleText = inaccessibleText ?? string.Empty;
             _zipText = zipText ?? string.Empty;
             _cancellationToken = cancellationToken;
@@ -1217,12 +1230,12 @@ namespace Ee4v.AssetManager.UI
             }
 
             var path = resolution.Path;
-            if (Directory.Exists(path))
+            if (_fileSystemReader.DirectoryExists(path))
             {
                 return CreateDirectoryItem(path, Path.GetFileName(path), path, file, path, string.Empty, isAssetFileRoot: true, isPrimaryFile: isPrimaryFile);
             }
 
-            if (File.Exists(path) && IsZipFile(file, path))
+            if (_fileSystemReader.FileExists(path) && IsZipFile(file, path))
             {
                 return CreateZipItem(file.FileName, path, file, isAssetFileRoot: true, isPrimaryFile: isPrimaryFile);
             }
@@ -1243,29 +1256,45 @@ namespace Ee4v.AssetManager.UI
             var children = new List<SearchableTreeItemData<FileTreeNode>>();
             try
             {
-                foreach (var childDirectory in Directory.EnumerateDirectories(path))
+                var entries = _fileSystemReader.GetDirectoryEntries(
+                    path,
+                    _cancellationToken);
+                for (var i = 0; i < entries.Count; i++)
                 {
                     _cancellationToken.ThrowIfCancellationRequested();
-                    children.Add(CreateDirectoryItem(
-                        childDirectory,
-                        Path.GetFileName(childDirectory),
-                        childDirectory,
-                        assetFile,
-                        rootPath,
-                        GetRelativePath(rootPath, childDirectory)));
-                }
-
-                foreach (var childFile in Directory.EnumerateFiles(path))
-                {
-                    _cancellationToken.ThrowIfCancellationRequested();
-                    var childRelativePath = GetRelativePath(rootPath, childFile);
-                    if (IsZipPath(childFile))
+                    var entry = entries[i];
+                    if (entry.Kind == AssetFileSystemEntryKind.Directory)
                     {
-                        children.Add(CreateZipItem(Path.GetFileName(childFile), childFile, assetFile, childRelativePath));
+                        children.Add(CreateDirectoryItem(
+                            entry.FullPath,
+                            entry.Name,
+                            entry.FullPath,
+                            assetFile,
+                            rootPath,
+                            GetRelativePath(rootPath, entry.FullPath)));
                     }
                     else
                     {
-                        children.Add(CreateFileItem(childFile, Path.GetFileName(childFile), childFile, assetFile, childRelativePath));
+                        var childRelativePath = GetRelativePath(
+                            rootPath,
+                            entry.FullPath);
+                        if (IsZipPath(entry.FullPath))
+                        {
+                            children.Add(CreateZipItem(
+                                entry.Name,
+                                entry.FullPath,
+                                assetFile,
+                                childRelativePath));
+                        }
+                        else
+                        {
+                            children.Add(CreateFileItem(
+                                entry.FullPath,
+                                entry.Name,
+                                entry.FullPath,
+                                assetFile,
+                                childRelativePath));
+                        }
                     }
                 }
             }

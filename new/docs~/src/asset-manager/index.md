@@ -62,10 +62,12 @@ prepare/apply use case を通し、Infrastructure の prepared state は opaque 
 conflict preview と overwrite 判断の契約は Application が所有し、通常 sync と起動時 sync は
 同じ sync port を使用します。
 
-UI の表示設定と ZIP 読み取りは Contracts の `IAssetManagerUiPreferences`、
-`IAssetArchiveReader` として注入します。background 実行と Unity main thread への復帰も
+UI の表示設定、File Tree の filesystem 読み取り、ZIP metadata 読み取りは Contracts の
+`IAssetManagerUiPreferences`、`IAssetFileSystemReader`、`IAssetArchiveReader` として
+注入します。background 実行と Unity main thread への復帰も
 `IAssetManagerUiScheduler` を Composition が注入します。UI assembly は Infrastructure、
-Application 実装、SQLite、Core Settings、`Task.Run`、`EditorApplication.delayCall` を参照しません。
+Application 実装、SQLite、filesystem具象、Core Settings、`Task.Run`、
+`EditorApplication.delayCall` を参照しません。
 
 setting の定義と登録は Composition が所有します。Infrastructure は
 `IAssetManagerInfrastructureSettings` の typed snapshot provider を受け取り、
@@ -94,7 +96,7 @@ setting の定義と登録は Composition が所有します。Infrastructure �
 - File Tree の ZIP metadata は、thumbnail と同じ cache root の `<ee4v global path>/cache/file-tree` に永続化し、更新日時と file size の検証を background で行う。ZIP 全体が ZIP と同名の単一 root folder に包まれている場合は、その folder を File Tree と import 先の相対 path から省略する
 - File Tree の PNG / JPEG / PSD file に hover すると `ImageTooltip` で preview と file 名を表示する。通常 file と ZIP 内 entry の両方を background で読み込み、PSD の合成画像は Raw / RLE compression の 8 / 16 bit Gray / RGB / CMYK を thumbnail size に縮小しながら最大 1 GiB まで stream decode する。PNG / JPEG の encoded data は 64 MiB を上限とする。user setting `assetManager.showFileTreeImageTooltip` を無効にすると通常の text tooltip に切り替わる
 - File Tree の要素、または Main View の file card をダブルクリックすると、通常 file、directory、group、ZIP 内 entry を同じ経路で Main View の詳細表示へ開く。詳細は Main View の履歴に入り、戻る・進むで一覧と往復できる。ZIP 内 entry のパンくずには所属 ZIP 名を item と target の間に表示する。単独 Infomation window からも単独 Main View window へ表示する。現時点の詳細内容は要素名のみ
-- Unity Editor session 開始時の BLM / Eagle datasource sync は background で変更確認を先行し、`cache/sync` の前回成功 fingerprint と一致する source は DB sync と UI reload を省略する
+- Unity Editor session 開始時の BLM / Eagle datasource sync は background で変更確認を先行し、DB 内にも同じ source の成功状態があり、かつ `cache/sync` の前回成功 fingerprint と一致する場合だけ DB sync と UI reload を省略する。DB を削除・再生成した場合は fingerprint が残っていても再同期する
 - Unity側の item 情報が同期元より新しい競合は `DiffConfirmationOverlay` で現在値と同期元値を比較し、上書きまたは今回の同期キャンセルを選択できる
 - 起動時に自動同期する source は user setting から個別に有効・無効を選択できる
 - background activity 中は統合 AssetManager の Main View と単独 Main View window の右下だけに `StatusOverlay` を表示する

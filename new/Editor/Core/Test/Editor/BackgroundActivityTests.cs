@@ -1,5 +1,6 @@
 using Ee4v.Core.Background;
 using NUnit.Framework;
+using UnityEditor;
 
 namespace Ee4v.Core.Tests
 {
@@ -24,6 +25,27 @@ namespace Ee4v.Core.Tests
 
             first.Dispose();
             Assert.That(tracker.GetState().IsActive, Is.False);
+        }
+
+        [Test]
+        public void BackgroundStatusOverlayHost_ReleaseRemovesWindowRegistration()
+        {
+            BackgroundStatusOverlayApi.ResetAllHosts();
+            var window = UnityEngine.ScriptableObject.CreateInstance<EditorWindow>();
+            try
+            {
+                BackgroundStatusOverlayApi.EnsureHost(window);
+                Assert.That(BackgroundStatusOverlayApi.HostCount, Is.EqualTo(1));
+
+                BackgroundStatusOverlayApi.ReleaseHost(window);
+
+                Assert.That(BackgroundStatusOverlayApi.HostCount, Is.Zero);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(window);
+                BackgroundStatusOverlayApi.ResetAllHosts();
+            }
         }
     }
 }
