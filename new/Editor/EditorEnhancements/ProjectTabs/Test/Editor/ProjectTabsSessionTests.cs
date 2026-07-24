@@ -145,16 +145,22 @@ namespace Ee4v.ProjectTabs.Tests
 
         [Test]
         [FeatureTestCase(
-            "最後のタブは閉じられない",
-            "Project タブ領域が空にならないことを確認します。",
+            "最後のタブを閉じると Assets の新規タブへ置き換わる",
+            "Project タブ領域を空にせず、新しい ID と履歴を持つ Assets タブだけが残ることを確認します。",
             order: 50)]
-        public void Remove_PreservesLastTab()
+        public void Remove_LastTab_ReplacesItWithFreshAssetsTab()
         {
             var session = CreateSession();
             var tabId = session.State.Tabs[0].Id;
+            session.RecordNavigation(tabId, Materials);
 
-            Assert.That(session.Remove(tabId), Is.False);
+            Assert.That(session.Remove(tabId), Is.True);
             Assert.That(session.State.Tabs.Count, Is.EqualTo(1));
+            Assert.That(session.State.Tabs[0].Id, Is.Not.EqualTo(tabId));
+            Assert.That(session.State.Tabs[0].History.Count, Is.EqualTo(1));
+            Assert.That(
+                session.State.Tabs[0].CurrentLocation,
+                Is.EqualTo(Assets));
         }
 
         [Test]

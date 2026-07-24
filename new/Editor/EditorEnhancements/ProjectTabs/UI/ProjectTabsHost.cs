@@ -85,7 +85,7 @@ namespace Ee4v.ProjectTabs
                 }
             }
 
-            if (index < 0 || state.Tabs.Count <= 1)
+            if (index < 0)
             {
                 return;
             }
@@ -93,7 +93,8 @@ namespace Ee4v.ProjectTabs
             if (string.Equals(
                     _selectedTabId,
                     tabId,
-                    StringComparison.Ordinal))
+                    StringComparison.Ordinal) &&
+                state.Tabs.Count > 1)
             {
                 var replacementIndex = index > 0 ? index - 1 : 1;
                 _selectedTabId = state.Tabs[replacementIndex].Id;
@@ -180,7 +181,6 @@ namespace Ee4v.ProjectTabs
         {
             var state = _session.State;
             var selected = state.Find(_selectedTabId);
-            var canClose = state.Tabs.Count > 1;
             var tabs = state.Tabs
                 .Select(tab =>
                 {
@@ -201,7 +201,7 @@ namespace Ee4v.ProjectTabs
                         tab.Id,
                         title,
                         tooltip,
-                        canClose);
+                        true);
                 })
                 .ToArray();
 

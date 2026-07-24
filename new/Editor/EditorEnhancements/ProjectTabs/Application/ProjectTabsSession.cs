@@ -44,11 +44,6 @@ namespace Ee4v.ProjectTabs
 
         public bool Remove(string tabId)
         {
-            if (_tabs.Count <= 1)
-            {
-                return false;
-            }
-
             var index = FindIndex(tabId);
             if (index < 0)
             {
@@ -56,6 +51,14 @@ namespace Ee4v.ProjectTabs
             }
 
             _tabs.RemoveAt(index);
+            if (_tabs.Count == 0)
+            {
+                _tabs.Add(new MutableTab(
+                    CreateUniqueId(),
+                    new[] { _defaultLocation },
+                    0));
+            }
+
             PersistAndNotify();
             return true;
         }
