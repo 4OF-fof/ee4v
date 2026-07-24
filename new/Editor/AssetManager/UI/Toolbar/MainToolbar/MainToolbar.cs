@@ -19,6 +19,8 @@ namespace Ee4v.AssetManager.UI
         private readonly HistoryNavigation _historyNavigation;
         private readonly NumericSlider _itemSizeSlider;
         private readonly SearchField _searchField;
+        private readonly int _configuredMinimumGridSize;
+        private readonly int _maximumGridSize;
 
         public MainToolbar(
             int initialGridSize = 7,
@@ -44,9 +46,13 @@ namespace Ee4v.AssetManager.UI
             Content.Add(leading);
 
             var preferences = AssetManagerUiDependencies.Preferences;
-            var minimumGridSize = preferences.MinimumItemsPerRow;
-            var maximumGridSize = preferences.MaximumItemsPerRow;
-            _itemSizeSlider = new NumericSlider(new NumericSliderState(initialGridSize, minimumGridSize, maximumGridSize, 1f));
+            _configuredMinimumGridSize = preferences.MinimumItemsPerRow;
+            _maximumGridSize = preferences.MaximumItemsPerRow;
+            _itemSizeSlider = new NumericSlider(new NumericSliderState(
+                initialGridSize,
+                _configuredMinimumGridSize,
+                _maximumGridSize,
+                1f));
             _itemSizeSlider.AddToClassList(SliderClassName);
             _itemSizeSlider.tooltip = I18N.Get("assetManager.mainToolbar.gridSize");
             _itemSizeSlider.ValueChanged += value =>
@@ -106,9 +112,27 @@ namespace Ee4v.AssetManager.UI
             get { return Mathf.RoundToInt(_itemSizeSlider.Value); }
         }
 
+        internal int MinimumGridSizeValue
+        {
+            get { return Mathf.RoundToInt(_itemSizeSlider.MinValue); }
+        }
+
         internal void SetGridSizeValue(int value)
         {
             _itemSizeSlider.SetValueWithoutNotify(value);
+        }
+
+        internal void SetMinimumGridSize(int value)
+        {
+            var minimumGridSize = Mathf.Clamp(
+                value,
+                _configuredMinimumGridSize,
+                _maximumGridSize);
+            _itemSizeSlider.SetState(new NumericSliderState(
+                _itemSizeSlider.Value,
+                minimumGridSize,
+                _maximumGridSize,
+                1f));
         }
 
         internal void SetHistoryState(AssetItemGridHistoryState state)

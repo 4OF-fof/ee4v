@@ -28,7 +28,7 @@ namespace Ee4v.AssetManager.UI.Tests
                 yield return null;
 
                 var initialSize = first.MainView.GridSize;
-                var firstSize = initialSize == 2 ? 3 : 2;
+                var firstSize = initialSize == 11 ? 10 : 11;
                 Assert.That(second.MainView.GridSize, Is.EqualTo(initialSize));
 
                 first.MainView.SetGridSize(firstSize);
@@ -60,6 +60,78 @@ namespace Ee4v.AssetManager.UI.Tests
                 first?.Dispose();
                 second?.Dispose();
                 third?.Dispose();
+                window.Close();
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator GridSizeMinimumTracksViewportSizeAndClampsSliderValue()
+        {
+            var window = ScriptableObject.CreateInstance<GridTestWindow>();
+            MainViewHost host = null;
+            window.position = new Rect(0f, 0f, 1000f, 540f);
+            window.Show();
+
+            try
+            {
+                host = AddView(window);
+                var itemGrid = host.MainView.Q<AssetItemGrid>();
+                var listView = itemGrid.Q<ListView>();
+                listView.style.flexGrow = 0f;
+                listView.style.flexShrink = 0f;
+                listView.style.width = 1000f;
+                listView.style.minWidth = 1000f;
+                listView.style.maxWidth = 1000f;
+                listView.style.height = 480f;
+                listView.style.minHeight = 480f;
+                listView.style.maxHeight = 480f;
+                yield return null;
+                yield return null;
+
+                var wideMinimum = host.MainView.MinimumGridSize;
+                Assert.That(wideMinimum, Is.EqualTo(3));
+                Assert.That(
+                    host.Toolbar.MinimumGridSizeValue,
+                    Is.EqualTo(wideMinimum));
+
+                host.MainView.SetGridSize(1);
+                yield return null;
+
+                Assert.That(
+                    host.MainView.DisplayedGridSize,
+                    Is.EqualTo(wideMinimum));
+                Assert.That(
+                    host.Toolbar.GridSizeValue,
+                    Is.EqualTo(wideMinimum));
+
+                listView.style.width = 480f;
+                listView.style.minWidth = 480f;
+                listView.style.maxWidth = 480f;
+                yield return null;
+                yield return null;
+
+                var narrowMinimum = host.MainView.MinimumGridSize;
+                Assert.That(narrowMinimum, Is.EqualTo(2));
+                Assert.That(
+                    host.Toolbar.MinimumGridSizeValue,
+                    Is.EqualTo(narrowMinimum));
+                Assert.That(
+                    host.MainView.DisplayedGridSize,
+                    Is.EqualTo(wideMinimum));
+
+                host.MainView.SetGridSize(1);
+                yield return null;
+
+                Assert.That(
+                    host.MainView.DisplayedGridSize,
+                    Is.EqualTo(narrowMinimum));
+                Assert.That(
+                    host.Toolbar.GridSizeValue,
+                    Is.EqualTo(narrowMinimum));
+            }
+            finally
+            {
+                host?.Dispose();
                 window.Close();
             }
         }

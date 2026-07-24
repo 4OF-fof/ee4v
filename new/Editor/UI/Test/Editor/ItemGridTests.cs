@@ -10,6 +10,23 @@ namespace Ee4v.UI.Tests
 {
     public sealed class ItemGridTests
     {
+        [TestCase(132f, 480f, 1)]
+        [TestCase(281f, 480f, 1)]
+        [TestCase(480f, 480f, 2)]
+        [TestCase(1000f, 480f, 3)]
+        [TestCase(1240f, 540f, 3)]
+        public void RecommendedMinimumItemsPerRowAvoidsUnusedHorizontalSpace(
+            float viewportWidth,
+            float viewportHeight,
+            int expected)
+        {
+            Assert.That(
+                ItemGrid.CalculateRecommendedMinimumItemsPerRow(
+                    viewportWidth,
+                    viewportHeight),
+                Is.EqualTo(expected));
+        }
+
         [UnityTest]
         public IEnumerator LayoutFallbackKeepsItemsVisibleAtBothRangeEdges()
         {

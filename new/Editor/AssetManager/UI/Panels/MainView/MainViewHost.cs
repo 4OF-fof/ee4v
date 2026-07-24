@@ -18,6 +18,7 @@ namespace Ee4v.AssetManager.UI
                 MainView.GridSize,
                 MainView.HistoryOverlayMaximumItems,
                 MainView.History.State);
+            Toolbar.SetMinimumGridSize(MainView.MinimumGridSize);
             NavigationPanel = new NavigationPanel(
                 _controller.NavigationItems,
                 _controller.SelectedNavigationItemId);
@@ -32,6 +33,7 @@ namespace Ee4v.AssetManager.UI
             NavigationPanel.SelectionChanged += _controller.SetSelectedNavigationItem;
 
             MainView.GridSizeChanged += Toolbar.SetGridSizeValue;
+            MainView.GridSizeMinimumChanged += Toolbar.SetMinimumGridSize;
             MainView.HistoryOverlayMaximumItemsChanged += Toolbar.SetHistoryOverlayMaximumItems;
             MainView.History.Changed += Toolbar.SetHistoryState;
             _controller.NavigationChanged += NavigationPanel.SetSelectedItem;
@@ -61,6 +63,7 @@ namespace Ee4v.AssetManager.UI
             NavigationPanel.SelectionChanged -= _controller.SetSelectedNavigationItem;
 
             MainView.GridSizeChanged -= Toolbar.SetGridSizeValue;
+            MainView.GridSizeMinimumChanged -= Toolbar.SetMinimumGridSize;
             MainView.HistoryOverlayMaximumItemsChanged -= Toolbar.SetHistoryOverlayMaximumItems;
             MainView.History.Changed -= Toolbar.SetHistoryState;
             _controller.NavigationChanged -= NavigationPanel.SetSelectedItem;

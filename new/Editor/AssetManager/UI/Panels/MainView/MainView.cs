@@ -47,6 +47,8 @@ namespace Ee4v.AssetManager.UI
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             _itemGrid.SelectionChanged += OnGridSelectionChanged;
             _itemGrid.ItemDoubleClicked += OnGridItemDoubleClicked;
+            _itemGrid.RecommendedMinimumItemsPerRowChanged +=
+                _controller.SetMinimumItemsPerRow;
         }
 
         public AssetItemGridHistory History
@@ -57,6 +59,11 @@ namespace Ee4v.AssetManager.UI
         public int GridSize
         {
             get { return _controller.ItemsPerRow; }
+        }
+
+        public int MinimumGridSize
+        {
+            get { return _controller.MinimumItemsPerRow; }
         }
 
         internal int DisplayedGridSize
@@ -72,6 +79,8 @@ namespace Ee4v.AssetManager.UI
         public event System.Action<int> HistoryOverlayMaximumItemsChanged;
 
         public event System.Action<int> GridSizeChanged;
+
+        public event System.Action<int> GridSizeMinimumChanged;
 
         public event System.Action<System.Collections.Generic.IReadOnlyList<ItemCardState>, AssetSelectionContentKind> SelectionChanged;
 
@@ -131,6 +140,8 @@ namespace Ee4v.AssetManager.UI
             _controller.NavigationChanged += OnSelectedItemChanged;
             _controller.ContentChanged += OnContentChanged;
             _controller.LayoutChanged += OnLayoutChanged;
+            _controller.MinimumItemsPerRowChanged +=
+                OnMinimumItemsPerRowChanged;
             _controller.HistoryOverlayMaximumItemsChanged += OnHistoryOverlayMaximumItemsChanged;
             _controller.LoadCompleted += OnLoadCompleted;
             PushCurrentHistory();
@@ -142,6 +153,8 @@ namespace Ee4v.AssetManager.UI
             _controller.NavigationChanged -= OnSelectedItemChanged;
             _controller.ContentChanged -= OnContentChanged;
             _controller.LayoutChanged -= OnLayoutChanged;
+            _controller.MinimumItemsPerRowChanged -=
+                OnMinimumItemsPerRowChanged;
             _controller.HistoryOverlayMaximumItemsChanged -= OnHistoryOverlayMaximumItemsChanged;
             _controller.LoadCompleted -= OnLoadCompleted;
             _controller.Deactivate();
@@ -175,6 +188,11 @@ namespace Ee4v.AssetManager.UI
         private void OnLayoutChanged()
         {
             ApplyGridSize(_controller.ItemsPerRow);
+        }
+
+        private void OnMinimumItemsPerRowChanged(int value)
+        {
+            GridSizeMinimumChanged?.Invoke(value);
         }
 
         private void ApplyGridSize(int settingValue)

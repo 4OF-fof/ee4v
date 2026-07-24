@@ -34,6 +34,7 @@ namespace Ee4v.UI
         private float _cardWidth = 132f;
         private float _columnGap = PreferredColumnGap;
         private int _rowHeight = DefaultRowHeight;
+        private int _recommendedMinimumItemsPerRow = 1;
         private float _viewportWidth;
         private float _viewportHeight;
 
@@ -64,6 +65,13 @@ namespace Ee4v.UI
         {
             get { return _itemsPerRow; }
         }
+
+        public int RecommendedMinimumItemsPerRow
+        {
+            get { return _recommendedMinimumItemsPerRow; }
+        }
+
+        public event Action<int> RecommendedMinimumItemsPerRowChanged;
 
         public virtual void SetState(ItemGridState state)
         {
@@ -147,6 +155,9 @@ namespace Ee4v.UI
             HideScrollbars();
             _viewportWidth = evt.newRect.width;
             _viewportHeight = evt.newRect.height;
+            UpdateRecommendedMinimumItemsPerRow(
+                _viewportWidth,
+                _viewportHeight);
             if (RecalculateLayout(_viewportWidth, _viewportHeight))
             {
                 RebuildRows();
@@ -249,6 +260,23 @@ namespace Ee4v.UI
             return Mathf.Clamp(fittingGap, 0f, PreferredColumnGap);
         }
 
+        internal static int CalculateRecommendedMinimumItemsPerRow(
+            float width,
+            float height)
+        {
+            if (!IsValidDimension(width) || !IsValidDimension(height))
+            {
+                return 1;
+            }
+
+            var maximumCardWidth = CalculateMaximumCardWidthForHeight(height);
+            return Mathf.Max(
+                1,
+                Mathf.CeilToInt(
+                    (width - ViewportSafetyMargin + PreferredColumnGap) /
+                    (maximumCardWidth + PreferredColumnGap)));
+        }
+
         internal static float CalculateCardWidth(float width, float height, int itemsPerRow)
         {
             return CalculateCardWidth(width, height, itemsPerRow, CalculateColumnGap(width, itemsPerRow));
@@ -262,7 +290,7 @@ namespace Ee4v.UI
                 return naturalWidth;
             }
 
-            var fallbackWidth = Mathf.Max(MinimumCardWidth, Mathf.Floor(height - NameHeight - RowVerticalPadding - ViewportSafetyMargin));
+            var fallbackWidth = CalculateMaximumCardWidthForHeight(height);
             return Mathf.Min(naturalWidth, fallbackWidth);
         }
 
@@ -283,9 +311,36 @@ namespace Ee4v.UI
             return Mathf.Max(MinimumCardWidth, Mathf.Floor(availableWidth / safeItemsPerRow));
         }
 
+        private static float CalculateMaximumCardWidthForHeight(float height)
+        {
+            return Mathf.Max(
+                MinimumCardWidth,
+                Mathf.Floor(
+                    height -
+                    NameHeight -
+                    RowVerticalPadding -
+                    ViewportSafetyMargin));
+        }
+
         private static bool IsValidDimension(float value)
         {
             return !float.IsNaN(value) && !float.IsInfinity(value) && value > 0f;
+        }
+
+        private void UpdateRecommendedMinimumItemsPerRow(
+            float width,
+            float height)
+        {
+            var nextValue = CalculateRecommendedMinimumItemsPerRow(
+                width,
+                height);
+            if (_recommendedMinimumItemsPerRow == nextValue)
+            {
+                return;
+            }
+
+            _recommendedMinimumItemsPerRow = nextValue;
+            RecommendedMinimumItemsPerRowChanged?.Invoke(nextValue);
         }
 
         private void HideScrollbars()

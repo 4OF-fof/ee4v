@@ -54,6 +54,7 @@ namespace Ee4v.AssetManager.UI
         private int _activationCount;
         private int _loadVersion;
         private int _itemsPerRow;
+        private int _minimumItemsPerRow;
         private CancellationTokenSource _loadCancellation;
         private string _selectedNavigationItemId = AssetManagerNavigationCatalog.DefaultItemId;
 
@@ -66,6 +67,7 @@ namespace Ee4v.AssetManager.UI
             _preferences = preferences ?? AssetManagerUiDependencies.Preferences;
             _scheduler = scheduler ?? AssetManagerUiDependencies.Scheduler;
             _preferences.Preload();
+            _minimumItemsPerRow = _preferences.MinimumItemsPerRow;
             _itemsPerRow = ClampItemsPerRow(_preferences.DefaultItemsPerRow);
             History = new AssetItemGridHistory();
         }
@@ -73,6 +75,8 @@ namespace Ee4v.AssetManager.UI
         public event Action ContentChanged;
 
         public event Action LayoutChanged;
+
+        public event Action<int> MinimumItemsPerRowChanged;
 
         public event Action<int> HistoryOverlayMaximumItemsChanged;
 
@@ -85,6 +89,11 @@ namespace Ee4v.AssetManager.UI
         public int ItemsPerRow
         {
             get { return _itemsPerRow; }
+        }
+
+        public int MinimumItemsPerRow
+        {
+            get { return _minimumItemsPerRow; }
         }
 
         public int HistoryOverlayMaximumItems
@@ -117,6 +126,21 @@ namespace Ee4v.AssetManager.UI
 
             _itemsPerRow = nextValue;
             LayoutChanged?.Invoke();
+        }
+
+        public void SetMinimumItemsPerRow(int value)
+        {
+            var nextMinimum = Math.Min(
+                _preferences.MaximumItemsPerRow,
+                Math.Max(_preferences.MinimumItemsPerRow, value));
+            if (_minimumItemsPerRow == nextMinimum)
+            {
+                return;
+            }
+
+            _minimumItemsPerRow = nextMinimum;
+            MinimumItemsPerRowChanged?.Invoke(_minimumItemsPerRow);
+            SetItemsPerRow(_itemsPerRow);
         }
 
         public void SetSelectedNavigationItem(string itemId)
@@ -497,7 +521,7 @@ namespace Ee4v.AssetManager.UI
         {
             return Math.Min(
                 _preferences.MaximumItemsPerRow,
-                Math.Max(_preferences.MinimumItemsPerRow, value));
+                Math.Max(_minimumItemsPerRow, value));
         }
 
         private int GetHistoryOverlayMaximumItems()
