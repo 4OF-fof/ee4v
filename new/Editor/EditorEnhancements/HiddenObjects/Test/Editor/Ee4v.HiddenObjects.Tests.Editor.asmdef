@@ -1,0 +1,23 @@
+{
+  "name": "Ee4v.HiddenObjects.Tests.Editor",
+  "rootNamespace": "Ee4v.HiddenObjects.Tests",
+  "references": [
+    "Ee4v.Core.Contracts.Editor",
+    "Ee4v.HiddenObjects.Editor",
+    "Ee4v.Testing.Contracts.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

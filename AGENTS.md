@@ -18,6 +18,7 @@
 ## UI・Unity 依存の分離
 
 - UI は UI Toolkit（UIElements）を優先して実装し、UI Toolkit では実現できない場合に限って IMGUI を使用してください。
+- UI Toolkit で通常の表示ラベルを実装する場合は、Unity 2022.3 のフォントキャッシュ問題を回避するため、`Label` を直接生成・継承せず `UiTextFactory.Create(...)` を使用してください。`Button.text` など操作 control 自身の text はこの制約の対象外です。
 - UI は見た目の差し替えを容易にするため、state の表示と入力イベントの通知に責務を限定し、機能ロジックと分離してください。依存方向は `UI -> 機能ロジック` とします。
 - Unity のバージョン更新時に変更箇所を特定しやすくするため、Unity 依存部分は Core の adapter / wrapper に集約してください。
 - 特に Unity の非公開・internal API、reflection、内部フィールドへのアクセスは feature 側で直接行わず、原則 `Editor/Core/Internal/EditorAPI` の facade と `Backends` に分離してください。

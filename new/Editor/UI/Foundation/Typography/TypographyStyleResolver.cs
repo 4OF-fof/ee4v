@@ -77,6 +77,9 @@ namespace Ee4v.UI
         private static readonly Dictionary<string, TypographyStyleDefinition> Styles =
             new Dictionary<string, TypographyStyleDefinition>(StringComparer.Ordinal)
             {
+                { UiClassNames.WindowTitle, Create(true, UiTypographyTokens.TitleFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
+                { UiClassNames.SectionTitle, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
+                { UiClassNames.SecondaryText, Create(false, UiTypographyTokens.SmallFontSize, UiColorTokens.TextMuted, TextAnchor.MiddleLeft, WhiteSpace.Normal) },
                 { UiClassNames.InfoCardEyebrow, Create(true, UiTypographyTokens.SmallFontSize, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
                 { UiClassNames.InfoCardTitle, Create(true, UiTypographyTokens.SubtitleFontSize, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal, fontStyle: FontStyle.Bold) },
                 { UiClassNames.InfoCardDescription, Create(false, UiTypographyTokens.BodyFontSize, UiColorTokens.TextSecondary, TextAnchor.UpperLeft, WhiteSpace.Normal) },

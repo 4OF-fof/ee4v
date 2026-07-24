@@ -52,6 +52,7 @@ filesystem、Editor lifecycle、UI Toolkitは外側の `Infrastructure`、`Unity
 | `AssetManager` | asset catalog、datasource同期、import、専用UIを所有する業務Module |
 | `DepthIndicator` | Hierarchyの親子関係を示す分岐ガイドを所有する小規模Module |
 | `FolderContentOverlay` | Project folder直下の主要asset種別を示すoverlayを所有する小規模Module |
+| `HiddenObjects` | HierarchyのScene見出しから非表示objectを検索・選択し、Undo対応で再表示する管理機能を所有する小規模Module |
 | `Core` | Settings、Localization、Injector、background activity、Unity internal facadeと、それらをEditor UIへ接続するPresentation |
 | `UI` | feature非依存のUI Toolkit component、state、resource。Catalogは開発支援用の別assembly |
 | `Testing` | test metadata、descriptor構築、Unity Test Runner adapter、静的監査、Test List UIを所有する独立Module |
@@ -109,13 +110,18 @@ LocalizationとTestも各Moduleの配下へ配置します。
 |---|---|---|
 | `Editor/EditorEnhancements/DepthIndicator` | `Ee4v.DepthIndicator` / `Ee4v.DepthIndicator.Editor` | Hierarchyの親子関係を示す分岐ガイド |
 | `Editor/EditorEnhancements/FolderContentOverlay` | `Ee4v.FolderContentOverlay` / `Ee4v.FolderContentOverlay.Editor` | Project folder直下の主要asset種別を示すoverlay |
+| `Editor/EditorEnhancements/HiddenObjects` | `Ee4v.HiddenObjects` / `Ee4v.HiddenObjects.Editor` | `HideInHierarchy` objectの管理画面とScene見出しの入口 |
 
-両Moduleは兄弟Moduleを参照せず、それぞれが `Core.Injector` を利用して描画callbackを
+各Moduleは兄弟Moduleを参照せず、それぞれが `Core.Injector` を利用して描画callbackを
 登録します。描画中にfilesystem走査やreflectionを行わず、
 `FolderContentOverlay` のAssetDatabase検索結果はModule内でcacheします。子folderの
 代表iconは同一iconが候補の過半数を占める場合だけ親へ伝播します。Texture、Material、
 Mesh、Prefab、Modelの内容previewは安定した種別iconへ置換し、それ以外はasset固有の
 iconを優先します。
+
+`HiddenObjects` はScene走査と `HideFlags` / Undo操作をUnity adapterへ閉じ込め、
+Applicationのcontrollerとtree builderはinstance IDとsnapshotだけを扱います。復帰時は
+`HideInHierarchy` だけを解除し、active stateやtagは変更しません。
 
 `Ee4v.Core.Settings`、`Ee4v.Core.I18n`、`Ee4v.Core.Injector` のpresentation実装は
 namespaceを機能境界として維持しつつ、物理配置とassemblyは

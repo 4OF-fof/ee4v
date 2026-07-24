@@ -1,0 +1,50 @@
+{
+  "settings": {
+    "section": {
+      "hierarchy": "Hierarchy"
+    },
+    "hierarchyButton": {
+      "label": "Hidden Objects button",
+      "tooltip": "Shows a Hidden Objects button on each Scene header in the Hierarchy."
+    }
+  },
+  "hierarchyButton": {
+    "tooltip": "Manage hidden objects"
+  },
+  "window": {
+    "title": "Hidden Objects",
+    "heading": "Hidden Objects",
+    "summary": "{0} hidden · {1} shown · {2} selected",
+    "search": {
+      "placeholder": "Search hidden objects",
+      "tooltip": "Filter hidden objects by name",
+      "clearTooltip": "Clear search"
+    },
+    "scene": {
+      "all": "All Scenes",
+      "tooltip": "Filter by Scene",
+      "duplicateFormat": "{0} ({1})"
+    },
+    "action": {
+      "refresh": "Refresh",
+      "refreshTooltip": "Scan all loaded Scenes again",
+      "selectAllVisible": "Select shown",
+      "clearSelection": "Clear selection",
+      "revealSelected": "Show in Hierarchy"
+    },
+    "empty": {
+      "noHidden": "No hidden objects were found in the loaded Scenes.",
+      "noMatches": "No hidden objects match the current filters."
+    },
+    "tree": {
+      "expandTooltip": "Expand",
+      "collapseTooltip": "Collapse"
+    },
+    "notification": {
+      "revealed": "Restored {0} object(s) to the Hierarchy."
+    }
+  },
+  "undo": {
+    "revealSelected": "Show hidden objects in Hierarchy"
+  }
+}

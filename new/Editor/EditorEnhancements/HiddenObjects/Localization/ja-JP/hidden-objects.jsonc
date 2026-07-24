@@ -1,0 +1,50 @@
+{
+  "settings": {
+    "section": {
+      "hierarchy": "Hierarchy"
+    },
+    "hierarchyButton": {
+      "label": "非表示オブジェクトボタン",
+      "tooltip": "Hierarchy の各 Scene 見出しに非表示オブジェクト管理ボタンを表示します。"
+    }
+  },
+  "hierarchyButton": {
+    "tooltip": "非表示オブジェクトを管理"
+  },
+  "window": {
+    "title": "非表示オブジェクト",
+    "heading": "非表示オブジェクト",
+    "summary": "非表示 {0} 件 · 表示中 {1} 件 · 選択 {2} 件",
+    "search": {
+      "placeholder": "非表示オブジェクトを検索",
+      "tooltip": "名前で非表示オブジェクトを絞り込みます",
+      "clearTooltip": "検索をクリア"
+    },
+    "scene": {
+      "all": "すべての Scene",
+      "tooltip": "Scene で絞り込み",
+      "duplicateFormat": "{0} ({1})"
+    },
+    "action": {
+      "refresh": "更新",
+      "refreshTooltip": "読み込み済みの Scene を再スキャンします",
+      "selectAllVisible": "表示中を選択",
+      "clearSelection": "選択を解除",
+      "revealSelected": "Hierarchy に表示"
+    },
+    "empty": {
+      "noHidden": "読み込み済みの Scene に非表示オブジェクトはありません。",
+      "noMatches": "現在の絞り込み条件に一致する非表示オブジェクトはありません。"
+    },
+    "tree": {
+      "expandTooltip": "展開",
+      "collapseTooltip": "折りたたむ"
+    },
+    "notification": {
+      "revealed": "{0} 件のオブジェクトを Hierarchy に戻しました。"
+    }
+  },
+  "undo": {
+    "revealSelected": "非表示オブジェクトを Hierarchy に表示"
+  }
+}

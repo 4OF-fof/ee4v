@@ -1,0 +1,157 @@
+/* Hidden Objects module window. */
+.ee4v-hidden-objects-window {
+    flex-grow: 1;
+    padding-left: var(--ee4v-space-xl);
+    padding-right: var(--ee4v-space-xl);
+    padding-top: var(--ee4v-space-xl);
+    padding-bottom: var(--ee4v-space-xl);
+}
+
+.ee4v-hidden-objects-window__header {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: var(--ee4v-space-lg);
+}
+
+.ee4v-hidden-objects-window__title {
+    flex-grow: 1;
+}
+
+.ee4v-hidden-objects-window__filters {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: var(--ee4v-space-lg);
+}
+
+.ee4v-hidden-objects-window__search {
+    flex-grow: 1;
+    margin-right: var(--ee4v-space-md);
+}
+
+.ee4v-hidden-objects-window__scene-filter {
+    min-width: 140px;
+    max-width: 220px;
+    margin-right: var(--ee4v-space-md);
+}
+
+.ee4v-hidden-objects-window__refresh {
+    height: var(--ee4v-control-height-default);
+}
+
+.ee4v-hidden-objects-window__scroll {
+    flex-grow: 1;
+    min-height: 0;
+    border-top-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-left-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
+    border-bottom-color: var(--ee4v-color-border-default);
+    border-left-color: var(--ee4v-color-border-default);
+    border-top-left-radius: var(--ee4v-radius-sm);
+    border-top-right-radius: var(--ee4v-radius-sm);
+    border-bottom-left-radius: var(--ee4v-radius-sm);
+    border-bottom-right-radius: var(--ee4v-radius-sm);
+    background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-hidden-objects-window__tree {
+    padding-top: var(--ee4v-space-sm);
+    padding-bottom: var(--ee4v-space-sm);
+}
+
+.ee4v-hidden-objects-window__scene {
+    margin-bottom: var(--ee4v-space-md);
+}
+
+.ee4v-hidden-objects-window__scene-name {
+    min-height: var(--ee4v-control-height-small);
+    padding-left: var(--ee4v-space-md);
+    padding-right: var(--ee4v-space-md);
+    justify-content: center;
+    background-color: var(--ee4v-color-surface-soft);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-bottom-color: var(--ee4v-color-border-subtle);
+}
+
+.ee4v-hidden-objects-window__row {
+    min-height: var(--ee4v-control-height-small);
+    padding-right: var(--ee4v-space-md);
+    flex-direction: row;
+    align-items: center;
+}
+
+.ee4v-hidden-objects-window__row:hover {
+    background-color: var(--ee4v-color-surface-hover);
+}
+
+.ee4v-hidden-objects-window__row--ancestor {
+    opacity: 0.68;
+}
+
+.ee4v-hidden-objects-window__disclosure {
+    width: var(--ee4v-size-18);
+    height: var(--ee4v-size-18);
+    min-width: var(--ee4v-size-18);
+    padding-left: var(--ee4v-space-none);
+    padding-right: var(--ee4v-space-none);
+    padding-top: var(--ee4v-space-none);
+    padding-bottom: var(--ee4v-space-none);
+    margin-right: var(--ee4v-space-xxs);
+    background-color: var(--ee4v-color-transparent);
+    border-top-width: var(--ee4v-space-none);
+    border-right-width: var(--ee4v-space-none);
+    border-bottom-width: var(--ee4v-space-none);
+    border-left-width: var(--ee4v-space-none);
+}
+
+.ee4v-hidden-objects-window__selection {
+    width: var(--ee4v-size-18);
+    min-width: var(--ee4v-size-18);
+    margin-right: var(--ee4v-space-xs);
+}
+
+.ee4v-hidden-objects-window__selection-spacer {
+    width: var(--ee4v-size-18);
+    min-width: var(--ee4v-size-18);
+    margin-right: var(--ee4v-space-xs);
+}
+
+.ee4v-hidden-objects-window__object-icon {
+    margin-right: var(--ee4v-space-sm);
+}
+
+.ee4v-hidden-objects-window__object-name {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.ee4v-hidden-objects-window__empty {
+    margin-top: var(--ee4v-space-3xl);
+    margin-bottom: var(--ee4v-space-3xl);
+    align-self: center;
+}
+
+.ee4v-hidden-objects-window__actions {
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-top: var(--ee4v-space-lg);
+}
+
+.ee4v-hidden-objects-window__actions Button {
+    min-height: var(--ee4v-control-height-default);
+    margin-left: var(--ee4v-space-md);
+}
+
+.ee4v-hidden-objects-window__primary-action {
+    background-color: var(--ee4v-color-tool-active);
+    border-top-color: var(--ee4v-color-focus);
+    border-right-color: var(--ee4v-color-focus);
+    border-bottom-color: var(--ee4v-color-focus);
+    border-left-color: var(--ee4v-color-focus);
+}
+
+.ee4v-hidden-objects-window__primary-action:hover {
+    background-color: var(--ee4v-color-tool-active-hover);
+}

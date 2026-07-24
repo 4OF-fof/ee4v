@@ -2,6 +2,10 @@ namespace Ee4v.UI
 {
     internal static class UiClassNames
     {
+        public const string WindowTitle = "ee4v-ui-window-title";
+        public const string SectionTitle = "ee4v-ui-section-title";
+        public const string SecondaryText = "ee4v-ui-secondary-text";
+
         public const string InfoCardEyebrow = "ee4v-ui-info-card__eyebrow";
         public const string InfoCardTitle = "ee4v-ui-info-card__title";
         public const string InfoCardDescription = "ee4v-ui-info-card__description";

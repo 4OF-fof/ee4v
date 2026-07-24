@@ -25,7 +25,8 @@ namespace Ee4v.UI
         UnityFile,
         ModelFile,
         AudioFile,
-        ScriptFile
+        ScriptFile,
+        VisibilityHidden
     }
 
     internal static class UiBuiltinIconResolver
@@ -119,6 +120,15 @@ namespace Ee4v.UI
                     return new[] { "AudioClip Icon", "d_AudioClip Icon", "DefaultAsset Icon" };
                 case UiBuiltinIcon.ScriptFile:
                     return new[] { "cs Script Icon", "d_cs Script Icon", "TextAsset Icon", "d_TextAsset Icon", "DefaultAsset Icon" };
+                case UiBuiltinIcon.VisibilityHidden:
+                    return new[]
+                    {
+                        "scenevis_hidden_hover",
+                        "scenevis_hidden",
+                        "d_scenevis_hidden_hover",
+                        "d_scenevis_hidden",
+                        "animationvisibilitytoggleoff"
+                    };
                 default:
                     throw new System.ArgumentOutOfRangeException(nameof(icon), icon, null);
             }
