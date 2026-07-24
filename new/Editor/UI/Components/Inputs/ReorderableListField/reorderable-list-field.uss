@@ -1,0 +1,77 @@
+.ee4v-ui-reorderable-list-field {
+    align-self: stretch;
+    min-width: 0;
+    margin-bottom: var(--ee4v-space-md);
+    padding-left: var(--ee4v-space-xs);
+    padding-right: var(--ee4v-space-xs);
+    padding-top: var(--ee4v-space-xs);
+    padding-bottom: var(--ee4v-space-xs);
+    border-top-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-left-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-strong);
+    border-right-color: var(--ee4v-color-border-strong);
+    border-bottom-color: var(--ee4v-color-border-strong);
+    border-left-color: var(--ee4v-color-border-strong);
+    border-top-left-radius: var(--ee4v-radius-sm);
+    border-top-right-radius: var(--ee4v-radius-sm);
+    border-bottom-left-radius: var(--ee4v-radius-sm);
+    border-bottom-right-radius: var(--ee4v-radius-sm);
+    background-color: var(--ee4v-color-surface-soft);
+}
+
+.ee4v-ui-reorderable-list-field__row {
+    flex-direction: row;
+    align-items: center;
+    align-self: stretch;
+    min-width: 0;
+    min-height: var(--ee4v-control-height-default);
+    margin-bottom: var(--ee4v-space-xxs);
+    padding-left: var(--ee4v-space-xs);
+    padding-right: var(--ee4v-space-xs);
+    border-top-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-left-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-subtle);
+    border-right-color: var(--ee4v-color-border-subtle);
+    border-bottom-color: var(--ee4v-color-border-subtle);
+    border-left-color: var(--ee4v-color-border-subtle);
+    border-top-left-radius: var(--ee4v-radius-xs);
+    border-top-right-radius: var(--ee4v-radius-xs);
+    border-bottom-left-radius: var(--ee4v-radius-xs);
+    border-bottom-right-radius: var(--ee4v-radius-xs);
+    background-color: var(--ee4v-color-field);
+}
+
+.ee4v-ui-reorderable-list-field__row:hover {
+    background-color: var(--ee4v-color-surface-hover-strong);
+}
+
+.ee4v-ui-reorderable-list-field__row--dragging {
+    background-color: var(--ee4v-color-selection-soft);
+    border-top-color: var(--ee4v-color-focus);
+    border-right-color: var(--ee4v-color-focus);
+    border-bottom-color: var(--ee4v-color-focus);
+    border-left-color: var(--ee4v-color-focus);
+    opacity: 0.65;
+}
+
+.ee4v-ui-reorderable-list-field__handle {
+    flex-grow: 0;
+    flex-shrink: 0;
+    align-self: center;
+    width: var(--ee4v-size-16);
+    min-width: var(--ee4v-size-16);
+    margin-right: var(--ee4v-space-xxs);
+    color: var(--ee4v-color-text-muted);
+    -unity-text-align: middle-center;
+}
+
+.ee4v-ui-reorderable-list-field__label {
+    flex-grow: 1;
+    flex-shrink: 1;
+    align-self: center;
+    min-width: 0;
+}

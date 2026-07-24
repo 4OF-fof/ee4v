@@ -1,11 +1,11 @@
 {
   "settings": {
     "section": {
-      "hierarchy": "Hierarchy 拡張"
+      "hierarchy": "ヒエラルキー拡張"
     },
     "enabled": {
-      "label": "Hierarchy の深度インジケーターを表示",
-      "tooltip": "Hierarchy に親子関係を追いやすくする分岐ガイドを表示します。"
+      "label": "ヒエラルキーの深度インジケーターを表示",
+      "tooltip": "ヒエラルキーに親子関係を追いやすくする分岐ガイドを表示します。"
     }
   }
 }

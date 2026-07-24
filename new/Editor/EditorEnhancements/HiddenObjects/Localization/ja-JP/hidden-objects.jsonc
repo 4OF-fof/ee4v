@@ -1,21 +1,21 @@
 {
   "settings": {
     "section": {
-      "hierarchy": "Hierarchy",
+      "hierarchy": "ヒエラルキー",
       "exclusions": "非表示オブジェクトの除外"
     },
     "hierarchyButton": {
       "label": "非表示オブジェクトボタン",
-      "tooltip": "Hierarchy の各 Scene 見出しに非表示オブジェクト管理ボタンを表示します。"
+      "tooltip": "ヒエラルキーの各シーン見出しに、非表示オブジェクト管理ボタンを表示します。"
     },
     "exclusions": {
       "scenes": {
-        "label": "除外する Scene",
-        "tooltip": "ウィンドウに表示しない Scene 名パターンを1行ずつ入力します。* と ? を使用できます。"
+        "label": "除外するシーン",
+        "tooltip": "ウィンドウに表示しないシーン名のパターンを、1行に1つ入力します。* と ? を使用できます。"
       },
       "objects": {
-        "label": "除外する object",
-        "tooltip": "ウィンドウに表示しない object 名パターンを1行ずつ入力します。一致した object の子階層も除外され、* と ? を使用できます。"
+        "label": "除外するオブジェクト",
+        "tooltip": "ウィンドウに表示しないオブジェクト名のパターンを、1行に1つ入力します。一致したオブジェクトの子階層も除外され、* と ? を使用できます。"
       }
     }
   },

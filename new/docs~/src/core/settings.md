@@ -47,6 +47,8 @@ grouping は `localizationScope + sectionKey` 単位です。section を増や�
 
 設定画面は `SettingsProvider.activateHandler` から UI Toolkit で構築します。標準fieldで足りないdrawerは `Editor/Core/Presentation/Settings` の `SettingDrawerRegistry` へpresentation側から登録し、`SettingDefinition<T>` にはUI型を持たせません。IMGUI drawerは使用しません。
 
+カンマ区切りで保存する可変長文字列リストは `CommaSeparatedListSettingDrawer` を使い、UIでは1行を1要素とする複数行入力を提供します。値が固定され順序だけを設定する項目はこのdrawerを流用せず、`ReorderableListField` を使うmodule専用drawerとして実装します。
+
 ## assembly 境界
 
 - `Ee4v.Core.Contracts.Editor`: 定義と `ISettingsService`。Unity非依存

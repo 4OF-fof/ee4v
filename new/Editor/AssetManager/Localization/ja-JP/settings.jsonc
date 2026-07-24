@@ -2,55 +2,61 @@
   "settings": {
     "section": {
       "assetManager": {
-        "paths": "AssetManager パス設定",
-        "import": "AssetManager 取り込み設定",
-        "source": "AssetManager datasource 設定",
-        "view": "AssetManager 表示設定"
+        "paths": "AssetManager パス",
+        "import": "AssetManager インポート",
+        "source": "AssetManager データソース",
+        "view": "AssetManager 表示"
       }
     },
     "ee4vGlobalPath": {
-      "label": "ee4v global path",
-      "tooltip": "AssetManager DB など ee4v 全体で使うデータの保存先です。既定値は Documents/ee4v です。"
+      "label": "ee4v 共通データの保存先",
+      "tooltip": "AssetManager のデータベースなど、ee4v 全体で使うデータの保存先です。既定値は Documents/ee4v です。"
     },
     "blmDatabasePath": {
-      "label": "BLM data.db path",
-      "tooltip": "Booth Library Manager の data.db パスです。"
+      "label": "BLM データベースのパス",
+      "tooltip": "Booth Library Manager の data.db ファイルのパスです。"
     },
     "eagleLibraryPath": {
-      "label": "Eagle library path",
-      "tooltip": "Eagle の root.library パスです。"
+      "label": "Eagle ライブラリのパス",
+      "tooltip": "Eagle の root.library フォルダーのパスです。"
     },
     "sourcePriority": {
-      "label": "Source priority",
-      "tooltip": "file origin の優先順です。例: ee4v,eagle,blm"
+      "label": "データソースの優先順位",
+      "tooltip": "ファイルの取得元を上から優先順に並べます。",
+      "reorderTooltip": "ドラッグまたは上下キーで優先順位を変更",
+      "options": {
+        "ee4v": "ee4v",
+        "eagle": "Eagle",
+        "blm": "Booth Library Manager"
+      }
     },
     "autoSyncBlmOnStartup": {
       "label": "起動時に BLM を自動同期",
-      "tooltip": "Unity Editor セッションの開始時に Booth Library Manager のローカルライブラリをバックグラウンド同期します。"
+      "tooltip": "Unity エディターのセッション開始時に、Booth Library Manager のローカルライブラリをバックグラウンドで同期します。"
     },
     "autoSyncEagleOnStartup": {
       "label": "起動時に Eagle を自動同期",
-      "tooltip": "Unity Editor セッションの開始時に Eagle library をバックグラウンド同期します。"
+      "tooltip": "Unity エディターのセッション開始時に、Eagle ライブラリをバックグラウンドで同期します。"
     },
     "avatarNames": {
-      "label": "Avatar names",
-      "tooltip": "variant group 自動判定に使うアバター名です。カンマ、セミコロン、改行区切りで指定します。アバター名以外の部分が一致する file 群を、検出したアバター名で group 化します。"
+      "label": "アバター名",
+      "tooltip": "バリアントグループの自動判定に使うアバター名を、1行に1つ入力します。アバター名以外の部分が一致するファイルを、検出したアバター名でグループ化します。"
     },
     "versionGroupRegex": {
-      "label": "Version group regex",
-      "tooltip": "取り込み時に file 名や datasource path から version group 名を抽出する正規表現です。空なら無効です。名前付き group name、最初の capture group、match 全体の順で group 名に使います。"
+      "label": "バージョングループの正規表現",
+      "tooltip": "インポート時にファイル名やデータソースのパスからバージョングループ名を抽出する、単一の正規表現です。空欄にすると無効になります。name という名前付きグループ、最初のキャプチャグループ、マッチ全体の順でグループ名に使います。"
     },
     "showUnityPackageImportDialog": {
-      "label": "UnityPackage の Import 確認画面を表示",
-      "tooltip": "有効にすると UnityPackage の内容を選択する確認画面を表示します。無効にすると確認画面を表示せず、Package の全内容を直接 Import します。"
+      "label": "UnityPackage のインポート確認画面を表示",
+      "tooltip": "有効にすると UnityPackage の内容を選択する確認画面を表示します。無効にすると確認画面を表示せず、パッケージの全内容を直接インポートします。"
     },
     "itemGridItemsPerRow": {
-      "label": "Item grid items per row",
-      "tooltip": "AssetManager の item grid で 1 行に表示する item 数です。"
+      "label": "グリッドの1行あたりの項目数",
+      "tooltip": "AssetManager のグリッドで1行に表示する項目数です。"
     },
     "showFileTreeImageTooltip": {
-      "label": "File Tree で画像プレビューを表示",
-      "tooltip": "有効にすると画像 file の hover 時に画像と file 名を表示します。無効にすると通常のテキスト tooltip を表示します。"
+      "label": "ファイルツリーで画像プレビューを表示",
+      "tooltip": "有効にすると、画像ファイルにマウスポインターを重ねたときに画像とファイル名を表示します。無効にすると通常のテキストツールチップを表示します。"
     },
     "historyOverlayMaximumItems": {
       "label": "履歴オーバーレイの最大表示件数",
@@ -58,9 +64,9 @@
     },
     "validation": {
       "required": "この項目は必須です。",
-      "sourcePriority": "Source priority には ee4v, eagle, blm をそれぞれ 1 回ずつ指定してください。",
+      "sourcePriority": "データソースの優先順位には ee4v、eagle、blm をそれぞれ1回ずつ指定してください。",
       "regex": "正しい正規表現を指定してください。",
-      "itemGridItemsPerRow": "Item grid items per row は 1 から 12 の範囲で指定してください。",
+      "itemGridItemsPerRow": "グリッドの1行あたりの項目数は1から12の範囲で指定してください。",
       "historyOverlayMaximumItems": "履歴オーバーレイの最大表示件数は 1 から 20 の範囲で指定してください。"
     }
   }

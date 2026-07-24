@@ -1,11 +1,11 @@
 {
   "settings": {
     "section": {
-      "project": "Project Window 拡張"
+      "project": "プロジェクトウィンドウ拡張"
     },
     "enabled": {
-      "label": "フォルダ内容オーバーレイを表示",
-      "tooltip": "Project Window のフォルダに、直下で最も多いアセット種別のアイコンを重ねて表示します。"
+      "label": "フォルダー内容オーバーレイを表示",
+      "tooltip": "プロジェクトウィンドウのフォルダーに、直下で最も多いアセット種別のアイコンを重ねて表示します。"
     }
   }
 }

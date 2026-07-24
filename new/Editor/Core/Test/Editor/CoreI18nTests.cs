@@ -1,6 +1,8 @@
+using System.Linq;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using Ee4v.Testing.Contracts;
+using Ee4v.UI;
 using NUnit.Framework;
 using UnityEngine.UIElements;
 
@@ -82,7 +84,6 @@ namespace Ee4v.Core.Tests
 
             var element = SettingFieldRenderer.Create(
                 typeof(int),
-                "Count",
                 "Item count",
                 3,
                 value => changedValue = value);
@@ -90,6 +91,7 @@ namespace Ee4v.Core.Tests
             var field = element as IntegerField;
             Assert.That(field, Is.Not.Null);
             Assert.That(field.value, Is.EqualTo(3));
+            Assert.That(field.label, Is.Empty);
 
             var window = UnityEngine.ScriptableObject.CreateInstance<UnityEditor.EditorWindow>();
             try
@@ -108,10 +110,10 @@ namespace Ee4v.Core.Tests
 
         [Test]
         [FeatureTestCase(
-            "設定画面は UI Toolkit のみで構築する",
-            "SettingsUiRenderer が設定画面を VisualElement で構築し、IMGUIContainer を含めないことを確認します。",
+            "設定画面の IMGUI fallback は UiTextFactory 内に限定する",
+            "フォントキャッシュ対策用のIMGUIContainerがUiTextElementの外へ作られないことを確認します。",
             order: 4)]
-        public void SettingsUiRenderer_BuildScope_DoesNotCreateImguiContainer()
+        public void SettingsUiRenderer_BuildScope_ContainsImguiOnlyInsideUiTextElements()
         {
             Ee4vCoreTestReset.RecoverEditorState();
             var root = new VisualElement();
@@ -123,7 +125,17 @@ namespace Ee4v.Core.Tests
                 string.Empty);
 
             Assert.That(root.childCount, Is.GreaterThan(0));
-            Assert.That(root.Query<IMGUIContainer>().ToList(), Is.Empty);
+            var allImguiContainers =
+                root.Query<IMGUIContainer>().ToList();
+            var uiTextImguiContainers =
+                root.Query<UiTextElement>()
+                    .ToList()
+                    .SelectMany(text =>
+                        text.Query<IMGUIContainer>().ToList())
+                    .ToList();
+            Assert.That(
+                uiTextImguiContainers,
+                Is.EquivalentTo(allImguiContainers));
         }
 
         [Test]
@@ -158,6 +170,70 @@ namespace Ee4v.Core.Tests
                     Assert.That(row.style.flexShrink.value, Is.EqualTo(0f));
                 }
             }
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "設定項目のラベルは UiTextFactory で描画する",
+            "Unity標準fieldのlabelを空にし、フォントキャッシュ対策済みのUiTextElementが項目名を表示することを確認します。",
+            order: 6,
+            category: FeatureTestCategory.Ui)]
+        public void SettingsUiRenderer_BuildScope_UsesUiTextFactoryLabels()
+        {
+            Ee4vCoreTestReset.RecoverEditorState();
+            var root = new VisualElement();
+
+            SettingsUiRenderer.BuildScope(
+                root,
+                CoreSettings.Current,
+                SettingScope.User,
+                string.Empty);
+
+            var expectedLabel = I18N.Get(
+                "settings.language.label");
+            var expectedSection = I18N.Get(
+                "settings.section.localization");
+            Assert.That(
+                root.Query<UiTextElement>()
+                    .ToList()
+                    .Any(label => label.Text == expectedLabel),
+                Is.True);
+            Assert.That(
+                root.Query<UiTextElement>()
+                    .ToList()
+                    .Any(label => label.Text == expectedSection),
+                Is.True);
+            Assert.That(
+                root.Query<Foldout>()
+                    .ToList()
+                    .All(foldout => string.IsNullOrEmpty(foldout.text)),
+                Is.True);
+            Assert.That(
+                root.Query<TextField>()
+                    .ToList()
+                    .All(field => string.IsNullOrEmpty(field.label)),
+                Is.True);
+            Assert.That(
+                root.Query<PopupField<string>>()
+                    .ToList()
+                    .All(field => string.IsNullOrEmpty(field.label)),
+                Is.True);
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "リスト設定をカンマ区切りで保存する",
+            "要素ごとの入力値を正規化し、永続化へ渡す文字列がカンマ区切りになることを確認します。",
+            order: 7)]
+        public void CommaSeparatedListSettingDrawer_SerializesItems()
+        {
+            var serialized =
+                CommaSeparatedListSettingDrawer.SerializeItems(
+                    new[] { " ee4v ", "eagle;blm", string.Empty });
+
+            Assert.That(
+                serialized,
+                Is.EqualTo("ee4v,eagle,blm"));
         }
     }
 }

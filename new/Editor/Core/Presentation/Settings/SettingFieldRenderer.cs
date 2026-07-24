@@ -10,14 +10,13 @@ namespace Ee4v.Core.Settings
     {
         public static VisualElement Create(
             Type valueType,
-            string label,
             string tooltip,
             object value,
             Action<object> onValueChanged)
         {
             if (valueType == typeof(bool))
             {
-                var field = new Toggle(label)
+                var field = new Toggle(string.Empty)
                 {
                     tooltip = tooltip,
                     value = value != null && (bool)value
@@ -28,7 +27,7 @@ namespace Ee4v.Core.Settings
 
             if (valueType == typeof(int))
             {
-                var field = new IntegerField(label)
+                var field = new IntegerField(string.Empty)
                 {
                     tooltip = tooltip,
                     value = value != null ? (int)value : 0
@@ -39,7 +38,7 @@ namespace Ee4v.Core.Settings
 
             if (valueType == typeof(float))
             {
-                var field = new FloatField(label)
+                var field = new FloatField(string.Empty)
                 {
                     tooltip = tooltip,
                     value = value != null ? (float)value : 0f
@@ -50,7 +49,7 @@ namespace Ee4v.Core.Settings
 
             if (valueType == typeof(double))
             {
-                var field = new DoubleField(label)
+                var field = new DoubleField(string.Empty)
                 {
                     tooltip = tooltip,
                     value = value != null ? (double)value : 0d
@@ -61,7 +60,7 @@ namespace Ee4v.Core.Settings
 
             if (valueType == typeof(string))
             {
-                var field = new TextField(label)
+                var field = new TextField(string.Empty)
                 {
                     tooltip = tooltip,
                     value = value as string ?? string.Empty
@@ -72,7 +71,7 @@ namespace Ee4v.Core.Settings
 
             if (valueType == typeof(Color))
             {
-                var field = new ColorField(label)
+                var field = new ColorField(string.Empty)
                 {
                     tooltip = tooltip,
                     value = value != null ? (Color)value : Color.white
@@ -86,7 +85,7 @@ namespace Ee4v.Core.Settings
                 var enumValue = value != null
                     ? (Enum)value
                     : (Enum)Enum.GetValues(valueType).GetValue(0);
-                var field = new EnumField(label, enumValue)
+                var field = new EnumField(string.Empty, enumValue)
                 {
                     tooltip = tooltip
                 };

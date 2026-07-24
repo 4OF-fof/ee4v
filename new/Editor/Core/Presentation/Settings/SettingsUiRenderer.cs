@@ -9,6 +9,17 @@ namespace Ee4v.Core.Settings
 {
     internal static class SettingsUiRenderer
     {
+        private const string RootClassName = "ee4v-settings";
+        private const string ContentClassName = "ee4v-settings__content";
+        private const string SectionClassName = "ee4v-settings__section";
+        private const string SectionLabelClassName =
+            "ee4v-settings__section-label";
+        private const string RowClassName = "ee4v-settings__row";
+        private const string FieldLayoutClassName =
+            "ee4v-settings__field-layout";
+        private const string LabelClassName =
+            "ee4v-settings__label";
+        private const string FieldClassName = "ee4v-settings__field";
         private static readonly Dictionary<string, string> ValidationMessages =
             new Dictionary<string, string>();
 
@@ -29,8 +40,25 @@ namespace Ee4v.Core.Settings
             }
 
             root.Clear();
+            root.AddToClassList("ee4v-ui");
+            root.AddToClassList(RootClassName);
             root.style.flexGrow = 1f;
             root.style.minHeight = 0f;
+            UiStyleUtility.AddPackageStyleSheet(
+                root,
+                "Editor/UI/Components/common.uss");
+            UiStyleUtility.AddPackageStyleSheet(
+                root,
+                "Editor/UI/Components/Inputs/InputField/input-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(
+                root,
+                "Editor/UI/Components/Inputs/CommaSeparatedListField/comma-separated-list-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(
+                root,
+                "Editor/UI/Components/Inputs/ReorderableListField/reorderable-list-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(
+                root,
+                "Editor/Core/Presentation/Settings/settings-ui.uss");
 
             var scrollView = new ScrollView(ScrollViewMode.Vertical);
             scrollView.style.flexGrow = 1f;
@@ -38,10 +66,11 @@ namespace Ee4v.Core.Settings
             scrollView.verticalScrollerVisibility = ScrollerVisibility.Auto;
 
             var content = scrollView.contentContainer;
-            content.style.paddingLeft = UiSpacingTokens.Medium;
-            content.style.paddingRight = UiSpacingTokens.Medium;
-            content.style.paddingTop = UiSpacingTokens.Medium;
-            content.style.paddingBottom = UiSpacingTokens.Medium;
+            content.AddToClassList(ContentClassName);
+            content.style.paddingLeft = UiSpacingTokens.Small;
+            content.style.paddingRight = UiSpacingTokens.Small;
+            content.style.paddingTop = UiSpacingTokens.Small;
+            content.style.paddingBottom = UiSpacingTokens.Small;
             root.Add(scrollView);
 
             var grouped = settings.GetDefinitions(scope)
@@ -59,15 +88,15 @@ namespace Ee4v.Core.Settings
                 }
 
                 var firstDefinition = visibleDefinitions[0];
-                var section = new Foldout
-                {
-                    text = Translate(
+                var section = new Foldout { value = true };
+                section.AddToClassList(SectionClassName);
+                UiTextFactory.AttachToFoldout(
+                    section,
+                    Translate(
                         firstDefinition.SectionKey,
                         firstDefinition.LocalizationScope),
-                    value = true
-                };
-                section.style.flexShrink = 0f;
-                section.style.marginBottom = UiSpacingTokens.Medium;
+                    UiClassNames.SectionTitle,
+                    SectionLabelClassName);
 
                 foreach (var definition in visibleDefinitions)
                 {
@@ -93,22 +122,31 @@ namespace Ee4v.Core.Settings
             }
 
             var row = new VisualElement();
-            row.style.flexShrink = 0f;
-            row.style.marginTop = UiSpacingTokens.Xxs;
-            row.style.marginBottom = UiSpacingTokens.Xxs;
+            row.AddToClassList(RowClassName);
 
             var errorBox = new HelpBox(string.Empty, HelpBoxMessageType.Error);
             errorBox.style.marginTop = UiSpacingTokens.Xxs;
 
+            var labelText = Translate(
+                definition.DisplayNameKey,
+                definition.LocalizationScope);
+            var label = UiTextFactory.Create(labelText);
+            label.AddToClassList(LabelClassName);
+            label.tooltip = tooltip;
+
             var field = SettingDrawerRegistry.Create(
                 definition,
-                Translate(definition.DisplayNameKey, definition.LocalizationScope),
                 tooltip,
                 settings.Get(definition),
                 searchContext,
                 value => ApplyValue(settings, definition, value, errorBox));
+            field.AddToClassList(FieldClassName);
 
-            row.Add(field);
+            var fieldLayout = new VisualElement();
+            fieldLayout.AddToClassList(FieldLayoutClassName);
+            fieldLayout.Add(label);
+            fieldLayout.Add(field);
+            row.Add(fieldLayout);
             row.Add(errorBox);
 
             if (ValidationMessages.TryGetValue(definition.Key, out var error))

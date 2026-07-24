@@ -7,20 +7,16 @@ namespace Ee4v.Core.Settings
         private readonly Action<T> _onValueChanged;
 
         public SettingDrawerContext(
-            string label,
             string tooltip,
             T value,
             string searchContext,
             Action<T> onValueChanged)
         {
-            Label = label ?? string.Empty;
             Tooltip = tooltip ?? string.Empty;
             Value = value;
             SearchContext = searchContext ?? string.Empty;
             _onValueChanged = onValueChanged;
         }
-
-        public string Label { get; }
 
         public string Tooltip { get; }
 

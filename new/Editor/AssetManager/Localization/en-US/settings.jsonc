@@ -22,7 +22,13 @@
     },
     "sourcePriority": {
       "label": "Source priority",
-      "tooltip": "Priority order for file origins. Example: ee4v,eagle,blm"
+      "tooltip": "Orders file origins from highest to lowest priority.",
+      "reorderTooltip": "Drag or use the arrow keys to change priority",
+      "options": {
+        "ee4v": "ee4v",
+        "eagle": "Eagle",
+        "blm": "Booth Library Manager"
+      }
     },
     "autoSyncBlmOnStartup": {
       "label": "Auto-sync BLM on startup",
@@ -34,11 +40,11 @@
     },
     "avatarNames": {
       "label": "Avatar names",
-      "tooltip": "Avatar names used for automatic variant grouping. Separate names with commas, semicolons, or new lines. Files with the same non-avatar signature are grouped by the detected avatar name."
+      "tooltip": "Enter one avatar name per line for automatic variant grouping. Files with the same non-avatar signature are grouped by the detected avatar name."
     },
     "versionGroupRegex": {
       "label": "Version group regex",
-      "tooltip": "Regular expression used during import to extract a version group name from the file name or datasource path. Empty disables it. The named group name, first capture group, or full match is used in that order."
+      "tooltip": "A single regular expression used during import to extract a version group name from the file name or datasource path. Empty disables it. The named group name, first capture group, or full match is used in that order."
     },
     "showUnityPackageImportDialog": {
       "label": "Show UnityPackage import confirmation",

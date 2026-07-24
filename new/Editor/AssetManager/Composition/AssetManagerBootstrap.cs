@@ -28,7 +28,15 @@ namespace Ee4v.AssetManager.Composition
             FeatureBootstrapContract.Initialize(
                 "AssetManager",
                 typeof(AssetManagerDefinitions),
-                () => AssetManagerDefinitions.RegisterAll(settings),
+                () =>
+                {
+                    AssetManagerDefinitions.RegisterAll(settings);
+                    global::Ee4v.AssetManager.UI
+                        .SourcePrioritySettingDrawer.Register(
+                        AssetManagerDefinitions.SourcePriority);
+                    CommaSeparatedListSettingDrawer.Register(
+                        AssetManagerDefinitions.AvatarNames);
+                },
                 () => InitializeModule(settings));
         }
 

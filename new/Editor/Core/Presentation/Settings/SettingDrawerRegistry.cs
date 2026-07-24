@@ -6,8 +6,8 @@ namespace Ee4v.Core.Settings
 {
     internal static class SettingDrawerRegistry
     {
-        private static readonly Dictionary<string, Func<string, string, object, string, Action<object>, VisualElement>>
-            Drawers = new Dictionary<string, Func<string, string, object, string, Action<object>, VisualElement>>();
+        private static readonly Dictionary<string, Func<string, object, string, Action<object>, VisualElement>>
+            Drawers = new Dictionary<string, Func<string, object, string, Action<object>, VisualElement>>();
 
         public static void Register<T>(
             SettingDefinition<T> definition,
@@ -23,9 +23,8 @@ namespace Ee4v.Core.Settings
                 throw new ArgumentNullException(nameof(drawer));
             }
 
-            Drawers[definition.Key] = (label, tooltip, value, searchContext, onValueChanged) =>
+            Drawers[definition.Key] = (tooltip, value, searchContext, onValueChanged) =>
                 drawer(new SettingDrawerContext<T>(
-                    label,
                     tooltip,
                     value != null ? (T)value : default(T),
                     searchContext,
@@ -34,7 +33,6 @@ namespace Ee4v.Core.Settings
 
         public static VisualElement Create(
             SettingDefinitionBase definition,
-            string label,
             string tooltip,
             object value,
             string searchContext,
@@ -42,12 +40,11 @@ namespace Ee4v.Core.Settings
         {
             if (Drawers.TryGetValue(definition.Key, out var drawer))
             {
-                return drawer(label, tooltip, value, searchContext, onValueChanged);
+                return drawer(tooltip, value, searchContext, onValueChanged);
             }
 
             return SettingFieldRenderer.Create(
                 definition.ValueType,
-                label,
                 tooltip,
                 value,
                 onValueChanged);

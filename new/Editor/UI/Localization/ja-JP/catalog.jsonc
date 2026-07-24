@@ -37,6 +37,18 @@
       "failed": "失敗",
       "skipped": "スキップ",
       "inconclusive": "未確定"
+    },
+    "listInput": {
+      "description": "1行を1要素として編集し、リスト値として通知する複数行入力コンポーネントです。",
+      "details": "UIでは改行区切りで表示し、保存形式への変換は利用側が担当します。",
+      "sampleTooltip": "グループ判定に使うアバター名です。",
+      "itemPlaceholder": "1行に1つアバター名を入力",
+      "savedValue": "保存形式の例: {0}"
+    },
+    "reorderableList": {
+      "description": "固定項目の値を編集せず、並び順だけを変更するコンポーネントです。",
+      "details": "ドラッグまたは上下キーで優先順位などの固定項目を並び替えます。",
+      "reorderTooltip": "ドラッグまたは上下キーで並び替え"
     }
   }
 }

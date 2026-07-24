@@ -37,6 +37,18 @@
       "failed": "Failed",
       "skipped": "Skipped",
       "inconclusive": "Inconclusive"
+    },
+    "listInput": {
+      "description": "A multiline input that treats each line as one list item.",
+      "details": "The UI uses newline-separated values while the consumer owns conversion to its persistence format.",
+      "sampleTooltip": "Avatar names used for grouping.",
+      "itemPlaceholder": "Enter one avatar name per line",
+      "savedValue": "Example storage value: {0}"
+    },
+    "reorderableList": {
+      "description": "Changes only the order of fixed items without editing their values.",
+      "details": "Reorder fixed priority items by dragging or using the arrow keys.",
+      "reorderTooltip": "Drag or use the arrow keys to reorder"
     }
   }
 }

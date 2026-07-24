@@ -24,7 +24,7 @@ namespace Ee4v.Core.Settings
             var languages = I18N.GetAvailableLanguages();
             if (languages.Count == 0)
             {
-                var textField = new TextField(context.Label)
+                var textField = new TextField(string.Empty)
                 {
                     tooltip = context.Tooltip,
                     value = context.Value ?? string.Empty
@@ -35,7 +35,10 @@ namespace Ee4v.Core.Settings
 
             var options = languages.ToList();
             var currentIndex = Math.Max(0, options.IndexOf(context.Value));
-            var popup = new PopupField<string>(context.Label, options, currentIndex)
+            var popup = new PopupField<string>(
+                string.Empty,
+                options,
+                currentIndex)
             {
                 tooltip = context.Tooltip
             };
