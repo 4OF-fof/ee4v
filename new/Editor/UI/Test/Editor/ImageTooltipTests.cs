@@ -57,6 +57,7 @@ namespace Ee4v.UI.Tests
 
             Assert.That(breadcrumbStyle.Alignment, Is.EqualTo(TextAnchor.MiddleLeft));
             Assert.That(rowStyle.Alignment, Is.EqualTo(TextAnchor.MiddleLeft));
+            Assert.That(rowStyle.RequiresImgui, Is.True);
             Assert.That(separatorStyle.Alignment, Is.EqualTo(TextAnchor.MiddleCenter));
         }
     }

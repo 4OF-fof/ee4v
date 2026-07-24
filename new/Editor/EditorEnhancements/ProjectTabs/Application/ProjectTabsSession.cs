@@ -112,26 +112,40 @@ namespace Ee4v.ProjectTabs
 
         public ProjectTabLocation GoBack(string tabId)
         {
+            return GoBack(tabId, 1);
+        }
+
+        public ProjectTabLocation GoBack(string tabId, int steps)
+        {
             var tab = Find(tabId);
-            if (tab == null || tab.HistoryIndex <= 0)
+            if (tab == null || tab.HistoryIndex <= 0 || steps <= 0)
             {
                 return null;
             }
 
-            tab.HistoryIndex--;
+            tab.HistoryIndex = Math.Max(0, tab.HistoryIndex - steps);
             PersistAndNotify();
             return tab.CurrentLocation;
         }
 
         public ProjectTabLocation GoForward(string tabId)
         {
+            return GoForward(tabId, 1);
+        }
+
+        public ProjectTabLocation GoForward(string tabId, int steps)
+        {
             var tab = Find(tabId);
-            if (tab == null || tab.HistoryIndex >= tab.History.Count - 1)
+            if (tab == null ||
+                tab.HistoryIndex >= tab.History.Count - 1 ||
+                steps <= 0)
             {
                 return null;
             }
 
-            tab.HistoryIndex++;
+            tab.HistoryIndex = Math.Min(
+                tab.History.Count - 1,
+                tab.HistoryIndex + steps);
             PersistAndNotify();
             return tab.CurrentLocation;
         }

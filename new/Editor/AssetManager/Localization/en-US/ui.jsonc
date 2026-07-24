@@ -51,11 +51,7 @@
       "gridSize": "Grid size",
       "filter": "Filter",
       "sort": "Sort order",
-      "searchPlaceholder": "Search assets",
-      "history": {
-        "back": "Back",
-        "forward": "Forward"
-      }
+      "searchPlaceholder": "Search assets"
     },
     "navigation": {
       "allAssets": {

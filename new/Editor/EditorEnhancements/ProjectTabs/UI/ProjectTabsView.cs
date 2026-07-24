@@ -14,12 +14,18 @@ namespace Ee4v.ProjectTabs
             IReadOnlyList<ProjectTabViewState> tabs,
             string selectedTabId,
             bool canGoBack,
-            bool canGoForward)
+            bool canGoForward,
+            IReadOnlyList<ProjectHistoryEntryViewState> backHistory = null,
+            IReadOnlyList<ProjectHistoryEntryViewState> forwardHistory = null)
         {
             Tabs = tabs ?? Array.Empty<ProjectTabViewState>();
             SelectedTabId = selectedTabId ?? string.Empty;
             CanGoBack = canGoBack;
             CanGoForward = canGoForward;
+            BackHistory = backHistory ??
+                Array.Empty<ProjectHistoryEntryViewState>();
+            ForwardHistory = forwardHistory ??
+                Array.Empty<ProjectHistoryEntryViewState>();
         }
 
         public IReadOnlyList<ProjectTabViewState> Tabs { get; }
@@ -29,6 +35,23 @@ namespace Ee4v.ProjectTabs
         public bool CanGoBack { get; }
 
         public bool CanGoForward { get; }
+
+        public IReadOnlyList<ProjectHistoryEntryViewState> BackHistory { get; }
+
+        public IReadOnlyList<ProjectHistoryEntryViewState> ForwardHistory { get; }
+    }
+
+    internal sealed class ProjectHistoryEntryViewState
+    {
+        public ProjectHistoryEntryViewState(string label, int steps)
+        {
+            Label = label ?? string.Empty;
+            Steps = steps;
+        }
+
+        public string Label { get; }
+
+        public int Steps { get; }
     }
 
     internal sealed class ProjectTabViewState
@@ -82,6 +105,7 @@ namespace Ee4v.ProjectTabs
         private readonly Button _forwardButton;
         private readonly VisualElement _strip;
         private readonly Button _addButton;
+        private ProjectTabsViewState _state;
 
         public ProjectTabsView()
         {
@@ -99,12 +123,18 @@ namespace Ee4v.ProjectTabs
 
             _backButton = CreateNavigationButton(
                 "\u2190",
-                I18N.Get("toolbar.history.back"),
                 () => BackRequested?.Invoke());
             _forwardButton = CreateNavigationButton(
                 "\u2192",
-                I18N.Get("toolbar.history.forward"),
                 () => ForwardRequested?.Invoke());
+            RegisterHistoryButton(
+                _backButton,
+                () => _state.BackHistory,
+                true);
+            RegisterHistoryButton(
+                _forwardButton,
+                () => _state.ForwardHistory,
+                false);
             navigation.Add(_backButton);
             navigation.Add(_forwardButton);
 
@@ -123,6 +153,12 @@ namespace Ee4v.ProjectTabs
             _addButton.tooltip = I18N.Get("toolbar.add.tooltip");
             _addButton.AddToClassList(AddButtonClassName);
 
+            _state = new ProjectTabsViewState(
+                null,
+                string.Empty,
+                false,
+                false);
+
             Add(navigation);
             Add(scroll);
         }
@@ -130,6 +166,10 @@ namespace Ee4v.ProjectTabs
         public event Action BackRequested;
 
         public event Action ForwardRequested;
+
+        public event Action<int> BackHistoryRequested;
+
+        public event Action<int> ForwardHistoryRequested;
 
         public event Action AddRequested;
 
@@ -139,15 +179,15 @@ namespace Ee4v.ProjectTabs
 
         public void SetState(ProjectTabsViewState state)
         {
-            state = state ??
+            _state = state ??
                 new ProjectTabsViewState(null, string.Empty, false, false);
-            _backButton.SetEnabled(state.CanGoBack);
-            _forwardButton.SetEnabled(state.CanGoForward);
+            _backButton.SetEnabled(_state.CanGoBack);
+            _forwardButton.SetEnabled(_state.CanGoForward);
             _strip.Clear();
 
-            for (var i = 0; i < state.Tabs.Count; i++)
+            for (var i = 0; i < _state.Tabs.Count; i++)
             {
-                var tab = state.Tabs[i];
+                var tab = _state.Tabs[i];
                 if (tab == null)
                 {
                     continue;
@@ -158,12 +198,59 @@ namespace Ee4v.ProjectTabs
                     SelectedTabClassName,
                     string.Equals(
                         tab.Id,
-                        state.SelectedTabId,
+                        _state.SelectedTabId,
                         StringComparison.Ordinal));
                 _strip.Add(tabElement);
             }
 
             _strip.Add(_addButton);
+        }
+
+        private void RegisterHistoryButton(
+            Button button,
+            Func<IReadOnlyList<ProjectHistoryEntryViewState>> getEntries,
+            bool back)
+        {
+            button.RegisterCallback<ContextClickEvent>(evt =>
+            {
+                ShowHistoryMenu(button, getEntries(), back);
+                evt.StopPropagation();
+            });
+        }
+
+        private void ShowHistoryMenu(
+            VisualElement anchor,
+            IReadOnlyList<ProjectHistoryEntryViewState> entries,
+            bool back)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return;
+            }
+
+            var rows = new HistoryNavigationOverlayRowState[entries.Count];
+            for (var i = 0; i < entries.Count; i++)
+            {
+                var entry = entries[i];
+                var steps = entry != null ? entry.Steps : 0;
+                rows[i] = new HistoryNavigationOverlayRowState(
+                    entry != null ? entry.Label : string.Empty,
+                    steps > 0
+                        ? (Action)(() =>
+                        {
+                            if (back)
+                            {
+                                BackHistoryRequested?.Invoke(steps);
+                            }
+                            else
+                            {
+                                ForwardHistoryRequested?.Invoke(steps);
+                            }
+                        })
+                        : null);
+            }
+
+            HistoryNavigationMenu.Show(anchor, rows);
         }
 
         private VisualElement CreateTab(ProjectTabViewState state)
@@ -246,13 +333,9 @@ namespace Ee4v.ProjectTabs
 
         private static Button CreateNavigationButton(
             string text,
-            string tooltip,
             Action clicked)
         {
-            var button = new Button(clicked)
-            {
-                tooltip = tooltip
-            };
+            var button = new Button(clicked);
             button.AddToClassList(NavigationButtonClassName);
 
             var label = UiTextFactory.Create(text);

@@ -20,7 +20,7 @@ namespace Ee4v.AssetManager.UI
                     "Domain/AssetManager",
                     "HistoryNavigation",
                     "AssetManager の history stack を操作する navigation component です。",
-                    "通常時は末尾の breadcrumb だけを表示し、breadcrumb と戻る・進むボタンの hover 時に全階層または履歴を overlay 表示します。",
+                    "通常時は末尾の breadcrumb だけを表示し、breadcrumb の hover 時に全階層、戻る・進むボタンの右クリック時に履歴を overlay 表示します。",
                     new string[0],
                     CatalogWindow.ComponentImplementationKind.UiToolkit,
                     (window, parent) => BuildHistoryNavigationStory(window, parent)));

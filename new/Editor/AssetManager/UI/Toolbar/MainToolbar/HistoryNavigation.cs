@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -19,31 +18,37 @@ namespace Ee4v.AssetManager.UI
         private readonly Button _backButton;
         private readonly Button _forwardButton;
         private readonly VisualElement _breadcrumb;
-        private readonly HistoryNavigationOverlay _hoverOverlay;
-        private VisualElement _hoverOverlayAnchor;
+        private readonly HistoryNavigationOverlay _overlay;
         private IVisualElementScheduledItem _pendingOverlayHide;
+        private int _maximumVisibleHistoryRows;
         private AssetItemGridHistoryState _state;
 
         public HistoryNavigation(int maximumVisibleHistoryRows = 5)
         {
             AddToClassList(RootClassName);
 
-            _backButton = CreateNavigationButton("<", I18N.Get("assetManager.mainToolbar.history.back"));
+            _backButton = CreateNavigationButton("\u2190");
             _backButton.clicked += () => BackClicked?.Invoke();
             _backButton.RegisterCallback<PointerEnterEvent>(_ =>
+                CancelPendingOverlayHide());
+            _backButton.RegisterCallback<ContextClickEvent>(evt =>
             {
                 CancelPendingOverlayHide();
                 ShowHistoryOverlay(_backButton, _state.BackEntries, true);
+                evt.StopPropagation();
             });
             _backButton.RegisterCallback<PointerLeaveEvent>(_ => ScheduleOverlayHide());
             Add(_backButton);
 
-            _forwardButton = CreateNavigationButton(">", I18N.Get("assetManager.mainToolbar.history.forward"));
+            _forwardButton = CreateNavigationButton("\u2192");
             _forwardButton.clicked += () => ForwardClicked?.Invoke();
             _forwardButton.RegisterCallback<PointerEnterEvent>(_ =>
+                CancelPendingOverlayHide());
+            _forwardButton.RegisterCallback<ContextClickEvent>(evt =>
             {
                 CancelPendingOverlayHide();
                 ShowHistoryOverlay(_forwardButton, _state.ForwardEntries, false);
+                evt.StopPropagation();
             });
             _forwardButton.RegisterCallback<PointerLeaveEvent>(_ => ScheduleOverlayHide());
             Add(_forwardButton);
@@ -52,12 +57,12 @@ namespace Ee4v.AssetManager.UI
             _breadcrumb.AddToClassList(BreadcrumbClassName);
             Add(_breadcrumb);
 
-            _hoverOverlay = new HistoryNavigationOverlay(maximumVisibleHistoryRows);
-            _hoverOverlay.RegisterCallback<PointerEnterEvent>(_ => CancelPendingOverlayHide());
-            _hoverOverlay.RegisterCallback<PointerLeaveEvent>(_ => ScheduleOverlayHide());
-            _hoverOverlay.RegisterCallback<GeometryChangedEvent>(_ => RepositionHoverOverlay());
+            _overlay = new HistoryNavigationOverlay();
+            _overlay.RegisterCallback<PointerEnterEvent>(_ => CancelPendingOverlayHide());
+            _overlay.RegisterCallback<PointerLeaveEvent>(_ => ScheduleOverlayHide());
+            SetMaximumVisibleRows(maximumVisibleHistoryRows);
             _state = new AssetItemGridHistoryState(null, false, false);
-            RegisterCallback<DetachFromPanelEvent>(_ => RemoveHoverOverlay());
+            RegisterCallback<DetachFromPanelEvent>(_ => RemoveOverlay());
         }
 
         public event Action BackClicked;
@@ -72,13 +77,13 @@ namespace Ee4v.AssetManager.UI
 
         public void SetMaximumVisibleRows(int value)
         {
-            _hoverOverlay.SetMaximumVisibleRows(value);
+            _maximumVisibleHistoryRows = Mathf.Clamp(value, 1, 20);
         }
 
         public void SetState(AssetItemGridHistoryState state)
         {
             _state = state ?? new AssetItemGridHistoryState(null, false, false);
-            HideHoverOverlay();
+            HideOverlay();
             _backButton.SetEnabled(_state.CanGoBack);
             _forwardButton.SetEnabled(_state.CanGoForward);
             RefreshBreadcrumb(_state.Current);
@@ -90,16 +95,16 @@ namespace Ee4v.AssetManager.UI
             var breadcrumbs = current != null ? current.Breadcrumbs : null;
             if (breadcrumbs == null || breadcrumbs.Count <= 1)
             {
-                HideHoverOverlay();
+                HideOverlay();
                 return;
             }
 
-            _hoverOverlay.SetBreadcrumbs(breadcrumbs, index =>
+            _overlay.SetBreadcrumbs(breadcrumbs, index =>
             {
-                HideHoverOverlay();
+                HideOverlay();
                 BreadcrumbClicked?.Invoke(index);
             });
-            ShowHoverOverlay(_breadcrumb);
+            ShowOverlay(_breadcrumb);
         }
 
         private void ShowHistoryOverlay(
@@ -109,7 +114,7 @@ namespace Ee4v.AssetManager.UI
         {
             if (entries == null || entries.Count == 0)
             {
-                HideHoverOverlay();
+                HideOverlay();
                 return;
             }
 
@@ -118,10 +123,10 @@ namespace Ee4v.AssetManager.UI
             {
                 var steps = i + 1;
                 rows[i] = new HistoryNavigationOverlayRowState(
-                    entries[i] != null ? string.Join(" / ", entries[i].Breadcrumbs) : string.Empty,
+                    FormatHistoryLabel(entries[i]),
                     () =>
                     {
-                        HideHoverOverlay();
+                        HideOverlay();
                         if (back)
                         {
                             BackHistoryClicked?.Invoke(steps);
@@ -133,11 +138,25 @@ namespace Ee4v.AssetManager.UI
                     });
             }
 
-            _hoverOverlay.SetRows(rows);
-            ShowHoverOverlay(anchor);
+            HideOverlay();
+            HistoryNavigationMenu.Show(
+                anchor,
+                rows,
+                _maximumVisibleHistoryRows);
         }
 
-        private void ShowHoverOverlay(VisualElement anchor)
+        private static string FormatHistoryLabel(
+            AssetItemGridHistoryEntry entry)
+        {
+            var breadcrumbs = entry != null
+                ? entry.Breadcrumbs
+                : null;
+            return breadcrumbs != null && breadcrumbs.Count > 0
+                ? breadcrumbs[breadcrumbs.Count - 1]
+                : string.Empty;
+        }
+
+        private void ShowOverlay(VisualElement anchor)
         {
             var root = FindOverlayRoot();
             if (root == null || anchor == null)
@@ -145,45 +164,7 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            if (_hoverOverlay.parent != root)
-            {
-                _hoverOverlay.RemoveFromHierarchy();
-                root.Add(_hoverOverlay);
-            }
-
-            _hoverOverlayAnchor = anchor;
-            _hoverOverlay.style.width = StyleKeyword.Auto;
-            _hoverOverlay.style.maxWidth = Mathf.Min(
-                _hoverOverlay.MaximumWidth,
-                Mathf.Max(0f, root.resolvedStyle.width - 8f));
-            _hoverOverlay.style.display = DisplayStyle.Flex;
-            RepositionHoverOverlay();
-        }
-
-        private void RepositionHoverOverlay()
-        {
-            var root = _hoverOverlay.parent;
-            if (root == null || _hoverOverlayAnchor == null ||
-                _hoverOverlay.resolvedStyle.display == DisplayStyle.None)
-            {
-                return;
-            }
-
-            var overlayWidth = _hoverOverlay.resolvedStyle.width;
-            if (float.IsNaN(overlayWidth))
-            {
-                return;
-            }
-
-            var rootPosition = root.worldBound.position;
-            var anchorX = _hoverOverlayAnchor.worldBound.x - rootPosition.x;
-            _hoverOverlay.style.left = Mathf.Clamp(
-                anchorX,
-                4f,
-                Mathf.Max(4f, root.resolvedStyle.width - overlayWidth - 4f));
-            _hoverOverlay.style.top = Mathf.Max(
-                4f,
-                _hoverOverlayAnchor.worldBound.yMax - rootPosition.y + 4f);
+            _overlay.Show(root, anchor);
         }
 
         private VisualElement FindOverlayRoot()
@@ -200,17 +181,16 @@ namespace Ee4v.AssetManager.UI
             return overlayRoot;
         }
 
-        private void HideHoverOverlay()
+        private void HideOverlay()
         {
             CancelPendingOverlayHide();
-            _hoverOverlay.style.display = DisplayStyle.None;
-            _hoverOverlayAnchor = null;
+            _overlay.Hide();
         }
 
         private void ScheduleOverlayHide()
         {
             CancelPendingOverlayHide();
-            _pendingOverlayHide = schedule.Execute(HideHoverOverlay)
+            _pendingOverlayHide = schedule.Execute(HideOverlay)
                 .StartingIn(OverlayHideDelayMilliseconds);
         }
 
@@ -225,9 +205,9 @@ namespace Ee4v.AssetManager.UI
             _pendingOverlayHide = null;
         }
 
-        private void RemoveHoverOverlay()
+        private void RemoveOverlay()
         {
-            _hoverOverlay.RemoveFromHierarchy();
+            _overlay.RemoveFromHierarchy();
         }
 
         private void RefreshBreadcrumb(AssetItemGridHistoryEntry current)
@@ -255,12 +235,11 @@ namespace Ee4v.AssetManager.UI
             _breadcrumb.Add(item);
         }
 
-        private static Button CreateNavigationButton(string text, string tooltip)
+        private static Button CreateNavigationButton(string text)
         {
             var button = new Button
             {
-                text = text,
-                tooltip = tooltip ?? string.Empty
+                text = text
             };
             button.AddToClassList(IconButtonClassName);
             button.focusable = false;
@@ -288,108 +267,4 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class HistoryNavigationOverlayRowState
-    {
-        public HistoryNavigationOverlayRowState(string label, Action action = null)
-        {
-            Label = label ?? string.Empty;
-            Action = action;
-        }
-
-        public string Label { get; }
-
-        public Action Action { get; }
-    }
-
-    internal sealed class HistoryNavigationOverlay : VisualElement
-    {
-        private const float HistoryMaximumWidth = 420f;
-        private const float BreadcrumbMaximumWidth = 600f;
-        private const string RootClassName = "ee4v-ui-history-navigation-overlay";
-        private const string BreadcrumbClassName = "ee4v-ui-history-navigation-overlay--breadcrumb";
-        private const string ItemClassName = "ee4v-ui-history-navigation-overlay__item";
-        private int _maximumVisibleRows;
-
-        public HistoryNavigationOverlay(int maximumVisibleRows = 5)
-        {
-            AddToClassList(RootClassName);
-            pickingMode = PickingMode.Position;
-            style.display = DisplayStyle.None;
-            SetMaximumVisibleRows(maximumVisibleRows);
-        }
-
-        public float MaximumWidth { get; private set; } = HistoryMaximumWidth;
-
-        public void SetMaximumVisibleRows(int value)
-        {
-            _maximumVisibleRows = Mathf.Clamp(value, 1, 20);
-        }
-
-        public void SetRows(IReadOnlyList<HistoryNavigationOverlayRowState> rows)
-        {
-            Clear();
-            EnableInClassList(BreadcrumbClassName, false);
-            MaximumWidth = HistoryMaximumWidth;
-            if (rows == null)
-            {
-                return;
-            }
-
-            var visibleCount = Math.Min(_maximumVisibleRows, rows.Count);
-            for (var i = 0; i < visibleCount; i++)
-            {
-                Add(CreateRow(rows[i]));
-            }
-
-            if (rows.Count > visibleCount)
-            {
-                Add(CreateRow(new HistoryNavigationOverlayRowState("…")));
-            }
-        }
-
-        public void SetBreadcrumbs(IReadOnlyList<string> breadcrumbs, Action<int> onSelected)
-        {
-            Clear();
-            EnableInClassList(BreadcrumbClassName, true);
-            if (breadcrumbs == null)
-            {
-                MaximumWidth = BreadcrumbMaximumWidth;
-                return;
-            }
-
-            for (var i = 0; i < breadcrumbs.Count; i++)
-            {
-                if (i > 0)
-                {
-                    var separator = UiTextFactory.Create("/", UiClassNames.HistoryNavigationOverlaySeparator);
-                    separator.SetColor(UiColorTokens.TextMuted);
-                    separator.pickingMode = PickingMode.Ignore;
-                    Add(separator);
-                }
-
-                var index = i;
-                Add(CreateRow(new HistoryNavigationOverlayRowState(
-                    breadcrumbs[i],
-                    () => onSelected?.Invoke(index))));
-            }
-
-            MaximumWidth = BreadcrumbMaximumWidth;
-        }
-
-        private static Button CreateRow(HistoryNavigationOverlayRowState state)
-        {
-            state = state ?? new HistoryNavigationOverlayRowState(string.Empty);
-            var button = new Button(state.Action);
-            button.AddToClassList(ItemClassName);
-            button.SetEnabled(state.Action != null);
-            button.focusable = false;
-
-            var label = UiTextFactory.Create(state.Label, UiClassNames.HistoryNavigationOverlayRow);
-            label.SetWhiteSpace(WhiteSpace.NoWrap);
-            label.pickingMode = PickingMode.Ignore;
-            label.SetColor(state.Action != null ? UiColorTokens.TextPrimary : UiColorTokens.TextMuted);
-            button.Add(label);
-            return button;
-        }
-    }
 }

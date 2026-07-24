@@ -9,10 +9,6 @@
     }
   },
   "toolbar": {
-    "history": {
-      "back": "前の場所へ戻る",
-      "forward": "次の場所へ進む"
-    },
     "add": {
       "tooltip": "現在の場所を新しいタブで開く"
     },

@@ -1,6 +1,10 @@
+using System.Collections;
 using System.Collections.Generic;
 using Ee4v.Testing.Contracts;
 using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.TestTools;
 using UnityEngine.UIElements;
 
 namespace Ee4v.ProjectTabs.Tests
@@ -57,6 +61,40 @@ namespace Ee4v.ProjectTabs.Tests
             Assert.That(
                 session.State.Find(tabId).CanGoForward,
                 Is.True);
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "履歴一覧から複数ステップ移動できる",
+            "戻る・進むボタンの履歴一覧で選んだ場所へ直接移動できることを確認します。",
+            order: 25)]
+        public void History_CanMoveBySelectedStepCount()
+        {
+            var session = CreateSession();
+            var tabId = session.State.Tabs[0].Id;
+            session.RecordNavigation(tabId, Materials);
+            session.RecordNavigation(tabId, Prefabs);
+
+            Assert.That(session.GoBack(tabId, 2), Is.EqualTo(Assets));
+            Assert.That(session.GoForward(tabId, 2), Is.EqualTo(Prefabs));
+        }
+
+        [Test]
+        public void HistoryLabel_UsesLastPathSegment()
+        {
+            Assert.That(
+                ProjectTabsHost.FormatHistoryLabel(
+                    new ProjectTabLocation(
+                        "asset-manager-guid",
+                        "Assets/ee4v/Editor/AssetManager")),
+                Is.EqualTo("AssetManager"));
+            Assert.That(
+                ProjectTabsHost.FormatHistoryLabel(
+                    new ProjectTabLocation(
+                        "editor-guid",
+                        "Assets/ee4v/Editor",
+                        "toolbar")),
+                Is.EqualTo("Editor · toolbar"));
         }
 
         [Test]
@@ -153,6 +191,73 @@ namespace Ee4v.ProjectTabs.Tests
             Assert.That(scroll.contentContainer.childCount, Is.EqualTo(3));
             Assert.That(addButton, Is.Not.Null);
             Assert.That(addButton.text, Is.EqualTo("+"));
+        }
+
+        [UnityTest]
+        [FeatureTestCase(
+            "履歴ボタンの右クリックで履歴一覧を表示する",
+            "Project の戻るボタンを右クリックしたときに履歴メニューが開くことを確認します。",
+            order: 70,
+            category: FeatureTestCategory.Ui)]
+        public IEnumerator View_BackButtonContextClickShowsHistoryMenu()
+        {
+            var window = ScriptableObject.CreateInstance<EditorWindow>();
+            EditorWindow historyMenu = null;
+            window.position = new Rect(0f, 0f, 600f, 200f);
+            window.Show();
+
+            try
+            {
+                var view = new ProjectTabsView();
+                view.SetState(new ProjectTabsViewState(
+                    null,
+                    string.Empty,
+                    true,
+                    false,
+                    new[]
+                    {
+                        new ProjectHistoryEntryViewState("Assets", 1)
+                    }));
+                window.rootVisualElement.Add(view);
+                yield return null;
+
+                var backButton = view.Q<Button>(
+                    className: "ee4v-project-tabs__navigation-button");
+                Assert.That(backButton.tooltip, Is.Null.Or.Empty);
+                using (var evt = ContextClickEvent.GetPooled())
+                {
+                    backButton.SendEvent(evt);
+                }
+                yield return null;
+
+                var editorWindows =
+                    Resources.FindObjectsOfTypeAll<EditorWindow>();
+                for (var i = 0; i < editorWindows.Length; i++)
+                {
+                    if (editorWindows[i].GetType().Name ==
+                        "ContextMenuWindow")
+                    {
+                        historyMenu = editorWindows[i];
+                    }
+                }
+
+                Assert.That(historyMenu, Is.Not.Null);
+                var historyRow = historyMenu.rootVisualElement.Q<Button>(
+                    className: "ee4v-ui-context-menu__item");
+                Assert.That(historyRow, Is.Not.Null);
+                Assert.That(historyRow.contentRect.width, Is.GreaterThan(0f));
+                Assert.That(
+                    historyRow.Q<IMGUIContainer>(),
+                    Is.Not.Null);
+            }
+            finally
+            {
+                if (historyMenu != null)
+                {
+                    historyMenu.Close();
+                }
+                window.Close();
+            }
         }
 
         private static ProjectTabsSession CreateSession()

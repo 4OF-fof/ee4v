@@ -1,5 +1,11 @@
+using System.Collections;
 using Ee4v.Testing.Contracts;
+using Ee4v.UI;
 using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.TestTools;
+using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI.Tests
 {
@@ -111,7 +117,7 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
-        public void HistoryOverlay_DefaultsToFiveVisibleEntriesAndCanBeConfigured()
+        public void HistoryMenu_DefaultsToFiveVisibleEntriesAndCanBeConfigured()
         {
             var rows = new[]
             {
@@ -122,14 +128,86 @@ namespace Ee4v.AssetManager.UI.Tests
                 new HistoryNavigationOverlayRowState("5", () => { }),
                 new HistoryNavigationOverlayRowState("6", () => { })
             };
-            var overlay = new HistoryNavigationOverlay();
+            var defaultState = HistoryNavigationMenu.CreateState(rows);
+            Assert.That(defaultState.Items.Count, Is.EqualTo(5));
+            Assert.That(defaultState.Items[0].Label, Is.EqualTo("1"));
 
-            overlay.SetRows(rows);
-            Assert.That(overlay.childCount, Is.EqualTo(6));
+            var configuredState =
+                HistoryNavigationMenu.CreateState(rows, 2);
+            Assert.That(configuredState.Items.Count, Is.EqualTo(2));
+            Assert.That(configuredState.Items[1].Label, Is.EqualTo("2"));
+        }
 
-            overlay.SetMaximumVisibleRows(2);
-            overlay.SetRows(rows);
-            Assert.That(overlay.childCount, Is.EqualTo(3));
+        [UnityTest]
+        [FeatureTestCase(
+            "履歴ボタンの右クリックで履歴一覧を表示する",
+            "AssetManager の戻るボタンを右クリックしたときに履歴メニューが開くことを確認します。",
+            order: 440,
+            category: FeatureTestCategory.Ui)]
+        public IEnumerator HistoryNavigation_ContextClickShowsHistoryMenu()
+        {
+            var window = ScriptableObject.CreateInstance<EditorWindow>();
+            ContextMenuWindow historyMenu = null;
+            window.position = new Rect(0f, 0f, 600f, 200f);
+            window.Show();
+
+            try
+            {
+                var root = new VisualElement();
+                root.AddToClassList("ee4v-ui");
+                var navigation = new HistoryNavigation();
+                navigation.SetState(new AssetItemGridHistoryState(
+                    new AssetItemGridHistoryEntry(
+                        AssetItemGridHistoryEntryKind.View,
+                        "current",
+                        "Current"),
+                    true,
+                    false,
+                    new[]
+                    {
+                        new AssetItemGridHistoryEntry(
+                            AssetItemGridHistoryEntryKind.FileList,
+                            "previous",
+                            "Previous",
+                            "item-1",
+                            "Avatar")
+                    }));
+                root.Add(navigation);
+                window.rootVisualElement.Add(root);
+                yield return null;
+
+                var backButton = navigation.Q<Button>(
+                    className: "ee4v-ui-history-navigation__icon-button");
+                Assert.That(backButton.tooltip, Is.Null.Or.Empty);
+                using (var evt = ContextClickEvent.GetPooled())
+                {
+                    backButton.SendEvent(evt);
+                }
+                yield return null;
+
+                var menus =
+                    Resources.FindObjectsOfTypeAll<ContextMenuWindow>();
+                Assert.That(menus, Is.Not.Empty);
+                historyMenu = menus[menus.Length - 1];
+                var historyRow = historyMenu.rootVisualElement.Q<Button>(
+                    className: "ee4v-ui-context-menu__item");
+                Assert.That(historyRow, Is.Not.Null);
+                Assert.That(
+                    historyRow.Q<UiTextElement>().Text,
+                    Is.EqualTo("Avatar"));
+                Assert.That(historyRow.contentRect.width, Is.GreaterThan(0f));
+                Assert.That(
+                    historyRow.Q<IMGUIContainer>(),
+                    Is.Not.Null);
+            }
+            finally
+            {
+                if (historyMenu != null)
+                {
+                    historyMenu.Close();
+                }
+                window.Close();
+            }
         }
 
     }

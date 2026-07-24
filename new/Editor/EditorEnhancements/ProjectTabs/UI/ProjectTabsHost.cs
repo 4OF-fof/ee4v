@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Ee4v.UI;
 using UnityEditor;
@@ -32,6 +33,8 @@ namespace Ee4v.ProjectTabs
 
             _view.BackRequested += GoBack;
             _view.ForwardRequested += GoForward;
+            _view.BackHistoryRequested += GoBack;
+            _view.ForwardHistoryRequested += GoForward;
             _view.AddRequested += AddTab;
             _view.TabSelected += SelectTab;
             _view.TabCloseRequested += CloseTab;
@@ -111,6 +114,16 @@ namespace Ee4v.ProjectTabs
         private void GoForward()
         {
             Open(_session.GoForward(_selectedTabId));
+        }
+
+        private void GoBack(int steps)
+        {
+            Open(_session.GoBack(_selectedTabId, steps));
+        }
+
+        private void GoForward(int steps)
+        {
+            Open(_session.GoForward(_selectedTabId, steps));
         }
 
         private void TrackCurrentLocation()
@@ -196,7 +209,54 @@ namespace Ee4v.ProjectTabs
                 tabs,
                 _selectedTabId,
                 selected?.CanGoBack ?? false,
-                selected?.CanGoForward ?? false));
+                selected?.CanGoForward ?? false,
+                CreateHistoryEntries(selected, true),
+                CreateHistoryEntries(selected, false)));
+        }
+
+        private static ProjectHistoryEntryViewState[] CreateHistoryEntries(
+            ProjectTabState tab,
+            bool back)
+        {
+            if (tab == null)
+            {
+                return Array.Empty<ProjectHistoryEntryViewState>();
+            }
+
+            var start = back
+                ? tab.HistoryIndex - 1
+                : tab.HistoryIndex + 1;
+            var end = back ? -1 : tab.History.Count;
+            var direction = back ? -1 : 1;
+            var entries = new List<ProjectHistoryEntryViewState>();
+
+            for (var index = start; index != end; index += direction)
+            {
+                var location = tab.History[index];
+                var steps = Math.Abs(index - tab.HistoryIndex);
+                entries.Add(new ProjectHistoryEntryViewState(
+                    FormatHistoryLabel(location),
+                    steps));
+            }
+
+            return entries.ToArray();
+        }
+
+        internal static string FormatHistoryLabel(
+            ProjectTabLocation location)
+        {
+            if (location == null)
+            {
+                return string.Empty;
+            }
+
+            var displayName = string.IsNullOrWhiteSpace(
+                location.DisplayName)
+                ? "Assets"
+                : location.DisplayName;
+            return string.IsNullOrEmpty(location.SearchText)
+                ? displayName
+                : displayName + " · " + location.SearchText;
         }
 
         private void Dispose()
@@ -204,6 +264,8 @@ namespace Ee4v.ProjectTabs
             _session.Changed -= OnSessionChanged;
             _view.BackRequested -= GoBack;
             _view.ForwardRequested -= GoForward;
+            _view.BackHistoryRequested -= GoBack;
+            _view.ForwardHistoryRequested -= GoForward;
             _view.AddRequested -= AddTab;
             _view.TabSelected -= SelectTab;
             _view.TabCloseRequested -= CloseTab;

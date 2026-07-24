@@ -95,7 +95,7 @@ namespace Ee4v.UI
                 { UiClassNames.ContextMenuShortcut, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextMuted, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.ImageTooltipFileName, Create(false, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
                 { UiClassNames.HistoryNavigationBreadcrumbItemLabel, Create(false, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
-                { UiClassNames.HistoryNavigationOverlayRow, Create(false, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
+                { UiClassNames.HistoryNavigationOverlayRow, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.HistoryNavigationOverlaySeparator, Create(false, UiTypographyTokens.BodyFontSize, UiColorTokens.TextMuted, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
                 { UiClassNames.InfomationPanelSelectionCount, Create(true, UiTypographyTokens.TitleFontSize, UiColorTokens.Focus, TextAnchor.MiddleCenter, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
                 { UiClassNames.InfomationPanelSelectionCountSuffix, Create(false, UiTypographyTokens.LargeBodyFontSize, UiColorTokens.TextSoft, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
