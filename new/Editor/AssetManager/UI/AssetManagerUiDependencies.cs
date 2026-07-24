@@ -10,6 +10,7 @@ namespace Ee4v.AssetManager.UI
         private static IAssetArchiveReader _archiveReader;
         private static IAssetFileSystemReader _fileSystemReader;
         private static IAssetManagerUiScheduler _scheduler;
+        private static StandaloneAssetManagerViewSession _standaloneViewSession;
 
         internal static IAssetManager AssetManager
         {
@@ -41,18 +42,26 @@ namespace Ee4v.AssetManager.UI
             _scheduler ?? throw new InvalidOperationException(
                 "AssetManager UI scheduler has not been configured.");
 
+        internal static StandaloneAssetManagerViewSession StandaloneViewSession =>
+            _standaloneViewSession ?? throw new InvalidOperationException(
+                "AssetManager standalone view session has not been configured.");
+
         internal static void Configure(
             IAssetManager assetManager,
             IAssetManagerUiPreferences preferences,
             IAssetArchiveReader archiveReader,
             IAssetFileSystemReader fileSystemReader,
-            IAssetManagerUiScheduler scheduler)
+            IAssetManagerUiScheduler scheduler,
+            StandaloneAssetManagerViewSession standaloneViewSession)
         {
             _assetManager = assetManager ?? throw new ArgumentNullException(nameof(assetManager));
             _preferences = preferences ?? throw new ArgumentNullException(nameof(preferences));
             _archiveReader = archiveReader ?? throw new ArgumentNullException(nameof(archiveReader));
             _fileSystemReader = fileSystemReader ?? throw new ArgumentNullException(nameof(fileSystemReader));
             _scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
+            _standaloneViewSession = standaloneViewSession ??
+                                     throw new ArgumentNullException(
+                                         nameof(standaloneViewSession));
         }
     }
 }

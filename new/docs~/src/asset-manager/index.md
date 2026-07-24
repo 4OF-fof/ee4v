@@ -78,7 +78,7 @@ setting の定義と登録は Composition が所有します。Infrastructure �
 - `MainViewController` は `MainViewHost` ごとに生成し、その表示セッションの navigation、履歴、grid 列数、取得済み一覧 cache、非同期 load と cancellation を所有する。統合 window と単独 window の controller instance は共有しない
 - `MainView` は AssetManager 固有の UI controller として、検索文字列、一覧・詳細 mode、選択中 item などの画面状態を持ち、Core UI component へ描画 state を渡す
 - `MainViewHost` は `MainToolbar`、`NavigationPanel`、`MainView` と controller の event 配線だけを担当する。toolbar と navigation panel は入力を通知し、渡された値を描画するだけで、設定や他 component を直接操作しない
-- `InfomationPanel` は統合 window から渡された選択 state を描画し、詳細表示要求を通知する。単独 window と選択 state を共有しない
+- `InfomationPanel` は渡された選択 state を描画し、詳細表示要求を通知する。統合 window は同じ layout 内で直接配線し、単独 Main View / Infomation window は Composition が生成する揮発性の standalone view session を介して選択 state と詳細 tab 要求だけを共有する。standalone session は現在値を保持するため、Infomation window を後から開いた場合も現在の選択を復元する
 - Core の `ItemGrid` / `ItemImage` は渡された state の描画と UI Toolkit 固有の layout・resource 処理に限定する。AssetManager の cache key、履歴、設定値は保持しない
 - grid 列数の実効値は controller ごとに独立した表示セッション state とする。user setting は新しい `MainViewHost` を生成するときのデフォルト値としてだけ読み取り、開いている他 window の実効値や slider へは反映しない
 

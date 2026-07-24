@@ -16,6 +16,7 @@ namespace Ee4v.AssetManager.UI
         private MainView _mainView;
         private MainViewHost _mainViewHost;
         private FileTreeDetailState _pendingFileDetailState;
+        private StandaloneAssetManagerViewSession _standaloneViewSession;
 
         [MenuItem("ee4v/Asset Manager/Main View", false, 3)]
         private static void ShowWindow()
@@ -50,6 +51,7 @@ namespace Ee4v.AssetManager.UI
         private void OnDisable()
         {
             BackgroundStatusOverlayApi.ReleaseHost(this);
+            UnbindStandaloneSession();
             _mainViewHost?.Dispose();
             _mainViewHost = null;
             _mainView = null;
@@ -78,9 +80,19 @@ namespace Ee4v.AssetManager.UI
             var body = new VisualElement();
             body.AddToClassList(BodyClassName);
 
+            UnbindStandaloneSession();
             _mainViewHost?.Dispose();
             _mainViewHost = new MainViewHost();
             _mainView = _mainViewHost.MainView;
+            _standaloneViewSession =
+                AssetManagerUiDependencies.StandaloneViewSession;
+            _mainView.SelectionChanged +=
+                _standaloneViewSession.SetSelection;
+            _mainView.DetailTabRequested +=
+                _standaloneViewSession.RequestDetailTab;
+            _standaloneViewSession.SetSelection(
+                null,
+                AssetSelectionContentKind.AssetItem);
             var toolbar = _mainViewHost.Toolbar;
             _mainView.AddToClassList(ContentClassName);
 
@@ -103,6 +115,20 @@ namespace Ee4v.AssetManager.UI
             var state = _pendingFileDetailState;
             _pendingFileDetailState = null;
             _mainView.ShowFileDetail(state);
+        }
+
+        private void UnbindStandaloneSession()
+        {
+            if (_mainView == null || _standaloneViewSession == null)
+            {
+                return;
+            }
+
+            _mainView.SelectionChanged -=
+                _standaloneViewSession.SetSelection;
+            _mainView.DetailTabRequested -=
+                _standaloneViewSession.RequestDetailTab;
+            _standaloneViewSession = null;
         }
     }
 }

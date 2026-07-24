@@ -1,8 +1,10 @@
 using System.Collections;
 using NUnit.Framework;
+using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.TestTools;
+using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI.Tests
 {
@@ -59,6 +61,64 @@ namespace Ee4v.AssetManager.UI.Tests
                 second?.Dispose();
                 third?.Dispose();
                 window.Close();
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator StandaloneInfomationWindowRestoresAndFollowsSelectionSession()
+        {
+            var session = AssetManagerUiDependencies.StandaloneViewSession;
+            var selectedItem = new ItemCardState(
+                "item-1",
+                "Selected Item",
+                new ItemImageState());
+            InfomationWindow window = null;
+            session.SetSelection(
+                new[] { selectedItem },
+                AssetSelectionContentKind.AssetItem);
+            session.RequestDetailTab("asset-info");
+
+            try
+            {
+                window = ScriptableObject.CreateInstance<InfomationWindow>();
+                window.Show();
+                yield return null;
+                yield return null;
+
+                var panel = window.rootVisualElement.Q<InfomationPanel>();
+                Assert.That(panel, Is.Not.Null);
+                Assert.That(panel.SelectedItems.Count, Is.EqualTo(1));
+                Assert.That(panel.SelectedItems[0].ItemId, Is.EqualTo("item-1"));
+                Assert.That(
+                    panel.SelectionContentKind,
+                    Is.EqualTo(AssetSelectionContentKind.AssetItem));
+                Assert.That(panel.SelectedDetailTabId, Is.EqualTo("asset-info"));
+
+                session.SetSelection(
+                    new[]
+                    {
+                        new ItemCardState(
+                            "file-1",
+                            "Selected File",
+                            new ItemImageState(),
+                            null,
+                            "item-1")
+                    },
+                    AssetSelectionContentKind.AssetFile);
+                yield return null;
+
+                Assert.That(panel.SelectedItems.Count, Is.EqualTo(1));
+                Assert.That(panel.SelectedItems[0].ItemId, Is.EqualTo("file-1"));
+                Assert.That(
+                    panel.SelectionContentKind,
+                    Is.EqualTo(AssetSelectionContentKind.AssetFile));
+            }
+            finally
+            {
+                session.SetSelection(
+                    null,
+                    AssetSelectionContentKind.AssetItem);
+                window?.Close();
             }
         }
 

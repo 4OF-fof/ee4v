@@ -78,6 +78,15 @@ namespace Ee4v.AssetManager.UI
 
         public event Action<FileTreeDetailState> FileDetailRequested;
 
+        internal IReadOnlyList<ItemCardState> SelectedItems =>
+            _selectedItems ?? Array.Empty<ItemCardState>();
+
+        internal AssetSelectionContentKind SelectionContentKind =>
+            _selectionContentKind;
+
+        internal string SelectedDetailTabId =>
+            _selectedDetailTabId;
+
         internal void SetSelectedAssetItems(
             IReadOnlyList<ItemCardState> items,
             AssetSelectionContentKind contentKind)
