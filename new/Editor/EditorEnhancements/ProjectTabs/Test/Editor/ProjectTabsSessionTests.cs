@@ -225,16 +225,21 @@ namespace Ee4v.ProjectTabs.Tests
 
         [Test]
         [FeatureTestCase(
-            "最後の通常タブを閉じると Home タブだけが残る",
-            "Project タブ領域を空にせず、解除・削除不能な Assets の Home タブが残ることを確認します。",
+            "最後の通常タブを閉じても Home を再生成しない",
+            "新しいAssets tabを作らず、既存の解除・削除不能なHomeだけがそのまま残ることを確認します。",
             order: 50)]
         public void Remove_LastRegularTab_PreservesHomeTab()
         {
-            var session = CreateSession();
-            var tabId = GetFirstRegularTabId(session);
+            var nextId = 0;
+            var session = new ProjectTabsSession(
+                new MemoryStore(),
+                Assets,
+                () => "tab-" + nextId++);
+            var tabId = session.Add(Assets);
             session.RecordNavigation(tabId, Materials);
 
             Assert.That(session.Remove(tabId), Is.True);
+            Assert.That(nextId, Is.EqualTo(1));
             Assert.That(session.State.Tabs.Count, Is.EqualTo(1));
             Assert.That(
                 session.State.Tabs[0].Id,
@@ -487,6 +492,10 @@ namespace Ee4v.ProjectTabs.Tests
                     .ClassListContains(
                         "ee4v-project-tabs__tab--home"),
                 Is.True);
+            Assert.That(
+                scroll.contentContainer[0].Q<Button>(
+                    className: "ee4v-project-tabs__close"),
+                Is.Null);
             var pinnedTab = scroll.contentContainer[2];
             var pinIcon = pinnedTab.Q<VisualElement>(
                 className: "ee4v-project-tabs__pin-icon");

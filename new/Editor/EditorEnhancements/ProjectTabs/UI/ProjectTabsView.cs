@@ -392,18 +392,20 @@ namespace Ee4v.ProjectTabs
                 tab.Add(title);
             }
 
-            var closeButton = new Button(
-                () => TabCloseRequested?.Invoke(state.Id));
-            closeButton.tooltip = I18N.Get("toolbar.close.tooltip");
-            closeButton.AddToClassList(CloseButtonClassName);
-            closeButton.style.display = state.CanClose
-                ? DisplayStyle.Flex
-                : DisplayStyle.None;
-            closeButton.Add(new Icon(
-                IconState.FromBuiltinIcon(
-                    UiBuiltinIcon.Close,
-                    UiSizeTokens.Size12)));
-            tab.Add(closeButton);
+            Button closeButton = null;
+            if (state.CanClose)
+            {
+                closeButton = new Button(
+                    () => TabCloseRequested?.Invoke(state.Id));
+                closeButton.tooltip = I18N.Get(
+                    "toolbar.close.tooltip");
+                closeButton.AddToClassList(CloseButtonClassName);
+                closeButton.Add(new Icon(
+                    IconState.FromBuiltinIcon(
+                        UiBuiltinIcon.Close,
+                        UiSizeTokens.Size12)));
+                tab.Add(closeButton);
+            }
 
             tab.RegisterCallback<ClickEvent>(evt =>
             {

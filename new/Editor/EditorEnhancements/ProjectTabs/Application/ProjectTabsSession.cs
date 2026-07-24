@@ -70,20 +70,15 @@ namespace Ee4v.ProjectTabs
         {
             var currentIndex = FindIndex(tabId);
             if (currentIndex < 0 ||
-                targetIndex < 0 ||
-                targetIndex >= _tabs.Count)
+                targetIndex < 1 ||
+                targetIndex >= _tabs.Count ||
+                currentIndex == targetIndex)
             {
                 return false;
             }
 
             var tab = _tabs[currentIndex];
             if (tab.IsHome)
-            {
-                return false;
-            }
-
-            if (targetIndex < 1 ||
-                currentIndex == targetIndex)
             {
                 return false;
             }
@@ -121,11 +116,14 @@ namespace Ee4v.ProjectTabs
                 return false;
             }
 
-            var currentLocation =
-                tab.CurrentLocation ?? _defaultLocation;
-            tab.History.Clear();
-            tab.History.Add(currentLocation);
-            tab.HistoryIndex = 0;
+            if (isPinned)
+            {
+                var currentLocation = tab.CurrentLocation;
+                tab.History.Clear();
+                tab.History.Add(currentLocation);
+                tab.HistoryIndex = 0;
+            }
+
             tab.IsPinned = isPinned;
 
             PersistAndNotify();

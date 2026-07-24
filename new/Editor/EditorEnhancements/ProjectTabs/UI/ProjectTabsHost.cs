@@ -96,25 +96,26 @@ namespace Ee4v.ProjectTabs
                 }
             }
 
-            if (index < 0)
+            if (index <= 0)
             {
                 return;
             }
 
-            if (string.Equals(
-                    _selectedTabId,
-                    tabId,
-                    StringComparison.Ordinal) &&
-                state.Tabs.Count > 1)
+            var wasSelected = string.Equals(
+                _selectedTabId,
+                tabId,
+                StringComparison.Ordinal);
+            ProjectTabLocation replacementLocation = null;
+            if (wasSelected)
             {
-                var replacementIndex = index > 0 ? index - 1 : 1;
-                _selectedTabId = state.Tabs[replacementIndex].Id;
+                var replacement = state.Tabs[index - 1];
+                _selectedTabId = replacement.Id;
+                replacementLocation = replacement.CurrentLocation;
             }
 
-            if (_session.Remove(tabId))
+            if (_session.Remove(tabId) && wasSelected)
             {
-                var selected = _session.State.Find(_selectedTabId);
-                Open(selected?.CurrentLocation);
+                Open(replacementLocation);
             }
         }
 
@@ -224,7 +225,9 @@ namespace Ee4v.ProjectTabs
             var state = _session.State;
             if (state.Find(_selectedTabId) == null)
             {
-                _selectedTabId = state.Tabs.First().Id;
+                var home = state.Tabs[0];
+                _selectedTabId = home.Id;
+                Open(home.CurrentLocation);
             }
 
             Refresh();
