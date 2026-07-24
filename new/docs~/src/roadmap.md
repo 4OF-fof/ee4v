@@ -49,8 +49,8 @@ phase 1 は `old` のリファクタや段階移植ではなく、`new` の再�
 - [ ] ComponentVisualizer
     - [ ] Hierarchy上でGameObjectにアタッチされたComponentのアイコンを表示する機能を実装する
     - [ ] アイコンクリック時に該当ComponentのInspectorを別ウィンドウで表示する機能を実装する
-- [ ] DepthIndicator
-    - [ ] Hierarchy上でGameObjectの階層の深さを示すインジケーターを表示する機能を実装する
+- [x] DepthIndicator
+    - [x] Hierarchy上でGameObjectの階層の深さを示すインジケーターを表示する機能を実装する
 - [ ] HiddenObject
     - [ ] Hierarchyから特定のGameObjectを非表示にする機能を実装する
     - [ ] 非表示のGameObjectを管理するUIを提供し、復元を可能にする
@@ -66,5 +66,5 @@ phase 1 は `old` のリファクタや段階移植ではなく、`new` の再�
     - [ ] CoreのEditorAPIを利用して現在位置を追跡し、履歴管理を実装する
 - [ ] FolderStyle
     - [ ] Projectのアイテムのアイコンや背景色を変更できる機能を実装する
-- [ ] ContentOverlay
-    - [ ] Folderのアイコンに重ねてフォルダ内に存在するアイテムの種類を示すアイコンを表示する機能を実装する
+- [x] ContentOverlay
+    - [x] Folderのアイコンに重ねてフォルダ内に存在するアイテムの種類を示すアイコンを表示する機能を実装する

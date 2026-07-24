@@ -1,0 +1,11 @@
+{
+  "settings": {
+    "section": {
+      "project": "Project Window Enhancements"
+    },
+    "enabled": {
+      "label": "Show folder content overlay",
+      "tooltip": "Overlay the most common direct-child asset type icon on folders in the Project window."
+    }
+  }
+}

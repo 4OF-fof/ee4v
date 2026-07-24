@@ -1,0 +1,11 @@
+{
+  "settings": {
+    "section": {
+      "hierarchy": "Hierarchy Enhancements"
+    },
+    "enabled": {
+      "label": "Show hierarchy depth indicator",
+      "tooltip": "Draw branch guides that make parent-child relationships easier to follow in the Hierarchy."
+    }
+  }
+}

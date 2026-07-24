@@ -1,0 +1,21 @@
+{
+  "name": "Ee4v.DepthIndicator.Editor",
+  "rootNamespace": "Ee4v.DepthIndicator",
+  "references": [
+    "Ee4v.Core.Contracts.Editor",
+    "Ee4v.Core.Editor",
+    "Ee4v.Core.Presentation.Editor",
+    "Ee4v.Core.Unity.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
