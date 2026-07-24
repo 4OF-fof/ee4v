@@ -60,10 +60,10 @@ phase 1 は `old` のリファクタや段階移植ではなく、`new` の再�
 - [ ] StyledObject
     - [ ] `:div`や`:header`などの特定の名前を持つGameObjectを特別なスタイルで表示する機能を実装する
 
-- [ ] ProjectTab
-    - [ ] ProjectToolbarにタブを追加する機能を実装する
-    - [ ] タブごとに履歴を管理し、進む・戻るができるようにする
-    - [ ] CoreのEditorAPIを利用して現在位置を追跡し、履歴管理を実装する
+- [x] ProjectTab
+    - [x] ProjectToolbarにタブを追加する機能を実装する
+    - [x] タブごとに履歴を管理し、進む・戻るができるようにする
+    - [x] CoreのEditorAPIを利用して現在位置を追跡し、履歴管理を実装する
 - [ ] FolderStyle
     - [ ] Projectのアイテムのアイコンや背景色を変更できる機能を実装する
 - [x] ContentOverlay

@@ -53,6 +53,7 @@ filesystem、Editor lifecycle、UI Toolkitは外側の `Infrastructure`、`Unity
 | `DepthIndicator` | Hierarchyの親子関係を示す分岐ガイドを所有する小規模Module |
 | `FolderContentOverlay` | Project folder直下の主要asset種別を示すoverlayを所有する小規模Module |
 | `HiddenObjects` | HierarchyのScene見出しから非表示objectを検索・選択し、Undo対応で再表示する管理機能を所有する小規模Module |
+| `ProjectTabs` | Project windowのfolder tab、tab別navigation history、現在位置追跡を所有する小規模Module |
 | `Core` | Settings、Localization、Injector、background activity、Unity internal facadeと、それらをEditor UIへ接続するPresentation |
 | `UI` | feature非依存のUI Toolkit component、state、resource。Catalogは開発支援用の別assembly |
 | `Testing` | test metadata、descriptor構築、Unity Test Runner adapter、静的監査、Test List UIを所有する独立Module |
@@ -111,6 +112,7 @@ LocalizationとTestも各Moduleの配下へ配置します。
 | `Editor/EditorEnhancements/DepthIndicator` | `Ee4v.DepthIndicator` / `Ee4v.DepthIndicator.Editor` | Hierarchyの親子関係を示す分岐ガイド |
 | `Editor/EditorEnhancements/FolderContentOverlay` | `Ee4v.FolderContentOverlay` / `Ee4v.FolderContentOverlay.Editor` | Project folder直下の主要asset種別を示すoverlay |
 | `Editor/EditorEnhancements/HiddenObjects` | `Ee4v.HiddenObjects` / `Ee4v.HiddenObjects.Editor` | `HideInHierarchy` objectの管理画面とScene見出しの入口 |
+| `Editor/EditorEnhancements/ProjectTabs` | `Ee4v.ProjectTabs` / `Ee4v.ProjectTabs.Editor` | Project windowのfolder tabとtab別navigation history |
 
 各Moduleは兄弟Moduleを参照せず、それぞれが `Core.Injector` を利用して描画callbackを
 登録します。描画中にfilesystem走査やreflectionを行わず、
@@ -124,6 +126,12 @@ Applicationのcontrollerとtree builderはinstance IDとsnapshotだけを扱い�
 `HideInHierarchy` だけを解除し、active stateやtagは変更しません。Scene名とobject名の
 除外patternはModule所有のUser settingとして保持し、既定ではNDMFのpreview Sceneと
 activator objectを一覧から除外します。
+
+`ProjectTabs` はtabごとに最大50件のfolder navigation historyを保持し、検索文字列の
+変更は現在の履歴entryへ統合します。tab一覧と履歴は `UserSettings` に保存し、
+Project windowごとの選択tabはwindow sessionだけで保持します。現在位置の読取と
+folder表示・検索復元は `Core.Internal.EditorAPI.ProjectBrowser` facadeを介し、
+対象のProject windowを明示して複数window間の誤操作を防ぎます。
 
 `Ee4v.Core.Settings`、`Ee4v.Core.I18n`、`Ee4v.Core.Injector` のpresentation実装は
 namespaceを機能境界として維持しつつ、物理配置とassemblyは

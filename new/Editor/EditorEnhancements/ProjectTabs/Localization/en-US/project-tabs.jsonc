@@ -1,0 +1,24 @@
+{
+  "settings": {
+    "section": {
+      "project": "Project"
+    },
+    "enabled": {
+      "label": "Project tabs",
+      "tooltip": "Show tabs in the Project window, each with its own navigation history."
+    }
+  },
+  "toolbar": {
+    "history": {
+      "back": "Go back",
+      "forward": "Go forward"
+    },
+    "add": {
+      "tooltip": "Open the current location in a new tab"
+    },
+    "close": {
+      "tooltip": "Close tab",
+      "menu": "Close Tab"
+    }
+  }
+}

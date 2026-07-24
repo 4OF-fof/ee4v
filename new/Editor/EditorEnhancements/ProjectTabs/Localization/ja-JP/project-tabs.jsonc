@@ -1,0 +1,24 @@
+{
+  "settings": {
+    "section": {
+      "project": "Project"
+    },
+    "enabled": {
+      "label": "Project タブ",
+      "tooltip": "Project ウィンドウに、履歴を個別に保持するタブを表示します。"
+    }
+  },
+  "toolbar": {
+    "history": {
+      "back": "前の場所へ戻る",
+      "forward": "次の場所へ進む"
+    },
+    "add": {
+      "tooltip": "現在の場所を新しいタブで開く"
+    },
+    "close": {
+      "tooltip": "タブを閉じる",
+      "menu": "タブを閉じる"
+    }
+  }
+}

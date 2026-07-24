@@ -17,6 +17,7 @@
     --ee4v-color-surface-subtle: rgba(255, 255, 255, 0.025);
     --ee4v-color-surface-soft: rgba(255, 255, 255, 0.035);
     --ee4v-color-surface-hover: rgba(255, 255, 255, 0.05);
+    --ee4v-color-surface-hover-opaque: #424242;
     --ee4v-color-surface-hover-strong: rgba(255, 255, 255, 0.08);
     --ee4v-color-surface-pressed: rgba(255, 255, 255, 0.13);
     --ee4v-color-border-subtle: rgba(255, 255, 255, 0.06);
@@ -30,6 +31,7 @@
     --ee4v-color-text-on-state: #F9F9F9;
     --ee4v-color-control-highlight: #F9F9F9;
     --ee4v-color-selection-soft: rgba(44, 93, 135, 0.42);
+    --ee4v-color-selection-soft-opaque: #334859;
     --ee4v-color-selection-pressed: #254F73;
     --ee4v-color-overlay-border: rgba(0, 0, 0, 0.45);
     --ee4v-color-scroll-thumb: rgba(194, 194, 194, 0.44);

@@ -54,27 +54,63 @@ namespace Ee4v.Core.Internal.EditorAPI
     {
         public static bool TryGetSnapshot(out ProjectBrowserSnapshot snapshot)
         {
-            return ProjectBrowserBackend.TryGetSnapshot(null, out snapshot);
+            return ProjectBrowserBackend.TryGetSnapshot(null, null, out snapshot);
         }
 
         public static bool TryShowFolder(string folderGuid, bool reveal = false)
         {
-            return ProjectBrowserBackend.TryShowFolder(folderGuid, reveal);
+            return ProjectBrowserBackend.TryShowFolder(null, folderGuid, reveal);
         }
 
         public static bool TrySetSearch(string searchText)
         {
-            return ProjectBrowserBackend.TrySetSearch(searchText);
+            return ProjectBrowserBackend.TrySetSearch(null, searchText);
         }
 
         public static bool TryClearSearch()
         {
-            return ProjectBrowserBackend.TryClearSearch();
+            return ProjectBrowserBackend.TryClearSearch(null);
+        }
+
+        internal static bool TryGetSnapshot(
+            EditorWindow window,
+            out ProjectBrowserSnapshot snapshot)
+        {
+            return ProjectBrowserBackend.TryGetSnapshot(
+                window,
+                null,
+                out snapshot);
+        }
+
+        internal static bool TryShowFolder(
+            EditorWindow window,
+            string folderGuid,
+            bool reveal = false)
+        {
+            return ProjectBrowserBackend.TryShowFolder(
+                window,
+                folderGuid,
+                reveal);
+        }
+
+        internal static bool TrySetSearch(
+            EditorWindow window,
+            string searchText)
+        {
+            return ProjectBrowserBackend.TrySetSearch(window, searchText);
+        }
+
+        internal static bool TryClearSearch(EditorWindow window)
+        {
+            return ProjectBrowserBackend.TryClearSearch(window);
         }
 
         internal static bool TryGetSnapshot(Rect selectionRect, out ProjectBrowserSnapshot snapshot)
         {
-            return ProjectBrowserBackend.TryGetSnapshot(selectionRect, out snapshot);
+            return ProjectBrowserBackend.TryGetSnapshot(
+                null,
+                selectionRect,
+                out snapshot);
         }
 
         internal static bool TryGetOpenWindows(

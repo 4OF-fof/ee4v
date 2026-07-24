@@ -1,0 +1,196 @@
+.ee4v-project-tabs {
+    flex-grow: 1;
+    min-width: 0;
+    height: var(--ee4v-size-20);
+    flex-direction: row;
+    align-items: center;
+}
+
+.ee4v-project-tabs__navigation {
+    height: var(--ee4v-size-20);
+    flex-direction: row;
+    align-items: center;
+    position: relative;
+    top: var(--ee4v-space-none);
+    margin-right: var(--ee4v-space-xxs);
+}
+
+.ee4v-project-tabs__navigation-button,
+.ee4v-project-tabs__add,
+.ee4v-project-tabs__close {
+    min-width: 0;
+    min-height: 0;
+    height: var(--ee4v-size-20);
+    margin-left: var(--ee4v-space-none);
+    margin-right: var(--ee4v-space-none);
+    margin-top: var(--ee4v-space-none);
+    margin-bottom: var(--ee4v-space-none);
+    padding-left: var(--ee4v-space-none);
+    padding-right: var(--ee4v-space-none);
+    padding-top: var(--ee4v-space-none);
+    padding-bottom: var(--ee4v-space-none);
+    border-top-width: var(--ee4v-space-none);
+    border-right-width: var(--ee4v-space-none);
+    border-bottom-width: var(--ee4v-space-none);
+    border-left-width: var(--ee4v-space-none);
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-project-tabs__navigation-button {
+    width: var(--ee4v-size-16);
+    height: var(--ee4v-size-18);
+    align-items: center;
+    justify-content: center;
+    border-top-left-radius: var(--ee4v-radius-xs);
+    border-top-right-radius: var(--ee4v-radius-xs);
+    border-bottom-left-radius: var(--ee4v-radius-xs);
+    border-bottom-right-radius: var(--ee4v-radius-xs);
+    font-size: var(--ee4v-font-size-subtitle);
+    color: var(--ee4v-color-text-secondary);
+    opacity: 0.72;
+}
+
+.ee4v-project-tabs__navigation-label {
+    width: var(--ee4v-size-16);
+    height: var(--ee4v-size-18);
+    color: var(--ee4v-color-text-secondary);
+    -unity-text-align: middle-center;
+}
+
+.ee4v-project-tabs__navigation-button:hover,
+.ee4v-project-tabs__add:hover,
+.ee4v-project-tabs__close:hover {
+    background-color: var(--ee4v-color-surface-hover);
+    opacity: 1;
+}
+
+.ee4v-project-tabs__navigation-button:disabled {
+    opacity: 0.35;
+}
+
+.ee4v-project-tabs__scroll {
+    flex-grow: 1;
+    min-width: 0;
+    height: var(--ee4v-size-20);
+    position: relative;
+    top: var(--ee4v-size-1);
+}
+
+.ee4v-project-tabs__scroll > .unity-scroll-view__content-and-vertical-scroll-container,
+.ee4v-project-tabs__scroll .unity-scroll-view__content-container {
+    height: var(--ee4v-size-20);
+}
+
+.ee4v-project-tabs__strip {
+    flex-direction: row;
+    align-items: center;
+}
+
+.ee4v-project-tabs__tab {
+    position: relative;
+    height: var(--ee4v-size-18);
+    min-width: var(--ee4v-size-24);
+    max-width: 140px;
+    flex-direction: row;
+    align-items: center;
+    padding-left: var(--ee4v-space-sm);
+    padding-right: var(--ee4v-space-xxs);
+    padding-top: var(--ee4v-size-1);
+    margin-right: var(--ee4v-space-xxs);
+    border-top-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-emphasis);
+    border-left-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
+    border-bottom-color: var(--ee4v-color-border-default);
+    border-left-color: var(--ee4v-color-border-default);
+    border-top-left-radius: var(--ee4v-radius-xs);
+    border-top-right-radius: var(--ee4v-radius-xs);
+    border-bottom-left-radius: var(--ee4v-radius-xs);
+    border-bottom-right-radius: var(--ee4v-radius-xs);
+    background-color: var(--ee4v-color-surface-subtle);
+    overflow: hidden;
+    transition-property: background-color, border-bottom-color;
+    transition-duration: 0.1s;
+    transition-timing-function: ease-out;
+}
+
+.ee4v-project-tabs__tab:hover {
+    background-color: var(--ee4v-color-surface-hover-opaque);
+}
+
+.ee4v-project-tabs__tab--selected,
+.ee4v-project-tabs__tab--selected:hover {
+    background-color: var(--ee4v-color-selection-soft-opaque);
+    border-top-color: var(--ee4v-color-border-active);
+    border-right-color: var(--ee4v-color-border-active);
+    border-bottom-color: var(--ee4v-color-focus);
+    border-left-color: var(--ee4v-color-border-active);
+}
+
+.ee4v-project-tabs__tab-title {
+    height: var(--ee4v-size-18);
+    min-width: 0;
+    flex-grow: 1;
+    overflow: hidden;
+    color: var(--ee4v-color-text-primary);
+    -unity-text-align: middle-left;
+}
+
+.ee4v-project-tabs__tab--selected .ee4v-project-tabs__tab-title {
+    padding-right: var(--ee4v-size-16);
+}
+
+.ee4v-project-tabs__close {
+    position: absolute;
+    right: var(--ee4v-space-xxs);
+    top: var(--ee4v-size-1);
+    width: var(--ee4v-size-14);
+    height: var(--ee4v-size-14);
+    margin-left: var(--ee4v-space-none);
+    margin-right: var(--ee4v-space-none);
+    color: var(--ee4v-color-text-muted);
+    border-top-left-radius: var(--ee4v-radius-xs);
+    border-top-right-radius: var(--ee4v-radius-xs);
+    border-bottom-left-radius: var(--ee4v-radius-xs);
+    border-bottom-right-radius: var(--ee4v-radius-xs);
+    opacity: 0;
+    flex-shrink: 0;
+}
+
+.ee4v-project-tabs__tab:hover .ee4v-project-tabs__close {
+    background-color: var(--ee4v-color-surface-hover-opaque);
+    opacity: 1;
+}
+
+.ee4v-project-tabs__tab--selected .ee4v-project-tabs__close,
+.ee4v-project-tabs__tab--selected:hover .ee4v-project-tabs__close {
+    background-color: var(--ee4v-color-selection-soft-opaque);
+    opacity: 1;
+}
+
+.ee4v-project-tabs__tab:hover .ee4v-project-tabs__close:hover,
+.ee4v-project-tabs__tab--selected .ee4v-project-tabs__close:hover {
+    background-color: var(--ee4v-color-error);
+    opacity: 1;
+}
+
+.ee4v-project-tabs__add {
+    width: var(--ee4v-size-18);
+    height: var(--ee4v-size-18);
+    margin-left: var(--ee4v-space-xxs);
+    margin-right: var(--ee4v-space-xs);
+    border-top-left-radius: var(--ee4v-radius-xs);
+    border-top-right-radius: var(--ee4v-radius-xs);
+    border-bottom-left-radius: var(--ee4v-radius-xs);
+    border-bottom-right-radius: var(--ee4v-radius-xs);
+    font-size: var(--ee4v-font-size-subtitle);
+    color: var(--ee4v-color-text-secondary);
+    opacity: 0.72;
+    flex-shrink: 0;
+}
+
+.ee4v-project-tabs__add:hover {
+    opacity: 1;
+}

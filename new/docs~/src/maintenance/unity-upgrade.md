@@ -41,6 +41,21 @@ Unity の内部 API はバージョンによって利用できる API や挙動�
 
 `InternalEditorAPI` は、テストによって利用可能な API が検証されており、利用できない API は例外を投げるのではなく失敗を返す。Unity のバージョン更新時はテストの実行結果を参照し、利用できなくなった API があった場合は実装を更新する。
 
+### ProjectBrowser navigation
+
+`ProjectTabs` とProject item contextは
+`Editor/Core/Internal/EditorAPI/ProjectBrowser.cs` のfacadeを利用します。backendは
+`UnityEditor.ProjectBrowser`、`ShowFolderContents(int, bool)`、
+`SetSearch(string)`、`ClearSearch()` と、SerializedObject上の
+`m_SearchFilter.m_Folders`、`m_SearchFilter.m_NameFilter`、`m_LastFolders`、
+`m_ViewMode`、`m_ListAreaGridSize` に依存します。
+
+Project tabからの操作では対象 `EditorWindow` を明示し、指定windowが
+ProjectBrowserでない場合はfallbackせず失敗を返します。Unity更新時はfolder移動、
+検索の復元と解除、one/two column表示、複数のProject windowを開いた状態で操作対象が
+混線しないことを確認します。private memberが変更された場合もfeature側へreflectionを
+追加せず、backendとfacadeのfallbackを更新します。
+
 ### ContextMenuWindow popup chrome
 
 `ContextMenuWindow` の native popup は矩形であり、Unity 2022.3 では透明化や OS の window region だけで滑らかな角丸を安定して作れない。このため表示直前に `EditorPopupWindow.TryReadScreenPixels` で popup 背面を取得し、UI root の背景へ一時 texture として設定する。USS の角丸外側には実際の背面が描かれるため、選択色など通常と異なる背景でも境界が一致する。右クリックによって TreeView の選択が変わる場合は、選択背景が画面へ反映される次フレームまで popup 表示を遅延させてから取得する。screen read は `Editor/Core/Internal/EditorAPI/Backends/EditorPopupWindowBackend.cs` に閉じ、取得できない場合は透明背景へ fallback する。

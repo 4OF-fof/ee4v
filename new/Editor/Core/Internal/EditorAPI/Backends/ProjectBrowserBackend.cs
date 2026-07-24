@@ -29,11 +29,14 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
             Type.EmptyTypes,
             null);
 
-        public static bool TryGetSnapshot(Rect? selectionRect, out ProjectBrowserSnapshot snapshot)
+        public static bool TryGetSnapshot(
+            EditorWindow targetWindow,
+            Rect? selectionRect,
+            out ProjectBrowserSnapshot snapshot)
         {
             snapshot = null;
 
-            var window = ResolveTargetWindow();
+            var window = ResolveTargetWindow(targetWindow);
             if (window == null)
             {
                 return false;
@@ -69,14 +72,17 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
             }
         }
 
-        public static bool TryShowFolder(string folderGuid, bool reveal)
+        public static bool TryShowFolder(
+            EditorWindow targetWindow,
+            string folderGuid,
+            bool reveal)
         {
             if (string.IsNullOrWhiteSpace(folderGuid) || ShowFolderContentsMethod == null)
             {
                 return false;
             }
 
-            var window = ResolveTargetWindow();
+            var window = ResolveTargetWindow(targetWindow);
             if (window == null)
             {
                 return false;
@@ -105,14 +111,16 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
             }
         }
 
-        public static bool TrySetSearch(string searchText)
+        public static bool TrySetSearch(
+            EditorWindow targetWindow,
+            string searchText)
         {
             if (searchText == null || SetSearchMethod == null)
             {
                 return false;
             }
 
-            var window = ResolveTargetWindow();
+            var window = ResolveTargetWindow(targetWindow);
             if (window == null)
             {
                 return false;
@@ -129,9 +137,9 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
             }
         }
 
-        public static bool TryClearSearch()
+        public static bool TryClearSearch(EditorWindow targetWindow)
         {
-            var window = ResolveTargetWindow();
+            var window = ResolveTargetWindow(targetWindow);
             if (window == null)
             {
                 return false;
@@ -175,8 +183,16 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
             return true;
         }
 
-        private static EditorWindow ResolveTargetWindow()
+        private static EditorWindow ResolveTargetWindow(
+            EditorWindow preferredWindow = null)
         {
+            if (preferredWindow != null)
+            {
+                return IsProjectBrowser(preferredWindow)
+                    ? preferredWindow
+                    : null;
+            }
+
             if (IsProjectBrowser(EditorWindow.focusedWindow))
             {
                 return EditorWindow.focusedWindow;
