@@ -1,11 +1,22 @@
 {
   "settings": {
     "section": {
-      "hierarchy": "Hierarchy"
+      "hierarchy": "Hierarchy",
+      "exclusions": "非表示オブジェクトの除外"
     },
     "hierarchyButton": {
       "label": "非表示オブジェクトボタン",
       "tooltip": "Hierarchy の各 Scene 見出しに非表示オブジェクト管理ボタンを表示します。"
+    },
+    "exclusions": {
+      "scenes": {
+        "label": "除外する Scene",
+        "tooltip": "ウィンドウに表示しない Scene 名パターンを1行ずつ入力します。* と ? を使用できます。"
+      },
+      "objects": {
+        "label": "除外する object",
+        "tooltip": "ウィンドウに表示しない object 名パターンを1行ずつ入力します。一致した object の子階層も除外され、* と ? を使用できます。"
+      }
     }
   },
   "hierarchyButton": {
@@ -13,7 +24,6 @@
   },
   "window": {
     "title": "非表示オブジェクト",
-    "heading": "非表示オブジェクト",
     "summary": "非表示 {0} 件 · 表示中 {1} 件 · 選択 {2} 件",
     "search": {
       "placeholder": "非表示オブジェクトを検索",
@@ -23,22 +33,21 @@
     "scene": {
       "all": "すべての Scene",
       "tooltip": "Scene で絞り込み",
-      "duplicateFormat": "{0} ({1})"
+      "duplicateFormat": "{0} ({1})",
+      "hiddenCount": "非表示 {0} 件"
     },
     "action": {
       "refresh": "更新",
       "refreshTooltip": "読み込み済みの Scene を再スキャンします",
-      "selectAllVisible": "表示中を選択",
+      "selectAllVisible": "すべて選択",
       "clearSelection": "選択を解除",
       "revealSelected": "Hierarchy に表示"
     },
     "empty": {
+      "noHiddenTitle": "非表示オブジェクトはありません",
       "noHidden": "読み込み済みの Scene に非表示オブジェクトはありません。",
+      "noMatchesTitle": "一致するオブジェクトはありません",
       "noMatches": "現在の絞り込み条件に一致する非表示オブジェクトはありません。"
-    },
-    "tree": {
-      "expandTooltip": "展開",
-      "collapseTooltip": "折りたたむ"
     },
     "notification": {
       "revealed": "{0} 件のオブジェクトを Hierarchy に戻しました。"

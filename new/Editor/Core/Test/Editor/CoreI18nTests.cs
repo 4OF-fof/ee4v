@@ -125,5 +125,39 @@ namespace Ee4v.Core.Tests
             Assert.That(root.childCount, Is.GreaterThan(0));
             Assert.That(root.Query<IMGUIContainer>().ToList(), Is.Empty);
         }
+
+        [Test]
+        [FeatureTestCase(
+            "設定画面は内容を縮めずスクロールできる",
+            "設定項目が増えても行を圧縮せず、共通の縦スクロール領域内へ配置されることを確認します。",
+            order: 5)]
+        public void SettingsUiRenderer_BuildScope_UsesNonShrinkingScrollableContent()
+        {
+            Ee4vCoreTestReset.RecoverEditorState();
+            var root = new VisualElement();
+
+            SettingsUiRenderer.BuildScope(
+                root,
+                CoreSettings.Current,
+                SettingScope.User,
+                string.Empty);
+
+            Assert.That(root.childCount, Is.EqualTo(1));
+            var scrollView = root[0] as ScrollView;
+            Assert.That(scrollView, Is.Not.Null);
+            Assert.That(scrollView.mode, Is.EqualTo(ScrollViewMode.Vertical));
+            Assert.That(scrollView.contentContainer.childCount, Is.GreaterThan(0));
+
+            foreach (var section in scrollView.contentContainer.Children())
+            {
+                Assert.That(section, Is.TypeOf<Foldout>());
+                Assert.That(section.style.flexShrink.value, Is.EqualTo(0f));
+
+                foreach (var row in section.Children())
+                {
+                    Assert.That(row.style.flexShrink.value, Is.EqualTo(0f));
+                }
+            }
+        }
     }
 }

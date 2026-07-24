@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Ee4v.Core.I18n;
+using Ee4v.UI;
 using UnityEngine.UIElements;
 
 namespace Ee4v.Core.Settings
@@ -28,10 +29,20 @@ namespace Ee4v.Core.Settings
             }
 
             root.Clear();
-            root.style.paddingLeft = 8f;
-            root.style.paddingRight = 8f;
-            root.style.paddingTop = 8f;
-            root.style.paddingBottom = 8f;
+            root.style.flexGrow = 1f;
+            root.style.minHeight = 0f;
+
+            var scrollView = new ScrollView(ScrollViewMode.Vertical);
+            scrollView.style.flexGrow = 1f;
+            scrollView.style.minHeight = 0f;
+            scrollView.verticalScrollerVisibility = ScrollerVisibility.Auto;
+
+            var content = scrollView.contentContainer;
+            content.style.paddingLeft = UiSpacingTokens.Medium;
+            content.style.paddingRight = UiSpacingTokens.Medium;
+            content.style.paddingTop = UiSpacingTokens.Medium;
+            content.style.paddingBottom = UiSpacingTokens.Medium;
+            root.Add(scrollView);
 
             var grouped = settings.GetDefinitions(scope)
                 .GroupBy(GetGroupKey)
@@ -55,14 +66,15 @@ namespace Ee4v.Core.Settings
                         firstDefinition.LocalizationScope),
                     value = true
                 };
-                section.style.marginBottom = 8f;
+                section.style.flexShrink = 0f;
+                section.style.marginBottom = UiSpacingTokens.Medium;
 
                 foreach (var definition in visibleDefinitions)
                 {
                     section.Add(CreateDefinition(settings, definition, searchContext));
                 }
 
-                root.Add(section);
+                content.Add(section);
             }
         }
 
@@ -81,11 +93,12 @@ namespace Ee4v.Core.Settings
             }
 
             var row = new VisualElement();
-            row.style.marginTop = 2f;
-            row.style.marginBottom = 2f;
+            row.style.flexShrink = 0f;
+            row.style.marginTop = UiSpacingTokens.Xxs;
+            row.style.marginBottom = UiSpacingTokens.Xxs;
 
             var errorBox = new HelpBox(string.Empty, HelpBoxMessageType.Error);
-            errorBox.style.marginTop = 2f;
+            errorBox.style.marginTop = UiSpacingTokens.Xxs;
 
             var field = SettingDrawerRegistry.Create(
                 definition,

@@ -1,11 +1,22 @@
 {
   "settings": {
     "section": {
-      "hierarchy": "Hierarchy"
+      "hierarchy": "Hierarchy",
+      "exclusions": "Hidden Object Exclusions"
     },
     "hierarchyButton": {
       "label": "Hidden Objects button",
       "tooltip": "Shows a Hidden Objects button on each Scene header in the Hierarchy."
+    },
+    "exclusions": {
+      "scenes": {
+        "label": "Excluded Scenes",
+        "tooltip": "Enter one Scene name pattern per line. Matching Scenes are omitted from the window. * and ? wildcards are supported."
+      },
+      "objects": {
+        "label": "Excluded objects",
+        "tooltip": "Enter one object name pattern per line. Matching objects and their descendants are omitted. * and ? wildcards are supported."
+      }
     }
   },
   "hierarchyButton": {
@@ -13,7 +24,6 @@
   },
   "window": {
     "title": "Hidden Objects",
-    "heading": "Hidden Objects",
     "summary": "{0} hidden · {1} shown · {2} selected",
     "search": {
       "placeholder": "Search hidden objects",
@@ -23,22 +33,21 @@
     "scene": {
       "all": "All Scenes",
       "tooltip": "Filter by Scene",
-      "duplicateFormat": "{0} ({1})"
+      "duplicateFormat": "{0} ({1})",
+      "hiddenCount": "{0} hidden"
     },
     "action": {
       "refresh": "Refresh",
       "refreshTooltip": "Scan all loaded Scenes again",
-      "selectAllVisible": "Select shown",
+      "selectAllVisible": "Select all",
       "clearSelection": "Clear selection",
       "revealSelected": "Show in Hierarchy"
     },
     "empty": {
+      "noHiddenTitle": "No hidden objects",
       "noHidden": "No hidden objects were found in the loaded Scenes.",
+      "noMatchesTitle": "No matching objects",
       "noMatches": "No hidden objects match the current filters."
-    },
-    "tree": {
-      "expandTooltip": "Expand",
-      "collapseTooltip": "Collapse"
     },
     "notification": {
       "revealed": "Restored {0} object(s) to the Hierarchy."

@@ -34,7 +34,11 @@ namespace Ee4v.HiddenObjects
             FeatureBootstrapContract.Initialize(
                 "HiddenObjects",
                 typeof(HiddenObjectsDefinitions),
-                () => HiddenObjectsDefinitions.RegisterAll(settings),
+                () =>
+                {
+                    HiddenObjectsDefinitions.RegisterAll(settings);
+                    HiddenObjectsSettingDrawers.Register();
+                },
                 () => _registration = InjectorApi.Register(
                     new ItemInjectionRegistration(
                         "editor-enhancements.hidden-objects",
@@ -48,6 +52,20 @@ namespace Ee4v.HiddenObjects
             settings.Changed += OnSettingChanged;
         }
 
+        internal static HiddenObjectsController CreateController()
+        {
+            EnsureInitialized();
+            return new HiddenObjectsController(
+                new UnityHiddenObjectRepository(),
+                new UnityHiddenObjectNavigator(),
+                new SettingsHiddenObjectExclusionSource(_settings));
+        }
+
+        internal static UnityHiddenObjectIconProvider CreateIconProvider()
+        {
+            return new UnityHiddenObjectIconProvider();
+        }
+
         private static void OnSettingChanged(
             object sender,
             SettingChangedEventArgs args)
@@ -57,6 +75,16 @@ namespace Ee4v.HiddenObjects
                     HiddenObjectsDefinitions.HierarchyButtonEnabled))
             {
                 InjectorApi.Repaint(InjectionChannel.HierarchyItem);
+            }
+
+            if (ReferenceEquals(
+                    args.Definition,
+                    HiddenObjectsDefinitions.ExcludedScenePatterns) ||
+                ReferenceEquals(
+                    args.Definition,
+                    HiddenObjectsDefinitions.ExcludedObjectPatterns))
+            {
+                HiddenObjectsWindow.RefreshAll();
             }
         }
 

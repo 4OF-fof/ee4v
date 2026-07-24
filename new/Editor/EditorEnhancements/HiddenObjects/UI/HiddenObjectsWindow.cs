@@ -5,7 +5,6 @@ using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace Ee4v.HiddenObjects
 {
@@ -17,27 +16,29 @@ namespace Ee4v.HiddenObjects
         private const float MinimumWidth = 420f;
         private const float MinimumHeight = 280f;
 
-        private readonly HashSet<int> _collapsedInstanceIds =
-            new HashSet<int>();
-        private readonly Dictionary<string, int> _sceneHandleByLabel =
-            new Dictionary<string, int>(StringComparer.Ordinal);
         private HiddenObjectsController _controller;
-        private SearchField _searchField;
-        private PopupField<string> _scenePopup;
-        private UiTextElement _summaryText;
-        private VisualElement _treeHost;
-        private Button _selectAllButton;
-        private Button _clearSelectionButton;
-        private Button _revealButton;
+        private UnityHiddenObjectIconProvider _iconProvider;
+        private HiddenObjectsView _view;
 
         internal static void OpenForScene(int sceneHandle)
         {
             var window = GetWindow<HiddenObjectsWindow>();
-            window.EnsureController();
+            window.EnsureDependencies();
             window._controller.Refresh();
             window._controller.SetSceneFilter(sceneHandle);
             window.Show();
             window.Focus();
+        }
+
+        internal static void RefreshAll()
+        {
+            var windows =
+                Resources.FindObjectsOfTypeAll<HiddenObjectsWindow>();
+            for (var i = 0; i < windows.Length; i++)
+            {
+                windows[i]._controller?.Refresh();
+                windows[i].Repaint();
+            }
         }
 
         private void OnEnable()
@@ -45,7 +46,7 @@ namespace Ee4v.HiddenObjects
             titleContent = new GUIContent(
                 I18N.Get("window.title"));
             minSize = new Vector2(MinimumWidth, MinimumHeight);
-            EnsureController();
+            EnsureDependencies();
             _controller.StateChanged += RenderState;
             EditorApplication.hierarchyChanged +=
                 OnHierarchyChanged;
@@ -74,21 +75,24 @@ namespace Ee4v.HiddenObjects
 
         private void CreateGUI()
         {
-            EnsureController();
+            EnsureDependencies();
             BuildWindow();
             RenderState(_controller.State);
         }
 
-        private void EnsureController()
+        private void EnsureDependencies()
         {
-            if (_controller != null)
+            if (_controller == null)
             {
-                return;
+                _controller =
+                    HiddenObjectsBootstrap.CreateController();
             }
 
-            _controller = new HiddenObjectsController(
-                new UnityHiddenObjectRepository(),
-                new UnityHiddenObjectNavigator());
+            if (_iconProvider == null)
+            {
+                _iconProvider =
+                    HiddenObjectsBootstrap.CreateIconProvider();
+            }
         }
 
         private void BuildWindow()
@@ -113,317 +117,136 @@ namespace Ee4v.HiddenObjects
                 root,
                 "Editor/EditorEnhancements/HiddenObjects/UI/hidden-objects-window.uss");
 
-            var header = new VisualElement();
-            header.AddToClassList(
-                "ee4v-hidden-objects-window__header");
-
-            var title = UiTextFactory.Create(
-                I18N.Get("window.heading"),
-                "ee4v-hidden-objects-window__title",
-                UiClassNames.WindowTitle);
-            _summaryText = UiTextFactory.Create(
-                string.Empty,
-                "ee4v-hidden-objects-window__summary",
-                UiClassNames.SecondaryText);
-            header.Add(title);
-            header.Add(_summaryText);
-
-            var filters = new VisualElement();
-            filters.AddToClassList(
-                "ee4v-hidden-objects-window__filters");
-            _searchField = new SearchField(
-                new SearchFieldState(
-                    _controller.State.Query,
-                    I18N.Get("window.search.placeholder"),
-                    I18N.Get("window.search.tooltip"),
-                    I18N.Get("window.search.clearTooltip")));
-            _searchField.AddToClassList(
-                "ee4v-hidden-objects-window__search");
-            _searchField.ValueChanged += _controller.SetQuery;
-
-            _scenePopup = new PopupField<string>(
-                new List<string>
-                {
-                    I18N.Get("window.scene.all")
-                },
-                0);
-            _scenePopup.tooltip =
-                I18N.Get("window.scene.tooltip");
-            _scenePopup.AddToClassList(
-                "ee4v-hidden-objects-window__scene-filter");
-            _scenePopup.RegisterValueChangedCallback(
-                OnSceneFilterChanged);
-
-            var refreshButton = new Button(
-                _controller.Refresh)
-            {
-                text = I18N.Get("window.action.refresh"),
-                tooltip = I18N.Get(
-                    "window.action.refreshTooltip")
-            };
-            refreshButton.AddToClassList(
-                "ee4v-hidden-objects-window__refresh");
-
-            filters.Add(_searchField);
-            filters.Add(_scenePopup);
-            filters.Add(refreshButton);
-
-            var scrollView = new ScrollView();
-            scrollView.AddToClassList(
-                "ee4v-hidden-objects-window__scroll");
-            _treeHost = new VisualElement();
-            _treeHost.AddToClassList(
-                "ee4v-hidden-objects-window__tree");
-            scrollView.Add(_treeHost);
-
-            var actions = new VisualElement();
-            actions.AddToClassList(
-                "ee4v-hidden-objects-window__actions");
-            _selectAllButton = new Button(
-                _controller.SelectAllVisible)
-            {
-                text = I18N.Get(
-                    "window.action.selectAllVisible")
-            };
-            _clearSelectionButton = new Button(
-                _controller.ClearSelection)
-            {
-                text = I18N.Get(
-                    "window.action.clearSelection")
-            };
-            _revealButton = new Button(RevealSelected)
-            {
-                text = I18N.Get(
-                    "window.action.revealSelected")
-            };
-            _revealButton.AddToClassList(
-                "ee4v-hidden-objects-window__primary-action");
-
-            actions.Add(_selectAllButton);
-            actions.Add(_clearSelectionButton);
-            actions.Add(_revealButton);
-
-            root.Add(header);
-            root.Add(filters);
-            root.Add(scrollView);
-            root.Add(actions);
+            _view = new HiddenObjectsView(CreateViewText());
+            _view.QueryChanged += _controller.SetQuery;
+            _view.SceneChanged += _controller.SetSceneFilter;
+            _view.RefreshRequested += _controller.Refresh;
+            _view.SelectionChanged += _controller.SetSelected;
+            _view.FocusRequested += _controller.Focus;
+            _view.SelectAllRequested +=
+                _controller.SelectAllVisible;
+            _view.ClearSelectionRequested +=
+                _controller.ClearSelection;
+            _view.RevealRequested += RevealSelected;
+            root.Add(_view);
         }
 
         private void RenderState(HiddenObjectsState state)
         {
-            if (state == null || _treeHost == null)
+            if (state == null || _view == null)
             {
                 return;
             }
 
+            _view.SetState(CreateViewState(state));
+        }
+
+        private HiddenObjectsViewText CreateViewText()
+        {
+            var text = new HiddenObjectsViewText(
+                I18N.Get("window.search.placeholder"),
+                I18N.Get("window.search.tooltip"),
+                I18N.Get("window.search.clearTooltip"),
+                I18N.Get("window.scene.tooltip"),
+                I18N.Get("window.action.refresh"),
+                I18N.Get("window.action.refreshTooltip"),
+                I18N.Get("window.action.selectAllVisible"),
+                I18N.Get("window.action.clearSelection"),
+                I18N.Get("window.action.revealSelected"));
+            return text;
+        }
+
+        private HiddenObjectsViewState CreateViewState(
+            HiddenObjectsState state)
+        {
             var selectedIds = new HashSet<int>(
                 state.SelectedInstanceIds);
-            _summaryText.SetText(I18N.Get(
-                "window.summary",
-                state.TotalHiddenCount,
+            var groups = state.SceneGroups
+                .Select(group => CreateSceneGroupState(
+                    group,
+                    selectedIds))
+                .ToArray();
+            var sceneOptions = CreateSceneOptions(state);
+            var hasHiddenObjects = state.TotalHiddenCount > 0;
+            var emptyTitle = hasHiddenObjects
+                ? I18N.Get("window.empty.noMatchesTitle")
+                : I18N.Get("window.empty.noHiddenTitle");
+            var emptyMessage = hasHiddenObjects
+                ? I18N.Get("window.empty.noMatches")
+                : I18N.Get("window.empty.noHidden");
+
+            return new HiddenObjectsViewState(
+                groups,
+                sceneOptions,
+                state.SelectedSceneHandle,
+                state.Query,
+                I18N.Get(
+                    "window.summary",
+                    state.TotalHiddenCount,
+                    state.VisibleHiddenCount,
+                    selectedIds.Count),
+                emptyTitle,
+                emptyMessage,
                 state.VisibleHiddenCount,
-                selectedIds.Count));
-            UpdateSceneChoices(state);
-
-            _treeHost.Clear();
-            if (state.SceneGroups.Count == 0)
-            {
-                var emptyText = state.TotalHiddenCount == 0
-                    ? I18N.Get("window.empty.noHidden")
-                    : I18N.Get("window.empty.noMatches");
-                _treeHost.Add(UiTextFactory.Create(
-                    emptyText,
-                    "ee4v-hidden-objects-window__empty",
-                    UiClassNames.SecondaryText));
-            }
-            else
-            {
-                for (var groupIndex = 0;
-                     groupIndex < state.SceneGroups.Count;
-                     groupIndex++)
-                {
-                    RenderSceneGroup(
-                        state.SceneGroups[groupIndex],
-                        selectedIds,
-                        !string.IsNullOrWhiteSpace(state.Query));
-                }
-            }
-
-            _selectAllButton.SetEnabled(
-                state.VisibleHiddenCount > 0);
-            _clearSelectionButton.SetEnabled(
-                selectedIds.Count > 0);
-            _revealButton.SetEnabled(selectedIds.Count > 0);
+                selectedIds.Count);
         }
 
-        private void RenderSceneGroup(
+        private HiddenObjectSceneGroupViewState CreateSceneGroupState(
             HiddenObjectSceneGroup group,
-            ISet<int> selectedIds,
-            bool expandForSearch)
+            ISet<int> selectedIds)
         {
-            var sceneContainer = new VisualElement();
-            sceneContainer.AddToClassList(
-                "ee4v-hidden-objects-window__scene");
-            sceneContainer.Add(
-                UiTextFactory.Create(
-                    group.SceneName,
-                    "ee4v-hidden-objects-window__scene-name",
-                    UiClassNames.SectionTitle));
-
-            for (var rootIndex = 0;
-                 rootIndex < group.Roots.Count;
-                 rootIndex++)
-            {
-                RenderNode(
-                    sceneContainer,
-                    group.Roots[rootIndex],
-                    0,
-                    selectedIds,
-                    expandForSearch);
-            }
-
-            _treeHost.Add(sceneContainer);
+            var roots = group.Roots
+                .Select(node => CreateNodeState(node, selectedIds))
+                .ToArray();
+            var hiddenCount = CountHiddenNodes(group.Roots);
+            return new HiddenObjectSceneGroupViewState(
+                group.SceneHandle,
+                group.SceneName,
+                I18N.Get(
+                    "window.scene.hiddenCount",
+                    hiddenCount),
+                roots);
         }
 
-        private void RenderNode(
-            VisualElement parent,
+        private HiddenObjectNodeViewState CreateNodeState(
             HiddenObjectTreeNode node,
-            int depth,
-            ISet<int> selectedIds,
-            bool expandForSearch)
+            ISet<int> selectedIds)
         {
-            var hasChildren = node.Children.Count > 0;
-            var isExpanded = expandForSearch ||
-                !_collapsedInstanceIds.Contains(node.InstanceId);
-            var row = new VisualElement();
-            row.AddToClassList(
-                "ee4v-hidden-objects-window__row");
-            if (!node.IsHidden)
-            {
-                row.AddToClassList(
-                    "ee4v-hidden-objects-window__row--ancestor");
-            }
-
-            row.style.paddingLeft =
-                UiSpacingTokens.Xs +
-                depth * UiSizeTokens.Size14;
-
-            var disclosure = new Button();
-            disclosure.AddToClassList(
-                "ee4v-hidden-objects-window__disclosure");
-            if (hasChildren)
-            {
-                disclosure.Add(new Icon(
-                    IconState.FromBuiltinIcon(
-                        isExpanded
-                            ? UiBuiltinIcon.DisclosureOpen
-                            : UiBuiltinIcon.DisclosureClosed,
-                        UiSizeTokens.Size10,
-                        isExpanded
-                            ? I18N.Get(
-                                "window.tree.collapseTooltip")
-                            : I18N.Get(
-                                "window.tree.expandTooltip"))));
-                disclosure.clicked += () =>
-                {
-                    if (!_collapsedInstanceIds.Add(
-                            node.InstanceId))
-                    {
-                        _collapsedInstanceIds.Remove(
-                            node.InstanceId);
-                    }
-
-                    RenderState(_controller.State);
-                };
-            }
-            else
-            {
-                disclosure.SetEnabled(false);
-            }
-
-            row.Add(disclosure);
-
-            if (node.IsHidden)
-            {
-                var toggle = new Toggle();
-                toggle.AddToClassList(
-                    "ee4v-hidden-objects-window__selection");
-                toggle.SetValueWithoutNotify(
-                    selectedIds.Contains(node.InstanceId));
-                toggle.RegisterValueChangedCallback(
-                    evt => _controller.SetSelected(
-                        node.InstanceId,
-                        evt.newValue));
-                row.Add(toggle);
-            }
-            else
-            {
-                var selectionSpacer = new VisualElement();
-                selectionSpacer.AddToClassList(
-                    "ee4v-hidden-objects-window__selection-spacer");
-                row.Add(selectionSpacer);
-            }
-
-            var target = EditorUtility.InstanceIDToObject(
-                node.InstanceId);
-            var texture = target != null
-                ? AssetPreview.GetMiniThumbnail(target)
-                : null;
+            var texture = _iconProvider.Load(node.InstanceId);
             var icon = texture != null
-                ? new Icon(IconState.FromTexture(
+                ? IconState.FromTexture(
                     texture,
-                    UiSizeTokens.Size16))
-                : new Icon(IconState.FromBuiltinIcon(
+                    UiSizeTokens.Size16)
+                : IconState.FromBuiltinIcon(
                     UiBuiltinIcon.GenericFile,
-                    UiSizeTokens.Size16));
-            icon.AddToClassList(
-                "ee4v-hidden-objects-window__object-icon");
-            row.Add(icon);
+                    UiSizeTokens.Size16);
+            var children = node.Children
+                .Select(child => CreateNodeState(
+                    child,
+                    selectedIds))
+                .ToArray();
 
-            var name = UiTextFactory.Create(
+            return new HiddenObjectNodeViewState(
+                node.InstanceId,
                 node.Name,
-                "ee4v-hidden-objects-window__object-name");
-            if (!node.IsHidden)
-            {
-                name.SetColor(UiColorTokens.TextMuted);
-            }
-
-            row.Add(name);
-            row.RegisterCallback<ClickEvent>(
-                evt =>
-                {
-                    if (evt.target != disclosure)
-                    {
-                        _controller.Focus(node.InstanceId);
-                    }
-                });
-            parent.Add(row);
-
-            if (!hasChildren || !isExpanded)
-            {
-                return;
-            }
-
-            for (var childIndex = 0;
-                 childIndex < node.Children.Count;
-                 childIndex++)
-            {
-                RenderNode(
-                    parent,
-                    node.Children[childIndex],
-                    depth + 1,
-                    selectedIds,
-                    expandForSearch);
-            }
+                node.IsHidden,
+                selectedIds.Contains(node.InstanceId),
+                icon,
+                children);
         }
 
-        private void UpdateSceneChoices(HiddenObjectsState state)
+        private static IReadOnlyList<HiddenObjectSceneOptionViewState>
+            CreateSceneOptions(HiddenObjectsState state)
         {
-            _sceneHandleByLabel.Clear();
             var allScenesLabel =
                 I18N.Get("window.scene.all");
-            _sceneHandleByLabel[allScenesLabel] = 0;
-
+            var options =
+                new List<HiddenObjectSceneOptionViewState>
+                {
+                    new HiddenObjectSceneOptionViewState(
+                        0,
+                        allScenesLabel)
+                };
             var duplicateNames = new HashSet<string>(
                 state.SceneOptions
                     .GroupBy(
@@ -432,15 +255,8 @@ namespace Ee4v.HiddenObjects
                     .Where(group => group.Count() > 1)
                     .Select(group => group.Key),
                 StringComparer.Ordinal);
-            var choices = new List<string>
-            {
-                allScenesLabel
-            };
-            var selectedLabel = allScenesLabel;
 
-            for (var i = 0;
-                 i < state.SceneOptions.Count;
-                 i++)
+            for (var i = 0; i < state.SceneOptions.Count; i++)
             {
                 var option = state.SceneOptions[i];
                 var label = duplicateNames.Contains(option.Label)
@@ -449,29 +265,30 @@ namespace Ee4v.HiddenObjects
                         option.Label,
                         option.SceneHandle)
                     : option.Label;
-                choices.Add(label);
-                _sceneHandleByLabel[label] =
-                    option.SceneHandle;
-                if (option.SceneHandle ==
-                    state.SelectedSceneHandle)
-                {
-                    selectedLabel = label;
-                }
+                options.Add(
+                    new HiddenObjectSceneOptionViewState(
+                        option.SceneHandle,
+                        label));
             }
 
-            _scenePopup.choices = choices;
-            _scenePopup.SetValueWithoutNotify(selectedLabel);
+            return options;
         }
 
-        private void OnSceneFilterChanged(
-            ChangeEvent<string> evt)
+        private static int CountHiddenNodes(
+            IReadOnlyList<HiddenObjectTreeNode> nodes)
         {
-            if (_sceneHandleByLabel.TryGetValue(
-                    evt.newValue,
-                    out var sceneHandle))
+            var count = 0;
+            for (var i = 0; i < nodes.Count; i++)
             {
-                _controller.SetSceneFilter(sceneHandle);
+                if (nodes[i].IsHidden)
+                {
+                    count++;
+                }
+
+                count += CountHiddenNodes(nodes[i].Children);
             }
+
+            return count;
         }
 
         private void RevealSelected()

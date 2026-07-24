@@ -8,6 +8,7 @@ namespace Ee4v.HiddenObjects
     {
         private readonly IHiddenObjectRepository _repository;
         private readonly IHiddenObjectNavigator _navigator;
+        private readonly IHiddenObjectExclusionSource _exclusionSource;
         private readonly HashSet<int> _selectedInstanceIds =
             new HashSet<int>();
         private IReadOnlyList<HiddenObjectSnapshotItem> _snapshot =
@@ -17,12 +18,14 @@ namespace Ee4v.HiddenObjects
 
         public HiddenObjectsController(
             IHiddenObjectRepository repository,
-            IHiddenObjectNavigator navigator)
+            IHiddenObjectNavigator navigator,
+            IHiddenObjectExclusionSource exclusionSource = null)
         {
             _repository = repository ??
                 throw new ArgumentNullException(nameof(repository));
             _navigator = navigator ??
                 throw new ArgumentNullException(nameof(navigator));
+            _exclusionSource = exclusionSource;
             State = CreateState();
         }
 
@@ -32,8 +35,14 @@ namespace Ee4v.HiddenObjects
 
         public void Refresh()
         {
-            _snapshot = _repository.Load() ??
+            var loaded = _repository.Load() ??
                 Array.Empty<HiddenObjectSnapshotItem>();
+            var exclusions = _exclusionSource != null
+                ? _exclusionSource.Load()
+                : HiddenObjectExclusionRules.None;
+            _snapshot = HiddenObjectExclusionPolicy.Apply(
+                loaded,
+                exclusions);
             var hiddenIds = new HashSet<int>(
                 _snapshot
                     .Where(item => item.IsHidden)

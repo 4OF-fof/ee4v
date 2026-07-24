@@ -121,7 +121,9 @@ iconを優先します。
 
 `HiddenObjects` はScene走査と `HideFlags` / Undo操作をUnity adapterへ閉じ込め、
 Applicationのcontrollerとtree builderはinstance IDとsnapshotだけを扱います。復帰時は
-`HideInHierarchy` だけを解除し、active stateやtagは変更しません。
+`HideInHierarchy` だけを解除し、active stateやtagは変更しません。Scene名とobject名の
+除外patternはModule所有のUser settingとして保持し、既定ではNDMFのpreview Sceneと
+activator objectを一覧から除外します。
 
 `Ee4v.Core.Settings`、`Ee4v.Core.I18n`、`Ee4v.Core.Injector` のpresentation実装は
 namespaceを機能境界として維持しつつ、物理配置とassemblyは

@@ -26,8 +26,8 @@ namespace Ee4v.HiddenObjects.Tests
                 0,
                 string.Empty);
 
-            Assert.That(groups, Has.Count.EqualTo(1));
-            Assert.That(groups[0].Roots, Has.Count.EqualTo(1));
+            Assert.That(groups.Count, Is.EqualTo(1));
+            Assert.That(groups[0].Roots.Count, Is.EqualTo(1));
             Assert.That(groups[0].Roots[0].Name, Is.EqualTo("Root"));
             Assert.That(
                 groups[0].Roots[0].Children.Select(node => node.Name),
@@ -54,7 +54,9 @@ namespace Ee4v.HiddenObjects.Tests
                 "camera");
 
             Assert.That(groups[0].Roots[0].Name, Is.EqualTo("Root"));
-            Assert.That(groups[0].Roots[0].Children, Has.Count.EqualTo(1));
+            Assert.That(
+                groups[0].Roots[0].Children.Count,
+                Is.EqualTo(1));
             Assert.That(
                 groups[0].Roots[0].Children[0].Name,
                 Is.EqualTo("Camera Secret"));
@@ -78,7 +80,7 @@ namespace Ee4v.HiddenObjects.Tests
                 20,
                 string.Empty);
 
-            Assert.That(groups, Has.Count.EqualTo(1));
+            Assert.That(groups.Count, Is.EqualTo(1));
             Assert.That(groups[0].SceneName, Is.EqualTo("Scene B"));
             Assert.That(groups[0].Roots[0].Name, Is.EqualTo("Hidden B"));
         }
