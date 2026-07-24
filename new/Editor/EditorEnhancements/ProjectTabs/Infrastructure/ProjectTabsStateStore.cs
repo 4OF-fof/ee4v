@@ -30,17 +30,19 @@ namespace Ee4v.ProjectTabs
                                 location.folderPath,
                                 location.searchText))
                             .ToArray(),
-                        tab.historyIndex))
+                        tab.historyIndex,
+                        tab.isPinned))
                     .ToArray());
         }
 
         public void Save(ProjectTabsState state)
         {
             _tabs = (state?.Tabs ?? Array.Empty<ProjectTabState>())
-                .Where(tab => tab != null)
+                .Where(tab => tab != null && !tab.IsHome)
                 .Select(tab => new SerializedTab
                 {
                     id = tab.Id,
+                    isPinned = tab.IsPinned,
                     historyIndex = tab.HistoryIndex,
                     history = tab.History
                         .Where(location => location != null)
@@ -60,6 +62,7 @@ namespace Ee4v.ProjectTabs
         private sealed class SerializedTab
         {
             public string id;
+            public bool isPinned;
             public List<SerializedLocation> history =
                 new List<SerializedLocation>();
             public int historyIndex;

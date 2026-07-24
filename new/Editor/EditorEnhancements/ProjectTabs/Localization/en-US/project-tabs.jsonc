@@ -13,16 +13,13 @@
       "tooltip": "Open the current location in a new tab"
     },
     "close": {
-      "tooltip": "Close tab",
-      "menu": "Close Tab"
+      "tooltip": "Close tab"
     },
-    "move": {
-      "left": {
-        "menu": "Move Tab Left"
-      },
-      "right": {
-        "menu": "Move Tab Right"
-      }
+    "pin": {
+      "tooltip": "Pinned tab"
+    },
+    "home": {
+      "tooltip": "Open Assets"
     }
   }
 }

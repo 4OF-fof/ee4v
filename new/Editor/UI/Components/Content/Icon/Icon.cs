@@ -16,6 +16,8 @@ namespace Ee4v.UI
         Filter,
         Sort,
         Close,
+        Pin,
+        Home,
         DisclosureClosed,
         DisclosureOpen,
         GenericFile,
@@ -87,6 +89,26 @@ namespace Ee4v.UI
                         "d_CrossIcon",
                         "winbtn_win_close",
                         "d_winbtn_win_close"
+                    };
+                case UiBuiltinIcon.Pin:
+                    return new[]
+                    {
+                        "Pinned",
+                        "d_Pinned",
+                        "Favorite",
+                        "d_Favorite",
+                        "Favorite Icon",
+                        "d_Favorite Icon"
+                    };
+                case UiBuiltinIcon.Home:
+                    return new[]
+                    {
+                        "HomeButton",
+                        "d_HomeButton",
+                        "Home",
+                        "d_Home",
+                        "Folder Icon",
+                        "d_Folder Icon"
                     };
                 case UiBuiltinIcon.DisclosureClosed:
                     return new[]

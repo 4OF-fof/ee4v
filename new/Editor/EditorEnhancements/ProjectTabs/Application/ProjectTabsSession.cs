@@ -6,6 +6,8 @@ namespace Ee4v.ProjectTabs
 {
     internal sealed class ProjectTabsSession
     {
+        internal const string HomeTabId =
+            "__ee4v_project_tabs_home__";
         private const int MaximumHistoryEntries = 50;
         private readonly IProjectTabsStateStore _store;
         private readonly Func<string> _idFactory;
@@ -69,13 +71,23 @@ namespace Ee4v.ProjectTabs
             var currentIndex = FindIndex(tabId);
             if (currentIndex < 0 ||
                 targetIndex < 0 ||
-                targetIndex >= _tabs.Count ||
-                currentIndex == targetIndex)
+                targetIndex >= _tabs.Count)
             {
                 return false;
             }
 
             var tab = _tabs[currentIndex];
+            if (tab.IsHome)
+            {
+                return false;
+            }
+
+            if (targetIndex < 1 ||
+                currentIndex == targetIndex)
+            {
+                return false;
+            }
+
             _tabs.RemoveAt(currentIndex);
             _tabs.Insert(targetIndex, tab);
             PersistAndNotify();
@@ -85,22 +97,54 @@ namespace Ee4v.ProjectTabs
         public bool Remove(string tabId)
         {
             var index = FindIndex(tabId);
-            if (index < 0)
+            if (index < 0 || _tabs[index].IsHome)
             {
                 return false;
             }
 
             _tabs.RemoveAt(index);
-            if (_tabs.Count == 0)
+            PersistAndNotify();
+            return true;
+        }
+
+        public bool SetPinned(string tabId, bool isPinned)
+        {
+            var index = FindIndex(tabId);
+            if (index < 0)
             {
-                _tabs.Add(new MutableTab(
-                    CreateUniqueId(),
-                    new[] { _defaultLocation },
-                    0));
+                return false;
             }
+
+            var tab = _tabs[index];
+            if (tab.IsHome || tab.IsPinned == isPinned)
+            {
+                return false;
+            }
+
+            var currentLocation =
+                tab.CurrentLocation ?? _defaultLocation;
+            tab.History.Clear();
+            tab.History.Add(currentLocation);
+            tab.HistoryIndex = 0;
+            tab.IsPinned = isPinned;
 
             PersistAndNotify();
             return true;
+        }
+
+        public bool ShouldOpenInNewTab(
+            string tabId,
+            ProjectTabLocation location)
+        {
+            var tab = Find(tabId);
+            if (tab == null || !tab.IsPinned)
+            {
+                return false;
+            }
+
+            return !HasSameFolder(
+                tab.CurrentLocation,
+                NormalizeLocation(location));
         }
 
         public bool RecordNavigation(
@@ -120,15 +164,19 @@ namespace Ee4v.ProjectTabs
                 return false;
             }
 
-            if (current != null &&
-                string.Equals(
-                    current.FolderGuid,
-                    normalized.FolderGuid,
-                    StringComparison.Ordinal) &&
-                string.Equals(
-                    current.FolderPath,
-                    normalized.FolderPath,
-                    StringComparison.Ordinal))
+            if (tab.IsPinned)
+            {
+                if (HasSameFolder(current, normalized))
+                {
+                    tab.History[tab.HistoryIndex] = normalized;
+                    PersistAndNotify();
+                    return true;
+                }
+
+                return false;
+            }
+
+            if (HasSameFolder(current, normalized))
             {
                 tab.History[tab.HistoryIndex] = normalized;
                 PersistAndNotify();
@@ -161,7 +209,10 @@ namespace Ee4v.ProjectTabs
         public ProjectTabLocation GoBack(string tabId, int steps)
         {
             var tab = Find(tabId);
-            if (tab == null || tab.HistoryIndex <= 0 || steps <= 0)
+            if (tab == null ||
+                tab.IsPinned ||
+                tab.HistoryIndex <= 0 ||
+                steps <= 0)
             {
                 return null;
             }
@@ -180,6 +231,7 @@ namespace Ee4v.ProjectTabs
         {
             var tab = Find(tabId);
             if (tab == null ||
+                tab.IsPinned ||
                 tab.HistoryIndex >= tab.History.Count - 1 ||
                 steps <= 0)
             {
@@ -202,6 +254,11 @@ namespace Ee4v.ProjectTabs
                 {
                     var tab = restored.Tabs[i];
                     if (tab == null ||
+                        tab.IsHome ||
+                        string.Equals(
+                            tab.Id,
+                            HomeTabId,
+                            StringComparison.Ordinal) ||
                         string.IsNullOrWhiteSpace(tab.Id) ||
                         _tabs.Any(existing =>
                             string.Equals(
@@ -225,18 +282,29 @@ namespace Ee4v.ProjectTabs
                     var historyIndex = Math.Max(
                         0,
                         Math.Min(tab.HistoryIndex, history.Count - 1));
-                    _tabs.Add(new MutableTab(tab.Id, history, historyIndex));
+                    if (tab.IsPinned)
+                    {
+                        var pinnedLocation = history[historyIndex];
+                        history.Clear();
+                        history.Add(pinnedLocation);
+                        historyIndex = 0;
+                    }
+
+                    _tabs.Add(new MutableTab(
+                        tab.Id,
+                        history,
+                        historyIndex,
+                        tab.IsPinned,
+                        false));
                 }
             }
 
-            if (_tabs.Count == 0)
-            {
-                _tabs.Add(new MutableTab(
-                    CreateUniqueId(),
-                    new[] { _defaultLocation },
-                    0));
-                _store.Save(CreateSnapshot());
-            }
+            _tabs.Insert(0, new MutableTab(
+                HomeTabId,
+                new[] { _defaultLocation },
+                0,
+                true,
+                true));
         }
 
         private ProjectTabsState CreateSnapshot()
@@ -245,7 +313,9 @@ namespace Ee4v.ProjectTabs
                 _tabs.Select(tab => new ProjectTabState(
                         tab.Id,
                         tab.History.ToArray(),
-                        tab.HistoryIndex))
+                        tab.HistoryIndex,
+                        tab.IsPinned,
+                        tab.IsHome))
                     .ToArray());
         }
 
@@ -262,12 +332,30 @@ namespace Ee4v.ProjectTabs
             return location;
         }
 
+        private static bool HasSameFolder(
+            ProjectTabLocation first,
+            ProjectTabLocation second)
+        {
+            return first != null &&
+                second != null &&
+                string.Equals(
+                    first.FolderGuid,
+                    second.FolderGuid,
+                    StringComparison.Ordinal) &&
+                string.Equals(
+                    first.FolderPath,
+                    second.FolderPath,
+                    StringComparison.Ordinal);
+        }
+
         private MutableTab CreateTab(ProjectTabLocation location)
         {
             return new MutableTab(
                 CreateUniqueId(),
                 new[] { NormalizeLocation(location) },
-                0);
+                0,
+                false,
+                false);
         }
 
         private MutableTab Find(string tabId)
@@ -307,11 +395,15 @@ namespace Ee4v.ProjectTabs
             public MutableTab(
                 string id,
                 IEnumerable<ProjectTabLocation> history,
-                int historyIndex)
+                int historyIndex,
+                bool isPinned,
+                bool isHome)
             {
                 Id = id;
                 History = new List<ProjectTabLocation>(history);
                 HistoryIndex = historyIndex;
+                IsPinned = isPinned || isHome;
+                IsHome = isHome;
             }
 
             public string Id { get; }
@@ -319,6 +411,10 @@ namespace Ee4v.ProjectTabs
             public List<ProjectTabLocation> History { get; }
 
             public int HistoryIndex { get; set; }
+
+            public bool IsPinned { get; set; }
+
+            public bool IsHome { get; }
 
             public ProjectTabLocation CurrentLocation
             {

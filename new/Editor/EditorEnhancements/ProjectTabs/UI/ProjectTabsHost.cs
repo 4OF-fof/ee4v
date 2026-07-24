@@ -45,6 +45,7 @@ namespace Ee4v.ProjectTabs
             _view.TabSelected += SelectTab;
             _view.TabCloseRequested += CloseTab;
             _view.TabMoveRequested += MoveTab;
+            _view.TabPinToggleRequested += TogglePinned;
             _view.FolderDropAcceptanceRequested +=
                 CanAcceptFolderDrop;
             _view.FolderDropRequested += AddDroppedFolders;
@@ -122,6 +123,15 @@ namespace Ee4v.ProjectTabs
             _session.Move(tabId, targetIndex);
         }
 
+        private void TogglePinned(string tabId)
+        {
+            var tab = _session.State.Find(tabId);
+            if (tab != null && !tab.IsHome)
+            {
+                _session.SetPinned(tabId, !tab.IsPinned);
+            }
+        }
+
         private bool CanAcceptFolderDrop(
             IReadOnlyList<string> paths)
         {
@@ -169,7 +179,19 @@ namespace Ee4v.ProjectTabs
 
             if (_navigator.TryGetCurrentLocation(out var location))
             {
-                _session.RecordNavigation(_selectedTabId, location);
+                if (_session.ShouldOpenInNewTab(
+                        _selectedTabId,
+                        location))
+                {
+                    _selectedTabId = _session.Add(location);
+                    Refresh();
+                }
+                else
+                {
+                    _session.RecordNavigation(
+                        _selectedTabId,
+                        location);
+                }
             }
         }
 
@@ -216,10 +238,14 @@ namespace Ee4v.ProjectTabs
                 .Select(tab =>
                 {
                     var location = tab.CurrentLocation;
-                    var title = location?.DisplayName;
+                    var title = tab.IsHome
+                        ? string.Empty
+                        : location?.DisplayName;
                     if (string.IsNullOrWhiteSpace(title))
                     {
-                        title = "Assets";
+                        title = tab.IsHome
+                            ? string.Empty
+                            : "Assets";
                     }
 
                     var tooltip = location?.FolderPath ?? "Assets";
@@ -232,7 +258,9 @@ namespace Ee4v.ProjectTabs
                         tab.Id,
                         title,
                         tooltip,
-                        true);
+                        !tab.IsHome,
+                        tab.IsPinned,
+                        tab.IsHome);
                 })
                 .ToArray();
 
@@ -301,6 +329,7 @@ namespace Ee4v.ProjectTabs
             _view.TabSelected -= SelectTab;
             _view.TabCloseRequested -= CloseTab;
             _view.TabMoveRequested -= MoveTab;
+            _view.TabPinToggleRequested -= TogglePinned;
             _view.FolderDropAcceptanceRequested -=
                 CanAcceptFolderDrop;
             _view.FolderDropRequested -= AddDroppedFolders;

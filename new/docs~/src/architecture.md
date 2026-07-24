@@ -133,7 +133,11 @@ Project windowごとの選択tabはwindow sessionだけで保持します。現�
 folder表示・検索復元は `Core.Internal.EditorAPI.ProjectBrowser` facadeを介し、
 対象のProject windowを明示して複数window間の誤操作を防ぎます。tabの並び替えは
 Applicationのsessionへ最終indexだけを通知し、Project folderのdropはUnity adapterで
-folder pathを検証してから新しいtabとして一括追加します。
+folder pathを検証してから新しいtabとして一括追加します。右クリックでpin留めした
+tabは位置を変えずにfolder pathを固定し、別folderへのnavigationは通常tabを新規作成
+します。同じfolder内の検索状態はpin tab自身へ反映します。pin tabと通常tabは同じ
+並び替え領域で混在できます。Assetsを開くHome tabだけは例外として、解除・削除・
+移動できない固定tabとしてtab列の左端へ常設します。
 
 `Ee4v.Core.Settings`、`Ee4v.Core.I18n`、`Ee4v.Core.Injector` のpresentation実装は
 namespaceを機能境界として維持しつつ、物理配置とassemblyは

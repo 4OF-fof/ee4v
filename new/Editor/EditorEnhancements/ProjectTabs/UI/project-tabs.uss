@@ -132,6 +132,15 @@
     opacity: 0.5;
 }
 
+.ee4v-project-tabs__tab--home {
+    min-width: var(--ee4v-size-24);
+    max-width: var(--ee4v-size-24);
+    padding-left: var(--ee4v-space-none);
+    padding-right: var(--ee4v-space-none);
+    justify-content: center;
+    flex-shrink: 0;
+}
+
 .ee4v-project-tabs__drop-indicator {
     width: var(--ee4v-size-2);
     height: var(--ee4v-size-18);
@@ -164,6 +173,17 @@
 
 .ee4v-project-tabs__tab--selected .ee4v-project-tabs__tab-title {
     padding-right: var(--ee4v-size-16);
+}
+
+.ee4v-project-tabs__pin-icon {
+    margin-right: var(--ee4v-space-xxs);
+    color: var(--ee4v-color-text-muted);
+    flex-shrink: 0;
+}
+
+.ee4v-project-tabs__home-icon {
+    color: var(--ee4v-color-text-secondary);
+    flex-shrink: 0;
 }
 
 .ee4v-project-tabs__close {

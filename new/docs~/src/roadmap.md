@@ -66,6 +66,7 @@ phase 1 は `old` のリファクタや段階移植ではなく、`new` の再�
     - [x] CoreのEditorAPIを利用して現在位置を追跡し、履歴管理を実装する
     - [x] ドラッグとキーボード操作でタブを並び替える
     - [x] Project folderをタブ領域へdropしてタブを追加する
+    - [x] folder locationを固定するpin tabとAssets Home tabを追加する
 - [ ] FolderStyle
     - [ ] Projectのアイテムのアイコンや背景色を変更できる機能を実装する
 - [x] ContentOverlay

@@ -60,12 +60,16 @@ namespace Ee4v.ProjectTabs
             string id,
             string title,
             string tooltip,
-            bool canClose)
+            bool canClose,
+            bool isPinned = false,
+            bool isHome = false)
         {
             Id = id ?? string.Empty;
             Title = title ?? string.Empty;
             Tooltip = tooltip ?? string.Empty;
             CanClose = canClose;
+            IsPinned = isPinned || isHome;
+            IsHome = isHome;
         }
 
         public string Id { get; }
@@ -75,6 +79,10 @@ namespace Ee4v.ProjectTabs
         public string Tooltip { get; }
 
         public bool CanClose { get; }
+
+        public bool IsPinned { get; }
+
+        public bool IsHome { get; }
     }
 
     internal sealed class ProjectTabsView : VisualElement
@@ -96,6 +104,14 @@ namespace Ee4v.ProjectTabs
             "ee4v-project-tabs__tab--selected";
         private const string TabTitleClassName =
             "ee4v-project-tabs__tab-title";
+        private const string PinnedTabClassName =
+            "ee4v-project-tabs__tab--pinned";
+        private const string HomeTabClassName =
+            "ee4v-project-tabs__tab--home";
+        private const string PinIconClassName =
+            "ee4v-project-tabs__pin-icon";
+        private const string HomeIconClassName =
+            "ee4v-project-tabs__home-icon";
         private const string DraggingTabClassName =
             "ee4v-project-tabs__tab--dragging";
         private const string DropIndicatorClassName =
@@ -197,6 +213,8 @@ namespace Ee4v.ProjectTabs
 
         public event Action<string, int> TabMoveRequested;
 
+        public event Action<string> TabPinToggleRequested;
+
         public event Func<IReadOnlyList<string>, bool>
             FolderDropAcceptanceRequested;
 
@@ -210,7 +228,6 @@ namespace Ee4v.ProjectTabs
             _backButton.SetEnabled(_state.CanGoBack);
             _forwardButton.SetEnabled(_state.CanGoForward);
             _strip.Clear();
-
             for (var i = 0; i < _state.Tabs.Count; i++)
             {
                 var tab = _state.Tabs[i];
@@ -219,10 +236,17 @@ namespace Ee4v.ProjectTabs
                     continue;
                 }
 
+                var minimumMoveIndex = tab.IsHome
+                    ? 0
+                    : 1;
+                var maximumMoveIndex = tab.IsHome
+                    ? 0
+                    : _state.Tabs.Count - 1;
                 var tabElement = CreateTab(
                     tab,
                     i,
-                    _state.Tabs.Count);
+                    minimumMoveIndex,
+                    maximumMoveIndex);
                 tabElement.EnableInClassList(
                     SelectedTabClassName,
                     string.Equals(
@@ -314,22 +338,59 @@ namespace Ee4v.ProjectTabs
         private VisualElement CreateTab(
             ProjectTabViewState state,
             int index,
-            int tabCount)
+            int minimumMoveIndex,
+            int maximumMoveIndex)
         {
+            var data = new TabElementData(
+                state.Id,
+                minimumMoveIndex,
+                maximumMoveIndex,
+                !state.IsHome &&
+                maximumMoveIndex > minimumMoveIndex);
             var tab = new VisualElement
             {
                 tooltip = state.Tooltip,
                 focusable = true,
                 tabIndex = 0,
-                userData = state.Id
+                userData = data
             };
             tab.AddToClassList(TabClassName);
+            tab.EnableInClassList(
+                PinnedTabClassName,
+                state.IsPinned && !state.IsHome);
+            tab.EnableInClassList(
+                HomeTabClassName,
+                state.IsHome);
 
-            var title = UiTextFactory.Create(state.Title);
-            title.AddToClassList(TabTitleClassName);
-            title.SetWhiteSpace(WhiteSpace.NoWrap);
-            title.pickingMode = PickingMode.Ignore;
-            tab.Add(title);
+            if (state.IsHome)
+            {
+                var homeIcon = new Icon(
+                    IconState.FromBuiltinIcon(
+                        UiBuiltinIcon.Home,
+                        UiSizeTokens.Size12,
+                        I18N.Get("toolbar.home.tooltip")));
+                homeIcon.AddToClassList(HomeIconClassName);
+                tab.Add(homeIcon);
+            }
+            else
+            {
+                if (state.IsPinned)
+                {
+                    var pinIcon = new Icon(
+                        IconState.FromBuiltinIcon(
+                            UiBuiltinIcon.Pin,
+                            UiSizeTokens.Size10,
+                            I18N.Get("toolbar.pin.tooltip")));
+                    pinIcon.AddToClassList(PinIconClassName);
+                    tab.Add(pinIcon);
+                }
+
+                var title = UiTextFactory.Create(state.Title);
+                title.AddToClassList(TabTitleClassName);
+                title.SetWhiteSpace(WhiteSpace.NoWrap);
+                title.pickingMode = PickingMode.Ignore;
+                tab.Add(title);
+            }
 
             var closeButton = new Button(
                 () => TabCloseRequested?.Invoke(state.Id));
@@ -346,7 +407,8 @@ namespace Ee4v.ProjectTabs
 
             tab.RegisterCallback<ClickEvent>(evt =>
             {
-                if (evt.target == closeButton)
+                if (evt.button != (int)MouseButton.LeftMouse ||
+                    evt.target == closeButton)
                 {
                     return;
                 }
@@ -378,7 +440,7 @@ namespace Ee4v.ProjectTabs
                     (evt.ctrlKey || evt.commandKey);
                 if (reorderModifier &&
                     evt.keyCode == UnityEngine.KeyCode.LeftArrow &&
-                    index > 0)
+                    index > minimumMoveIndex)
                 {
                     TabMoveRequested?.Invoke(state.Id, index - 1);
                     evt.StopPropagation();
@@ -387,7 +449,7 @@ namespace Ee4v.ProjectTabs
 
                 if (reorderModifier &&
                     evt.keyCode == UnityEngine.KeyCode.RightArrow &&
-                    index + 1 < tabCount)
+                    index < maximumMoveIndex)
                 {
                     TabMoveRequested?.Invoke(state.Id, index + 1);
                     evt.StopPropagation();
@@ -403,57 +465,14 @@ namespace Ee4v.ProjectTabs
             });
             tab.RegisterCallback<ContextClickEvent>(evt =>
             {
-                var menu = new GenericMenu();
-                if (index > 0)
+                if (evt.target != closeButton &&
+                    !state.IsHome)
                 {
-                    menu.AddItem(
-                        new GUIContent(
-                            I18N.Get("toolbar.move.left.menu")),
-                        false,
-                        () => TabMoveRequested?.Invoke(
-                            state.Id,
-                            index - 1));
-                }
-                else
-                {
-                    menu.AddDisabledItem(
-                        new GUIContent(
-                            I18N.Get("toolbar.move.left.menu")));
+                    TabPinToggleRequested?.Invoke(state.Id);
                 }
 
-                if (index + 1 < tabCount)
-                {
-                    menu.AddItem(
-                        new GUIContent(
-                            I18N.Get("toolbar.move.right.menu")),
-                        false,
-                        () => TabMoveRequested?.Invoke(
-                            state.Id,
-                            index + 1));
-                }
-                else
-                {
-                    menu.AddDisabledItem(
-                        new GUIContent(
-                            I18N.Get("toolbar.move.right.menu")));
-                }
-
-                menu.AddSeparator(string.Empty);
-                if (state.CanClose)
-                {
-                    menu.AddItem(
-                        new GUIContent(I18N.Get("toolbar.close.menu")),
-                        false,
-                        () => TabCloseRequested?.Invoke(state.Id));
-                }
-                else
-                {
-                    menu.AddDisabledItem(
-                        new GUIContent(I18N.Get("toolbar.close.menu")));
-                }
-
-                menu.ShowAsContext();
-                evt.StopPropagation();
+                evt.PreventDefault();
+                evt.StopImmediatePropagation();
             });
 
             return tab;
@@ -483,7 +502,8 @@ namespace Ee4v.ProjectTabs
             }
 
             var tab = FindTabElement(evt.target);
-            if (tab == null)
+            var data = tab?.userData as TabElementData;
+            if (tab == null || data == null || !data.CanMove)
             {
                 return;
             }
@@ -532,9 +552,10 @@ namespace Ee4v.ProjectTabs
             }
 
             var clickedTabId =
-                _potentialDragTab?.userData as string;
+                (_potentialDragTab?.userData as TabElementData)?.Id;
             var draggedTab = _draggingTab;
-            var draggedTabId = draggedTab?.userData as string;
+            var draggedTabId =
+                (draggedTab?.userData as TabElementData)?.Id;
             var targetIndex = _dragTargetIndex;
             var originalIndex = _dragOriginalIndex;
             var wasDragging = draggedTab != null;
@@ -602,6 +623,16 @@ namespace Ee4v.ProjectTabs
                 return;
             }
 
+            var data = _draggingTab.userData as TabElementData;
+            if (data == null)
+            {
+                return;
+            }
+
+            targetIndex = Mathf.Clamp(
+                targetIndex,
+                data.MinimumMoveIndex,
+                data.MaximumMoveIndex);
             _dragTargetIndex = targetIndex;
             _dropIndicator.RemoveFromHierarchy();
             var reference = targetIndex < otherTabs.Count
@@ -798,6 +829,29 @@ namespace Ee4v.ProjectTabs
             label.style.justifyContent = Justify.Center;
             button.Add(label);
             return button;
+        }
+
+        private sealed class TabElementData
+        {
+            public TabElementData(
+                string id,
+                int minimumMoveIndex,
+                int maximumMoveIndex,
+                bool canMove)
+            {
+                Id = id ?? string.Empty;
+                MinimumMoveIndex = minimumMoveIndex;
+                MaximumMoveIndex = maximumMoveIndex;
+                CanMove = canMove;
+            }
+
+            public string Id { get; }
+
+            public int MinimumMoveIndex { get; }
+
+            public int MaximumMoveIndex { get; }
+
+            public bool CanMove { get; }
         }
     }
 }

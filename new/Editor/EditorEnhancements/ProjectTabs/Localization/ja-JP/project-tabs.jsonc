@@ -13,16 +13,13 @@
       "tooltip": "現在の場所を新しいタブで開く"
     },
     "close": {
-      "tooltip": "タブを閉じる",
-      "menu": "タブを閉じる"
+      "tooltip": "タブを閉じる"
     },
-    "move": {
-      "left": {
-        "menu": "タブを左へ移動"
-      },
-      "right": {
-        "menu": "タブを右へ移動"
-      }
+    "pin": {
+      "tooltip": "ピン止めされたタブ"
+    },
+    "home": {
+      "tooltip": "Assets を開く"
     }
   }
 }
