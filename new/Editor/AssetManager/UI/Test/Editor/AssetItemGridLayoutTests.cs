@@ -9,13 +9,12 @@ namespace Ee4v.AssetManager.UI.Tests
     public sealed class AssetItemGridLayoutTests
     {
         [UnityTest]
-        public IEnumerator AttachedHostsWithIndependentControllersFollowTheSameGridSetting()
+        public IEnumerator AttachedHostsKeepIndependentGridSizesAndUseSettingAsInitialValue()
         {
-            var settingController = new MainViewController();
-            var originalSize = settingController.ItemsPerRow;
             var window = ScriptableObject.CreateInstance<GridTestWindow>();
             MainViewHost first = null;
             MainViewHost second = null;
+            MainViewHost third = null;
             window.position = new Rect(0f, 0f, 1000f, 540f);
             window.Show();
 
@@ -26,28 +25,39 @@ namespace Ee4v.AssetManager.UI.Tests
                 yield return null;
                 yield return null;
 
-                first.MainView.SetGridSize(2);
+                var initialSize = first.MainView.GridSize;
+                var firstSize = initialSize == 2 ? 3 : 2;
+                Assert.That(second.MainView.GridSize, Is.EqualTo(initialSize));
+
+                first.MainView.SetGridSize(firstSize);
                 yield return null;
 
-                Assert.That(first.MainView.DisplayedGridSize, Is.EqualTo(2));
-                Assert.That(second.MainView.DisplayedGridSize, Is.EqualTo(2));
-                Assert.That(first.Toolbar.GridSizeValue, Is.EqualTo(2));
-                Assert.That(second.Toolbar.GridSizeValue, Is.EqualTo(2));
+                Assert.That(first.MainView.DisplayedGridSize, Is.EqualTo(firstSize));
+                Assert.That(second.MainView.DisplayedGridSize, Is.EqualTo(initialSize));
+                Assert.That(first.Toolbar.GridSizeValue, Is.EqualTo(firstSize));
+                Assert.That(second.Toolbar.GridSizeValue, Is.EqualTo(initialSize));
+
+                third = AddView(window);
+                yield return null;
+
+                Assert.That(third.MainView.GridSize, Is.EqualTo(initialSize));
+                Assert.That(third.Toolbar.GridSizeValue, Is.EqualTo(initialSize));
 
                 second.MainView.SetGridSize(12);
                 yield return null;
 
-                Assert.That(first.MainView.DisplayedGridSize, Is.EqualTo(12));
+                Assert.That(first.MainView.DisplayedGridSize, Is.EqualTo(firstSize));
                 Assert.That(second.MainView.DisplayedGridSize, Is.EqualTo(12));
-                Assert.That(first.Toolbar.GridSizeValue, Is.EqualTo(12));
+                Assert.That(third.MainView.DisplayedGridSize, Is.EqualTo(initialSize));
+                Assert.That(first.Toolbar.GridSizeValue, Is.EqualTo(firstSize));
                 Assert.That(second.Toolbar.GridSizeValue, Is.EqualTo(12));
+                Assert.That(third.Toolbar.GridSizeValue, Is.EqualTo(initialSize));
             }
             finally
             {
-                settingController.SetItemsPerRow(originalSize);
                 first?.Dispose();
                 second?.Dispose();
-                settingController.Dispose();
+                third?.Dispose();
                 window.Close();
             }
         }

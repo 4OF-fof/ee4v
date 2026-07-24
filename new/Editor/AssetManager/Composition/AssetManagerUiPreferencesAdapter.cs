@@ -17,11 +17,8 @@ namespace Ee4v.AssetManager.Composition
 
         public event Action<AssetManagerUiPreference> Changed;
 
-        public int ItemsPerRow
-        {
-            get { return _settings.Get(AssetManagerDefinitions.ItemGridItemsPerRow); }
-            set { _settings.Set(AssetManagerDefinitions.ItemGridItemsPerRow, value); }
-        }
+        public int DefaultItemsPerRow =>
+            _settings.Get(AssetManagerDefinitions.ItemGridItemsPerRow);
 
         public int MinimumItemsPerRow =>
             AssetManagerDefinitions.ItemGridItemsPerRow.Range.Minimum;
@@ -46,11 +43,7 @@ namespace Ee4v.AssetManager.Composition
 
         private void OnSettingChanged(object sender, SettingChangedEventArgs args)
         {
-            if (ReferenceEquals(args.Definition, AssetManagerDefinitions.ItemGridItemsPerRow))
-            {
-                Changed?.Invoke(AssetManagerUiPreference.ItemsPerRow);
-            }
-            else if (ReferenceEquals(
+            if (ReferenceEquals(
                          args.Definition,
                          AssetManagerDefinitions.HistoryOverlayMaximumItems))
             {

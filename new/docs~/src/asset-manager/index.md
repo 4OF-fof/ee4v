@@ -75,12 +75,12 @@ setting の定義と登録は Composition が所有します。Infrastructure �
 
 ## UI の責務
 
-- `MainViewController` は `MainViewHost` ごとに生成し、その表示セッションの navigation、履歴、取得済み一覧 cache、非同期 load と cancellation を所有する。統合 window と単独 window の controller instance は共有しない
+- `MainViewController` は `MainViewHost` ごとに生成し、その表示セッションの navigation、履歴、grid 列数、取得済み一覧 cache、非同期 load と cancellation を所有する。統合 window と単独 window の controller instance は共有しない
 - `MainView` は AssetManager 固有の UI controller として、検索文字列、一覧・詳細 mode、選択中 item などの画面状態を持ち、Core UI component へ描画 state を渡す
 - `MainViewHost` は `MainToolbar`、`NavigationPanel`、`MainView` と controller の event 配線だけを担当する。toolbar と navigation panel は入力を通知し、渡された値を描画するだけで、設定や他 component を直接操作しない
 - `InfomationPanel` は統合 window から渡された選択 state を描画し、詳細表示要求を通知する。単独 window と選択 state を共有しない
 - Core の `ItemGrid` / `ItemImage` は渡された state の描画と UI Toolkit 固有の layout・resource 処理に限定する。AssetManager の cache key、履歴、設定値は保持しない
-- grid 列数の唯一の永続 state は user setting である。各 controller は同じ設定変更を購読し、各 window の `ItemGrid` と slider へ反映する。新しい window も生成時に現在の設定値から初期化する
+- grid 列数の実効値は controller ごとに独立した表示セッション state とする。user setting は新しい `MainViewHost` を生成するときのデフォルト値としてだけ読み取り、開いている他 window の実効値や slider へは反映しない
 
 ## 現在の実装状態
 
@@ -88,7 +88,7 @@ setting の定義と登録は Composition が所有します。Infrastructure �
 - BLM `data.db` と Eagle library の読み取り同期、安定した source identity、datasource tag、欠落 origin の reconciliation を実装済み
 - BLM snapshot に任意の `preferences` table がない場合も item metadata の同期を継続し、item directory path だけを未設定として扱う
 - Main View と File Tree は DB / filesystem 読み込みを background で行い、前回 load の cancellation に対応
-- Main View のグリッドサイズ変更は取得済み item state の再配置だけを行い、DB と thumbnail の再読み込みや表示 cache の破棄を行わない。列数の範囲は `ItemGridItemsPerRow` 設定の `SettingRange<int>`（1〜12）だけが所有し、toolbar slider はその範囲へ入力を clip する。取得データと Core UI state は列数を保持しない。狭い表示領域では column gap と card 幅を縮め、高さが不足する場合は card 幅と行高を抑える fallback により、設定列数を維持したまま表示領域へ収める
+- Main View のグリッドサイズ変更は、その `MainViewHost` の controller が持つ実効値と取得済み item state の再配置だけを更新し、user setting、他 window、DB、thumbnail、表示 cacheへ影響させない。`ItemGridItemsPerRow` user setting は新規 controller のデフォルト値であり、列数の範囲は同 setting の `SettingRange<int>`（1〜12）だけが所有する。toolbar slider と controller はその範囲へ入力を clip する。取得データと Core UI state は列数を保持しない。狭い表示領域では column gap と card 幅を縮め、高さが不足する場合は card 幅と行高を抑える fallback により、設定列数を維持したまま表示領域へ収める
 - File Tree は完成済みツリーを Unity Editor のメモリ上に最大 64 件共有し、同一 item / file の再表示では background 確認と loading 表示を省略する。Import Target と Version Group の代表変更は cache 上の表示 state へ反映して再構築せず、構造を含む AssetManager の変更時だけ全件を破棄する。cache は Unity 終了または domain reload で揮発する
 - File Tree の Variant Group と Version Group は異なる accent で表示し、行末の localized meta label で group 種別を識別できる
 - Version Group 配下の file root は context menu から代表ファイルに設定でき、現在の代表は Import Target と同じ配色で識別できる。設定後は Main View 全体を再読み込みせず File Tree の行 state だけを更新する。file root 自体は Import Target にできない

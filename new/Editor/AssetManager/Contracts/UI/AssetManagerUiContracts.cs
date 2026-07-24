@@ -7,7 +7,6 @@ namespace Ee4v.AssetManager.Contracts
 {
     public enum AssetManagerUiPreference
     {
-        ItemsPerRow,
         HistoryOverlayMaximumItems,
         ShowFileTreeImageTooltip
     }
@@ -16,7 +15,7 @@ namespace Ee4v.AssetManager.Contracts
     {
         event Action<AssetManagerUiPreference> Changed;
 
-        int ItemsPerRow { get; set; }
+        int DefaultItemsPerRow { get; }
         int MinimumItemsPerRow { get; }
         int MaximumItemsPerRow { get; }
         int HistoryOverlayMaximumItems { get; }
