@@ -52,7 +52,8 @@ namespace Ee4v.ProjectTabs
                     InjectionChannel.ProjectToolbar,
                     context => new ProjectTabsHost(
                         context.Window,
-                        _session),
+                        _session,
+                        new UnityProjectTabFolderDropResolver()),
                     priority: 0,
                     isEnabled: () => settings.Get(
                         ProjectTabsDefinitions.Enabled)));

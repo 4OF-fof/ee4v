@@ -33,13 +33,53 @@ namespace Ee4v.ProjectTabs
 
         public string Add(ProjectTabLocation location)
         {
-            var tab = new MutableTab(
-                CreateUniqueId(),
-                new[] { NormalizeLocation(location) },
-                0);
+            var tab = CreateTab(location);
             _tabs.Add(tab);
             PersistAndNotify();
             return tab.Id;
+        }
+
+        public IReadOnlyList<string> AddRange(
+            IEnumerable<ProjectTabLocation> locations)
+        {
+            if (locations == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            var addedIds = new List<string>();
+            foreach (var location in locations)
+            {
+                var tab = CreateTab(location);
+                _tabs.Add(tab);
+                addedIds.Add(tab.Id);
+            }
+
+            if (addedIds.Count == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            PersistAndNotify();
+            return addedIds.ToArray();
+        }
+
+        public bool Move(string tabId, int targetIndex)
+        {
+            var currentIndex = FindIndex(tabId);
+            if (currentIndex < 0 ||
+                targetIndex < 0 ||
+                targetIndex >= _tabs.Count ||
+                currentIndex == targetIndex)
+            {
+                return false;
+            }
+
+            var tab = _tabs[currentIndex];
+            _tabs.RemoveAt(currentIndex);
+            _tabs.Insert(targetIndex, tab);
+            PersistAndNotify();
+            return true;
         }
 
         public bool Remove(string tabId)
@@ -220,6 +260,14 @@ namespace Ee4v.ProjectTabs
             }
 
             return location;
+        }
+
+        private MutableTab CreateTab(ProjectTabLocation location)
+        {
+            return new MutableTab(
+                CreateUniqueId(),
+                new[] { NormalizeLocation(location) },
+                0);
         }
 
         private MutableTab Find(string tabId)

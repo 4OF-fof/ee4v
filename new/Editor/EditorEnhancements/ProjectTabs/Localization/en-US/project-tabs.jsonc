@@ -15,6 +15,14 @@
     "close": {
       "tooltip": "Close tab",
       "menu": "Close Tab"
+    },
+    "move": {
+      "left": {
+        "menu": "Move Tab Left"
+      },
+      "right": {
+        "menu": "Move Tab Right"
+      }
     }
   }
 }

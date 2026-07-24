@@ -13,17 +13,23 @@ namespace Ee4v.ProjectTabs
         private readonly EditorWindow _window;
         private readonly ProjectTabsSession _session;
         private readonly UnityProjectBrowserNavigator _navigator;
+        private readonly IProjectTabFolderDropResolver
+            _folderDropResolver;
         private readonly ProjectTabsView _view;
         private string _selectedTabId;
         private double _ignoreTrackingUntil;
 
         public ProjectTabsHost(
             EditorWindow window,
-            ProjectTabsSession session)
+            ProjectTabsSession session,
+            IProjectTabFolderDropResolver folderDropResolver)
         {
             _window = window ?? throw new ArgumentNullException(nameof(window));
             _session = session ??
                 throw new ArgumentNullException(nameof(session));
+            _folderDropResolver = folderDropResolver ??
+                throw new ArgumentNullException(
+                    nameof(folderDropResolver));
             _navigator = new UnityProjectBrowserNavigator(window);
             _view = new ProjectTabsView();
             _selectedTabId = _session.State.Tabs.First().Id;
@@ -38,6 +44,10 @@ namespace Ee4v.ProjectTabs
             _view.AddRequested += AddTab;
             _view.TabSelected += SelectTab;
             _view.TabCloseRequested += CloseTab;
+            _view.TabMoveRequested += MoveTab;
+            _view.FolderDropAcceptanceRequested +=
+                CanAcceptFolderDrop;
+            _view.FolderDropRequested += AddDroppedFolders;
             _session.Changed += OnSessionChanged;
 
             Add(_view);
@@ -104,6 +114,27 @@ namespace Ee4v.ProjectTabs
             {
                 var selected = _session.State.Find(_selectedTabId);
                 Open(selected?.CurrentLocation);
+            }
+        }
+
+        private void MoveTab(string tabId, int targetIndex)
+        {
+            _session.Move(tabId, targetIndex);
+        }
+
+        private bool CanAcceptFolderDrop(
+            IReadOnlyList<string> paths)
+        {
+            return _folderDropResolver.Resolve(paths).Count > 0;
+        }
+
+        private void AddDroppedFolders(
+            IReadOnlyList<string> paths)
+        {
+            var locations = _folderDropResolver.Resolve(paths);
+            if (locations.Count > 0)
+            {
+                _session.AddRange(locations);
             }
         }
 
@@ -269,6 +300,10 @@ namespace Ee4v.ProjectTabs
             _view.AddRequested -= AddTab;
             _view.TabSelected -= SelectTab;
             _view.TabCloseRequested -= CloseTab;
+            _view.TabMoveRequested -= MoveTab;
+            _view.FolderDropAcceptanceRequested -=
+                CanAcceptFolderDrop;
+            _view.FolderDropRequested -= AddDroppedFolders;
         }
     }
 }

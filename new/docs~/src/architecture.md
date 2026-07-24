@@ -131,7 +131,9 @@ activator objectを一覧から除外します。
 変更は現在の履歴entryへ統合します。tab一覧と履歴は `UserSettings` に保存し、
 Project windowごとの選択tabはwindow sessionだけで保持します。現在位置の読取と
 folder表示・検索復元は `Core.Internal.EditorAPI.ProjectBrowser` facadeを介し、
-対象のProject windowを明示して複数window間の誤操作を防ぎます。
+対象のProject windowを明示して複数window間の誤操作を防ぎます。tabの並び替えは
+Applicationのsessionへ最終indexだけを通知し、Project folderのdropはUnity adapterで
+folder pathを検証してから新しいtabとして一括追加します。
 
 `Ee4v.Core.Settings`、`Ee4v.Core.I18n`、`Ee4v.Core.Injector` のpresentation実装は
 namespaceを機能境界として維持しつつ、物理配置とassemblyは
