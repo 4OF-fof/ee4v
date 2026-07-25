@@ -156,8 +156,21 @@ namespace Ee4v.FolderStyle
                     context.SelectionRect.xMax,
                     context.SelectionRect.y));
 
+            FocusMouseOverWindow();
             EditorApplication.delayCall += () =>
                 _openEditor(targetGuids, anchor);
+        }
+
+        private static void FocusMouseOverWindow()
+        {
+            var window = EditorWindow.mouseOverWindow;
+            if (window != null &&
+                !ReferenceEquals(
+                    window,
+                    EditorWindow.focusedWindow))
+            {
+                window.Focus();
+            }
         }
 
         private static IReadOnlyList<string>

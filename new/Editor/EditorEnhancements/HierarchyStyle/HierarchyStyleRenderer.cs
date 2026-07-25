@@ -169,8 +169,21 @@ namespace Ee4v.HierarchyStyle
                     context.SelectionRect.xMax,
                     context.SelectionRect.y));
 
+            FocusMouseOverWindow();
             EditorApplication.delayCall += () =>
                 _openEditor(targets, anchor);
+        }
+
+        private static void FocusMouseOverWindow()
+        {
+            var window = EditorWindow.mouseOverWindow;
+            if (window != null &&
+                !ReferenceEquals(
+                    window,
+                    EditorWindow.focusedWindow))
+            {
+                window.Focus();
+            }
         }
     }
 }

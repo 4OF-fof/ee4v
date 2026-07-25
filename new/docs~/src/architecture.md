@@ -161,7 +161,9 @@ focus保護に空白を作りません。
 `FolderStyle` は最近使ったicon GUIDを最大8件UserSettingsへ保存し、
 Texture候補へ解決してcomponentへ渡します。popupは領域外clickで閉じますが、Color Pickerと
 Object Selectorへの一時的なfocus移動はCore EditorAPI facadeで判定して編集を継続します。
-同じcomponentは`HierarchyStyle`のHierarchy item装飾でも再利用します。
+Alt押下時はmodifier変更によるProject windowの再描画で対象itemを検出し、マウス下の
+Project windowへfocusを移してからpopupを開きます。同じcomponentは`HierarchyStyle`の
+Hierarchy item装飾でも再利用します。
 
 `HierarchyStyle` はscene objectの`GlobalObjectId`をidentityとして背景色とicon asset GUIDを
 UserSettingsへ保存し、sceneへ専用componentを追加しません。背景色は対象自身から親へ向かって
@@ -170,7 +172,9 @@ iconは対象自身のHierarchy TreeView itemだけへCore EditorAPI facadeで�
 Scene側へは設定せず子へも継承しません。Alt操作で開く編集popupは`Ee4v.UI`の
 `DecorationStyleEditor`を再利用し、非表示操作はUnity adapterで
 `HideInHierarchy`だけをUndo対応で設定します。active stateとtagは変更せず、復帰は
-`HiddenObjects` moduleが既存の管理画面から行います。
+`HiddenObjects` moduleが既存の管理画面から行います。Alt押下時はmodifier変更による
+Hierarchy windowの再描画で対象itemを検出し、マウス下のHierarchy windowへfocusを
+移してからpopupを開きます。
 
 `Ee4v.Core.Settings`、`Ee4v.Core.I18n`、`Ee4v.Core.Injector` のpresentation実装は
 namespaceを機能境界として維持しつつ、物理配置とassemblyは

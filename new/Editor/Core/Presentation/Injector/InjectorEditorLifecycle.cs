@@ -19,6 +19,17 @@ namespace Ee4v.Core.Injector
 
             EditorApplication.update -= InjectorApi.UpdateVisualHosts;
             EditorApplication.update += InjectorApi.UpdateVisualHosts;
+
+            EditorApplication.modifierKeysChanged -=
+                RepaintItemWindows;
+            EditorApplication.modifierKeysChanged +=
+                RepaintItemWindows;
+        }
+
+        private static void RepaintItemWindows()
+        {
+            EditorApplication.RepaintHierarchyWindow();
+            EditorApplication.RepaintProjectWindow();
         }
     }
 }
