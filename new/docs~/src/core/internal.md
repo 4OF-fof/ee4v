@@ -31,3 +31,4 @@ Unity の private / internal 実装に触る必要がある場合は、feature �
 - `Editor/Core/Internal/EditorAPI` に用途別 facade を作る
 - reflection は `Backends` 側へ閉じる
 - feature 側は facade だけを使う
+- Hierarchy item固有のiconは`SceneHierarchyItemIcon.TrySetItemIcon(...)`を使い、scene objectへ設定しない

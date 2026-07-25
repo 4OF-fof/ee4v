@@ -12,7 +12,7 @@
     "title": "フォルダースタイル",
     "singleTitle": "{0}",
     "multipleTitle": "{0}個のフォルダーを装飾",
-    "singleSubtitle": "プロジェクトフォルダーの見た目を変更",
+    "singleSubtitle": "フォルダーの見た目を変更",
     "multipleSubtitle": "選択中のすべてのフォルダーへ適用",
     "unknownFolder": "不明なフォルダー",
     "closeTooltip": "閉じる"

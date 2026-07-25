@@ -293,15 +293,8 @@ namespace Ee4v.HiddenObjects
 
         private void RevealSelected()
         {
-            var count = _controller.RevealSelected(
+            _controller.RevealSelected(
                 I18N.Get("undo.revealSelected"));
-            if (count > 0)
-            {
-                ShowNotification(new GUIContent(
-                    I18N.Get(
-                        "window.notification.revealed",
-                        count)));
-            }
         }
 
         private void OnHierarchyChanged()

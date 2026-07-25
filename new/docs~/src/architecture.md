@@ -53,6 +53,7 @@ filesystem、Editor lifecycle、UI Toolkitは外側の `Infrastructure`、`Unity
 | `DepthIndicator` | Hierarchyの親子関係を示す分岐ガイドを所有する小規模Module |
 | `FolderContentOverlay` | Project folder直下の主要asset種別を示すoverlayを所有する小規模Module |
 | `FolderStyle` | Project folderの色・アイコン装飾とAlt操作の編集入口を所有する小規模Module |
+| `HierarchyStyle` | Hierarchy itemの継承背景色・アイコン・Alt操作による非表示入口を所有する小規模Module |
 | `HiddenObjects` | HierarchyのScene見出しから非表示objectを検索・選択し、Undo対応で再表示する管理機能を所有する小規模Module |
 | `ProjectTabs` | Project windowのfolder tab、tab別navigation history、現在位置追跡を所有する小規模Module |
 | `Core` | Settings、Localization、Injector、background activity、Unity internal facadeと、それらをEditor UIへ接続するPresentation |
@@ -113,6 +114,7 @@ LocalizationとTestも各Moduleの配下へ配置します。
 | `Editor/EditorEnhancements/DepthIndicator` | `Ee4v.DepthIndicator` / `Ee4v.DepthIndicator.Editor` | Hierarchyの親子関係を示す分岐ガイド |
 | `Editor/EditorEnhancements/FolderContentOverlay` | `Ee4v.FolderContentOverlay` / `Ee4v.FolderContentOverlay.Editor` | Project folder直下の主要asset種別を示すoverlay |
 | `Editor/EditorEnhancements/FolderStyle` | `Ee4v.FolderStyle` / `Ee4v.FolderStyle.Editor` | Project folderの色・アイコン装飾とAlt操作の編集入口 |
+| `Editor/EditorEnhancements/HierarchyStyle` | `Ee4v.HierarchyStyle` / `Ee4v.HierarchyStyle.Editor` | Hierarchy itemの継承背景色・アイコン・Alt操作による非表示入口 |
 | `Editor/EditorEnhancements/HiddenObjects` | `Ee4v.HiddenObjects` / `Ee4v.HiddenObjects.Editor` | `HideInHierarchy` objectの管理画面とScene見出しの入口 |
 | `Editor/EditorEnhancements/ProjectTabs` | `Ee4v.ProjectTabs` / `Ee4v.ProjectTabs.Editor` | Project windowのfolder tabとtab別navigation history |
 
@@ -159,7 +161,16 @@ focus保護に空白を作りません。
 `FolderStyle` は最近使ったicon GUIDを最大8件UserSettingsへ保存し、
 Texture候補へ解決してcomponentへ渡します。popupは領域外clickで閉じますが、Color Pickerと
 Object Selectorへの一時的なfocus移動はCore EditorAPI facadeで判定して編集を継続します。
-同じcomponentは将来のHierarchy item装飾でも再利用します。
+同じcomponentは`HierarchyStyle`のHierarchy item装飾でも再利用します。
+
+`HierarchyStyle` はscene objectの`GlobalObjectId`をidentityとして背景色とicon asset GUIDを
+UserSettingsへ保存し、sceneへ専用componentを追加しません。背景色は対象自身から親へ向かって
+最初に見つかった明示設定を使うため子孫へ伝播し、子に背景色がある場合は子の値を優先します。
+iconは対象自身のHierarchy TreeView itemだけへCore EditorAPI facadeで適用し、
+Scene側へは設定せず子へも継承しません。Alt操作で開く編集popupは`Ee4v.UI`の
+`DecorationStyleEditor`を再利用し、非表示操作はUnity adapterで
+`HideInHierarchy`だけをUndo対応で設定します。active stateとtagは変更せず、復帰は
+`HiddenObjects` moduleが既存の管理画面から行います。
 
 `Ee4v.Core.Settings`、`Ee4v.Core.I18n`、`Ee4v.Core.Injector` のpresentation実装は
 namespaceを機能境界として維持しつつ、物理配置とassemblyは

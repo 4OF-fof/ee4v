@@ -56,6 +56,21 @@ ProjectBrowserでない場合はfallbackせず失敗を返します。Unity更�
 混線しないことを確認します。private memberが変更された場合もfeature側へreflectionを
 追加せず、backendとfacadeのfallbackを更新します。
 
+### SceneHierarchy item icon
+
+`HierarchyStyle`のicon変更はscene objectのiconへ書き込まず、
+`Editor/Core/Internal/EditorAPI/SceneHierarchy.cs`の
+`SceneHierarchyItemIcon` facadeを利用してHierarchyの
+TreeView itemだけへ適用します。backendは`UnityEditor.SceneHierarchyWindow`の
+`m_SceneHierarchy`、`UnityEditor.SceneHierarchy.m_TreeView`、
+`TreeViewController.FindItem(int)`、`TreeViewItem.icon`に依存します。
+
+内部APIが利用できない場合はHierarchy item描画callback上のicon overlayへfallbackします。
+Unity更新時は`SceneHierarchyEditorApiTests`に加え、Hierarchy上のiconだけが変わり、
+Scene Viewのgizmo iconが変わらないこと、Hierarchy windowの再生成後もiconが復元される
+ことを確認します。private memberが変更された場合はfeature側へreflectionを追加せず、
+`SceneHierarchyBackend`の取得経路とfallbackだけを更新します。
+
 ### ContextMenuWindow popup chrome
 
 `ContextMenuWindow` の native popup は矩形であり、Unity 2022.3 では透明化や OS の window region だけで滑らかな角丸を安定して作れない。このため表示直前に `EditorPopupWindow.TryReadScreenPixels` で popup 背面を取得し、UI root の背景へ一時 texture として設定する。USS の角丸外側には実際の背面が描かれるため、選択色など通常と異なる背景でも境界が一致する。右クリックによって TreeView の選択が変わる場合は、選択背景が画面へ反映される次フレームまで popup 表示を遅延させてから取得する。screen read は `Editor/Core/Internal/EditorAPI/Backends/EditorPopupWindowBackend.cs` に閉じ、取得できない場合は透明背景へ fallback する。

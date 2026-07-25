@@ -12,7 +12,7 @@
     "title": "Folder Style",
     "singleTitle": "{0}",
     "multipleTitle": "Style {0} folders",
-    "singleSubtitle": "Customize this Project folder",
+    "singleSubtitle": "Customize this folder",
     "multipleSubtitle": "Apply changes to every selected folder",
     "unknownFolder": "Unknown folder",
     "closeTooltip": "Close"

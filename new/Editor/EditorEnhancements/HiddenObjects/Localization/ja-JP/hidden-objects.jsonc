@@ -48,9 +48,6 @@
       "noHidden": "読み込み済みの Scene に非表示オブジェクトはありません。",
       "noMatchesTitle": "一致するオブジェクトはありません",
       "noMatches": "現在の絞り込み条件に一致する非表示オブジェクトはありません。"
-    },
-    "notification": {
-      "revealed": "{0} 件のオブジェクトを Hierarchy に戻しました。"
     }
   },
   "undo": {

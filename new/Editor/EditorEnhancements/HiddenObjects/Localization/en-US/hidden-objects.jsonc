@@ -48,9 +48,6 @@
       "noHidden": "No hidden objects were found in the loaded Scenes.",
       "noMatchesTitle": "No matching objects",
       "noMatches": "No hidden objects match the current filters."
-    },
-    "notification": {
-      "revealed": "Restored {0} object(s) to the Hierarchy."
     }
   },
   "undo": {

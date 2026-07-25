@@ -1,0 +1,40 @@
+{
+  "settings": {
+    "section": {
+      "hierarchy": "ヒエラルキー拡張"
+    },
+    "enabled": {
+      "label": "ヒエラルキースタイルを有効化",
+      "tooltip": "GameObjectの背景色とアイコンの変更、ヒエラルキーからの非表示を行います。項目上でAltキーを押すと編集画面を開きます。"
+    }
+  },
+  "window": {
+    "title": "ヒエラルキースタイル",
+    "multipleTitle": "{0}個のオブジェクトを装飾",
+    "singleSubtitle": "ヒエラルキー項目の見た目を変更",
+    "multipleSubtitle": "選択中のすべてのオブジェクトへ適用",
+    "closeTooltip": "閉じる"
+  },
+  "editor": {
+    "color": {
+      "label": "背景色",
+      "tooltip": "子へ継承される背景色です。子に背景色が設定されている場合は子の設定を優先します。",
+      "customLabel": "色を選択",
+      "clearLabel": "背景色を解除",
+      "presetTooltip": "プリセット {0}"
+    },
+    "icon": {
+      "label": "アイコン",
+      "tooltip": "このGameObjectのヒエラルキーアイコンとして使うTexture2Dです。アイコンは子へ継承されません。",
+      "recentLabel": "最近使ったアイコン",
+      "chooseLabel": "アイコンを選択",
+      "clearLabel": "アイコンを解除"
+    },
+    "hide": {
+      "singleLabel": "ヒエラルキーから非表示",
+      "multipleLabel": "{0}個のオブジェクトをヒエラルキーから非表示",
+      "tooltip": "active状態やtagを変更せずに非表示にします。Hidden Objectsから再表示できます。",
+      "undo": "GameObjectをヒエラルキーから非表示"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "settings": {
+    "section": {
+      "hierarchy": "Hierarchy Enhancements"
+    },
+    "enabled": {
+      "label": "Enable hierarchy styles",
+      "tooltip": "Change GameObject background colors and icons, or hide objects from the Hierarchy. Press Alt over an item to open the editor."
+    }
+  },
+  "window": {
+    "title": "Hierarchy Style",
+    "multipleTitle": "Style {0} objects",
+    "singleSubtitle": "Customize this Hierarchy item",
+    "multipleSubtitle": "Apply changes to every selected object",
+    "closeTooltip": "Close"
+  },
+  "editor": {
+    "color": {
+      "label": "Background",
+      "tooltip": "Background color inherited by descendants unless they define their own background.",
+      "customLabel": "Custom color",
+      "clearLabel": "Clear background",
+      "presetTooltip": "Preset {0}"
+    },
+    "icon": {
+      "label": "Icon",
+      "tooltip": "Texture2D used as this GameObject's Hierarchy icon. Icons are not inherited.",
+      "recentLabel": "Recently used",
+      "chooseLabel": "Choose icon",
+      "clearLabel": "Clear icon"
+    },
+    "hide": {
+      "singleLabel": "Hide from Hierarchy",
+      "multipleLabel": "Hide {0} objects from Hierarchy",
+      "tooltip": "Hide the selected object without changing its active state or tag. It can be restored from Hidden Objects.",
+      "undo": "Hide GameObject from Hierarchy"
+    }
+  }
+}

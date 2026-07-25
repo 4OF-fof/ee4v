@@ -1,0 +1,24 @@
+{
+  "name": "Ee4v.HierarchyStyle.Tests.Editor",
+  "rootNamespace": "Ee4v.HierarchyStyle.Tests",
+  "references": [
+    "Ee4v.Core.Contracts.Editor",
+    "Ee4v.Core.Presentation.Editor",
+    "Ee4v.HierarchyStyle.Editor",
+    "Ee4v.Testing.Contracts.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}
