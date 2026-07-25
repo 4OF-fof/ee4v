@@ -26,6 +26,29 @@ namespace Ee4v.UI.Tests
         }
 
         [Test]
+        [FeatureTestCase(
+            "小さい画像をtooltipで拡大表示できる",
+            "アイコン候補などの小さい画像を縦横比を維持したまま見やすい大きさへ拡大できることを確認します。",
+            order: 224,
+            category: FeatureTestCategory.Ui)]
+        public void CalculateImageSize_CanEnlargeSmallImages()
+        {
+            var texture = new Texture2D(32, 16);
+            try
+            {
+                Assert.That(
+                    ImageTooltipLayout.CalculateImageSize(
+                        texture,
+                        true),
+                    Is.EqualTo(new Vector2(160f, 80f)));
+            }
+            finally
+            {
+                Object.DestroyImmediate(texture);
+            }
+        }
+
+        [Test]
         public void CalculateWindowRect_MovesTooltipAwayFromDesktopEdges()
         {
             var desktop = new Rect(0f, 0f, 800f, 600f);

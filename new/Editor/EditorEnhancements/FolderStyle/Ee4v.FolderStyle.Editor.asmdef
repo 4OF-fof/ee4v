@@ -1,0 +1,22 @@
+{
+  "name": "Ee4v.FolderStyle.Editor",
+  "rootNamespace": "Ee4v.FolderStyle",
+  "references": [
+    "Ee4v.Core.Contracts.Editor",
+    "Ee4v.Core.Editor",
+    "Ee4v.Core.Presentation.Editor",
+    "Ee4v.Core.Unity.Editor",
+    "Ee4v.UI.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

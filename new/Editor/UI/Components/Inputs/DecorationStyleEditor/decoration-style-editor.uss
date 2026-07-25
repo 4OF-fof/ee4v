@@ -1,0 +1,186 @@
+.ee4v-ui-decoration-style-editor {
+    min-width: 0;
+    flex-grow: 1;
+}
+
+.ee4v-ui-decoration-style-editor__section {
+    min-width: 0;
+    padding-top: var(--ee4v-space-xs);
+    padding-bottom: var(--ee4v-space-md);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-bottom-color: var(--ee4v-color-border-default);
+}
+
+.ee4v-ui-decoration-style-editor__section--last {
+    border-bottom-width: var(--ee4v-space-none);
+}
+
+.ee4v-ui-decoration-style-editor__section-header {
+    height: var(--ee4v-size-24);
+    flex-direction: row;
+    align-items: center;
+}
+
+.ee4v-ui-decoration-style-editor__section-title {
+    min-width: 0;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.ee4v-ui-decoration-style-editor__palette {
+    min-width: 0;
+    height: var(--ee4v-size-28);
+    margin-bottom: var(--ee4v-space-xs);
+    flex-direction: row;
+    align-items: center;
+}
+
+.ee4v-ui-decoration-style-editor__swatch {
+    width: var(--ee4v-size-24);
+    height: var(--ee4v-size-24);
+    min-width: var(--ee4v-size-24);
+    min-height: var(--ee4v-size-24);
+    margin-left: var(--ee4v-space-none);
+    margin-right: var(--ee4v-space-xxs);
+    margin-top: var(--ee4v-space-none);
+    margin-bottom: var(--ee4v-space-none);
+    padding-left: var(--ee4v-space-none);
+    padding-right: var(--ee4v-space-none);
+    padding-top: var(--ee4v-space-none);
+    padding-bottom: var(--ee4v-space-none);
+    border-top-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-left-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-transparent);
+    border-right-color: var(--ee4v-color-transparent);
+    border-bottom-color: var(--ee4v-color-transparent);
+    border-left-color: var(--ee4v-color-transparent);
+    border-top-left-radius: var(--ee4v-radius-sm);
+    border-top-right-radius: var(--ee4v-radius-sm);
+    border-bottom-left-radius: var(--ee4v-radius-sm);
+    border-bottom-right-radius: var(--ee4v-radius-sm);
+    background-color: var(--ee4v-color-transparent);
+    align-items: center;
+    justify-content: center;
+}
+
+.ee4v-ui-decoration-style-editor__swatch:hover {
+    background-color: var(--ee4v-color-surface-hover-strong);
+}
+
+.ee4v-ui-decoration-style-editor__swatch--selected,
+.ee4v-ui-decoration-style-editor__swatch--selected:hover {
+    border-top-color: var(--ee4v-color-focus);
+    border-right-color: var(--ee4v-color-focus);
+    border-bottom-color: var(--ee4v-color-focus);
+    border-left-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-selection-soft);
+}
+
+.ee4v-ui-decoration-style-editor__swatch-color {
+    width: var(--ee4v-size-16);
+    height: var(--ee4v-size-16);
+    border-top-left-radius: var(--ee4v-radius-3xl);
+    border-top-right-radius: var(--ee4v-radius-3xl);
+    border-bottom-left-radius: var(--ee4v-radius-3xl);
+    border-bottom-right-radius: var(--ee4v-radius-3xl);
+}
+
+.ee4v-ui-decoration-style-editor__caption {
+    height: var(--ee4v-size-18);
+    color: var(--ee4v-color-text-muted);
+}
+
+.ee4v-ui-decoration-style-editor__row {
+    min-width: 0;
+    height: var(--ee4v-size-22);
+    flex-direction: row;
+    align-items: center;
+}
+
+.ee4v-ui-decoration-style-editor__label {
+    min-width: 0;
+    margin-right: var(--ee4v-space-md);
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.ee4v-ui-decoration-style-editor__field {
+    min-width: 0;
+    margin-left: var(--ee4v-space-none);
+    margin-right: var(--ee4v-space-none);
+    margin-top: var(--ee4v-space-none);
+    margin-bottom: var(--ee4v-space-none);
+}
+
+.ee4v-ui-decoration-style-editor__color-field {
+    width: 72px;
+    min-width: 72px;
+    max-width: 72px;
+    height: var(--ee4v-size-20);
+    flex-grow: 0;
+}
+
+.ee4v-ui-decoration-style-editor__object-field {
+    height: var(--ee4v-size-20);
+    flex-grow: 1;
+}
+
+.ee4v-ui-decoration-style-editor__recent-icons {
+    min-width: 0;
+    height: 34px;
+    margin-bottom: var(--ee4v-space-xs);
+    flex-direction: row;
+    align-items: center;
+}
+
+.ee4v-ui-decoration-style-editor__icon-candidate {
+    width: var(--ee4v-size-31);
+    height: var(--ee4v-size-31);
+    min-width: var(--ee4v-size-31);
+    min-height: var(--ee4v-size-31);
+    margin-left: var(--ee4v-space-none);
+    margin-right: var(--ee4v-space-xs);
+    margin-top: var(--ee4v-space-none);
+    margin-bottom: var(--ee4v-space-none);
+    padding-left: var(--ee4v-space-xs);
+    padding-right: var(--ee4v-space-xs);
+    padding-top: var(--ee4v-space-xs);
+    padding-bottom: var(--ee4v-space-xs);
+    border-top-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-left-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
+    border-bottom-color: var(--ee4v-color-border-default);
+    border-left-color: var(--ee4v-color-border-default);
+    border-top-left-radius: var(--ee4v-radius-sm);
+    border-top-right-radius: var(--ee4v-radius-sm);
+    border-bottom-left-radius: var(--ee4v-radius-sm);
+    border-bottom-right-radius: var(--ee4v-radius-sm);
+    background-color: var(--ee4v-color-field);
+}
+
+.ee4v-ui-decoration-style-editor__icon-candidate:hover {
+    background-color: var(--ee4v-color-surface-hover-opaque);
+    border-top-color: var(--ee4v-color-border-active);
+    border-right-color: var(--ee4v-color-border-active);
+    border-bottom-color: var(--ee4v-color-border-active);
+    border-left-color: var(--ee4v-color-border-active);
+}
+
+.ee4v-ui-decoration-style-editor__icon-candidate--selected,
+.ee4v-ui-decoration-style-editor__icon-candidate--selected:hover {
+    background-color: var(--ee4v-color-selection-soft-opaque);
+    border-top-color: var(--ee4v-color-focus);
+    border-right-color: var(--ee4v-color-focus);
+    border-bottom-color: var(--ee4v-color-focus);
+    border-left-color: var(--ee4v-color-focus);
+}
+
+.ee4v-ui-decoration-style-editor__candidate-image {
+    width: var(--ee4v-size-22);
+    height: var(--ee4v-size-22);
+}

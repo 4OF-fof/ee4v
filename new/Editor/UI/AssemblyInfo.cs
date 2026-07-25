@@ -10,3 +10,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Ee4v.ProjectTabs.Editor")]
 [assembly: InternalsVisibleTo("Ee4v.Testing.UI.Editor")]
 [assembly: InternalsVisibleTo("Ee4v.HiddenObjects.Editor")]
+[assembly: InternalsVisibleTo("Ee4v.FolderStyle.Editor")]

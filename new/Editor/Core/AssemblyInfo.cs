@@ -9,3 +9,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Ee4v.UI.Catalog.Editor")]
 [assembly: InternalsVisibleTo("Ee4v.Testing.Infrastructure.StaticAnalysis.Editor")]
 [assembly: InternalsVisibleTo("Ee4v.ProjectTabs.Editor")]
+[assembly: InternalsVisibleTo("Ee4v.FolderStyle.Editor")]

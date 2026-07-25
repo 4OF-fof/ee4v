@@ -1,0 +1,36 @@
+{
+  "settings": {
+    "section": {
+      "project": "プロジェクトウィンドウ拡張"
+    },
+    "enabled": {
+      "label": "フォルダースタイルを有効化",
+      "tooltip": "プロジェクトウィンドウでフォルダーの色とアイコンを変更します。フォルダー上でAltキーを押すと編集画面を開きます。"
+    }
+  },
+  "window": {
+    "title": "フォルダースタイル",
+    "singleTitle": "{0}",
+    "multipleTitle": "{0}個のフォルダーを装飾",
+    "singleSubtitle": "プロジェクトフォルダーの見た目を変更",
+    "multipleSubtitle": "選択中のすべてのフォルダーへ適用",
+    "unknownFolder": "不明なフォルダー",
+    "closeTooltip": "閉じる"
+  },
+  "editor": {
+    "color": {
+      "label": "色",
+      "tooltip": "フォルダーアイコンへ適用する色です。",
+      "customLabel": "色を選択",
+      "clearLabel": "色を解除",
+      "presetTooltip": "プリセット {0}"
+    },
+    "icon": {
+      "label": "アイコン",
+      "tooltip": "フォルダーアイコンの代わりに表示するTextureです。",
+      "recentLabel": "最近使ったアイコン",
+      "chooseLabel": "アイコンを選択",
+      "clearLabel": "アイコンを解除"
+    }
+  }
+}

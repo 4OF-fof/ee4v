@@ -1,0 +1,36 @@
+{
+  "settings": {
+    "section": {
+      "project": "Project Window Enhancements"
+    },
+    "enabled": {
+      "label": "Enable folder styles",
+      "tooltip": "Change folder colors and icons in the Project window. Press Alt over a folder to open the editor."
+    }
+  },
+  "window": {
+    "title": "Folder Style",
+    "singleTitle": "{0}",
+    "multipleTitle": "Style {0} folders",
+    "singleSubtitle": "Customize this Project folder",
+    "multipleSubtitle": "Apply changes to every selected folder",
+    "unknownFolder": "Unknown folder",
+    "closeTooltip": "Close"
+  },
+  "editor": {
+    "color": {
+      "label": "Color",
+      "tooltip": "Tint applied to the folder icon.",
+      "customLabel": "Custom color",
+      "clearLabel": "Clear color",
+      "presetTooltip": "Preset {0}"
+    },
+    "icon": {
+      "label": "Icon",
+      "tooltip": "Texture displayed instead of the folder icon.",
+      "recentLabel": "Recently used",
+      "chooseLabel": "Choose icon",
+      "clearLabel": "Clear icon"
+    }
+  }
+}

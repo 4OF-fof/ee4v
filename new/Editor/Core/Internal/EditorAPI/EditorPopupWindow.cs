@@ -20,5 +20,24 @@ namespace Ee4v.Core.Internal.EditorAPI
         {
             return EditorPopupWindowBackend.TryReadScreenPixels(screenRect, out pixels, out width, out height);
         }
+
+        public static bool IsTransientPicker(
+            EditorWindow window)
+        {
+            return EditorPopupWindowBackend
+                .IsTransientPicker(window);
+        }
+
+        public static bool HasOpenTransientPicker()
+        {
+            return EditorPopupWindowBackend
+                .HasOpenTransientPicker();
+        }
+
+        public static bool IsEyeDropperOpen()
+        {
+            return EditorPopupWindowBackend
+                .IsEyeDropperOpen();
+        }
     }
 }

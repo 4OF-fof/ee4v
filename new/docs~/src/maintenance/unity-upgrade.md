@@ -60,4 +60,16 @@ ProjectBrowserでない場合はfallbackせず失敗を返します。Unity更�
 
 `ContextMenuWindow` の native popup は矩形であり、Unity 2022.3 では透明化や OS の window region だけで滑らかな角丸を安定して作れない。このため表示直前に `EditorPopupWindow.TryReadScreenPixels` で popup 背面を取得し、UI root の背景へ一時 texture として設定する。USS の角丸外側には実際の背面が描かれるため、選択色など通常と異なる背景でも境界が一致する。右クリックによって TreeView の選択が変わる場合は、選択背景が画面へ反映される次フレームまで popup 表示を遅延させてから取得する。screen read は `Editor/Core/Internal/EditorAPI/Backends/EditorPopupWindowBackend.cs` に閉じ、取得できない場合は透明背景へ fallback する。
 
+`FolderStyleWindow` は領域外clickで閉じる一方、`ColorField` と `ObjectField` が開く
+Unity internal windowへのfocus移動では閉じない。`UnityEditor.ColorPicker` と
+`UnityEditor.ObjectSelector` の型名判定は
+`EditorPopupWindow.IsTransientPicker(...)` facadeを介し、型名は
+`EditorPopupWindowBackend` だけが所有する。Color Pickerのスポイト中はpickerが
+focusを失うため、`EditorPopupWindow.HasOpenTransientPicker()` でpicker window自体の
+生存期間も確認する。`ColorField` 右端から直接起動するスポイトはpicker windowを
+作らないため、backendが`UnityEditor.EyeDropper.IsOpened`をreflectionで読み取り、
+`EditorPopupWindow.IsEyeDropperOpen()`として公開する。Unity更新時は両pickerを
+開いた状態、Color Picker内のスポイト、ColorFieldから直接起動するスポイトのすべてで
+popupが維持され、各操作終了後に外側をclickすると閉じることを確認する。
+
 popup の最大幅と配置には `UnityEditorInternal.InternalEditorUtility.GetBoundsOfDesktopAtPoint` から得た表示中モニターの bounds を使う。この API を利用できない場合は従来どおり希望サイズと起点位置で表示する。Unity 更新時は、角丸外側の透過、複数モニター上での配置、長いラベルがモニター幅まで省略されないことを Catalog の `ContextMenuWindow` story でも確認する。

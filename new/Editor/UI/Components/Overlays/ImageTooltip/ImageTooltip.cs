@@ -7,15 +7,21 @@ namespace Ee4v.UI
 {
     internal sealed class ImageTooltipState
     {
-        public ImageTooltipState(Texture texture, string fileName)
+        public ImageTooltipState(
+            Texture texture,
+            string fileName,
+            bool enlargeSmallImages = false)
         {
             Texture = texture;
             FileName = fileName ?? string.Empty;
+            EnlargeSmallImages = enlargeSmallImages;
         }
 
         public Texture Texture { get; }
 
         public string FileName { get; }
+
+        public bool EnlargeSmallImages { get; }
     }
 
     internal sealed class ImageTooltip : VisualElement
@@ -52,7 +58,9 @@ namespace Ee4v.UI
             _image.image = state.Texture;
             _fileName.SetText(state.FileName);
 
-            var contentSize = ImageTooltipLayout.CalculateImageSize(state.Texture);
+            var contentSize = ImageTooltipLayout.CalculateImageSize(
+                state.Texture,
+                state.EnlargeSmallImages);
             _image.style.width = contentSize.x;
             _image.style.height = contentSize.y;
             _image.style.display = state.Texture != null ? DisplayStyle.Flex : DisplayStyle.None;
@@ -166,6 +174,7 @@ namespace Ee4v.UI
     {
         internal const float MaximumImageWidth = 300f;
         internal const float MaximumImageHeight = 240f;
+        internal const float EnlargedMinimumExtent = 160f;
         private const float MinimumWidth = 140f;
         private const float HorizontalPadding = UiSpacingTokens.Medium;
         private const float VerticalPadding = UiSpacingTokens.Medium;
@@ -174,14 +183,31 @@ namespace Ee4v.UI
         private const float PointerOffset = UiSpacingTokens.Xxl;
         private const float OppositeSideGap = UiSpacingTokens.Xl;
 
-        public static Vector2 CalculateImageSize(Texture texture)
+        public static Vector2 CalculateImageSize(
+            Texture texture,
+            bool enlargeSmallImages = false)
         {
             if (texture == null || texture.width <= 0 || texture.height <= 0)
             {
                 return Vector2.zero;
             }
 
-            var scale = Mathf.Min(1f, Mathf.Min(MaximumImageWidth / texture.width, MaximumImageHeight / texture.height));
+            var fitScale = Mathf.Min(
+                MaximumImageWidth / texture.width,
+                MaximumImageHeight / texture.height);
+            var scale = Mathf.Min(1f, fitScale);
+            if (enlargeSmallImages)
+            {
+                var largestExtent = Mathf.Max(
+                    texture.width,
+                    texture.height);
+                var enlargedScale =
+                    EnlargedMinimumExtent / largestExtent;
+                scale = Mathf.Min(
+                    fitScale,
+                    Mathf.Max(1f, enlargedScale));
+            }
+
             return new Vector2(
                 Mathf.Max(1f, Mathf.Round(texture.width * scale)),
                 Mathf.Max(1f, Mathf.Round(texture.height * scale)));
@@ -189,7 +215,10 @@ namespace Ee4v.UI
 
         public static Vector2 CalculateWindowSize(ImageTooltipState state)
         {
-            var imageSize = CalculateImageSize(state != null ? state.Texture : null);
+            var imageSize = CalculateImageSize(
+                state != null ? state.Texture : null,
+                state != null &&
+                state.EnlargeSmallImages);
             var width = Mathf.Max(MinimumWidth, imageSize.x + HorizontalPadding * 2f);
             var height = VerticalPadding * 2f + imageSize.y + FileNameHeight;
             if (imageSize.y > 0f)

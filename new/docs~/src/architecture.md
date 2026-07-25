@@ -52,6 +52,7 @@ filesystem、Editor lifecycle、UI Toolkitは外側の `Infrastructure`、`Unity
 | `AssetManager` | asset catalog、datasource同期、import、専用UIを所有する業務Module |
 | `DepthIndicator` | Hierarchyの親子関係を示す分岐ガイドを所有する小規模Module |
 | `FolderContentOverlay` | Project folder直下の主要asset種別を示すoverlayを所有する小規模Module |
+| `FolderStyle` | Project folderの色・アイコン装飾とAlt操作の編集入口を所有する小規模Module |
 | `HiddenObjects` | HierarchyのScene見出しから非表示objectを検索・選択し、Undo対応で再表示する管理機能を所有する小規模Module |
 | `ProjectTabs` | Project windowのfolder tab、tab別navigation history、現在位置追跡を所有する小規模Module |
 | `Core` | Settings、Localization、Injector、background activity、Unity internal facadeと、それらをEditor UIへ接続するPresentation |
@@ -111,6 +112,7 @@ LocalizationとTestも各Moduleの配下へ配置します。
 |---|---|---|
 | `Editor/EditorEnhancements/DepthIndicator` | `Ee4v.DepthIndicator` / `Ee4v.DepthIndicator.Editor` | Hierarchyの親子関係を示す分岐ガイド |
 | `Editor/EditorEnhancements/FolderContentOverlay` | `Ee4v.FolderContentOverlay` / `Ee4v.FolderContentOverlay.Editor` | Project folder直下の主要asset種別を示すoverlay |
+| `Editor/EditorEnhancements/FolderStyle` | `Ee4v.FolderStyle` / `Ee4v.FolderStyle.Editor` | Project folderの色・アイコン装飾とAlt操作の編集入口 |
 | `Editor/EditorEnhancements/HiddenObjects` | `Ee4v.HiddenObjects` / `Ee4v.HiddenObjects.Editor` | `HideInHierarchy` objectの管理画面とScene見出しの入口 |
 | `Editor/EditorEnhancements/ProjectTabs` | `Ee4v.ProjectTabs` / `Ee4v.ProjectTabs.Editor` | Project windowのfolder tabとtab別navigation history |
 
@@ -139,6 +141,25 @@ tabは位置を変えずにfolder pathを固定し、別folderへのnavigation�
 並び替え領域で混在できます。Assetsを開くHome tabだけは例外として、解除・削除・
 移動できない固定tabとしてtab列の左端へ常設します。通常tabが0件になってもHome
 自体が残るため、代替のAssets tabは生成しません。
+
+`FolderStyle` はfolder GUIDをidentityとして色とicon asset GUIDをUserSettingsへ保存し、
+Project item描画中は永続化やasset走査を行いません。Alt操作で開く編集windowは対象選択と
+保存だけを担当し、色・iconのfieldは`Ee4v.UI`の`DecorationStyleEditor`へ分離します。
+このcomponentは表示stateと変更eventだけを持ち、色presetや最近使ったicon候補の内容と
+履歴は所有しません。編集UIは旧版のコンパクトな色paletteとicon fieldの操作順を基準にし、
+任意色pickerと最近使ったicon候補を追加します。icon候補のhover previewには共通
+`ImageTooltip`を使い、小さいTextureも縦横比を保って拡大します。候補の右clickは
+確認menuを介さず履歴だけから即時削除しますが、選択対象のいずれかへ適用中の候補は
+削除できません。icon履歴行の先頭には色paletteと同じ解除候補を常設し、履歴がない
+場合もpopup高を固定します。
+popup表示中の候補順はopen時のsession snapshotへ固定し、icon選択による利用順の更新は
+次回open時に反映します。右click削除だけは明示操作としてsnapshotにも即時反映します。
+候補間を移動する際は`ImageTooltip`の終了を短時間遅延し、次候補へのhoverでcancelして
+focus保護に空白を作りません。
+`FolderStyle` は最近使ったicon GUIDを最大8件UserSettingsへ保存し、
+Texture候補へ解決してcomponentへ渡します。popupは領域外clickで閉じますが、Color Pickerと
+Object Selectorへの一時的なfocus移動はCore EditorAPI facadeで判定して編集を継続します。
+同じcomponentは将来のHierarchy item装飾でも再利用します。
 
 `Ee4v.Core.Settings`、`Ee4v.Core.I18n`、`Ee4v.Core.Injector` のpresentation実装は
 namespaceを機能境界として維持しつつ、物理配置とassemblyは
