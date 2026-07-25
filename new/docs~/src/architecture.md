@@ -119,15 +119,21 @@ LocalizationとTestも各Moduleの配下へ配置します。
 | `Editor/EditorEnhancements/ProjectTabs` | `Ee4v.ProjectTabs` / `Ee4v.ProjectTabs.Editor` | Project windowのfolder tabとtab別navigation history |
 
 各Moduleは兄弟Moduleを参照せず、それぞれが `Core.Injector` を利用して描画callbackを
-登録します。描画中にfilesystem走査やreflectionを行わず、
+登録します。Hierarchyの非表示操作はCoreのinstance IDベース契約を介して連携します。
+描画中にfilesystem走査やreflectionを行わず、
 `FolderContentOverlay` のAssetDatabase検索結果はModule内でcacheします。子folderの
 代表iconは同一iconが候補の過半数を占める場合だけ親へ伝播します。Texture、Material、
 Mesh、Prefab、Modelの内容previewは安定した種別iconへ置換し、それ以外はasset固有の
 iconを優先します。
 
-`HiddenObjects` はScene走査と `HideFlags` / Undo操作をUnity adapterへ閉じ込め、
-Applicationのcontrollerとtree builderはinstance IDとsnapshotだけを扱います。復帰時は
-`HideInHierarchy` だけを解除し、active stateやtagは変更しません。Scene名とobject名の
+`DepthIndicator` は `HideInHierarchy` が設定された子と兄弟を枝線の接続判定から除外し、
+Hierarchyに表示されているobjectだけで終端と縦線を決定します。
+
+`HiddenObjects` はScene走査と `HideFlags` / active state / tag / Undo操作をUnity adapterへ
+閉じ込め、Applicationのcontrollerとtree builderはinstance IDとsnapshotだけを扱います。
+非表示前の `activeSelf` とtagは `GlobalObjectId` ごとにUserSettingsへ保存し、非表示時は
+`SetActive(false)` と `EditorOnly` tagを適用します。復帰時は `HideInHierarchy` を解除して
+保存値へ戻します。Scene名とobject名の
 除外patternはModule所有のUser settingとして保持し、既定ではNDMFのpreview Sceneと
 activator objectを一覧から除外します。
 
@@ -170,9 +176,10 @@ UserSettingsへ保存し、sceneへ専用componentを追加しません。背景
 最初に見つかった明示設定を使うため子孫へ伝播し、子に背景色がある場合は子の値を優先します。
 iconは対象自身のHierarchy TreeView itemだけへCore EditorAPI facadeで適用し、
 Scene側へは設定せず子へも継承しません。Alt操作で開く編集popupは`Ee4v.UI`の
-`DecorationStyleEditor`を再利用し、非表示操作はUnity adapterで
-`HideInHierarchy`だけをUndo対応で設定します。active stateとtagは変更せず、復帰は
-`HiddenObjects` moduleが既存の管理画面から行います。Alt押下時はmodifier変更による
+`DecorationStyleEditor`を再利用します。非表示操作はCoreのinstance IDベース契約を介して
+`HiddenObjects` moduleのUnity adapterへ委譲し、`HideInHierarchy`、非アクティブ化、
+`EditorOnly` tagをUndo対応で設定します。復帰は同Moduleの管理画面から行い、保存していた
+active stateとtagを復元します。Alt押下時はmodifier変更による
 Hierarchy windowの再描画で対象itemを検出し、マウス下のHierarchy windowへfocusを
 移してからpopupを開きます。
 

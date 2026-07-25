@@ -15,7 +15,7 @@ namespace Ee4v.HierarchyStyle
         private static HierarchyObjectIdentity _identity;
         private static HierarchyStyleIconApplier _iconApplier;
         private static HierarchyStyleService _service;
-        private static UnityHierarchyObjectVisibility _visibility;
+        private static IHierarchyObjectVisibility _visibility;
 
         static HierarchyStyleBootstrap()
         {

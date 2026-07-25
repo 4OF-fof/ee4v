@@ -1,4 +1,5 @@
 using System;
+using Ee4v.Core.Hierarchy;
 using Ee4v.Core.Injector;
 using Ee4v.Core.Internal;
 using Ee4v.Core.Settings;
@@ -12,6 +13,8 @@ namespace Ee4v.HiddenObjects
         private static bool _initialized;
         private static ISettingsService _settings;
         private static IDisposable _registration;
+        private static IDisposable _visibilityRegistration;
+        private static UnityHiddenObjectVisibilityService _visibility;
 
         static HiddenObjectsBootstrap()
         {
@@ -29,7 +32,14 @@ namespace Ee4v.HiddenObjects
             _initialized = true;
             DetachSettings();
             _registration?.Dispose();
+            _visibilityRegistration?.Dispose();
             _settings = settings;
+            _visibility =
+                new UnityHiddenObjectVisibilityService(
+                    HiddenObjectRestoreStateStore.instance);
+            _visibilityRegistration =
+                HierarchyObjectVisibilityApi.Register(
+                    _visibility);
 
             FeatureBootstrapContract.Initialize(
                 "HiddenObjects",
@@ -56,7 +66,7 @@ namespace Ee4v.HiddenObjects
         {
             EnsureInitialized();
             return new HiddenObjectsController(
-                new UnityHiddenObjectRepository(),
+                new UnityHiddenObjectRepository(_visibility),
                 new UnityHiddenObjectNavigator(),
                 new SettingsHiddenObjectExclusionSource(_settings));
         }

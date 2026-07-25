@@ -27,7 +27,9 @@ namespace Ee4v.DepthIndicator
                 ? DarkThemeColor
                 : LightThemeColor;
 
-            if (transform.childCount == 0 && parent != null)
+            if (!DepthIndicatorHierarchy.HasVisibleChild(
+                    transform) &&
+                parent != null)
             {
                 DrawRect(
                     DepthIndicatorGeometry.GetLeafLine(cellRect),
@@ -44,7 +46,8 @@ namespace Ee4v.DepthIndicator
                 DepthIndicatorGeometry.GetBranchHorizontalLine(cellRect),
                 color);
             DrawRect(
-                IsLastSibling(transform)
+                DepthIndicatorHierarchy.IsLastVisibleSibling(
+                    transform)
                     ? DepthIndicatorGeometry.GetBranchEndVerticalLine(cellRect)
                     : DepthIndicatorGeometry.GetVerticalLine(cellRect),
                 color);
@@ -53,7 +56,8 @@ namespace Ee4v.DepthIndicator
             while (ancestor.parent != null)
             {
                 cellRect = DepthIndicatorGeometry.MoveToParentCell(cellRect);
-                if (!IsLastSibling(ancestor))
+                if (!DepthIndicatorHierarchy
+                        .IsLastVisibleSibling(ancestor))
                 {
                     DrawRect(
                         DepthIndicatorGeometry.GetVerticalLine(cellRect),
@@ -64,19 +68,69 @@ namespace Ee4v.DepthIndicator
             }
         }
 
-        private static bool IsLastSibling(Transform transform)
-        {
-            var parent = transform.parent;
-            return parent == null ||
-                transform.GetSiblingIndex() == parent.childCount - 1;
-        }
-
         private static void DrawRect(Rect rect, Color color)
         {
             if (rect.width > 0f && rect.height > 0f)
             {
                 EditorGUI.DrawRect(rect, color);
             }
+        }
+    }
+
+    internal static class DepthIndicatorHierarchy
+    {
+        public static bool HasVisibleChild(
+            Transform transform)
+        {
+            if (transform == null)
+            {
+                return false;
+            }
+
+            for (var i = 0;
+                 i < transform.childCount;
+                 i++)
+            {
+                if (!IsHidden(
+                        transform.GetChild(i).gameObject))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static bool IsLastVisibleSibling(
+            Transform transform)
+        {
+            if (transform == null ||
+                transform.parent == null)
+            {
+                return true;
+            }
+
+            var parent = transform.parent;
+            for (var i = transform.GetSiblingIndex() + 1;
+                 i < parent.childCount;
+                 i++)
+            {
+                if (!IsHidden(
+                        parent.GetChild(i).gameObject))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsHidden(
+            GameObject gameObject)
+        {
+            return gameObject == null ||
+                (gameObject.hideFlags &
+                 HideFlags.HideInHierarchy) != 0;
         }
     }
 }

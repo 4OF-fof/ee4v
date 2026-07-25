@@ -43,7 +43,7 @@ namespace Ee4v.HierarchyStyle
         private HierarchyStyleService _service;
         private HierarchyObjectIdentity _identity;
         private HierarchyStyleIconApplier _iconApplier;
-        private UnityHierarchyObjectVisibility _visibility;
+        private IHierarchyObjectVisibility _visibility;
         private HierarchyStyleRecentIconSession
             _recentIconSession;
         private DecorationStyleEditor _editor;
@@ -57,7 +57,7 @@ namespace Ee4v.HierarchyStyle
             HierarchyStyleService service,
             HierarchyObjectIdentity identity,
             HierarchyStyleIconApplier iconApplier,
-            UnityHierarchyObjectVisibility visibility)
+            IHierarchyObjectVisibility visibility)
         {
             if (targets == null ||
                 targets.Count == 0 ||
@@ -115,7 +115,7 @@ namespace Ee4v.HierarchyStyle
             HierarchyStyleService service,
             HierarchyObjectIdentity identity,
             HierarchyStyleIconApplier iconApplier,
-            UnityHierarchyObjectVisibility visibility)
+            IHierarchyObjectVisibility visibility)
         {
             _targets = new List<GameObject>(targets);
             _service = service;

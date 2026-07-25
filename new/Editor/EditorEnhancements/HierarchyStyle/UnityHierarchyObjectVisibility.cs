@@ -1,12 +1,19 @@
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
-using UnityEditor.SceneManagement;
+using Ee4v.Core.Hierarchy;
 using UnityEngine;
 
 namespace Ee4v.HierarchyStyle
 {
+    internal interface IHierarchyObjectVisibility
+    {
+        int Hide(
+            IReadOnlyList<GameObject> targets,
+            string undoOperationName);
+    }
+
     internal sealed class UnityHierarchyObjectVisibility
+        : IHierarchyObjectVisibility
     {
         public int Hide(
             IReadOnlyList<GameObject> targets,
@@ -17,40 +24,23 @@ namespace Ee4v.HierarchyStyle
                 return 0;
             }
 
-            var objects = targets
+            var instanceIds = targets
                 .Where(gameObject =>
                     gameObject != null &&
-                    gameObject.scene.IsValid() &&
-                    (gameObject.hideFlags &
-                     HideFlags.HideInHierarchy) == 0)
+                    gameObject.scene.IsValid())
                 .Distinct()
+                .Select(gameObject =>
+                    gameObject.GetInstanceID())
                 .ToArray();
-            if (objects.Length == 0)
+            if (instanceIds.Length == 0)
             {
                 return 0;
             }
 
-            Undo.RecordObjects(
-                objects.Cast<Object>().ToArray(),
-                undoOperationName ?? string.Empty);
-
-            var dirtyScenes = new HashSet<int>();
-            for (var i = 0; i < objects.Length; i++)
-            {
-                var gameObject = objects[i];
-                gameObject.hideFlags |=
-                    HideFlags.HideInHierarchy;
-                EditorUtility.SetDirty(gameObject);
-                if (dirtyScenes.Add(
-                        gameObject.scene.handle))
-                {
-                    EditorSceneManager.MarkSceneDirty(
-                        gameObject.scene);
-                }
-            }
-
-            EditorApplication.RepaintHierarchyWindow();
-            return objects.Length;
+            return HierarchyObjectVisibilityApi
+                .HideFromHierarchy(
+                    instanceIds,
+                    undoOperationName);
         }
     }
 }

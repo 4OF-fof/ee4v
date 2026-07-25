@@ -33,7 +33,7 @@
     "hide": {
       "singleLabel": "ヒエラルキーから非表示",
       "multipleLabel": "{0}個のオブジェクトをヒエラルキーから非表示",
-      "tooltip": "active状態やtagを変更せずに非表示にします。Hidden Objectsから再表示できます。",
+      "tooltip": "非表示にして非アクティブ化し、tagを一時的にEditorOnlyへ変更します。Hidden Objectsから再表示すると元のactive状態とtagへ戻ります。",
       "undo": "GameObjectをヒエラルキーから非表示"
     }
   }

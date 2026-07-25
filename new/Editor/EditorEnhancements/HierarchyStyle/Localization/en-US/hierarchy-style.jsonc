@@ -33,7 +33,7 @@
     "hide": {
       "singleLabel": "Hide from Hierarchy",
       "multipleLabel": "Hide {0} objects from Hierarchy",
-      "tooltip": "Hide the selected object without changing its active state or tag. It can be restored from Hidden Objects.",
+      "tooltip": "Hide the selected object, deactivate it, and temporarily set its tag to EditorOnly. Hidden Objects restores its previous active state and tag.",
       "undo": "Hide GameObject from Hierarchy"
     }
   }

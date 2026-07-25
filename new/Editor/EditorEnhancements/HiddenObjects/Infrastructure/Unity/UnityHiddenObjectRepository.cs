@@ -1,7 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -10,6 +7,14 @@ namespace Ee4v.HiddenObjects
     internal sealed class UnityHiddenObjectRepository
         : IHiddenObjectRepository
     {
+        private readonly UnityHiddenObjectVisibilityService _visibility;
+
+        public UnityHiddenObjectRepository(
+            UnityHiddenObjectVisibilityService visibility)
+        {
+            _visibility = visibility;
+        }
+
         public IReadOnlyList<HiddenObjectSnapshotItem> Load()
         {
             var items = new List<HiddenObjectSnapshotItem>();
@@ -50,43 +55,9 @@ namespace Ee4v.HiddenObjects
             IReadOnlyCollection<int> instanceIds,
             string undoOperationName)
         {
-            if (instanceIds == null || instanceIds.Count == 0)
-            {
-                return 0;
-            }
-
-            var objects = instanceIds
-                .Select(EditorUtility.InstanceIDToObject)
-                .OfType<GameObject>()
-                .Where(gameObject =>
-                    (gameObject.hideFlags &
-                     HideFlags.HideInHierarchy) != 0)
-                .Distinct()
-                .ToArray();
-            if (objects.Length == 0)
-            {
-                return 0;
-            }
-
-            Undo.RecordObjects(
-                objects.Cast<Object>().ToArray(),
-                undoOperationName ?? string.Empty);
-
-            var dirtyScenes = new HashSet<int>();
-            for (var i = 0; i < objects.Length; i++)
-            {
-                var gameObject = objects[i];
-                gameObject.hideFlags &= ~HideFlags.HideInHierarchy;
-                EditorUtility.SetDirty(gameObject);
-                if (gameObject.scene.IsValid() &&
-                    dirtyScenes.Add(gameObject.scene.handle))
-                {
-                    EditorSceneManager.MarkSceneDirty(gameObject.scene);
-                }
-            }
-
-            EditorApplication.RepaintHierarchyWindow();
-            return objects.Length;
+            return _visibility.RevealInHierarchy(
+                instanceIds,
+                undoOperationName);
         }
 
         private static void Collect(
