@@ -54,9 +54,11 @@ phase 1 は `old` のリファクタや段階移植ではなく、`new` の再�
 - [ ] HiddenObject
     - [ ] Hierarchyから特定のGameObjectを非表示にする機能を実装する
     - [ ] 非表示のGameObjectを管理するUIを提供し、復元を可能にする
-- [ ] SceneSwitcher
-    - [ ] HierarchyのScene名をクリックするとSceneを切り替えられるウィンドウを開く機能を実装する
-    - [ ] 複数Sceneを開いている場合は、クリックしたSceneを切り替え他のSceneはそのままにする
+- [x] SceneSwitcher
+    - [x] HierarchyのScene名をクリックするとSceneを切り替えられるウィンドウを開く機能を実装する
+    - [x] 複数Sceneを開いている場合は、クリックしたSceneを切り替え他のSceneはそのままにする
+    - [x] 一覧の右クリックで対象Sceneをadditiveに追加する
+    - [x] 新規Sceneの保存先を設定可能にする
 - [ ] StyledObject
     - [ ] `:div`や`:header`などの特定の名前を持つGameObjectを特別なスタイルで表示する機能を実装する
 

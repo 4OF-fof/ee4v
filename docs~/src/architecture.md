@@ -56,6 +56,7 @@ filesystem、Editor lifecycle、UI Toolkitは外側の `Infrastructure`、`Unity
 | `HierarchyStyle` | Hierarchy itemの継承背景色・アイコン・Alt操作による非表示入口を所有する小規模Module |
 | `HiddenObjects` | HierarchyのScene見出しから非表示objectを検索・選択し、Undo対応で再表示する管理機能を所有する小規模Module |
 | `ProjectTabs` | Project windowのfolder tab、tab別navigation history、現在位置追跡を所有する小規模Module |
+| `SceneSwitcher` | HierarchyのScene見出しからSceneを検索・切替・作成する小規模Module |
 | `Core` | Settings、Localization、Injector、background activity、Unity internal facadeと、それらをEditor UIへ接続するPresentation |
 | `UI` | feature非依存のUI Toolkit component、state、resource。Catalogは開発支援用の別assembly |
 | `Testing` | test metadata、descriptor構築、Unity Test Runner adapter、静的監査、Test List UIを所有する独立Module |
@@ -117,6 +118,7 @@ LocalizationとTestも各Moduleの配下へ配置します。
 | `Editor/EditorEnhancements/HierarchyStyle` | `Ee4v.HierarchyStyle` / `Ee4v.HierarchyStyle.Editor` | Hierarchy itemの継承背景色・アイコン・Alt操作による非表示入口 |
 | `Editor/EditorEnhancements/HiddenObjects` | `Ee4v.HiddenObjects` / `Ee4v.HiddenObjects.Editor` | `HideInHierarchy` objectの管理画面とScene見出しの入口 |
 | `Editor/EditorEnhancements/ProjectTabs` | `Ee4v.ProjectTabs` / `Ee4v.ProjectTabs.Editor` | Project windowのfolder tabとtab別navigation history |
+| `Editor/EditorEnhancements/SceneSwitcher` | `Ee4v.SceneSwitcher` / `Ee4v.SceneSwitcher.Editor` | Sceneの検索、優先表示、切替、作成 |
 
 各Moduleは兄弟Moduleを参照せず、それぞれが `Core.Injector` を利用して描画callbackを
 登録します。Hierarchyの非表示操作はCoreのinstance IDベース契約を介して連携します。
@@ -149,6 +151,21 @@ tabは位置を変えずにfolder pathを固定し、別folderへのnavigation�
 並び替え領域で混在できます。Assetsを開くHome tabだけは例外として、解除・削除・
 移動できない固定tabとしてtab列の左端へ常設します。通常tabが0件になってもHome
 自体が残るため、代替のAssets tabは生成しません。
+
+`SceneSwitcher` はHierarchyのScene見出しを入口に、Assets配下のSceneを検索して
+切り替えます。複数Sceneを読み込み中はpopupを開いたSceneのhandleを保持し、
+一覧で選んだSceneをadditiveで読み込み、起点Sceneの直前へ移動してから起点Sceneだけを
+閉じることで、Hierarchy上の位置を維持して置き換えます。対象がすでに
+読み込み済みの場合も起点Sceneだけを閉じて対象をactiveにし、ほかのSceneは維持します。
+一覧を右クリックした場合は起点Sceneを閉じず、対象Sceneをadditiveで追加してactiveにします。
+読み込み中のScene、お気に入り、その他の順で表示し、
+各group内では利用者の並び順を保持します。一覧の順序、お気に入り、除外状態は
+Module所有のstoreへ保存し、Scene assetの追加・削除・移動時にcatalogを同期します。
+検索語と同名のSceneがない場合は設定したAssets配下のfolder（既定値は
+`Assets/Scene`）へ新規作成できます。
+同じfolderに`TEMPLATE.unity`があればtemplateとして複製します。検索・同期・並び順の
+判断はApplicationのpure logicへ置き、AssetDatabase、SceneManager、
+EditorSceneManagerはUnity adapterへ隔離します。
 
 `FolderStyle` はfolder GUIDをidentityとして色とicon asset GUIDをUserSettingsへ保存し、
 Project item描画中は永続化やasset走査を行いません。Alt操作で開く編集windowは対象選択と

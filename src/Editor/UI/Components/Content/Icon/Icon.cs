@@ -103,10 +103,6 @@ namespace Ee4v.UI
                 case UiBuiltinIcon.Home:
                     return new[]
                     {
-                        "HomeButton",
-                        "d_HomeButton",
-                        "Home",
-                        "d_Home",
                         "Folder Icon",
                         "d_Folder Icon"
                     };
