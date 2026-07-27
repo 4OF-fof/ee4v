@@ -18,7 +18,7 @@ namespace Ee4v.AssetManager.UI
         private FileTreeDetailState _pendingFileDetailState;
         private StandaloneAssetManagerViewSession _standaloneViewSession;
 
-        [MenuItem("ee4v/Asset Manager/Main View", false, 3)]
+        [MenuItem("ee4v/Window/Main View", false, 3)]
         private static void ShowWindow()
         {
             var window = GetWindow<MainViewWindow>();

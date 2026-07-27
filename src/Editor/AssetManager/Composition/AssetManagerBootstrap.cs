@@ -54,7 +54,6 @@ namespace Ee4v.AssetManager.Composition
                 new AssetManagerUiSchedulerAdapter(),
                 new global::Ee4v.AssetManager.UI.StandaloneAssetManagerViewSession());
             AssetManagerStartupSyncConflictPresenter.Initialize(_assetManager);
-            AssetManagerDebugSyncMenu.Initialize(_assetManager);
             AssetManagerStartupSync.EnsureInitialized(_assetManager, settings);
         }
     }

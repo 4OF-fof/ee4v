@@ -73,6 +73,18 @@ setting の定義と登録は Composition が所有します。Infrastructure �
 `IAssetManagerInfrastructureSettings` の typed snapshot provider を受け取り、
 `CoreSettings`、`ISettingsService`、Composition の setting 定義を直接参照しません。
 
+## Unity メニュー
+
+統合 AssetManager window は Unity メニューの `ee4v/Asset Manager` から開きます。
+分割 window は `ee4v/Window` 配下から個別に開きます。
+
+- `ee4v/Window/Navigation`: 単独 Navigation window
+- `ee4v/Window/Infomation`: 単独 Infomation window
+- `ee4v/Window/Main View`: 単独 Main View window
+
+手動 datasource sync 用の AssetManager debug menu は提供しません。BLM / Eagle の自動同期は
+起動時 sync の user setting に従って実行します。
+
 ## UI の責務
 
 - `MainViewController` は `MainViewHost` ごとに生成し、その表示セッションの navigation、履歴、grid 列数、取得済み一覧 cache、非同期 load と cancellation を所有する。統合 window と単独 window の controller instance は共有しない

@@ -12,7 +12,7 @@ namespace Ee4v.AssetManager.UI
         private const string WindowClassName = "ee4v-asset-manager-window";
         private const string BodyClassName = "ee4v-asset-manager-window__standalone-panel-body";
 
-        [MenuItem("ee4v/Asset Manager/Navigation", false, 1)]
+        [MenuItem("ee4v/Window/Navigation", false, 1)]
         private static void ShowWindow()
         {
             var window = GetWindow<NavigationWindow>();

@@ -14,7 +14,7 @@ namespace Ee4v.AssetManager.UI
         private InfomationPanel _infomationPanel;
         private StandaloneAssetManagerViewSession _standaloneViewSession;
 
-        [MenuItem("ee4v/Asset Manager/Infomation", false, 2)]
+        [MenuItem("ee4v/Window/Infomation", false, 2)]
         private static void ShowWindow()
         {
             var window = GetWindow<InfomationWindow>();

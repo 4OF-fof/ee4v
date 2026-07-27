@@ -1,6 +1,6 @@
 # UI Catalog
 
-新規 UI を作ったら、原則 `Debug/UI Catalog` で触れるようにします。Catalog window 本体は navigation と共通 helper に寄せ、story の追加は Catalog registrar からの登録で行います。
+新規 UI を作ったら、原則 `ee4v/Debug/Catalog` で触れるようにします。Catalog window 本体は navigation と共通 helper に寄せ、story の追加は Catalog registrar からの登録で行います。
 
 Catalog は「存在確認」ではなく「使い方の見本」を置く場所です。プロパティを触って見た目を確認できる control + preview、または最小構成の static preview を用意します。
 

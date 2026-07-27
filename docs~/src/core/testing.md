@@ -1,6 +1,7 @@
 # Test 登録
 
 Testing は `Editor/Testing` に置く独立Moduleです。Coreの内部機能ではありません。
+Test List window は Unity メニューの `ee4v/Debug/Test List` から開きます。
 
 | assembly | namespace | 役割 |
 |---|---|---|
