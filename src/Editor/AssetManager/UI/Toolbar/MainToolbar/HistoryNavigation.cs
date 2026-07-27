@@ -19,12 +19,27 @@ namespace Ee4v.AssetManager.UI
         private readonly Button _forwardButton;
         private readonly VisualElement _breadcrumb;
         private readonly HistoryNavigationOverlay _overlay;
+        private readonly Action<
+            VisualElement,
+            IReadOnlyList<HistoryNavigationOverlayRowState>,
+            int> _showHistoryMenu;
         private IVisualElementScheduledItem _pendingOverlayHide;
         private int _maximumVisibleHistoryRows;
         private AssetItemGridHistoryState _state;
 
-        public HistoryNavigation(int maximumVisibleHistoryRows = 5)
+        public HistoryNavigation(
+            int maximumVisibleHistoryRows = 5,
+            Action<
+                VisualElement,
+                IReadOnlyList<HistoryNavigationOverlayRowState>,
+                int> showHistoryMenu = null)
         {
+            _showHistoryMenu = showHistoryMenu ??
+                ((anchor, rows, maximumRows) =>
+                    HistoryNavigationMenu.Show(
+                        anchor,
+                        rows,
+                        maximumRows));
             AddToClassList(RootClassName);
 
             _backButton = CreateNavigationButton("\u2190");
@@ -139,7 +154,7 @@ namespace Ee4v.AssetManager.UI
             }
 
             HideOverlay();
-            HistoryNavigationMenu.Show(
+            _showHistoryMenu(
                 anchor,
                 rows,
                 _maximumVisibleHistoryRows);

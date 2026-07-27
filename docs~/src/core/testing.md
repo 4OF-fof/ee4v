@@ -2,6 +2,10 @@
 
 Testing は `Editor/Testing` に置く独立Moduleです。Coreの内部機能ではありません。
 Test List window は Unity メニューの `ee4v/Debug/Test List` から開きます。
+window の先頭には、登録された全 suite の状態と全 case の結果件数をまとめた
+全体サマリを表示します。検索条件による絞り込みは全体サマリへ影響しません。
+`すべて実行` は登録済みの全 suite を一括実行し、実行中または suite が未登録の
+場合は操作できません。
 
 | assembly | namespace | 役割 |
 |---|---|---|

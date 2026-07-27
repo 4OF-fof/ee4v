@@ -35,7 +35,7 @@ namespace Ee4v.ProjectTabs.Tests
                 Assets,
                 () => "tab");
 
-            Assert.That(session.State.Tabs, Has.Count.EqualTo(1));
+            Assert.That(session.State.Tabs.Count, Is.EqualTo(1));
             Assert.That(session.State.Tabs[0].IsHome, Is.True);
             Assert.That(session.State.Tabs[0].IsPinned, Is.True);
             Assert.That(
@@ -180,8 +180,8 @@ namespace Ee4v.ProjectTabs.Tests
             Assert.That(session.Move(assetsId, 3), Is.True);
 
             Assert.That(
-                session.State.Tabs,
-                Has.Count.EqualTo(4));
+                session.State.Tabs.Count,
+                Is.EqualTo(4));
             Assert.That(session.State.Tabs[0].IsHome, Is.True);
             Assert.That(
                 session.State.Tabs[1].Id,
@@ -211,9 +211,9 @@ namespace Ee4v.ProjectTabs.Tests
             var addedIds = session.AddRange(
                 new[] { Materials, Prefabs });
 
-            Assert.That(addedIds, Has.Count.EqualTo(2));
+            Assert.That(addedIds.Count, Is.EqualTo(2));
             Assert.That(changeCount, Is.EqualTo(1));
-            Assert.That(session.State.Tabs, Has.Count.EqualTo(4));
+            Assert.That(session.State.Tabs.Count, Is.EqualTo(4));
             Assert.That(session.State.Tabs[0].IsHome, Is.True);
             Assert.That(
                 session.State.Tabs[2].CurrentLocation,
@@ -336,8 +336,8 @@ namespace Ee4v.ProjectTabs.Tests
                 session.State.Find(tabId).CurrentLocation,
                 Is.EqualTo(Prefabs));
             Assert.That(
-                session.State.Find(tabId).History,
-                Has.Count.EqualTo(1));
+                session.State.Find(tabId).History.Count,
+                Is.EqualTo(1));
         }
 
         [Test]
@@ -366,8 +366,8 @@ namespace Ee4v.ProjectTabs.Tests
                 session.State.Find(tabId).CurrentLocation,
                 Is.EqualTo(searchedPrefabs));
             Assert.That(
-                session.State.Find(tabId).History,
-                Has.Count.EqualTo(1));
+                session.State.Find(tabId).History.Count,
+                Is.EqualTo(1));
         }
 
         [Test]
@@ -392,7 +392,7 @@ namespace Ee4v.ProjectTabs.Tests
                 Assets,
                 () => "restored-" + nextId++);
 
-            Assert.That(restored.State.Tabs, Has.Count.EqualTo(3));
+            Assert.That(restored.State.Tabs.Count, Is.EqualTo(3));
             Assert.That(restored.State.Tabs[0].IsHome, Is.True);
             Assert.That(restored.State.Tabs[1].Id, Is.EqualTo(regularId));
             Assert.That(restored.State.Tabs[1].IsPinned, Is.False);
@@ -508,53 +508,79 @@ namespace Ee4v.ProjectTabs.Tests
                 Is.LessThan(pinnedTab.IndexOf(title)));
         }
 
-        [Test]
+        [UnityTest]
         [FeatureTestCase(
             "タブの右クリックでピン止めを切り替える",
             "通常tabはpin切替を通知し、固定Home tabの右クリックでは通知しないことを確認します。",
             order: 62,
             category: FeatureTestCategory.Ui)]
-        public void View_ContextClickTogglesPinExceptForHome()
+        public IEnumerator View_ContextClickTogglesPinExceptForHome()
         {
+            var window = ScriptableObject.CreateInstance<EditorWindow>();
+            window.position = new Rect(0f, 0f, 600f, 200f);
+            window.Show();
             var view = new ProjectTabsView();
-            view.SetState(new ProjectTabsViewState(
-                new[]
+            try
+            {
+                view.SetState(new ProjectTabsViewState(
+                    new[]
+                    {
+                        new ProjectTabViewState(
+                            ProjectTabsSession.HomeTabId,
+                            string.Empty,
+                            "Assets",
+                            false,
+                            true,
+                            true),
+                        new ProjectTabViewState(
+                            "tab-1",
+                            "Assets",
+                            "Assets",
+                            true)
+                    },
+                    "tab-1",
+                    false,
+                    false));
+                window.rootVisualElement.Add(view);
+                yield return null;
+                var toggledIds = new List<string>();
+                view.TabPinToggleRequested += toggledIds.Add;
+                var tabs = view.Query<VisualElement>(
+                        className: "ee4v-project-tabs__tab")
+                    .ToList();
+
+                using (var contextClick =
+                       ContextClickEvent.GetPooled(
+                           tabs[1].worldBound.center,
+                           (int)MouseButton.RightMouse,
+                           1,
+                           Vector2.zero,
+                           EventModifiers.None))
                 {
-                    new ProjectTabViewState(
-                        ProjectTabsSession.HomeTabId,
-                        string.Empty,
-                        "Assets",
-                        false,
-                        true,
-                        true),
-                    new ProjectTabViewState(
-                        "tab-1",
-                        "Assets",
-                        "Assets",
-                        true)
-                },
-                "tab-1",
-                false,
-                false));
-            var toggledIds = new List<string>();
-            view.TabPinToggleRequested += toggledIds.Add;
-            var tabs = view.Query<VisualElement>(
-                    className: "ee4v-project-tabs__tab")
-                .ToList();
+                    contextClick.target = tabs[1];
+                    tabs[1].SendEvent(contextClick);
+                }
 
-            using (var contextClick =
-                   ContextClickEvent.GetPooled())
-            {
-                tabs[1].SendEvent(contextClick);
+                using (var contextClick =
+                       ContextClickEvent.GetPooled(
+                           tabs[0].worldBound.center,
+                           (int)MouseButton.RightMouse,
+                           1,
+                           Vector2.zero,
+                           EventModifiers.None))
+                {
+                    contextClick.target = tabs[0];
+                    tabs[0].SendEvent(contextClick);
+                }
+
+                Assert.That(
+                    toggledIds,
+                    Is.EqualTo(new[] { "tab-1" }));
             }
-
-            using (var contextClick =
-                   ContextClickEvent.GetPooled())
+            finally
             {
-                tabs[0].SendEvent(contextClick);
+                window.Close();
             }
-
-            Assert.That(toggledIds, Is.EqualTo(new[] { "tab-1" }));
         }
 
         [UnityTest]
@@ -599,9 +625,9 @@ namespace Ee4v.ProjectTabs.Tests
                 window.rootVisualElement.Add(view);
                 yield return null;
 
-                var selectedTabId = string.Empty;
+                var selectedTabIds = new List<string>();
                 view.TabSelected += tabId =>
-                    selectedTabId = tabId;
+                    selectedTabIds.Add(tabId);
                 var tabs = view.Query<VisualElement>(
                         className: "ee4v-project-tabs__tab")
                     .ToList();
@@ -610,10 +636,11 @@ namespace Ee4v.ProjectTabs.Tests
                        PointerDownEvent.GetPooled(new Event
                        {
                            type = EventType.MouseDown,
-                           button = 0,
+                           button = (int)MouseButton.LeftMouse,
                            mousePosition = position
                        }))
                 {
+                    pointerDown.target = tabs[2];
                     tabs[2].SendEvent(pointerDown);
                 }
 
@@ -621,14 +648,28 @@ namespace Ee4v.ProjectTabs.Tests
                        PointerUpEvent.GetPooled(new Event
                        {
                            type = EventType.MouseUp,
-                           button = 0,
+                           button = (int)MouseButton.LeftMouse,
                            mousePosition = position
                        }))
                 {
+                    pointerUp.target = tabs[2];
                     tabs[2].SendEvent(pointerUp);
                 }
 
-                Assert.That(selectedTabId, Is.EqualTo("tab-2"));
+                using (var click = ClickEvent.GetPooled(new Event
+                       {
+                           type = EventType.MouseUp,
+                           button = (int)MouseButton.LeftMouse,
+                           mousePosition = position
+                       }))
+                {
+                    click.target = tabs[2];
+                    tabs[2].SendEvent(click);
+                }
+
+                Assert.That(
+                    selectedTabIds,
+                    Is.EqualTo(new[] { "tab-2" }));
             }
             finally
             {
@@ -645,13 +686,20 @@ namespace Ee4v.ProjectTabs.Tests
         public IEnumerator View_BackButtonContextClickShowsHistoryMenu()
         {
             var window = ScriptableObject.CreateInstance<EditorWindow>();
-            EditorWindow historyMenu = null;
+            IReadOnlyList<ProjectHistoryEntryViewState>
+                shownEntries = null;
+            var shownBackHistory = false;
             window.position = new Rect(0f, 0f, 600f, 200f);
             window.Show();
 
             try
             {
-                var view = new ProjectTabsView();
+                var view = new ProjectTabsView(
+                    (_, entries, back) =>
+                    {
+                        shownEntries = entries;
+                        shownBackHistory = back;
+                    });
                 view.SetState(new ProjectTabsViewState(
                     null,
                     string.Empty,
@@ -667,38 +715,27 @@ namespace Ee4v.ProjectTabs.Tests
                 var backButton = view.Q<Button>(
                     className: "ee4v-project-tabs__navigation-button");
                 Assert.That(backButton.tooltip, Is.Null.Or.Empty);
-                using (var evt = ContextClickEvent.GetPooled())
+                using (var evt = ContextClickEvent.GetPooled(
+                           backButton.worldBound.center,
+                           (int)MouseButton.RightMouse,
+                           1,
+                           Vector2.zero,
+                           EventModifiers.None))
                 {
+                    evt.target = backButton;
                     backButton.SendEvent(evt);
                 }
-                yield return null;
 
-                var editorWindows =
-                    Resources.FindObjectsOfTypeAll<EditorWindow>();
-                for (var i = 0; i < editorWindows.Length; i++)
-                {
-                    if (editorWindows[i].GetType().Name ==
-                        "ContextMenuWindow")
-                    {
-                        historyMenu = editorWindows[i];
-                    }
-                }
-
-                Assert.That(historyMenu, Is.Not.Null);
-                var historyRow = historyMenu.rootVisualElement.Q<Button>(
-                    className: "ee4v-ui-context-menu__item");
-                Assert.That(historyRow, Is.Not.Null);
-                Assert.That(historyRow.contentRect.width, Is.GreaterThan(0f));
+                Assert.That(shownEntries, Is.Not.Null);
+                Assert.That(shownEntries.Count, Is.EqualTo(1));
                 Assert.That(
-                    historyRow.Q<IMGUIContainer>(),
-                    Is.Not.Null);
+                    shownEntries[0].Label,
+                    Is.EqualTo("Assets"));
+                Assert.That(shownEntries[0].Steps, Is.EqualTo(1));
+                Assert.That(shownBackHistory, Is.True);
             }
             finally
             {
-                if (historyMenu != null)
-                {
-                    historyMenu.Close();
-                }
                 window.Close();
             }
         }

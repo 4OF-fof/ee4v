@@ -332,6 +332,7 @@ namespace Ee4v.UI
         private const float MenuBorderWidth = UiBorderTokens.Hairline;
         private const float ItemPaddingX = UiSpacingTokens.Large;
         private const float MinimumWidth = 80f;
+        private const float MinimumWidthSnapTolerance = UiBorderTokens.Hairline;
         private const float ShortcutGap = UiSpacingTokens.Xxl;
         private const float TextMeasurementAllowance = UiSpacingTokens.Xl;
 
@@ -403,7 +404,14 @@ namespace Ee4v.UI
                     TextMeasurementAllowance + ItemPaddingX + MenuPaddingX + MenuBorderWidth);
             }
 
-            return Mathf.Max(width, MinimumWidth);
+            return NormalizeAutoWidth(width);
+        }
+
+        internal static float NormalizeAutoWidth(float width)
+        {
+            return width <= MinimumWidth + MinimumWidthSnapTolerance
+                ? MinimumWidth
+                : Mathf.Max(width, MinimumWidth);
         }
     }
 }

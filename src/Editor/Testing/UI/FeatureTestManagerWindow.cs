@@ -39,6 +39,9 @@ namespace Ee4v.Testing.UI
 
         private readonly List<FeatureTestDescriptor> _descriptors = new List<FeatureTestDescriptor>();
         private readonly List<DescriptorView> _descriptorViews = new List<DescriptorView>();
+        private InfoCard _overallCard;
+        private Alerts _overallAlert;
+        private Button _runAllButton;
         private SearchField _searchField;
         private Alerts _stateAlert;
         private ScrollView _suiteScrollView;
@@ -98,6 +101,20 @@ namespace Ee4v.Testing.UI
             var shell = new VisualElement();
             shell.AddToClassList("ee4v-test-manager__shell");
 
+            _overallCard = new InfoCard();
+            _overallCard.AddToClassList("ee4v-test-manager__overall");
+
+            _runAllButton = new Button(TryRunAll)
+            {
+                text = I18N.Get("testing.window.runAll")
+            };
+            _runAllButton.AddToClassList("ee4v-test-manager__run-all");
+            _overallCard.HeaderRight.Add(_runAllButton);
+
+            _overallAlert = new Alerts();
+            _overallAlert.AddToClassList("ee4v-test-manager__overall-alert");
+            _overallCard.Body.Add(_overallAlert);
+
             _searchField = new SearchField(new SearchFieldState(
                 _searchQuery,
                 I18N.Get("testing.window.searchPlaceholder"),
@@ -116,6 +133,7 @@ namespace Ee4v.Testing.UI
             _suiteListHost.AddToClassList("ee4v-test-manager__list");
             _suiteScrollView.Add(_suiteListHost);
 
+            shell.Add(_overallCard);
             shell.Add(_searchField);
             shell.Add(_stateAlert);
             shell.Add(_suiteScrollView);
@@ -173,12 +191,44 @@ namespace Ee4v.Testing.UI
                 return;
             }
 
+            RefreshOverallSummary();
+
             for (var i = 0; i < _descriptorViews.Count; i++)
             {
                 UpdateDescriptorView(_descriptorViews[i]);
             }
 
             ApplySearchQuery(_searchQuery);
+        }
+
+        private void RefreshOverallSummary()
+        {
+            if (_overallCard == null || _overallAlert == null || _runAllButton == null)
+            {
+                return;
+            }
+
+            var summary = FeatureTestOverallSummary.Build(
+                _descriptors,
+                featureScope => _runnerService != null
+                    ? _runnerService.GetRecord(featureScope)
+                    : null);
+            _overallCard.SetState(new InfoCardState(
+                I18N.Get("testing.window.overallSummary"),
+                description: null,
+                eyebrow: null,
+                badgeState: new StatusBadgeState(
+                    FormatStatus(summary.Status),
+                    ToBadgeTone(summary.Status))));
+            _overallAlert.SetState(new AlertsState(
+                ToAlertTone(summary.Status),
+                string.Empty,
+                BuildOverallSummaryMessage(summary)));
+            _runAllButton.SetEnabled(
+                _runnerService != null
+                && !_runnerService.IsRunInProgress
+                && string.IsNullOrWhiteSpace(_loadError)
+                && _descriptors.Count > 0);
         }
 
         private void RebuildDescriptorViews()
@@ -306,6 +356,28 @@ namespace Ee4v.Testing.UI
             RefreshWindowState();
         }
 
+        private void TryRunAll()
+        {
+            EnsureRunnerService();
+            if (_runnerService == null)
+            {
+                return;
+            }
+
+            if (!_runnerService.TryRunAll(_descriptors, out var errorMessage))
+            {
+                WindowToastApi.Show(this, new WindowToastRequest(
+                    WindowToastTone.Error,
+                    I18N.Get("testing.window.title"),
+                    ResolveRunnerMessage(
+                        errorMessage,
+                        string.Empty)));
+                return;
+            }
+
+            RefreshWindowState();
+        }
+
         private static string FormatStatus(FeatureTestRunRecord record)
         {
             return FormatStatus(record.Status);
@@ -367,6 +439,28 @@ namespace Ee4v.Testing.UI
             return !string.IsNullOrWhiteSpace(resolvedMessage)
                 ? resolvedMessage
                 : counts;
+        }
+
+        private static string BuildOverallSummaryMessage(
+            FeatureTestOverallSummary summary)
+        {
+            var suites = string.Format(
+                I18N.Get("testing.window.overallSuitesFormat"),
+                summary.SuiteCount,
+                summary.PassedSuiteCount,
+                summary.FailedSuiteCount,
+                summary.SkippedSuiteCount,
+                summary.InconclusiveSuiteCount,
+                summary.RunningSuiteCount,
+                summary.NotRunSuiteCount);
+            var counts = string.Format(
+                I18N.Get("testing.window.countsFormat"),
+                summary.PassCount,
+                summary.FailCount,
+                summary.SkipCount,
+                summary.InconclusiveCount,
+                summary.DurationSeconds);
+            return suites + "\n" + counts;
         }
 
         private static string ResolveRunnerMessage(

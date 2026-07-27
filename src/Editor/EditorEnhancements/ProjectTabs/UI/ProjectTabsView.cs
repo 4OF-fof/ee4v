@@ -129,6 +129,11 @@ namespace Ee4v.ProjectTabs
         private readonly ScrollView _scroll;
         private readonly VisualElement _strip;
         private readonly Button _addButton;
+        private readonly Action<
+            VisualElement,
+            IReadOnlyList<ProjectHistoryEntryViewState>,
+            bool>
+            _showHistoryMenu;
         private ProjectTabsViewState _state;
         private VisualElement _potentialDragTab;
         private VisualElement _draggingTab;
@@ -139,8 +144,14 @@ namespace Ee4v.ProjectTabs
         private Vector2 _dragStartPosition;
         private string _suppressedClickTabId;
 
-        public ProjectTabsView()
+        public ProjectTabsView(
+            Action<
+                VisualElement,
+                IReadOnlyList<ProjectHistoryEntryViewState>,
+                bool>
+                showHistoryMenu = null)
         {
+            _showHistoryMenu = showHistoryMenu;
             AddToClassList("ee4v-ui");
             AddToClassList(RootClassName);
             UiStyleUtility.AddPackageStyleSheet(
@@ -278,6 +289,12 @@ namespace Ee4v.ProjectTabs
         {
             if (entries == null || entries.Count == 0)
             {
+                return;
+            }
+
+            if (_showHistoryMenu != null)
+            {
+                _showHistoryMenu(anchor, entries, back);
                 return;
             }
 
@@ -486,11 +503,9 @@ namespace Ee4v.ProjectTabs
                 OnTabPointerDown,
                 TrickleDown.TrickleDown);
             _strip.RegisterCallback<PointerMoveEvent>(
-                OnTabPointerMove,
-                TrickleDown.TrickleDown);
+                OnTabPointerMove);
             _strip.RegisterCallback<PointerUpEvent>(
-                OnTabPointerUp,
-                TrickleDown.TrickleDown);
+                OnTabPointerUp);
             _strip.RegisterCallback<PointerCaptureOutEvent>(
                 _ => CancelTabDrag());
         }

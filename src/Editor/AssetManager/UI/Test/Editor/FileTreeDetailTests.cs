@@ -147,65 +147,57 @@ namespace Ee4v.AssetManager.UI.Tests
         public IEnumerator HistoryNavigation_ContextClickShowsHistoryMenu()
         {
             var window = ScriptableObject.CreateInstance<EditorWindow>();
-            ContextMenuWindow historyMenu = null;
-            window.position = new Rect(0f, 0f, 600f, 200f);
+            ContextMenuState shownState = null;
+            var navigation = new HistoryNavigation(
+                showHistoryMenu: (_, rows, maximumRows) =>
+                    shownState = HistoryNavigationMenu.CreateState(
+                        rows,
+                        maximumRows));
+            navigation.SetState(new AssetItemGridHistoryState(
+                new AssetItemGridHistoryEntry(
+                    AssetItemGridHistoryEntryKind.View,
+                    "current",
+                    "Current"),
+                true,
+                false,
+                new[]
+                {
+                    new AssetItemGridHistoryEntry(
+                        AssetItemGridHistoryEntryKind.FileList,
+                        "previous",
+                        "Previous",
+                        "item-1",
+                        "Avatar")
+                }));
+            window.rootVisualElement.Add(navigation);
             window.Show();
+            yield return null;
 
             try
             {
-                var root = new VisualElement();
-                root.AddToClassList("ee4v-ui");
-                var navigation = new HistoryNavigation();
-                navigation.SetState(new AssetItemGridHistoryState(
-                    new AssetItemGridHistoryEntry(
-                        AssetItemGridHistoryEntryKind.View,
-                        "current",
-                        "Current"),
-                    true,
-                    false,
-                    new[]
-                    {
-                        new AssetItemGridHistoryEntry(
-                            AssetItemGridHistoryEntryKind.FileList,
-                            "previous",
-                            "Previous",
-                            "item-1",
-                            "Avatar")
-                    }));
-                root.Add(navigation);
-                window.rootVisualElement.Add(root);
-                yield return null;
-
                 var backButton = navigation.Q<Button>(
                     className: "ee4v-ui-history-navigation__icon-button");
                 Assert.That(backButton.tooltip, Is.Null.Or.Empty);
-                using (var evt = ContextClickEvent.GetPooled())
+                using (var evt = ContextClickEvent.GetPooled(
+                           backButton.worldBound.center,
+                           (int)MouseButton.RightMouse,
+                           1,
+                           Vector2.zero,
+                           EventModifiers.None))
                 {
+                    evt.target = backButton;
                     backButton.SendEvent(evt);
                 }
-                yield return null;
 
-                var menus =
-                    Resources.FindObjectsOfTypeAll<ContextMenuWindow>();
-                Assert.That(menus, Is.Not.Empty);
-                historyMenu = menus[menus.Length - 1];
-                var historyRow = historyMenu.rootVisualElement.Q<Button>(
-                    className: "ee4v-ui-context-menu__item");
-                Assert.That(historyRow, Is.Not.Null);
+                Assert.That(shownState, Is.Not.Null);
+                Assert.That(shownState.Items.Count, Is.EqualTo(1));
                 Assert.That(
-                    historyRow.Q<UiTextElement>().Text,
+                    shownState.Items[0].Label,
                     Is.EqualTo("Avatar"));
-                Assert.That(historyRow.contentRect.width, Is.GreaterThan(0f));
-                Assert.That(
-                    historyRow.Q<IMGUIContainer>(),
-                    Is.Not.Null);
+                Assert.That(shownState.Items[0].Enabled, Is.True);
             }
             finally
             {
-                if (historyMenu != null)
-                {
-                    historyMenu.Close();
-                }
                 window.Close();
             }
         }

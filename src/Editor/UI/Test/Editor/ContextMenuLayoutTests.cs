@@ -61,6 +61,14 @@ namespace Ee4v.UI.Tests
         }
 
         [Test]
+        public void NormalizeAutoWidth_SnapsHairlineFontMetricDifferenceToMinimum()
+        {
+            Assert.That(ContextMenuLayout.NormalizeAutoWidth(80.01f), Is.EqualTo(80f));
+            Assert.That(ContextMenuLayout.NormalizeAutoWidth(81f), Is.EqualTo(80f));
+            Assert.That(ContextMenuLayout.NormalizeAutoWidth(81.01f), Is.EqualTo(81.01f));
+        }
+
+        [Test]
         public void CalculateSize_AutoWidthIsNotLimitedToLegacyFixedMaximum()
         {
             var state = new ContextMenuState(

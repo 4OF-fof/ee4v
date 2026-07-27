@@ -88,3 +88,6 @@ focusを失うため、`EditorPopupWindow.HasOpenTransientPicker()` でpicker wi
 popupが維持され、各操作終了後に外側をclickすると閉じることを確認する。
 
 popup の最大幅と配置には `UnityEditorInternal.InternalEditorUtility.GetBoundsOfDesktopAtPoint` から得た表示中モニターの bounds を使う。この API を利用できない場合は従来どおり希望サイズと起点位置で表示する。Unity 更新時は、角丸外側の透過、複数モニター上での配置、長いラベルがモニター幅まで省略されないことを Catalog の `ContextMenuWindow` story でも確認する。
+通常Editorとbatchmodeでは `GUIStyle.CalcSize` の結果に1pxの差が出ることがあるため、
+自動計算幅が80pxの最小幅からhairline以内に収まる場合は80pxへ正規化する。
+それを超えるラベル幅は正規化せず、従来どおり内容に合わせて拡張する。

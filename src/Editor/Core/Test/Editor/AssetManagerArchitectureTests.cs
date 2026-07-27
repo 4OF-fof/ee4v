@@ -50,6 +50,7 @@ namespace Ee4v.Core.Tests
                 new[]
                 {
                     "Ee4v.AssetManager.Contracts.Editor",
+                    "Ee4v.Core.Contracts.Editor",
                     "Ee4v.Core.Editor",
                     "Ee4v.Core.Presentation.Editor",
                     "Ee4v.UI.Editor"

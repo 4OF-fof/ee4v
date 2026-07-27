@@ -257,7 +257,7 @@ namespace Ee4v.Testing.UI
             var detailsField = new CopyableTextArea(new CopyableTextAreaState(
                 testCase.DetailsText,
                 testCase.DetailsCopyButtonText,
-                I18N.Get("ui.copy.copied")));
+                I18N.Get("testing.window.copied")));
             detailsField.AddToClassList(CaseDetailsFieldClassName);
             detailsBody.Add(detailsField);
 
