@@ -29,6 +29,13 @@ namespace Ee4v.AssetManager.Contracts
         IReadOnlyList<AssetCollection> GetCollections();
         AssetCollection CreateCollection(CreateCollectionRequest request);
         AssetCollection CreateSmartCollection(CreateSmartCollectionRequest request);
+        AssetCollection UpdateCollection(
+            string collectionId,
+            UpdateCollectionRequest request);
+        AssetCollection UpdateSmartCollection(
+            string collectionId,
+            UpdateSmartCollectionRequest request);
+        void DeleteCollection(string collectionId);
         void MoveCollection(
             string collectionId,
             string parentCollectionId,
@@ -55,6 +62,7 @@ namespace Ee4v.AssetManager.Contracts
     {
         Catalog,
         Collections,
+        SmartCollectionRule,
         FileTree,
         FileImportTargets,
         VersionGroupPrimaryFile

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Ee4v.AssetManager.Contracts;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI
@@ -52,6 +53,12 @@ namespace Ee4v.AssetManager.UI
                 OnCreateSmartCollectionRequested;
             NavigationPanel.MoveCollectionsRequested +=
                 _collectionController.MoveCollections;
+            NavigationPanel.RenameCollectionRequested +=
+                OnRenameCollectionRequested;
+            NavigationPanel.EditSmartCollectionRequested +=
+                OnEditSmartCollectionRequested;
+            NavigationPanel.DeleteCollectionRequested +=
+                OnDeleteCollectionRequested;
             NavigationPanel.ManualSyncRequested +=
                 OnManualSyncRequested;
 
@@ -102,6 +109,12 @@ namespace Ee4v.AssetManager.UI
                 OnCreateSmartCollectionRequested;
             NavigationPanel.MoveCollectionsRequested -=
                 _collectionController.MoveCollections;
+            NavigationPanel.RenameCollectionRequested -=
+                OnRenameCollectionRequested;
+            NavigationPanel.EditSmartCollectionRequested -=
+                OnEditSmartCollectionRequested;
+            NavigationPanel.DeleteCollectionRequested -=
+                OnDeleteCollectionRequested;
             NavigationPanel.ManualSyncRequested -=
                 OnManualSyncRequested;
 
@@ -176,6 +189,40 @@ namespace Ee4v.AssetManager.UI
                 true,
                 _collectionController.CreateCollection,
                 _collectionController.CreateSmartCollection);
+        }
+
+        private void OnRenameCollectionRequested(
+            AssetCollection collection,
+            VisualElement anchor,
+            Vector2 panelPosition)
+        {
+            CollectionCreationWindow.ShowRename(
+                anchor,
+                panelPosition,
+                collection,
+                _collectionController.UpdateCollection);
+        }
+
+        private void OnEditSmartCollectionRequested(
+            AssetCollection collection,
+            VisualElement anchor,
+            Vector2 panelPosition)
+        {
+            CollectionCreationWindow.ShowSmartConditions(
+                anchor,
+                panelPosition,
+                collection,
+                _collectionController.UpdateSmartCollection);
+        }
+
+        private void OnDeleteCollectionRequested(
+            AssetCollection collection)
+        {
+            if (CollectionDeletionConfirmation.Confirm(collection))
+            {
+                _collectionController.DeleteCollection(
+                    collection.Id);
+            }
         }
     }
 }

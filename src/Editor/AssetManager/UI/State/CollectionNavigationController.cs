@@ -14,6 +14,7 @@ namespace Ee4v.AssetManager.UI
         private CancellationTokenSource _loadCancellation;
         private CancellationTokenSource _createCancellation;
         private CancellationTokenSource _moveCancellation;
+        private CancellationTokenSource _mutationCancellation;
         private int _loadVersion;
         private bool _active;
         private bool _disposed;
@@ -66,6 +67,7 @@ namespace Ee4v.AssetManager.UI
             CancelLoad();
             CancelCreate();
             CancelMove();
+            CancelMutation();
         }
 
         public void Reload()
@@ -128,6 +130,39 @@ namespace Ee4v.AssetManager.UI
             CreateSmartCollectionRequest request)
         {
             Create(() => _assetManager.CreateSmartCollection(request));
+        }
+
+        public void UpdateCollection(
+            string collectionId,
+            UpdateCollectionRequest request)
+        {
+            Mutate(
+                () => _assetManager.UpdateCollection(
+                    collectionId,
+                    request),
+                AddOrReplace);
+        }
+
+        public void UpdateSmartCollection(
+            string collectionId,
+            UpdateSmartCollectionRequest request)
+        {
+            Mutate(
+                () => _assetManager.UpdateSmartCollection(
+                    collectionId,
+                    request),
+                AddOrReplace);
+        }
+
+        public void DeleteCollection(string collectionId)
+        {
+            Mutate(
+                () =>
+                {
+                    _assetManager.DeleteCollection(collectionId);
+                    return collectionId;
+                },
+                Remove);
         }
 
         public void MoveCollection(
@@ -254,6 +289,57 @@ namespace Ee4v.AssetManager.UI
                 });
         }
 
+        private void Mutate<T>(
+            Func<T> operation,
+            Action<T> applyResult)
+        {
+            if (_disposed || operation == null)
+            {
+                return;
+            }
+
+            ErrorChanged?.Invoke(string.Empty);
+            CancelMutation();
+            var cancellation = new CancellationTokenSource();
+            _mutationCancellation = cancellation;
+            _scheduler.RunInBackground(
+                token =>
+                {
+                    token.ThrowIfCancellationRequested();
+                    var result = operation();
+                    token.ThrowIfCancellationRequested();
+                    return result;
+                },
+                cancellation.Token,
+                result =>
+                {
+                    cancellation.Dispose();
+                    if (ReferenceEquals(
+                            _mutationCancellation,
+                            cancellation))
+                    {
+                        _mutationCancellation = null;
+                    }
+
+                    if (_disposed || result.Canceled)
+                    {
+                        return;
+                    }
+
+                    if (!result.Succeeded)
+                    {
+                        ErrorChanged?.Invoke(
+                            result.Error != null
+                                ? FormatError(result.Error)
+                                : string.Empty);
+                        Reload();
+                        return;
+                    }
+
+                    applyResult?.Invoke(result.Value);
+                });
+        }
+
         private void AddOrReplace(AssetCollection collection)
         {
             if (collection == null)
@@ -270,6 +356,24 @@ namespace Ee4v.AssetManager.UI
                             collection.Id,
                             StringComparison.Ordinal))
                     .Concat(new[] { collection })
+                    .ToArray());
+        }
+
+        private void Remove(string collectionId)
+        {
+            if (string.IsNullOrWhiteSpace(collectionId))
+            {
+                return;
+            }
+
+            SetCollections(
+                _collections
+                    .Where(item =>
+                        item != null &&
+                        !string.Equals(
+                            item.Id,
+                            collectionId,
+                            StringComparison.Ordinal))
                     .ToArray());
         }
 
@@ -327,6 +431,17 @@ namespace Ee4v.AssetManager.UI
 
             _moveCancellation.Cancel();
             _moveCancellation = null;
+        }
+
+        private void CancelMutation()
+        {
+            if (_mutationCancellation == null)
+            {
+                return;
+            }
+
+            _mutationCancellation.Cancel();
+            _mutationCancellation = null;
         }
 
         private static string FormatError(Exception exception)

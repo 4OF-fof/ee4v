@@ -76,7 +76,8 @@ namespace Ee4v.AssetManager.UI
                     MoveCollectionsRequested?.Invoke(
                         collectionIds,
                         parentCollectionId,
-                        siblingIndex));
+                        siblingIndex),
+                ShowCollectionContextMenu);
             collectionsScroll.Add(CreateCollectionSection(
                 I18N.Get("assetManager.navigation.collections.title"),
                 I18N.Get(
@@ -96,6 +97,15 @@ namespace Ee4v.AssetManager.UI
 
         public event Action<IReadOnlyList<string>, string, int>
             MoveCollectionsRequested;
+
+        public event Action<AssetCollection, VisualElement, Vector2>
+            RenameCollectionRequested;
+
+        public event Action<AssetCollection, VisualElement, Vector2>
+            EditSmartCollectionRequested;
+
+        public event Action<AssetCollection>
+            DeleteCollectionRequested;
 
         public event Action ManualSyncRequested;
 
@@ -210,6 +220,81 @@ namespace Ee4v.AssetManager.UI
                     anchor,
                     createCollection,
                     createSmartCollection));
+        }
+
+        internal static ContextMenuState
+            CreateCollectionContextMenuState(
+                AssetCollection collection,
+                VisualElement anchor,
+                Vector2 panelPosition,
+                Action<AssetCollection, VisualElement, Vector2>
+                    renameCollection,
+                Action<AssetCollection, VisualElement, Vector2>
+                    editSmartCollection,
+                Action<AssetCollection> deleteCollection)
+        {
+            if (collection == null)
+            {
+                return new ContextMenuState(null);
+            }
+
+            var items = new List<ContextMenuItemState>
+            {
+                new ContextMenuItemState(
+                    "rename-collection",
+                    I18N.Get(
+                        "assetManager.navigation.collections.context.rename"),
+                    () => renameCollection?.Invoke(
+                        collection,
+                        anchor,
+                        panelPosition))
+            };
+            if (collection.IsSmartCollection)
+            {
+                items.Add(new ContextMenuItemState(
+                    "edit-smart-collection",
+                    I18N.Get(
+                        "assetManager.navigation.collections.context.editConditions"),
+                    () => editSmartCollection?.Invoke(
+                        collection,
+                        anchor,
+                        panelPosition)));
+            }
+
+            items.Add(ContextMenuItemState.Separator());
+            items.Add(new ContextMenuItemState(
+                "delete-collection",
+                I18N.Get(
+                    "assetManager.navigation.collections.context.delete"),
+                () => deleteCollection?.Invoke(collection)));
+            return new ContextMenuState(items);
+        }
+
+        private void ShowCollectionContextMenu(
+            AssetCollection collection,
+            VisualElement anchor,
+            Vector2 panelPosition)
+        {
+            ContextMenuWindow.Show(
+                anchor,
+                panelPosition,
+                CreateCollectionContextMenuState(
+                    collection,
+                    anchor,
+                    panelPosition,
+                    (item, target, position) =>
+                        RenameCollectionRequested?.Invoke(
+                            item,
+                            target,
+                            position),
+                    (item, target, position) =>
+                        EditSmartCollectionRequested?.Invoke(
+                            item,
+                            target,
+                            position),
+                    item =>
+                        DeleteCollectionRequested?.Invoke(
+                            item)));
         }
 
         private static VisualElement CreateHeader(

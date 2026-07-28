@@ -83,6 +83,12 @@ namespace Ee4v.AssetManager.UI
                 OnCreateSmartCollectionRequested;
             _navigationPanel.MoveCollectionsRequested +=
                 _collectionController.MoveCollections;
+            _navigationPanel.RenameCollectionRequested +=
+                OnRenameCollectionRequested;
+            _navigationPanel.EditSmartCollectionRequested +=
+                OnEditSmartCollectionRequested;
+            _navigationPanel.DeleteCollectionRequested +=
+                OnDeleteCollectionRequested;
             _navigationPanel.SelectionChanged +=
                 OnSelectionChanged;
             _navigationPanel.ManualSyncRequested +=
@@ -94,6 +100,23 @@ namespace Ee4v.AssetManager.UI
             System.Collections.Generic.IReadOnlyList<
                 AssetCollection> collections)
         {
+            var selectedCollectionId = string.Empty;
+            if (AssetManagerCollectionViewId.TryDecode(
+                    _selectedItemId,
+                    out selectedCollectionId) &&
+                (collections == null ||
+                 !System.Linq.Enumerable.Any(
+                     collections,
+                     collection =>
+                         collection != null &&
+                         collection.Id == selectedCollectionId)))
+            {
+                _selectedItemId =
+                    AssetManagerNavigationCatalog.DefaultItemId;
+                _standaloneViewSession?.SetNavigation(
+                    _selectedItemId);
+            }
+
             _navigationPanel?.SetCollections(
                 collections,
                 _selectedItemId);
@@ -156,6 +179,40 @@ namespace Ee4v.AssetManager.UI
                 _collectionController.CreateSmartCollection);
         }
 
+        private void OnRenameCollectionRequested(
+            AssetCollection collection,
+            VisualElement anchor,
+            Vector2 panelPosition)
+        {
+            CollectionCreationWindow.ShowRename(
+                anchor,
+                panelPosition,
+                collection,
+                _collectionController.UpdateCollection);
+        }
+
+        private void OnEditSmartCollectionRequested(
+            AssetCollection collection,
+            VisualElement anchor,
+            Vector2 panelPosition)
+        {
+            CollectionCreationWindow.ShowSmartConditions(
+                anchor,
+                panelPosition,
+                collection,
+                _collectionController.UpdateSmartCollection);
+        }
+
+        private void OnDeleteCollectionRequested(
+            AssetCollection collection)
+        {
+            if (CollectionDeletionConfirmation.Confirm(collection))
+            {
+                _collectionController.DeleteCollection(
+                    collection.Id);
+            }
+        }
+
         private void DisposeCollectionController()
         {
             if (_navigationPanel != null)
@@ -168,6 +225,12 @@ namespace Ee4v.AssetManager.UI
                 {
                     _navigationPanel.MoveCollectionsRequested -=
                         _collectionController.MoveCollections;
+                    _navigationPanel.RenameCollectionRequested -=
+                        OnRenameCollectionRequested;
+                    _navigationPanel.EditSmartCollectionRequested -=
+                        OnEditSmartCollectionRequested;
+                    _navigationPanel.DeleteCollectionRequested -=
+                        OnDeleteCollectionRequested;
                 }
                 _navigationPanel.SelectionChanged -=
                     OnSelectionChanged;

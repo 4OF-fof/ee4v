@@ -170,7 +170,58 @@ namespace Ee4v.AssetManager.Application
         public AssetCollection CreateSmartCollection(CreateSmartCollectionRequest request)
         {
             AssetManagerRequestValidator.ValidateSmartCollection(request);
-            return PublishCollections(_collectionWriter.CreateSmartCollection(request));
+            var collection =
+                _collectionWriter.CreateSmartCollection(request);
+            PublishCollections();
+            PublishSmartCollectionRule(collection.Id);
+            return collection;
+        }
+
+        public AssetCollection UpdateCollection(
+            string collectionId,
+            UpdateCollectionRequest request)
+        {
+            AssetManagerRequestValidator.Require(
+                collectionId,
+                "collection id");
+            AssetManagerRequestValidator.ValidateCollection(
+                request);
+            return PublishCollections(
+                _collectionWriter.UpdateCollection(
+                    collectionId,
+                    request));
+        }
+
+        public AssetCollection UpdateSmartCollection(
+            string collectionId,
+            UpdateSmartCollectionRequest request)
+        {
+            AssetManagerRequestValidator.Require(
+                collectionId,
+                "collection id");
+            AssetManagerRequestValidator.ValidateSmartCollection(
+                request);
+            var collection =
+                _collectionWriter.UpdateSmartCollection(
+                    collectionId,
+                    request);
+            PublishCollections();
+            PublishSmartCollectionRule(collectionId);
+            return collection;
+        }
+
+        public void DeleteCollection(string collectionId)
+        {
+            AssetManagerRequestValidator.Require(
+                collectionId,
+                "collection id");
+            var affectedSmartCollection =
+                _collectionWriter.DeleteCollection(collectionId);
+            PublishCollections();
+            if (affectedSmartCollection)
+            {
+                PublishSmartCollectionRule(collectionId);
+            }
         }
 
         public void MoveCollection(
@@ -287,6 +338,14 @@ namespace Ee4v.AssetManager.Application
         {
             Publish(new AssetManagerChange(
                 AssetManagerChangeKind.Collections));
+        }
+
+        private void PublishSmartCollectionRule(
+            string collectionId)
+        {
+            Publish(new AssetManagerChange(
+                AssetManagerChangeKind.SmartCollectionRule,
+                collectionId));
         }
 
         private void Publish(AssetManagerChange change)

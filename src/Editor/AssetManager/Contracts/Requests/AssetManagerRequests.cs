@@ -90,4 +90,17 @@ namespace Ee4v.AssetManager.Contracts
         public SmartCollectionMatchMode MatchMode { get; set; }
         public IReadOnlyList<SmartCollectionCondition> Conditions { get; set; }
     }
+
+    public sealed class UpdateCollectionRequest
+    {
+        public string Name { get; set; }
+        public AssetCollectionIcon Icon { get; set; }
+        public string IconAssetGuid { get; set; }
+    }
+
+    public sealed class UpdateSmartCollectionRequest
+    {
+        public SmartCollectionMatchMode MatchMode { get; set; }
+        public IReadOnlyList<SmartCollectionCondition> Conditions { get; set; }
+    }
 }

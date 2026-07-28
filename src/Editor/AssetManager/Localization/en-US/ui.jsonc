@@ -79,6 +79,17 @@
         "create": "Create a collection",
         "createCollection": "New Collection",
         "createSmartCollection": "New Smart Collection",
+        "context": {
+          "rename": "Rename",
+          "editConditions": "Change Conditions",
+          "delete": "Delete"
+        },
+        "delete": {
+          "title": "Delete Collection",
+          "message": "Delete \"{0}\" and all child collections? Items in these collections will not be deleted.",
+          "confirm": "Delete",
+          "cancel": "Cancel"
+        },
         "error": {
           "smartCollectionCannotContainCollections": "Smart Collections cannot contain other collections."
         }
@@ -90,6 +101,8 @@
     "collectionCreation": {
       "collectionTitle": "New Collection",
       "smartTitle": "New Smart Collection",
+      "renameTitle": "Rename Collection",
+      "conditionsTitle": "Change Smart Collection Conditions",
       "name": "Name",
       "namePlaceholder": "Collection name",
       "iconLabel": "Icon",
@@ -103,6 +116,7 @@
       "removeCondition": "Remove condition",
       "queryPlaceholder": "Comparison value",
       "create": "Create",
+      "save": "Save",
       "cancel": "Cancel",
       "icon": {
         "folder": "Folder",

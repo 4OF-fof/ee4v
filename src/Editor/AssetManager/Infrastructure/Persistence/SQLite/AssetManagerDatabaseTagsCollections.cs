@@ -163,6 +163,175 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             }
         }
 
+        public static AssetCollection UpdateCollection(
+            string collectionId,
+            UpdateCollectionRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(collectionId) ||
+                request == null ||
+                string.IsNullOrWhiteSpace(request.Name))
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidRequest,
+                    "Collection id and update request are required.");
+            }
+
+            using (var connection = OpenConnection())
+            {
+                EnsureCollectionExists(connection, collectionId);
+                var isSmart = connection.ExecuteScalar<int>(
+                    "SELECT COUNT(*) FROM smart_collection_info WHERE collection_info_id = ?",
+                    collectionId) > 0;
+                connection.Execute(
+                    "UPDATE collection_info SET name = ?, icon = ?, icon_asset_guid = ?, updated_at = ? WHERE id = ?",
+                    request.Name.Trim(),
+                    ToDbCollectionIcon(
+                        isSmart
+                            ? request.Icon
+                            : AssetCollectionIcon.Folder),
+                    isSmart &&
+                    !string.IsNullOrWhiteSpace(request.IconAssetGuid)
+                        ? request.IconAssetGuid.Trim()
+                        : null,
+                    Now(),
+                    collectionId);
+                return ToAssetCollection(
+                    connection,
+                    connection.Query<CollectionRow>(
+                        "SELECT * FROM collection_info WHERE id = ?",
+                        collectionId).First());
+            }
+        }
+
+        public static AssetCollection UpdateSmartCollection(
+            string collectionId,
+            UpdateSmartCollectionRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(collectionId) ||
+                request == null)
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidRequest,
+                    "Smart Collection id and update request are required.");
+            }
+
+            var conditions = request.Conditions ??
+                             Array.Empty<SmartCollectionCondition>();
+            for (var i = 0; i < conditions.Count; i++)
+            {
+                ValidateSmartCondition(conditions[i]);
+            }
+
+            using (var connection = OpenConnection())
+            {
+                EnsureCollectionExists(connection, collectionId);
+                var isSmart = connection.ExecuteScalar<int>(
+                    "SELECT COUNT(*) FROM smart_collection_info WHERE collection_info_id = ?",
+                    collectionId) > 0;
+                if (!isSmart)
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "Collection is not a Smart Collection.");
+                }
+
+                InTransaction(connection, () =>
+                {
+                    var now = Now();
+                    connection.Execute(
+                        "UPDATE smart_collection_info SET match_mode = ?, updated_at = ? WHERE collection_info_id = ?",
+                        request.MatchMode ==
+                        SmartCollectionMatchMode.Any
+                            ? "any"
+                            : "all",
+                        now,
+                        collectionId);
+                    connection.Execute(
+                        "DELETE FROM smart_collection_condition WHERE collection_info_id = ?",
+                        collectionId);
+                    for (var i = 0; i < conditions.Count; i++)
+                    {
+                        InsertSmartCondition(
+                            connection,
+                            collectionId,
+                            conditions[i]);
+                    }
+
+                    connection.Execute(
+                        "UPDATE collection_info SET updated_at = ? WHERE id = ?",
+                        now,
+                        collectionId);
+                });
+
+                return ToAssetCollection(
+                    connection,
+                    connection.Query<CollectionRow>(
+                        "SELECT * FROM collection_info WHERE id = ?",
+                        collectionId).First());
+            }
+        }
+
+        public static bool DeleteCollection(string collectionId)
+        {
+            if (string.IsNullOrWhiteSpace(collectionId))
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidRequest,
+                    "Collection id is required.");
+            }
+
+            using (var connection = OpenConnection())
+            {
+                return InTransaction(connection, () =>
+                {
+                    EnsureCollectionExists(connection, collectionId);
+                    var relation = connection
+                        .Query<CollectionCollectionRow>(
+                            "SELECT * FROM collection_collection WHERE child_collection_id = ? LIMIT 1",
+                            collectionId)
+                        .FirstOrDefault();
+                    var parentId = relation != null
+                        ? relation.parent_collection_id
+                        : null;
+                    var subtree = connection
+                        .Query<CollectionSubtreeRow>(
+                            @"WITH RECURSIVE collection_subtree(id, depth) AS (
+                                SELECT ?, 0
+                                UNION ALL
+                                SELECT
+                                    relation.child_collection_id,
+                                    subtree.depth + 1
+                                FROM collection_collection relation
+                                INNER JOIN collection_subtree subtree
+                                    ON relation.parent_collection_id = subtree.id
+                            )
+                            SELECT id, depth
+                            FROM collection_subtree
+                            ORDER BY depth DESC",
+                            collectionId);
+                    var affectsSmartCollection =
+                        subtree.Any(item =>
+                            connection.ExecuteScalar<int>(
+                                "SELECT COUNT(*) FROM smart_collection_info WHERE collection_info_id = ?",
+                                item.id) > 0);
+                    for (var i = 0; i < subtree.Count; i++)
+                    {
+                        connection.Execute(
+                            "DELETE FROM collection_info WHERE id = ?",
+                            subtree[i].id);
+                    }
+
+                    NormalizeCollectionOrder(
+                        connection,
+                        GetCollectionSiblingIds(
+                            connection,
+                            parentId,
+                            null));
+                    return affectsSmartCollection;
+                });
+            }
+        }
+
         public static void MoveCollection(
             string collectionId,
             string parentCollectionId,

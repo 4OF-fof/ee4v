@@ -41,6 +41,10 @@ namespace Ee4v.AssetManager.UI
         private readonly Action<string> _selected;
         private readonly Action<IReadOnlyList<string>, string, int>
             _moveRequested;
+        private readonly Action<
+            AssetCollection,
+            VisualElement,
+            Vector2> _contextMenuRequested;
         private readonly List<CollectionButton> _buttons =
             new List<CollectionButton>();
         private readonly Dictionary<string, AssetCollection> _collections =
@@ -67,10 +71,13 @@ namespace Ee4v.AssetManager.UI
         public CollectionNavigationList(
             Action<string> selected,
             Action<IReadOnlyList<string>, string, int>
-                moveRequested = null)
+                moveRequested = null,
+            Action<AssetCollection, VisualElement, Vector2>
+                contextMenuRequested = null)
         {
             _selected = selected;
             _moveRequested = moveRequested;
+            _contextMenuRequested = contextMenuRequested;
             AddToClassList(RootClassName);
             focusable = true;
             pickingMode = PickingMode.Position;
@@ -736,6 +743,31 @@ namespace Ee4v.AssetManager.UI
             PointerDownEvent evt,
             CollectionButton item)
         {
+            if (evt.button == (int)MouseButton.RightMouse)
+            {
+                EndPointerInteraction(releasePointer: true);
+                SelectCollection(
+                    item.CollectionId,
+                    toggle: false,
+                    range: false);
+                AssetCollection collection;
+                if (_contextMenuRequested != null &&
+                    _collections.TryGetValue(
+                        item.CollectionId,
+                        out collection))
+                {
+                    var panelPosition = ToVector2(evt.position);
+                    item.Row.schedule.Execute(() =>
+                        _contextMenuRequested(
+                            collection,
+                            item.Row,
+                            panelPosition));
+                }
+
+                evt.StopPropagation();
+                return;
+            }
+
             if (evt.button != (int)MouseButton.LeftMouse)
             {
                 return;

@@ -43,9 +43,14 @@ namespace Ee4v.AssetManager.UI
         private const string ActionsClassName =
             "ee4v-collection-creation-window__actions";
 
+        private CollectionWindowMode _mode;
         private bool _smart;
+        private AssetCollection _initialCollection;
         private Action<CreateCollectionRequest> _createCollection;
         private Action<CreateSmartCollectionRequest> _createSmartCollection;
+        private Action<string, UpdateCollectionRequest> _updateCollection;
+        private Action<string, UpdateSmartCollectionRequest>
+            _updateSmartCollection;
         private InputField _nameField;
         private AssetCollectionIconSelector _iconField;
         private PopupField<SmartCollectionMatchMode> _matchModeField;
@@ -62,21 +67,75 @@ namespace Ee4v.AssetManager.UI
             Action<CreateCollectionRequest> createCollection,
             Action<CreateSmartCollectionRequest> createSmartCollection)
         {
-            CloseExistingWindows();
-            anchor?.Blur();
             var window = CreateInstance<CollectionCreationWindow>();
+            window._mode = CollectionWindowMode.Create;
             window._smart = smart;
             window._createCollection = createCollection;
             window._createSmartCollection = createSmartCollection;
-            window.titleContent = new GUIContent(I18N.Get(
-                smart
-                    ? "assetManager.collectionCreation.smartTitle"
-                    : "assetManager.collectionCreation.collectionTitle"));
-            var size = CalculateInitialSize(smart);
+            return ShowConfigured(anchor, null, window);
+        }
+
+        public static CollectionCreationWindow ShowRename(
+            VisualElement anchor,
+            Vector2 panelPosition,
+            AssetCollection collection,
+            Action<string, UpdateCollectionRequest> updateCollection)
+        {
+            if (collection == null)
+            {
+                return null;
+            }
+
+            var window = CreateInstance<CollectionCreationWindow>();
+            window._mode = CollectionWindowMode.Rename;
+            window._smart = collection.IsSmartCollection;
+            window._initialCollection = collection;
+            window._updateCollection = updateCollection;
+            return ShowConfigured(anchor, panelPosition, window);
+        }
+
+        public static CollectionCreationWindow ShowSmartConditions(
+            VisualElement anchor,
+            Vector2 panelPosition,
+            AssetCollection collection,
+            Action<string, UpdateSmartCollectionRequest>
+                updateSmartCollection)
+        {
+            if (collection == null ||
+                !collection.IsSmartCollection)
+            {
+                return null;
+            }
+
+            var window = CreateInstance<CollectionCreationWindow>();
+            window._mode = CollectionWindowMode.SmartConditions;
+            window._smart = true;
+            window._initialCollection = collection;
+            window._updateSmartCollection =
+                updateSmartCollection;
+            return ShowConfigured(anchor, panelPosition, window);
+        }
+
+        private static CollectionCreationWindow ShowConfigured(
+            VisualElement anchor,
+            Vector2? panelPosition,
+            CollectionCreationWindow window)
+        {
+            CloseExistingWindows(window);
+            anchor?.Blur();
+            window.titleContent = new GUIContent(
+                window.GetTitleText());
+            var size = CalculateInitialSize(
+                window._smart,
+                window._mode);
             window.minSize = size;
             window.maxSize = size;
             window.ShowAsDropDown(
-                ResolveAnchor(anchor),
+                panelPosition.HasValue
+                    ? ResolvePointerAnchor(
+                        anchor,
+                        panelPosition.Value)
+                    : ResolveElementAnchor(anchor),
                 size);
             window.Focus();
             return window;
@@ -115,28 +174,42 @@ namespace Ee4v.AssetManager.UI
             root.Add(_form);
 
             _form.Add(UiTextFactory.Create(
-                I18N.Get(
-                    _smart
-                        ? "assetManager.collectionCreation.smartTitle"
-                        : "assetManager.collectionCreation.collectionTitle"),
+                GetTitleText(),
                 UiClassNames.SectionTitle,
                 TitleClassName));
 
-            _nameField = new InputField(new InputFieldState(
-                placeholder: I18N.Get(
-                    "assetManager.collectionCreation.namePlaceholder")));
-            _form.Add(CreateField(
-                I18N.Get("assetManager.collectionCreation.name"),
-                _nameField));
+            if (_mode != CollectionWindowMode.SmartConditions)
+            {
+                _nameField = new InputField(new InputFieldState(
+                    value: _initialCollection != null
+                        ? _initialCollection.Name
+                        : string.Empty,
+                    placeholder: I18N.Get(
+                        "assetManager.collectionCreation.namePlaceholder")));
+                _form.Add(CreateField(
+                    I18N.Get("assetManager.collectionCreation.name"),
+                    _nameField));
+            }
 
-            if (_smart)
+            if (_smart &&
+                _mode != CollectionWindowMode.SmartConditions)
             {
                 _iconField = new AssetCollectionIconSelector(
-                    AssetCollectionIcon.Search);
+                    _initialCollection != null
+                        ? _initialCollection.Icon
+                        : AssetCollectionIcon.Search,
+                    _initialCollection != null
+                        ? _initialCollection.IconAssetGuid
+                        : null);
                 _form.Add(CreateField(
                     I18N.Get(
                         "assetManager.collectionCreation.iconLabel"),
                     _iconField));
+            }
+
+            if (_smart &&
+                _mode != CollectionWindowMode.Rename)
+            {
                 BuildSmartCollectionFields(_form);
             }
 
@@ -157,8 +230,7 @@ namespace Ee4v.AssetManager.UI
                 Close));
             actions.Add(new UiButton(
                 new UiButtonState(
-                    I18N.Get(
-                        "assetManager.collectionCreation.create")),
+                    GetSubmitLabel()),
                 Submit));
             _form.Add(actions);
             QueuePopupSizeRefresh();
@@ -176,6 +248,12 @@ namespace Ee4v.AssetManager.UI
                     0,
                     FormatMatchMode,
                     FormatMatchMode);
+            if (_initialCollection != null &&
+                _initialCollection.SmartRule != null)
+            {
+                _matchModeField.SetValueWithoutNotify(
+                    _initialCollection.SmartRule.MatchMode);
+            }
             form.Add(CreateField(
                 I18N.Get("assetManager.collectionCreation.matchMode"),
                 _matchModeField));
@@ -204,7 +282,27 @@ namespace Ee4v.AssetManager.UI
                 AddConditionClassName);
             conditionField.Add(addConditionButton);
             form.Add(conditionField);
-            AddCondition(refreshPopupSize: false);
+            var initialConditions =
+                _initialCollection != null &&
+                _initialCollection.SmartRule != null
+                    ? _initialCollection.SmartRule.Conditions
+                    : null;
+            if (initialConditions != null &&
+                initialConditions.Count > 0)
+            {
+                for (var i = 0; i < initialConditions.Count; i++)
+                {
+                    AddCondition(
+                        initialConditions[i],
+                        refreshPopupSize: false);
+                }
+            }
+            else
+            {
+                AddCondition(
+                    null,
+                    refreshPopupSize: false);
+            }
         }
 
         private void AddConditionFromButton(
@@ -215,7 +313,7 @@ namespace Ee4v.AssetManager.UI
                 addConditionButton.Blur();
             }
 
-            AddCondition();
+            AddCondition(null);
             if (addConditionButton != null)
             {
                 addConditionButton.schedule.Execute(
@@ -237,9 +335,13 @@ namespace Ee4v.AssetManager.UI
             return container;
         }
 
-        private void AddCondition(bool refreshPopupSize = true)
+        private void AddCondition(
+            SmartCollectionCondition initialCondition,
+            bool refreshPopupSize = true)
         {
-            var row = new ConditionRow(RemoveCondition);
+            var row = new ConditionRow(
+                RemoveCondition,
+                initialCondition);
             _conditionRows.Add(row);
             _conditions.Add(row.Root);
             if (refreshPopupSize)
@@ -356,26 +458,49 @@ namespace Ee4v.AssetManager.UI
         }
 
         private static Vector2 CalculateInitialSize(
-            bool smart)
+            bool smart,
+            CollectionWindowMode mode)
         {
             return new Vector2(
                 smart ? SmartWidth : RegularWidth,
-                smart
+                smart &&
+                mode != CollectionWindowMode.Rename
                     ? SmartInitialHeight
                     : RegularInitialHeight);
         }
 
         private void Submit()
         {
-            var name = (_nameField.Value ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(name))
+            var name = _nameField != null
+                ? (_nameField.Value ?? string.Empty).Trim()
+                : string.Empty;
+            if (_mode != CollectionWindowMode.SmartConditions &&
+                string.IsNullOrWhiteSpace(name))
             {
                 SetError(I18N.Get(
                     "assetManager.collectionCreation.error.nameRequired"));
                 return;
             }
 
-            if (!_smart)
+            if (_mode == CollectionWindowMode.Rename)
+            {
+                _updateCollection?.Invoke(
+                    _initialCollection.Id,
+                    new UpdateCollectionRequest
+                    {
+                        Name = name,
+                        Icon = _smart
+                            ? _iconField.Value
+                            : AssetCollectionIcon.Folder,
+                        IconAssetGuid = _smart
+                            ? _iconField.AssetGuid
+                            : null
+                    });
+                Close();
+                return;
+            }
+
+            if (_mode == CollectionWindowMode.Create && !_smart)
             {
                 _createCollection?.Invoke(new CreateCollectionRequest
                 {
@@ -406,16 +531,65 @@ namespace Ee4v.AssetManager.UI
                 conditions.Add(condition);
             }
 
-            _createSmartCollection?.Invoke(
-                new CreateSmartCollectionRequest
-                {
-                    Name = name,
-                    Icon = _iconField.Value,
-                    IconAssetGuid = _iconField.AssetGuid,
-                    MatchMode = _matchModeField.value,
-                    Conditions = conditions
-                });
+            if (_mode == CollectionWindowMode.SmartConditions)
+            {
+                _updateSmartCollection?.Invoke(
+                    _initialCollection.Id,
+                    new UpdateSmartCollectionRequest
+                    {
+                        MatchMode = _matchModeField.value,
+                        Conditions = conditions
+                    });
+            }
+            else
+            {
+                _createSmartCollection?.Invoke(
+                    new CreateSmartCollectionRequest
+                    {
+                        Name = name,
+                        Icon = _iconField.Value,
+                        IconAssetGuid = _iconField.AssetGuid,
+                        MatchMode = _matchModeField.value,
+                        Conditions = conditions
+                    });
+            }
+
             Close();
+        }
+
+        private string GetTitleText()
+        {
+            switch (_mode)
+            {
+                case CollectionWindowMode.Rename:
+                    return I18N.Get(
+                        "assetManager.collectionCreation.renameTitle");
+                case CollectionWindowMode.SmartConditions:
+                    return I18N.Get(
+                        "assetManager.collectionCreation.conditionsTitle");
+                default:
+                    return _smart
+                        ? I18N.Get(
+                            "assetManager.collectionCreation.smartTitle")
+                        : I18N.Get(
+                            "assetManager.collectionCreation.collectionTitle");
+            }
+        }
+
+        private string GetSubmitLabel()
+        {
+            return _mode == CollectionWindowMode.Create
+                ? I18N.Get(
+                    "assetManager.collectionCreation.create")
+                : I18N.Get(
+                    "assetManager.collectionCreation.save");
+        }
+
+        private enum CollectionWindowMode
+        {
+            Create,
+            Rename,
+            SmartConditions
         }
 
         private void SetError(string message)
@@ -424,18 +598,25 @@ namespace Ee4v.AssetManager.UI
             QueuePopupSizeRefresh();
         }
 
-        private static void CloseExistingWindows()
+        private static void CloseExistingWindows(
+            CollectionCreationWindow except = null)
         {
             var windows =
                 Resources.FindObjectsOfTypeAll<
                     CollectionCreationWindow>();
             for (var i = 0; i < windows.Length; i++)
             {
-                windows[i].Close();
+                if (windows[i] != null &&
+                    !ReferenceEquals(windows[i], except) &&
+                    windows[i].rootVisualElement != null &&
+                    windows[i].rootVisualElement.panel != null)
+                {
+                    windows[i].Close();
+                }
             }
         }
 
-        private static Rect ResolveAnchor(
+        private static Rect ResolveElementAnchor(
             VisualElement anchor)
         {
             if (anchor == null || anchor.panel == null)
@@ -459,6 +640,42 @@ namespace Ee4v.AssetManager.UI
             return new Rect(
                 screenPosition,
                 anchor.worldBound.size);
+        }
+
+        private static Rect ResolvePointerAnchor(
+            VisualElement anchor,
+            Vector2 panelPosition)
+        {
+            if (anchor == null || anchor.panel == null)
+            {
+                var point =
+                    GUIUtility.GUIToScreenPoint(panelPosition);
+                return new Rect(point, Vector2.zero);
+            }
+
+            var root = anchor.panel.visualTree;
+            var rootOffset =
+                root != null
+                    ? root.worldBound.position
+                    : Vector2.zero;
+            var owner = FindOwnerWindow(anchor);
+            var screenPosition =
+                owner != null
+                    ? CalculatePointerScreenPosition(
+                        owner.position.position,
+                        rootOffset,
+                        panelPosition)
+                    : GUIUtility.GUIToScreenPoint(
+                        panelPosition - rootOffset);
+            return new Rect(screenPosition, Vector2.zero);
+        }
+
+        internal static Vector2 CalculatePointerScreenPosition(
+            Vector2 ownerPosition,
+            Vector2 rootOffset,
+            Vector2 panelPosition)
+        {
+            return ownerPosition + panelPosition - rootOffset;
         }
 
         private static EditorWindow FindOwnerWindow(
@@ -498,7 +715,9 @@ namespace Ee4v.AssetManager.UI
                 _operator;
             private readonly InputField _query;
 
-            public ConditionRow(Action<ConditionRow> remove)
+            public ConditionRow(
+                Action<ConditionRow> remove,
+                SmartCollectionCondition initialCondition = null)
             {
                 Root = new VisualElement();
                 Root.AddToClassList(ConditionClassName);
@@ -529,6 +748,13 @@ namespace Ee4v.AssetManager.UI
                         FormatOperator);
                 _operator.RegisterValueChangedCallback(_ =>
                     RefreshQueryVisibility());
+                if (initialCondition != null)
+                {
+                    _field.SetValueWithoutNotify(
+                        initialCondition.Field);
+                    _operator.SetValueWithoutNotify(
+                        initialCondition.Operator);
+                }
 
                 var removeButton = new UiButton(
                     new UiButtonState(
@@ -547,6 +773,9 @@ namespace Ee4v.AssetManager.UI
                 Root.Add(controls);
 
                 _query = new InputField(new InputFieldState(
+                    value: initialCondition != null
+                        ? initialCondition.QueryText
+                        : string.Empty,
                     placeholder: I18N.Get(
                         "assetManager.collectionCreation.queryPlaceholder")));
                 _query.AddToClassList(ConditionQueryClassName);

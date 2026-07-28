@@ -517,7 +517,11 @@ namespace Ee4v.AssetManager.UI
 
         private void OnAssetManagerChanged(AssetManagerChange change)
         {
-            if (change != null && change.Kind == AssetManagerChangeKind.Catalog)
+            if (change != null &&
+                (change.Kind == AssetManagerChangeKind.Catalog ||
+                 ShouldInvalidateForSmartCollectionRule(
+                     change,
+                     _selectedNavigationItemId)))
             {
                 _scheduler.RunOnMainThread(() =>
                 {
@@ -527,6 +531,35 @@ namespace Ee4v.AssetManager.UI
                     }
                 });
             }
+        }
+
+        internal static bool ShouldInvalidateForSmartCollectionRule(
+            AssetManagerChange change,
+            string selectedNavigationItemId)
+        {
+            if (change == null ||
+                change.Kind !=
+                AssetManagerChangeKind.SmartCollectionRule)
+            {
+                return false;
+            }
+
+            if (string.Equals(
+                    selectedNavigationItemId,
+                    "uncategorized",
+                    StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            string collectionId;
+            return AssetManagerCollectionViewId.TryDecode(
+                       selectedNavigationItemId,
+                       out collectionId) &&
+                   string.Equals(
+                       collectionId,
+                       change.SubjectId,
+                       StringComparison.Ordinal);
         }
 
         private void OnSettingChanged(AssetManagerUiPreference preference)

@@ -48,6 +48,13 @@ namespace Ee4v.AssetManager.Application.Ports
     {
         AssetCollection CreateCollection(CreateCollectionRequest request);
         AssetCollection CreateSmartCollection(CreateSmartCollectionRequest request);
+        AssetCollection UpdateCollection(
+            string collectionId,
+            UpdateCollectionRequest request);
+        AssetCollection UpdateSmartCollection(
+            string collectionId,
+            UpdateSmartCollectionRequest request);
+        bool DeleteCollection(string collectionId);
         void MoveCollection(
             string collectionId,
             string parentCollectionId,

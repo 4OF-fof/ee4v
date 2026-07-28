@@ -158,6 +158,12 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             public string child_collection_id { get; set; }
         }
 
+        private sealed class CollectionSubtreeRow
+        {
+            public string id { get; set; }
+            public int depth { get; set; }
+        }
+
         private sealed class SmartCollectionRow
         {
             public string collection_info_id { get; set; }

@@ -79,6 +79,17 @@
         "create": "コレクションを作成",
         "createCollection": "新規コレクション",
         "createSmartCollection": "新規スマートコレクション",
+        "context": {
+          "rename": "名前を変更",
+          "editConditions": "条件を変更",
+          "delete": "削除"
+        },
+        "delete": {
+          "title": "コレクションを削除",
+          "message": "「{0}」と配下の子コレクションを削除しますか？ コレクション内のアイテムは削除されません。",
+          "confirm": "削除",
+          "cancel": "キャンセル"
+        },
         "error": {
           "smartCollectionCannotContainCollections": "スマートコレクションにはコレクションを追加できません。"
         }
@@ -90,6 +101,8 @@
     "collectionCreation": {
       "collectionTitle": "新規コレクション",
       "smartTitle": "新規スマートコレクション",
+      "renameTitle": "コレクション名を変更",
+      "conditionsTitle": "スマートコレクションの条件を変更",
       "name": "名前",
       "namePlaceholder": "コレクション名",
       "iconLabel": "アイコン",
@@ -103,6 +116,7 @@
       "removeCondition": "条件を削除",
       "queryPlaceholder": "比較する値",
       "create": "作成",
+      "save": "保存",
       "cancel": "キャンセル",
       "icon": {
         "folder": "フォルダー",

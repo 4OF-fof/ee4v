@@ -334,6 +334,223 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
+            "Collection の名前・条件・削除を更新する",
+            "通常 Collection の表示情報、Smart Collection の条件、子孫 Collection の再帰削除と Item の保持を確認します。",
+            order: 344)]
+        public void CollectionCommands_UpdateAndDeleteCollections()
+        {
+            var parent = _assetManager.CreateCollection(
+                new CreateCollectionRequest { Name = "Parent" });
+            var child = _assetManager.CreateCollection(
+                new CreateCollectionRequest
+                {
+                    Name = "Child",
+                    ParentCollectionId = parent.Id
+                });
+            var sibling = _assetManager.CreateCollection(
+                new CreateCollectionRequest
+                {
+                    Name = "Sibling"
+                });
+            var smart = _assetManager.CreateSmartCollection(
+                new CreateSmartCollectionRequest
+                {
+                    Name = "Smart",
+                    Icon = AssetCollectionIcon.Search,
+                    ParentCollectionId = child.Id,
+                    MatchMode = SmartCollectionMatchMode.All,
+                    Conditions = new[]
+                    {
+                        new SmartCollectionCondition
+                        {
+                            Field =
+                                SmartCollectionConditionField.Name,
+                            Operator =
+                                SmartCollectionConditionOperator.Contains,
+                            QueryText = "old"
+                        }
+                    }
+                });
+            var retainedItem = _assetManager.CreateItem(
+                new CreateAssetItemRequest
+                {
+                    Name = "Retained Item",
+                    CollectionIds = new[] { child.Id }
+                });
+
+            var renamed = _assetManager.UpdateCollection(
+                parent.Id,
+                new UpdateCollectionRequest
+                {
+                    Name = "Renamed",
+                    Icon = AssetCollectionIcon.Search,
+                    IconAssetGuid = "ignored"
+                });
+            var updatedPresentation =
+                _assetManager.UpdateCollection(
+                    smart.Id,
+                    new UpdateCollectionRequest
+                    {
+                        Name = "Smart Renamed",
+                        Icon = AssetCollectionIcon.Star
+                    });
+            var updated = _assetManager.UpdateSmartCollection(
+                smart.Id,
+                new UpdateSmartCollectionRequest
+                {
+                    MatchMode = SmartCollectionMatchMode.Any,
+                    Conditions = new[]
+                    {
+                        new SmartCollectionCondition
+                        {
+                            Field =
+                                SmartCollectionConditionField.Tag,
+                            Operator =
+                                SmartCollectionConditionOperator.Equals,
+                            QueryText = "avatar"
+                        },
+                        new SmartCollectionCondition
+                        {
+                            Field =
+                                SmartCollectionConditionField.Extension,
+                            Operator =
+                                SmartCollectionConditionOperator.Exists
+                        }
+                    }
+                });
+            var deletionChanges = new List<AssetManagerChange>();
+            _assetManager.Changed += deletionChanges.Add;
+            _assetManager.DeleteCollection(parent.Id);
+
+            Assert.That(renamed.Name, Is.EqualTo("Renamed"));
+            Assert.That(
+                renamed.Icon,
+                Is.EqualTo(AssetCollectionIcon.Folder));
+            Assert.That(renamed.IconAssetGuid, Is.Null);
+            Assert.That(
+                updatedPresentation.Name,
+                Is.EqualTo("Smart Renamed"));
+            Assert.That(
+                updatedPresentation.Icon,
+                Is.EqualTo(AssetCollectionIcon.Star));
+            Assert.That(
+                updated.SmartRule.MatchMode,
+                Is.EqualTo(SmartCollectionMatchMode.Any));
+            Assert.That(
+                updated.SmartRule.Conditions
+                    .Select(condition => condition.Field)
+                    .ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    SmartCollectionConditionField.Tag,
+                    SmartCollectionConditionField.Extension
+                }));
+            var collections = _assetManager.GetCollections();
+            Assert.That(
+                collections.Any(item => item.Id == parent.Id),
+                Is.False);
+            Assert.That(
+                collections.Any(item => item.Id == child.Id),
+                Is.False);
+            Assert.That(
+                collections.Any(item => item.Id == smart.Id),
+                Is.False);
+            Assert.That(
+                collections.Single(item => item.Id == sibling.Id)
+                    .SortOrder,
+                Is.EqualTo(0));
+            Assert.That(
+                _assetManager.GetItem(retainedItem.Id).Name,
+                Is.EqualTo("Retained Item"));
+            Assert.That(
+                deletionChanges
+                    .Select(change => change.Kind)
+                    .ToArray(),
+                Is.EqualTo(new[]
+                {
+                    AssetManagerChangeKind.Collections,
+                    AssetManagerChangeKind.SmartCollectionRule
+                }));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Smart Collection 条件変更を検索結果へ通知する",
+            "Smart Collection の作成・条件更新・削除が Collections と SmartCollectionRule の両方を発行することを確認します。",
+            order: 345)]
+        public void SmartCollectionCommands_PublishRuleChanges()
+        {
+            var changes = new List<AssetManagerChange>();
+            _assetManager.Changed += changes.Add;
+
+            var smart = _assetManager.CreateSmartCollection(
+                new CreateSmartCollectionRequest
+                {
+                    Name = "Smart",
+                    Icon = AssetCollectionIcon.Search,
+                    MatchMode = SmartCollectionMatchMode.All,
+                    Conditions = new[]
+                    {
+                        new SmartCollectionCondition
+                        {
+                            Field =
+                                SmartCollectionConditionField.Name,
+                            Operator =
+                                SmartCollectionConditionOperator.Contains,
+                            QueryText = "old"
+                        }
+                    }
+                });
+
+            Assert.That(
+                changes.Select(change => change.Kind).ToArray(),
+                Is.EqualTo(new[]
+                {
+                    AssetManagerChangeKind.Collections,
+                    AssetManagerChangeKind.SmartCollectionRule
+                }));
+            Assert.That(
+                changes[1].SubjectId,
+                Is.EqualTo(smart.Id));
+
+            changes.Clear();
+            _assetManager.UpdateSmartCollection(
+                smart.Id,
+                new UpdateSmartCollectionRequest
+                {
+                    MatchMode = SmartCollectionMatchMode.Any,
+                    Conditions = new[]
+                    {
+                        new SmartCollectionCondition
+                        {
+                            Field =
+                                SmartCollectionConditionField.Tag,
+                            Operator =
+                                SmartCollectionConditionOperator.Exists
+                        }
+                    }
+                });
+            Assert.That(
+                changes.Select(change => change.Kind).ToArray(),
+                Is.EqualTo(new[]
+                {
+                    AssetManagerChangeKind.Collections,
+                    AssetManagerChangeKind.SmartCollectionRule
+                }));
+
+            changes.Clear();
+            _assetManager.DeleteCollection(smart.Id);
+            Assert.That(
+                changes.Select(change => change.Kind).ToArray(),
+                Is.EqualTo(new[]
+                {
+                    AssetManagerChangeKind.Collections,
+                    AssetManagerChangeKind.SmartCollectionRule
+                }));
+        }
+
+        [Test]
+        [FeatureTestCase(
             "存在しない item の更新は NotFound",
             "UpdateItem が missing item に対して NotFound を返すことを確認します。",
             order: 303)]

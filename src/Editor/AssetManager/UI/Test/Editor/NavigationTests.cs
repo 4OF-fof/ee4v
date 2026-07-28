@@ -72,6 +72,41 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
+        public void SmartCollectionRuleChange_InvalidatesAffectedViews()
+        {
+            var change = new AssetManagerChange(
+                AssetManagerChangeKind.SmartCollectionRule,
+                "smart");
+
+            Assert.That(
+                MainViewController
+                    .ShouldInvalidateForSmartCollectionRule(
+                        change,
+                        AssetManagerCollectionViewId.Encode(
+                            "smart")),
+                Is.True);
+            Assert.That(
+                MainViewController
+                    .ShouldInvalidateForSmartCollectionRule(
+                        change,
+                        "uncategorized"),
+                Is.True);
+            Assert.That(
+                MainViewController
+                    .ShouldInvalidateForSmartCollectionRule(
+                        change,
+                        AssetManagerCollectionViewId.Encode(
+                            "other")),
+                Is.False);
+            Assert.That(
+                MainViewController
+                    .ShouldInvalidateForSmartCollectionRule(
+                        change,
+                        "all-assets"),
+                Is.False);
+        }
+
+        [Test]
         public void CollectionNavigationList_RendersRegularAndSmartInOneTree()
         {
             var list = new CollectionNavigationList(null);
@@ -394,6 +429,163 @@ namespace Ee4v.AssetManager.UI.Tests
 
             state.Items[1].Action();
             Assert.That(smartRequested, Is.True);
+        }
+
+        [Test]
+        public void CollectionContextMenu_OffersConditionsOnlyForSmartCollection()
+        {
+            var anchor = new VisualElement();
+            AssetCollection renamed = null;
+            AssetCollection edited = null;
+            AssetCollection deleted = null;
+            var pointerPosition = new Vector2(80f, 96f);
+            var renamedPosition = Vector2.zero;
+            var editedPosition = Vector2.zero;
+            var regular = new AssetCollection
+            {
+                Id = "regular",
+                Name = "Regular"
+            };
+            var smart = new AssetCollection
+            {
+                Id = "smart",
+                Name = "Smart",
+                IsSmartCollection = true
+            };
+
+            var regularState =
+                NavigationPanel.CreateCollectionContextMenuState(
+                    regular,
+                    anchor,
+                    pointerPosition,
+                    (collection, _, position) =>
+                    {
+                        renamed = collection;
+                        renamedPosition = position;
+                    },
+                    (collection, _, position) =>
+                    {
+                        edited = collection;
+                        editedPosition = position;
+                    },
+                    collection => deleted = collection);
+            Assert.That(
+                regularState.Items
+                    .Where(item =>
+                        item.Kind == ContextMenuItemKind.Action)
+                    .Select(item => item.Id)
+                    .ToArray(),
+                Is.EqualTo(new[]
+                {
+                    "rename-collection",
+                    "delete-collection"
+                }));
+
+            var smartState =
+                NavigationPanel.CreateCollectionContextMenuState(
+                    smart,
+                    anchor,
+                    pointerPosition,
+                    (collection, _, position) =>
+                    {
+                        renamed = collection;
+                        renamedPosition = position;
+                    },
+                    (collection, _, position) =>
+                    {
+                        edited = collection;
+                        editedPosition = position;
+                    },
+                    collection => deleted = collection);
+            Assert.That(
+                smartState.Items
+                    .Where(item =>
+                        item.Kind == ContextMenuItemKind.Action)
+                    .Select(item => item.Id)
+                    .ToArray(),
+                Is.EqualTo(new[]
+                {
+                    "rename-collection",
+                    "edit-smart-collection",
+                    "delete-collection"
+                }));
+
+            smartState.Items[0].Action();
+            smartState.Items[1].Action();
+            smartState.Items[3].Action();
+            Assert.That(renamed, Is.SameAs(smart));
+            Assert.That(edited, Is.SameAs(smart));
+            Assert.That(deleted, Is.SameAs(smart));
+            Assert.That(renamedPosition, Is.EqualTo(pointerPosition));
+            Assert.That(editedPosition, Is.EqualTo(pointerPosition));
+        }
+
+        [Test]
+        public void CollectionEditPopup_UsesContextMenuPointerPosition()
+        {
+            Assert.That(
+                CollectionCreationWindow.CalculatePointerScreenPosition(
+                    new Vector2(100f, 200f),
+                    new Vector2(10f, 20f),
+                    new Vector2(40f, 60f)),
+                Is.EqualTo(new Vector2(130f, 240f)));
+        }
+
+        [UnityTest]
+        public IEnumerator CollectionNavigationList_RightClickSelectsRowAndRequestsMenu()
+        {
+            var window =
+                ScriptableObject.CreateInstance<EditorWindow>();
+            try
+            {
+                AssetCollection requestedCollection = null;
+                var list = new CollectionNavigationList(
+                    null,
+                    null,
+                    (collection, _, __) =>
+                        requestedCollection = collection);
+                list.SetState(new[]
+                {
+                    new AssetCollection
+                    {
+                        Id = "collection",
+                        Name = "Collection"
+                    }
+                }, string.Empty);
+                window.rootVisualElement.Add(list);
+                window.Show();
+                yield return null;
+
+                var row = list.Query<VisualElement>(
+                        className:
+                        "ee4v-asset-manager-collection-list__row")
+                    .ToList()
+                    .Single();
+                using (var pointerDown =
+                       PointerDownEvent.GetPooled(new Event
+                       {
+                           type = EventType.MouseDown,
+                           button =
+                               (int)MouseButton.RightMouse,
+                           mousePosition = row.worldBound.center
+                       }))
+                {
+                    pointerDown.target = row;
+                    row.SendEvent(pointerDown);
+                }
+
+                yield return null;
+                Assert.That(
+                    list.SelectedCollectionIds,
+                    Is.EqualTo(new[] { "collection" }));
+                Assert.That(
+                    requestedCollection.Id,
+                    Is.EqualTo("collection"));
+            }
+            finally
+            {
+                window.Close();
+            }
         }
 
         [Test]
@@ -1072,6 +1264,219 @@ namespace Ee4v.AssetManager.UI.Tests
             }
         }
 
+        [UnityTest]
+        public IEnumerator CollectionRenamePopup_OpensAndSubmitsUpdate()
+        {
+            var owner =
+                ScriptableObject.CreateInstance<EditorWindow>();
+            CollectionCreationWindow popup = null;
+            try
+            {
+                var anchor = new VisualElement();
+                anchor.style.width = 120f;
+                anchor.style.height = 22f;
+                owner.rootVisualElement.Add(anchor);
+                owner.Show();
+                yield return null;
+
+                string renamedId = null;
+                UpdateCollectionRequest renamedRequest = null;
+                popup = CollectionCreationWindow.ShowRename(
+                    anchor,
+                    new Vector2(30f, 40f),
+                    new AssetCollection
+                    {
+                        Id = "collection",
+                        Name = "Before"
+                    },
+                    (collectionId, request) =>
+                    {
+                        renamedId = collectionId;
+                        renamedRequest = request;
+                    });
+                yield return null;
+
+                var nameField = popup.rootVisualElement
+                    .Query<InputField>()
+                    .ToList()
+                    .Single();
+                Assert.That(nameField.Value, Is.EqualTo("Before"));
+                nameField.Value = "After";
+                InvokeCollectionPopupSubmit(popup);
+
+                Assert.That(renamedId, Is.EqualTo("collection"));
+                Assert.That(renamedRequest, Is.Not.Null);
+                Assert.That(renamedRequest.Name, Is.EqualTo("After"));
+                Assert.That(
+                    renamedRequest.Icon,
+                    Is.EqualTo(AssetCollectionIcon.Folder));
+                Assert.That(renamedRequest.IconAssetGuid, Is.Null);
+            }
+            finally
+            {
+                if (popup != null)
+                {
+                    popup.Close();
+                }
+
+                owner.Close();
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator SmartCollectionRenamePopup_ChangesIcon()
+        {
+            var owner =
+                ScriptableObject.CreateInstance<EditorWindow>();
+            CollectionCreationWindow popup = null;
+            try
+            {
+                var anchor = new VisualElement();
+                anchor.style.width = 120f;
+                anchor.style.height = 22f;
+                owner.rootVisualElement.Add(anchor);
+                owner.Show();
+                yield return null;
+
+                UpdateCollectionRequest updatedRequest = null;
+                popup = CollectionCreationWindow.ShowRename(
+                    anchor,
+                    new Vector2(30f, 40f),
+                    new AssetCollection
+                    {
+                        Id = "smart",
+                        Name = "Before",
+                        IsSmartCollection = true,
+                        Icon = AssetCollectionIcon.Search
+                    },
+                    (_, request) => updatedRequest = request);
+                yield return null;
+
+                var selector = popup.rootVisualElement
+                    .Query<AssetCollectionIconSelector>()
+                    .ToList()
+                    .Single();
+                Assert.That(
+                    selector.Value,
+                    Is.EqualTo(AssetCollectionIcon.Search));
+                Assert.That(
+                    popup.rootVisualElement
+                        .Query<PopupField<SmartCollectionMatchMode>>()
+                        .ToList(),
+                    Is.Empty);
+
+                selector.Value = AssetCollectionIcon.Star;
+                InvokeCollectionPopupSubmit(popup);
+
+                Assert.That(updatedRequest, Is.Not.Null);
+                Assert.That(updatedRequest.Name, Is.EqualTo("Before"));
+                Assert.That(
+                    updatedRequest.Icon,
+                    Is.EqualTo(AssetCollectionIcon.Star));
+                Assert.That(
+                    updatedRequest.IconAssetGuid,
+                    Is.EqualTo(string.Empty));
+            }
+            finally
+            {
+                if (popup != null)
+                {
+                    popup.Close();
+                }
+
+                owner.Close();
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator SmartConditionsPopup_RestoresAndSubmitsRule()
+        {
+            var owner =
+                ScriptableObject.CreateInstance<EditorWindow>();
+            CollectionCreationWindow popup = null;
+            try
+            {
+                var anchor = new VisualElement();
+                anchor.style.width = 120f;
+                anchor.style.height = 22f;
+                owner.rootVisualElement.Add(anchor);
+                owner.Show();
+                yield return null;
+
+                string updatedId = null;
+                UpdateSmartCollectionRequest updatedRequest = null;
+                popup =
+                    CollectionCreationWindow.ShowSmartConditions(
+                        anchor,
+                        new Vector2(30f, 40f),
+                        new AssetCollection
+                        {
+                            Id = "smart",
+                            Name = "Smart",
+                            IsSmartCollection = true,
+                            SmartRule = new SmartCollectionRule
+                            {
+                                MatchMode =
+                                    SmartCollectionMatchMode.Any,
+                                Conditions = new[]
+                                {
+                                    new SmartCollectionCondition
+                                    {
+                                        Field =
+                                            SmartCollectionConditionField.Tag,
+                                        Operator =
+                                            SmartCollectionConditionOperator.Equals,
+                                        QueryText = "avatar"
+                                    }
+                                }
+                            }
+                        },
+                        (collectionId, request) =>
+                        {
+                            updatedId = collectionId;
+                            updatedRequest = request;
+                        });
+                yield return null;
+
+                Assert.That(
+                    popup.rootVisualElement
+                        .Query<PopupField<SmartCollectionMatchMode>>()
+                        .ToList()
+                        .Single()
+                        .value,
+                    Is.EqualTo(SmartCollectionMatchMode.Any));
+                Assert.That(
+                    popup.rootVisualElement
+                        .Query<InputField>()
+                        .ToList()
+                        .Single()
+                        .Value,
+                    Is.EqualTo("avatar"));
+                InvokeCollectionPopupSubmit(popup);
+
+                Assert.That(updatedId, Is.EqualTo("smart"));
+                Assert.That(updatedRequest, Is.Not.Null);
+                Assert.That(
+                    updatedRequest.MatchMode,
+                    Is.EqualTo(SmartCollectionMatchMode.Any));
+                Assert.That(
+                    updatedRequest.Conditions.Single().Field,
+                    Is.EqualTo(SmartCollectionConditionField.Tag));
+                Assert.That(
+                    updatedRequest.Conditions.Single().QueryText,
+                    Is.EqualTo("avatar"));
+            }
+            finally
+            {
+                if (popup != null)
+                {
+                    popup.Close();
+                }
+
+                owner.Close();
+            }
+        }
+
         [Test]
         public void CollectionPopupHeight_UsesNaturalHeightUntilMaximum()
         {
@@ -1201,6 +1606,18 @@ namespace Ee4v.AssetManager.UI.Tests
             Assert.That(
                 page.Query<UiTextElement>().ToList().Any(text => text.Text == "Shader"),
                 Is.True);
+        }
+
+        private static void InvokeCollectionPopupSubmit(
+            CollectionCreationWindow popup)
+        {
+            var submit = typeof(CollectionCreationWindow)
+                .GetMethod(
+                    "Submit",
+                    BindingFlags.Instance |
+                    BindingFlags.NonPublic);
+            Assert.That(submit, Is.Not.Null);
+            submit.Invoke(popup, null);
         }
     }
 }

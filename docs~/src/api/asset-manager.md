@@ -358,6 +358,12 @@ public sealed class CreateSmartCollectionRequest
     public IReadOnlyList<SmartCollectionCondition> Conditions { get; set; }
 }
 
+public sealed class UpdateSmartCollectionRequest
+{
+    public SmartCollectionMatchMode MatchMode { get; set; }
+    public IReadOnlyList<SmartCollectionCondition> Conditions { get; set; }
+}
+
 public sealed class BlmSyncRequest
 {
     public BlmSyncRequest(string databasePath = null, string itemDirectoryPath = null)
@@ -783,6 +789,46 @@ Notes:
 - `request.ParentCollectionId` に Smart Collection は指定できない。
 - Smart Collection の item 所属は `item_collection` に保存しない。`SearchItems(...)` で Smart Collection を指定した場合に条件から item を抽出する。
 
+### `IAssetManager.UpdateCollection`
+
+Collection の表示情報を変更します。
+
+```csharp
+public AssetCollection UpdateCollection(
+    string collectionId,
+    UpdateCollectionRequest request)
+```
+
+通常 Collection と Smart Collection の両方を対象にし、更新後の
+`AssetCollection` を返します。`request.Name` は必須です。
+Smart Collection では `Icon` と `IconAssetGuid` も更新します。
+通常 Collection のアイコンは `Folder` に固定し、`IconAssetGuid` は保存しません。
+
+### `IAssetManager.UpdateSmartCollection`
+
+Smart Collection の match mode と条件一覧を置き換えます。
+
+```csharp
+public AssetCollection UpdateSmartCollection(
+    string collectionId,
+    UpdateSmartCollectionRequest request)
+```
+
+`request.Conditions` は1件以上必要で、`exists` 以外の operator では
+`QueryText` が必須です。通常 Collection を指定した場合は `InvalidRequest` です。
+
+### `IAssetManager.DeleteCollection`
+
+Collection を削除します。
+
+```csharp
+public void DeleteCollection(string collectionId)
+```
+
+指定した Collection と配下の子孫 Collection を再帰的に削除します。
+削除対象 Collection の item 所属と Smart Collection 定義は cascade で削除しますが、
+`item_info` は削除しません。残った兄弟の `SortOrder` は正規化します。
+
 ### `IAssetManager.MoveCollection`
 
 Collection の親または兄弟順を変更します。
@@ -1007,12 +1053,15 @@ public event Action<AssetManagerChange> Changed;
 |---|---|---|---|
 | `Catalog` | 空 | 空 | item 一覧や file tree の構造・内容を再取得する |
 | `Collections` | 空 | 空 | Collection 一覧・親子関係・兄弟順だけを再取得する |
+| `SmartCollectionRule` | Smart Collection ID | 空 | 対象 Smart Collection と Uncategorized の検索結果を再取得する |
 | `FileTree` | 空 | 空 | File Tree に関係する変更を知らせる |
 | `FileImportTargets` | file ID | 保存後の `ImportTargets` | cache 上の target state だけを更新する |
 | `VersionGroupPrimaryFile` | Version Group ID | `RelatedId` に代表 file ID | cache 上の代表 state だけを更新する |
 
-Collection の作成・移動、`SetFileImportTargets(...)`、`SetVersionGroupPrimaryFile(...)` は
+Collection の作成・更新・削除・移動、`SetFileImportTargets(...)`、`SetVersionGroupPrimaryFile(...)` は
 `Catalog` change を発行しません。
+Smart Collection の作成・条件更新・削除は `Collections` に加えて
+`SmartCollectionRule` を発行します。
 標準 UI は詳細 change から既存の File Tree 行 state だけを更新し、Main View の再検索や File Tree の
 再構築を行いません。
 

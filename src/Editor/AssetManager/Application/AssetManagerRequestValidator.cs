@@ -87,12 +87,47 @@ namespace Ee4v.AssetManager.Application
             });
         }
 
+        internal static void ValidateSmartCollection(
+            UpdateSmartCollectionRequest request)
+        {
+            RequireRequest(request, "Smart Collection update request");
+            Execute(() =>
+            {
+                CatalogCommandPolicy.EnsureSmartConditions(
+                    request.Conditions == null
+                        ? Array.Empty<string>()
+                        : request.Conditions
+                            .Where(condition => condition != null)
+                            .Select(condition =>
+                                condition.Operator ==
+                                SmartCollectionConditionOperator.Exists
+                                    ? "exists"
+                                    : condition.QueryText)
+                            .ToArray(),
+                    request.Conditions != null &&
+                    request.Conditions.Any(condition =>
+                        condition == null));
+            });
+        }
+
         internal static void ValidateCollection(CreateCollectionRequest request)
         {
             RequireRequest(request, "Create collection request");
             Execute(() =>
             {
                 CatalogCommandPolicy.Require(request.Name, "collection name");
+            });
+        }
+
+        internal static void ValidateCollection(UpdateCollectionRequest request)
+        {
+            RequireRequest(request, "Collection update request");
+            Execute(() =>
+            {
+                CatalogCommandPolicy.Require(request.Name, "collection name");
+                CatalogCommandPolicy.EnsureCollectionIcon(
+                    (int)request.Icon,
+                    (int)AssetCollectionIcon.Search);
             });
         }
 
