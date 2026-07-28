@@ -35,6 +35,22 @@ Unity の組み込みアイコンは、バージョンによって利用でき�
 
 使用可能なアイコンは enum で定義されており、アイコンが使用可能なことはテストコードで検証されている。Unity のバージョン更新時はテストの実行結果を参照し、失敗していた場合はアイコンの enum 定義を更新する。
 
+## Fluent SVG Icon
+
+拡大表示する共通単色 icon は
+`ThirdParty~/FluentUiSystemIcons` に保管した SVG から事前生成した
+透明 512px PNG を UI Toolkit の
+標準 `Image` で描画します。package 本体は Vector Graphics package、
+SVG importer、runtime parser、custom tessellation のいずれにも依存しません。
+
+Unity 更新時は次を確認します。
+
+- `Image` の `ScaleToFit` と tint で拡大表示と theme color が維持される
+- `UiIconTests` で全 `UiFluentIcon` が解決できる
+- generated PNG がすべて透明背景の 512 x 512 である
+- Folder Zip など compound path を含む icon が元 SVG と同じ silhouette を保つ
+- vendor の100 SVGに size / style variant が再混入していない
+
 ## InternalEditorAPI
 
 Unity の内部 API はバージョンによって利用できる API や挙動が異なるため、Core 配下に `InternalEditorAPI` を設けて Unity 内部 API へのアクセスを一元管理している。

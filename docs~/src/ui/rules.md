@@ -92,6 +92,27 @@ Unity の built-in icon はバージョン差分があるため、`Icon` / `UiBu
 - 追加が必要なら `UiBuiltinIcon` と `UiBuiltinIconResolver` を更新する
 - `Editor/UI/Test/Editor/UiIconTests.cs` で解決可能か確認される
 
+## 同梱 Fluent アイコン
+
+Unity built-in の小さい bitmap を拡大して使わず、主表示など拡大可能な単色 icon には
+`IconState.FromFluentIcon(...)` と `UiFluentIcon` を使います。
+
+- SVG は `src` の外にある
+  `ThirdParty~/FluentUiSystemIcons/Source/Filled` に厳選した100種類だけを保持する
+- Unity packageには
+  `Editor/ThirdParty/FluentUiSystemIcons/Png512` の生成済みPNGだけを含める
+- size や style の variant は増やさず、1 icon につき1 SVGを保持する
+- `UiFluentIconResolver` 以外から asset path を直参照しない
+- SVG から事前生成した透明 512px PNG を標準 `Image` で描画する
+- package 本体へ Vector Graphics package、SVG importer、runtime parser、
+  custom tessellation を追加しない
+- 新しい icon を追加するときは `selected-icons.txt`、`UiFluentIcon`、vendor README を同時に更新する
+- `UiIconTests` で登録済み Fluent icon の PNG がすべて解決でき、
+  512 x 512 texture としてimportされることを確認する
+
+ライセンス、固定 version、色正規化、更新手順は
+`ThirdParty~/FluentUiSystemIcons/README.md` を参照します。
+
 ## ローカライズ
 
 永続的に表示される文言は `I18N.Get("key")` を使います。

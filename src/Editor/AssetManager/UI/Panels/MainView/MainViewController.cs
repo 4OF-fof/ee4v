@@ -493,7 +493,7 @@ namespace Ee4v.AssetManager.UI
                         child,
                         44f);
                 var artwork =
-                    CreateTypedArtworkState(
+                    CreateCollectionArtworkState(
                         previewStates,
                         collectionIcon);
                 items.Add(new AssetItemGridListItem(
@@ -628,7 +628,7 @@ namespace Ee4v.AssetManager.UI
         }
 
         internal static AssetItemGridArtworkState
-            CreateTypedArtworkState(
+            CreateCollectionArtworkState(
                 IReadOnlyList<ItemCardState> contentStates,
                 IconState typeIcon)
         {
@@ -809,11 +809,7 @@ namespace Ee4v.AssetManager.UI
                     AssetItemGridNodeKind.VariantGroup,
                     variants[i].Id,
                     variants[i].Name,
-                    itemId,
-                    CreateVariantGroupContentStates(
-                        variants[i].Id,
-                        versions,
-                        files)));
+                    itemId));
             }
 
             for (var i = 0; i < versions.Count; i++)
@@ -824,10 +820,7 @@ namespace Ee4v.AssetManager.UI
                         AssetItemGridNodeKind.VersionGroup,
                         versions[i].Id,
                         versions[i].Name,
-                        itemId,
-                        CreateVersionGroupContentStates(
-                            versions[i].Id,
-                            files)));
+                        itemId));
                 }
             }
 
@@ -856,10 +849,7 @@ namespace Ee4v.AssetManager.UI
                             AssetItemGridNodeKind.VersionGroup,
                             versions[i].Id,
                             versions[i].Name,
-                            itemId,
-                            CreateVersionGroupContentStates(
-                                versions[i].Id,
-                                files)));
+                            itemId));
                     }
                 }
 
@@ -1026,6 +1016,22 @@ namespace Ee4v.AssetManager.UI
 
         private static IconState CreateFileIcon(string extension)
         {
+            switch (NormalizeExtension(extension))
+            {
+                case "zip":
+                case "unitypackage":
+                    return IconState.FromFluentIcon(
+                        UiFluentIcon.FolderZip,
+                        size: 44f);
+                case "rar":
+                case "7z":
+                case "tar":
+                case "gz":
+                    return IconState.FromFluentIcon(
+                        UiFluentIcon.Archive,
+                        size: 44f);
+            }
+
             return IconState.FromBuiltinIcon(ResolveFileIcon(extension), size: 44f);
         }
 
@@ -1033,18 +1039,10 @@ namespace Ee4v.AssetManager.UI
             AssetItemGridNodeKind kind,
             string id,
             string name,
-            string itemId,
-            IReadOnlyList<ItemCardState> contentStates)
+            string itemId)
         {
-            var typeIcon = IconState.FromBuiltinIcon(
-                kind == AssetItemGridNodeKind.VariantGroup
-                    ? UiBuiltinIcon.DisclosureClosed
-                    : UiBuiltinIcon.DisclosureOpen,
-                size: 44f);
-            var artwork =
-                CreateTypedArtworkState(
-                    contentStates,
-                    typeIcon);
+            var typeIcon = CreateGroupTypeIcon(kind);
+            var artwork = CreateGroupArtworkState(kind);
             return new AssetItemGridListItem(
                 AssetItemGridNodeKey.Encode(kind, id),
                 name,
@@ -1053,6 +1051,24 @@ namespace Ee4v.AssetManager.UI
                 itemId,
                 artwork.StackStates,
                 typeIcon);
+        }
+
+        internal static AssetItemGridArtworkState
+            CreateGroupArtworkState(
+                AssetItemGridNodeKind kind)
+        {
+            return new AssetItemGridArtworkState(
+                iconState: CreateGroupTypeIcon(kind));
+        }
+
+        internal static IconState CreateGroupTypeIcon(
+            AssetItemGridNodeKind kind)
+        {
+            return IconState.FromFluentIcon(
+                kind == AssetItemGridNodeKind.VariantGroup
+                    ? UiFluentIcon.Stack
+                    : UiFluentIcon.History,
+                size: 44f);
         }
 
         private static void AddFiles(
@@ -1091,104 +1107,10 @@ namespace Ee4v.AssetManager.UI
                 iconState: CreateFileIcon(extension));
         }
 
-        internal static IReadOnlyList<ItemCardState>
-            CreateVariantGroupContentStates(
-                string variantGroupId,
-                IReadOnlyList<AssetVersionGroup> versions,
-                IReadOnlyList<AssetFile> files)
-        {
-            var states = new List<ItemCardState>(3);
-            for (var i = 0;
-                 versions != null &&
-                 i < versions.Count &&
-                 states.Count < 3;
-                 i++)
-            {
-                if (versions[i] != null &&
-                    string.Equals(
-                        versions[i].VariantGroupId,
-                        variantGroupId,
-                        StringComparison.Ordinal))
-                {
-                    states.Add(
-                        CreateIconContentState(
-                            UiBuiltinIcon.DisclosureOpen));
-                }
-            }
-
-            AddFileContentStates(
-                states,
-                files,
-                file => string.Equals(
-                    file.VariantGroupId,
-                    variantGroupId,
-                    StringComparison.Ordinal));
-            return states;
-        }
-
-        internal static IReadOnlyList<ItemCardState>
-            CreateVersionGroupContentStates(
-                string versionGroupId,
-                IReadOnlyList<AssetFile> files)
-        {
-            var states = new List<ItemCardState>(3);
-            AddFileContentStates(
-                states,
-                files,
-                file => string.Equals(
-                    file.VersionGroupId,
-                    versionGroupId,
-                    StringComparison.Ordinal));
-            return states;
-        }
-
-        private static void AddFileContentStates(
-            ICollection<ItemCardState> states,
-            IReadOnlyList<AssetFile> files,
-            Func<AssetFile, bool> predicate)
-        {
-            for (var i = 0;
-                 files != null &&
-                 i < files.Count &&
-                 states.Count < 3;
-                 i++)
-            {
-                var file = files[i];
-                if (file != null &&
-                    predicate(file))
-                {
-                    states.Add(
-                        CreateIconContentState(
-                            ResolveFileIcon(
-                                file.Extension)));
-                }
-            }
-        }
-
-        private static ItemCardState
-            CreateIconContentState(
-                UiBuiltinIcon builtinIcon)
-        {
-            return new ItemCardState(
-                string.Empty,
-                string.Empty,
-                new ItemImageState(),
-                IconState.FromBuiltinIcon(
-                    builtinIcon,
-                    size: 44f));
-        }
-
         private static UiBuiltinIcon ResolveFileIcon(string extension)
         {
-            switch ((extension ?? string.Empty).Trim().TrimStart('.').ToLowerInvariant())
+            switch (NormalizeExtension(extension))
             {
-                case "zip":
-                case "rar":
-                case "7z":
-                case "tar":
-                case "gz":
-                case "unitypackage":
-                    return UiBuiltinIcon.ArchiveFile;
                 case "png":
                 case "jpg":
                 case "jpeg":
@@ -1233,6 +1155,15 @@ namespace Ee4v.AssetManager.UI
                 default:
                     return UiBuiltinIcon.GenericFile;
             }
+        }
+
+        private static string NormalizeExtension(
+            string extension)
+        {
+            return (extension ?? string.Empty)
+                .Trim()
+                .TrimStart('.')
+                .ToLowerInvariant();
         }
 
         private int ClampItemsPerRow(int value)

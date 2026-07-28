@@ -7,7 +7,8 @@ namespace Ee4v.UI
     internal enum UiIconSourceKind
     {
         Texture,
-        Builtin
+        Builtin,
+        Fluent
     }
 
     internal enum UiBuiltinIcon
@@ -286,6 +287,7 @@ namespace Ee4v.UI
             UiIconSourceKind sourceKind,
             Texture texture = null,
             UiBuiltinIcon builtinIcon = UiBuiltinIcon.Search,
+            UiFluentIcon fluentIcon = UiFluentIcon.Search,
             float size = 16f,
             string tooltip = null)
         {
@@ -297,6 +299,7 @@ namespace Ee4v.UI
             SourceKind = sourceKind;
             Texture = texture;
             BuiltinIcon = builtinIcon;
+            FluentIcon = fluentIcon;
             Size = size < 0f ? 0f : size;
             Tooltip = tooltip ?? string.Empty;
         }
@@ -306,6 +309,8 @@ namespace Ee4v.UI
         public Texture Texture { get; }
 
         public UiBuiltinIcon BuiltinIcon { get; }
+
+        public UiFluentIcon FluentIcon { get; }
 
         public float Size { get; }
 
@@ -322,6 +327,18 @@ namespace Ee4v.UI
             string tooltip = null)
         {
             return new IconState(UiIconSourceKind.Builtin, builtinIcon: builtinIcon, size: size, tooltip: tooltip);
+        }
+
+        public static IconState FromFluentIcon(
+            UiFluentIcon fluentIcon,
+            float size = UiSizeTokens.Size16,
+            string tooltip = null)
+        {
+            return new IconState(
+                UiIconSourceKind.Fluent,
+                fluentIcon: fluentIcon,
+                size: size,
+                tooltip: tooltip);
         }
 
     }
@@ -352,7 +369,6 @@ namespace Ee4v.UI
         {
             state = state ?? IconState.FromBuiltinIcon(UiBuiltinIcon.Search);
 
-            var texture = ResolveTexture(state);
             var size = state.Size;
 
             tooltip = state.Tooltip;
@@ -360,7 +376,7 @@ namespace Ee4v.UI
             style.height = size;
             style.display = DisplayStyle.Flex;
 
-            _image.image = texture;
+            ApplySource(state);
             SetSize(size);
         }
 
@@ -373,14 +389,37 @@ namespace Ee4v.UI
             _image.style.height = safeSize;
         }
 
-        private static Texture ResolveTexture(IconState state)
+        private void ApplySource(IconState state)
         {
+            _image.image = null;
+            _image.tintColor = Color.white;
+
             switch (state.SourceKind)
             {
                 case UiIconSourceKind.Texture:
-                    return state.Texture;
+                    _image.image = state.Texture;
+                    return;
                 case UiIconSourceKind.Builtin:
-                    return UiBuiltinIconResolver.TryResolve(state.BuiltinIcon, out var texture) ? texture : null;
+                    if (UiBuiltinIconResolver.TryResolve(
+                            state.BuiltinIcon,
+                            out var texture))
+                    {
+                        _image.image = texture;
+                    }
+
+                    return;
+                case UiIconSourceKind.Fluent:
+                    if (UiFluentIconResolver.TryResolve(
+                            state.FluentIcon,
+                            out var fluentTexture))
+                    {
+                        _image.image = fluentTexture;
+                        _image.tintColor =
+                            UiColorTokens.TextPrimary;
+                        return;
+                    }
+
+                    return;
                 default:
                     throw new System.ArgumentOutOfRangeException(nameof(state.SourceKind), state.SourceKind, null);
             }

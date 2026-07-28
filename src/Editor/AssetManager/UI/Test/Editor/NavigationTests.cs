@@ -227,7 +227,7 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
-        public void TypedArtwork_UsesSingleImageStackOrTypeIconByContentCount()
+        public void CollectionArtwork_UsesImageStackOrTypeIconByContentCount()
         {
             var firstPreview = new ItemCardState(
                 "item-1",
@@ -242,15 +242,15 @@ namespace Ee4v.AssetManager.UI.Tests
                     UiBuiltinIcon.Folder);
 
             var emptyArtwork =
-                MainViewController.CreateTypedArtworkState(
+                MainViewController.CreateCollectionArtworkState(
                     null,
                     typeIcon);
             var singleArtwork =
-                MainViewController.CreateTypedArtworkState(
+                MainViewController.CreateCollectionArtworkState(
                     new[] { firstPreview },
                     typeIcon);
             var stackedArtwork =
-                MainViewController.CreateTypedArtworkState(
+                MainViewController.CreateCollectionArtworkState(
                     new[]
                     {
                         firstPreview,
@@ -295,10 +295,10 @@ namespace Ee4v.AssetManager.UI.Tests
 
             Assert.That(
                 archive.IconState.SourceKind,
-                Is.EqualTo(UiIconSourceKind.Builtin));
+                Is.EqualTo(UiIconSourceKind.Fluent));
             Assert.That(
-                archive.IconState.BuiltinIcon,
-                Is.EqualTo(UiBuiltinIcon.ArchiveFile));
+                archive.IconState.FluentIcon,
+                Is.EqualTo(UiFluentIcon.FolderZip));
             Assert.That(
                 archive.StackStates,
                 Is.Empty);
@@ -311,49 +311,51 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
-        public void GroupContentStates_UseActualChildCountUpToThree()
+        public void GroupArtwork_AlwaysUsesTypeIconWithoutImageStack()
         {
-            var states =
-                MainViewController
-                    .CreateVersionGroupContentStates(
-                        "version",
-                        new[]
-                        {
-                            new AssetFile
-                            {
-                                VersionGroupId = "version",
-                                Extension = "png"
-                            },
-                            new AssetFile
-                            {
-                                VersionGroupId = "version",
-                                Extension = "zip"
-                            },
-                            new AssetFile
-                            {
-                                VersionGroupId = "version",
-                                Extension = "cs"
-                            },
-                            new AssetFile
-                            {
-                                VersionGroupId = "version",
-                                Extension = "fbx"
-                            }
-                        });
+            var variant =
+                MainViewController.CreateGroupArtworkState(
+                    AssetItemGridNodeKind.VariantGroup);
+            var version =
+                MainViewController.CreateGroupArtworkState(
+                    AssetItemGridNodeKind.VersionGroup);
 
-            Assert.That(states.Count, Is.EqualTo(3));
             Assert.That(
-                states[0].IconState.BuiltinIcon,
-                Is.EqualTo(UiBuiltinIcon.ImageFile));
+                variant.IconState.FluentIcon,
+                Is.EqualTo(UiFluentIcon.Stack));
             Assert.That(
-                states[1].IconState.SourceKind,
-                Is.EqualTo(UiIconSourceKind.Builtin));
+                variant.StackStates,
+                Is.Empty);
             Assert.That(
-                states[1].IconState.BuiltinIcon,
-                Is.EqualTo(UiBuiltinIcon.ArchiveFile));
+                version.IconState.FluentIcon,
+                Is.EqualTo(UiFluentIcon.History));
             Assert.That(
-                states[2].IconState.BuiltinIcon,
-                Is.EqualTo(UiBuiltinIcon.ScriptFile));
+                version.StackStates,
+                Is.Empty);
+        }
+
+        [Test]
+        public void GroupTypeIcons_UseDistinctFluentIcons()
+        {
+            var variant =
+                MainViewController.CreateGroupTypeIcon(
+                    AssetItemGridNodeKind.VariantGroup);
+            var version =
+                MainViewController.CreateGroupTypeIcon(
+                    AssetItemGridNodeKind.VersionGroup);
+
+            Assert.That(
+                variant.SourceKind,
+                Is.EqualTo(UiIconSourceKind.Fluent));
+            Assert.That(
+                variant.FluentIcon,
+                Is.EqualTo(UiFluentIcon.Stack));
+            Assert.That(
+                version.SourceKind,
+                Is.EqualTo(UiIconSourceKind.Fluent));
+            Assert.That(
+                version.FluentIcon,
+                Is.EqualTo(UiFluentIcon.History));
         }
 
         [Test]
