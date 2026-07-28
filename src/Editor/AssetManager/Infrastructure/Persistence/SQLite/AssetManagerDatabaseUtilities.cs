@@ -376,6 +376,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 return AssetManagerErrorCode.CollectionCycle;
             }
 
+            if (message.IndexOf("smart collection cannot contain", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return AssetManagerErrorCode.InvalidCollectionHierarchy;
+            }
+
             if (message.IndexOf("UNIQUE", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return AssetManagerErrorCode.Duplicate;

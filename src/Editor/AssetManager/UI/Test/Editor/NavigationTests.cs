@@ -351,6 +351,24 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
+        public void NavigationPanel_ReloadButtonDoesNotRetainFocus()
+        {
+            var panel = new NavigationPanel();
+            var picker = panel.Query<VisualElement>(
+                    className:
+                    "ee4v-asset-manager-panel__navigation-picker")
+                .ToList()
+                .Single();
+            var reloadButton = picker.Query<UiButton>(
+                    className:
+                    "ee4v-asset-manager-panel__header-action")
+                .ToList()
+                .Single();
+
+            Assert.That(reloadButton.focusable, Is.False);
+        }
+
+        [Test]
         public void CollectionCreationMenu_ChoosesRegularOrSmart()
         {
             var anchor = new VisualElement();
@@ -379,7 +397,7 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
-        public void CollectionNavigationList_DragMoveRejectsCyclesAndMovesAcrossKinds()
+        public void CollectionNavigationList_DragMoveRejectsCyclesAndSmartParents()
         {
             string movedId = null;
             string parentId = null;
@@ -419,6 +437,9 @@ namespace Ee4v.AssetManager.UI.Tests
                 Is.True);
             Assert.That(movedId, Is.EqualTo("smart"));
             Assert.That(parentId, Is.EqualTo("regular"));
+            Assert.That(
+                list.TryRequestMove("regular", "smart"),
+                Is.False);
         }
 
         [Test]

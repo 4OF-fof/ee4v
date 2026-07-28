@@ -229,6 +229,7 @@ namespace Ee4v.AssetManager.UI
                 actionTooltip,
                 actionIcon,
                 action);
+            button.focusable = false;
             header.Add(button);
             return header;
         }

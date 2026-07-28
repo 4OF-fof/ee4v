@@ -78,7 +78,10 @@
         "title": "Collections",
         "create": "コレクションを作成",
         "createCollection": "新規コレクション",
-        "createSmartCollection": "新規スマートコレクション"
+        "createSmartCollection": "新規スマートコレクション",
+        "error": {
+          "smartCollectionCannotContainCollections": "スマートコレクションにはコレクションを追加できません。"
+        }
       },
       "smartCollections": {
         "title": "Smart Collections"

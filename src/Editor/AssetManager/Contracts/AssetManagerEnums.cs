@@ -59,6 +59,7 @@ namespace Ee4v.AssetManager.Contracts
         Duplicate,
         InvalidRequest,
         CollectionCycle,
+        InvalidCollectionHierarchy,
         InvalidSmartCollectionCondition,
         DatabaseError,
         DatasourceError

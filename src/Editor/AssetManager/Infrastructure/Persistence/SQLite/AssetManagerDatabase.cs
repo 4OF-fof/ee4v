@@ -13,7 +13,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
 {
     internal static partial class AssetManagerDatabase
     {
-        private const int CurrentSchemaVersion = 5;
+        private const int CurrentSchemaVersion = 6;
 
         private const string DatabaseFileName = "asset-manager.db";
 

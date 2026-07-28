@@ -86,7 +86,7 @@ namespace Ee4v.AssetManager.UI
             _navigationPanel.SelectionChanged +=
                 OnSelectionChanged;
             _navigationPanel.ManualSyncRequested +=
-                AssetManagerUiDependencies.RequestManualSync;
+                OnManualSyncRequested;
             _collectionController.Activate();
         }
 
@@ -172,7 +172,7 @@ namespace Ee4v.AssetManager.UI
                 _navigationPanel.SelectionChanged -=
                     OnSelectionChanged;
                 _navigationPanel.ManualSyncRequested -=
-                    AssetManagerUiDependencies.RequestManualSync;
+                    OnManualSyncRequested;
             }
 
             if (_standaloneViewSession != null)
@@ -199,6 +199,15 @@ namespace Ee4v.AssetManager.UI
 
             _collectionController.Dispose();
             _collectionController = null;
+        }
+
+        private void OnManualSyncRequested()
+        {
+            if (_collectionController != null)
+            {
+                AssetManagerUiDependencies.RequestManualSync(
+                    _collectionController.Reload);
+            }
         }
     }
 }

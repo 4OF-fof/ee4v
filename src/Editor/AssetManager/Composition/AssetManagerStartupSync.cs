@@ -21,6 +21,9 @@ namespace Ee4v.AssetManager.Composition
         private static AssetManagerService _assetManager;
         private static ISettingsService _settings;
         private static int _running;
+        private static readonly object CompletionLock = new object();
+        private static readonly HashSet<Action> CompletionCallbacks =
+            new HashSet<Action>();
 
         internal static event Action<IReadOnlyList<AssetSyncConflict>, Action<bool>> ConfirmationRequested;
 
@@ -63,10 +66,11 @@ namespace Ee4v.AssetManager.Composition
             StartSync(checkBlm, blmPath, checkEagle, eaglePath);
         }
 
-        internal static void RequestManualSync()
+        internal static void RequestManualSync(Action completed)
         {
             if (_assetManager == null || _settings == null)
             {
+                InvokeCompletion(completed);
                 return;
             }
 
@@ -81,7 +85,16 @@ namespace Ee4v.AssetManager.Composition
             {
                 Debug.LogWarning(I18N.Get(
                     "assetManager.background.noDatasource"));
+                InvokeCompletion(completed);
                 return;
+            }
+
+            if (completed != null)
+            {
+                lock (CompletionLock)
+                {
+                    CompletionCallbacks.Add(completed);
+                }
             }
 
             StartSync(checkBlm, blmPath, checkEagle, eaglePath);
@@ -224,6 +237,34 @@ namespace Ee4v.AssetManager.Composition
         private static void CompleteSync()
         {
             Interlocked.Exchange(ref _running, 0);
+            Action[] callbacks;
+            lock (CompletionLock)
+            {
+                callbacks = CompletionCallbacks.ToArray();
+                CompletionCallbacks.Clear();
+            }
+
+            for (var i = 0; i < callbacks.Length; i++)
+            {
+                InvokeCompletion(callbacks[i]);
+            }
+        }
+
+        private static void InvokeCompletion(Action completed)
+        {
+            if (completed == null)
+            {
+                return;
+            }
+
+            try
+            {
+                completed();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
         }
 
         private static string ResolvePath(string path)

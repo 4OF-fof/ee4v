@@ -78,7 +78,10 @@
         "title": "Collections",
         "create": "Create a collection",
         "createCollection": "New Collection",
-        "createSmartCollection": "New Smart Collection"
+        "createSmartCollection": "New Smart Collection",
+        "error": {
+          "smartCollectionCannotContainCollections": "Smart Collections cannot contain other collections."
+        }
       },
       "smartCollections": {
         "title": "Smart Collections"

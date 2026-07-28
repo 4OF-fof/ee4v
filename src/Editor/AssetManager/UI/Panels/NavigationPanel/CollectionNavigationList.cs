@@ -345,6 +345,12 @@ namespace Ee4v.AssetManager.UI
                 return false;
             }
 
+            if (targetParentId.Length > 0 &&
+                _collections[targetParentId].IsSmartCollection)
+            {
+                return false;
+            }
+
             for (var i = 0; i < movingIds.Count; i++)
             {
                 var collectionId = movingIds[i];

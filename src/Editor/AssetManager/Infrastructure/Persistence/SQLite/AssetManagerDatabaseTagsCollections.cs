@@ -71,6 +71,9 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 if (!string.IsNullOrWhiteSpace(request.ParentCollectionId))
                 {
                     EnsureCollectionExists(connection, request.ParentCollectionId);
+                    EnsureCollectionCanContainChildren(
+                        connection,
+                        request.ParentCollectionId);
                 }
 
                 var id = InTransaction(connection, () =>
@@ -110,6 +113,9 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 if (!string.IsNullOrWhiteSpace(request.ParentCollectionId))
                 {
                     EnsureCollectionExists(connection, request.ParentCollectionId);
+                    EnsureCollectionCanContainChildren(
+                        connection,
+                        request.ParentCollectionId);
                 }
 
                 var conditions = request.Conditions ?? Array.Empty<SmartCollectionCondition>();
@@ -300,6 +306,9 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             if (targetParentId != null)
             {
                 EnsureCollectionExists(connection, targetParentId);
+                EnsureCollectionCanContainChildren(
+                    connection,
+                    targetParentId);
                 for (var i = 0; i < movingIds.Length; i++)
                 {
                     if (movingIds[i] == targetParentId ||
@@ -597,6 +606,21 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             if (connection.ExecuteScalar<int>("SELECT COUNT(*) FROM collection_info WHERE id = ?", collectionId) == 0)
             {
                 throw new AssetManagerException(AssetManagerErrorCode.NotFound, "Collection was not found.");
+            }
+        }
+
+        private static void EnsureCollectionCanContainChildren(
+            SQLiteConnection connection,
+            string collectionId)
+        {
+            var isSmart = connection.ExecuteScalar<int>(
+                "SELECT COUNT(*) FROM smart_collection_info WHERE collection_info_id = ?",
+                collectionId) > 0;
+            if (isSmart)
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidCollectionHierarchy,
+                    "Smart Collection cannot contain child collections.");
             }
         }
 

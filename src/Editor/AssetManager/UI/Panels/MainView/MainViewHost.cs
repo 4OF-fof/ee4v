@@ -53,7 +53,7 @@ namespace Ee4v.AssetManager.UI
             NavigationPanel.MoveCollectionsRequested +=
                 _collectionController.MoveCollections;
             NavigationPanel.ManualSyncRequested +=
-                AssetManagerUiDependencies.RequestManualSync;
+                OnManualSyncRequested;
 
             MainView.GridSizeChanged += Toolbar.SetGridSizeValue;
             MainView.GridSizeMinimumChanged += Toolbar.SetMinimumGridSize;
@@ -103,7 +103,7 @@ namespace Ee4v.AssetManager.UI
             NavigationPanel.MoveCollectionsRequested -=
                 _collectionController.MoveCollections;
             NavigationPanel.ManualSyncRequested -=
-                AssetManagerUiDependencies.RequestManualSync;
+                OnManualSyncRequested;
 
             MainView.GridSizeChanged -= Toolbar.SetGridSizeValue;
             MainView.GridSizeMinimumChanged -= Toolbar.SetMinimumGridSize;
@@ -138,6 +138,12 @@ namespace Ee4v.AssetManager.UI
             NavigationPanel.SetCollections(
                 collections,
                 _controller.SelectedNavigationItemId);
+        }
+
+        private void OnManualSyncRequested()
+        {
+            AssetManagerUiDependencies.RequestManualSync(
+                _collectionController.Reload);
         }
 
         private void OnCollectionCreated(

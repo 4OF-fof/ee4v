@@ -113,6 +113,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             connection.Execute("CREATE UNIQUE INDEX IF NOT EXISTS unique_blm_file_origin_registered_relative_path ON blm_file_origin(registered_item_id, relative_path)");
             connection.Execute("CREATE TABLE IF NOT EXISTS ee4v_file_origin(file_info_id TEXT PRIMARY KEY REFERENCES file_info(id) ON DELETE CASCADE, ee4v_file_id TEXT NOT NULL UNIQUE, file_path_cache TEXT NOT NULL, imported_at TEXT)");
             EnsureCollectionCycleTriggers(connection);
+            EnsureSmartCollectionHierarchyTriggers(connection);
             var now = Now();
             connection.Execute("INSERT OR IGNORE INTO schema_version(version, created_at, updated_at) VALUES (?, ?, ?)", CurrentSchemaVersion, now, now);
         }
@@ -174,6 +175,55 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                          )
                          SELECT 1 FROM descendants WHERE id = NEW.parent_collection_id
                        );
+                  END");
+        }
+
+        private static void EnsureSmartCollectionHierarchyTriggers(
+            SQLiteConnection connection)
+        {
+            connection.Execute(
+                @"CREATE TRIGGER IF NOT EXISTS prevent_smart_collection_parent_insert
+                  BEFORE INSERT ON collection_collection
+                  BEGIN
+                    SELECT RAISE(ABORT, 'smart collection cannot contain child collections')
+                    WHERE EXISTS (
+                      SELECT 1
+                      FROM smart_collection_info
+                      WHERE collection_info_id = NEW.parent_collection_id
+                    );
+                  END");
+            connection.Execute(
+                @"CREATE TRIGGER IF NOT EXISTS prevent_smart_collection_parent_update
+                  BEFORE UPDATE OF parent_collection_id ON collection_collection
+                  BEGIN
+                    SELECT RAISE(ABORT, 'smart collection cannot contain child collections')
+                    WHERE EXISTS (
+                      SELECT 1
+                      FROM smart_collection_info
+                      WHERE collection_info_id = NEW.parent_collection_id
+                    );
+                  END");
+            connection.Execute(
+                @"CREATE TRIGGER IF NOT EXISTS prevent_collection_with_children_becoming_smart_insert
+                  BEFORE INSERT ON smart_collection_info
+                  BEGIN
+                    SELECT RAISE(ABORT, 'smart collection cannot contain child collections')
+                    WHERE EXISTS (
+                      SELECT 1
+                      FROM collection_collection
+                      WHERE parent_collection_id = NEW.collection_info_id
+                    );
+                  END");
+            connection.Execute(
+                @"CREATE TRIGGER IF NOT EXISTS prevent_collection_with_children_becoming_smart_update
+                  BEFORE UPDATE OF collection_info_id ON smart_collection_info
+                  BEGIN
+                    SELECT RAISE(ABORT, 'smart collection cannot contain child collections')
+                    WHERE EXISTS (
+                      SELECT 1
+                      FROM collection_collection
+                      WHERE parent_collection_id = NEW.collection_info_id
+                    );
                   END");
         }
     }

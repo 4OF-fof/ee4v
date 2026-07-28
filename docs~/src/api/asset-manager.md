@@ -114,6 +114,7 @@ Notes:
 - 通常 Collection の `Icon` は `Folder`、`IconAssetGuid` は `null` に固定する。
 - Smart Collection の `IconAssetGuid` が有効な Texture asset を指す場合は任意アイコンとして `Icon` より優先する。asset が見つからない場合は `Icon` へフォールバックする。
 - 子 Collection は最大 1 つの親だけを持つ。
+- Smart Collection は子 Collection にはなれるが、Collection 系の子を持つ親にはなれない。
 - Smart Collection の rule は保存して返す。`SearchItems(...)` で Smart Collection を指定すると条件を評価して item を抽出する。
 
 ### その他の model
@@ -277,6 +278,7 @@ public enum AssetManagerErrorCode
     Duplicate,
     InvalidRequest,
     CollectionCycle,
+    InvalidCollectionHierarchy,
     InvalidSmartCollectionCondition,
     DatabaseError,
     DatasourceError
@@ -742,6 +744,10 @@ Effects:
 - 親が指定されていれば `collection_collection` を追加する。
 - 指定した親の兄弟一覧の末尾へ追加する。
 
+Notes:
+
+- `request.ParentCollectionId` に Smart Collection は指定できない。
+
 ### `IAssetManager.CreateSmartCollection`
 
 Smart Collection を作成します。
@@ -774,6 +780,7 @@ Effects:
 Notes:
 
 - `exists` operator 以外では `query_text` が必須。
+- `request.ParentCollectionId` に Smart Collection は指定できない。
 - Smart Collection の item 所属は `item_collection` に保存しない。`SearchItems(...)` で Smart Collection を指定した場合に条件から item を抽出する。
 
 ### `IAssetManager.MoveCollection`
@@ -805,7 +812,8 @@ Notes:
 
 - 自分自身や子孫 Collection の下へ移動する操作は例外。
 - 子 Collection は最大 1 つの親だけを持つ。
-- 通常 Collection と Smart Collection のどちらも親または子にできる。
+- Smart Collection は通常 Collection の子にできるが、Smart Collection 自身は Collection 系の子を持てない。
+- Smart Collection を `parentCollectionId` に指定すると `InvalidCollectionHierarchy`。
 - 移動元と移動先の兄弟は `SortOrder` が連続するように正規化する。
 
 ### `IAssetManager.MoveCollections`

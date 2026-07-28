@@ -43,10 +43,10 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
-            "schema version 5 の DB 制約を作成する",
-            "AssetManager DB が source origin、availability、collection cycle trigger を作成することを確認します。",
+            "schema version 6 の DB 制約を作成する",
+            "AssetManager DB が source origin、availability、collection hierarchy trigger を作成することを確認します。",
             order: 301)]
-        public void Schema_CreatesVersion5Constraints()
+        public void Schema_CreatesVersion6Constraints()
         {
             var databasePath = GetDatabasePath();
 
@@ -54,13 +54,15 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
             using (var connection = new SQLiteConnection(databasePath, SQLiteOpenFlags.ReadOnly | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.PrivateCache))
             {
-                Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(5));
+                Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(6));
                 Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'file_info'"), Does.Contain("CHECK"));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'item_source_origin'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'datasource_tag'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'file_import_target'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'unique_file_import_target_file_path'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'prevent_collection_collection_cycle_insert'"), Is.EqualTo(1));
+                Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'prevent_smart_collection_parent_insert'"), Is.EqualTo(1));
+                Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'prevent_collection_with_children_becoming_smart_insert'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'collection_info'"), Does.Contain("icon"));
                 Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'collection_info'"), Does.Contain("icon_asset_guid"));
                 Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'collection_info'"), Does.Contain("sort_order"));
@@ -87,10 +89,10 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
-            "通常・Smart Collection 間で親子関係を移動できる",
-            "MoveCollection が Collection 種別をまたいだ双方向の親子関係を保存することを確認します。",
+            "Smart Collection を子にできるが親にはできない",
+            "MoveCollection が通常 Collection 配下への Smart Collection 移動だけを許可することを確認します。",
             order: 339)]
-        public void MoveCollection_AllowsParentsAcrossCollectionKinds()
+        public void MoveCollection_RejectsSmartCollectionAsParent()
         {
             var regular = _assetManager.CreateCollection(
                 new CreateCollectionRequest { Name = "Regular" });
@@ -121,13 +123,85 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 Is.EqualTo(regular.Id));
 
             _assetManager.MoveCollection(smart.Id, null);
-            _assetManager.MoveCollection(regular.Id, smart.Id);
+            var ex = Assert.Throws<AssetManagerException>(() =>
+                _assetManager.MoveCollection(regular.Id, smart.Id));
 
+            Assert.That(
+                ex.Code,
+                Is.EqualTo(
+                    AssetManagerErrorCode.InvalidCollectionHierarchy));
             Assert.That(
                 _assetManager.GetCollections()
                     .Single(item => item.Id == regular.Id)
                     .ParentCollectionId,
-                Is.EqualTo(smart.Id));
+                Is.Null);
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Smart Collection 配下への Collection 作成を拒否する",
+            "通常 Collection と Smart Collection のどちらも Smart Collection の子として作成されず、DB に残らないことを確認します。",
+            order: 343)]
+        public void CreateCollections_RejectSmartCollectionAsParent()
+        {
+            var smart = _assetManager.CreateSmartCollection(
+                new CreateSmartCollectionRequest
+                {
+                    Name = "Smart",
+                    Icon = AssetCollectionIcon.Search,
+                    MatchMode = SmartCollectionMatchMode.All,
+                    Conditions = new[]
+                    {
+                        new SmartCollectionCondition
+                        {
+                            Field = SmartCollectionConditionField.Name,
+                            Operator =
+                                SmartCollectionConditionOperator.Contains,
+                            QueryText = "avatar"
+                        }
+                    }
+                });
+
+            var regularEx = Assert.Throws<AssetManagerException>(() =>
+                _assetManager.CreateCollection(
+                    new CreateCollectionRequest
+                    {
+                        Name = "Regular child",
+                        ParentCollectionId = smart.Id
+                    }));
+            var smartEx = Assert.Throws<AssetManagerException>(() =>
+                _assetManager.CreateSmartCollection(
+                    new CreateSmartCollectionRequest
+                    {
+                        Name = "Smart child",
+                        ParentCollectionId = smart.Id,
+                        Icon = AssetCollectionIcon.Search,
+                        MatchMode = SmartCollectionMatchMode.All,
+                        Conditions = new[]
+                        {
+                            new SmartCollectionCondition
+                            {
+                                Field =
+                                    SmartCollectionConditionField.Name,
+                                Operator =
+                                    SmartCollectionConditionOperator.Contains,
+                                QueryText = "avatar"
+                            }
+                        }
+                    }));
+
+            Assert.That(
+                regularEx.Code,
+                Is.EqualTo(
+                    AssetManagerErrorCode.InvalidCollectionHierarchy));
+            Assert.That(
+                smartEx.Code,
+                Is.EqualTo(
+                    AssetManagerErrorCode.InvalidCollectionHierarchy));
+            Assert.That(
+                _assetManager.GetCollections()
+                    .Select(collection => collection.Name),
+                Is.EqualTo(new[] { "Smart" }));
         }
 
         [Test]

@@ -299,7 +299,7 @@ CHECK (sort_order >= 0)
 
 条件に一致する Item を自動収集する Collection。
 
-通常 Collection と同じ `collection_info` として階層に配置し、条件定義だけを Smart Collection 固有情報として保持する。
+通常 Collection と同じ `collection_info` として階層に配置し、条件定義だけを Smart Collection 固有情報として保持する。Smart Collection は子 Collection にはなれるが、親 Collection にはなれない。
 
 Smart Collection の所属 Item は永続化しない。条件評価による Item 抽出は `smart_collection_condition` から実行する。
 
@@ -338,7 +338,7 @@ CHECK (operator = 'exists' OR query_text IS NOT NULL)
 
 ## Collection Collection
 
-Collection 同士の親子関係。`parent_collection_id` が `child_collection_id` を含む。tree として扱い、子 Collection は最大 1 つの親 Collection だけを持てる。親を持たない Collection は root collection として扱う。
+Collection 同士の親子関係。`parent_collection_id` が `child_collection_id` を含む。tree として扱い、子 Collection は最大 1 つの親 Collection だけを持てる。親を持たない Collection は root collection として扱う。`parent_collection_id` は通常 Collection に限定し、Smart Collection が Collection 系の子を持つことを禁止する。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
@@ -405,7 +405,33 @@ BEGIN
        WHERE id = NEW.parent_collection_id
      );
 END;
+
+CREATE TRIGGER prevent_smart_collection_parent_insert
+BEFORE INSERT ON collection_collection
+BEGIN
+  SELECT RAISE(ABORT, 'smart collection cannot contain child collections')
+  WHERE EXISTS (
+    SELECT 1
+    FROM smart_collection_info
+    WHERE collection_info_id = NEW.parent_collection_id
+  );
+END;
+
+CREATE TRIGGER prevent_collection_with_children_becoming_smart_insert
+BEFORE INSERT ON smart_collection_info
+BEGIN
+  SELECT RAISE(ABORT, 'smart collection cannot contain child collections')
+  WHERE EXISTS (
+    SELECT 1
+    FROM collection_collection
+    WHERE parent_collection_id = NEW.collection_info_id
+  );
+END;
 ```
+
+同じ制約を relation / Smart Collection ID の更新時にも維持するため、
+`prevent_smart_collection_parent_update` と
+`prevent_collection_with_children_becoming_smart_update` も作成する。
 
 ## Item Collection
 
