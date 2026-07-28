@@ -15,6 +15,7 @@ namespace Ee4v.UI
             public void Register(CatalogRegistry registry)
             {
                 registry.RegisterStyleSheet("Editor/UI/Components/Content/ItemImage/item-image.uss");
+                registry.RegisterStyleSheet("Editor/UI/Components/Content/ImageStack/image-stack.uss");
                 registry.RegisterStyleSheet("Editor/UI/Components/Content/ItemCard/item-card.uss");
                 registry.RegisterStory(new StoryRegistration(
                     "item-card",

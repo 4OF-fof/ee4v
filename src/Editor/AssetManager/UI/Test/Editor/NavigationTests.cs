@@ -227,6 +227,136 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
+        public void TypedArtwork_UsesSingleImageStackOrTypeIconByContentCount()
+        {
+            var firstPreview = new ItemCardState(
+                "item-1",
+                "First",
+                new ItemImageState(new byte[] { 1, 2, 3 }));
+            var secondPreview = new ItemCardState(
+                "item-2",
+                "Second",
+                new ItemImageState(new byte[] { 4, 5, 6 }));
+            var typeIcon =
+                IconState.FromBuiltinIcon(
+                    UiBuiltinIcon.Folder);
+
+            var emptyArtwork =
+                MainViewController.CreateTypedArtworkState(
+                    null,
+                    typeIcon);
+            var singleArtwork =
+                MainViewController.CreateTypedArtworkState(
+                    new[] { firstPreview },
+                    typeIcon);
+            var stackedArtwork =
+                MainViewController.CreateTypedArtworkState(
+                    new[]
+                    {
+                        firstPreview,
+                        secondPreview
+                    },
+                    typeIcon);
+
+            Assert.That(
+                emptyArtwork.IconState,
+                Is.SameAs(typeIcon));
+            Assert.That(
+                emptyArtwork.StackStates,
+                Is.Empty);
+            Assert.That(
+                singleArtwork.IconState,
+                Is.Null);
+            Assert.That(
+                singleArtwork.StackStates,
+                Is.EqualTo(new[]
+                {
+                    firstPreview
+                }));
+            Assert.That(
+                stackedArtwork.StackStates,
+                Is.EqualTo(new[]
+                {
+                    firstPreview,
+                    secondPreview
+                }));
+            Assert.That(stackedArtwork.IconState, Is.Null);
+        }
+
+        [Test]
+        public void FileArtwork_AlwaysUsesExtensionIcon()
+        {
+            var archive =
+                MainViewController.CreateFileArtworkState(
+                    "zip");
+            var image =
+                MainViewController.CreateFileArtworkState(
+                    "png");
+
+            Assert.That(
+                archive.IconState.SourceKind,
+                Is.EqualTo(UiIconSourceKind.Builtin));
+            Assert.That(
+                archive.IconState.BuiltinIcon,
+                Is.EqualTo(UiBuiltinIcon.ArchiveFile));
+            Assert.That(
+                archive.StackStates,
+                Is.Empty);
+            Assert.That(
+                image.IconState.BuiltinIcon,
+                Is.EqualTo(UiBuiltinIcon.ImageFile));
+            Assert.That(
+                image.StackStates,
+                Is.Empty);
+        }
+
+        [Test]
+        public void GroupContentStates_UseActualChildCountUpToThree()
+        {
+            var states =
+                MainViewController
+                    .CreateVersionGroupContentStates(
+                        "version",
+                        new[]
+                        {
+                            new AssetFile
+                            {
+                                VersionGroupId = "version",
+                                Extension = "png"
+                            },
+                            new AssetFile
+                            {
+                                VersionGroupId = "version",
+                                Extension = "zip"
+                            },
+                            new AssetFile
+                            {
+                                VersionGroupId = "version",
+                                Extension = "cs"
+                            },
+                            new AssetFile
+                            {
+                                VersionGroupId = "version",
+                                Extension = "fbx"
+                            }
+                        });
+
+            Assert.That(states.Count, Is.EqualTo(3));
+            Assert.That(
+                states[0].IconState.BuiltinIcon,
+                Is.EqualTo(UiBuiltinIcon.ImageFile));
+            Assert.That(
+                states[1].IconState.SourceKind,
+                Is.EqualTo(UiIconSourceKind.Builtin));
+            Assert.That(
+                states[1].IconState.BuiltinIcon,
+                Is.EqualTo(UiBuiltinIcon.ArchiveFile));
+            Assert.That(
+                states[2].IconState.BuiltinIcon,
+                Is.EqualTo(UiBuiltinIcon.ScriptFile));
+        }
+
+        [Test]
         public void CollectionNavigationList_RendersRegularAndSmartInOneTree()
         {
             var list = new CollectionNavigationList(null);

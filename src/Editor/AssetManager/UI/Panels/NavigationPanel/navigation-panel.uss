@@ -146,7 +146,6 @@
 .ee4v-asset-manager-collection-list__depth-line,
 .ee4v-asset-manager-collection-list__depth-branch {
     position: absolute;
-    background-color: var(--ee4v-color-border-subtle);
 }
 
 .ee4v-asset-manager-collection-list__depth-line {

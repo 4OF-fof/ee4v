@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Ee4v.AssetManager.Contracts;
+using Ee4v.Core;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -695,6 +696,8 @@ namespace Ee4v.AssetManager.UI
             {
                 pickingMode = PickingMode.Ignore
             };
+            element.style.backgroundColor =
+                EditorThemeColors.HierarchyDepthLine;
             for (var i = 0; i < classNames.Length; i++)
             {
                 element.AddToClassList(classNames[i]);

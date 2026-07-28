@@ -1,3 +1,4 @@
+using Ee4v.Core;
 using Ee4v.Core.Injector;
 using UnityEditor;
 using UnityEngine;
@@ -6,11 +7,6 @@ namespace Ee4v.DepthIndicator
 {
     internal static class DepthIndicatorRenderer
     {
-        private static readonly Color DarkThemeColor =
-            new Color32(104, 104, 104, 255);
-        private static readonly Color LightThemeColor =
-            new Color32(142, 142, 142, 255);
-
         public static void Draw(ItemInjectionContext context)
         {
             if (Event.current.type != EventType.Repaint ||
@@ -23,9 +19,7 @@ namespace Ee4v.DepthIndicator
             var parent = transform.parent;
             var cellRect = DepthIndicatorGeometry.GetFirstCell(
                 context.SelectionRect);
-            var color = EditorGUIUtility.isProSkin
-                ? DarkThemeColor
-                : LightThemeColor;
+            var color = EditorThemeColors.HierarchyDepthLine;
 
             if (!DepthIndicatorHierarchy.HasVisibleChild(
                     transform) &&

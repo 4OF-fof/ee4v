@@ -27,6 +27,80 @@ namespace Ee4v.UI.Tests
                 Is.EqualTo(expected));
         }
 
+        [Test]
+        public void ItemCard_ShowsImageStackArtwork()
+        {
+            var card = new ItemCard(
+                new ItemCardState(
+                    "collection",
+                    "Collection",
+                    new ItemImageState(),
+                    null,
+                    string.Empty,
+                    new[]
+                    {
+                        new ItemCardState("back"),
+                        new ItemCardState(
+                            string.Empty,
+                            string.Empty,
+                            new ItemImageState(),
+                            IconState.FromBuiltinIcon(
+                                UiBuiltinIcon.Folder))
+                    }));
+
+            var stack = card.Q<ImageStack>(
+                className:
+                "ee4v-ui-item-card__image-stack");
+
+            Assert.That(stack, Is.Not.Null);
+            Assert.That(
+                stack.style.display.value,
+                Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(
+                card.Q<VisualElement>(
+                    className:
+                    "ee4v-ui-item-card__badge"),
+                Is.Null);
+        }
+
+        [Test]
+        public void ItemCard_ShowsTypeIconBeforeName()
+        {
+            var nameIcon =
+                IconState.FromBuiltinIcon(
+                    UiBuiltinIcon.Folder);
+            var card = new ItemCard(
+                new ItemCardState(
+                    "collection",
+                    "Collection",
+                    new ItemImageState(),
+                    null,
+                    string.Empty,
+                    null,
+                    nameIcon));
+
+            var nameRow = card.Q<VisualElement>(
+                className:
+                "ee4v-ui-item-card__name-row");
+            Assert.That(nameRow, Is.Not.Null);
+
+            var icon = nameRow.Q<Icon>(
+                className:
+                "ee4v-ui-item-card__name-icon");
+            var label = nameRow.Q<UiTextElement>(
+                className:
+                UiClassNames.ItemCardName);
+
+            Assert.That(icon, Is.Not.Null);
+            Assert.That(label, Is.Not.Null);
+            Assert.That(
+                nameRow.IndexOf(icon),
+                Is.LessThan(nameRow.IndexOf(label)));
+            Assert.That(
+                icon.style.display.value,
+                Is.EqualTo(DisplayStyle.Flex));
+        }
+
         [UnityTest]
         public IEnumerator LayoutFallbackKeepsItemsVisibleAtBothRangeEdges()
         {

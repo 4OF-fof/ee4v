@@ -719,7 +719,9 @@ namespace Ee4v.AssetManager.UI
                             item.ItemName,
                             item.ImageState,
                             item.IconState,
-                            item.ParentItemId));
+                            item.ParentItemId,
+                            item.StackStates,
+                            item.NameIconState));
                     }
                 }
                 else

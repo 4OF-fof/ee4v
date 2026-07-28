@@ -39,7 +39,14 @@ namespace Ee4v.AssetManager.UI
                     continue;
                 }
 
-                itemCardStates.Add(new ItemCardState(item.ItemId, item.ItemName, item.ImageState, item.IconState, item.ParentItemId));
+                itemCardStates.Add(new ItemCardState(
+                    item.ItemId,
+                    item.ItemName,
+                    item.ImageState,
+                    item.IconState,
+                    item.ParentItemId,
+                    item.StackStates,
+                    item.NameIconState));
             }
 
             statusText = itemCardStates.Count == 0 ? list.EmptyText : string.Empty;

@@ -423,20 +423,20 @@ namespace Ee4v.AssetManager.UI
             var query = CreateQuery(request);
             var result = _assetManager.SearchItemSummaries(query);
             var items = new List<AssetItemGridListItem>();
-            if (result == null || result.Items == null)
-            {
-                return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noItems"));
-            }
+            var resultItems =
+                result != null && result.Items != null
+                    ? result.Items
+                    : Array.Empty<AssetItem>();
 
             cancellationToken.ThrowIfCancellationRequested();
-            var thumbnails = _assetManager.GetThumbnails(result.Items
+            var thumbnails = _assetManager.GetThumbnails(resultItems
                 .Where(item => item != null)
                 .Select(item => item.Id)
                 .ToArray());
-            for (var i = 0; i < result.Items.Count; i++)
+            for (var i = 0; i < resultItems.Count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var item = result.Items[i];
+                var item = resultItems[i];
                 if (item == null)
                 {
                     continue;
@@ -447,7 +447,14 @@ namespace Ee4v.AssetManager.UI
                 items.Add(new AssetItemGridListItem(item.Id, item.Name, CreateThumbnailState(thumbnail)));
             }
 
-            return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noItems"));
+            var collectionPreviewStates =
+                LoadCollectionPreviewStates(
+                    request,
+                    cancellationToken);
+            return new AssetItemGridList(
+                items,
+                I18N.Get("assetManager.mainView.noItems"),
+                collectionPreviewStates);
         }
 
         public AssetItemGridList CreateDisplayItems(
@@ -477,21 +484,182 @@ namespace Ee4v.AssetManager.UI
             for (var i = 0; i < children.Count; i++)
             {
                 var child = children[i];
+                IReadOnlyList<ItemCardState> previewStates;
+                source.CollectionPreviewStates.TryGetValue(
+                    child.Id,
+                    out previewStates);
+                var collectionIcon =
+                    AssetCollectionIconPresenter.CreateState(
+                        child,
+                        44f);
+                var artwork =
+                    CreateTypedArtworkState(
+                        previewStates,
+                        collectionIcon);
                 items.Add(new AssetItemGridListItem(
                     AssetItemGridNodeKey.Encode(
                         AssetItemGridNodeKind.Collection,
                         child.Id),
                     child.Name,
-                    new ItemImageState(),
-                    AssetCollectionIconPresenter.CreateState(
-                        child,
-                        44f)));
+                    artwork.ImageState,
+                    artwork.IconState,
+                    string.Empty,
+                    artwork.StackStates,
+                    collectionIcon));
             }
 
             items.AddRange(source.Items);
             return new AssetItemGridList(
                 items,
-                source.EmptyText);
+                source.EmptyText,
+                source.CollectionPreviewStates);
+        }
+
+        private IReadOnlyDictionary<
+                string,
+                IReadOnlyList<ItemCardState>>
+            LoadCollectionPreviewStates(
+                MainViewRequest request,
+                CancellationToken cancellationToken)
+        {
+            var previews =
+                new Dictionary<
+                    string,
+                    IReadOnlyList<ItemCardState>>(
+                    StringComparer.Ordinal);
+            string collectionId;
+            if (!AssetManagerCollectionViewId.TryDecode(
+                    request != null
+                        ? request.ViewId
+                        : string.Empty,
+                    out collectionId))
+            {
+                return previews;
+            }
+
+            var children = GetChildCollections(
+                _collections,
+                collectionId,
+                request != null
+                    ? request.Keyword
+                    : string.Empty);
+            var previewItemsByCollection =
+                new Dictionary<
+                    string,
+                    IReadOnlyList<AssetItem>>(
+                    StringComparer.Ordinal);
+            var previewItemIds = new HashSet<string>(
+                StringComparer.Ordinal);
+            for (var i = 0; i < children.Count; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var child = children[i];
+                var result =
+                    _assetManager.SearchItemSummaries(
+                        new AssetItemQuery
+                        {
+                            CollectionId = child.Id,
+                            Limit = 3
+                        });
+                var previewItems =
+                    result != null && result.Items != null
+                        ? result.Items
+                        : Array.Empty<AssetItem>();
+                previewItemsByCollection[child.Id] =
+                    previewItems;
+                for (var itemIndex = 0;
+                     itemIndex < previewItems.Count;
+                     itemIndex++)
+                {
+                    var item = previewItems[itemIndex];
+                    if (item != null &&
+                        !string.IsNullOrWhiteSpace(item.Id))
+                    {
+                        previewItemIds.Add(item.Id);
+                    }
+                }
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            var thumbnails = previewItemIds.Count > 0
+                ? _assetManager.GetThumbnails(
+                    previewItemIds.ToArray())
+                : new Dictionary<string, AssetThumbnail>(
+                    StringComparer.Ordinal);
+            for (var i = 0; i < children.Count; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var child = children[i];
+                IReadOnlyList<AssetItem> previewItems;
+                if (!previewItemsByCollection.TryGetValue(
+                        child.Id,
+                        out previewItems))
+                {
+                    continue;
+                }
+
+                var states = new List<ItemCardState>(
+                    previewItems.Count);
+                for (var itemIndex = 0;
+                     itemIndex < previewItems.Count;
+                     itemIndex++)
+                {
+                    var item = previewItems[itemIndex];
+                    if (item == null)
+                    {
+                        continue;
+                    }
+
+                    AssetThumbnail thumbnail;
+                    thumbnails.TryGetValue(
+                        item.Id,
+                        out thumbnail);
+                    states.Add(new ItemCardState(
+                        item.Id,
+                        item.Name,
+                        CreateThumbnailState(
+                            thumbnail)));
+                }
+
+                previews[child.Id] = states;
+            }
+
+            return previews;
+        }
+
+        internal static AssetItemGridArtworkState
+            CreateTypedArtworkState(
+                IReadOnlyList<ItemCardState> contentStates,
+                IconState typeIcon)
+        {
+            var visibleStates =
+                new List<ItemCardState>(3);
+            if (contentStates != null)
+            {
+                for (var i = 0;
+                     i < contentStates.Count &&
+                     visibleStates.Count < 3;
+                     i++)
+                {
+                    var state = contentStates[i];
+                    if (state != null &&
+                        (state.ImageState.CacheKey.Length >
+                         0 ||
+                         state.IconState != null))
+                    {
+                        visibleStates.Add(state);
+                    }
+                }
+            }
+
+            if (visibleStates.Count == 0)
+            {
+                return new AssetItemGridArtworkState(
+                    iconState: typeIcon);
+            }
+
+            return new AssetItemGridArtworkState(
+                stackStates: visibleStates);
         }
 
         internal static IReadOnlyList<AssetCollection>
@@ -613,12 +781,17 @@ namespace Ee4v.AssetManager.UI
                     continue;
                 }
 
+                var artwork =
+                    CreateFileArtworkState(
+                        file.Extension);
                 items.Add(new AssetItemGridListItem(
                     file.Id,
                     file.FileName,
-                    new ItemImageState(),
-                    CreateFileIcon(file.Extension),
-                    itemId));
+                    artwork.ImageState,
+                    artwork.IconState,
+                    itemId,
+                    artwork.StackStates,
+                    artwork.IconState));
             }
 
             return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noFiles"));
@@ -628,22 +801,43 @@ namespace Ee4v.AssetManager.UI
         {
             var items = new List<AssetItemGridListItem>();
             var variants = _assetManager.GetVariantGroups(itemId);
+            var versions = _assetManager.GetVersionGroups(itemId);
+            var files = _assetManager.GetFiles(itemId, new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active });
             for (var i = 0; i < variants.Count; i++)
             {
-                items.Add(CreateGroupListItem(AssetItemGridNodeKind.VariantGroup, variants[i].Id, variants[i].Name, itemId));
+                items.Add(CreateGroupListItem(
+                    AssetItemGridNodeKind.VariantGroup,
+                    variants[i].Id,
+                    variants[i].Name,
+                    itemId,
+                    CreateVariantGroupContentStates(
+                        variants[i].Id,
+                        versions,
+                        files)));
             }
 
-            var versions = _assetManager.GetVersionGroups(itemId);
             for (var i = 0; i < versions.Count; i++)
             {
                 if (string.IsNullOrWhiteSpace(versions[i].VariantGroupId))
                 {
-                    items.Add(CreateGroupListItem(AssetItemGridNodeKind.VersionGroup, versions[i].Id, versions[i].Name, itemId));
+                    items.Add(CreateGroupListItem(
+                        AssetItemGridNodeKind.VersionGroup,
+                        versions[i].Id,
+                        versions[i].Name,
+                        itemId,
+                        CreateVersionGroupContentStates(
+                            versions[i].Id,
+                            files)));
                 }
             }
 
-            var files = _assetManager.GetFiles(itemId, new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active });
-            AddFiles(items, files, itemId, file => !string.IsNullOrWhiteSpace(file.ItemId));
+            AddFiles(
+                items,
+                files,
+                itemId,
+                file =>
+                    !string.IsNullOrWhiteSpace(
+                        file.ItemId));
             return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noChildren"));
         }
 
@@ -658,17 +852,38 @@ namespace Ee4v.AssetManager.UI
                 {
                     if (string.Equals(versions[i].VariantGroupId, groupId, StringComparison.Ordinal))
                     {
-                        items.Add(CreateGroupListItem(AssetItemGridNodeKind.VersionGroup, versions[i].Id, versions[i].Name, itemId));
+                        items.Add(CreateGroupListItem(
+                            AssetItemGridNodeKind.VersionGroup,
+                            versions[i].Id,
+                            versions[i].Name,
+                            itemId,
+                            CreateVersionGroupContentStates(
+                                versions[i].Id,
+                                files)));
                     }
                 }
 
-                AddFiles(items, files, itemId, file => string.Equals(file.VariantGroupId, groupId, StringComparison.Ordinal));
+                AddFiles(
+                    items,
+                    files,
+                    itemId,
+                    file => string.Equals(
+                        file.VariantGroupId,
+                        groupId,
+                        StringComparison.Ordinal));
                 return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noChildren"));
             }
 
             if (groupKind == AssetItemGridNodeKind.VersionGroup)
             {
-                AddFiles(items, files, itemId, file => string.Equals(file.VersionGroupId, groupId, StringComparison.Ordinal));
+                AddFiles(
+                    items,
+                    files,
+                    itemId,
+                    file => string.Equals(
+                        file.VersionGroupId,
+                        groupId,
+                        StringComparison.Ordinal));
             }
 
             return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noChildren"));
@@ -814,17 +1029,37 @@ namespace Ee4v.AssetManager.UI
             return IconState.FromBuiltinIcon(ResolveFileIcon(extension), size: 44f);
         }
 
-        private static AssetItemGridListItem CreateGroupListItem(AssetItemGridNodeKind kind, string id, string name, string itemId)
+        private static AssetItemGridListItem CreateGroupListItem(
+            AssetItemGridNodeKind kind,
+            string id,
+            string name,
+            string itemId,
+            IReadOnlyList<ItemCardState> contentStates)
         {
+            var typeIcon = IconState.FromBuiltinIcon(
+                kind == AssetItemGridNodeKind.VariantGroup
+                    ? UiBuiltinIcon.DisclosureClosed
+                    : UiBuiltinIcon.DisclosureOpen,
+                size: 44f);
+            var artwork =
+                CreateTypedArtworkState(
+                    contentStates,
+                    typeIcon);
             return new AssetItemGridListItem(
                 AssetItemGridNodeKey.Encode(kind, id),
                 name,
-                new ItemImageState(),
-                IconState.FromBuiltinIcon(kind == AssetItemGridNodeKind.VariantGroup ? UiBuiltinIcon.DisclosureClosed : UiBuiltinIcon.DisclosureOpen, size: 44f),
-                itemId);
+                artwork.ImageState,
+                artwork.IconState,
+                itemId,
+                artwork.StackStates,
+                typeIcon);
         }
 
-        private static void AddFiles(ICollection<AssetItemGridListItem> items, IReadOnlyList<AssetFile> files, string itemId, Func<AssetFile, bool> predicate)
+        private static void AddFiles(
+            ICollection<AssetItemGridListItem> items,
+            IReadOnlyList<AssetFile> files,
+            string itemId,
+            Func<AssetFile, bool> predicate)
         {
             for (var i = 0; i < files.Count; i++)
             {
@@ -834,13 +1069,113 @@ namespace Ee4v.AssetManager.UI
                     continue;
                 }
 
+                var artwork =
+                    CreateFileArtworkState(
+                        file.Extension);
                 items.Add(new AssetItemGridListItem(
                     AssetItemGridNodeKey.Encode(AssetItemGridNodeKind.File, file.Id),
                     file.FileName,
-                    new ItemImageState(),
-                    CreateFileIcon(file.Extension),
-                    itemId));
+                    artwork.ImageState,
+                    artwork.IconState,
+                    itemId,
+                    artwork.StackStates,
+                    artwork.IconState));
             }
+        }
+
+        internal static AssetItemGridArtworkState
+            CreateFileArtworkState(
+                string extension)
+        {
+            return new AssetItemGridArtworkState(
+                iconState: CreateFileIcon(extension));
+        }
+
+        internal static IReadOnlyList<ItemCardState>
+            CreateVariantGroupContentStates(
+                string variantGroupId,
+                IReadOnlyList<AssetVersionGroup> versions,
+                IReadOnlyList<AssetFile> files)
+        {
+            var states = new List<ItemCardState>(3);
+            for (var i = 0;
+                 versions != null &&
+                 i < versions.Count &&
+                 states.Count < 3;
+                 i++)
+            {
+                if (versions[i] != null &&
+                    string.Equals(
+                        versions[i].VariantGroupId,
+                        variantGroupId,
+                        StringComparison.Ordinal))
+                {
+                    states.Add(
+                        CreateIconContentState(
+                            UiBuiltinIcon.DisclosureOpen));
+                }
+            }
+
+            AddFileContentStates(
+                states,
+                files,
+                file => string.Equals(
+                    file.VariantGroupId,
+                    variantGroupId,
+                    StringComparison.Ordinal));
+            return states;
+        }
+
+        internal static IReadOnlyList<ItemCardState>
+            CreateVersionGroupContentStates(
+                string versionGroupId,
+                IReadOnlyList<AssetFile> files)
+        {
+            var states = new List<ItemCardState>(3);
+            AddFileContentStates(
+                states,
+                files,
+                file => string.Equals(
+                    file.VersionGroupId,
+                    versionGroupId,
+                    StringComparison.Ordinal));
+            return states;
+        }
+
+        private static void AddFileContentStates(
+            ICollection<ItemCardState> states,
+            IReadOnlyList<AssetFile> files,
+            Func<AssetFile, bool> predicate)
+        {
+            for (var i = 0;
+                 files != null &&
+                 i < files.Count &&
+                 states.Count < 3;
+                 i++)
+            {
+                var file = files[i];
+                if (file != null &&
+                    predicate(file))
+                {
+                    states.Add(
+                        CreateIconContentState(
+                            ResolveFileIcon(
+                                file.Extension)));
+                }
+            }
+        }
+
+        private static ItemCardState
+            CreateIconContentState(
+                UiBuiltinIcon builtinIcon)
+        {
+            return new ItemCardState(
+                string.Empty,
+                string.Empty,
+                new ItemImageState(),
+                IconState.FromBuiltinIcon(
+                    builtinIcon,
+                    size: 44f));
         }
 
         private static UiBuiltinIcon ResolveFileIcon(string extension)
