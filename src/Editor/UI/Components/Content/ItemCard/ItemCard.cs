@@ -77,6 +77,7 @@ namespace Ee4v.UI
         private readonly Icon _nameIcon;
         private readonly UiTextElement _nameLabel;
         private float _width = DefaultWidth;
+        private float _iconPreferredSize = DefaultIconSize;
         private bool _showNameIcon;
 
         public ItemCard(ItemCardState state = null)
@@ -149,6 +150,8 @@ namespace Ee4v.UI
             _icon.style.display = showIcon ? DisplayStyle.Flex : DisplayStyle.None;
             if (showIcon)
             {
+                _iconPreferredSize =
+                    nextState.IconState.Size;
                 _icon.SetState(nextState.IconState);
                 ApplyIconSize();
             }
@@ -201,7 +204,10 @@ namespace Ee4v.UI
 
         private void ApplyIconSize()
         {
-            var iconSize = Mathf.Min(DefaultIconSize, _width);
+            var iconSize =
+                Mathf.Min(
+                    _iconPreferredSize,
+                    _width);
             _icon.SetSize(iconSize);
             _icon.style.left = (_width - iconSize) * 0.5f;
             _icon.style.top = (_width - iconSize) * 0.5f;

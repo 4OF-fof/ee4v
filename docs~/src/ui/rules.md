@@ -100,13 +100,19 @@ Unity built-in の小さい bitmap を拡大して使わず、主表示など拡
 - SVG は `src` の外にある
   `ThirdParty~/FluentUiSystemIcons/Source/Filled` に厳選した100種類だけを保持する
 - Unity packageには
-  `Editor/ThirdParty/FluentUiSystemIcons/Png512` の生成済みPNGだけを含める
+  `Editor/ThirdParty/FluentUiSystemIcons/Png512` の生成済みPNG 102種類だけを含める
 - size や style の variant は増やさず、1 icon につき1 SVGを保持する
+- 複数の Fluent icon を組み合わせる場合も新しい SVG は作らず、
+  選定済み source から単色の合成PNGを生成する
 - `UiFluentIconResolver` 以外から asset path を直参照しない
 - SVG から事前生成した透明 512px PNG を標準 `Image` で描画する
+- PNG は専用 `AssetPostprocessor` で非圧縮、mipmapなし、Clamp、
+  alpha transparency有効のUI向け設定に統一する
 - package 本体へ Vector Graphics package、SVG importer、runtime parser、
   custom tessellation を追加しない
-- 新しい icon を追加するときは `selected-icons.txt`、`UiFluentIcon`、vendor README を同時に更新する
+- upstream icon を追加するときは `selected-icons.txt`、`UiFluentIcon`、
+  vendor README を同時に更新する。合成iconを追加するときは
+  `UiFluentIcon` と vendor README に構成元を記録する
 - `UiIconTests` で登録済み Fluent icon の PNG がすべて解決でき、
   512 x 512 texture としてimportされることを確認する
 

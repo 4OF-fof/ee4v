@@ -15,7 +15,7 @@
 }
 
 .ee4v-ui-item-card__icon .ee4v-ui-icon__image {
-    opacity: 0.84;
+    opacity: 1;
 }
 
 .ee4v-ui-item-card__name-row {

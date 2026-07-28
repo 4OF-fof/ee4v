@@ -17,7 +17,8 @@
 - built-in icon を直接引かず `Icon` 経由にしたか
 - 拡大表示する単色 icon で bitmap built-in を使わず、Fluent SVG由来の
   事前生成 512px PNG を検討したか
-- Fluent icon を追加した場合、variant を増やさず vendor の選定一覧とテストを更新したか
+- Fluent icon を追加した場合、variant を増やさず vendor の選定一覧または
+  合成元の記録とテストを更新したか
 - Catalog registrar で story を登録したか
 - Catalog registrar で必要な stylesheet を登録したか
 - `Editor/UI/Catalog/Stories` の `<name>.story.cs` に preview 実装を追加したか

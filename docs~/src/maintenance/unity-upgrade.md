@@ -48,7 +48,10 @@ Unity 更新時は次を確認します。
 - `Image` の `ScaleToFit` と tint で拡大表示と theme color が維持される
 - `UiIconTests` で全 `UiFluentIcon` が解決できる
 - generated PNG がすべて透明背景の 512 x 512 である
+- generated PNG のimport設定が非圧縮、mipmapなし、Clamp、
+  alpha transparency有効である
 - Folder Zip など compound path を含む icon が元 SVG と同じ silhouette を保つ
+- Folder + Branch Fork / Layer の合成iconで、単色tintと記号周囲の透明な分離が維持される
 - vendor の100 SVGに size / style variant が再混入していない
 
 ## InternalEditorAPI

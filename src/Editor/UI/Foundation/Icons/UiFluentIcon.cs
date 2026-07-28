@@ -79,6 +79,8 @@ namespace Ee4v.UI
         DocumentCode,
         DocumentMultiple,
         Folder,
+        FolderBranchFork,
+        FolderLayer,
         FolderOpen,
         FolderMultiple,
         FolderZip,

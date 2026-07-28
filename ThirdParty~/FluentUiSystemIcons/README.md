@@ -9,7 +9,8 @@ by `ee4v`.
 - Version: `1.1.334`
 - Commit: `f2f75a6e4814153d5c049c0f06e197731718326b`
 - Style: Filled
-- Imported icons: 100
+- Imported upstream icons: 100
+- Generated runtime icons: 102
 
 The package keeps one source-size variant per icon. The 24px Filled SVG is used
 when available; `Document Code` uses its available 16px Filled SVG.
@@ -38,9 +39,18 @@ Unity package in `src`.
 `src/Editor/ThirdParty/FluentUiSystemIcons/Png512` contains transparent
 512 x 512 PNG derivatives rendered from those exact SVGs. UI Toolkit displays
 the PNG through its standard `Image` element and applies the ee4v theme tint.
+The package asset postprocessor imports them without texture compression or
+mipmaps, clamps sampling at the texture edge, and enables alpha transparency.
+These settings prevent Unity from selecting a smaller mip or introducing
+compression artifacts when a card displays an icon at 88 px.
+
+`folder_branch_fork.png` and `folder_layer.png` are single-color composite
+derivatives made from the imported `Folder` plus `Branch Fork` or `Layer`
+icons. A transparent separation around each overlaid glyph keeps it legible
+when UI Toolkit applies one tint to the complete texture.
 
 512 px covers the same card area as large thumbnails with ample HiDPI headroom,
-while keeping the complete 100-icon set compact. The package has no Vector
+while keeping the 102-icon runtime set compact. The package has no Vector
 Graphics dependency, SVG importer, runtime SVG parser, or custom path
 tessellation. This avoids Unity 2022.3 compound-path rendering differences.
 
@@ -57,8 +67,10 @@ tessellation. This avoids Unity 2022.3 compound-path rendering differences.
    512 x 512 PNG in
    `../../src/Editor/ThirdParty/FluentUiSystemIcons/Png512`. Do not use a
    renderer that loses the SVG nonzero compound-path fill semantics.
-8. Run `UiIconTests` and confirm every `UiFluentIcon` resolves to a 512 x 512
-   texture and the generated icon count remains 100.
+8. Regenerate `folder_branch_fork.png` and `folder_layer.png` from the
+   corresponding imported source icons.
+9. Run `UiIconTests` and confirm every `UiFluentIcon` resolves to a 512 x 512
+   texture and the generated runtime icon count remains 102.
 
 Any distribution that extracts `src` from this repository must also include
 this directory's `LICENSE.txt` and `NOTICE.txt` with the PNG derivatives.

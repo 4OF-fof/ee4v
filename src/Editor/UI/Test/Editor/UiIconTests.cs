@@ -1,6 +1,8 @@
 using System;
 using Ee4v.Testing.Contracts;
 using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI.Tests
@@ -58,10 +60,58 @@ namespace Ee4v.UI.Tests
                 iconCount++;
             }
 
-            Assert.That(iconCount, Is.EqualTo(100));
+            Assert.That(iconCount, Is.EqualTo(102));
+        }
+
+        [Test]
+        public void FluentPngs_UseCrispUiImportSettings()
+        {
+            foreach (UiFluentIcon fluentIcon in
+                     Enum.GetValues(typeof(UiFluentIcon)))
+            {
+                var path =
+                    UiFluentIconResolver.GetAssetPath(
+                        fluentIcon);
+                var importer =
+                    AssetImporter.GetAtPath(path)
+                        as TextureImporter;
+
+                Assert.That(
+                    importer,
+                    Is.Not.Null,
+                    fluentIcon.ToString());
+                Assert.That(
+                    importer.mipmapEnabled,
+                    Is.False,
+                    fluentIcon.ToString());
+                Assert.That(
+                    importer.textureCompression,
+                    Is.EqualTo(
+                        TextureImporterCompression
+                            .Uncompressed),
+                    fluentIcon.ToString());
+                Assert.That(
+                    importer.alphaIsTransparency,
+                    Is.True,
+                    fluentIcon.ToString());
+                Assert.That(
+                    importer.wrapMode,
+                    Is.EqualTo(TextureWrapMode.Clamp),
+                    fluentIcon.ToString());
+                Assert.That(
+                    importer.filterMode,
+                    Is.EqualTo(FilterMode.Bilinear),
+                    fluentIcon.ToString());
+                Assert.That(
+                    importer.maxTextureSize,
+                    Is.EqualTo(512),
+                    fluentIcon.ToString());
+            }
         }
 
         [TestCase("FolderZip", "folder_zip")]
+        [TestCase("FolderBranchFork", "folder_branch_fork")]
+        [TestCase("FolderLayer", "folder_layer")]
         [TestCase("MusicNote2", "music_note_2")]
         [TestCase("CloudArrowDown", "cloud_arrow_down")]
         public void UiFluentIconResolver_UsesStableSnakeCaseNames(
@@ -92,6 +142,35 @@ namespace Ee4v.UI.Tests
                 Does.EndWith(
                     "/FluentUiSystemIcons/Png512/" +
                     "folder_zip.png"));
+        }
+
+        [TestCase(
+            "FolderBranchFork",
+            "folder_branch_fork.png")]
+        [TestCase(
+            "FolderLayer",
+            "folder_layer.png")]
+        public void CompositeGroupIcons_UseGeneratedPngAssets(
+            string iconName,
+            string fileName)
+        {
+            var icon =
+                (UiFluentIcon)Enum.Parse(
+                    typeof(UiFluentIcon),
+                    iconName);
+            var resolved =
+                UiFluentIconResolver.TryResolve(
+                    icon,
+                    out var texture);
+
+            Assert.That(resolved, Is.True);
+            Assert.That(texture.width, Is.EqualTo(512));
+            Assert.That(texture.height, Is.EqualTo(512));
+            Assert.That(
+                UiFluentIconResolver.GetAssetPath(icon),
+                Does.EndWith(
+                    "/FluentUiSystemIcons/Png512/" +
+                    fileName));
         }
 
         [Test]

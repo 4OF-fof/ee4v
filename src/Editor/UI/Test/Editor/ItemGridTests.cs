@@ -101,6 +101,31 @@ namespace Ee4v.UI.Tests
                 Is.EqualTo(DisplayStyle.Flex));
         }
 
+        [Test]
+        public void ItemCard_UsesRequestedMainIconSize()
+        {
+            var card = new ItemCard(
+                new ItemCardState(
+                    "group",
+                    "Group",
+                    new ItemImageState(),
+                    IconState.FromFluentIcon(
+                        UiFluentIcon.FolderBranchFork,
+                        size: 88f)));
+
+            var icon = card.Q<Icon>(
+                className:
+                "ee4v-ui-item-card__icon");
+
+            Assert.That(icon, Is.Not.Null);
+            Assert.That(
+                icon.style.width.value.value,
+                Is.EqualTo(88f));
+            Assert.That(
+                icon.style.height.value.value,
+                Is.EqualTo(88f));
+        }
+
         [UnityTest]
         public IEnumerator LayoutFallbackKeepsItemsVisibleAtBothRangeEdges()
         {

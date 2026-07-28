@@ -300,6 +300,9 @@ namespace Ee4v.AssetManager.UI.Tests
                 archive.IconState.FluentIcon,
                 Is.EqualTo(UiFluentIcon.FolderZip));
             Assert.That(
+                archive.IconState.Size,
+                Is.EqualTo(88f));
+            Assert.That(
                 archive.StackStates,
                 Is.Empty);
             Assert.That(
@@ -322,13 +325,15 @@ namespace Ee4v.AssetManager.UI.Tests
 
             Assert.That(
                 variant.IconState.FluentIcon,
-                Is.EqualTo(UiFluentIcon.Stack));
+                Is.EqualTo(
+                    UiFluentIcon.FolderBranchFork));
             Assert.That(
                 variant.StackStates,
                 Is.Empty);
             Assert.That(
                 version.IconState.FluentIcon,
-                Is.EqualTo(UiFluentIcon.History));
+                Is.EqualTo(
+                    UiFluentIcon.FolderLayer));
             Assert.That(
                 version.StackStates,
                 Is.Empty);
@@ -349,13 +354,21 @@ namespace Ee4v.AssetManager.UI.Tests
                 Is.EqualTo(UiIconSourceKind.Fluent));
             Assert.That(
                 variant.FluentIcon,
-                Is.EqualTo(UiFluentIcon.Stack));
+                Is.EqualTo(
+                    UiFluentIcon.FolderBranchFork));
+            Assert.That(
+                variant.Size,
+                Is.EqualTo(88f));
             Assert.That(
                 version.SourceKind,
                 Is.EqualTo(UiIconSourceKind.Fluent));
             Assert.That(
                 version.FluentIcon,
-                Is.EqualTo(UiFluentIcon.History));
+                Is.EqualTo(
+                    UiFluentIcon.FolderLayer));
+            Assert.That(
+                version.Size,
+                Is.EqualTo(88f));
         }
 
         [Test]

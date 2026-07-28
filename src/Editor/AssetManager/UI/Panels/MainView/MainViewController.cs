@@ -1022,7 +1022,7 @@ namespace Ee4v.AssetManager.UI
                 case "unitypackage":
                     return IconState.FromFluentIcon(
                         UiFluentIcon.FolderZip,
-                        size: 44f);
+                        size: 88f);
                 case "rar":
                 case "7z":
                 case "tar":
@@ -1066,9 +1066,9 @@ namespace Ee4v.AssetManager.UI
         {
             return IconState.FromFluentIcon(
                 kind == AssetItemGridNodeKind.VariantGroup
-                    ? UiFluentIcon.Stack
-                    : UiFluentIcon.History,
-                size: 44f);
+                    ? UiFluentIcon.FolderBranchFork
+                    : UiFluentIcon.FolderLayer,
+                size: 88f);
         }
 
         private static void AddFiles(
