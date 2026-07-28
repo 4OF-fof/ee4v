@@ -100,6 +100,7 @@ public sealed class AssetCollection
     public string IconAssetGuid { get; set; }
     public bool IsSmartCollection { get; set; }
     public string ParentCollectionId { get; set; }
+    public int SortOrder { get; set; }
     public SmartCollectionRule SmartRule { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
@@ -109,8 +110,9 @@ public sealed class AssetCollection
 Notes:
 
 - `ParentCollectionId` が `null` の場合は root collection。
-- `Icon` は通常 Collection と Smart Collection で共通の組み込み表示アイコン。
-- `IconAssetGuid` が有効な Texture asset を指す場合は任意アイコンとして `Icon` より優先する。asset が見つからない場合は `Icon` へフォールバックする。
+- `SortOrder` は同じ親を持つ兄弟 Collection 内の0始まり表示順。
+- 通常 Collection の `Icon` は `Folder`、`IconAssetGuid` は `null` に固定する。
+- Smart Collection の `IconAssetGuid` が有効な Texture asset を指す場合は任意アイコンとして `Icon` より優先する。asset が見つからない場合は `Icon` へフォールバックする。
 - 子 Collection は最大 1 つの親だけを持つ。
 - Smart Collection の rule は保存して返す。`SearchItems(...)` で Smart Collection を指定すると条件を評価して item を抽出する。
 
@@ -341,8 +343,6 @@ public sealed class AssetFileImportTargetRequest
 public sealed class CreateCollectionRequest
 {
     public string Name { get; set; }
-    public AssetCollectionIcon Icon { get; set; }
-    public string IconAssetGuid { get; set; }
     public string ParentCollectionId { get; set; }
 }
 
@@ -715,7 +715,7 @@ Effects:
 
 Notes:
 
-- tree 表示側は `ParentCollectionId` で階層化する。
+- tree 表示側は `ParentCollectionId` で階層化し、兄弟を `SortOrder` で並べる。
 - cycle は DB constraint で禁止する。
 
 ### `IAssetManager.CreateCollection`
@@ -729,7 +729,6 @@ public AssetCollection CreateCollection(CreateCollectionRequest request)
 Parameters:
 
 - `request.Name`: collection 名。
-- `request.Icon`: navigation などで使用する Collection アイコン。
 - `request.ParentCollectionId`: 親 Collection。root に置く場合は `null`。
 
 Returns:
@@ -739,7 +738,9 @@ Returns:
 Effects:
 
 - `collection_info` を追加する。
+- `icon` は `folder`、`icon_asset_guid` は `null` で保存する。
 - 親が指定されていれば `collection_collection` を追加する。
+- 指定した親の兄弟一覧の末尾へ追加する。
 
 ### `IAssetManager.CreateSmartCollection`
 
@@ -752,7 +753,8 @@ public AssetCollection CreateSmartCollection(CreateSmartCollectionRequest reques
 Parameters:
 
 - `request.Name`: collection 名。
-- `request.Icon`: 通常 Collection と共通の Collection アイコン。
+- `request.Icon`: Smart Collection の組み込み表示アイコン。
+- `request.IconAssetGuid`: 任意 Texture asset の GUID。
 - `request.ParentCollectionId`: 親 Collection。
 - `request.MatchMode`: `All` または `Any`。
 - `request.Conditions`: 評価条件。
@@ -767,6 +769,7 @@ Effects:
 - `smart_collection_info` を追加する。
 - `smart_collection_condition` を追加する。
 - 親が指定されていれば `collection_collection` を追加する。
+- 指定した親の兄弟一覧の末尾へ追加する。
 
 Notes:
 
@@ -775,16 +778,20 @@ Notes:
 
 ### `IAssetManager.MoveCollection`
 
-Collection の親を変更します。
+Collection の親または兄弟順を変更します。
 
 ```csharp
-public void MoveCollection(string collectionId, string parentCollectionId)
+public void MoveCollection(
+    string collectionId,
+    string parentCollectionId,
+    int siblingIndex = -1)
 ```
 
 Parameters:
 
 - `collectionId`: 移動する Collection。
 - `parentCollectionId`: 移動先の親 Collection。root に移動する場合は `null`。
+- `siblingIndex`: 移動先の兄弟一覧に挿入する0始まりindex。負数の場合は末尾。
 
 Returns:
 
@@ -792,12 +799,28 @@ Returns:
 
 Effects:
 
-- `collection_collection` を更新する。
+- `collection_collection` と `collection_info.sort_order` を更新する。
 
 Notes:
 
 - 自分自身や子孫 Collection の下へ移動する操作は例外。
 - 子 Collection は最大 1 つの親だけを持つ。
+- 通常 Collection と Smart Collection のどちらも親または子にできる。
+- 移動元と移動先の兄弟は `SortOrder` が連続するように正規化する。
+
+### `IAssetManager.MoveCollections`
+
+複数 Collection を選択順を保ったブロックとして移動します。
+
+```csharp
+public void MoveCollections(
+    IReadOnlyList<string> collectionIds,
+    string parentCollectionId,
+    int siblingIndex = -1)
+```
+
+親とその子が同時に指定された場合、親の移動に含まれる子は個別の移動対象から除外します。
+cycle 制約と兄弟順の正規化は `MoveCollection(...)` と同じです。
 
 ### `IAssetManager.SetItemCollections`
 
@@ -975,11 +998,13 @@ public event Action<AssetManagerChange> Changed;
 | kind | `SubjectId` | `RelatedId` / `ImportTargets` | 用途 |
 |---|---|---|---|
 | `Catalog` | 空 | 空 | item 一覧や file tree の構造・内容を再取得する |
+| `Collections` | 空 | 空 | Collection 一覧・親子関係・兄弟順だけを再取得する |
 | `FileTree` | 空 | 空 | File Tree に関係する変更を知らせる |
 | `FileImportTargets` | file ID | 保存後の `ImportTargets` | cache 上の target state だけを更新する |
 | `VersionGroupPrimaryFile` | Version Group ID | `RelatedId` に代表 file ID | cache 上の代表 state だけを更新する |
 
-`SetFileImportTargets(...)` と `SetVersionGroupPrimaryFile(...)` は `Catalog` change を発行しません。
+Collection の作成・移動、`SetFileImportTargets(...)`、`SetVersionGroupPrimaryFile(...)` は
+`Catalog` change を発行しません。
 標準 UI は詳細 change から既存の File Tree 行 state だけを更新し、Main View の再検索や File Tree の
 再構築を行いません。
 

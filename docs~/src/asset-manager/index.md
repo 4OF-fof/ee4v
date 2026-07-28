@@ -68,6 +68,8 @@ UI の表示設定、File Tree の filesystem 読み取り、ZIP metadata 読み
 `IAssetManagerUiScheduler` を Composition が注入します。UI assembly は Infrastructure、
 Application 実装、SQLite、filesystem具象、Core Settings、`Task.Run`、
 `EditorApplication.delayCall` を参照しません。
+`IAssetManager.Changed` は command の実行 thread で通知されるため、UI subscriber は
+`IAssetManagerUiScheduler.RunOnMainThread(...)` を通してから UI Toolkit の state を更新します。
 
 setting の定義と登録は Composition が所有します。Infrastructure は
 `IAssetManagerInfrastructureSettings` の typed snapshot provider を受け取り、
@@ -93,7 +95,8 @@ background activity の経路を使用します。
 - `MainView` は AssetManager 固有の UI controller として、検索文字列、一覧・詳細 mode、選択中 item などの画面状態を持ち、Core UI component へ描画 state を渡す
 - `MainViewHost` は `MainToolbar`、`NavigationPanel`、`MainView` と controller の event 配線だけを担当する。toolbar と navigation panel は入力を通知し、渡された値を描画するだけで、設定や他 component を直接操作しない
 - Navigation は `All`、Booth snapshot を持つ Item の `BOOTH Items`、通常 Collection 未所属かつ Smart Collection にも一致しない `Uncategorized`、Item grid とは別の tag 一覧ページを開く `Tags` を提供する
-- Navigation の固定項目の下には通常 Collection と Smart Collection を別々の折りたたみ可能なセクションで表示し、固定項目と同じ左右余白、行幅、共通の行表現を使用する。各セクションの背景なし追加アイコンから枠線付きのアンカー popup を開き、実測したコンテンツ高に合わせて高さを調整し、最大高を超えた場合だけ縦スクロールする。双方で名前、組み込みアイコンまたは任意 Texture asset を入力し、Smart Collection のみ match mode と条件一覧を追加で入力する。Smart Collection の条件 field は名前、説明、タグ、ファイル名、拡張子に限定する
+- Navigation の固定項目の下では通常 Collection と Smart Collection を 1 つの Collection tree に統合し、`ParentCollectionId` と `SortOrder` に従って両種別をまたいだ親子関係と兄弟順を表示する。Collection 全体の Foldout は置かず、子を持つ各Collection行の disclosureで個別に開閉する。行は13px文字、14pxアイコン、22px高とし、親子をdepth lineで結ぶ。Asset Gridと同様にCtrl/Command+clickは個別の追加・解除、Shift+clickは表示中のanchorからの範囲選択を行う。最後の1件もmodifier clickで解除でき、treeの空白clickまたはEscapeで全選択を解除する。選択した複数行は表示順を保ったブロックとしてドラッグできる。ドラッグ先の行中央ではその子の末尾へ移動し、行の上端・下端では同じ階層の前後へ挿入する。treeの行以外からNavigation下端まで続く空き領域へドロップするとroot末尾へ移動し、root移動時の外枠は表示しない。cycleになるdropと配置が変わらないdropは受け付けない。Collection構造変更は専用の`Collections` changeだけを発行し、Main Viewの再検索を起こさない
+- 通常 Collection の表示アイコンは塗り付きの folder に固定し、Smart Collection は組み込みアイコンまたは任意 Texture asset を使用して区別する。Collection 見出しには `+` ボタンを 1 つだけ表示し、クリック時の context menu から通常 Collection または Smart Collection の作成を選ぶ。選択後は枠線付きのアンカー popup を開き、実測したコンテンツ高に合わせて高さを調整し、最大高を超えた場合だけ縦スクロールする。通常 Collection は名前だけを入力し、Smart Collection は名前、アイコン、match mode、条件一覧を入力する。条件追加buttonは左端に`+` iconを表示し、操作後のfocus枠を残さない。Smart Collection の条件 field は名前、説明、タグ、ファイル名、拡張子に限定する
 - 単独 Navigation window の選択は standalone view session を介して単独 Main View window と共有し、`Tags` を含む固定ページと Collection の選択を Main View 側へ通知する
 - `InfomationPanel` は渡された選択 state を描画し、詳細表示要求を通知する。統合 window は同じ layout 内で直接配線し、単独 Main View / Infomation window は Composition が生成する揮発性の standalone view session を介して選択 state と詳細 tab 要求だけを共有する。standalone session は現在値を保持するため、Infomation window を後から開いた場合も現在の選択を復元する
 - Core の `ItemGrid` / `ItemImage` は渡された state の描画と UI Toolkit 固有の layout・resource 処理に限定する。AssetManager の cache key、履歴、設定値は保持しない
@@ -101,7 +104,7 @@ background activity の経路を使用します。
 
 ## 現在の実装状態
 
-- schema v4、Item/File/Tag/Collection/Dependency/Import Target API を実装済み
+- schema v5、Item/File/Tag/Collection/Dependency/Import Target API を実装済み
 - BLM `data.db` と Eagle library の読み取り同期、安定した source identity、datasource tag、欠落 origin の reconciliation を実装済み
 - BLM snapshot に任意の `preferences` table がない場合も item metadata の同期を継続し、item directory path だけを未設定として扱う
 - Main View と File Tree は DB / filesystem 読み込みを background で行い、前回 load の cancellation に対応

@@ -97,6 +97,7 @@ erDiagram
         TEXT name
         TEXT icon
         TEXT icon_asset_guid
+        INTEGER sort_order
         TEXT created_at
         TEXT updated_at
     }
@@ -283,13 +284,15 @@ AssetManager 独自 folder / collection。階層構造は `collection_collection
 |---|---|---:|---|---|
 | `id` | GUID string | Yes |  | Collection Info の識別子 |
 | `name` | TEXT | Yes |  | collection 名 |
-| `icon` | collection_icon | Yes |  | 通常・Smart Collection 共通の表示アイコン |
-| `icon_asset_guid` | GUID string |  |  | 任意 Texture asset のGUID。有効な場合は `icon` より優先 |
+| `icon` | collection_icon | Yes |  | 通常 Collection は `folder` 固定。Smart Collection は選択された表示アイコン |
+| `icon_asset_guid` | GUID string |  |  | Smart Collection の任意 Texture asset GUID。有効な場合は `icon` より優先。通常 Collection は `NULL` |
+| `sort_order` | INTEGER | Yes |  | 同じ親を持つ兄弟 Collection 内の0始まり表示順 |
 | `created_at` | DATETIME | Yes |  | 作成時刻 |
 | `updated_at` | DATETIME | Yes |  | 更新時刻 |
 
 ```sql
 CHECK (icon IN ('folder', 'star', 'package', 'tag', 'search'))
+CHECK (sort_order >= 0)
 ```
 
 ## Smart Collection Info
@@ -420,7 +423,7 @@ ON item_collection(item_info_id, collection_info_id);
 
 ## Schema Version
 
-AssetManager DB の schema version。現在は `4`。開発段階のため migration は提供せず、version 不一致時は既存 DB を削除して再作成する。
+AssetManager DB の schema version。現在は `5`。開発段階のため migration は提供せず、version 不一致時は既存 DB を削除して再作成する。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|

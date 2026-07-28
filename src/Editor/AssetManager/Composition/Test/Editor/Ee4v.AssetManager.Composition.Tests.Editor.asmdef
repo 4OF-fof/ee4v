@@ -1,0 +1,22 @@
+{
+  "name": "Ee4v.AssetManager.Composition.Tests.Editor",
+  "rootNamespace": "Ee4v.AssetManager.Composition.Tests",
+  "references": [
+    "Ee4v.AssetManager.Composition.Editor",
+    "Ee4v.Testing.Contracts.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

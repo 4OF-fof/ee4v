@@ -53,7 +53,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
         {
             using (var connection = OpenConnection())
             {
-                return connection.Query<CollectionRow>("SELECT * FROM collection_info ORDER BY name COLLATE NOCASE, id")
+                return connection.Query<CollectionRow>("SELECT * FROM collection_info ORDER BY sort_order, name COLLATE NOCASE, id")
                     .Select(row => ToAssetCollection(connection, row))
                     .ToArray();
             }
@@ -78,16 +78,20 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                     var now = Now();
                     var nextId = NewId();
                     connection.Execute(
-                        "INSERT INTO collection_info(id, name, icon, icon_asset_guid, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO collection_info(id, name, icon, icon_asset_guid, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
                         nextId,
                         request.Name,
-                        ToDbCollectionIcon(request.Icon),
-                        string.IsNullOrWhiteSpace(request.IconAssetGuid)
-                            ? null
-                            : request.IconAssetGuid.Trim(),
+                        ToDbCollectionIcon(
+                            AssetCollectionIcon.Folder),
+                        null,
+                        0,
                         now,
                         now);
-                    SetCollectionParent(connection, nextId, request.ParentCollectionId);
+                    PlaceCollection(
+                        connection,
+                        nextId,
+                        request.ParentCollectionId,
+                        -1);
                     return nextId;
                 });
                 return ToAssetCollection(connection, connection.Query<CollectionRow>("SELECT * FROM collection_info WHERE id = ?", id).First());
@@ -119,16 +123,21 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                     var now = Now();
                     var nextId = NewId();
                     connection.Execute(
-                        "INSERT INTO collection_info(id, name, icon, icon_asset_guid, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO collection_info(id, name, icon, icon_asset_guid, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
                         nextId,
                         request.Name,
                         ToDbCollectionIcon(request.Icon),
                         string.IsNullOrWhiteSpace(request.IconAssetGuid)
                             ? null
                             : request.IconAssetGuid.Trim(),
+                        0,
                         now,
                         now);
-                    SetCollectionParent(connection, nextId, request.ParentCollectionId);
+                    PlaceCollection(
+                        connection,
+                        nextId,
+                        request.ParentCollectionId,
+                        -1);
                     connection.Execute(
                         "INSERT INTO smart_collection_info(collection_info_id, match_mode, created_at, updated_at) VALUES (?, ?, ?, ?)",
                         nextId,
@@ -148,14 +157,31 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             }
         }
 
-        public static void MoveCollection(string collectionId, string parentCollectionId)
+        public static void MoveCollection(
+            string collectionId,
+            string parentCollectionId,
+            int siblingIndex)
+        {
+            MoveCollections(
+                new[] { collectionId },
+                parentCollectionId,
+                siblingIndex);
+        }
+
+        public static void MoveCollections(
+            IReadOnlyList<string> collectionIds,
+            string parentCollectionId,
+            int siblingIndex)
         {
             using (var connection = OpenConnection())
             {
                 InTransaction(connection, () =>
                 {
-                    EnsureCollectionExists(connection, collectionId);
-                    SetCollectionParent(connection, collectionId, parentCollectionId);
+                    PlaceCollections(
+                        connection,
+                        collectionIds,
+                        parentCollectionId,
+                        siblingIndex);
                 });
             }
         }
@@ -224,23 +250,234 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             }
         }
 
-        private static void SetCollectionParent(SQLiteConnection connection, string collectionId, string parentCollectionId)
+        private static void PlaceCollection(
+            SQLiteConnection connection,
+            string collectionId,
+            string parentCollectionId,
+            int siblingIndex)
         {
-            EnsureCollectionExists(connection, collectionId);
-            if (string.IsNullOrWhiteSpace(parentCollectionId))
+            PlaceCollections(
+                connection,
+                new[] { collectionId },
+                parentCollectionId,
+                siblingIndex);
+        }
+
+        private static void PlaceCollections(
+            SQLiteConnection connection,
+            IReadOnlyList<string> collectionIds,
+            string parentCollectionId,
+            int siblingIndex)
+        {
+            var requestedIds = (collectionIds ??
+                    Array.Empty<string>())
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            if (requestedIds.Length == 0)
             {
-                connection.Execute("DELETE FROM collection_collection WHERE child_collection_id = ?", collectionId);
                 return;
             }
 
-            EnsureCollectionExists(connection, parentCollectionId);
-            if (collectionId == parentCollectionId || IsCollectionDescendant(connection, parentCollectionId, collectionId))
+            for (var i = 0; i < requestedIds.Length; i++)
             {
-                throw new AssetManagerException(AssetManagerErrorCode.CollectionCycle, "Collection cycle is not allowed.");
+                EnsureCollectionExists(connection, requestedIds[i]);
             }
 
-            connection.Execute("DELETE FROM collection_collection WHERE child_collection_id = ?", collectionId);
-            connection.Execute("INSERT INTO collection_collection(parent_collection_id, child_collection_id) VALUES (?, ?)", parentCollectionId, collectionId);
+            var requestedIdSet = new HashSet<string>(
+                requestedIds,
+                StringComparer.Ordinal);
+            var movingIds = requestedIds
+                .Where(id => !HasSelectedAncestor(
+                    connection,
+                    id,
+                    requestedIdSet))
+                .ToArray();
+            var targetParentId = string.IsNullOrWhiteSpace(
+                    parentCollectionId)
+                ? null
+                : parentCollectionId;
+            if (targetParentId != null)
+            {
+                EnsureCollectionExists(connection, targetParentId);
+                for (var i = 0; i < movingIds.Length; i++)
+                {
+                    if (movingIds[i] == targetParentId ||
+                        IsCollectionDescendant(
+                            connection,
+                            targetParentId,
+                            movingIds[i]))
+                    {
+                        throw new AssetManagerException(
+                            AssetManagerErrorCode.CollectionCycle,
+                            "Collection cycle is not allowed.");
+                    }
+                }
+            }
+
+            var currentParentIds = new HashSet<string>(
+                StringComparer.Ordinal);
+            for (var i = 0; i < movingIds.Length; i++)
+            {
+                var currentRelation = connection
+                    .Query<CollectionCollectionRow>(
+                        "SELECT * FROM collection_collection WHERE child_collection_id = ? LIMIT 1",
+                        movingIds[i])
+                    .FirstOrDefault();
+                currentParentIds.Add(currentRelation != null
+                    ? currentRelation.parent_collection_id ?? string.Empty
+                    : string.Empty);
+            }
+
+            var movingIdSet = new HashSet<string>(
+                movingIds,
+                StringComparer.Ordinal);
+            var targetSiblings = GetCollectionSiblingIds(
+                connection,
+                targetParentId,
+                null)
+                .Where(id => !movingIdSet.Contains(id))
+                .ToList();
+            var targetIndex = siblingIndex < 0
+                ? targetSiblings.Count
+                : Math.Max(
+                    0,
+                    Math.Min(siblingIndex, targetSiblings.Count));
+
+            for (var i = 0; i < movingIds.Length; i++)
+            {
+                connection.Execute(
+                    "DELETE FROM collection_collection WHERE child_collection_id = ?",
+                    movingIds[i]);
+                if (targetParentId != null)
+                {
+                    connection.Execute(
+                        "INSERT INTO collection_collection(parent_collection_id, child_collection_id) VALUES (?, ?)",
+                        targetParentId,
+                        movingIds[i]);
+                }
+            }
+
+            targetSiblings.InsertRange(targetIndex, movingIds);
+            NormalizeCollectionOrder(
+                connection,
+                targetSiblings);
+            foreach (var currentParentId in currentParentIds)
+            {
+                var normalizedCurrentParentId =
+                    string.IsNullOrWhiteSpace(currentParentId)
+                        ? null
+                        : currentParentId;
+                if (string.Equals(
+                        normalizedCurrentParentId,
+                        targetParentId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                NormalizeCollectionOrder(
+                    connection,
+                    GetCollectionSiblingIds(
+                        connection,
+                        normalizedCurrentParentId,
+                        null));
+            }
+
+            var now = Now();
+            for (var i = 0; i < movingIds.Length; i++)
+            {
+                connection.Execute(
+                    "UPDATE collection_info SET updated_at = ? WHERE id = ?",
+                    now,
+                    movingIds[i]);
+            }
+        }
+
+        private static bool HasSelectedAncestor(
+            SQLiteConnection connection,
+            string collectionId,
+            ISet<string> selectedIds)
+        {
+            var visited = new HashSet<string>(StringComparer.Ordinal);
+            var currentId = collectionId;
+            while (visited.Add(currentId))
+            {
+                var relation = connection
+                    .Query<CollectionCollectionRow>(
+                        "SELECT * FROM collection_collection WHERE child_collection_id = ? LIMIT 1",
+                        currentId)
+                    .FirstOrDefault();
+                if (relation == null ||
+                    string.IsNullOrWhiteSpace(
+                        relation.parent_collection_id))
+                {
+                    return false;
+                }
+
+                if (selectedIds.Contains(
+                        relation.parent_collection_id))
+                {
+                    return true;
+                }
+
+                currentId = relation.parent_collection_id;
+            }
+
+            return false;
+        }
+
+        private static List<string> GetCollectionSiblingIds(
+            SQLiteConnection connection,
+            string parentCollectionId,
+            string excludedCollectionId)
+        {
+            List<CollectionRow> rows;
+            if (string.IsNullOrWhiteSpace(parentCollectionId))
+            {
+                rows = connection.Query<CollectionRow>(
+                    @"SELECT collection_info.*
+                      FROM collection_info
+                      WHERE NOT EXISTS (
+                        SELECT 1
+                        FROM collection_collection
+                        WHERE child_collection_id = collection_info.id
+                      )
+                      ORDER BY collection_info.sort_order, collection_info.id");
+            }
+            else
+            {
+                rows = connection.Query<CollectionRow>(
+                    @"SELECT collection_info.*
+                      FROM collection_info
+                      INNER JOIN collection_collection
+                        ON collection_collection.child_collection_id = collection_info.id
+                      WHERE collection_collection.parent_collection_id = ?
+                      ORDER BY collection_info.sort_order, collection_info.id",
+                    parentCollectionId);
+            }
+
+            return rows
+                .Where(row =>
+                    !string.Equals(
+                        row.id,
+                        excludedCollectionId,
+                        StringComparison.Ordinal))
+                .Select(row => row.id)
+                .ToList();
+        }
+
+        private static void NormalizeCollectionOrder(
+            SQLiteConnection connection,
+            IReadOnlyList<string> collectionIds)
+        {
+            for (var i = 0; i < collectionIds.Count; i++)
+            {
+                connection.Execute(
+                    "UPDATE collection_info SET sort_order = ? WHERE id = ?",
+                    i,
+                    collectionIds[i]);
+            }
         }
 
         private static bool IsCollectionDescendant(SQLiteConnection connection, string candidateChildId, string parentId)

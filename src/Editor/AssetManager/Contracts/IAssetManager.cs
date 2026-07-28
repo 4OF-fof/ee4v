@@ -29,7 +29,14 @@ namespace Ee4v.AssetManager.Contracts
         IReadOnlyList<AssetCollection> GetCollections();
         AssetCollection CreateCollection(CreateCollectionRequest request);
         AssetCollection CreateSmartCollection(CreateSmartCollectionRequest request);
-        void MoveCollection(string collectionId, string parentCollectionId);
+        void MoveCollection(
+            string collectionId,
+            string parentCollectionId,
+            int siblingIndex = -1);
+        void MoveCollections(
+            IReadOnlyList<string> collectionIds,
+            string parentCollectionId,
+            int siblingIndex = -1);
         void SetItemCollections(string itemId, IReadOnlyList<string> collectionIds);
         IReadOnlyList<AssetFileDependency> GetFileDependencies(string fileId);
         void SetFileDependencies(string dependentFileId, IReadOnlyList<string> dependencyFileIds);
@@ -47,6 +54,7 @@ namespace Ee4v.AssetManager.Contracts
     public enum AssetManagerChangeKind
     {
         Catalog,
+        Collections,
         FileTree,
         FileImportTargets,
         VersionGroupPrimaryFile

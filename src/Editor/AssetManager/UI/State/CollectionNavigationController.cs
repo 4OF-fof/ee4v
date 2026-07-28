@@ -12,6 +12,7 @@ namespace Ee4v.AssetManager.UI
         private readonly IAssetManagerUiScheduler _scheduler;
         private CancellationTokenSource _loadCancellation;
         private CancellationTokenSource _createCancellation;
+        private CancellationTokenSource _moveCancellation;
         private int _loadVersion;
         private bool _active;
         private bool _disposed;
@@ -63,6 +64,7 @@ namespace Ee4v.AssetManager.UI
             _assetManager.Changed -= OnAssetManagerChanged;
             CancelLoad();
             CancelCreate();
+            CancelMove();
         }
 
         public void Reload()
@@ -127,6 +129,72 @@ namespace Ee4v.AssetManager.UI
             Create(() => _assetManager.CreateSmartCollection(request));
         }
 
+        public void MoveCollection(
+            string collectionId,
+            string parentCollectionId,
+            int siblingIndex)
+        {
+            MoveCollections(
+                new[] { collectionId },
+                parentCollectionId,
+                siblingIndex);
+        }
+
+        public void MoveCollections(
+            IReadOnlyList<string> collectionIds,
+            string parentCollectionId,
+            int siblingIndex)
+        {
+            if (_disposed ||
+                collectionIds == null ||
+                collectionIds.Count == 0 ||
+                _moveCancellation != null)
+            {
+                return;
+            }
+
+            ErrorChanged?.Invoke(string.Empty);
+            var cancellation = new CancellationTokenSource();
+            _moveCancellation = cancellation;
+            _scheduler.RunInBackground(
+                token =>
+                {
+                    token.ThrowIfCancellationRequested();
+                    _assetManager.MoveCollections(
+                        collectionIds,
+                        parentCollectionId,
+                        siblingIndex);
+                    token.ThrowIfCancellationRequested();
+                    return true;
+                },
+                cancellation.Token,
+                result =>
+                {
+                    cancellation.Dispose();
+                    if (ReferenceEquals(
+                            _moveCancellation,
+                            cancellation))
+                    {
+                        _moveCancellation = null;
+                    }
+
+                    if (_disposed || result.Canceled)
+                    {
+                        return;
+                    }
+
+                    if (!result.Succeeded)
+                    {
+                        ErrorChanged?.Invoke(
+                            result.Error != null
+                                ? result.Error.Message
+                                : string.Empty);
+                        Reload();
+                        return;
+                    }
+                });
+        }
+
         public void Dispose()
         {
             if (_disposed)
@@ -182,7 +250,6 @@ namespace Ee4v.AssetManager.UI
 
                     AddOrReplace(result.Value);
                     CollectionCreated?.Invoke(result.Value);
-                    Reload();
                 });
         }
 
@@ -215,9 +282,15 @@ namespace Ee4v.AssetManager.UI
         private void OnAssetManagerChanged(AssetManagerChange change)
         {
             if (change != null &&
-                change.Kind == AssetManagerChangeKind.Catalog)
+                change.Kind == AssetManagerChangeKind.Collections)
             {
-                Reload();
+                _scheduler.RunOnMainThread(() =>
+                {
+                    if (_active && !_disposed)
+                    {
+                        Reload();
+                    }
+                });
             }
         }
 
@@ -242,6 +315,17 @@ namespace Ee4v.AssetManager.UI
 
             _createCancellation.Cancel();
             _createCancellation = null;
+        }
+
+        private void CancelMove()
+        {
+            if (_moveCancellation == null)
+            {
+                return;
+            }
+
+            _moveCancellation.Cancel();
+            _moveCancellation = null;
         }
     }
 }

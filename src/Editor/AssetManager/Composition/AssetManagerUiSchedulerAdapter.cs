@@ -8,6 +8,40 @@ namespace Ee4v.AssetManager.Composition
 {
     internal sealed class AssetManagerUiSchedulerAdapter : IAssetManagerUiScheduler
     {
+        private readonly int _mainThreadId;
+        private readonly SynchronizationContext _mainThreadContext;
+
+        public AssetManagerUiSchedulerAdapter()
+        {
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            _mainThreadContext = SynchronizationContext.Current;
+        }
+
+        public void RunOnMainThread(Action operation)
+        {
+            if (operation == null)
+            {
+                throw new ArgumentNullException(nameof(operation));
+            }
+
+            if (Thread.CurrentThread.ManagedThreadId ==
+                _mainThreadId)
+            {
+                operation();
+                return;
+            }
+
+            if (_mainThreadContext != null)
+            {
+                _mainThreadContext.Post(
+                    _ => operation(),
+                    null);
+                return;
+            }
+
+            EditorApplication.delayCall += () => operation();
+        }
+
         public void RunInBackground<T>(
             Func<CancellationToken, T> operation,
             CancellationToken cancellationToken,
@@ -31,7 +65,7 @@ namespace Ee4v.AssetManager.Composition
                         ? task.Exception.GetBaseException()
                         : null,
                     task.IsCanceled);
-                EditorApplication.delayCall += () => completed(result);
+                RunOnMainThread(() => completed(result));
             });
         }
     }

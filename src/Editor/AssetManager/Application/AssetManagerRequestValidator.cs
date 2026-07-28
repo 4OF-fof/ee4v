@@ -93,9 +93,6 @@ namespace Ee4v.AssetManager.Application
             Execute(() =>
             {
                 CatalogCommandPolicy.Require(request.Name, "collection name");
-                CatalogCommandPolicy.EnsureCollectionIcon(
-                    (int)request.Icon,
-                    (int)AssetCollectionIcon.Search);
             });
         }
 

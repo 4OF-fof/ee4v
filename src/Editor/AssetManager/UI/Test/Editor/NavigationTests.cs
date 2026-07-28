@@ -1,10 +1,14 @@
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.UI;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.TestTools;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI.Tests
@@ -68,7 +72,7 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
-        public void CollectionNavigationList_RendersRegularAndSmartTheSameWay()
+        public void CollectionNavigationList_RendersRegularAndSmartInOneTree()
         {
             var list = new CollectionNavigationList(null);
 
@@ -102,7 +106,153 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
-        public void NavigationPanel_SeparatesRegularAndSmartCollections()
+        public void CollectionNavigationList_UsesLargerRowsAndDepthLines()
+        {
+            var list = new CollectionNavigationList(null);
+
+            list.SetState(new[]
+            {
+                new AssetCollection
+                {
+                    Id = "parent",
+                    Name = "Parent"
+                },
+                new AssetCollection
+                {
+                    Id = "child",
+                    Name = "Child",
+                    ParentCollectionId = "parent"
+                },
+                new AssetCollection
+                {
+                    Id = "grandchild",
+                    Name = "Grandchild",
+                    ParentCollectionId = "child"
+                }
+            }, string.Empty);
+
+            var buttons = list.Query<UiButton>(
+                    className:
+                    "ee4v-asset-manager-collection-list__button")
+                .ToList();
+            Assert.That(
+                buttons.All(button =>
+                    button.GetClasses().Contains(
+                        "ee4v-ui-button--compact")),
+                Is.True);
+            Assert.That(
+                buttons.All(button =>
+                    button.LabelElement.GetClasses().Contains(
+                        UiClassNames.CollectionNavigationLabel)),
+                Is.True);
+            Assert.That(
+                buttons.All(button =>
+                    button.LabelElement.GetType().Name ==
+                    "ImguiUiTextElement"),
+                Is.True);
+            Assert.That(
+                list.Query<VisualElement>(
+                        className:
+                        "ee4v-asset-manager-collection-list__depth-line--current")
+                    .ToList().Count,
+                Is.EqualTo(2));
+            Assert.That(
+                list.Query<VisualElement>(
+                        className:
+                        "ee4v-asset-manager-collection-list__depth-line--children")
+                    .ToList().Count,
+                Is.EqualTo(2));
+            Assert.That(
+                list.Query<VisualElement>(
+                        className:
+                        "ee4v-asset-manager-collection-list__depth-branch")
+                    .ToList().Count,
+                Is.EqualTo(2));
+        }
+
+        [Test]
+        public void CollectionNavigationList_TogglesIndividualFolders()
+        {
+            var list = new CollectionNavigationList(null);
+            list.SetState(new[]
+            {
+                new AssetCollection
+                {
+                    Id = "parent",
+                    Name = "Parent"
+                },
+                new AssetCollection
+                {
+                    Id = "child",
+                    Name = "Child",
+                    ParentCollectionId = "parent"
+                }
+            }, string.Empty);
+
+            Assert.That(
+                list.Query<VisualElement>(
+                        className:
+                        "ee4v-asset-manager-collection-list__row")
+                    .ToList().Count,
+                Is.EqualTo(2));
+            Assert.That(
+                list.Query<UiButton>(
+                        className:
+                        "ee4v-asset-manager-collection-list__disclosure")
+                    .ToList().Count,
+                Is.EqualTo(1));
+
+            list.SetCollectionExpanded("parent", false);
+
+            Assert.That(
+                list.Query<VisualElement>(
+                        className:
+                        "ee4v-asset-manager-collection-list__row")
+                    .ToList().Count,
+                Is.EqualTo(1));
+
+            list.SetCollectionExpanded("parent", true);
+
+            Assert.That(
+                list.Query<VisualElement>(
+                        className:
+                        "ee4v-asset-manager-collection-list__row")
+                    .ToList().Count,
+                Is.EqualTo(2));
+        }
+
+        [Test]
+        public void CollectionNavigationList_UsesPersistedSiblingOrder()
+        {
+            var list = new CollectionNavigationList(null);
+            list.SetState(new[]
+            {
+                new AssetCollection
+                {
+                    Id = "second",
+                    Name = "A",
+                    SortOrder = 1
+                },
+                new AssetCollection
+                {
+                    Id = "first",
+                    Name = "Z",
+                    SortOrder = 0
+                }
+            }, string.Empty);
+
+            Assert.That(
+                list.Query<UiButton>(
+                        className:
+                        "ee4v-asset-manager-collection-list__button")
+                    .ToList()
+                    .Select(button => button.LabelElement.Text)
+                    .ToArray(),
+                Is.EqualTo(new[] { "Z", "A" }));
+        }
+
+        [Test]
+        public void NavigationPanel_UnifiesRegularAndSmartCollections()
         {
             var panel = new NavigationPanel();
             panel.SetCollections(new[]
@@ -122,37 +272,593 @@ namespace Ee4v.AssetManager.UI.Tests
 
             var lists = panel.Query<CollectionNavigationList>()
                 .ToList();
-            Assert.That(lists.Count, Is.EqualTo(2));
+            Assert.That(lists.Count, Is.EqualTo(1));
             Assert.That(
                 lists[0].Query<Button>(
                         className:
                         "ee4v-asset-manager-collection-list__button")
                     .ToList().Count,
-                Is.EqualTo(1));
+                Is.EqualTo(2));
+        }
+
+        [Test]
+        public void NavigationPanel_RemovesCollectionFoldout()
+        {
+            var panel = new NavigationPanel();
+
             Assert.That(
-                lists[1].Query<Button>(
+                panel.Query<Foldout>(
                         className:
-                        "ee4v-asset-manager-collection-list__button")
+                        "ee4v-asset-manager-panel__collection-section")
+                    .ToList(),
+                Is.Empty);
+            Assert.That(
+                panel.Query<VisualElement>(
+                        className:
+                        "ee4v-asset-manager-panel__collection-section")
                     .ToList().Count,
                 Is.EqualTo(1));
         }
 
         [Test]
-        public void NavigationPanel_CollectionSectionsAreIndependentFoldouts()
+        public void NavigationPanel_CollectionHeaderUsesSingleAddButton()
         {
             var panel = new NavigationPanel();
-            var sections = panel.Query<Foldout>(
+            var section = panel.Query<VisualElement>(
                     className:
                     "ee4v-asset-manager-panel__collection-section")
-                .ToList();
+                .ToList()
+                .Single();
 
-            Assert.That(sections.Count, Is.EqualTo(2));
-            Assert.That(sections.All(section => section.value), Is.True);
+            Assert.That(
+                section.Query<UiButton>(
+                        className:
+                        "ee4v-asset-manager-panel__header-action")
+                    .ToList().Count,
+                Is.EqualTo(1));
+        }
 
-            sections[0].value = false;
+        [Test]
+        public void CollectionCreationMenu_ChoosesRegularOrSmart()
+        {
+            var anchor = new VisualElement();
+            var regularRequested = false;
+            var smartRequested = false;
+            var state =
+                NavigationPanel.CreateCollectionCreationMenuState(
+                    anchor,
+                    _ => regularRequested = true,
+                    _ => smartRequested = true);
 
-            Assert.That(sections[0].value, Is.False);
-            Assert.That(sections[1].value, Is.True);
+            Assert.That(
+                state.Items.Select(item => item.Id).ToArray(),
+                Is.EqualTo(new[]
+                {
+                    "create-collection",
+                    "create-smart-collection"
+                }));
+
+            state.Items[0].Action();
+            Assert.That(regularRequested, Is.True);
+            Assert.That(smartRequested, Is.False);
+
+            state.Items[1].Action();
+            Assert.That(smartRequested, Is.True);
+        }
+
+        [Test]
+        public void CollectionNavigationList_DragMoveRejectsCyclesAndMovesAcrossKinds()
+        {
+            string movedId = null;
+            string parentId = null;
+            var list = new CollectionNavigationList(
+                null,
+                (collectionIds, nextParentId, _) =>
+                {
+                    movedId = collectionIds.Single();
+                    parentId = nextParentId;
+                });
+            list.SetState(new[]
+            {
+                new AssetCollection
+                {
+                    Id = "regular",
+                    Name = "Regular"
+                },
+                new AssetCollection
+                {
+                    Id = "child",
+                    Name = "Child",
+                    ParentCollectionId = "regular"
+                },
+                new AssetCollection
+                {
+                    Id = "smart",
+                    Name = "Smart",
+                    IsSmartCollection = true
+                }
+            }, string.Empty);
+
+            Assert.That(
+                list.CanMoveCollection("regular", "child"),
+                Is.False);
+            Assert.That(
+                list.TryRequestMove("smart", "regular"),
+                Is.True);
+            Assert.That(movedId, Is.EqualTo("smart"));
+            Assert.That(parentId, Is.EqualTo("regular"));
+        }
+
+        [Test]
+        public void CollectionNavigationList_CanMoveChildBackToRoot()
+        {
+            string parentId = "not-called";
+            var list = new CollectionNavigationList(
+                null,
+                (_, nextParentId, __) =>
+                    parentId = nextParentId);
+            list.SetState(new[]
+            {
+                new AssetCollection
+                {
+                    Id = "parent",
+                    Name = "Parent"
+                },
+                new AssetCollection
+                {
+                    Id = "child",
+                    Name = "Child",
+                    ParentCollectionId = "parent"
+                }
+            }, string.Empty);
+
+            Assert.That(
+                list.TryRequestMove("child", null),
+                Is.True);
+            Assert.That(parentId, Is.Null);
+        }
+
+        [Test]
+        public void CollectionNavigationList_CanReorderWithinParent()
+        {
+            string movedId = null;
+            string parentId = "not-called";
+            var siblingIndex = -1;
+            var list = new CollectionNavigationList(
+                null,
+                (nextMovedIds, nextParentId, nextSiblingIndex) =>
+                {
+                    movedId = nextMovedIds.Single();
+                    parentId = nextParentId;
+                    siblingIndex = nextSiblingIndex;
+                });
+            list.SetState(new[]
+            {
+                new AssetCollection
+                {
+                    Id = "first",
+                    Name = "First",
+                    SortOrder = 0
+                },
+                new AssetCollection
+                {
+                    Id = "second",
+                    Name = "Second",
+                    SortOrder = 1
+                }
+            }, string.Empty);
+
+            Assert.That(
+                list.TryRequestMove("second", null, 0),
+                Is.True);
+            Assert.That(movedId, Is.EqualTo("second"));
+            Assert.That(parentId, Is.Null);
+            Assert.That(siblingIndex, Is.Zero);
+            Assert.That(
+                list.TryRequestMove("first", null, 0),
+                Is.False);
+        }
+
+        [Test]
+        public void CollectionNavigationList_CtrlTogglesAndShiftSelectsVisibleRange()
+        {
+            var list = new CollectionNavigationList(null);
+            list.SetState(new[]
+            {
+                new AssetCollection
+                {
+                    Id = "first",
+                    Name = "First",
+                    SortOrder = 0
+                },
+                new AssetCollection
+                {
+                    Id = "second",
+                    Name = "Second",
+                    SortOrder = 1
+                },
+                new AssetCollection
+                {
+                    Id = "third",
+                    Name = "Third",
+                    SortOrder = 2
+                }
+            }, string.Empty);
+
+            list.SelectCollection(
+                "first",
+                toggle: false,
+                range: false);
+            list.SelectCollection(
+                "third",
+                toggle: true,
+                range: false);
+
+            Assert.That(
+                list.SelectedCollectionIds,
+                Is.EquivalentTo(new[] { "first", "third" }));
+
+            list.SelectCollection(
+                "third",
+                toggle: true,
+                range: false);
+
+            Assert.That(
+                list.SelectedCollectionIds,
+                Is.EquivalentTo(new[] { "first" }));
+
+            list.SelectCollection(
+                "first",
+                toggle: true,
+                range: false);
+
+            Assert.That(
+                list.SelectedCollectionIds,
+                Is.Empty);
+
+            list.SelectCollection(
+                "first",
+                toggle: false,
+                range: false);
+            list.SelectCollection(
+                "third",
+                toggle: false,
+                range: true);
+
+            Assert.That(
+                list.SelectedCollectionIds,
+                Is.EquivalentTo(
+                    new[] { "first", "second", "third" }));
+        }
+
+        [Test]
+        public void CollectionNavigationList_ClearSelectionSurvivesRefresh()
+        {
+            var collections = new[]
+            {
+                new AssetCollection
+                {
+                    Id = "first",
+                    Name = "First"
+                }
+            };
+            var list = new CollectionNavigationList(null);
+            var selectedViewId =
+                AssetManagerCollectionViewId.Encode("first");
+            list.SetState(collections, selectedViewId);
+
+            list.ClearSelection();
+            list.SetState(collections, selectedViewId);
+
+            Assert.That(
+                list.SelectedCollectionIds,
+                Is.Empty);
+        }
+
+        [UnityTest]
+        public IEnumerator CollectionNavigationList_BackgroundAndEscapeClearSelection()
+        {
+            var window =
+                ScriptableObject.CreateInstance<EditorWindow>();
+            try
+            {
+                var list = new CollectionNavigationList(null);
+                list.style.height = 100f;
+                list.SetState(new[]
+                {
+                    new AssetCollection
+                    {
+                        Id = "first",
+                        Name = "First"
+                    },
+                    new AssetCollection
+                    {
+                        Id = "second",
+                        Name = "Second"
+                    }
+                }, string.Empty);
+                window.rootVisualElement.Add(list);
+                window.Show();
+                yield return null;
+
+                list.SelectCollection(
+                    "first",
+                    toggle: false,
+                    range: false);
+                using (var pointerDown =
+                       PointerDownEvent.GetPooled(new Event
+                       {
+                           type = EventType.MouseDown,
+                           button =
+                               (int)MouseButton.LeftMouse,
+                           mousePosition = new Vector2(
+                               list.worldBound.center.x,
+                               list.worldBound.yMax - 1f)
+                       }))
+                {
+                    pointerDown.target = list;
+                    list.SendEvent(pointerDown);
+                }
+
+                Assert.That(
+                    list.SelectedCollectionIds,
+                    Is.Empty);
+
+                list.SelectCollection(
+                    "second",
+                    toggle: false,
+                    range: false);
+                using (var keyDown =
+                       KeyDownEvent.GetPooled(new Event
+                       {
+                           type = EventType.KeyDown,
+                           keyCode = KeyCode.Escape
+                       }))
+                {
+                    keyDown.target = list;
+                    list.SendEvent(keyDown);
+                }
+
+                Assert.That(
+                    list.SelectedCollectionIds,
+                    Is.Empty);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
+
+        [Test]
+        public void CollectionNavigationList_MovesSelectionAsOrderedBlock()
+        {
+            IReadOnlyList<string> movedIds = null;
+            string parentId = "not-called";
+            var siblingIndex = -1;
+            var list = new CollectionNavigationList(
+                null,
+                (nextMovedIds, nextParentId, nextSiblingIndex) =>
+                {
+                    movedIds = nextMovedIds;
+                    parentId = nextParentId;
+                    siblingIndex = nextSiblingIndex;
+                });
+            list.SetState(new[]
+            {
+                new AssetCollection
+                {
+                    Id = "first",
+                    Name = "First",
+                    SortOrder = 0
+                },
+                new AssetCollection
+                {
+                    Id = "second",
+                    Name = "Second",
+                    SortOrder = 1
+                },
+                new AssetCollection
+                {
+                    Id = "third",
+                    Name = "Third",
+                    SortOrder = 2
+                }
+            }, string.Empty);
+
+            Assert.That(
+                list.TryRequestMoves(
+                    new[] { "first", "second" },
+                    null,
+                    1),
+                Is.True);
+            Assert.That(
+                movedIds,
+                Is.EqualTo(new[] { "first", "second" }));
+            Assert.That(parentId, Is.Null);
+            Assert.That(siblingIndex, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void CollectionNavigationList_MultiMoveOmitsSelectedDescendants()
+        {
+            IReadOnlyList<string> movedIds = null;
+            var list = new CollectionNavigationList(
+                null,
+                (nextMovedIds, _, __) =>
+                    movedIds = nextMovedIds);
+            list.SetState(new[]
+            {
+                new AssetCollection
+                {
+                    Id = "parent",
+                    Name = "Parent"
+                },
+                new AssetCollection
+                {
+                    Id = "child",
+                    Name = "Child",
+                    ParentCollectionId = "parent"
+                },
+                new AssetCollection
+                {
+                    Id = "target",
+                    Name = "Target"
+                }
+            }, string.Empty);
+
+            Assert.That(
+                list.TryRequestMoves(
+                    new[] { "parent", "child" },
+                    "target"),
+                Is.True);
+            Assert.That(
+                movedIds,
+                Is.EqualTo(new[] { "parent" }));
+        }
+
+        [UnityTest]
+        public IEnumerator CollectionNavigationList_PointerDragMovesAndReorders()
+        {
+            var window =
+                ScriptableObject.CreateInstance<EditorWindow>();
+            try
+            {
+                var root = window.rootVisualElement;
+                root.AddToClassList("ee4v-ui");
+                UiStyleUtility.AddPackageStyleSheet(
+                    root,
+                    "Editor/UI/Components/common.uss");
+                UiStyleUtility.AddPackageStyleSheet(
+                    root,
+                    "Editor/UI/Components/Inputs/Button/ui-button.uss");
+                UiStyleUtility.AddPackageStyleSheet(
+                    root,
+                    "Editor/UI/Components/Content/Icon/icon.uss");
+                UiStyleUtility.AddPackageStyleSheet(
+                    root,
+                    "Editor/AssetManager/UI/Panels/NavigationPanel/navigation-panel.uss");
+
+                string movedId = null;
+                string parentId = null;
+                var siblingIndex = -1;
+                var list = new CollectionNavigationList(
+                    null,
+                    (collectionIds, nextParentId, nextSiblingIndex) =>
+                    {
+                        movedId = collectionIds.Single();
+                        parentId = nextParentId;
+                        siblingIndex = nextSiblingIndex;
+                    });
+                list.SetState(new[]
+                {
+                    new AssetCollection
+                    {
+                        Id = "parent",
+                        Name = "Parent"
+                    },
+                    new AssetCollection
+                    {
+                        Id = "source",
+                        Name = "Source"
+                    }
+                }, string.Empty);
+                root.Add(list);
+                window.Show();
+                yield return null;
+
+                var rows = list.Query<VisualElement>(
+                        className:
+                        "ee4v-asset-manager-collection-list__row")
+                    .ToList();
+                var source = rows[1];
+                var sourcePosition = source.worldBound.center;
+                var targetPosition = rows[0].worldBound.center;
+
+                SendPointerDrag(
+                    source,
+                    sourcePosition,
+                    targetPosition);
+
+                Assert.That(movedId, Is.EqualTo("source"));
+                Assert.That(parentId, Is.EqualTo("parent"));
+                Assert.That(siblingIndex, Is.Zero);
+
+                movedId = null;
+                parentId = "not-called";
+                siblingIndex = -1;
+                SendPointerDrag(
+                    source,
+                    sourcePosition,
+                    new Vector2(
+                        rows[0].worldBound.center.x,
+                        rows[0].worldBound.yMin + 1f));
+
+                Assert.That(movedId, Is.EqualTo("source"));
+                Assert.That(parentId, Is.Null);
+                Assert.That(siblingIndex, Is.Zero);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
+
+        private static void SendPointerDrag(
+            VisualElement source,
+            Vector2 sourcePosition,
+            Vector2 targetPosition)
+        {
+            using (var pointerDown =
+                   PointerDownEvent.GetPooled(new Event
+                   {
+                       type = EventType.MouseDown,
+                       button = (int)MouseButton.LeftMouse,
+                       mousePosition = sourcePosition
+                   }))
+            {
+                pointerDown.target = source;
+                source.SendEvent(pointerDown);
+            }
+
+            using (var pointerMove =
+                   PointerMoveEvent.GetPooled(new Event
+                   {
+                       type = EventType.MouseDrag,
+                       button = (int)MouseButton.LeftMouse,
+                       mousePosition = targetPosition
+                   }))
+            {
+                pointerMove.target = source;
+                source.SendEvent(pointerMove);
+            }
+
+            using (var pointerUp =
+                   PointerUpEvent.GetPooled(new Event
+                   {
+                       type = EventType.MouseUp,
+                       button = (int)MouseButton.LeftMouse,
+                       mousePosition = targetPosition
+                   }))
+            {
+                pointerUp.target = source;
+                source.SendEvent(pointerUp);
+            }
+        }
+
+        [Test]
+        public void RegularCollectionIcon_IsAlwaysFolder()
+        {
+            var state = AssetCollectionIconPresenter.CreateState(
+                new AssetCollection
+                {
+                    Id = "regular",
+                    Icon = AssetCollectionIcon.Star,
+                    IconAssetGuid = "legacy-custom-icon"
+                });
+
+            Assert.That(
+                state.BuiltinIcon,
+                Is.EqualTo(UiBuiltinIcon.Folder));
         }
 
         [Test]
@@ -179,6 +885,17 @@ namespace Ee4v.AssetManager.UI.Tests
                 TypographyStyleResolver.Resolve(
                     UiClassNames.NavigationItemLabel).Style.RequiresImgui,
                 Is.True);
+            Assert.That(
+                TypographyStyleResolver.Resolve(
+                    UiClassNames.CollectionNavigationLabel)
+                    .Style.RequiresImgui,
+                Is.True);
+            Assert.That(
+                TypographyStyleResolver.Resolve(
+                    UiClassNames.CollectionNavigationLabel)
+                    .Style.FontSize,
+                Is.EqualTo(
+                    UiTypographyTokens.LargeBodyFontSize));
             Assert.That(
                 TypographyStyleResolver.Resolve(
                     UiClassNames.ButtonLabel).Style.RequiresImgui,
@@ -254,6 +971,47 @@ namespace Ee4v.AssetManager.UI.Tests
                 Assert.That(
                     scrollView.horizontalScrollerVisibility,
                     Is.EqualTo(ScrollerVisibility.Hidden));
+                var addConditionButton = window.rootVisualElement
+                    .Query<UiButton>(
+                        className:
+                        "ee4v-collection-creation-window__add-condition")
+                    .ToList()
+                    .Single();
+                UiBuiltinIconResolver.TryResolve(
+                    UiBuiltinIcon.Add,
+                    out var expectedAddIcon);
+                Assert.That(
+                    addConditionButton.IconElement.Q<Image>().image,
+                    Is.SameAs(expectedAddIcon));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(window);
+            }
+        }
+
+        [Test]
+        public void RegularCollectionPopup_DoesNotOfferIconSelection()
+        {
+            var window =
+                ScriptableObject.CreateInstance<
+                    CollectionCreationWindow>();
+            try
+            {
+                var createGui = typeof(CollectionCreationWindow)
+                    .GetMethod(
+                        "CreateGUI",
+                        BindingFlags.Instance |
+                        BindingFlags.NonPublic);
+
+                Assert.That(createGui, Is.Not.Null);
+                createGui.Invoke(window, null);
+
+                Assert.That(
+                    window.rootVisualElement
+                        .Query<AssetCollectionIconSelector>()
+                        .ToList(),
+                    Is.Empty);
             }
             finally
             {

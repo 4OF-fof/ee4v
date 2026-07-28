@@ -77,6 +77,27 @@ namespace Ee4v.UI
         private bool _selected;
 
         public UiButton(Action onClick = null)
+            : this(
+                new UiButtonState(),
+                UiClassNames.ButtonLabel,
+                onClick)
+        {
+        }
+
+        public UiButton(
+            UiButtonState state,
+            Action onClick = null)
+            : this(
+                state,
+                UiClassNames.ButtonLabel,
+                onClick)
+        {
+        }
+
+        public UiButton(
+            UiButtonState state,
+            string labelTypographyClassName,
+            Action onClick = null)
             : base(onClick)
         {
             text = string.Empty;
@@ -96,7 +117,10 @@ namespace Ee4v.UI
 
             _label = UiTextFactory.Create(
                 string.Empty,
-                UiClassNames.ButtonLabel,
+                string.IsNullOrWhiteSpace(
+                    labelTypographyClassName)
+                    ? UiClassNames.ButtonLabel
+                    : labelTypographyClassName,
                 LabelClassName);
             _label.pickingMode = PickingMode.Ignore;
             _label.SetWhiteSpace(WhiteSpace.NoWrap);
@@ -113,14 +137,6 @@ namespace Ee4v.UI
             _content.Add(_meta);
             Add(_content);
 
-            SetState(new UiButtonState());
-        }
-
-        public UiButton(
-            UiButtonState state,
-            Action onClick = null)
-            : this(onClick)
-        {
             SetState(state);
         }
 

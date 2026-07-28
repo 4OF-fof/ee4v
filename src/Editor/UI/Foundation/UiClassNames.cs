@@ -20,6 +20,8 @@ namespace Ee4v.UI
         public const string TestResultGroupCasesTitle = "ee4v-ui-test-result-group__cases-title";
         public const string TestResultGroupCasesMeta = "ee4v-ui-test-result-group__cases-meta";
         public const string NavigationItemLabel = "ee4v-ui-navigation-item__label";
+        public const string CollectionNavigationLabel =
+            "ee4v-ui-collection-navigation__label";
         public const string ButtonLabel = "ee4v-ui-button__typography-label";
         public const string ButtonMeta = "ee4v-ui-button__typography-meta";
         public const string ItemCardName = "ee4v-ui-item-card__name";

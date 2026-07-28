@@ -225,6 +225,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 IconAssetGuid = row.icon_asset_guid,
                 IsSmartCollection = smart != null,
                 ParentCollectionId = parent != null ? parent.parent_collection_id : null,
+                SortOrder = row.sort_order,
                 SmartRule = smart == null ? null : new SmartCollectionRule
                 {
                     MatchMode = smart.match_mode == "any" ? SmartCollectionMatchMode.Any : SmartCollectionMatchMode.All,

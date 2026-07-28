@@ -43,10 +43,10 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
-            "schema version 4 の DB 制約を作成する",
+            "schema version 5 の DB 制約を作成する",
             "AssetManager DB が source origin、availability、collection cycle trigger を作成することを確認します。",
             order: 301)]
-        public void Schema_CreatesVersion4Constraints()
+        public void Schema_CreatesVersion5Constraints()
         {
             var databasePath = GetDatabasePath();
 
@@ -54,7 +54,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
             using (var connection = new SQLiteConnection(databasePath, SQLiteOpenFlags.ReadOnly | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.PrivateCache))
             {
-                Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(4));
+                Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(5));
                 Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'file_info'"), Does.Contain("CHECK"));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'item_source_origin'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'datasource_tag'"), Is.EqualTo(1));
@@ -63,6 +63,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'prevent_collection_collection_cycle_insert'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'collection_info'"), Does.Contain("icon"));
                 Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'collection_info'"), Does.Contain("icon_asset_guid"));
+                Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'collection_info'"), Does.Contain("sort_order"));
                 var smartConditionSql = connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'smart_collection_condition'");
                 Assert.That(smartConditionSql, Does.Not.Contain("source_type"));
                 Assert.That(smartConditionSql, Does.Not.Contain("lifecycle"));
@@ -82,6 +83,179 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             var ex = Assert.Throws<AssetManagerException>(() => _assetManager.MoveCollection(parent.Id, child.Id));
 
             Assert.That(ex.Code, Is.EqualTo(AssetManagerErrorCode.CollectionCycle));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "通常・Smart Collection 間で親子関係を移動できる",
+            "MoveCollection が Collection 種別をまたいだ双方向の親子関係を保存することを確認します。",
+            order: 339)]
+        public void MoveCollection_AllowsParentsAcrossCollectionKinds()
+        {
+            var regular = _assetManager.CreateCollection(
+                new CreateCollectionRequest { Name = "Regular" });
+            var smart = _assetManager.CreateSmartCollection(
+                new CreateSmartCollectionRequest
+                {
+                    Name = "Smart",
+                    Icon = AssetCollectionIcon.Search,
+                    MatchMode = SmartCollectionMatchMode.All,
+                    Conditions = new[]
+                    {
+                        new SmartCollectionCondition
+                        {
+                            Field = SmartCollectionConditionField.Name,
+                            Operator =
+                                SmartCollectionConditionOperator.Contains,
+                            QueryText = "avatar"
+                        }
+                    }
+                });
+
+            _assetManager.MoveCollection(smart.Id, regular.Id);
+
+            Assert.That(
+                _assetManager.GetCollections()
+                    .Single(item => item.Id == smart.Id)
+                    .ParentCollectionId,
+                Is.EqualTo(regular.Id));
+
+            _assetManager.MoveCollection(smart.Id, null);
+            _assetManager.MoveCollection(regular.Id, smart.Id);
+
+            Assert.That(
+                _assetManager.GetCollections()
+                    .Single(item => item.Id == regular.Id)
+                    .ParentCollectionId,
+                Is.EqualTo(smart.Id));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Collection の兄弟順を保存する",
+            "MoveCollection が root と子階層の指定 index へ移動し、SortOrder を正規化することを確認します。",
+            order: 340)]
+        public void MoveCollection_PersistsSiblingOrder()
+        {
+            var first = _assetManager.CreateCollection(
+                new CreateCollectionRequest { Name = "First" });
+            var second = _assetManager.CreateCollection(
+                new CreateCollectionRequest { Name = "Second" });
+            var third = _assetManager.CreateCollection(
+                new CreateCollectionRequest { Name = "Third" });
+
+            _assetManager.MoveCollection(third.Id, null, 0);
+
+            var roots = _assetManager.GetCollections()
+                .Where(item =>
+                    string.IsNullOrWhiteSpace(
+                        item.ParentCollectionId))
+                .OrderBy(item => item.SortOrder)
+                .ToArray();
+            Assert.That(
+                roots.Select(item => item.Id).ToArray(),
+                Is.EqualTo(new[]
+                {
+                    third.Id,
+                    first.Id,
+                    second.Id
+                }));
+            Assert.That(
+                roots.Select(item => item.SortOrder).ToArray(),
+                Is.EqualTo(new[] { 0, 1, 2 }));
+
+            _assetManager.MoveCollection(first.Id, third.Id, 0);
+            _assetManager.MoveCollection(second.Id, third.Id, 0);
+
+            var children = _assetManager.GetCollections()
+                .Where(item =>
+                    item.ParentCollectionId == third.Id)
+                .OrderBy(item => item.SortOrder)
+                .ToArray();
+            Assert.That(
+                children.Select(item => item.Id).ToArray(),
+                Is.EqualTo(new[]
+                {
+                    second.Id,
+                    first.Id
+                }));
+            Assert.That(
+                children.Select(item => item.SortOrder).ToArray(),
+                Is.EqualTo(new[] { 0, 1 }));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "複数 Collection を順序を保って移動する",
+            "MoveCollections が選択順を保ったブロックとして兄弟間・親子間を移動することを確認します。",
+            order: 341)]
+        public void MoveCollections_PersistsSelectionOrderAsBlock()
+        {
+            var first = _assetManager.CreateCollection(
+                new CreateCollectionRequest { Name = "First" });
+            var second = _assetManager.CreateCollection(
+                new CreateCollectionRequest { Name = "Second" });
+            var third = _assetManager.CreateCollection(
+                new CreateCollectionRequest { Name = "Third" });
+            var target = _assetManager.CreateCollection(
+                new CreateCollectionRequest { Name = "Target" });
+
+            _assetManager.MoveCollections(
+                new[] { second.Id, third.Id },
+                null,
+                0);
+
+            Assert.That(
+                _assetManager.GetCollections()
+                    .Where(item => string.IsNullOrWhiteSpace(
+                        item.ParentCollectionId))
+                    .OrderBy(item => item.SortOrder)
+                    .Select(item => item.Id)
+                    .ToArray(),
+                Is.EqualTo(new[]
+                {
+                    second.Id,
+                    third.Id,
+                    first.Id,
+                    target.Id
+                }));
+
+            _assetManager.MoveCollections(
+                new[] { second.Id, third.Id },
+                target.Id,
+                0);
+
+            Assert.That(
+                _assetManager.GetCollections()
+                    .Where(item =>
+                        item.ParentCollectionId == target.Id)
+                    .OrderBy(item => item.SortOrder)
+                    .Select(item => item.Id)
+                    .ToArray(),
+                Is.EqualTo(new[] { second.Id, third.Id }));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Collection 構造変更を専用通知として発行する",
+            "Collection の作成・移動が Catalog ではなく Collections 変更を発行することを確認します。",
+            order: 342)]
+        public void CollectionChanges_PublishCollectionsWithoutCatalog()
+        {
+            var changes = new List<AssetManagerChange>();
+            _assetManager.Changed += changes.Add;
+
+            var first = _assetManager.CreateCollection(
+                new CreateCollectionRequest { Name = "First" });
+            var second = _assetManager.CreateCollection(
+                new CreateCollectionRequest { Name = "Second" });
+            _assetManager.MoveCollection(second.Id, first.Id);
+
+            Assert.That(
+                changes.Select(change => change.Kind),
+                Is.All.EqualTo(
+                    AssetManagerChangeKind.Collections));
+            Assert.That(changes.Count, Is.EqualTo(3));
         }
 
         [Test]
@@ -272,17 +446,15 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
-            "通常・Smart Collection のアイコンを保存する",
-            "両 Collection が同じ icon contract を返し、Smart Collection の exists 条件が query text なしで作成できることを確認します。",
+            "通常 Collection はフォルダー、Smart Collection は指定アイコンを保存する",
+            "通常 Collection の固定フォルダーアイコンと Smart Collection の icon contract、および exists 条件を確認します。",
             order: 338)]
-        public void CreateCollections_PersistsSharedIconContract()
+        public void CreateCollections_UsesFixedRegularAndCustomSmartIcons()
         {
             var regular = _assetManager.CreateCollection(
                 new CreateCollectionRequest
                 {
-                    Name = "Regular",
-                    Icon = AssetCollectionIcon.Star,
-                    IconAssetGuid = "regular-icon-guid"
+                    Name = "Regular"
                 });
             var smart = _assetManager.CreateSmartCollection(
                 new CreateSmartCollectionRequest
@@ -303,24 +475,26 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
             var collections = _assetManager.GetCollections();
 
-            Assert.That(regular.Icon, Is.EqualTo(AssetCollectionIcon.Star));
+            Assert.That(
+                regular.Icon,
+                Is.EqualTo(AssetCollectionIcon.Folder));
             Assert.That(
                 regular.IconAssetGuid,
-                Is.EqualTo("regular-icon-guid"));
+                Is.Null);
             Assert.That(smart.Icon, Is.EqualTo(AssetCollectionIcon.Search));
             Assert.That(
                 smart.IconAssetGuid,
                 Is.EqualTo("smart-icon-guid"));
             Assert.That(
                 collections.Single(item => item.Id == regular.Id).Icon,
-                Is.EqualTo(AssetCollectionIcon.Star));
+                Is.EqualTo(AssetCollectionIcon.Folder));
             Assert.That(
                 collections.Single(item => item.Id == smart.Id).Icon,
                 Is.EqualTo(AssetCollectionIcon.Search));
             Assert.That(
                 collections.Single(item => item.Id == regular.Id)
                     .IconAssetGuid,
-                Is.EqualTo("regular-icon-guid"));
+                Is.Null);
             Assert.That(
                 collections.Single(item => item.Id == smart.Id)
                     .IconAssetGuid,

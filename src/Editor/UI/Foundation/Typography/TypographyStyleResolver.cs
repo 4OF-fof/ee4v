@@ -92,6 +92,7 @@ namespace Ee4v.UI
                 { UiClassNames.TestResultGroupCasesTitle, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
                 { UiClassNames.TestResultGroupCasesMeta, Create(false, UiTypographyTokens.SmallFontSize, UiColorTokens.TextMuted, TextAnchor.MiddleRight, WhiteSpace.NoWrap) },
                 { UiClassNames.NavigationItemLabel, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
+                { UiClassNames.CollectionNavigationLabel, Create(true, UiTypographyTokens.LargeBodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.ButtonLabel, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.ButtonMeta, Create(true, UiTypographyTokens.CaptionFontSize, UiColorTokens.TextMuted, TextAnchor.MiddleRight, WhiteSpace.NoWrap, marginLeft: UiSpacingTokens.Medium) },
                 { UiClassNames.ItemCardName, Create(false, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },

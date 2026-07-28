@@ -50,6 +50,8 @@ namespace Ee4v.AssetManager.UI
                 OnCreateCollectionRequested;
             NavigationPanel.CreateSmartCollectionRequested +=
                 OnCreateSmartCollectionRequested;
+            NavigationPanel.MoveCollectionsRequested +=
+                _collectionController.MoveCollections;
             NavigationPanel.ManualSyncRequested +=
                 AssetManagerUiDependencies.RequestManualSync;
 
@@ -98,6 +100,8 @@ namespace Ee4v.AssetManager.UI
                 OnCreateCollectionRequested;
             NavigationPanel.CreateSmartCollectionRequested -=
                 OnCreateSmartCollectionRequested;
+            NavigationPanel.MoveCollectionsRequested -=
+                _collectionController.MoveCollections;
             NavigationPanel.ManualSyncRequested -=
                 AssetManagerUiDependencies.RequestManualSync;
 

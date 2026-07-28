@@ -106,6 +106,8 @@ namespace Ee4v.AssetManager.Contracts
 
     public interface IAssetManagerUiScheduler
     {
+        void RunOnMainThread(Action operation);
+
         void RunInBackground<T>(
             Func<CancellationToken, T> operation,
             CancellationToken cancellationToken,

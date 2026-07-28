@@ -81,6 +81,8 @@ namespace Ee4v.AssetManager.UI
                 OnCreateCollectionRequested;
             _navigationPanel.CreateSmartCollectionRequested +=
                 OnCreateSmartCollectionRequested;
+            _navigationPanel.MoveCollectionsRequested +=
+                _collectionController.MoveCollections;
             _navigationPanel.SelectionChanged +=
                 OnSelectionChanged;
             _navigationPanel.ManualSyncRequested +=
@@ -162,6 +164,11 @@ namespace Ee4v.AssetManager.UI
                     OnCreateCollectionRequested;
                 _navigationPanel.CreateSmartCollectionRequested -=
                     OnCreateSmartCollectionRequested;
+                if (_collectionController != null)
+                {
+                    _navigationPanel.MoveCollectionsRequested -=
+                        _collectionController.MoveCollections;
+                }
                 _navigationPanel.SelectionChanged -=
                     OnSelectionChanged;
                 _navigationPanel.ManualSyncRequested -=

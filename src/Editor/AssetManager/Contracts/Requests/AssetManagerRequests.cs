@@ -78,8 +78,6 @@ namespace Ee4v.AssetManager.Contracts
     public sealed class CreateCollectionRequest
     {
         public string Name { get; set; }
-        public AssetCollectionIcon Icon { get; set; }
-        public string IconAssetGuid { get; set; }
         public string ParentCollectionId { get; set; }
     }
 

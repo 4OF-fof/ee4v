@@ -164,19 +164,36 @@ namespace Ee4v.AssetManager.Application
         public AssetCollection CreateCollection(CreateCollectionRequest request)
         {
             AssetManagerRequestValidator.ValidateCollection(request);
-            return PublishCatalog(_collectionWriter.CreateCollection(request));
+            return PublishCollections(_collectionWriter.CreateCollection(request));
         }
 
         public AssetCollection CreateSmartCollection(CreateSmartCollectionRequest request)
         {
             AssetManagerRequestValidator.ValidateSmartCollection(request);
-            return PublishCatalog(_collectionWriter.CreateSmartCollection(request));
+            return PublishCollections(_collectionWriter.CreateSmartCollection(request));
         }
 
-        public void MoveCollection(string collectionId, string parentCollectionId)
+        public void MoveCollection(
+            string collectionId,
+            string parentCollectionId,
+            int siblingIndex = -1)
         {
-            _collectionWriter.MoveCollection(collectionId, parentCollectionId);
-            PublishCatalog();
+            MoveCollections(
+                new[] { collectionId },
+                parentCollectionId,
+                siblingIndex);
+        }
+
+        public void MoveCollections(
+            IReadOnlyList<string> collectionIds,
+            string parentCollectionId,
+            int siblingIndex = -1)
+        {
+            _collectionWriter.MoveCollections(
+                collectionIds,
+                parentCollectionId,
+                siblingIndex);
+            PublishCollections();
         }
 
         public void SetItemCollections(string itemId, IReadOnlyList<string> collectionIds)
@@ -258,6 +275,18 @@ namespace Ee4v.AssetManager.Application
         private void PublishCatalog()
         {
             Publish(new AssetManagerChange(AssetManagerChangeKind.Catalog));
+        }
+
+        private T PublishCollections<T>(T result)
+        {
+            PublishCollections();
+            return result;
+        }
+
+        private void PublishCollections()
+        {
+            Publish(new AssetManagerChange(
+                AssetManagerChangeKind.Collections));
         }
 
         private void Publish(AssetManagerChange change)

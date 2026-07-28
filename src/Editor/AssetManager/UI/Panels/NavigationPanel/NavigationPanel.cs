@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI
@@ -24,19 +24,12 @@ namespace Ee4v.AssetManager.UI
             "ee4v-asset-manager-panel__collections-content";
         private const string CollectionSectionClassName =
             "ee4v-asset-manager-panel__collection-section";
-        private const string CollectionSectionToggleClassName =
-            "ee4v-asset-manager-panel__collection-section-toggle";
         private const string CollectionSectionHeaderClassName =
             "ee4v-asset-manager-panel__collection-section-header";
-        private const string CollectionSectionDisclosureClassName =
-            "ee4v-asset-manager-panel__collection-section-disclosure";
-        private const string CollectionSectionContentClassName =
-            "ee4v-asset-manager-panel__collection-section-content";
         private const string CollectionErrorClassName =
             "ee4v-asset-manager-panel__collection-error";
         private readonly SingleSelectButtonGroup _group;
         private readonly CollectionNavigationList _collectionList;
-        private readonly CollectionNavigationList _smartCollectionList;
         private readonly UiTextElement _error;
 
         public NavigationPanel(
@@ -78,23 +71,20 @@ namespace Ee4v.AssetManager.UI
             collectionsScroll.Add(_error);
 
             _collectionList = new CollectionNavigationList(
-                itemId => SelectionChanged?.Invoke(itemId));
+                itemId => SelectionChanged?.Invoke(itemId),
+                (collectionIds, parentCollectionId, siblingIndex) =>
+                    MoveCollectionsRequested?.Invoke(
+                        collectionIds,
+                        parentCollectionId,
+                        siblingIndex));
             collectionsScroll.Add(CreateCollectionSection(
                 I18N.Get("assetManager.navigation.collections.title"),
                 I18N.Get(
-                    "assetManager.navigation.collections.createCollection"),
+                    "assetManager.navigation.collections.create"),
                 _collectionList,
-                button => CreateCollectionRequested?.Invoke(button)));
-
-            _smartCollectionList = new CollectionNavigationList(
-                itemId => SelectionChanged?.Invoke(itemId));
-            collectionsScroll.Add(CreateCollectionSection(
-                I18N.Get(
-                    "assetManager.navigation.smartCollections.title"),
-                I18N.Get(
-                    "assetManager.navigation.collections.createSmartCollection"),
-                _smartCollectionList,
-                button => CreateSmartCollectionRequested?.Invoke(button)));
+                button => CreateCollectionRequested?.Invoke(button),
+                button =>
+                    CreateSmartCollectionRequested?.Invoke(button)));
             Add(collectionsScroll);
         }
 
@@ -104,28 +94,23 @@ namespace Ee4v.AssetManager.UI
 
         public event Action<VisualElement> CreateSmartCollectionRequested;
 
+        public event Action<IReadOnlyList<string>, string, int>
+            MoveCollectionsRequested;
+
         public event Action ManualSyncRequested;
 
         public void SetSelectedItem(string itemId)
         {
             _group.SetSelectedItem(itemId, notify: false);
             _collectionList.SetSelectedItem(itemId);
-            _smartCollectionList.SetSelectedItem(itemId);
         }
 
         public void SetCollections(
             IReadOnlyList<AssetCollection> collections,
             string selectedItemId)
         {
-            var snapshot =
-                collections ?? Array.Empty<AssetCollection>();
             _collectionList.SetState(
-                snapshot.Where(item =>
-                    item != null && !item.IsSmartCollection).ToArray(),
-                selectedItemId);
-            _smartCollectionList.SetState(
-                snapshot.Where(item =>
-                    item != null && item.IsSmartCollection).ToArray(),
+                collections ?? Array.Empty<AssetCollection>(),
                 selectedItemId);
         }
 
@@ -153,46 +138,78 @@ namespace Ee4v.AssetManager.UI
             return new SingleSelectButtonGroupState(items, selectedItemId);
         }
 
-        private static Foldout CreateCollectionSection(
+        private static VisualElement CreateCollectionSection(
             string title,
             string createTooltip,
             CollectionNavigationList list,
-            Action<VisualElement> create)
+            Action<VisualElement> createCollection,
+            Action<VisualElement> createSmartCollection)
         {
-            var section = new Foldout { value = true };
+            var section = new VisualElement();
             section.AddToClassList(CollectionSectionClassName);
-            UiTextFactory.AttachToFoldout(
-                section,
+
+            var header = new VisualElement();
+            header.AddToClassList(CollectionSectionHeaderClassName);
+            header.Add(UiTextFactory.Create(
                 title,
                 UiClassNames.SectionTitle,
-                SectionTitleClassName);
-
-            var toggle = section.Q<Toggle>();
-            toggle.AddToClassList(CollectionSectionToggleClassName);
-            var disclosure = toggle.Q<VisualElement>(
-                className: "unity-foldout__checkmark");
-            disclosure?.AddToClassList(
-                CollectionSectionDisclosureClassName);
-            var header = toggle.Q<VisualElement>(
-                className: "unity-foldout__input") ?? toggle;
-            header.AddToClassList(CollectionSectionHeaderClassName);
+                SectionTitleClassName));
 
             var createButton = CreateActionButton(
                 createTooltip,
                 UiBuiltinIcon.Add,
-                create);
-            createButton.RegisterCallback<PointerDownEvent>(
-                evt => evt.StopPropagation());
-            createButton.RegisterCallback<PointerUpEvent>(
-                evt => evt.StopPropagation());
-            createButton.RegisterCallback<ClickEvent>(
-                evt => evt.StopPropagation());
+                button => ShowCollectionCreationMenu(
+                    button,
+                    createCollection,
+                    createSmartCollection));
             header.Add(createButton);
 
-            section.contentContainer.AddToClassList(
-                CollectionSectionContentClassName);
+            section.Add(header);
             section.Add(list);
             return section;
+        }
+
+        internal static ContextMenuState
+            CreateCollectionCreationMenuState(
+                VisualElement anchor,
+                Action<VisualElement> createCollection,
+                Action<VisualElement> createSmartCollection)
+        {
+            return new ContextMenuState(new[]
+            {
+                new ContextMenuItemState(
+                    "create-collection",
+                    I18N.Get(
+                        "assetManager.navigation.collections.createCollection"),
+                    () => createCollection?.Invoke(anchor)),
+                new ContextMenuItemState(
+                    "create-smart-collection",
+                    I18N.Get(
+                        "assetManager.navigation.collections.createSmartCollection"),
+                    () => createSmartCollection?.Invoke(anchor))
+            });
+        }
+
+        private static void ShowCollectionCreationMenu(
+            VisualElement anchor,
+            Action<VisualElement> createCollection,
+            Action<VisualElement> createSmartCollection)
+        {
+            if (anchor == null)
+            {
+                return;
+            }
+
+            anchor.Blur();
+            ContextMenuWindow.Show(
+                anchor,
+                new Vector2(
+                    anchor.worldBound.xMin,
+                    anchor.worldBound.yMax),
+                CreateCollectionCreationMenuState(
+                    anchor,
+                    createCollection,
+                    createSmartCollection));
         }
 
         private static VisualElement CreateHeader(

@@ -30,6 +30,8 @@ namespace Ee4v.AssetManager.UI
             "ee4v-collection-creation-window__label";
         private const string ConditionsClassName =
             "ee4v-collection-creation-window__conditions";
+        private const string AddConditionClassName =
+            "ee4v-collection-creation-window__add-condition";
         private const string ConditionClassName =
             "ee4v-collection-creation-window__condition";
         private const string ConditionControlsClassName =
@@ -61,6 +63,7 @@ namespace Ee4v.AssetManager.UI
             Action<CreateSmartCollectionRequest> createSmartCollection)
         {
             CloseExistingWindows();
+            anchor?.Blur();
             var window = CreateInstance<CollectionCreationWindow>();
             window._smart = smart;
             window._createCollection = createCollection;
@@ -126,16 +129,14 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get("assetManager.collectionCreation.name"),
                 _nameField));
 
-            _iconField = new AssetCollectionIconSelector(
-                _smart
-                    ? AssetCollectionIcon.Search
-                    : AssetCollectionIcon.Folder);
-            _form.Add(CreateField(
-                I18N.Get("assetManager.collectionCreation.iconLabel"),
-                _iconField));
-
             if (_smart)
             {
+                _iconField = new AssetCollectionIconSelector(
+                    AssetCollectionIcon.Search);
+                _form.Add(CreateField(
+                    I18N.Get(
+                        "assetManager.collectionCreation.iconLabel"),
+                    _iconField));
                 BuildSmartCollectionFields(_form);
             }
 
@@ -189,14 +190,37 @@ namespace Ee4v.AssetManager.UI
             _conditions = new VisualElement();
             _conditions.AddToClassList(ConditionsClassName);
             conditionField.Add(_conditions);
-            conditionField.Add(new UiButton(
+            var addConditionButton = new UiButton(
                 new UiButtonState(
                     I18N.Get(
                         "assetManager.collectionCreation.addCondition"),
-                    variant: UiButtonVariant.Ghost),
-                () => AddCondition()));
+                    iconState: IconState.FromBuiltinIcon(
+                        UiBuiltinIcon.Add,
+                        UiSizeTokens.Size12),
+                    variant: UiButtonVariant.Ghost));
+            addConditionButton.clicked += () =>
+                AddConditionFromButton(addConditionButton);
+            addConditionButton.AddToClassList(
+                AddConditionClassName);
+            conditionField.Add(addConditionButton);
             form.Add(conditionField);
             AddCondition(refreshPopupSize: false);
+        }
+
+        private void AddConditionFromButton(
+            UiButton addConditionButton)
+        {
+            if (addConditionButton != null)
+            {
+                addConditionButton.Blur();
+            }
+
+            AddCondition();
+            if (addConditionButton != null)
+            {
+                addConditionButton.schedule.Execute(
+                    addConditionButton.Blur);
+            }
         }
 
         private static VisualElement CreateField(
@@ -355,9 +379,7 @@ namespace Ee4v.AssetManager.UI
             {
                 _createCollection?.Invoke(new CreateCollectionRequest
                 {
-                    Name = name,
-                    Icon = _iconField.Value,
-                    IconAssetGuid = _iconField.AssetGuid
+                    Name = name
                 });
                 Close();
                 return;

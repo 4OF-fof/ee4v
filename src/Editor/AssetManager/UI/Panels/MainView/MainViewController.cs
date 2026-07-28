@@ -519,7 +519,13 @@ namespace Ee4v.AssetManager.UI
         {
             if (change != null && change.Kind == AssetManagerChangeKind.Catalog)
             {
-                InvalidateContent();
+                _scheduler.RunOnMainThread(() =>
+                {
+                    if (_activationCount > 0)
+                    {
+                        InvalidateContent();
+                    }
+                });
             }
         }
 

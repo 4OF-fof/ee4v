@@ -160,6 +160,18 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
+            _scheduler.RunOnMainThread(() =>
+                ApplyAssetManagerChange(change));
+        }
+
+        private void ApplyAssetManagerChange(
+            AssetManagerChange change)
+        {
+            if (!_isAttached || change == null)
+            {
+                return;
+            }
+
             switch (change.Kind)
             {
                 case AssetManagerChangeKind.Catalog:

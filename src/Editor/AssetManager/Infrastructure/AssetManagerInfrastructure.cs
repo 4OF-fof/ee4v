@@ -89,8 +89,23 @@ namespace Ee4v.AssetManager.Infrastructure
         public AssetCollection CreateSmartCollection(CreateSmartCollectionRequest request) =>
             Execute(() => AssetManagerDatabase.CreateSmartCollection(request));
 
-        public void MoveCollection(string collectionId, string parentCollectionId) =>
-            Execute(() => AssetManagerDatabase.MoveCollection(collectionId, parentCollectionId));
+        public void MoveCollection(
+            string collectionId,
+            string parentCollectionId,
+            int siblingIndex) =>
+            Execute(() => AssetManagerDatabase.MoveCollection(
+                collectionId,
+                parentCollectionId,
+                siblingIndex));
+
+        public void MoveCollections(
+            IReadOnlyList<string> collectionIds,
+            string parentCollectionId,
+            int siblingIndex) =>
+            Execute(() => AssetManagerDatabase.MoveCollections(
+                collectionIds,
+                parentCollectionId,
+                siblingIndex));
 
         public void SetItemCollections(string itemId, IReadOnlyList<string> collectionIds) =>
             Execute(() => AssetManagerDatabase.SetItemCollections(itemId, collectionIds));

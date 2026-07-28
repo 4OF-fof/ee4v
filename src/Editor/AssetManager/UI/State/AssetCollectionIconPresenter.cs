@@ -11,6 +11,14 @@ namespace Ee4v.AssetManager.UI
             AssetCollection collection,
             float size = UiSizeTokens.Size12)
         {
+            if (collection == null ||
+                !collection.IsSmartCollection)
+            {
+                return IconState.FromBuiltinIcon(
+                    UiBuiltinIcon.Folder,
+                    size);
+            }
+
             var texture = collection != null
                 ? LoadAssetIcon(collection.IconAssetGuid)
                 : null;
@@ -49,7 +57,7 @@ namespace Ee4v.AssetManager.UI
                 return UiBuiltinIcon.Search;
             }
 
-            return UiBuiltinIcon.FolderEmpty;
+            return UiBuiltinIcon.Folder;
         }
 
         private static Texture LoadAssetIcon(

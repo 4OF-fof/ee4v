@@ -143,6 +143,7 @@ namespace Ee4v.AssetManager.Contracts
         public string IconAssetGuid { get; set; }
         public bool IsSmartCollection { get; set; }
         public string ParentCollectionId { get; set; }
+        public int SortOrder { get; set; }
         public SmartCollectionRule SmartRule { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

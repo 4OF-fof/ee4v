@@ -27,6 +27,7 @@ namespace Ee4v.UI
         Package,
         Grid,
         Store,
+        Folder,
         FolderEmpty,
         Uncategorized,
         Tag,
@@ -193,6 +194,12 @@ namespace Ee4v.UI
                         "d_Asset Store",
                         "Package Manager",
                         "d_Package Manager"
+                    };
+                case UiBuiltinIcon.Folder:
+                    return new[]
+                    {
+                        "Folder Icon",
+                        "d_Folder Icon"
                     };
                 case UiBuiltinIcon.FolderEmpty:
                     return new[]

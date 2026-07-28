@@ -91,6 +91,10 @@
     margin-bottom: var(--ee4v-space-sm);
 }
 
+.ee4v-collection-creation-window__add-condition:focus {
+    border-color: var(--ee4v-color-transparent);
+}
+
 .ee4v-collection-creation-window__condition {
     margin-bottom: var(--ee4v-space-sm);
     padding: var(--ee4v-space-sm);

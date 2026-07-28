@@ -42,68 +42,123 @@
 }
 
 .ee4v-asset-manager-panel__collections-content {
-    padding-left: var(--ee4v-space-xl);
+    flex-grow: 1;
+    min-height: 100%;
+    padding-left: var(--ee4v-space-xxs);
     padding-right: var(--ee4v-space-xl);
-    padding-bottom: var(--ee4v-space-lg);
 }
 
 .ee4v-asset-manager-panel__collection-section {
+    flex-grow: 1;
+    min-height: 0;
     padding-top: var(--ee4v-space-lg);
 }
 
-.ee4v-asset-manager-panel__collection-section-toggle {
+.ee4v-asset-manager-panel__collection-section-header {
     height: var(--ee4v-size-24);
     min-height: var(--ee4v-size-24);
-    margin: var(--ee4v-space-none);
-    padding: var(--ee4v-space-none);
-    border-color: var(--ee4v-color-transparent);
-    background-color: var(--ee4v-color-transparent);
-}
-
-.ee4v-asset-manager-panel__collection-section-toggle:hover,
-.ee4v-asset-manager-panel__collection-section-toggle:focus,
-.ee4v-asset-manager-panel__collection-section-toggle:checked {
-    border-color: var(--ee4v-color-transparent);
-    background-color: var(--ee4v-color-transparent);
-}
-
-.ee4v-asset-manager-panel__collection-section-toggle .ee4v-asset-manager-panel__collection-section-disclosure,
-.ee4v-asset-manager-panel__collection-section-toggle:hover .ee4v-asset-manager-panel__collection-section-disclosure,
-.ee4v-asset-manager-panel__collection-section-toggle:focus .ee4v-asset-manager-panel__collection-section-disclosure,
-.ee4v-asset-manager-panel__collection-section-toggle:checked .ee4v-asset-manager-panel__collection-section-disclosure {
-    -unity-background-image-tint-color: var(--ee4v-color-text-muted);
-}
-
-.ee4v-asset-manager-panel__collection-section-header {
-    flex-grow: 1;
-    min-width: 0;
+    flex-shrink: 0;
+    flex-direction: row;
     align-items: center;
-}
-
-.ee4v-asset-manager-panel__collection-section-toggle > .ee4v-asset-manager-panel__collection-section-header,
-.ee4v-asset-manager-panel__collection-section-toggle:hover > .ee4v-asset-manager-panel__collection-section-header,
-.ee4v-asset-manager-panel__collection-section-toggle:focus > .ee4v-asset-manager-panel__collection-section-header,
-.ee4v-asset-manager-panel__collection-section-toggle:checked > .ee4v-asset-manager-panel__collection-section-header {
-    border-color: var(--ee4v-color-transparent);
-    background-color: var(--ee4v-color-transparent);
-}
-
-.ee4v-asset-manager-panel__collection-section-content {
-    margin-left: 0;
-    padding-left: 0;
-    padding-right: 0;
+    margin-bottom: var(--ee4v-space-xs);
+    margin-left: var(--ee4v-space-lg);
 }
 
 .ee4v-asset-manager-panel__collection-error {
     margin-top: var(--ee4v-space-sm);
     margin-bottom: var(--ee4v-space-sm);
+    margin-left: var(--ee4v-space-lg);
     color: var(--ee4v-color-error);
 }
 
 .ee4v-asset-manager-collection-list {
+    flex-grow: 1;
     flex-direction: column;
+    min-height: var(--ee4v-size-24);
+}
+
+.ee4v-asset-manager-collection-list__disclosure {
+    width: var(--ee4v-size-16);
+    min-width: var(--ee4v-size-16);
+    max-width: var(--ee4v-size-16);
+    height: var(--ee4v-size-22);
+    min-height: var(--ee4v-size-22);
+    max-height: var(--ee4v-size-22);
+    flex-shrink: 0;
+    padding: var(--ee4v-space-none);
+    border-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-asset-manager-collection-list__button {
-    margin-bottom: var(--ee4v-space-xxs);
+    flex-grow: 1;
+    min-height: var(--ee4v-size-22);
+}
+
+.ee4v-asset-manager-collection-list__row {
+    flex-direction: row;
+    flex-shrink: 0;
+    min-height: var(--ee4v-size-22);
+    border-top-color: var(--ee4v-color-transparent);
+    border-bottom-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-asset-manager-collection-list__row--drop-before {
+    margin-top: -2px;
+    border-top-width: var(--ee4v-border-emphasis);
+    border-top-color: var(--ee4v-color-selection);
+}
+
+.ee4v-asset-manager-collection-list__row--drop-after {
+    margin-bottom: -2px;
+    border-bottom-width: var(--ee4v-border-emphasis);
+    border-bottom-color: var(--ee4v-color-selection);
+}
+
+.ee4v-asset-manager-collection-list__depth-line,
+.ee4v-asset-manager-collection-list__depth-branch {
+    position: absolute;
+    background-color: var(--ee4v-color-border-subtle);
+}
+
+.ee4v-asset-manager-collection-list__depth-line {
+    width: var(--ee4v-border-hairline);
+}
+
+.ee4v-asset-manager-collection-list__depth-line--current {
+    top: 0;
+    bottom: 0;
+}
+
+.ee4v-asset-manager-collection-list__depth-line--current.ee4v-asset-manager-collection-list__depth-line--last {
+    bottom: 50%;
+}
+
+.ee4v-asset-manager-collection-list__depth-line--children {
+    top: 50%;
+    bottom: 0;
+}
+
+.ee4v-asset-manager-collection-list__depth-branch {
+    top: 50%;
+    height: var(--ee4v-border-hairline);
+}
+
+.ee4v-asset-manager-collection-list__row--dragging {
+    opacity: 0.5;
+}
+
+.ee4v-asset-manager-collection-list__row:hover > .ee4v-asset-manager-collection-list__button {
+    background-color: var(--ee4v-color-surface-hover);
+}
+
+.ee4v-asset-manager-collection-list__row:hover > .ee4v-asset-manager-collection-list__button.ee4v-ui-button--selected {
+    background-color: var(--ee4v-color-tool-active-hover);
+}
+
+.ee4v-asset-manager-collection-list__row:active > .ee4v-asset-manager-collection-list__button {
+    background-color: var(--ee4v-color-surface-pressed);
+}
+
+.ee4v-asset-manager-collection-list__button--drop-target {
+    background-color: var(--ee4v-color-selection-soft-opaque);
 }
