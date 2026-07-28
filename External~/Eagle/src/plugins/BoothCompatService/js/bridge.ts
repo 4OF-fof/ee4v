@@ -9,7 +9,7 @@
   const timers = require("timers");
 
   const HOST = "127.0.0.1";
-  const PORT = 41596;
+  const PORT = 48196;
   const EAGLE_API_HOST = "127.0.0.1";
   const EAGLE_API_PORT = 41595;
   const POLL_INTERVAL_MS = 1500;

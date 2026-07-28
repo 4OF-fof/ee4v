@@ -37,7 +37,7 @@ npm run check
 - Eagle 起動時は status window を非表示にし、plugin を手動で開いた時だけ表示する
 - plugin を手動で開くと 480x320 の frameless status window を表示する
 - status window は bridge、`VRCAsset`、保留 import 件数を表示する
-- `http://127.0.0.1:41596` を公開する
+- `http://127.0.0.1:48196` を公開する
 - bridge は `GET /health`, `POST /v1/status`, `POST /v1/import` を受け、BOOTH library userscript へ BoothMeta / download 状態を返す
 - `127.0.0.1` のみに bind し、BOOTH HTTPS origin だけへ CORS を許可する
 - `/health` が返す session token を `X-EE4V-Bridge-Token` に付けた POST だけを受け付ける

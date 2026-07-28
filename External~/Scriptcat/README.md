@@ -6,8 +6,9 @@
 
 - script path: `new/External~/Scriptcat/B2E.user.js`
 - BOOTH library の商品カードと download 行に Eagle 連携状態 badge を追加する
-- Eagle plugin 側 bridge `http://127.0.0.1:41596` と通信する
+- Eagle plugin 側 bridge `http://127.0.0.1:48196` と通信する
 - `GET /health`, `POST /v1/status`, `POST /v1/import` を使う
 - `/health` で取得した session token を後続 POST の `X-EE4V-Bridge-Token` header に自動設定する
 - import action は bridge に BoothMeta / download request を登録してから BOOTH の通常 download button を発火する
 - library の解析は `data-test` と商品・download action の包含関係を優先し、BOOTH の utility class 変更時は既存 class selector を fallback として扱う
+- 商品ページの解析は canonical item URL、`#variations` 配下の `/downloadables/` link、`data-test="other-downloads-button"` を優先し、localized URL と shop subdomain の両方を扱う

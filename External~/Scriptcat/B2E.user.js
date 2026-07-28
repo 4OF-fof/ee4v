@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         Booth to Ealge
 // @namespace    https://4of.dev
-// @version      0.1.1
+// @version      0.1.3
 // @description  Add Eagle import badges and actions to the BOOTH library and item pages.
 // @match        https://accounts.booth.pm/library*
 // @match        https://accounts.booth.pm/library/gifts*
 // @match        https://booth.pm/items/*
 // @match        https://booth.pm/*/items/*
 // @match        https://*.booth.pm/items/*
+// @match        https://*.booth.pm/*/items/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_openInTab
 // @connect      127.0.0.1
@@ -19,7 +20,7 @@
   "use strict";
 
   // Eagle plugin bridge
-  const BRIDGE_BASE = "http://127.0.0.1:41596";
+  const BRIDGE_BASE = "http://127.0.0.1:48196";
   // bridge の生存確認間隔
   const HEALTH_INTERVAL_MS = 10000;
   // BOOTH の DOM 更新が連続した時に status API 呼び出しをまとめる待ち時間。
@@ -53,16 +54,17 @@
     otherDownloads: '[data-test="other-downloads-button"]',
   };
   const BOOTH_ITEM_SELECTORS = {
-    root: ".market-item-detail",
+    root: ".summary",
     productName: ".summary header h2, .market-item-detail h2",
     shopLink:
       '.summary header a[href*=".booth.pm/"]:not([href*="accounts.booth.pm"])',
     variations: "#variations",
     variationRow: ".variation-item",
     variationName: ".variation-name",
-    freeDownloadTrigger:
-      'a[href*="booth.pm/downloadables/"].add-cart, a[href*="booth.pm/downloadables/"].btn',
-    otherDownloads: '.js-download-free-button[data-test="other-downloads-button"], .js-download-free-button',
+    downloadTrigger:
+      'a[href*="/downloadables/"]:not([href*="/deeplink"])',
+    otherDownloads:
+      '[data-test="other-downloads-button"], .js-download-free-button',
   };
   const pageAdapter = createCompositePageAdapter([
     createBoothLibraryPageAdapter(BOOTH_LIBRARY_SELECTORS),
@@ -589,13 +591,13 @@
   function createBoothItemPageAdapter(selectors) {
     return {
       collectContexts(root) {
-        const product = this.readProduct(root);
-        if (!product) {
+        const variations = root.querySelector(selectors.variations);
+        if (!variations) {
           return [];
         }
 
-        const variations = root.querySelector(selectors.variations);
-        if (!variations) {
+        const product = this.readProduct(root);
+        if (!product) {
           return [];
         }
 
@@ -611,9 +613,9 @@
 
       readProduct(root) {
         const itemUrl =
-          normalizeItemUrl(window.location.href) ||
           normalizeItemUrl(readLinkHref(root.querySelector('link[rel="canonical"]'))) ||
-          normalizeItemUrl(readMetaContent(root, 'meta[property="og:url"]'));
+          normalizeItemUrl(readMetaContent(root, 'meta[property="og:url"]')) ||
+          normalizeItemUrl(window.location.href);
         const boothItemId = extractItemId(itemUrl);
         if (!itemUrl || !boothItemId) {
           return null;
@@ -644,7 +646,7 @@
       readDownloads(variations, product) {
         const downloads = [];
         variations
-          .querySelectorAll(selectors.freeDownloadTrigger)
+          .querySelectorAll(selectors.downloadTrigger)
           .forEach((trigger) => {
             const download = this.readDownload(trigger, product);
             if (download) {
@@ -655,7 +657,9 @@
       },
 
       readDownload(trigger, product) {
-        const downloadUrl = normalizeDownloadUrl(trigger.href);
+        const downloadUrl = normalizeDownloadUrl(
+          trigger.getAttribute("href") || trigger.href,
+        );
         const row = trigger.closest(selectors.variationRow);
         if (!row || !downloadUrl) {
           return null;
