@@ -5,6 +5,12 @@ namespace Ee4v.AssetManager.UI
 {
     internal sealed class AssetItemGrid : SelectableItemGrid
     {
+        public AssetItemGrid()
+        {
+            ItemsDragStarted += items =>
+                AssetItemDragAndDrop.Start(items);
+        }
+
         public void SetLoading()
         {
             SetState(new ItemGridState(null));

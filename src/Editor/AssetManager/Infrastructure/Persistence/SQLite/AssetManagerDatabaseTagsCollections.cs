@@ -373,6 +373,42 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             }
         }
 
+        public static bool AddItemsToCollection(
+            IReadOnlyList<string> itemIds,
+            string collectionId)
+        {
+            using (var connection = OpenConnection())
+            {
+                return InTransaction(connection, () =>
+                {
+                    EnsureRegularCollection(connection, collectionId);
+                    var distinctItemIds = (itemIds ??
+                                           Array.Empty<string>())
+                        .Where(id =>
+                            !string.IsNullOrWhiteSpace(id))
+                        .Distinct(StringComparer.Ordinal)
+                        .ToArray();
+                    for (var i = 0; i < distinctItemIds.Length; i++)
+                    {
+                        EnsureItemExists(
+                            connection,
+                            distinctItemIds[i]);
+                    }
+
+                    var changed = false;
+                    for (var i = 0; i < distinctItemIds.Length; i++)
+                    {
+                        changed |= connection.Execute(
+                                       "INSERT OR IGNORE INTO item_collection(item_info_id, collection_info_id) VALUES (?, ?)",
+                                       distinctItemIds[i],
+                                       collectionId) > 0;
+                    }
+
+                    return changed;
+                });
+            }
+        }
+
         private static TagRow EnsureTag(SQLiteConnection connection, string name)
         {
             var existing = connection.Query<TagRow>("SELECT * FROM tag_info WHERE name = ? LIMIT 1", name).FirstOrDefault();

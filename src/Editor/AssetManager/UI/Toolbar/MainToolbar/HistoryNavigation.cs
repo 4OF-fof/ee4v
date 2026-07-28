@@ -11,6 +11,7 @@ namespace Ee4v.AssetManager.UI
         private const long OverlayHideDelayMilliseconds = 120;
         private const string RootClassName = "ee4v-ui-history-navigation";
         private const string IconButtonClassName = "ee4v-ui-history-navigation__icon-button";
+        private const string ArrowLabelClassName = "ee4v-ui-history-navigation__arrow-label";
         private const string BreadcrumbClassName = "ee4v-ui-history-navigation__breadcrumb";
         private const string BreadcrumbItemClassName = "ee4v-ui-history-navigation__breadcrumb-item";
         private const string BreadcrumbItemCurrentClassName = "ee4v-ui-history-navigation__breadcrumb-item--current";
@@ -43,7 +44,7 @@ namespace Ee4v.AssetManager.UI
             AddToClassList(RootClassName);
 
             _backButton = CreateNavigationButton(
-                UiBuiltinIcon.Back);
+                "\u2190");
             _backButton.clicked += () => BackClicked?.Invoke();
             _backButton.RegisterCallback<PointerEnterEvent>(_ =>
                 CancelPendingOverlayHide());
@@ -57,7 +58,7 @@ namespace Ee4v.AssetManager.UI
             Add(_backButton);
 
             _forwardButton = CreateNavigationButton(
-                UiBuiltinIcon.Forward);
+                "\u2192");
             _forwardButton.clicked += () => ForwardClicked?.Invoke();
             _forwardButton.RegisterCallback<PointerEnterEvent>(_ =>
                 CancelPendingOverlayHide());
@@ -253,15 +254,17 @@ namespace Ee4v.AssetManager.UI
         }
 
         private static UiButton CreateNavigationButton(
-            UiBuiltinIcon icon)
+            string text)
         {
-            var button = new UiButton(new UiButtonState(
-                iconState: IconState.FromBuiltinIcon(
-                    icon,
-                    UiSizeTokens.Size12),
-                variant: UiButtonVariant.Ghost,
-                size: UiButtonSize.Compact));
+            var button = new UiButton(
+                new UiButtonState(
+                    text,
+                    variant: UiButtonVariant.Ghost,
+                    size: UiButtonSize.Compact),
+                UiClassNames.HistoryNavigationArrow);
             button.AddToClassList(IconButtonClassName);
+            button.LabelElement.AddToClassList(
+                ArrowLabelClassName);
             button.focusable = false;
             return button;
         }

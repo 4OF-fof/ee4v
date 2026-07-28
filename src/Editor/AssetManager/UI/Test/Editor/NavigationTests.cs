@@ -107,6 +107,126 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
+        public void ItemCollectionChange_InvalidatesOnlyAffectedViews()
+        {
+            var change = new AssetManagerChange(
+                AssetManagerChangeKind.ItemCollections,
+                relatedId: "target");
+
+            Assert.That(
+                MainViewController
+                    .ShouldInvalidateForItemCollections(
+                        change,
+                        AssetManagerCollectionViewId.Encode(
+                            "target")),
+                Is.True);
+            Assert.That(
+                MainViewController
+                    .ShouldInvalidateForItemCollections(
+                        change,
+                        "uncategorized"),
+                Is.True);
+            Assert.That(
+                MainViewController
+                    .ShouldInvalidateForItemCollections(
+                        change,
+                        "all-assets"),
+                Is.False);
+            Assert.That(
+                MainViewController
+                    .ShouldInvalidateForItemCollections(
+                        change,
+                        AssetManagerCollectionViewId.Encode(
+                            "source")),
+                Is.False);
+        }
+
+        [Test]
+        public void GetChildCollections_ReturnsDirectChildrenInDisplayOrder()
+        {
+            var children =
+                MainViewController.GetChildCollections(
+                    new[]
+                    {
+                        new AssetCollection
+                        {
+                            Id = "second",
+                            Name = "Second",
+                            ParentCollectionId = "parent",
+                            SortOrder = 1
+                        },
+                        new AssetCollection
+                        {
+                            Id = "grandchild",
+                            Name = "Grandchild",
+                            ParentCollectionId = "second",
+                            SortOrder = 0
+                        },
+                        new AssetCollection
+                        {
+                            Id = "first",
+                            Name = "First",
+                            ParentCollectionId = "parent",
+                            SortOrder = 0
+                        },
+                        new AssetCollection
+                        {
+                            Id = "other",
+                            Name = "Other",
+                            ParentCollectionId = "other-parent",
+                            SortOrder = 0
+                        }
+                    },
+                    "parent",
+                    "s");
+
+            Assert.That(
+                children.Select(collection => collection.Id),
+                Is.EqualTo(new[] { "first", "second" }));
+        }
+
+        [Test]
+        public void CreateHistoryViewPath_ReturnsCollectionAncestors()
+        {
+            var path =
+                MainViewController.CreateHistoryViewPath(
+                    new[]
+                    {
+                        new AssetCollection
+                        {
+                            Id = "hoge",
+                            Name = "hoge"
+                        },
+                        new AssetCollection
+                        {
+                            Id = "fuga",
+                            Name = "fuga",
+                            ParentCollectionId = "hoge"
+                        },
+                        new AssetCollection
+                        {
+                            Id = "child",
+                            Name = "child",
+                            ParentCollectionId = "fuga"
+                        }
+                    },
+                    AssetManagerCollectionViewId.Encode("child"),
+                    "child");
+
+            Assert.That(
+                path.Select(item => item.Id),
+                Is.EqualTo(new[]
+                {
+                    AssetManagerCollectionViewId.Encode("hoge"),
+                    AssetManagerCollectionViewId.Encode("fuga"),
+                    AssetManagerCollectionViewId.Encode("child")
+                }));
+            Assert.That(
+                path.Select(item => item.Label),
+                Is.EqualTo(new[] { "hoge", "fuga", "child" }));
+        }
+
+        [Test]
         public void CollectionNavigationList_RendersRegularAndSmartInOneTree()
         {
             var list = new CollectionNavigationList(null);
@@ -632,6 +752,92 @@ namespace Ee4v.AssetManager.UI.Tests
             Assert.That(
                 list.TryRequestMove("regular", "smart"),
                 Is.False);
+        }
+
+        [Test]
+        public void CollectionNavigationList_ItemDropAcceptsOnlyRegularCollection()
+        {
+            IReadOnlyList<string> droppedItemIds = null;
+            string droppedCollectionId = null;
+            var list = new CollectionNavigationList(
+                null,
+                itemsDropped: (itemIds, collectionId) =>
+                {
+                    droppedItemIds = itemIds;
+                    droppedCollectionId = collectionId;
+                });
+            list.SetState(new[]
+            {
+                new AssetCollection
+                {
+                    Id = "regular",
+                    Name = "Regular"
+                },
+                new AssetCollection
+                {
+                    Id = "smart",
+                    Name = "Smart",
+                    IsSmartCollection = true
+                }
+            }, string.Empty);
+
+            Assert.That(
+                list.TryRequestItemDrop(
+                    new[] { "item-1", "item-2", "item-1" },
+                    "regular"),
+                Is.True);
+            Assert.That(
+                droppedItemIds,
+                Is.EqualTo(new[] { "item-1", "item-2" }));
+            Assert.That(
+                droppedCollectionId,
+                Is.EqualTo("regular"));
+            Assert.That(
+                list.TryRequestItemDrop(
+                    new[] { "item-1" },
+                    "smart"),
+                Is.False);
+            Assert.That(
+                list.TryRequestItemDrop(
+                    new[] { "item-1" },
+                    "missing"),
+                Is.False);
+        }
+
+        [Test]
+        public void AssetItemDragAndDrop_UsesParentItemForFileAndGroupCards()
+        {
+            var itemIds =
+                AssetItemDragAndDrop.GetAssetItemIds(
+                    new[]
+                    {
+                        new ItemCardState(
+                            "item",
+                            "Item",
+                            new ItemImageState()),
+                        new ItemCardState(
+                            "file:1",
+                            "File",
+                            new ItemImageState(),
+                            null,
+                            "parent"),
+                        new ItemCardState(
+                            "group:1",
+                            "Group",
+                            new ItemImageState(),
+                            null,
+                            "parent"),
+                        new ItemCardState(
+                            AssetItemGridNodeKey.Encode(
+                                AssetItemGridNodeKind.Collection,
+                                "collection"),
+                            "Collection",
+                            new ItemImageState())
+                    });
+
+            Assert.That(
+                itemIds,
+                Is.EqualTo(new[] { "item", "parent" }));
         }
 
         [Test]

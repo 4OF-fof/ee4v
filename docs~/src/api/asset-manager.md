@@ -901,6 +901,21 @@ Notes:
 
 - Smart Collection は指定できない。
 
+### `IAssetManager.AddItemsToCollection`
+
+複数 Item を通常 Collection へ追加します。
+
+```csharp
+public void AddItemsToCollection(
+    IReadOnlyList<string> itemIds,
+    string collectionId)
+```
+
+`SetItemCollections(...)` と異なり、各 Item の既存 Collection 所属は保持します。
+全 Item と対象 Collection を検証してから同一 transaction で追加し、重複する指定または
+すでに存在する所属は無視します。Smart Collection は指定できません。新しい所属を追加した
+場合だけ、`RelatedId` に対象 Collection ID を持つ `ItemCollections` change を通知します。
+
 ## Dependency
 
 ### `IAssetManager.GetFileDependencies`
@@ -1052,6 +1067,7 @@ public event Action<AssetManagerChange> Changed;
 | kind | `SubjectId` | `RelatedId` / `ImportTargets` | 用途 |
 |---|---|---|---|
 | `Catalog` | 空 | 空 | item 一覧や file tree の構造・内容を再取得する |
+| `ItemCollections` | 空 | `RelatedId` に追加先 Collection ID | 追加先 Collection と Uncategorized の item 一覧だけを再取得する |
 | `Collections` | 空 | 空 | Collection 一覧・親子関係・兄弟順だけを再取得する |
 | `SmartCollectionRule` | Smart Collection ID | 空 | 対象 Smart Collection と Uncategorized の検索結果を再取得する |
 | `FileTree` | 空 | 空 | File Tree に関係する変更を知らせる |

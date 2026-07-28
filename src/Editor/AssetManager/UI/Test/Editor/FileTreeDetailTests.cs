@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using Ee4v.Testing.Contracts;
 using Ee4v.UI;
 using NUnit.Framework;
@@ -82,6 +83,59 @@ namespace Ee4v.AssetManager.UI.Tests
             Assert.That(next.Kind, Is.EqualTo(AssetItemGridHistoryEntryKind.FileDetail));
             Assert.That(next.DetailName, Is.EqualTo("preview.png"));
             Assert.That(next.DetailParentName, Is.EqualTo("archive.zip"));
+        }
+
+        [Test]
+        public void CollectionFileHistory_IncludesCollectionPath()
+        {
+            var entry = new AssetItemGridHistoryEntry(
+                AssetItemGridHistoryEntryKind.FileDetail,
+                AssetManagerCollectionViewId.Encode("fuga"),
+                "fuga",
+                "item-1",
+                "item",
+                detailId: "item-1|preview.png",
+                detailName: "preview.png",
+                detailParentName: "archive.zip",
+                viewPath: new[]
+                {
+                    new AssetItemGridHistoryView(
+                        AssetManagerCollectionViewId.Encode("hoge"),
+                        "hoge"),
+                    new AssetItemGridHistoryView(
+                        AssetManagerCollectionViewId.Encode("fuga"),
+                        "fuga")
+                });
+
+            Assert.That(entry.Breadcrumbs, Is.EqualTo(new[]
+            {
+                "hoge",
+                "fuga",
+                "item",
+                "archive.zip",
+                "preview.png"
+            }));
+        }
+
+        [Test]
+        public void HistoryNavigation_UsesProjectTabArrowGlyphs()
+        {
+            var navigation = new HistoryNavigation();
+            var buttons = navigation.Query<UiButton>(
+                    className:
+                    "ee4v-ui-history-navigation__icon-button")
+                .ToList();
+
+            Assert.That(buttons.Count, Is.EqualTo(2));
+            Assert.That(
+                buttons.Select(button =>
+                    button.LabelElement.Text),
+                Is.EqualTo(new[] { "\u2190", "\u2192" }));
+            Assert.That(
+                buttons.All(button =>
+                    button.LabelElement.GetType().Name ==
+                    "ImguiUiTextElement"),
+                Is.True);
         }
 
         [Test]

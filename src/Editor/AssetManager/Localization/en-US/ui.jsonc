@@ -47,6 +47,7 @@
       "noItems": "No asset items.",
       "noFiles": "This item has no files.",
       "noChildren": "No child items to display.",
+      "dragItems": "Add items to a collection",
       "tags": {
         "title": "Tags ({0})",
         "empty": "No tags.",

@@ -129,6 +129,12 @@
     color: var(--ee4v-color-text-disabled);
 }
 
+.ee4v-ui-history-navigation__arrow-label {
+    width: var(--ee4v-size-16);
+    height: var(--ee4v-size-18);
+    -unity-text-align: middle-center;
+}
+
 .ee4v-ui-history-navigation__breadcrumb {
     flex-direction: row;
     align-items: center;

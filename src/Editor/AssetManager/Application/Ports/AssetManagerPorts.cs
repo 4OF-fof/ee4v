@@ -64,6 +64,9 @@ namespace Ee4v.AssetManager.Application.Ports
             string parentCollectionId,
             int siblingIndex);
         void SetItemCollections(string itemId, IReadOnlyList<string> collectionIds);
+        bool AddItemsToCollection(
+            IReadOnlyList<string> itemIds,
+            string collectionId);
     }
 
     internal interface IAssetDependencyReadStore

@@ -128,6 +128,13 @@ namespace Ee4v.AssetManager.Infrastructure
         public void SetItemCollections(string itemId, IReadOnlyList<string> collectionIds) =>
             Execute(() => AssetManagerDatabase.SetItemCollections(itemId, collectionIds));
 
+        public bool AddItemsToCollection(
+            IReadOnlyList<string> itemIds,
+            string collectionId) =>
+            Execute(() => AssetManagerDatabase.AddItemsToCollection(
+                itemIds,
+                collectionId));
+
         public IReadOnlyList<AssetFileDependency> GetFileDependencies(string fileId) =>
             Execute(() => AssetManagerDatabase.GetFileDependencies(fileId));
 

@@ -83,6 +83,8 @@ namespace Ee4v.AssetManager.UI
                 OnCreateSmartCollectionRequested;
             _navigationPanel.MoveCollectionsRequested +=
                 _collectionController.MoveCollections;
+            _navigationPanel.ItemsDroppedOnCollection +=
+                _collectionController.AddItemsToCollection;
             _navigationPanel.RenameCollectionRequested +=
                 OnRenameCollectionRequested;
             _navigationPanel.EditSmartCollectionRequested +=
@@ -225,6 +227,8 @@ namespace Ee4v.AssetManager.UI
                 {
                     _navigationPanel.MoveCollectionsRequested -=
                         _collectionController.MoveCollections;
+                    _navigationPanel.ItemsDroppedOnCollection -=
+                        _collectionController.AddItemsToCollection;
                     _navigationPanel.RenameCollectionRequested -=
                         OnRenameCollectionRequested;
                     _navigationPanel.EditSmartCollectionRequested -=

@@ -15,6 +15,7 @@ namespace Ee4v.AssetManager.UI
         private CancellationTokenSource _createCancellation;
         private CancellationTokenSource _moveCancellation;
         private CancellationTokenSource _mutationCancellation;
+        private CancellationTokenSource _itemDropCancellation;
         private int _loadVersion;
         private bool _active;
         private bool _disposed;
@@ -68,6 +69,7 @@ namespace Ee4v.AssetManager.UI
             CancelCreate();
             CancelMove();
             CancelMutation();
+            CancelItemDrop();
         }
 
         public void Reload()
@@ -227,6 +229,58 @@ namespace Ee4v.AssetManager.UI
                                 : string.Empty);
                         Reload();
                         return;
+                    }
+                });
+        }
+
+        public void AddItemsToCollection(
+            IReadOnlyList<string> itemIds,
+            string collectionId)
+        {
+            if (_disposed ||
+                itemIds == null ||
+                itemIds.Count == 0 ||
+                string.IsNullOrWhiteSpace(collectionId))
+            {
+                return;
+            }
+
+            ErrorChanged?.Invoke(string.Empty);
+            CancelItemDrop();
+            var cancellation = new CancellationTokenSource();
+            _itemDropCancellation = cancellation;
+            _scheduler.RunInBackground(
+                token =>
+                {
+                    token.ThrowIfCancellationRequested();
+                    _assetManager.AddItemsToCollection(
+                        itemIds,
+                        collectionId);
+                    token.ThrowIfCancellationRequested();
+                    return true;
+                },
+                cancellation.Token,
+                result =>
+                {
+                    cancellation.Dispose();
+                    if (ReferenceEquals(
+                            _itemDropCancellation,
+                            cancellation))
+                    {
+                        _itemDropCancellation = null;
+                    }
+
+                    if (_disposed || result.Canceled)
+                    {
+                        return;
+                    }
+
+                    if (!result.Succeeded)
+                    {
+                        ErrorChanged?.Invoke(
+                            result.Error != null
+                                ? FormatError(result.Error)
+                                : string.Empty);
                     }
                 });
         }
@@ -442,6 +496,17 @@ namespace Ee4v.AssetManager.UI
 
             _mutationCancellation.Cancel();
             _mutationCancellation = null;
+        }
+
+        private void CancelItemDrop()
+        {
+            if (_itemDropCancellation == null)
+            {
+                return;
+            }
+
+            _itemDropCancellation.Cancel();
+            _itemDropCancellation = null;
         }
 
         private static string FormatError(Exception exception)

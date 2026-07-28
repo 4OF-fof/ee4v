@@ -77,7 +77,11 @@ namespace Ee4v.AssetManager.UI
                         collectionIds,
                         parentCollectionId,
                         siblingIndex),
-                ShowCollectionContextMenu);
+                ShowCollectionContextMenu,
+                (itemIds, collectionId) =>
+                    ItemsDroppedOnCollection?.Invoke(
+                        itemIds,
+                        collectionId));
             collectionsScroll.Add(CreateCollectionSection(
                 I18N.Get("assetManager.navigation.collections.title"),
                 I18N.Get(
@@ -97,6 +101,9 @@ namespace Ee4v.AssetManager.UI
 
         public event Action<IReadOnlyList<string>, string, int>
             MoveCollectionsRequested;
+
+        public event Action<IReadOnlyList<string>, string>
+            ItemsDroppedOnCollection;
 
         public event Action<AssetCollection, VisualElement, Vector2>
             RenameCollectionRequested;

@@ -99,6 +99,7 @@ namespace Ee4v.UI
                 { UiClassNames.ContextMenuLabel, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.ContextMenuShortcut, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextMuted, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.ImageTooltipFileName, Create(false, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
+                { UiClassNames.HistoryNavigationArrow, Create(true, UiTypographyTokens.SubtitleFontSize, UiColorTokens.TextSecondary, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
                 { UiClassNames.HistoryNavigationBreadcrumbItemLabel, Create(false, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.HistoryNavigationOverlayRow, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.HistoryNavigationOverlaySeparator, Create(false, UiTypographyTokens.BodyFontSize, UiColorTokens.TextMuted, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },

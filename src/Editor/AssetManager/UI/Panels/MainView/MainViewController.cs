@@ -77,6 +77,8 @@ namespace Ee4v.AssetManager.UI
             new Dictionary<string, IReadOnlyList<AssetTag>>(StringComparer.Ordinal);
         private readonly Dictionary<string, AssetCollection> _collectionsByViewId =
             new Dictionary<string, AssetCollection>(StringComparer.Ordinal);
+        private IReadOnlyList<AssetCollection> _collections =
+            Array.Empty<AssetCollection>();
         private int _contentVersion;
         private int _activationCount;
         private int _loadVersion;
@@ -112,6 +114,8 @@ namespace Ee4v.AssetManager.UI
         public event Action<TagListLoadResult> TagListLoadCompleted;
 
         public event Action<string> NavigationChanged;
+
+        public event Action CollectionPresentationChanged;
 
         public AssetItemGridHistory History { get; }
 
@@ -164,6 +168,16 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
+        public IReadOnlyList<AssetItemGridHistoryView>
+            CreateHistoryViewPath()
+        {
+            var selectedItem = SelectedNavigationItem;
+            return CreateHistoryViewPath(
+                _collections,
+                selectedItem.Id,
+                selectedItem.Label);
+        }
+
         public void SetItemsPerRow(int value)
         {
             var nextValue = ClampItemsPerRow(value);
@@ -207,24 +221,22 @@ namespace Ee4v.AssetManager.UI
 
         public void SetCollections(IReadOnlyList<AssetCollection> collections)
         {
+            _collections = (collections ??
+                            Array.Empty<AssetCollection>())
+                .Where(collection =>
+                    collection != null &&
+                    !string.IsNullOrWhiteSpace(collection.Id))
+                .ToArray();
             _collectionsByViewId.Clear();
-            if (collections != null)
+            for (var i = 0; i < _collections.Count; i++)
             {
-                for (var i = 0; i < collections.Count; i++)
-                {
-                    var collection = collections[i];
-                    if (collection == null ||
-                        string.IsNullOrWhiteSpace(collection.Id))
-                    {
-                        continue;
-                    }
-
-                    _collectionsByViewId[
-                        AssetManagerCollectionViewId.Encode(collection.Id)] =
-                        collection;
-                }
+                var collection = _collections[i];
+                _collectionsByViewId[
+                    AssetManagerCollectionViewId.Encode(collection.Id)] =
+                    collection;
             }
 
+            var navigationChanged = false;
             string selectedCollectionId;
             if (AssetManagerCollectionViewId.TryDecode(
                     _selectedNavigationItemId,
@@ -233,7 +245,13 @@ namespace Ee4v.AssetManager.UI
             {
                 _selectedNavigationItemId =
                     AssetManagerNavigationCatalog.DefaultItemId;
+                navigationChanged = true;
                 NavigationChanged?.Invoke(_selectedNavigationItemId);
+            }
+
+            if (!navigationChanged && _activationCount > 0)
+            {
+                CollectionPresentationChanged?.Invoke();
             }
         }
 
@@ -432,6 +450,147 @@ namespace Ee4v.AssetManager.UI
             return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noItems"));
         }
 
+        public AssetItemGridList CreateDisplayItems(
+            MainViewRequest request,
+            AssetItemGridList itemList)
+        {
+            var source = itemList ?? new AssetItemGridList(null);
+            string collectionId;
+            if (!AssetManagerCollectionViewId.TryDecode(
+                    request != null ? request.ViewId : string.Empty,
+                    out collectionId))
+            {
+                return source;
+            }
+
+            var children = GetChildCollections(
+                _collections,
+                collectionId,
+                request != null ? request.Keyword : string.Empty);
+            if (children.Count == 0)
+            {
+                return source;
+            }
+
+            var items = new List<AssetItemGridListItem>(
+                children.Count + source.Items.Count);
+            for (var i = 0; i < children.Count; i++)
+            {
+                var child = children[i];
+                items.Add(new AssetItemGridListItem(
+                    AssetItemGridNodeKey.Encode(
+                        AssetItemGridNodeKind.Collection,
+                        child.Id),
+                    child.Name,
+                    new ItemImageState(),
+                    AssetCollectionIconPresenter.CreateState(
+                        child,
+                        44f)));
+            }
+
+            items.AddRange(source.Items);
+            return new AssetItemGridList(
+                items,
+                source.EmptyText);
+        }
+
+        internal static IReadOnlyList<AssetCollection>
+            GetChildCollections(
+                IReadOnlyList<AssetCollection> collections,
+                string parentCollectionId,
+                string keyword)
+        {
+            var normalizedKeyword = keyword ?? string.Empty;
+            return (collections ?? Array.Empty<AssetCollection>())
+                .Where(collection =>
+                    collection != null &&
+                    string.Equals(
+                        collection.ParentCollectionId,
+                        parentCollectionId,
+                        StringComparison.Ordinal) &&
+                    (normalizedKeyword.Length == 0 ||
+                     (collection.Name ?? string.Empty).IndexOf(
+                         normalizedKeyword,
+                         StringComparison.OrdinalIgnoreCase) >= 0))
+                .OrderBy(collection => collection.SortOrder)
+                .ThenBy(
+                    collection => collection.Name,
+                    StringComparer.OrdinalIgnoreCase)
+                .ThenBy(
+                    collection => collection.Id,
+                    StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        internal static IReadOnlyList<AssetItemGridHistoryView>
+            CreateHistoryViewPath(
+                IReadOnlyList<AssetCollection> collections,
+                string viewId,
+                string viewLabel)
+        {
+            string collectionId;
+            if (!AssetManagerCollectionViewId.TryDecode(
+                    viewId,
+                    out collectionId))
+            {
+                return new[]
+                {
+                    new AssetItemGridHistoryView(
+                        viewId,
+                        viewLabel)
+                };
+            }
+
+            var collectionsById =
+                (collections ??
+                 Array.Empty<AssetCollection>())
+                .Where(collection =>
+                    collection != null &&
+                    !string.IsNullOrWhiteSpace(collection.Id))
+                .GroupBy(
+                    collection => collection.Id,
+                    StringComparer.Ordinal)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.First(),
+                    StringComparer.Ordinal);
+            var path =
+                new List<AssetItemGridHistoryView>();
+            var visited =
+                new HashSet<string>(StringComparer.Ordinal);
+            var currentId = collectionId;
+            while (!string.IsNullOrWhiteSpace(currentId) &&
+                   visited.Add(currentId))
+            {
+                AssetCollection collection;
+                if (!collectionsById.TryGetValue(
+                        currentId,
+                        out collection))
+                {
+                    break;
+                }
+
+                path.Add(new AssetItemGridHistoryView(
+                    AssetManagerCollectionViewId.Encode(
+                        collection.Id),
+                    collection.Name));
+                currentId = collection.ParentCollectionId;
+            }
+
+            if (path.Count == 0)
+            {
+                return new[]
+                {
+                    new AssetItemGridHistoryView(
+                        viewId,
+                        viewLabel)
+                };
+            }
+
+            path.Reverse();
+            return path;
+        }
+
         public IReadOnlyList<AssetTag> LoadTags(
             string keyword,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -519,6 +678,9 @@ namespace Ee4v.AssetManager.UI
         {
             if (change != null &&
                 (change.Kind == AssetManagerChangeKind.Catalog ||
+                 ShouldInvalidateForItemCollections(
+                     change,
+                     _selectedNavigationItemId) ||
                  ShouldInvalidateForSmartCollectionRule(
                      change,
                      _selectedNavigationItemId)))
@@ -531,6 +693,35 @@ namespace Ee4v.AssetManager.UI
                     }
                 });
             }
+        }
+
+        internal static bool ShouldInvalidateForItemCollections(
+            AssetManagerChange change,
+            string selectedNavigationItemId)
+        {
+            if (change == null ||
+                change.Kind !=
+                AssetManagerChangeKind.ItemCollections)
+            {
+                return false;
+            }
+
+            if (string.Equals(
+                    selectedNavigationItemId,
+                    "uncategorized",
+                    StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            string collectionId;
+            return AssetManagerCollectionViewId.TryDecode(
+                       selectedNavigationItemId,
+                       out collectionId) &&
+                   string.Equals(
+                       collectionId,
+                       change.RelatedId,
+                       StringComparison.Ordinal);
         }
 
         internal static bool ShouldInvalidateForSmartCollectionRule(

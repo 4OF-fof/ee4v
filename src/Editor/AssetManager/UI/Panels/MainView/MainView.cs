@@ -143,6 +143,8 @@ namespace Ee4v.AssetManager.UI
             _controller.Activate();
             _controller.NavigationChanged += OnSelectedItemChanged;
             _controller.ContentChanged += OnContentChanged;
+            _controller.CollectionPresentationChanged +=
+                OnCollectionPresentationChanged;
             _controller.LayoutChanged += OnLayoutChanged;
             _controller.MinimumItemsPerRowChanged +=
                 OnMinimumItemsPerRowChanged;
@@ -157,6 +159,8 @@ namespace Ee4v.AssetManager.UI
         {
             _controller.NavigationChanged -= OnSelectedItemChanged;
             _controller.ContentChanged -= OnContentChanged;
+            _controller.CollectionPresentationChanged -=
+                OnCollectionPresentationChanged;
             _controller.LayoutChanged -= OnLayoutChanged;
             _controller.MinimumItemsPerRowChanged -=
                 OnMinimumItemsPerRowChanged;
@@ -189,6 +193,28 @@ namespace Ee4v.AssetManager.UI
             ClearGridSelection();
             PushCurrentHistory();
             RefreshContent();
+        }
+
+        private void OnCollectionPresentationChanged()
+        {
+            if (IsFileListMode ||
+                IsFileDetailMode ||
+                IsTagListMode)
+            {
+                return;
+            }
+
+            var cacheKey = CreateCurrentCacheKey();
+            AssetItemGridList cachedItems;
+            if (!_controller.TryGetCachedItems(
+                    cacheKey,
+                    out cachedItems))
+            {
+                return;
+            }
+
+            ClearGridSelection();
+            ApplyItemList(cacheKey, cachedItems);
         }
 
         private void OnLayoutChanged()
@@ -235,6 +261,13 @@ namespace Ee4v.AssetManager.UI
                 _browserNodeKind = AssetItemGridNodeKind.Item;
                 _browserNodeId = string.Empty;
                 _browserNodeName = string.Empty;
+            }
+            else if (kind == AssetItemGridNodeKind.Collection)
+            {
+                ClearGridSelection();
+                _controller.SetSelectedNavigationItem(
+                    AssetManagerCollectionViewId.Encode(rawId));
+                return;
             }
             else if (kind == AssetItemGridNodeKind.File)
             {
@@ -286,22 +319,31 @@ namespace Ee4v.AssetManager.UI
         {
             var current = _controller.History.State.Current;
             if (current == null
-                || (current.Kind != AssetItemGridHistoryEntryKind.FileList &&
-                    current.Kind != AssetItemGridHistoryEntryKind.FileDetail)
-                || index < 0)
+                || index < 0
+                || index >= current.Breadcrumbs.Count)
             {
                 return;
             }
 
             AssetItemGridHistoryEntry entry;
-            if (index == 0)
+            if (index < current.ViewPath.Count)
             {
+                var targetView = current.ViewPath[index];
                 entry = new AssetItemGridHistoryEntry(
                     AssetItemGridHistoryEntryKind.View,
-                    current.ViewId,
-                    current.ViewLabel);
+                    targetView.Id,
+                    targetView.Label,
+                    viewPath:
+                    CreateViewPathPrefix(
+                        current.ViewPath,
+                        index));
             }
-            else if (index == 1)
+            else if (
+                index == current.ViewPath.Count &&
+                (current.Kind ==
+                 AssetItemGridHistoryEntryKind.FileList ||
+                 current.Kind ==
+                 AssetItemGridHistoryEntryKind.FileDetail))
             {
                 if (string.IsNullOrWhiteSpace(current.ItemId))
                 {
@@ -313,9 +355,15 @@ namespace Ee4v.AssetManager.UI
                     current.ViewId,
                     current.ViewLabel,
                     current.ItemId,
-                    current.ItemName);
+                    current.ItemName,
+                    viewPath: current.ViewPath);
             }
             else
+            {
+                return;
+            }
+
+            if (current.IsSameLocation(entry))
             {
                 return;
             }
@@ -423,8 +471,17 @@ namespace Ee4v.AssetManager.UI
         private void ApplyItemList(string cacheKey, AssetItemGridList itemList)
         {
             _controller.StoreCachedItems(cacheKey, itemList);
+            var displayItems = IsFileListMode
+                ? itemList
+                : _controller.CreateDisplayItems(
+                    _controller.CreateRequest(
+                        _controller.SelectedNavigationItemId,
+                        _searchText),
+                    itemList);
             string statusText;
-            _itemGrid.SetAssetItems(itemList, out statusText);
+            _itemGrid.SetAssetItems(
+                displayItems,
+                out statusText);
             SetStatus(ResolveStatusText(statusText));
         }
 
@@ -536,6 +593,7 @@ namespace Ee4v.AssetManager.UI
         private AssetItemGridHistoryEntry CreateCurrentHistoryEntry()
         {
             var selectedItem = _controller.SelectedNavigationItem;
+            var viewPath = _controller.CreateHistoryViewPath();
             if (IsFileDetailMode)
             {
                 return new AssetItemGridHistoryEntry(
@@ -549,7 +607,8 @@ namespace Ee4v.AssetManager.UI
                     _browserNodeName,
                     _fileDetailState.Id,
                     _fileDetailState.Name,
-                    _fileDetailState.ParentName);
+                    _fileDetailState.ParentName,
+                    viewPath);
             }
 
             if (IsFileListMode)
@@ -562,13 +621,32 @@ namespace Ee4v.AssetManager.UI
                     _fileListItemName,
                     _browserNodeKind,
                     _browserNodeId,
-                    _browserNodeName);
+                    _browserNodeName,
+                    viewPath: viewPath);
             }
 
             return new AssetItemGridHistoryEntry(
                 AssetItemGridHistoryEntryKind.View,
                 selectedItem.Id,
-                selectedItem.Label);
+                selectedItem.Label,
+                viewPath: viewPath);
+        }
+
+        private static System.Collections.Generic.IReadOnlyList<
+                AssetItemGridHistoryView>
+            CreateViewPathPrefix(
+                System.Collections.Generic.IReadOnlyList<
+                    AssetItemGridHistoryView> viewPath,
+                int lastIndex)
+        {
+            var result =
+                new AssetItemGridHistoryView[lastIndex + 1];
+            for (var i = 0; i <= lastIndex; i++)
+            {
+                result[i] = viewPath[i];
+            }
+
+            return result;
         }
 
         private void ApplyHistoryEntry(AssetItemGridHistoryEntry entry)
@@ -629,9 +707,25 @@ namespace Ee4v.AssetManager.UI
 
                 AssetItemGridNodeKind kind;
                 string rawId;
-                result.Add(AssetItemGridNodeKey.TryDecode(item.ItemId, out kind, out rawId)
-                    ? new ItemCardState(rawId, item.ItemName, item.ImageState, item.IconState, item.ParentItemId)
-                    : item);
+                if (AssetItemGridNodeKey.TryDecode(
+                        item.ItemId,
+                        out kind,
+                        out rawId))
+                {
+                    if (kind != AssetItemGridNodeKind.Collection)
+                    {
+                        result.Add(new ItemCardState(
+                            rawId,
+                            item.ItemName,
+                            item.ImageState,
+                            item.IconState,
+                            item.ParentItemId));
+                    }
+                }
+                else
+                {
+                    result.Add(item);
+                }
             }
 
             return result;
@@ -696,7 +790,9 @@ namespace Ee4v.AssetManager.UI
                 {
                     hasFile = true;
                 }
-                else
+                else if (
+                    kind == AssetItemGridNodeKind.VariantGroup ||
+                    kind == AssetItemGridNodeKind.VersionGroup)
                 {
                     hasGroup = true;
                 }

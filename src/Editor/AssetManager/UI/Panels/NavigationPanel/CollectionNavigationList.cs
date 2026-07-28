@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.UI;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -41,6 +42,8 @@ namespace Ee4v.AssetManager.UI
         private readonly Action<string> _selected;
         private readonly Action<IReadOnlyList<string>, string, int>
             _moveRequested;
+        private readonly Action<IReadOnlyList<string>, string>
+            _itemsDropped;
         private readonly Action<
             AssetCollection,
             VisualElement,
@@ -73,17 +76,26 @@ namespace Ee4v.AssetManager.UI
             Action<IReadOnlyList<string>, string, int>
                 moveRequested = null,
             Action<AssetCollection, VisualElement, Vector2>
-                contextMenuRequested = null)
+                contextMenuRequested = null,
+            Action<IReadOnlyList<string>, string>
+                itemsDropped = null)
         {
             _selected = selected;
             _moveRequested = moveRequested;
             _contextMenuRequested = contextMenuRequested;
+            _itemsDropped = itemsDropped;
             AddToClassList(RootClassName);
             focusable = true;
             pickingMode = PickingMode.Position;
             RegisterCallback<PointerDownEvent>(
                 OnBackgroundPointerDown);
             RegisterCallback<KeyDownEvent>(OnKeyDown);
+            RegisterCallback<DragUpdatedEvent>(
+                OnItemDragUpdated);
+            RegisterCallback<DragPerformEvent>(
+                OnItemDragPerform);
+            RegisterCallback<DragLeaveEvent>(
+                OnItemDragLeave);
         }
 
         public void SetState(
@@ -462,6 +474,39 @@ namespace Ee4v.AssetManager.UI
             return true;
         }
 
+        internal bool CanDropItems(
+            IReadOnlyList<string> itemIds,
+            string collectionId)
+        {
+            AssetCollection collection;
+            return itemIds != null &&
+                   itemIds.Any(id =>
+                       !string.IsNullOrWhiteSpace(id)) &&
+                   _collections.TryGetValue(
+                       collectionId ?? string.Empty,
+                       out collection) &&
+                   !collection.IsSmartCollection;
+        }
+
+        internal bool TryRequestItemDrop(
+            IReadOnlyList<string> itemIds,
+            string collectionId)
+        {
+            if (!CanDropItems(itemIds, collectionId))
+            {
+                return false;
+            }
+
+            _itemsDropped?.Invoke(
+                itemIds
+                    .Where(id =>
+                        !string.IsNullOrWhiteSpace(id))
+                    .Distinct(StringComparer.Ordinal)
+                    .ToArray(),
+                collectionId);
+            return _itemsDropped != null;
+        }
+
         internal void SetCollectionExpanded(
             string collectionId,
             bool expanded)
@@ -737,6 +782,74 @@ namespace Ee4v.AssetManager.UI
 
             ClearSelection();
             evt.StopPropagation();
+        }
+
+        private void OnItemDragUpdated(
+            DragUpdatedEvent evt)
+        {
+            IReadOnlyList<string> itemIds;
+            if (!AssetItemDragAndDrop.TryGetItemIds(
+                    out itemIds))
+            {
+                return;
+            }
+
+            ResetDropHighlights();
+            var item = FindRowAtPosition(
+                evt.mousePosition);
+            var accepted =
+                item != null &&
+                CanDropItems(
+                    itemIds,
+                    item.CollectionId);
+            DragAndDrop.visualMode = accepted
+                ? DragAndDropVisualMode.Link
+                : DragAndDropVisualMode.Rejected;
+            if (accepted)
+            {
+                item.Button.EnableInClassList(
+                    ButtonDropTargetClassName,
+                    true);
+            }
+
+            evt.StopPropagation();
+        }
+
+        private void OnItemDragPerform(
+            DragPerformEvent evt)
+        {
+            IReadOnlyList<string> itemIds;
+            if (!AssetItemDragAndDrop.TryGetItemIds(
+                    out itemIds))
+            {
+                return;
+            }
+
+            var item = FindRowAtPosition(
+                evt.mousePosition);
+            if (item != null &&
+                TryRequestItemDrop(
+                    itemIds,
+                    item.CollectionId))
+            {
+                DragAndDrop.AcceptDrag();
+            }
+
+            ResetDropHighlights();
+            evt.StopPropagation();
+        }
+
+        private void OnItemDragLeave(
+            DragLeaveEvent evt)
+        {
+            IReadOnlyList<string> itemIds;
+            if (!AssetItemDragAndDrop.TryGetItemIds(
+                    out itemIds))
+            {
+                return;
+            }
+
+            ResetDropHighlights();
         }
 
         private void OnRowPointerDown(

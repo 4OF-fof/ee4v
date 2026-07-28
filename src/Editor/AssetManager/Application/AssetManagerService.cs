@@ -253,6 +253,37 @@ namespace Ee4v.AssetManager.Application
             PublishCatalog();
         }
 
+        public void AddItemsToCollection(
+            IReadOnlyList<string> itemIds,
+            string collectionId)
+        {
+            AssetManagerRequestValidator.Require(
+                collectionId,
+                "collection id");
+            if (itemIds == null || itemIds.Count == 0)
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidRequest,
+                    "At least one item id is required.");
+            }
+
+            for (var i = 0; i < itemIds.Count; i++)
+            {
+                AssetManagerRequestValidator.Require(
+                    itemIds[i],
+                    "item id");
+            }
+
+            if (_collectionWriter.AddItemsToCollection(
+                    itemIds,
+                    collectionId))
+            {
+                Publish(new AssetManagerChange(
+                    AssetManagerChangeKind.ItemCollections,
+                    relatedId: collectionId));
+            }
+        }
+
         public IReadOnlyList<AssetFileDependency> GetFileDependencies(string fileId) =>
             _dependencyReader.GetFileDependencies(fileId);
 

@@ -7,6 +7,7 @@ namespace Ee4v.UI
 {
     internal class SelectableItemGrid : ItemGrid
     {
+        private const float ItemDragStartDistance = 5f;
         private const string SelectedSlotClassName = "ee4v-ui-selectable-item-grid__row-slot--selected";
         private readonly HashSet<int> _selectedItemIndices = new HashSet<int>();
         private readonly List<int> _selectedItemOrder = new List<int>();
@@ -16,6 +17,10 @@ namespace Ee4v.UI
         private int _dragPointerId = -1;
         private int _selectionAnchorIndex = -1;
         private Vector2 _dragStartPosition;
+        private int _pendingItemDragIndex = -1;
+        private int _pendingItemDragPointerId = -1;
+        private Vector2 _pendingItemDragStartPosition;
+        private bool _selectOnlyOnItemPointerUp;
 
         public SelectableItemGrid(ItemGridState state = null)
             : base(state)
@@ -33,6 +38,9 @@ namespace Ee4v.UI
         public event Action<IReadOnlyList<ItemCardState>> SelectionChanged;
 
         public event Action<ItemCardState> ItemDoubleClicked;
+
+        public event Action<IReadOnlyList<ItemCardState>>
+            ItemsDragStarted;
 
         public IReadOnlyList<ItemCardState> SelectedItems
         {
@@ -107,6 +115,7 @@ namespace Ee4v.UI
             var additive = evt.ctrlKey || evt.commandKey;
             if (evt.shiftKey)
             {
+                ClearPendingItemDrag();
                 SelectRange(itemIndex);
                 evt.StopPropagation();
                 return;
@@ -114,12 +123,25 @@ namespace Ee4v.UI
 
             if (additive)
             {
+                ClearPendingItemDrag();
                 BeginDragSelection(evt, itemIndex);
                 evt.StopPropagation();
                 return;
             }
 
-            SelectSingle(itemIndex);
+            _selectOnlyOnItemPointerUp =
+                evt.clickCount < 2 &&
+                _selectedItemIndices.Count > 1 &&
+                _selectedItemIndices.Contains(itemIndex);
+            if (!_selectOnlyOnItemPointerUp)
+            {
+                SelectSingle(itemIndex);
+            }
+
+            _pendingItemDragIndex = itemIndex;
+            _pendingItemDragPointerId = evt.pointerId;
+            _pendingItemDragStartPosition =
+                ToVector2(evt.position);
             if (evt.clickCount >= 2)
             {
                 ItemDoubleClicked?.Invoke(Items[itemIndex]);
@@ -178,29 +200,63 @@ namespace Ee4v.UI
 
         private void OnPointerMove(PointerMoveEvent evt)
         {
-            if (!_isDragging || evt.pointerId != _dragPointerId)
+            if (_isDragging && evt.pointerId == _dragPointerId)
+            {
+                ApplyDragSelection(CreateSelectionRect(_dragStartPosition, ToVector2(evt.position)));
+                evt.StopPropagation();
+                return;
+            }
+
+            if (_pendingItemDragIndex < 0 ||
+                evt.pointerId != _pendingItemDragPointerId)
             {
                 return;
             }
 
-            ApplyDragSelection(CreateSelectionRect(_dragStartPosition, ToVector2(evt.position)));
+            if ((evt.pressedButtons & 1) == 0)
+            {
+                ClearPendingItemDrag();
+                return;
+            }
+
+            if ((ToVector2(evt.position) -
+                 _pendingItemDragStartPosition).sqrMagnitude <
+                ItemDragStartDistance * ItemDragStartDistance)
+            {
+                return;
+            }
+
+            var draggedItems = CreateSelectedItems();
+            ClearPendingItemDrag();
+            ItemsDragStarted?.Invoke(draggedItems);
             evt.StopPropagation();
         }
 
         private void OnPointerUp(PointerUpEvent evt)
         {
-            if (!_isDragging || evt.pointerId != _dragPointerId)
+            if (_isDragging && evt.pointerId == _dragPointerId)
             {
+                ApplyDragSelection(CreateSelectionRect(_dragStartPosition, ToVector2(evt.position)));
+                EndDrag();
+                evt.StopPropagation();
                 return;
             }
 
-            ApplyDragSelection(CreateSelectionRect(_dragStartPosition, ToVector2(evt.position)));
-            EndDrag();
-            evt.StopPropagation();
+            if (evt.pointerId == _pendingItemDragPointerId)
+            {
+                var itemIndex = _pendingItemDragIndex;
+                var selectOnly = _selectOnlyOnItemPointerUp;
+                ClearPendingItemDrag();
+                if (selectOnly)
+                {
+                    SelectSingle(itemIndex);
+                }
+            }
         }
 
         private void OnPointerCaptureOut(PointerCaptureOutEvent evt)
         {
+            ClearPendingItemDrag();
             if (_isDragging)
             {
                 EndDragWithoutRelease();
@@ -238,6 +294,13 @@ namespace Ee4v.UI
             _isDragging = false;
             _dragPointerId = -1;
             _dragAppliedItemIndices.Clear();
+        }
+
+        private void ClearPendingItemDrag()
+        {
+            _pendingItemDragIndex = -1;
+            _pendingItemDragPointerId = -1;
+            _selectOnlyOnItemPointerUp = false;
         }
 
         private void ApplyDragSelection(Rect selectionRect)

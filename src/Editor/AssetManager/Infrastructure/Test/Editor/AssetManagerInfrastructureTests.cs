@@ -661,6 +661,113 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
+            "drop 登録で既存 collection 所属を保持する",
+            "AddItemsToCollection が複数 item を追加し、既存の別 collection 所属を置換しないことを確認します。",
+            order: 311)]
+        public void AddItemsToCollection_PreservesExistingMemberships()
+        {
+            var existing = _assetManager.CreateCollection(
+                new CreateCollectionRequest
+                {
+                    Name = "Existing"
+                });
+            var target = _assetManager.CreateCollection(
+                new CreateCollectionRequest
+                {
+                    Name = "Target"
+                });
+            var first = _assetManager.CreateItem(
+                new CreateAssetItemRequest
+                {
+                    Name = "First",
+                    CollectionIds = new[] { existing.Id }
+                });
+            var second = _assetManager.CreateItem(
+                new CreateAssetItemRequest
+                {
+                    Name = "Second"
+                });
+            var changes = new List<AssetManagerChange>();
+            _assetManager.Changed += changes.Add;
+
+            _assetManager.AddItemsToCollection(
+                new[] { first.Id, second.Id, first.Id },
+                target.Id);
+
+            Assert.That(
+                _assetManager.SearchItems(
+                        new AssetItemQuery
+                        {
+                            CollectionId = existing.Id
+                        })
+                    .Items.Select(item => item.Id),
+                Is.EqualTo(new[] { first.Id }));
+            Assert.That(
+                _assetManager.SearchItems(
+                        new AssetItemQuery
+                        {
+                            CollectionId = target.Id
+                        })
+                    .Items.Select(item => item.Id),
+                Is.EquivalentTo(
+                    new[] { first.Id, second.Id }));
+            Assert.That(
+                changes.Select(change => change.Kind),
+                Is.EqualTo(
+                    new[]
+                    {
+                        AssetManagerChangeKind.ItemCollections
+                    }));
+            Assert.That(
+                changes.Single().RelatedId,
+                Is.EqualTo(target.Id));
+
+            changes.Clear();
+            _assetManager.AddItemsToCollection(
+                new[] { first.Id, second.Id },
+                target.Id);
+            Assert.That(changes, Is.Empty);
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "drop 登録失敗を atomic に扱う",
+            "AddItemsToCollection に存在しない item が含まれる場合、ほかの item も追加しないことを確認します。",
+            order: 312)]
+        public void AddItemsToCollection_MissingItem_AddsNothing()
+        {
+            var target = _assetManager.CreateCollection(
+                new CreateCollectionRequest
+                {
+                    Name = "Target"
+                });
+            var item = _assetManager.CreateItem(
+                new CreateAssetItemRequest
+                {
+                    Name = "Item"
+                });
+
+            var exception =
+                Assert.Throws<AssetManagerException>(() =>
+                    _assetManager.AddItemsToCollection(
+                        new[] { item.Id, "missing-item" },
+                        target.Id));
+
+            Assert.That(
+                exception.Code,
+                Is.EqualTo(AssetManagerErrorCode.NotFound));
+            Assert.That(
+                _assetManager.SearchItems(
+                        new AssetItemQuery
+                        {
+                            CollectionId = target.Id
+                        })
+                    .Items,
+                Is.Empty);
+        }
+
+        [Test]
+        [FeatureTestCase(
             "Booth 情報の有無で item を絞り込む",
             "HasBoothInformation が BLM source ではなく booth_info snapshot の存在だけを条件にすることを確認します。",
             order: 336)]

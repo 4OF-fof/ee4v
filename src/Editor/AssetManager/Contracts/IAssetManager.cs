@@ -45,6 +45,9 @@ namespace Ee4v.AssetManager.Contracts
             string parentCollectionId,
             int siblingIndex = -1);
         void SetItemCollections(string itemId, IReadOnlyList<string> collectionIds);
+        void AddItemsToCollection(
+            IReadOnlyList<string> itemIds,
+            string collectionId);
         IReadOnlyList<AssetFileDependency> GetFileDependencies(string fileId);
         void SetFileDependencies(string dependentFileId, IReadOnlyList<string> dependencyFileIds);
         IReadOnlyList<AssetDependency> GetDependencies(DependencyEndpointRequest source);
@@ -61,6 +64,7 @@ namespace Ee4v.AssetManager.Contracts
     public enum AssetManagerChangeKind
     {
         Catalog,
+        ItemCollections,
         Collections,
         SmartCollectionRule,
         FileTree,

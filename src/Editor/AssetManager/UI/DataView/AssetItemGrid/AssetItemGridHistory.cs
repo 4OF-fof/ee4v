@@ -13,9 +13,23 @@ namespace Ee4v.AssetManager.UI
     internal enum AssetItemGridNodeKind
     {
         Item,
+        Collection,
         VariantGroup,
         VersionGroup,
         File
+    }
+
+    internal sealed class AssetItemGridHistoryView
+    {
+        public AssetItemGridHistoryView(string id, string label)
+        {
+            Id = id ?? string.Empty;
+            Label = label ?? string.Empty;
+        }
+
+        public string Id { get; }
+
+        public string Label { get; }
     }
 
     internal sealed class AssetItemGridHistoryEntry
@@ -31,11 +45,16 @@ namespace Ee4v.AssetManager.UI
             string nodeName = null,
             string detailId = null,
             string detailName = null,
-            string detailParentName = null)
+            string detailParentName = null,
+            IReadOnlyList<AssetItemGridHistoryView> viewPath = null)
         {
             Kind = kind;
             ViewId = viewId ?? string.Empty;
             ViewLabel = viewLabel ?? string.Empty;
+            ViewPath = CreateViewPath(
+                viewPath,
+                ViewId,
+                ViewLabel);
             ItemId = itemId ?? string.Empty;
             ItemName = itemName ?? string.Empty;
             NodeKind = nodeKind;
@@ -51,6 +70,8 @@ namespace Ee4v.AssetManager.UI
         public string ViewId { get; }
 
         public string ViewLabel { get; }
+
+        public IReadOnlyList<AssetItemGridHistoryView> ViewPath { get; }
 
         public string ItemId { get; }
 
@@ -72,38 +93,47 @@ namespace Ee4v.AssetManager.UI
         {
             get
             {
+                var breadcrumbs = new List<string>(
+                    ViewPath.Count + 4);
+                for (var i = 0; i < ViewPath.Count; i++)
+                {
+                    breadcrumbs.Add(ViewPath[i].Label);
+                }
+
                 if ((Kind == AssetItemGridHistoryEntryKind.FileList || Kind == AssetItemGridHistoryEntryKind.FileDetail) &&
                     !string.IsNullOrWhiteSpace(ItemName))
                 {
+                    breadcrumbs.Add(ItemName);
                     if (Kind == AssetItemGridHistoryEntryKind.FileDetail && !string.IsNullOrWhiteSpace(DetailName))
                     {
                         if (!string.IsNullOrWhiteSpace(DetailParentName))
                         {
-                            return new[] { ViewLabel, ItemName, DetailParentName, DetailName };
+                            breadcrumbs.Add(DetailParentName);
                         }
 
-                        return new[] { ViewLabel, ItemName, DetailName };
+                        breadcrumbs.Add(DetailName);
+                        return breadcrumbs;
                     }
 
                     if (!string.IsNullOrWhiteSpace(NodeName))
                     {
-                        return new[] { ViewLabel, ItemName, NodeName };
+                        breadcrumbs.Add(NodeName);
                     }
 
-                    return new[] { ViewLabel, ItemName };
+                    return breadcrumbs;
                 }
 
                 if (Kind == AssetItemGridHistoryEntryKind.FileDetail && !string.IsNullOrWhiteSpace(DetailName))
                 {
                     if (!string.IsNullOrWhiteSpace(DetailParentName))
                     {
-                        return new[] { ViewLabel, DetailParentName, DetailName };
+                        breadcrumbs.Add(DetailParentName);
                     }
 
-                    return new[] { ViewLabel, DetailName };
+                    breadcrumbs.Add(DetailName);
                 }
 
-                return new[] { ViewLabel };
+                return breadcrumbs;
             }
         }
 
@@ -117,6 +147,43 @@ namespace Ee4v.AssetManager.UI
                 && string.Equals(NodeId, other.NodeId, StringComparison.Ordinal)
                 && string.Equals(DetailId, other.DetailId, StringComparison.Ordinal)
                 && string.Equals(DetailParentName, other.DetailParentName, StringComparison.Ordinal);
+        }
+
+        private static IReadOnlyList<AssetItemGridHistoryView>
+            CreateViewPath(
+                IReadOnlyList<AssetItemGridHistoryView> viewPath,
+                string viewId,
+                string viewLabel)
+        {
+            if (viewPath == null || viewPath.Count == 0)
+            {
+                return new[]
+                {
+                    new AssetItemGridHistoryView(
+                        viewId,
+                        viewLabel)
+                };
+            }
+
+            var result =
+                new List<AssetItemGridHistoryView>(
+                    viewPath.Count);
+            for (var i = 0; i < viewPath.Count; i++)
+            {
+                if (viewPath[i] != null)
+                {
+                    result.Add(viewPath[i]);
+                }
+            }
+
+            return result.Count > 0
+                ? result.ToArray()
+                : new[]
+                {
+                    new AssetItemGridHistoryView(
+                        viewId,
+                        viewLabel)
+                };
         }
     }
 
