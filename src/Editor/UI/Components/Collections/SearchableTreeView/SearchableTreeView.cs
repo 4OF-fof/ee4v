@@ -49,6 +49,8 @@ namespace Ee4v.UI
         private readonly Action<TData> _onItemDoubleClicked;
         private readonly string _searchTooltip;
         private readonly string _clearTooltip;
+        private readonly IconState _searchIconState;
+        private readonly IconState _clearIconState;
         private IReadOnlyList<SearchableTreeItemData<TData>> _sourceItems;
         private IReadOnlyList<SearchableTreeItemData<TData>> _selectedTreeItems = Array.Empty<SearchableTreeItemData<TData>>();
         private Action<string> _onSearchValueChanged;
@@ -64,7 +66,9 @@ namespace Ee4v.UI
             Func<TData, bool> canInteractWithItem = null,
             Action<TData> onItemDoubleClicked = null,
             string searchTooltip = null,
-            string clearTooltip = null)
+            string clearTooltip = null,
+            IconState searchIconState = null,
+            IconState clearIconState = null)
         {
             if (makeItem == null)
             {
@@ -78,10 +82,19 @@ namespace Ee4v.UI
             _onItemDoubleClicked = onItemDoubleClicked;
             _searchTooltip = searchTooltip ?? string.Empty;
             _clearTooltip = clearTooltip ?? string.Empty;
+            _searchIconState = searchIconState;
+            _clearIconState = clearIconState;
 
             AddToClassList(RootClassName);
 
-            _searchField = new SearchField();
+            _searchField = new SearchField(
+                new SearchFieldState(
+                    searchTooltip: _searchTooltip,
+                    clearTooltip: _clearTooltip,
+                    searchIconState:
+                    _searchIconState,
+                    clearIconState:
+                    _clearIconState));
             _searchField.AddToClassList(SearchClassName);
             _searchField.ValueChanged += value =>
             {
@@ -363,7 +376,9 @@ namespace Ee4v.UI
                 value,
                 placeholder,
                 _searchTooltip,
-                _clearTooltip));
+                _clearTooltip,
+                _searchIconState,
+                _clearIconState));
         }
 
         private void ClearSearch()

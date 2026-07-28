@@ -7,6 +7,40 @@ namespace Ee4v.AssetManager.UI
 {
     internal static class AssetCollectionIconPresenter
     {
+        private static readonly UiFluentIcon[] PresetIcons =
+        {
+            UiFluentIcon.Folder,
+            UiFluentIcon.Star,
+            UiFluentIcon.Box,
+            UiFluentIcon.Tag,
+            UiFluentIcon.Search,
+            UiFluentIcon.Image,
+            UiFluentIcon.MusicNote2,
+            UiFluentIcon.DocumentCode,
+            UiFluentIcon.Cube,
+            UiFluentIcon.Database,
+            UiFluentIcon.Heart,
+            UiFluentIcon.Library,
+            UiFluentIcon.Collections,
+            UiFluentIcon.Group,
+            UiFluentIcon.Grid,
+            UiFluentIcon.List,
+            UiFluentIcon.Table,
+            UiFluentIcon.Camera,
+            UiFluentIcon.Video,
+            UiFluentIcon.Document,
+            UiFluentIcon.Archive,
+            UiFluentIcon.Cloud,
+            UiFluentIcon.Color,
+            UiFluentIcon.Lightbulb,
+            UiFluentIcon.Wrench,
+            UiFluentIcon.Settings,
+            UiFluentIcon.Pin,
+            UiFluentIcon.Home,
+            UiFluentIcon.Apps,
+            UiFluentIcon.Key
+        };
+
         public static IconState CreateState(
             AssetCollection collection,
             float size = UiSizeTokens.Size12)
@@ -14,8 +48,8 @@ namespace Ee4v.AssetManager.UI
             if (collection == null ||
                 !collection.IsSmartCollection)
             {
-                return IconState.FromBuiltinIcon(
-                    UiBuiltinIcon.Folder,
+                return IconState.FromFluentIcon(
+                    UiFluentIcon.Folder,
                     size);
             }
 
@@ -27,7 +61,7 @@ namespace Ee4v.AssetManager.UI
                 return IconState.FromTexture(texture, size);
             }
 
-            return IconState.FromBuiltinIcon(
+            return IconState.FromFluentIcon(
                 Resolve(
                     collection != null
                         ? collection.Icon
@@ -35,29 +69,13 @@ namespace Ee4v.AssetManager.UI
                 size);
         }
 
-        public static UiBuiltinIcon Resolve(AssetCollectionIcon icon)
+        public static UiFluentIcon Resolve(AssetCollectionIcon icon)
         {
-            if (icon == AssetCollectionIcon.Star)
-            {
-                return UiBuiltinIcon.Star;
-            }
-
-            if (icon == AssetCollectionIcon.Package)
-            {
-                return UiBuiltinIcon.ArchiveFile;
-            }
-
-            if (icon == AssetCollectionIcon.Tag)
-            {
-                return UiBuiltinIcon.Tag;
-            }
-
-            if (icon == AssetCollectionIcon.Search)
-            {
-                return UiBuiltinIcon.Search;
-            }
-
-            return UiBuiltinIcon.Folder;
+            var index = (int)icon;
+            return index >= 0 &&
+                   index < PresetIcons.Length
+                ? PresetIcons[index]
+                : UiFluentIcon.Folder;
         }
 
         private static Texture LoadAssetIcon(

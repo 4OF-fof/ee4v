@@ -100,7 +100,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 new CreateSmartCollectionRequest
                 {
                     Name = "Smart",
-                    Icon = AssetCollectionIcon.Search,
+                    Icon = AssetCollectionIcon.Key,
                     MatchMode = SmartCollectionMatchMode.All,
                     Conditions = new[]
                     {
@@ -879,7 +879,9 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             Assert.That(
                 regular.IconAssetGuid,
                 Is.Null);
-            Assert.That(smart.Icon, Is.EqualTo(AssetCollectionIcon.Search));
+            Assert.That(
+                smart.Icon,
+                Is.EqualTo(AssetCollectionIcon.Key));
             Assert.That(
                 smart.IconAssetGuid,
                 Is.EqualTo("smart-icon-guid"));
@@ -888,7 +890,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 Is.EqualTo(AssetCollectionIcon.Folder));
             Assert.That(
                 collections.Single(item => item.Id == smart.Id).Icon,
-                Is.EqualTo(AssetCollectionIcon.Search));
+                Is.EqualTo(AssetCollectionIcon.Key));
             Assert.That(
                 collections.Single(item => item.Id == regular.Id)
                     .IconAssetGuid,

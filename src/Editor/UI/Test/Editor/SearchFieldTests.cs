@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Ee4v.Testing.Contracts;
 using NUnit.Framework;
@@ -52,6 +53,39 @@ namespace Ee4v.UI.Tests
             Assert.That(
                 placeholder.GetType().Name,
                 Is.EqualTo("ImguiUiTextElement"));
+        }
+
+        [Test]
+        public void IconStates_CanUseFluentPngTextures()
+        {
+            var field = new SearchField(
+                new SearchFieldState(
+                    searchIconState:
+                    IconState.FromFluentIcon(
+                        UiFluentIcon.Search,
+                        UiSizeTokens.Size14),
+                    clearIconState:
+                    IconState.FromFluentIcon(
+                        UiFluentIcon.Dismiss,
+                        UiSizeTokens.Size10)));
+            UiFluentIconResolver.TryResolve(
+                UiFluentIcon.Search,
+                out var searchTexture);
+            UiFluentIconResolver.TryResolve(
+                UiFluentIcon.Dismiss,
+                out var clearTexture);
+            var icons = field.Query<Icon>().ToList();
+
+            Assert.That(icons.Count, Is.EqualTo(2));
+            Assert.That(
+                icons.Select(icon =>
+                        icon.Q<Image>().image)
+                    .ToArray(),
+                Is.EqualTo(new[]
+                {
+                    searchTexture,
+                    clearTexture
+                }));
         }
 
         private static void AssertRuleClips(

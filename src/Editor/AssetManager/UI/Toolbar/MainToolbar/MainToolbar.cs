@@ -65,18 +65,38 @@ namespace Ee4v.AssetManager.UI
             actions.AddToClassList(ActionsClassName);
 
             actions.Add(CreateIconButton(
-                UiBuiltinIcon.Filter,
+                UiFluentIcon.Filter,
                 I18N.Get("assetManager.mainToolbar.filter"),
                 () => FilterClicked?.Invoke()));
             actions.Add(CreateIconButton(
-                UiBuiltinIcon.Sort,
+                UiFluentIcon.Options,
                 I18N.Get("assetManager.mainToolbar.sort"),
                 () => SortClicked?.Invoke()));
 
-            _searchField = new SearchField(new SearchFieldState(
-                placeholder: I18N.Get("assetManager.mainToolbar.searchPlaceholder"),
-                searchTooltip: I18N.GetForScope("UI", "ui.search.tooltip"),
-                clearTooltip: I18N.GetForScope("UI", "ui.clear.tooltip")));
+            var searchTooltip =
+                I18N.GetForScope(
+                    "UI",
+                    "ui.search.tooltip");
+            var clearTooltip =
+                I18N.GetForScope(
+                    "UI",
+                    "ui.clear.tooltip");
+            _searchField = new SearchField(
+                new SearchFieldState(
+                    placeholder: I18N.Get(
+                        "assetManager.mainToolbar.searchPlaceholder"),
+                    searchTooltip: searchTooltip,
+                    clearTooltip: clearTooltip,
+                    searchIconState:
+                    IconState.FromFluentIcon(
+                        UiFluentIcon.Search,
+                        UiSizeTokens.Size14,
+                        searchTooltip),
+                    clearIconState:
+                    IconState.FromFluentIcon(
+                        UiFluentIcon.Dismiss,
+                        UiSizeTokens.Size10,
+                        clearTooltip)));
             _searchField.AddToClassList(SearchClassName);
             _searchField.ValueChanged += value =>
             {
@@ -153,15 +173,15 @@ namespace Ee4v.AssetManager.UI
         }
 
         private static UiButton CreateIconButton(
-            UiBuiltinIcon builtinIcon,
+            UiFluentIcon fluentIcon,
             string tooltip,
             Action clicked)
         {
             var button = new UiButton(
                 new UiButtonState(
                     tooltip: tooltip,
-                    iconState: IconState.FromBuiltinIcon(
-                        builtinIcon,
+                    iconState: IconState.FromFluentIcon(
+                        fluentIcon,
                         size: UiSizeTokens.Size14,
                         tooltip: tooltip),
                     variant: UiButtonVariant.Ghost,

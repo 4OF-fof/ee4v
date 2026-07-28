@@ -71,7 +71,7 @@ namespace Ee4v.AssetManager.Application
                 CatalogCommandPolicy.Require(request.Name, "smart collection name");
                 CatalogCommandPolicy.EnsureCollectionIcon(
                     (int)request.Icon,
-                    (int)AssetCollectionIcon.Search);
+                    (int)AssetCollectionIcon.Key);
                 CatalogCommandPolicy.EnsureSmartConditions(
                     request.Conditions == null
                         ? Array.Empty<string>()
@@ -127,7 +127,7 @@ namespace Ee4v.AssetManager.Application
                 CatalogCommandPolicy.Require(request.Name, "collection name");
                 CatalogCommandPolicy.EnsureCollectionIcon(
                     (int)request.Icon,
-                    (int)AssetCollectionIcon.Search);
+                    (int)AssetCollectionIcon.Key);
             });
         }
 

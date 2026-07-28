@@ -31,9 +31,17 @@
 }
 
 .ee4v-collection-icon-selector__presets {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: var(--ee4v-space-xs);
+}
+
+.ee4v-collection-icon-selector__preset-row {
+    width: 100%;
     flex-direction: row;
-    align-items: center;
-    margin-bottom: var(--ee4v-space-sm);
+    align-items: stretch;
+    margin-bottom: var(--ee4v-space-xs);
 }
 
 .ee4v-collection-icon-selector__candidate {
@@ -52,6 +60,11 @@
     background-color: var(--ee4v-color-field);
     align-items: center;
     justify-content: center;
+    flex-grow: 1;
+}
+
+.ee4v-collection-icon-selector__candidate--last {
+    margin-right: 0;
 }
 
 .ee4v-collection-icon-selector__candidate:hover {

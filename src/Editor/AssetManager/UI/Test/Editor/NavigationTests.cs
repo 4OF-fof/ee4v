@@ -30,16 +30,27 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
-        public void Catalog_UsesPackageAndStoreIcons()
+        public void Catalog_UsesFluentPngIcons()
         {
             var items = AssetManagerNavigationCatalog.Items;
 
             Assert.That(
-                items[0].IconState.BuiltinIcon,
-                Is.EqualTo(UiBuiltinIcon.Package));
+                items.Select(item =>
+                        item.IconState.SourceKind)
+                    .ToArray(),
+                Is.All.EqualTo(
+                    UiIconSourceKind.Fluent));
             Assert.That(
-                items[1].IconState.BuiltinIcon,
-                Is.EqualTo(UiBuiltinIcon.Store));
+                items.Select(item =>
+                        item.IconState.FluentIcon)
+                    .ToArray(),
+                Is.EqualTo(new[]
+                {
+                    UiFluentIcon.Library,
+                    UiFluentIcon.BoxMultiple,
+                    UiFluentIcon.Folder,
+                    UiFluentIcon.Tag
+                }));
         }
 
         [Test]
@@ -306,8 +317,11 @@ namespace Ee4v.AssetManager.UI.Tests
                 archive.StackStates,
                 Is.Empty);
             Assert.That(
-                image.IconState.BuiltinIcon,
-                Is.EqualTo(UiBuiltinIcon.ImageFile));
+                image.IconState.SourceKind,
+                Is.EqualTo(UiIconSourceKind.Fluent));
+            Assert.That(
+                image.IconState.FluentIcon,
+                Is.EqualTo(UiFluentIcon.Image));
             Assert.That(
                 image.StackStates,
                 Is.Empty);
@@ -648,6 +662,60 @@ namespace Ee4v.AssetManager.UI.Tests
                         "ee4v-asset-manager-panel__header-action")
                     .ToList().Count,
                 Is.EqualTo(1));
+        }
+
+        [Test]
+        public void NavigationPanel_HeaderActionsUseFluentPngIcons()
+        {
+            var panel = new NavigationPanel();
+            var buttons = panel.Query<UiButton>(
+                    className:
+                    "ee4v-asset-manager-panel__header-action")
+                .ToList();
+            UiFluentIconResolver.TryResolve(
+                UiFluentIcon.ArrowClockwise,
+                out var refreshTexture);
+            UiFluentIconResolver.TryResolve(
+                UiFluentIcon.Add,
+                out var addTexture);
+
+            Assert.That(buttons.Count, Is.EqualTo(2));
+            Assert.That(
+                buttons.Select(button =>
+                        button.IconElement.Q<Image>().image)
+                    .ToArray(),
+                Is.EqualTo(new[]
+                {
+                    refreshTexture,
+                    addTexture
+                }));
+        }
+
+        [Test]
+        public void MainToolbar_ActionsUseFluentPngIcons()
+        {
+            var toolbar = new MainToolbar();
+            var buttons = toolbar.Query<UiButton>(
+                    className:
+                    "ee4v-ui-main-toolbar__icon-button")
+                .ToList();
+            UiFluentIconResolver.TryResolve(
+                UiFluentIcon.Filter,
+                out var filterTexture);
+            UiFluentIconResolver.TryResolve(
+                UiFluentIcon.Options,
+                out var sortTexture);
+
+            Assert.That(buttons.Count, Is.EqualTo(2));
+            Assert.That(
+                buttons.Select(button =>
+                        button.IconElement.Q<Image>().image)
+                    .ToArray(),
+                Is.EqualTo(new[]
+                {
+                    filterTexture,
+                    sortTexture
+                }));
         }
 
         [Test]
@@ -1453,8 +1521,75 @@ namespace Ee4v.AssetManager.UI.Tests
                 });
 
             Assert.That(
-                state.BuiltinIcon,
-                Is.EqualTo(UiBuiltinIcon.Folder));
+                state.SourceKind,
+                Is.EqualTo(UiIconSourceKind.Fluent));
+            Assert.That(
+                state.FluentIcon,
+                Is.EqualTo(UiFluentIcon.Folder));
+        }
+
+        [Test]
+        public void SmartCollectionPresets_MapToFluentPngIcons()
+        {
+            var icons =
+                System.Enum.GetValues(
+                        typeof(AssetCollectionIcon))
+                    .Cast<AssetCollectionIcon>()
+                    .ToArray();
+            var expected = new[]
+            {
+                UiFluentIcon.Folder,
+                UiFluentIcon.Star,
+                UiFluentIcon.Box,
+                UiFluentIcon.Tag,
+                UiFluentIcon.Search,
+                UiFluentIcon.Image,
+                UiFluentIcon.MusicNote2,
+                UiFluentIcon.DocumentCode,
+                UiFluentIcon.Cube,
+                UiFluentIcon.Database,
+                UiFluentIcon.Heart,
+                UiFluentIcon.Library,
+                UiFluentIcon.Collections,
+                UiFluentIcon.Group,
+                UiFluentIcon.Grid,
+                UiFluentIcon.List,
+                UiFluentIcon.Table,
+                UiFluentIcon.Camera,
+                UiFluentIcon.Video,
+                UiFluentIcon.Document,
+                UiFluentIcon.Archive,
+                UiFluentIcon.Cloud,
+                UiFluentIcon.Color,
+                UiFluentIcon.Lightbulb,
+                UiFluentIcon.Wrench,
+                UiFluentIcon.Settings,
+                UiFluentIcon.Pin,
+                UiFluentIcon.Home,
+                UiFluentIcon.Apps,
+                UiFluentIcon.Key
+            };
+
+            Assert.That(icons.Length, Is.EqualTo(30));
+            for (var i = 0; i < icons.Length; i++)
+            {
+                var state =
+                    AssetCollectionIconPresenter.CreateState(
+                        new AssetCollection
+                        {
+                            IsSmartCollection = true,
+                            Icon = icons[i]
+                        });
+                Assert.That(
+                    state.SourceKind,
+                    Is.EqualTo(
+                        UiIconSourceKind.Fluent),
+                    icons[i].ToString());
+                Assert.That(
+                    state.FluentIcon,
+                    Is.EqualTo(expected[i]),
+                    icons[i].ToString());
+            }
         }
 
         [Test]
@@ -1573,8 +1708,8 @@ namespace Ee4v.AssetManager.UI.Tests
                         "ee4v-collection-creation-window__add-condition")
                     .ToList()
                     .Single();
-                UiBuiltinIconResolver.TryResolve(
-                    UiBuiltinIcon.Add,
+                UiFluentIconResolver.TryResolve(
+                    UiFluentIcon.Add,
                     out var expectedAddIcon);
                 Assert.That(
                     addConditionButton.IconElement.Q<Image>().image,
@@ -1892,7 +2027,20 @@ namespace Ee4v.AssetManager.UI.Tests
                         className:
                         "ee4v-collection-icon-selector__candidate")
                     .ToList().Count,
-                Is.EqualTo(5));
+                Is.EqualTo(30));
+            var rows = selector.Query<VisualElement>(
+                    className:
+                    "ee4v-collection-icon-selector__preset-row")
+                .ToList();
+            Assert.That(rows.Count, Is.EqualTo(2));
+            Assert.That(
+                rows.Select(row =>
+                        row.Query<Button>(
+                                className:
+                                "ee4v-collection-icon-selector__candidate")
+                            .ToList().Count)
+                    .ToArray(),
+                Is.EqualTo(new[] { 15, 15 }));
             Assert.That(
                 selector.Query<Button>(
                         className:

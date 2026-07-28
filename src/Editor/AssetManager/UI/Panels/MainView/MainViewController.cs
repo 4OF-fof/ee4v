@@ -1032,7 +1032,9 @@ namespace Ee4v.AssetManager.UI
                         size: 44f);
             }
 
-            return IconState.FromBuiltinIcon(ResolveFileIcon(extension), size: 44f);
+            return IconState.FromFluentIcon(
+                ResolveFileIcon(extension),
+                size: 44f);
         }
 
         private static AssetItemGridListItem CreateGroupListItem(
@@ -1107,7 +1109,7 @@ namespace Ee4v.AssetManager.UI
                 iconState: CreateFileIcon(extension));
         }
 
-        private static UiBuiltinIcon ResolveFileIcon(string extension)
+        private static UiFluentIcon ResolveFileIcon(string extension)
         {
             switch (NormalizeExtension(extension))
             {
@@ -1118,7 +1120,7 @@ namespace Ee4v.AssetManager.UI
                 case "webp":
                 case "psd":
                 case "clip":
-                    return UiBuiltinIcon.ImageFile;
+                    return UiFluentIcon.Image;
                 case "txt":
                 case "md":
                 case "json":
@@ -1126,34 +1128,34 @@ namespace Ee4v.AssetManager.UI
                 case "xml":
                 case "yaml":
                 case "yml":
-                    return UiBuiltinIcon.TextFile;
+                    return UiFluentIcon.DocumentText;
                 case "unity":
                 case "asset":
                 case "prefab":
                 case "mat":
                 case "controller":
                 case "anim":
-                    return UiBuiltinIcon.UnityFile;
+                    return UiFluentIcon.Apps;
                 case "fbx":
                 case "obj":
                 case "blend":
                 case "vrm":
                 case "glb":
                 case "gltf":
-                    return UiBuiltinIcon.ModelFile;
+                    return UiFluentIcon.Cube;
                 case "wav":
                 case "mp3":
                 case "ogg":
                 case "aiff":
-                    return UiBuiltinIcon.AudioFile;
+                    return UiFluentIcon.MusicNote2;
                 case "cs":
                 case "js":
                 case "ts":
                 case "shader":
                 case "cginc":
-                    return UiBuiltinIcon.ScriptFile;
+                    return UiFluentIcon.DocumentCode;
                 default:
-                    return UiBuiltinIcon.GenericFile;
+                    return UiFluentIcon.Document;
             }
         }
 

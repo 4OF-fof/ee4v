@@ -45,7 +45,7 @@ namespace Ee4v.AssetManager.UI
             var libraryHeader = CreateHeader(
                 I18N.Get("assetManager.navigation.library"),
                 I18N.Get("assetManager.navigation.manualSync"),
-                UiBuiltinIcon.Refresh,
+                UiFluentIcon.ArrowClockwise,
                 button => ManualSyncRequested?.Invoke());
             pickerSection.Add(libraryHeader);
 
@@ -174,7 +174,7 @@ namespace Ee4v.AssetManager.UI
 
             var createButton = CreateActionButton(
                 createTooltip,
-                UiBuiltinIcon.Add,
+                UiFluentIcon.Add,
                 button => ShowCollectionCreationMenu(
                     button,
                     createCollection,
@@ -307,7 +307,7 @@ namespace Ee4v.AssetManager.UI
         private static VisualElement CreateHeader(
             string title,
             string actionTooltip,
-            UiBuiltinIcon actionIcon,
+            UiFluentIcon actionIcon,
             Action<VisualElement> action)
         {
             var header = new VisualElement();
@@ -328,13 +328,13 @@ namespace Ee4v.AssetManager.UI
 
         private static UiButton CreateActionButton(
             string tooltip,
-            UiBuiltinIcon icon,
+            UiFluentIcon icon,
             Action<VisualElement> action)
         {
             var button = new UiButton(
                 new UiButtonState(
                     tooltip: tooltip,
-                    iconState: IconState.FromBuiltinIcon(
+                    iconState: IconState.FromFluentIcon(
                         icon,
                         size: UiSizeTokens.Size12),
                     variant: UiButtonVariant.Ghost,

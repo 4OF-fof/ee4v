@@ -64,7 +64,9 @@ namespace Ee4v.AssetManager.UI
                     I18N.Get("assetManager.navigation.all.label"),
                     string.Empty,
                     Array.Empty<string>(),
-                    IconState.FromBuiltinIcon(UiBuiltinIcon.Package, size: UiSizeTokens.Size12)),
+                    IconState.FromFluentIcon(
+                        UiFluentIcon.Library,
+                        size: UiSizeTokens.Size12)),
                 new AssetManagerViewItemState(
                     "booth-items",
                     I18N.Get("assetManager.navigation.boothItems.label"),
@@ -73,7 +75,9 @@ namespace Ee4v.AssetManager.UI
                     I18N.Get("assetManager.navigation.boothItems.label"),
                     string.Empty,
                     Array.Empty<string>(),
-                    IconState.FromBuiltinIcon(UiBuiltinIcon.Store, size: UiSizeTokens.Size12)),
+                    IconState.FromFluentIcon(
+                        UiFluentIcon.BoxMultiple,
+                        size: UiSizeTokens.Size12)),
                 new AssetManagerViewItemState(
                     "uncategorized",
                     I18N.Get("assetManager.navigation.uncategorized.label"),
@@ -82,7 +86,9 @@ namespace Ee4v.AssetManager.UI
                     I18N.Get("assetManager.navigation.uncategorized.label"),
                     string.Empty,
                     Array.Empty<string>(),
-                    IconState.FromBuiltinIcon(UiBuiltinIcon.Uncategorized, size: UiSizeTokens.Size12)),
+                    IconState.FromFluentIcon(
+                        UiFluentIcon.Folder,
+                        size: UiSizeTokens.Size12)),
                 new AssetManagerViewItemState(
                     "tags",
                     I18N.Get("assetManager.navigation.tags.label"),
@@ -91,7 +97,9 @@ namespace Ee4v.AssetManager.UI
                     I18N.Get("assetManager.navigation.tags.label"),
                     string.Empty,
                     Array.Empty<string>(),
-                    IconState.FromBuiltinIcon(UiBuiltinIcon.Tag, size: UiSizeTokens.Size12))
+                    IconState.FromFluentIcon(
+                        UiFluentIcon.Tag,
+                        size: UiSizeTokens.Size12))
             };
         }
     }

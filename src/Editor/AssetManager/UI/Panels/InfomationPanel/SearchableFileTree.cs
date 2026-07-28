@@ -57,6 +57,14 @@ namespace Ee4v.AssetManager.UI
                                 AssetManagerUiDependencies.FileSystemReader;
             _scheduler = scheduler ?? AssetManagerUiDependencies.Scheduler;
             AddToClassList(RootClassName);
+            var searchTooltip =
+                I18N.GetForScope(
+                    "UI",
+                    "ui.search.tooltip");
+            var clearTooltip =
+                I18N.GetForScope(
+                    "UI",
+                    "ui.clear.tooltip");
             _treeView = new SearchableTreeView<FileTreeNode>(
                 CreateTreeItem,
                 BindTreeItem,
@@ -67,8 +75,18 @@ namespace Ee4v.AssetManager.UI
                 OnTreeContextClick,
                 node => node == null || !node.IsGroup || node.GroupKind == FileTreeGroupKind.Version,
                 OnTreeItemDoubleClicked,
-                I18N.GetForScope("UI", "ui.search.tooltip"),
-                I18N.GetForScope("UI", "ui.clear.tooltip"));
+                searchTooltip,
+                clearTooltip,
+                searchIconState:
+                IconState.FromFluentIcon(
+                    UiFluentIcon.Search,
+                    UiSizeTokens.Size14,
+                    searchTooltip),
+                clearIconState:
+                IconState.FromFluentIcon(
+                    UiFluentIcon.Dismiss,
+                    UiSizeTokens.Size10,
+                    clearTooltip));
             _treeView.SetViewDataKey("ee4v-asset-manager-infomation-panel-file-tree");
             Add(_treeView);
 

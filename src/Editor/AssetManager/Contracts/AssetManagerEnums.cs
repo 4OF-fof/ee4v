@@ -32,7 +32,32 @@ namespace Ee4v.AssetManager.Contracts
         Star,
         Package,
         Tag,
-        Search
+        Search,
+        Image,
+        Music,
+        Code,
+        Cube,
+        Database,
+        Heart,
+        Library,
+        Collections,
+        Group,
+        Grid,
+        List,
+        Table,
+        Camera,
+        Video,
+        Document,
+        Archive,
+        Cloud,
+        Color,
+        Lightbulb,
+        Wrench,
+        Settings,
+        Pin,
+        Home,
+        Apps,
+        Key
     }
 
     public enum SmartCollectionConditionField

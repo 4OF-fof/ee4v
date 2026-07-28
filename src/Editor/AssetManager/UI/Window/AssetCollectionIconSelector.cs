@@ -17,10 +17,15 @@ namespace Ee4v.AssetManager.UI
             "ee4v-collection-icon-selector";
         private const string CandidateClassName =
             "ee4v-collection-icon-selector__candidate";
+        private const string LastCandidateClassName =
+            "ee4v-collection-icon-selector__candidate--last";
         private const string SelectedClassName =
             "ee4v-collection-icon-selector__candidate--selected";
         private const string PresetsClassName =
             "ee4v-collection-icon-selector__presets";
+        private const string PresetRowClassName =
+            "ee4v-collection-icon-selector__preset-row";
+        private const int PresetColumns = 15;
         private const string CustomRowClassName =
             "ee4v-collection-icon-selector__custom-row";
         private const string CustomLabelClassName =
@@ -41,14 +46,25 @@ namespace Ee4v.AssetManager.UI
             var presets = new VisualElement();
             presets.AddToClassList(PresetsClassName);
             var icons = Enum.GetValues(typeof(AssetCollectionIcon))
-                .Cast<AssetCollectionIcon>();
+                .Cast<AssetCollectionIcon>()
+                .ToArray();
+            VisualElement presetRow = null;
+            var index = 0;
             foreach (var icon in icons)
             {
+                if (index % PresetColumns == 0)
+                {
+                    presetRow = new VisualElement();
+                    presetRow.AddToClassList(
+                        PresetRowClassName);
+                    presets.Add(presetRow);
+                }
+
                 var capturedIcon = icon;
                 var button = new UiButton(
                     new UiButtonState(
                         tooltip: FormatIcon(capturedIcon),
-                        iconState: IconState.FromBuiltinIcon(
+                        iconState: IconState.FromFluentIcon(
                             AssetCollectionIconPresenter.Resolve(
                                 capturedIcon),
                             size: UiSizeTokens.Size18),
@@ -56,8 +72,13 @@ namespace Ee4v.AssetManager.UI
                         size: UiButtonSize.Compact),
                     () => SelectBuiltin(capturedIcon));
                 button.AddToClassList(CandidateClassName);
-                presets.Add(button);
+                button.EnableInClassList(
+                    LastCandidateClassName,
+                    (index + 1) % PresetColumns == 0 ||
+                    index == icons.Length - 1);
+                presetRow.Add(button);
                 _candidates.Add(new Candidate(capturedIcon, button));
+                index++;
             }
 
             Add(presets);

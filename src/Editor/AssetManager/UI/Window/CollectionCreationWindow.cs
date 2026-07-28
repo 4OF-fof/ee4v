@@ -272,8 +272,8 @@ namespace Ee4v.AssetManager.UI
                 new UiButtonState(
                     I18N.Get(
                         "assetManager.collectionCreation.addCondition"),
-                    iconState: IconState.FromBuiltinIcon(
-                        UiBuiltinIcon.Add,
+                    iconState: IconState.FromFluentIcon(
+                        UiFluentIcon.Add,
                         UiSizeTokens.Size12),
                     variant: UiButtonVariant.Ghost));
             addConditionButton.clicked += () =>
@@ -760,8 +760,8 @@ namespace Ee4v.AssetManager.UI
                     new UiButtonState(
                         tooltip: I18N.Get(
                             "assetManager.collectionCreation.removeCondition"),
-                        iconState: IconState.FromBuiltinIcon(
-                            UiBuiltinIcon.Close,
+                        iconState: IconState.FromFluentIcon(
+                            UiFluentIcon.Dismiss,
                             UiSizeTokens.Size12),
                         variant: UiButtonVariant.Ghost,
                         size: UiButtonSize.Compact),

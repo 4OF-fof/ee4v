@@ -309,20 +309,25 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
 
         private static string ToDbCollectionIcon(AssetCollectionIcon icon)
         {
-            if (icon == AssetCollectionIcon.Star) return "star";
-            if (icon == AssetCollectionIcon.Package) return "package";
-            if (icon == AssetCollectionIcon.Tag) return "tag";
-            if (icon == AssetCollectionIcon.Search) return "search";
-            return "folder";
+            return Enum.IsDefined(
+                    typeof(AssetCollectionIcon),
+                    icon)
+                ? icon.ToString().ToLowerInvariant()
+                : "folder";
         }
 
         private static AssetCollectionIcon FromDbCollectionIcon(string icon)
         {
-            if (icon == "star") return AssetCollectionIcon.Star;
-            if (icon == "package") return AssetCollectionIcon.Package;
-            if (icon == "tag") return AssetCollectionIcon.Tag;
-            if (icon == "search") return AssetCollectionIcon.Search;
-            return AssetCollectionIcon.Folder;
+            AssetCollectionIcon parsed;
+            return Enum.TryParse(
+                       icon,
+                       true,
+                       out parsed) &&
+                   Enum.IsDefined(
+                       typeof(AssetCollectionIcon),
+                       parsed)
+                ? parsed
+                : AssetCollectionIcon.Folder;
         }
 
         private static string ToDbSmartField(SmartCollectionConditionField field)
