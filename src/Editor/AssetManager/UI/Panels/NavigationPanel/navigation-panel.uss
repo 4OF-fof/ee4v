@@ -89,6 +89,35 @@
     border-color: var(--ee4v-color-transparent);
 }
 
+.ee4v-asset-manager-collection-list__disclosure--toggle {
+    border-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-color-panel);
+}
+
+.ee4v-asset-manager-collection-list__disclosure--toggle > .unity-foldout__toggle,
+.ee4v-asset-manager-collection-list__disclosure--toggle > .unity-foldout__toggle:hover,
+.ee4v-asset-manager-collection-list__disclosure--toggle > .unity-foldout__toggle:active,
+.ee4v-asset-manager-collection-list__disclosure--toggle > .unity-foldout__toggle:focus {
+    width: var(--ee4v-size-16);
+    min-width: var(--ee4v-size-16);
+    max-width: var(--ee4v-size-16);
+    height: var(--ee4v-size-22);
+    min-height: var(--ee4v-size-22);
+    max-height: var(--ee4v-size-22);
+    margin: var(--ee4v-space-none);
+    padding: var(--ee4v-space-none);
+    border-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-color-panel);
+}
+
+.ee4v-asset-manager-collection-list__disclosure--toggle > .unity-foldout__content {
+    display: none;
+}
+
+.ee4v-asset-manager-collection-list__disclosure--toggle .unity-toggle__label {
+    display: none;
+}
+
 .ee4v-asset-manager-collection-list__button {
     flex-grow: 1;
     min-height: var(--ee4v-size-22);
@@ -131,11 +160,6 @@
 
 .ee4v-asset-manager-collection-list__depth-line--current.ee4v-asset-manager-collection-list__depth-line--last {
     bottom: 50%;
-}
-
-.ee4v-asset-manager-collection-list__depth-line--children {
-    top: 50%;
-    bottom: 0;
 }
 
 .ee4v-asset-manager-collection-list__depth-branch {

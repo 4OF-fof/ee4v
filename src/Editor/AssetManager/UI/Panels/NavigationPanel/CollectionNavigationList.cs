@@ -24,6 +24,8 @@ namespace Ee4v.AssetManager.UI
             "ee4v-asset-manager-collection-list__row--drop-after";
         private const string DisclosureClassName =
             "ee4v-asset-manager-collection-list__disclosure";
+        private const string DisclosureToggleClassName =
+            "ee4v-asset-manager-collection-list__disclosure--toggle";
         private const string ButtonClassName =
             "ee4v-asset-manager-collection-list__button";
         private const string ButtonDropTargetClassName =
@@ -34,8 +36,6 @@ namespace Ee4v.AssetManager.UI
             "ee4v-asset-manager-collection-list__depth-line--current";
         private const string DepthLineLastClassName =
             "ee4v-asset-manager-collection-list__depth-line--last";
-        private const string DepthLineChildrenClassName =
-            "ee4v-asset-manager-collection-list__depth-line--children";
         private const string DepthBranchClassName =
             "ee4v-asset-manager-collection-list__depth-branch";
         private readonly Action<string> _selected;
@@ -526,17 +526,17 @@ namespace Ee4v.AssetManager.UI
                     pickingMode = PickingMode.Position
                 };
                 row.AddToClassList(RowClassName);
+                AddDepthLines(
+                    row,
+                    depth,
+                    hasChildren,
+                    isLastSibling: i == items.Length - 1);
                 row.Add(CreateDisclosure(
                     collection.Id,
                     depth,
                     hasChildren,
                     expanded));
                 row.Add(button);
-                AddDepthLines(
-                    row,
-                    depth,
-                    hasChildren && expanded,
-                    isLastSibling: i == items.Length - 1);
                 var collectionButton = new CollectionButton(
                     collection.Id,
                     viewId,
@@ -563,24 +563,24 @@ namespace Ee4v.AssetManager.UI
             VisualElement disclosure;
             if (hasChildren)
             {
-                var button = new UiButton(
-                    new UiButtonState(
-                        iconState: IconState.FromBuiltinIcon(
-                            expanded
-                                ? UiBuiltinIcon.DisclosureOpen
-                                : UiBuiltinIcon.DisclosureClosed,
-                            UiSizeTokens.Size10),
-                        variant: UiButtonVariant.Ghost,
-                        size: UiButtonSize.Compact));
-                button.clicked += () =>
+                var foldout = new Foldout
+                {
+                    value = expanded
+                };
+                foldout.RegisterValueChangedCallback(evt =>
+                {
                     SetCollectionExpanded(
                         collectionId,
-                        !expanded);
-                button.RegisterCallback<PointerDownEvent>(
+                        evt.newValue);
+                    evt.StopPropagation();
+                });
+                foldout.RegisterCallback<PointerDownEvent>(
                     evt => evt.StopPropagation());
-                button.RegisterCallback<PointerUpEvent>(
+                foldout.RegisterCallback<PointerUpEvent>(
                     evt => evt.StopPropagation());
-                disclosure = button;
+                foldout.AddToClassList(
+                    DisclosureToggleClassName);
+                disclosure = foldout;
             }
             else
             {
@@ -614,26 +614,20 @@ namespace Ee4v.AssetManager.UI
                     GetDepthLineLeft(depth);
                 row.Add(currentLine);
 
-                var branch = CreateDepthElement(
-                    DepthBranchClassName);
-                branch.style.left =
-                    GetDepthLineLeft(depth);
-                branch.style.width =
-                    UiSpacingTokens.Xl * 0.5f;
-                row.Add(branch);
+                if (!hasChildren)
+                {
+                    var branch = CreateDepthElement(
+                        DepthBranchClassName);
+                    branch.style.left =
+                        GetDepthLineLeft(depth);
+                    branch.style.width =
+                        UiSpacingTokens.Xl +
+                        UiSizeTokens.Size16 -
+                        UiSpacingTokens.Small;
+                    row.Add(branch);
+                }
             }
 
-            if (!hasChildren)
-            {
-                return;
-            }
-
-            var childrenLine = CreateDepthElement(
-                DepthLineClassName,
-                DepthLineChildrenClassName);
-            childrenLine.style.left =
-                GetDepthLineLeft(depth + 1);
-            row.Add(childrenLine);
         }
 
         private static VisualElement CreateDepthElement(
@@ -651,11 +645,9 @@ namespace Ee4v.AssetManager.UI
             return element;
         }
 
-        private static float GetDepthLineLeft(int depth)
+        internal static float GetDepthLineLeft(int depth)
         {
-            return UiSizeTokens.Size16 +
-                   UiSpacingTokens.Xxs +
-                   UiSizeTokens.Size14 * 0.5f +
+            return UiSizeTokens.Size16 * 0.5f +
                    (depth - 1) * UiSpacingTokens.Xl;
         }
 

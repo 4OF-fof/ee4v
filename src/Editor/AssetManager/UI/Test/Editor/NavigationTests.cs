@@ -160,14 +160,42 @@ namespace Ee4v.AssetManager.UI.Tests
                 list.Query<VisualElement>(
                         className:
                         "ee4v-asset-manager-collection-list__depth-line--children")
-                    .ToList().Count,
-                Is.EqualTo(2));
+                    .ToList(),
+                Is.Empty);
             Assert.That(
                 list.Query<VisualElement>(
                         className:
                         "ee4v-asset-manager-collection-list__depth-branch")
                     .ToList().Count,
+                Is.EqualTo(1));
+            Assert.That(
+                list.Query<Foldout>(
+                        className:
+                        "ee4v-asset-manager-collection-list__disclosure--toggle")
+                    .ToList().Count,
                 Is.EqualTo(2));
+            Assert.That(
+                CollectionNavigationList.GetDepthLineLeft(1),
+                Is.EqualTo(UiSizeTokens.Size16 * 0.5f));
+            Assert.That(
+                CollectionNavigationList.GetDepthLineLeft(2),
+                Is.EqualTo(
+                    UiSizeTokens.Size16 * 0.5f +
+                    UiSpacingTokens.Xl));
+            var childRow = list.Query<VisualElement>(
+                    className:
+                    "ee4v-asset-manager-collection-list__row")
+                .ToList()[1];
+            var childElements = childRow.Children().ToList();
+            var depthLine = childRow.Q<VisualElement>(
+                className:
+                "ee4v-asset-manager-collection-list__depth-line--current");
+            var disclosure = childRow.Q<VisualElement>(
+                className:
+                "ee4v-asset-manager-collection-list__disclosure");
+            Assert.That(
+                childElements.IndexOf(depthLine),
+                Is.LessThan(childElements.IndexOf(disclosure)));
         }
 
         [Test]
@@ -195,14 +223,13 @@ namespace Ee4v.AssetManager.UI.Tests
                         "ee4v-asset-manager-collection-list__row")
                     .ToList().Count,
                 Is.EqualTo(2));
-            Assert.That(
-                list.Query<UiButton>(
-                        className:
-                        "ee4v-asset-manager-collection-list__disclosure")
-                    .ToList().Count,
-                Is.EqualTo(1));
+            var disclosure = list.Query<Foldout>(
+                    className:
+                    "ee4v-asset-manager-collection-list__disclosure")
+                .ToList()
+                .Single();
 
-            list.SetCollectionExpanded("parent", false);
+            disclosure.value = false;
 
             Assert.That(
                 list.Query<VisualElement>(
@@ -211,7 +238,12 @@ namespace Ee4v.AssetManager.UI.Tests
                     .ToList().Count,
                 Is.EqualTo(1));
 
-            list.SetCollectionExpanded("parent", true);
+            list.Query<Foldout>(
+                    className:
+                    "ee4v-asset-manager-collection-list__disclosure")
+                .ToList()
+                .Single()
+                .value = true;
 
             Assert.That(
                 list.Query<VisualElement>(
