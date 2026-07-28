@@ -8,6 +8,7 @@ namespace Ee4v.AssetManager.Domain
         RequiredValue,
         SelfDependency,
         UnsupportedDependencyTarget,
+        UnsupportedCollectionIcon,
         SmartConditionRequired,
         SmartConditionQueryRequired
     }
@@ -104,6 +105,16 @@ namespace Ee4v.AssetManager.Domain
                     throw new CatalogRuleException(
                         CatalogRuleError.SmartConditionQueryRequired);
                 }
+            }
+        }
+
+        internal static void EnsureCollectionIcon(int value, int maximumValue)
+        {
+            if (value < 0 || value > maximumValue)
+            {
+                throw new CatalogRuleException(
+                    CatalogRuleError.UnsupportedCollectionIcon,
+                    "collection icon");
             }
         }
     }

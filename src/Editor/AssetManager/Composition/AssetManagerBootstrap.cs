@@ -52,7 +52,8 @@ namespace Ee4v.AssetManager.Composition
                 AssetManagerInfrastructure.CreateArchiveReader(),
                 AssetManagerInfrastructure.CreateFileSystemReader(),
                 new AssetManagerUiSchedulerAdapter(),
-                new global::Ee4v.AssetManager.UI.StandaloneAssetManagerViewSession());
+                new global::Ee4v.AssetManager.UI.StandaloneAssetManagerViewSession(),
+                AssetManagerStartupSync.RequestManualSync);
             AssetManagerStartupSyncConflictPresenter.Initialize(_assetManager);
             AssetManagerStartupSync.EnsureInitialized(_assetManager, settings);
         }

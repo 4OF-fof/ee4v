@@ -145,6 +145,8 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
         {
             public string id { get; set; }
             public string name { get; set; }
+            public string icon { get; set; }
+            public string icon_asset_guid { get; set; }
             public string created_at { get; set; }
             public string updated_at { get; set; }
         }

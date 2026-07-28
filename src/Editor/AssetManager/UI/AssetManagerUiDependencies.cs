@@ -11,6 +11,7 @@ namespace Ee4v.AssetManager.UI
         private static IAssetFileSystemReader _fileSystemReader;
         private static IAssetManagerUiScheduler _scheduler;
         private static StandaloneAssetManagerViewSession _standaloneViewSession;
+        private static Action _requestManualSync;
 
         internal static IAssetManager AssetManager
         {
@@ -46,13 +47,25 @@ namespace Ee4v.AssetManager.UI
             _standaloneViewSession ?? throw new InvalidOperationException(
                 "AssetManager standalone view session has not been configured.");
 
+        internal static void RequestManualSync()
+        {
+            if (_requestManualSync == null)
+            {
+                throw new InvalidOperationException(
+                    "AssetManager manual sync has not been configured.");
+            }
+
+            _requestManualSync();
+        }
+
         internal static void Configure(
             IAssetManager assetManager,
             IAssetManagerUiPreferences preferences,
             IAssetArchiveReader archiveReader,
             IAssetFileSystemReader fileSystemReader,
             IAssetManagerUiScheduler scheduler,
-            StandaloneAssetManagerViewSession standaloneViewSession)
+            StandaloneAssetManagerViewSession standaloneViewSession,
+            Action requestManualSync)
         {
             _assetManager = assetManager ?? throw new ArgumentNullException(nameof(assetManager));
             _preferences = preferences ?? throw new ArgumentNullException(nameof(preferences));
@@ -62,6 +75,9 @@ namespace Ee4v.AssetManager.UI
             _standaloneViewSession = standaloneViewSession ??
                                      throw new ArgumentNullException(
                                          nameof(standaloneViewSession));
+            _requestManualSync = requestManualSync ??
+                                 throw new ArgumentNullException(
+                                     nameof(requestManualSync));
         }
     }
 }

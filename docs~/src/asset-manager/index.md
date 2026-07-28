@@ -82,21 +82,26 @@ setting の定義と登録は Composition が所有します。Infrastructure �
 - `ee4v/Window/Infomation`: 単独 Infomation window
 - `ee4v/Window/Main View`: 単独 Main View window
 
-手動 datasource sync 用の AssetManager debug menu は提供しません。BLM / Eagle の自動同期は
-起動時 sync の user setting に従って実行します。
+Navigation の `Library` 見出しにある同期操作から、設定済みの BLM / Eagle datasource を
+手動同期できます。起動時の自動同期は user setting に従い、手動同期は同設定の有効・無効に
+かかわらず、存在する datasource path を対象にします。どちらも同じ変更確認、競合確認、
+background activity の経路を使用します。
 
 ## UI の責務
 
 - `MainViewController` は `MainViewHost` ごとに生成し、その表示セッションの navigation、履歴、grid 列数、取得済み一覧 cache、非同期 load と cancellation を所有する。統合 window と単独 window の controller instance は共有しない
 - `MainView` は AssetManager 固有の UI controller として、検索文字列、一覧・詳細 mode、選択中 item などの画面状態を持ち、Core UI component へ描画 state を渡す
 - `MainViewHost` は `MainToolbar`、`NavigationPanel`、`MainView` と controller の event 配線だけを担当する。toolbar と navigation panel は入力を通知し、渡された値を描画するだけで、設定や他 component を直接操作しない
+- Navigation は `All`、Booth snapshot を持つ Item の `BOOTH Items`、通常 Collection 未所属かつ Smart Collection にも一致しない `Uncategorized`、Item grid とは別の tag 一覧ページを開く `Tags` を提供する
+- Navigation の固定項目の下には通常 Collection と Smart Collection を別々の折りたたみ可能なセクションで表示し、固定項目と同じ左右余白、行幅、共通の行表現を使用する。各セクションの背景なし追加アイコンから枠線付きのアンカー popup を開き、実測したコンテンツ高に合わせて高さを調整し、最大高を超えた場合だけ縦スクロールする。双方で名前、組み込みアイコンまたは任意 Texture asset を入力し、Smart Collection のみ match mode と条件一覧を追加で入力する。Smart Collection の条件 field は名前、説明、タグ、ファイル名、拡張子に限定する
+- 単独 Navigation window の選択は standalone view session を介して単独 Main View window と共有し、`Tags` を含む固定ページと Collection の選択を Main View 側へ通知する
 - `InfomationPanel` は渡された選択 state を描画し、詳細表示要求を通知する。統合 window は同じ layout 内で直接配線し、単独 Main View / Infomation window は Composition が生成する揮発性の standalone view session を介して選択 state と詳細 tab 要求だけを共有する。standalone session は現在値を保持するため、Infomation window を後から開いた場合も現在の選択を復元する
 - Core の `ItemGrid` / `ItemImage` は渡された state の描画と UI Toolkit 固有の layout・resource 処理に限定する。AssetManager の cache key、履歴、設定値は保持しない
 - grid 列数の実効値は controller ごとに独立した表示セッション state とする。user setting は新しい `MainViewHost` を生成するときのデフォルト値としてだけ読み取り、開いている他 window の実効値や slider へは反映しない
 
 ## 現在の実装状態
 
-- schema v2、Item/File/Tag/Collection/Dependency/Import Target API を実装済み
+- schema v4、Item/File/Tag/Collection/Dependency/Import Target API を実装済み
 - BLM `data.db` と Eagle library の読み取り同期、安定した source identity、datasource tag、欠落 origin の reconciliation を実装済み
 - BLM snapshot に任意の `preferences` table がない場合も item metadata の同期を継続し、item directory path だけを未設定として扱う
 - Main View と File Tree は DB / filesystem 読み込みを background で行い、前回 load の cancellation に対応
@@ -111,7 +116,7 @@ setting の定義と登録は Composition が所有します。Infrastructure �
 - Unity Editor session 開始時の BLM / Eagle datasource sync は background で変更確認を先行し、DB 内にも同じ source の成功状態があり、かつ `cache/sync` の前回成功 fingerprint と一致する場合だけ DB sync と UI reload を省略する。DB を削除・再生成した場合は fingerprint が残っていても再同期する
 - Unity側の item 情報が同期元より新しい競合は `DiffConfirmationOverlay` で現在値と同期元値を比較し、上書きまたは今回の同期キャンセルを選択できる
 - 起動時に自動同期する source は user setting から個別に有効・無効を選択できる
-- background activity 中は統合 AssetManager の Main View と単独 Main View window の右下だけに `StatusOverlay` を表示する
+- background activity 中は統合 AssetManagerと単独 Main View windowの右下に `StatusOverlay` を表示する。単独 Navigation windowには表示しない
 - File Tree の構築状況は File Tree 内の loading message だけで表示し、`StatusOverlay` には追加しない
 - Main View の一覧検索は関連 tag / file / Booth snapshot を構築しない軽量 summary API を使う。thumbnail URL は一覧分を一度の DB 接続で解決して最大 4 並列取得する。描画用 Texture cache は画像内容を含む key と LRU 上限を持つ
 - Eagle Booth bridge は loopback bind、BOOTH origin 制限、session token、1 MiB request body 上限を適用

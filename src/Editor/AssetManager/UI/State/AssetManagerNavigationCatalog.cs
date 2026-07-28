@@ -9,9 +9,9 @@ namespace Ee4v.AssetManager.UI
         private static readonly string[] ItemIds =
         {
             "all-assets",
-            "favorites",
-            "booth-library",
-            "packages"
+            "booth-items",
+            "uncategorized",
+            "tags"
         };
 
         public static string DefaultItemId
@@ -58,59 +58,40 @@ namespace Ee4v.AssetManager.UI
             {
                 new AssetManagerViewItemState(
                     "all-assets",
-                    I18N.Get("assetManager.navigation.allAssets.label"),
-                    I18N.Get("assetManager.navigation.allAssets.meta"),
-                    I18N.Get("assetManager.navigation.allAssets.eyebrow"),
-                    I18N.Get("assetManager.navigation.allAssets.title"),
-                    I18N.Get("assetManager.navigation.allAssets.description"),
-                    new[]
-                    {
-                        I18N.Get("assetManager.navigation.allAssets.row.search"),
-                        I18N.Get("assetManager.navigation.allAssets.row.viewMode"),
-                        I18N.Get("assetManager.navigation.allAssets.row.bulkActions")
-                    },
-                    IconState.FromBuiltinIcon(UiBuiltinIcon.Search, size: UiSizeTokens.Size12)),
+                    I18N.Get("assetManager.navigation.all.label"),
+                    string.Empty,
+                    string.Empty,
+                    I18N.Get("assetManager.navigation.all.label"),
+                    string.Empty,
+                    Array.Empty<string>(),
+                    IconState.FromBuiltinIcon(UiBuiltinIcon.Package, size: UiSizeTokens.Size12)),
                 new AssetManagerViewItemState(
-                    "favorites",
-                    I18N.Get("assetManager.navigation.favorites.label"),
-                    I18N.Get("assetManager.navigation.favorites.meta"),
-                    I18N.Get("assetManager.navigation.favorites.eyebrow"),
-                    I18N.Get("assetManager.navigation.favorites.title"),
-                    I18N.Get("assetManager.navigation.favorites.description"),
-                    new[]
-                    {
-                        I18N.Get("assetManager.navigation.favorites.row.list"),
-                        I18N.Get("assetManager.navigation.favorites.row.recent"),
-                        I18N.Get("assetManager.navigation.favorites.row.preview")
-                    },
-                    IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureOpen, size: UiSizeTokens.Size12)),
+                    "booth-items",
+                    I18N.Get("assetManager.navigation.boothItems.label"),
+                    string.Empty,
+                    string.Empty,
+                    I18N.Get("assetManager.navigation.boothItems.label"),
+                    string.Empty,
+                    Array.Empty<string>(),
+                    IconState.FromBuiltinIcon(UiBuiltinIcon.Store, size: UiSizeTokens.Size12)),
                 new AssetManagerViewItemState(
-                    "booth-library",
-                    I18N.Get("assetManager.navigation.boothLibrary.label"),
-                    I18N.Get("assetManager.navigation.boothLibrary.meta"),
-                    I18N.Get("assetManager.navigation.boothLibrary.eyebrow"),
-                    I18N.Get("assetManager.navigation.boothLibrary.title"),
-                    I18N.Get("assetManager.navigation.boothLibrary.description"),
-                    new[]
-                    {
-                        I18N.Get("assetManager.navigation.boothLibrary.row.purchases"),
-                        I18N.Get("assetManager.navigation.boothLibrary.row.sync"),
-                        I18N.Get("assetManager.navigation.boothLibrary.row.download")
-                    },
-                    IconState.FromBuiltinIcon(UiBuiltinIcon.DisclosureClosed, size: UiSizeTokens.Size12)),
+                    "uncategorized",
+                    I18N.Get("assetManager.navigation.uncategorized.label"),
+                    string.Empty,
+                    string.Empty,
+                    I18N.Get("assetManager.navigation.uncategorized.label"),
+                    string.Empty,
+                    Array.Empty<string>(),
+                    IconState.FromBuiltinIcon(UiBuiltinIcon.Uncategorized, size: UiSizeTokens.Size12)),
                 new AssetManagerViewItemState(
-                    "packages",
-                    I18N.Get("assetManager.navigation.packages.label"),
-                    I18N.Get("assetManager.navigation.packages.meta"),
-                    I18N.Get("assetManager.navigation.packages.eyebrow"),
-                    I18N.Get("assetManager.navigation.packages.title"),
-                    I18N.Get("assetManager.navigation.packages.description"),
-                    new[]
-                    {
-                        I18N.Get("assetManager.navigation.packages.row.installed"),
-                        I18N.Get("assetManager.navigation.packages.row.dependencies"),
-                        I18N.Get("assetManager.navigation.packages.row.updates")
-                    })
+                    "tags",
+                    I18N.Get("assetManager.navigation.tags.label"),
+                    string.Empty,
+                    string.Empty,
+                    I18N.Get("assetManager.navigation.tags.label"),
+                    string.Empty,
+                    Array.Empty<string>(),
+                    IconState.FromBuiltinIcon(UiBuiltinIcon.Tag, size: UiSizeTokens.Size12))
             };
         }
     }

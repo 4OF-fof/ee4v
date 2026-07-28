@@ -1,3 +1,4 @@
+using Ee4v.AssetManager.Contracts;
 using Ee4v.UI;
 using UnityEngine.UIElements;
 
@@ -14,6 +15,7 @@ namespace Ee4v.AssetManager.UI
 
             public void Register(CatalogWindow.CatalogRegistry registry)
             {
+                registry.RegisterStyleSheet("Editor/UI/Components/Inputs/Button/ui-button.uss");
                 registry.RegisterStyleSheet("Editor/AssetManager/UI/Panels/NavigationPanel/navigation-panel.uss");
                 registry.RegisterStory(new CatalogWindow.StoryRegistration(
                     "asset-manager-navigation-panel",
@@ -21,7 +23,7 @@ namespace Ee4v.AssetManager.UI
                     "NavigationPanel",
                     "AssetManager 左ペイン用の navigation コンポーネントです。",
                     "カテゴリ、ソース、保存済みビューのような左側導線を単体で再利用できるようにした panel component です。ThreePaneLayout の左ペインにも、単体 window にも同じものを載せます。",
-                    new[] { "SingleSelectButtonGroup" },
+                    new[] { "UiButton", "SingleSelectButtonGroup" },
                     CatalogWindow.ComponentImplementationKind.UiToolkit,
                     (window, parent) => BuildAssetManagerNavigationPanelStory(window, parent)));
             }
@@ -38,6 +40,22 @@ namespace Ee4v.AssetManager.UI
             surface.style.height = 360f;
 
             var panel = new NavigationPanel();
+            panel.SetCollections(new[]
+            {
+                new AssetCollection
+                {
+                    Id = "favorites",
+                    Name = "Favorites",
+                    Icon = AssetCollectionIcon.Star
+                },
+                new AssetCollection
+                {
+                    Id = "recent-avatar",
+                    Name = "Recently updated avatars",
+                    Icon = AssetCollectionIcon.Search,
+                    IsSmartCollection = true
+                }
+            }, AssetManagerNavigationCatalog.DefaultItemId);
             panel.style.flexGrow = 1f;
             surface.Add(panel);
             preview.Body.Add(surface);

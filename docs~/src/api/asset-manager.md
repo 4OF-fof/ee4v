@@ -96,6 +96,8 @@ public sealed class AssetCollection
 {
     public string Id { get; set; }
     public string Name { get; set; }
+    public AssetCollectionIcon Icon { get; set; }
+    public string IconAssetGuid { get; set; }
     public bool IsSmartCollection { get; set; }
     public string ParentCollectionId { get; set; }
     public SmartCollectionRule SmartRule { get; set; }
@@ -107,6 +109,8 @@ public sealed class AssetCollection
 Notes:
 
 - `ParentCollectionId` が `null` の場合は root collection。
+- `Icon` は通常 Collection と Smart Collection で共通の組み込み表示アイコン。
+- `IconAssetGuid` が有効な Texture asset を指す場合は任意アイコンとして `Icon` より優先する。asset が見つからない場合は `Icon` へフォールバックする。
 - 子 Collection は最大 1 つの親だけを持つ。
 - Smart Collection の rule は保存して返す。`SearchItems(...)` で Smart Collection を指定すると条件を評価して item を抽出する。
 
@@ -238,15 +242,22 @@ public enum SmartCollectionMatchMode
     Any
 }
 
+public enum AssetCollectionIcon
+{
+    Folder,
+    Star,
+    Package,
+    Tag,
+    Search
+}
+
 public enum SmartCollectionConditionField
 {
     Name,
     Description,
     Tag,
-    SourceType,
     FileName,
-    Extension,
-    Lifecycle
+    Extension
 }
 
 public enum SmartCollectionConditionOperator
@@ -280,6 +291,8 @@ public sealed class AssetItemQuery
     public IReadOnlyList<string> TagIds { get; set; }
     public IReadOnlyList<AssetSourceType> SourceTypes { get; set; }
     public AssetFileLifecycle? Lifecycle { get; set; }
+    public bool HasBoothInformation { get; set; }
+    public bool UncategorizedOnly { get; set; }
     public bool IncludeUnavailable { get; set; }
     public int Offset { get; set; }
     public int Limit { get; set; }
@@ -328,12 +341,16 @@ public sealed class AssetFileImportTargetRequest
 public sealed class CreateCollectionRequest
 {
     public string Name { get; set; }
+    public AssetCollectionIcon Icon { get; set; }
+    public string IconAssetGuid { get; set; }
     public string ParentCollectionId { get; set; }
 }
 
 public sealed class CreateSmartCollectionRequest
 {
     public string Name { get; set; }
+    public AssetCollectionIcon Icon { get; set; }
+    public string IconAssetGuid { get; set; }
     public string ParentCollectionId { get; set; }
     public SmartCollectionMatchMode MatchMode { get; set; }
     public IReadOnlyList<SmartCollectionCondition> Conditions { get; set; }
@@ -380,7 +397,7 @@ public AssetSearchResult SearchItems(AssetItemQuery query)
 
 Parameters:
 
-- `query`: keyword、tag、通常 collection、source type、file lifecycle、paging を含む検索条件。
+- `query`: keyword、tag、通常 collection、source type、Booth 情報の有無、未分類、file lifecycle、paging を含む検索条件。
 
 Returns:
 
@@ -391,6 +408,8 @@ Effects:
 
 - DB を読み取る。
 - `SourceTypes` は file origin の存在で絞り込む。代表 origin だけでなく、指定 datasource origin を持つ file があれば一致する。
+- `HasBoothInformation` は datasource の種類ではなく、`booth_info` snapshot の存在で絞り込む。
+- `UncategorizedOnly` は通常 Collection に直接所属せず、どの Smart Collection の条件にも一致しない Item だけに絞り込む。
 
 Notes:
 
@@ -710,6 +729,7 @@ public AssetCollection CreateCollection(CreateCollectionRequest request)
 Parameters:
 
 - `request.Name`: collection 名。
+- `request.Icon`: navigation などで使用する Collection アイコン。
 - `request.ParentCollectionId`: 親 Collection。root に置く場合は `null`。
 
 Returns:
@@ -732,6 +752,7 @@ public AssetCollection CreateSmartCollection(CreateSmartCollectionRequest reques
 Parameters:
 
 - `request.Name`: collection 名。
+- `request.Icon`: 通常 Collection と共通の Collection アイコン。
 - `request.ParentCollectionId`: 親 Collection。
 - `request.MatchMode`: `All` または `Any`。
 - `request.Conditions`: 評価条件。
@@ -1030,9 +1051,11 @@ Notes:
 - Eagle item に対応しない Booth download も `file_info` として作成する。この場合は origin を持たないため、実体 path 解決はできない。
 - Booth metadata を持たない folder も同期対象に含め、folder 名を item 名、説明を空文字として扱う。
 
-### 起動時の自動同期
+### datasource 同期
 
 Unity Editor session の開始時に、設定で有効な datasource の変更確認を background で行い、変更がある source だけを順番に同期します。同じ session 内の domain reload では再実行しません。
+
+Navigation の同期操作では、起動時同期の有効設定にかかわらず、設定済みで存在する BLM / Eagle datasource を同じ prepare / conflict / apply 経路で手動同期します。同期処理が進行中の場合、重複した要求は開始しません。
 
 - `assetManager.autoSyncBlmOnStartup`: BLM `data.db` と item directory を同期する
 - `assetManager.autoSyncEagleOnStartup`: Eagle library を同期する
@@ -1041,9 +1064,9 @@ Unity Editor session の開始時に、設定で有効な datasource の変更�
 - DB 内に同じ source の成功した `sync_info` があり、fingerprint も前回成功時と一致する場合は DB sync と `Catalog` change 通知を行わない。DB を削除・再生成した場合は fingerprint が残っていても再同期する
 - 外部の item 情報に差分があり、Unity の `item_info.updated_at` が datasource update time（取得できない場合は前回 `imported_at`）より新しい場合は競合として扱う
 - 競合時は AssetManager window を開き、`DiffConfirmationOverlay` で名前・説明の現在値と同期元値を表示する
-- `上書き` は差分を同期元の値で上書きして同期を続行し、`キャンセル` は今回の起動時同期全体を中止する
+- `上書き` は差分を同期元の値で上書きして同期を続行し、`キャンセル` は今回の同期全体を中止する
 - 実際に同期を実行した場合だけ、完了後の `Catalog` change を main thread で通知する
-- background activity は統合 AssetManager の Main View と単独 Main View window の `StatusOverlay` に表示する
+- background activity は統合 AssetManagerと単独 Main View windowの `StatusOverlay` に表示し、単独 Navigation windowには表示しない
 
 File Tree の完成済み表示データは Unity Editor のメモリ上に最大 64 件共有します。同一 item / file の再表示ではこの memory cache をそのまま利用し、filesystem / ZIP の再確認と loading text の表示を行いません。Import Target と Version Group の代表変更は cache 上の node state を更新し、構造を含む `Catalog` change で全件を破棄します。cache は Unity 終了または domain reload で揮発します。
 

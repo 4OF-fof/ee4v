@@ -65,6 +65,7 @@ namespace Ee4v.AssetManager.UI
             root.AddToClassList(WindowClassName);
 
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/Button/ui-button.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/MainView/main-view.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Toolbar/MainToolbar/main-toolbar.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/ItemImage/item-image.uss");
@@ -86,10 +87,14 @@ namespace Ee4v.AssetManager.UI
             _mainView = _mainViewHost.MainView;
             _standaloneViewSession =
                 AssetManagerUiDependencies.StandaloneViewSession;
+            _mainViewHost.SetSelectedNavigationItem(
+                _standaloneViewSession.SelectedNavigationItemId);
             _mainView.SelectionChanged +=
                 _standaloneViewSession.SetSelection;
             _mainView.DetailTabRequested +=
                 _standaloneViewSession.RequestDetailTab;
+            _standaloneViewSession.NavigationChanged +=
+                OnStandaloneNavigationChanged;
             _standaloneViewSession.SetSelection(
                 null,
                 AssetSelectionContentKind.AssetItem);
@@ -128,7 +133,15 @@ namespace Ee4v.AssetManager.UI
                 _standaloneViewSession.SetSelection;
             _mainView.DetailTabRequested -=
                 _standaloneViewSession.RequestDetailTab;
+            _standaloneViewSession.NavigationChanged -=
+                OnStandaloneNavigationChanged;
             _standaloneViewSession = null;
+        }
+
+        private void OnStandaloneNavigationChanged(
+            string itemId)
+        {
+            _mainViewHost?.SetSelectedNavigationItem(itemId);
         }
     }
 }

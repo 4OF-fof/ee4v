@@ -26,6 +26,11 @@ UI は Unity Editor 上で使う共通 UI コンポーネントと、その実�
 
 `ImageTooltip` は画像とファイル名を縦に並べる汎用 preview component です。画像取得や hover 判定には依存せず、`ImageTooltipState` で受け取った texture の下へファイル名を中央揃えで表示します。desktop 端では `ImageTooltipWindow` が pointer の反対側へ表示位置を補正します。
 
+`UiButton` は文字、補助情報、組み込みまたは任意 texture の icon、selected / disabled
+state を共通の見た目で描画する汎用操作 component です。文字描画には
+`UiTextFactory` の IMGUI fallback を使い、Unity 2022.3 のフォントキャッシュ問題を
+回避します。
+
 ## 新規コンポーネント
 
 新規コンポーネントは基本的に以下を揃えます。

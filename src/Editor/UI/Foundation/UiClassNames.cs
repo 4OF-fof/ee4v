@@ -14,10 +14,14 @@ namespace Ee4v.UI
         public const string BannerMessage = "ee4v-ui-banner__message";
 
         public const string StatusBadge = "ee4v-ui-status";
-        public const string SearchFieldPlaceholder = "ee4v-ui-search-field__placeholder";
+        public const string InputPlaceholder = "ee4v-ui-input__placeholder";
+        public const string FormLabel = "ee4v-ui-form__label";
+        public const string FormError = "ee4v-ui-form__error";
         public const string TestResultGroupCasesTitle = "ee4v-ui-test-result-group__cases-title";
         public const string TestResultGroupCasesMeta = "ee4v-ui-test-result-group__cases-meta";
-        public const string SingleSelectButtonGroupMeta = "ee4v-ui-single-select-button-group__meta";
+        public const string NavigationItemLabel = "ee4v-ui-navigation-item__label";
+        public const string ButtonLabel = "ee4v-ui-button__typography-label";
+        public const string ButtonMeta = "ee4v-ui-button__typography-meta";
         public const string ItemCardName = "ee4v-ui-item-card__name";
         public const string ContextMenuLabel = "ee4v-ui-context-menu__label";
         public const string ContextMenuShortcut = "ee4v-ui-context-menu__shortcut";

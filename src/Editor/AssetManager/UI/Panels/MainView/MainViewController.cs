@@ -43,6 +43,29 @@ namespace Ee4v.AssetManager.UI
         public bool Canceled { get; }
     }
 
+    internal sealed class TagListLoadResult
+    {
+        public TagListLoadResult(
+            string cacheKey,
+            IReadOnlyList<AssetTag> tags,
+            Exception error,
+            bool canceled)
+        {
+            CacheKey = cacheKey ?? string.Empty;
+            Tags = tags ?? Array.Empty<AssetTag>();
+            Error = error;
+            Canceled = canceled;
+        }
+
+        public string CacheKey { get; }
+
+        public IReadOnlyList<AssetTag> Tags { get; }
+
+        public Exception Error { get; }
+
+        public bool Canceled { get; }
+    }
+
     internal sealed class MainViewController : IDisposable
     {
         private readonly IAssetManager _assetManager;
@@ -50,6 +73,10 @@ namespace Ee4v.AssetManager.UI
         private readonly IAssetManagerUiScheduler _scheduler;
         private readonly Dictionary<string, AssetItemGridList> _itemCache =
             new Dictionary<string, AssetItemGridList>(StringComparer.Ordinal);
+        private readonly Dictionary<string, IReadOnlyList<AssetTag>> _tagCache =
+            new Dictionary<string, IReadOnlyList<AssetTag>>(StringComparer.Ordinal);
+        private readonly Dictionary<string, AssetCollection> _collectionsByViewId =
+            new Dictionary<string, AssetCollection>(StringComparer.Ordinal);
         private int _contentVersion;
         private int _activationCount;
         private int _loadVersion;
@@ -82,6 +109,8 @@ namespace Ee4v.AssetManager.UI
 
         public event Action<MainViewLoadResult> LoadCompleted;
 
+        public event Action<TagListLoadResult> TagListLoadCompleted;
+
         public event Action<string> NavigationChanged;
 
         public AssetItemGridHistory History { get; }
@@ -113,7 +142,26 @@ namespace Ee4v.AssetManager.UI
 
         public AssetManagerViewItemState SelectedNavigationItem
         {
-            get { return AssetManagerNavigationCatalog.GetItem(_selectedNavigationItemId); }
+            get
+            {
+                AssetCollection collection;
+                if (_collectionsByViewId.TryGetValue(
+                        _selectedNavigationItemId,
+                        out collection))
+                {
+                    return new AssetManagerViewItemState(
+                        _selectedNavigationItemId,
+                        collection.Name,
+                        string.Empty,
+                        string.Empty,
+                        collection.Name,
+                        string.Empty,
+                        Array.Empty<string>());
+                }
+
+                return AssetManagerNavigationCatalog.GetItem(
+                    _selectedNavigationItemId);
+            }
         }
 
         public void SetItemsPerRow(int value)
@@ -145,7 +193,9 @@ namespace Ee4v.AssetManager.UI
 
         public void SetSelectedNavigationItem(string itemId)
         {
-            var resolvedId = AssetManagerNavigationCatalog.NormalizeItemId(itemId);
+            var resolvedId = _collectionsByViewId.ContainsKey(itemId ?? string.Empty)
+                ? itemId
+                : AssetManagerNavigationCatalog.NormalizeItemId(itemId);
             if (string.Equals(_selectedNavigationItemId, resolvedId, StringComparison.Ordinal))
             {
                 return;
@@ -153,6 +203,38 @@ namespace Ee4v.AssetManager.UI
 
             _selectedNavigationItemId = resolvedId;
             NavigationChanged?.Invoke(_selectedNavigationItemId);
+        }
+
+        public void SetCollections(IReadOnlyList<AssetCollection> collections)
+        {
+            _collectionsByViewId.Clear();
+            if (collections != null)
+            {
+                for (var i = 0; i < collections.Count; i++)
+                {
+                    var collection = collections[i];
+                    if (collection == null ||
+                        string.IsNullOrWhiteSpace(collection.Id))
+                    {
+                        continue;
+                    }
+
+                    _collectionsByViewId[
+                        AssetManagerCollectionViewId.Encode(collection.Id)] =
+                        collection;
+                }
+            }
+
+            string selectedCollectionId;
+            if (AssetManagerCollectionViewId.TryDecode(
+                    _selectedNavigationItemId,
+                    out selectedCollectionId) &&
+                !_collectionsByViewId.ContainsKey(_selectedNavigationItemId))
+            {
+                _selectedNavigationItemId =
+                    AssetManagerNavigationCatalog.DefaultItemId;
+                NavigationChanged?.Invoke(_selectedNavigationItemId);
+            }
         }
 
         public void Activate()
@@ -190,6 +272,7 @@ namespace Ee4v.AssetManager.UI
             _activationCount = 1;
             Deactivate();
             _itemCache.Clear();
+            _tagCache.Clear();
         }
 
         public void StartLoad(
@@ -241,6 +324,43 @@ namespace Ee4v.AssetManager.UI
             _loadCancellation = null;
         }
 
+        public void StartTagListLoad(
+            string cacheKey,
+            Func<CancellationToken, IReadOnlyList<AssetTag>> load)
+        {
+            if (load == null)
+            {
+                throw new ArgumentNullException(nameof(load));
+            }
+
+            _preferences.Preload();
+            CancelPendingLoad();
+            var loadCancellation = new CancellationTokenSource();
+            _loadCancellation = loadCancellation;
+            var cancellationToken = loadCancellation.Token;
+            var version = ++_loadVersion;
+
+            _scheduler.RunInBackground(load, cancellationToken, result =>
+            {
+                loadCancellation.Dispose();
+                if (ReferenceEquals(_loadCancellation, loadCancellation))
+                {
+                    _loadCancellation = null;
+                }
+
+                if (version != _loadVersion)
+                {
+                    return;
+                }
+
+                TagListLoadCompleted?.Invoke(new TagListLoadResult(
+                    cacheKey,
+                    result.Succeeded ? result.Value : null,
+                    result.Error,
+                    result.Canceled));
+            });
+        }
+
         public bool TryGetCachedItems(string cacheKey, out AssetItemGridList itemList)
         {
             return _itemCache.TryGetValue(cacheKey ?? string.Empty, out itemList);
@@ -251,9 +371,20 @@ namespace Ee4v.AssetManager.UI
             _itemCache[cacheKey ?? string.Empty] = itemList ?? new AssetItemGridList(null);
         }
 
+        public bool TryGetCachedTags(string cacheKey, out IReadOnlyList<AssetTag> tags)
+        {
+            return _tagCache.TryGetValue(cacheKey ?? string.Empty, out tags);
+        }
+
+        public void StoreCachedTags(string cacheKey, IReadOnlyList<AssetTag> tags)
+        {
+            _tagCache[cacheKey ?? string.Empty] = tags ?? Array.Empty<AssetTag>();
+        }
+
         public void ClearCachedItems()
         {
             _itemCache.Clear();
+            _tagCache.Clear();
         }
 
         public MainViewRequest CreateRequest(string viewId, string keyword = null)
@@ -299,6 +430,16 @@ namespace Ee4v.AssetManager.UI
             }
 
             return new AssetItemGridList(items, I18N.Get("assetManager.mainView.noItems"));
+        }
+
+        public IReadOnlyList<AssetTag> LoadTags(
+            string keyword,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var tags = _assetManager.GetTags(keyword);
+            cancellationToken.ThrowIfCancellationRequested();
+            return tags ?? Array.Empty<AssetTag>();
         }
 
         public AssetItemGridList LoadFiles(string itemId)
@@ -394,10 +535,11 @@ namespace Ee4v.AssetManager.UI
         {
             _contentVersion++;
             _itemCache.Clear();
+            _tagCache.Clear();
             ContentChanged?.Invoke();
         }
 
-        private static AssetItemQuery CreateQuery(MainViewRequest request)
+        internal static AssetItemQuery CreateQuery(MainViewRequest request)
         {
             var viewId = request != null ? request.ViewId : string.Empty;
             var query = new AssetItemQuery
@@ -406,9 +548,20 @@ namespace Ee4v.AssetManager.UI
                 Limit = request != null ? request.Limit : 200
             };
 
-            if (string.Equals(viewId, "booth-library", StringComparison.Ordinal))
+            string collectionId;
+            if (AssetManagerCollectionViewId.TryDecode(
+                    viewId,
+                    out collectionId))
             {
-                query.SourceTypes = new[] { AssetSourceType.Blm, AssetSourceType.Eagle };
+                query.CollectionId = collectionId;
+            }
+            else if (string.Equals(viewId, "booth-items", StringComparison.Ordinal))
+            {
+                query.HasBoothInformation = true;
+            }
+            else if (string.Equals(viewId, "uncategorized", StringComparison.Ordinal))
+            {
+                query.UncategorizedOnly = true;
             }
 
             return query;

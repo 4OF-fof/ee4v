@@ -9,6 +9,53 @@
     min-height: 0;
 }
 
+.ee4v-asset-manager-tag-list {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.ee4v-asset-manager-tag-list__header {
+    margin-left: var(--ee4v-space-xl);
+    margin-right: var(--ee4v-space-xl);
+    margin-top: var(--ee4v-space-xl);
+    margin-bottom: var(--ee4v-space-lg);
+    color: var(--ee4v-color-text-primary);
+    font-size: var(--ee4v-font-size-heading);
+    -unity-font-style: bold;
+}
+
+.ee4v-asset-manager-tag-list__content {
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding-left: var(--ee4v-space-xl);
+    padding-right: var(--ee4v-space-xl);
+    padding-bottom: var(--ee4v-space-xl);
+}
+
+.ee4v-asset-manager-tag-list__item {
+    min-height: var(--ee4v-control-height-default);
+    justify-content: center;
+    margin-right: var(--ee4v-space-sm);
+    margin-bottom: var(--ee4v-space-sm);
+    padding-left: var(--ee4v-space-md);
+    padding-right: var(--ee4v-space-md);
+    border-top-left-radius: var(--ee4v-radius-pill);
+    border-top-right-radius: var(--ee4v-radius-pill);
+    border-bottom-left-radius: var(--ee4v-radius-pill);
+    border-bottom-right-radius: var(--ee4v-radius-pill);
+    background-color: var(--ee4v-color-surface-raised);
+}
+
+.ee4v-asset-manager-tag-list__item-text {
+    color: var(--ee4v-color-text-primary);
+}
+
+.ee4v-asset-manager-tag-list__empty {
+    margin-left: var(--ee4v-space-xl);
+    margin-right: var(--ee4v-space-xl);
+    color: var(--ee4v-color-text-soft);
+}
+
 .ee4v-asset-manager-panel__main-status {
     margin-left: var(--ee4v-space-xl);
     margin-right: var(--ee4v-space-xl);

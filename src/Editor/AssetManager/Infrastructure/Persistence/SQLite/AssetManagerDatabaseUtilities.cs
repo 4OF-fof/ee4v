@@ -307,14 +307,30 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             return AssetSyncState.Success;
         }
 
+        private static string ToDbCollectionIcon(AssetCollectionIcon icon)
+        {
+            if (icon == AssetCollectionIcon.Star) return "star";
+            if (icon == AssetCollectionIcon.Package) return "package";
+            if (icon == AssetCollectionIcon.Tag) return "tag";
+            if (icon == AssetCollectionIcon.Search) return "search";
+            return "folder";
+        }
+
+        private static AssetCollectionIcon FromDbCollectionIcon(string icon)
+        {
+            if (icon == "star") return AssetCollectionIcon.Star;
+            if (icon == "package") return AssetCollectionIcon.Package;
+            if (icon == "tag") return AssetCollectionIcon.Tag;
+            if (icon == "search") return AssetCollectionIcon.Search;
+            return AssetCollectionIcon.Folder;
+        }
+
         private static string ToDbSmartField(SmartCollectionConditionField field)
         {
             if (field == SmartCollectionConditionField.Description) return "description";
             if (field == SmartCollectionConditionField.Tag) return "tag";
-            if (field == SmartCollectionConditionField.SourceType) return "source_type";
             if (field == SmartCollectionConditionField.FileName) return "file_name";
             if (field == SmartCollectionConditionField.Extension) return "extension";
-            if (field == SmartCollectionConditionField.Lifecycle) return "lifecycle";
             return "name";
         }
 
@@ -322,10 +338,8 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
         {
             if (field == "description") return SmartCollectionConditionField.Description;
             if (field == "tag") return SmartCollectionConditionField.Tag;
-            if (field == "source_type") return SmartCollectionConditionField.SourceType;
             if (field == "file_name") return SmartCollectionConditionField.FileName;
             if (field == "extension") return SmartCollectionConditionField.Extension;
-            if (field == "lifecycle") return SmartCollectionConditionField.Lifecycle;
 
             SmartCollectionConditionField parsed;
             return Enum.TryParse(field, true, out parsed) ? parsed : SmartCollectionConditionField.Name;

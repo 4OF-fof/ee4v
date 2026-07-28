@@ -18,7 +18,9 @@
 ## UI・Unity 依存の分離
 
 - UI は UI Toolkit（UIElements）を優先して実装し、UI Toolkit では実現できない場合に限って IMGUI を使用してください。
-- UI Toolkit で通常の表示ラベルを実装する場合は、Unity 2022.3 のフォントキャッシュ問題を回避するため、`Label` を直接生成・継承せず `UiTextFactory.Create(...)` を使用してください。`Button.text` など操作 control 自身の text はこの制約の対象外です。
+- UI Toolkit で通常の表示ラベルを実装する場合は、Unity 2022.3 のフォントキャッシュ問題を回避するため、`Label` を直接生成・継承せず `UiTextFactory.Create(...)` を使用してください。
+- `UiTextFactory.Create(...)` を呼ぶだけではフォントキャッシュ問題の回避を保証できません。構造用 class しか渡さない場合は通常の UI Toolkit `Label` 実装へ fallback します。問題回避が必要な text は `UiClassNames` に typography class を定義し、`TypographyStyleResolver` で `RequiresImgui = true` として登録した class を `UiTextFactory.Create(...)` または `UiTextFactory.AttachToFoldout(...)` へ必ず渡してください。追加・変更時は生成された `UiTextElement` が IMGUI fallback を使用することをテストで確認してください。
+- 新規追加または変更する文字付き button で `Button.text` を使用しないでください。共通の `UiButton` を使い、表示文字列を内部の `UiTextFactory` と登録済み typography class 経由で描画してください。標準 `Button` を直接使えるのは、共通 component では表現できない低レベル操作や文字を持たない特殊 control に限ります。その場合も `Button.text` は空にし、例外理由を関連テストまたはコード上の構造から確認できるようにしてください。
 - `TextField(label)`、`Toggle(label)`、`IntegerField(label)`、`PopupField(label, ...)`、`BaseField<T>.label` など、Unity 標準 control が内部生成する label へ表示テキストを渡すことも禁止です。見た目が通常の label と同じでも `UiTextFactory` の代替にはなりません。
 - `Foldout.text` も Unity 標準の内部 label を使用するため、表示文字列を設定しないでください。折り畳み見出しは `UiTextFactory.AttachToFoldout(...)` で追加してください。
 - 特に Settings UI では、項目名を `UiTextFactory.Create(...)` で独立した要素として生成し、隣接する標準 field / custom drawer へ渡す label は必ず空文字列にしてください。これは `Toggle`、数値 field、文字列 field、enum / popup、custom setting drawer のすべてに適用します。

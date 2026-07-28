@@ -71,6 +71,7 @@ namespace Ee4v.AssetManager.UI
             root.AddToClassList(WindowClassName);
 
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/Button/ui-button.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Layout/ThreePaneLayout/three-pane-layout.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/NavigationPanel/navigation-panel.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/MainView/main-view.uss");

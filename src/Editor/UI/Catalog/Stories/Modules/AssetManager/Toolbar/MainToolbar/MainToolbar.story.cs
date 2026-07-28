@@ -14,6 +14,7 @@ namespace Ee4v.AssetManager.UI
 
             public void Register(CatalogWindow.CatalogRegistry registry)
             {
+                registry.RegisterStyleSheet("Editor/UI/Components/Inputs/Button/ui-button.uss");
                 registry.RegisterStyleSheet("Editor/AssetManager/UI/Toolbar/MainToolbar/main-toolbar.uss");
                 registry.RegisterStyleSheet("Editor/UI/Components/Content/Icon/icon.uss");
                 registry.RegisterStyleSheet("Editor/UI/Components/Inputs/SearchField/search-field.uss");
@@ -24,7 +25,7 @@ namespace Ee4v.AssetManager.UI
                     "MainToolbar",
                     "AssetManager main view 上部に置く、横並びの toolbar です。",
                     "history navigation を先頭に持ち、呼び出し側が追加 action を Content slot に足せる構成です。",
-                    new[] { "HistoryNavigation", "NumericSlider", "SearchField", "Icon" },
+                    new[] { "UiButton", "HistoryNavigation", "NumericSlider", "SearchField", "Icon" },
                     CatalogWindow.ComponentImplementationKind.UiToolkit,
                     (window, parent) => BuildMainToolbarStory(window, parent)));
             }

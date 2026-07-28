@@ -94,5 +94,20 @@ namespace Ee4v.AssetManager.Domain.Tests
                 emptyQuery.Error,
                 Is.EqualTo(CatalogRuleError.SmartConditionQueryRequired));
         }
+
+        [Test]
+        [FeatureTestCase(
+            "Collection icon の範囲を検証する",
+            "未定義の Collection icon 値を domain policy が拒否することを確認します。",
+            order: 5)]
+        public void EnsureCollectionIcon_RejectsUnsupportedValue()
+        {
+            var exception = Assert.Throws<CatalogRuleException>(
+                () => CatalogCommandPolicy.EnsureCollectionIcon(6, 4));
+
+            Assert.That(
+                exception.Error,
+                Is.EqualTo(CatalogRuleError.UnsupportedCollectionIcon));
+        }
     }
 }

@@ -163,8 +163,7 @@ namespace Ee4v.AssetManager.Application
 
         public AssetCollection CreateCollection(CreateCollectionRequest request)
         {
-            AssetManagerRequestValidator.RequireRequest(request, "Create collection request");
-            AssetManagerRequestValidator.Require(request.Name, "collection name");
+            AssetManagerRequestValidator.ValidateCollection(request);
             return PublishCatalog(_collectionWriter.CreateCollection(request));
         }
 

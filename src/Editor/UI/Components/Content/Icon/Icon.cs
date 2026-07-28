@@ -16,8 +16,21 @@ namespace Ee4v.UI
         Filter,
         Sort,
         Close,
+        Add,
+        Refresh,
+        Back,
+        Forward,
         Pin,
+        Star,
         Home,
+        Assets,
+        Package,
+        Grid,
+        Store,
+        FolderEmpty,
+        Uncategorized,
+        Tag,
+        SmartCollection,
         DisclosureClosed,
         DisclosureOpen,
         GenericFile,
@@ -90,6 +103,37 @@ namespace Ee4v.UI
                         "winbtn_win_close",
                         "d_winbtn_win_close"
                     };
+                case UiBuiltinIcon.Add:
+                    return new[]
+                    {
+                        "Toolbar Plus",
+                        "d_Toolbar Plus",
+                        "CreateAddNew",
+                        "d_CreateAddNew"
+                    };
+                case UiBuiltinIcon.Refresh:
+                    return new[]
+                    {
+                        "Refresh",
+                        "d_Refresh",
+                        "TreeEditor.Refresh"
+                    };
+                case UiBuiltinIcon.Back:
+                    return new[]
+                    {
+                        "tab_prev",
+                        "d_tab_prev",
+                        "Animation.PrevKey",
+                        "d_Animation.PrevKey"
+                    };
+                case UiBuiltinIcon.Forward:
+                    return new[]
+                    {
+                        "tab_next",
+                        "d_tab_next",
+                        "Animation.NextKey",
+                        "d_Animation.NextKey"
+                    };
                 case UiBuiltinIcon.Pin:
                     return new[]
                     {
@@ -100,11 +144,87 @@ namespace Ee4v.UI
                         "Favorite Icon",
                         "d_Favorite Icon"
                     };
+                case UiBuiltinIcon.Star:
+                    return new[]
+                    {
+                        "Favorite",
+                        "d_Favorite",
+                        "Favorite Icon",
+                        "d_Favorite Icon"
+                    };
                 case UiBuiltinIcon.Home:
                     return new[]
                     {
                         "Folder Icon",
                         "d_Folder Icon"
+                    };
+                case UiBuiltinIcon.Assets:
+                    return new[]
+                    {
+                        "Project",
+                        "d_Project",
+                        "DefaultAsset Icon",
+                        "d_DefaultAsset Icon"
+                    };
+                case UiBuiltinIcon.Package:
+                    return new[]
+                    {
+                        "Package Manager",
+                        "d_Package Manager",
+                        "PackageManager",
+                        "d_PackageManager",
+                        "DefaultAsset Icon",
+                        "d_DefaultAsset Icon"
+                    };
+                case UiBuiltinIcon.Grid:
+                    return new[]
+                    {
+                        "Grid.BoxTool",
+                        "d_Grid.BoxTool",
+                        "GridLayoutGroup Icon",
+                        "d_GridLayoutGroup Icon",
+                        "Project",
+                        "d_Project"
+                    };
+                case UiBuiltinIcon.Store:
+                    return new[]
+                    {
+                        "Asset Store",
+                        "d_Asset Store",
+                        "Package Manager",
+                        "d_Package Manager"
+                    };
+                case UiBuiltinIcon.FolderEmpty:
+                    return new[]
+                    {
+                        "FolderEmpty Icon",
+                        "d_FolderEmpty Icon",
+                        "Folder Icon",
+                        "d_Folder Icon"
+                    };
+                case UiBuiltinIcon.Uncategorized:
+                    return new[]
+                    {
+                        "UnLinked",
+                        "d_UnLinked",
+                        "DefaultAsset Icon",
+                        "d_DefaultAsset Icon"
+                    };
+                case UiBuiltinIcon.Tag:
+                    return new[]
+                    {
+                        "FilterByLabel",
+                        "d_FilterByLabel",
+                        "FilterByType",
+                        "d_FilterByType"
+                    };
+                case UiBuiltinIcon.SmartCollection:
+                    return new[]
+                    {
+                        "Search Icon",
+                        "d_Search Icon",
+                        "FilterByType",
+                        "d_FilterByType"
                     };
                 case UiBuiltinIcon.DisclosureClosed:
                     return new[]

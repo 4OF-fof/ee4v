@@ -9,6 +9,8 @@ namespace Ee4v.AssetManager.Contracts
         public IReadOnlyList<string> TagIds { get; set; }
         public IReadOnlyList<AssetSourceType> SourceTypes { get; set; }
         public AssetFileLifecycle? Lifecycle { get; set; }
+        public bool HasBoothInformation { get; set; }
+        public bool UncategorizedOnly { get; set; }
         public int Offset { get; set; }
         public int Limit { get; set; }
         public bool IncludeUnavailable { get; set; }
@@ -76,12 +78,16 @@ namespace Ee4v.AssetManager.Contracts
     public sealed class CreateCollectionRequest
     {
         public string Name { get; set; }
+        public AssetCollectionIcon Icon { get; set; }
+        public string IconAssetGuid { get; set; }
         public string ParentCollectionId { get; set; }
     }
 
     public sealed class CreateSmartCollectionRequest
     {
         public string Name { get; set; }
+        public AssetCollectionIcon Icon { get; set; }
+        public string IconAssetGuid { get; set; }
         public string ParentCollectionId { get; set; }
         public SmartCollectionMatchMode MatchMode { get; set; }
         public IReadOnlyList<SmartCollectionCondition> Conditions { get; set; }

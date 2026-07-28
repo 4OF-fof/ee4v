@@ -69,15 +69,33 @@ namespace Ee4v.AssetManager.Application
             Execute(() =>
             {
                 CatalogCommandPolicy.Require(request.Name, "smart collection name");
+                CatalogCommandPolicy.EnsureCollectionIcon(
+                    (int)request.Icon,
+                    (int)AssetCollectionIcon.Search);
                 CatalogCommandPolicy.EnsureSmartConditions(
                     request.Conditions == null
                         ? Array.Empty<string>()
                         : request.Conditions
                             .Where(condition => condition != null)
-                            .Select(condition => condition.QueryText)
+                            .Select(condition =>
+                                condition.Operator == SmartCollectionConditionOperator.Exists
+                                    ? "exists"
+                                    : condition.QueryText)
                             .ToArray(),
                     request.Conditions != null &&
                     request.Conditions.Any(condition => condition == null));
+            });
+        }
+
+        internal static void ValidateCollection(CreateCollectionRequest request)
+        {
+            RequireRequest(request, "Create collection request");
+            Execute(() =>
+            {
+                CatalogCommandPolicy.Require(request.Name, "collection name");
+                CatalogCommandPolicy.EnsureCollectionIcon(
+                    (int)request.Icon,
+                    (int)AssetCollectionIcon.Search);
             });
         }
 
@@ -114,6 +132,8 @@ namespace Ee4v.AssetManager.Application
                     return "Self dependency is not allowed.";
                 case CatalogRuleError.UnsupportedDependencyTarget:
                     return "Variant group cannot be a dependency target.";
+                case CatalogRuleError.UnsupportedCollectionIcon:
+                    return "Collection icon is not supported.";
                 case CatalogRuleError.SmartConditionRequired:
                     return "Smart Collection condition is required.";
                 case CatalogRuleError.SmartConditionQueryRequired:

@@ -1,10 +1,15 @@
 using System;
+using System.Collections.Generic;
+using Ee4v.AssetManager.Contracts;
+using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI
 {
     internal sealed class MainViewHost : IDisposable
     {
         private readonly MainViewController _controller;
+        private readonly CollectionNavigationController
+            _collectionController;
         private readonly bool _ownsController;
         private bool _disposed;
 
@@ -12,6 +17,8 @@ namespace Ee4v.AssetManager.UI
         {
             _controller = controller ?? new MainViewController();
             _ownsController = controller == null;
+            _collectionController =
+                new CollectionNavigationController();
 
             MainView = new MainView(_controller);
             Toolbar = new MainToolbar(
@@ -19,8 +26,16 @@ namespace Ee4v.AssetManager.UI
                 MainView.HistoryOverlayMaximumItems,
                 MainView.History.State);
             Toolbar.SetMinimumGridSize(MainView.MinimumGridSize);
+            Toolbar.SetGridSizeVisible(
+                !string.Equals(
+                    _controller.SelectedNavigationItemId,
+                    "tags",
+                    StringComparison.Ordinal));
             NavigationPanel = new NavigationPanel(
                 _controller.NavigationItems,
+                _controller.SelectedNavigationItemId);
+            NavigationPanel.SetCollections(
+                _collectionController.Collections,
                 _controller.SelectedNavigationItemId);
 
             Toolbar.GridSizeChanged += MainView.SetGridSize;
@@ -31,12 +46,25 @@ namespace Ee4v.AssetManager.UI
             Toolbar.ForwardHistoryClicked += MainView.GoForward;
             Toolbar.BreadcrumbClicked += MainView.GoToBreadcrumb;
             NavigationPanel.SelectionChanged += _controller.SetSelectedNavigationItem;
+            NavigationPanel.CreateCollectionRequested +=
+                OnCreateCollectionRequested;
+            NavigationPanel.CreateSmartCollectionRequested +=
+                OnCreateSmartCollectionRequested;
+            NavigationPanel.ManualSyncRequested +=
+                AssetManagerUiDependencies.RequestManualSync;
 
             MainView.GridSizeChanged += Toolbar.SetGridSizeValue;
             MainView.GridSizeMinimumChanged += Toolbar.SetMinimumGridSize;
             MainView.HistoryOverlayMaximumItemsChanged += Toolbar.SetHistoryOverlayMaximumItems;
             MainView.History.Changed += Toolbar.SetHistoryState;
-            _controller.NavigationChanged += NavigationPanel.SetSelectedItem;
+            _controller.NavigationChanged += OnNavigationChanged;
+            _collectionController.CollectionsChanged +=
+                OnCollectionsChanged;
+            _collectionController.CollectionCreated +=
+                OnCollectionCreated;
+            _collectionController.ErrorChanged +=
+                NavigationPanel.SetCollectionError;
+            _collectionController.Activate();
         }
 
         public MainView MainView { get; }
@@ -44,6 +72,11 @@ namespace Ee4v.AssetManager.UI
         public MainToolbar Toolbar { get; }
 
         public NavigationPanel NavigationPanel { get; }
+
+        public void SetSelectedNavigationItem(string itemId)
+        {
+            _controller.SetSelectedNavigationItem(itemId);
+        }
 
         public void Dispose()
         {
@@ -61,17 +94,78 @@ namespace Ee4v.AssetManager.UI
             Toolbar.ForwardHistoryClicked -= MainView.GoForward;
             Toolbar.BreadcrumbClicked -= MainView.GoToBreadcrumb;
             NavigationPanel.SelectionChanged -= _controller.SetSelectedNavigationItem;
+            NavigationPanel.CreateCollectionRequested -=
+                OnCreateCollectionRequested;
+            NavigationPanel.CreateSmartCollectionRequested -=
+                OnCreateSmartCollectionRequested;
+            NavigationPanel.ManualSyncRequested -=
+                AssetManagerUiDependencies.RequestManualSync;
 
             MainView.GridSizeChanged -= Toolbar.SetGridSizeValue;
             MainView.GridSizeMinimumChanged -= Toolbar.SetMinimumGridSize;
             MainView.HistoryOverlayMaximumItemsChanged -= Toolbar.SetHistoryOverlayMaximumItems;
             MainView.History.Changed -= Toolbar.SetHistoryState;
-            _controller.NavigationChanged -= NavigationPanel.SetSelectedItem;
+            _controller.NavigationChanged -= OnNavigationChanged;
+            _collectionController.CollectionsChanged -=
+                OnCollectionsChanged;
+            _collectionController.CollectionCreated -=
+                OnCollectionCreated;
+            _collectionController.ErrorChanged -=
+                NavigationPanel.SetCollectionError;
+            _collectionController.Dispose();
 
             if (_ownsController)
             {
                 _controller.Dispose();
             }
+        }
+
+        private void OnNavigationChanged(string itemId)
+        {
+            NavigationPanel.SetSelectedItem(itemId);
+            Toolbar.SetGridSizeVisible(
+                !string.Equals(itemId, "tags", StringComparison.Ordinal));
+        }
+
+        private void OnCollectionsChanged(
+            IReadOnlyList<AssetCollection> collections)
+        {
+            _controller.SetCollections(collections);
+            NavigationPanel.SetCollections(
+                collections,
+                _controller.SelectedNavigationItemId);
+        }
+
+        private void OnCollectionCreated(
+            AssetCollection collection)
+        {
+            if (collection == null)
+            {
+                return;
+            }
+
+            _controller.SetSelectedNavigationItem(
+                AssetManagerCollectionViewId.Encode(collection.Id));
+        }
+
+        private void OnCreateCollectionRequested(
+            VisualElement anchor)
+        {
+            CollectionCreationWindow.Show(
+                anchor,
+                false,
+                _collectionController.CreateCollection,
+                _collectionController.CreateSmartCollection);
+        }
+
+        private void OnCreateSmartCollectionRequested(
+            VisualElement anchor)
+        {
+            CollectionCreationWindow.Show(
+                anchor,
+                true,
+                _collectionController.CreateCollection,
+                _collectionController.CreateSmartCollection);
         }
     }
 }

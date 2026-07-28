@@ -3,51 +3,5 @@
 }
 
 .ee4v-ui-single-select-button-group__button {
-    margin-left: var(--ee4v-space-none);
-    margin-right: var(--ee4v-space-none);
-    margin-top: var(--ee4v-space-none);
     margin-bottom: var(--ee4v-space-xxs);
-    min-height: 0;
-    padding-left: var(--ee4v-space-md);
-    padding-right: var(--ee4v-space-md);
-    padding-top: var(--ee4v-space-xs);
-    padding-bottom: var(--ee4v-space-xs);
-    border-top-width: 0;
-    border-bottom-width: 0;
-    border-left-width: 0;
-    border-right-width: 0;
-    border-top-left-radius: var(--ee4v-radius-sm);
-    border-top-right-radius: var(--ee4v-radius-sm);
-    border-bottom-left-radius: var(--ee4v-radius-sm);
-    border-bottom-right-radius: var(--ee4v-radius-sm);
-    background-color: var(--ee4v-color-transparent);
-    -unity-text-align: middle-left;
-}
-
-.ee4v-ui-single-select-button-group__button-content {
-    flex-direction: row;
-    align-items: center;
-    min-width: 0;
-}
-
-.ee4v-ui-single-select-button-group__icon {
-    margin-right: var(--ee4v-space-sm);
-}
-
-.ee4v-ui-single-select-button-group__label {
-    flex-grow: 1;
-    min-width: 0;
-}
-
-.ee4v-ui-single-select-button-group__button:hover {
-    background-color: var(--ee4v-color-surface-hover);
-}
-
-.ee4v-ui-single-select-button-group__button--selected {
-    background-color: var(--ee4v-color-tool-active);
-    color: var(--ee4v-color-text-on-state);
-}
-
-.ee4v-ui-single-select-button-group__button--selected:hover {
-    background-color: var(--ee4v-color-tool-active-hover);
 }

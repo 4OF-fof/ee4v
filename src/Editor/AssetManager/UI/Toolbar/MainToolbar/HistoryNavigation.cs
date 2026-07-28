@@ -15,8 +15,8 @@ namespace Ee4v.AssetManager.UI
         private const string BreadcrumbItemClassName = "ee4v-ui-history-navigation__breadcrumb-item";
         private const string BreadcrumbItemCurrentClassName = "ee4v-ui-history-navigation__breadcrumb-item--current";
         private const string BreadcrumbItemLabelCurrentClassName = "ee4v-ui-history-navigation__breadcrumb-item-label--current";
-        private readonly Button _backButton;
-        private readonly Button _forwardButton;
+        private readonly UiButton _backButton;
+        private readonly UiButton _forwardButton;
         private readonly VisualElement _breadcrumb;
         private readonly HistoryNavigationOverlay _overlay;
         private readonly Action<
@@ -42,7 +42,8 @@ namespace Ee4v.AssetManager.UI
                         maximumRows));
             AddToClassList(RootClassName);
 
-            _backButton = CreateNavigationButton("\u2190");
+            _backButton = CreateNavigationButton(
+                UiBuiltinIcon.Back);
             _backButton.clicked += () => BackClicked?.Invoke();
             _backButton.RegisterCallback<PointerEnterEvent>(_ =>
                 CancelPendingOverlayHide());
@@ -55,7 +56,8 @@ namespace Ee4v.AssetManager.UI
             _backButton.RegisterCallback<PointerLeaveEvent>(_ => ScheduleOverlayHide());
             Add(_backButton);
 
-            _forwardButton = CreateNavigationButton("\u2192");
+            _forwardButton = CreateNavigationButton(
+                UiBuiltinIcon.Forward);
             _forwardButton.clicked += () => ForwardClicked?.Invoke();
             _forwardButton.RegisterCallback<PointerEnterEvent>(_ =>
                 CancelPendingOverlayHide());
@@ -99,8 +101,8 @@ namespace Ee4v.AssetManager.UI
         {
             _state = state ?? new AssetItemGridHistoryState(null, false, false);
             HideOverlay();
-            _backButton.SetEnabled(_state.CanGoBack);
-            _forwardButton.SetEnabled(_state.CanGoForward);
+            _backButton.SetInteractable(_state.CanGoBack);
+            _forwardButton.SetInteractable(_state.CanGoForward);
             RefreshBreadcrumb(_state.Current);
         }
 
@@ -250,34 +252,43 @@ namespace Ee4v.AssetManager.UI
             _breadcrumb.Add(item);
         }
 
-        private static Button CreateNavigationButton(string text)
+        private static UiButton CreateNavigationButton(
+            UiBuiltinIcon icon)
         {
-            var button = new Button
-            {
-                text = text
-            };
+            var button = new UiButton(new UiButtonState(
+                iconState: IconState.FromBuiltinIcon(
+                    icon,
+                    UiSizeTokens.Size12),
+                variant: UiButtonVariant.Ghost,
+                size: UiButtonSize.Compact));
             button.AddToClassList(IconButtonClassName);
             button.focusable = false;
             return button;
         }
 
-        private Button CreateBreadcrumbButton(string text, int index, bool current)
+        private UiButton CreateBreadcrumbButton(
+            string text,
+            int index,
+            bool current)
         {
-            var button = new Button(() => BreadcrumbClicked?.Invoke(index));
+            var button = new UiButton(
+                new UiButtonState(
+                    text,
+                    variant: UiButtonVariant.Ghost),
+                () => BreadcrumbClicked?.Invoke(index));
             button.AddToClassList(BreadcrumbItemClassName);
             button.EnableInClassList(BreadcrumbItemCurrentClassName, current);
             button.focusable = false;
 
-            var label = UiTextFactory.Create(text, UiClassNames.HistoryNavigationBreadcrumbItemLabel);
+            var label = button.LabelElement;
+            label.AddToClassList(
+                UiClassNames.HistoryNavigationBreadcrumbItemLabel);
             label.EnableInClassList(BreadcrumbItemLabelCurrentClassName, current);
-            label.SetWhiteSpace(WhiteSpace.NoWrap);
-            label.pickingMode = PickingMode.Ignore;
             if (current)
             {
                 label.SetColor(UiColorTokens.TextSoft);
             }
 
-            button.Add(label);
             return button;
         }
     }

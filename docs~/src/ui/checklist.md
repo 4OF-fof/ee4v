@@ -4,6 +4,8 @@
 - `Ee4v.UI` namespace になっているか
 - `Label` を直接使っていないか
 - text 表示を `UiTextFactory` 経由にしたか
+- フォントキャッシュ回避が必要な text に、`RequiresImgui = true` の登録済み typography class を渡したか
+- 文字付き button に `Button.text` や標準 `Button` を使わず `UiButton` を使用したか
 - typography が必要な class 名だけを `UiClassNames` に追加したか
 - typography 不要な class を component 内に閉じたか
 - 必要なタイポグラフィ定義を `TypographyStyleResolver` に追加したか

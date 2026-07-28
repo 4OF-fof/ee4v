@@ -43,10 +43,6 @@ namespace Ee4v.UI
     {
         private const string RootClassName = "ee4v-ui-single-select-button-group";
         private const string ButtonClassName = "ee4v-ui-single-select-button-group__button";
-        private const string ButtonSelectedClassName = "ee4v-ui-single-select-button-group__button--selected";
-        private const string ButtonContentClassName = "ee4v-ui-single-select-button-group__button-content";
-        private const string ButtonIconClassName = "ee4v-ui-single-select-button-group__icon";
-        private const string ButtonLabelClassName = "ee4v-ui-single-select-button-group__label";
         private readonly List<ButtonView> _buttonViews = new List<ButtonView>();
         private Action<string> _onSelect;
         private string _selectedItemId = string.Empty;
@@ -85,40 +81,19 @@ namespace Ee4v.UI
                 }
 
                 var itemId = item.Id;
-                var button = new Button(() => SelectItem(itemId));
+                var button = new UiButton(
+                    new UiButtonState(
+                        item.Label,
+                        item.Meta,
+                        iconState: item.IconState,
+                        enabled: item.Enabled,
+                        selected: string.Equals(
+                            item.Id,
+                            _selectedItemId,
+                            StringComparison.Ordinal),
+                        variant: UiButtonVariant.Ghost),
+                    () => SelectItem(itemId));
                 button.AddToClassList(ButtonClassName);
-                button.SetEnabled(item.Enabled);
-
-                var content = new VisualElement
-                {
-                    pickingMode = PickingMode.Ignore
-                };
-                content.AddToClassList(ButtonContentClassName);
-
-                var icon = new Icon();
-                icon.AddToClassList(ButtonIconClassName);
-                icon.pickingMode = PickingMode.Ignore;
-                if (item.IconState != null)
-                {
-                    icon.SetState(item.IconState);
-                }
-                else
-                {
-                    icon.style.display = DisplayStyle.None;
-                }
-
-                var label = UiTextFactory.Create(item.Label);
-                label.AddToClassList(ButtonLabelClassName);
-                label.pickingMode = PickingMode.Ignore;
-                label.SetWhiteSpace(WhiteSpace.NoWrap);
-
-                var meta = UiTextFactory.Create(item.Meta, UiClassNames.SingleSelectButtonGroupMeta);
-                meta.pickingMode = PickingMode.Ignore;
-
-                content.Add(icon);
-                content.Add(label);
-                content.Add(meta);
-                button.Add(content);
 
                 Add(button);
                 _buttonViews.Add(new ButtonView(itemId, button));
@@ -155,15 +130,14 @@ namespace Ee4v.UI
             for (var i = 0; i < _buttonViews.Count; i++)
             {
                 var view = _buttonViews[i];
-                view.Button.EnableInClassList(
-                    ButtonSelectedClassName,
+                view.Button.SetSelected(
                     string.Equals(view.Id, _selectedItemId, StringComparison.Ordinal));
             }
         }
 
         private sealed class ButtonView
         {
-            public ButtonView(string id, Button button)
+            public ButtonView(string id, UiButton button)
             {
                 Id = id ?? string.Empty;
                 Button = button;
@@ -171,7 +145,7 @@ namespace Ee4v.UI
 
             public string Id { get; }
 
-            public Button Button { get; }
+            public UiButton Button { get; }
         }
     }
 }

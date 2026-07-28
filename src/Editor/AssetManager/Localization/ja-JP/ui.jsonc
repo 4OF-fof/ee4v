@@ -27,11 +27,12 @@
     },
     "background": {
       "datasourceCheck": "ライブラリの変更を確認中...",
-      "datasourceSync": "AssetManager ライブラリを同期中..."
+      "datasourceSync": "AssetManager ライブラリを同期中...",
+      "noDatasource": "同期可能なBLMデータベースまたはEagleライブラリが設定されていません。"
     },
     "syncConflict": {
       "title": "同期内容の確認",
-      "message": "Unity側の情報が同期元より新しいアイテムがあります。差分を確認してから上書きしてください。キャンセルすると今回の起動時同期を中止します。",
+      "message": "Unity側の情報が同期元より新しいアイテムがあります。差分を確認してから上書きしてください。キャンセルすると今回の同期を中止します。",
       "current": "Unity側",
       "incoming": "同期元",
       "overwrite": "上書き",
@@ -45,7 +46,12 @@
       "loadCanceled": "アセットの読み込みがキャンセルされました。",
       "noItems": "アセット項目がありません。",
       "noFiles": "このアイテムにファイルはありません。",
-      "noChildren": "表示できる子要素がありません。"
+      "noChildren": "表示できる子要素がありません。",
+      "tags": {
+        "title": "Tags ({0})",
+        "empty": "タグがありません。",
+        "loading": "タグを読み込み中..."
+      }
     },
     "mainToolbar": {
       "gridSize": "グリッドサイズ",
@@ -54,53 +60,71 @@
       "searchPlaceholder": "アセットを検索"
     },
     "navigation": {
-      "allAssets": {
-        "label": "All Assets",
-        "meta": "240 items",
-        "eyebrow": "AssetManager",
-        "title": "All Assets",
-        "description": "プロジェクト全体を横断して検索、一覧、操作を行う標準ビューです。",
-        "row": {
-          "search": "検索バーとフィルタ",
-          "viewMode": "グリッド / リスト切り替え",
-          "bulkActions": "一括操作と import/export 導線"
-        }
+      "library": "Library",
+      "manualSync": "BLM / Eagleを手動同期",
+      "all": {
+        "label": "All"
       },
-      "favorites": {
-        "label": "Favorites",
-        "meta": "Pinned",
-        "eyebrow": "Collections",
-        "title": "Favorites",
-        "description": "作業中に頻繁に触るアセットを優先表示するビューです。",
-        "row": {
-          "list": "お気に入りの一覧",
-          "recent": "最近の更新順ソート",
-          "preview": "即時プレビュー導線"
-        }
+      "boothItems": {
+        "label": "BOOTH Items"
       },
-      "boothLibrary": {
-        "label": "Booth Library",
-        "meta": "Store Sync",
-        "eyebrow": "Source",
-        "title": "Booth Library",
-        "description": "Booth 連携済みライブラリと同期状態を扱うビューです。",
-        "row": {
-          "purchases": "購入済みアセット一覧",
-          "sync": "同期待ち / 更新待ちの確認",
-          "download": "ダウンロード導線"
-        }
+      "uncategorized": {
+        "label": "Uncategorized"
       },
-      "packages": {
-        "label": "Packages",
-        "meta": "UPM",
-        "eyebrow": "Source",
-        "title": "Packages",
-        "description": "Package Manager 由来のアセットと依存関係を確認するビューです。",
-        "row": {
-          "installed": "導入済み package 一覧",
-          "dependencies": "依存関係の可視化",
-          "updates": "更新確認"
-        }
+      "tags": {
+        "label": "Tags"
+      },
+      "collections": {
+        "title": "Collections",
+        "create": "コレクションを作成",
+        "createCollection": "新規コレクション",
+        "createSmartCollection": "新規スマートコレクション"
+      },
+      "smartCollections": {
+        "title": "Smart Collections"
+      }
+    },
+    "collectionCreation": {
+      "collectionTitle": "新規コレクション",
+      "smartTitle": "新規スマートコレクション",
+      "name": "名前",
+      "namePlaceholder": "コレクション名",
+      "iconLabel": "アイコン",
+      "customIcon": "任意アセット",
+      "customIconTooltip": "Project内のTextureアセットをアイコンとして使用",
+      "matchMode": "条件の一致方法",
+      "matchModeAll": "すべての条件に一致",
+      "matchModeAny": "いずれかの条件に一致",
+      "conditions": "条件",
+      "addCondition": "条件を追加",
+      "removeCondition": "条件を削除",
+      "queryPlaceholder": "比較する値",
+      "create": "作成",
+      "cancel": "キャンセル",
+      "icon": {
+        "folder": "フォルダー",
+        "star": "スター",
+        "package": "パッケージ",
+        "tag": "タグ",
+        "search": "検索"
+      },
+      "field": {
+        "name": "名前",
+        "description": "説明",
+        "tag": "タグ",
+        "fileName": "ファイル名",
+        "extension": "拡張子"
+      },
+      "operator": {
+        "contains": "含む",
+        "equals": "等しい",
+        "in": "いずれかに一致",
+        "exists": "存在する"
+      },
+      "error": {
+        "nameRequired": "名前を入力してください。",
+        "conditionRequired": "条件を1つ以上追加してください。",
+        "queryRequired": "条件の比較値を入力してください。"
       }
     }
   }

@@ -14,6 +14,7 @@ namespace Ee4v.AssetManager.UI
 
             public void Register(CatalogWindow.CatalogRegistry registry)
             {
+                registry.RegisterStyleSheet("Editor/UI/Components/Inputs/Button/ui-button.uss");
                 registry.RegisterStyleSheet("Editor/AssetManager/UI/Toolbar/MainToolbar/main-toolbar.uss");
                 registry.RegisterStory(new CatalogWindow.StoryRegistration(
                     "history-navigation",
@@ -21,7 +22,7 @@ namespace Ee4v.AssetManager.UI
                     "HistoryNavigation",
                     "AssetManager の history stack を操作する navigation component です。",
                     "通常時は末尾の breadcrumb だけを表示し、breadcrumb の hover 時に全階層、戻る・進むボタンの右クリック時に履歴を overlay 表示します。",
-                    new string[0],
+                    new[] { "UiButton" },
                     CatalogWindow.ComponentImplementationKind.UiToolkit,
                     (window, parent) => BuildHistoryNavigationStory(window, parent)));
             }

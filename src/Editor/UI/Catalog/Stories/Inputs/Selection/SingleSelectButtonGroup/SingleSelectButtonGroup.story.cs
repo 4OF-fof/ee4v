@@ -14,6 +14,7 @@ namespace Ee4v.UI
 
             public void Register(CatalogRegistry registry)
             {
+                registry.RegisterStyleSheet("Editor/UI/Components/Inputs/Button/ui-button.uss");
                 registry.RegisterStyleSheet("Editor/UI/Components/Inputs/Selection/SingleSelectButtonGroup/single-select-button-group.uss");
                 registry.RegisterStory(new StoryRegistration(
                     "single-select-button-group",

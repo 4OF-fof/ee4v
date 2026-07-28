@@ -221,6 +221,8 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             {
                 Id = row.id,
                 Name = row.name,
+                Icon = FromDbCollectionIcon(row.icon),
+                IconAssetGuid = row.icon_asset_guid,
                 IsSmartCollection = smart != null,
                 ParentCollectionId = parent != null ? parent.parent_collection_id : null,
                 SmartRule = smart == null ? null : new SmartCollectionRule

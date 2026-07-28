@@ -34,6 +34,7 @@ namespace Ee4v.UI
         private const string IconClassName = "ee4v-ui-search-field__icon";
         private const string InputHostClassName = "ee4v-ui-search-field__input-host";
         private const string InputClassName = "ee4v-ui-search-field__input";
+        private const string PlaceholderClassName = "ee4v-ui-search-field__placeholder";
         private const string ClearClassName = "ee4v-ui-search-field__clear";
         private readonly Icon _searchIcon;
         private readonly VisualElement _inputHost;
@@ -75,7 +76,10 @@ namespace Ee4v.UI
                 RefreshVisualState();
             });
 
-            _placeholderLabel = UiTextFactory.Create(string.Empty, UiClassNames.SearchFieldPlaceholder);
+            _placeholderLabel = UiTextFactory.Create(
+                string.Empty,
+                UiClassNames.InputPlaceholder,
+                PlaceholderClassName);
             _placeholderLabel.pickingMode = PickingMode.Ignore;
 
             _clearButton = new Button(ClearValue);

@@ -10,11 +10,15 @@ namespace Ee4v.AssetManager.UI
         private AssetSelectionContentKind _selectionContentKind =
             AssetSelectionContentKind.AssetItem;
         private string _selectedDetailTabId = string.Empty;
+        private string _selectedNavigationItemId =
+            AssetManagerNavigationCatalog.DefaultItemId;
 
         public event Action<IReadOnlyList<ItemCardState>, AssetSelectionContentKind>
             SelectionChanged;
 
         public event Action<string> DetailTabRequested;
+
+        public event Action<string> NavigationChanged;
 
         public IReadOnlyList<ItemCardState> SelectedItems
         {
@@ -29,6 +33,11 @@ namespace Ee4v.AssetManager.UI
         public string SelectedDetailTabId
         {
             get { return _selectedDetailTabId; }
+        }
+
+        public string SelectedNavigationItemId
+        {
+            get { return _selectedNavigationItemId; }
         }
 
         public void SetSelection(
@@ -64,6 +73,24 @@ namespace Ee4v.AssetManager.UI
         {
             _selectedDetailTabId = tabId ?? string.Empty;
             DetailTabRequested?.Invoke(_selectedDetailTabId);
+        }
+
+        public void SetNavigation(string itemId)
+        {
+            var nextItemId =
+                string.IsNullOrWhiteSpace(itemId)
+                    ? AssetManagerNavigationCatalog.DefaultItemId
+                    : itemId;
+            if (string.Equals(
+                    _selectedNavigationItemId,
+                    nextItemId,
+                    StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _selectedNavigationItemId = nextItemId;
+            NavigationChanged?.Invoke(_selectedNavigationItemId);
         }
     }
 }

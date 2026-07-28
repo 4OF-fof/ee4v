@@ -27,11 +27,12 @@
     },
     "background": {
       "datasourceCheck": "Checking library changes...",
-      "datasourceSync": "Synchronizing the AssetManager library..."
+      "datasourceSync": "Synchronizing the AssetManager library...",
+      "noDatasource": "No available BLM database or Eagle library is configured."
     },
     "syncConflict": {
       "title": "Review synchronization changes",
-      "message": "Some Unity-side item information is newer than its source. Review the differences before overwriting it. Cancel stops this startup synchronization.",
+      "message": "Some Unity-side item information is newer than its source. Review the differences before overwriting it. Cancel stops this synchronization.",
       "current": "Unity",
       "incoming": "Source",
       "overwrite": "Overwrite",
@@ -45,7 +46,12 @@
       "loadCanceled": "Asset loading was canceled.",
       "noItems": "No asset items.",
       "noFiles": "This item has no files.",
-      "noChildren": "No child items to display."
+      "noChildren": "No child items to display.",
+      "tags": {
+        "title": "Tags ({0})",
+        "empty": "No tags.",
+        "loading": "Loading tags..."
+      }
     },
     "mainToolbar": {
       "gridSize": "Grid size",
@@ -54,53 +60,71 @@
       "searchPlaceholder": "Search assets"
     },
     "navigation": {
-      "allAssets": {
-        "label": "All Assets",
-        "meta": "240 items",
-        "eyebrow": "AssetManager",
-        "title": "All Assets",
-        "description": "The default view for searching, browsing, and managing assets across the project.",
-        "row": {
-          "search": "Search bar and filters",
-          "viewMode": "Grid / list switching",
-          "bulkActions": "Bulk actions and import/export entry points"
-        }
+      "library": "Library",
+      "manualSync": "Synchronize BLM / Eagle",
+      "all": {
+        "label": "All"
       },
-      "favorites": {
-        "label": "Favorites",
-        "meta": "Pinned",
-        "eyebrow": "Collections",
-        "title": "Favorites",
-        "description": "A focused view for assets you use frequently while working.",
-        "row": {
-          "list": "Favorite assets",
-          "recent": "Recently updated sorting",
-          "preview": "Quick preview entry points"
-        }
+      "boothItems": {
+        "label": "BOOTH Items"
       },
-      "boothLibrary": {
-        "label": "Booth Library",
-        "meta": "Store Sync",
-        "eyebrow": "Source",
-        "title": "Booth Library",
-        "description": "A view for Booth-linked libraries and sync status.",
-        "row": {
-          "purchases": "Purchased asset list",
-          "sync": "Pending sync / update checks",
-          "download": "Download entry points"
-        }
+      "uncategorized": {
+        "label": "Uncategorized"
       },
-      "packages": {
-        "label": "Packages",
-        "meta": "UPM",
-        "eyebrow": "Source",
-        "title": "Packages",
-        "description": "A view for Package Manager assets and dependencies.",
-        "row": {
-          "installed": "Installed package list",
-          "dependencies": "Dependency visualization",
-          "updates": "Update checks"
-        }
+      "tags": {
+        "label": "Tags"
+      },
+      "collections": {
+        "title": "Collections",
+        "create": "Create a collection",
+        "createCollection": "New Collection",
+        "createSmartCollection": "New Smart Collection"
+      },
+      "smartCollections": {
+        "title": "Smart Collections"
+      }
+    },
+    "collectionCreation": {
+      "collectionTitle": "New Collection",
+      "smartTitle": "New Smart Collection",
+      "name": "Name",
+      "namePlaceholder": "Collection name",
+      "iconLabel": "Icon",
+      "customIcon": "Custom asset",
+      "customIconTooltip": "Use a Texture asset from the Project as the icon",
+      "matchMode": "Condition matching",
+      "matchModeAll": "Match all conditions",
+      "matchModeAny": "Match any condition",
+      "conditions": "Conditions",
+      "addCondition": "Add condition",
+      "removeCondition": "Remove condition",
+      "queryPlaceholder": "Comparison value",
+      "create": "Create",
+      "cancel": "Cancel",
+      "icon": {
+        "folder": "Folder",
+        "star": "Star",
+        "package": "Package",
+        "tag": "Tag",
+        "search": "Search"
+      },
+      "field": {
+        "name": "Name",
+        "description": "Description",
+        "tag": "Tag",
+        "fileName": "File name",
+        "extension": "Extension"
+      },
+      "operator": {
+        "contains": "Contains",
+        "equals": "Equals",
+        "in": "Matches any",
+        "exists": "Exists"
+      },
+      "error": {
+        "nameRequired": "Enter a name.",
+        "conditionRequired": "Add at least one condition.",
+        "queryRequired": "Enter a comparison value."
       }
     }
   }

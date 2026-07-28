@@ -42,6 +42,16 @@
 
 許可されている例外実装は `Editor/UI/Foundation/Typography/UiTextFactory.cs` のみです。
 
+`UiTextFactory.Create(...)` に component 固有の構造用 class だけを渡すと、
+`TypographyStyleResolver` は default style を返し、通常の UI Toolkit `Label` 実装が
+選ばれます。Unity 2022.3 のフォントキャッシュ問題を回避する text では、
+`UiClassNames` に typography class を追加し、`RequiresImgui = true` の定義を
+`TypographyStyleResolver` に登録してから factory へ渡します。
+
+文字付き button は `Button.text` を使わず、`UiButton` を使用します。`UiButton` は
+表示文字列を登録済み typography class と `UiTextFactory` 経由で描画し、solid / ghost、
+compact / default、icon、meta、selected state の共通表現を提供します。
+
 ## class 名は `UiClassNames` に寄せる
 
 `UiClassNames` は typography 用 class 名の入口です。`TypographyStyleResolver` で解決する text 用 class 名は string 直書きせず、`UiClassNames` に定数を追加して使います。

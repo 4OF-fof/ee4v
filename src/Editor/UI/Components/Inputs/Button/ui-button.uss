@@ -1,0 +1,95 @@
+@import url("../../../Foundation/ui-design-tokens.uss");
+
+.ee4v-ui-button {
+    min-width: 0;
+    min-height: var(--ee4v-control-height-default);
+    margin: var(--ee4v-space-none);
+    padding-left: var(--ee4v-space-md);
+    padding-right: var(--ee4v-space-md);
+    padding-top: var(--ee4v-space-xs);
+    padding-bottom: var(--ee4v-space-xs);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-sm);
+    background-color: var(--ee4v-color-control);
+    align-items: center;
+    justify-content: center;
+}
+
+.ee4v-ui-button:hover {
+    background-color: var(--ee4v-color-control-hover);
+    border-color: var(--ee4v-color-border-active);
+}
+
+.ee4v-ui-button:active {
+    background-color: var(--ee4v-color-control-pressed);
+}
+
+.ee4v-ui-button:focus {
+    border-color: var(--ee4v-color-focus);
+}
+
+.ee4v-ui-button--ghost {
+    border-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-ui-button--ghost:hover {
+    border-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-color-surface-hover);
+}
+
+.ee4v-ui-button--ghost:active {
+    background-color: var(--ee4v-color-surface-pressed);
+}
+
+.ee4v-ui-button--selected,
+.ee4v-ui-button--selected:active {
+    border-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-color-tool-active);
+}
+
+.ee4v-ui-button--selected:hover {
+    background-color: var(--ee4v-color-tool-active-hover);
+}
+
+.ee4v-ui-button--compact {
+    min-height: var(--ee4v-control-height-compact);
+    padding-left: var(--ee4v-space-xs);
+    padding-right: var(--ee4v-space-xs);
+    padding-top: var(--ee4v-space-none);
+    padding-bottom: var(--ee4v-space-none);
+}
+
+.ee4v-ui-button--icon-only {
+    width: var(--ee4v-size-20);
+    min-width: var(--ee4v-size-20);
+    height: var(--ee4v-size-20);
+    min-height: var(--ee4v-size-20);
+    padding: var(--ee4v-space-none);
+}
+
+.ee4v-ui-button:disabled {
+    opacity: 0.5;
+}
+
+.ee4v-ui-button__content {
+    flex-grow: 1;
+    min-width: 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.ee4v-ui-button__content--with-icon > .ee4v-ui-button__icon {
+    margin-right: var(--ee4v-space-sm);
+}
+
+.ee4v-ui-button__label {
+    min-width: 0;
+    flex-grow: 1;
+}
+
+.ee4v-ui-button__meta {
+    flex-shrink: 0;
+}

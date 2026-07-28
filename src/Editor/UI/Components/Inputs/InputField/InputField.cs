@@ -46,7 +46,9 @@ namespace Ee4v.UI
             _fieldContainer = new VisualElement();
             _fieldContainer.AddToClassList(FieldContainerClassName);
 
-            _placeholderLabel = UiTextFactory.Create(string.Empty, UiClassNames.SearchFieldPlaceholder);
+            _placeholderLabel = UiTextFactory.Create(
+                string.Empty,
+                UiClassNames.InputPlaceholder);
             _placeholderLabel.AddToClassList(PlaceholderClassName);
             _placeholderLabel.pickingMode = PickingMode.Ignore;
 

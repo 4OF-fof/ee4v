@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Ee4v.Testing.Contracts;
 using NUnit.Framework;
 using UnityEditor;
+using UnityEngine.UIElements;
 
 namespace Ee4v.UI.Tests
 {
@@ -31,6 +32,26 @@ namespace Ee4v.UI.Tests
             AssertRuleClips(
                 styleSheet,
                 ".ee4v-ui-search-field__placeholder Label");
+        }
+
+        [Test]
+        public void Placeholder_UsesSearchFieldLayoutAndImguiTypography()
+        {
+            var field = new SearchField(new SearchFieldState(
+                placeholder: "Search files"));
+
+            var placeholder = field.Q<UiTextElement>(
+                className:
+                "ee4v-ui-search-field__placeholder");
+
+            Assert.That(placeholder, Is.Not.Null);
+            Assert.That(
+                placeholder.ClassListContains(
+                    UiClassNames.InputPlaceholder),
+                Is.True);
+            Assert.That(
+                placeholder.GetType().Name,
+                Is.EqualTo("ImguiUiTextElement"));
         }
 
         private static void AssertRuleClips(

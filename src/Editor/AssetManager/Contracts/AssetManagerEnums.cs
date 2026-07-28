@@ -26,15 +26,22 @@ namespace Ee4v.AssetManager.Contracts
         Any
     }
 
+    public enum AssetCollectionIcon
+    {
+        Folder,
+        Star,
+        Package,
+        Tag,
+        Search
+    }
+
     public enum SmartCollectionConditionField
     {
         Name,
         Description,
         Tag,
-        SourceType,
         FileName,
-        Extension,
-        Lifecycle
+        Extension
     }
 
     public enum SmartCollectionConditionOperator

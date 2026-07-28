@@ -139,6 +139,8 @@ namespace Ee4v.AssetManager.Contracts
     {
         public string Id { get; set; }
         public string Name { get; set; }
+        public AssetCollectionIcon Icon { get; set; }
+        public string IconAssetGuid { get; set; }
         public bool IsSmartCollection { get; set; }
         public string ParentCollectionId { get; set; }
         public SmartCollectionRule SmartRule { get; set; }

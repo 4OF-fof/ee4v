@@ -14,6 +14,7 @@ namespace Ee4v.UI
         public static readonly Color32 ToolActive = new Color32(70, 96, 124, 255);
         public static readonly Color32 Selection = new Color32(44, 93, 135, 255);
         public static readonly Color32 Focus = new Color32(58, 121, 187, 255);
+        public static readonly Color32 Error = new Color32(220, 92, 92, 255);
         public static readonly Color32 TextPrimary = new Color32(194, 194, 194, 255);
         public static readonly Color32 TextSecondary = new Color32(194, 194, 194, 209);
         public static readonly Color32 TextMuted = new Color32(194, 194, 194, 184);

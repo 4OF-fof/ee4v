@@ -77,7 +77,16 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 {
                     var now = Now();
                     var nextId = NewId();
-                    connection.Execute("INSERT INTO collection_info(id, name, created_at, updated_at) VALUES (?, ?, ?, ?)", nextId, request.Name, now, now);
+                    connection.Execute(
+                        "INSERT INTO collection_info(id, name, icon, icon_asset_guid, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+                        nextId,
+                        request.Name,
+                        ToDbCollectionIcon(request.Icon),
+                        string.IsNullOrWhiteSpace(request.IconAssetGuid)
+                            ? null
+                            : request.IconAssetGuid.Trim(),
+                        now,
+                        now);
                     SetCollectionParent(connection, nextId, request.ParentCollectionId);
                     return nextId;
                 });
@@ -109,7 +118,16 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 {
                     var now = Now();
                     var nextId = NewId();
-                    connection.Execute("INSERT INTO collection_info(id, name, created_at, updated_at) VALUES (?, ?, ?, ?)", nextId, request.Name, now, now);
+                    connection.Execute(
+                        "INSERT INTO collection_info(id, name, icon, icon_asset_guid, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+                        nextId,
+                        request.Name,
+                        ToDbCollectionIcon(request.Icon),
+                        string.IsNullOrWhiteSpace(request.IconAssetGuid)
+                            ? null
+                            : request.IconAssetGuid.Trim(),
+                        now,
+                        now);
                     SetCollectionParent(connection, nextId, request.ParentCollectionId);
                     connection.Execute(
                         "INSERT INTO smart_collection_info(collection_info_id, match_mode, created_at, updated_at) VALUES (?, ?, ?, ?)",
@@ -438,15 +456,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                     itemId).Select(row => row.name).ToArray();
             }
 
-            if (field == SmartCollectionConditionField.SourceType)
-            {
-                var values = new List<string>();
-                if (connection.ExecuteScalar<int>("SELECT COUNT(*) FROM file_info INNER JOIN ee4v_file_origin ON ee4v_file_origin.file_info_id = file_info.id WHERE " + FileBelongsToItemWhereClause(), itemId, itemId, itemId) > 0) values.Add("ee4v");
-                if (connection.ExecuteScalar<int>("SELECT COUNT(*) FROM file_info INNER JOIN eagle_file_origin ON eagle_file_origin.file_info_id = file_info.id WHERE " + FileBelongsToItemWhereClause(), itemId, itemId, itemId) > 0) values.Add("eagle");
-                if (connection.ExecuteScalar<int>("SELECT COUNT(*) FROM file_info INNER JOIN blm_file_origin ON blm_file_origin.file_info_id = file_info.id WHERE " + FileBelongsToItemWhereClause(), itemId, itemId, itemId) > 0) values.Add("blm");
-                return values;
-            }
-
             if (field == SmartCollectionConditionField.FileName)
             {
                 return connection.Query<FileRow>("SELECT file_name FROM file_info WHERE " + FileBelongsToItemWhereClause(), itemId, itemId, itemId).Select(row => row.file_name).ToArray();
@@ -457,7 +466,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 return connection.Query<FileRow>("SELECT extension FROM file_info WHERE " + FileBelongsToItemWhereClause(), itemId, itemId, itemId).Select(row => row.extension).ToArray();
             }
 
-            return connection.Query<FileRow>("SELECT lifecycle FROM file_info WHERE " + FileBelongsToItemWhereClause(), itemId, itemId, itemId).Select(row => row.lifecycle).ToArray();
+            return Array.Empty<string>();
         }
 
         private static string FileBelongsToItemWhereClause()

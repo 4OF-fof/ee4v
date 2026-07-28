@@ -15,6 +15,7 @@ namespace Ee4v.AssetManager.UI
         private readonly AssetItemGrid _itemGrid;
         private readonly UiTextElement _statusLabel;
         private readonly FileTreeDetailView _fileDetailView;
+        private readonly TagListPage _tagListPage;
         private string _fileListItemId;
         private string _fileListItemName;
         private AssetItemGridNodeKind _browserNodeKind;
@@ -36,11 +37,14 @@ namespace Ee4v.AssetManager.UI
             _statusLabel.SetWhiteSpace(WhiteSpace.Normal);
             _fileDetailView = new FileTreeDetailView();
             _fileDetailView.style.display = DisplayStyle.None;
+            _tagListPage = new TagListPage();
+            _tagListPage.style.display = DisplayStyle.None;
 
             AddToClassList("ee4v-asset-manager-panel");
             AddToClassList(RootClassName);
             Add(_statusLabel);
             Add(_fileDetailView);
+            Add(_tagListPage);
             Add(_itemGrid);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -144,6 +148,7 @@ namespace Ee4v.AssetManager.UI
                 OnMinimumItemsPerRowChanged;
             _controller.HistoryOverlayMaximumItemsChanged += OnHistoryOverlayMaximumItemsChanged;
             _controller.LoadCompleted += OnLoadCompleted;
+            _controller.TagListLoadCompleted += OnTagListLoadCompleted;
             PushCurrentHistory();
             RefreshContent();
         }
@@ -157,6 +162,7 @@ namespace Ee4v.AssetManager.UI
                 OnMinimumItemsPerRowChanged;
             _controller.HistoryOverlayMaximumItemsChanged -= OnHistoryOverlayMaximumItemsChanged;
             _controller.LoadCompleted -= OnLoadCompleted;
+            _controller.TagListLoadCompleted -= OnTagListLoadCompleted;
             _controller.Deactivate();
             _controller.CancelPendingLoad();
         }
@@ -325,6 +331,7 @@ namespace Ee4v.AssetManager.UI
                 _controller.CancelPendingLoad();
                 SetStatus(string.Empty);
                 _itemGrid.style.display = DisplayStyle.None;
+                _tagListPage.style.display = DisplayStyle.None;
                 _fileDetailView.style.display = DisplayStyle.Flex;
                 _fileDetailView.SetState(_fileDetailState);
                 return;
@@ -332,6 +339,27 @@ namespace Ee4v.AssetManager.UI
 
             _fileDetailView.SetState(null);
             _fileDetailView.style.display = DisplayStyle.None;
+            if (IsTagListMode)
+            {
+                _itemGrid.style.display = DisplayStyle.None;
+                _tagListPage.style.display = DisplayStyle.Flex;
+                var tagCacheKey = CreateCurrentCacheKey();
+                System.Collections.Generic.IReadOnlyList<AssetTag> cachedTags;
+                if (_controller.TryGetCachedTags(tagCacheKey, out cachedTags))
+                {
+                    ApplyTagList(tagCacheKey, cachedTags);
+                    return;
+                }
+
+                SetStatus(I18N.Get("assetManager.mainView.tags.loading"));
+                _tagListPage.SetLoading();
+                _controller.StartTagListLoad(
+                    tagCacheKey,
+                    cancellationToken => _controller.LoadTags(_searchText, cancellationToken));
+                return;
+            }
+
+            _tagListPage.style.display = DisplayStyle.None;
             _itemGrid.style.display = DisplayStyle.Flex;
             var cacheKey = CreateCurrentCacheKey();
             AssetItemGridList cachedItems;
@@ -370,12 +398,43 @@ namespace Ee4v.AssetManager.UI
             ApplyItemList(result.CacheKey, result.Items);
         }
 
+        private void OnTagListLoadCompleted(TagListLoadResult result)
+        {
+            if (result == null)
+            {
+                return;
+            }
+
+            if (result.Error != null)
+            {
+                SetStatus(result.Error.Message);
+                return;
+            }
+
+            if (result.Canceled)
+            {
+                SetStatus(I18N.Get("assetManager.mainView.loadCanceled"));
+                return;
+            }
+
+            ApplyTagList(result.CacheKey, result.Tags);
+        }
+
         private void ApplyItemList(string cacheKey, AssetItemGridList itemList)
         {
             _controller.StoreCachedItems(cacheKey, itemList);
             string statusText;
             _itemGrid.SetAssetItems(itemList, out statusText);
             SetStatus(ResolveStatusText(statusText));
+        }
+
+        private void ApplyTagList(
+            string cacheKey,
+            System.Collections.Generic.IReadOnlyList<AssetTag> tags)
+        {
+            _controller.StoreCachedTags(cacheKey, tags);
+            _tagListPage.SetTags(tags);
+            SetStatus(string.Empty);
         }
 
         private void SetStatus(string message)
@@ -398,6 +457,18 @@ namespace Ee4v.AssetManager.UI
         private bool IsFileDetailMode
         {
             get { return _fileDetailState != null; }
+        }
+
+        private bool IsTagListMode
+        {
+            get
+            {
+                return !IsFileListMode &&
+                       string.Equals(
+                           _controller.SelectedNavigationItemId,
+                           "tags",
+                           System.StringComparison.Ordinal);
+            }
         }
 
         private AssetItemGridList LoadCurrentGridItems(CancellationToken cancellationToken)

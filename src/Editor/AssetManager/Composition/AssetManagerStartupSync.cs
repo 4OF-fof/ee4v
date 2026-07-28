@@ -20,6 +20,7 @@ namespace Ee4v.AssetManager.Composition
         private static bool _scheduled;
         private static AssetManagerService _assetManager;
         private static ISettingsService _settings;
+        private static int _running;
 
         internal static event Action<IReadOnlyList<AssetSyncConflict>, Action<bool>> ConfirmationRequested;
 
@@ -59,6 +60,47 @@ namespace Ee4v.AssetManager.Composition
                 return;
             }
 
+            StartSync(checkBlm, blmPath, checkEagle, eaglePath);
+        }
+
+        internal static void RequestManualSync()
+        {
+            if (_assetManager == null || _settings == null)
+            {
+                return;
+            }
+
+            _settings.Preload(SettingScope.User);
+            var blmPath = ResolvePath(
+                _settings.Get(AssetManagerDefinitions.BlmDatabasePath));
+            var eaglePath = ResolvePath(
+                _settings.Get(AssetManagerDefinitions.EagleLibraryPath));
+            var checkBlm = File.Exists(blmPath);
+            var checkEagle = Directory.Exists(eaglePath);
+            if (!checkBlm && !checkEagle)
+            {
+                Debug.LogWarning(I18N.Get(
+                    "assetManager.background.noDatasource"));
+                return;
+            }
+
+            StartSync(checkBlm, blmPath, checkEagle, eaglePath);
+        }
+
+        private static void StartSync(
+            bool checkBlm,
+            string blmPath,
+            bool checkEagle,
+            string eaglePath)
+        {
+            if (Interlocked.CompareExchange(
+                    ref _running,
+                    1,
+                    0) != 0)
+            {
+                return;
+            }
+
             var activity = CoreBackgroundActivities.Current.Begin(
                 I18N.Get("assetManager.background.datasourceCheck"));
             Task.Run(() => Prepare(checkBlm, blmPath, checkEagle, eaglePath)).ContinueWith(task =>
@@ -76,20 +118,21 @@ namespace Ee4v.AssetManager.Composition
 
         private static void HandlePrepared(Task<PreparedStartupSync> task, IDisposable activity)
         {
+            activity.Dispose();
             if (task.IsFaulted)
             {
-                activity.Dispose();
                 if (task.Exception != null)
                 {
                     Debug.LogException(task.Exception.GetBaseException());
                 }
 
+                CompleteSync();
                 return;
             }
 
             if (task.IsCanceled || task.Result == null || !task.Result.HasChanges)
             {
-                activity.Dispose();
+                CompleteSync();
                 return;
             }
 
@@ -97,39 +140,45 @@ namespace Ee4v.AssetManager.Composition
             var conflicts = prepared.Conflicts;
             if (conflicts.Count == 0)
             {
-                Apply(prepared, activity);
+                Apply(prepared);
                 return;
             }
 
             var handler = ConfirmationRequested;
             if (handler == null)
             {
-                activity.Dispose();
+                CompleteSync();
                 return;
             }
 
-            activity.Dispose();
             var resolved = 0;
-            handler(conflicts, overwrite =>
+            try
             {
-                if (Interlocked.Exchange(ref resolved, 1) != 0)
+                handler(conflicts, overwrite =>
                 {
-                    return;
-                }
+                    if (Interlocked.Exchange(ref resolved, 1) != 0)
+                    {
+                        return;
+                    }
 
-                if (!overwrite)
-                {
-                    activity.Dispose();
-                    return;
-                }
+                    if (!overwrite)
+                    {
+                        CompleteSync();
+                        return;
+                    }
 
-                Apply(prepared, activity);
-            });
+                    Apply(prepared);
+                });
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                CompleteSync();
+            }
         }
 
-        private static void Apply(PreparedStartupSync prepared, IDisposable activity)
+        private static void Apply(PreparedStartupSync prepared)
         {
-            activity.Dispose();
             var syncActivity = CoreBackgroundActivities.Current.Begin(
                 I18N.Get("assetManager.background.datasourceSync"));
             Task.Run(() =>
@@ -158,6 +207,7 @@ namespace Ee4v.AssetManager.Composition
                             Debug.LogException(task.Exception.GetBaseException());
                         }
 
+                        CompleteSync();
                         return;
                     }
 
@@ -165,8 +215,15 @@ namespace Ee4v.AssetManager.Composition
                     {
                         _assetManager.NotifyCatalogChanged();
                     }
+
+                    CompleteSync();
                 };
             });
+        }
+
+        private static void CompleteSync()
+        {
+            Interlocked.Exchange(ref _running, 0);
         }
 
         private static string ResolvePath(string path)

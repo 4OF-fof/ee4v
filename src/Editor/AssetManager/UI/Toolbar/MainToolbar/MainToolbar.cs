@@ -135,6 +135,13 @@ namespace Ee4v.AssetManager.UI
                 1f));
         }
 
+        internal void SetGridSizeVisible(bool visible)
+        {
+            _itemSizeSlider.style.display = visible
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+        }
+
         internal void SetHistoryState(AssetItemGridHistoryState state)
         {
             _historyNavigation.SetState(state);
@@ -145,15 +152,23 @@ namespace Ee4v.AssetManager.UI
             _historyNavigation.SetMaximumVisibleRows(value);
         }
 
-        private static Button CreateIconButton(UiBuiltinIcon builtinIcon, string tooltip, Action clicked)
+        private static UiButton CreateIconButton(
+            UiBuiltinIcon builtinIcon,
+            string tooltip,
+            Action clicked)
         {
-            var button = new Button(clicked)
-            {
-                tooltip = tooltip ?? string.Empty,
-                focusable = false
-            };
+            var button = new UiButton(
+                new UiButtonState(
+                    tooltip: tooltip,
+                    iconState: IconState.FromBuiltinIcon(
+                        builtinIcon,
+                        size: UiSizeTokens.Size14,
+                        tooltip: tooltip),
+                    variant: UiButtonVariant.Ghost,
+                    size: UiButtonSize.Compact),
+                clicked);
+            button.focusable = false;
             button.AddToClassList(IconButtonClassName);
-            button.Add(new Icon(IconState.FromBuiltinIcon(builtinIcon, size: UiSizeTokens.Size14, tooltip: tooltip)));
             return button;
         }
     }

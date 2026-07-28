@@ -15,7 +15,7 @@ CHECK (source_type IN ('blm', 'eagle', 'ee4v'))
 CHECK (last_sync_status IN ('success', 'failed', 'partial'))
 CHECK (file_lifecycle IN ('active', 'archived'))
 CHECK (smart_collection_match_mode IN ('all', 'any'))
-CHECK (smart_collection_condition_field IN ('name', 'description', 'tag', 'source_type', 'file_name', 'extension', 'lifecycle'))
+CHECK (smart_collection_condition_field IN ('name', 'description', 'tag', 'file_name', 'extension'))
 CHECK (smart_collection_condition_operator IN ('contains', 'equals', 'in', 'exists'))
 ```
 
@@ -95,6 +95,8 @@ erDiagram
     collection_info {
         TEXT id PK
         TEXT name
+        TEXT icon
+        TEXT icon_asset_guid
         TEXT created_at
         TEXT updated_at
     }
@@ -281,8 +283,14 @@ AssetManager 独自 folder / collection。階層構造は `collection_collection
 |---|---|---:|---|---|
 | `id` | GUID string | Yes |  | Collection Info の識別子 |
 | `name` | TEXT | Yes |  | collection 名 |
+| `icon` | collection_icon | Yes |  | 通常・Smart Collection 共通の表示アイコン |
+| `icon_asset_guid` | GUID string |  |  | 任意 Texture asset のGUID。有効な場合は `icon` より優先 |
 | `created_at` | DATETIME | Yes |  | 作成時刻 |
 | `updated_at` | DATETIME | Yes |  | 更新時刻 |
+
+```sql
+CHECK (icon IN ('folder', 'star', 'package', 'tag', 'search'))
+```
 
 ## Smart Collection Info
 
@@ -320,7 +328,7 @@ Smart Collection の検索条件。
 | `updated_at` | DATETIME | Yes |  | 更新時刻 |
 
 ```sql
-CHECK (field IN ('name', 'description', 'tag', 'source_type', 'file_name', 'extension', 'lifecycle'))
+CHECK (field IN ('name', 'description', 'tag', 'file_name', 'extension'))
 CHECK (operator IN ('contains', 'equals', 'in', 'exists'))
 CHECK (operator = 'exists' OR query_text IS NOT NULL)
 ```
@@ -412,7 +420,7 @@ ON item_collection(item_info_id, collection_info_id);
 
 ## Schema Version
 
-AssetManager DB の schema version。現在は `2`。開発段階のため migration は提供せず、version 不一致時は既存 DB を削除して再作成する。
+AssetManager DB の schema version。現在は `4`。開発段階のため migration は提供せず、version 不一致時は既存 DB を削除して再作成する。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|

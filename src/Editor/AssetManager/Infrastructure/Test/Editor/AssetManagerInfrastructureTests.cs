@@ -43,10 +43,10 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
-            "schema version 2 の DB 制約を作成する",
+            "schema version 4 の DB 制約を作成する",
             "AssetManager DB が source origin、availability、collection cycle trigger を作成することを確認します。",
             order: 301)]
-        public void Schema_CreatesVersion2Constraints()
+        public void Schema_CreatesVersion4Constraints()
         {
             var databasePath = GetDatabasePath();
 
@@ -54,13 +54,18 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
             using (var connection = new SQLiteConnection(databasePath, SQLiteOpenFlags.ReadOnly | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.PrivateCache))
             {
-                Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(2));
+                Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(4));
                 Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'file_info'"), Does.Contain("CHECK"));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'item_source_origin'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'datasource_tag'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'file_import_target'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'unique_file_import_target_file_path'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'prevent_collection_collection_cycle_insert'"), Is.EqualTo(1));
+                Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'collection_info'"), Does.Contain("icon"));
+                Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'collection_info'"), Does.Contain("icon_asset_guid"));
+                var smartConditionSql = connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'smart_collection_condition'");
+                Assert.That(smartConditionSql, Does.Not.Contain("source_type"));
+                Assert.That(smartConditionSql, Does.Not.Contain("lifecycle"));
             }
         }
 
@@ -187,6 +192,142 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
             Assert.That(ex.Code, Is.EqualTo(AssetManagerErrorCode.NotFound));
             Assert.That(result.Items.Select(collectionItem => collectionItem.Id).ToArray(), Is.EqualTo(new[] { item.Id }));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Booth 情報の有無で item を絞り込む",
+            "HasBoothInformation が BLM source ではなく booth_info snapshot の存在だけを条件にすることを確認します。",
+            order: 336)]
+        public void SearchItems_HasBoothInformation_FiltersByBoothSnapshot()
+        {
+            var boothItem = _assetManager.CreateItem(new CreateAssetItemRequest { Name = "Booth Item" });
+            _assetManager.CreateItem(new CreateAssetItemRequest { Name = "Plain Item" });
+            using (var connection = new SQLiteConnection(GetDatabasePath()))
+            {
+                connection.Execute(
+                    "INSERT INTO shop_info(id, name, subdomain) VALUES (?, ?, ?)",
+                    "shop-1",
+                    "Shop",
+                    "shop");
+                connection.Execute(
+                    "INSERT INTO booth_info(id, item_info_id, booth_item_id, shop_info_id, name, description) VALUES (?, ?, ?, ?, ?, ?)",
+                    "booth-1",
+                    boothItem.Id,
+                    123L,
+                    "shop-1",
+                    "Booth Item",
+                    string.Empty);
+            }
+
+            var result = _assetManager.SearchItems(new AssetItemQuery
+            {
+                HasBoothInformation = true
+            });
+
+            Assert.That(result.Items.Select(item => item.Id).ToArray(), Is.EqualTo(new[] { boothItem.Id }));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "通常・Smart Collection 未所属の item を絞り込む",
+            "UncategorizedOnly が直接所属と Smart Collection 条件一致の両方を除外することを確認します。",
+            order: 337)]
+        public void SearchItems_UncategorizedOnly_ExcludesRegularAndSmartCollectionMembers()
+        {
+            var regularCollection = _assetManager.CreateCollection(
+                new CreateCollectionRequest { Name = "Regular" });
+            var uncategorizedItem = _assetManager.CreateItem(
+                new CreateAssetItemRequest { Name = "Uncategorized" });
+            _assetManager.CreateItem(new CreateAssetItemRequest
+            {
+                Name = "Regular Member",
+                CollectionIds = new[] { regularCollection.Id }
+            });
+            _assetManager.CreateItem(new CreateAssetItemRequest { Name = "Smart Member" });
+            _assetManager.CreateSmartCollection(new CreateSmartCollectionRequest
+            {
+                Name = "Smart",
+                MatchMode = SmartCollectionMatchMode.All,
+                Conditions = new[]
+                {
+                    new SmartCollectionCondition
+                    {
+                        Field = SmartCollectionConditionField.Name,
+                        Operator = SmartCollectionConditionOperator.Equals,
+                        QueryText = "Smart Member"
+                    }
+                }
+            });
+
+            var result = _assetManager.SearchItems(new AssetItemQuery
+            {
+                UncategorizedOnly = true
+            });
+
+            Assert.That(
+                result.Items.Select(item => item.Id).ToArray(),
+                Is.EqualTo(new[] { uncategorizedItem.Id }));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "通常・Smart Collection のアイコンを保存する",
+            "両 Collection が同じ icon contract を返し、Smart Collection の exists 条件が query text なしで作成できることを確認します。",
+            order: 338)]
+        public void CreateCollections_PersistsSharedIconContract()
+        {
+            var regular = _assetManager.CreateCollection(
+                new CreateCollectionRequest
+                {
+                    Name = "Regular",
+                    Icon = AssetCollectionIcon.Star,
+                    IconAssetGuid = "regular-icon-guid"
+                });
+            var smart = _assetManager.CreateSmartCollection(
+                new CreateSmartCollectionRequest
+                {
+                    Name = "Smart",
+                    Icon = AssetCollectionIcon.Search,
+                    IconAssetGuid = "smart-icon-guid",
+                    MatchMode = SmartCollectionMatchMode.All,
+                    Conditions = new[]
+                    {
+                        new SmartCollectionCondition
+                        {
+                            Field = SmartCollectionConditionField.Tag,
+                            Operator = SmartCollectionConditionOperator.Exists
+                        }
+                    }
+                });
+
+            var collections = _assetManager.GetCollections();
+
+            Assert.That(regular.Icon, Is.EqualTo(AssetCollectionIcon.Star));
+            Assert.That(
+                regular.IconAssetGuid,
+                Is.EqualTo("regular-icon-guid"));
+            Assert.That(smart.Icon, Is.EqualTo(AssetCollectionIcon.Search));
+            Assert.That(
+                smart.IconAssetGuid,
+                Is.EqualTo("smart-icon-guid"));
+            Assert.That(
+                collections.Single(item => item.Id == regular.Id).Icon,
+                Is.EqualTo(AssetCollectionIcon.Star));
+            Assert.That(
+                collections.Single(item => item.Id == smart.Id).Icon,
+                Is.EqualTo(AssetCollectionIcon.Search));
+            Assert.That(
+                collections.Single(item => item.Id == regular.Id)
+                    .IconAssetGuid,
+                Is.EqualTo("regular-icon-guid"));
+            Assert.That(
+                collections.Single(item => item.Id == smart.Id)
+                    .IconAssetGuid,
+                Is.EqualTo("smart-icon-guid"));
+            Assert.That(
+                smart.SmartRule.Conditions.Single().QueryText,
+                Is.Null);
         }
 
         [Test]
