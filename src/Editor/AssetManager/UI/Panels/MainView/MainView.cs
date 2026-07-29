@@ -609,8 +609,11 @@ namespace Ee4v.AssetManager.UI
                 return _controller.LoadGroupChildren(_fileListItemId, _browserNodeKind, _browserNodeId);
             }
 
-            var selectedItem = _controller.SelectedNavigationItem;
-            return _controller.LoadItems(_controller.CreateRequest(selectedItem.Id, _searchText), cancellationToken);
+            return _controller.LoadItems(
+                _controller.CreateRequest(
+                    _controller.SelectedNavigationItemId,
+                    _searchText),
+                cancellationToken);
         }
 
         private string CreateCurrentContentKey()
@@ -620,10 +623,9 @@ namespace Ee4v.AssetManager.UI
                 return "children|" + _fileListItemId + "|" + _browserNodeKind + "|" + _browserNodeId;
             }
 
-            var selectedItem = _controller.SelectedNavigationItem;
             return _controller.CreateContentKey(
                 _controller.CreateRequest(
-                    selectedItem.Id,
+                    _controller.SelectedNavigationItemId,
                     _searchText));
         }
 

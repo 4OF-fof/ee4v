@@ -230,12 +230,19 @@ namespace Ee4v.AssetManager.Application
             AssetManagerRequestValidator.Require(
                 collectionId,
                 "collection id");
+            DeleteCollections(new[] { collectionId });
+        }
+
+        public void DeleteCollections(
+            IReadOnlyList<string> collectionIds)
+        {
             var affectedSmartCollection =
-                _collectionWriter.DeleteCollection(collectionId);
+                _collectionWriter.DeleteCollections(collectionIds);
             PublishCollections();
             if (affectedSmartCollection)
             {
-                PublishSmartCollectionRule(collectionId);
+                PublishSmartCollectionRule(
+                    collectionIds[0]);
             }
         }
 

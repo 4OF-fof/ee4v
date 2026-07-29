@@ -111,8 +111,8 @@ namespace Ee4v.AssetManager.UI
         public event Action<AssetCollection, VisualElement, Vector2>
             EditSmartCollectionRequested;
 
-        public event Action<AssetCollection>
-            DeleteCollectionRequested;
+        public event Action<IReadOnlyList<AssetCollection>>
+            DeleteCollectionsRequested;
 
         public event Action ManualSyncRequested;
 
@@ -232,17 +232,36 @@ namespace Ee4v.AssetManager.UI
         internal static ContextMenuState
             CreateCollectionContextMenuState(
                 AssetCollection collection,
+                IReadOnlyList<AssetCollection> selectedCollections,
                 VisualElement anchor,
                 Vector2 panelPosition,
                 Action<AssetCollection, VisualElement, Vector2>
                     renameCollection,
                 Action<AssetCollection, VisualElement, Vector2>
                     editSmartCollection,
-                Action<AssetCollection> deleteCollection)
+                Action<IReadOnlyList<AssetCollection>>
+                    deleteCollections)
         {
             if (collection == null)
             {
                 return new ContextMenuState(null);
+            }
+
+            var targets =
+                selectedCollections != null &&
+                selectedCollections.Count > 0
+                    ? selectedCollections
+                    : new[] { collection };
+            if (targets.Count > 1)
+            {
+                return new ContextMenuState(new[]
+                {
+                    new ContextMenuItemState(
+                        "delete-collections",
+                        I18N.Get(
+                            "assetManager.navigation.collections.context.delete"),
+                        () => deleteCollections?.Invoke(targets))
+                });
             }
 
             var items = new List<ContextMenuItemState>
@@ -273,12 +292,13 @@ namespace Ee4v.AssetManager.UI
                 "delete-collection",
                 I18N.Get(
                     "assetManager.navigation.collections.context.delete"),
-                () => deleteCollection?.Invoke(collection)));
+                () => deleteCollections?.Invoke(targets)));
             return new ContextMenuState(items);
         }
 
         private void ShowCollectionContextMenu(
             AssetCollection collection,
+            IReadOnlyList<AssetCollection> selectedCollections,
             VisualElement anchor,
             Vector2 panelPosition)
         {
@@ -287,6 +307,7 @@ namespace Ee4v.AssetManager.UI
                 panelPosition,
                 CreateCollectionContextMenuState(
                     collection,
+                    selectedCollections,
                     anchor,
                     panelPosition,
                     (item, target, position) =>
@@ -299,9 +320,9 @@ namespace Ee4v.AssetManager.UI
                             item,
                             target,
                             position),
-                    item =>
-                        DeleteCollectionRequested?.Invoke(
-                            item)));
+                    items =>
+                        DeleteCollectionsRequested?.Invoke(
+                            items)));
         }
 
         private static VisualElement CreateHeader(

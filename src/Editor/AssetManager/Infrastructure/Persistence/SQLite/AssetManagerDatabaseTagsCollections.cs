@@ -272,62 +272,119 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             }
         }
 
-        public static bool DeleteCollection(string collectionId)
+        public static bool DeleteCollections(
+            IReadOnlyList<string> collectionIds)
         {
-            if (string.IsNullOrWhiteSpace(collectionId))
+            var requestedIds = (collectionIds ??
+                                Array.Empty<string>())
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            if (requestedIds.Length == 0 ||
+                collectionIds == null ||
+                requestedIds.Length != collectionIds.Count)
             {
                 throw new AssetManagerException(
                     AssetManagerErrorCode.InvalidRequest,
-                    "Collection id is required.");
+                    "At least one unique collection id is required.");
             }
 
             using (var connection = OpenConnection())
             {
                 return InTransaction(connection, () =>
                 {
-                    EnsureCollectionExists(connection, collectionId);
-                    var relation = connection
-                        .Query<CollectionCollectionRow>(
-                            "SELECT * FROM collection_collection WHERE child_collection_id = ? LIMIT 1",
-                            collectionId)
-                        .FirstOrDefault();
-                    var parentId = relation != null
-                        ? relation.parent_collection_id
-                        : null;
-                    var subtree = connection
-                        .Query<CollectionSubtreeRow>(
-                            @"WITH RECURSIVE collection_subtree(id, depth) AS (
-                                SELECT ?, 0
-                                UNION ALL
-                                SELECT
-                                    relation.child_collection_id,
-                                    subtree.depth + 1
-                                FROM collection_collection relation
-                                INNER JOIN collection_subtree subtree
-                                    ON relation.parent_collection_id = subtree.id
-                            )
-                            SELECT id, depth
-                            FROM collection_subtree
-                            ORDER BY depth DESC",
+                    var subtreeById =
+                        new Dictionary<string, CollectionSubtreeRow>(
+                            StringComparer.Ordinal);
+                    for (var i = 0; i < requestedIds.Length; i++)
+                    {
+                        var collectionId = requestedIds[i];
+                        EnsureCollectionExists(
+                            connection,
                             collectionId);
+                        var subtree = connection
+                            .Query<CollectionSubtreeRow>(
+                                @"WITH RECURSIVE collection_subtree(id, depth) AS (
+                                    SELECT ?, 0
+                                    UNION ALL
+                                    SELECT
+                                        relation.child_collection_id,
+                                        subtree.depth + 1
+                                    FROM collection_collection relation
+                                    INNER JOIN collection_subtree subtree
+                                        ON relation.parent_collection_id = subtree.id
+                                )
+                                SELECT id, depth
+                                FROM collection_subtree",
+                                collectionId);
+                        for (var j = 0; j < subtree.Count; j++)
+                        {
+                            CollectionSubtreeRow existing;
+                            if (!subtreeById.TryGetValue(
+                                    subtree[j].id,
+                                    out existing) ||
+                                subtree[j].depth > existing.depth)
+                            {
+                                subtreeById[subtree[j].id] =
+                                    subtree[j];
+                            }
+                        }
+                    }
+
+                    var deletedIds = new HashSet<string>(
+                        subtreeById.Keys,
+                        StringComparer.Ordinal);
+                    var affectedParentIds =
+                        new HashSet<string>(StringComparer.Ordinal);
+                    for (var i = 0;
+                         i < requestedIds.Length;
+                         i++)
+                    {
+                        var relation = connection
+                            .Query<CollectionCollectionRow>(
+                                "SELECT * FROM collection_collection WHERE child_collection_id = ? LIMIT 1",
+                                requestedIds[i])
+                            .FirstOrDefault();
+                        var parentId = relation != null
+                            ? relation.parent_collection_id
+                            : null;
+                        if (!deletedIds.Contains(
+                                parentId ?? string.Empty))
+                        {
+                            affectedParentIds.Add(
+                                parentId ?? string.Empty);
+                        }
+                    }
+
                     var affectsSmartCollection =
-                        subtree.Any(item =>
+                        subtreeById.Values.Any(item =>
                             connection.ExecuteScalar<int>(
                                 "SELECT COUNT(*) FROM smart_collection_info WHERE collection_info_id = ?",
                                 item.id) > 0);
-                    for (var i = 0; i < subtree.Count; i++)
+                    var orderedSubtree = subtreeById.Values
+                        .OrderByDescending(item => item.depth)
+                        .ToArray();
+                    for (var i = 0;
+                         i < orderedSubtree.Length;
+                         i++)
                     {
                         connection.Execute(
                             "DELETE FROM collection_info WHERE id = ?",
-                            subtree[i].id);
+                            orderedSubtree[i].id);
                     }
 
-                    NormalizeCollectionOrder(
-                        connection,
-                        GetCollectionSiblingIds(
+                    foreach (var parentId in affectedParentIds)
+                    {
+                        NormalizeCollectionOrder(
                             connection,
-                            parentId,
-                            null));
+                            GetCollectionSiblingIds(
+                                connection,
+                                string.IsNullOrEmpty(parentId)
+                                    ? null
+                                    : parentId,
+                                null));
+                    }
+
                     return affectsSmartCollection;
                 });
             }

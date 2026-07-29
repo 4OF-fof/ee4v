@@ -36,6 +36,7 @@ namespace Ee4v.AssetManager.Contracts
             string collectionId,
             UpdateSmartCollectionRequest request);
         void DeleteCollection(string collectionId);
+        void DeleteCollections(IReadOnlyList<string> collectionIds);
         void MoveCollection(
             string collectionId,
             string parentCollectionId,

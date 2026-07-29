@@ -96,9 +96,10 @@ namespace Ee4v.AssetManager.Infrastructure
                 collectionId,
                 request));
 
-        public bool DeleteCollection(string collectionId) =>
-            Execute(() => AssetManagerDatabase.DeleteCollection(
-                collectionId));
+        public bool DeleteCollections(
+            IReadOnlyList<string> collectionIds) =>
+            Execute(() => AssetManagerDatabase.DeleteCollections(
+                collectionIds));
 
         public void MoveCollection(
             string collectionId,

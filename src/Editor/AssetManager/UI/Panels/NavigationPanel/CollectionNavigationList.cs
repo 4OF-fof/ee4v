@@ -48,6 +48,7 @@ namespace Ee4v.AssetManager.UI
             _itemsDropped;
         private readonly Action<
             AssetCollection,
+            IReadOnlyList<AssetCollection>,
             VisualElement,
             Vector2> _contextMenuRequested;
         private readonly List<CollectionButton> _buttons =
@@ -77,7 +78,11 @@ namespace Ee4v.AssetManager.UI
             Action<string> selected,
             Action<IReadOnlyList<string>, string, int>
                 moveRequested = null,
-            Action<AssetCollection, VisualElement, Vector2>
+            Action<
+                AssetCollection,
+                IReadOnlyList<AssetCollection>,
+                VisualElement,
+                Vector2>
                 contextMenuRequested = null,
             Action<IReadOnlyList<string>, string>
                 itemsDropped = null)
@@ -783,10 +788,6 @@ namespace Ee4v.AssetManager.UI
             if (evt.button == (int)MouseButton.RightMouse)
             {
                 EndPointerInteraction(releasePointer: true);
-                SelectCollection(
-                    item.CollectionId,
-                    toggle: false,
-                    range: false);
                 AssetCollection collection;
                 if (_contextMenuRequested != null &&
                     _collections.TryGetValue(
@@ -794,9 +795,13 @@ namespace Ee4v.AssetManager.UI
                         out collection))
                 {
                     var panelPosition = ToVector2(evt.position);
+                    var selectedCollections =
+                        GetContextMenuCollections(
+                            item.CollectionId);
                     item.Row.schedule.Execute(() =>
                         _contextMenuRequested(
                             collection,
+                            selectedCollections,
                             item.Row,
                             panelPosition));
                 }
@@ -1112,6 +1117,26 @@ namespace Ee4v.AssetManager.UI
                 string.Empty,
                 result);
             return result;
+        }
+
+        private IReadOnlyList<AssetCollection>
+            GetContextMenuCollections(
+                string collectionId)
+        {
+            if (_selectedCollectionIds.Count <= 1 ||
+                !_selectedCollectionIds.Contains(collectionId))
+            {
+                AssetCollection collection;
+                return _collections.TryGetValue(
+                        collectionId,
+                        out collection)
+                    ? new[] { collection }
+                    : Array.Empty<AssetCollection>();
+            }
+
+            return GetOrderedSelectedCollectionIds()
+                .Select(id => _collections[id])
+                .ToArray();
         }
 
         private void AddOrderedSelectedChildren(

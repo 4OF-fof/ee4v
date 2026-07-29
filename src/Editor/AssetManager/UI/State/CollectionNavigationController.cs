@@ -35,7 +35,7 @@ namespace Ee4v.AssetManager.UI
         public event Action<IReadOnlyList<AssetCollection>>
             CollectionsChanged;
 
-        public event Action<AssetCollection> CollectionCreated;
+        public event Action<AssetCollection> CollectionOpenRequested;
 
         public event Action<string> ErrorChanged;
 
@@ -156,15 +156,26 @@ namespace Ee4v.AssetManager.UI
                 AddOrReplace);
         }
 
-        public void DeleteCollection(string collectionId)
+        public void DeleteCollections(
+            IReadOnlyList<string> collectionIds)
         {
+            var requestedIds = (collectionIds ??
+                                Array.Empty<string>())
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            if (requestedIds.Length == 0)
+            {
+                return;
+            }
+
             Mutate(
                 () =>
                 {
-                    _assetManager.DeleteCollection(collectionId);
-                    return collectionId;
+                    _assetManager.DeleteCollections(requestedIds);
+                    return (IReadOnlyList<string>)requestedIds;
                 },
-                Remove);
+                RemoveCollections);
         }
 
         public void MoveCollection(
@@ -339,7 +350,12 @@ namespace Ee4v.AssetManager.UI
                     }
 
                     AddOrReplace(result.Value);
-                    CollectionCreated?.Invoke(result.Value);
+                    if (result.Value != null &&
+                        result.Value.IsSmartCollection)
+                    {
+                        CollectionOpenRequested?.Invoke(
+                            result.Value);
+                    }
                 });
         }
 
@@ -413,21 +429,45 @@ namespace Ee4v.AssetManager.UI
                     .ToArray());
         }
 
-        private void Remove(string collectionId)
+        private void RemoveCollections(
+            IReadOnlyList<string> collectionIds)
         {
-            if (string.IsNullOrWhiteSpace(collectionId))
+            if (collectionIds == null ||
+                collectionIds.Count == 0)
             {
                 return;
+            }
+
+            var removedIds = new HashSet<string>(
+                collectionIds,
+                StringComparer.Ordinal);
+            var changed = true;
+            while (changed)
+            {
+                changed = false;
+                for (var i = 0; i < _collections.Count; i++)
+                {
+                    var collection = _collections[i];
+                    if (collection == null ||
+                        removedIds.Contains(collection.Id) ||
+                        string.IsNullOrWhiteSpace(
+                            collection.ParentCollectionId) ||
+                        !removedIds.Contains(
+                            collection.ParentCollectionId))
+                    {
+                        continue;
+                    }
+
+                    removedIds.Add(collection.Id);
+                    changed = true;
+                }
             }
 
             SetCollections(
                 _collections
                     .Where(item =>
                         item != null &&
-                        !string.Equals(
-                            item.Id,
-                            collectionId,
-                            StringComparison.Ordinal))
+                        !removedIds.Contains(item.Id))
                     .ToArray());
         }
 

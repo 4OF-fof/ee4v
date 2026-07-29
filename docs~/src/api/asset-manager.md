@@ -865,6 +865,18 @@ public void DeleteCollection(string collectionId)
 削除対象 Collection の item 所属と Smart Collection 定義は cascade で削除しますが、
 `item_info` は削除しません。残った兄弟の `SortOrder` は正規化します。
 
+### `IAssetManager.DeleteCollections`
+
+複数の Collection と各子孫を1回の transaction で削除します。
+
+```csharp
+public void DeleteCollections(IReadOnlyList<string> collectionIds)
+```
+
+親とその子が同時に指定された場合も重複して削除せず、すべての削除対象が存在することを
+確認してから一括削除します。item 本体の保持と兄弟の `SortOrder` 正規化は
+`DeleteCollection(...)` と同じです。
+
 ### `IAssetManager.MoveCollection`
 
 Collection の親または兄弟順を変更します。

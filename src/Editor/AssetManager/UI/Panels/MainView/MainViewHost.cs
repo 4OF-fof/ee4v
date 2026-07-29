@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Ee4v.AssetManager.Contracts;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -59,8 +60,8 @@ namespace Ee4v.AssetManager.UI
                 OnRenameCollectionRequested;
             NavigationPanel.EditSmartCollectionRequested +=
                 OnEditSmartCollectionRequested;
-            NavigationPanel.DeleteCollectionRequested +=
-                OnDeleteCollectionRequested;
+            NavigationPanel.DeleteCollectionsRequested +=
+                OnDeleteCollectionsRequested;
             NavigationPanel.ManualSyncRequested +=
                 OnManualSyncRequested;
 
@@ -71,8 +72,8 @@ namespace Ee4v.AssetManager.UI
             _controller.NavigationChanged += OnNavigationChanged;
             _collectionController.CollectionsChanged +=
                 OnCollectionsChanged;
-            _collectionController.CollectionCreated +=
-                OnCollectionCreated;
+            _collectionController.CollectionOpenRequested +=
+                OnCollectionOpenRequested;
             _collectionController.ErrorChanged +=
                 NavigationPanel.SetCollectionError;
             _collectionController.Activate();
@@ -117,8 +118,8 @@ namespace Ee4v.AssetManager.UI
                 OnRenameCollectionRequested;
             NavigationPanel.EditSmartCollectionRequested -=
                 OnEditSmartCollectionRequested;
-            NavigationPanel.DeleteCollectionRequested -=
-                OnDeleteCollectionRequested;
+            NavigationPanel.DeleteCollectionsRequested -=
+                OnDeleteCollectionsRequested;
             NavigationPanel.ManualSyncRequested -=
                 OnManualSyncRequested;
 
@@ -129,8 +130,8 @@ namespace Ee4v.AssetManager.UI
             _controller.NavigationChanged -= OnNavigationChanged;
             _collectionController.CollectionsChanged -=
                 OnCollectionsChanged;
-            _collectionController.CollectionCreated -=
-                OnCollectionCreated;
+            _collectionController.CollectionOpenRequested -=
+                OnCollectionOpenRequested;
             _collectionController.ErrorChanged -=
                 NavigationPanel.SetCollectionError;
             _collectionController.Dispose();
@@ -163,7 +164,7 @@ namespace Ee4v.AssetManager.UI
                 _collectionController.Reload);
         }
 
-        private void OnCollectionCreated(
+        private void OnCollectionOpenRequested(
             AssetCollection collection)
         {
             if (collection == null)
@@ -219,13 +220,17 @@ namespace Ee4v.AssetManager.UI
                 _collectionController.UpdateSmartCollection);
         }
 
-        private void OnDeleteCollectionRequested(
-            AssetCollection collection)
+        private void OnDeleteCollectionsRequested(
+            IReadOnlyList<AssetCollection> collections)
         {
-            if (CollectionDeletionConfirmation.Confirm(collection))
+            if (CollectionDeletionConfirmation.Confirm(
+                    collections))
             {
-                _collectionController.DeleteCollection(
-                    collection.Id);
+                _collectionController.DeleteCollections(
+                    collections
+                        .Where(collection => collection != null)
+                        .Select(collection => collection.Id)
+                        .ToArray());
             }
         }
     }

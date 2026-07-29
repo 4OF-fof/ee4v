@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using Ee4v.AssetManager.Contracts;
@@ -75,8 +77,8 @@ namespace Ee4v.AssetManager.UI
                 OnStandaloneNavigationChanged;
             _collectionController.CollectionsChanged +=
                 OnCollectionsChanged;
-            _collectionController.CollectionCreated +=
-                OnCollectionCreated;
+            _collectionController.CollectionOpenRequested +=
+                OnCollectionOpenRequested;
             _collectionController.ErrorChanged +=
                 _navigationPanel.SetCollectionError;
             _navigationPanel.CreateCollectionRequested +=
@@ -91,8 +93,8 @@ namespace Ee4v.AssetManager.UI
                 OnRenameCollectionRequested;
             _navigationPanel.EditSmartCollectionRequested +=
                 OnEditSmartCollectionRequested;
-            _navigationPanel.DeleteCollectionRequested +=
-                OnDeleteCollectionRequested;
+            _navigationPanel.DeleteCollectionsRequested +=
+                OnDeleteCollectionsRequested;
             _navigationPanel.SelectionChanged +=
                 OnSelectionChanged;
             _navigationPanel.ManualSyncRequested +=
@@ -126,7 +128,8 @@ namespace Ee4v.AssetManager.UI
                 _selectedItemId);
         }
 
-        private void OnCollectionCreated(AssetCollection collection)
+        private void OnCollectionOpenRequested(
+            AssetCollection collection)
         {
             if (collection != null)
             {
@@ -207,13 +210,17 @@ namespace Ee4v.AssetManager.UI
                 _collectionController.UpdateSmartCollection);
         }
 
-        private void OnDeleteCollectionRequested(
-            AssetCollection collection)
+        private void OnDeleteCollectionsRequested(
+            IReadOnlyList<AssetCollection> collections)
         {
-            if (CollectionDeletionConfirmation.Confirm(collection))
+            if (CollectionDeletionConfirmation.Confirm(
+                    collections))
             {
-                _collectionController.DeleteCollection(
-                    collection.Id);
+                _collectionController.DeleteCollections(
+                    collections
+                        .Where(collection => collection != null)
+                        .Select(collection => collection.Id)
+                        .ToArray());
             }
         }
 
@@ -235,8 +242,8 @@ namespace Ee4v.AssetManager.UI
                         OnRenameCollectionRequested;
                     _navigationPanel.EditSmartCollectionRequested -=
                         OnEditSmartCollectionRequested;
-                    _navigationPanel.DeleteCollectionRequested -=
-                        OnDeleteCollectionRequested;
+                    _navigationPanel.DeleteCollectionsRequested -=
+                        OnDeleteCollectionsRequested;
                 }
                 _navigationPanel.SelectionChanged -=
                     OnSelectionChanged;
@@ -258,8 +265,8 @@ namespace Ee4v.AssetManager.UI
 
             _collectionController.CollectionsChanged -=
                 OnCollectionsChanged;
-            _collectionController.CollectionCreated -=
-                OnCollectionCreated;
+            _collectionController.CollectionOpenRequested -=
+                OnCollectionOpenRequested;
             if (_navigationPanel != null)
             {
                 _collectionController.ErrorChanged -=

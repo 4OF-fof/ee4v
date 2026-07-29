@@ -94,6 +94,7 @@
         "delete": {
           "title": "Delete Collection",
           "message": "Delete \"{0}\" and all child collections? Items in these collections will not be deleted.",
+          "messageMultiple": "Delete the selected {0} collections and all child collections? Items in these collections will not be deleted.",
           "confirm": "Delete",
           "cancel": "Cancel"
         },

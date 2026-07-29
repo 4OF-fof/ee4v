@@ -83,6 +83,37 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
+        public void PendingCollectionNavigation_IsPreservedUntilCollectionsLoad()
+        {
+            var viewId =
+                AssetManagerCollectionViewId.Encode(
+                    "new-smart-collection");
+            var pendingItem =
+                MainViewController
+                    .CreateCollectionNavigationItem(
+                        viewId,
+                        "new-smart-collection");
+
+            Assert.That(
+                MainViewController.ResolveNavigationItemId(
+                    viewId,
+                    collectionExists: false),
+                Is.EqualTo(viewId));
+            Assert.That(pendingItem.Id, Is.EqualTo(viewId));
+            Assert.That(
+                MainViewController.CreateQuery(
+                        new MainViewRequest(pendingItem.Id))
+                    .CollectionId,
+                Is.EqualTo("new-smart-collection"));
+            Assert.That(
+                MainViewController.ResolveNavigationItemId(
+                    "missing-fixed-item",
+                    collectionExists: false),
+                Is.EqualTo(
+                    AssetManagerNavigationCatalog.DefaultItemId));
+        }
+
+        [Test]
         public void MainViewController_CachesOnlyFileAndGroupChildren()
         {
             var itemListCaches = typeof(MainViewController)
@@ -809,6 +840,7 @@ namespace Ee4v.AssetManager.UI.Tests
             var regularState =
                 NavigationPanel.CreateCollectionContextMenuState(
                     regular,
+                    new[] { regular },
                     anchor,
                     pointerPosition,
                     (collection, _, position) =>
@@ -821,7 +853,8 @@ namespace Ee4v.AssetManager.UI.Tests
                         edited = collection;
                         editedPosition = position;
                     },
-                    collection => deleted = collection);
+                    collections =>
+                        deleted = collections.Single());
             Assert.That(
                 regularState.Items
                     .Where(item =>
@@ -837,6 +870,7 @@ namespace Ee4v.AssetManager.UI.Tests
             var smartState =
                 NavigationPanel.CreateCollectionContextMenuState(
                     smart,
+                    new[] { smart },
                     anchor,
                     pointerPosition,
                     (collection, _, position) =>
@@ -849,7 +883,8 @@ namespace Ee4v.AssetManager.UI.Tests
                         edited = collection;
                         editedPosition = position;
                     },
-                    collection => deleted = collection);
+                    collections =>
+                        deleted = collections.Single());
             Assert.That(
                 smartState.Items
                     .Where(item =>
@@ -874,6 +909,47 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
+        public void CollectionContextMenu_MultipleSelectionOffersOnlyDelete()
+        {
+            var first = new AssetCollection
+            {
+                Id = "first",
+                Name = "First"
+            };
+            var second = new AssetCollection
+            {
+                Id = "second",
+                Name = "Second",
+                IsSmartCollection = true
+            };
+            IReadOnlyList<AssetCollection> deleted = null;
+
+            var state =
+                NavigationPanel.CreateCollectionContextMenuState(
+                    first,
+                    new[] { first, second },
+                    new VisualElement(),
+                    Vector2.zero,
+                    null,
+                    null,
+                    collections => deleted = collections);
+
+            Assert.That(
+                state.Items
+                    .Where(item =>
+                        item.Kind == ContextMenuItemKind.Action)
+                    .Select(item => item.Id)
+                    .ToArray(),
+                Is.EqualTo(new[] { "delete-collections" }));
+
+            state.Items.Single().Action();
+            Assert.That(
+                deleted.Select(collection => collection.Id)
+                    .ToArray(),
+                Is.EqualTo(new[] { "first", "second" }));
+        }
+
+        [Test]
         public void CollectionEditPopup_UsesContextMenuPointerPosition()
         {
             Assert.That(
@@ -885,55 +961,64 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [UnityTest]
-        public IEnumerator CollectionNavigationList_RightClickSelectsRowAndRequestsMenu()
+        public IEnumerator CollectionNavigationList_RightClickPreservesSelectionAndRequestsMenu()
         {
             var window =
                 ScriptableObject.CreateInstance<EditorWindow>();
             try
             {
+                string selectedViewId = null;
                 AssetCollection requestedCollection = null;
                 var list = new CollectionNavigationList(
+                    viewId => selectedViewId = viewId,
                     null,
-                    null,
-                    (collection, _, __) =>
+                    (collection, _, __, ___) =>
                         requestedCollection = collection);
                 list.SetState(new[]
                 {
                     new AssetCollection
                     {
-                        Id = "collection",
-                        Name = "Collection"
+                        Id = "selected",
+                        Name = "Selected",
+                        SortOrder = 0
+                    },
+                    new AssetCollection
+                    {
+                        Id = "context-menu",
+                        Name = "Context Menu",
+                        SortOrder = 1
                     }
-                }, string.Empty);
+                }, AssetManagerCollectionViewId.Encode("selected"));
                 window.rootVisualElement.Add(list);
                 window.Show();
                 yield return null;
 
-                var row = list.Query<VisualElement>(
+                var rows = list.Query<VisualElement>(
                         className:
                         "ee4v-asset-manager-collection-list__row")
-                    .ToList()
-                    .Single();
+                    .ToList();
                 using (var pointerDown =
                        PointerDownEvent.GetPooled(new Event
                        {
                            type = EventType.MouseDown,
                            button =
                                (int)MouseButton.RightMouse,
-                           mousePosition = row.worldBound.center
+                           mousePosition =
+                               rows[1].worldBound.center
                        }))
                 {
-                    pointerDown.target = row;
-                    row.SendEvent(pointerDown);
+                    pointerDown.target = rows[1];
+                    rows[1].SendEvent(pointerDown);
                 }
 
                 yield return null;
                 Assert.That(
                     list.SelectedCollectionIds,
-                    Is.EqualTo(new[] { "collection" }));
+                    Is.EqualTo(new[] { "selected" }));
+                Assert.That(selectedViewId, Is.Null);
                 Assert.That(
                     requestedCollection.Id,
-                    Is.EqualTo("collection"));
+                    Is.EqualTo("context-menu"));
             }
             finally
             {

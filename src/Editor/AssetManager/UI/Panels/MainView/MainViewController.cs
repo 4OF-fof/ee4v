@@ -172,6 +172,7 @@ namespace Ee4v.AssetManager.UI
         private int _minimumItemsPerRow;
         private CancellationTokenSource _loadCancellation;
         private string _selectedNavigationItemId = AssetManagerNavigationCatalog.DefaultItemId;
+        private bool _hasPendingCollectionNavigation;
 
         public MainViewController(
             IAssetManager assetManager = null,
@@ -248,19 +249,40 @@ namespace Ee4v.AssetManager.UI
                         _selectedNavigationItemId,
                         out collection))
                 {
-                    return new AssetManagerViewItemState(
+                    return CreateCollectionNavigationItem(
                         _selectedNavigationItemId,
-                        collection.Name,
-                        string.Empty,
-                        string.Empty,
-                        collection.Name,
-                        string.Empty,
-                        Array.Empty<string>());
+                        collection.Name);
+                }
+
+                string pendingCollectionId;
+                if (AssetManagerCollectionViewId.TryDecode(
+                        _selectedNavigationItemId,
+                        out pendingCollectionId))
+                {
+                    return CreateCollectionNavigationItem(
+                        _selectedNavigationItemId,
+                        pendingCollectionId);
                 }
 
                 return AssetManagerNavigationCatalog.GetItem(
                     _selectedNavigationItemId);
             }
+        }
+
+        internal static AssetManagerViewItemState
+            CreateCollectionNavigationItem(
+                string viewId,
+                string label)
+        {
+            var resolvedLabel = label ?? string.Empty;
+            return new AssetManagerViewItemState(
+                viewId ?? string.Empty,
+                resolvedLabel,
+                string.Empty,
+                string.Empty,
+                resolvedLabel,
+                string.Empty,
+                Array.Empty<string>());
         }
 
         public IReadOnlyList<AssetItemGridHistoryView>
@@ -302,9 +324,18 @@ namespace Ee4v.AssetManager.UI
 
         public void SetSelectedNavigationItem(string itemId)
         {
-            var resolvedId = _collectionsByViewId.ContainsKey(itemId ?? string.Empty)
-                ? itemId
-                : AssetManagerNavigationCatalog.NormalizeItemId(itemId);
+            var requestedId = itemId ?? string.Empty;
+            var collectionExists =
+                _collectionsByViewId.ContainsKey(requestedId);
+            string requestedCollectionId;
+            _hasPendingCollectionNavigation =
+                !collectionExists &&
+                AssetManagerCollectionViewId.TryDecode(
+                    requestedId,
+                    out requestedCollectionId);
+            var resolvedId = ResolveNavigationItemId(
+                requestedId,
+                collectionExists);
             if (string.Equals(_selectedNavigationItemId, resolvedId, StringComparison.Ordinal))
             {
                 return;
@@ -312,6 +343,24 @@ namespace Ee4v.AssetManager.UI
 
             _selectedNavigationItemId = resolvedId;
             NavigationChanged?.Invoke(_selectedNavigationItemId);
+        }
+
+        internal static string ResolveNavigationItemId(
+            string itemId,
+            bool collectionExists)
+        {
+            var requestedId = itemId ?? string.Empty;
+            string collectionId;
+            if (collectionExists ||
+                AssetManagerCollectionViewId.TryDecode(
+                    requestedId,
+                    out collectionId))
+            {
+                return requestedId;
+            }
+
+            return AssetManagerNavigationCatalog.NormalizeItemId(
+                requestedId);
         }
 
         public void SetCollections(IReadOnlyList<AssetCollection> collections)
@@ -338,10 +387,18 @@ namespace Ee4v.AssetManager.UI
                     out selectedCollectionId) &&
                 !_collectionsByViewId.ContainsKey(_selectedNavigationItemId))
             {
-                _selectedNavigationItemId =
-                    AssetManagerNavigationCatalog.DefaultItemId;
-                navigationChanged = true;
-                NavigationChanged?.Invoke(_selectedNavigationItemId);
+                if (!_hasPendingCollectionNavigation)
+                {
+                    _selectedNavigationItemId =
+                        AssetManagerNavigationCatalog.DefaultItemId;
+                    navigationChanged = true;
+                    NavigationChanged?.Invoke(
+                        _selectedNavigationItemId);
+                }
+            }
+            else if (_hasPendingCollectionNavigation)
+            {
+                _hasPendingCollectionNavigation = false;
             }
 
             if (!navigationChanged && _activationCount > 0)

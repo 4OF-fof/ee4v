@@ -475,6 +475,42 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
+            "複数 Collection を一括削除する",
+            "親子を含む複数選択を重複なく削除し、残った兄弟順を正規化することを確認します。",
+            order: 346)]
+        public void DeleteCollections_DeletesSelectedSubtreesAtomically()
+        {
+            var parent = _assetManager.CreateCollection(
+                new CreateCollectionRequest { Name = "Parent" });
+            var child = _assetManager.CreateCollection(
+                new CreateCollectionRequest
+                {
+                    Name = "Child",
+                    ParentCollectionId = parent.Id
+                });
+            var sibling = _assetManager.CreateCollection(
+                new CreateCollectionRequest { Name = "Sibling" });
+            var retained = _assetManager.CreateCollection(
+                new CreateCollectionRequest { Name = "Retained" });
+
+            _assetManager.DeleteCollections(new[]
+            {
+                parent.Id,
+                child.Id,
+                sibling.Id
+            });
+
+            var collections = _assetManager.GetCollections();
+            Assert.That(
+                collections.Select(collection => collection.Id),
+                Is.EqualTo(new[] { retained.Id }));
+            Assert.That(
+                collections.Single().SortOrder,
+                Is.EqualTo(0));
+        }
+
+        [Test]
+        [FeatureTestCase(
             "Smart Collection 条件変更を検索結果へ通知する",
             "Smart Collection の作成・条件更新・削除が Collections と SmartCollectionRule の両方を発行することを確認します。",
             order: 345)]

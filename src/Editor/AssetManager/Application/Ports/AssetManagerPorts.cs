@@ -70,7 +70,7 @@ namespace Ee4v.AssetManager.Application.Ports
         AssetCollection UpdateSmartCollection(
             string collectionId,
             UpdateSmartCollectionRequest request);
-        bool DeleteCollection(string collectionId);
+        bool DeleteCollections(IReadOnlyList<string> collectionIds);
         void MoveCollection(
             string collectionId,
             string parentCollectionId,
