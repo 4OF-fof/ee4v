@@ -13,6 +13,9 @@ namespace Ee4v.ProjectTabs
         private static ISettingsService _settings;
         private static IDisposable _registration;
         private static ProjectTabsSession _session;
+        private static UnityProjectFavoriteFolderStore _favoriteStore;
+        private static ProjectTabsFavoriteSynchronizer
+            _favoriteSynchronizer;
 
         static ProjectTabsBootstrap()
         {
@@ -43,9 +46,16 @@ namespace Ee4v.ProjectTabs
 
         private static void RegisterFeature(ISettingsService settings)
         {
+            _favoriteSynchronizer?.Dispose();
+            _favoriteStore?.Dispose();
             _session = new ProjectTabsSession(
                 ProjectTabsStateStore.instance,
                 UnityProjectBrowserNavigator.CreateDefaultLocation());
+            _favoriteStore = new UnityProjectFavoriteFolderStore();
+            _favoriteSynchronizer =
+                new ProjectTabsFavoriteSynchronizer(
+                    _session,
+                    _favoriteStore);
             _registration = InjectorApi.Register(
                 new VisualElementInjectionRegistration(
                     "editor-enhancements.project-tabs",

@@ -75,6 +75,21 @@ ProjectBrowserでない場合はfallbackせず失敗を返します。Unity更�
 混線しないことを確認します。private memberが変更された場合もfeature側へreflectionを
 追加せず、backendとfacadeのfallbackを更新します。
 
+### Project Favorites
+
+`ProjectTabs` の通常tab pinとUnity標準Favoritesのfolder同期は
+`Editor/Core/Internal/EditorAPI/ProjectFavorites.cs` のfacadeを利用します。backendは
+`UnityEditor.SavedSearchFilters` の `ConvertToTreeView()`、`GetFilter(int)`、
+`AddSavedFilter(string, SearchFilter, float)`、`RemoveSavedFilter(int)`、
+`AddChangeListener(Action)` と、`UnityEditor.SearchFilter.folders`、
+`SearchFilterTreeItem.isFolder` に依存します。標準Favoritesにはfolder以外の保存検索も
+含まれるため、`isFolder` かつ単一の有効folder pathを持つentryだけを同期対象にします。
+
+Unity更新時はfolderをProject windowのFavoritesへ追加・削除した変更がpin tabへ反映される
+こと、pinの追加・解除・tab削除がFavoritesへ反映されること、保存検索が同期対象へ混入しない
+ことを確認します。非公開APIが利用できない場合、facadeは例外を外へ出さず失敗を返し、
+ProjectTabs自身のpin機能は同期なしで継続します。
+
 ### SceneHierarchy item icon
 
 `HierarchyStyle`のicon変更はscene objectのiconへ書き込まず、

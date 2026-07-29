@@ -152,6 +152,13 @@ tabは位置を変えずにfolder pathを固定し、別folderへのnavigation�
 解除・削除・移動できない固定tabとしてtab列の左端へ常設します。通常tabが0件になっても
 Home自体が残るため、代替のAssets tabは生成しません。HomeではAssetsとPackagesの
 rootを切り替えられ、どちらかの配下へ移動した場合は通常tabを新規作成します。
+通常tabのpin folderはUnity標準Favoritesのfolderと双方向同期します。pin操作では
+同じfolderをFavoriteへ追加・削除し、Favorites側の変更では既存の通常tabを優先して
+pin化し、該当tabがなければ新しいpin tabを追加します。同じfolderのpin tabが複数ある
+場合は、最後のpinが解除または削除されたときだけFavoriteを削除します。起動時は保存済み
+pinとFavoritesの和集合を採用し、どちらか一方だけに残ったfolderを失わないよう統合します。
+Favoritesの非公開API accessは `Core.Internal.EditorAPI.ProjectFavorites` facadeへ隔離し、
+Applicationのsynchronizerはfolder locationの集合だけを扱います。
 
 `SceneSwitcher` はHierarchyのScene見出しを入口に、Assets配下のSceneを検索して
 切り替えます。複数Sceneを読み込み中はpopupを開いたSceneのhandleを保持し、

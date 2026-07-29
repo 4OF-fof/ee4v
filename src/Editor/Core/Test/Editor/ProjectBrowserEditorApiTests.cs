@@ -1,5 +1,6 @@
 using Ee4v.Core.Internal.EditorAPI;
 using Ee4v.Testing.Contracts;
+using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -37,6 +38,26 @@ namespace Ee4v.Core.Tests
             {
                 Object.DestroyImmediate(window);
             }
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Unity標準Favoritesのfolderを安全に読み取る",
+            "SavedSearchFiltersが利用できるUnityでは、facadeが有効なfolder pathだけを返すことを確認します。",
+            order: 261)]
+        public void ProjectFavorites_ReturnsValidUniqueFolders()
+        {
+            Assert.That(
+                ProjectFavorites.TryGetFolders(out var folders),
+                Is.True);
+            Assert.That(
+                folders.Select(folder => folder.FolderPath),
+                Is.Unique);
+            Assert.That(
+                folders.All(folder =>
+                    AssetDatabase.IsValidFolder(
+                        folder.FolderPath)),
+                Is.True);
         }
 
         private sealed class TestEditorWindow : EditorWindow

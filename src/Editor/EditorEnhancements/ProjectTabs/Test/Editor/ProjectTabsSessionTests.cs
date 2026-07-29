@@ -472,6 +472,115 @@ namespace Ee4v.ProjectTabs.Tests
 
         [Test]
         [FeatureTestCase(
+            "起動時にpinとUnity Favoritesを結合する",
+            "既存pinをFavoritesへ追加し、既存Favoriteを既存tabのpinへ反映して双方を失わないことを確認します。",
+            order: 56)]
+        public void FavoriteSync_InitialMergePreservesBothSides()
+        {
+            var session = CreateSession();
+            var assetsId = GetFirstRegularTabId(session);
+            session.SetPinned(assetsId, true);
+            var materialsId = session.Add(Materials);
+            var favorites = new MemoryFavoriteStore(Prefabs, Materials);
+
+            using (new ProjectTabsFavoriteSynchronizer(
+                       session,
+                       favorites))
+            {
+                Assert.That(
+                    favorites.Locations.Select(
+                        location => location.FolderPath),
+                    Is.EquivalentTo(new[]
+                    {
+                        "Assets",
+                        "Assets/Materials",
+                        "Assets/Prefabs"
+                    }));
+                Assert.That(
+                    session.State.Find(materialsId).IsPinned,
+                    Is.True);
+                Assert.That(
+                    session.State.Tabs.Any(tab =>
+                        !tab.IsHome &&
+                        tab.IsPinned &&
+                        tab.CurrentLocation.Equals(Prefabs)),
+                    Is.True);
+            }
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Project tabのpin操作をUnity Favoritesへ反映する",
+            "pin追加でfolder Favoriteを作成し、最後の同一folder pin解除でFavoriteを削除することを確認します。",
+            order: 56)]
+        public void FavoriteSync_TabPinChangesFavorites()
+        {
+            var session = CreateSession();
+            var assetsId = GetFirstRegularTabId(session);
+            var duplicateId = session.Add(Assets);
+            var favorites = new MemoryFavoriteStore();
+
+            using (new ProjectTabsFavoriteSynchronizer(
+                       session,
+                       favorites))
+            {
+                session.SetPinned(assetsId, true);
+                session.SetPinned(duplicateId, true);
+                Assert.That(
+                    favorites.Contains("Assets"),
+                    Is.True);
+
+                session.SetPinned(assetsId, false);
+                Assert.That(
+                    favorites.Contains("Assets"),
+                    Is.True);
+
+                session.SetPinned(duplicateId, false);
+                Assert.That(
+                    favorites.Contains("Assets"),
+                    Is.False);
+            }
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Unity Favoritesの変更をProject tabのpinへ反映する",
+            "Favorite追加では既存tabを優先してpinし、削除では同一folderのpinをすべて解除することを確認します。",
+            order: 56)]
+        public void FavoriteSync_ExternalChangesUpdateTabs()
+        {
+            var session = CreateSession();
+            var materialsId = session.Add(Materials);
+            var duplicateId = session.Add(Materials);
+            var favorites = new MemoryFavoriteStore();
+
+            using (new ProjectTabsFavoriteSynchronizer(
+                       session,
+                       favorites))
+            {
+                favorites.SetExternally(Materials);
+
+                Assert.That(
+                    session.State.Find(materialsId).IsPinned,
+                    Is.True);
+                Assert.That(
+                    session.State.Find(duplicateId).IsPinned,
+                    Is.False);
+
+                session.SetPinned(duplicateId, true);
+                favorites.SetExternally();
+
+                Assert.That(
+                    session.State.Find(materialsId).IsPinned,
+                    Is.False);
+                Assert.That(
+                    session.State.Find(duplicateId).IsPinned,
+                    Is.False);
+            }
+        }
+
+        [Test]
+        [FeatureTestCase(
             "横方向のポインター位置からタブ挿入位置を求める",
             "タブの中央を境界として、先頭・中間・末尾の挿入位置を安定して判定することを確認します。",
             order: 57,
@@ -838,6 +947,80 @@ namespace Ee4v.ProjectTabs.Tests
             public void Save(ProjectTabsState state)
             {
                 State = state;
+            }
+        }
+
+        private sealed class MemoryFavoriteStore
+            : IProjectFavoriteFolderStore
+        {
+            private readonly List<ProjectTabLocation> _locations;
+
+            public MemoryFavoriteStore(
+                params ProjectTabLocation[] locations)
+            {
+                _locations = new List<ProjectTabLocation>(
+                    locations ?? System.Array.Empty<ProjectTabLocation>());
+            }
+
+            public event System.Action Changed;
+
+            public IReadOnlyList<ProjectTabLocation> Locations
+            {
+                get { return _locations; }
+            }
+
+            public bool TryGetAll(
+                out IReadOnlyList<ProjectTabLocation> locations)
+            {
+                locations = _locations.ToArray();
+                return true;
+            }
+
+            public bool TryAdd(ProjectTabLocation location)
+            {
+                if (location == null || Contains(location.FolderPath))
+                {
+                    return location != null;
+                }
+
+                _locations.Add(location);
+                Changed?.Invoke();
+                return true;
+            }
+
+            public bool TryRemove(ProjectTabLocation location)
+            {
+                if (location == null)
+                {
+                    return false;
+                }
+
+                _locations.RemoveAll(existing =>
+                    string.Equals(
+                        existing.FolderPath,
+                        location.FolderPath,
+                        System.StringComparison.Ordinal));
+                Changed?.Invoke();
+                return true;
+            }
+
+            public bool Contains(string folderPath)
+            {
+                return _locations.Any(location =>
+                    string.Equals(
+                        location.FolderPath,
+                        folderPath,
+                        System.StringComparison.Ordinal));
+            }
+
+            public void SetExternally(
+                params ProjectTabLocation[] locations)
+            {
+                _locations.Clear();
+                _locations.AddRange(
+                    locations ??
+                    System.Array.Empty<ProjectTabLocation>());
+                Changed?.Invoke();
             }
         }
     }
