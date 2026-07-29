@@ -1,0 +1,14 @@
+{
+  "settings": {
+    "section": {
+      "hierarchy": "Hierarchy Enhancements"
+    },
+    "enabled": {
+      "label": "Show hierarchy decorations",
+      "tooltip": "Draw an empty GameObject named --- as a separator line in the Hierarchy."
+    }
+  },
+  "undo": {
+    "createDivider": "Create hierarchy divider"
+  }
+}

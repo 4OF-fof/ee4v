@@ -91,6 +91,7 @@ namespace Ee4v.UI.Tests
             "depth-indicator-renderer",
             "folder-content-overlay-renderer",
             "folder-style-renderer",
+            "hierarchy-decoration-renderer",
             "hierarchy-style-renderer",
             "hidden-object-hierarchy-button",
             "scene-switcher-hierarchy-trigger"

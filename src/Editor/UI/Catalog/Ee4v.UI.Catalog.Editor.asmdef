@@ -12,6 +12,7 @@
     "Ee4v.FolderContentOverlay.Editor",
     "Ee4v.FolderStyle.Editor",
     "Ee4v.HiddenObjects.Editor",
+    "Ee4v.HierarchyDecoration.Editor",
     "Ee4v.HierarchyStyle.Editor",
     "Ee4v.ProjectTabs.Editor",
     "Ee4v.SceneSwitcher.Editor",

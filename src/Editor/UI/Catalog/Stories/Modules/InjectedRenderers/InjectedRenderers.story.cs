@@ -3,6 +3,7 @@ using Ee4v.DepthIndicator;
 using Ee4v.FolderContentOverlay;
 using Ee4v.FolderStyle;
 using Ee4v.HiddenObjects;
+using Ee4v.HierarchyDecoration;
 using Ee4v.HierarchyStyle;
 using Ee4v.SceneSwitcher;
 using UnityEditor;
@@ -18,6 +19,7 @@ namespace Ee4v.UI
             DepthIndicator,
             FolderContentOverlay,
             FolderStyle,
+            HierarchyDecoration,
             HierarchyStyle,
             HiddenObjectsButton,
             SceneSwitcherTrigger
@@ -48,6 +50,12 @@ namespace Ee4v.UI
                     "Domain/FolderStyle/Injected UI",
                     "FolderStyleRenderer",
                     PreviewKind.FolderStyle);
+                Register(
+                    registry,
+                    "hierarchy-decoration-renderer",
+                    "Domain/HierarchyDecoration/Injected UI",
+                    "HierarchyDecorationRenderer",
+                    PreviewKind.HierarchyDecoration);
                 Register(
                     registry,
                     "hierarchy-style-renderer",
@@ -131,6 +139,9 @@ namespace Ee4v.UI
                     break;
                 case PreviewKind.FolderStyle:
                     DrawFolder(row, false, true);
+                    break;
+                case PreviewKind.HierarchyDecoration:
+                    DrawHierarchyDecoration(row);
                     break;
                 case PreviewKind.HierarchyStyle:
                     DrawHierarchyStyle(row);
@@ -234,6 +245,23 @@ namespace Ee4v.UI
                     ScaleMode.ScaleToFit,
                     true);
             }
+        }
+
+        private static void DrawHierarchyDecoration(Rect row)
+        {
+            var backgroundRect =
+                HierarchyDecorationRenderer.GetBackgroundRect(
+                    row,
+                    row.xMax);
+            EditorGUI.DrawRect(
+                backgroundRect,
+                HierarchyDecorationRenderer.ResolveBackgroundColor(
+                    EditorGUIUtility.isProSkin));
+            EditorGUI.DrawRect(
+                HierarchyDecorationRenderer.GetLineRect(
+                    backgroundRect),
+                HierarchyDecorationRenderer.ResolveLineColor(
+                    EditorGUIUtility.isProSkin));
         }
 
         private static void DrawHiddenObjectsButton(Rect row)

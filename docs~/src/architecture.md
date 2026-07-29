@@ -53,6 +53,7 @@ filesystem、Editor lifecycle、UI Toolkitは外側の `Infrastructure`、`Unity
 | `DepthIndicator` | Hierarchyの親子関係を示す分岐ガイドを所有する小規模Module |
 | `FolderContentOverlay` | Project folder直下の主要asset種別を示すoverlayを所有する小規模Module |
 | `FolderStyle` | Project folderの色・アイコン装飾とAlt操作の編集入口を所有する小規模Module |
+| `HierarchyDecoration` | Empty GameObjectを使ったHierarchyの構造用装飾を所有する小規模Module |
 | `HierarchyStyle` | Hierarchy itemの継承背景色・アイコン・Alt操作による非表示入口を所有する小規模Module |
 | `HiddenObjects` | HierarchyのScene見出しから非表示objectを検索・選択し、Undo対応で再表示する管理機能を所有する小規模Module |
 | `ProjectTabs` | Project windowのfolder tab、tab別navigation history、現在位置追跡を所有する小規模Module |
@@ -115,6 +116,7 @@ LocalizationとTestも各Moduleの配下へ配置します。
 | `Editor/EditorEnhancements/DepthIndicator` | `Ee4v.DepthIndicator` / `Ee4v.DepthIndicator.Editor` | Hierarchyの親子関係を示す分岐ガイド |
 | `Editor/EditorEnhancements/FolderContentOverlay` | `Ee4v.FolderContentOverlay` / `Ee4v.FolderContentOverlay.Editor` | Project folder直下の主要asset種別を示すoverlay |
 | `Editor/EditorEnhancements/FolderStyle` | `Ee4v.FolderStyle` / `Ee4v.FolderStyle.Editor` | Project folderの色・アイコン装飾とAlt操作の編集入口 |
+| `Editor/EditorEnhancements/HierarchyDecoration` | `Ee4v.HierarchyDecoration` / `Ee4v.HierarchyDecoration.Editor` | Empty GameObjectを使ったHierarchyの構造用装飾 |
 | `Editor/EditorEnhancements/HierarchyStyle` | `Ee4v.HierarchyStyle` / `Ee4v.HierarchyStyle.Editor` | Hierarchy itemの継承背景色・アイコン・Alt操作による非表示入口 |
 | `Editor/EditorEnhancements/HiddenObjects` | `Ee4v.HiddenObjects` / `Ee4v.HiddenObjects.Editor` | `HideInHierarchy` objectの管理画面とScene見出しの入口 |
 | `Editor/EditorEnhancements/ProjectTabs` | `Ee4v.ProjectTabs` / `Ee4v.ProjectTabs.Editor` | Project windowのfolder tabとtab別navigation history |
@@ -130,6 +132,13 @@ iconを優先します。
 
 `DepthIndicator` は `HideInHierarchy` が設定された子と兄弟を枝線の接続判定から除外し、
 Hierarchyに表示されているobjectだけで終端と縦線を決定します。
+
+`HierarchyDecoration` は名前が `---` と完全一致し、Transform以外のcomponentと子を持たない
+Empty GameObjectを区切り線として描画します。構造用objectの名前や内容が条件から外れた場合は
+通常のHierarchy itemへ戻し、Sceneへ専用componentや永続化dataを追加しません。
+Hierarchyのcontext menuに`HierarchyDecoration/div`を追加し、Undo対応で区切り線を生成します。
+区切り線をcopy / pasteまたは複製した際は、生成eventで付与された` (1)`などの連番suffixを
+除去して`---`へ戻します。
 
 `HiddenObjects` はScene走査と `HideFlags` / active state / tag / Undo操作をUnity adapterへ
 閉じ込め、Applicationのcontrollerとtree builderはinstance IDとsnapshotだけを扱います。

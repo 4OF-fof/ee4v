@@ -1,0 +1,14 @@
+{
+  "settings": {
+    "section": {
+      "hierarchy": "ヒエラルキー拡張"
+    },
+    "enabled": {
+      "label": "ヒエラルキーの装飾を表示",
+      "tooltip": "「---」という名前の Empty GameObject をヒエラルキーの区切り線として描画します。"
+    }
+  },
+  "undo": {
+    "createDivider": "ヒエラルキーの区切り線を作成"
+  }
+}
