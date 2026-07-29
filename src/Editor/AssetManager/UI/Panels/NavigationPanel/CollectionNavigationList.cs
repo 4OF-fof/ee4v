@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Ee4v.AssetManager.Contracts;
+using Ee4v.AssetManager.Domain;
 using Ee4v.Core;
 using Ee4v.UI;
 using UnityEditor;
@@ -350,93 +351,13 @@ namespace Ee4v.AssetManager.UI
             string parentCollectionId,
             int siblingIndex)
         {
-            var movingIds = GetTopLevelCollectionIds(
-                collectionIds);
-            if (movingIds.Count == 0)
-            {
-                return false;
-            }
-
-            var targetParentId =
-                NormalizeParentId(parentCollectionId);
-            if (targetParentId.Length > 0 &&
-                !_collections.ContainsKey(targetParentId))
-            {
-                return false;
-            }
-
-            if (targetParentId.Length > 0 &&
-                _collections[targetParentId].IsSmartCollection)
-            {
-                return false;
-            }
-
-            for (var i = 0; i < movingIds.Count; i++)
-            {
-                var collectionId = movingIds[i];
-                var visited = new HashSet<string>(
-                    StringComparer.Ordinal);
-                var ancestorId = targetParentId;
-                while (!string.IsNullOrWhiteSpace(ancestorId) &&
-                       visited.Add(ancestorId))
-                {
-                    if (string.Equals(
-                            collectionId,
-                            ancestorId,
-                            StringComparison.Ordinal))
-                    {
-                        return false;
-                    }
-
-                    AssetCollection ancestor;
-                    if (!_collections.TryGetValue(
-                            ancestorId,
-                            out ancestor))
-                    {
-                        break;
-                    }
-
-                    ancestorId = ancestor.ParentCollectionId;
-                }
-            }
-
-            var movingIdSet = new HashSet<string>(
-                movingIds,
-                StringComparer.Ordinal);
-            var siblings = GetSiblings(targetParentId)
-                .Where(item =>
-                    !movingIdSet.Contains(item.Id))
-                .ToArray();
-            var targetIndex = siblingIndex < 0
-                ? siblings.Length
-                : Mathf.Clamp(
-                    siblingIndex,
-                    0,
-                    siblings.Length);
-            for (var i = 0; i < movingIds.Count; i++)
-            {
-                var currentParentId = NormalizeParentId(
-                    _collections[movingIds[i]]
-                        .ParentCollectionId);
-                if (!string.Equals(
-                        currentParentId,
-                        targetParentId,
-                        StringComparison.Ordinal))
-                {
-                    return true;
-                }
-            }
-
-            var currentOrder = GetSiblings(targetParentId)
-                .Select(item => item.Id)
-                .ToArray();
-            var nextOrder = siblings
-                .Select(item => item.Id)
-                .ToList();
-            nextOrder.InsertRange(targetIndex, movingIds);
-            return !currentOrder.SequenceEqual(
-                nextOrder,
-                StringComparer.Ordinal);
+            var result = CollectionPlacementPolicy.Evaluate(
+                CreatePlacementNodes(),
+                collectionIds,
+                parentCollectionId,
+                siblingIndex);
+            return result.IsValid &&
+                   result.ChangesPlacement;
         }
 
         internal bool TryRequestMove(
@@ -1215,74 +1136,22 @@ namespace Ee4v.AssetManager.UI
         private IReadOnlyList<string> GetTopLevelCollectionIds(
             IReadOnlyList<string> collectionIds)
         {
-            if (collectionIds == null)
-            {
-                return Array.Empty<string>();
-            }
-
-            var requestedIds = new HashSet<string>(
-                collectionIds.Where(id =>
-                    !string.IsNullOrWhiteSpace(id) &&
-                    _collections.ContainsKey(id)),
-                StringComparer.Ordinal);
-            var result = new List<string>();
-            var added = new HashSet<string>(
-                StringComparer.Ordinal);
-            for (var i = 0; i < collectionIds.Count; i++)
-            {
-                var collectionId = collectionIds[i];
-                if (!requestedIds.Contains(collectionId) ||
-                    !added.Add(collectionId) ||
-                    HasSelectedAncestor(
-                        collectionId,
-                        requestedIds))
-                {
-                    continue;
-                }
-
-                result.Add(collectionId);
-            }
-
-            return result;
+            return CollectionPlacementPolicy.GetTopLevelIds(
+                CreatePlacementNodes(),
+                collectionIds);
         }
 
-        private bool HasSelectedAncestor(
-            string collectionId,
-            ISet<string> selectedIds)
+        private IReadOnlyList<CollectionPlacementNode>
+            CreatePlacementNodes()
         {
-            AssetCollection collection;
-            if (!_collections.TryGetValue(
-                    collectionId,
-                    out collection))
-            {
-                return false;
-            }
-
-            var visited = new HashSet<string>(
-                StringComparer.Ordinal);
-            var parentId = NormalizeParentId(
-                collection.ParentCollectionId);
-            while (parentId.Length > 0 &&
-                   visited.Add(parentId))
-            {
-                if (selectedIds.Contains(parentId))
-                {
-                    return true;
-                }
-
-                AssetCollection parent;
-                if (!_collections.TryGetValue(
-                        parentId,
-                        out parent))
-                {
-                    break;
-                }
-
-                parentId = NormalizeParentId(
-                    parent.ParentCollectionId);
-            }
-
-            return false;
+            return _collections.Values
+                .Select(collection =>
+                    new CollectionPlacementNode(
+                        collection.Id,
+                        collection.ParentCollectionId,
+                        collection.IsSmartCollection,
+                        collection.SortOrder))
+                .ToArray();
         }
 
         private static string NormalizeParentId(

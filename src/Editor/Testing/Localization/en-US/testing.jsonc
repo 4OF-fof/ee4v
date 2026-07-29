@@ -10,6 +10,8 @@
       "tests": "Tests",
       "testCasesMeta": "{0} items",
       "failureDetailsTitle": "Failure Details",
+      "testLabel": "Test",
+      "descriptionLabel": "Description",
       "copy": "Copy",
       "copied": "Copied",
       "countsFormat": "Pass {0}  Fail {1}  Skip {2}  Inc {3}  {4:0.00}s",

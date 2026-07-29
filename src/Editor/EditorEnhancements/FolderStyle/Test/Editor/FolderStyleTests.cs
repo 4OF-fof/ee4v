@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Ee4v.Core.Injector;
 using Ee4v.Testing.Contracts;
+using Ee4v.UI;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -34,7 +35,7 @@ namespace Ee4v.FolderStyle.Tests
                 64f,
                 80f);
 
-            var iconRect = FolderStyleLayout.GetIconRect(
+            var iconRect = ProjectItemLayout.GetIconRect(
                 itemRect,
                 ProjectItemViewMode.TwoColumns,
                 ProjectItemOrientation.Vertical);
@@ -260,7 +261,7 @@ namespace Ee4v.FolderStyle.Tests
             service.SetIcon(targets, "first");
             service.SetIcon(targets, "second");
             var openSession =
-                new FolderStyleRecentIconSession(
+                new DecorationRecentIconSession(
                     service.GetRecentIconGuids());
 
             service.SetIcon(targets, "first");
@@ -270,7 +271,7 @@ namespace Ee4v.FolderStyle.Tests
                 Is.EqualTo(
                     new[] { "second", "first" }));
             var reopenedSession =
-                new FolderStyleRecentIconSession(
+                new DecorationRecentIconSession(
                     service.GetRecentIconGuids());
             Assert.That(
                 reopenedSession.IconGuids,
@@ -289,8 +290,7 @@ namespace Ee4v.FolderStyle.Tests
                 new Rect(100f, 50f, 800f, 600f);
 
             var result =
-                FolderStyleWindowLayout
-                    .CalculateWindowRect(
+                PopupWindowLayout.ClampToDesktop(
                         new Vector2(850f, 620f),
                         new Vector2(360f, 268f),
                         desktop);

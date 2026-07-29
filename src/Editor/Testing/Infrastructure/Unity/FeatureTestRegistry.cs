@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Ee4v.Testing.Application;
 using Ee4v.Testing.Contracts;
-using UnityEditor;
 
 namespace Ee4v.Testing.Infrastructure.Unity
 {
@@ -24,25 +23,20 @@ namespace Ee4v.Testing.Infrastructure.Unity
         public static IReadOnlyList<FeatureTestDescriptor> Refresh()
         {
             _cachedDescriptors = new FeatureTestDescriptorBuilder()
-                .Build(DiscoverRegistrarTypes())
+                .Build(DiscoverSuites())
                 .ToList();
             return _cachedDescriptors;
         }
 
-        private static IEnumerable<Type> DiscoverRegistrarTypes()
+        private static IEnumerable<FeatureTestSuiteAttribute>
+            DiscoverSuites()
         {
-            return TypeCache.GetTypesDerivedFrom<IFeatureTestRegistrar>()
-                .Where(type => type != null &&
-                    !type.IsAbstract &&
-                    type.Name.EndsWith("TestRegistrar", StringComparison.Ordinal));
-        }
-
-        internal static List<FeatureTestDescriptor> BuildDescriptors(
-            IEnumerable<Type> registrarTypes)
-        {
-            return new FeatureTestDescriptorBuilder()
-                .Build(registrarTypes)
-                .ToList();
+            return AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(assembly =>
+                    assembly.GetCustomAttributes(
+                            typeof(FeatureTestSuiteAttribute),
+                            false)
+                        .Cast<FeatureTestSuiteAttribute>());
         }
     }
 }

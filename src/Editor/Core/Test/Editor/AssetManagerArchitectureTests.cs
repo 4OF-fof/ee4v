@@ -50,6 +50,7 @@ namespace Ee4v.Core.Tests
                 new[]
                 {
                     "Ee4v.AssetManager.Contracts.Editor",
+                    "Ee4v.AssetManager.Domain.Editor",
                     "Ee4v.Core.Contracts.Editor",
                     "Ee4v.Core.Editor",
                     "Ee4v.Core.Presentation.Editor",
@@ -62,6 +63,7 @@ namespace Ee4v.Core.Tests
                 {
                     "Ee4v.AssetManager.Application.Editor",
                     "Ee4v.AssetManager.Contracts.Editor",
+                    "Ee4v.AssetManager.Domain.Editor",
                     "Ee4v.Core.Editor",
                     "Ee4v.SQLite.Editor"
                 },

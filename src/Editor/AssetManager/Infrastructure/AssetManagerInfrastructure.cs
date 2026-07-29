@@ -11,17 +11,7 @@ using SQLite;
 namespace Ee4v.AssetManager.Infrastructure
 {
     internal sealed class SqliteAssetManagerStore :
-        IAssetCatalogReadStore,
-        IAssetCatalogCommandStore,
-        IAssetFileReadStore,
-        IAssetFileCommandStore,
-        IAssetCollectionReadStore,
-        IAssetCollectionCommandStore,
-        IAssetDependencyReadStore,
-        IAssetDependencyCommandStore,
-        IAssetImportTargetReadStore,
-        IAssetImportTargetCommandStore,
-        IAssetSyncStore
+        IAssetManagerStore
     {
         public AssetCatalogSnapshot LoadCatalogSnapshot() =>
             Execute(AssetManagerDatabase.LoadCatalogSnapshot);
@@ -280,16 +270,6 @@ namespace Ee4v.AssetManager.Infrastructure
         {
             var store = new SqliteAssetManagerStore();
             return new AssetManagerService(
-                store,
-                store,
-                store,
-                store,
-                store,
-                store,
-                store,
-                store,
-                store,
-                store,
                 store,
                 new UnityAssetImportGateway(),
                 new UnityAssetManagerDiagnostics());

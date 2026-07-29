@@ -69,7 +69,7 @@ namespace Ee4v.FolderStyle
                 return;
             }
 
-            var iconRect = FolderStyleLayout.GetIconRect(
+            var iconRect = ProjectItemLayout.GetIconRect(
                 context.SelectionRect,
                 context.ProjectViewMode,
                 context.ProjectOrientation);

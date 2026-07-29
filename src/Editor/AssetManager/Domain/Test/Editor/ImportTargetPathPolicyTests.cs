@@ -1,6 +1,13 @@
 using Ee4v.Testing.Contracts;
 using NUnit.Framework;
 
+[assembly: FeatureTestSuite(
+    "AssetManager Domain",
+    "AssetManager",
+    "Ee4v.AssetManager.Domain.Tests.Editor",
+    "AssetManager の技術非依存な invariant と policy を確認します。",
+    order: 301)]
+
 namespace Ee4v.AssetManager.Domain.Tests
 {
     public sealed class ImportTargetPathPolicyTests
@@ -42,19 +49,6 @@ namespace Ee4v.AssetManager.Domain.Tests
         {
             Assert.Throws<ImportTargetPathRuleException>(
                 () => ImportTargetPathPolicy.Normalize(new[] { relativePath }));
-        }
-    }
-
-    public sealed class AssetManagerDomainTestRegistrar : IFeatureTestRegistrar
-    {
-        public FeatureTestDescriptor CreateDescriptor()
-        {
-            return new FeatureTestDescriptor(
-                "AssetManager Domain",
-                "AssetManager",
-                "Ee4v.AssetManager.Domain.Tests.Editor",
-                "AssetManager の技術非依存な invariant と policy を確認します。",
-                order: 301);
         }
     }
 
@@ -108,6 +102,74 @@ namespace Ee4v.AssetManager.Domain.Tests
             Assert.That(
                 exception.Error,
                 Is.EqualTo(CatalogRuleError.UnsupportedCollectionIcon));
+        }
+    }
+
+    public sealed class CollectionPlacementPolicyTests
+    {
+        private static readonly CollectionPlacementNode[] Nodes =
+        {
+            new CollectionPlacementNode("a", null, false, 0),
+            new CollectionPlacementNode("b", null, false, 1),
+            new CollectionPlacementNode("a-child", "a", false, 0),
+            new CollectionPlacementNode("smart", null, true, 2)
+        };
+
+        [Test]
+        [FeatureTestCase(
+            "Collection の親子同時選択を一度だけ移動する",
+            "親と子を同時に選択した場合、top-level の親だけを placement 対象にすることを確認します。",
+            order: 6)]
+        public void Evaluate_RemovesSelectedDescendants()
+        {
+            var result = CollectionPlacementPolicy.Evaluate(
+                Nodes,
+                new[] { "a", "a-child" },
+                null,
+                1);
+
+            Assert.That(result.IsValid, Is.True);
+            Assert.That(
+                result.MovingIds,
+                Is.EqualTo(new[] { "a" }));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Collection の循環配置を拒否する",
+            "Collection を自身の子孫へ移動できないことを確認します。",
+            order: 7)]
+        public void Evaluate_RejectsDescendantParent()
+        {
+            var result = CollectionPlacementPolicy.Evaluate(
+                Nodes,
+                new[] { "a" },
+                "a-child",
+                0);
+
+            Assert.That(
+                result.Error,
+                Is.EqualTo(CollectionPlacementError.Cycle));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Smart Collection を親にできない",
+            "通常 Collection の移動先に Smart Collection を指定した場合に拒否することを確認します。",
+            order: 8)]
+        public void Evaluate_RejectsSmartCollectionParent()
+        {
+            var result = CollectionPlacementPolicy.Evaluate(
+                Nodes,
+                new[] { "a" },
+                "smart",
+                0);
+
+            Assert.That(
+                result.Error,
+                Is.EqualTo(
+                    CollectionPlacementError
+                        .SmartCollectionParent));
         }
     }
 }

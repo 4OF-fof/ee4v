@@ -41,7 +41,7 @@ namespace Ee4v.Testing.UI
         private readonly List<DescriptorView> _descriptorViews = new List<DescriptorView>();
         private InfoCard _overallCard;
         private Alerts _overallAlert;
-        private Button _runAllButton;
+        private UiButton _runAllButton;
         private SearchField _searchField;
         private Alerts _stateAlert;
         private ScrollView _suiteScrollView;
@@ -90,6 +90,7 @@ namespace Ee4v.Testing.UI
             root.AddToClassList("ee4v-test-manager");
 
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/Button/ui-button.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/SearchField/search-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/InfoCard/info-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/Alerts/alerts.uss");
@@ -104,10 +105,10 @@ namespace Ee4v.Testing.UI
             _overallCard = new InfoCard();
             _overallCard.AddToClassList("ee4v-test-manager__overall");
 
-            _runAllButton = new Button(TryRunAll)
-            {
-                text = I18N.Get("testing.window.runAll")
-            };
+            _runAllButton = new UiButton(
+                new UiButtonState(
+                    label: I18N.Get("testing.window.runAll")),
+                TryRunAll);
             _runAllButton.AddToClassList("ee4v-test-manager__run-all");
             _overallCard.HeaderRight.Add(_runAllButton);
 
@@ -224,7 +225,7 @@ namespace Ee4v.Testing.UI
                 ToAlertTone(summary.Status),
                 string.Empty,
                 BuildOverallSummaryMessage(summary)));
-            _runAllButton.SetEnabled(
+            _runAllButton.SetInteractable(
                 _runnerService != null
                 && !_runnerService.IsRunInProgress
                 && string.IsNullOrWhiteSpace(_loadError)
@@ -349,7 +350,10 @@ namespace Ee4v.Testing.UI
                     I18N.Get("testing.window.title"),
                     ResolveRunnerMessage(
                         errorMessage,
-                        string.Empty)));
+                        string.Empty),
+                    dismissTooltip: I18N.GetForScope(
+                        "UI",
+                        "ui.dismiss.tooltip")));
                 return;
             }
 
@@ -371,7 +375,10 @@ namespace Ee4v.Testing.UI
                     I18N.Get("testing.window.title"),
                     ResolveRunnerMessage(
                         errorMessage,
-                        string.Empty)));
+                        string.Empty),
+                    dismissTooltip: I18N.GetForScope(
+                        "UI",
+                        "ui.dismiss.tooltip")));
                 return;
             }
 
@@ -531,7 +538,14 @@ namespace Ee4v.Testing.UI
                 return string.Empty;
             }
 
-            return ExtractFailureDetails(record.DetailedResult);
+            var details = ExtractFailureDetails(
+                record.DetailedResult);
+            return string.IsNullOrWhiteSpace(details)
+                ? string.Empty
+                : I18N.Get(
+                    "testing.window.failureDetailsTitle") +
+                  "\n" +
+                  LocalizeStatusMarkers(details);
         }
 
         private static bool IsProblemStatus(FeatureTestRunStatus status)
@@ -543,38 +557,24 @@ namespace Ee4v.Testing.UI
 
         private static string ExtractFailureDetails(string detailedResult)
         {
-            if (string.IsNullOrWhiteSpace(detailedResult))
-            {
-                return string.Empty;
-            }
+            return string.IsNullOrWhiteSpace(detailedResult)
+                ? string.Empty
+                : detailedResult.Trim();
+        }
 
-            var normalized = detailedResult.Trim();
-            const string header = "Failure Details";
-            var startIndex = normalized.IndexOf(header, StringComparison.Ordinal);
-            if (startIndex < 0)
-            {
-                return string.Empty;
-            }
-
-            var nextSectionIndex = normalized.Length;
-            var nextSectionHeaders = new[]
-            {
-                "\n\nCase Results",
-                "\n\nSummary",
-                "\n\nRegistered Cases"
-            };
-            for (var i = 0; i < nextSectionHeaders.Length; i++)
-            {
-                var candidateIndex = normalized.IndexOf(nextSectionHeaders[i], startIndex + header.Length, StringComparison.Ordinal);
-                if (candidateIndex >= 0)
-                {
-                    nextSectionIndex = Math.Min(nextSectionIndex, candidateIndex);
-                }
-            }
-
-            return nextSectionIndex < normalized.Length
-                ? normalized.Substring(startIndex, nextSectionIndex - startIndex).TrimEnd()
-                : normalized.Substring(startIndex).TrimEnd();
+        private static string LocalizeStatusMarkers(string details)
+        {
+            return (details ?? string.Empty)
+                .Replace(
+                    "[Failed]",
+                    "[" + I18N.Get("testing.status.failed") + "]")
+                .Replace(
+                    "[Skipped]",
+                    "[" + I18N.Get("testing.status.skipped") + "]")
+                .Replace(
+                    "[Inconclusive]",
+                    "[" + I18N.Get(
+                        "testing.status.inconclusive") + "]");
         }
 
         private static UiStatusTone ToBadgeTone(FeatureTestRunStatus status)
@@ -684,11 +684,18 @@ namespace Ee4v.Testing.UI
             if (!string.IsNullOrWhiteSpace(testCase.ResultKey)
                 && record.CaseDetails.TryGetValue(testCase.ResultKey, out var details))
             {
-                return FormatCaseDetailsText(testCase, ExtractFailureDetails(details));
+                return FormatCaseDetailsText(
+                    testCase,
+                    LocalizeStatusMarkers(
+                        ExtractFailureDetails(details)));
             }
 
             return totalCaseCount == 1
-                ? FormatCaseDetailsText(testCase, ExtractFailureDetails(record.DetailedResult))
+                ? FormatCaseDetailsText(
+                    testCase,
+                    LocalizeStatusMarkers(
+                        ExtractFailureDetails(
+                            record.DetailedResult)))
                 : string.Empty;
         }
 
@@ -709,12 +716,19 @@ namespace Ee4v.Testing.UI
             var sections = new List<string>();
             if (!string.IsNullOrWhiteSpace(testCase.Title))
             {
-                sections.Add("Test\n" + testCase.Title);
+                sections.Add(
+                    I18N.Get("testing.window.testLabel") +
+                    "\n" +
+                    testCase.Title);
             }
 
             if (!string.IsNullOrWhiteSpace(testCase.Description))
             {
-                sections.Add("Description\n" + testCase.Description);
+                sections.Add(
+                    I18N.Get(
+                        "testing.window.descriptionLabel") +
+                    "\n" +
+                    testCase.Description);
             }
 
             sections.Add(details);

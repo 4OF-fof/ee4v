@@ -142,9 +142,17 @@ namespace Ee4v.UI
 
             var actions = new VisualElement();
             actions.AddToClassList(RootClassName + "__actions");
-            var cancel = new Button(() => Resolve(DiffConfirmationResult.Cancel)) { text = state.CancelLabel };
+            var cancel = new UiButton(
+                new UiButtonState(
+                    label: state.CancelLabel,
+                    variant: UiButtonVariant.Ghost),
+                () => Resolve(DiffConfirmationResult.Cancel));
             cancel.AddToClassList(RootClassName + "__button");
-            var overwrite = new Button(() => Resolve(DiffConfirmationResult.Overwrite)) { text = state.OverwriteLabel };
+            var overwrite = new UiButton(
+                new UiButtonState(
+                    label: state.OverwriteLabel,
+                    selected: true),
+                () => Resolve(DiffConfirmationResult.Overwrite));
             overwrite.AddToClassList(RootClassName + "__button");
             overwrite.AddToClassList(RootClassName + "__button--primary");
             actions.Add(cancel);

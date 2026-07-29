@@ -1,4 +1,5 @@
 using System;
+using Ee4v.Core.I18n;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
@@ -162,7 +163,10 @@ namespace Ee4v.UI
                     {
                         new WindowToastAction("Open", closesToast: true)
                     }
-                    : Array.Empty<WindowToastAction>());
+                    : Array.Empty<WindowToastAction>(),
+                dismissTooltip: I18N.GetForScope(
+                    "UI",
+                    "ui.dismiss.tooltip"));
         }
 
         private static void ApplyCatalogToastPreset(

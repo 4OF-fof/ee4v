@@ -44,12 +44,12 @@ namespace Ee4v.HierarchyStyle
         private HierarchyObjectIdentity _identity;
         private HierarchyStyleIconApplier _iconApplier;
         private IHierarchyObjectVisibility _visibility;
-        private HierarchyStyleRecentIconSession
+        private DecorationRecentIconSession
             _recentIconSession;
         private DecorationStyleEditor _editor;
         private VisualElement _preview;
         private Image _previewImage;
-        private bool _watchingTransientFocus;
+        private TransientPopupFocusController _focusController;
 
         internal static void ShowAt(
             IReadOnlyList<GameObject> targets,
@@ -97,8 +97,7 @@ namespace Ee4v.HierarchyStyle
                 EditorPopupWindow.TryGetDesktopBounds(
                     screenPosition,
                     out var desktopBounds)
-                    ? HierarchyStyleWindowLayout
-                        .CalculateWindowRect(
+                    ? PopupWindowLayout.ClampToDesktop(
                             screenPosition,
                             size,
                             desktopBounds)
@@ -128,8 +127,10 @@ namespace Ee4v.HierarchyStyle
                     !string.IsNullOrEmpty(objectId))
                 .ToArray();
             _recentIconSession =
-                new HierarchyStyleRecentIconSession(
+                new DecorationRecentIconSession(
                     _service.GetRecentIconGuids());
+            _focusController =
+                new TransientPopupFocusController(this);
             minSize = new Vector2(
                 WindowWidth,
                 WindowHeight);
@@ -604,99 +605,13 @@ namespace Ee4v.HierarchyStyle
 
         private void OnLostFocus()
         {
-            EditorApplication.delayCall +=
-                EvaluateFocusLoss;
-        }
-
-        private void EvaluateFocusLoss()
-        {
-            if (this == null)
-            {
-                return;
-            }
-
-            var focused = EditorWindow.focusedWindow;
-            if (focused == this)
-            {
-                StopTransientFocusWatch();
-                return;
-            }
-
-            if (EditorPopupWindow.IsTransientPicker(
-                    focused) ||
-                EditorPopupWindow.HasOpenTransientPicker() ||
-                EditorPopupWindow.IsEyeDropperOpen() ||
-                focused is ImageTooltipWindow)
-            {
-                StartTransientFocusWatch();
-                return;
-            }
-
-            Close();
-        }
-
-        private void StartTransientFocusWatch()
-        {
-            if (_watchingTransientFocus)
-            {
-                return;
-            }
-
-            _watchingTransientFocus = true;
-            EditorApplication.update +=
-                WatchTransientFocus;
-        }
-
-        private void WatchTransientFocus()
-        {
-            if (this == null)
-            {
-                StopTransientFocusWatch();
-                return;
-            }
-
-            var focused = EditorWindow.focusedWindow;
-            if (focused == this)
-            {
-                StopTransientFocusWatch();
-                return;
-            }
-
-            if (EditorPopupWindow.IsTransientPicker(
-                    focused) ||
-                EditorPopupWindow.HasOpenTransientPicker() ||
-                EditorPopupWindow.IsEyeDropperOpen() ||
-                focused is ImageTooltipWindow)
-            {
-                return;
-            }
-
-            if (focused == null)
-            {
-                StopTransientFocusWatch();
-                Focus();
-                return;
-            }
-
-            StopTransientFocusWatch();
-            Focus();
-        }
-
-        private void StopTransientFocusWatch()
-        {
-            if (!_watchingTransientFocus)
-            {
-                return;
-            }
-
-            _watchingTransientFocus = false;
-            EditorApplication.update -=
-                WatchTransientFocus;
+            _focusController?.OnLostFocus();
         }
 
         private void OnDisable()
         {
-            StopTransientFocusWatch();
+            _focusController?.Dispose();
+            _focusController = null;
         }
 
         private static void CloseExistingWindows()
@@ -711,30 +626,4 @@ namespace Ee4v.HierarchyStyle
         }
     }
 
-    internal static class HierarchyStyleWindowLayout
-    {
-        public static Rect CalculateWindowRect(
-            Vector2 anchor,
-            Vector2 size,
-            Rect desktopBounds)
-        {
-            var maximumX = Mathf.Max(
-                desktopBounds.xMin,
-                desktopBounds.xMax - size.x);
-            var maximumY = Mathf.Max(
-                desktopBounds.yMin,
-                desktopBounds.yMax - size.y);
-            return new Rect(
-                Mathf.Clamp(
-                    anchor.x,
-                    desktopBounds.xMin,
-                    maximumX),
-                Mathf.Clamp(
-                    anchor.y,
-                    desktopBounds.yMin,
-                    maximumY),
-                size.x,
-                size.y);
-        }
-    }
 }

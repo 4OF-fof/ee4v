@@ -5,7 +5,8 @@
     "Ee4v.Core.Contracts.Editor",
     "Ee4v.Core.Presentation.Editor",
     "Ee4v.HierarchyStyle.Editor",
-    "Ee4v.Testing.Contracts.Editor"
+    "Ee4v.Testing.Contracts.Editor",
+    "Ee4v.UI.Editor"
   ],
   "includePlatforms": [
     "Editor"

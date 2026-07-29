@@ -5,6 +5,13 @@ using Ee4v.AssetManager.Contracts;
 using Ee4v.Testing.Contracts;
 using NUnit.Framework;
 
+[assembly: FeatureTestSuite(
+    "AssetManager Application",
+    "AssetManager",
+    "Ee4v.AssetManager.Application.Tests.Editor",
+    "AssetManager use case の transaction 境界と通知順序を確認します。",
+    order: 302)]
+
 namespace Ee4v.AssetManager.Application.Tests
 {
     public sealed class SetFileImportTargetsUseCaseTests
@@ -183,16 +190,4 @@ namespace Ee4v.AssetManager.Application.Tests
         }
     }
 
-    public sealed class AssetManagerApplicationTestRegistrar : IFeatureTestRegistrar
-    {
-        public FeatureTestDescriptor CreateDescriptor()
-        {
-            return new FeatureTestDescriptor(
-                "AssetManager Application",
-                "AssetManager",
-                "Ee4v.AssetManager.Application.Tests.Editor",
-                "AssetManager use case の transaction 境界と通知順序を確認します。",
-                order: 302);
-        }
-    }
 }

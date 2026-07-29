@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
 
@@ -90,55 +91,31 @@ namespace Ee4v.FolderStyle
 
         public IReadOnlyList<string> GetRecentIconGuids()
         {
-            return (_recentIconGuids ??
-                    new List<string>())
-                .ToArray();
+            return DecorationRecentIconHistory.Snapshot(
+                _recentIconGuids);
         }
 
         public void RecordRecentIcon(
             string iconGuid,
             int maximumCount)
         {
-            if (string.IsNullOrEmpty(iconGuid) ||
-                maximumCount <= 0)
-            {
-                return;
-            }
-
             if (_recentIconGuids == null)
             {
                 _recentIconGuids =
                     new List<string>();
             }
 
-            _recentIconGuids.RemoveAll(
-                guid => string.Equals(
-                    guid,
-                    iconGuid,
-                    StringComparison.Ordinal));
-            _recentIconGuids.Insert(0, iconGuid);
-            if (_recentIconGuids.Count > maximumCount)
-            {
-                _recentIconGuids.RemoveRange(
-                    maximumCount,
-                    _recentIconGuids.Count -
-                    maximumCount);
-            }
+            DecorationRecentIconHistory.Record(
+                _recentIconGuids,
+                iconGuid,
+                maximumCount);
         }
 
         public bool RemoveRecentIcon(string iconGuid)
         {
-            if (string.IsNullOrEmpty(iconGuid) ||
-                _recentIconGuids == null)
-            {
-                return false;
-            }
-
-            return _recentIconGuids.RemoveAll(
-                guid => string.Equals(
-                    guid,
-                    iconGuid,
-                    StringComparison.Ordinal)) > 0;
+            return DecorationRecentIconHistory.Remove(
+                _recentIconGuids,
+                iconGuid);
         }
 
         private int FindIndex(string folderGuid)

@@ -1,3 +1,4 @@
+using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -7,7 +8,8 @@ namespace Ee4v.AssetManager.UI
 {
     internal sealed class InfomationWindow : EditorWindow
     {
-        private const string WindowTitle = "Infomation";
+        private static string WindowTitle =>
+            I18N.Get("assetManager.window.information");
         private const string RootClassName = "ee4v-ui";
         private const string WindowClassName = "ee4v-asset-manager-window";
         private const string BodyClassName = "ee4v-asset-manager-window__standalone-panel-body";

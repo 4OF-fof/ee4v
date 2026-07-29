@@ -29,7 +29,7 @@ namespace Ee4v.UI
         private const string CopyButtonClassName = "ee4v-ui-copyable-text-area__copy-button";
         private const string CopyButtonCopiedClassName = "ee4v-ui-copyable-text-area__copy-button--copied";
         private const string FieldClassName = "ee4v-ui-copyable-text-area__field";
-        private readonly Button _copyButton;
+        private readonly UiButton _copyButton;
         private readonly TextField _textField;
         private IVisualElementScheduledItem _copyFeedbackResetItem;
         private CopyableTextAreaState _state;
@@ -38,7 +38,7 @@ namespace Ee4v.UI
         {
             AddToClassList(RootClassName);
 
-            _copyButton = new Button(CopyToClipboard);
+            _copyButton = new UiButton(onClick: CopyToClipboard);
             _copyButton.AddToClassList(CopyButtonClassName);
 
             _textField = new TextField();
@@ -62,11 +62,13 @@ namespace Ee4v.UI
             _state = state ?? new CopyableTextAreaState(string.Empty);
             ClearCopyFeedback();
 
-            _copyButton.text = _state.CopyButtonText;
+            _copyButton.SetState(new UiButtonState(
+                label: _state.CopyButtonText,
+                enabled: !string.IsNullOrWhiteSpace(_state.Text),
+                size: UiButtonSize.Compact));
             _copyButton.style.display = string.IsNullOrWhiteSpace(_state.CopyButtonText)
                 ? DisplayStyle.None
                 : DisplayStyle.Flex;
-            _copyButton.SetEnabled(!string.IsNullOrWhiteSpace(_state.Text));
             _textField.SetValueWithoutNotify(_state.Text);
         }
 
@@ -89,7 +91,9 @@ namespace Ee4v.UI
         private void ShowCopyFeedback()
         {
             _copyFeedbackResetItem?.Pause();
-            _copyButton.text = _state.CopiedFeedbackText;
+            SetButtonLabel(_state.CopiedFeedbackText);
+            _copyButton.LabelElement.SetColor(
+                UiColorTokens.StatusPassedText);
             _copyButton.EnableInClassList(CopyButtonCopiedClassName, true);
             _copyFeedbackResetItem = schedule.Execute(ClearCopyFeedback).StartingIn(CopyFeedbackDurationMs);
         }
@@ -99,7 +103,19 @@ namespace Ee4v.UI
             _copyFeedbackResetItem?.Pause();
             _copyFeedbackResetItem = null;
             _copyButton.EnableInClassList(CopyButtonCopiedClassName, false);
-            _copyButton.text = _state != null ? _state.CopyButtonText : string.Empty;
+            SetButtonLabel(
+                _state != null
+                    ? _state.CopyButtonText
+                    : string.Empty);
+        }
+
+        private void SetButtonLabel(string label)
+        {
+            _copyButton.SetState(new UiButtonState(
+                label: label,
+                enabled: _state != null &&
+                         !string.IsNullOrWhiteSpace(_state.Text),
+                size: UiButtonSize.Compact));
         }
     }
 }

@@ -37,7 +37,8 @@ namespace Ee4v.UI
             string message,
             double? durationSeconds = null,
             bool dismissible = true,
-            IReadOnlyList<WindowToastAction> actions = null)
+            IReadOnlyList<WindowToastAction> actions = null,
+            string dismissTooltip = null)
         {
             Tone = tone;
             Title = title ?? string.Empty;
@@ -45,6 +46,7 @@ namespace Ee4v.UI
             DurationSeconds = durationSeconds;
             Dismissible = dismissible;
             Actions = actions ?? Array.Empty<WindowToastAction>();
+            DismissTooltip = dismissTooltip ?? string.Empty;
         }
 
         public WindowToastTone Tone { get; }
@@ -58,6 +60,8 @@ namespace Ee4v.UI
         public bool Dismissible { get; }
 
         public IReadOnlyList<WindowToastAction> Actions { get; }
+
+        public string DismissTooltip { get; }
     }
 
     internal sealed class WindowToastState
@@ -67,13 +71,15 @@ namespace Ee4v.UI
             string title,
             string message,
             bool dismissible,
-            IReadOnlyList<WindowToastAction> actions)
+            IReadOnlyList<WindowToastAction> actions,
+            string dismissTooltip = null)
         {
             Tone = tone;
             Title = title ?? string.Empty;
             Message = message ?? string.Empty;
             Dismissible = dismissible;
             Actions = actions ?? Array.Empty<WindowToastAction>();
+            DismissTooltip = dismissTooltip ?? string.Empty;
         }
 
         public WindowToastTone Tone { get; }
@@ -85,6 +91,8 @@ namespace Ee4v.UI
         public bool Dismissible { get; }
 
         public IReadOnlyList<WindowToastAction> Actions { get; }
+
+        public string DismissTooltip { get; }
     }
 
     internal sealed class WindowToast : VisualElement
@@ -128,7 +136,7 @@ namespace Ee4v.UI
 
             _closeButton = new Button(RequestDismiss);
             _closeButton.AddToClassList(CloseButtonClassName);
-            _closeIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.Close, size: UiSizeTokens.Size10, tooltip: "Dismiss"));
+            _closeIcon = new Icon();
             _closeButton.Add(_closeIcon);
             header.Add(_closeButton);
 
@@ -161,6 +169,10 @@ namespace Ee4v.UI
             _messageLabel.style.display = string.IsNullOrWhiteSpace(_state.Message) ? DisplayStyle.None : DisplayStyle.Flex;
 
             _closeButton.style.display = _state.Dismissible ? DisplayStyle.Flex : DisplayStyle.None;
+            _closeIcon.SetState(IconState.FromBuiltinIcon(
+                UiBuiltinIcon.Close,
+                size: UiSizeTokens.Size10,
+                tooltip: _state.DismissTooltip));
 
             EnableInClassList(ToneInfoClassName, _state.Tone == WindowToastTone.Info);
             EnableInClassList(ToneSuccessClassName, _state.Tone == WindowToastTone.Success);
@@ -181,10 +193,11 @@ namespace Ee4v.UI
                     continue;
                 }
 
-                var button = new Button(() => InvokeAction(action))
-                {
-                    text = action.Label
-                };
+                var button = new UiButton(
+                    new UiButtonState(
+                        label: action.Label,
+                        size: UiButtonSize.Compact),
+                    () => InvokeAction(action));
                 button.AddToClassList(ActionButtonClassName);
                 _actionsRow.Add(button);
             }
@@ -241,7 +254,8 @@ namespace Ee4v.UI
                 request.Title,
                 request.Message,
                 request.Dismissible,
-                request.Actions));
+                request.Actions,
+                request.DismissTooltip));
             toast.DismissRequested += OnToastDismissRequested;
 
             _entries.Insert(0, new Entry(toast, ResolveExpiresAt(request, now)));
@@ -421,6 +435,7 @@ namespace Ee4v.UI
 
             root.AddToClassList(RootClassName);
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/Button/ui-button.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Overlays/WindowToast/window-toast.uss");
 
             var host = root.Q<WindowToastHost>(HostElementName);

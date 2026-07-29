@@ -541,50 +541,33 @@ Testing API はCore assemblyではなく、Unity非依存の
 featureのtest assemblyはこのContractsだけを参照し、Application、
 Unity Test Runner adapter、UIを直接参照しません。
 
-### `IFeatureTestRegistrar.CreateDescriptor`
+### `FeatureTestSuiteAttribute`
 
-Feature test suite の metadata を `Test List` に提供します。
+Feature test assembly の metadata を `Test List` に提供します。
 
 ```csharp
-public interface IFeatureTestRegistrar
-{
-    FeatureTestDescriptor CreateDescriptor();
-}
+[assembly: FeatureTestSuite(
+    featureScope: "Sample",
+    displayName: "Sample",
+    assemblyName: "Ee4v.Sample.Tests.Editor",
+    description: "Sample feature tests",
+    order: 100,
+    category: FeatureTestCategory.Standard)]
 ```
 
 Parameters:
 
-- なし
-
-Returns:
-
-- `FeatureTestDescriptor`
-
-Effects:
-
-- registrar 自体は直接登録処理を持たない。
-- `FeatureTestRegistry` が `*TestRegistrar` を自動発見して descriptor を収集する。
+- `featureScope`
+- `displayName`
+- `assemblyName`
+- `description`
+- `order`
+- `category`
 
 Notes:
 
-- registrar class 名は `*TestRegistrar` で終わる必要がある。
+- `FeatureTestRegistry` が読み込み済み assembly の attribute を自動発見する。
 - `FeatureScope` と `AssemblyName` は全 suite で重複禁止。
-
-```csharp
-public sealed class SampleTestRegistrar : IFeatureTestRegistrar
-{
-    public FeatureTestDescriptor CreateDescriptor()
-    {
-        return new FeatureTestDescriptor(
-            featureScope: "Sample",
-            displayName: "Sample",
-            assemblyName: "Ee4v.Sample.Tests.Editor",
-            description: "Sample feature tests",
-            order: 100,
-            category: FeatureTestCategory.Standard);
-    }
-}
-```
 
 ### `FeatureTestDescriptor`
 

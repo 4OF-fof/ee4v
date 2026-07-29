@@ -28,31 +28,22 @@ namespace Ee4v.AssetManager.Application
         private readonly AssetManagerReadSnapshot _readSnapshot;
 
         internal AssetManagerService(
-            IAssetCatalogReadStore catalogReader,
-            IAssetCatalogCommandStore catalogWriter,
-            IAssetFileReadStore fileReader,
-            IAssetFileCommandStore fileWriter,
-            IAssetCollectionReadStore collectionReader,
-            IAssetCollectionCommandStore collectionWriter,
-            IAssetDependencyReadStore dependencyReader,
-            IAssetDependencyCommandStore dependencyWriter,
-            IAssetImportTargetReadStore importTargetReader,
-            IAssetImportTargetCommandStore importTargetWriter,
-            IAssetSyncStore sync,
+            IAssetManagerStore store,
             IAssetImportGateway importGateway,
             IAssetManagerDiagnostics diagnostics)
         {
-            _catalogReader = catalogReader ?? throw new ArgumentNullException(nameof(catalogReader));
-            _catalogWriter = catalogWriter ?? throw new ArgumentNullException(nameof(catalogWriter));
-            _fileReader = fileReader ?? throw new ArgumentNullException(nameof(fileReader));
-            _fileWriter = fileWriter ?? throw new ArgumentNullException(nameof(fileWriter));
-            _collectionReader = collectionReader ?? throw new ArgumentNullException(nameof(collectionReader));
-            _collectionWriter = collectionWriter ?? throw new ArgumentNullException(nameof(collectionWriter));
-            _dependencyReader = dependencyReader ?? throw new ArgumentNullException(nameof(dependencyReader));
-            _dependencyWriter = dependencyWriter ?? throw new ArgumentNullException(nameof(dependencyWriter));
-            _importTargetReader = importTargetReader ?? throw new ArgumentNullException(nameof(importTargetReader));
-            _importTargetWriter = importTargetWriter ?? throw new ArgumentNullException(nameof(importTargetWriter));
-            _sync = sync ?? throw new ArgumentNullException(nameof(sync));
+            store = store ?? throw new ArgumentNullException(nameof(store));
+            _catalogReader = store;
+            _catalogWriter = store;
+            _fileReader = store;
+            _fileWriter = store;
+            _collectionReader = store;
+            _collectionWriter = store;
+            _dependencyReader = store;
+            _dependencyWriter = store;
+            _importTargetReader = store;
+            _importTargetWriter = store;
+            _sync = store;
             _importGateway = importGateway ?? throw new ArgumentNullException(nameof(importGateway));
             _changePublisher = new AssetManagerChangePublisher(diagnostics);
             _readSnapshot =

@@ -44,7 +44,7 @@ namespace Ee4v.SceneSwitcher
         private readonly ListView _list;
         private readonly UiTextElement _empty;
         private readonly VisualElement _footer;
-        private readonly Button _create;
+        private readonly UiButton _create;
         private List<SceneSwitcherItem> _items =
             new List<SceneSwitcherItem>();
         private SceneSwitcherViewState _state;
@@ -99,7 +99,7 @@ namespace Ee4v.SceneSwitcher
 
             _footer = new VisualElement();
             _footer.AddToClassList(FooterClassName);
-            _create = new Button(() =>
+            _create = new UiButton(onClick: () =>
                 CreateRequested?.Invoke(_state?.Query ?? string.Empty));
             _create.AddToClassList(CreateClassName);
             _footer.Add(_create);
@@ -153,11 +153,13 @@ namespace Ee4v.SceneSwitcher
             _create.style.display = _state.CanCreate
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
-            _create.text = _state.CanCreate
-                ? string.Format(
-                    _text.CreateFormat ?? "{0}",
-                    _state.Query)
-                : string.Empty;
+            _create.SetState(new UiButtonState(
+                label: _state.CanCreate
+                    ? string.Format(
+                        _text.CreateFormat ?? "{0}",
+                        _state.Query)
+                    : string.Empty,
+                enabled: _state.CanCreate));
             _rendering = false;
         }
 

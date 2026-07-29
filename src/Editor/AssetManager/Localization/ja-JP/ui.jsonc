@@ -1,5 +1,11 @@
 {
   "assetManager": {
+    "window": {
+      "assetManager": "Asset Manager",
+      "navigation": "navigation",
+      "mainView": "mainView",
+      "information": "information"
+    },
     "infomationPanel": {
       "selectedItemsSuffix": "件のアイテムを選択中",
       "detailTabs": {

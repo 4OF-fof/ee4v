@@ -114,7 +114,7 @@ namespace Ee4v.Testing.UI
         private const string CaseDetailsBodyClassName = "ee4v-ui-test-result-group__case-details-body";
         private const string CaseDetailsFieldClassName = "ee4v-ui-test-result-group__case-details-field";
         private readonly Alerts _summaryAlert;
-        private readonly Button _runButton;
+        private readonly UiButton _runButton;
         private readonly VisualElement _casesPanel;
         private readonly Button _casesToggle;
         private readonly Icon _casesChevron;
@@ -128,7 +128,7 @@ namespace Ee4v.Testing.UI
         {
             AddToClassList(RootClassName);
 
-            _runButton = new Button(RaiseRunRequested);
+            _runButton = new UiButton(onClick: RaiseRunRequested);
             _runButton.AddToClassList(RunButtonClassName);
             HeaderRight.Add(_runButton);
 
@@ -178,9 +178,11 @@ namespace Ee4v.Testing.UI
         {
             _state = state ?? new TestResultGroupState(new InfoCardState(string.Empty));
 
-            _runButton.text = _state.RunText;
+            _runButton.SetState(new UiButtonState(
+                label: _state.RunText,
+                enabled: !string.IsNullOrWhiteSpace(_state.RunText) &&
+                         _state.RunEnabled));
             _runButton.style.display = string.IsNullOrWhiteSpace(_state.RunText) ? DisplayStyle.None : DisplayStyle.Flex;
-            _runButton.SetEnabled(!string.IsNullOrWhiteSpace(_state.RunText) && _state.RunEnabled);
 
             base.SetState(_state.CardState);
 

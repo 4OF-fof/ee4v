@@ -587,7 +587,7 @@ namespace Ee4v.Testing.Infrastructure.Unity
 
             return entries.Count == 0
                 ? string.Empty
-                : "Failure Details\n" + string.Join("\n\n", entries);
+                : string.Join("\n\n", entries);
         }
 
         private static string BuildCaseDetailEntry(ITestResultAdaptor leaf)

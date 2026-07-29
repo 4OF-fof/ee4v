@@ -10,6 +10,8 @@
       "tests": "Tests",
       "testCasesMeta": "{0}件",
       "failureDetailsTitle": "失敗詳細",
+      "testLabel": "テスト",
+      "descriptionLabel": "説明",
       "copy": "コピー",
       "copied": "コピーしました",
       "countsFormat": "Pass {0}  Fail {1}  Skip {2}  Inc {3}  {4:0.00}s",

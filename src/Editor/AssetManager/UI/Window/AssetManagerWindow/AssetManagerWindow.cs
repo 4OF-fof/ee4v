@@ -1,4 +1,5 @@
 using Ee4v.Core.Background;
+using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -7,7 +8,8 @@ namespace Ee4v.AssetManager.UI
 {
     internal sealed class AssetManagerWindow : EditorWindow
     {
-        private const string WindowTitle = "Asset Manager";
+        private static string WindowTitle =>
+            I18N.Get("assetManager.window.assetManager");
         private const string RootClassName = "ee4v-ui";
         private const string WindowClassName = "ee4v-asset-manager-window";
         private const string LayoutClassName = "ee4v-asset-manager-window__layout";

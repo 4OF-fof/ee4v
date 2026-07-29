@@ -230,9 +230,9 @@ Unity adapterはUIを参照しません。
 
 | namespace | 役割 |
 |---|---|
-| `Ee4v.Testing.Contracts` | registrar、suite / case metadata、category |
+| `Ee4v.Testing.Contracts` | assembly登録attribute、suite / case metadata、category |
 | `Ee4v.Testing.Application` | test case発見、descriptor構築、run state model、catalog / runner port |
-| `Ee4v.Testing.Infrastructure.Unity` | TypeCache、Unity Test Runner、SessionState |
+| `Ee4v.Testing.Infrastructure.Unity` | assembly登録発見、Unity Test Runner、SessionState |
 | `Ee4v.Testing.Infrastructure.StaticAnalysis` | localizationとUI sourceの監査 |
 | `Ee4v.Testing.UI` | Test List window、run stateのlocalizationと表示 |
 | `Ee4v.Testing.Composition` | Unity実装をApplicationのportとしてUIへ注入するcomposition root |

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Ee4v.Testing.Contracts;
+using Ee4v.UI;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -239,8 +240,7 @@ namespace Ee4v.HierarchyStyle.Tests
                 new Rect(100f, 50f, 800f, 600f);
 
             var result =
-                HierarchyStyleWindowLayout
-                    .CalculateWindowRect(
+                PopupWindowLayout.ClampToDesktop(
                         new Vector2(850f, 620f),
                         new Vector2(360f, 318f),
                         desktop);

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Ee4v.AssetManager.Domain;
 using Ee4v.AssetManager.Infrastructure.Datasources.Blm;
 using Ee4v.AssetManager.Infrastructure.Datasources.Eagle;
 using Ee4v.SQLite;
@@ -495,70 +496,40 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 EnsureCollectionExists(connection, requestedIds[i]);
             }
 
-            var requestedIdSet = new HashSet<string>(
-                requestedIds,
-                StringComparer.Ordinal);
-            var movingIds = requestedIds
-                .Where(id => !HasSelectedAncestor(
-                    connection,
-                    id,
-                    requestedIdSet))
-                .ToArray();
-            var targetParentId = string.IsNullOrWhiteSpace(
-                    parentCollectionId)
-                ? null
-                : parentCollectionId;
-            if (targetParentId != null)
+            if (!string.IsNullOrWhiteSpace(parentCollectionId))
             {
-                EnsureCollectionExists(connection, targetParentId);
-                EnsureCollectionCanContainChildren(
-                    connection,
-                    targetParentId);
-                for (var i = 0; i < movingIds.Length; i++)
-                {
-                    if (movingIds[i] == targetParentId ||
-                        IsCollectionDescendant(
-                            connection,
-                            targetParentId,
-                            movingIds[i]))
-                    {
-                        throw new AssetManagerException(
-                            AssetManagerErrorCode.CollectionCycle,
-                            "Collection cycle is not allowed.");
-                    }
-                }
+                EnsureCollectionExists(connection, parentCollectionId);
             }
 
+            var nodes = LoadCollectionPlacementNodes(connection);
+            var placement = CollectionPlacementPolicy.Evaluate(
+                nodes,
+                requestedIds,
+                parentCollectionId,
+                siblingIndex);
+            ThrowIfInvalidPlacement(placement);
+            if (!placement.ChangesPlacement)
+            {
+                return;
+            }
+
+            var movingIds = placement.MovingIds;
+            var targetParentId =
+                placement.TargetParentId.Length == 0
+                    ? null
+                    : placement.TargetParentId;
+            var nodesById = nodes.ToDictionary(
+                node => node.Id,
+                StringComparer.Ordinal);
             var currentParentIds = new HashSet<string>(
                 StringComparer.Ordinal);
-            for (var i = 0; i < movingIds.Length; i++)
+            for (var i = 0; i < movingIds.Count; i++)
             {
-                var currentRelation = connection
-                    .Query<CollectionCollectionRow>(
-                        "SELECT * FROM collection_collection WHERE child_collection_id = ? LIMIT 1",
-                        movingIds[i])
-                    .FirstOrDefault();
-                currentParentIds.Add(currentRelation != null
-                    ? currentRelation.parent_collection_id ?? string.Empty
-                    : string.Empty);
+                currentParentIds.Add(
+                    nodesById[movingIds[i]].ParentId);
             }
 
-            var movingIdSet = new HashSet<string>(
-                movingIds,
-                StringComparer.Ordinal);
-            var targetSiblings = GetCollectionSiblingIds(
-                connection,
-                targetParentId,
-                null)
-                .Where(id => !movingIdSet.Contains(id))
-                .ToList();
-            var targetIndex = siblingIndex < 0
-                ? targetSiblings.Count
-                : Math.Max(
-                    0,
-                    Math.Min(siblingIndex, targetSiblings.Count));
-
-            for (var i = 0; i < movingIds.Length; i++)
+            for (var i = 0; i < movingIds.Count; i++)
             {
                 connection.Execute(
                     "DELETE FROM collection_collection WHERE child_collection_id = ?",
@@ -572,10 +543,9 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 }
             }
 
-            targetSiblings.InsertRange(targetIndex, movingIds);
             NormalizeCollectionOrder(
                 connection,
-                targetSiblings);
+                placement.TargetSiblingIds);
             foreach (var currentParentId in currentParentIds)
             {
                 var normalizedCurrentParentId =
@@ -599,7 +569,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             }
 
             var now = Now();
-            for (var i = 0; i < movingIds.Length; i++)
+            for (var i = 0; i < movingIds.Count; i++)
             {
                 connection.Execute(
                     "UPDATE collection_info SET updated_at = ? WHERE id = ?",
@@ -608,37 +578,66 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             }
         }
 
-        private static bool HasSelectedAncestor(
-            SQLiteConnection connection,
-            string collectionId,
-            ISet<string> selectedIds)
+        private static IReadOnlyList<CollectionPlacementNode>
+            LoadCollectionPlacementNodes(SQLiteConnection connection)
         {
-            var visited = new HashSet<string>(StringComparer.Ordinal);
-            var currentId = collectionId;
-            while (visited.Add(currentId))
+            var parents = connection
+                .Query<CollectionCollectionRow>(
+                    "SELECT * FROM collection_collection")
+                .ToDictionary(
+                    row => row.child_collection_id,
+                    row => row.parent_collection_id,
+                    StringComparer.Ordinal);
+            var smartIds = new HashSet<string>(
+                connection.Query<SmartCollectionRow>(
+                        "SELECT * FROM smart_collection_info")
+                    .Select(row => row.collection_info_id),
+                StringComparer.Ordinal);
+            return connection.Query<CollectionRow>(
+                    "SELECT * FROM collection_info")
+                .Select(row =>
+                {
+                    string parentId;
+                    parents.TryGetValue(row.id, out parentId);
+                    return new CollectionPlacementNode(
+                        row.id,
+                        parentId,
+                        smartIds.Contains(row.id),
+                        row.sort_order);
+                })
+                .ToArray();
+        }
+
+        private static void ThrowIfInvalidPlacement(
+            CollectionPlacementResult placement)
+        {
+            if (placement == null ||
+                placement.Error == CollectionPlacementError.EmptySelection)
             {
-                var relation = connection
-                    .Query<CollectionCollectionRow>(
-                        "SELECT * FROM collection_collection WHERE child_collection_id = ? LIMIT 1",
-                        currentId)
-                    .FirstOrDefault();
-                if (relation == null ||
-                    string.IsNullOrWhiteSpace(
-                        relation.parent_collection_id))
-                {
-                    return false;
-                }
-
-                if (selectedIds.Contains(
-                        relation.parent_collection_id))
-                {
-                    return true;
-                }
-
-                currentId = relation.parent_collection_id;
+                return;
             }
 
-            return false;
+            if (placement.Error == CollectionPlacementError.Cycle)
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.CollectionCycle,
+                    "Collection cycle is not allowed.");
+            }
+
+            if (placement.Error ==
+                CollectionPlacementError.SmartCollectionParent)
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidCollectionHierarchy,
+                    "Smart Collection cannot contain child collections.");
+            }
+
+            if (!placement.IsValid)
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidRequest,
+                    "Collection placement is invalid.");
+            }
         }
 
         private static List<string> GetCollectionSiblingIds(
@@ -692,20 +691,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                     i,
                     collectionIds[i]);
             }
-        }
-
-        private static bool IsCollectionDescendant(SQLiteConnection connection, string candidateChildId, string parentId)
-        {
-            var children = connection.Query<CollectionCollectionRow>("SELECT * FROM collection_collection WHERE parent_collection_id = ?", parentId);
-            for (var i = 0; i < children.Count; i++)
-            {
-                if (children[i].child_collection_id == candidateChildId || IsCollectionDescendant(connection, candidateChildId, children[i].child_collection_id))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private static void InsertSmartCondition(SQLiteConnection connection, string collectionId, SmartCollectionCondition condition)

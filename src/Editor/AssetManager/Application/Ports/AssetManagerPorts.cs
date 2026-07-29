@@ -4,6 +4,21 @@ using Ee4v.AssetManager.Contracts;
 
 namespace Ee4v.AssetManager.Application.Ports
 {
+    internal interface IAssetManagerStore :
+        IAssetCatalogReadStore,
+        IAssetCatalogCommandStore,
+        IAssetFileReadStore,
+        IAssetFileCommandStore,
+        IAssetCollectionReadStore,
+        IAssetCollectionCommandStore,
+        IAssetDependencyReadStore,
+        IAssetDependencyCommandStore,
+        IAssetImportTargetReadStore,
+        IAssetImportTargetCommandStore,
+        IAssetSyncStore
+    {
+    }
+
     internal interface IAssetCatalogReadStore
     {
         AssetCatalogSnapshot LoadCatalogSnapshot();

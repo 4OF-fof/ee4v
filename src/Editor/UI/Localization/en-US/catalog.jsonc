@@ -10,6 +10,9 @@
     "copy": {
       "copied": "Copied"
     },
+    "dismiss": {
+      "tooltip": "Dismiss"
+    },
     "url": {
       "openTooltip": "Open URL"
     }

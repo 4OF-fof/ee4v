@@ -8,45 +8,37 @@ namespace Ee4v.Testing.Application
     public sealed class FeatureTestDescriptorBuilder
     {
         public IReadOnlyList<FeatureTestDescriptor> Build(
-            IEnumerable<Type> registrarTypes)
+            IEnumerable<FeatureTestSuiteAttribute> suites)
         {
-            if (registrarTypes == null)
+            if (suites == null)
             {
-                throw new ArgumentNullException(nameof(registrarTypes));
+                throw new ArgumentNullException(nameof(suites));
             }
 
-            var descriptors = new List<FeatureTestDescriptor>();
-            foreach (var registrarType in registrarTypes
-                .Where(type =>
-                    type != null &&
-                    !type.IsAbstract &&
-                    typeof(IFeatureTestRegistrar).IsAssignableFrom(type))
-                .OrderBy(type => type.FullName, StringComparer.Ordinal))
-            {
-                var registrar = CreateRegistrar(registrarType);
-                var descriptor = registrar.CreateDescriptor();
-                if (descriptor == null)
+            var descriptors = suites
+                .Where(suite => suite != null)
+                .Select(suite =>
                 {
-                    throw new InvalidOperationException(
-                        "Feature test registrar '" +
-                        registrarType.FullName +
-                        "' returned null descriptor.");
-                }
+                    var discoveredCases =
+                        FeatureTestCaseDiscovery.Discover(
+                            suite.AssemblyName);
+                    return new FeatureTestDescriptor(
+                        suite.FeatureScope,
+                        suite.DisplayName,
+                        suite.AssemblyName,
+                        suite.Description,
+                        suite.Order,
+                        discoveredCases,
+                        suite.Category);
+                })
+                .ToArray();
+            return OrderAndValidate(descriptors);
+        }
 
-                var discoveredCases = FeatureTestCaseDiscovery.Discover(
-                    descriptor.AssemblyName);
-                descriptors.Add(new FeatureTestDescriptor(
-                    descriptor.FeatureScope,
-                    descriptor.DisplayName,
-                    descriptor.AssemblyName,
-                    descriptor.Description,
-                    descriptor.Order,
-                    discoveredCases.Count > 0
-                        ? discoveredCases
-                        : descriptor.TestCases,
-                    descriptor.Category));
-            }
-
+        private static IReadOnlyList<FeatureTestDescriptor>
+            OrderAndValidate(
+                IReadOnlyList<FeatureTestDescriptor> descriptors)
+        {
             ValidateNoDuplicates(
                 descriptors,
                 descriptor => descriptor.FeatureScope,
@@ -68,22 +60,6 @@ namespace Ee4v.Testing.Application
                     descriptor => descriptor.AssemblyName,
                     StringComparer.Ordinal)
                 .ToArray();
-        }
-
-        private static IFeatureTestRegistrar CreateRegistrar(Type type)
-        {
-            try
-            {
-                return (IFeatureTestRegistrar)Activator.CreateInstance(type);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException(
-                    "Failed to instantiate feature test registrar '" +
-                    type.FullName +
-                    "'.",
-                    exception);
-            }
         }
 
         private static void ValidateNoDuplicates(

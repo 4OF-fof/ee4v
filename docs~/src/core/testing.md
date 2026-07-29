@@ -9,9 +9,9 @@ window の先頭には、登録された全 suite の状態と全 case の結果
 
 | assembly | namespace | 役割 |
 |---|---|---|
-| `Ee4v.Testing.Contracts.Editor` | `Ee4v.Testing.Contracts` | suite / case metadataとregistrar契約 |
+| `Ee4v.Testing.Contracts.Editor` | `Ee4v.Testing.Contracts` | suite / case metadataとassembly登録attribute |
 | `Ee4v.Testing.Application.Editor` | `Ee4v.Testing.Application` | test case発見、descriptor構築規則、catalog / runner port |
-| `Ee4v.Testing.Infrastructure.Unity.Editor` | `Ee4v.Testing.Infrastructure.Unity` | TypeCache、Unity Test Runner、SessionState adapter |
+| `Ee4v.Testing.Infrastructure.Unity.Editor` | `Ee4v.Testing.Infrastructure.Unity` | assembly登録発見、Unity Test Runner、SessionState adapter |
 | `Ee4v.Testing.Infrastructure.StaticAnalysis.Editor` | `Ee4v.Testing.Infrastructure.StaticAnalysis` | source / localization監査 |
 | `Ee4v.Testing.UI.Editor` | `Ee4v.Testing.UI` | Test List windowと結果presentation |
 | `Ee4v.Testing.Composition.Editor` | `Ee4v.Testing.Composition` | Unity adapterをApplicationのportとしてUIへ注入 |
@@ -26,18 +26,27 @@ feature test は原則 `Editor/<Scope>/Test/Editor` に置きます。
 必要になるもの:
 
 - test asmdef
-- `<Scope>TestRegistrar.cs`
+- assembly に付ける `[FeatureTestSuite(...)]`
 - NUnit test class
 - 必要なら `Editor/AssemblyInfo.cs` の `InternalsVisibleTo`
 
-## Registrar
+## Suite 登録
 
-`Test List` に suite を出すには `Ee4v.Testing.Contracts.IFeatureTestRegistrar`
-を実装します。クラス名は `*TestRegistrar` で終わる必要があります。
-Unity adapterの `FeatureTestRegistry` がこの命名で自動発見し、
-Applicationの `FeatureTestDescriptorBuilder` へ渡します。
+`Test List` に suite を出すには test assembly へ
+`Ee4v.Testing.Contracts.FeatureTestSuiteAttribute` を付けます。
+Unity adapter の `FeatureTestRegistry` が読み込み済み assembly から自動発見し、
+Application の `FeatureTestDescriptorBuilder` へ渡します。
 
-`FeatureTestDescriptor` では以下を決めます。
+```csharp
+[assembly: FeatureTestSuite(
+    "Sample",
+    "Sample",
+    "Ee4v.Sample.Tests.Editor",
+    "Sample module の判断を確認します。",
+    order: 300)]
+```
+
+attribute では以下を決めます。
 
 | field | 内容 |
 |---|---|
