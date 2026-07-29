@@ -102,7 +102,7 @@
     border-bottom-color: var(--ee4v-color-border-subtle);
 }
 
-.ee4v-ui-diff-confirmation__row:last-child {
+.ee4v-ui-diff-confirmation__row--last {
     border-bottom-width: 0;
 }
 
@@ -113,7 +113,7 @@
     border-left-width: 0;
 }
 
-.ee4v-ui-diff-confirmation__value:last-child {
+.ee4v-ui-diff-confirmation__value--incoming {
     border-left-width: var(--ee4v-border-hairline);
     border-left-color: var(--ee4v-color-border-subtle);
 }

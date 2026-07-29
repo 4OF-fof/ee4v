@@ -185,6 +185,7 @@ namespace Ee4v.UI
             itemHeader.Add(heading);
             item.Add(itemHeader);
 
+            VisualElement lastRow = null;
             for (var i = 0; i < state.Fields.Count; i++)
             {
                 var field = state.Fields[i];
@@ -196,10 +197,15 @@ namespace Ee4v.UI
                 var row = new VisualElement();
                 row.AddToClassList(RootClassName + "__row");
                 row.Add(CreateColumnText(field.CurrentValue, RootClassName + "__value"));
-                row.Add(CreateColumnText(field.IncomingValue, RootClassName + "__value"));
+                row.Add(CreateColumnText(
+                    field.IncomingValue,
+                    RootClassName + "__value",
+                    RootClassName + "__value--incoming"));
                 item.Add(row);
+                lastRow = row;
             }
 
+            lastRow?.AddToClassList(RootClassName + "__row--last");
             return item;
         }
 
@@ -208,13 +214,24 @@ namespace Ee4v.UI
             var header = new VisualElement();
             header.AddToClassList(RootClassName + "__column-header");
             header.Add(CreateColumnText(state.CurrentHeader, RootClassName + "__value"));
-            header.Add(CreateColumnText(state.IncomingHeader, RootClassName + "__value"));
+            header.Add(CreateColumnText(
+                state.IncomingHeader,
+                RootClassName + "__value",
+                RootClassName + "__value--incoming"));
             return header;
         }
 
-        private static UiTextElement CreateColumnText(string text, string className)
+        private static UiTextElement CreateColumnText(
+            string text,
+            string className,
+            string modifierClassName = null)
         {
             var label = UiTextFactory.Create(text ?? string.Empty, className);
+            if (!string.IsNullOrEmpty(modifierClassName))
+            {
+                label.AddToClassList(modifierClassName);
+            }
+
             label.SetWhiteSpace(WhiteSpace.Normal);
             return label;
         }
