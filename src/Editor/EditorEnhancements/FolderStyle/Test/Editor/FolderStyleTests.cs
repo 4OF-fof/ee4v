@@ -12,85 +12,6 @@ namespace Ee4v.FolderStyle.Tests
     {
         [Test]
         [FeatureTestCase(
-            "FolderStyle の設定は既定で有効",
-            "初回起動時からAlt操作でフォルダー装飾を編集できることを確認します。",
-            order: 10)]
-        public void Definition_IsEnabledByDefault()
-        {
-            Assert.That(
-                FolderStyleDefinitions.Enabled.DefaultValue,
-                Is.True);
-        }
-
-        [Test]
-        [FeatureTestCase(
-            "FolderStyle のgrid配置を計算できる",
-            "Project Window のgrid表示で元のフォルダーアイコンと同じ領域へ装飾を描画できることを確認します。",
-            order: 20)]
-        public void Layout_UsesProjectFolderIconRect()
-        {
-            var itemRect = new Rect(
-                10f,
-                20f,
-                64f,
-                80f);
-
-            var iconRect = ProjectItemLayout.GetIconRect(
-                itemRect,
-                ProjectItemViewMode.TwoColumns,
-                ProjectItemOrientation.Vertical);
-
-            Assert.That(iconRect.x, Is.EqualTo(9f));
-            Assert.That(iconRect.y, Is.EqualTo(19f));
-            Assert.That(iconRect.width, Is.EqualTo(66f));
-            Assert.That(
-                iconRect.height,
-                Is.EqualTo(62.7f).Within(0.001f));
-        }
-
-        [Test]
-        [FeatureTestCase(
-            "FolderStyle のプリセットは旧版同様に陰影を残す",
-            "プリセットが半透明で、フォルダーアイコン本来の陰影を潰さずに着色できることを確認します。",
-            order: 25)]
-        public void ColorPresets_PreserveFolderIconShading()
-        {
-            var presets = FolderStyleColorPresets.GetAll();
-
-            Assert.That(presets.Count, Is.EqualTo(12));
-            for (var i = 0; i < presets.Count; i++)
-            {
-                Assert.That(
-                    presets[i].a,
-                    Is.EqualTo(0.7f).Within(0.001f));
-            }
-        }
-
-        [Test]
-        [FeatureTestCase(
-            "選択中も装飾アイコンの背景色を変えない",
-            "元アイコンの消去には選択色ではなくProject表示方式ごとの通常背景色を使い、大きな選択色の矩形を作らないことを確認します。",
-            order: 27)]
-        public void RendererBackground_UsesStableProjectBackground()
-        {
-            Assert.That(
-                FolderStyleRenderer.ResolveBackgroundColor(
-                    ProjectItemViewMode.TwoColumns,
-                    ProjectItemOrientation.Vertical,
-                    true),
-                Is.EqualTo((Color)
-                    new Color32(51, 51, 51, 255)));
-            Assert.That(
-                FolderStyleRenderer.ResolveBackgroundColor(
-                    ProjectItemViewMode.TwoColumns,
-                    ProjectItemOrientation.Horizontal,
-                    true),
-                Is.EqualTo((Color)
-                    new Color32(56, 56, 56, 255)));
-        }
-
-        [Test]
-        [FeatureTestCase(
             "色とアイコンを独立して更新できる",
             "色の変更でアイコンを失わず、アイコン解除後に設定済みの色へ戻れることを確認します。",
             order: 30)]
@@ -277,30 +198,6 @@ namespace Ee4v.FolderStyle.Tests
                 reopenedSession.IconGuids,
                 Is.EqualTo(
                     new[] { "first", "second" }));
-        }
-
-        [Test]
-        [FeatureTestCase(
-            "FolderStyle popupをdesktop内へ収める",
-            "Project itemが画面端にある場合も編集popup全体がdesktop bounds内へ配置されることを確認します。",
-            order: 80)]
-        public void WindowLayout_ClampsToDesktopBounds()
-        {
-            var desktop =
-                new Rect(100f, 50f, 800f, 600f);
-
-            var result =
-                PopupWindowLayout.ClampToDesktop(
-                        new Vector2(850f, 620f),
-                        new Vector2(360f, 268f),
-                        desktop);
-
-            Assert.That(
-                result.xMax,
-                Is.EqualTo(desktop.xMax));
-            Assert.That(
-                result.yMax,
-                Is.EqualTo(desktop.yMax));
         }
 
         private sealed class MemoryFolderStyleRepository

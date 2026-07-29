@@ -1,12 +1,6 @@
-using System.Collections;
-using System.Linq;
 using Ee4v.Testing.Contracts;
 using Ee4v.UI;
 using NUnit.Framework;
-using UnityEditor;
-using UnityEngine;
-using UnityEngine.TestTools;
-using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI.Tests
 {
@@ -118,27 +112,6 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
-        public void HistoryNavigation_UsesProjectTabArrowGlyphs()
-        {
-            var navigation = new HistoryNavigation();
-            var buttons = navigation.Query<UiButton>(
-                    className:
-                    "ee4v-ui-history-navigation__icon-button")
-                .ToList();
-
-            Assert.That(buttons.Count, Is.EqualTo(2));
-            Assert.That(
-                buttons.Select(button =>
-                    button.LabelElement.Text),
-                Is.EqualTo(new[] { "\u2190", "\u2192" }));
-            Assert.That(
-                buttons.All(button =>
-                    button.LabelElement.GetType().Name ==
-                    "ImguiUiTextElement"),
-                Is.True);
-        }
-
-        [Test]
         public void History_CanMoveToSelectedOverlayEntry()
         {
             var history = new AssetItemGridHistory();
@@ -190,70 +163,6 @@ namespace Ee4v.AssetManager.UI.Tests
                 HistoryNavigationMenu.CreateState(rows, 2);
             Assert.That(configuredState.Items.Count, Is.EqualTo(2));
             Assert.That(configuredState.Items[1].Label, Is.EqualTo("2"));
-        }
-
-        [UnityTest]
-        [FeatureTestCase(
-            "履歴ボタンの右クリックで履歴一覧を表示する",
-            "AssetManager の戻るボタンを右クリックしたときに履歴メニューが開くことを確認します。",
-            order: 440,
-            category: FeatureTestCategory.Ui)]
-        public IEnumerator HistoryNavigation_ContextClickShowsHistoryMenu()
-        {
-            var window = ScriptableObject.CreateInstance<EditorWindow>();
-            ContextMenuState shownState = null;
-            var navigation = new HistoryNavigation(
-                showHistoryMenu: (_, rows, maximumRows) =>
-                    shownState = HistoryNavigationMenu.CreateState(
-                        rows,
-                        maximumRows));
-            navigation.SetState(new AssetItemGridHistoryState(
-                new AssetItemGridHistoryEntry(
-                    AssetItemGridHistoryEntryKind.View,
-                    "current",
-                    "Current"),
-                true,
-                false,
-                new[]
-                {
-                    new AssetItemGridHistoryEntry(
-                        AssetItemGridHistoryEntryKind.FileList,
-                        "previous",
-                        "Previous",
-                        "item-1",
-                        "Avatar")
-                }));
-            window.rootVisualElement.Add(navigation);
-            window.Show();
-            yield return null;
-
-            try
-            {
-                var backButton = navigation.Q<Button>(
-                    className: "ee4v-ui-history-navigation__icon-button");
-                Assert.That(backButton.tooltip, Is.Null.Or.Empty);
-                using (var evt = ContextClickEvent.GetPooled(
-                           backButton.worldBound.center,
-                           (int)MouseButton.RightMouse,
-                           1,
-                           Vector2.zero,
-                           EventModifiers.None))
-                {
-                    evt.target = backButton;
-                    backButton.SendEvent(evt);
-                }
-
-                Assert.That(shownState, Is.Not.Null);
-                Assert.That(shownState.Items.Count, Is.EqualTo(1));
-                Assert.That(
-                    shownState.Items[0].Label,
-                    Is.EqualTo("Avatar"));
-                Assert.That(shownState.Items[0].Enabled, Is.True);
-            }
-            finally
-            {
-                window.Close();
-            }
         }
 
     }

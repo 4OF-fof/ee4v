@@ -85,19 +85,6 @@ namespace Ee4v.HiddenObjects.Tests
             Assert.That(groups[0].Roots[0].Name, Is.EqualTo("Hidden B"));
         }
 
-        [Test]
-        [FeatureTestCase(
-            "Hierarchy button は既定で有効",
-            "Hidden Objects への入口が初回起動時に表示されることを確認します。",
-            order: 40)]
-        public void Definition_HierarchyButtonIsEnabledByDefault()
-        {
-            Assert.That(
-                HiddenObjectsDefinitions
-                    .HierarchyButtonEnabled.DefaultValue,
-                Is.True);
-        }
-
         private static HiddenObjectSnapshotItem Item(
             int instanceId,
             int parentInstanceId,

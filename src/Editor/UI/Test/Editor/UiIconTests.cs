@@ -3,7 +3,6 @@ using Ee4v.Testing.Contracts;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace Ee4v.UI.Tests
 {
@@ -124,74 +123,5 @@ namespace Ee4v.UI.Tests
                 Is.EqualTo(expectedStem));
         }
 
-        [Test]
-        public void FolderZip_UsesGeneratedPngAsset()
-        {
-            var resolved =
-                UiFluentIconResolver.TryResolve(
-                    UiFluentIcon.FolderZip,
-                    out var texture);
-
-            Assert.That(resolved, Is.True);
-            Assert.That(
-                texture.width,
-                Is.EqualTo(512));
-            Assert.That(
-                UiFluentIconResolver.GetAssetPath(
-                    UiFluentIcon.FolderZip),
-                Does.EndWith(
-                    "/FluentUiSystemIcons/Png512/" +
-                    "folder_zip.png"));
-        }
-
-        [TestCase(
-            "FolderBranchFork",
-            "folder_branch_fork.png")]
-        [TestCase(
-            "FolderLayer",
-            "folder_layer.png")]
-        public void CompositeGroupIcons_UseGeneratedPngAssets(
-            string iconName,
-            string fileName)
-        {
-            var icon =
-                (UiFluentIcon)Enum.Parse(
-                    typeof(UiFluentIcon),
-                    iconName);
-            var resolved =
-                UiFluentIconResolver.TryResolve(
-                    icon,
-                    out var texture);
-
-            Assert.That(resolved, Is.True);
-            Assert.That(texture.width, Is.EqualTo(512));
-            Assert.That(texture.height, Is.EqualTo(512));
-            Assert.That(
-                UiFluentIconResolver.GetAssetPath(icon),
-                Does.EndWith(
-                    "/FluentUiSystemIcons/Png512/" +
-                    fileName));
-        }
-
-        [Test]
-        public void Icon_UsesGeneratedTextureForFluentSource()
-        {
-            UiFluentIconResolver.TryResolve(
-                UiFluentIcon.FolderZip,
-                out var expectedTexture);
-            var icon = new Icon(
-                IconState.FromFluentIcon(
-                    UiFluentIcon.FolderZip,
-                    size: 44f));
-
-            var image = icon.Q<Image>();
-
-            Assert.That(
-                image,
-                Is.Not.Null);
-            Assert.That(
-                image.image,
-                Is.SameAs(expectedTexture));
-        }
     }
 }

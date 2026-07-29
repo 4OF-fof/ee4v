@@ -30,6 +30,17 @@
 - 特に Unity の非公開・internal API、reflection、内部フィールドへのアクセスは feature 側で直接行わず、原則 `Editor/Core/Internal/EditorAPI` の facade と `Backends` に分離してください。
 - 非公開 API が利用できない場合も機能全体を壊さないよう、facade は `Try...` や fallback を提供してください。変更時は関連テストと `docs~/src/maintenance/unity-upgrade.md` も更新してください。
 
+## テスト方針
+
+- テストは、非自明な判断、invariant、状態遷移、外部技術との境界、障害時 fallback、Localization・Architecture・UI実装規約など、壊れたことを自動検出する必要がある契約に限定してください。
+- テストを追加する前に、同じ保証が別レイヤーや別assemblyの既存テストにないか確認してください。同じinvariantをUI、Application、Infrastructureで重ねて確認せず、原則として判断を所有する最も内側のレイヤーで1回だけテストしてください。境界固有の変換、通知順序、永続化、failure handlingが別に壊れ得る場合だけ、その境界のテストを追加してください。
+- getter、既定値の転記、constructor引数の保持、privateな要素数やclass構造など、実装をそのままなぞるだけのテストは追加しないでください。列挙値や表示variantごとの同型テストも、固有のfailure modeがなければdata-driven testへまとめるか削除してください。
+- UI CatalogにstoryまたはscreenがあるUIについて、見た目や通常操作をNUnit / Unity Testで重複確認しないでください。座標、寸法、余白、色、USS class、表示順、text・iconの見え方、通常のclick、focus、foldout、drag、context menu、popup操作はCatalogで確認し、必要なstateや操作presetをCatalog側へ追加してください。
+- UIの重要な判断はUI component内へ置かずpure logicへ分離し、そのlogicだけをunit testしてください。Catalogで再現できないUnity lifecycle、external adapter、fallback、複雑なfailure handlingに固有の回帰がある場合に限り、UI境界の自動テストを追加してください。
+- Catalogで見える結果だけでは保証できない実装規約は自動テストを維持してください。具体的にはLocalization key監査、asmdefと依存方向の監査、`UiTextFactory`利用、標準field / `Foldout`の空label、`Button.text`禁止、typography classのIMGUI fallback、design token整合性、Catalog登録・stylesheet網羅性が該当します。
+- UIの不具合を修正するときは、まずCatalogのstory / presetで再現可能にしてください。見た目や通常操作だけの回帰テストは追加せず、原因がpure logic、実装規約、Unity固有境界のいずれかに分離できる場合だけ、その最小単位へテストを追加してください。
+- 実装変更で既存テストの保証が別のテストやCatalogへ移った場合は、重複した旧テストを同じ変更内で削除してください。
+
 ## クリーンアーキテクチャ・疎結合
 
 - module は配置上のカテゴリではなく、単独で有効化・テスト・変更できる機能境界として定義してください。カテゴリディレクトリは module の assembly、namespace、設定、初期化処理を所有しません。

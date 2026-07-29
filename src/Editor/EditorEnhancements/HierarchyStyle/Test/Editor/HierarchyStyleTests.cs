@@ -11,18 +11,6 @@ namespace Ee4v.HierarchyStyle.Tests
     {
         [Test]
         [FeatureTestCase(
-            "HierarchyStyle は既定で有効",
-            "新しいHierarchy装飾が設定画面から無効化でき、既定では利用可能なことを確認します。",
-            order: 10)]
-        public void Definition_IsEnabledByDefault()
-        {
-            Assert.That(
-                HierarchyStyleDefinitions.Enabled.DefaultValue,
-                Is.True);
-        }
-
-        [Test]
-        [FeatureTestCase(
             "最も近い背景色を子へ継承する",
             "自身からrootへ並べた設定のうち最初の明示背景色を採用し、子の個別設定を優先することを確認します。",
             order: 20)]
@@ -192,65 +180,6 @@ namespace Ee4v.HierarchyStyle.Tests
                     1,
                     new[] { 1, 2 }),
                 Is.EqualTo(new[] { 1, 2 }));
-        }
-
-        [Test]
-        [FeatureTestCase(
-            "背景overlayをHierarchy行全体へ描画する",
-            "深度に依存せず一定の左端から現在のHierarchy幅まで背景領域を計算することを確認します。",
-            order: 80)]
-        public void Renderer_UsesStableFullRowBackground()
-        {
-            var rect =
-                HierarchyStyleRenderer.GetBackgroundRect(
-                    new Rect(120f, 24f, 200f, 16f),
-                    500f);
-
-            Assert.That(rect.x, Is.EqualTo(32f));
-            Assert.That(rect.y, Is.EqualTo(24f));
-            Assert.That(rect.width, Is.EqualTo(468f));
-            Assert.That(rect.height, Is.EqualTo(16f));
-        }
-
-        [Test]
-        [FeatureTestCase(
-            "fallback iconをHierarchy標準位置へ描画する",
-            "SceneHierarchy internal APIが利用できない場合もHierarchy item内の標準icon領域へだけ描画することを確認します。",
-            order: 85)]
-        public void Renderer_UsesHierarchyItemIconRect()
-        {
-            var rect =
-                HierarchyStyleRenderer.GetIconRect(
-                    new Rect(120f, 24f, 200f, 18f));
-
-            Assert.That(rect.x, Is.EqualTo(120f));
-            Assert.That(rect.y, Is.EqualTo(25f));
-            Assert.That(rect.width, Is.EqualTo(16f));
-            Assert.That(rect.height, Is.EqualTo(16f));
-        }
-
-        [Test]
-        [FeatureTestCase(
-            "HierarchyStyle popupをdesktop内へ収める",
-            "Hierarchy項目が画面端にある場合も編集popup全体をdesktop bounds内へ配置することを確認します。",
-            order: 90)]
-        public void WindowLayout_ClampsToDesktopBounds()
-        {
-            var desktop =
-                new Rect(100f, 50f, 800f, 600f);
-
-            var result =
-                PopupWindowLayout.ClampToDesktop(
-                        new Vector2(850f, 620f),
-                        new Vector2(360f, 318f),
-                        desktop);
-
-            Assert.That(
-                result.xMax,
-                Is.EqualTo(desktop.xMax));
-            Assert.That(
-                result.yMax,
-                Is.EqualTo(desktop.yMax));
         }
 
         private sealed class MemoryHierarchyStyleRepository

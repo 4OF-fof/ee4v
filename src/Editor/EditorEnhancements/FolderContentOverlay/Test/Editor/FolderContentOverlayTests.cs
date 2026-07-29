@@ -30,46 +30,6 @@ namespace Ee4v.FolderContentOverlay.Tests
 
         [Test]
         [FeatureTestCase(
-            "FolderContentOverlay のgrid配置を計算できる",
-            "Project Window のgrid表示でオーバーレイがフォルダアイコン右下へ配置されることを確認します。",
-            order: 10)]
-        public void Layout_PlacesOverlayAtBottomRight()
-        {
-            var itemRect = new Rect(10f, 20f, 64f, 80f);
-
-            var iconRect =
-                FolderContentOverlayLayout.GetFolderIconRect(
-                    itemRect,
-                    ProjectItemViewMode.TwoColumns,
-                    ProjectItemOrientation.Vertical);
-            var overlayRect =
-                FolderContentOverlayLayout.GetOverlayRect(iconRect);
-
-            Assert.That(iconRect.x, Is.EqualTo(9f));
-            Assert.That(iconRect.y, Is.EqualTo(19f));
-            Assert.That(iconRect.width, Is.EqualTo(66f));
-            Assert.That(iconRect.height, Is.EqualTo(62.7f).Within(0.001f));
-            Assert.That(overlayRect.xMax, Is.EqualTo(iconRect.xMax));
-            Assert.That(overlayRect.yMax, Is.EqualTo(iconRect.yMax));
-            Assert.That(
-                overlayRect.size,
-                Is.EqualTo(iconRect.size * 0.5f));
-        }
-
-        [Test]
-        [FeatureTestCase(
-            "FolderContentOverlay の設定は既定で有効",
-            "FolderContentOverlay が初回起動時に有効であることを確認します。",
-            order: 20)]
-        public void Definition_IsEnabledByDefault()
-        {
-            Assert.That(
-                FolderContentOverlayDefinitions.Enabled.DefaultValue,
-                Is.EqualTo(true));
-        }
-
-        [Test]
-        [FeatureTestCase(
             "同じ代表iconを親folderへ伝播できる",
             "子folderがすべて同じ代表iconを持つ場合に祖先folderも同じiconを返すことを確認します。",
             order: 30)]

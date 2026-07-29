@@ -107,23 +107,6 @@ namespace Ee4v.HiddenObjects.Tests
                 Is.False);
         }
 
-        [Test]
-        [FeatureTestCase(
-            "NDMF除外patternがsettingの既定値に登録される",
-            "初回起動時からNDMFのpreview Sceneとactivator objectが一覧へ出ない設定であることを確認します。",
-            order: 110)]
-        public void Definitions_DefaultExclusionsTargetNdmf()
-        {
-            Assert.That(
-                HiddenObjectsDefinitions
-                    .ExcludedScenePatterns.DefaultValue,
-                Is.EqualTo("*NDMF*"));
-            Assert.That(
-                HiddenObjectsDefinitions
-                    .ExcludedObjectPatterns.DefaultValue,
-                Is.EqualTo("nadena.dev.ndmf*Activator"));
-        }
-
         private static HiddenObjectSnapshotItem Item(
             int instanceId,
             int parentInstanceId,

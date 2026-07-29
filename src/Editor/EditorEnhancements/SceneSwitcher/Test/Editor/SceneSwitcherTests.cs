@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Ee4v.Testing.Contracts;
 using NUnit.Framework;
-using UnityEngine;
 
 namespace Ee4v.SceneSwitcher.Tests
 {
@@ -188,21 +187,6 @@ namespace Ee4v.SceneSwitcher.Tests
 
         [Test]
         [FeatureTestCase(
-            "Scene Switcherは既定で有効",
-            "Hierarchyの入口と新規Scene保存先の既定値を確認します。",
-            order: 50)]
-        public void Definitions_HaveExpectedDefaults()
-        {
-            Assert.That(
-                SceneSwitcherDefinitions.Enabled.DefaultValue,
-                Is.EqualTo(true));
-            Assert.That(
-                SceneSwitcherDefinitions.CreateFolder.DefaultValue,
-                Is.EqualTo("Assets/Scene"));
-        }
-
-        [Test]
-        [FeatureTestCase(
             "popupを開いたSceneを切替元として渡す",
             "open状態のSceneを選択した場合も、HierarchyでクリックしたScene handleと切替先をUnity adapterへ渡すことを確認します。",
             order: 60)]
@@ -250,38 +234,6 @@ namespace Ee4v.SceneSwitcher.Tests
             Assert.That(added, Is.True);
             Assert.That(gateway.LastAddedPath, Is.EqualTo(path));
             Assert.That(gateway.LastSwitchedPath, Is.Null);
-        }
-
-        [Test]
-        [FeatureTestCase(
-            "popup配置を旧Scene Switcherと揃える",
-            "Hierarchy左端48px、右端46px、行高16pxのanchorを使い、scrollbar分だけ縮むことを確認します。",
-            order: 70)]
-        public void HierarchyTrigger_UsesLegacyPopupAnchor()
-        {
-            var withoutScrollbar =
-                SceneSwitcherHierarchyTrigger.GetAnchorRect(
-                    new Rect(0f, 24f, 320f, 18f),
-                    320f);
-            var withScrollbar =
-                SceneSwitcherHierarchyTrigger.GetAnchorRect(
-                    new Rect(0f, 24f, 306f, 18f),
-                    320f);
-
-            Assert.That(
-                withoutScrollbar,
-                Is.EqualTo(new Rect(
-                    48f,
-                    24f,
-                    226f,
-                    16f)));
-            Assert.That(
-                withScrollbar,
-                Is.EqualTo(new Rect(
-                    48f,
-                    24f,
-                    212f,
-                    16f)));
         }
 
         private sealed class MemoryRepository
