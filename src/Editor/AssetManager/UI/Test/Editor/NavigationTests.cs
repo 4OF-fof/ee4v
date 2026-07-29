@@ -83,6 +83,26 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
+        public void MainViewController_CachesOnlyFileAndGroupChildren()
+        {
+            var itemListCaches = typeof(MainViewController)
+                .GetFields(
+                    BindingFlags.Instance |
+                    BindingFlags.NonPublic)
+                .Where(field =>
+                    field.FieldType ==
+                    typeof(Dictionary<
+                        string,
+                        AssetItemGridList>))
+                .Select(field => field.Name)
+                .ToArray();
+
+            Assert.That(
+                itemListCaches,
+                Is.EqualTo(new[] { "_childItemCache" }));
+        }
+
+        [Test]
         public void SmartCollectionRuleChange_InvalidatesAffectedViews()
         {
             var change = new AssetManagerChange(

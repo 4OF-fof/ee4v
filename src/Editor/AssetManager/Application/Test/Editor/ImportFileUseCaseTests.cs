@@ -78,6 +78,9 @@ namespace Ee4v.AssetManager.Application.Tests
 
             public AssetItem GetItem(string itemId) => Item;
 
+            public AssetCatalogSnapshot LoadCatalogSnapshot() =>
+                throw new NotSupportedException();
+
             public IReadOnlyList<AssetFile> GetFiles(string itemId, AssetFileQuery query)
             {
                 GetFilesCallCount++;

@@ -435,6 +435,34 @@ var result = assetManager.SearchItems(new AssetItemQuery
 });
 ```
 
+### `IAssetManager.SearchItemSummaries`
+
+Main View 向けの軽量 Item 一覧を検索します。戻り値の `AssetItem` は `Id`、`Name`、
+`Description`、availability、作成・更新日時だけを持ち、Booth、tag、file の詳細は
+含みません。
+
+```csharp
+public AssetSearchResult SearchItemSummaries(AssetItemQuery query)
+```
+
+Effects:
+
+- Application service が初回呼び出し時に一覧用 catalog snapshot を構築する。
+- All、Booth 情報の有無、未分類、通常 / Smart Collection、keyword の検索と paging は
+  同じ snapshot 上で評価し、表示切替では DB を再読込しない。
+- Main View は条件別の Item 一覧 cache を重ねず、現在描画中の raw list だけを
+  Collection card の再合成用 view state として保持する。
+- `IAssetManagerSnapshotReader` は snapshot を新規構築せず、準備済みの一覧と
+  thumbnail だけを `Try...` で返す。Main View は通常の表示切替でこの経路を使い、
+  loading 表示を挟まず同期的に描画する。未取得 thumbnail は空の画像 state で
+  先に描画し、表示を止めず background で補完する。
+- datasource sync、item / tag / file、Collection、Smart Collection rule の変更後は
+  snapshot を破棄し、次の検索で一度だけ再構築する。
+- `Lifecycle`、`TagIds`、`SourceTypes` を指定する詳細条件は DB 検索へ fallback する。
+- thumbnail は item ID 単位で別に保持し、未取得 item だけを読み込む。
+  thumbnail が存在しない item も取得済みとして記録し、表示切替ごとの再問い合わせを
+  行わない。
+
 ### `IAssetManager.GetItem`
 
 Item 詳細を取得します。

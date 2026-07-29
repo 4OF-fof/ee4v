@@ -26,21 +26,29 @@ namespace Ee4v.AssetManager.UI
 
     internal sealed class MainViewLoadResult
     {
-        public MainViewLoadResult(string cacheKey, AssetItemGridList items, Exception error, bool canceled)
+        public MainViewLoadResult(
+            string contentKey,
+            AssetItemGridList items,
+            Exception error,
+            bool canceled,
+            bool silent)
         {
-            CacheKey = cacheKey ?? string.Empty;
+            ContentKey = contentKey ?? string.Empty;
             Items = items;
             Error = error;
             Canceled = canceled;
+            Silent = silent;
         }
 
-        public string CacheKey { get; }
+        public string ContentKey { get; }
 
         public AssetItemGridList Items { get; }
 
         public Exception Error { get; }
 
         public bool Canceled { get; }
+
+        public bool Silent { get; }
     }
 
     internal sealed class TagListLoadResult
@@ -69,9 +77,11 @@ namespace Ee4v.AssetManager.UI
     internal sealed class MainViewController : IDisposable
     {
         private readonly IAssetManager _assetManager;
+        private readonly IAssetManagerSnapshotReader _snapshotReader;
         private readonly IAssetManagerUiPreferences _preferences;
         private readonly IAssetManagerUiScheduler _scheduler;
-        private readonly Dictionary<string, AssetItemGridList> _itemCache =
+        private readonly Dictionary<string, AssetItemGridList>
+            _childItemCache =
             new Dictionary<string, AssetItemGridList>(StringComparer.Ordinal);
         private readonly Dictionary<string, IReadOnlyList<AssetTag>> _tagCache =
             new Dictionary<string, IReadOnlyList<AssetTag>>(StringComparer.Ordinal);
@@ -93,6 +103,8 @@ namespace Ee4v.AssetManager.UI
             IAssetManagerUiScheduler scheduler = null)
         {
             _assetManager = assetManager ?? AssetManagerUiDependencies.AssetManager;
+            _snapshotReader =
+                _assetManager as IAssetManagerSnapshotReader;
             _preferences = preferences ?? AssetManagerUiDependencies.Preferences;
             _scheduler = scheduler ?? AssetManagerUiDependencies.Scheduler;
             _preferences.Preload();
@@ -289,13 +301,14 @@ namespace Ee4v.AssetManager.UI
             CancelPendingLoad();
             _activationCount = 1;
             Deactivate();
-            _itemCache.Clear();
+            _childItemCache.Clear();
             _tagCache.Clear();
         }
 
         public void StartLoad(
-            string cacheKey,
-            Func<CancellationToken, AssetItemGridList> load)
+            string contentKey,
+            Func<CancellationToken, AssetItemGridList> load,
+            bool silent = false)
         {
             if (load == null)
             {
@@ -323,10 +336,11 @@ namespace Ee4v.AssetManager.UI
                 }
 
                 LoadCompleted?.Invoke(new MainViewLoadResult(
-                    cacheKey,
+                    contentKey,
                     result.Succeeded ? result.Value : null,
                     result.Error,
-                    result.Canceled));
+                    result.Canceled,
+                    silent));
             });
         }
 
@@ -379,14 +393,21 @@ namespace Ee4v.AssetManager.UI
             });
         }
 
-        public bool TryGetCachedItems(string cacheKey, out AssetItemGridList itemList)
+        public bool TryGetCachedChildren(
+            string cacheKey,
+            out AssetItemGridList itemList)
         {
-            return _itemCache.TryGetValue(cacheKey ?? string.Empty, out itemList);
+            return _childItemCache.TryGetValue(
+                cacheKey ?? string.Empty,
+                out itemList);
         }
 
-        public void StoreCachedItems(string cacheKey, AssetItemGridList itemList)
+        public void StoreCachedChildren(
+            string cacheKey,
+            AssetItemGridList itemList)
         {
-            _itemCache[cacheKey ?? string.Empty] = itemList ?? new AssetItemGridList(null);
+            _childItemCache[cacheKey ?? string.Empty] =
+                itemList ?? new AssetItemGridList(null);
         }
 
         public bool TryGetCachedTags(string cacheKey, out IReadOnlyList<AssetTag> tags)
@@ -399,9 +420,8 @@ namespace Ee4v.AssetManager.UI
             _tagCache[cacheKey ?? string.Empty] = tags ?? Array.Empty<AssetTag>();
         }
 
-        public void ClearCachedItems()
+        public void ClearCachedTags()
         {
-            _itemCache.Clear();
             _tagCache.Clear();
         }
 
@@ -410,7 +430,7 @@ namespace Ee4v.AssetManager.UI
             return new MainViewRequest(viewId, keyword);
         }
 
-        public string CreateCacheKey(MainViewRequest request)
+        public string CreateContentKey(MainViewRequest request)
         {
             var viewId = request != null ? request.ViewId : string.Empty;
             var keyword = request != null ? request.Keyword : string.Empty;
@@ -422,17 +442,90 @@ namespace Ee4v.AssetManager.UI
         {
             var query = CreateQuery(request);
             var result = _assetManager.SearchItemSummaries(query);
-            var items = new List<AssetItemGridListItem>();
             var resultItems =
                 result != null && result.Items != null
                     ? result.Items
                     : Array.Empty<AssetItem>();
+            var previewItemsByCollection =
+                LoadCollectionPreviewItems(
+                    request,
+                    cancellationToken);
 
             cancellationToken.ThrowIfCancellationRequested();
-            var thumbnails = _assetManager.GetThumbnails(resultItems
-                .Where(item => item != null)
-                .Select(item => item.Id)
-                .ToArray());
+            var thumbnails = _assetManager.GetThumbnails(
+                CollectItemIds(
+                    resultItems,
+                    previewItemsByCollection));
+            return CreateItemList(
+                resultItems,
+                previewItemsByCollection,
+                thumbnails,
+                cancellationToken);
+        }
+
+        public bool TryLoadItemsImmediately(
+            MainViewRequest request,
+            out AssetItemGridList itemList,
+            out bool requiresThumbnailLoad)
+        {
+            itemList = null;
+            requiresThumbnailLoad = false;
+            if (_snapshotReader == null)
+            {
+                return false;
+            }
+
+            AssetSearchResult result;
+            if (!_snapshotReader.TrySearchItemSummaries(
+                    CreateQuery(request),
+                    out result))
+            {
+                return false;
+            }
+
+            var resultItems =
+                result != null && result.Items != null
+                    ? result.Items
+                    : Array.Empty<AssetItem>();
+            IReadOnlyDictionary<
+                string,
+                IReadOnlyList<AssetItem>>
+                previewItemsByCollection;
+            if (!TryLoadCollectionPreviewItems(
+                    request,
+                    out previewItemsByCollection))
+            {
+                return false;
+            }
+
+            IReadOnlyDictionary<string, AssetThumbnail>
+                thumbnails;
+            var thumbnailsReady =
+                _snapshotReader.TryGetThumbnails(
+                    CollectItemIds(
+                        resultItems,
+                        previewItemsByCollection),
+                    out thumbnails);
+            itemList = CreateItemList(
+                resultItems,
+                previewItemsByCollection,
+                thumbnails,
+                CancellationToken.None);
+            requiresThumbnailLoad = !thumbnailsReady;
+            return true;
+        }
+
+        private AssetItemGridList CreateItemList(
+            IReadOnlyList<AssetItem> resultItems,
+            IReadOnlyDictionary<
+                string,
+                IReadOnlyList<AssetItem>>
+                previewItemsByCollection,
+            IReadOnlyDictionary<string, AssetThumbnail>
+                thumbnails,
+            CancellationToken cancellationToken)
+        {
+            var items = new List<AssetItemGridListItem>();
             for (var i = 0; i < resultItems.Count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -448,8 +541,9 @@ namespace Ee4v.AssetManager.UI
             }
 
             var collectionPreviewStates =
-                LoadCollectionPreviewStates(
-                    request,
+                CreateCollectionPreviewStates(
+                    previewItemsByCollection,
+                    thumbnails,
                     cancellationToken);
             return new AssetItemGridList(
                 items,
@@ -517,39 +611,18 @@ namespace Ee4v.AssetManager.UI
 
         private IReadOnlyDictionary<
                 string,
-                IReadOnlyList<ItemCardState>>
-            LoadCollectionPreviewStates(
+                IReadOnlyList<AssetItem>>
+            LoadCollectionPreviewItems(
                 MainViewRequest request,
                 CancellationToken cancellationToken)
         {
-            var previews =
-                new Dictionary<
-                    string,
-                    IReadOnlyList<ItemCardState>>(
-                    StringComparer.Ordinal);
-            string collectionId;
-            if (!AssetManagerCollectionViewId.TryDecode(
-                    request != null
-                        ? request.ViewId
-                        : string.Empty,
-                    out collectionId))
-            {
-                return previews;
-            }
-
-            var children = GetChildCollections(
-                _collections,
-                collectionId,
-                request != null
-                    ? request.Keyword
-                    : string.Empty);
             var previewItemsByCollection =
                 new Dictionary<
                     string,
                     IReadOnlyList<AssetItem>>(
                     StringComparer.Ordinal);
-            var previewItemIds = new HashSet<string>(
-                StringComparer.Ordinal);
+            var children =
+                GetPreviewCollections(request);
             for (var i = 0; i < children.Count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -567,43 +640,132 @@ namespace Ee4v.AssetManager.UI
                         : Array.Empty<AssetItem>();
                 previewItemsByCollection[child.Id] =
                     previewItems;
-                for (var itemIndex = 0;
-                     itemIndex < previewItems.Count;
-                     itemIndex++)
-                {
-                    var item = previewItems[itemIndex];
-                    if (item != null &&
-                        !string.IsNullOrWhiteSpace(item.Id))
-                    {
-                        previewItemIds.Add(item.Id);
-                    }
-                }
             }
 
-            cancellationToken.ThrowIfCancellationRequested();
-            var thumbnails = previewItemIds.Count > 0
-                ? _assetManager.GetThumbnails(
-                    previewItemIds.ToArray())
-                : new Dictionary<string, AssetThumbnail>(
+            return previewItemsByCollection;
+        }
+
+        private bool TryLoadCollectionPreviewItems(
+            MainViewRequest request,
+            out IReadOnlyDictionary<
+                string,
+                IReadOnlyList<AssetItem>>
+                previewItemsByCollection)
+        {
+            var previews =
+                new Dictionary<
+                    string,
+                    IReadOnlyList<AssetItem>>(
                     StringComparer.Ordinal);
+            var children =
+                GetPreviewCollections(request);
             for (var i = 0; i < children.Count; i++)
             {
-                cancellationToken.ThrowIfCancellationRequested();
                 var child = children[i];
-                IReadOnlyList<AssetItem> previewItems;
-                if (!previewItemsByCollection.TryGetValue(
-                        child.Id,
-                        out previewItems))
+                AssetSearchResult result;
+                if (!_snapshotReader.TrySearchItemSummaries(
+                        new AssetItemQuery
+                        {
+                            CollectionId = child.Id,
+                            Limit = 3
+                        },
+                        out result))
                 {
-                    continue;
+                    previewItemsByCollection = null;
+                    return false;
                 }
 
+                previews[child.Id] =
+                    result != null && result.Items != null
+                        ? result.Items
+                        : Array.Empty<AssetItem>();
+            }
+
+            previewItemsByCollection = previews;
+            return true;
+        }
+
+        private IReadOnlyList<AssetCollection>
+            GetPreviewCollections(MainViewRequest request)
+        {
+            string collectionId;
+            if (!AssetManagerCollectionViewId.TryDecode(
+                    request != null
+                        ? request.ViewId
+                        : string.Empty,
+                    out collectionId))
+            {
+                return Array.Empty<AssetCollection>();
+            }
+
+            return GetChildCollections(
+                _collections,
+                collectionId,
+                request != null
+                    ? request.Keyword
+                    : string.Empty);
+        }
+
+        private static IReadOnlyList<string> CollectItemIds(
+            IReadOnlyList<AssetItem> resultItems,
+            IReadOnlyDictionary<
+                string,
+                IReadOnlyList<AssetItem>>
+                previewItemsByCollection)
+        {
+            var itemIds =
+                new HashSet<string>(StringComparer.Ordinal);
+            AddItemIds(itemIds, resultItems);
+            foreach (var pair in previewItemsByCollection)
+            {
+                AddItemIds(itemIds, pair.Value);
+            }
+
+            return itemIds.ToArray();
+        }
+
+        private static void AddItemIds(
+            ISet<string> itemIds,
+            IReadOnlyList<AssetItem> items)
+        {
+            for (var i = 0; i < items.Count; i++)
+            {
+                var item = items[i];
+                if (item != null &&
+                    !string.IsNullOrWhiteSpace(item.Id))
+                {
+                    itemIds.Add(item.Id);
+                }
+            }
+        }
+
+        private static IReadOnlyDictionary<
+                string,
+                IReadOnlyList<ItemCardState>>
+            CreateCollectionPreviewStates(
+                IReadOnlyDictionary<
+                    string,
+                    IReadOnlyList<AssetItem>>
+                    previewItemsByCollection,
+                IReadOnlyDictionary<string, AssetThumbnail>
+                    thumbnails,
+                CancellationToken cancellationToken)
+        {
+            var previews =
+                new Dictionary<
+                    string,
+                    IReadOnlyList<ItemCardState>>(
+                    StringComparer.Ordinal);
+            foreach (var pair in previewItemsByCollection)
+            {
+                var previewItems = pair.Value;
                 var states = new List<ItemCardState>(
                     previewItems.Count);
                 for (var itemIndex = 0;
                      itemIndex < previewItems.Count;
                      itemIndex++)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     var item = previewItems[itemIndex];
                     if (item == null)
                     {
@@ -621,7 +783,7 @@ namespace Ee4v.AssetManager.UI
                             thumbnail)));
                 }
 
-                previews[child.Id] = states;
+                previews[pair.Key] = states;
             }
 
             return previews;
@@ -881,21 +1043,35 @@ namespace Ee4v.AssetManager.UI
 
         private void OnAssetManagerChanged(AssetManagerChange change)
         {
-            if (change != null &&
-                (change.Kind == AssetManagerChangeKind.Catalog ||
-                 ShouldInvalidateForItemCollections(
-                     change,
-                     _selectedNavigationItemId) ||
-                 ShouldInvalidateForSmartCollectionRule(
-                     change,
-                     _selectedNavigationItemId)))
+            if (change == null)
+            {
+                return;
+            }
+
+            var refreshCurrent =
+                change.Kind == AssetManagerChangeKind.Catalog ||
+                (change.Kind ==
+                 AssetManagerChangeKind.Collections &&
+                 string.Equals(
+                     _selectedNavigationItemId,
+                     "uncategorized",
+                     StringComparison.Ordinal)) ||
+                ShouldInvalidateForItemCollections(
+                    change,
+                    _selectedNavigationItemId) ||
+                ShouldInvalidateForSmartCollectionRule(
+                    change,
+                    _selectedNavigationItemId);
+            if (refreshCurrent)
             {
                 _scheduler.RunOnMainThread(() =>
                 {
-                    if (_activationCount > 0)
+                    if (_activationCount <= 0)
                     {
-                        InvalidateContent();
+                        return;
                     }
+
+                    InvalidateContent();
                 });
             }
         }
@@ -969,7 +1145,7 @@ namespace Ee4v.AssetManager.UI
         private void InvalidateContent()
         {
             _contentVersion++;
-            _itemCache.Clear();
+            _childItemCache.Clear();
             _tagCache.Clear();
             ContentChanged?.Invoke();
         }

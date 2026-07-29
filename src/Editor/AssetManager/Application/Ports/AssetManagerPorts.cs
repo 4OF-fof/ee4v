@@ -6,6 +6,7 @@ namespace Ee4v.AssetManager.Application.Ports
 {
     internal interface IAssetCatalogReadStore
     {
+        AssetCatalogSnapshot LoadCatalogSnapshot();
         AssetSearchResult SearchItems(AssetItemQuery query);
         AssetSearchResult SearchItemSummaries(AssetItemQuery query);
         AssetItem GetItem(string itemId);

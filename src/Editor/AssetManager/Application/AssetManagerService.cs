@@ -6,7 +6,9 @@ using Ee4v.AssetManager.Contracts;
 
 namespace Ee4v.AssetManager.Application
 {
-    internal sealed class AssetManagerService : IAssetManager
+    internal sealed class AssetManagerService :
+        IAssetManager,
+        IAssetManagerSnapshotReader
     {
         private readonly IAssetCatalogReadStore _catalogReader;
         private readonly IAssetCatalogCommandStore _catalogWriter;
@@ -23,6 +25,10 @@ namespace Ee4v.AssetManager.Application
         private readonly AssetManagerChangePublisher _changePublisher;
         private readonly SetFileImportTargetsUseCase _setFileImportTargets;
         private readonly ImportFileUseCase _importFile;
+        private readonly AssetCatalogSnapshotCache
+            _catalogSnapshot;
+        private readonly AssetThumbnailSnapshotCache
+            _thumbnailSnapshot;
 
         internal AssetManagerService(
             IAssetCatalogReadStore catalogReader,
@@ -52,6 +58,13 @@ namespace Ee4v.AssetManager.Application
             _sync = sync ?? throw new ArgumentNullException(nameof(sync));
             _importGateway = importGateway ?? throw new ArgumentNullException(nameof(importGateway));
             _changePublisher = new AssetManagerChangePublisher(diagnostics);
+            _catalogSnapshot =
+                new AssetCatalogSnapshotCache(
+                    _catalogReader.LoadCatalogSnapshot);
+            _thumbnailSnapshot =
+                new AssetThumbnailSnapshotCache(
+                    _catalogReader.GetThumbnails,
+                    _catalogReader.GetThumbnail);
             _setFileImportTargets = new SetFileImportTargetsUseCase(
                 _importTargetReader,
                 _importTargetWriter,
@@ -70,11 +83,33 @@ namespace Ee4v.AssetManager.Application
         }
 
         public AssetSearchResult SearchItems(AssetItemQuery query) => _catalogReader.SearchItems(query);
-        public AssetSearchResult SearchItemSummaries(AssetItemQuery query) => _catalogReader.SearchItemSummaries(query);
+        public AssetSearchResult SearchItemSummaries(
+            AssetItemQuery query) =>
+            AssetCatalogSnapshotCache.CanSearch(query)
+                ? _catalogSnapshot.Search(query)
+                : _catalogReader.SearchItemSummaries(query);
         public AssetItem GetItem(string itemId) => _catalogReader.GetItem(itemId);
-        public AssetThumbnail GetThumbnail(string itemId) => _catalogReader.GetThumbnail(itemId);
+        public AssetThumbnail GetThumbnail(string itemId) =>
+            _thumbnailSnapshot.Get(itemId);
         public IReadOnlyDictionary<string, AssetThumbnail> GetThumbnails(IReadOnlyList<string> itemIds) =>
-            _catalogReader.GetThumbnails(itemIds);
+            _thumbnailSnapshot.GetMany(itemIds);
+        public bool TrySearchItemSummaries(
+            AssetItemQuery query,
+            out AssetSearchResult result)
+        {
+            if (!AssetCatalogSnapshotCache.CanSearch(query))
+            {
+                result = null;
+                return false;
+            }
+
+            return _catalogSnapshot.TrySearch(query, out result);
+        }
+
+        public bool TryGetThumbnails(
+            IReadOnlyList<string> itemIds,
+            out IReadOnlyDictionary<string, AssetThumbnail> thumbnails) =>
+            _thumbnailSnapshot.TryGetMany(itemIds, out thumbnails);
 
         public AssetItem CreateItem(CreateAssetItemRequest request)
         {
@@ -278,6 +313,7 @@ namespace Ee4v.AssetManager.Application
                     itemIds,
                     collectionId))
             {
+                _catalogSnapshot.Invalidate();
                 Publish(new AssetManagerChange(
                     AssetManagerChangeKind.ItemCollections,
                     relatedId: collectionId));
@@ -328,8 +364,14 @@ namespace Ee4v.AssetManager.Application
             _importFile.ImportEntry(itemId, fileId, relativePath);
         }
 
-        public AssetSyncResult SyncBlm(BlmSyncRequest request) => PublishCatalog(_sync.SyncBlm(request));
-        public AssetSyncResult SyncEagle(EagleSyncRequest request) => PublishCatalog(_sync.SyncEagle(request));
+        public AssetSyncResult SyncBlm(BlmSyncRequest request) =>
+            PublishCatalog(
+                _sync.SyncBlm(request),
+                invalidateThumbnails: true);
+        public AssetSyncResult SyncEagle(EagleSyncRequest request) =>
+            PublishCatalog(
+                _sync.SyncEagle(request),
+                invalidateThumbnails: true);
         public IReadOnlyList<AssetSyncInfo> GetSyncInfo() => _sync.GetSyncInfo();
 
         internal PreparedAssetSync PrepareBlmSync(BlmSyncRequest request) =>
@@ -345,17 +387,26 @@ namespace Ee4v.AssetManager.Application
 
         internal void NotifyCatalogChanged()
         {
-            PublishCatalog();
+            PublishCatalog(invalidateThumbnails: true);
         }
 
-        private T PublishCatalog<T>(T result)
+        private T PublishCatalog<T>(
+            T result,
+            bool invalidateThumbnails = false)
         {
-            PublishCatalog();
+            PublishCatalog(invalidateThumbnails);
             return result;
         }
 
-        private void PublishCatalog()
+        private void PublishCatalog(
+            bool invalidateThumbnails = false)
         {
+            _catalogSnapshot.Invalidate();
+            if (invalidateThumbnails)
+            {
+                _thumbnailSnapshot.Invalidate();
+            }
+
             Publish(new AssetManagerChange(AssetManagerChangeKind.Catalog));
         }
 
@@ -367,6 +418,7 @@ namespace Ee4v.AssetManager.Application
 
         private void PublishCollections()
         {
+            _catalogSnapshot.Invalidate();
             Publish(new AssetManagerChange(
                 AssetManagerChangeKind.Collections));
         }

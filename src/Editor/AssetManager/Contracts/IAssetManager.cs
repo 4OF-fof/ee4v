@@ -61,6 +61,17 @@ namespace Ee4v.AssetManager.Contracts
         IReadOnlyList<AssetSyncInfo> GetSyncInfo();
     }
 
+    public interface IAssetManagerSnapshotReader
+    {
+        bool TrySearchItemSummaries(
+            AssetItemQuery query,
+            out AssetSearchResult result);
+
+        bool TryGetThumbnails(
+            IReadOnlyList<string> itemIds,
+            out IReadOnlyDictionary<string, AssetThumbnail> thumbnails);
+    }
+
     public enum AssetManagerChangeKind
     {
         Catalog,

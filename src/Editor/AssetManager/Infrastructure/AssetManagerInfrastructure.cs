@@ -23,6 +23,9 @@ namespace Ee4v.AssetManager.Infrastructure
         IAssetImportTargetCommandStore,
         IAssetSyncStore
     {
+        public AssetCatalogSnapshot LoadCatalogSnapshot() =>
+            Execute(AssetManagerDatabase.LoadCatalogSnapshot);
+
         public AssetSearchResult SearchItems(AssetItemQuery query) =>
             Execute(() => AssetManagerDatabase.SearchItems(query));
 

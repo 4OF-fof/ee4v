@@ -23,6 +23,8 @@ namespace Ee4v.AssetManager.UI
         private string _browserNodeName;
         private FileTreeDetailState _fileDetailState;
         private string _searchText = string.Empty;
+        private string _currentItemContentKey = string.Empty;
+        private AssetItemGridList _currentItemList;
         private bool _applyingHistory;
         private ItemCardState[] _selectedAssetItems = System.Array.Empty<ItemCardState>();
         private AssetSelectionContentKind _selectionContentKind = AssetSelectionContentKind.AssetItem;
@@ -133,7 +135,8 @@ namespace Ee4v.AssetManager.UI
             }
 
             _searchText = nextValue;
-            _controller.ClearCachedItems();
+            _controller.ClearCachedTags();
+            ClearCurrentItemList();
             ClearGridSelection();
             RefreshContent();
         }
@@ -180,6 +183,7 @@ namespace Ee4v.AssetManager.UI
 
             ClearFileListMode();
             ClearFileDetailMode();
+            ClearCurrentItemList();
             ClearGridSelection();
             PushCurrentHistory();
             RefreshContent();
@@ -187,9 +191,9 @@ namespace Ee4v.AssetManager.UI
 
         private void OnContentChanged()
         {
-            _controller.ClearCachedItems();
             ClearFileListMode();
             ClearFileDetailMode();
+            ClearCurrentItemList();
             ClearGridSelection();
             PushCurrentHistory();
             RefreshContent();
@@ -204,17 +208,18 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            var cacheKey = CreateCurrentCacheKey();
-            AssetItemGridList cachedItems;
-            if (!_controller.TryGetCachedItems(
-                    cacheKey,
-                    out cachedItems))
+            var contentKey = CreateCurrentContentKey();
+            if (_currentItemList == null ||
+                !string.Equals(
+                    _currentItemContentKey,
+                    contentKey,
+                    System.StringComparison.Ordinal))
             {
                 return;
             }
 
             ClearGridSelection();
-            ApplyItemList(cacheKey, cachedItems);
+            ApplyItemList(contentKey, _currentItemList);
         }
 
         private void OnLayoutChanged()
@@ -377,6 +382,7 @@ namespace Ee4v.AssetManager.UI
             if (IsFileDetailMode)
             {
                 _controller.CancelPendingLoad();
+                ClearCurrentItemList();
                 SetStatus(string.Empty);
                 _itemGrid.style.display = DisplayStyle.None;
                 _tagListPage.style.display = DisplayStyle.None;
@@ -389,12 +395,14 @@ namespace Ee4v.AssetManager.UI
             _fileDetailView.style.display = DisplayStyle.None;
             if (IsTagListMode)
             {
+                ClearCurrentItemList();
                 _itemGrid.style.display = DisplayStyle.None;
                 _tagListPage.style.display = DisplayStyle.Flex;
-                var tagCacheKey = CreateCurrentCacheKey();
+                var tagCacheKey = CreateCurrentContentKey();
                 System.Collections.Generic.IReadOnlyList<AssetTag> cachedTags;
                 if (_controller.TryGetCachedTags(tagCacheKey, out cachedTags))
                 {
+                    _controller.CancelPendingLoad();
                     ApplyTagList(tagCacheKey, cachedTags);
                     return;
                 }
@@ -409,19 +417,57 @@ namespace Ee4v.AssetManager.UI
 
             _tagListPage.style.display = DisplayStyle.None;
             _itemGrid.style.display = DisplayStyle.Flex;
-            var cacheKey = CreateCurrentCacheKey();
-            AssetItemGridList cachedItems;
-            if (_controller.TryGetCachedItems(cacheKey, out cachedItems))
+            var contentKey = CreateCurrentContentKey();
+            if (IsFileListMode)
             {
-                ApplyItemList(cacheKey, cachedItems);
-                return;
+                AssetItemGridList cachedChildren;
+                if (_controller.TryGetCachedChildren(
+                        contentKey,
+                        out cachedChildren))
+                {
+                    _controller.CancelPendingLoad();
+                    ApplyItemList(contentKey, cachedChildren);
+                    return;
+                }
+            }
+            else
+            {
+                var request =
+                    _controller.CreateRequest(
+                        _controller
+                            .SelectedNavigationItemId,
+                        _searchText);
+                AssetItemGridList snapshotItems;
+                bool requiresThumbnailLoad;
+                if (_controller.TryLoadItemsImmediately(
+                        request,
+                        out snapshotItems,
+                        out requiresThumbnailLoad))
+                {
+                    _controller.CancelPendingLoad();
+                    ApplyItemList(
+                        contentKey,
+                        snapshotItems);
+                    if (requiresThumbnailLoad)
+                    {
+                        _controller.StartLoad(
+                            contentKey,
+                            LoadCurrentGridItems,
+                            silent: true);
+                    }
+
+                    return;
+                }
             }
 
+            ClearCurrentItemList();
             SetStatus(IsFileListMode
                 ? I18N.Get("assetManager.mainView.loadingChildren")
                 : I18N.Get("assetManager.mainView.loading"));
             _itemGrid.SetLoading();
-            _controller.StartLoad(cacheKey, LoadCurrentGridItems);
+            _controller.StartLoad(
+                contentKey,
+                LoadCurrentGridItems);
         }
 
         private void OnLoadCompleted(MainViewLoadResult result)
@@ -433,17 +479,27 @@ namespace Ee4v.AssetManager.UI
 
             if (result.Error != null)
             {
+                if (result.Silent)
+                {
+                    return;
+                }
+
                 SetStatus(result.Error.Message);
                 return;
             }
 
             if (result.Canceled)
             {
+                if (result.Silent)
+                {
+                    return;
+                }
+
                 SetStatus(I18N.Get("assetManager.mainView.loadCanceled"));
                 return;
             }
 
-            ApplyItemList(result.CacheKey, result.Items);
+            ApplyItemList(result.ContentKey, result.Items);
         }
 
         private void OnTagListLoadCompleted(TagListLoadResult result)
@@ -468,16 +524,28 @@ namespace Ee4v.AssetManager.UI
             ApplyTagList(result.CacheKey, result.Tags);
         }
 
-        private void ApplyItemList(string cacheKey, AssetItemGridList itemList)
+        private void ApplyItemList(
+            string contentKey,
+            AssetItemGridList itemList)
         {
-            _controller.StoreCachedItems(cacheKey, itemList);
+            _currentItemContentKey =
+                contentKey ?? string.Empty;
+            _currentItemList =
+                itemList ?? new AssetItemGridList(null);
+            if (IsFileListMode)
+            {
+                _controller.StoreCachedChildren(
+                    _currentItemContentKey,
+                    _currentItemList);
+            }
+
             var displayItems = IsFileListMode
-                ? itemList
+                ? _currentItemList
                 : _controller.CreateDisplayItems(
                     _controller.CreateRequest(
                         _controller.SelectedNavigationItemId,
                         _searchText),
-                    itemList);
+                    _currentItemList);
             string statusText;
             _itemGrid.SetAssetItems(
                 displayItems,
@@ -545,7 +613,7 @@ namespace Ee4v.AssetManager.UI
             return _controller.LoadItems(_controller.CreateRequest(selectedItem.Id, _searchText), cancellationToken);
         }
 
-        private string CreateCurrentCacheKey()
+        private string CreateCurrentContentKey()
         {
             if (IsFileListMode)
             {
@@ -553,7 +621,16 @@ namespace Ee4v.AssetManager.UI
             }
 
             var selectedItem = _controller.SelectedNavigationItem;
-            return _controller.CreateCacheKey(_controller.CreateRequest(selectedItem.Id, _searchText));
+            return _controller.CreateContentKey(
+                _controller.CreateRequest(
+                    selectedItem.Id,
+                    _searchText));
+        }
+
+        private void ClearCurrentItemList()
+        {
+            _currentItemContentKey = string.Empty;
+            _currentItemList = null;
         }
 
         private string ResolveStatusText(string statusText)
