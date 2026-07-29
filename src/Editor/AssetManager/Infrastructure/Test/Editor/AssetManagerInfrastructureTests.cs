@@ -844,6 +844,109 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
+            "一覧 snapshot で Smart Collection 条件を一括評価する",
+            "name、description、tag、file name、extension の条件が DB 再問い合わせなしの一覧 snapshot に反映されることを確認します。",
+            order: 338)]
+        public void SearchItemSummaries_SnapshotEvaluatesAllSmartFields()
+        {
+            var item = _assetManager.CreateItem(
+                new CreateAssetItemRequest
+                {
+                    Name = "Avatar Package",
+                    Description = "Summer outfit"
+                });
+            var tag = _assetManager.CreateTag("favorite");
+            _assetManager.SetItemTags(
+                item.Id,
+                new[] { tag.Id });
+            var filePath =
+                Path.Combine(_tempRoot, "avatar.unitypackage");
+            File.WriteAllText(filePath, "package");
+            _assetManager.RegisterFile(
+                item.Id,
+                new RegisterFileRequest
+                {
+                    FilePath = filePath,
+                    FileName = "avatar.unitypackage"
+                });
+            var smart =
+                _assetManager.CreateSmartCollection(
+                    new CreateSmartCollectionRequest
+                    {
+                        Name = "Matched",
+                        MatchMode =
+                            SmartCollectionMatchMode.All,
+                        Conditions = new[]
+                        {
+                            new SmartCollectionCondition
+                            {
+                                Field =
+                                    SmartCollectionConditionField
+                                        .Name,
+                                Operator =
+                                    SmartCollectionConditionOperator
+                                        .Contains,
+                                QueryText = "Avatar"
+                            },
+                            new SmartCollectionCondition
+                            {
+                                Field =
+                                    SmartCollectionConditionField
+                                        .Description,
+                                Operator =
+                                    SmartCollectionConditionOperator
+                                        .Contains,
+                                QueryText = "Summer"
+                            },
+                            new SmartCollectionCondition
+                            {
+                                Field =
+                                    SmartCollectionConditionField
+                                        .Tag,
+                                Operator =
+                                    SmartCollectionConditionOperator
+                                        .Equals,
+                                QueryText = "favorite"
+                            },
+                            new SmartCollectionCondition
+                            {
+                                Field =
+                                    SmartCollectionConditionField
+                                        .FileName,
+                                Operator =
+                                    SmartCollectionConditionOperator
+                                        .Contains,
+                                QueryText = "avatar"
+                            },
+                            new SmartCollectionCondition
+                            {
+                                Field =
+                                    SmartCollectionConditionField
+                                        .Extension,
+                                Operator =
+                                    SmartCollectionConditionOperator
+                                        .In,
+                                QueryText =
+                                    "zip, unitypackage"
+                            }
+                        }
+                    });
+
+            var result =
+                _assetManager.SearchItemSummaries(
+                    new AssetItemQuery
+                    {
+                        CollectionId = smart.Id,
+                        Limit = 200
+                    });
+
+            Assert.That(
+                result.Items.Select(entry => entry.Id),
+                Is.EqualTo(new[] { item.Id }));
+        }
+
+        [Test]
+        [FeatureTestCase(
             "通常 Collection はフォルダー、Smart Collection は指定アイコンを保存する",
             "通常 Collection の固定フォルダーアイコンと Smart Collection の icon contract、および exists 条件を確認します。",
             order: 338)]

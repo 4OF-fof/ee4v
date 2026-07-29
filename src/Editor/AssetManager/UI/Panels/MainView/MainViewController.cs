@@ -74,10 +74,86 @@ namespace Ee4v.AssetManager.UI
         public bool Canceled { get; }
     }
 
+    internal interface IMainViewCatalogReader
+    {
+        bool TrySearch(
+            AssetItemQuery query,
+            out AssetSearchResult result);
+
+        bool TryGetThumbnails(
+            IReadOnlyList<string> itemIds,
+            out IReadOnlyDictionary<string, AssetThumbnail>
+                thumbnails);
+    }
+
+    internal sealed class MainViewCatalogReader :
+        IMainViewCatalogReader
+    {
+        private readonly IAssetManager _assetManager;
+
+        internal MainViewCatalogReader(
+            IAssetManager assetManager)
+        {
+            _assetManager = assetManager ??
+                            throw new ArgumentNullException(
+                                nameof(assetManager));
+        }
+
+        public bool TrySearch(
+            AssetItemQuery query,
+            out AssetSearchResult result)
+        {
+            result =
+                _assetManager.SearchItemSummaries(query);
+            return true;
+        }
+
+        public bool TryGetThumbnails(
+            IReadOnlyList<string> itemIds,
+            out IReadOnlyDictionary<string, AssetThumbnail>
+                thumbnails)
+        {
+            thumbnails =
+                _assetManager.GetThumbnails(itemIds);
+            return true;
+        }
+    }
+
+    internal sealed class MainViewSnapshotCatalogReader :
+        IMainViewCatalogReader
+    {
+        private readonly IAssetManagerSnapshotReader _snapshot;
+
+        internal MainViewSnapshotCatalogReader(
+            IAssetManagerSnapshotReader snapshot)
+        {
+            _snapshot = snapshot ??
+                        throw new ArgumentNullException(
+                            nameof(snapshot));
+        }
+
+        public bool TrySearch(
+            AssetItemQuery query,
+            out AssetSearchResult result) =>
+            _snapshot.TrySearchItemSummaries(
+                query,
+                out result);
+
+        public bool TryGetThumbnails(
+            IReadOnlyList<string> itemIds,
+            out IReadOnlyDictionary<string, AssetThumbnail>
+                thumbnails) =>
+            _snapshot.TryGetThumbnails(
+                itemIds,
+                out thumbnails);
+    }
+
     internal sealed class MainViewController : IDisposable
     {
         private readonly IAssetManager _assetManager;
-        private readonly IAssetManagerSnapshotReader _snapshotReader;
+        private readonly IMainViewCatalogReader _catalogReader;
+        private readonly IMainViewCatalogReader
+            _snapshotCatalogReader;
         private readonly IAssetManagerUiPreferences _preferences;
         private readonly IAssetManagerUiScheduler _scheduler;
         private readonly Dictionary<string, AssetItemGridList>
@@ -103,8 +179,15 @@ namespace Ee4v.AssetManager.UI
             IAssetManagerUiScheduler scheduler = null)
         {
             _assetManager = assetManager ?? AssetManagerUiDependencies.AssetManager;
-            _snapshotReader =
+            _catalogReader =
+                new MainViewCatalogReader(_assetManager);
+            var snapshotReader =
                 _assetManager as IAssetManagerSnapshotReader;
+            _snapshotCatalogReader =
+                snapshotReader != null
+                    ? new MainViewSnapshotCatalogReader(
+                        snapshotReader)
+                    : null;
             _preferences = preferences ?? AssetManagerUiDependencies.Preferences;
             _scheduler = scheduler ?? AssetManagerUiDependencies.Scheduler;
             _preferences.Preload();
@@ -440,27 +523,20 @@ namespace Ee4v.AssetManager.UI
 
         public AssetItemGridList LoadItems(MainViewRequest request, CancellationToken cancellationToken = default(CancellationToken))
         {
-            var query = CreateQuery(request);
-            var result = _assetManager.SearchItemSummaries(query);
-            var resultItems =
-                result != null && result.Items != null
-                    ? result.Items
-                    : Array.Empty<AssetItem>();
-            var previewItemsByCollection =
-                LoadCollectionPreviewItems(
+            AssetItemGridList itemList;
+            bool thumbnailsReady;
+            if (!TryLoadItems(
+                    _catalogReader,
                     request,
-                    cancellationToken);
+                    cancellationToken,
+                    out itemList,
+                    out thumbnailsReady))
+            {
+                throw new InvalidOperationException(
+                    "The catalog reader did not return data.");
+            }
 
-            cancellationToken.ThrowIfCancellationRequested();
-            var thumbnails = _assetManager.GetThumbnails(
-                CollectItemIds(
-                    resultItems,
-                    previewItemsByCollection));
-            return CreateItemList(
-                resultItems,
-                previewItemsByCollection,
-                thumbnails,
-                cancellationToken);
+            return itemList;
         }
 
         public bool TryLoadItemsImmediately(
@@ -470,13 +546,31 @@ namespace Ee4v.AssetManager.UI
         {
             itemList = null;
             requiresThumbnailLoad = false;
-            if (_snapshotReader == null)
+            if (_snapshotCatalogReader == null)
             {
                 return false;
             }
 
+            return TryLoadItems(
+                _snapshotCatalogReader,
+                request,
+                CancellationToken.None,
+                out itemList,
+                out requiresThumbnailLoad);
+        }
+
+        private bool TryLoadItems(
+            IMainViewCatalogReader reader,
+            MainViewRequest request,
+            CancellationToken cancellationToken,
+            out AssetItemGridList itemList,
+            out bool requiresThumbnailLoad)
+        {
+            itemList = null;
+            requiresThumbnailLoad = false;
+            cancellationToken.ThrowIfCancellationRequested();
             AssetSearchResult result;
-            if (!_snapshotReader.TrySearchItemSummaries(
+            if (!reader.TrySearch(
                     CreateQuery(request),
                     out result))
             {
@@ -492,7 +586,9 @@ namespace Ee4v.AssetManager.UI
                 IReadOnlyList<AssetItem>>
                 previewItemsByCollection;
             if (!TryLoadCollectionPreviewItems(
+                    reader,
                     request,
+                    cancellationToken,
                     out previewItemsByCollection))
             {
                 return false;
@@ -501,7 +597,7 @@ namespace Ee4v.AssetManager.UI
             IReadOnlyDictionary<string, AssetThumbnail>
                 thumbnails;
             var thumbnailsReady =
-                _snapshotReader.TryGetThumbnails(
+                reader.TryGetThumbnails(
                     CollectItemIds(
                         resultItems,
                         previewItemsByCollection),
@@ -510,7 +606,7 @@ namespace Ee4v.AssetManager.UI
                 resultItems,
                 previewItemsByCollection,
                 thumbnails,
-                CancellationToken.None);
+                cancellationToken);
             requiresThumbnailLoad = !thumbnailsReady;
             return true;
         }
@@ -609,44 +705,10 @@ namespace Ee4v.AssetManager.UI
                 source.CollectionPreviewStates);
         }
 
-        private IReadOnlyDictionary<
-                string,
-                IReadOnlyList<AssetItem>>
-            LoadCollectionPreviewItems(
-                MainViewRequest request,
-                CancellationToken cancellationToken)
-        {
-            var previewItemsByCollection =
-                new Dictionary<
-                    string,
-                    IReadOnlyList<AssetItem>>(
-                    StringComparer.Ordinal);
-            var children =
-                GetPreviewCollections(request);
-            for (var i = 0; i < children.Count; i++)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var child = children[i];
-                var result =
-                    _assetManager.SearchItemSummaries(
-                        new AssetItemQuery
-                        {
-                            CollectionId = child.Id,
-                            Limit = 3
-                        });
-                var previewItems =
-                    result != null && result.Items != null
-                        ? result.Items
-                        : Array.Empty<AssetItem>();
-                previewItemsByCollection[child.Id] =
-                    previewItems;
-            }
-
-            return previewItemsByCollection;
-        }
-
         private bool TryLoadCollectionPreviewItems(
+            IMainViewCatalogReader reader,
             MainViewRequest request,
+            CancellationToken cancellationToken,
             out IReadOnlyDictionary<
                 string,
                 IReadOnlyList<AssetItem>>
@@ -661,9 +723,10 @@ namespace Ee4v.AssetManager.UI
                 GetPreviewCollections(request);
             for (var i = 0; i < children.Count; i++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var child = children[i];
                 AssetSearchResult result;
-                if (!_snapshotReader.TrySearchItemSummaries(
+                if (!reader.TrySearch(
                         new AssetItemQuery
                         {
                             CollectionId = child.Id,

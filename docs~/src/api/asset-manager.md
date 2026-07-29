@@ -456,12 +456,20 @@ Effects:
   thumbnail だけを `Try...` で返す。Main View は通常の表示切替でこの経路を使い、
   loading 表示を挟まず同期的に描画する。未取得 thumbnail は空の画像 state で
   先に描画し、表示を止めず background で補完する。
+- catalog と thumbnail の保持・無効化は Application の一つの read snapshot が
+  管理する。通常の catalog 更新は一覧だけを破棄し、datasource sync のように
+  thumbnail URL も変わり得る更新だけが両方を破棄する。
 - datasource sync、item / tag / file、Collection、Smart Collection rule の変更後は
   snapshot を破棄し、次の検索で一度だけ再構築する。
 - `Lifecycle`、`TagIds`、`SourceTypes` を指定する詳細条件は DB 検索へ fallback する。
 - thumbnail は item ID 単位で別に保持し、未取得 item だけを読み込む。
   thumbnail が存在しない item も取得済みとして記録し、表示切替ごとの再問い合わせを
   行わない。
+- thumbnail の外部読み込み中は cache lock を保持しない。同期中に invalidation
+  された結果は世代番号で破棄し、古い画像を cache へ戻さない。
+- snapshot 構築時は Smart Collection の条件と name、description、tag、file name、
+  extension の判定値を一括取得して memory 上で評価する。item / condition ごとの
+  DB query は行わない。
 
 ### `IAssetManager.GetItem`
 

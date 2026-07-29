@@ -5,6 +5,13 @@ using Ee4v.AssetManager.Contracts;
 
 namespace Ee4v.AssetManager.Application
 {
+    internal enum AssetManagerSnapshotInvalidation
+    {
+        None,
+        Catalog,
+        CatalogAndThumbnails
+    }
+
     internal sealed class AssetCatalogSnapshotItem
     {
         internal AssetCatalogSnapshotItem(
@@ -17,8 +24,12 @@ namespace Ee4v.AssetManager.Application
             Item = item ?? throw new ArgumentNullException(nameof(item));
             HasBoothInformation = hasBoothInformation;
             IsUncategorized = isUncategorized;
-            CollectionIds = collectionIds ?? Array.Empty<string>();
-            KeywordValues = keywordValues ?? Array.Empty<string>();
+            CollectionIds = (collectionIds ??
+                             Array.Empty<string>())
+                .ToArray();
+            KeywordValues = (keywordValues ??
+                             Array.Empty<string>())
+                .ToArray();
         }
 
         internal AssetItem Item { get; }
@@ -38,8 +49,12 @@ namespace Ee4v.AssetManager.Application
             IReadOnlyList<AssetCatalogSnapshotItem> items,
             IReadOnlyList<string> collectionIds)
         {
-            Items = items ?? Array.Empty<AssetCatalogSnapshotItem>();
-            CollectionIds = collectionIds ?? Array.Empty<string>();
+            Items = (items ??
+                     Array.Empty<AssetCatalogSnapshotItem>())
+                .ToArray();
+            CollectionIds = (collectionIds ??
+                             Array.Empty<string>())
+                .ToArray();
         }
 
         internal IReadOnlyList<AssetCatalogSnapshotItem> Items { get; }
@@ -104,42 +119,6 @@ namespace Ee4v.AssetManager.Application
                     "Collection was not found: " + collectionId);
             }
 
-            IEnumerable<AssetCatalogSnapshotItem> filtered =
-                snapshot.Items;
-            if (query == null || !query.IncludeUnavailable)
-            {
-                filtered = filtered.Where(entry =>
-                    entry.Item.IsAvailable);
-            }
-
-            if (query != null &&
-                !string.IsNullOrWhiteSpace(query.Keyword))
-            {
-                filtered = filtered.Where(entry =>
-                    ContainsKeyword(
-                        entry.KeywordValues,
-                        query.Keyword));
-            }
-
-            if (collectionId != null)
-            {
-                filtered = filtered.Where(entry =>
-                    Contains(entry.CollectionIds, collectionId));
-            }
-
-            if (query != null && query.HasBoothInformation)
-            {
-                filtered = filtered.Where(entry =>
-                    entry.HasBoothInformation);
-            }
-
-            if (query != null && query.UncategorizedOnly)
-            {
-                filtered = filtered.Where(entry =>
-                    entry.IsUncategorized);
-            }
-
-            var matches = filtered.ToArray();
             var offset =
                 query != null && query.Offset > 0
                     ? query.Offset
@@ -148,15 +127,70 @@ namespace Ee4v.AssetManager.Application
                 query != null && query.Limit > 0
                     ? query.Limit
                     : 100;
+            var items = new List<AssetItem>(
+                Math.Min(limit, snapshot.Items.Count));
+            var totalCount = 0;
+            for (var i = 0; i < snapshot.Items.Count; i++)
+            {
+                var entry = snapshot.Items[i];
+                if (!Matches(entry, query, collectionId))
+                {
+                    continue;
+                }
+
+                if (totalCount >= offset &&
+                    items.Count < limit)
+                {
+                    items.Add(CloneSummary(entry.Item));
+                }
+
+                totalCount++;
+            }
+
             return new AssetSearchResult
             {
-                Items = matches
-                    .Skip(offset)
-                    .Take(limit)
-                    .Select(entry => CloneSummary(entry.Item))
-                    .ToArray(),
-                TotalCount = matches.Length
+                Items = items,
+                TotalCount = totalCount
             };
+        }
+
+        private static bool Matches(
+            AssetCatalogSnapshotItem entry,
+            AssetItemQuery query,
+            string collectionId)
+        {
+            if ((query == null ||
+                 !query.IncludeUnavailable) &&
+                !entry.Item.IsAvailable)
+            {
+                return false;
+            }
+
+            if (query != null &&
+                !string.IsNullOrWhiteSpace(query.Keyword) &&
+                !ContainsKeyword(
+                    entry.KeywordValues,
+                    query.Keyword))
+            {
+                return false;
+            }
+
+            if (collectionId != null &&
+                !Contains(entry.CollectionIds, collectionId))
+            {
+                return false;
+            }
+
+            if (query != null &&
+                query.HasBoothInformation &&
+                !entry.HasBoothInformation)
+            {
+                return false;
+            }
+
+            return query == null ||
+                   !query.UncategorizedOnly ||
+                   entry.IsUncategorized;
         }
 
         internal void Invalidate()
@@ -247,6 +281,7 @@ namespace Ee4v.AssetManager.Application
                 StringComparer.Ordinal);
         private readonly HashSet<string> _loadedIds =
             new HashSet<string>(StringComparer.Ordinal);
+        private int _generation;
 
         internal AssetThumbnailSnapshotCache(
             Func<
@@ -262,58 +297,94 @@ namespace Ee4v.AssetManager.Application
 
         internal AssetThumbnail Get(string itemId)
         {
-            lock (_gate)
+            var normalizedId = itemId ?? string.Empty;
+            while (true)
             {
-                AssetThumbnail cached;
-                if (_thumbnails.TryGetValue(
-                        itemId ?? string.Empty,
-                        out cached))
+                int generation;
+                lock (_gate)
                 {
-                    return cached;
+                    if (_loadedIds.Contains(normalizedId))
+                    {
+                        AssetThumbnail cached;
+                        _thumbnails.TryGetValue(
+                            normalizedId,
+                            out cached);
+                        return cached;
+                    }
+
+                    generation = _generation;
                 }
 
                 var loaded = _loadOne(itemId);
-                _thumbnails[itemId ?? string.Empty] = loaded;
-                _loadedIds.Add(itemId ?? string.Empty);
-                return loaded;
+                lock (_gate)
+                {
+                    if (generation != _generation)
+                    {
+                        continue;
+                    }
+
+                    _loadedIds.Add(normalizedId);
+                    if (loaded != null)
+                    {
+                        _thumbnails[normalizedId] = loaded;
+                    }
+
+                    return loaded;
+                }
             }
         }
 
         internal IReadOnlyDictionary<string, AssetThumbnail> GetMany(
             IReadOnlyList<string> itemIds)
         {
-            var requestedIds = (itemIds ?? Array.Empty<string>())
-                .Where(itemId =>
-                    !string.IsNullOrWhiteSpace(itemId))
-                .Distinct(StringComparer.Ordinal)
-                .ToArray();
-            lock (_gate)
+            var requestedIds = NormalizeItemIds(itemIds);
+            while (true)
             {
-                var missingIds = new List<string>();
-                for (var i = 0; i < requestedIds.Length; i++)
+                string[] missingIds;
+                int generation;
+                lock (_gate)
                 {
-                    if (!_loadedIds.Contains(
-                            requestedIds[i]))
+                    missingIds = requestedIds
+                        .Where(itemId =>
+                            !_loadedIds.Contains(itemId))
+                        .ToArray();
+                    if (missingIds.Length == 0)
                     {
-                        missingIds.Add(requestedIds[i]);
+                        return CreateResult(requestedIds);
                     }
+
+                    generation = _generation;
                 }
 
-                if (missingIds.Count > 0)
+                var loaded =
+                    _loadMany(missingIds) ??
+                    new Dictionary<string, AssetThumbnail>(
+                        StringComparer.Ordinal);
+                lock (_gate)
                 {
-                    var loaded = _loadMany(missingIds);
-                    foreach (var pair in loaded)
+                    if (generation != _generation)
                     {
-                        _thumbnails[pair.Key] = pair.Value;
+                        continue;
                     }
 
-                    for (var i = 0; i < missingIds.Count; i++)
+                    foreach (var pair in loaded)
+                    {
+                        if (!string.IsNullOrWhiteSpace(
+                                pair.Key) &&
+                            pair.Value != null)
+                        {
+                            _thumbnails[pair.Key] =
+                                pair.Value;
+                        }
+                    }
+
+                    for (var i = 0; i < missingIds.Length; i++)
                     {
                         _loadedIds.Add(missingIds[i]);
                     }
-                }
 
-                return CreateResult(requestedIds);
+                    return CreateResult(requestedIds);
+                }
             }
         }
 
@@ -321,11 +392,7 @@ namespace Ee4v.AssetManager.Application
             IReadOnlyList<string> itemIds,
             out IReadOnlyDictionary<string, AssetThumbnail> thumbnails)
         {
-            var requestedIds = (itemIds ?? Array.Empty<string>())
-                .Where(itemId =>
-                    !string.IsNullOrWhiteSpace(itemId))
-                .Distinct(StringComparer.Ordinal)
-                .ToArray();
+            var requestedIds = NormalizeItemIds(itemIds);
             if (!System.Threading.Monitor.TryEnter(_gate))
             {
                 thumbnails =
@@ -359,9 +426,20 @@ namespace Ee4v.AssetManager.Application
         {
             lock (_gate)
             {
+                _generation++;
                 _thumbnails.Clear();
                 _loadedIds.Clear();
             }
+        }
+
+        private static string[] NormalizeItemIds(
+            IReadOnlyList<string> itemIds)
+        {
+            return (itemIds ?? Array.Empty<string>())
+                .Where(itemId =>
+                    !string.IsNullOrWhiteSpace(itemId))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
         }
 
         private IReadOnlyDictionary<string, AssetThumbnail>
@@ -383,6 +461,79 @@ namespace Ee4v.AssetManager.Application
             }
 
             return result;
+        }
+    }
+
+    internal sealed class AssetManagerReadSnapshot
+    {
+        private readonly AssetCatalogSnapshotCache _catalog;
+        private readonly AssetThumbnailSnapshotCache _thumbnails;
+
+        internal AssetManagerReadSnapshot(
+            Func<AssetCatalogSnapshot> loadCatalog,
+            Func<
+                IReadOnlyList<string>,
+                IReadOnlyDictionary<string, AssetThumbnail>>
+                loadThumbnails,
+            Func<string, AssetThumbnail> loadThumbnail)
+        {
+            _catalog =
+                new AssetCatalogSnapshotCache(loadCatalog);
+            _thumbnails =
+                new AssetThumbnailSnapshotCache(
+                    loadThumbnails,
+                    loadThumbnail);
+        }
+
+        internal bool CanSearch(AssetItemQuery query) =>
+            AssetCatalogSnapshotCache.CanSearch(query);
+
+        internal AssetSearchResult Search(
+            AssetItemQuery query) =>
+            _catalog.Search(query);
+
+        internal bool TrySearch(
+            AssetItemQuery query,
+            out AssetSearchResult result)
+        {
+            if (!AssetCatalogSnapshotCache.CanSearch(query))
+            {
+                result = null;
+                return false;
+            }
+
+            return _catalog.TrySearch(query, out result);
+        }
+
+        internal AssetThumbnail GetThumbnail(string itemId) =>
+            _thumbnails.Get(itemId);
+
+        internal IReadOnlyDictionary<string, AssetThumbnail>
+            GetThumbnails(IReadOnlyList<string> itemIds) =>
+            _thumbnails.GetMany(itemIds);
+
+        internal bool TryGetThumbnails(
+            IReadOnlyList<string> itemIds,
+            out IReadOnlyDictionary<string, AssetThumbnail>
+                thumbnails) =>
+            _thumbnails.TryGetMany(itemIds, out thumbnails);
+
+        internal void Invalidate(
+            AssetManagerSnapshotInvalidation invalidation)
+        {
+            if (invalidation ==
+                AssetManagerSnapshotInvalidation.None)
+            {
+                return;
+            }
+
+            _catalog.Invalidate();
+            if (invalidation ==
+                AssetManagerSnapshotInvalidation
+                    .CatalogAndThumbnails)
+            {
+                _thumbnails.Invalidate();
+            }
         }
     }
 }

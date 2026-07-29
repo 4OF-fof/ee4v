@@ -834,16 +834,36 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             var conditions = connection.Query<SmartConditionRow>(
                 "SELECT * FROM smart_collection_condition WHERE collection_info_id = ? ORDER BY id",
                 smartCollection.collection_info_id);
+            return MatchesSmartCollection(
+                smartCollection.match_mode,
+                conditions,
+                field => LoadSmartConditionValues(
+                    connection,
+                    itemId,
+                    field));
+        }
+
+        private static bool MatchesSmartCollection(
+            string matchMode,
+            IReadOnlyList<SmartConditionRow> conditions,
+            Func<
+                SmartCollectionConditionField,
+                IReadOnlyList<string>> loadValues)
+        {
             if (conditions.Count == 0)
             {
-                return smartCollection.match_mode != "any";
+                return matchMode != "any";
             }
 
-            if (smartCollection.match_mode == "any")
+            if (matchMode == "any")
             {
                 for (var i = 0; i < conditions.Count; i++)
                 {
-                    if (MatchesSmartCondition(connection, itemId, conditions[i]))
+                    if (MatchesSmartCondition(
+                            loadValues(
+                                FromDbSmartField(
+                                    conditions[i].field)),
+                            conditions[i]))
                     {
                         return true;
                     }
@@ -854,7 +874,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
 
             for (var i = 0; i < conditions.Count; i++)
             {
-                if (!MatchesSmartCondition(connection, itemId, conditions[i]))
+                if (!MatchesSmartCondition(
+                        loadValues(
+                            FromDbSmartField(
+                                conditions[i].field)),
+                        conditions[i]))
                 {
                     return false;
                 }
@@ -863,9 +887,10 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             return true;
         }
 
-        private static bool MatchesSmartCondition(SQLiteConnection connection, string itemId, SmartConditionRow condition)
+        private static bool MatchesSmartCondition(
+            IReadOnlyList<string> values,
+            SmartConditionRow condition)
         {
-            var values = LoadSmartConditionValues(connection, itemId, FromDbSmartField(condition.field));
             var op = FromDbSmartOperator(condition.@operator);
             if (op == SmartCollectionConditionOperator.Exists)
             {

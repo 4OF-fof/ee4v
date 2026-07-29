@@ -25,10 +25,7 @@ namespace Ee4v.AssetManager.Application
         private readonly AssetManagerChangePublisher _changePublisher;
         private readonly SetFileImportTargetsUseCase _setFileImportTargets;
         private readonly ImportFileUseCase _importFile;
-        private readonly AssetCatalogSnapshotCache
-            _catalogSnapshot;
-        private readonly AssetThumbnailSnapshotCache
-            _thumbnailSnapshot;
+        private readonly AssetManagerReadSnapshot _readSnapshot;
 
         internal AssetManagerService(
             IAssetCatalogReadStore catalogReader,
@@ -58,17 +55,15 @@ namespace Ee4v.AssetManager.Application
             _sync = sync ?? throw new ArgumentNullException(nameof(sync));
             _importGateway = importGateway ?? throw new ArgumentNullException(nameof(importGateway));
             _changePublisher = new AssetManagerChangePublisher(diagnostics);
-            _catalogSnapshot =
-                new AssetCatalogSnapshotCache(
-                    _catalogReader.LoadCatalogSnapshot);
-            _thumbnailSnapshot =
-                new AssetThumbnailSnapshotCache(
+            _readSnapshot =
+                new AssetManagerReadSnapshot(
+                    _catalogReader.LoadCatalogSnapshot,
                     _catalogReader.GetThumbnails,
                     _catalogReader.GetThumbnail);
             _setFileImportTargets = new SetFileImportTargetsUseCase(
                 _importTargetReader,
                 _importTargetWriter,
-                Publish);
+                change => Publish(change));
             _importFile = new ImportFileUseCase(
                 _catalogReader,
                 _fileReader,
@@ -85,31 +80,25 @@ namespace Ee4v.AssetManager.Application
         public AssetSearchResult SearchItems(AssetItemQuery query) => _catalogReader.SearchItems(query);
         public AssetSearchResult SearchItemSummaries(
             AssetItemQuery query) =>
-            AssetCatalogSnapshotCache.CanSearch(query)
-                ? _catalogSnapshot.Search(query)
+            _readSnapshot.CanSearch(query)
+                ? _readSnapshot.Search(query)
                 : _catalogReader.SearchItemSummaries(query);
         public AssetItem GetItem(string itemId) => _catalogReader.GetItem(itemId);
         public AssetThumbnail GetThumbnail(string itemId) =>
-            _thumbnailSnapshot.Get(itemId);
+            _readSnapshot.GetThumbnail(itemId);
         public IReadOnlyDictionary<string, AssetThumbnail> GetThumbnails(IReadOnlyList<string> itemIds) =>
-            _thumbnailSnapshot.GetMany(itemIds);
+            _readSnapshot.GetThumbnails(itemIds);
         public bool TrySearchItemSummaries(
             AssetItemQuery query,
-            out AssetSearchResult result)
-        {
-            if (!AssetCatalogSnapshotCache.CanSearch(query))
-            {
-                result = null;
-                return false;
-            }
-
-            return _catalogSnapshot.TrySearch(query, out result);
-        }
+            out AssetSearchResult result) =>
+            _readSnapshot.TrySearch(query, out result);
 
         public bool TryGetThumbnails(
             IReadOnlyList<string> itemIds,
             out IReadOnlyDictionary<string, AssetThumbnail> thumbnails) =>
-            _thumbnailSnapshot.TryGetMany(itemIds, out thumbnails);
+            _readSnapshot.TryGetThumbnails(
+                itemIds,
+                out thumbnails);
 
         public AssetItem CreateItem(CreateAssetItemRequest request)
         {
@@ -313,10 +302,10 @@ namespace Ee4v.AssetManager.Application
                     itemIds,
                     collectionId))
             {
-                _catalogSnapshot.Invalidate();
                 Publish(new AssetManagerChange(
                     AssetManagerChangeKind.ItemCollections,
-                    relatedId: collectionId));
+                    relatedId: collectionId),
+                    AssetManagerSnapshotInvalidation.Catalog);
             }
         }
 
@@ -401,13 +390,13 @@ namespace Ee4v.AssetManager.Application
         private void PublishCatalog(
             bool invalidateThumbnails = false)
         {
-            _catalogSnapshot.Invalidate();
-            if (invalidateThumbnails)
-            {
-                _thumbnailSnapshot.Invalidate();
-            }
-
-            Publish(new AssetManagerChange(AssetManagerChangeKind.Catalog));
+            Publish(
+                new AssetManagerChange(
+                    AssetManagerChangeKind.Catalog),
+                invalidateThumbnails
+                    ? AssetManagerSnapshotInvalidation
+                        .CatalogAndThumbnails
+                    : AssetManagerSnapshotInvalidation.Catalog);
         }
 
         private T PublishCollections<T>(T result)
@@ -418,9 +407,9 @@ namespace Ee4v.AssetManager.Application
 
         private void PublishCollections()
         {
-            _catalogSnapshot.Invalidate();
             Publish(new AssetManagerChange(
-                AssetManagerChangeKind.Collections));
+                    AssetManagerChangeKind.Collections),
+                AssetManagerSnapshotInvalidation.Catalog);
         }
 
         private void PublishSmartCollectionRule(
@@ -431,8 +420,12 @@ namespace Ee4v.AssetManager.Application
                 collectionId));
         }
 
-        private void Publish(AssetManagerChange change)
+        private void Publish(
+            AssetManagerChange change,
+            AssetManagerSnapshotInvalidation invalidation =
+                AssetManagerSnapshotInvalidation.None)
         {
+            _readSnapshot.Invalidate(invalidation);
             _changePublisher.Publish(change);
         }
     }

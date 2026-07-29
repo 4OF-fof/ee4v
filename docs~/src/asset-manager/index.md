@@ -112,7 +112,7 @@ schema 不整合を含む Navigation のエラー状態を現在の DB に対し
 - schema v6、Item/File/Tag/Collection/Dependency/Import Target API を実装済み
 - BLM `data.db` と Eagle library の読み取り同期、安定した source identity、datasource tag、欠落 origin の reconciliation を実装済み
 - BLM snapshot に任意の `preferences` table がない場合も item metadata の同期を継続し、item directory path だけを未設定として扱う
-- Main View の初回 snapshot 構築と File Tree の DB / filesystem 読み込みは background で行い、前回 load の cancellation に対応する。snapshot 構築後の Main View 切替は memory filter を同期的に描画する
+- Main View の初回 snapshot 構築と File Tree の DB / filesystem 読み込みは background で行い、前回 load の cancellation に対応する。snapshot 構築では Smart Collection の条件と判定値を一括取得して memory 評価し、item ごとの DB query を行わない。snapshot 構築後の Main View 切替は memory filter を同期的に描画する
 - Main View のグリッドサイズ変更は、その `MainViewHost` の controller が持つ実効値と取得済み item state の再配置だけを更新し、user setting、他 window、DB、thumbnail、表示 cacheへ影響させない。`ItemGridItemsPerRow` user setting は新規 controller のデフォルト値であり、静的な列数範囲（1〜12）は同 setting の `SettingRange<int>` が所有する。実効下限は各 `ItemGrid` の viewport 幅と高さから、card が高さ制限によって縮小されて右側に未使用領域を生じない最大 card 幅と column gap 16 px を使って必要な列数を切り上げて求める。window の拡大または高さの縮小で下限が現在値を超えた場合は controller、grid、toolbar slider を同じ値へ引き上げ、下限未満の入力を許可しない。下限が下がった場合は現在値を維持し、その後の slider 操作で新しい下限まで選択できる。狭い表示領域では column gap と card 幅を縮め、高さが不足する場合は card 幅と行高を抑える fallback により表示領域へ収める
 - File Tree は完成済みツリーを Unity Editor のメモリ上に最大 64 件共有し、同一 item / file の再表示では background 確認と loading 表示を省略する。Import Target と Version Group の代表変更は cache 上の表示 state へ反映して再構築せず、構造を含む AssetManager の変更時だけ全件を破棄する。cache は Unity 終了または domain reload で揮発する
 - File Tree の Variant Group と Version Group は異なる accent で表示し、行末の localized meta label で group 種別を識別できる
@@ -126,7 +126,7 @@ schema 不整合を含む Navigation のエラー状態を現在の DB に対し
 - 起動時に自動同期する source は user setting から個別に有効・無効を選択できる
 - background activity 中は統合 AssetManagerと単独 Main View windowの右下に `StatusOverlay` を表示する。単独 Navigation windowには表示しない
 - File Tree の構築状況は File Tree 内の loading message だけで表示し、`StatusOverlay` には追加しない
-- Main View の一覧検索は関連 tag / file / Booth snapshot を返却値へ構築しない軽量 summary API を使う。初回検索時に検索判定用の tag 名、file 名、Booth 有無、Collection 所属を含む不変 catalog snapshot を Application service が構築する。通常の navigation 切替は準備済み snapshot を副作用なしで取得して memory filter し、loading 表示を挟まず即時描画する。snapshot は datasource sync または item / collection の明示的な更新通知で破棄し、次の検索で一度だけ再構築する。thumbnail は item ID 単位で同じ service に保持し、未取得分だけ URL を一度の DB 接続で解決して最大 4 並列取得する。未取得 thumbnail がある場合も空の画像 state で一覧を先に表示し、background 補完の完了時だけ画像を差し替える。thumbnail が存在しない結果も取得済みとして保持する。描画用 Texture cache は画像内容を含む key と LRU 上限を持つ
+- Main View の一覧検索は関連 tag / file / Booth snapshot を返却値へ構築しない軽量 summary API を使う。初回検索時に検索判定用の tag 名、file 名、Booth 有無、Collection 所属を含む不変 catalog snapshot を Application service が構築する。通常の navigation 切替は準備済み snapshot を副作用なしで取得して memory filter し、loading 表示を挟まず即時描画する。通常取得と即時取得は Main View の同じ catalog reader pipeline を通し、Item、子 Collection preview、thumbnail の組み立てを重複させない。catalog と thumbnail の invalidation は一つの read snapshot が更新種別に応じて管理する。snapshot は datasource sync または item / collection の明示的な更新通知で破棄し、次の検索で一度だけ再構築する。thumbnail は item ID 単位で同じ service に保持し、未取得分だけ URL を一度の DB 接続で解決して最大 4 並列取得する。未取得 thumbnail がある場合も空の画像 state で一覧を先に表示し、background 補完の完了時だけ画像を差し替える。thumbnail が存在しない結果も取得済みとして保持し、外部読み込み中は cache lock を占有しない。描画用 Texture cache は画像内容を含む key と LRU 上限を持つ
 - Eagle Booth bridge は loopback bind、BOOTH origin 制限、session token、1 MiB request body 上限を適用
 
 未完了なのは全件を辿る pagination、toolbar 検索・絞り込みの接続です。Smart Collection は現状 Item ごとの条件評価を含むため、大規模 DB 向けの query 一括化も今後の課題です。

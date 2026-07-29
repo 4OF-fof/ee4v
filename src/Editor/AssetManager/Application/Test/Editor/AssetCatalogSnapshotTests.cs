@@ -81,6 +81,25 @@ namespace Ee4v.AssetManager.Application.Tests
         }
 
         [Test]
+        public void Search_PagingKeepsFullMatchCount()
+        {
+            var cache = new AssetCatalogSnapshotCache(
+                CreateSnapshot);
+
+            var result = cache.Search(
+                new AssetItemQuery
+                {
+                    Offset = 1,
+                    Limit = 1
+                });
+
+            Assert.That(result.TotalCount, Is.EqualTo(3));
+            Assert.That(
+                result.Items.Select(item => item.Id),
+                Is.EqualTo(new[] { "plain" }));
+        }
+
+        [Test]
         [FeatureTestCase(
             "catalog 変更後だけ snapshot を再構築する",
             "通常の表示切替では保持し、明示的な invalidation 後の最初の検索でだけ再読込することを確認します。",
@@ -253,6 +272,56 @@ namespace Ee4v.AssetManager.Application.Tests
                 thumbnails.Keys,
                 Is.EqualTo(new[] { "a" }));
             Assert.That(loadCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void ReadSnapshot_InvalidatesCatalogAndThumbnailsByScope()
+        {
+            var snapshot = new AssetManagerReadSnapshot(
+                CreateSnapshot,
+                itemIds => itemIds.ToDictionary(
+                    itemId => itemId,
+                    itemId => new AssetThumbnail
+                    {
+                        Found = true,
+                        Path = itemId + ".png"
+                    },
+                    StringComparer.Ordinal),
+                itemId => new AssetThumbnail
+                {
+                    Found = true,
+                    Path = itemId + ".png"
+                });
+
+            snapshot.Search(new AssetItemQuery());
+            snapshot.GetThumbnails(new[] { "booth" });
+
+            snapshot.Invalidate(
+                AssetManagerSnapshotInvalidation.Catalog);
+
+            AssetSearchResult searchResult;
+            IReadOnlyDictionary<string, AssetThumbnail>
+                thumbnails;
+            Assert.That(
+                snapshot.TrySearch(
+                    new AssetItemQuery(),
+                    out searchResult),
+                Is.False);
+            Assert.That(
+                snapshot.TryGetThumbnails(
+                    new[] { "booth" },
+                    out thumbnails),
+                Is.True);
+
+            snapshot.Invalidate(
+                AssetManagerSnapshotInvalidation
+                    .CatalogAndThumbnails);
+
+            Assert.That(
+                snapshot.TryGetThumbnails(
+                    new[] { "booth" },
+                    out thumbnails),
+                Is.False);
         }
 
         private static string[] SearchIds(
