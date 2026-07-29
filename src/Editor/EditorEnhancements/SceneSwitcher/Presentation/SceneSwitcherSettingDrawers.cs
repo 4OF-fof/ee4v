@@ -16,7 +16,7 @@ namespace Ee4v.SceneSwitcher
                 CreateFolderField);
         }
 
-        private static VisualElement CreateFolderField(
+        internal static VisualElement CreateFolderField(
             SettingDrawerContext<string> context)
         {
             var root = new VisualElement();

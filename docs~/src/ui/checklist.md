@@ -22,7 +22,11 @@
 - Catalog registrar で story を登録したか
 - Catalog registrar で必要な stylesheet を登録したか
 - `Editor/UI/Catalog/Stories` の `<name>.story.cs` に preview 実装を追加したか
+- `Domain` 外へ登録する汎用UIの本体、USS、testが `Editor/UI` と `Ee4v.UI` namespaceにあるか
 - Catalog 上で最低限の使い方が確認できるか
+- 独立 window に、実 component から画面全体を再構築する screen story があるか
+- Project / Hierarchy 注入 UI に `Imgui` story があるか
+- `UiCatalogCoverageTests` の必須 component / screen / IMGUI / USS 監査を更新したか
 
 ## 補足
 

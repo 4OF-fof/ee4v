@@ -17,16 +17,8 @@ namespace Ee4v.HiddenObjects
                 return;
             }
 
-            var buttonRect = new Rect(
-                context.SelectionRect.xMax - ButtonWidth,
-                context.SelectionRect.y,
-                ButtonWidth,
-                context.SelectionRect.height);
-            var iconRect = new Rect(
-                buttonRect.x + (buttonRect.width - IconSize) * 0.5f,
-                buttonRect.y + (buttonRect.height - IconSize) * 0.5f,
-                IconSize,
-                IconSize);
+            var buttonRect = GetButtonRect(context.SelectionRect);
+            var iconRect = GetIconRect(buttonRect);
 
             if (Event.current.type == EventType.Repaint &&
                 UiBuiltinIconResolver.TryResolve(
@@ -56,6 +48,24 @@ namespace Ee4v.HiddenObjects
             HiddenObjectsWindow.OpenForScene(
                 context.HierarchyScene.handle);
             Event.current.Use();
+        }
+
+        internal static Rect GetButtonRect(Rect selectionRect)
+        {
+            return new Rect(
+                selectionRect.xMax - ButtonWidth,
+                selectionRect.y,
+                ButtonWidth,
+                selectionRect.height);
+        }
+
+        internal static Rect GetIconRect(Rect buttonRect)
+        {
+            return new Rect(
+                buttonRect.x + (buttonRect.width - IconSize) * 0.5f,
+                buttonRect.y + (buttonRect.height - IconSize) * 0.5f,
+                IconSize,
+                IconSize);
         }
     }
 }

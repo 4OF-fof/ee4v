@@ -16,29 +16,13 @@ namespace Ee4v.FolderStyle
         private const float WindowWidth = 360f;
         private const float WindowHeight = 268f;
         private const string RootClassName = "ee4v-ui";
-        private const string WindowClassName =
-            "ee4v-folder-style-window";
-        private const string HeaderClassName =
-            "ee4v-folder-style-window__header";
-        private const string PreviewClassName =
-            "ee4v-folder-style-window__preview";
-        private const string PreviewImageClassName =
-            "ee4v-folder-style-window__preview-image";
-        private const string HeaderTextClassName =
-            "ee4v-folder-style-window__header-text";
-        private const string TitleClassName =
-            "ee4v-folder-style-window__title";
-        private const string SubtitleClassName =
-            "ee4v-folder-style-window__subtitle";
-        private const string CloseClassName =
-            "ee4v-folder-style-window__close";
 
         private IReadOnlyList<string> _folderGuids;
         private FolderStyleService _service;
         private DecorationRecentIconSession
             _recentIconSession;
         private DecorationStyleEditor _editor;
-        private Image _previewImage;
+        private DecorationStyleWindowLayout _layout;
         private TransientPopupFocusController _focusController;
 
         internal static void ShowAt(
@@ -112,7 +96,6 @@ namespace Ee4v.FolderStyle
             var root = rootVisualElement;
             root.Clear();
             root.AddToClassList(RootClassName);
-            root.AddToClassList(WindowClassName);
             UiStyleUtility.AddPackageStyleSheet(
                 root,
                 "Editor/UI/Components/common.uss");
@@ -121,78 +104,37 @@ namespace Ee4v.FolderStyle
                 "Editor/UI/Components/Content/Icon/icon.uss");
             UiStyleUtility.AddPackageStyleSheet(
                 root,
+                "Editor/UI/Components/Inputs/Button/ui-button.uss");
+            UiStyleUtility.AddPackageStyleSheet(
+                root,
                 "Editor/UI/Components/Inputs/DecorationStyleEditor/decoration-style-editor.uss");
             UiStyleUtility.AddPackageStyleSheet(
                 root,
-                "Editor/EditorEnhancements/FolderStyle/UI/folder-style-window.uss");
+                "Editor/UI/Components/Layout/DecorationStyleWindowLayout/decoration-style-window-layout.uss");
 
-            root.Add(CreateHeader());
-
-            _editor = new DecorationStyleEditor(
-                CreateEditorText(),
-                CreateEditorState());
+            _layout = new DecorationStyleWindowLayout(
+                new DecorationStyleWindowLayoutState(
+                    CreateTitle(),
+                    CreateSubtitle(),
+                    CreateTargetTooltip(),
+                    I18N.Get("window.closeTooltip"),
+                    CreateEditorText(),
+                    CreateEditorState()),
+                Close);
+            _editor = _layout.Editor;
             _editor.ColorChanged += SetColor;
             _editor.IconChanged += SetIcon;
             _editor.RemoveRecentIconRequested +=
                 RemoveRecentIcon;
             _editor.ClearColorRequested += ClearColor;
             _editor.ClearIconRequested += ClearIcon;
-            root.Add(_editor);
+            root.Add(_layout);
 
             root.focusable = true;
             root.RegisterCallback<KeyDownEvent>(
                 OnKeyDown);
             root.Focus();
             RefreshPreview();
-        }
-
-        private VisualElement CreateHeader()
-        {
-            var header = new VisualElement();
-            header.AddToClassList(HeaderClassName);
-
-            var preview = new VisualElement();
-            preview.AddToClassList(PreviewClassName);
-            _previewImage = new Image
-            {
-                scaleMode = ScaleMode.ScaleToFit,
-                pickingMode = PickingMode.Ignore
-            };
-            _previewImage.AddToClassList(
-                PreviewImageClassName);
-            preview.Add(_previewImage);
-            header.Add(preview);
-
-            var headerText = new VisualElement();
-            headerText.AddToClassList(
-                HeaderTextClassName);
-            var title = UiTextFactory.Create(
-                CreateTitle(),
-                UiClassNames.WindowTitle);
-            title.AddToClassList(TitleClassName);
-            title.tooltip = CreateTargetTooltip();
-            headerText.Add(title);
-
-            var subtitle = UiTextFactory.Create(
-                CreateSubtitle(),
-                UiClassNames.SecondaryText);
-            subtitle.AddToClassList(
-                SubtitleClassName);
-            headerText.Add(subtitle);
-            header.Add(headerText);
-
-            var closeButton = new Button(Close)
-            {
-                tooltip = I18N.Get(
-                    "window.closeTooltip")
-            };
-            closeButton.AddToClassList(CloseClassName);
-            closeButton.Add(new Icon(
-                IconState.FromBuiltinIcon(
-                    UiBuiltinIcon.Close,
-                    UiSizeTokens.Size14)));
-            header.Add(closeButton);
-            return header;
         }
 
         private DecorationStyleEditorText CreateEditorText()
@@ -436,7 +378,7 @@ namespace Ee4v.FolderStyle
 
         private void RefreshPreview()
         {
-            if (_previewImage == null ||
+            if (_layout == null ||
                 _folderGuids == null ||
                 _folderGuids.Count == 0)
             {
@@ -467,16 +409,16 @@ namespace Ee4v.FolderStyle
                 !iconMixed && first.HasIcon
                     ? LoadIcon(first.IconGuid)
                     : null;
-            _previewImage.image =
+            _layout.SetPreview(
                 customIcon ??
-                EditorGUIUtility.IconContent(
-                    "Folder Icon").image;
-            _previewImage.tintColor =
+                    EditorGUIUtility.IconContent(
+                        "Folder Icon").image,
                 customIcon != null ||
                 colorMixed ||
                 !first.HasColor
                     ? Color.white
-                    : first.Color;
+                    : first.Color);
+            _layout.ClearPreviewBackground();
         }
 
         private static Texture LoadIcon(string iconGuid)

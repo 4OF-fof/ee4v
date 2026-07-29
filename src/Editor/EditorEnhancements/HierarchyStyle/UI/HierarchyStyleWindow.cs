@@ -17,26 +17,6 @@ namespace Ee4v.HierarchyStyle
         private const float WindowWidth = 360f;
         private const float WindowHeight = 318f;
         private const string RootClassName = "ee4v-ui";
-        private const string WindowClassName =
-            "ee4v-hierarchy-style-window";
-        private const string HeaderClassName =
-            "ee4v-hierarchy-style-window__header";
-        private const string PreviewClassName =
-            "ee4v-hierarchy-style-window__preview";
-        private const string PreviewImageClassName =
-            "ee4v-hierarchy-style-window__preview-image";
-        private const string HeaderTextClassName =
-            "ee4v-hierarchy-style-window__header-text";
-        private const string TitleClassName =
-            "ee4v-hierarchy-style-window__title";
-        private const string SubtitleClassName =
-            "ee4v-hierarchy-style-window__subtitle";
-        private const string CloseClassName =
-            "ee4v-hierarchy-style-window__close";
-        private const string HideButtonClassName =
-            "ee4v-hierarchy-style-window__hide";
-        private const string HideButtonTextClassName =
-            "ee4v-hierarchy-style-window__hide-text";
 
         private IReadOnlyList<GameObject> _targets;
         private IReadOnlyList<string> _objectIds;
@@ -47,8 +27,7 @@ namespace Ee4v.HierarchyStyle
         private DecorationRecentIconSession
             _recentIconSession;
         private DecorationStyleEditor _editor;
-        private VisualElement _preview;
-        private Image _previewImage;
+        private DecorationStyleWindowLayout _layout;
         private TransientPopupFocusController _focusController;
 
         internal static void ShowAt(
@@ -158,7 +137,6 @@ namespace Ee4v.HierarchyStyle
             var root = rootVisualElement;
             root.Clear();
             root.AddToClassList(RootClassName);
-            root.AddToClassList(WindowClassName);
             UiStyleUtility.AddPackageStyleSheet(
                 root,
                 "Editor/UI/Components/common.uss");
@@ -167,16 +145,36 @@ namespace Ee4v.HierarchyStyle
                 "Editor/UI/Components/Content/Icon/icon.uss");
             UiStyleUtility.AddPackageStyleSheet(
                 root,
+                "Editor/UI/Components/Inputs/Button/ui-button.uss");
+            UiStyleUtility.AddPackageStyleSheet(
+                root,
                 "Editor/UI/Components/Inputs/DecorationStyleEditor/decoration-style-editor.uss");
             UiStyleUtility.AddPackageStyleSheet(
                 root,
-                "Editor/EditorEnhancements/HierarchyStyle/UI/hierarchy-style-window.uss");
+                "Editor/UI/Components/Layout/DecorationStyleWindowLayout/decoration-style-window-layout.uss");
 
-            root.Add(CreateHeader());
-
-            _editor = new DecorationStyleEditor(
-                CreateEditorText(),
-                CreateEditorState());
+            _layout = new DecorationStyleWindowLayout(
+                new DecorationStyleWindowLayoutState(
+                    CreateTitle(),
+                    CreateSubtitle(),
+                    CreateTargetTooltip(),
+                    I18N.Get("window.closeTooltip"),
+                    CreateEditorText(),
+                    CreateEditorState(),
+                    actionLabel: _targets.Count > 1
+                        ? I18N.Get(
+                            "editor.hide.multipleLabel",
+                            _targets.Count)
+                        : I18N.Get(
+                            "editor.hide.singleLabel"),
+                    actionTooltip:
+                        I18N.Get("editor.hide.tooltip"),
+                    actionIcon: IconState.FromBuiltinIcon(
+                        UiBuiltinIcon.VisibilityHidden,
+                        UiSizeTokens.Size16)),
+                Close,
+                HideTargets);
+            _editor = _layout.Editor;
             _editor.ColorChanged += SetBackgroundColor;
             _editor.IconChanged += SetIcon;
             _editor.RemoveRecentIconRequested +=
@@ -184,88 +182,13 @@ namespace Ee4v.HierarchyStyle
             _editor.ClearColorRequested +=
                 ClearBackgroundColor;
             _editor.ClearIconRequested += ClearIcon;
-            root.Add(_editor);
-            root.Add(CreateHideButton());
+            root.Add(_layout);
 
             root.focusable = true;
             root.RegisterCallback<KeyDownEvent>(
                 OnKeyDown);
             root.Focus();
             RefreshPreview();
-        }
-
-        private VisualElement CreateHeader()
-        {
-            var header = new VisualElement();
-            header.AddToClassList(HeaderClassName);
-
-            _preview = new VisualElement();
-            _preview.AddToClassList(PreviewClassName);
-            _previewImage = new Image
-            {
-                scaleMode = ScaleMode.ScaleToFit,
-                pickingMode = PickingMode.Ignore
-            };
-            _previewImage.AddToClassList(
-                PreviewImageClassName);
-            _preview.Add(_previewImage);
-            header.Add(_preview);
-
-            var headerText = new VisualElement();
-            headerText.AddToClassList(
-                HeaderTextClassName);
-            var title = UiTextFactory.Create(
-                CreateTitle(),
-                UiClassNames.WindowTitle);
-            title.AddToClassList(TitleClassName);
-            title.tooltip = CreateTargetTooltip();
-            headerText.Add(title);
-
-            var subtitle = UiTextFactory.Create(
-                CreateSubtitle(),
-                UiClassNames.SecondaryText);
-            subtitle.AddToClassList(
-                SubtitleClassName);
-            headerText.Add(subtitle);
-            header.Add(headerText);
-
-            var closeButton = new Button(Close)
-            {
-                tooltip = I18N.Get(
-                    "window.closeTooltip")
-            };
-            closeButton.AddToClassList(CloseClassName);
-            closeButton.Add(new Icon(
-                IconState.FromBuiltinIcon(
-                    UiBuiltinIcon.Close,
-                    UiSizeTokens.Size14)));
-            header.Add(closeButton);
-            return header;
-        }
-
-        private VisualElement CreateHideButton()
-        {
-            var button = new Button(HideTargets)
-            {
-                tooltip = I18N.Get(
-                    "editor.hide.tooltip")
-            };
-            button.AddToClassList(HideButtonClassName);
-            button.Add(new Icon(
-                IconState.FromBuiltinIcon(
-                    UiBuiltinIcon.VisibilityHidden,
-                    UiSizeTokens.Size16)));
-            var text = UiTextFactory.Create(
-                _targets.Count > 1
-                    ? I18N.Get(
-                        "editor.hide.multipleLabel",
-                        _targets.Count)
-                    : I18N.Get(
-                        "editor.hide.singleLabel"));
-            text.AddToClassList(
-                HideButtonTextClassName);
-            button.Add(text);
-            return button;
         }
 
         private DecorationStyleEditorText CreateEditorText()
@@ -522,8 +445,7 @@ namespace Ee4v.HierarchyStyle
 
         private void RefreshPreview()
         {
-            if (_preview == null ||
-                _previewImage == null ||
+            if (_layout == null ||
                 _targets == null ||
                 _targets.Count == 0)
             {
@@ -555,22 +477,21 @@ namespace Ee4v.HierarchyStyle
                 !iconMixed && first.HasIcon
                     ? LoadIcon(first.IconGuid)
                     : null;
-            _previewImage.image =
+            _layout.SetPreview(
                 customIcon ??
-                EditorGUIUtility.ObjectContent(
-                    _targets[0],
-                    typeof(GameObject)).image;
+                    EditorGUIUtility.ObjectContent(
+                        _targets[0],
+                        typeof(GameObject)).image,
+                Color.white);
             if (!colorMixed &&
                 first.HasBackgroundColor)
             {
-                _preview.style.backgroundColor =
-                    new StyleColor(
-                        first.BackgroundColor);
+                _layout.SetPreviewBackground(
+                    first.BackgroundColor);
             }
             else
             {
-                _preview.style.backgroundColor =
-                    StyleKeyword.Null;
+                _layout.ClearPreviewBackground();
             }
         }
 

@@ -249,6 +249,8 @@ catalogとrunnerは `Testing.Application` のportとして受け取り、具象�
 - Domain / Application / ServicesからUnity、UI、SQLite、filesystemを参照しない
 - UIはview stateの表示と入力通知に限定し、use caseをContracts経由で呼ぶ
 - 共通UIはCore固有のI18N、Settings、Injector、background serviceを参照しない
+- Catalogで`Domain`外へ分類する汎用component / layoutは、実装も`Editor/UI`、
+  `Ee4v.UI` namespace、`Ee4v.UI.Editor` assemblyが所有する
 - Catalogとstoryは本番の共通UI assemblyへ含めない
 - AssetManager.UIとTesting.UIはCatalogを参照せず、Catalogが外側から各UIを参照する
 - InfrastructureはUIを参照せず、Compositionだけが具象を組み立てる

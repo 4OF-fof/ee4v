@@ -6,6 +6,7 @@
     "Ee4v.Testing.Contracts.Editor",
     "Ee4v.Testing.Infrastructure.StaticAnalysis.Editor",
     "Ee4v.Testing.UI.Editor",
+    "Ee4v.UI.Catalog.Editor",
     "Ee4v.UI.Editor"
   ],
   "includePlatforms": [

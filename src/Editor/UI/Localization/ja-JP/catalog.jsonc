@@ -52,6 +52,41 @@
       "description": "固定項目の値を編集せず、並び順だけを変更するコンポーネントです。",
       "details": "ドラッグまたは上下キーで優先順位などの固定項目を並び替えます。",
       "reorderTooltip": "ドラッグまたは上下キーで並び替え"
+    },
+    "coverage": {
+      "componentDescription": "{0} UIコンポーネントのCatalogプレビューです。",
+      "componentDetails": "実際の{0}コンポーネントへ代表的なstateを渡し、単体のレイアウトと操作を確認できます。",
+      "screenDescription": "{0}画面のCatalogプレビューです。",
+      "screenDetails": "実際のコンポーネントから{0}画面を再構築し、別windowを開かずに画面全体を確認できます。",
+      "sample": {
+        "title": "サンプルタイトル",
+        "subtitle": "表示確認用の代表状態",
+        "search": "検索",
+        "empty": "項目がありません",
+        "noMatches": "一致する項目がありません",
+        "selectAll": "すべて選択",
+        "clearSelection": "選択を解除",
+        "reveal": "Hierarchyに表示",
+        "refresh": "更新",
+        "refreshTooltip": "表示データを更新",
+        "sceneAll": "すべてのScene",
+        "sceneMain": "Main",
+        "open": "開く",
+        "openTooltip": "この項目を開く",
+        "favorite": "お気に入り",
+        "unfavorite": "お気に入りを解除",
+        "createFormat": "「{0}」を作成",
+        "collection": "コレクション",
+        "smartCollection": "スマートコレクション",
+        "tagOne": "アバター",
+        "tagTwo": "環境",
+        "file": "avatar.unitypackage",
+        "folder": "Assets",
+        "status": "3件 · 1件選択",
+        "run": "実行",
+        "passed": "成功",
+        "description": "Catalog確認用の代表コンテンツです。"
+      }
     }
   }
 }

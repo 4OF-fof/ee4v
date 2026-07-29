@@ -16,9 +16,10 @@ namespace Ee4v.UI
             { "Content", 0 },
             { "Inputs", 1 },
             { "Collections", 2 },
-            { "Overlays", 3 },
-            { "Layout", 4 },
-            { "Domain", 5 }
+            { "Navigation", 3 },
+            { "Overlays", 4 },
+            { "Layout", 5 },
+            { "Domain", 6 }
         };
         internal enum ComponentImplementationKind
         {
@@ -526,6 +527,20 @@ namespace Ee4v.UI
             {
                 registrar.Register(registry);
             }
+        }
+
+        internal static IReadOnlyList<StoryRegistration>
+            GetRegisteredStoriesForTests()
+        {
+            EnsureCatalogRegistrations();
+            return RegisteredStories.ToArray();
+        }
+
+        internal static IReadOnlyList<string>
+            GetRegisteredStyleSheetPathsForTests()
+        {
+            EnsureCatalogRegistrations();
+            return RegisteredStyleSheetPaths.ToArray();
         }
 
         private sealed class NavigatorTreeNode

@@ -52,6 +52,41 @@
       "description": "Changes only the order of fixed items without editing their values.",
       "details": "Reorder fixed priority items by dragging or using the arrow keys.",
       "reorderTooltip": "Drag or use the arrow keys to reorder"
+    },
+    "coverage": {
+      "componentDescription": "Catalog preview for the {0} UI component.",
+      "componentDetails": "Shows the production {0} component with representative state so its layout and interaction can be checked independently.",
+      "screenDescription": "Catalog preview for the {0} screen.",
+      "screenDetails": "Reconstructs the production {0} screen from its actual components so the complete layout can be checked without opening a separate window.",
+      "sample": {
+        "title": "Sample title",
+        "subtitle": "Representative state for visual review",
+        "search": "Search",
+        "empty": "No items",
+        "noMatches": "No matching items",
+        "selectAll": "Select all",
+        "clearSelection": "Clear selection",
+        "reveal": "Show in Hierarchy",
+        "refresh": "Refresh",
+        "refreshTooltip": "Refresh the displayed data",
+        "sceneAll": "All Scenes",
+        "sceneMain": "Main",
+        "open": "Open",
+        "openTooltip": "Open this item",
+        "favorite": "Favorite",
+        "unfavorite": "Remove favorite",
+        "createFormat": "Create \"{0}\"",
+        "collection": "Collection",
+        "smartCollection": "Smart Collection",
+        "tagOne": "Avatar",
+        "tagTwo": "Environment",
+        "file": "avatar.unitypackage",
+        "folder": "Assets",
+        "status": "3 items · 1 selected",
+        "run": "Run",
+        "passed": "Passed",
+        "description": "Representative content for Catalog verification."
+      }
     }
   }
 }

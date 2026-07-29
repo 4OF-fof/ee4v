@@ -59,7 +59,7 @@ namespace Ee4v.AssetManager.UI
                 order ?? Array.Empty<string>());
         }
 
-        private static VisualElement CreateField(
+        internal static VisualElement CreateField(
             SettingDrawerContext<string> context)
         {
             var items = NormalizeOrder(context.Value)
