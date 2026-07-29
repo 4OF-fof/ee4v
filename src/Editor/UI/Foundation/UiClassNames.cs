@@ -34,6 +34,7 @@ namespace Ee4v.UI
         public const string HistoryNavigationOverlaySeparator = "ee4v-ui-history-navigation-overlay__separator";
         public const string InfomationPanelSelectionCount = "ee4v-asset-manager-panel__infomation-selection-count";
         public const string InfomationPanelSelectionCountSuffix = "ee4v-asset-manager-panel__infomation-selection-count-suffix";
+        public const string FileTreeDetailName = "ee4v-asset-manager-file-detail__typography-name";
 
         public const string CatalogPageTitle = "ee4v-ui-catalog-page__title";
         public const string CatalogPageDescription = "ee4v-ui-catalog-page__description";

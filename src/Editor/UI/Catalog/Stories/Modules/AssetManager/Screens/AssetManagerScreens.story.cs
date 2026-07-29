@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.AssetManager.UI;
 using Ee4v.Core.Settings;
@@ -35,6 +36,11 @@ namespace Ee4v.UI
                     "file-tree-detail-view",
                     "FileTreeDetailView",
                     BuildFileTreeDetailView);
+                RegisterComponent(
+                    registry,
+                    "file-icon-catalog",
+                    "FileIconCatalog",
+                    BuildFileIconCatalog);
                 RegisterComponent(
                     registry,
                     "tag-list-page",
@@ -196,6 +202,114 @@ namespace Ee4v.UI
                 parent,
                 140f,
                 true).Add(view);
+        }
+
+        private static void BuildFileIconCatalog(
+            CatalogWindow window,
+            VisualElement parent)
+        {
+            var definitions =
+                FileIconCatalog.Definitions;
+            if (definitions.Count == 0)
+            {
+                return;
+            }
+
+            var choices = new List<string>(
+                definitions.Count);
+            for (var i = 0; i < definitions.Count; i++)
+            {
+                choices.Add(
+                    CreateFileIconChoiceLabel(
+                        definitions[i]));
+            }
+
+            var selectedIndex = 0;
+            var controls = window.CreatePlainControlsSection(
+                parent,
+                "拡張子・directory・group の定義を選択し、対応する icon を preview します。");
+            var selector = new PopupField<string>(
+                choices,
+                selectedIndex);
+            selector.label = string.Empty;
+            controls.Content.Add(selector);
+
+            var surface = CatalogCoveragePreview.CreateSurface(
+                window,
+                parent,
+                220f,
+                true);
+            var previewContent = new VisualElement();
+            previewContent.style.flexGrow = 1f;
+            previewContent.style.alignItems = Align.Center;
+            previewContent.style.justifyContent =
+                Justify.Center;
+            var icon = new Icon();
+            var idText = UiTextFactory.Create(
+                string.Empty,
+                UiClassNames.CatalogDetailLabel);
+            var targetText = UiTextFactory.Create(
+                string.Empty,
+                UiClassNames.CatalogDetailValue);
+            var sizeText = UiTextFactory.Create(
+                string.Empty,
+                UiClassNames.CatalogDetailValue);
+            previewContent.Add(icon);
+            previewContent.Add(idText);
+            previewContent.Add(targetText);
+            previewContent.Add(sizeText);
+            surface.Add(previewContent);
+
+            System.Action refresh = () =>
+            {
+                var definition =
+                    definitions[selectedIndex];
+                icon.SetState(
+                    definition.CreateArtworkIconState());
+                idText.SetText(definition.Id);
+                targetText.SetText(
+                    CreateFileIconTargetText(
+                        definition));
+                sizeText.SetText(
+                    definition.ArtworkIconSize + " px");
+            };
+            selector.RegisterValueChangedCallback(evt =>
+            {
+                var nextIndex =
+                    choices.IndexOf(evt.newValue);
+                if (nextIndex < 0)
+                {
+                    return;
+                }
+
+                selectedIndex = nextIndex;
+                refresh();
+            });
+
+            refresh();
+            CatalogWindow.FinalizeControlsSection(
+                parent,
+                controls);
+        }
+
+        private static string
+            CreateFileIconChoiceLabel(
+                FileIconDefinition definition)
+        {
+            return definition.Id + " · " +
+                   CreateFileIconTargetText(
+                       definition);
+        }
+
+        private static string
+            CreateFileIconTargetText(
+                FileIconDefinition definition)
+        {
+            return definition.Extensions.Count > 0
+                ? string.Join(
+                    ", ",
+                    definition.Extensions)
+                : definition.Kind.ToString();
         }
 
         private static void BuildTagListPage(

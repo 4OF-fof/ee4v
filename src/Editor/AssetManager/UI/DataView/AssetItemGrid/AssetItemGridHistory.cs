@@ -46,7 +46,8 @@ namespace Ee4v.AssetManager.UI
             string detailId = null,
             string detailName = null,
             string detailParentName = null,
-            IReadOnlyList<AssetItemGridHistoryView> viewPath = null)
+            IReadOnlyList<AssetItemGridHistoryView> viewPath = null,
+            string detailExtension = null)
         {
             Kind = kind;
             ViewId = viewId ?? string.Empty;
@@ -63,6 +64,9 @@ namespace Ee4v.AssetManager.UI
             DetailId = detailId ?? string.Empty;
             DetailName = detailName ?? string.Empty;
             DetailParentName = detailParentName ?? string.Empty;
+            DetailExtension =
+                FileExtensionUtility.Normalize(
+                    detailExtension);
         }
 
         public AssetItemGridHistoryEntryKind Kind { get; }
@@ -88,6 +92,8 @@ namespace Ee4v.AssetManager.UI
         public string DetailName { get; }
 
         public string DetailParentName { get; }
+
+        public string DetailExtension { get; }
 
         public IReadOnlyList<string> Breadcrumbs
         {

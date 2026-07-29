@@ -71,9 +71,12 @@
     padding: var(--ee4v-space-3xl);
 }
 
+.ee4v-asset-manager-file-detail__content {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+}
+
 .ee4v-asset-manager-file-detail__name {
-    color: var(--ee4v-color-text-primary);
-    font-size: var(--ee4v-font-size-display);
-    -unity-font-style: bold;
-    -unity-text-align: middle-center;
+    max-width: 100%;
 }

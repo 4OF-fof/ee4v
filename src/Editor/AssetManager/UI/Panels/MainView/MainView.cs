@@ -687,7 +687,8 @@ namespace Ee4v.AssetManager.UI
                     _fileDetailState.Id,
                     _fileDetailState.Name,
                     _fileDetailState.ParentName,
-                    viewPath);
+                    viewPath,
+                    _fileDetailState.Extension);
             }
 
             if (IsFileListMode)
@@ -749,7 +750,11 @@ namespace Ee4v.AssetManager.UI
                     _browserNodeName = entry.NodeName;
                     DetailTabRequested?.Invoke("file-tree");
                     _fileDetailState = entry.Kind == AssetItemGridHistoryEntryKind.FileDetail
-                        ? new FileTreeDetailState(entry.DetailId, entry.DetailName, entry.DetailParentName)
+                        ? new FileTreeDetailState(
+                            entry.DetailId,
+                            entry.DetailName,
+                            entry.DetailParentName,
+                            entry.DetailExtension)
                         : null;
                 }
                 else

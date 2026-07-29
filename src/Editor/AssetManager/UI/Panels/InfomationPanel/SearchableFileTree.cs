@@ -986,7 +986,13 @@ namespace Ee4v.AssetManager.UI
                 Path ?? string.Empty,
                 Name ?? string.Empty
             });
-            return new FileTreeDetailState(detailId, Name, DetailParentName);
+            return new FileTreeDetailState(
+                detailId,
+                Name,
+                DetailParentName,
+                IsDirectory || IsGroup
+                    ? string.Empty
+                    : Path);
         }
 
         public void SetImportTargetState(string fileId, HashSet<string> targetPaths)

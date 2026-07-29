@@ -44,6 +44,7 @@ namespace Ee4v.UI.Tests
             "decoration-style-window-layout",
             "diff-confirmation-overlay",
             "draggable-toggle-group",
+            "file-icon-catalog",
             "file-tree-detail-view",
             "hidden-object-tree-row",
             "hidden-object-tree-view",

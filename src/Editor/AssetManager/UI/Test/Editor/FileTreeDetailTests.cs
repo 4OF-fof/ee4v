@@ -1,6 +1,9 @@
 using Ee4v.Testing.Contracts;
 using Ee4v.UI;
 using NUnit.Framework;
+using System;
+using System.Linq;
+using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI.Tests
 {
@@ -26,6 +29,7 @@ namespace Ee4v.AssetManager.UI.Tests
             Assert.That(state.Name, Is.EqualTo("preview.png"));
             Assert.That(state.ParentName, Is.EqualTo("archive.zip"));
             Assert.That(state.Id, Does.Contain("archive/content/preview.png"));
+            Assert.That(state.Extension, Is.EqualTo("png"));
         }
 
         [Test]
@@ -36,6 +40,175 @@ namespace Ee4v.AssetManager.UI.Tests
             Assert.That(state.Id, Is.EqualTo("asset-file|file-1"));
             Assert.That(state.Name, Is.EqualTo("avatar.zip"));
             Assert.That(state.ParentName, Is.Empty);
+            Assert.That(state.Extension, Is.EqualTo("zip"));
+        }
+
+        [TestCase(".PNG", "image", "Image")]
+        [TestCase("Assets/model.VRM", "model", "Cube")]
+        [TestCase("unitypackage", "package-archive", "FolderZip")]
+        [TestCase("unknown", "file", "Document")]
+        public void IconCatalog_ResolvesFileDefinition(
+            string extension,
+            string expectedId,
+            string expectedIcon)
+        {
+            var definition =
+                FileIconCatalog.Resolve(
+                    FileEntryKind.File,
+                    extension);
+
+            Assert.That(definition.Id, Is.EqualTo(expectedId));
+            Assert.That(
+                definition.Icon.ToString(),
+                Is.EqualTo(expectedIcon));
+        }
+
+        [Test]
+        public void IconCatalog_OwnsUniqueExtensions()
+        {
+            var duplicateExtensions =
+                FileIconCatalog.Definitions
+                    .Where(definition =>
+                        definition.Kind ==
+                        FileEntryKind.File)
+                    .SelectMany(definition =>
+                        definition.Extensions)
+                    .GroupBy(
+                        extension => extension,
+                        StringComparer.OrdinalIgnoreCase)
+                    .Where(group => group.Count() > 1)
+                    .Select(group => group.Key)
+                    .ToArray();
+
+            Assert.That(duplicateExtensions, Is.Empty);
+        }
+
+        [Test]
+        public void IconCatalog_UsesStandard88PixelSize()
+        {
+            Assert.That(
+                FileIconCatalog.Definitions
+                    .Select(definition =>
+                        definition.ArtworkIconSize)
+                    .Distinct()
+                    .ToArray(),
+                Is.EqualTo(new[]
+                {
+                    FileIconDefinition.StandardIconSize
+                }));
+            Assert.That(
+                FileIconDefinition.StandardIconSize,
+                Is.EqualTo(88f));
+        }
+
+        [Test]
+        public void DetailContentCatalog_UsesNameOnlyFallback()
+        {
+            Assert.That(
+                FileTreeDetailContentCatalog.Definitions,
+                Is.Empty);
+
+            var definition =
+                FileTreeDetailContentCatalog.Resolve("png");
+            var content = definition.CreateContent(
+                FileTreeDetailState.FromAssetFile(
+                    "file-1",
+                    "preview.png"));
+            var textElements =
+                content.Query<UiTextElement>().ToList();
+
+            Assert.That(definition.Id, Is.EqualTo("fallback"));
+            Assert.That(textElements, Has.Count.EqualTo(1));
+            Assert.That(
+                textElements[0].Text,
+                Is.EqualTo("preview.png"));
+        }
+
+        [Test]
+        public void DetailContentDefinition_NormalizesExtensions()
+        {
+            var definition =
+                new FileTreeDetailContentDefinition(
+                    "image",
+                    new[] { ".PNG", "jpg" },
+                    _ => new VisualElement());
+
+            Assert.That(
+                definition.Matches(
+                    "Assets/Preview.png"),
+                Is.True);
+            Assert.That(
+                definition.Matches("jpeg"),
+                Is.False);
+        }
+
+        [Test]
+        public void NonFileNode_DoesNotSelectExtensionContent()
+        {
+            var node = new FileTreeNode(
+                "Group.png",
+                string.Empty,
+                "Group.png",
+                isGroup: true,
+                groupKind:
+                    FileTreeGroupKind.Variant);
+
+            var state =
+                node.CreateDetailState("item-1");
+
+            Assert.That(state.Extension, Is.Empty);
+            Assert.That(
+                FileTreeDetailContentCatalog
+                    .Resolve(state.Extension)
+                    .Id,
+                Is.EqualTo("fallback"));
+        }
+
+        [TestCase(
+            "VariantGroup",
+            "variant-group")]
+        [TestCase(
+            "VersionGroup",
+            "version-group")]
+        public void IconCatalog_ResolvesGroupDefinition(
+            string expectedKindName,
+            string expectedDefinitionId)
+        {
+            var kind =
+                (FileEntryKind)Enum.Parse(
+                    typeof(FileEntryKind),
+                    expectedKindName);
+            var definition =
+                FileIconCatalog.Resolve(
+                    kind,
+                    string.Empty);
+
+            Assert.That(
+                definition.Kind.ToString(),
+                Is.EqualTo(expectedKindName));
+            Assert.That(
+                definition.Id,
+                Is.EqualTo(expectedDefinitionId));
+        }
+
+        [Test]
+        public void DetailTypography_UsesImguiFontCacheWorkaround()
+        {
+            var view = new FileTreeDetailView();
+            view.SetState(
+                FileTreeDetailState.FromAssetFile(
+                    "file-1",
+                    "preview.png"));
+
+            var textElements =
+                view.Query<UiTextElement>().ToList();
+
+            Assert.That(textElements, Has.Count.EqualTo(1));
+            Assert.That(
+                textElements.All(element =>
+                    element.GetType().Name ==
+                    "ImguiUiTextElement"),
+                Is.True);
         }
 
         [Test]
@@ -56,7 +229,8 @@ namespace Ee4v.AssetManager.UI.Tests
                 "Avatar",
                 detailId: "item-1|preview.png",
                 detailName: "preview.png",
-                detailParentName: "archive.zip");
+                detailParentName: "archive.zip",
+                detailExtension: "png");
 
             history.SetCurrent(list);
             history.SetCurrent(detail);
@@ -77,6 +251,7 @@ namespace Ee4v.AssetManager.UI.Tests
             Assert.That(next.Kind, Is.EqualTo(AssetItemGridHistoryEntryKind.FileDetail));
             Assert.That(next.DetailName, Is.EqualTo("preview.png"));
             Assert.That(next.DetailParentName, Is.EqualTo("archive.zip"));
+            Assert.That(next.DetailExtension, Is.EqualTo("png"));
         }
 
         [Test]

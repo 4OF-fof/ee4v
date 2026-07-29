@@ -1312,25 +1312,11 @@ namespace Ee4v.AssetManager.UI
 
         private static IconState CreateFileIcon(string extension)
         {
-            switch (NormalizeExtension(extension))
-            {
-                case "zip":
-                case "unitypackage":
-                    return IconState.FromFluentIcon(
-                        UiFluentIcon.FolderZip,
-                        size: 88f);
-                case "rar":
-                case "7z":
-                case "tar":
-                case "gz":
-                    return IconState.FromFluentIcon(
-                        UiFluentIcon.Archive,
-                        size: 44f);
-            }
-
-            return IconState.FromFluentIcon(
-                ResolveFileIcon(extension),
-                size: 44f);
+            return FileIconCatalog
+                .Resolve(
+                    FileEntryKind.File,
+                    extension)
+                .CreateArtworkIconState();
         }
 
         private static AssetItemGridListItem CreateGroupListItem(
@@ -1362,11 +1348,13 @@ namespace Ee4v.AssetManager.UI
         internal static IconState CreateGroupTypeIcon(
             AssetItemGridNodeKind kind)
         {
-            return IconState.FromFluentIcon(
-                kind == AssetItemGridNodeKind.VariantGroup
-                    ? UiFluentIcon.FolderBranchFork
-                    : UiFluentIcon.FolderLayer,
-                size: 88f);
+            return FileIconCatalog
+                .Resolve(
+                    kind == AssetItemGridNodeKind.VariantGroup
+                        ? FileEntryKind.VariantGroup
+                        : FileEntryKind.VersionGroup,
+                    string.Empty)
+                .CreateArtworkIconState();
         }
 
         private static void AddFiles(
@@ -1403,65 +1391,6 @@ namespace Ee4v.AssetManager.UI
         {
             return new AssetItemGridArtworkState(
                 iconState: CreateFileIcon(extension));
-        }
-
-        private static UiFluentIcon ResolveFileIcon(string extension)
-        {
-            switch (NormalizeExtension(extension))
-            {
-                case "png":
-                case "jpg":
-                case "jpeg":
-                case "gif":
-                case "webp":
-                case "psd":
-                case "clip":
-                    return UiFluentIcon.Image;
-                case "txt":
-                case "md":
-                case "json":
-                case "jsonc":
-                case "xml":
-                case "yaml":
-                case "yml":
-                    return UiFluentIcon.DocumentText;
-                case "unity":
-                case "asset":
-                case "prefab":
-                case "mat":
-                case "controller":
-                case "anim":
-                    return UiFluentIcon.Apps;
-                case "fbx":
-                case "obj":
-                case "blend":
-                case "vrm":
-                case "glb":
-                case "gltf":
-                    return UiFluentIcon.Cube;
-                case "wav":
-                case "mp3":
-                case "ogg":
-                case "aiff":
-                    return UiFluentIcon.MusicNote2;
-                case "cs":
-                case "js":
-                case "ts":
-                case "shader":
-                case "cginc":
-                    return UiFluentIcon.DocumentCode;
-                default:
-                    return UiFluentIcon.Document;
-            }
-        }
-
-        private static string NormalizeExtension(
-            string extension)
-        {
-            return (extension ?? string.Empty)
-                .Trim()
-                .TrimStart('.')
-                .ToLowerInvariant();
         }
 
         private int ClampItemsPerRow(int value)

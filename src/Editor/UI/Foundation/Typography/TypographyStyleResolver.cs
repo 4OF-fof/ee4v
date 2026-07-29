@@ -105,6 +105,7 @@ namespace Ee4v.UI
                 { UiClassNames.HistoryNavigationOverlaySeparator, Create(false, UiTypographyTokens.BodyFontSize, UiColorTokens.TextMuted, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
                 { UiClassNames.InfomationPanelSelectionCount, Create(true, UiTypographyTokens.TitleFontSize, UiColorTokens.Focus, TextAnchor.MiddleCenter, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
                 { UiClassNames.InfomationPanelSelectionCountSuffix, Create(false, UiTypographyTokens.LargeBodyFontSize, UiColorTokens.TextSoft, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
+                { UiClassNames.FileTreeDetailName, Create(true, UiTypographyTokens.DisplayFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.Normal, fontStyle: FontStyle.Bold) },
                 { UiClassNames.CatalogPageTitle, Create(true, UiTypographyTokens.HeadingFontSize, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal, fontStyle: FontStyle.Bold, marginBottom: UiSpacingTokens.Xs) },
                 { UiClassNames.CatalogPageDescription, Create(false, UiTypographyTokens.BodyFontSize, UiColorTokens.TextSecondary, TextAnchor.UpperLeft, WhiteSpace.Normal) },
                 { UiClassNames.CatalogDetailLabel, Create(true, UiTypographyTokens.SmallFontSize, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold, marginBottom: UiSpacingTokens.Xxs) },
