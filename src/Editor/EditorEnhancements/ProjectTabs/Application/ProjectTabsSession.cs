@@ -140,9 +140,15 @@ namespace Ee4v.ProjectTabs
                 return false;
             }
 
+            var normalized = NormalizeLocation(location);
+            if (tab.IsHome)
+            {
+                return !IsHomeRoot(normalized);
+            }
+
             return !HasSameFolder(
                 tab.CurrentLocation,
-                NormalizeLocation(location));
+                normalized);
         }
 
         public bool RecordNavigation(
@@ -160,6 +166,18 @@ namespace Ee4v.ProjectTabs
             if (normalized.Equals(current))
             {
                 return false;
+            }
+
+            if (tab.IsHome)
+            {
+                if (!IsHomeRoot(normalized))
+                {
+                    return false;
+                }
+
+                tab.History[tab.HistoryIndex] = normalized;
+                PersistAndNotify();
+                return true;
             }
 
             if (tab.IsPinned)
@@ -344,6 +362,19 @@ namespace Ee4v.ProjectTabs
                     first.FolderPath,
                     second.FolderPath,
                     StringComparison.Ordinal);
+        }
+
+        private static bool IsHomeRoot(ProjectTabLocation location)
+        {
+            return location != null &&
+                (string.Equals(
+                     location.FolderPath,
+                     "Assets",
+                     StringComparison.Ordinal) ||
+                 string.Equals(
+                     location.FolderPath,
+                     "Packages",
+                     StringComparison.Ordinal));
         }
 
         private MutableTab CreateTab(ProjectTabLocation location)

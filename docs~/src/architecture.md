@@ -148,9 +148,10 @@ Applicationのsessionへ最終indexだけを通知し、Project folderのdropは
 folder pathを検証してから新しいtabとして一括追加します。右クリックでpin留めした
 tabは位置を変えずにfolder pathを固定し、別folderへのnavigationは通常tabを新規作成
 します。同じfolder内の検索状態はpin tab自身へ反映します。pin tabと通常tabは同じ
-並び替え領域で混在できます。Assetsを開くHome tabだけは例外として、解除・削除・
-移動できない固定tabとしてtab列の左端へ常設します。通常tabが0件になってもHome
-自体が残るため、代替のAssets tabは生成しません。
+並び替え領域で混在できます。AssetsとPackagesのrootを開くHome tabだけは例外として、
+解除・削除・移動できない固定tabとしてtab列の左端へ常設します。通常tabが0件になっても
+Home自体が残るため、代替のAssets tabは生成しません。HomeではAssetsとPackagesの
+rootを切り替えられ、どちらかの配下へ移動した場合は通常tabを新規作成します。
 
 `SceneSwitcher` はHierarchyのScene見出しを入口に、Assets配下のSceneを検索して
 切り替えます。複数Sceneを読み込み中はpopupを開いたSceneのhandleを保持し、

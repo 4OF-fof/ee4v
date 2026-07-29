@@ -22,6 +22,14 @@ namespace Ee4v.ProjectTabs.Tests
             new ProjectTabLocation(
                 "prefabs-guid",
                 "Assets/Prefabs");
+        private static readonly ProjectTabLocation Packages =
+            new ProjectTabLocation(
+                "packages-guid",
+                "Packages");
+        private static readonly ProjectTabLocation PackageFolder =
+            new ProjectTabLocation(
+                "package-folder-guid",
+                "Packages/dev.4of.ee4v");
 
         [Test]
         [FeatureTestCase(
@@ -338,6 +346,65 @@ namespace Ee4v.ProjectTabs.Tests
             Assert.That(
                 session.State.Find(tabId).History.Count,
                 Is.EqualTo(1));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "Home では Assets と Packages の root を開ける",
+            "AssetsとPackagesのroot間はHome内で切り替え、どちらかの配下へ" +
+            "移動した場合だけ通常tabが必要になることを確認します。",
+            order: 54)]
+        public void HomeNavigation_KeepsRootsAndOpensChildrenInNewTabs()
+        {
+            var session = new ProjectTabsSession(
+                new MemoryStore(),
+                Assets,
+                () => "tab");
+
+            Assert.That(
+                session.ShouldOpenInNewTab(
+                    ProjectTabsSession.HomeTabId,
+                    Packages),
+                Is.False);
+            Assert.That(
+                session.RecordNavigation(
+                    ProjectTabsSession.HomeTabId,
+                    Packages),
+                Is.True);
+            Assert.That(
+                session.State.Tabs[0].CurrentLocation,
+                Is.EqualTo(Packages));
+            Assert.That(
+                session.ShouldOpenInNewTab(
+                    ProjectTabsSession.HomeTabId,
+                    Assets),
+                Is.False);
+            Assert.That(
+                session.RecordNavigation(
+                    ProjectTabsSession.HomeTabId,
+                    Assets),
+                Is.True);
+            Assert.That(
+                session.State.Tabs[0].CurrentLocation,
+                Is.EqualTo(Assets));
+            Assert.That(
+                session.ShouldOpenInNewTab(
+                    ProjectTabsSession.HomeTabId,
+                    Materials),
+                Is.True);
+            Assert.That(
+                session.ShouldOpenInNewTab(
+                    ProjectTabsSession.HomeTabId,
+                    PackageFolder),
+                Is.True);
+            Assert.That(
+                session.RecordNavigation(
+                    ProjectTabsSession.HomeTabId,
+                    PackageFolder),
+                Is.False);
+            Assert.That(
+                session.State.Tabs[0].CurrentLocation,
+                Is.EqualTo(Assets));
         }
 
         [Test]
