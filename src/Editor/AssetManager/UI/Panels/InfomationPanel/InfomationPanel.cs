@@ -189,7 +189,9 @@ namespace Ee4v.AssetManager.UI
             var hasSingleSelection = _selectedItems != null && _selectedItems.Count == 1;
             var canShowFileTree =
                 _selectionContentKind == AssetSelectionContentKind.AssetFile ||
-                _selectionContentKind == AssetSelectionContentKind.AssetItem;
+                _selectionContentKind == AssetSelectionContentKind.AssetItem ||
+                _selectionContentKind == AssetSelectionContentKind.AssetVariantGroup ||
+                _selectionContentKind == AssetSelectionContentKind.AssetVersionGroup;
             var showFileTree = hasSingleSelection &&
                                canShowFileTree &&
                                string.Equals(_selectedDetailTabId, FileTreeTabId, StringComparison.Ordinal);
@@ -205,6 +207,18 @@ namespace Ee4v.AssetManager.UI
                 else if (_selectionContentKind == AssetSelectionContentKind.AssetItem)
                 {
                     _fileTree.SetItemId(_selectedItems[0].ItemId);
+                }
+                else if (
+                    _selectionContentKind == AssetSelectionContentKind.AssetVariantGroup ||
+                    _selectionContentKind == AssetSelectionContentKind.AssetVersionGroup)
+                {
+                    _fileTree.SetGroupId(
+                        _selectedItems[0].ParentItemId,
+                        _selectionContentKind ==
+                        AssetSelectionContentKind.AssetVariantGroup
+                            ? FileTreeGroupKind.Variant
+                            : FileTreeGroupKind.Version,
+                        _selectedItems[0].ItemId);
                 }
                 else
                 {

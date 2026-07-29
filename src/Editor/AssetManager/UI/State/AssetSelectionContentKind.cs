@@ -4,6 +4,8 @@ namespace Ee4v.AssetManager.UI
     {
         AssetItem,
         AssetFile,
+        AssetVariantGroup,
+        AssetVersionGroup,
         AssetGroup
     }
 }

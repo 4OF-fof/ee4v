@@ -42,6 +42,8 @@ namespace Ee4v.AssetManager.UI
         private bool _isAttached;
         private string _itemId;
         private string _fileId;
+        private FileTreeGroupKind _groupKind;
+        private string _groupId;
 
         public SearchableFileTree(
             IAssetManager assetManager = null,
@@ -110,13 +112,17 @@ namespace Ee4v.AssetManager.UI
         {
             var nextItemId = itemId ?? string.Empty;
             if (string.Equals(_itemId, nextItemId, StringComparison.Ordinal) &&
-                string.IsNullOrWhiteSpace(_fileId))
+                string.IsNullOrWhiteSpace(_fileId) &&
+                _groupKind == FileTreeGroupKind.None &&
+                string.IsNullOrWhiteSpace(_groupId))
             {
                 return;
             }
 
             _itemId = nextItemId;
             _fileId = string.Empty;
+            _groupKind = FileTreeGroupKind.None;
+            _groupId = string.Empty;
             if (_isAttached)
             {
                 Reload();
@@ -128,13 +134,42 @@ namespace Ee4v.AssetManager.UI
             var nextItemId = itemId ?? string.Empty;
             var nextFileId = fileId ?? string.Empty;
             if (string.Equals(_itemId, nextItemId, StringComparison.Ordinal) &&
-                string.Equals(_fileId, nextFileId, StringComparison.Ordinal))
+                string.Equals(_fileId, nextFileId, StringComparison.Ordinal) &&
+                _groupKind == FileTreeGroupKind.None &&
+                string.IsNullOrWhiteSpace(_groupId))
             {
                 return;
             }
 
             _itemId = nextItemId;
             _fileId = nextFileId;
+            _groupKind = FileTreeGroupKind.None;
+            _groupId = string.Empty;
+            if (_isAttached)
+            {
+                Reload();
+            }
+        }
+
+        public void SetGroupId(
+            string itemId,
+            FileTreeGroupKind groupKind,
+            string groupId)
+        {
+            var nextItemId = itemId ?? string.Empty;
+            var nextGroupId = groupId ?? string.Empty;
+            if (string.Equals(_itemId, nextItemId, StringComparison.Ordinal) &&
+                string.IsNullOrWhiteSpace(_fileId) &&
+                _groupKind == groupKind &&
+                string.Equals(_groupId, nextGroupId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _itemId = nextItemId;
+            _fileId = string.Empty;
+            _groupKind = groupKind;
+            _groupId = nextGroupId;
             if (_isAttached)
             {
                 Reload();
@@ -147,6 +182,8 @@ namespace Ee4v.AssetManager.UI
             CancelPendingReload();
             _itemId = string.Empty;
             _fileId = string.Empty;
+            _groupKind = FileTreeGroupKind.None;
+            _groupId = string.Empty;
             _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.empty"));
             _treeView.SetItems(null);
         }
@@ -236,12 +273,16 @@ namespace Ee4v.AssetManager.UI
             _preferences.Preload();
             var itemId = _itemId;
             var fileId = _fileId;
+            var groupKind = _groupKind;
+            var groupId = _groupId;
             var cacheDirectory = _archiveReader.CacheDirectory;
             var inaccessibleText = I18N.Get("assetManager.infomationPanel.fileTree.meta.inaccessible");
             var zipText = I18N.Get("assetManager.infomationPanel.fileTree.meta.zip");
             var memoryCacheKey = new FileTreeMemoryCacheKey(
                 itemId,
                 fileId,
+                groupKind,
+                groupId,
                 cacheDirectory,
                 inaccessibleText,
                 zipText);
@@ -261,7 +302,15 @@ namespace Ee4v.AssetManager.UI
             _treeView.SetItems(null);
 
             _scheduler.RunInBackground(
-                token => LoadTree(itemId, fileId, cacheDirectory, inaccessibleText, zipText, token),
+                token => LoadTree(
+                    itemId,
+                    fileId,
+                    groupKind,
+                    groupId,
+                    cacheDirectory,
+                    inaccessibleText,
+                    zipText,
+                    token),
                 cancellation.Token,
                 result =>
             {
@@ -294,6 +343,8 @@ namespace Ee4v.AssetManager.UI
         private IReadOnlyList<SearchableTreeItemData<FileTreeNode>> LoadTree(
             string itemId,
             string fileId,
+            FileTreeGroupKind groupKind,
+            string groupId,
             string cacheDirectory,
             string inaccessibleText,
             string zipText,
@@ -321,7 +372,65 @@ namespace Ee4v.AssetManager.UI
                 inaccessibleText,
                 zipText,
                 cancellationToken);
-            return builder.Build(files, variants, versions, importTargetsByFileId);
+            var items = builder.Build(
+                files,
+                variants,
+                versions,
+                importTargetsByFileId);
+            if (groupKind == FileTreeGroupKind.None ||
+                string.IsNullOrWhiteSpace(groupId))
+            {
+                return items;
+            }
+
+            var groupItem = FindGroupItem(
+                items,
+                groupKind,
+                groupId);
+            return groupItem == null
+                ? Array.Empty<SearchableTreeItemData<FileTreeNode>>()
+                : new[] { groupItem };
+        }
+
+        private static SearchableTreeItemData<FileTreeNode> FindGroupItem(
+            IReadOnlyList<SearchableTreeItemData<FileTreeNode>> items,
+            FileTreeGroupKind groupKind,
+            string groupId)
+        {
+            if (items == null)
+            {
+                return null;
+            }
+
+            for (var i = 0; i < items.Count; i++)
+            {
+                var item = items[i];
+                if (item == null)
+                {
+                    continue;
+                }
+
+                if (item.Data != null &&
+                    item.Data.GroupKind == groupKind &&
+                    string.Equals(
+                        item.Data.GroupId,
+                        groupId,
+                        StringComparison.Ordinal))
+                {
+                    return item;
+                }
+
+                var childMatch = FindGroupItem(
+                    item.Children,
+                    groupKind,
+                    groupId);
+                if (childMatch != null)
+                {
+                    return childMatch;
+                }
+            }
+
+            return null;
         }
 
         private IReadOnlyList<AssetFile> LoadFiles(string itemId, string fileId)
@@ -732,12 +841,16 @@ namespace Ee4v.AssetManager.UI
         public FileTreeMemoryCacheKey(
             string itemId,
             string fileId,
+            FileTreeGroupKind groupKind,
+            string groupId,
             string cacheDirectory,
             string inaccessibleText,
             string zipText)
         {
             ItemId = itemId ?? string.Empty;
             FileId = fileId ?? string.Empty;
+            GroupKind = groupKind;
+            GroupId = groupId ?? string.Empty;
             CacheDirectory = cacheDirectory ?? string.Empty;
             InaccessibleText = inaccessibleText ?? string.Empty;
             ZipText = zipText ?? string.Empty;
@@ -746,6 +859,10 @@ namespace Ee4v.AssetManager.UI
         private string ItemId { get; }
 
         private string FileId { get; }
+
+        private FileTreeGroupKind GroupKind { get; }
+
+        private string GroupId { get; }
 
         private string CacheDirectory { get; }
 
@@ -757,6 +874,8 @@ namespace Ee4v.AssetManager.UI
         {
             return string.Equals(ItemId, other.ItemId, StringComparison.Ordinal) &&
                    string.Equals(FileId, other.FileId, StringComparison.Ordinal) &&
+                   GroupKind == other.GroupKind &&
+                   string.Equals(GroupId, other.GroupId, StringComparison.Ordinal) &&
                    string.Equals(CacheDirectory, other.CacheDirectory, StringComparison.Ordinal) &&
                    string.Equals(InaccessibleText, other.InaccessibleText, StringComparison.Ordinal) &&
                    string.Equals(ZipText, other.ZipText, StringComparison.Ordinal);
@@ -773,6 +892,8 @@ namespace Ee4v.AssetManager.UI
             {
                 var hashCode = StringComparer.Ordinal.GetHashCode(ItemId);
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(FileId);
+                hashCode = (hashCode * 397) ^ (int)GroupKind;
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(GroupId);
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(CacheDirectory);
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(InaccessibleText);
                 return (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ZipText);
@@ -901,6 +1022,7 @@ namespace Ee4v.AssetManager.UI
             bool isDirectory = false,
             bool isGroup = false,
             FileTreeGroupKind groupKind = FileTreeGroupKind.None,
+            string groupId = null,
             bool isAssetFileRoot = false,
             string assetFileId = null,
             string versionGroupId = null,
@@ -920,6 +1042,7 @@ namespace Ee4v.AssetManager.UI
             IsDirectory = isDirectory;
             IsGroup = isGroup;
             GroupKind = groupKind;
+            GroupId = groupId ?? string.Empty;
             IsAssetFileRoot = isAssetFileRoot;
             AssetFileId = assetFileId ?? string.Empty;
             VersionGroupId = versionGroupId ?? string.Empty;
@@ -946,6 +1069,8 @@ namespace Ee4v.AssetManager.UI
         public bool IsGroup { get; }
 
         public FileTreeGroupKind GroupKind { get; }
+
+        public string GroupId { get; }
 
         public bool IsAssetFileRoot { get; }
 
@@ -1178,7 +1303,11 @@ namespace Ee4v.AssetManager.UI
             AddFiles(children, files, consumedFileIds, file => string.Equals(file.VariantGroupId, variantGroup.Id, StringComparison.Ordinal));
             return children.Count == 0
                 ? null
-                : CreateGroupItem(variantGroup.Name, FileTreeGroupKind.Variant, children);
+                : CreateGroupItem(
+                    variantGroup.Name,
+                    FileTreeGroupKind.Variant,
+                    variantGroup.Id,
+                    children);
         }
 
         private SearchableTreeItemData<FileTreeNode> BuildVersionGroupNode(
@@ -1203,6 +1332,7 @@ namespace Ee4v.AssetManager.UI
                 : CreateGroupItem(
                     versionGroup.Name,
                     FileTreeGroupKind.Version,
+                    versionGroup.Id,
                     children,
                     versionGroup.Id,
                     versionGroup.PrimaryFileId);
@@ -1231,6 +1361,7 @@ namespace Ee4v.AssetManager.UI
         private SearchableTreeItemData<FileTreeNode> CreateGroupItem(
             string name,
             FileTreeGroupKind groupKind,
+            string groupId,
             IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children,
             string versionGroupId = null,
             string primaryFileId = null)
@@ -1241,6 +1372,7 @@ namespace Ee4v.AssetManager.UI
                 name,
                 isGroup: true,
                 groupKind: groupKind,
+                groupId: groupId,
                 assetFileId: primaryFileId,
                 versionGroupId: versionGroupId);
             return new SearchableTreeItemData<FileTreeNode>(

@@ -858,6 +858,7 @@ namespace Ee4v.AssetManager.UI
 
             var hasFile = false;
             var hasGroup = false;
+            var groupContentKind = AssetSelectionContentKind.AssetGroup;
             for (var i = 0; i < items.Count; i++)
             {
                 if (items[i] == null)
@@ -880,6 +881,19 @@ namespace Ee4v.AssetManager.UI
                     kind == AssetItemGridNodeKind.VariantGroup ||
                     kind == AssetItemGridNodeKind.VersionGroup)
                 {
+                    var nextGroupContentKind =
+                        kind == AssetItemGridNodeKind.VariantGroup
+                            ? AssetSelectionContentKind.AssetVariantGroup
+                            : AssetSelectionContentKind.AssetVersionGroup;
+                    if (!hasGroup)
+                    {
+                        groupContentKind = nextGroupContentKind;
+                    }
+                    else if (groupContentKind != nextGroupContentKind)
+                    {
+                        groupContentKind = AssetSelectionContentKind.AssetGroup;
+                    }
+
                     hasGroup = true;
                 }
             }
@@ -890,7 +904,7 @@ namespace Ee4v.AssetManager.UI
             }
 
             return hasGroup
-                ? AssetSelectionContentKind.AssetGroup
+                ? groupContentKind
                 : AssetSelectionContentKind.AssetItem;
         }
     }
