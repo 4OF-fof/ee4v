@@ -140,6 +140,18 @@ namespace Ee4v.ProjectTabs
             return Tabs.FirstOrDefault(tab =>
                 string.Equals(tab.Id, tabId, StringComparison.Ordinal));
         }
+
+        public ProjectTabState FindByCurrentLocation(
+            ProjectTabLocation location)
+        {
+            if (location == null)
+            {
+                return null;
+            }
+
+            return Tabs.FirstOrDefault(tab =>
+                location.Equals(tab?.CurrentLocation));
+        }
     }
 
     internal interface IProjectTabsStateStore

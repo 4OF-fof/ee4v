@@ -467,6 +467,32 @@ namespace Ee4v.ProjectTabs.Tests
 
         [Test]
         [FeatureTestCase(
+            "再起動後のProject windowを保存済みタブへ再接続する",
+            "Unityが復元した現在位置から既存tabを特定し、同じ場所のtabを追加せず選択へ再利用できることを確認します。",
+            order: 56)]
+        public void Restore_FindsExistingTabByCurrentLocation()
+        {
+            var store = new MemoryStore();
+            var first = new ProjectTabsSession(
+                store,
+                Assets,
+                () => "tab");
+            var tabId = first.Add(Materials);
+
+            var restored = new ProjectTabsSession(
+                store,
+                Assets,
+                () => "unused");
+            var matchingTab =
+                restored.State.FindByCurrentLocation(Materials);
+
+            Assert.That(matchingTab, Is.Not.Null);
+            Assert.That(matchingTab.Id, Is.EqualTo(tabId));
+            Assert.That(restored.State.Tabs.Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        [FeatureTestCase(
             "起動時にpinとUnity Favoritesを結合する",
             "既存pinをFavoritesへ追加し、既存Favoriteを既存tabのpinへ反映して双方を失わないことを確認します。",
             order: 56)]

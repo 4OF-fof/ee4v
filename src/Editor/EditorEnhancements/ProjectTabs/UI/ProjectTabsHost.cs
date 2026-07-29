@@ -18,6 +18,7 @@ namespace Ee4v.ProjectTabs
         private readonly ProjectTabsView _view;
         private string _selectedTabId;
         private double _ignoreTrackingUntil;
+        private bool _initialLocationPending = true;
 
         public ProjectTabsHost(
             EditorWindow window,
@@ -180,6 +181,11 @@ namespace Ee4v.ProjectTabs
 
             if (_navigator.TryGetCurrentLocation(out var location))
             {
+                if (TrySelectInitialTab(location))
+                {
+                    return;
+                }
+
                 if (_session.ShouldOpenInNewTab(
                         _selectedTabId,
                         location))
@@ -194,6 +200,27 @@ namespace Ee4v.ProjectTabs
                         location);
                 }
             }
+        }
+
+        private bool TrySelectInitialTab(
+            ProjectTabLocation location)
+        {
+            if (!_initialLocationPending)
+            {
+                return false;
+            }
+
+            _initialLocationPending = false;
+            var restoredTab =
+                _session.State.FindByCurrentLocation(location);
+            if (restoredTab == null)
+            {
+                return false;
+            }
+
+            _selectedTabId = restoredTab.Id;
+            Refresh();
+            return true;
         }
 
         private ProjectTabLocation GetCurrentOrSelectedLocation()

@@ -150,7 +150,8 @@ activator objectを一覧から除外します。
 
 `ProjectTabs` はtabごとに最大50件のfolder navigation historyを保持し、検索文字列の
 変更は現在の履歴entryへ統合します。tab一覧と履歴は `UserSettings` に保存し、
-Project windowごとの選択tabはwindow sessionだけで保持します。現在位置の読取と
+Project windowごとの選択tabはwindow sessionだけで保持します。Host再生成後の初回追跡では
+Unityがwindowへ復元した現在位置と保存済みtabを照合し、既存tabへ再接続します。現在位置の読取と
 folder表示・検索復元は `Core.Internal.EditorAPI.ProjectBrowser` facadeを介し、
 対象のProject windowを明示して複数window間の誤操作を防ぎます。tabの並び替えは
 Applicationのsessionへ最終indexだけを通知し、Project folderのdropはUnity adapterで
