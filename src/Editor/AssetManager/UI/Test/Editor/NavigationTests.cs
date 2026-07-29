@@ -1856,6 +1856,96 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [UnityTest]
+        public IEnumerator CollectionNamePopups_FocusNameInput()
+        {
+            CollectionCreationWindow popup = null;
+            try
+            {
+                var smartField = typeof(CollectionCreationWindow)
+                    .GetField(
+                        "_smart",
+                        BindingFlags.Instance |
+                        BindingFlags.NonPublic);
+                var modeField = typeof(CollectionCreationWindow)
+                    .GetField(
+                        "_mode",
+                        BindingFlags.Instance |
+                        BindingFlags.NonPublic);
+                var initialCollectionField =
+                    typeof(CollectionCreationWindow)
+                        .GetField(
+                            "_initialCollection",
+                            BindingFlags.Instance |
+                            BindingFlags.NonPublic);
+                Assert.That(smartField, Is.Not.Null);
+                Assert.That(modeField, Is.Not.Null);
+                Assert.That(initialCollectionField, Is.Not.Null);
+
+                foreach (var rename in new[] { false, true })
+                {
+                    foreach (var smart in new[] { false, true })
+                    {
+                        popup =
+                            ScriptableObject.CreateInstance<
+                                CollectionCreationWindow>();
+                        smartField.SetValue(popup, smart);
+                        modeField.SetValue(
+                            popup,
+                            System.Enum.Parse(
+                                modeField.FieldType,
+                                rename ? "Rename" : "Create"));
+                        if (rename)
+                        {
+                            initialCollectionField.SetValue(
+                                popup,
+                                new AssetCollection
+                                {
+                                    Id = "collection",
+                                    Name = "Before",
+                                    IsSmartCollection = smart
+                                });
+                        }
+
+                        popup.Show();
+                        popup.Focus();
+                        yield return null;
+
+                        var nameField = popup.rootVisualElement
+                            .Query<InputField>()
+                            .ToList()
+                            .First();
+                        var focusedElement =
+                            popup.rootVisualElement.panel
+                                .focusController.focusedElement
+                            as VisualElement;
+                        var popupDescription =
+                            (smart ? "Smart collection " : "Collection ") +
+                            (rename ? "rename" : "creation") +
+                            " name input";
+
+                        Assert.That(
+                            focusedElement,
+                            Is.Not.Null,
+                            popupDescription);
+                        Assert.That(
+                            nameField == focusedElement ||
+                            nameField.Contains(focusedElement),
+                            Is.True,
+                            popupDescription);
+
+                        popup.Close();
+                        popup = null;
+                        yield return null;
+                    }
+                }
+            }
+            finally
+            {
+                popup?.Close();
+            }
+        }
+
+        [UnityTest]
         public IEnumerator CollectionRenamePopup_OpensAndSubmitsUpdate()
         {
             var owner =

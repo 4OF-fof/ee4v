@@ -234,6 +234,18 @@ namespace Ee4v.AssetManager.UI
                 Submit));
             _form.Add(actions);
             QueuePopupSizeRefresh();
+            QueueInitialNameFocus();
+        }
+
+        private void QueueInitialNameFocus()
+        {
+            if (_nameField == null)
+            {
+                return;
+            }
+
+            _nameField.schedule.Execute(
+                _nameField.FocusInput);
         }
 
         private void BuildSmartCollectionFields(VisualElement form)

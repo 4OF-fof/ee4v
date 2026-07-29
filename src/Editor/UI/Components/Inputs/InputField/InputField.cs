@@ -114,6 +114,11 @@ namespace Ee4v.UI
             RefreshVisualState();
         }
 
+        public void FocusInput()
+        {
+            _textField.Focus();
+        }
+
         public void SetPlaceholder(string placeholder)
         {
             _placeholderLabel.SetText(placeholder ?? string.Empty);
