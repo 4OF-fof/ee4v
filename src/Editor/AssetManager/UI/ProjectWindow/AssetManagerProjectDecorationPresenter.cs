@@ -36,6 +36,9 @@ namespace Ee4v.AssetManager.UI
         private AssetManagerProjectAssociationIndex
             _associationIndex =
                 AssetManagerProjectAssociationIndex.Create(null);
+        private readonly AssetManagerProjectHighlightSelection
+            _highlightSelection =
+                new AssetManagerProjectHighlightSelection();
         private bool _initialized;
         private bool _disposed;
 
@@ -90,23 +93,41 @@ namespace Ee4v.AssetManager.UI
                 fileId);
         }
 
+        public bool IsItemHighlighted(string itemId)
+        {
+            return _highlightSelection.IsSelected(
+                AssetManagerProjectHighlightTargetKind.Item,
+                itemId);
+        }
+
+        public bool IsFileHighlighted(string fileId)
+        {
+            return _highlightSelection.IsSelected(
+                AssetManagerProjectHighlightTargetKind.File,
+                fileId);
+        }
+
         public void HighlightItem(string itemId)
         {
             Highlight(
                 _associationIndex.GuidsByItem,
-                itemId);
+                itemId,
+                AssetManagerProjectHighlightTargetKind.Item);
         }
 
         public void HighlightFile(string fileId)
         {
             Highlight(
                 _associationIndex.GuidsByFile,
-                fileId);
+                fileId,
+                AssetManagerProjectHighlightTargetKind.File);
         }
 
         public void ClearHighlights()
         {
-            if (_highlightedGuids.Count == 0)
+            var hadGuids = _highlightedGuids.Count > 0;
+            var hadTarget = _highlightSelection.Clear();
+            if (!hadGuids && !hadTarget)
             {
                 return;
             }
@@ -175,7 +196,8 @@ namespace Ee4v.AssetManager.UI
             IReadOnlyDictionary<
                 string,
                 IReadOnlyList<string>> source,
-            string id)
+            string id,
+            AssetManagerProjectHighlightTargetKind targetKind)
         {
             IReadOnlyList<string> guids;
             if (string.IsNullOrWhiteSpace(id) ||
@@ -185,6 +207,7 @@ namespace Ee4v.AssetManager.UI
             }
 
             _highlightedGuids.Clear();
+            _highlightSelection.Select(targetKind, id);
             for (var i = 0; i < guids.Count; i++)
             {
                 AddGuidAndParents(guids[i]);
@@ -375,6 +398,61 @@ namespace Ee4v.AssetManager.UI
             return isList
                 ? LightListBackground
                 : LightGridBackground;
+        }
+    }
+
+    internal enum AssetManagerProjectHighlightTargetKind
+    {
+        None,
+        Item,
+        File
+    }
+
+    internal sealed class AssetManagerProjectHighlightSelection
+    {
+        private AssetManagerProjectHighlightTargetKind _kind;
+        private string _id = string.Empty;
+
+        internal bool IsSelected(
+            AssetManagerProjectHighlightTargetKind kind,
+            string id)
+        {
+            return _kind == kind &&
+                   kind !=
+                   AssetManagerProjectHighlightTargetKind.None &&
+                   !string.IsNullOrWhiteSpace(id) &&
+                   string.Equals(
+                       _id,
+                       id,
+                       StringComparison.Ordinal);
+        }
+
+        internal void Select(
+            AssetManagerProjectHighlightTargetKind kind,
+            string id)
+        {
+            if (kind ==
+                    AssetManagerProjectHighlightTargetKind.None ||
+                string.IsNullOrWhiteSpace(id))
+            {
+                return;
+            }
+
+            _kind = kind;
+            _id = id;
+        }
+
+        internal bool Clear()
+        {
+            if (_kind ==
+                AssetManagerProjectHighlightTargetKind.None)
+            {
+                return false;
+            }
+
+            _kind = AssetManagerProjectHighlightTargetKind.None;
+            _id = string.Empty;
+            return true;
         }
     }
 }

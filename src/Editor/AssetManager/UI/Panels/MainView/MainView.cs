@@ -349,27 +349,27 @@ namespace Ee4v.AssetManager.UI
             var canHighlight = isFile
                 ? projectActions.CanHighlightFile(targetId)
                 : projectActions.CanHighlightItem(targetId);
+            var isHighlighted = isFile
+                ? projectActions.IsFileHighlighted(targetId)
+                : projectActions.IsItemHighlighted(targetId);
             Action highlight = isFile
                 ? (Action)(() =>
                     projectActions.HighlightFile(targetId))
                 : () => projectActions.HighlightItem(targetId);
+            var menuItem = isHighlighted
+                ? new ContextMenuItemState(
+                    "clear-imported-asset-highlights",
+                    I18N.Get(
+                        "assetManager.mainView.context.clearHighlight"),
+                    projectActions.ClearHighlights)
+                : new ContextMenuItemState(
+                    "highlight-imported-assets",
+                    I18N.Get(
+                        "assetManager.mainView.context.highlight"),
+                    highlight,
+                    canHighlight);
             var menu = new ContextMenuState(
-                new List<ContextMenuItemState>
-                {
-                    new ContextMenuItemState(
-                        "highlight-imported-assets",
-                        I18N.Get(
-                            isFile
-                                ? "assetManager.mainView.context.highlightFile"
-                                : "assetManager.mainView.context.highlightItem"),
-                        highlight,
-                        canHighlight),
-                    new ContextMenuItemState(
-                        "clear-imported-asset-highlights",
-                        I18N.Get(
-                            "assetManager.mainView.context.clearHighlights"),
-                        projectActions.ClearHighlights)
-                });
+                new[] { menuItem });
             ContextMenuWindow.Show(
                 target,
                 panelPosition,

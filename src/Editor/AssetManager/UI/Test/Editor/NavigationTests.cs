@@ -136,6 +136,56 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
+        public void ProjectHighlightState_MatchesOnlyTheActiveTarget()
+        {
+            var selection =
+                new AssetManagerProjectHighlightSelection();
+            selection.Select(
+                AssetManagerProjectHighlightTargetKind.Item,
+                "item-a");
+
+            Assert.That(
+                selection.IsSelected(
+                    AssetManagerProjectHighlightTargetKind.Item,
+                    "item-a"),
+                Is.True);
+            Assert.That(
+                selection.IsSelected(
+                    AssetManagerProjectHighlightTargetKind.Item,
+                    "item-b"),
+                Is.False);
+            Assert.That(
+                selection.IsSelected(
+                    AssetManagerProjectHighlightTargetKind.File,
+                    "item-a"),
+                Is.False,
+                "the same id in another target kind is not selected");
+
+            selection.Select(
+                AssetManagerProjectHighlightTargetKind.Item,
+                "item-b");
+
+            Assert.That(
+                selection.IsSelected(
+                    AssetManagerProjectHighlightTargetKind.Item,
+                    "item-a"),
+                Is.False);
+            Assert.That(
+                selection.IsSelected(
+                    AssetManagerProjectHighlightTargetKind.Item,
+                    "item-b"),
+                Is.True);
+
+            Assert.That(selection.Clear(), Is.True);
+
+            Assert.That(
+                selection.IsSelected(
+                    AssetManagerProjectHighlightTargetKind.Item,
+                    "item-b"),
+                Is.False);
+        }
+
+        [Test]
         public void ProjectFolderIconSelection_KeepsOnlyTopmostAppliedFolders()
         {
             var selected =
