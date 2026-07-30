@@ -7,6 +7,7 @@ namespace Ee4v.AssetManager.Domain
     {
         RequiredValue,
         SelfDependency,
+        DependencyCycle,
         UnsupportedDependencyTarget,
         UnsupportedCollectionIcon,
         SmartConditionRequired,

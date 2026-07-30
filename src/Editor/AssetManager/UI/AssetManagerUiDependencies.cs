@@ -61,6 +61,13 @@ namespace Ee4v.AssetManager.UI
             return projectActions != null;
         }
 
+        internal static bool TryGetAssetManager(
+            out IAssetManager assetManager)
+        {
+            assetManager = _assetManager;
+            return assetManager != null;
+        }
+
         internal static bool TryGetProtectionActions(
             out IAssetManagerProtectionActions
                 protectionActions)

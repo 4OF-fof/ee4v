@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System.Linq;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI.Tests
@@ -22,6 +23,24 @@ namespace Ee4v.UI.Tests
                 Is.True);
             Assert.That(
                 placeholder.GetType().Name,
+                Is.EqualTo("ImguiUiTextElement"));
+        }
+
+        [Test]
+        public void SearchableTreeEmptyText_UsesImguiTypography()
+        {
+            var tree = new SearchableTreeView<string>(
+                () => new VisualElement(),
+                (_, __) => { },
+                emptyText: "No files");
+
+            var empty = tree.Query<UiTextElement>()
+                .ToList()
+                .Single(element =>
+                    element.Text == "No files");
+
+            Assert.That(
+                empty.GetType().Name,
                 Is.EqualTo("ImguiUiTextElement"));
         }
 

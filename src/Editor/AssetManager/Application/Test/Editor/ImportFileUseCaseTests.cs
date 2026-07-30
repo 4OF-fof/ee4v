@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Ee4v.AssetManager.Application.Ports;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Testing.Contracts;
@@ -47,6 +48,7 @@ namespace Ee4v.AssetManager.Application.Tests
                 ports,
                 ports,
                 ports,
+                ports,
                 change => ports.PublishedChange = change);
 
             useCase.ImportEntry("item-1", "file-1", "\\Textures\\body.png/");
@@ -81,6 +83,7 @@ namespace Ee4v.AssetManager.Application.Tests
         {
             var ports = new RecordingImportPorts();
             var useCase = new ImportFileUseCase(
+                ports,
                 ports,
                 ports,
                 ports,
@@ -135,6 +138,7 @@ namespace Ee4v.AssetManager.Application.Tests
                 ports,
                 ports,
                 ports,
+                ports,
                 change => ports.PublishedChange = change);
 
             useCase.ImportEntry(
@@ -150,9 +154,113 @@ namespace Ee4v.AssetManager.Application.Tests
                 Is.Null);
         }
 
+        [Test]
+        [FeatureTestCase(
+            "依存 File を再帰的に先行 import する",
+            "共有する間接 dependency を一度だけ import し、各 gateway 完了後に dependent file へ進むことを確認します。",
+            order: 7)]
+        public void ImportEntry_RecursiveDependencies_ImportsDependenciesFirst()
+        {
+            var ports = new RecordingImportPorts
+            {
+                Item = new AssetItem
+                {
+                    Id = "item-1",
+                    Name = "Avatar"
+                },
+                Files = new[]
+                {
+                    File("file-a"),
+                    File("file-b"),
+                    File("file-c")
+                },
+                Dependencies =
+                    new Dictionary<string, IReadOnlyList<string>>
+                    {
+                        {
+                            "file-a",
+                            new[] { "file-b", "file-c" }
+                        },
+                        {
+                            "file-b",
+                            new[] { "file-c" }
+                        }
+                    },
+                ImportTargets =
+                    new Dictionary<string, IReadOnlyList<AssetFileImportTarget>>
+                    {
+                        {
+                            "file-b",
+                            new[]
+                            {
+                                Target("file-b")
+                            }
+                        },
+                        {
+                            "file-c",
+                            new[]
+                            {
+                                Target("file-c")
+                            }
+                        }
+                    },
+                Resolution = new AssetFilePathResolution
+                {
+                    Found = true,
+                    Path = "C:/library/file.zip"
+                }
+            };
+            var useCase = new ImportFileUseCase(
+                ports,
+                ports,
+                ports,
+                ports,
+                ports,
+                ports,
+                change => ports.PublishedChange = change);
+
+            useCase.ImportEntry(
+                "item-1",
+                "file-a",
+                "content/file-a.prefab");
+
+            Assert.That(
+                ports.ImportedFileIds,
+                Is.EqualTo(
+                    new[]
+                    {
+                        "file-c",
+                        "file-b",
+                        "file-a"
+                    }));
+        }
+
+        private static AssetFile File(string id)
+        {
+            return new AssetFile
+            {
+                Id = id,
+                ItemId = "item-1",
+                FileName = id + ".zip",
+                Lifecycle = AssetFileLifecycle.Active
+            };
+        }
+
+        private static AssetFileImportTarget Target(
+            string fileId)
+        {
+            return new AssetFileImportTarget
+            {
+                FileId = fileId,
+                RelativePath =
+                    "content/" + fileId + ".prefab"
+            };
+        }
+
         private sealed class RecordingImportPorts :
             IAssetCatalogReadStore,
             IAssetFileReadStore,
+            IAssetDependencyReadStore,
             IAssetImportTargetReadStore,
             IImportedAssetGuidCommandStore,
             IAssetImportGateway
@@ -169,6 +277,29 @@ namespace Ee4v.AssetManager.Application.Tests
                 Array.Empty<string>();
             internal int ReplaceGuidsCallCount { get; private set; }
             internal AssetManagerChange PublishedChange { get; set; }
+            internal IReadOnlyDictionary<
+                string,
+                IReadOnlyList<string>> Dependencies
+            {
+                get;
+                set;
+            } = new Dictionary<
+                string,
+                IReadOnlyList<string>>();
+            internal IReadOnlyDictionary<
+                string,
+                IReadOnlyList<AssetFileImportTarget>>
+                ImportTargets
+            {
+                get;
+                set;
+            } = new Dictionary<
+                string,
+                IReadOnlyList<AssetFileImportTarget>>();
+            internal List<string> ImportedFileIds
+            {
+                get;
+            } = new List<string>();
 
             public AssetItem GetItem(string itemId) => Item;
 
@@ -183,11 +314,54 @@ namespace Ee4v.AssetManager.Application.Tests
 
             public AssetFilePathResolution ResolveFilePath(string fileId) => Resolution;
 
+            public AssetFile GetFile(string fileId) =>
+                Files == null
+                    ? null
+                    : System.Linq.Enumerable.FirstOrDefault(
+                        Files,
+                        file => string.Equals(
+                            file.Id,
+                            fileId,
+                            StringComparison.Ordinal));
+
+            public string GetFileOwnerItemId(string fileId) =>
+                GetFile(fileId)?.ItemId;
+
+            public IReadOnlyList<AssetFileDependency>
+                GetFileDependencies(string fileId)
+            {
+                if (!Dependencies.TryGetValue(
+                        fileId,
+                        out var dependencies))
+                {
+                    return Array.Empty<
+                        AssetFileDependency>();
+                }
+
+                return System.Linq.Enumerable
+                    .Select(
+                        dependencies,
+                        dependencyFileId =>
+                            new AssetFileDependency
+                            {
+                                DependentFileId = fileId,
+                                DependencyFileId =
+                                    dependencyFileId
+                            })
+                    .ToArray();
+            }
+
+            public IReadOnlyList<AssetDependency>
+                GetDependencies(
+                    DependencyEndpointRequest source) =>
+                Array.Empty<AssetDependency>();
+
             public void Import(
                 AssetImportPlan plan,
                 Action<AssetImportResult> completed)
             {
                 Plan = plan;
+                ImportedFileIds.Add(plan.FileId);
                 completed?.Invoke(
                     new AssetImportResult(
                         GatewaySucceeded,
@@ -209,8 +383,13 @@ namespace Ee4v.AssetManager.Application.Tests
                 throw new NotSupportedException();
             }
 
-            public IReadOnlyList<AssetFileImportTarget> GetFileImportTargets(string fileId) =>
-                Array.Empty<AssetFileImportTarget>();
+            public IReadOnlyList<AssetFileImportTarget>
+                GetFileImportTargets(string fileId) =>
+                ImportTargets.TryGetValue(
+                    fileId,
+                    out var targets)
+                    ? targets
+                    : Array.Empty<AssetFileImportTarget>();
 
             public AssetSearchResult SearchItems(AssetItemQuery query) =>
                 throw new NotSupportedException();

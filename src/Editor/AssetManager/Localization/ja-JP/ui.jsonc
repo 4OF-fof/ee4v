@@ -41,6 +41,7 @@
       "notFound": "指定された AssetManager のデータが見つかりません。",
       "duplicate": "同じ AssetManager のデータがすでに存在します。",
       "invalidRequest": "AssetManager でこの操作を処理できませんでした。",
+      "dependencyCycle": "ファイルは直接または間接的に自身へ依存できません。",
       "collectionCycle": "コレクションには自身や親コレクションを含められません。",
       "invalidSmartCollectionCondition": "スマートコレクションの条件が正しくありません。",
       "databaseSchemaIncompatible": "AssetManager データベースの形式に互換性がありません。データベースを削除し、ee4v で再作成してください。",
@@ -122,6 +123,15 @@
       "filter": "フィルタ",
       "sort": "ソート順",
       "searchPlaceholder": "アセットを検索"
+    },
+    "fileDependencies": {
+      "title": "ファイルの依存",
+      "instruction": "先にインポートするファイルをチェックしてください。",
+      "sameItem": "同じアイテム",
+      "sameItemEmpty": "このアイテムにほかのファイルはありません。",
+      "otherItems": "ほかのアイテム",
+      "searchPlaceholder": "ファイルを検索",
+      "empty": "ほかのアイテムに依存先にできるファイルがありません。"
     },
     "navigation": {
       "library": "Library",

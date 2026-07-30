@@ -282,6 +282,7 @@ public enum AssetManagerErrorCode
     NotFound,
     Duplicate,
     InvalidRequest,
+    DependencyCycle,
     CollectionCycle,
     InvalidCollectionHierarchy,
     InvalidSmartCollectionCondition,
@@ -1016,7 +1017,8 @@ Effects:
 
 Notes:
 
-- 自己依存は例外。
+- 自己依存と、既存の依存を再帰的に辿って要求元へ戻る間接循環は
+  `DependencyCycle` 例外。
 - 置換処理は transaction 内で実行され、検証失敗時は既存関係を維持する。
 
 ## Import Target
@@ -1095,6 +1097,9 @@ public void ImportFileTargets(string itemId, string fileId)
 - `.unitypackage` は Unity の package import へ渡す。user setting `assetManager.showUnityPackageImportDialog` は既定で `true` とし、`false` の場合は内容選択画面を表示せず package 全体を直接 import する。
 - それ以外は `Assets/<asset name>/<file name>/` 配下へ target の相対 path を維持して copy し、最後に AssetDatabase を refresh する。
 - Import Target がない file root では標準 File Tree の context menu に表示しない。
+- file dependency を再帰的に解決し、共有 dependency を 1 回だけ、
+  dependency 側から順に直列 import した後で要求元 file を import する。
+  dependency file には保存済み Import Target を使用する。
 
 ### `IAssetManager.ImportFileEntry`
 
@@ -1108,6 +1113,7 @@ public void ImportFileEntry(string itemId, string fileId, string relativePath)
 - directory 行には表示しない。
 - ZIP entry は必要な entry だけを読み出す。File Tree で同名 root folder を省略した ZIP は、import 時に実 entry path へ戻して解決し、destination には省略した folder を作らない。path traversal を含む relative path は拒否する。
 - `.unitypackage` とそれ以外の取り扱いは `ImportFileTargets` と同じ。
+- file dependency の解決・先行 import は `ImportFileTargets` と同じ。
 
 ### Import 済み Unity GUID
 

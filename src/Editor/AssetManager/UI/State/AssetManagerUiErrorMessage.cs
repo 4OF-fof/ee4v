@@ -10,6 +10,7 @@ namespace Ee4v.AssetManager.UI
         NotFound,
         Duplicate,
         InvalidRequest,
+        DependencyCycle,
         CollectionCycle,
         InvalidCollectionHierarchy,
         InvalidSmartCollectionCondition,
@@ -38,6 +39,9 @@ namespace Ee4v.AssetManager.UI
                 case AssetManagerUiErrorKind.InvalidRequest:
                     return I18N.Get(
                         "assetManager.error.invalidRequest");
+                case AssetManagerUiErrorKind.DependencyCycle:
+                    return I18N.Get(
+                        "assetManager.error.dependencyCycle");
                 case AssetManagerUiErrorKind.CollectionCycle:
                     return I18N.Get(
                         "assetManager.error.collectionCycle");
@@ -83,6 +87,8 @@ namespace Ee4v.AssetManager.UI
                     return AssetManagerUiErrorKind.Duplicate;
                 case AssetManagerErrorCode.InvalidRequest:
                     return AssetManagerUiErrorKind.InvalidRequest;
+                case AssetManagerErrorCode.DependencyCycle:
+                    return AssetManagerUiErrorKind.DependencyCycle;
                 case AssetManagerErrorCode.CollectionCycle:
                     return AssetManagerUiErrorKind.CollectionCycle;
                 case AssetManagerErrorCode

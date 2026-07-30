@@ -1078,6 +1078,65 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
+            "file dependency の間接循環を保存しない",
+            "SQLite 境界でも A→B→C→A を拒否し、失敗前の C の dependency を保持することを確認します。",
+            order: 312)]
+        public void SetFileDependencies_IndirectCycle_PreservesExistingDependencies()
+        {
+            var item = _assetManager.CreateItem(
+                new CreateAssetItemRequest
+                {
+                    Name = "Item"
+                });
+            var files = new[] { "a", "b", "c", "d" }
+                .Select(name =>
+                {
+                    var path = Path.Combine(
+                        _tempRoot,
+                        name + ".txt");
+                    File.WriteAllText(path, name);
+                    return _assetManager.RegisterFile(
+                        item.Id,
+                        new RegisterFileRequest
+                        {
+                            FilePath = path,
+                            FileName = name + ".txt"
+                        });
+                })
+                .ToArray();
+            _assetManager.SetFileDependencies(
+                files[0].Id,
+                new[] { files[1].Id });
+            _assetManager.SetFileDependencies(
+                files[1].Id,
+                new[] { files[2].Id });
+            _assetManager.SetFileDependencies(
+                files[2].Id,
+                new[] { files[3].Id });
+
+            var exception = Assert.Throws<
+                AssetManagerException>(
+                () =>
+                    _assetManager.SetFileDependencies(
+                        files[2].Id,
+                        new[] { files[0].Id }));
+
+            Assert.That(
+                exception.Code,
+                Is.EqualTo(
+                    AssetManagerErrorCode
+                        .DependencyCycle));
+            Assert.That(
+                _assetManager
+                    .GetFileDependencies(files[2].Id)
+                    .Select(dependency =>
+                        dependency.DependencyFileId)
+                    .ToArray(),
+                Is.EqualTo(new[] { files[3].Id }));
+        }
+
+        [Test]
+        [FeatureTestCase(
             "file dependency 置換で file-to-version を保持する",
             "SetFileDependencies が同じ source file の version dependency を削除しないことを確認します。",
             order: 312)]

@@ -114,7 +114,10 @@ namespace Ee4v.UI
             _treeView.selectionChanged += OnSelectionChanged;
             Add(_treeView);
 
-            _emptyLabel = UiTextFactory.Create(emptyText, EmptyClassName);
+            _emptyLabel = UiTextFactory.Create(
+                emptyText,
+                EmptyClassName,
+                UiClassNames.InfoCardDescription);
             _emptyLabel.SetWhiteSpace(WhiteSpace.Normal);
             Add(_emptyLabel);
 

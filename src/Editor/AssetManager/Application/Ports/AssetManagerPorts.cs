@@ -42,6 +42,8 @@ namespace Ee4v.AssetManager.Application.Ports
 
     internal interface IAssetFileReadStore
     {
+        AssetFile GetFile(string fileId);
+        string GetFileOwnerItemId(string fileId);
         IReadOnlyList<AssetFile> GetFiles(string itemId, AssetFileQuery query);
         IReadOnlyList<AssetVariantGroup> GetVariantGroups(string itemId);
         IReadOnlyList<AssetVersionGroup> GetVersionGroups(string itemId);

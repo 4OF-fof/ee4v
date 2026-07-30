@@ -49,6 +49,13 @@ namespace Ee4v.AssetManager.Infrastructure
         public IReadOnlyList<AssetFile> GetFiles(string itemId, AssetFileQuery query) =>
             Execute(() => AssetManagerDatabase.GetFiles(itemId, query));
 
+        public AssetFile GetFile(string fileId) =>
+            Execute(() => AssetManagerDatabase.GetFile(fileId));
+
+        public string GetFileOwnerItemId(string fileId) =>
+            Execute(() =>
+                AssetManagerDatabase.GetFileOwnerItemId(fileId));
+
         public AssetFile RegisterFile(string itemId, RegisterFileRequest request) =>
             Execute(() => AssetManagerDatabase.RegisterFile(itemId, request));
 

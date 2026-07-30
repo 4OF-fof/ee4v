@@ -41,6 +41,7 @@
       "notFound": "The requested AssetManager data could not be found.",
       "duplicate": "The same AssetManager data already exists.",
       "invalidRequest": "AssetManager could not process this request.",
+      "dependencyCycle": "A file cannot depend on itself directly or indirectly.",
       "collectionCycle": "Collections cannot contain themselves or one of their parent collections.",
       "invalidSmartCollectionCondition": "The Smart Collection conditions are invalid.",
       "databaseSchemaIncompatible": "The AssetManager database format is incompatible. Delete the database and let ee4v recreate it.",
@@ -122,6 +123,15 @@
       "filter": "Filter",
       "sort": "Sort order",
       "searchPlaceholder": "Search assets"
+    },
+    "fileDependencies": {
+      "title": "File dependencies",
+      "instruction": "Check the files that must be imported first.",
+      "sameItem": "Same item",
+      "sameItemEmpty": "No other files in this item.",
+      "otherItems": "Other items",
+      "searchPlaceholder": "Search files",
+      "empty": "No files in other items."
     },
     "navigation": {
       "library": "Library",

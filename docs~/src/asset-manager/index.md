@@ -56,6 +56,9 @@ notification を発行します。全面的な CQRS や汎用 repository は導�
 Unity への file import は Application の `ImportFileUseCase` が item/file の所属、path 解決、
 Import Target の Domain policy を確認して `AssetImportPlan` を生成します。Infrastructure は
 plan に従って filesystem / ZIP / Unity package import を実行します。
+file に file dependency が設定されている場合は dependency graph を再帰的に解決し、
+共有 dependency を 1 回だけ、dependency 側から順に直列 import してから要求元 file を
+import します。dependency file には保存済み Import Target を使用します。
 import 成功後の Unity GUID は file 単位で DB へ一括保存します。通常 copy は refresh 後に
 確定した GUID、UnityPackage は完了後に Project 内へ実在する package GUID だけを保存し、
 キャンセル・失敗時は既存値を維持します。
@@ -98,6 +101,7 @@ schema 不整合を含む Navigation のエラー状態を現在の DB に対し
 
 - `MainViewController` は `MainViewHost` ごとに生成し、その表示セッションの navigation、履歴、grid 列数、file / group 子要素 cache、tag 一覧 cache、非同期 load と cancellation を所有する。catalog item 一覧の条件別 cache は持たない。統合 window と単独 window の controller instance は共有せず、AssetManager Application service の一覧用 catalog snapshot だけを全 window で共有する。All、BOOTH Items、Uncategorized、Collection、キーワードの切替は同じ snapshot に対する memory filter として処理する
 - `MainView` は AssetManager 固有の UI controller として、検索文字列、一覧・詳細 mode、選択中 item などの画面状態を持ち、Core UI component へ描画 state を渡す
+- file card のダブルクリック詳細には `FileDependencySettingsView` を仮配置する。同じ Item の active file は先頭の独立枠へ直接表示し、ほかの Item の active file は Item ごとに束ねた検索可能な tree へ表示する。file 行の checkbox または行 click で複数の先行 import file を切り替える。Toggle の label は空にし、Item / file 名は IMGUI fallback を有効にした `UiTextFactory` で表示する
 - `MainViewHost` は `MainToolbar`、`NavigationPanel`、`MainView` と controller の event 配線だけを担当する。toolbar と navigation panel は入力を通知し、渡された値を描画するだけで、設定や他 component を直接操作しない
 - Navigation は `All`、Booth snapshot を持つ Item の `BOOTH Items`、通常 Collection 未所属かつ Smart Collection にも一致しない `Uncategorized`、Item grid とは別の tag 一覧ページを開く `Tags` を提供する
 - Navigation の固定項目の下では通常 Collection と Smart Collection を 1 つの Collection tree に統合し、`ParentCollectionId` と `SortOrder` に従って両種別をまたいだ親子関係と兄弟順を表示する。Smart Collection は通常 Collection の子にできるが、Smart Collection 自身は通常・Smart のどちらの Collection も子に持てない。Collection 全体の Foldout は置かず、子を持つ各Collection行の disclosureで個別に開閉する。行は13px文字、14pxアイコン、22px高とし、親子をHierarchyのDepthIndicatorと同じテーマ色のdepth lineで結ぶ。Asset Gridと同様にCtrl/Command+clickは個別の追加・解除、Shift+clickは表示中のanchorからの範囲選択を行う。最後の1件もmodifier clickで解除でき、treeの空白clickまたはEscapeで全選択を解除する。選択した複数行は表示順を保ったブロックとしてドラッグできる。ドラッグ先の行中央ではその子の末尾へ移動し、行の上端・下端では同じ階層の前後へ挿入する。treeの行以外からNavigation下端まで続く空き領域へドロップするとroot末尾へ移動し、root移動時の外枠は表示しない。cycle、Smart Collection 配下への配置、配置が変わらないdropは受け付けない。Collection構造変更は専用の`Collections` changeだけを発行し、Main Viewの再検索を起こさない

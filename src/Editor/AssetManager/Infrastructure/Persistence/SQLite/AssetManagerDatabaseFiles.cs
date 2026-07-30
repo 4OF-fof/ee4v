@@ -13,6 +13,41 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
 {
     internal static partial class AssetManagerDatabase
     {
+        public static AssetFile GetFile(string fileId)
+        {
+            using (var connection = OpenConnection())
+            {
+                var row = connection.Query<FileRow>(
+                    "SELECT * FROM file_info WHERE id = ? LIMIT 1",
+                    fileId).FirstOrDefault();
+                return row == null
+                    ? null
+                    : ToAssetFile(connection, row);
+            }
+        }
+
+        public static string GetFileOwnerItemId(string fileId)
+        {
+            using (var connection = OpenConnection())
+            {
+                return connection.ExecuteScalar<string>(
+                    @"SELECT COALESCE(
+                        file_info.item_info_id,
+                        version_group.item_info_id,
+                        variant_group.item_info_id)
+                      FROM file_info
+                      LEFT JOIN version_group
+                        ON version_group.id =
+                           file_info.version_group_id
+                      LEFT JOIN variant_group
+                        ON variant_group.id =
+                           file_info.variant_group_id
+                      WHERE file_info.id = ?
+                      LIMIT 1",
+                    fileId);
+            }
+        }
+
         public static IReadOnlyList<AssetFile> GetFiles(string itemId, AssetFileQuery query)
         {
             using (var connection = OpenConnection())

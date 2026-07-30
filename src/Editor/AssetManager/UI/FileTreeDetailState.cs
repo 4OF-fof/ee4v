@@ -26,6 +26,19 @@ namespace Ee4v.AssetManager.UI
 
         public string Extension { get; }
 
+        public string AssetFileId
+        {
+            get
+            {
+                const string prefix = "asset-file|";
+                return Id.StartsWith(
+                    prefix,
+                    System.StringComparison.Ordinal)
+                    ? Id.Substring(prefix.Length)
+                    : string.Empty;
+            }
+        }
+
         public static FileTreeDetailState FromAssetFile(
             string fileId,
             string name,

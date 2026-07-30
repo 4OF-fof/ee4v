@@ -63,6 +63,7 @@ namespace Ee4v.AssetManager.Application
             _importFile = new ImportFileUseCase(
                 _catalogReader,
                 _fileReader,
+                _dependencyReader,
                 _importTargetReader,
                 _importedAssetGuidWriter,
                 _importGateway,
@@ -321,7 +322,12 @@ namespace Ee4v.AssetManager.Application
         {
             AssetManagerRequestValidator.ValidateFileDependencies(
                 dependentFileId,
-                dependencyFileIds);
+                dependencyFileIds,
+                fileId => _dependencyReader
+                    .GetFileDependencies(fileId)
+                    .Select(dependency =>
+                        dependency.DependencyFileId)
+                    .ToArray());
             _dependencyWriter.SetFileDependencies(dependentFileId, dependencyFileIds);
             PublishCatalog();
         }
@@ -334,6 +340,24 @@ namespace Ee4v.AssetManager.Application
             IReadOnlyList<DependencyEndpointRequest> targets)
         {
             AssetManagerRequestValidator.ValidateDependencies(source, targets);
+            if (source.Type == AssetDependencyEndpointType.File &&
+                (targets ?? Array.Empty<DependencyEndpointRequest>())
+                    .All(target =>
+                        target != null &&
+                        target.Type ==
+                        AssetDependencyEndpointType.File))
+            {
+                AssetManagerRequestValidator.ValidateFileDependencies(
+                    source.Id,
+                    (targets ?? Array.Empty<DependencyEndpointRequest>())
+                        .Select(target => target.Id)
+                        .ToArray(),
+                    fileId => _dependencyReader
+                        .GetFileDependencies(fileId)
+                        .Select(dependency =>
+                            dependency.DependencyFileId)
+                        .ToArray());
+            }
             _dependencyWriter.SetDependencies(source, targets);
             PublishCatalog();
         }

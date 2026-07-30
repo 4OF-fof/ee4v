@@ -10,12 +10,14 @@ namespace Ee4v.AssetManager.Application
     internal sealed class AssetImportPlan
     {
         internal AssetImportPlan(
+            string itemId,
             string fileId,
             string assetName,
             string assetFileName,
             string sourcePath,
             IReadOnlyList<string> relativePaths)
         {
+            ItemId = itemId ?? string.Empty;
             FileId = fileId ?? string.Empty;
             AssetName = assetName ?? string.Empty;
             AssetFileName = assetFileName ?? string.Empty;
@@ -23,6 +25,7 @@ namespace Ee4v.AssetManager.Application
             RelativePaths = relativePaths ?? Array.Empty<string>();
         }
 
+        internal string ItemId { get; }
         internal string FileId { get; }
         internal string AssetName { get; }
         internal string AssetFileName { get; }
@@ -48,6 +51,8 @@ namespace Ee4v.AssetManager.Application
     {
         private readonly IAssetCatalogReadStore _catalog;
         private readonly IAssetFileReadStore _files;
+        private readonly IAssetDependencyReadStore
+            _dependencyReader;
         private readonly IAssetImportTargetReadStore _importTargets;
         private readonly IImportedAssetGuidCommandStore _importedAssetGuids;
         private readonly IAssetImportGateway _gateway;
@@ -56,6 +61,7 @@ namespace Ee4v.AssetManager.Application
         internal ImportFileUseCase(
             IAssetCatalogReadStore catalog,
             IAssetFileReadStore files,
+            IAssetDependencyReadStore dependencyReader,
             IAssetImportTargetReadStore importTargets,
             IImportedAssetGuidCommandStore importedAssetGuids,
             IAssetImportGateway gateway,
@@ -63,6 +69,9 @@ namespace Ee4v.AssetManager.Application
         {
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _files = files ?? throw new ArgumentNullException(nameof(files));
+            _dependencyReader = dependencyReader ??
+                throw new ArgumentNullException(
+                    nameof(dependencyReader));
             _importTargets = importTargets ?? throw new ArgumentNullException(nameof(importTargets));
             _importedAssetGuids = importedAssetGuids ??
                 throw new ArgumentNullException(nameof(importedAssetGuids));
@@ -92,21 +101,6 @@ namespace Ee4v.AssetManager.Application
             AssetManagerRequestValidator.Require(itemId, "item id");
             AssetManagerRequestValidator.Require(fileId, "file id");
 
-            IReadOnlyList<string> normalizedPaths;
-            try
-            {
-                normalizedPaths = ImportTargetPathPolicy.Normalize(relativePaths);
-            }
-            catch (ImportTargetPathRuleException exception)
-            {
-                throw new AssetManagerException(
-                    AssetManagerErrorCode.InvalidRequest,
-                    exception.Error == ImportTargetPathError.Empty
-                        ? "At least one import entry is required."
-                        : "Import entry paths must be relative.",
-                    exception);
-            }
-
             var item = _catalog.GetItem(itemId);
             if (item == null)
             {
@@ -115,19 +109,110 @@ namespace Ee4v.AssetManager.Application
                     "The item was not found.");
             }
 
-            var file = _files.GetFiles(
-                    itemId,
-                    new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active })
-                .FirstOrDefault(candidate =>
-                    string.Equals(candidate.Id, fileId, StringComparison.Ordinal));
-            if (file == null)
+            IReadOnlyList<string> importOrder;
+            try
+            {
+                importOrder =
+                    FileDependencyGraphPolicy.ResolveImportOrder(
+                        fileId,
+                        dependencyFileId =>
+                            _dependencyReader
+                                .GetFileDependencies(
+                                    dependencyFileId)
+                                .Where(dependency =>
+                                    dependency != null)
+                                .Select(dependency =>
+                                    dependency.DependencyFileId)
+                                .ToArray());
+            }
+            catch (CatalogRuleException exception)
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.DependencyCycle,
+                    "File dependency cycle is not allowed.",
+                    exception);
+            }
+
+            var plans = importOrder
+                .Select(orderedFileId =>
+                {
+                    var paths = string.Equals(
+                        orderedFileId,
+                        fileId,
+                        StringComparison.Ordinal)
+                        ? relativePaths
+                        : _importTargets
+                            .GetFileImportTargets(
+                                orderedFileId)
+                            .Where(target =>
+                                target != null)
+                            .Select(target =>
+                                target.RelativePath)
+                            .ToArray();
+                    return CreatePlan(
+                        orderedFileId,
+                        paths,
+                        string.Equals(
+                            orderedFileId,
+                            fileId,
+                            StringComparison.Ordinal)
+                            ? itemId
+                            : null);
+                })
+                .ToArray();
+            ImportNext(plans, 0);
+        }
+
+        private AssetImportPlan CreatePlan(
+            string fileId,
+            IReadOnlyList<string> relativePaths,
+            string expectedItemId)
+        {
+            var file = _files.GetFile(fileId);
+            var ownerItemId =
+                _files.GetFileOwnerItemId(fileId);
+            if (file == null ||
+                file.Lifecycle != AssetFileLifecycle.Active ||
+                string.IsNullOrWhiteSpace(ownerItemId) ||
+                (!string.IsNullOrWhiteSpace(expectedItemId) &&
+                 !string.Equals(
+                     ownerItemId,
+                     expectedItemId,
+                     StringComparison.Ordinal)))
             {
                 throw new AssetManagerException(
                     AssetManagerErrorCode.NotFound,
                     "The file was not found in the item.");
             }
 
-            var resolution = _files.ResolveFilePath(fileId);
+            var item = _catalog.GetItem(ownerItemId);
+            if (item == null)
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.NotFound,
+                    "The item was not found.");
+            }
+
+            IReadOnlyList<string> normalizedPaths;
+            try
+            {
+                normalizedPaths =
+                    ImportTargetPathPolicy.Normalize(
+                        relativePaths);
+            }
+            catch (ImportTargetPathRuleException exception)
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidRequest,
+                    exception.Error ==
+                    ImportTargetPathError.Empty
+                        ? "At least one import entry is required."
+                        : "Import entry paths must be relative.",
+                    exception);
+            }
+
+            var resolution =
+                _files.ResolveFilePath(fileId);
             if (resolution == null ||
                 !resolution.Found ||
                 string.IsNullOrWhiteSpace(resolution.Path))
@@ -137,32 +222,46 @@ namespace Ee4v.AssetManager.Application
                     "The file path could not be resolved.");
             }
 
+            return new AssetImportPlan(
+                ownerItemId,
+                fileId,
+                item.Name,
+                file.FileName,
+                resolution.Path,
+                normalizedPaths);
+        }
+
+        private void ImportNext(
+            IReadOnlyList<AssetImportPlan> plans,
+            int index)
+        {
+            if (index >= plans.Count)
+            {
+                return;
+            }
+
+            var plan = plans[index];
             _gateway.Import(
-                new AssetImportPlan(
-                    fileId,
-                    item.Name,
-                    file.FileName,
-                    resolution.Path,
-                    normalizedPaths),
+                plan,
                 result =>
                 {
-                    if (result == null || !result.Succeeded)
+                    if (result == null ||
+                        !result.Succeeded)
                     {
                         return;
                     }
 
-                    var assetGuids =
-                        ImportedAssetGuidPolicy.Normalize(
-                            result.AssetGuids);
                     _importedAssetGuids
                         .ReplaceFileImportedAssetGuids(
-                            fileId,
-                            assetGuids);
+                            plan.FileId,
+                            ImportedAssetGuidPolicy.Normalize(
+                                result.AssetGuids));
                     _publish(new AssetManagerChange(
                         AssetManagerChangeKind
                             .ImportedAssetGuids,
-                        itemId,
-                        fileId));
+                        plan.ItemId,
+                        plan.FileId));
+                    ImportNext(plans, index + 1);
                 });
         }
     }

@@ -203,11 +203,138 @@ namespace Ee4v.AssetManager.UI.Tests
             var textElements =
                 view.Query<UiTextElement>().ToList();
 
-            Assert.That(textElements, Has.Count.EqualTo(1));
             Assert.That(
-                textElements.All(element =>
-                    element.GetType().Name ==
-                    "ImguiUiTextElement"),
+                textElements.Any(element =>
+                    element.Text == "preview.png"),
+                Is.True);
+            Assert.That(
+                textElements
+                    .Single(element =>
+                        element.Text == "preview.png")
+                    .GetType()
+                    .Name,
+                Is.EqualTo(
+                    "ImguiUiTextElement"));
+        }
+
+        [Test]
+        public void FileDetail_ContainsDependencySettingsComponent()
+        {
+            var view = new FileTreeDetailView();
+
+            Assert.That(
+                view.Query<FileDependencySettingsView>()
+                    .First(),
+                Is.Not.Null);
+        }
+
+        [Test]
+        public void DependencySettings_UsesSearchableTreeInsteadOfSelector()
+        {
+            var view =
+                new FileDependencySettingsView();
+            view.SetState(
+                new FileDependencySettingsState(
+                    "item-1",
+                    new[]
+                    {
+                        new FileDependencyOption(
+                            "item-1",
+                            "Item",
+                            "file-b",
+                            "B.prefab")
+                    },
+                    Array.Empty<string>(),
+                    _ => { }));
+
+            Assert.That(
+                view.Query<SearchableTreeView<
+                    FileDependencyTreeNode>>()
+                    .First()
+                    .GetType(),
+                Is.EqualTo(typeof(
+                    SearchableTreeView<
+                        FileDependencyTreeNode>)));
+            Assert.That(
+                view.Query<DropdownField>()
+                    .ToList(),
+                Is.Empty);
+        }
+
+        [Test]
+        public void DependencySettings_PinsSameItemBeforeOtherItems()
+        {
+            var view = new FileDependencySettingsView();
+            view.SetState(
+                new FileDependencySettingsState(
+                    "item-1",
+                    new[]
+                    {
+                        new FileDependencyOption(
+                            "item-2",
+                            "Other",
+                            "file-c",
+                            "C.prefab"),
+                        new FileDependencyOption(
+                            "item-1",
+                            "Current",
+                            "file-b",
+                            "B.prefab")
+                    },
+                    Array.Empty<string>(),
+                    _ => { }));
+
+            var current = view.Q<VisualElement>(
+                className:
+                "ee4v-file-dependency-settings__section--current");
+            var other = view.Q<VisualElement>(
+                className:
+                "ee4v-file-dependency-settings__section--other");
+
+            Assert.That(current, Is.Not.Null);
+            Assert.That(other, Is.Not.Null);
+            Assert.That(
+                view.IndexOf(current),
+                Is.LessThan(view.IndexOf(other)));
+            Assert.That(
+                current.Query<FileDependencyTreeRow>()
+                    .ToList(),
+                Has.Count.EqualTo(1));
+            Assert.That(
+                view.Query<UiTextElement>()
+                    .ToList()
+                    .All(element =>
+                        element.GetType().Name ==
+                        "ImguiUiTextElement"),
+                Is.True);
+        }
+
+        [Test]
+        public void DependencyTreeRow_UsesEmptyToggleLabel()
+        {
+            bool? changed = null;
+            var row = new FileDependencyTreeRow(
+                (_, selected) =>
+                    changed = selected);
+            row.Bind(
+                new FileDependencyTreeNode(
+                    "B.prefab",
+                    "file-b",
+                    "prefab"),
+                selected: true);
+
+            Assert.That(row.Toggle.label, Is.Empty);
+            Assert.That(row.Toggle.value, Is.True);
+
+            row.Toggle.value = false;
+
+            Assert.That(changed, Is.False);
+            Assert.That(
+                row.Query<UiTextElement>()
+                    .ToList()
+                    .All(element =>
+                        element.GetType().Name ==
+                        "ImguiUiTextElement"),
                 Is.True);
         }
 

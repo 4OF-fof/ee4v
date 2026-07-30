@@ -617,6 +617,10 @@ file を持つ Version Group は primary file を 1 つ持つ。自動分類時�
 
 File Info / Version Group / Variant Group の依存関係。依存元は File Info、Version Group、Variant Group のいずれか 1 つを指定する。依存先は File Info または Version Group のいずれか 1 つを指定する。
 
+File Info から File Info への依存は有向非巡回 graph とする。設定の一括置換時は、
+追加後の graph を再帰的に検証し、直接・間接の循環を登録しない。SQLite trigger でも
+同じ制約を防御し、失敗した置換 transaction は変更前の依存を保持する。
+
 依存元と依存先の ID をこの table に直接保持する。依存元は `source_*` のうち 1 つ、依存先は `target_*` のうち 1 つだけを設定する。Variant Group は依存元にはなれるが、依存先にはしない。
 
 | column | type | required | unique | note |

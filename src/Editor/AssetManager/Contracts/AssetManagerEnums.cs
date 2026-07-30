@@ -83,6 +83,7 @@ namespace Ee4v.AssetManager.Contracts
         NotFound,
         Duplicate,
         InvalidRequest,
+        DependencyCycle,
         CollectionCycle,
         InvalidCollectionHierarchy,
         InvalidSmartCollectionCondition,

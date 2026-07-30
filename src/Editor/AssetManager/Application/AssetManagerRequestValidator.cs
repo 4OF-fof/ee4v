@@ -28,7 +28,8 @@ namespace Ee4v.AssetManager.Application
 
         internal static void ValidateFileDependencies(
             string dependentFileId,
-            IReadOnlyList<string> dependencyFileIds)
+            IReadOnlyList<string> dependencyFileIds,
+            Func<string, IReadOnlyList<string>> getDependencies = null)
         {
             Execute(() =>
             {
@@ -36,6 +37,13 @@ namespace Ee4v.AssetManager.Application
                 CatalogCommandPolicy.EnsureNoSelfDependency(
                     dependentFileId,
                     dependencyFileIds);
+                if (getDependencies != null)
+                {
+                    FileDependencyGraphPolicy.EnsureCanReplace(
+                        dependentFileId,
+                        dependencyFileIds,
+                        getDependencies);
+                }
             });
         }
 
@@ -145,6 +153,8 @@ namespace Ee4v.AssetManager.Application
             return error == CatalogRuleError.SmartConditionRequired ||
                    error == CatalogRuleError.SmartConditionQueryRequired
                 ? AssetManagerErrorCode.InvalidSmartCollectionCondition
+                : error == CatalogRuleError.DependencyCycle
+                    ? AssetManagerErrorCode.DependencyCycle
                 : AssetManagerErrorCode.InvalidRequest;
         }
 
@@ -156,6 +166,8 @@ namespace Ee4v.AssetManager.Application
                     return exception.Field + " is required.";
                 case CatalogRuleError.SelfDependency:
                     return "Self dependency is not allowed.";
+                case CatalogRuleError.DependencyCycle:
+                    return "File dependency cycle is not allowed.";
                 case CatalogRuleError.UnsupportedDependencyTarget:
                     return "Variant group cannot be a dependency target.";
                 case CatalogRuleError.UnsupportedCollectionIcon:

@@ -82,8 +82,7 @@
 
 .ee4v-asset-manager-file-detail {
     flex-grow: 1;
-    align-items: center;
-    justify-content: center;
+    align-items: stretch;
     padding: var(--ee4v-space-3xl);
 }
 
@@ -95,4 +94,70 @@
 
 .ee4v-asset-manager-file-detail__name {
     max-width: 100%;
+}
+
+.ee4v-file-dependency-settings {
+    flex-shrink: 0;
+    margin-top: var(--ee4v-space-xl);
+    padding: var(--ee4v-space-lg);
+    background-color: var(--ee4v-color-surface-raised);
+}
+
+.ee4v-file-dependency-settings__instruction {
+    margin-top: var(--ee4v-space-md);
+    color: var(--ee4v-color-text-muted);
+}
+
+.ee4v-file-dependency-settings__section {
+    margin-top: var(--ee4v-space-md);
+    padding: var(--ee4v-space-md);
+    border-top-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-left-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-subtle);
+    border-right-color: var(--ee4v-color-border-subtle);
+    border-bottom-color: var(--ee4v-color-border-subtle);
+    border-left-color: var(--ee4v-color-border-subtle);
+    border-radius: var(--ee4v-radius-md);
+}
+
+.ee4v-file-dependency-settings__current-rows,
+.ee4v-file-dependency-settings__current-empty {
+    margin-top: var(--ee4v-space-sm);
+}
+
+.ee4v-file-dependency-settings__tree {
+    height: 260px;
+    min-height: 180px;
+    max-height: 320px;
+    margin-top: var(--ee4v-space-sm);
+}
+
+.ee4v-file-dependency-settings__row {
+    min-width: 0;
+    width: 100%;
+    min-height: var(--ee4v-size-20);
+    flex-direction: row;
+    align-items: center;
+}
+
+.ee4v-file-dependency-settings__row Toggle {
+    flex-shrink: 0;
+    margin-right: var(--ee4v-space-xs);
+}
+
+.ee4v-file-dependency-settings__row--group {
+    -unity-font-style: bold;
+}
+
+.ee4v-file-dependency-settings__meta {
+    flex-shrink: 0;
+    margin-left: var(--ee4v-space-md);
+    color: var(--ee4v-color-text-muted);
+}
+
+.ee4v-file-dependency-settings__error {
+    margin-top: var(--ee4v-space-sm);
+    color: var(--ee4v-color-error);
 }
