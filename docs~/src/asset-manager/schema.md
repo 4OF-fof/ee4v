@@ -63,20 +63,17 @@ erDiagram
     }
 
     shop_info {
-        TEXT id PK
+        TEXT subdomain PK
         TEXT name
-        TEXT subdomain UK
         TEXT thumbnail_url
     }
 
     schema_version {
         INTEGER version PK
-        TEXT created_at
-        TEXT updated_at
     }
 
     sync_info {
-        TEXT source_type PK
+        TEXT source_type PK "blm | eagle"
         TEXT last_sync_at
         TEXT last_sync_status
     }
@@ -106,18 +103,14 @@ erDiagram
     smart_collection_info {
         TEXT collection_info_id PK, FK
         TEXT match_mode
-        TEXT created_at
-        TEXT updated_at
     }
 
     smart_collection_condition {
-        TEXT id PK
-        TEXT collection_info_id FK
+        TEXT collection_info_id PK, FK
+        INTEGER sort_order PK
         TEXT field
         TEXT operator
         TEXT query_text
-        TEXT created_at
-        TEXT updated_at
     }
 
     collection_collection {
@@ -131,10 +124,9 @@ erDiagram
     }
 
     booth_info {
-        TEXT id PK
+        INTEGER booth_item_id PK
         TEXT item_info_id FK, UK
-        INTEGER booth_item_id UK
-        TEXT shop_info_id FK
+        TEXT shop_subdomain FK
         TEXT name
         TEXT description
         TEXT thumbnail_url
@@ -183,9 +175,8 @@ erDiagram
     }
 
     file_import_target {
-        TEXT id PK
-        TEXT file_info_id FK
-        TEXT relative_path
+        TEXT file_info_id PK, FK
+        TEXT relative_path PK
     }
 
     file_imported_asset_guid {
@@ -208,6 +199,7 @@ erDiagram
         TEXT registered_item_id
         TEXT relative_path
         TEXT file_path_cache
+        INTEGER is_missing
         TEXT imported_at
     }
 
@@ -215,7 +207,6 @@ erDiagram
         TEXT file_info_id PK, FK
         TEXT ee4v_file_id UK
         TEXT file_path_cache
-        INTEGER is_missing
         TEXT imported_at
     }
 
@@ -232,7 +223,6 @@ erDiagram
     datasource_tag {
         TEXT source_type PK, FK
         TEXT source_id PK, FK
-        TEXT item_info_id FK
         TEXT name PK
     }
 
@@ -315,8 +305,6 @@ Smart Collection の所属 Item は永続化しない。条件評価による It
 |---|---|---:|---|---|
 | `collection_info_id` | GUID string | Yes | Yes | 対応する Collection Info |
 | `match_mode` | smart_collection_match_mode | Yes |  | 複数条件の結合方法 |
-| `created_at` | DATETIME | Yes |  | 作成時刻 |
-| `updated_at` | DATETIME | Yes |  | 更新時刻 |
 
 ```sql
 CHECK (match_mode IN ('all', 'any'))
@@ -330,15 +318,14 @@ Smart Collection の検索条件。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `id` | GUID string | Yes |  | Smart Collection Condition の識別子 |
-| `collection_info_id` | GUID string | Yes |  | 親 Smart Collection Info |
+| `collection_info_id` | GUID string | Yes | `(collection_info_id, sort_order)` | 親 Smart Collection Info |
+| `sort_order` | INTEGER | Yes | `(collection_info_id, sort_order)` | 条件の表示・評価順 |
 | `field` | smart_collection_condition_field | Yes |  | 評価対象 field |
 | `operator` | smart_collection_condition_operator | Yes |  | 評価方法 |
 | `query_text` | TEXT |  |  | 検索文字列。`exists` では NULL を許容 |
-| `created_at` | DATETIME | Yes |  | 作成時刻 |
-| `updated_at` | DATETIME | Yes |  | 更新時刻 |
 
 ```sql
+CHECK (sort_order >= 0)
 CHECK (field IN ('name', 'description', 'tag', 'file_name', 'extension'))
 CHECK (operator IN ('contains', 'equals', 'in', 'exists'))
 CHECK (operator = 'exists' OR query_text IS NOT NULL)
@@ -457,13 +444,11 @@ ON item_collection(item_info_id, collection_info_id);
 
 ## Schema Version
 
-AssetManager DB の schema version。現在は `8`。開発段階のため migration は提供せず、version 不一致時は既存 DB を削除して再作成する。
+AssetManager DB の schema version。現在は `9`。開発段階のため migration は提供せず、version 不一致時は既存 DB を削除して再作成する。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
 | `version` | INTEGER | Yes | Yes | schema version |
-| `created_at` | DATETIME | Yes |  | 作成時刻 |
-| `updated_at` | DATETIME | Yes |  | 更新時刻 |
 
 ```sql
 CHECK (version >= 1)
@@ -480,7 +465,7 @@ Datasource 別 sync 状態。
 | `last_sync_status` | sync_status | Yes |  | 最後の sync 結果。`success` / `failed` / `partial` |
 
 ```sql
-CHECK (source_type IN ('blm', 'eagle', 'ee4v'))
+CHECK (source_type IN ('blm', 'eagle'))
 CHECK (last_sync_status IN ('success', 'failed', 'partial'))
 ```
 
@@ -494,10 +479,9 @@ conflict は確認後上書きで対応。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `id` | GUID string | Yes |  | Booth Info の識別子 |
 | `item_info_id` | GUID string | Yes | Yes | 親 Item Info |
 | `booth_item_id` | INTEGER | Yes | Yes | Booth item ID。BLM `booth_items.id` / Eagle `boothItemId` |
-| `shop_info_id` | GUID string | Yes |  | Shop Info への参照 |
+| `shop_subdomain` | TEXT | Yes |  | Shop Info への参照 |
 | `name` | TEXT | Yes |  | Booth 商品名 |
 | `description` | TEXT | Yes |  | Booth 商品説明。取得元に説明がない場合は空文字を保持 |
 | `thumbnail_url` | TEXT |  |  | 商品 thumbnail URL |
@@ -509,14 +493,15 @@ Booth shop 単位の情報。複数 Booth Info から共有する。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `id` | GUID string | Yes |  | Shop Info の識別子 |
 | `name` | TEXT | Yes |  | ショップ名 |
 | `subdomain` | TEXT | Yes | Yes | Booth shop subdomain |
 | `thumbnail_url` | TEXT |  |  | shop thumbnail URL |
 
 ```sql
-subdomain TEXT NOT NULL UNIQUE
+subdomain TEXT PRIMARY KEY
 ```
+
+subdomain を取得できない場合は `unknown-{booth_item_id}` を安定した代替値として使用する。
 
 ## File Info
 
@@ -588,8 +573,9 @@ BLM / Eagle 由来 tag の snapshot。ユーザー編集する `tag_info` / `ite
 |---|---|---:|---|---|
 | `source_type` | TEXT | Yes | `(source_type, source_id, name)` | origin source |
 | `source_id` | TEXT | Yes | `(source_type, source_id, name)` | origin identity |
-| `item_info_id` | GUID string | Yes |  | 対応 Item Info |
 | `name` | TEXT | Yes | `(source_type, source_id, name)` | datasource tag 名 |
+
+対応 Item は `(source_type, source_id)` で参照する `item_source_origin` から取得する。
 
 ## Variant Group
 
@@ -688,13 +674,11 @@ Unity へ取り込む対象 file entry。`file_info` の実体が directory ま�
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
-| `id` | GUID string | Yes |  | File Import Target の識別子 |
 | `file_info_id` | GUID string | Yes | `(file_info_id, relative_path)` | 親 File Info |
 | `relative_path` | TEXT | Yes | `(file_info_id, relative_path)` | file 実体からの相対 path。zip 内 entry も `/` 区切りで保持する |
 
 ```sql
-CREATE UNIQUE INDEX unique_file_import_target_file_path
-ON file_import_target(file_info_id, relative_path);
+PRIMARY KEY(file_info_id, relative_path)
 ```
 
 ## File Imported Asset GUID

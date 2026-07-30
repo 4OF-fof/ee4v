@@ -146,15 +146,13 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                         request.ParentCollectionId,
                         -1);
                     connection.Execute(
-                        "INSERT INTO smart_collection_info(collection_info_id, match_mode, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                        "INSERT INTO smart_collection_info(collection_info_id, match_mode) VALUES (?, ?)",
                         nextId,
-                        request.MatchMode == SmartCollectionMatchMode.Any ? "any" : "all",
-                        now,
-                        now);
+                        request.MatchMode == SmartCollectionMatchMode.Any ? "any" : "all");
 
                     for (var i = 0; i < conditions.Count; i++)
                     {
-                        InsertSmartCondition(connection, nextId, conditions[i]);
+                        InsertSmartCondition(connection, nextId, i, conditions[i]);
                     }
 
                     return nextId;
@@ -238,14 +236,12 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
 
                 InTransaction(connection, () =>
                 {
-                    var now = Now();
                     connection.Execute(
-                        "UPDATE smart_collection_info SET match_mode = ?, updated_at = ? WHERE collection_info_id = ?",
+                        "UPDATE smart_collection_info SET match_mode = ? WHERE collection_info_id = ?",
                         request.MatchMode ==
                         SmartCollectionMatchMode.Any
                             ? "any"
                             : "all",
-                        now,
                         collectionId);
                     connection.Execute(
                         "DELETE FROM smart_collection_condition WHERE collection_info_id = ?",
@@ -255,12 +251,13 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                         InsertSmartCondition(
                             connection,
                             collectionId,
+                            i,
                             conditions[i]);
                     }
 
                     connection.Execute(
                         "UPDATE collection_info SET updated_at = ? WHERE id = ?",
-                        now,
+                        Now(),
                         collectionId);
                 });
 
@@ -750,7 +747,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             }
         }
 
-        private static void InsertSmartCondition(SQLiteConnection connection, string collectionId, SmartCollectionCondition condition)
+        private static void InsertSmartCondition(
+            SQLiteConnection connection,
+            string collectionId,
+            int sortOrder,
+            SmartCollectionCondition condition)
         {
             if (condition == null)
             {
@@ -758,16 +759,13 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             }
 
             ValidateSmartCondition(condition);
-            var now = Now();
             connection.Execute(
-                "INSERT INTO smart_collection_condition(id, collection_info_id, field, operator, query_text, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                NewId(),
+                "INSERT INTO smart_collection_condition(collection_info_id, sort_order, field, operator, query_text) VALUES (?, ?, ?, ?, ?)",
                 collectionId,
+                sortOrder,
                 ToDbSmartField(condition.Field),
                 ToDbSmartOperator(condition.Operator),
-                condition.QueryText,
-                now,
-                now);
+                condition.QueryText);
         }
 
         private static void EnsureRegularCollection(SQLiteConnection connection, string collectionId)
@@ -874,7 +872,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
         private static bool MatchesSmartCollection(SQLiteConnection connection, string itemId, SmartCollectionRow smartCollection)
         {
             var conditions = connection.Query<SmartConditionRow>(
-                "SELECT * FROM smart_collection_condition WHERE collection_info_id = ? ORDER BY id",
+                "SELECT * FROM smart_collection_condition WHERE collection_info_id = ? ORDER BY sort_order",
                 smartCollection.collection_info_id);
             return MatchesSmartCollection(
                 smartCollection.match_mode,

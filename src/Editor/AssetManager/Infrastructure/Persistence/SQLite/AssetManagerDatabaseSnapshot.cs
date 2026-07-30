@@ -109,7 +109,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                     connection.Query<SmartConditionRow>(
                             "SELECT * FROM " +
                             "smart_collection_condition " +
-                            "ORDER BY collection_info_id, id")
+                            "ORDER BY collection_info_id, sort_order")
                         .GroupBy(
                             condition =>
                                 condition.collection_info_id,

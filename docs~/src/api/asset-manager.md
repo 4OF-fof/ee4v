@@ -122,7 +122,6 @@ Notes:
 ```csharp
 public sealed class BoothSnapshot
 {
-    public string Id { get; set; }
     public long BoothItemId { get; set; }
     public string ItemUrl { get; set; }
     public string Name { get; set; }
@@ -154,7 +153,6 @@ public sealed class AssetFilePathResolution
 
 public sealed class AssetFileImportTarget
 {
-    public string Id { get; set; }
     public string FileId { get; set; }
     public string RelativePath { get; set; }
 }
@@ -183,7 +181,6 @@ public sealed class SmartCollectionRule
 
 public sealed class SmartCollectionCondition
 {
-    public string Id { get; set; }
     public SmartCollectionConditionField Field { get; set; }
     public SmartCollectionConditionOperator Operator { get; set; }
     public string QueryText { get; set; }

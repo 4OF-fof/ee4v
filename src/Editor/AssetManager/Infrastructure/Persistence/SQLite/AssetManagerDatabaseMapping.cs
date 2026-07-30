@@ -59,9 +59,9 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
         private static BoothSnapshot LoadBoothSnapshot(SQLiteConnection connection, string itemId)
         {
             var row = connection.Query<BoothRow>(
-                @"SELECT booth_info.*, shop_info.name AS shop_name, shop_info.subdomain AS shop_subdomain, shop_info.thumbnail_url AS shop_thumbnail_url
+                @"SELECT booth_info.*, shop_info.name AS shop_name, shop_info.thumbnail_url AS shop_thumbnail_url
                   FROM booth_info
-                  INNER JOIN shop_info ON shop_info.id = booth_info.shop_info_id
+                  INNER JOIN shop_info ON shop_info.subdomain = booth_info.shop_subdomain
                   WHERE booth_info.item_info_id = ?
                   LIMIT 1",
                 itemId).FirstOrDefault();
@@ -72,7 +72,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
 
             return new BoothSnapshot
             {
-                Id = row.id,
                 BoothItemId = row.booth_item_id,
                 ItemUrl = string.IsNullOrWhiteSpace(row.shop_subdomain) ? string.Empty : "https://" + row.shop_subdomain + ".booth.pm/items/" + row.booth_item_id,
                 Name = row.name,
@@ -88,7 +87,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                           INNER JOIN item_source_origin
                             ON item_source_origin.source_type = datasource_tag.source_type
                            AND item_source_origin.source_id = datasource_tag.source_id
-                          WHERE datasource_tag.item_info_id = ?
+                          WHERE item_source_origin.item_info_id = ?
                             AND item_source_origin.is_missing = 0
                           ORDER BY datasource_tag.name COLLATE NOCASE",
                         itemId)
@@ -178,7 +177,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
         {
             return new AssetFileImportTarget
             {
-                Id = row.id,
                 FileId = row.file_info_id,
                 RelativePath = row.relative_path
             };
@@ -229,7 +227,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 SmartRule = smart == null ? null : new SmartCollectionRule
                 {
                     MatchMode = smart.match_mode == "any" ? SmartCollectionMatchMode.Any : SmartCollectionMatchMode.All,
-                    Conditions = connection.Query<SmartConditionRow>("SELECT * FROM smart_collection_condition WHERE collection_info_id = ? ORDER BY id", row.id)
+                    Conditions = connection.Query<SmartConditionRow>("SELECT * FROM smart_collection_condition WHERE collection_info_id = ? ORDER BY sort_order", row.id)
                         .Select(ToSmartCondition)
                         .ToArray()
                 },
@@ -242,7 +240,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
         {
             return new SmartCollectionCondition
             {
-                Id = row.id,
                 Field = FromDbSmartField(row.field),
                 Operator = FromDbSmartOperator(row.@operator),
                 QueryText = row.query_text

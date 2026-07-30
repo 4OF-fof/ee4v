@@ -29,7 +29,6 @@ namespace Ee4v.AssetManager.Application.Tests
                 {
                     new AssetFileImportTarget
                     {
-                        Id = "target-1",
                         FileId = "file-1",
                         RelativePath = "Packages/avatar.unitypackage"
                     }

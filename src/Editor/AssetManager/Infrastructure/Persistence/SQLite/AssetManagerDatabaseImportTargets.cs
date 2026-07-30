@@ -12,7 +12,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             {
                 EnsureFileExists(connection, fileId);
                 return connection.Query<FileImportTargetRow>(
-                        "SELECT * FROM file_import_target WHERE file_info_id = ? ORDER BY relative_path COLLATE NOCASE, id",
+                        "SELECT * FROM file_import_target WHERE file_info_id = ? ORDER BY relative_path COLLATE NOCASE",
                         fileId)
                     .Select(ToAssetFileImportTarget)
                     .ToArray();
@@ -33,9 +33,8 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                     for (var i = 0; i < normalizedRelativePaths.Count; i++)
                     {
                         connection.Execute(
-                            @"INSERT INTO file_import_target(id, file_info_id, relative_path)
-                              VALUES (?, ?, ?)",
-                            NewId(),
+                            @"INSERT INTO file_import_target(file_info_id, relative_path)
+                              VALUES (?, ?)",
                             fileId,
                             normalizedRelativePaths[i]);
                     }

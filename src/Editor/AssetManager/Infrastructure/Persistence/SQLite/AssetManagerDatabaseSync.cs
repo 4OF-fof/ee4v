@@ -223,18 +223,22 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             }
 
             var safeDescription = NormalizeDatasourceText(description);
-            var shop = EnsureShop(connection, shopName, shopSubdomain, shopThumbnailUrl);
+            var shop = EnsureShop(
+                connection,
+                shopName,
+                shopSubdomain,
+                shopThumbnailUrl,
+                boothItemId);
             var booth = connection.Query<BoothRow>("SELECT * FROM booth_info WHERE booth_item_id = ? LIMIT 1", boothItemId).FirstOrDefault();
             if (booth == null)
             {
                 var itemId = NewId();
                 connection.Execute("INSERT INTO item_info(id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)", itemId, safeName, safeDescription, now, now);
                 connection.Execute(
-                    "INSERT INTO booth_info(id, item_info_id, booth_item_id, shop_info_id, name, description, thumbnail_url, last_updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    NewId(),
-                    itemId,
+                    "INSERT INTO booth_info(booth_item_id, item_info_id, shop_subdomain, name, description, thumbnail_url, last_updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     boothItemId,
-                    shop.Row.id,
+                    itemId,
+                    shop.Row.subdomain,
                     safeName,
                     safeDescription,
                     thumbnailUrl,
@@ -246,7 +250,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             var previousBoothName = booth.name;
             var previousBoothDescription = booth.description;
             var changed = shop.Status != AssetSyncStatus.Unchanged ||
-                          !StringEquals(booth.shop_info_id, shop.Row.id) ||
+                          !StringEquals(booth.shop_subdomain, shop.Row.subdomain) ||
                           !StringEquals(booth.name, safeName) ||
                           !StringEquals(booth.description, safeDescription) ||
                           !StringEquals(booth.thumbnail_url, thumbnailUrl) ||
@@ -254,13 +258,13 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             if (changed)
             {
                 connection.Execute(
-                    "UPDATE booth_info SET shop_info_id = ?, name = ?, description = ?, thumbnail_url = ?, last_updated_at = ? WHERE id = ?",
-                    shop.Row.id,
+                    "UPDATE booth_info SET shop_subdomain = ?, name = ?, description = ?, thumbnail_url = ?, last_updated_at = ? WHERE booth_item_id = ?",
+                    shop.Row.subdomain,
                     safeName,
                     safeDescription,
                     thumbnailUrl,
                     nextLastUpdatedAt,
-                    booth.id);
+                    booth.booth_item_id);
             }
 
             changed = NormalizeExistingItemInfoText(connection, booth.item_info_id, previousBoothName, previousBoothDescription, safeName, safeDescription, overwriteItemText) || changed;
@@ -538,7 +542,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                     sourceId);
             }
 
-            changed = SyncDatasourceTags(connection, sourceType, sourceId, itemId, tags) || changed;
+            changed = SyncDatasourceTags(connection, sourceType, sourceId, tags) || changed;
             connection.Execute("UPDATE item_info SET is_available = 1 WHERE id = ?", itemId);
             if (existing != null && !StringEquals(existing.item_info_id, itemId))
             {
@@ -554,7 +558,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             SQLiteConnection connection,
             string sourceType,
             string sourceId,
-            string itemId,
             IReadOnlyList<string> tags)
         {
             var normalizedTags = (tags ?? Array.Empty<string>())
@@ -564,11 +567,10 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 .OrderBy(tag => tag, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
             var existingTags = connection.Query<DatasourceTagRow>(
-                    "SELECT * FROM datasource_tag WHERE source_type = ? AND source_id = ? ORDER BY name COLLATE NOCASE",
+                    "SELECT name FROM datasource_tag WHERE source_type = ? AND source_id = ? ORDER BY name COLLATE NOCASE",
                     sourceType,
                     sourceId);
-            if (existingTags.All(tag => StringEquals(tag.item_info_id, itemId)) &&
-                existingTags.Select(tag => tag.name).SequenceEqual(normalizedTags, StringComparer.Ordinal))
+            if (existingTags.Select(tag => tag.name).SequenceEqual(normalizedTags, StringComparer.Ordinal))
             {
                 return false;
             }
@@ -580,10 +582,9 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             for (var i = 0; i < normalizedTags.Length; i++)
             {
                 connection.Execute(
-                    "INSERT INTO datasource_tag(source_type, source_id, item_info_id, name) VALUES (?, ?, ?, ?)",
+                    "INSERT INTO datasource_tag(source_type, source_id, name) VALUES (?, ?, ?)",
                     sourceType,
                     sourceId,
-                    itemId,
                     normalizedTags[i]);
             }
 
@@ -878,9 +879,16 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             return true;
         }
 
-        private static ShopUpsertResult EnsureShop(SQLiteConnection connection, string shopName, string subdomain, string thumbnailUrl)
+        private static ShopUpsertResult EnsureShop(
+            SQLiteConnection connection,
+            string shopName,
+            string subdomain,
+            string thumbnailUrl,
+            long boothItemId)
         {
-            var safeSubdomain = string.IsNullOrWhiteSpace(subdomain) ? "unknown-" + NewId() : subdomain;
+            var safeSubdomain = string.IsNullOrWhiteSpace(subdomain)
+                ? "unknown-" + boothItemId
+                : subdomain;
             var safeShopName = NormalizeDatasourceText(shopName);
             var existing = connection.Query<ShopRow>("SELECT * FROM shop_info WHERE subdomain = ? LIMIT 1", safeSubdomain).FirstOrDefault();
             if (existing != null)
@@ -890,7 +898,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                               !StringEquals(existing.thumbnail_url, thumbnailUrl);
                 if (changed)
                 {
-                    connection.Execute("UPDATE shop_info SET name = ?, thumbnail_url = ? WHERE id = ?", nextName, thumbnailUrl, existing.id);
+                    connection.Execute(
+                        "UPDATE shop_info SET name = ?, thumbnail_url = ? WHERE subdomain = ?",
+                        nextName,
+                        thumbnailUrl,
+                        existing.subdomain);
                     existing.name = nextName;
                     existing.thumbnail_url = thumbnailUrl;
                 }
@@ -898,9 +910,16 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 return new ShopUpsertResult(existing, changed ? AssetSyncStatus.Updated : AssetSyncStatus.Unchanged);
             }
 
-            var id = NewId();
-            connection.Execute("INSERT INTO shop_info(id, name, subdomain, thumbnail_url) VALUES (?, ?, ?, ?)", id, safeShopName, safeSubdomain, thumbnailUrl);
-            return new ShopUpsertResult(connection.Query<ShopRow>("SELECT * FROM shop_info WHERE id = ?", id).First(), AssetSyncStatus.Created);
+            connection.Execute(
+                "INSERT INTO shop_info(subdomain, name, thumbnail_url) VALUES (?, ?, ?)",
+                safeSubdomain,
+                safeShopName,
+                thumbnailUrl);
+            return new ShopUpsertResult(
+                connection.Query<ShopRow>(
+                    "SELECT * FROM shop_info WHERE subdomain = ?",
+                    safeSubdomain).First(),
+                AssetSyncStatus.Created);
         }
 
         private sealed class SyncItemUpsertResult

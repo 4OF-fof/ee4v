@@ -26,11 +26,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             connection.RunInTransaction(action);
         }
 
-        private static void UpsertSyncInfo(SQLiteConnection connection, string sourceType)
-        {
-            UpsertSyncInfo(connection, sourceType, AssetSyncState.Success);
-        }
-
         private static void UpsertSyncInfo(SQLiteConnection connection, string sourceType, AssetSyncState state)
         {
             connection.Execute("INSERT OR REPLACE INTO sync_info(source_type, last_sync_at, last_sync_status) VALUES (?, ?, ?)", sourceType, Now(), ToDbSyncState(state));

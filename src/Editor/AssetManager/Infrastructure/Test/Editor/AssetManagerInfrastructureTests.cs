@@ -341,7 +341,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         [Test]
         [FeatureTestCase(
             "Collection の名前・条件・削除を更新する",
-            "通常 Collection の表示情報、Smart Collection の条件、子孫 Collection の再帰削除と Item の保持を確認します。",
+            "通常 Collection の表示情報、Smart Collection の条件順、子孫 Collection の再帰削除と Item の保持を確認します。",
             order: 344)]
         public void CollectionCommands_UpdateAndDeleteCollections()
         {
@@ -446,7 +446,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 updated.SmartRule.Conditions
                     .Select(condition => condition.Field)
                     .ToArray(),
-                Is.EquivalentTo(new[]
+                Is.EqualTo(new[]
                 {
                     SmartCollectionConditionField.Tag,
                     SmartCollectionConditionField.Extension
@@ -820,16 +820,14 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             using (var connection = new SQLiteConnection(GetDatabasePath()))
             {
                 connection.Execute(
-                    "INSERT INTO shop_info(id, name, subdomain) VALUES (?, ?, ?)",
-                    "shop-1",
-                    "Shop",
-                    "shop");
+                    "INSERT INTO shop_info(subdomain, name) VALUES (?, ?)",
+                    "shop",
+                    "Shop");
                 connection.Execute(
-                    "INSERT INTO booth_info(id, item_info_id, booth_item_id, shop_info_id, name, description) VALUES (?, ?, ?, ?, ?, ?)",
-                    "booth-1",
-                    boothItem.Id,
+                    "INSERT INTO booth_info(booth_item_id, item_info_id, shop_subdomain, name, description) VALUES (?, ?, ?, ?, ?)",
                     123L,
-                    "shop-1",
+                    boothItem.Id,
+                    "shop",
                     "Booth Item",
                     string.Empty);
             }

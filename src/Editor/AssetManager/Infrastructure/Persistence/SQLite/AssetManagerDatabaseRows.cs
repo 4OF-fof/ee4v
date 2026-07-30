@@ -30,7 +30,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
 
         private sealed class ShopRow
         {
-            public string id { get; set; }
             public string name { get; set; }
             public string subdomain { get; set; }
             public string thumbnail_url { get; set; }
@@ -38,16 +37,14 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
 
         private sealed class BoothRow
         {
-            public string id { get; set; }
             public string item_info_id { get; set; }
             public long booth_item_id { get; set; }
-            public string shop_info_id { get; set; }
+            public string shop_subdomain { get; set; }
             public string name { get; set; }
             public string description { get; set; }
             public string thumbnail_url { get; set; }
             public string last_updated_at { get; set; }
             public string shop_name { get; set; }
-            public string shop_subdomain { get; set; }
             public string shop_thumbnail_url { get; set; }
         }
 
@@ -135,9 +132,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
 
         private sealed class DatasourceTagRow
         {
-            public string source_type { get; set; }
-            public string source_id { get; set; }
-            public string item_info_id { get; set; }
             public string name { get; set; }
         }
 
@@ -168,14 +162,12 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
         {
             public string collection_info_id { get; set; }
             public string match_mode { get; set; }
-            public string created_at { get; set; }
-            public string updated_at { get; set; }
         }
 
         private sealed class SmartConditionRow
         {
-            public string id { get; set; }
             public string collection_info_id { get; set; }
+            public int sort_order { get; set; }
             public string field { get; set; }
             public string @operator { get; set; }
             public string query_text { get; set; }
@@ -192,7 +184,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
 
         private sealed class FileImportTargetRow
         {
-            public string id { get; set; }
             public string file_info_id { get; set; }
             public string relative_path { get; set; }
         }
@@ -211,11 +202,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             public string source_type { get; set; }
             public string last_sync_at { get; set; }
             public string last_sync_status { get; set; }
-        }
-
-        private sealed class TableInfoRow
-        {
-            public string name { get; set; }
         }
     }
 }
