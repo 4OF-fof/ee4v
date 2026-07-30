@@ -136,6 +136,49 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
+        public void ProjectFolderIconSelection_KeepsOnlyTopmostAppliedFolders()
+        {
+            var selected =
+                AssetManagerProjectFolderIconSelection
+                    .SelectTopmost(
+                        new[]
+                        {
+                            new AssetManagerProjectFolderIconCandidate(
+                                "animation-guid",
+                                "Assets/Amatousagi/Chocolat/Animation",
+                                "item-a"),
+                            new AssetManagerProjectFolderIconCandidate(
+                                "sibling-guid",
+                                "Assets/Other",
+                                "item-b"),
+                            new AssetManagerProjectFolderIconCandidate(
+                                "chocolat-guid",
+                                "Assets/Amatousagi/Chocolat",
+                                "item-a"),
+                            new AssetManagerProjectFolderIconCandidate(
+                                "fbx-guid",
+                                "Assets/Amatousagi/Chocolat/FBX",
+                                "item-a"),
+                            new AssetManagerProjectFolderIconCandidate(
+                                "similar-prefix-guid",
+                                "Assets/Amatousagi/ChocolatExtra",
+                                "item-c")
+                        });
+
+            Assert.That(
+                selected.Keys,
+                Is.EquivalentTo(new[]
+                {
+                    "chocolat-guid",
+                    "sibling-guid",
+                    "similar-prefix-guid"
+                }));
+            Assert.That(
+                selected["chocolat-guid"],
+                Is.EqualTo("item-a"));
+        }
+
+        [Test]
         public void ProjectDecoration_InitialCacheFailureDoesNotEscapeInitialization()
         {
             var source =

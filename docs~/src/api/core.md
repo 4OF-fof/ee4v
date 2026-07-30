@@ -215,6 +215,7 @@ Notes:
 
 - `draw` は idempotent に保つ。
 - badge や overlay を描いた後は、必要に応じて `context.CurrentRect` を更新して後続 registration と領域を分ける。
+- Project item で後続の小icon overlayを表示しない registration は `context.SuppressProjectItemIconOverlay = true` を設定する。後続の内容種別overlayはこの描画契約を確認して処理を省略する。
 
 ### `VisualElementInjectionRegistration`
 

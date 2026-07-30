@@ -26,7 +26,8 @@ namespace Ee4v.FolderContentOverlay
         public void Draw(ItemInjectionContext context)
         {
             if (Event.current.type != EventType.Repaint ||
-                string.IsNullOrEmpty(context.Guid))
+                string.IsNullOrEmpty(context.Guid) ||
+                context.SuppressProjectItemIconOverlay)
             {
                 return;
             }

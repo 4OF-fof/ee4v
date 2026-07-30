@@ -63,6 +63,8 @@ namespace Ee4v.Core.Injector
 
         public Rect CurrentRect { get; set; }
 
+        public bool SuppressProjectItemIconOverlay { get; set; }
+
         public Object Target { get; }
 
         public HierarchyItemKind HierarchyItemKind { get; }

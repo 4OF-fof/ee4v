@@ -86,6 +86,7 @@ namespace Ee4v.FolderStyle
                     customIcon,
                     ScaleMode.ScaleToFit,
                     true);
+                context.SuppressProjectItemIconOverlay = true;
                 return;
             }
 

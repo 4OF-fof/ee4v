@@ -142,14 +142,6 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            var assetPath =
-                AssetDatabase.GUIDToAssetPath(context.Guid);
-            if (string.IsNullOrWhiteSpace(assetPath) ||
-                !AssetDatabase.IsValidFolder(assetPath))
-            {
-                return;
-            }
-
             var iconRect = ProjectItemLayout.GetIconRect(
                 context.SelectionRect,
                 context.ProjectViewMode,
@@ -162,6 +154,7 @@ namespace Ee4v.AssetManager.UI
                 icon,
                 ScaleMode.ScaleToFit,
                 true);
+            context.SuppressProjectItemIconOverlay = true;
         }
 
         public void Dispose()
@@ -278,10 +271,34 @@ namespace Ee4v.AssetManager.UI
             var associationIndex =
                 AssetManagerProjectAssociationIndex.Create(
                     associations);
+            var folderCandidates =
+                new List<
+                    AssetManagerProjectFolderIconCandidate>();
+            foreach (var pair in
+                     associationIndex.ItemIdByAssetGuid)
+            {
+                var assetPath =
+                    AssetDatabase.GUIDToAssetPath(pair.Key);
+                if (string.IsNullOrWhiteSpace(assetPath) ||
+                    !AssetDatabase.IsValidFolder(assetPath))
+                {
+                    continue;
+                }
+
+                folderCandidates.Add(
+                    new AssetManagerProjectFolderIconCandidate(
+                        pair.Key,
+                        assetPath,
+                        pair.Value));
+            }
+
+            var selectedFolders =
+                AssetManagerProjectFolderIconSelection
+                    .SelectTopmost(folderCandidates);
             var itemIds =
                 new List<string>();
             foreach (var itemId in
-                     associationIndex.ItemIdByAssetGuid.Values)
+                     selectedFolders.Values)
             {
                 if (!itemIds.Contains(itemId))
                 {
@@ -295,7 +312,7 @@ namespace Ee4v.AssetManager.UI
                 new Dictionary<string, Texture2D>(
                     StringComparer.Ordinal);
             foreach (var pair in
-                     associationIndex.ItemIdByAssetGuid)
+                     selectedFolders)
             {
                 AssetThumbnail thumbnail;
                 if (!thumbnails.TryGetValue(

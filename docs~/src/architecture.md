@@ -196,6 +196,9 @@ EditorSceneManagerはUnity adapterへ隔離します。
 `FolderStyle` はfolder GUIDをidentityとして色とicon asset GUIDをUserSettingsへ保存し、
 Project item描画中は永続化やasset走査を行いません。Alt操作で開く編集windowは対象選択と
 保存だけを担当し、色・iconのfieldは`Ee4v.UI`の`DecorationStyleEditor`へ分離します。
+custom icon を描画した場合は共有の`ItemInjectionContext`へ小icon overlayの抑制を記録し、
+後段の`FolderContentOverlay`が内容種別iconを重ねないようにします。AssetManagerによる
+自動folder iconも同じ契約を使い、module間で具象型やstatic stateを参照しません。
 このcomponentは表示stateと変更eventだけを持ち、色presetや最近使ったicon候補の内容と
 履歴は所有しません。編集UIは旧版のコンパクトな色paletteとicon fieldの操作順を基準にし、
 任意色pickerと最近使ったicon候補を追加します。icon候補のhover previewには共通
