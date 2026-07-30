@@ -1,6 +1,8 @@
 using System;
 using Ee4v.AssetManager.Infrastructure;
 using Ee4v.AssetManager.Application;
+using Ee4v.AssetManager.Infrastructure.Files;
+using Ee4v.AssetManager.Infrastructure.Unity;
 using Ee4v.Core.Injector;
 using Ee4v.Core.Internal;
 using Ee4v.Core.Settings;
@@ -54,14 +56,15 @@ namespace Ee4v.AssetManager.Composition
 
         private static void InitializeModule(ISettingsService settings)
         {
-            AssetManagerInfrastructure.ConfigureSettings(
+            AssetManagerInfrastructureSettings.Configure(
                 new AssetManagerInfrastructureSettingsAdapter(settings));
-            _assetProtection =
-                AssetManagerInfrastructure
-                    .CreateProtectionService();
-            _assetManager =
-                AssetManagerInfrastructure.CreateDefaultService(
-                    _assetProtection);
+            _assetProtection = new AssetProtectionService();
+            _assetManager = new AssetManagerService(
+                new SqliteAssetManagerStore(),
+                new UnityAssetImportGateway(
+                    new UnityAssetFileImportEnvironment(),
+                    _assetProtection),
+                new UnityAssetManagerDiagnostics());
             _assetProtection.Initialize(_assetManager);
             global::Ee4v.AssetManager.Infrastructure.Unity
                 .AssetProtectionEditorBridge.Configure(
@@ -90,8 +93,8 @@ namespace Ee4v.AssetManager.Composition
             global::Ee4v.AssetManager.UI.AssetManagerUiDependencies.Configure(
                 _assetManager,
                 _uiPreferences,
-                AssetManagerInfrastructure.CreateArchiveReader(),
-                AssetManagerInfrastructure.CreateFileSystemReader(),
+                new CachedAssetArchiveReader(),
+                new AssetFileSystemReader(),
                 uiScheduler,
                 new global::Ee4v.AssetManager.UI.StandaloneAssetManagerViewSession(),
                 _projectDecoration,

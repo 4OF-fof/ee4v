@@ -36,7 +36,13 @@ namespace Ee4v.DepthIndicator
                 typeof(DepthIndicatorDefinitions),
                 () => DepthIndicatorDefinitions.RegisterAll(settings),
                 () => _registration = InjectorApi.Register(
-                    DepthIndicatorFeature.CreateRegistration(settings)));
+                    new ItemInjectionRegistration(
+                        "editor-enhancements.depth-indicator",
+                        InjectionChannel.HierarchyItem,
+                        DepthIndicatorRenderer.Draw,
+                        priority: 0,
+                        isEnabled: () => settings.Get(
+                            DepthIndicatorDefinitions.Enabled))));
 
             settings.Changed += OnSettingChanged;
         }

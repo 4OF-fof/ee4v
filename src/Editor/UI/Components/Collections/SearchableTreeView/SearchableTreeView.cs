@@ -381,16 +381,6 @@ namespace Ee4v.UI
                 _clearIconState));
         }
 
-        private void ClearSearch()
-        {
-            if (string.IsNullOrEmpty(_searchField.Value))
-            {
-                return;
-            }
-
-            _searchField.ClearValue();
-        }
-
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
             HideScrollbars();

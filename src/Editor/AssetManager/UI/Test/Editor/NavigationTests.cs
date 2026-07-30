@@ -321,7 +321,11 @@ namespace Ee4v.AssetManager.UI.Tests
         private sealed class FailingProjectCacheSource :
             IAssetManagerProjectCacheSource
         {
-            public event Action<AssetManagerChange> Changed;
+            public event Action<AssetManagerChange> Changed
+            {
+                add { }
+                remove { }
+            }
 
             internal int AssociationReadCount { get; private set; }
 

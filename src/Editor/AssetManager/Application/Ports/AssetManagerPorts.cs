@@ -73,10 +73,6 @@ namespace Ee4v.AssetManager.Application.Ports
             string collectionId,
             UpdateSmartCollectionRequest request);
         bool DeleteCollections(IReadOnlyList<string> collectionIds);
-        void MoveCollection(
-            string collectionId,
-            string parentCollectionId,
-            int siblingIndex);
         void MoveCollections(
             IReadOnlyList<string> collectionIds,
             string parentCollectionId,

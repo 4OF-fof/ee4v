@@ -125,14 +125,6 @@ namespace Ee4v.UI
             RefreshVisualState();
         }
 
-        public void SetMinHeight(float minHeight)
-        {
-            var safeHeight = Mathf.Max(48f, minHeight);
-            _fieldContainer.style.minHeight = safeHeight;
-            _textField.style.minHeight = safeHeight - 2f;
-            ApplyHeightConstraints();
-        }
-
         public void SetMaxHeight(float maxHeight)
         {
             _maxHeight = Mathf.Max(0f, maxHeight);

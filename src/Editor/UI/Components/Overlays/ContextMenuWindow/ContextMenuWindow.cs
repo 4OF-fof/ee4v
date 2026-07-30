@@ -243,7 +243,12 @@ namespace Ee4v.UI
             if (_backgroundSnapshot != null)
             {
                 root.style.backgroundImage = new StyleBackground(_backgroundSnapshot);
-                root.style.unityBackgroundScaleMode = ScaleMode.StretchToFill;
+                root.style.backgroundSize = new BackgroundSize(
+                    Length.Percent(100f),
+                    Length.Percent(100f));
+                root.style.backgroundRepeat = new BackgroundRepeat(
+                    Repeat.NoRepeat,
+                    Repeat.NoRepeat);
             }
 
             root.focusable = true;

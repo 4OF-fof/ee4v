@@ -57,21 +57,6 @@ namespace Ee4v.Core.Internal.EditorAPI
             return ProjectBrowserBackend.TryGetSnapshot(null, null, out snapshot);
         }
 
-        public static bool TryShowFolder(string folderGuid, bool reveal = false)
-        {
-            return ProjectBrowserBackend.TryShowFolder(null, folderGuid, reveal);
-        }
-
-        public static bool TrySetSearch(string searchText)
-        {
-            return ProjectBrowserBackend.TrySetSearch(null, searchText);
-        }
-
-        public static bool TryClearSearch()
-        {
-            return ProjectBrowserBackend.TryClearSearch(null);
-        }
-
         internal static bool TryGetSnapshot(
             EditorWindow window,
             out ProjectBrowserSnapshot snapshot)

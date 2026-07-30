@@ -72,18 +72,7 @@ namespace Ee4v.AssetManager.Application
                 CatalogCommandPolicy.EnsureCollectionIcon(
                     (int)request.Icon,
                     (int)AssetCollectionIcon.Key);
-                CatalogCommandPolicy.EnsureSmartConditions(
-                    request.Conditions == null
-                        ? Array.Empty<string>()
-                        : request.Conditions
-                            .Where(condition => condition != null)
-                            .Select(condition =>
-                                condition.Operator == SmartCollectionConditionOperator.Exists
-                                    ? "exists"
-                                    : condition.QueryText)
-                            .ToArray(),
-                    request.Conditions != null &&
-                    request.Conditions.Any(condition => condition == null));
+                EnsureSmartConditions(request.Conditions);
             });
         }
 
@@ -93,20 +82,7 @@ namespace Ee4v.AssetManager.Application
             RequireRequest(request, "Smart Collection update request");
             Execute(() =>
             {
-                CatalogCommandPolicy.EnsureSmartConditions(
-                    request.Conditions == null
-                        ? Array.Empty<string>()
-                        : request.Conditions
-                            .Where(condition => condition != null)
-                            .Select(condition =>
-                                condition.Operator ==
-                                SmartCollectionConditionOperator.Exists
-                                    ? "exists"
-                                    : condition.QueryText)
-                            .ToArray(),
-                    request.Conditions != null &&
-                    request.Conditions.Any(condition =>
-                        condition == null));
+                EnsureSmartConditions(request.Conditions);
             });
         }
 
@@ -129,6 +105,24 @@ namespace Ee4v.AssetManager.Application
                     (int)request.Icon,
                     (int)AssetCollectionIcon.Key);
             });
+        }
+
+        private static void EnsureSmartConditions(
+            IReadOnlyList<SmartCollectionCondition> conditions)
+        {
+            CatalogCommandPolicy.EnsureSmartConditions(
+                conditions == null
+                    ? Array.Empty<string>()
+                    : conditions
+                        .Where(condition => condition != null)
+                        .Select(condition =>
+                            condition.Operator ==
+                            SmartCollectionConditionOperator.Exists
+                                ? "exists"
+                                : condition.QueryText)
+                        .ToArray(),
+                conditions != null &&
+                conditions.Any(condition => condition == null));
         }
 
         private static void Execute(Action action)

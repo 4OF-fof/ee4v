@@ -101,15 +101,6 @@ namespace Ee4v.AssetManager.Infrastructure
             Execute(() => AssetManagerDatabase.DeleteCollections(
                 collectionIds));
 
-        public void MoveCollection(
-            string collectionId,
-            string parentCollectionId,
-            int siblingIndex) =>
-            Execute(() => AssetManagerDatabase.MoveCollection(
-                collectionId,
-                parentCollectionId,
-                siblingIndex));
-
         public void MoveCollections(
             IReadOnlyList<string> collectionIds,
             string parentCollectionId,
@@ -258,11 +249,15 @@ namespace Ee4v.AssetManager.Infrastructure
 
     internal sealed class UnityAssetImportGateway : IAssetImportGateway
     {
+        private readonly IAssetFileImportEnvironment _environment;
         private readonly AssetProtectionService _protection;
 
         internal UnityAssetImportGateway(
+            IAssetFileImportEnvironment environment,
             AssetProtectionService protection = null)
         {
+            _environment = environment ??
+                throw new ArgumentNullException(nameof(environment));
             _protection = protection;
         }
 
@@ -283,7 +278,7 @@ namespace Ee4v.AssetManager.Infrastructure
                     plan.AssetFileName,
                     plan.SourcePath,
                     plan.RelativePaths,
-                    new UnityAssetFileImportEnvironment(),
+                    _environment,
                     AssetManagerInfrastructureSettings.Current.ShowUnityPackageImportDialog,
                     result =>
                     {
@@ -319,47 +314,4 @@ namespace Ee4v.AssetManager.Infrastructure
             AssetFileTreeCache.ReadZipEntries(CacheDirectory, zipPath, cancellationToken);
     }
 
-    internal static class AssetManagerInfrastructure
-    {
-        internal static void ConfigureSettings(IAssetManagerInfrastructureSettings settings)
-        {
-            AssetManagerInfrastructureSettings.Configure(settings);
-        }
-
-        internal static IAssetManager CreateDefault()
-        {
-            return CreateDefaultService();
-        }
-
-        internal static AssetManagerService CreateDefaultService()
-        {
-            return CreateDefaultService(null);
-        }
-
-        internal static AssetManagerService CreateDefaultService(
-            AssetProtectionService protection)
-        {
-            var store = new SqliteAssetManagerStore();
-            return new AssetManagerService(
-                store,
-                new UnityAssetImportGateway(protection),
-                new UnityAssetManagerDiagnostics());
-        }
-
-        internal static AssetProtectionService
-            CreateProtectionService()
-        {
-            return new AssetProtectionService();
-        }
-
-        internal static IAssetArchiveReader CreateArchiveReader()
-        {
-            return new CachedAssetArchiveReader();
-        }
-
-        internal static IAssetFileSystemReader CreateFileSystemReader()
-        {
-            return new AssetFileSystemReader();
-        }
-    }
 }

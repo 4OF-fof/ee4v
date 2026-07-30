@@ -387,17 +387,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             }
         }
 
-        public static void MoveCollection(
-            string collectionId,
-            string parentCollectionId,
-            int siblingIndex)
-        {
-            MoveCollections(
-                new[] { collectionId },
-                parentCollectionId,
-                siblingIndex);
-        }
-
         public static void MoveCollections(
             IReadOnlyList<string> collectionIds,
             string parentCollectionId,

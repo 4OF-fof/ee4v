@@ -24,11 +24,6 @@ namespace Ee4v.Testing.Infrastructure.Unity
 
         private ActiveRun _activeRun;
 
-        public FeatureTestRunnerService()
-            : this(new UnityFeatureTestRunnerGateway())
-        {
-        }
-
         internal FeatureTestRunnerService(IFeatureTestRunnerGateway gateway)
         {
             _gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
@@ -307,21 +302,6 @@ namespace Ee4v.Testing.Infrastructure.Unity
                 default:
                     return "testing.runner.failed";
             }
-        }
-
-        private static string BuildRegisteredCaseSummary(FeatureTestDescriptor descriptor)
-        {
-            if (descriptor == null || descriptor.TestCases == null || descriptor.TestCases.Count == 0)
-            {
-                return string.Empty;
-            }
-
-            return string.Join(
-                "\n",
-                descriptor.TestCases.Select(testCase =>
-                    string.IsNullOrWhiteSpace(testCase.Description)
-                        ? "- " + testCase.Title
-                        : "- " + testCase.Title + ": " + testCase.Description));
         }
 
         private static void ApplyCaseStatuses(FeatureTestRunRecord record, FeatureTestDescriptor descriptor, ITestResultAdaptor assemblyResult)

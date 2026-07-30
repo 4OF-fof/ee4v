@@ -52,9 +52,13 @@ namespace Ee4v.FolderContentOverlay
                 new FolderAssetIconResolver());
             _renderer = new FolderContentOverlayRenderer(_iconCache);
             _registration = InjectorApi.Register(
-                FolderContentOverlayFeature.CreateRegistration(
-                    settings,
-                    _renderer));
+                new ItemInjectionRegistration(
+                    "editor-enhancements.folder-content-overlay",
+                    InjectionChannel.ProjectItem,
+                    _renderer.Draw,
+                    priority: 10,
+                    isEnabled: () => settings.Get(
+                        FolderContentOverlayDefinitions.Enabled)));
         }
 
         private static void OnSettingChanged(

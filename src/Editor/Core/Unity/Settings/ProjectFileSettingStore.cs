@@ -6,30 +6,19 @@ namespace Ee4v.Core.Settings
 {
     internal sealed class ProjectFileSettingStore : ISettingStore
     {
-        private readonly string _filePath;
-        private readonly IFileSystem _fileSystem;
-
-        public ProjectFileSettingStore()
-            : this(null, null)
-        {
-        }
-
-        internal ProjectFileSettingStore(string filePath, IFileSystem fileSystem)
-        {
-            _filePath = string.IsNullOrWhiteSpace(filePath)
-                ? Path.Combine(Directory.GetCurrentDirectory(), "ProjectSettings", "ee4v.settings.json")
-                : filePath;
-            _fileSystem = fileSystem ?? new DefaultFileSystem();
-        }
+        private readonly string _filePath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "ProjectSettings",
+            "ee4v.settings.json");
 
         public Dictionary<string, string> LoadAll()
         {
-            if (!_fileSystem.FileExists(_filePath))
+            if (!File.Exists(_filePath))
             {
                 return new Dictionary<string, string>();
             }
 
-            var raw = _fileSystem.ReadAllText(_filePath);
+            var raw = File.ReadAllText(_filePath);
             try
             {
                 return JsonConvert.DeserializeObject<Dictionary<string, string>>(raw) ??
@@ -44,12 +33,12 @@ namespace Ee4v.Core.Settings
         public void SaveAll(Dictionary<string, string> values)
         {
             var directory = Path.GetDirectoryName(_filePath);
-            if (!string.IsNullOrEmpty(directory) && !_fileSystem.DirectoryExists(directory))
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
-                _fileSystem.CreateDirectory(directory);
+                Directory.CreateDirectory(directory);
             }
 
-            _fileSystem.WriteAllText(
+            File.WriteAllText(
                 _filePath,
                 JsonConvert.SerializeObject(values, Formatting.Indented));
         }

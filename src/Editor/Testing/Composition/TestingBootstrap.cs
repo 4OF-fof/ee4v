@@ -23,8 +23,9 @@ namespace Ee4v.Testing.Composition
 
             _initialized = true;
             TestingUiDependencies.Configure(
-                UnityTestingInfrastructure.CreateCatalog(),
-                UnityTestingInfrastructure.CreateRunner());
+                new UnityFeatureTestCatalog(),
+                new FeatureTestRunnerService(
+                    new UnityFeatureTestRunnerGateway()));
         }
     }
 }

@@ -317,40 +317,6 @@ namespace Ee4v.AssetManager.UI
             RefreshSelection();
         }
 
-        internal bool CanMoveCollection(
-            string collectionId,
-            string parentCollectionId)
-        {
-            AssetCollection collection;
-            if (!_collections.TryGetValue(
-                    collectionId ?? string.Empty,
-                    out collection))
-            {
-                return false;
-            }
-
-            return !string.Equals(
-                       NormalizeParentId(
-                           collection.ParentCollectionId),
-                       NormalizeParentId(parentCollectionId),
-                       StringComparison.Ordinal) &&
-                   CanPlaceCollection(
-                       collectionId,
-                       parentCollectionId,
-                       -1);
-        }
-
-        internal bool CanPlaceCollection(
-            string collectionId,
-            string parentCollectionId,
-            int siblingIndex)
-        {
-            return CanPlaceCollections(
-                new[] { collectionId },
-                parentCollectionId,
-                siblingIndex);
-        }
-
         internal bool CanPlaceCollections(
             IReadOnlyList<string> collectionIds,
             string parentCollectionId,
@@ -363,17 +329,6 @@ namespace Ee4v.AssetManager.UI
                 siblingIndex);
             return result.IsValid &&
                    result.ChangesPlacement;
-        }
-
-        internal bool TryRequestMove(
-            string collectionId,
-            string parentCollectionId,
-            int siblingIndex = -1)
-        {
-            return TryRequestMoves(
-                new[] { collectionId },
-                parentCollectionId,
-                siblingIndex);
         }
 
         internal bool TryRequestMoves(

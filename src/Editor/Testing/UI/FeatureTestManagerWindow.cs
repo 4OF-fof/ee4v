@@ -526,35 +526,6 @@ namespace Ee4v.Testing.UI
                     || record.DurationSeconds > 0d);
         }
 
-        private static string BuildDetailedResult(FeatureTestRunRecord record)
-        {
-            if (record == null || record.Status == FeatureTestRunStatus.NotRun)
-            {
-                return string.Empty;
-            }
-
-            if (!IsProblemStatus(record.Status))
-            {
-                return string.Empty;
-            }
-
-            var details = ExtractFailureDetails(
-                record.DetailedResult);
-            return string.IsNullOrWhiteSpace(details)
-                ? string.Empty
-                : I18N.Get(
-                    "testing.window.failureDetailsTitle") +
-                  "\n" +
-                  LocalizeStatusMarkers(details);
-        }
-
-        private static bool IsProblemStatus(FeatureTestRunStatus status)
-        {
-            return status == FeatureTestRunStatus.Failed
-                || status == FeatureTestRunStatus.Skipped
-                || status == FeatureTestRunStatus.Inconclusive;
-        }
-
         private static string ExtractFailureDetails(string detailedResult)
         {
             return string.IsNullOrWhiteSpace(detailedResult)

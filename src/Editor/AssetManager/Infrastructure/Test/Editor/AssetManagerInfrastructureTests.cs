@@ -5,9 +5,11 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Threading;
+using Ee4v.AssetManager.Application;
 using Ee4v.Testing.Contracts;
 using Ee4v.AssetManager.Infrastructure.Files;
 using Ee4v.AssetManager.Infrastructure.Persistence.SQLite;
+using Ee4v.AssetManager.Infrastructure.Unity;
 using NUnit.Framework;
 using SQLite;
 
@@ -28,8 +30,12 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             {
                 GlobalPath = _tempRoot
             };
-            AssetManagerInfrastructure.ConfigureSettings(_settings);
-            _assetManager = AssetManagerInfrastructure.CreateDefault();
+            AssetManagerInfrastructureSettings.Configure(_settings);
+            _assetManager = new AssetManagerService(
+                new SqliteAssetManagerStore(),
+                new UnityAssetImportGateway(
+                    new UnityAssetFileImportEnvironment()),
+                new UnityAssetManagerDiagnostics());
         }
 
         [TearDown]

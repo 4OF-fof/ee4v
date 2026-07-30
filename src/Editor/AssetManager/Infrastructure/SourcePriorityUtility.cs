@@ -28,13 +28,6 @@ namespace Ee4v.AssetManager.Infrastructure
             return results;
         }
 
-        public static string ToDbValue(AssetSourceType sourceType)
-        {
-            if (sourceType == AssetSourceType.Ee4v) return "ee4v";
-            if (sourceType == AssetSourceType.Eagle) return "eagle";
-            return "blm";
-        }
-
         private static bool TryParseSourceType(string value, out AssetSourceType sourceType)
         {
             var normalized = (value ?? string.Empty).Trim();

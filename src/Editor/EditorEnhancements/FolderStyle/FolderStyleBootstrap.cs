@@ -57,9 +57,13 @@ namespace Ee4v.FolderStyle
                         position,
                         _service));
             _registration = InjectorApi.Register(
-                FolderStyleFeature.CreateRegistration(
-                    settings,
-                    renderer));
+                new ItemInjectionRegistration(
+                    "editor-enhancements.folder-style",
+                    InjectionChannel.ProjectItem,
+                    renderer.Draw,
+                    priority: 0,
+                    isEnabled: () => settings.Get(
+                        FolderStyleDefinitions.Enabled)));
         }
 
         private static void OnSettingChanged(
