@@ -36,6 +36,27 @@ namespace Ee4v.AssetManager.Contracts
         void ClearHighlights();
     }
 
+    public interface IAssetManagerProtectionActions
+    {
+        event Action Changed;
+
+        bool IsManaged(string assetGuid);
+        bool IsProtected(string assetGuid);
+        string GetProtectionRootGuid(string assetGuid);
+        bool CanCreateMaterialVariant(string assetGuid);
+        bool CanCreatePrefabVariant(string assetGuid);
+        void SetProtected(string assetGuid, bool isProtected);
+        bool CreateEditableCopy(
+            string assetGuid,
+            string destinationAssetPath);
+        bool CreateMaterialVariant(
+            string assetGuid,
+            string destinationAssetPath);
+        bool CreatePrefabVariant(
+            string assetGuid,
+            string destinationAssetPath);
+    }
+
     public sealed class AssetArchiveEntry
     {
         public AssetArchiveEntry(string fullName, long length, string archiveFullName = null)

@@ -10,17 +10,20 @@ namespace Ee4v.AssetManager.Application
     internal sealed class AssetImportPlan
     {
         internal AssetImportPlan(
+            string fileId,
             string assetName,
             string assetFileName,
             string sourcePath,
             IReadOnlyList<string> relativePaths)
         {
+            FileId = fileId ?? string.Empty;
             AssetName = assetName ?? string.Empty;
             AssetFileName = assetFileName ?? string.Empty;
             SourcePath = sourcePath ?? string.Empty;
             RelativePaths = relativePaths ?? Array.Empty<string>();
         }
 
+        internal string FileId { get; }
         internal string AssetName { get; }
         internal string AssetFileName { get; }
         internal string SourcePath { get; }
@@ -136,6 +139,7 @@ namespace Ee4v.AssetManager.Application
 
             _gateway.Import(
                 new AssetImportPlan(
+                    fileId,
                     item.Name,
                     file.FileName,
                     resolution.Path,

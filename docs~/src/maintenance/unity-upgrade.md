@@ -66,9 +66,27 @@ AssetManager の UnityPackage import は
 `Editor/Core/Internal/EditorAPI/AssetImport.cs` の queue と完了 callbackを利用します。
 `AssetDatabase.importPackageCompleted` のみ成功として扱い、`importPackageCancelled` と
 `importPackageFailed` は失敗結果を返します。AssetManager は成功後に
-`AssetDatabase.GUIDToAssetPath(...)` で実在を確認できた GUID だけを保存します。
+package 内 GUID と import 中の `AssetPostprocessor.OnPostprocessAllAssets(...)` を照合し、
+今回実際に import / reimport された GUID だけを保存します。確認画面なしの全件 import で
+callback が得られない場合だけ、`AssetDatabase.GUIDToAssetPath(...)` で実在を確認できた
+package 内 GUID へ fallback します。
 Unity更新時は3 eventのsignatureと発火順、interactive importで一部選択した場合、
 キャンセル時に既存GUID関連付けが維持されることを確認します。
+
+### Imported asset protection
+
+AssetManager の import GUID 保護は public `AssetModificationProcessor` callback の
+`IsOpenForEdit`、`OnWillSaveAssets`、`OnWillMoveAsset`、`OnWillDeleteAsset` を使用します。
+Unity 更新時は Inspector が無効になること、保存・移動・名前変更・削除が拒否されること、
+保護範囲外への copy と参照は維持されることを確認します。AssetManager 自身の再 import 中は
+対象 file の scope だけを一時解除し、成功・失敗のどちらでも再適用されることも確認します。
+
+保護専用 Inspector は `Editor/Core/Internal/EditorAPI/InspectorHost.cs` の facade を利用します。
+backend は internal `UnityEditor.InspectorWindow`、`GetInspectedObjects()`、
+`editorsElement`、`previewAndLabelElement`、`versionControlElement` に依存します。
+private member が利用できない場合は通常 Inspector を残す fail-open とし、保護そのものは
+`AssetModificationProcessor` と read-only 属性で継続します。Unity 更新時は通常選択、
+Inspector lock、Material / Prefab / importer asset、保護解除後の通常 Inspector 復帰を確認します。
 
 ### ProjectBrowser navigation
 

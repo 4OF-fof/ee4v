@@ -62,6 +62,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                               variant.item_info_id) AS item_info_id,
                             imported.file_info_id,
                             imported.asset_guid,
+                            imported.is_protected,
                             imported.imported_at
                           FROM file_imported_asset_guid imported
                           INNER JOIN file_info file
@@ -76,6 +77,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                         ItemId = row.item_info_id,
                         FileId = row.file_info_id,
                         AssetGuid = row.asset_guid,
+                        IsProtected = row.is_protected != 0,
                         ImportedAt = ParseDate(row.imported_at)
                     })
                     .ToArray();
@@ -91,6 +93,16 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 InTransaction(connection, () =>
                 {
                     EnsureFileExists(connection, fileId);
+                    var previousProtection =
+                        connection.Query<ImportedAssetGuidRow>(
+                                @"SELECT asset_guid, is_protected
+                                  FROM file_imported_asset_guid
+                                  WHERE file_info_id = ?",
+                                fileId)
+                            .ToDictionary(
+                                row => row.asset_guid,
+                                row => row.is_protected,
+                                System.StringComparer.Ordinal);
                     connection.Execute(
                         "DELETE FROM file_imported_asset_guid WHERE file_info_id = ?",
                         fileId);
@@ -102,13 +114,40 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                             @"INSERT INTO file_imported_asset_guid(
                                 file_info_id,
                                 asset_guid,
+                                is_protected,
                                 imported_at)
-                              VALUES (?, ?, ?)",
+                              VALUES (?, ?, ?, ?)",
                             fileId,
                             assetGuids[i],
+                            previousProtection.TryGetValue(
+                                assetGuids[i],
+                                out var isProtected)
+                                ? isProtected
+                                : 1,
                             importedAt);
                     }
                 });
+            }
+        }
+
+        public static void SetImportedAssetProtection(
+            string assetGuid,
+            bool isProtected)
+        {
+            using (var connection = OpenConnection())
+            {
+                var updated = connection.Execute(
+                    @"UPDATE file_imported_asset_guid
+                      SET is_protected = ?
+                      WHERE asset_guid = ?",
+                    isProtected ? 1 : 0,
+                    assetGuid);
+                if (updated == 0)
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.NotFound,
+                        "The imported Unity asset association was not found.");
+                }
             }
         }
     }

@@ -58,6 +58,7 @@ namespace Ee4v.AssetManager.Contracts
         IReadOnlyList<string> GetFileImportedAssetGuids(string fileId);
         IReadOnlyList<string> GetItemImportedAssetGuids(string itemId);
         IReadOnlyList<AssetImportedAssetAssociation> GetImportedAssetAssociations();
+        void SetImportedAssetProtection(string assetGuid, bool isProtected);
         void ImportFileTargets(string itemId, string fileId);
         void ImportFileEntry(string itemId, string fileId, string relativePath);
         AssetSyncResult SyncBlm(BlmSyncRequest request);
@@ -85,7 +86,8 @@ namespace Ee4v.AssetManager.Contracts
         FileTree,
         FileImportTargets,
         VersionGroupPrimaryFile,
-        ImportedAssetGuids
+        ImportedAssetGuids,
+        ImportedAssetProtection
     }
 
     public sealed class AssetManagerChange

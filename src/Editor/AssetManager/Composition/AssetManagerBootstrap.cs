@@ -4,6 +4,7 @@ using Ee4v.AssetManager.Application;
 using Ee4v.Core.Injector;
 using Ee4v.Core.Internal;
 using Ee4v.Core.Settings;
+using Ee4v.Core.I18n;
 using UnityEditor;
 
 namespace Ee4v.AssetManager.Composition
@@ -17,6 +18,11 @@ namespace Ee4v.AssetManager.Composition
             .AssetManagerProjectDecorationPresenter
             _projectDecoration;
         private static IDisposable _projectRegistration;
+        private static global::Ee4v.AssetManager.Infrastructure.Unity
+            .AssetProtectionService _assetProtection;
+        private static global::Ee4v.AssetManager.UI
+            .AssetManagerProtectedInspectorPresenter
+            _protectedInspector;
 
         static AssetManagerBootstrap()
         {
@@ -50,7 +56,18 @@ namespace Ee4v.AssetManager.Composition
         {
             AssetManagerInfrastructure.ConfigureSettings(
                 new AssetManagerInfrastructureSettingsAdapter(settings));
-            _assetManager = AssetManagerInfrastructure.CreateDefaultService();
+            _assetProtection =
+                AssetManagerInfrastructure
+                    .CreateProtectionService();
+            _assetManager =
+                AssetManagerInfrastructure.CreateDefaultService(
+                    _assetProtection);
+            _assetProtection.Initialize(_assetManager);
+            global::Ee4v.AssetManager.Infrastructure.Unity
+                .AssetProtectionEditorBridge.Configure(
+                    _assetProtection,
+                    I18N.Get(
+                        "assetManager.protection.blocked"));
             _uiPreferences = new AssetManagerUiPreferencesAdapter(settings);
             var uiScheduler =
                 new AssetManagerUiSchedulerAdapter();
@@ -66,6 +83,10 @@ namespace Ee4v.AssetManager.Composition
                 };
             _projectDecoration.DecorationChanged +=
                 RepaintProjectWindow;
+            _protectedInspector =
+                new global::Ee4v.AssetManager.UI
+                    .AssetManagerProtectedInspectorPresenter(
+                        _assetProtection);
             global::Ee4v.AssetManager.UI.AssetManagerUiDependencies.Configure(
                 _assetManager,
                 _uiPreferences,
@@ -74,6 +95,7 @@ namespace Ee4v.AssetManager.Composition
                 uiScheduler,
                 new global::Ee4v.AssetManager.UI.StandaloneAssetManagerViewSession(),
                 _projectDecoration,
+                _assetProtection,
                 AssetManagerStartupSync.RequestManualSync);
             _projectRegistration = InjectorApi.Register(
                 new ItemInjectionRegistration(
@@ -83,6 +105,7 @@ namespace Ee4v.AssetManager.Composition
                     priority: -100));
             settings.Changed += OnSettingChanged;
             _projectDecoration.Initialize();
+            _protectedInspector.Initialize();
             AssetManagerStartupSyncConflictPresenter.Initialize(_assetManager);
             AssetManagerStartupSync.EnsureInitialized(_assetManager, settings);
         }

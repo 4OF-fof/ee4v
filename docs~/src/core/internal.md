@@ -32,3 +32,7 @@ Unity の private / internal 実装に触る必要がある場合は、feature �
 - reflection は `Backends` 側へ閉じる
 - feature 側は facade だけを使う
 - Hierarchy item固有のiconは`SceneHierarchyItemIcon.TrySetItemIcon(...)`を使い、scene objectへ設定しない
+
+Inspector の表示領域と現在の inspected object が必要な場合は
+`InspectorHost.TryGetSnapshots(...)` を使用します。feature 側から
+`UnityEditor.InspectorWindow` やその内部 VisualElement を直接 reflection しません。

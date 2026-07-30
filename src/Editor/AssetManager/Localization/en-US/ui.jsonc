@@ -47,6 +47,44 @@
       "database": "AssetManager could not read or update its database.",
       "datasource": "AssetManager could not read the configured data source."
     },
+    "protection": {
+      "blocked": "This asset is protected by AssetManager. Create an editable copy or a variant to modify it.",
+      "cancel": "Cancel",
+      "variant": {
+        "title": "Create Material Variant",
+        "defaultName": "{0} Variant",
+        "message": "Choose where to save an editable Material Variant whose parent is the protected Material."
+      },
+      "prefabVariant": {
+        "title": "Create Prefab Variant",
+        "defaultName": "{0} Variant",
+        "message": "Choose where to save an editable Prefab Variant whose parent is the protected Prefab."
+      },
+      "copy": {
+        "title": "Create Editable Copy",
+        "defaultName": "{0} Copy",
+        "message": "Choose a location outside the protected scope for the editable copy."
+      },
+      "unprotect": {
+        "title": "Remove AssetManager Protection",
+        "message": "Remove protection from the imported scope containing \"{0}\"? The original assets will become directly editable.",
+        "confirm": "Unprotect"
+      },
+      "error": {
+        "title": "Could Not Create Derived Asset",
+        "message": "Make sure the destination is outside the protected scope and no asset with the same name exists.",
+        "close": "Close"
+      },
+      "inspector": {
+        "title": "Protected Asset",
+        "message": "This asset is an original managed by AssetManager. Create a variant or copy instead of editing it directly.",
+        "asset": "Asset: {0}",
+        "createMaterialVariant": "Create Material Variant",
+        "createPrefabVariant": "Create Prefab Variant",
+        "createEditableCopy": "Create Editable Copy",
+        "unprotect": "Unprotect"
+      }
+    },
     "syncConflict": {
       "title": "Review synchronization changes",
       "message": "Some Unity-side item information is newer than its source. Review the differences before overwriting it. Cancel stops this synchronization.",

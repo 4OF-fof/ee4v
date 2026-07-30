@@ -47,6 +47,44 @@
       "database": "AssetManager データベースを読み書きできませんでした。",
       "datasource": "設定されたデータソースを読み込めませんでした。"
     },
+    "protection": {
+      "blocked": "このアセットは AssetManager によって保護されています。変更するには編集可能なコピーまたはバリアントを作成してください。",
+      "cancel": "キャンセル",
+      "variant": {
+        "title": "Material Variant を作成",
+        "defaultName": "{0} Variant",
+        "message": "保護された Material を親にする、編集可能な Material Variant の保存先を選択してください。"
+      },
+      "prefabVariant": {
+        "title": "Prefab Variant を作成",
+        "defaultName": "{0} Variant",
+        "message": "保護された Prefab を親にする、編集可能な Prefab Variant の保存先を選択してください。"
+      },
+      "copy": {
+        "title": "編集可能なコピーを作成",
+        "defaultName": "{0} Copy",
+        "message": "保護対象外に作成するコピーの保存先を選択してください。"
+      },
+      "unprotect": {
+        "title": "AssetManager の保護を解除",
+        "message": "「{0}」を含むインポート範囲の保護を解除しますか？ 元のアセットを直接変更できるようになります。",
+        "confirm": "保護を解除"
+      },
+      "error": {
+        "title": "派生アセットを作成できませんでした",
+        "message": "保存先が保護範囲内でないことと、同名のアセットが存在しないことを確認してください。",
+        "close": "閉じる"
+      },
+      "inspector": {
+        "title": "保護されたアセット",
+        "message": "このアセットは AssetManager が管理する原本です。直接編集せず、Variant またはコピーを作成してください。",
+        "asset": "アセット: {0}",
+        "createMaterialVariant": "Material Variant を作成",
+        "createPrefabVariant": "Prefab Variant を作成",
+        "createEditableCopy": "編集可能なコピーを作成",
+        "unprotect": "保護を解除"
+      }
+    },
     "syncConflict": {
       "title": "同期内容の確認",
       "message": "Unity側の情報が同期元より新しいアイテムがあります。差分を確認してから上書きしてください。キャンセルすると今回の同期を中止します。",

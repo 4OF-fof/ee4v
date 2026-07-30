@@ -276,12 +276,15 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             public void ImportPackage(
                 string packagePath,
                 bool interactive,
-                Action<bool> onFinished)
+                IReadOnlyList<string> expectedAssetGuids,
+                Action<bool, IReadOnlyList<string>> onFinished)
             {
                 PackagePaths.Add(packagePath);
                 PackageInteractiveValues.Add(interactive);
                 ImportedPackages.Add(File.ReadAllText(packagePath));
-                onFinished?.Invoke(true);
+                onFinished?.Invoke(
+                    true,
+                    expectedAssetGuids);
             }
 
             public void Refresh()

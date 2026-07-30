@@ -191,6 +191,7 @@ erDiagram
     file_imported_asset_guid {
         TEXT file_info_id PK, FK
         TEXT asset_guid PK
+        INTEGER is_protected
         TEXT imported_at
     }
 
@@ -456,7 +457,7 @@ ON item_collection(item_info_id, collection_info_id);
 
 ## Schema Version
 
-AssetManager DB の schema version。現在は `7`。開発段階のため migration は提供せず、version 不一致時は既存 DB を削除して再作成する。
+AssetManager DB の schema version。現在は `8`。開発段階のため migration は提供せず、version 不一致時は既存 DB を削除して再作成する。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
@@ -701,13 +702,15 @@ ON file_import_target(file_info_id, relative_path);
 AssetManager の file import によって Unity Project へ取り込まれた asset の GUID。
 関連付けは file 単位で一括置換し、Item 操作時は Item 配下の全 file から集約する。
 通常 file copy では Unity の refresh 後に確定した GUID と生成先 root folder GUID を保存する。
-UnityPackage は package 完了後に Project 内へ実在する GUID だけを保存し、キャンセル・失敗時は
-既存の関連付けを維持する。
+UnityPackage は package 完了までに実際に import / reimport callback で確認した GUID だけを保存し、
+キャンセル・失敗時は既存の関連付けを維持する。新しい GUID は保護状態を既定で有効にし、
+同じ GUID の再 import では既存の状態を維持する。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
 | `file_info_id` | GUID string | Yes | `(file_info_id, asset_guid)` | 親 File Info |
 | `asset_guid` | Unity GUID string | Yes | `(file_info_id, asset_guid)` | 32桁の小文字16進 GUID |
+| `is_protected` | BOOLEAN | Yes |  | Unity Project 上で元 asset の直接編集を禁止するか。既定値は `1` |
 | `imported_at` | DATETIME | Yes |  | import 完了時刻 |
 
 ```sql

@@ -121,6 +121,10 @@ namespace Ee4v.AssetManager.Application.Ports
         void ReplaceFileImportedAssetGuids(
             string fileId,
             IReadOnlyList<string> assetGuids);
+
+        void SetImportedAssetProtection(
+            string assetGuid,
+            bool isProtected);
     }
 
     internal interface IAssetSyncStore

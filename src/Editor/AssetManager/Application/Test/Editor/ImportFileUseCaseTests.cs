@@ -52,6 +52,7 @@ namespace Ee4v.AssetManager.Application.Tests
             useCase.ImportEntry("item-1", "file-1", "\\Textures\\body.png/");
 
             Assert.That(ports.Plan, Is.Not.Null);
+            Assert.That(ports.Plan.FileId, Is.EqualTo("file-1"));
             Assert.That(ports.Plan.AssetName, Is.EqualTo("Avatar"));
             Assert.That(ports.Plan.AssetFileName, Is.EqualTo("avatar.zip"));
             Assert.That(ports.Plan.SourcePath, Is.EqualTo("C:/library/avatar.zip"));
@@ -199,6 +200,13 @@ namespace Ee4v.AssetManager.Application.Tests
             {
                 ReplaceGuidsCallCount++;
                 StoredAssetGuids = assetGuids;
+            }
+
+            public void SetImportedAssetProtection(
+                string assetGuid,
+                bool isProtected)
+            {
+                throw new NotSupportedException();
             }
 
             public IReadOnlyList<AssetFileImportTarget> GetFileImportTargets(string fileId) =>

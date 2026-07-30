@@ -12,6 +12,8 @@ namespace Ee4v.AssetManager.UI
         private static IAssetManagerUiScheduler _scheduler;
         private static StandaloneAssetManagerViewSession _standaloneViewSession;
         private static IAssetManagerProjectActions _projectActions;
+        private static IAssetManagerProtectionActions
+            _protectionActions;
         private static Action<Action> _requestManualSync;
 
         internal static IAssetManager AssetManager
@@ -59,6 +61,14 @@ namespace Ee4v.AssetManager.UI
             return projectActions != null;
         }
 
+        internal static bool TryGetProtectionActions(
+            out IAssetManagerProtectionActions
+                protectionActions)
+        {
+            protectionActions = _protectionActions;
+            return protectionActions != null;
+        }
+
         internal static void RequestManualSync(Action completed)
         {
             if (_requestManualSync == null)
@@ -78,6 +88,7 @@ namespace Ee4v.AssetManager.UI
             IAssetManagerUiScheduler scheduler,
             StandaloneAssetManagerViewSession standaloneViewSession,
             IAssetManagerProjectActions projectActions,
+            IAssetManagerProtectionActions protectionActions,
             Action<Action> requestManualSync)
         {
             _assetManager = assetManager ?? throw new ArgumentNullException(nameof(assetManager));
@@ -91,6 +102,9 @@ namespace Ee4v.AssetManager.UI
             _projectActions = projectActions ??
                               throw new ArgumentNullException(
                                   nameof(projectActions));
+            _protectionActions = protectionActions ??
+                throw new ArgumentNullException(
+                    nameof(protectionActions));
             _requestManualSync = requestManualSync ??
                                  throw new ArgumentNullException(
                                      nameof(requestManualSync));

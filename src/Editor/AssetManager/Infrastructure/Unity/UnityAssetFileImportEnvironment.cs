@@ -2,6 +2,7 @@ using System;
 using Ee4v.AssetManager.Infrastructure.Files;
 using Ee4v.Core.Internal.EditorAPI;
 using System.IO;
+using System.Collections.Generic;
 using UnityEditor;
 
 namespace Ee4v.AssetManager.Infrastructure.Unity
@@ -13,9 +14,35 @@ namespace Ee4v.AssetManager.Infrastructure.Unity
         public void ImportPackage(
             string packagePath,
             bool interactive,
-            Action<bool> onFinished)
+            IReadOnlyList<string> expectedAssetGuids,
+            Action<bool, IReadOnlyList<string>> onFinished)
         {
-            AssetImport.ImportPackage(packagePath, interactive, onFinished);
+            UnityPackageImportCapture.Begin(
+                expectedAssetGuids);
+            try
+            {
+                AssetImport.ImportPackage(
+                    packagePath,
+                    interactive,
+                    succeeded =>
+                    {
+                        var importedGuids =
+                            UnityPackageImportCapture.End(
+                                succeeded,
+                                fallbackToExpected:
+                                    !interactive);
+                        onFinished?.Invoke(
+                            succeeded,
+                            importedGuids);
+                    });
+            }
+            catch
+            {
+                UnityPackageImportCapture.End(
+                    succeeded: false,
+                    fallbackToExpected: false);
+                throw;
+            }
         }
 
         public void Refresh()

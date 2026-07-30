@@ -1118,14 +1118,16 @@ public void ImportFileEntry(string itemId, string fileId, string relativePath)
 public IReadOnlyList<string> GetFileImportedAssetGuids(string fileId)
 public IReadOnlyList<string> GetItemImportedAssetGuids(string itemId)
 public IReadOnlyList<AssetImportedAssetAssociation> GetImportedAssetAssociations()
+public void SetImportedAssetProtection(string assetGuid, bool isProtected)
 ```
 
 - GUID は `file_info` 単位で保持する。file の再 import 成功時はその file の一覧を置き換える。
 - Item の取得は、Item 直下・Variant Group・Version Group に属する全 file の GUID を重複なしで返す。
 - 通常 copy は AssetDatabase refresh 後の GUID と生成先 root folder GUID を保存する。
-- UnityPackage は package 内 GUID を候補として読み、import 完了後に Project 内へ実在するものだけを保存する。
+- UnityPackage は package 内 GUID を候補として読み、`OnPostprocessAllAssets` で今回実際に import / reimport された GUID だけを保存する。確認画面なしの全件 import で callback が得られない場合だけ、Project 内へ実在する候補 GUID へ fallback する。
 - 内容選択画面のキャンセルまたは import 失敗時は既存 GUID を変更せず、change も発行しない。
 - 全関連付け API は Project Window の表示 cache 構築用であり、item 描画 callback 中に DB query は行わない。
+- 新しい関連付けは既定で保護し、`SetImportedAssetProtection` は同じ Unity GUID を持つ関連付けの保護状態を一括更新する。同じ GUID の再 import では保存済みの保護状態を維持する。
 
 ## Change Notifications
 
@@ -1145,6 +1147,7 @@ public event Action<AssetManagerChange> Changed;
 | `FileImportTargets` | file ID | 保存後の `ImportTargets` | cache 上の target state だけを更新する |
 | `VersionGroupPrimaryFile` | Version Group ID | `RelatedId` に代表 file ID | cache 上の代表 state だけを更新する |
 | `ImportedAssetGuids` | Item ID | `RelatedId` に file ID | Project Window の関連付け・アイコン cache を更新する |
+| `ImportedAssetProtection` | Unity asset GUID | 空 | 保護専用 Inspector と Unity 編集ガードを更新する |
 
 Collection の作成・更新・削除・移動、`SetFileImportTargets(...)`、`SetVersionGroupPrimaryFile(...)` は
 `Catalog` change を発行しません。

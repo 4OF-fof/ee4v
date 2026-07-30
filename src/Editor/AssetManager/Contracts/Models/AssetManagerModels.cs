@@ -69,6 +69,7 @@ namespace Ee4v.AssetManager.Contracts
         public string ItemId { get; set; }
         public string FileId { get; set; }
         public string AssetGuid { get; set; }
+        public bool IsProtected { get; set; }
         public DateTime ImportedAt { get; set; }
     }
 

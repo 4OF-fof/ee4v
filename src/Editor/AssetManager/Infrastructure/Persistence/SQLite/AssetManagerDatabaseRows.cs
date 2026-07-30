@@ -202,6 +202,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             public string item_info_id { get; set; }
             public string file_info_id { get; set; }
             public string asset_guid { get; set; }
+            public int is_protected { get; set; }
             public string imported_at { get; set; }
         }
 

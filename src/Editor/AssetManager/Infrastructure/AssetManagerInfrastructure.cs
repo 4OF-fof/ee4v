@@ -173,6 +173,14 @@ namespace Ee4v.AssetManager.Infrastructure
                     fileId,
                     assetGuids));
 
+        public void SetImportedAssetProtection(
+            string assetGuid,
+            bool isProtected) =>
+            Execute(() =>
+                AssetManagerDatabase.SetImportedAssetProtection(
+                    assetGuid,
+                    isProtected));
+
         public AssetSyncResult SyncBlm(BlmSyncRequest request) =>
             Execute(() => AssetManagerDatabase.SyncBlm(request));
 
@@ -250,6 +258,14 @@ namespace Ee4v.AssetManager.Infrastructure
 
     internal sealed class UnityAssetImportGateway : IAssetImportGateway
     {
+        private readonly AssetProtectionService _protection;
+
+        internal UnityAssetImportGateway(
+            AssetProtectionService protection = null)
+        {
+            _protection = protection;
+        }
+
         public void Import(
             AssetImportPlan plan,
             Action<AssetImportResult> completed)
@@ -259,17 +275,37 @@ namespace Ee4v.AssetManager.Infrastructure
                 throw new ArgumentNullException(nameof(plan));
             }
 
-            AssetFileImportService.Import(
-                plan.AssetName,
-                plan.AssetFileName,
-                plan.SourcePath,
-                plan.RelativePaths,
-                new UnityAssetFileImportEnvironment(),
-                AssetManagerInfrastructureSettings.Current.ShowUnityPackageImportDialog,
-                result => completed?.Invoke(
-                    new AssetImportResult(
-                        result.Succeeded,
-                        result.AssetGuids)));
+            _protection?.BeginImport(plan.FileId);
+            try
+            {
+                AssetFileImportService.Import(
+                    plan.AssetName,
+                    plan.AssetFileName,
+                    plan.SourcePath,
+                    plan.RelativePaths,
+                    new UnityAssetFileImportEnvironment(),
+                    AssetManagerInfrastructureSettings.Current.ShowUnityPackageImportDialog,
+                    result =>
+                    {
+                        try
+                        {
+                            completed?.Invoke(
+                                new AssetImportResult(
+                                    result.Succeeded,
+                                    result.AssetGuids));
+                        }
+                        finally
+                        {
+                            _protection?.EndImport(
+                                plan.FileId);
+                        }
+                    });
+            }
+            catch
+            {
+                _protection?.EndImport(plan.FileId);
+                throw;
+            }
         }
     }
 
@@ -297,11 +333,23 @@ namespace Ee4v.AssetManager.Infrastructure
 
         internal static AssetManagerService CreateDefaultService()
         {
+            return CreateDefaultService(null);
+        }
+
+        internal static AssetManagerService CreateDefaultService(
+            AssetProtectionService protection)
+        {
             var store = new SqliteAssetManagerStore();
             return new AssetManagerService(
                 store,
-                new UnityAssetImportGateway(),
+                new UnityAssetImportGateway(protection),
                 new UnityAssetManagerDiagnostics());
+        }
+
+        internal static AssetProtectionService
+            CreateProtectionService()
+        {
+            return new AssetProtectionService();
         }
 
         internal static IAssetArchiveReader CreateArchiveReader()

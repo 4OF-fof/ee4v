@@ -14,7 +14,8 @@ namespace Ee4v.AssetManager.Infrastructure.Files
         void ImportPackage(
             string packagePath,
             bool interactive,
-            Action<bool> onFinished);
+            IReadOnlyList<string> expectedAssetGuids,
+            Action<bool, IReadOnlyList<string>> onFinished);
 
         void Refresh();
 
@@ -187,10 +188,11 @@ namespace Ee4v.AssetManager.Infrastructure.Files
                 environment.ImportPackage(
                     filePath,
                     showUnityPackageImportDialog,
-                    succeeded =>
+                    guids,
+                    (succeeded, importedGuids) =>
                         completed?.Invoke(
                             succeeded,
-                            guids));
+                            importedGuids));
                 return;
             }
 
@@ -210,13 +212,14 @@ namespace Ee4v.AssetManager.Infrastructure.Files
                 environment.ImportPackage(
                     temporaryPackage,
                     showUnityPackageImportDialog,
-                    succeeded =>
+                    guids,
+                    (succeeded, importedGuids) =>
                     {
                         TryDeleteDirectory(
                             temporaryDirectory);
                         completed?.Invoke(
                             succeeded,
-                            guids);
+                            importedGuids);
                     });
             }
             catch

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Ee4v.AssetManager.Application.Ports;
 using Ee4v.AssetManager.Contracts;
+using Ee4v.AssetManager.Domain;
 
 namespace Ee4v.AssetManager.Application
 {
@@ -356,6 +357,30 @@ namespace Ee4v.AssetManager.Application
         public IReadOnlyList<AssetImportedAssetAssociation>
             GetImportedAssetAssociations() =>
             _importedAssetGuidReader.GetImportedAssetAssociations();
+
+        public void SetImportedAssetProtection(
+            string assetGuid,
+            bool isProtected)
+        {
+            var normalized =
+                ImportedAssetGuidPolicy.Normalize(
+                    new[] { assetGuid });
+            if (normalized.Count != 1)
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidRequest,
+                    "A valid Unity asset GUID is required.");
+            }
+
+            _importedAssetGuidWriter
+                .SetImportedAssetProtection(
+                    normalized[0],
+                    isProtected);
+            Publish(new AssetManagerChange(
+                AssetManagerChangeKind
+                    .ImportedAssetProtection,
+                normalized[0]));
+        }
 
         public void ImportFileTargets(string itemId, string fileId)
         {

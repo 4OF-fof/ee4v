@@ -43,10 +43,10 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
-            "schema version 7 の DB 制約を作成する",
+            "schema version 8 の DB 制約を作成する",
             "AssetManager DB が source origin、availability、collection hierarchy trigger を作成することを確認します。",
             order: 301)]
-        public void Schema_CreatesVersion7Constraints()
+        public void Schema_CreatesVersion8Constraints()
         {
             var databasePath = GetDatabasePath();
 
@@ -54,7 +54,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
             using (var connection = new SQLiteConnection(databasePath, SQLiteOpenFlags.ReadOnly | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.PrivateCache))
             {
-                Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(7));
+                Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(8));
                 Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'file_info'"), Does.Contain("CHECK"));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'item_source_origin'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'datasource_tag'"), Is.EqualTo(1));
@@ -62,6 +62,10 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'unique_file_import_target_file_path'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'file_imported_asset_guid'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'index_file_imported_asset_guid_asset'"), Is.EqualTo(1));
+                Assert.That(
+                    connection.ExecuteScalar<string>(
+                        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'file_imported_asset_guid'"),
+                    Does.Contain("is_protected"));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'prevent_collection_collection_cycle_insert'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'prevent_smart_collection_parent_insert'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'prevent_collection_with_children_becoming_smart_insert'"), Is.EqualTo(1));
@@ -1354,6 +1358,30 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                         candidate.AssetGuid == firstGuid);
             Assert.That(association.ItemId, Is.EqualTo(item.Id));
             Assert.That(association.FileId, Is.EqualTo(file.Id));
+            Assert.That(association.IsProtected, Is.True);
+
+            var changes = new List<AssetManagerChange>();
+            _assetManager.Changed += changes.Add;
+            _assetManager.SetImportedAssetProtection(
+                firstGuid,
+                false);
+            AssetManagerDatabase.ReplaceFileImportedAssetGuids(
+                file.Id,
+                new[] { firstGuid, secondGuid });
+
+            Assert.That(
+                _assetManager.GetImportedAssetAssociations()
+                    .Single(candidate =>
+                        candidate.AssetGuid == firstGuid)
+                    .IsProtected,
+                Is.False);
+            Assert.That(
+                changes.Select(change => change.Kind),
+                Is.EqualTo(new[]
+                {
+                    AssetManagerChangeKind
+                        .ImportedAssetProtection
+                }));
         }
 
         [Test]

@@ -160,28 +160,27 @@ namespace Ee4v.AssetManager.UI
             }
 
             Texture2D icon;
-            if (!ShowIcons ||
-                !_iconsByGuid.TryGetValue(
+            if (ShowIcons &&
+                _iconsByGuid.TryGetValue(
                     context.Guid,
-                    out icon) ||
-                icon == null)
+                    out icon) &&
+                icon != null)
             {
-                return;
+                var iconRect = ProjectItemLayout.GetIconRect(
+                    context.SelectionRect,
+                    context.ProjectViewMode,
+                    context.ProjectOrientation);
+                EditorGUI.DrawRect(
+                    iconRect,
+                    ResolveBackgroundColor(context));
+                GUI.DrawTexture(
+                    iconRect,
+                    icon,
+                    ScaleMode.ScaleToFit,
+                    true);
+                context.SuppressProjectItemIconOverlay = true;
             }
 
-            var iconRect = ProjectItemLayout.GetIconRect(
-                context.SelectionRect,
-                context.ProjectViewMode,
-                context.ProjectOrientation);
-            EditorGUI.DrawRect(
-                iconRect,
-                ResolveBackgroundColor(context));
-            GUI.DrawTexture(
-                iconRect,
-                icon,
-                ScaleMode.ScaleToFit,
-                true);
-            context.SuppressProjectItemIconOverlay = true;
         }
 
         public void Dispose()
