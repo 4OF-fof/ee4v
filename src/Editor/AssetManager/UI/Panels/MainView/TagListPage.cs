@@ -47,6 +47,11 @@ namespace Ee4v.AssetManager.UI
             get { return _tags; }
         }
 
+        internal bool IsEmpty
+        {
+            get { return _content.childCount == 0; }
+        }
+
         public void SetTags(IReadOnlyList<AssetTag> tags)
         {
             _tags = tags ?? Array.Empty<AssetTag>();

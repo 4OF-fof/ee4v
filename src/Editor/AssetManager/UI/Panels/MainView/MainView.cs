@@ -14,17 +14,18 @@ namespace Ee4v.AssetManager.UI
         private const string RootClassName = "ee4v-asset-manager-panel--main-view";
         private const string ContentClassName = "ee4v-asset-manager-panel__main-content";
         private const string StatusClassName = "ee4v-asset-manager-panel__main-status";
-        private const string ErrorStateClassName =
-            "ee4v-asset-manager-main-error";
-        private const string ErrorIconClassName =
-            "ee4v-asset-manager-main-error__icon";
-        private const string ErrorMessageClassName =
-            "ee4v-asset-manager-main-error__message";
+        private const string MessageStateClassName =
+            "ee4v-asset-manager-main-message";
+        private const string MessageIconClassName =
+            "ee4v-asset-manager-main-message__icon";
+        private const string MessageTextClassName =
+            "ee4v-asset-manager-main-message__text";
         private readonly MainViewController _controller;
         private readonly AssetItemGrid _itemGrid;
         private readonly UiTextElement _statusLabel;
-        private readonly VisualElement _errorState;
-        private readonly UiTextElement _errorMessage;
+        private readonly VisualElement _messageState;
+        private readonly Image _messageIcon;
+        private readonly UiTextElement _messageText;
         private readonly FileTreeDetailView _fileDetailView;
         private readonly TagListPage _tagListPage;
         private string _fileListItemId;
@@ -40,6 +41,7 @@ namespace Ee4v.AssetManager.UI
         private ItemCardState[] _selectedAssetItems = System.Array.Empty<ItemCardState>();
         private AssetSelectionContentKind _selectionContentKind = AssetSelectionContentKind.AssetItem;
         private string _statusMessage = string.Empty;
+        private string _emptyMessage = string.Empty;
         private string _contentErrorMessage = string.Empty;
         private string _externalErrorMessage = string.Empty;
 
@@ -51,18 +53,18 @@ namespace Ee4v.AssetManager.UI
             _itemGrid.AddToClassList(ContentClassName);
             _statusLabel = UiTextFactory.Create(string.Empty, StatusClassName);
             _statusLabel.SetWhiteSpace(WhiteSpace.Normal);
-            _errorState = new VisualElement();
-            _errorState.AddToClassList(ErrorStateClassName);
-            _errorState.style.display = DisplayStyle.None;
-            var errorIcon = CreateErrorIcon();
-            errorIcon.AddToClassList(ErrorIconClassName);
-            _errorState.Add(errorIcon);
-            _errorMessage = UiTextFactory.Create(
+            _messageState = new VisualElement();
+            _messageState.AddToClassList(MessageStateClassName);
+            _messageState.style.display = DisplayStyle.None;
+            _messageIcon = CreateMessageIcon();
+            _messageIcon.AddToClassList(MessageIconClassName);
+            _messageState.Add(_messageIcon);
+            _messageText = UiTextFactory.Create(
                 string.Empty,
-                UiClassNames.MainViewErrorMessage,
-                ErrorMessageClassName);
-            _errorMessage.SetWhiteSpace(WhiteSpace.Normal);
-            _errorState.Add(_errorMessage);
+                UiClassNames.MainViewMessage,
+                MessageTextClassName);
+            _messageText.SetWhiteSpace(WhiteSpace.Normal);
+            _messageState.Add(_messageText);
             _fileDetailView = new FileTreeDetailView();
             _fileDetailView.style.display = DisplayStyle.None;
             _tagListPage = new TagListPage();
@@ -71,7 +73,7 @@ namespace Ee4v.AssetManager.UI
             AddToClassList("ee4v-asset-manager-panel");
             AddToClassList(RootClassName);
             Add(_statusLabel);
-            Add(_errorState);
+            Add(_messageState);
             Add(_fileDetailView);
             Add(_tagListPage);
             Add(_itemGrid);
@@ -124,7 +126,7 @@ namespace Ee4v.AssetManager.UI
         internal void SetExternalError(string message)
         {
             _externalErrorMessage = message ?? string.Empty;
-            RefreshErrorState();
+            RefreshMessageState();
         }
 
         public void SetGridSize(int value)
@@ -524,6 +526,7 @@ namespace Ee4v.AssetManager.UI
 
         private void RefreshContent()
         {
+            SetEmptyState(string.Empty);
             SetContentError(string.Empty);
             if (IsFileDetailMode)
             {
@@ -701,7 +704,8 @@ namespace Ee4v.AssetManager.UI
             _itemGrid.SetAssetItems(
                 displayItems,
                 out statusText);
-            SetStatus(ResolveStatusText(statusText));
+            SetStatus(string.Empty);
+            SetEmptyState(ResolveStatusText(statusText));
         }
 
         private void ApplyTagList(
@@ -711,6 +715,10 @@ namespace Ee4v.AssetManager.UI
             _controller.StoreCachedTags(cacheKey, tags);
             _tagListPage.SetTags(tags);
             SetStatus(string.Empty);
+            SetEmptyState(
+                _tagListPage.IsEmpty
+                    ? I18N.Get("assetManager.mainView.tags.empty")
+                    : string.Empty);
         }
 
         private void SetStatus(string message)
@@ -723,18 +731,36 @@ namespace Ee4v.AssetManager.UI
         private void SetContentError(string message)
         {
             _contentErrorMessage = message ?? string.Empty;
-            RefreshErrorState();
+            RefreshMessageState();
         }
 
-        private void RefreshErrorState()
+        internal void SetEmptyState(string message)
         {
-            var message = !string.IsNullOrWhiteSpace(
-                _externalErrorMessage)
+            _emptyMessage = message ?? string.Empty;
+            RefreshMessageState();
+        }
+
+        private void RefreshMessageState()
+        {
+            var hasError =
+                !string.IsNullOrWhiteSpace(_externalErrorMessage) ||
+                !string.IsNullOrWhiteSpace(_contentErrorMessage);
+            var message = !string.IsNullOrWhiteSpace(_externalErrorMessage)
                 ? _externalErrorMessage
-                : _contentErrorMessage;
-            var hasError = !string.IsNullOrWhiteSpace(message);
-            _errorMessage.SetText(message);
-            _errorState.style.display = hasError
+                : !string.IsNullOrWhiteSpace(_contentErrorMessage)
+                    ? _contentErrorMessage
+                    : _emptyMessage;
+            var hasMessage = !string.IsNullOrWhiteSpace(message);
+            _messageText.SetText(message);
+            if (hasMessage)
+            {
+                SetMessageIcon(
+                    hasError
+                        ? UiFluentIcon.ErrorCircle
+                        : UiFluentIcon.Info);
+            }
+
+            _messageState.style.display = hasMessage
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             ApplyContentVisibility();
@@ -743,43 +769,33 @@ namespace Ee4v.AssetManager.UI
 
         private void ApplyContentVisibility()
         {
-            var hasError =
-                !string.IsNullOrWhiteSpace(_externalErrorMessage) ||
-                !string.IsNullOrWhiteSpace(_contentErrorMessage);
+            var hasMessage = HasMessage;
             _fileDetailView.style.display =
-                !hasError && IsFileDetailMode
+                !hasMessage && IsFileDetailMode
                     ? DisplayStyle.Flex
                     : DisplayStyle.None;
             _tagListPage.style.display =
-                !hasError && !IsFileDetailMode && IsTagListMode
+                !hasMessage && !IsFileDetailMode && IsTagListMode
                     ? DisplayStyle.Flex
                     : DisplayStyle.None;
             _itemGrid.style.display =
-                !hasError && !IsFileDetailMode && !IsTagListMode
+                !hasMessage && !IsFileDetailMode && !IsTagListMode
                     ? DisplayStyle.Flex
                     : DisplayStyle.None;
         }
 
         private void RefreshStatusVisibility()
         {
-            var hasError =
-                !string.IsNullOrWhiteSpace(_externalErrorMessage) ||
-                !string.IsNullOrWhiteSpace(_contentErrorMessage);
             _statusLabel.style.display =
-                !hasError && !string.IsNullOrWhiteSpace(_statusMessage)
+                !HasMessage && !string.IsNullOrWhiteSpace(_statusMessage)
                     ? DisplayStyle.Flex
                     : DisplayStyle.None;
         }
 
-        private static Image CreateErrorIcon()
+        private static Image CreateMessageIcon()
         {
-            Texture2D texture;
-            UiFluentIconResolver.TryResolve(
-                UiFluentIcon.ErrorCircle,
-                out texture);
             var image = new Image
             {
-                image = texture,
                 scaleMode = ScaleMode.ScaleToFit,
                 pickingMode = PickingMode.Ignore
             };
@@ -787,12 +803,28 @@ namespace Ee4v.AssetManager.UI
                 FileIconDefinition.StandardIconSize;
             image.style.height =
                 FileIconDefinition.StandardIconSize;
-            if (texture == null)
-            {
-                image.style.display = DisplayStyle.None;
-            }
-
             return image;
+        }
+
+        private void SetMessageIcon(UiFluentIcon icon)
+        {
+            Texture2D texture;
+            UiFluentIconResolver.TryResolve(icon, out texture);
+            _messageIcon.image = texture;
+            _messageIcon.style.display = texture != null
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+        }
+
+        private bool HasMessage
+        {
+            get
+            {
+                return
+                    !string.IsNullOrWhiteSpace(_externalErrorMessage) ||
+                    !string.IsNullOrWhiteSpace(_contentErrorMessage) ||
+                    !string.IsNullOrWhiteSpace(_emptyMessage);
+            }
         }
 
         private void ClearGridSelection()

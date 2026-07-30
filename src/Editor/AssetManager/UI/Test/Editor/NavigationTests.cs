@@ -563,17 +563,17 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
-        public void MainViewErrorTypography_UsesImguiFontCacheWorkaround()
+        public void MainViewMessageTypography_UsesImguiFontCacheWorkaround()
         {
             Assert.That(
                 TypographyStyleResolver.Resolve(
-                    UiClassNames.MainViewErrorMessage)
+                    UiClassNames.MainViewMessage)
                     .Style.RequiresImgui,
                 Is.True);
 
             var message = UiTextFactory.Create(
                 "Error",
-                UiClassNames.MainViewErrorMessage);
+                UiClassNames.MainViewMessage);
 
             Assert.That(
                 message.GetType().Name,

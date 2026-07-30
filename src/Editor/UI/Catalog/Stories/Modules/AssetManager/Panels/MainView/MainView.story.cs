@@ -33,6 +33,7 @@ namespace Ee4v.AssetManager.UI
         {
             const string DatabaseErrorPresetId = "database-error";
             const string CollectionErrorPresetId = "collection-error";
+            const string EmptyPresetId = "empty";
             var selectedPresetId = DatabaseErrorPresetId;
             Action<string> applyPreset = null;
             var controls = window.CreateTabbedControlsSection(
@@ -66,18 +67,31 @@ namespace Ee4v.AssetManager.UI
                                 "Database"),
                             new TabCardTabState(
                                 CollectionErrorPresetId,
-                                "Collection")
+                                "Collection"),
+                            new TabCardTabState(
+                                EmptyPresetId,
+                                "Empty")
                         },
                         selectedPresetId),
                     applyPreset);
+                var empty = string.Equals(
+                    selectedPresetId,
+                    EmptyPresetId,
+                    StringComparison.Ordinal);
+                panel.SetEmptyState(
+                    empty
+                        ? I18N.Get("assetManager.mainView.noItems")
+                        : string.Empty);
                 panel.SetExternalError(
-                    I18N.Get(
-                        string.Equals(
-                            selectedPresetId,
-                            CollectionErrorPresetId,
-                            StringComparison.Ordinal)
-                            ? "assetManager.mainView.preview.collectionError"
-                            : "assetManager.error.databaseSchemaIncompatible"));
+                    empty
+                        ? string.Empty
+                        : I18N.Get(
+                            string.Equals(
+                                selectedPresetId,
+                                CollectionErrorPresetId,
+                                StringComparison.Ordinal)
+                                ? "assetManager.mainView.preview.collectionError"
+                                : "assetManager.error.databaseSchemaIncompatible"));
             };
 
             applyPreset(selectedPresetId);
