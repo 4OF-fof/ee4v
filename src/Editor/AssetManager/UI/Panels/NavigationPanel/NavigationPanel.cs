@@ -26,11 +26,8 @@ namespace Ee4v.AssetManager.UI
             "ee4v-asset-manager-panel__collection-section";
         private const string CollectionSectionHeaderClassName =
             "ee4v-asset-manager-panel__collection-section-header";
-        private const string CollectionErrorClassName =
-            "ee4v-asset-manager-panel__collection-error";
         private readonly SingleSelectButtonGroup _group;
         private readonly CollectionNavigationList _collectionList;
-        private readonly UiTextElement _error;
 
         public NavigationPanel(
             AssetManagerViewItemState[] items = null,
@@ -62,13 +59,6 @@ namespace Ee4v.AssetManager.UI
             collectionsScroll.AddToClassList(CollectionsScrollClassName);
             collectionsScroll.contentContainer.AddToClassList(
                 CollectionsContentClassName);
-
-            _error = UiTextFactory.Create(
-                string.Empty,
-                UiClassNames.NavigationItemLabel,
-                CollectionErrorClassName);
-            _error.SetWhiteSpace(WhiteSpace.Normal);
-            collectionsScroll.Add(_error);
 
             _collectionList = new CollectionNavigationList(
                 itemId => SelectionChanged?.Invoke(itemId),
@@ -129,11 +119,6 @@ namespace Ee4v.AssetManager.UI
             _collectionList.SetState(
                 collections ?? Array.Empty<AssetCollection>(),
                 selectedItemId);
-        }
-
-        public void SetCollectionError(string message)
-        {
-            _error.SetText(message ?? string.Empty);
         }
 
         private static SingleSelectButtonGroupState CreateGroupState(

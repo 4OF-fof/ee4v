@@ -37,7 +37,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             if (schemaVersions.Any(row => row.version != CurrentSchemaVersion))
             {
                 throw new AssetManagerException(
-                    AssetManagerErrorCode.DatabaseError,
+                    AssetManagerErrorCode.DatabaseSchemaIncompatible,
                     "AssetManager database schema is incompatible. Delete the database and let ee4v recreate it.");
             }
             connection.Execute("CREATE TABLE IF NOT EXISTS sync_info(source_type TEXT PRIMARY KEY CHECK(source_type IN ('blm', 'eagle', 'ee4v')), last_sync_at TEXT, last_sync_status TEXT NOT NULL DEFAULT 'success' CHECK(last_sync_status IN ('success', 'failed', 'partial')))");
@@ -108,6 +108,8 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             connection.Execute("CREATE UNIQUE INDEX IF NOT EXISTS unique_dependency_variant_to_version ON dependency(source_variant_group_id, target_version_group_id) WHERE source_variant_group_id IS NOT NULL AND target_version_group_id IS NOT NULL");
             connection.Execute("CREATE TABLE IF NOT EXISTS file_import_target(id TEXT PRIMARY KEY, file_info_id TEXT NOT NULL REFERENCES file_info(id) ON DELETE CASCADE, relative_path TEXT NOT NULL)");
             connection.Execute("CREATE UNIQUE INDEX IF NOT EXISTS unique_file_import_target_file_path ON file_import_target(file_info_id, relative_path)");
+            connection.Execute("CREATE TABLE IF NOT EXISTS file_imported_asset_guid(file_info_id TEXT NOT NULL REFERENCES file_info(id) ON DELETE CASCADE, asset_guid TEXT NOT NULL CHECK(length(asset_guid) = 32 AND asset_guid = lower(asset_guid) AND asset_guid NOT GLOB '*[^0-9a-f]*'), imported_at TEXT NOT NULL, PRIMARY KEY(file_info_id, asset_guid))");
+            connection.Execute("CREATE INDEX IF NOT EXISTS index_file_imported_asset_guid_asset ON file_imported_asset_guid(asset_guid)");
             connection.Execute("CREATE TABLE IF NOT EXISTS eagle_file_origin(file_info_id TEXT PRIMARY KEY REFERENCES file_info(id) ON DELETE CASCADE, eagle_item_id TEXT NOT NULL UNIQUE, file_path_cache TEXT, is_deleted INTEGER CHECK(is_deleted IS NULL OR is_deleted IN (0, 1)), imported_at TEXT)");
             connection.Execute("CREATE TABLE IF NOT EXISTS blm_file_origin(file_info_id TEXT PRIMARY KEY REFERENCES file_info(id) ON DELETE CASCADE, registered_item_id TEXT NOT NULL, relative_path TEXT NOT NULL, file_path_cache TEXT, is_missing INTEGER NOT NULL DEFAULT 0 CHECK(is_missing IN (0, 1)), imported_at TEXT)");
             connection.Execute("CREATE UNIQUE INDEX IF NOT EXISTS unique_blm_file_origin_registered_relative_path ON blm_file_origin(registered_item_id, relative_path)");

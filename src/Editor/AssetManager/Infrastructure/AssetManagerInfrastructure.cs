@@ -151,6 +151,28 @@ namespace Ee4v.AssetManager.Infrastructure
             IReadOnlyList<string> normalizedRelativePaths) =>
             Execute(() => AssetManagerDatabase.ReplaceFileImportTargets(fileId, normalizedRelativePaths));
 
+        public IReadOnlyList<string> GetFileImportedAssetGuids(
+            string fileId) =>
+            Execute(() =>
+                AssetManagerDatabase.GetFileImportedAssetGuids(fileId));
+
+        public IReadOnlyList<string> GetItemImportedAssetGuids(
+            string itemId) =>
+            Execute(() =>
+                AssetManagerDatabase.GetItemImportedAssetGuids(itemId));
+
+        public IReadOnlyList<AssetImportedAssetAssociation>
+            GetImportedAssetAssociations() =>
+            Execute(AssetManagerDatabase.GetImportedAssetAssociations);
+
+        public void ReplaceFileImportedAssetGuids(
+            string fileId,
+            IReadOnlyList<string> assetGuids) =>
+            Execute(() =>
+                AssetManagerDatabase.ReplaceFileImportedAssetGuids(
+                    fileId,
+                    assetGuids));
+
         public AssetSyncResult SyncBlm(BlmSyncRequest request) =>
             Execute(() => AssetManagerDatabase.SyncBlm(request));
 
@@ -228,7 +250,9 @@ namespace Ee4v.AssetManager.Infrastructure
 
     internal sealed class UnityAssetImportGateway : IAssetImportGateway
     {
-        public void Import(AssetImportPlan plan)
+        public void Import(
+            AssetImportPlan plan,
+            Action<AssetImportResult> completed)
         {
             if (plan == null)
             {
@@ -241,7 +265,11 @@ namespace Ee4v.AssetManager.Infrastructure
                 plan.SourcePath,
                 plan.RelativePaths,
                 new UnityAssetFileImportEnvironment(),
-                AssetManagerInfrastructureSettings.Current.ShowUnityPackageImportDialog);
+                AssetManagerInfrastructureSettings.Current.ShowUnityPackageImportDialog,
+                result => completed?.Invoke(
+                    new AssetImportResult(
+                        result.Succeeded,
+                        result.AssetGuids)));
         }
     }
 

@@ -1,5 +1,4 @@
 - hierarchy背景改善
+- assetハイライト背景改善
 - git
 - 一時フォルダ
-- 自動folder icon
-- assetハイライト

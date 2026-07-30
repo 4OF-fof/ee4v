@@ -1,7 +1,12 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.UI;
 using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI.Tests
@@ -38,6 +43,122 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
+        public void ProjectHighlightTarget_DistinguishesItemAndFileCards()
+        {
+            AssetSelectionContentKind kind;
+            string id;
+
+            Assert.That(
+                MainView.TryResolveHighlightTarget(
+                    new ItemCardState(
+                        "item-1",
+                        "Item",
+                        new ItemImageState()),
+                    out kind,
+                    out id),
+                Is.True);
+            Assert.That(
+                kind,
+                Is.EqualTo(
+                    AssetSelectionContentKind.AssetItem));
+            Assert.That(id, Is.EqualTo("item-1"));
+
+            Assert.That(
+                MainView.TryResolveHighlightTarget(
+                    new ItemCardState(
+                        AssetItemGridNodeKey.Encode(
+                            AssetItemGridNodeKind.File,
+                            "file-1"),
+                        "File",
+                        new ItemImageState()),
+                    out kind,
+                    out id),
+                Is.True);
+            Assert.That(
+                kind,
+                Is.EqualTo(
+                    AssetSelectionContentKind.AssetFile));
+            Assert.That(id, Is.EqualTo("file-1"));
+
+            Assert.That(
+                MainView.TryResolveHighlightTarget(
+                    new ItemCardState(
+                        AssetItemGridNodeKey.Encode(
+                            AssetItemGridNodeKind.VersionGroup,
+                            "version-1"),
+                        "Version",
+                        new ItemImageState()),
+                    out kind,
+                    out id),
+                Is.False);
+        }
+
+        [Test]
+        public void ProjectAssociationIndex_AggregatesFilesAndUsesLatestIconOwner()
+        {
+            var earlier = new DateTime(2026, 1, 1);
+            var later = earlier.AddMinutes(1);
+            var index = AssetManagerProjectAssociationIndex.Create(
+                new[]
+                {
+                    new AssetImportedAssetAssociation
+                    {
+                        ItemId = "item-a",
+                        FileId = "file-a1",
+                        AssetGuid = "guid-a",
+                        ImportedAt = earlier
+                    },
+                    new AssetImportedAssetAssociation
+                    {
+                        ItemId = "item-a",
+                        FileId = "file-a2",
+                        AssetGuid = "shared-guid",
+                        ImportedAt = earlier
+                    },
+                    new AssetImportedAssetAssociation
+                    {
+                        ItemId = "item-b",
+                        FileId = "file-b",
+                        AssetGuid = "shared-guid",
+                        ImportedAt = later
+                    }
+                });
+
+            Assert.That(
+                index.GuidsByItem["item-a"],
+                Is.EqualTo(new[] { "guid-a", "shared-guid" }));
+            Assert.That(
+                index.GuidsByFile["file-a1"],
+                Is.EqualTo(new[] { "guid-a" }));
+            Assert.That(
+                index.ItemIdByAssetGuid["shared-guid"],
+                Is.EqualTo("item-b"));
+        }
+
+        [Test]
+        public void ProjectDecoration_InitialCacheFailureDoesNotEscapeInitialization()
+        {
+            var source =
+                new FailingProjectCacheSource();
+            var presenter =
+                new AssetManagerProjectDecorationPresenter(
+                    source,
+                    new ImmediateUiScheduler());
+            Assert.That(
+                source.AssociationReadCount,
+                Is.Zero,
+                "constructor must not read the DB before UI dependencies are configured");
+            LogAssert.Expect(
+                LogType.Exception,
+                "AssetManagerException: incompatible schema");
+
+            Assert.DoesNotThrow(presenter.Initialize);
+
+            Assert.That(source.AssociationReadCount, Is.EqualTo(1));
+            presenter.Dispose();
+        }
+
+        [Test]
         public void PendingCollectionNavigation_IsPreservedUntilCollectionsLoad()
         {
             var viewId =
@@ -66,6 +187,44 @@ namespace Ee4v.AssetManager.UI.Tests
                     collectionExists: false),
                 Is.EqualTo(
                     AssetManagerNavigationCatalog.DefaultItemId));
+        }
+
+        private sealed class FailingProjectCacheSource :
+            IAssetManagerProjectCacheSource
+        {
+            public event Action<AssetManagerChange> Changed;
+
+            internal int AssociationReadCount { get; private set; }
+
+            public IReadOnlyList<AssetImportedAssetAssociation>
+                GetImportedAssetAssociations()
+            {
+                AssociationReadCount++;
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.DatabaseError,
+                    "incompatible schema");
+            }
+
+            public IReadOnlyDictionary<string, AssetThumbnail>
+                GetThumbnails(IReadOnlyList<string> itemIds) =>
+                new Dictionary<string, AssetThumbnail>();
+        }
+
+        private sealed class ImmediateUiScheduler :
+            IAssetManagerUiScheduler
+        {
+            public void RunOnMainThread(Action operation)
+            {
+                operation?.Invoke();
+            }
+
+            public void RunInBackground<T>(
+                Func<CancellationToken, T> operation,
+                CancellationToken cancellationToken,
+                Action<AssetManagerBackgroundResult<T>> completed)
+            {
+                throw new NotSupportedException();
+            }
         }
 
         [Test]
@@ -268,6 +427,43 @@ namespace Ee4v.AssetManager.UI.Tests
                 panel.Query<Button>().ToList()
                     .All(button => button is UiButton),
                 Is.True);
+        }
+
+        [Test]
+        public void MainViewErrorTypography_UsesImguiFontCacheWorkaround()
+        {
+            Assert.That(
+                TypographyStyleResolver.Resolve(
+                    UiClassNames.MainViewErrorMessage)
+                    .Style.RequiresImgui,
+                Is.True);
+
+            var message = UiTextFactory.Create(
+                "Error",
+                UiClassNames.MainViewErrorMessage);
+
+            Assert.That(
+                message.GetType().Name,
+                Is.EqualTo("ImguiUiTextElement"));
+        }
+
+        [Test]
+        public void AssetManagerErrorMessage_MapsStableErrorCodesToLocalization()
+        {
+            Assert.That(
+                AssetManagerUiErrorMessage.ResolveKind(
+                    new AssetManagerException(
+                        AssetManagerErrorCode
+                            .DatabaseSchemaIncompatible,
+                        "infrastructure detail")),
+                Is.EqualTo(
+                    AssetManagerUiErrorKind
+                        .DatabaseSchemaIncompatible));
+            Assert.That(
+                AssetManagerUiErrorMessage.ResolveKind(
+                    new InvalidOperationException(
+                        "unlocalized detail")),
+                Is.EqualTo(AssetManagerUiErrorKind.Unknown));
         }
 
         [Test]

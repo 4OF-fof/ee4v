@@ -1,3 +1,5 @@
+using System;
+using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEngine.UIElements;
 
@@ -29,6 +31,14 @@ namespace Ee4v.AssetManager.UI
 
         private static void BuildAssetManagerMainViewStory(CatalogWindow window, VisualElement parent)
         {
+            const string DatabaseErrorPresetId = "database-error";
+            const string CollectionErrorPresetId = "collection-error";
+            var selectedPresetId = DatabaseErrorPresetId;
+            Action<string> applyPreset = null;
+            var controls = window.CreateTabbedControlsSection(
+                parent,
+                "MainView 全体を置き換えるエラー状態を切り替えて、中央配置と複数行表示を確認します。");
+
             var preview = window.CreatePreviewSection(parent);
             var surface = window.CreatePreviewSurface();
             surface.style.paddingLeft = UiSpacingTokens.None;
@@ -43,6 +53,35 @@ namespace Ee4v.AssetManager.UI
             panel.style.flexGrow = 1f;
             surface.Add(panel);
             preview.Body.Add(surface);
+
+            applyPreset = presetId =>
+            {
+                selectedPresetId = presetId;
+                controls.TabCard.SetState(
+                    new TabCardState(
+                        new[]
+                        {
+                            new TabCardTabState(
+                                DatabaseErrorPresetId,
+                                "Database"),
+                            new TabCardTabState(
+                                CollectionErrorPresetId,
+                                "Collection")
+                        },
+                        selectedPresetId),
+                    applyPreset);
+                panel.SetExternalError(
+                    I18N.Get(
+                        string.Equals(
+                            selectedPresetId,
+                            CollectionErrorPresetId,
+                            StringComparison.Ordinal)
+                            ? "assetManager.mainView.preview.collectionError"
+                            : "assetManager.error.databaseSchemaIncompatible"));
+            };
+
+            applyPreset(selectedPresetId);
+            CatalogWindow.FinalizeControlsSection(parent, controls);
         }
     }
 }

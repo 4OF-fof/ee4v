@@ -55,6 +55,9 @@ namespace Ee4v.AssetManager.Contracts
         void SetDependencies(DependencyEndpointRequest source, IReadOnlyList<DependencyEndpointRequest> targets);
         IReadOnlyList<AssetFileImportTarget> GetFileImportTargets(string fileId);
         void SetFileImportTargets(string fileId, IReadOnlyList<AssetFileImportTargetRequest> targets);
+        IReadOnlyList<string> GetFileImportedAssetGuids(string fileId);
+        IReadOnlyList<string> GetItemImportedAssetGuids(string itemId);
+        IReadOnlyList<AssetImportedAssetAssociation> GetImportedAssetAssociations();
         void ImportFileTargets(string itemId, string fileId);
         void ImportFileEntry(string itemId, string fileId, string relativePath);
         AssetSyncResult SyncBlm(BlmSyncRequest request);
@@ -81,7 +84,8 @@ namespace Ee4v.AssetManager.Contracts
         SmartCollectionRule,
         FileTree,
         FileImportTargets,
-        VersionGroupPrimaryFile
+        VersionGroupPrimaryFile,
+        ImportedAssetGuids
     }
 
     public sealed class AssetManagerChange

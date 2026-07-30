@@ -20,6 +20,8 @@ namespace Ee4v.AssetManager.Application
         private readonly IAssetDependencyCommandStore _dependencyWriter;
         private readonly IAssetImportTargetReadStore _importTargetReader;
         private readonly IAssetImportTargetCommandStore _importTargetWriter;
+        private readonly IImportedAssetGuidReadStore _importedAssetGuidReader;
+        private readonly IImportedAssetGuidCommandStore _importedAssetGuidWriter;
         private readonly IAssetSyncStore _sync;
         private readonly IAssetImportGateway _importGateway;
         private readonly AssetManagerChangePublisher _changePublisher;
@@ -43,6 +45,8 @@ namespace Ee4v.AssetManager.Application
             _dependencyWriter = store;
             _importTargetReader = store;
             _importTargetWriter = store;
+            _importedAssetGuidReader = store;
+            _importedAssetGuidWriter = store;
             _sync = store;
             _importGateway = importGateway ?? throw new ArgumentNullException(nameof(importGateway));
             _changePublisher = new AssetManagerChangePublisher(diagnostics);
@@ -59,7 +63,9 @@ namespace Ee4v.AssetManager.Application
                 _catalogReader,
                 _fileReader,
                 _importTargetReader,
-                _importGateway);
+                _importedAssetGuidWriter,
+                _importGateway,
+                change => Publish(change));
         }
 
         public event Action<AssetManagerChange> Changed
@@ -340,6 +346,16 @@ namespace Ee4v.AssetManager.Application
         {
             _setFileImportTargets.Execute(fileId, targets);
         }
+
+        public IReadOnlyList<string> GetFileImportedAssetGuids(string fileId) =>
+            _importedAssetGuidReader.GetFileImportedAssetGuids(fileId);
+
+        public IReadOnlyList<string> GetItemImportedAssetGuids(string itemId) =>
+            _importedAssetGuidReader.GetItemImportedAssetGuids(itemId);
+
+        public IReadOnlyList<AssetImportedAssetAssociation>
+            GetImportedAssetAssociations() =>
+            _importedAssetGuidReader.GetImportedAssetAssociations();
 
         public void ImportFileTargets(string itemId, string fileId)
         {

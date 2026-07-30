@@ -64,13 +64,6 @@
     margin-left: var(--ee4v-space-lg);
 }
 
-.ee4v-asset-manager-panel__collection-error {
-    margin-top: var(--ee4v-space-sm);
-    margin-bottom: var(--ee4v-space-sm);
-    margin-left: var(--ee4v-space-lg);
-    color: var(--ee4v-color-error);
-}
-
 .ee4v-asset-manager-collection-list {
     flex-grow: 1;
     flex-direction: column;

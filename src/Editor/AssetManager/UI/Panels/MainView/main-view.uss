@@ -64,6 +64,22 @@
     color: var(--ee4v-color-text-soft);
 }
 
+.ee4v-asset-manager-main-error {
+    flex-grow: 1;
+    min-height: 0;
+    align-items: center;
+    justify-content: center;
+    padding: var(--ee4v-space-3xl);
+}
+
+.ee4v-asset-manager-main-error__icon {
+    margin-bottom: var(--ee4v-space-xl);
+}
+
+.ee4v-asset-manager-main-error__message {
+    width: 70%;
+}
+
 .ee4v-asset-manager-file-detail {
     flex-grow: 1;
     align-items: center;

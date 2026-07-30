@@ -84,6 +84,14 @@ filesystem、Editor lifecycle、UI Toolkitは外側の `Infrastructure`、`Unity
 | `Ee4v.AssetManager.UI` | window、controller、view state、UI Toolkit presentation |
 | `Ee4v.AssetManager.Composition` | settingsを含む依存構築とEditor lifecycleの唯一の入口 |
 
+AssetManager の import 済み Unity GUID は Infrastructure が file 単位で取得・永続化し、
+Application が import 成功時の置換と通知を制御します。Project Window presentation は
+関連付けと thumbnail を事前に cache し、描画 callback では cache の参照と描画だけを
+行います。Main View は item/file の識別と操作通知に限定し、GUID の集約や親 folder の
+展開は Project Window presentation が担当します。Project Window cache の初期読込は
+UI dependency の構成後に行い、schema 不整合などで失敗しても AssetManager window 自体の
+初期化を妨げません。
+
 ## Core namespace
 
 Coreではnamespaceを機能境界、asmdefとdirectoryを依存レイヤ境界として使います。

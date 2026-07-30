@@ -36,6 +36,17 @@
       "datasourceSync": "Synchronizing the AssetManager library...",
       "noDatasource": "No available BLM database or Eagle library is configured."
     },
+    "error": {
+      "unknown": "AssetManager encountered an unexpected error.",
+      "notFound": "The requested AssetManager data could not be found.",
+      "duplicate": "The same AssetManager data already exists.",
+      "invalidRequest": "AssetManager could not process this request.",
+      "collectionCycle": "Collections cannot contain themselves or one of their parent collections.",
+      "invalidSmartCollectionCondition": "The Smart Collection conditions are invalid.",
+      "databaseSchemaIncompatible": "The AssetManager database format is incompatible. Delete the database and let ee4v recreate it.",
+      "database": "AssetManager could not read or update its database.",
+      "datasource": "AssetManager could not read the configured data source."
+    },
     "syncConflict": {
       "title": "Review synchronization changes",
       "message": "Some Unity-side item information is newer than its source. Review the differences before overwriting it. Cancel stops this synchronization.",
@@ -54,6 +65,14 @@
       "noFiles": "This item has no files.",
       "noChildren": "No child items to display.",
       "dragItems": "Add items to a collection",
+      "preview": {
+        "collectionError": "Failed to load collections. Check the AssetManager database and try again."
+      },
+      "context": {
+        "highlightItem": "Highlight this item's imports in Project",
+        "highlightFile": "Highlight this file's imports in Project",
+        "clearHighlights": "Clear Project highlights"
+      },
       "tags": {
         "title": "Tags ({0})",
         "empty": "No tags.",

@@ -27,23 +27,44 @@ namespace Ee4v.AssetManager.Application
         internal IReadOnlyList<string> RelativePaths { get; }
     }
 
+    internal sealed class AssetImportResult
+    {
+        internal AssetImportResult(
+            bool succeeded,
+            IReadOnlyList<string> assetGuids)
+        {
+            Succeeded = succeeded;
+            AssetGuids = assetGuids ?? Array.Empty<string>();
+        }
+
+        internal bool Succeeded { get; }
+        internal IReadOnlyList<string> AssetGuids { get; }
+    }
+
     internal sealed class ImportFileUseCase
     {
         private readonly IAssetCatalogReadStore _catalog;
         private readonly IAssetFileReadStore _files;
         private readonly IAssetImportTargetReadStore _importTargets;
+        private readonly IImportedAssetGuidCommandStore _importedAssetGuids;
         private readonly IAssetImportGateway _gateway;
+        private readonly Action<AssetManagerChange> _publish;
 
         internal ImportFileUseCase(
             IAssetCatalogReadStore catalog,
             IAssetFileReadStore files,
             IAssetImportTargetReadStore importTargets,
-            IAssetImportGateway gateway)
+            IImportedAssetGuidCommandStore importedAssetGuids,
+            IAssetImportGateway gateway,
+            Action<AssetManagerChange> publish)
         {
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _files = files ?? throw new ArgumentNullException(nameof(files));
             _importTargets = importTargets ?? throw new ArgumentNullException(nameof(importTargets));
+            _importedAssetGuids = importedAssetGuids ??
+                throw new ArgumentNullException(nameof(importedAssetGuids));
             _gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
+            _publish = publish ?? throw new ArgumentNullException(nameof(publish));
         }
 
         internal void ImportConfiguredTargets(string itemId, string fileId)
@@ -113,11 +134,32 @@ namespace Ee4v.AssetManager.Application
                     "The file path could not be resolved.");
             }
 
-            _gateway.Import(new AssetImportPlan(
-                item.Name,
-                file.FileName,
-                resolution.Path,
-                normalizedPaths));
+            _gateway.Import(
+                new AssetImportPlan(
+                    item.Name,
+                    file.FileName,
+                    resolution.Path,
+                    normalizedPaths),
+                result =>
+                {
+                    if (result == null || !result.Succeeded)
+                    {
+                        return;
+                    }
+
+                    var assetGuids =
+                        ImportedAssetGuidPolicy.Normalize(
+                            result.AssetGuids);
+                    _importedAssetGuids
+                        .ReplaceFileImportedAssetGuids(
+                            fileId,
+                            assetGuids);
+                    _publish(new AssetManagerChange(
+                        AssetManagerChangeKind
+                            .ImportedAssetGuids,
+                        itemId,
+                        fileId));
+                });
         }
     }
 }

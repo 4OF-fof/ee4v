@@ -50,6 +50,30 @@ namespace Ee4v.AssetManager.Domain.Tests
             Assert.Throws<ImportTargetPathRuleException>(
                 () => ImportTargetPathPolicy.Normalize(new[] { relativePath }));
         }
+
+        [Test]
+        [FeatureTestCase(
+            "Unity GUID を正規化して重複を除く",
+            "import adapter の結果から32桁の16進 GUID だけを小文字で保持することを確認します。",
+            order: 3)]
+        public void ImportedAssetGuidPolicy_NormalizesValidUnityGuids()
+        {
+            var result = ImportedAssetGuidPolicy.Normalize(
+                new[]
+                {
+                    "ABCDEF0123456789ABCDEF0123456789",
+                    "abcdef0123456789abcdef0123456789",
+                    "not-a-guid",
+                    null
+                });
+
+            Assert.That(
+                result,
+                Is.EqualTo(new[]
+                {
+                    "abcdef0123456789abcdef0123456789"
+                }));
+        }
     }
 
     public sealed class CatalogCommandPolicyTests

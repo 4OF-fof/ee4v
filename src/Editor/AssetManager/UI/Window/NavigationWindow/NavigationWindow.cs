@@ -79,8 +79,6 @@ namespace Ee4v.AssetManager.UI
                 OnCollectionsChanged;
             _collectionController.CollectionOpenRequested +=
                 OnCollectionOpenRequested;
-            _collectionController.ErrorChanged +=
-                _navigationPanel.SetCollectionError;
             _navigationPanel.CreateCollectionRequested +=
                 OnCreateCollectionRequested;
             _navigationPanel.CreateSmartCollectionRequested +=
@@ -267,11 +265,6 @@ namespace Ee4v.AssetManager.UI
                 OnCollectionsChanged;
             _collectionController.CollectionOpenRequested -=
                 OnCollectionOpenRequested;
-            if (_navigationPanel != null)
-            {
-                _collectionController.ErrorChanged -=
-                    _navigationPanel.SetCollectionError;
-            }
 
             _collectionController.Dispose();
             _collectionController = null;

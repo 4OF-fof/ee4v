@@ -56,6 +56,9 @@ notification を発行します。全面的な CQRS や汎用 repository は導�
 Unity への file import は Application の `ImportFileUseCase` が item/file の所属、path 解決、
 Import Target の Domain policy を確認して `AssetImportPlan` を生成します。Infrastructure は
 plan に従って filesystem / ZIP / Unity package import を実行します。
+import 成功後の Unity GUID は file 単位で DB へ一括保存します。通常 copy は refresh 後に
+確定した GUID、UnityPackage は完了後に Project 内へ実在する package GUID だけを保存し、
+キャンセル・失敗時は既存値を維持します。
 
 起動時 sync も Composition から SQLite helper を直接呼びません。Application の
 prepare/apply use case を通し、Infrastructure の prepared state は opaque token として保持します。
@@ -110,7 +113,7 @@ schema 不整合を含む Navigation のエラー状態を現在の DB に対し
 
 ## 現在の実装状態
 
-- schema v6、Item/File/Tag/Collection/Dependency/Import Target API を実装済み
+- schema v7、Item/File/Tag/Collection/Dependency/Import Target/Imported Asset GUID API を実装済み
 - BLM `data.db` と Eagle library の読み取り同期、安定した source identity、datasource tag、欠落 origin の reconciliation を実装済み
 - BLM snapshot に任意の `preferences` table がない場合も item metadata の同期を継続し、item directory path だけを未設定として扱う
 - Main View の初回 snapshot 構築と File Tree の DB / filesystem 読み込みは background で行い、前回 load の cancellation に対応する。snapshot 構築では Smart Collection の条件と判定値を一括取得して memory 評価し、item ごとの DB query を行わない。snapshot 構築後の Main View 切替は memory filter を同期的に描画する
@@ -119,6 +122,8 @@ schema 不整合を含む Navigation のエラー状態を現在の DB に対し
 - File Tree の Variant Group と Version Group は異なる accent で表示し、行末の localized meta label で group 種別を識別できる。Infomation Panel で単一の Group を選択した場合は、親 Item 全体ではなく選択した Group の subtree だけを表示する
 - Version Group 配下の file root は context menu から代表ファイルに設定でき、現在の代表は Import Target と同じ配色で識別できる。設定後は Main View 全体を再読み込みせず File Tree の行 state だけを更新する。file root 自体は Import Target にできない
 - File Tree の context menu から Import Target、または個別の実 file を Unity へ取り込める。Version Group は代表 file root と同じ対象を使う。`.unitypackage` は Unity package import を実行し、user setting `assetManager.showUnityPackageImportDialog` で内容選択画面の表示を切り替えられる。それ以外は `Assets/<asset name>/<file name>/` 配下へ相対 path を維持して copy する
+- Main View grid の Item context menu からは配下の全 file、file card の context menu からはその file の import 済み GUID を Project Window でハイライトする。対象 asset の親 folder も展開経路としてハイライトし、次のハイライト操作または解除操作まで session 内で保持する
+- Project Window では import 済み folder GUID に対応する AssetManager item の thumbnail を folder icon として表示する。複数 Item が同じ GUID に対応する場合は最後に import した関連付けを優先し、user setting `assetManager.showProjectWindowIcons` で表示だけを切り替える。描画 callback 中は DB、filesystem、thumbnail の読み込みを行わない
 - File Tree の ZIP metadata は、thumbnail と同じ cache root の `<ee4v global path>/cache/file-tree` に永続化し、更新日時と file size の検証を background で行う。ZIP 全体が ZIP と同名の単一 root folder に包まれている場合は、その folder を File Tree と import 先の相対 path から省略する
 - File Tree の PNG / JPEG / PSD file に hover すると `ImageTooltip` で preview と file 名を表示する。通常 file と ZIP 内 entry の両方を background で読み込み、PSD の合成画像は Raw / RLE compression の 8 / 16 bit Gray / RGB / CMYK を thumbnail size に縮小しながら最大 1 GiB まで stream decode する。PNG / JPEG の encoded data は 64 MiB を上限とする。user setting `assetManager.showFileTreeImageTooltip` を無効にすると通常の text tooltip に切り替わる
 - File Tree の要素、または Main View の file card をダブルクリックすると、通常 file、directory、group、ZIP 内 entry を同じ経路で Main View の詳細表示へ開く。コレクション内の表示も親から選択中コレクションまでの階層を履歴へ保持し、パンくずを `hoge / fuga / item / ...` の順で表示する。親コレクション、item、詳細は同じパンくずから移動でき、戻る・進むで一覧と往復できる。ZIP 内 entry のパンくずには所属 ZIP 名を item と target の間に表示する。単独 Infomation window からも単独 Main View window へ表示する

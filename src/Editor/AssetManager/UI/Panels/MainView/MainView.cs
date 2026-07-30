@@ -1,8 +1,11 @@
+using System;
+using System.Collections.Generic;
 using System.Threading;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEngine.UIElements;
+using UnityEngine;
 
 namespace Ee4v.AssetManager.UI
 {
@@ -11,9 +14,17 @@ namespace Ee4v.AssetManager.UI
         private const string RootClassName = "ee4v-asset-manager-panel--main-view";
         private const string ContentClassName = "ee4v-asset-manager-panel__main-content";
         private const string StatusClassName = "ee4v-asset-manager-panel__main-status";
+        private const string ErrorStateClassName =
+            "ee4v-asset-manager-main-error";
+        private const string ErrorIconClassName =
+            "ee4v-asset-manager-main-error__icon";
+        private const string ErrorMessageClassName =
+            "ee4v-asset-manager-main-error__message";
         private readonly MainViewController _controller;
         private readonly AssetItemGrid _itemGrid;
         private readonly UiTextElement _statusLabel;
+        private readonly VisualElement _errorState;
+        private readonly UiTextElement _errorMessage;
         private readonly FileTreeDetailView _fileDetailView;
         private readonly TagListPage _tagListPage;
         private string _fileListItemId;
@@ -28,6 +39,9 @@ namespace Ee4v.AssetManager.UI
         private bool _applyingHistory;
         private ItemCardState[] _selectedAssetItems = System.Array.Empty<ItemCardState>();
         private AssetSelectionContentKind _selectionContentKind = AssetSelectionContentKind.AssetItem;
+        private string _statusMessage = string.Empty;
+        private string _contentErrorMessage = string.Empty;
+        private string _externalErrorMessage = string.Empty;
 
         public MainView(MainViewController controller)
         {
@@ -37,6 +51,18 @@ namespace Ee4v.AssetManager.UI
             _itemGrid.AddToClassList(ContentClassName);
             _statusLabel = UiTextFactory.Create(string.Empty, StatusClassName);
             _statusLabel.SetWhiteSpace(WhiteSpace.Normal);
+            _errorState = new VisualElement();
+            _errorState.AddToClassList(ErrorStateClassName);
+            _errorState.style.display = DisplayStyle.None;
+            var errorIcon = CreateErrorIcon();
+            errorIcon.AddToClassList(ErrorIconClassName);
+            _errorState.Add(errorIcon);
+            _errorMessage = UiTextFactory.Create(
+                string.Empty,
+                UiClassNames.MainViewErrorMessage,
+                ErrorMessageClassName);
+            _errorMessage.SetWhiteSpace(WhiteSpace.Normal);
+            _errorState.Add(_errorMessage);
             _fileDetailView = new FileTreeDetailView();
             _fileDetailView.style.display = DisplayStyle.None;
             _tagListPage = new TagListPage();
@@ -45,6 +71,7 @@ namespace Ee4v.AssetManager.UI
             AddToClassList("ee4v-asset-manager-panel");
             AddToClassList(RootClassName);
             Add(_statusLabel);
+            Add(_errorState);
             Add(_fileDetailView);
             Add(_tagListPage);
             Add(_itemGrid);
@@ -53,6 +80,8 @@ namespace Ee4v.AssetManager.UI
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             _itemGrid.SelectionChanged += OnGridSelectionChanged;
             _itemGrid.ItemDoubleClicked += OnGridItemDoubleClicked;
+            _itemGrid.ItemContextClicked +=
+                OnGridItemContextClicked;
             _itemGrid.RecommendedMinimumItemsPerRowChanged +=
                 _controller.SetMinimumItemsPerRow;
         }
@@ -91,6 +120,12 @@ namespace Ee4v.AssetManager.UI
         public event System.Action<System.Collections.Generic.IReadOnlyList<ItemCardState>, AssetSelectionContentKind> SelectionChanged;
 
         public event System.Action<string> DetailTabRequested;
+
+        internal void SetExternalError(string message)
+        {
+            _externalErrorMessage = message ?? string.Empty;
+            RefreshErrorState();
+        }
 
         public void SetGridSize(int value)
         {
@@ -292,6 +327,89 @@ namespace Ee4v.AssetManager.UI
             RefreshContent();
         }
 
+        private void OnGridItemContextClicked(
+            VisualElement target,
+            ItemCardState item,
+            Vector2 panelPosition)
+        {
+            AssetSelectionContentKind targetKind;
+            string targetId;
+            if (!TryResolveHighlightTarget(
+                    item,
+                    out targetKind,
+                    out targetId))
+            {
+                return;
+            }
+
+            var projectActions =
+                AssetManagerUiDependencies.ProjectActions;
+            var isFile =
+                targetKind == AssetSelectionContentKind.AssetFile;
+            var canHighlight = isFile
+                ? projectActions.CanHighlightFile(targetId)
+                : projectActions.CanHighlightItem(targetId);
+            Action highlight = isFile
+                ? (Action)(() =>
+                    projectActions.HighlightFile(targetId))
+                : () => projectActions.HighlightItem(targetId);
+            var menu = new ContextMenuState(
+                new List<ContextMenuItemState>
+                {
+                    new ContextMenuItemState(
+                        "highlight-imported-assets",
+                        I18N.Get(
+                            isFile
+                                ? "assetManager.mainView.context.highlightFile"
+                                : "assetManager.mainView.context.highlightItem"),
+                        highlight,
+                        canHighlight),
+                    new ContextMenuItemState(
+                        "clear-imported-asset-highlights",
+                        I18N.Get(
+                            "assetManager.mainView.context.clearHighlights"),
+                        projectActions.ClearHighlights)
+                });
+            ContextMenuWindow.Show(
+                target,
+                panelPosition,
+                menu);
+        }
+
+        internal static bool TryResolveHighlightTarget(
+            ItemCardState item,
+            out AssetSelectionContentKind kind,
+            out string targetId)
+        {
+            kind = AssetSelectionContentKind.AssetItem;
+            targetId = string.Empty;
+            if (item == null ||
+                string.IsNullOrWhiteSpace(item.ItemId))
+            {
+                return false;
+            }
+
+            AssetItemGridNodeKind nodeKind;
+            string nodeId;
+            if (!AssetItemGridNodeKey.TryDecode(
+                    item.ItemId,
+                    out nodeKind,
+                    out nodeId))
+            {
+                targetId = item.ItemId;
+                return true;
+            }
+
+            if (nodeKind != AssetItemGridNodeKind.File)
+            {
+                return false;
+            }
+
+            kind = AssetSelectionContentKind.AssetFile;
+            targetId = nodeId;
+            return true;
+        }
+
         public void GoBack()
         {
             GoBack(1);
@@ -379,25 +497,22 @@ namespace Ee4v.AssetManager.UI
 
         private void RefreshContent()
         {
+            SetContentError(string.Empty);
             if (IsFileDetailMode)
             {
                 _controller.CancelPendingLoad();
                 ClearCurrentItemList();
                 SetStatus(string.Empty);
-                _itemGrid.style.display = DisplayStyle.None;
-                _tagListPage.style.display = DisplayStyle.None;
-                _fileDetailView.style.display = DisplayStyle.Flex;
+                ApplyContentVisibility();
                 _fileDetailView.SetState(_fileDetailState);
                 return;
             }
 
             _fileDetailView.SetState(null);
-            _fileDetailView.style.display = DisplayStyle.None;
             if (IsTagListMode)
             {
                 ClearCurrentItemList();
-                _itemGrid.style.display = DisplayStyle.None;
-                _tagListPage.style.display = DisplayStyle.Flex;
+                ApplyContentVisibility();
                 var tagCacheKey = CreateCurrentContentKey();
                 System.Collections.Generic.IReadOnlyList<AssetTag> cachedTags;
                 if (_controller.TryGetCachedTags(tagCacheKey, out cachedTags))
@@ -415,8 +530,7 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            _tagListPage.style.display = DisplayStyle.None;
-            _itemGrid.style.display = DisplayStyle.Flex;
+            ApplyContentVisibility();
             var contentKey = CreateCurrentContentKey();
             if (IsFileListMode)
             {
@@ -484,7 +598,10 @@ namespace Ee4v.AssetManager.UI
                     return;
                 }
 
-                SetStatus(result.Error.Message);
+                SetStatus(string.Empty);
+                SetContentError(
+                    AssetManagerUiErrorMessage.Format(
+                        result.Error));
                 return;
             }
 
@@ -495,10 +612,12 @@ namespace Ee4v.AssetManager.UI
                     return;
                 }
 
+                SetContentError(string.Empty);
                 SetStatus(I18N.Get("assetManager.mainView.loadCanceled"));
                 return;
             }
 
+            SetContentError(string.Empty);
             ApplyItemList(result.ContentKey, result.Items);
         }
 
@@ -511,16 +630,21 @@ namespace Ee4v.AssetManager.UI
 
             if (result.Error != null)
             {
-                SetStatus(result.Error.Message);
+                SetStatus(string.Empty);
+                SetContentError(
+                    AssetManagerUiErrorMessage.Format(
+                        result.Error));
                 return;
             }
 
             if (result.Canceled)
             {
+                SetContentError(string.Empty);
                 SetStatus(I18N.Get("assetManager.mainView.loadCanceled"));
                 return;
             }
 
+            SetContentError(string.Empty);
             ApplyTagList(result.CacheKey, result.Tags);
         }
 
@@ -564,8 +688,84 @@ namespace Ee4v.AssetManager.UI
 
         private void SetStatus(string message)
         {
-            _statusLabel.SetText(message);
-            _statusLabel.style.display = string.IsNullOrWhiteSpace(message) ? DisplayStyle.None : DisplayStyle.Flex;
+            _statusMessage = message ?? string.Empty;
+            _statusLabel.SetText(_statusMessage);
+            RefreshStatusVisibility();
+        }
+
+        private void SetContentError(string message)
+        {
+            _contentErrorMessage = message ?? string.Empty;
+            RefreshErrorState();
+        }
+
+        private void RefreshErrorState()
+        {
+            var message = !string.IsNullOrWhiteSpace(
+                _externalErrorMessage)
+                ? _externalErrorMessage
+                : _contentErrorMessage;
+            var hasError = !string.IsNullOrWhiteSpace(message);
+            _errorMessage.SetText(message);
+            _errorState.style.display = hasError
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+            ApplyContentVisibility();
+            RefreshStatusVisibility();
+        }
+
+        private void ApplyContentVisibility()
+        {
+            var hasError =
+                !string.IsNullOrWhiteSpace(_externalErrorMessage) ||
+                !string.IsNullOrWhiteSpace(_contentErrorMessage);
+            _fileDetailView.style.display =
+                !hasError && IsFileDetailMode
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+            _tagListPage.style.display =
+                !hasError && !IsFileDetailMode && IsTagListMode
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+            _itemGrid.style.display =
+                !hasError && !IsFileDetailMode && !IsTagListMode
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+        }
+
+        private void RefreshStatusVisibility()
+        {
+            var hasError =
+                !string.IsNullOrWhiteSpace(_externalErrorMessage) ||
+                !string.IsNullOrWhiteSpace(_contentErrorMessage);
+            _statusLabel.style.display =
+                !hasError && !string.IsNullOrWhiteSpace(_statusMessage)
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+        }
+
+        private static Image CreateErrorIcon()
+        {
+            Texture2D texture;
+            UiFluentIconResolver.TryResolve(
+                UiFluentIcon.ErrorCircle,
+                out texture);
+            var image = new Image
+            {
+                image = texture,
+                scaleMode = ScaleMode.ScaleToFit,
+                pickingMode = PickingMode.Ignore
+            };
+            image.style.width =
+                FileIconDefinition.StandardIconSize;
+            image.style.height =
+                FileIconDefinition.StandardIconSize;
+            if (texture == null)
+            {
+                image.style.display = DisplayStyle.None;
+            }
+
+            return image;
         }
 
         private void ClearGridSelection()

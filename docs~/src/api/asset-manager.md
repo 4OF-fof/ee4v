@@ -159,6 +159,14 @@ public sealed class AssetFileImportTarget
     public string RelativePath { get; set; }
 }
 
+public sealed class AssetImportedAssetAssociation
+{
+    public string ItemId { get; set; }
+    public string FileId { get; set; }
+    public string AssetGuid { get; set; }
+    public DateTime ImportedAt { get; set; }
+}
+
 public sealed class AssetTag
 {
     public string Id { get; set; }
@@ -1104,6 +1112,21 @@ public void ImportFileEntry(string itemId, string fileId, string relativePath)
 - ZIP entry は必要な entry だけを読み出す。File Tree で同名 root folder を省略した ZIP は、import 時に実 entry path へ戻して解決し、destination には省略した folder を作らない。path traversal を含む relative path は拒否する。
 - `.unitypackage` とそれ以外の取り扱いは `ImportFileTargets` と同じ。
 
+### Import 済み Unity GUID
+
+```csharp
+public IReadOnlyList<string> GetFileImportedAssetGuids(string fileId)
+public IReadOnlyList<string> GetItemImportedAssetGuids(string itemId)
+public IReadOnlyList<AssetImportedAssetAssociation> GetImportedAssetAssociations()
+```
+
+- GUID は `file_info` 単位で保持する。file の再 import 成功時はその file の一覧を置き換える。
+- Item の取得は、Item 直下・Variant Group・Version Group に属する全 file の GUID を重複なしで返す。
+- 通常 copy は AssetDatabase refresh 後の GUID と生成先 root folder GUID を保存する。
+- UnityPackage は package 内 GUID を候補として読み、import 完了後に Project 内へ実在するものだけを保存する。
+- 内容選択画面のキャンセルまたは import 失敗時は既存 GUID を変更せず、change も発行しない。
+- 全関連付け API は Project Window の表示 cache 構築用であり、item 描画 callback 中に DB query は行わない。
+
 ## Change Notifications
 
 ```csharp
@@ -1121,6 +1144,7 @@ public event Action<AssetManagerChange> Changed;
 | `FileTree` | 空 | 空 | File Tree に関係する変更を知らせる |
 | `FileImportTargets` | file ID | 保存後の `ImportTargets` | cache 上の target state だけを更新する |
 | `VersionGroupPrimaryFile` | Version Group ID | `RelatedId` に代表 file ID | cache 上の代表 state だけを更新する |
+| `ImportedAssetGuids` | Item ID | `RelatedId` に file ID | Project Window の関連付け・アイコン cache を更新する |
 
 Collection の作成・更新・削除・移動、`SetFileImportTargets(...)`、`SetVersionGroupPrimaryFile(...)` は
 `Catalog` change を発行しません。

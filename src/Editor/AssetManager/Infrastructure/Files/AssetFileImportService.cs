@@ -11,9 +11,30 @@ namespace Ee4v.AssetManager.Infrastructure.Files
     {
         string AssetsDirectory { get; }
 
-        void ImportPackage(string packagePath, bool interactive, Action onFinished);
+        void ImportPackage(
+            string packagePath,
+            bool interactive,
+            Action<bool> onFinished);
 
         void Refresh();
+
+        string GetAssetGuid(string absolutePath);
+
+        bool AssetGuidExists(string assetGuid);
+    }
+
+    internal sealed class AssetFileImportResult
+    {
+        internal AssetFileImportResult(
+            bool succeeded,
+            IReadOnlyList<string> assetGuids)
+        {
+            Succeeded = succeeded;
+            AssetGuids = assetGuids ?? Array.Empty<string>();
+        }
+
+        internal bool Succeeded { get; }
+        internal IReadOnlyList<string> AssetGuids { get; }
     }
 
     internal static class AssetFileImportService
@@ -26,7 +47,8 @@ namespace Ee4v.AssetManager.Infrastructure.Files
             string sourcePath,
             IReadOnlyList<string> relativePaths,
             IAssetFileImportEnvironment environment,
-            bool showUnityPackageImportDialog)
+            bool showUnityPackageImportDialog,
+            Action<AssetFileImportResult> completed)
         {
             if (string.IsNullOrWhiteSpace(sourcePath) || (!File.Exists(sourcePath) && !Directory.Exists(sourcePath)))
             {
@@ -51,36 +73,124 @@ namespace Ee4v.AssetManager.Infrastructure.Files
                 environment.AssetsDirectory,
                 SanitizeFolderName(assetName, "Asset"),
                 SanitizeFolderName(Path.GetFileNameWithoutExtension(assetFileName), "File"));
+            var importedAssetGuids =
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var copiedPaths = new List<string>();
+            var pendingPackageCount = 0;
+            var schedulingPackages = true;
+            var allPackagesSucceeded = true;
+            Action completeIfReady = () =>
+            {
+                if (schedulingPackages ||
+                    pendingPackageCount != 0)
+                {
+                    return;
+                }
+
+                completed?.Invoke(
+                    new AssetFileImportResult(
+                        allPackagesSucceeded,
+                        importedAssetGuids.ToArray()));
+            };
             var copiedAny = false;
             for (var i = 0; i < paths.Length; i++)
             {
                 var relativePath = paths[i];
                 if (IsUnityPackage(relativePath))
                 {
-                    ImportUnityPackage(sourcePath, relativePath, environment, showUnityPackageImportDialog);
+                    pendingPackageCount++;
+                    ImportUnityPackage(
+                        sourcePath,
+                        relativePath,
+                        environment,
+                        showUnityPackageImportDialog,
+                        (succeeded, packageGuids) =>
+                        {
+                            if (succeeded)
+                            {
+                                for (var guidIndex = 0;
+                                     guidIndex <
+                                     packageGuids.Count;
+                                     guidIndex++)
+                                {
+                                    var guid =
+                                        packageGuids[guidIndex];
+                                    if (environment
+                                        .AssetGuidExists(guid))
+                                    {
+                                        importedAssetGuids.Add(
+                                            guid);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                allPackagesSucceeded = false;
+                            }
+
+                            pendingPackageCount--;
+                            completeIfReady();
+                        });
                     continue;
                 }
 
-                CopyEntry(sourcePath, relativePath, destinationRoot);
+                copiedPaths.Add(CopyEntry(
+                    sourcePath,
+                    relativePath,
+                    destinationRoot));
                 copiedAny = true;
             }
 
             if (copiedAny)
             {
                 environment.Refresh();
+                AddResolvedGuid(
+                    environment,
+                    destinationRoot,
+                    importedAssetGuids);
+                for (var i = 0; i < copiedPaths.Count; i++)
+                {
+                    var importedPath = copiedPaths[i];
+                    if (string.Equals(
+                            Path.GetExtension(importedPath),
+                            ".meta",
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        importedPath = importedPath.Substring(
+                            0,
+                            importedPath.Length - ".meta".Length);
+                    }
+
+                    AddResolvedGuid(
+                        environment,
+                        importedPath,
+                        importedAssetGuids);
+                }
             }
+
+            schedulingPackages = false;
+            completeIfReady();
         }
 
         private static void ImportUnityPackage(
             string sourcePath,
             string relativePath,
             IAssetFileImportEnvironment environment,
-            bool showUnityPackageImportDialog)
+            bool showUnityPackageImportDialog,
+            Action<bool, IReadOnlyList<string>> completed)
         {
             string filePath;
             if (TryResolveFile(sourcePath, relativePath, out filePath))
             {
-                environment.ImportPackage(filePath, showUnityPackageImportDialog, null);
+                var guids =
+                    UnityPackageGuidReader.ReadGuids(filePath);
+                environment.ImportPackage(
+                    filePath,
+                    showUnityPackageImportDialog,
+                    succeeded =>
+                        completed?.Invoke(
+                            succeeded,
+                            guids));
                 return;
             }
 
@@ -95,10 +205,19 @@ namespace Ee4v.AssetManager.Infrastructure.Files
                     source.CopyTo(destination);
                 }
 
+                var guids =
+                    UnityPackageGuidReader.ReadGuids(temporaryPackage);
                 environment.ImportPackage(
                     temporaryPackage,
                     showUnityPackageImportDialog,
-                    () => TryDeleteDirectory(temporaryDirectory));
+                    succeeded =>
+                    {
+                        TryDeleteDirectory(
+                            temporaryDirectory);
+                        completed?.Invoke(
+                            succeeded,
+                            guids);
+                    });
             }
             catch
             {
@@ -107,7 +226,10 @@ namespace Ee4v.AssetManager.Infrastructure.Files
             }
         }
 
-        private static void CopyEntry(string sourcePath, string relativePath, string destinationRoot)
+        private static string CopyEntry(
+            string sourcePath,
+            string relativePath,
+            string destinationRoot)
         {
             var destinationPath = ResolveDestinationPath(destinationRoot, relativePath);
             var destinationDirectory = Path.GetDirectoryName(destinationPath);
@@ -120,13 +242,27 @@ namespace Ee4v.AssetManager.Infrastructure.Files
             if (TryResolveFile(sourcePath, relativePath, out filePath))
             {
                 File.Copy(filePath, destinationPath, true);
-                return;
+                return destinationPath;
             }
 
             using (var source = OpenArchiveEntry(sourcePath, relativePath))
             using (var destination = File.Create(destinationPath))
             {
                 source.CopyTo(destination);
+            }
+
+            return destinationPath;
+        }
+
+        private static void AddResolvedGuid(
+            IAssetFileImportEnvironment environment,
+            string path,
+            ISet<string> assetGuids)
+        {
+            var assetGuid = environment.GetAssetGuid(path);
+            if (!string.IsNullOrWhiteSpace(assetGuid))
+            {
+                assetGuids.Add(assetGuid);
             }
         }
 

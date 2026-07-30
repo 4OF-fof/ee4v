@@ -197,6 +197,14 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             public string relative_path { get; set; }
         }
 
+        private sealed class ImportedAssetGuidRow
+        {
+            public string item_info_id { get; set; }
+            public string file_info_id { get; set; }
+            public string asset_guid { get; set; }
+            public string imported_at { get; set; }
+        }
+
         private sealed class SyncInfoRow
         {
             public string source_type { get; set; }

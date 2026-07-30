@@ -43,10 +43,10 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
-            "schema version 6 の DB 制約を作成する",
+            "schema version 7 の DB 制約を作成する",
             "AssetManager DB が source origin、availability、collection hierarchy trigger を作成することを確認します。",
             order: 301)]
-        public void Schema_CreatesVersion6Constraints()
+        public void Schema_CreatesVersion7Constraints()
         {
             var databasePath = GetDatabasePath();
 
@@ -54,12 +54,14 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
             using (var connection = new SQLiteConnection(databasePath, SQLiteOpenFlags.ReadOnly | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.PrivateCache))
             {
-                Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(6));
+                Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(7));
                 Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'file_info'"), Does.Contain("CHECK"));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'item_source_origin'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'datasource_tag'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'file_import_target'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'unique_file_import_target_file_path'"), Is.EqualTo(1));
+                Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'file_imported_asset_guid'"), Is.EqualTo(1));
+                Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'index_file_imported_asset_guid_asset'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'prevent_collection_collection_cycle_insert'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'prevent_smart_collection_parent_insert'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' AND name = 'prevent_collection_with_children_becoming_smart_insert'"), Is.EqualTo(1));
@@ -1287,6 +1289,71 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             var targets = _assetManager.GetFileImportTargets(file.Id);
 
             Assert.That(targets.Select(target => target.RelativePath).ToArray(), Is.EqualTo(new[] { "Packages/avatar.unitypackage", "Textures/albedo.png" }));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "import 済み GUID を file と item から取得する",
+            "file 単位の GUID 保存と、Item 直下および Version Group 配下の全 file を Item 単位で集約することを確認します。",
+            order: 315)]
+        public void ImportedAssetGuids_AreStoredPerFileAndAggregatedByItem()
+        {
+            var item = _assetManager.CreateItem(
+                new CreateAssetItemRequest { Name = "Item" });
+            var version = _assetManager.CreateVersionGroup(
+                item.Id,
+                new CreateVersionGroupRequest { Name = "1.0" });
+            var filePath = Path.Combine(_tempRoot, "avatar.zip");
+            File.WriteAllText(filePath, "zip");
+            var file = _assetManager.RegisterFile(
+                item.Id,
+                new RegisterFileRequest
+                {
+                    FilePath = filePath,
+                    FileName = "avatar.zip",
+                    VersionGroupId = version.Id
+                });
+            var directFilePath =
+                Path.Combine(_tempRoot, "materials.zip");
+            File.WriteAllText(directFilePath, "zip");
+            var directFile = _assetManager.RegisterFile(
+                item.Id,
+                new RegisterFileRequest
+                {
+                    FilePath = directFilePath,
+                    FileName = "materials.zip"
+                });
+            var firstGuid =
+                "11111111111111111111111111111111";
+            var secondGuid =
+                "22222222222222222222222222222222";
+            var directFileGuid =
+                "33333333333333333333333333333333";
+
+            AssetManagerDatabase.ReplaceFileImportedAssetGuids(
+                file.Id,
+                new[] { firstGuid, secondGuid });
+            AssetManagerDatabase.ReplaceFileImportedAssetGuids(
+                directFile.Id,
+                new[] { directFileGuid });
+
+            Assert.That(
+                _assetManager.GetFileImportedAssetGuids(file.Id),
+                Is.EqualTo(new[] { firstGuid, secondGuid }));
+            Assert.That(
+                _assetManager.GetItemImportedAssetGuids(item.Id),
+                Is.EqualTo(new[]
+                {
+                    firstGuid,
+                    secondGuid,
+                    directFileGuid
+                }));
+            var association =
+                _assetManager.GetImportedAssetAssociations()
+                    .Single(candidate =>
+                        candidate.AssetGuid == firstGuid);
+            Assert.That(association.ItemId, Is.EqualTo(item.Id));
+            Assert.That(association.FileId, Is.EqualTo(file.Id));
         }
 
         [Test]

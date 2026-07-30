@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Ee4v.AssetManager.Contracts;
-using Ee4v.Core.I18n;
 
 namespace Ee4v.AssetManager.UI
 {
@@ -551,19 +550,8 @@ namespace Ee4v.AssetManager.UI
 
         private static string FormatError(Exception exception)
         {
-            var assetManagerException =
-                exception as AssetManagerException;
-            if (assetManagerException != null &&
-                assetManagerException.Code ==
-                AssetManagerErrorCode.InvalidCollectionHierarchy)
-            {
-                return I18N.Get(
-                    "assetManager.navigation.collections.error.smartCollectionCannotContainCollections");
-            }
-
-            return exception != null
-                ? exception.Message
-                : string.Empty;
+            return AssetManagerUiErrorMessage.Format(
+                exception);
         }
     }
 }

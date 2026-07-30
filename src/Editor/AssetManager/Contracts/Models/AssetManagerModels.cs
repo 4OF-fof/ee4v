@@ -64,6 +64,14 @@ namespace Ee4v.AssetManager.Contracts
         public string RelativePath { get; set; }
     }
 
+    public sealed class AssetImportedAssetAssociation
+    {
+        public string ItemId { get; set; }
+        public string FileId { get; set; }
+        public string AssetGuid { get; set; }
+        public DateTime ImportedAt { get; set; }
+    }
+
     public sealed class AssetFileSummary
     {
         public string Id { get; set; }

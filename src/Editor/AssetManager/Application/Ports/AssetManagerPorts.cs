@@ -15,6 +15,8 @@ namespace Ee4v.AssetManager.Application.Ports
         IAssetDependencyCommandStore,
         IAssetImportTargetReadStore,
         IAssetImportTargetCommandStore,
+        IImportedAssetGuidReadStore,
+        IImportedAssetGuidCommandStore,
         IAssetSyncStore
     {
     }
@@ -107,6 +109,20 @@ namespace Ee4v.AssetManager.Application.Ports
         void ReplaceFileImportTargets(string fileId, IReadOnlyList<string> normalizedRelativePaths);
     }
 
+    internal interface IImportedAssetGuidReadStore
+    {
+        IReadOnlyList<string> GetFileImportedAssetGuids(string fileId);
+        IReadOnlyList<string> GetItemImportedAssetGuids(string itemId);
+        IReadOnlyList<AssetImportedAssetAssociation> GetImportedAssetAssociations();
+    }
+
+    internal interface IImportedAssetGuidCommandStore
+    {
+        void ReplaceFileImportedAssetGuids(
+            string fileId,
+            IReadOnlyList<string> assetGuids);
+    }
+
     internal interface IAssetSyncStore
     {
         AssetSyncResult SyncBlm(BlmSyncRequest request);
@@ -121,7 +137,9 @@ namespace Ee4v.AssetManager.Application.Ports
 
     internal interface IAssetImportGateway
     {
-        void Import(AssetImportPlan plan);
+        void Import(
+            AssetImportPlan plan,
+            Action<AssetImportResult> completed);
     }
 
     internal interface IAssetManagerDiagnostics

@@ -60,6 +60,16 @@ Unity の内部 API はバージョンによって利用できる API や挙動�
 
 `InternalEditorAPI` は、テストによって利用可能な API が検証されており、利用できない API は例外を投げるのではなく失敗を返す。Unity のバージョン更新時はテストの実行結果を参照し、利用できなくなった API があった場合は実装を更新する。
 
+### Asset import completion
+
+AssetManager の UnityPackage import は
+`Editor/Core/Internal/EditorAPI/AssetImport.cs` の queue と完了 callbackを利用します。
+`AssetDatabase.importPackageCompleted` のみ成功として扱い、`importPackageCancelled` と
+`importPackageFailed` は失敗結果を返します。AssetManager は成功後に
+`AssetDatabase.GUIDToAssetPath(...)` で実在を確認できた GUID だけを保存します。
+Unity更新時は3 eventのsignatureと発火順、interactive importで一部選択した場合、
+キャンセル時に既存GUID関連付けが維持されることを確認します。
+
 ### ProjectBrowser navigation
 
 `ProjectTabs` とProject item contextは

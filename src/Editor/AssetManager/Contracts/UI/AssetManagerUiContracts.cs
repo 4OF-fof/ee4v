@@ -24,6 +24,15 @@ namespace Ee4v.AssetManager.Contracts
         void Preload();
     }
 
+    public interface IAssetManagerProjectActions
+    {
+        bool CanHighlightItem(string itemId);
+        bool CanHighlightFile(string fileId);
+        void HighlightItem(string itemId);
+        void HighlightFile(string fileId);
+        void ClearHighlights();
+    }
+
     public sealed class AssetArchiveEntry
     {
         public AssetArchiveEntry(string fullName, long length, string archiveFullName = null)

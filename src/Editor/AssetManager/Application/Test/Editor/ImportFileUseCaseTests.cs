@@ -33,9 +33,21 @@ namespace Ee4v.AssetManager.Application.Tests
                 {
                     Found = true,
                     Path = "C:/library/avatar.zip"
+                },
+                GatewayAssetGuids = new[]
+                {
+                    "ABCDEF0123456789ABCDEF0123456789",
+                    "abcdef0123456789abcdef0123456789",
+                    "not-a-guid"
                 }
             };
-            var useCase = new ImportFileUseCase(ports, ports, ports, ports);
+            var useCase = new ImportFileUseCase(
+                ports,
+                ports,
+                ports,
+                ports,
+                ports,
+                change => ports.PublishedChange = change);
 
             useCase.ImportEntry("item-1", "file-1", "\\Textures\\body.png/");
 
@@ -44,6 +56,19 @@ namespace Ee4v.AssetManager.Application.Tests
             Assert.That(ports.Plan.AssetFileName, Is.EqualTo("avatar.zip"));
             Assert.That(ports.Plan.SourcePath, Is.EqualTo("C:/library/avatar.zip"));
             Assert.That(ports.Plan.RelativePaths, Is.EqualTo(new[] { "Textures/body.png" }));
+            Assert.That(
+                ports.StoredAssetGuids,
+                Is.EqualTo(new[]
+                {
+                    "abcdef0123456789abcdef0123456789"
+                }));
+            Assert.That(
+                ports.PublishedChange.Kind,
+                Is.EqualTo(
+                    AssetManagerChangeKind.ImportedAssetGuids));
+            Assert.That(
+                ports.PublishedChange.RelatedId,
+                Is.EqualTo("file-1"));
         }
 
         [Test]
@@ -54,7 +79,13 @@ namespace Ee4v.AssetManager.Application.Tests
         public void ImportEntry_MissingItem_DoesNotCallGateway()
         {
             var ports = new RecordingImportPorts();
-            var useCase = new ImportFileUseCase(ports, ports, ports, ports);
+            var useCase = new ImportFileUseCase(
+                ports,
+                ports,
+                ports,
+                ports,
+                ports,
+                change => ports.PublishedChange = change);
 
             var exception = Assert.Throws<AssetManagerException>(
                 () => useCase.ImportEntry("missing", "file-1", "avatar.unitypackage"));
@@ -64,10 +95,65 @@ namespace Ee4v.AssetManager.Application.Tests
             Assert.That(ports.Plan, Is.Null);
         }
 
+        [Test]
+        [FeatureTestCase(
+            "失敗した import では GUID 関連付けを維持する",
+            "UnityPackage のキャンセルまたは失敗時に既存 GUID を空の結果で置換せず、変更通知もしないことを確認します。",
+            order: 6)]
+        public void ImportEntry_FailedGateway_DoesNotReplaceGuids()
+        {
+            var ports = new RecordingImportPorts
+            {
+                Item = new AssetItem
+                {
+                    Id = "item-1",
+                    Name = "Avatar"
+                },
+                Files = new[]
+                {
+                    new AssetFile
+                    {
+                        Id = "file-1",
+                        ItemId = "item-1",
+                        FileName = "avatar.unitypackage",
+                        Lifecycle =
+                            AssetFileLifecycle.Active
+                    }
+                },
+                Resolution = new AssetFilePathResolution
+                {
+                    Found = true,
+                    Path =
+                        "C:/library/avatar.unitypackage"
+                },
+                GatewaySucceeded = false
+            };
+            var useCase = new ImportFileUseCase(
+                ports,
+                ports,
+                ports,
+                ports,
+                ports,
+                change => ports.PublishedChange = change);
+
+            useCase.ImportEntry(
+                "item-1",
+                "file-1",
+                "avatar.unitypackage");
+
+            Assert.That(
+                ports.ReplaceGuidsCallCount,
+                Is.Zero);
+            Assert.That(
+                ports.PublishedChange,
+                Is.Null);
+        }
+
         private sealed class RecordingImportPorts :
             IAssetCatalogReadStore,
             IAssetFileReadStore,
             IAssetImportTargetReadStore,
+            IImportedAssetGuidCommandStore,
             IAssetImportGateway
         {
             internal AssetItem Item { get; set; }
@@ -75,6 +161,13 @@ namespace Ee4v.AssetManager.Application.Tests
             internal AssetFilePathResolution Resolution { get; set; }
             internal int GetFilesCallCount { get; private set; }
             internal AssetImportPlan Plan { get; private set; }
+            internal IReadOnlyList<string> GatewayAssetGuids { get; set; } =
+                Array.Empty<string>();
+            internal bool GatewaySucceeded { get; set; } = true;
+            internal IReadOnlyList<string> StoredAssetGuids { get; private set; } =
+                Array.Empty<string>();
+            internal int ReplaceGuidsCallCount { get; private set; }
+            internal AssetManagerChange PublishedChange { get; set; }
 
             public AssetItem GetItem(string itemId) => Item;
 
@@ -89,9 +182,23 @@ namespace Ee4v.AssetManager.Application.Tests
 
             public AssetFilePathResolution ResolveFilePath(string fileId) => Resolution;
 
-            public void Import(AssetImportPlan plan)
+            public void Import(
+                AssetImportPlan plan,
+                Action<AssetImportResult> completed)
             {
                 Plan = plan;
+                completed?.Invoke(
+                    new AssetImportResult(
+                        GatewaySucceeded,
+                        GatewayAssetGuids));
+            }
+
+            public void ReplaceFileImportedAssetGuids(
+                string fileId,
+                IReadOnlyList<string> assetGuids)
+            {
+                ReplaceGuidsCallCount++;
+                StoredAssetGuids = assetGuids;
             }
 
             public IReadOnlyList<AssetFileImportTarget> GetFileImportTargets(string fileId) =>

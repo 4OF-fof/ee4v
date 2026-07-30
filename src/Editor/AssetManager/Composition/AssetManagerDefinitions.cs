@@ -144,6 +144,17 @@ namespace Ee4v.AssetManager.Composition
             order: 2,
             validator: ValidateHistoryOverlayMaximumItems);
 
+        public static readonly SettingDefinition<bool> ShowProjectWindowIcons =
+            new SettingDefinition<bool>(
+                "assetManager.showProjectWindowIcons",
+                SettingScope.User,
+                "AssetManager",
+                "settings.section.assetManager.view",
+                "settings.showProjectWindowIcons.label",
+                "settings.showProjectWindowIcons.tooltip",
+                true,
+                order: 3);
+
         public static void RegisterAll(ISettingsService settings)
         {
             settings.Register(Ee4vGlobalPath);
@@ -158,6 +169,7 @@ namespace Ee4v.AssetManager.Composition
             settings.Register(ItemGridItemsPerRow);
             settings.Register(ShowFileTreeImageTooltip);
             settings.Register(HistoryOverlayMaximumItems);
+            settings.Register(ShowProjectWindowIcons);
         }
 
         private static SettingValidationResult ValidateNonEmpty(string value)

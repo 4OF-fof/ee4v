@@ -87,7 +87,8 @@ namespace Ee4v.AssetManager.Contracts
         InvalidCollectionHierarchy,
         InvalidSmartCollectionCondition,
         DatabaseError,
-        DatasourceError
+        DatasourceError,
+        DatabaseSchemaIncompatible
     }
 
     public enum AssetSyncState

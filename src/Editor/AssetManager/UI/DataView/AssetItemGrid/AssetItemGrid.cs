@@ -1,5 +1,8 @@
+using System;
 using System.Collections.Generic;
 using Ee4v.UI;
+using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI
 {
@@ -10,6 +13,9 @@ namespace Ee4v.AssetManager.UI
             ItemsDragStarted += items =>
                 AssetItemDragAndDrop.Start(items);
         }
+
+        public event Action<VisualElement, ItemCardState, Vector2>
+            ItemContextClicked;
 
         public void SetLoading()
         {
@@ -25,6 +31,39 @@ namespace Ee4v.AssetManager.UI
         protected override ItemCard CreateItemCard()
         {
             return new ItemCard();
+        }
+
+        protected override void OnCreateSlot(VisualElement slot)
+        {
+            base.OnCreateSlot(slot);
+            slot.RegisterCallback<PointerUpEvent>(
+                OnSlotPointerUp);
+        }
+
+        private void OnSlotPointerUp(PointerUpEvent evt)
+        {
+            if (evt.button != (int)MouseButton.RightMouse)
+            {
+                return;
+            }
+
+            var slot = evt.currentTarget as VisualElement;
+            var itemIndex =
+                slot != null && slot.userData is int
+                    ? (int)slot.userData
+                    : -1;
+            if (itemIndex < 0 || itemIndex >= Items.Count)
+            {
+                return;
+            }
+
+            var panelPosition = slot.LocalToWorld(
+                evt.localPosition);
+            evt.StopPropagation();
+            ItemContextClicked?.Invoke(
+                slot,
+                Items[itemIndex],
+                panelPosition);
         }
 
         private static ItemGridState CreateGridState(AssetItemGridList itemList, out string statusText)

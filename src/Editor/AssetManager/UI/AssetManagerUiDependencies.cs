@@ -11,6 +11,7 @@ namespace Ee4v.AssetManager.UI
         private static IAssetFileSystemReader _fileSystemReader;
         private static IAssetManagerUiScheduler _scheduler;
         private static StandaloneAssetManagerViewSession _standaloneViewSession;
+        private static IAssetManagerProjectActions _projectActions;
         private static Action<Action> _requestManualSync;
 
         internal static IAssetManager AssetManager
@@ -47,6 +48,10 @@ namespace Ee4v.AssetManager.UI
             _standaloneViewSession ?? throw new InvalidOperationException(
                 "AssetManager standalone view session has not been configured.");
 
+        internal static IAssetManagerProjectActions ProjectActions =>
+            _projectActions ?? throw new InvalidOperationException(
+                "AssetManager Project actions have not been configured.");
+
         internal static void RequestManualSync(Action completed)
         {
             if (_requestManualSync == null)
@@ -65,6 +70,7 @@ namespace Ee4v.AssetManager.UI
             IAssetFileSystemReader fileSystemReader,
             IAssetManagerUiScheduler scheduler,
             StandaloneAssetManagerViewSession standaloneViewSession,
+            IAssetManagerProjectActions projectActions,
             Action<Action> requestManualSync)
         {
             _assetManager = assetManager ?? throw new ArgumentNullException(nameof(assetManager));
@@ -75,6 +81,9 @@ namespace Ee4v.AssetManager.UI
             _standaloneViewSession = standaloneViewSession ??
                                      throw new ArgumentNullException(
                                          nameof(standaloneViewSession));
+            _projectActions = projectActions ??
+                              throw new ArgumentNullException(
+                                  nameof(projectActions));
             _requestManualSync = requestManualSync ??
                                  throw new ArgumentNullException(
                                      nameof(requestManualSync));

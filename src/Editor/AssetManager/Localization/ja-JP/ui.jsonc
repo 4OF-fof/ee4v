@@ -36,6 +36,17 @@
       "datasourceSync": "AssetManager ライブラリを同期中...",
       "noDatasource": "同期可能なBLMデータベースまたはEagleライブラリが設定されていません。"
     },
+    "error": {
+      "unknown": "AssetManager で予期しないエラーが発生しました。",
+      "notFound": "指定された AssetManager のデータが見つかりません。",
+      "duplicate": "同じ AssetManager のデータがすでに存在します。",
+      "invalidRequest": "AssetManager でこの操作を処理できませんでした。",
+      "collectionCycle": "コレクションには自身や親コレクションを含められません。",
+      "invalidSmartCollectionCondition": "スマートコレクションの条件が正しくありません。",
+      "databaseSchemaIncompatible": "AssetManager データベースの形式に互換性がありません。データベースを削除し、ee4v で再作成してください。",
+      "database": "AssetManager データベースを読み書きできませんでした。",
+      "datasource": "設定されたデータソースを読み込めませんでした。"
+    },
     "syncConflict": {
       "title": "同期内容の確認",
       "message": "Unity側の情報が同期元より新しいアイテムがあります。差分を確認してから上書きしてください。キャンセルすると今回の同期を中止します。",
@@ -54,6 +65,14 @@
       "noFiles": "このアイテムにファイルはありません。",
       "noChildren": "表示できる子要素がありません。",
       "dragItems": "アイテムをコレクションに登録",
+      "preview": {
+        "collectionError": "コレクションを読み込めませんでした。AssetManager データベースを確認して、もう一度お試しください。"
+      },
+      "context": {
+        "highlightItem": "このアイテムのインポート内容を Project でハイライト",
+        "highlightFile": "このファイルのインポート内容を Project でハイライト",
+        "clearHighlights": "Project のハイライトを解除"
+      },
       "tags": {
         "title": "Tags ({0})",
         "empty": "タグがありません。",

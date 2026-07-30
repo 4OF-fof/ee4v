@@ -13,7 +13,7 @@ namespace Ee4v.Core.Internal.EditorAPI
 
             public bool Interactive { get; set; }
 
-            public Action OnFinished { get; set; }
+            public Action<bool> OnFinished { get; set; }
         }
 
         private static readonly Queue<PackageImportRequest> PackageQueue = new Queue<PackageImportRequest>();
@@ -24,7 +24,10 @@ namespace Ee4v.Core.Internal.EditorAPI
             get { return Application.dataPath; }
         }
 
-        public static void ImportPackage(string packagePath, bool interactive, Action onFinished = null)
+        public static void ImportPackage(
+            string packagePath,
+            bool interactive,
+            Action<bool> onFinished = null)
         {
             if (string.IsNullOrWhiteSpace(packagePath))
             {
@@ -57,19 +60,26 @@ namespace Ee4v.Core.Internal.EditorAPI
             AssetDatabase.ImportPackageCallback completed = null;
             AssetDatabase.ImportPackageCallback cancelled = null;
             AssetDatabase.ImportPackageFailedCallback failed = null;
-            Action finish = () =>
+            var didFinish = false;
+            Action<bool> finish = succeeded =>
             {
+                if (didFinish)
+                {
+                    return;
+                }
+
+                didFinish = true;
                 AssetDatabase.importPackageCompleted -= completed;
                 AssetDatabase.importPackageCancelled -= cancelled;
                 AssetDatabase.importPackageFailed -= failed;
                 _isImportingPackage = false;
-                request.OnFinished?.Invoke();
                 EditorApplication.delayCall += TryStartNextPackage;
+                request.OnFinished?.Invoke(succeeded);
             };
 
-            completed = _ => finish();
-            cancelled = _ => finish();
-            failed = (_, __) => finish();
+            completed = _ => finish(true);
+            cancelled = _ => finish(false);
+            failed = (_, __) => finish(false);
             AssetDatabase.importPackageCompleted += completed;
             AssetDatabase.importPackageCancelled += cancelled;
             AssetDatabase.importPackageFailed += failed;
@@ -80,7 +90,7 @@ namespace Ee4v.Core.Internal.EditorAPI
             }
             catch
             {
-                finish();
+                finish(false);
                 throw;
             }
         }

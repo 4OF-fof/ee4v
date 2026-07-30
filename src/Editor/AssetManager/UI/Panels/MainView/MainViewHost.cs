@@ -75,7 +75,7 @@ namespace Ee4v.AssetManager.UI
             _collectionController.CollectionOpenRequested +=
                 OnCollectionOpenRequested;
             _collectionController.ErrorChanged +=
-                NavigationPanel.SetCollectionError;
+                MainView.SetExternalError;
             _collectionController.Activate();
         }
 
@@ -133,7 +133,7 @@ namespace Ee4v.AssetManager.UI
             _collectionController.CollectionOpenRequested -=
                 OnCollectionOpenRequested;
             _collectionController.ErrorChanged -=
-                NavigationPanel.SetCollectionError;
+                MainView.SetExternalError;
             _collectionController.Dispose();
 
             if (_ownsController)
