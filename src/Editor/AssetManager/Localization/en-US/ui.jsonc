@@ -69,6 +69,7 @@
         "collectionError": "Failed to load collections. Check the AssetManager database and try again."
       },
       "context": {
+        "import": "Import",
         "highlight": "Highlight",
         "clearHighlight": "Clear highlight"
       },

@@ -1051,6 +1051,107 @@ namespace Ee4v.AssetManager.UI
             return tags ?? Array.Empty<AssetTag>();
         }
 
+        internal bool TryCreateImportAction(
+            string itemId,
+            string fileId,
+            out Action importAction)
+        {
+            importAction = null;
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                return false;
+            }
+
+            var files = _assetManager.GetFiles(
+                itemId,
+                new AssetFileQuery
+                {
+                    Lifecycle = AssetFileLifecycle.Active
+                });
+            var configuredFileIds =
+                new HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < files.Count; i++)
+            {
+                var candidate = files[i];
+                if (candidate == null ||
+                    string.IsNullOrWhiteSpace(candidate.Id) ||
+                    (!string.IsNullOrWhiteSpace(fileId) &&
+                     !string.Equals(
+                         candidate.Id,
+                         fileId,
+                         StringComparison.Ordinal)) ||
+                    _assetManager
+                        .GetFileImportTargets(candidate.Id)
+                        .Count == 0)
+                {
+                    continue;
+                }
+
+                configuredFileIds.Add(candidate.Id);
+            }
+
+            var importableFileIds =
+                SelectImportableFileIds(
+                    files,
+                    configuredFileIds,
+                    fileId);
+            if (importableFileIds.Count == 0)
+            {
+                return false;
+            }
+
+            importAction = () =>
+            {
+                for (var i = 0;
+                     i < importableFileIds.Count;
+                     i++)
+                {
+                    _assetManager.ImportFileTargets(
+                        itemId,
+                        importableFileIds[i]);
+                }
+            };
+            return true;
+        }
+
+        internal static IReadOnlyList<string>
+            SelectImportableFileIds(
+                IReadOnlyList<AssetFile> files,
+                ISet<string> configuredFileIds,
+                string requestedFileId)
+        {
+            var source =
+                files ?? Array.Empty<AssetFile>();
+            var configured =
+                configuredFileIds ??
+                new HashSet<string>(StringComparer.Ordinal);
+            var result = new List<string>();
+            for (var i = 0; i < source.Count; i++)
+            {
+                var candidate = source[i];
+                var candidateId =
+                    candidate != null
+                        ? candidate.Id
+                        : string.Empty;
+                if (string.IsNullOrWhiteSpace(candidateId) ||
+                    !configured.Contains(candidateId) ||
+                    (!string.IsNullOrWhiteSpace(
+                         requestedFileId) &&
+                     !string.Equals(
+                         candidateId,
+                         requestedFileId,
+                         StringComparison.Ordinal)) ||
+                    result.Contains(candidateId))
+                {
+                    continue;
+                }
+
+                result.Add(candidateId);
+            }
+
+            return result;
+        }
+
         public AssetItemGridList LoadFiles(string itemId)
         {
             var files = _assetManager.GetFiles(itemId, new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active });

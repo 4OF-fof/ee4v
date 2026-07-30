@@ -69,6 +69,7 @@
         "collectionError": "コレクションを読み込めませんでした。AssetManager データベースを確認して、もう一度お試しください。"
       },
       "context": {
+        "import": "インポート",
         "highlight": "ハイライト",
         "clearHighlight": "ハイライトを解除"
       },

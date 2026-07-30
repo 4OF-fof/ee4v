@@ -107,6 +107,12 @@ namespace Ee4v.AssetManager.UI
                 fileId);
         }
 
+        public bool IsGuidHighlighted(string guid)
+        {
+            return !string.IsNullOrWhiteSpace(guid) &&
+                   _highlightedGuids.Contains(guid);
+        }
+
         public void HighlightItem(string itemId)
         {
             Highlight(
@@ -453,6 +459,44 @@ namespace Ee4v.AssetManager.UI
             _kind = AssetManagerProjectHighlightTargetKind.None;
             _id = string.Empty;
             return true;
+        }
+    }
+
+    internal static class AssetManagerProjectHighlightMenu
+    {
+        private const string ClearHighlightMenuPath =
+            "Assets/AssetManager/Clear Highlight";
+
+        [MenuItem(ClearHighlightMenuPath, false, 2100)]
+        private static void ClearHighlight()
+        {
+            if (AssetManagerUiDependencies
+                .TryGetProjectActions(out var projectActions))
+            {
+                projectActions.ClearHighlights();
+            }
+        }
+
+        [MenuItem(ClearHighlightMenuPath, true)]
+        private static bool CanClearHighlight()
+        {
+            if (!AssetManagerUiDependencies
+                    .TryGetProjectActions(
+                        out var projectActions) ||
+                Selection.activeObject == null)
+            {
+                return false;
+            }
+
+            var assetPath =
+                AssetDatabase.GetAssetPath(
+                    Selection.activeObject);
+            var guid =
+                string.IsNullOrWhiteSpace(assetPath)
+                    ? string.Empty
+                    : AssetDatabase.AssetPathToGUID(
+                        assetPath);
+            return projectActions.IsGuidHighlighted(guid);
         }
     }
 }

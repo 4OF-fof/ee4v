@@ -186,6 +186,42 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
+        public void GridImportSelection_UsesAllConfiguredFilesOrOneRequestedFile()
+        {
+            var files = new[]
+            {
+                new AssetFile { Id = "file-a" },
+                new AssetFile { Id = "file-b" },
+                new AssetFile { Id = "file-c" },
+                new AssetFile { Id = "file-a" }
+            };
+            var configured =
+                new HashSet<string>(
+                    new[] { "file-a", "file-c" },
+                    StringComparer.Ordinal);
+
+            Assert.That(
+                MainViewController.SelectImportableFileIds(
+                    files,
+                    configured,
+                    requestedFileId: null),
+                Is.EqualTo(
+                    new[] { "file-a", "file-c" }));
+            Assert.That(
+                MainViewController.SelectImportableFileIds(
+                    files,
+                    configured,
+                    "file-c"),
+                Is.EqualTo(new[] { "file-c" }));
+            Assert.That(
+                MainViewController.SelectImportableFileIds(
+                    files,
+                    configured,
+                    "file-b"),
+                Is.Empty);
+        }
+
+        [Test]
         public void ProjectFolderIconSelection_KeepsOnlyTopmostAppliedFolders()
         {
             var selected =

@@ -30,6 +30,7 @@ namespace Ee4v.AssetManager.Contracts
         bool CanHighlightFile(string fileId);
         bool IsItemHighlighted(string itemId);
         bool IsFileHighlighted(string fileId);
+        bool IsGuidHighlighted(string guid);
         void HighlightItem(string itemId);
         void HighlightFile(string fileId);
         void ClearHighlights();

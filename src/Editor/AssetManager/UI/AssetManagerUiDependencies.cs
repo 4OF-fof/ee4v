@@ -52,6 +52,13 @@ namespace Ee4v.AssetManager.UI
             _projectActions ?? throw new InvalidOperationException(
                 "AssetManager Project actions have not been configured.");
 
+        internal static bool TryGetProjectActions(
+            out IAssetManagerProjectActions projectActions)
+        {
+            projectActions = _projectActions;
+            return projectActions != null;
+        }
+
         internal static void RequestManualSync(Action completed)
         {
             if (_requestManualSync == null)

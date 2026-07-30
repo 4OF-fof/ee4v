@@ -356,6 +356,18 @@ namespace Ee4v.AssetManager.UI
                 ? (Action)(() =>
                     projectActions.HighlightFile(targetId))
                 : () => projectActions.HighlightItem(targetId);
+            Action import;
+            var importItemId = isFile
+                ? _fileListItemId
+                : targetId;
+            var importFileId = isFile
+                ? targetId
+                : null;
+            var canImport =
+                _controller.TryCreateImportAction(
+                    importItemId,
+                    importFileId,
+                    out import);
             var menuItem = isHighlighted
                 ? new ContextMenuItemState(
                     "clear-imported-asset-highlights",
@@ -368,8 +380,23 @@ namespace Ee4v.AssetManager.UI
                         "assetManager.mainView.context.highlight"),
                     highlight,
                     canHighlight);
+            var menuItems =
+                new List<ContextMenuItemState>();
+            if (canImport)
+            {
+                menuItems.Add(
+                    new ContextMenuItemState(
+                        "import",
+                        I18N.Get(
+                            "assetManager.mainView.context.import"),
+                        import));
+                menuItems.Add(
+                    ContextMenuItemState.Separator());
+            }
+
+            menuItems.Add(menuItem);
             var menu = new ContextMenuState(
-                new[] { menuItem });
+                menuItems);
             ContextMenuWindow.Show(
                 target,
                 panelPosition,
