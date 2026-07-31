@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
+using System.Threading;
 using Ee4v.AssetManager.Infrastructure.Files;
 using Ee4v.Testing.Contracts;
 using NUnit.Framework;
@@ -194,6 +196,200 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 }));
         }
 
+        [Test]
+        [FeatureTestCase(
+            "UnityPackage の配置先を内容一覧として取得する",
+            "内部 GUID directory ではなく pathname の Unity 配置先を file tree 用に取得できることを確認します。",
+            order: 337)]
+        public void UnityPackageContentReader_ReadsAssetPaths()
+        {
+            var packagePath = Path.Combine(
+                _tempRoot,
+                "avatar-content.unitypackage");
+            var folderGuid =
+                "11111111111111111111111111111111";
+            var assetGuid =
+                "22222222222222222222222222222222";
+            using (var file = File.Create(packagePath))
+            using (var gzip = new GZipStream(
+                       file,
+                       CompressionMode.Compress))
+            {
+                WriteTarEntry(
+                    gzip,
+                    folderGuid + "/pathname",
+                    Encoding.UTF8.GetBytes(
+                        "Assets/Avatar"));
+                WriteTarEntry(
+                    gzip,
+                    folderGuid + "/asset.meta",
+                    Encoding.UTF8.GetBytes(
+                        "folderAsset: yes"));
+                WriteTarEntry(
+                    gzip,
+                    assetGuid + "/pathname",
+                    Encoding.UTF8.GetBytes(
+                        "Assets/Avatar/Body.prefab"));
+                WriteTarEntry(
+                    gzip,
+                    assetGuid + "/asset",
+                    new byte[37]);
+                gzip.Write(
+                    new byte[1024],
+                    0,
+                    1024);
+            }
+
+            var snapshot =
+                UnityPackageContentReader.Read(
+                    packagePath,
+                    CancellationToken.None);
+
+            Assert.That(
+                snapshot.Entries.Count,
+                Is.EqualTo(2));
+            Assert.That(
+                snapshot.Entries[0].Path,
+                Is.EqualTo("Assets/Avatar"));
+            Assert.That(
+                snapshot.Entries[0].Kind,
+                Is.EqualTo(
+                    AssetArchiveContentEntryKind
+                        .Directory));
+            Assert.That(
+                snapshot.Entries[1].Path,
+                Is.EqualTo(
+                    "Assets/Avatar/Body.prefab"));
+            Assert.That(
+                snapshot.Entries[1].Kind,
+                Is.EqualTo(
+                    AssetArchiveContentEntryKind.File));
+            Assert.That(
+                snapshot.Entries[1].SizeBytes,
+                Is.EqualTo(37L));
+            Assert.That(
+                snapshot.Entries[1].SourcePath,
+                Is.EqualTo(
+                    assetGuid + "/asset"));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "ZIP 内 UnityPackage の配置先を内容一覧として取得する",
+            "元 ZIP の実 entry を直接読み、pathname の Unity 配置先と entry サイズを詳細表示用に返すことを確認します。",
+            order: 338)]
+        public void ArchiveReader_ReadsUnityPackageInsideZip()
+        {
+            var packagePath = Path.Combine(
+                _tempRoot,
+                "avatar.unitypackage");
+            var guid =
+                "11111111111111111111111111111111";
+            WriteUnityPackage(packagePath, guid);
+            var zipPath = Path.Combine(
+                _tempRoot,
+                "avatar.zip");
+            using (var archive = ZipFile.Open(
+                       zipPath,
+                       ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry(
+                    "Avatar/Packages/avatar.unitypackage");
+                using (var source =
+                       File.OpenRead(packagePath))
+                using (var destination = entry.Open())
+                {
+                    source.CopyTo(destination);
+                }
+            }
+
+            var content =
+                new CachedAssetArchiveReader()
+                    .ReadUnityPackageContentFromZip(
+                        zipPath,
+                        "Avatar/Packages/avatar.unitypackage",
+                        CancellationToken.None);
+
+            Assert.That(
+                content.Kind,
+                Is.EqualTo(
+                    AssetArchiveContentKind.UnityPackage));
+            Assert.That(
+                content.SizeBytes,
+                Is.EqualTo(
+                    new FileInfo(packagePath).Length));
+            Assert.That(
+                content.Entries
+                    .Select(entry => entry.Path),
+                Is.EqualTo(new[]
+                {
+                    "Assets/Test0.asset"
+                }));
+            var entrySourcePath =
+                content.Entries[0].SourcePath;
+            Assert.That(
+                entrySourcePath,
+                Is.EqualTo(guid + "/asset"));
+            Assert.That(
+                Encoding.UTF8.GetString(
+                    new CachedAssetArchiveReader()
+                        .ReadEntryBytes(
+                            AssetArchiveContentKind
+                                .UnityPackage,
+                            zipPath,
+                            "Avatar/Packages/avatar.unitypackage",
+                            entrySourcePath,
+                            1024L,
+                            CancellationToken.None)),
+                Is.EqualTo("asset-0"));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "ZIP entry のプレビュー内容を取得する",
+            "表示用 path とは別に保持した実 entry path から、上限内の内容だけをプレビュー用に読み取れることを確認します。",
+            order: 339)]
+        public void ArchiveReader_ReadsZipEntryPreviewBytes()
+        {
+            var zipPath = Path.Combine(
+                _tempRoot,
+                "preview.zip");
+            using (var archive = ZipFile.Open(
+                       zipPath,
+                       ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry(
+                    "Root/Images/preview.png");
+                using (var writer = new StreamWriter(
+                           entry.Open()))
+                {
+                    writer.Write("preview");
+                }
+            }
+
+            var reader =
+                new CachedAssetArchiveReader();
+            var content = reader.ReadZipContent(
+                zipPath,
+                CancellationToken.None);
+            var preview = reader.ReadEntryBytes(
+                AssetArchiveContentKind.Zip,
+                zipPath,
+                string.Empty,
+                content.Entries.Single(
+                    entry =>
+                        entry.Path.EndsWith(
+                            "preview.png",
+                            StringComparison.Ordinal))
+                    .SourcePath,
+                1024L,
+                CancellationToken.None);
+
+            Assert.That(
+                Encoding.UTF8.GetString(preview),
+                Is.EqualTo("preview"));
+        }
+
         private static void WriteUnityPackage(
             string path,
             params string[] guids)
@@ -210,6 +406,11 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                         guids[i] + "/pathname",
                         Encoding.UTF8.GetBytes(
                             "Assets/Test" + i + ".asset"));
+                    WriteTarEntry(
+                        gzip,
+                        guids[i] + "/asset",
+                        Encoding.UTF8.GetBytes(
+                            "asset-" + i));
                 }
 
                 gzip.Write(new byte[1024], 0, 1024);

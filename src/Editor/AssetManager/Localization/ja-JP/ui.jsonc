@@ -31,6 +31,16 @@
         }
       }
     },
+    "archiveDetail": {
+      "searchPlaceholder": "アーカイブ内を検索",
+      "loading": "アーカイブの内容を確認中...",
+      "empty": "アーカイブ内に表示できるファイルがありません。",
+      "loadFailed": "アーカイブの内容を読み込めませんでした。",
+      "preview": "プレビュー",
+      "previewSelect": "左のツリーからファイルを選択してください。",
+      "previewSelectFile": "プレビューするファイルを選択してください。",
+      "previewUnavailable": "このファイルはプレビューできません。"
+    },
     "background": {
       "datasourceCheck": "ライブラリの変更を確認中...",
       "datasourceSync": "AssetManager ライブラリを同期中...",
@@ -127,6 +137,8 @@
     "fileDependencies": {
       "title": "ファイルの依存",
       "instruction": "先にインポートするファイルをチェックしてください。",
+      "open": "依存設定",
+      "close": "閉じる",
       "sameItem": "同じアイテム",
       "sameItemEmpty": "このアイテムにほかのファイルはありません。",
       "otherItems": "ほかのアイテム",

@@ -88,6 +88,9 @@
 
 .ee4v-asset-manager-file-detail__content {
     flex-grow: 1;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
     align-items: center;
     justify-content: center;
 }
@@ -96,11 +99,186 @@
     max-width: 100%;
 }
 
+.ee4v-asset-manager-archive-detail {
+    flex-grow: 1;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    align-self: stretch;
+}
+
+.ee4v-asset-manager-archive-detail__header {
+    flex-shrink: 0;
+    align-items: center;
+}
+
+.ee4v-asset-manager-archive-detail__name {
+    max-width: 100%;
+}
+
+.ee4v-asset-manager-archive-detail__body {
+    flex-grow: 1;
+    min-width: 0;
+    min-height: 0;
+    flex-direction: row;
+    margin-top: var(--ee4v-space-xl);
+}
+
+.ee4v-asset-manager-archive-detail__tree-pane {
+    flex-grow: 1;
+    flex-basis: 45%;
+    min-width: 220px;
+    min-height: 0;
+}
+
+.ee4v-asset-manager-archive-detail__tree {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.ee4v-asset-manager-archive-detail__preview {
+    flex-grow: 1;
+    flex-basis: 55%;
+    min-width: 220px;
+    min-height: 0;
+    margin-left: var(--ee4v-space-xl);
+    padding-left: var(--ee4v-space-xl);
+    border-left-width: var(--ee4v-border-hairline);
+    border-left-color: var(--ee4v-color-border-subtle);
+}
+
+.ee4v-asset-manager-archive-detail__preview-title {
+    flex-shrink: 0;
+}
+
+.ee4v-asset-manager-archive-detail__preview-name {
+    flex-shrink: 0;
+    margin-top: var(--ee4v-space-sm);
+}
+
+.ee4v-asset-manager-archive-detail__preview-content {
+    flex-grow: 1;
+    min-height: 0;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+}
+
+.ee4v-asset-manager-archive-detail__preview-image {
+    flex-grow: 1;
+    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.ee4v-asset-manager-archive-detail__preview-icon {
+    flex-shrink: 0;
+}
+
+.ee4v-asset-manager-archive-detail__preview-status {
+    flex-shrink: 0;
+    max-width: 100%;
+    margin-top: var(--ee4v-space-md);
+    color: var(--ee4v-color-text-muted);
+    -unity-text-align: middle-center;
+}
+
+.ee4v-asset-manager-archive-detail__status {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    color: var(--ee4v-color-text-muted);
+}
+
+.ee4v-asset-manager-file-detail__actions {
+    flex-shrink: 0;
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-bottom: var(--ee4v-space-md);
+}
+
+.ee4v-asset-manager-file-detail__dependency-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+}
+
+.ee4v-asset-manager-file-detail__dependency-scrim {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.55);
+}
+
+.ee4v-asset-manager-file-detail__dependency-selection {
+    width: 76%;
+    max-width: 820px;
+    height: 82%;
+    min-height: 0;
+    overflow: hidden;
+    padding: var(--ee4v-space-xl);
+    border-top-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-left-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-strong);
+    border-right-color: var(--ee4v-color-border-strong);
+    border-bottom-color: var(--ee4v-color-border-strong);
+    border-left-color: var(--ee4v-color-border-strong);
+    border-radius: var(--ee4v-radius-lg);
+    background-color: var(--ee4v-color-surface-raised);
+}
+
+.ee4v-asset-manager-file-detail__dependency-selection-actions {
+    flex-shrink: 0;
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-bottom: var(--ee4v-space-md);
+}
+
+.ee4v-asset-manager-file-detail__dependency-selection .ee4v-file-dependency-settings {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    margin-top: 0;
+    overflow: hidden;
+}
+
+.ee4v-asset-manager-file-detail__dependency-selection .ee4v-file-dependency-settings__section--current {
+    flex-shrink: 0;
+}
+
+.ee4v-asset-manager-file-detail__dependency-selection .ee4v-file-dependency-settings__section--other {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.ee4v-asset-manager-file-detail__dependency-selection .ee4v-file-dependency-settings__tree {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+}
+
 .ee4v-file-dependency-settings {
     flex-shrink: 0;
     margin-top: var(--ee4v-space-xl);
     padding: var(--ee4v-space-lg);
     background-color: var(--ee4v-color-surface-raised);
+}
+
+.ee4v-file-dependency-settings__title,
+.ee4v-file-dependency-settings__instruction {
+    min-height: var(--ee4v-size-18);
 }
 
 .ee4v-file-dependency-settings__instruction {

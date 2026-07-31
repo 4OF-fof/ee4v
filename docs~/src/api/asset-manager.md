@@ -1250,6 +1250,8 @@ File Tree の構築中は File Tree 内の loading text だけを表示し、`IB
 
 File Tree の ZIP metadata cache は、thumbnail と同じ cache root の `<ee4v global path>/cache/file-tree` に保存します。cache は source ZIP の更新日時と file size が一致する場合だけ利用し、不一致時は background task で再生成します。これは memory cache と異なり Unity を終了しても保持されます。cache には archive 内の実 path を保持し、読み出し時に ZIP と同名の単一 root folder を表示 path から省略します。
 
+ZIP / UnityPackage の詳細表示は `IAssetArchiveReader` を通して background で内容を読み取ります。ZIP は File Tree と同じ cache entry を再利用します。UnityPackage は単独ファイルと ZIP 内 entry の両方に対応し、gzip/TAR 内の `pathname` と `asset` を対応付けます。内容 tree には内部 GUID directory ではなく Unity への配置先を表示し、選択した画像の実 entry だけを上限付きで読み取って右側へプレビューします。
+
 File Tree の画像 file hover は user setting `assetManager.showFileTreeImageTooltip` で切り替えます。既定値は `true` で `ImageTooltip` に画像 preview と file 名を表示し、`false` では Unity 標準の text tooltip に戻します。設定変更は開いている File Tree へ即時反映します。
 
 ### `IAssetManager.GetSyncInfo`

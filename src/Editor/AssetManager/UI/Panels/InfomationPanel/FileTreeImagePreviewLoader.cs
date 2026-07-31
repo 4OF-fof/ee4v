@@ -208,12 +208,52 @@ namespace Ee4v.AssetManager.UI
                     return null;
                 }
 
-                if (string.Equals(Path.GetExtension(source.FileName), ".psd", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(
+                        Path.GetExtension(
+                            source.FileName),
+                        ".psd",
+                        StringComparison.OrdinalIgnoreCase))
                 {
-                    return PsdCompositeImageDecoder.Decode(stream, cancellationToken);
+                    return PsdCompositeImageDecoder.Decode(
+                        stream,
+                        cancellationToken);
                 }
 
-                return FileTreeImagePreviewData.FromEncoded(ReadAllBytes(stream, cancellationToken));
+                return FileTreeImagePreviewData
+                    .FromEncoded(
+                        ReadAllBytes(
+                            stream,
+                            cancellationToken));
+            }
+        }
+
+        internal static FileTreeImagePreviewData Decode(
+            string fileName,
+            byte[] bytes,
+            CancellationToken cancellationToken)
+        {
+            if (bytes == null || bytes.Length == 0)
+            {
+                return null;
+            }
+
+            if (!string.Equals(
+                    Path.GetExtension(
+                        fileName ?? string.Empty),
+                    ".psd",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return FileTreeImagePreviewData
+                    .FromEncoded(bytes);
+            }
+
+            using (var stream = new MemoryStream(
+                       bytes,
+                       false))
+            {
+                return PsdCompositeImageDecoder.Decode(
+                    stream,
+                    cancellationToken);
             }
         }
 

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.AssetManager.UI;
+using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using UnityEngine.UIElements;
 
@@ -192,16 +193,134 @@ namespace Ee4v.UI
             CatalogWindow window,
             VisualElement parent)
         {
+            var dependencyChoice =
+                I18N.Get(
+                    "assetManager.fileDependencies.open");
+            var choices = new List<string>
+            {
+                "ZIP",
+                "UnityPackage",
+                dependencyChoice
+            };
+            var controls = window.CreatePlainControlsSection(
+                parent,
+                "ZIP と UnityPackage の左ツリー・右プレビューを切り替えます。");
+            var selector = new PopupField<string>(
+                choices,
+                0);
+            selector.label = string.Empty;
+            controls.Content.Add(selector);
+
             var view = new FileTreeDetailView();
-            view.SetState(new FileTreeDetailState(
-                "sample-file",
-                CatalogCoveragePreview.SampleFile,
-                CatalogCoveragePreview.SampleCollection));
             CatalogCoveragePreview.CreateSurface(
                 window,
                 parent,
-                140f,
+                500f,
                 true).Add(view);
+            System.Action refresh = () =>
+            {
+                var unityPackage =
+                    string.Equals(
+                        selector.value,
+                        "UnityPackage",
+                        System.StringComparison.Ordinal);
+                view.SetState(
+                    CreateArchiveDetailState(
+                        unityPackage));
+                if (string.Equals(
+                        selector.value,
+                        dependencyChoice,
+                        System.StringComparison.Ordinal))
+                {
+                    view.ShowDependencySelection(
+                        CreateDependencySettingsState());
+                }
+            };
+            selector.RegisterValueChangedCallback(
+                _ => refresh());
+            refresh();
+            CatalogWindow.FinalizeControlsSection(
+                parent,
+                controls);
+        }
+
+        private static FileDependencySettingsState
+            CreateDependencySettingsState()
+        {
+            var options =
+                new List<FileDependencyOption>();
+            for (var itemIndex = 0;
+                 itemIndex < 16;
+                 itemIndex++)
+            {
+                options.Add(
+                    new FileDependencyOption(
+                        "item-" + itemIndex,
+                        "Sample Item " + (itemIndex + 1),
+                        "file-" + itemIndex,
+                        "Avatar.prefab",
+                        "prefab"));
+            }
+
+            return new FileDependencySettingsState(
+                "item-0",
+                options,
+                new[] { "file-0" },
+                _ => { });
+        }
+
+        private static FileTreeDetailState
+            CreateArchiveDetailState(
+                bool unityPackage)
+        {
+            var entries = unityPackage
+                ? new[]
+                {
+                    new AssetArchiveContentEntry(
+                        "Assets/Sample",
+                        AssetArchiveContentEntryKind.Directory),
+                    new AssetArchiveContentEntry(
+                        "Assets/Sample/Avatar.prefab",
+                        AssetArchiveContentEntryKind.File),
+                    new AssetArchiveContentEntry(
+                        "Assets/Sample/Materials/Body.mat",
+                        AssetArchiveContentEntryKind.File),
+                    new AssetArchiveContentEntry(
+                        "Assets/Sample/Textures/Body.png",
+                        AssetArchiveContentEntryKind.File)
+                }
+                : new[]
+                {
+                    new AssetArchiveContentEntry(
+                        "Avatar",
+                        AssetArchiveContentEntryKind.Directory),
+                    new AssetArchiveContentEntry(
+                        "Avatar/Avatar.prefab",
+                        AssetArchiveContentEntryKind.File),
+                    new AssetArchiveContentEntry(
+                        "Avatar/Materials/Body.mat",
+                        AssetArchiveContentEntryKind.File),
+                    new AssetArchiveContentEntry(
+                        "Avatar/Textures/Body.png",
+                        AssetArchiveContentEntryKind.File)
+                };
+            var kind = unityPackage
+                ? AssetArchiveContentKind.UnityPackage
+                : AssetArchiveContentKind.Zip;
+            var extension = unityPackage
+                ? "unitypackage"
+                : "zip";
+            return new FileTreeDetailState(
+                "sample-archive",
+                unityPackage
+                    ? "Sample.unitypackage"
+                    : "Sample.zip",
+                CatalogCoveragePreview.SampleCollection,
+                extension,
+                new AssetArchiveContent(
+                    kind,
+                    0L,
+                    entries));
         }
 
         private static void BuildFileIconCatalog(

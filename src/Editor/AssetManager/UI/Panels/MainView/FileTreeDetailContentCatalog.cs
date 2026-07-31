@@ -58,11 +58,17 @@ namespace Ee4v.AssetManager.UI
         private const string NameClassName =
             "ee4v-asset-manager-file-detail__name";
 
-        // Add extension-specific detail definitions here. Until one is
-        // registered, every extension uses the original name-only view.
         private static readonly FileTreeDetailContentDefinition[]
             RegisteredDefinitions =
         {
+            new FileTreeDetailContentDefinition(
+                "zip",
+                new[] { "zip" },
+                CreateArchiveDetail),
+            new FileTreeDetailContentDefinition(
+                "unitypackage",
+                new[] { "unitypackage" },
+                CreateArchiveDetail)
         };
 
         private static readonly FileTreeDetailContentDefinition
@@ -111,6 +117,14 @@ namespace Ee4v.AssetManager.UI
             name.SetWhiteSpace(WhiteSpace.Normal);
             content.Add(name);
             return content;
+        }
+
+        private static VisualElement CreateArchiveDetail(
+            FileTreeDetailState state)
+        {
+            var view = new ArchiveFileDetailView();
+            view.SetState(state);
+            return view;
         }
     }
 }

@@ -68,7 +68,7 @@ prepare/apply use case を通し、Infrastructure の prepared state は opaque 
 conflict preview と overwrite 判断の契約は Application が所有し、通常 sync と起動時 sync は
 同じ sync port を使用します。
 
-UI の表示設定、File Tree の filesystem 読み取り、ZIP metadata 読み取りは Contracts の
+UI の表示設定、File Tree の filesystem 読み取り、archive 内容の読み取りは Contracts の
 `IAssetManagerUiPreferences`、`IAssetFileSystemReader`、`IAssetArchiveReader` として
 注入します。background 実行と Unity main thread への復帰も
 `IAssetManagerUiScheduler` を Composition が注入します。UI assembly は Infrastructure、
@@ -101,7 +101,7 @@ schema 不整合を含む Navigation のエラー状態を現在の DB に対し
 
 - `MainViewController` は `MainViewHost` ごとに生成し、その表示セッションの navigation、履歴、grid 列数、file / group 子要素 cache、tag 一覧 cache、非同期 load と cancellation を所有する。catalog item 一覧の条件別 cache は持たない。統合 window と単独 window の controller instance は共有せず、AssetManager Application service の一覧用 catalog snapshot だけを全 window で共有する。All、BOOTH Items、Uncategorized、Collection、キーワードの切替は同じ snapshot に対する memory filter として処理する
 - `MainView` は AssetManager 固有の UI controller として、検索文字列、一覧・詳細 mode、選択中 item などの画面状態を持ち、Core UI component へ描画 state を渡す
-- file card のダブルクリック詳細には `FileDependencySettingsView` を仮配置する。同じ Item の active file は先頭の独立枠へ直接表示し、ほかの Item の active file は Item ごとに束ねた検索可能な tree へ表示する。file 行の checkbox または行 click で複数の先行 import file を切り替える。Toggle の label は空にし、Item / file 名は IMGUI fallback を有効にした `UiTextFactory` で表示する
+- file card のダブルクリック詳細には依存設定ボタンを表示する。ボタンで開く選択 overlay に `FileDependencySettingsView` を配置し、閉じるまでは通常の詳細内容と重ねて表示する。同じ Item の active file は先頭の独立枠へ直接表示し、ほかの Item の active file は Item ごとに束ねた検索可能な tree へ表示する。file 行の checkbox または行 click で複数の先行 import file を切り替える。Toggle の label は空にし、Item / file 名は IMGUI fallback を有効にした `UiTextFactory` で表示する
 - `MainViewHost` は `MainToolbar`、`NavigationPanel`、`MainView` と controller の event 配線だけを担当する。toolbar と navigation panel は入力を通知し、渡された値を描画するだけで、設定や他 component を直接操作しない
 - Navigation は `All`、Booth snapshot を持つ Item の `BOOTH Items`、通常 Collection 未所属かつ Smart Collection にも一致しない `Uncategorized`、Item grid とは別の tag 一覧ページを開く `Tags` を提供する
 - Navigation の固定項目の下では通常 Collection と Smart Collection を 1 つの Collection tree に統合し、`ParentCollectionId` と `SortOrder` に従って両種別をまたいだ親子関係と兄弟順を表示する。Smart Collection は通常 Collection の子にできるが、Smart Collection 自身は通常・Smart のどちらの Collection も子に持てない。Collection 全体の Foldout は置かず、子を持つ各Collection行の disclosureで個別に開閉する。行は13px文字、14pxアイコン、22px高とし、親子をHierarchyのDepthIndicatorと同じテーマ色のdepth lineで結ぶ。Asset Gridと同様にCtrl/Command+clickは個別の追加・解除、Shift+clickは表示中のanchorからの範囲選択を行う。最後の1件もmodifier clickで解除でき、treeの空白clickまたはEscapeで全選択を解除する。選択した複数行は表示順を保ったブロックとしてドラッグできる。ドラッグ先の行中央ではその子の末尾へ移動し、行の上端・下端では同じ階層の前後へ挿入する。treeの行以外からNavigation下端まで続く空き領域へドロップするとroot末尾へ移動し、root移動時の外枠は表示しない。cycle、Smart Collection 配下への配置、配置が変わらないdropは受け付けない。Collection構造変更は専用の`Collections` changeだけを発行し、Main Viewの再検索を起こさない
@@ -133,7 +133,8 @@ schema 不整合を含む Navigation のエラー状態を現在の DB に対し
 - File Tree の PNG / JPEG / PSD file に hover すると `ImageTooltip` で preview と file 名を表示する。通常 file と ZIP 内 entry の両方を background で読み込み、PSD の合成画像は Raw / RLE compression の 8 / 16 bit Gray / RGB / CMYK を thumbnail size に縮小しながら最大 1 GiB まで stream decode する。PNG / JPEG の encoded data は 64 MiB を上限とする。user setting `assetManager.showFileTreeImageTooltip` を無効にすると通常の text tooltip に切り替わる
 - File Tree の要素、または Main View の file card をダブルクリックすると、通常 file、directory、group、ZIP 内 entry を同じ経路で Main View の詳細表示へ開く。コレクション内の表示も親から選択中コレクションまでの階層を履歴へ保持し、パンくずを `hoge / fuga / item / ...` の順で表示する。親コレクション、item、詳細は同じパンくずから移動でき、戻る・進むで一覧と往復できる。ZIP 内 entry のパンくずには所属 ZIP 名を item と target の間に表示する。単独 Infomation window からも単独 Main View window へ表示する
 - file の拡張子、directory、Variant Group、Version Group ごとの icon は `UI/State/FileIconCatalog.cs` の宣言的な定義が正本となり、主表示サイズはすべて88pxに統一する。新しい拡張子や種別は同定義へ追加し、`MainViewController` に条件分岐を増やさない。Catalog の `FileIconCatalog` story は登録済み定義から control の選択肢を自動生成し、ZIP と group を含む選択中の1定義だけを preview する
-- `FileTreeDetailView` の拡張子別内容は `UI/Panels/MainView/FileTreeDetailContentCatalog.cs` の定義から生成する。現時点では個別定義を登録せず、すべての拡張子を従来の要素名だけの fallback で表示する。種別固有の詳細 UI が必要になった時点で同 catalog へ拡張子と content factory の組を追加し、`FileTreeDetailView` 自体には条件分岐を増やさない
+- `FileTreeDetailView` の拡張子別内容は `UI/Panels/MainView/FileTreeDetailContentCatalog.cs` の定義から生成する。ZIP と UnityPackage は左側に検索可能な内容 tree、右側に選択ファイルのプレビューを表示し、形式名、件数、ファイルサイズなどの概要は表示しない。内容 tree の行構造と表示は Information Window の File Tree と共通にする。PNG、JPEG、PSD の読み込み中はプレビュー領域に何も表示せず、完了後に実画像へ切り替える。それ以外は種類アイコンとプレビュー不可の案内を表示する。UnityPackage は単独ファイルと ZIP 内 entry の両方を読み、内部 GUID directory ではなく `pathname` の Unity 配置先を tree にする。それ以外の詳細は要素名だけの fallback を使う
+- 依存設定は詳細画面のボタンから重ねて表示し、見出しと同じアイテムの項目を固定したまま、ほかのアイテムの tree を残りの高さへ収めて内部スクロールする
 - Unity Editor session 開始時の BLM / Eagle datasource sync は background で変更確認を先行し、DB 内にも同じ source の成功状態があり、かつ `cache/sync` の前回成功 fingerprint と一致する場合だけ DB sync と UI reload を省略する。DB を削除・再生成した場合は fingerprint が残っていても再同期する
 - Unity側の item 情報が同期元より新しい競合は `DiffConfirmationOverlay` で現在値と同期元値を比較し、上書きまたは今回の同期キャンセルを選択できる
 - 起動時に自動同期する source は user setting から個別に有効・無効を選択できる

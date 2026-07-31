@@ -31,6 +31,16 @@
         }
       }
     },
+    "archiveDetail": {
+      "searchPlaceholder": "Search archive contents",
+      "loading": "Checking archive contents...",
+      "empty": "No files to display in this archive.",
+      "loadFailed": "Failed to read the archive contents.",
+      "preview": "Preview",
+      "previewSelect": "Select a file from the tree.",
+      "previewSelectFile": "Select a file to preview.",
+      "previewUnavailable": "This file cannot be previewed."
+    },
     "background": {
       "datasourceCheck": "Checking library changes...",
       "datasourceSync": "Synchronizing the AssetManager library...",
@@ -127,6 +137,8 @@
     "fileDependencies": {
       "title": "File dependencies",
       "instruction": "Check the files that must be imported first.",
+      "open": "Dependencies",
+      "close": "Close",
       "sameItem": "Same item",
       "sameItemEmpty": "No other files in this item.",
       "otherItems": "Other items",

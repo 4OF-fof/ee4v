@@ -1,3 +1,4 @@
+using Ee4v.AssetManager.Contracts;
 using Ee4v.Testing.Contracts;
 using Ee4v.UI;
 using NUnit.Framework;
@@ -41,6 +42,60 @@ namespace Ee4v.AssetManager.UI.Tests
             Assert.That(state.Name, Is.EqualTo("avatar.zip"));
             Assert.That(state.ParentName, Is.Empty);
             Assert.That(state.Extension, Is.EqualTo("zip"));
+        }
+
+        [Test]
+        public void AssetFileRoot_PreservesFileIdForArchiveDetail()
+        {
+            var node = new FileTreeNode(
+                "avatar.unitypackage",
+                string.Empty,
+                "C:/Library/avatar.unitypackage",
+                isAssetFileRoot: true,
+                assetFileId: "file-1");
+
+            var state =
+                node.CreateDetailState("item-1");
+
+            Assert.That(
+                state.AssetFileId,
+                Is.EqualTo("file-1"));
+            Assert.That(
+                state.Extension,
+                Is.EqualTo("unitypackage"));
+        }
+
+        [Test]
+        [FeatureTestCase(
+            "ZIP 内 UnityPackage の読み込み元を詳細表示へ引き継ぐ",
+            "表示用に省略した path ではなく元 ZIP と実 entry path を詳細表示 state が保持することを確認します。",
+            order: 431,
+            category: FeatureTestCategory.Ui)]
+        public void ZipUnityPackageEntry_PreservesArchiveSource()
+        {
+            var node = new FileTreeNode(
+                "avatar.unitypackage",
+                string.Empty,
+                "Packages/avatar.unitypackage",
+                detailParentName: "avatar.zip",
+                detailArchivePath:
+                    "C:/Library/avatar.zip",
+                detailArchiveEntryPath:
+                    "Avatar/Packages/avatar.unitypackage");
+
+            var state =
+                node.CreateDetailState("item-1");
+
+            Assert.That(
+                state.HasArchiveEntrySource,
+                Is.True);
+            Assert.That(
+                state.SourceArchivePath,
+                Is.EqualTo("C:/Library/avatar.zip"));
+            Assert.That(
+                state.SourceArchiveEntryPath,
+                Is.EqualTo(
+                    "Avatar/Packages/avatar.unitypackage"));
         }
 
         [TestCase(".PNG", "image", "Image")]
@@ -105,8 +160,14 @@ namespace Ee4v.AssetManager.UI.Tests
         public void DetailContentCatalog_UsesNameOnlyFallback()
         {
             Assert.That(
-                FileTreeDetailContentCatalog.Definitions,
-                Is.Empty);
+                FileTreeDetailContentCatalog.Definitions
+                    .Select(definition =>
+                        definition.Id),
+                Is.EqualTo(new[]
+                {
+                    "zip",
+                    "unitypackage"
+                }));
 
             var definition =
                 FileTreeDetailContentCatalog.Resolve("png");
@@ -122,6 +183,157 @@ namespace Ee4v.AssetManager.UI.Tests
             Assert.That(
                 textElements[0].Text,
                 Is.EqualTo("preview.png"));
+        }
+
+        [TestCase("zip", "zip")]
+        [TestCase(".unitypackage", "unitypackage")]
+        public void DetailContentCatalog_ResolvesArchiveDetails(
+            string extension,
+            string expectedId)
+        {
+            Assert.That(
+                FileTreeDetailContentCatalog
+                    .Resolve(extension)
+                    .Id,
+                Is.EqualTo(expectedId));
+        }
+
+        [Test]
+        public void ArchiveDetail_UsesPreloadedContent()
+        {
+            var content = new AssetArchiveContent(
+                AssetArchiveContentKind.Zip,
+                2048L,
+                new[]
+                {
+                    new AssetArchiveContentEntry(
+                        "Avatar/Body.prefab",
+                        AssetArchiveContentEntryKind.File,
+                        128L)
+                });
+            var definition =
+                FileTreeDetailContentCatalog.Resolve("zip");
+
+            var view = definition.CreateContent(
+                new FileTreeDetailState(
+                    "archive",
+                    "Avatar.zip",
+                    extension: "zip",
+                    archiveContent: content));
+
+            Assert.That(
+                view,
+                Is.TypeOf<ArchiveFileDetailView>());
+            Assert.That(
+                view.Query<SearchableTreeView<
+                    ArchiveFileDetailNode>>()
+                    .First(),
+                Is.Not.Null);
+            Assert.That(
+                view.Query<UiTextElement>()
+                    .ToList()
+                    .Any(element =>
+                        element.Text == "Avatar.zip"),
+                Is.True);
+            Assert.That(
+                view.Q<VisualElement>(
+                    className:
+                    "ee4v-asset-manager-archive-detail__tree-pane"),
+                Is.Not.Null);
+            Assert.That(
+                view.Q<VisualElement>(
+                    className:
+                    "ee4v-asset-manager-archive-detail__preview"),
+                Is.Not.Null);
+            Assert.That(
+                view.Q<VisualElement>(
+                    className:
+                    "ee4v-asset-manager-archive-detail__summary"),
+                Is.Null);
+            Assert.That(
+                view.Q<VisualElement>(
+                    className:
+                    "ee4v-asset-manager-archive-detail__format"),
+                Is.Null);
+        }
+
+        [Test]
+        public void ArchiveTree_PreservesPreviewSourcePath()
+        {
+            var tree =
+                ArchiveFileDetailTreeBuilder.Build(
+                    new[]
+                    {
+                        new AssetArchiveContentEntry(
+                            "Avatar/Body.png",
+                            AssetArchiveContentEntryKind.File,
+                            sourcePath:
+                            "Root/Avatar/Body.png")
+                    });
+
+            Assert.That(
+                tree[0].Children[0]
+                    .Data.SourcePath,
+                Is.EqualTo(
+                    "Root/Avatar/Body.png"));
+        }
+
+        [Test]
+        public void ArchiveTreeRow_UsesInformationFileTreeAppearance()
+        {
+            var row =
+                ArchiveFileDetailView.CreateTreeRow();
+
+            Assert.That(
+                row.ClassListContains(
+                    SearchableFileTree.RowClassName),
+                Is.True);
+            Assert.That(
+                row.Q<UiTextElement>(
+                    className:
+                    SearchableFileTree.RowTitleClassName),
+                Is.Not.Null);
+            Assert.That(
+                row.Q<UiTextElement>(
+                        className:
+                        SearchableFileTree.RowMetaClassName)
+                    .ClassListContains(
+                        SearchableFileTree
+                            .RowEmptyMetaClassName),
+                Is.True);
+        }
+
+        [Test]
+        public void ArchivePreviewLoading_ShowsNothing()
+        {
+            var view = new ArchiveFileDetailView();
+
+            view.SetPreviewLoading();
+
+            Assert.That(
+                view.Q<Icon>(
+                        className:
+                        "ee4v-asset-manager-archive-detail__preview-icon")
+                    .style.display.value,
+                Is.EqualTo(DisplayStyle.None));
+            Assert.That(
+                view.Q<Image>(
+                        className:
+                        "ee4v-asset-manager-archive-detail__preview-image")
+                    .style.display.value,
+                Is.EqualTo(DisplayStyle.None));
+            Assert.That(
+                view.Q<UiTextElement>(
+                        className:
+                        "ee4v-asset-manager-archive-detail__preview-name")
+                    .Text,
+                Is.Empty);
+            Assert.That(
+                view.Q<UiTextElement>(
+                        className:
+                        "ee4v-asset-manager-archive-detail__preview-status")
+                    .style.display.value,
+                Is.EqualTo(DisplayStyle.None));
         }
 
         [Test]
@@ -229,6 +441,44 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
+        public void FileDetail_ContainsDependencySelectionOverlay()
+        {
+            var view = new FileTreeDetailView();
+
+            Assert.That(
+                view.Q<VisualElement>(
+                        className:
+                        "ee4v-asset-manager-file-detail__dependency-overlay")
+                    .style.display.value,
+                Is.EqualTo(DisplayStyle.None));
+            Assert.That(
+                view.Q<UiButton>(
+                    className:
+                    "ee4v-asset-manager-file-detail__dependency-button"),
+                Is.Not.Null);
+        }
+
+        [Test]
+        public void FileDetail_CanPresentDependencySelection()
+        {
+            var view = new FileTreeDetailView();
+            view.ShowDependencySelection(
+                new FileDependencySettingsState(
+                    "item-1",
+                    Array.Empty<
+                        FileDependencyOption>(),
+                    Array.Empty<string>(),
+                    _ => { }));
+
+            Assert.That(
+                view.Q<VisualElement>(
+                        className:
+                        "ee4v-asset-manager-file-detail__dependency-overlay")
+                    .style.display.value,
+                Is.EqualTo(DisplayStyle.Flex));
+        }
+
+        [Test]
         public void DependencySettings_UsesSearchableTreeInsteadOfSelector()
         {
             var view =
@@ -259,6 +509,31 @@ namespace Ee4v.AssetManager.UI.Tests
                 view.Query<DropdownField>()
                     .ToList(),
                 Is.Empty);
+        }
+
+        [Test]
+        public void DependencySettings_HasFixedHeaderElements()
+        {
+            var view =
+                new FileDependencySettingsView();
+
+            var title =
+                view.Q<UiTextElement>(
+                    className:
+                    "ee4v-file-dependency-settings__title");
+            var instruction =
+                view.Q<UiTextElement>(
+                    className:
+                    "ee4v-file-dependency-settings__instruction");
+
+            Assert.That(title, Is.Not.Null);
+            Assert.That(instruction, Is.Not.Null);
+            Assert.That(
+                title.style.flexShrink.value,
+                Is.EqualTo(0f));
+            Assert.That(
+                instruction.style.flexShrink.value,
+                Is.EqualTo(0f));
         }
 
         [Test]

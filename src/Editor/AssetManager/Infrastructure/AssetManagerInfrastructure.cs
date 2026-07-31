@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using Ee4v.AssetManager.Application;
 using Ee4v.AssetManager.Application.Ports;
 using Ee4v.AssetManager.Contracts;
@@ -319,6 +322,282 @@ namespace Ee4v.AssetManager.Infrastructure
             string zipPath,
             System.Threading.CancellationToken cancellationToken) =>
             AssetFileTreeCache.ReadZipEntries(CacheDirectory, zipPath, cancellationToken);
+
+        public AssetArchiveContent ReadZipContent(
+            string zipPath,
+            System.Threading.CancellationToken
+                cancellationToken)
+        {
+            var entries = ReadZipEntries(
+                zipPath,
+                cancellationToken);
+            var source = new FileInfo(zipPath);
+            return new AssetArchiveContent(
+                AssetArchiveContentKind.Zip,
+                source.Length,
+                entries
+                    .Select(entry =>
+                        new AssetArchiveContentEntry(
+                            entry.FullName.TrimEnd(
+                                '/',
+                                '\\'),
+                            entry.FullName.EndsWith(
+                                "/",
+                                StringComparison.Ordinal) ||
+                            entry.FullName.EndsWith(
+                                "\\",
+                                StringComparison.Ordinal)
+                                ? AssetArchiveContentEntryKind
+                                    .Directory
+                                : AssetArchiveContentEntryKind
+                                    .File,
+                            entry.Length,
+                            entry.ArchiveFullName))
+                    .Where(entry =>
+                        !string.IsNullOrWhiteSpace(
+                            entry.Path))
+                    .ToArray());
+        }
+
+        public AssetArchiveContent
+            ReadUnityPackageContent(
+                string packagePath,
+                System.Threading.CancellationToken
+                    cancellationToken)
+        {
+            var source = new FileInfo(packagePath);
+            if (!source.Exists)
+            {
+                throw new FileNotFoundException(
+                    "UnityPackage was not found.",
+                    packagePath);
+            }
+
+            var snapshot =
+                UnityPackageContentReader.Read(
+                    source.FullName,
+                    cancellationToken);
+            return new AssetArchiveContent(
+                AssetArchiveContentKind.UnityPackage,
+                source.Length,
+                snapshot.Entries);
+        }
+
+        public AssetArchiveContent
+            ReadUnityPackageContentFromZip(
+                string zipPath,
+                string entryPath,
+                System.Threading.CancellationToken
+                    cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(zipPath))
+            {
+                throw new ArgumentException(
+                    "ZIP path is required.",
+                    nameof(zipPath));
+            }
+
+            if (string.IsNullOrWhiteSpace(entryPath))
+            {
+                throw new ArgumentException(
+                    "ZIP entry path is required.",
+                    nameof(entryPath));
+            }
+
+            using (var stream = File.Open(
+                       zipPath,
+                       FileMode.Open,
+                       FileAccess.Read,
+                       FileShare.ReadWrite))
+            using (var archive = new ZipArchive(
+                       stream,
+                       ZipArchiveMode.Read,
+                       false))
+            {
+                var entry = FindEntry(
+                    archive,
+                    entryPath,
+                    cancellationToken);
+
+                if (entry == null)
+                {
+                    throw new FileNotFoundException(
+                        "UnityPackage ZIP entry was not found.",
+                        entryPath);
+                }
+
+                using (var packageStream = entry.Open())
+                {
+                    var snapshot =
+                        UnityPackageContentReader.Read(
+                            packageStream,
+                            cancellationToken);
+                    return new AssetArchiveContent(
+                        AssetArchiveContentKind
+                            .UnityPackage,
+                        entry.Length,
+                        snapshot.Entries);
+                }
+            }
+        }
+
+        public byte[] ReadEntryBytes(
+            AssetArchiveContentKind kind,
+            string archivePath,
+            string packageEntryPath,
+            string contentEntryPath,
+            long maximumBytes,
+            System.Threading.CancellationToken
+                cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(
+                    archivePath) ||
+                string.IsNullOrWhiteSpace(
+                    contentEntryPath) ||
+                maximumBytes < 0L)
+            {
+                return null;
+            }
+
+            if (kind == AssetArchiveContentKind.Zip)
+            {
+                using (var stream = File.Open(
+                           archivePath,
+                           FileMode.Open,
+                           FileAccess.Read,
+                           FileShare.ReadWrite))
+                using (var archive = new ZipArchive(
+                           stream,
+                           ZipArchiveMode.Read,
+                           false))
+                {
+                    var entry = FindEntry(
+                        archive,
+                        contentEntryPath,
+                        cancellationToken);
+                    return ReadZipEntryBytes(
+                        entry,
+                        maximumBytes,
+                        cancellationToken);
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                    packageEntryPath))
+            {
+                using (var packageStream = File.Open(
+                           archivePath,
+                           FileMode.Open,
+                           FileAccess.Read,
+                           FileShare.ReadWrite))
+                {
+                    return UnityPackageContentReader
+                        .ReadEntry(
+                            packageStream,
+                            contentEntryPath,
+                            maximumBytes,
+                            cancellationToken);
+                }
+            }
+
+            using (var stream = File.Open(
+                       archivePath,
+                       FileMode.Open,
+                       FileAccess.Read,
+                       FileShare.ReadWrite))
+            using (var archive = new ZipArchive(
+                       stream,
+                       ZipArchiveMode.Read,
+                       false))
+            {
+                var packageEntry = FindEntry(
+                    archive,
+                    packageEntryPath,
+                    cancellationToken);
+                if (packageEntry == null)
+                {
+                    return null;
+                }
+
+                using (var packageStream =
+                       packageEntry.Open())
+                {
+                    return UnityPackageContentReader
+                        .ReadEntry(
+                            packageStream,
+                            contentEntryPath,
+                            maximumBytes,
+                            cancellationToken);
+                }
+            }
+        }
+
+        private static ZipArchiveEntry FindEntry(
+            ZipArchive archive,
+            string entryPath,
+            System.Threading.CancellationToken
+                cancellationToken)
+        {
+            if (archive == null)
+            {
+                return null;
+            }
+
+            for (var i = 0;
+                 i < archive.Entries.Count;
+                 i++)
+            {
+                cancellationToken
+                    .ThrowIfCancellationRequested();
+                if (string.Equals(
+                        archive.Entries[i].FullName,
+                        entryPath,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return archive.Entries[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static byte[] ReadZipEntryBytes(
+            ZipArchiveEntry entry,
+            long maximumBytes,
+            System.Threading.CancellationToken
+                cancellationToken)
+        {
+            if (entry == null ||
+                entry.Length > maximumBytes ||
+                entry.Length > int.MaxValue)
+            {
+                return null;
+            }
+
+            var bytes = new byte[(int)entry.Length];
+            using (var source = entry.Open())
+            {
+                var offset = 0;
+                while (offset < bytes.Length)
+                {
+                    cancellationToken
+                        .ThrowIfCancellationRequested();
+                    var read = source.Read(
+                        bytes,
+                        offset,
+                        bytes.Length - offset);
+                    if (read == 0)
+                    {
+                        throw new InvalidDataException(
+                            "ZIP entry ended unexpectedly.");
+                    }
+
+                    offset += read;
+                }
+            }
+
+            return bytes;
+        }
     }
 
 }

@@ -14,14 +14,15 @@ namespace Ee4v.AssetManager.UI
     internal sealed class SearchableFileTree : VisualElement
     {
         private const string RootClassName = "ee4v-asset-manager-file-tree";
-        private const string RowClassName = "ee4v-asset-manager-file-tree__row";
+        internal const string RowClassName = "ee4v-asset-manager-file-tree__row";
         private const string RowImportTargetClassName = "ee4v-asset-manager-file-tree__row--import-target";
         private const string RowGroupClassName = "ee4v-asset-manager-file-tree__row--group";
         private const string RowVariantGroupClassName = "ee4v-asset-manager-file-tree__row--variant-group";
         private const string RowVersionGroupClassName = "ee4v-asset-manager-file-tree__row--version-group";
         private const string RowPrimaryFileClassName = "ee4v-asset-manager-file-tree__row--primary-file";
-        private const string RowTitleClassName = "ee4v-asset-manager-file-tree__title";
-        private const string RowMetaClassName = "ee4v-asset-manager-file-tree__meta";
+        internal const string RowTitleClassName = "ee4v-asset-manager-file-tree__title";
+        internal const string RowMetaClassName = "ee4v-asset-manager-file-tree__meta";
+        internal const string RowEmptyMetaClassName = "ee4v-asset-manager-file-tree__meta--empty";
         private const string RowGroupMetaClassName = "ee4v-asset-manager-file-tree__meta--group";
         private const int MaximumCachedImagePreviews = 24;
         private readonly IAssetManager _assetManager;
@@ -468,11 +469,17 @@ namespace Ee4v.AssetManager.UI
 
         private VisualElement CreateTreeItem()
         {
-            var row = new VisualElement();
-            row.AddToClassList(RowClassName);
+            var row = CreateRow();
             row.RegisterCallback<PointerEnterEvent>(OnImageRowPointerEnter);
             row.RegisterCallback<PointerMoveEvent>(OnImageRowPointerMove);
             row.RegisterCallback<PointerLeaveEvent>(OnImageRowPointerLeave);
+            return row;
+        }
+
+        internal static VisualElement CreateRow()
+        {
+            var row = new VisualElement();
+            row.AddToClassList(RowClassName);
             var title = UiTextFactory.Create(string.Empty, RowTitleClassName);
             title.SetWhiteSpace(WhiteSpace.NoWrap);
             title.pickingMode = PickingMode.Ignore;
@@ -513,7 +520,7 @@ namespace Ee4v.AssetManager.UI
                 meta.SetText(metaText);
                 meta.tooltip = string.Empty;
                 meta.EnableInClassList(RowGroupMetaClassName, node.IsGroup);
-                meta.EnableInClassList("ee4v-asset-manager-file-tree__meta--empty", string.IsNullOrWhiteSpace(metaText));
+                meta.EnableInClassList(RowEmptyMetaClassName, string.IsNullOrWhiteSpace(metaText));
             }
         }
 
@@ -1029,7 +1036,9 @@ namespace Ee4v.AssetManager.UI
             bool isPrimaryFile = false,
             IReadOnlyList<FileTreeImportTargetEntry> importTargetEntries = null,
             FileTreeImageSource imageSource = null,
-            string detailParentName = null)
+            string detailParentName = null,
+            string detailArchivePath = null,
+            string detailArchiveEntryPath = null)
         {
             Name = name ?? string.Empty;
             Meta = meta ?? string.Empty;
@@ -1050,6 +1059,10 @@ namespace Ee4v.AssetManager.UI
             ImportTargetEntries = importTargetEntries ?? Array.Empty<FileTreeImportTargetEntry>();
             ImageSource = imageSource;
             DetailParentName = detailParentName ?? string.Empty;
+            DetailArchivePath =
+                detailArchivePath ?? string.Empty;
+            DetailArchiveEntryPath =
+                detailArchiveEntryPath ?? string.Empty;
         }
 
         public string Name { get; }
@@ -1086,6 +1099,10 @@ namespace Ee4v.AssetManager.UI
 
         public string DetailParentName { get; }
 
+        public string DetailArchivePath { get; }
+
+        public string DetailArchiveEntryPath { get; }
+
         public bool CanSetImportTarget
         {
             get { return !IsAssetFileRoot && ImportTargetEntries.Count > 0; }
@@ -1104,6 +1121,17 @@ namespace Ee4v.AssetManager.UI
 
         public FileTreeDetailState CreateDetailState(string itemId)
         {
+            if (IsAssetFileRoot &&
+                !string.IsNullOrWhiteSpace(
+                    AssetFileId))
+            {
+                return FileTreeDetailState
+                    .FromAssetFile(
+                        AssetFileId,
+                        Name,
+                        Path);
+            }
+
             var detailId = string.Join("|", new[]
             {
                 itemId ?? string.Empty,
@@ -1117,7 +1145,11 @@ namespace Ee4v.AssetManager.UI
                 DetailParentName,
                 IsDirectory || IsGroup
                     ? string.Empty
-                    : Path);
+                    : Path,
+                sourceArchivePath:
+                    DetailArchivePath,
+                sourceArchiveEntryPath:
+                    DetailArchiveEntryPath);
         }
 
         public void SetImportTargetState(string fileId, HashSet<string> targetPaths)
@@ -1796,7 +1828,13 @@ namespace Ee4v.AssetManager.UI
                     imageSource: isDirectory
                         ? null
                         : FileTreeImageSource.FromArchive(Name, archivePath, archiveEntryPath),
-                    detailParentName: System.IO.Path.GetFileName(archivePath));
+                    detailParentName: System.IO.Path.GetFileName(archivePath),
+                    detailArchivePath: isDirectory
+                        ? null
+                        : archivePath,
+                    detailArchiveEntryPath: isDirectory
+                        ? null
+                        : archiveEntryPath);
                 return new SearchableTreeItemData<FileTreeNode>(
                     nextId(),
                     node,

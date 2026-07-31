@@ -280,15 +280,20 @@ namespace Ee4v.AssetManager.UI
         internal FileDependencySettingsView()
         {
             AddToClassList(RootClassName);
-            Add(UiTextFactory.Create(
+            var title = UiTextFactory.Create(
                 I18N.Get(
                     "assetManager.fileDependencies.title"),
-                UiClassNames.SectionTitle));
-            Add(UiTextFactory.Create(
+                "ee4v-file-dependency-settings__title",
+                UiClassNames.SectionTitle);
+            title.style.flexShrink = 0f;
+            Add(title);
+            var instruction = UiTextFactory.Create(
                 I18N.Get(
                     "assetManager.fileDependencies.instruction"),
                 "ee4v-file-dependency-settings__instruction",
-                UiClassNames.InfoCardDescription));
+                UiClassNames.InfoCardDescription);
+            instruction.style.flexShrink = 0f;
+            Add(instruction);
 
             _currentSection = CreateSection(
                 CurrentSectionClassName,

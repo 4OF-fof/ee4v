@@ -68,6 +68,19 @@ namespace Ee4v.AssetManager.UI
             return assetManager != null;
         }
 
+        internal static bool TryGetArchiveDetailDependencies(
+            out IAssetManager assetManager,
+            out IAssetArchiveReader archiveReader,
+            out IAssetManagerUiScheduler scheduler)
+        {
+            assetManager = _assetManager;
+            archiveReader = _archiveReader;
+            scheduler = _scheduler;
+            return assetManager != null &&
+                   archiveReader != null &&
+                   scheduler != null;
+        }
+
         internal static bool TryGetProtectionActions(
             out IAssetManagerProtectionActions
                 protectionActions)

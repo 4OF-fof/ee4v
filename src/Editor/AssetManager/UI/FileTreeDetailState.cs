@@ -1,3 +1,5 @@
+using Ee4v.AssetManager.Contracts;
+
 namespace Ee4v.AssetManager.UI
 {
     internal sealed class FileTreeDetailState
@@ -6,7 +8,10 @@ namespace Ee4v.AssetManager.UI
             string id,
             string name,
             string parentName = null,
-            string extension = null)
+            string extension = null,
+            AssetArchiveContent archiveContent = null,
+            string sourceArchivePath = null,
+            string sourceArchiveEntryPath = null)
         {
             Id = id ?? string.Empty;
             Name = name ?? string.Empty;
@@ -16,6 +21,11 @@ namespace Ee4v.AssetManager.UI
                     extension == null
                         ? Name
                         : extension);
+            ArchiveContent = archiveContent;
+            SourceArchivePath =
+                sourceArchivePath ?? string.Empty;
+            SourceArchiveEntryPath =
+                sourceArchiveEntryPath ?? string.Empty;
         }
 
         public string Id { get; }
@@ -25,6 +35,18 @@ namespace Ee4v.AssetManager.UI
         public string ParentName { get; }
 
         public string Extension { get; }
+
+        public AssetArchiveContent ArchiveContent { get; }
+
+        public string SourceArchivePath { get; }
+
+        public string SourceArchiveEntryPath { get; }
+
+        public bool HasArchiveEntrySource =>
+            !string.IsNullOrWhiteSpace(
+                SourceArchivePath) &&
+            !string.IsNullOrWhiteSpace(
+                SourceArchiveEntryPath);
 
         public string AssetFileId
         {

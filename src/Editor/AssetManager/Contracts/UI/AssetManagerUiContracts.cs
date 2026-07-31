@@ -73,12 +73,83 @@ namespace Ee4v.AssetManager.Contracts
         public string ArchiveFullName { get; }
     }
 
+    public enum AssetArchiveContentKind
+    {
+        Zip,
+        UnityPackage
+    }
+
+    public enum AssetArchiveContentEntryKind
+    {
+        File,
+        Directory
+    }
+
+    public sealed class AssetArchiveContentEntry
+    {
+        public AssetArchiveContentEntry(
+            string path,
+            AssetArchiveContentEntryKind kind,
+            long sizeBytes = 0L,
+            string sourcePath = null)
+        {
+            Path = path ?? string.Empty;
+            Kind = kind;
+            SizeBytes = Math.Max(0L, sizeBytes);
+            SourcePath = sourcePath ?? string.Empty;
+        }
+
+        public string Path { get; }
+        public AssetArchiveContentEntryKind Kind { get; }
+        public long SizeBytes { get; }
+        public string SourcePath { get; }
+    }
+
+    public sealed class AssetArchiveContent
+    {
+        public AssetArchiveContent(
+            AssetArchiveContentKind kind,
+            long sizeBytes,
+            IReadOnlyList<AssetArchiveContentEntry> entries)
+        {
+            Kind = kind;
+            SizeBytes = Math.Max(0L, sizeBytes);
+            Entries = entries ?? Array.Empty<AssetArchiveContentEntry>();
+        }
+
+        public AssetArchiveContentKind Kind { get; }
+        public long SizeBytes { get; }
+        public IReadOnlyList<AssetArchiveContentEntry> Entries { get; }
+    }
+
     public interface IAssetArchiveReader
     {
         string CacheDirectory { get; }
 
         IReadOnlyList<AssetArchiveEntry> ReadZipEntries(
             string zipPath,
+            CancellationToken cancellationToken);
+
+        AssetArchiveContent ReadZipContent(
+            string zipPath,
+            CancellationToken cancellationToken);
+
+        AssetArchiveContent ReadUnityPackageContent(
+            string packagePath,
+            CancellationToken cancellationToken);
+
+        AssetArchiveContent
+            ReadUnityPackageContentFromZip(
+                string zipPath,
+                string entryPath,
+                CancellationToken cancellationToken);
+
+        byte[] ReadEntryBytes(
+            AssetArchiveContentKind kind,
+            string archivePath,
+            string packageEntryPath,
+            string contentEntryPath,
+            long maximumBytes,
             CancellationToken cancellationToken);
     }
 

@@ -74,6 +74,8 @@ namespace Ee4v.AssetManager.UI
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/ImageStack/image-stack.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/Icon/icon.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/SearchField/search-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/AssetManager/UI/Panels/InfomationPanel/infomation-panel.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/NumericSlider/numeric-slider.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/ItemCard/item-card.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Collections/ItemGrid/item-grid.uss");
