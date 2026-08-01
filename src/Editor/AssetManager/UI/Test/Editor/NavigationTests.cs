@@ -105,6 +105,29 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
+        public void AssetTagSelection_FiltersAndTogglesNormalizedNames()
+        {
+            var selection = new AssetTagSelection(
+                new[] { "Avatar", "Sample", "sample" },
+                new[] { "Avatar" });
+
+            Assert.That(
+                selection.AvailableOptions(),
+                Is.EqualTo(new[] { "Sample" }));
+
+            selection.Toggle(" sample ");
+            selection.Toggle("avatar");
+            selection.Toggle(" Custom ");
+
+            Assert.That(
+                selection.Selected,
+                Is.EqualTo(new[] { "Sample", "Custom" }));
+            Assert.That(
+                selection.SelectedOptions("cus"),
+                Is.EqualTo(new[] { "Custom" }));
+        }
+
+        [Test]
         public void CreateQuery_UsesBoothInformationInsteadOfSourceType()
         {
             var query = MainViewController.CreateQuery(

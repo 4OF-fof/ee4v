@@ -60,9 +60,18 @@ namespace Ee4v.UI
             var nextState =
                 state ??
                 new ErrorScreenState(string.Empty);
-            _icon.SetState(IconState.FromFluentIcon(
-                ResolveIcon(nextState.Kind),
-                IconSize));
+            var showIcon =
+                nextState.Kind != ErrorScreenKind.Loading;
+            if (showIcon)
+            {
+                _icon.SetState(IconState.FromFluentIcon(
+                    ResolveIcon(nextState.Kind),
+                    IconSize));
+            }
+
+            _icon.style.display = showIcon
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
             _message.SetText(nextState.Message);
         }
 
@@ -73,8 +82,6 @@ namespace Ee4v.UI
             {
                 case ErrorScreenKind.Info:
                     return UiFluentIcon.Info;
-                case ErrorScreenKind.Loading:
-                    return UiFluentIcon.ArrowClockwise;
                 default:
                     return UiFluentIcon.ErrorCircle;
             }

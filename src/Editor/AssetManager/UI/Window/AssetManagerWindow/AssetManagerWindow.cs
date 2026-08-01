@@ -83,7 +83,6 @@ namespace Ee4v.AssetManager.UI
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/Icon/icon.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/ErrorScreen/error-screen.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/InputField/input-field.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/CommaSeparatedListField/comma-separated-list-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/SearchField/search-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/NumericSlider/numeric-slider.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss");

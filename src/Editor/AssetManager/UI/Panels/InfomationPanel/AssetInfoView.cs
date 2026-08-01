@@ -18,7 +18,8 @@ namespace Ee4v.AssetManager.UI
             string createdAt,
             string updatedAt,
             bool showTags = true,
-            bool canAddFile = true)
+            bool canAddFile = true,
+            IReadOnlyList<string> availableTagNames = null)
         {
             ItemId = itemId ?? string.Empty;
             Name = name ?? string.Empty;
@@ -30,6 +31,7 @@ namespace Ee4v.AssetManager.UI
             UpdatedAt = updatedAt ?? string.Empty;
             ShowTags = showTags;
             CanAddFile = canAddFile;
+            AvailableTagNames = availableTagNames ?? TagNames;
         }
 
         internal string ItemId { get; }
@@ -42,6 +44,7 @@ namespace Ee4v.AssetManager.UI
         internal string UpdatedAt { get; }
         internal bool ShowTags { get; }
         internal bool CanAddFile { get; }
+        internal IReadOnlyList<string> AvailableTagNames { get; }
     }
 
     internal sealed class AssetInfoEditRequest
@@ -86,7 +89,7 @@ namespace Ee4v.AssetManager.UI
 
         private readonly InputField _nameField;
         private readonly InputField _descriptionField;
-        private readonly CommaSeparatedListField _tagsField;
+        private readonly AssetTagField _tagsField;
         private readonly VisualElement _tagsFieldContainer;
         private readonly UiTextElement _fileCount;
         private readonly UiTextElement _sources;
@@ -122,11 +125,7 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get("assetManager.assetInfo.description"),
                 _descriptionField));
 
-            _tagsField = new CommaSeparatedListField(
-                new CommaSeparatedListFieldState(
-                    Array.Empty<string>(),
-                    itemPlaceholder: I18N.Get(
-                        "assetManager.assetInfo.tagsPlaceholder")));
+            _tagsField = new AssetTagField();
             _tagsFieldContainer = CreateField(
                 I18N.Get("assetManager.assetInfo.tags"),
                 _tagsField);
@@ -136,8 +135,7 @@ namespace Ee4v.AssetManager.UI
                 _ => SubmitIfChanged());
             _descriptionField.RegisterCallback<FocusOutEvent>(
                 _ => SubmitIfChanged());
-            _tagsField.RegisterCallback<FocusOutEvent>(
-                _ => SubmitIfChanged());
+            _tagsField.ValuesCommitted += SubmitIfChanged;
 
             var metadata = new VisualElement();
             metadata.AddToClassList(MetadataClassName);
@@ -191,7 +189,9 @@ namespace Ee4v.AssetManager.UI
             {
                 _nameField.SetValueWithoutNotify(string.Empty);
                 _descriptionField.SetValueWithoutNotify(string.Empty);
-                _tagsField.Values = Array.Empty<string>();
+                _tagsField.SetValues(
+                    Array.Empty<string>(),
+                    Array.Empty<string>());
                 ClearFeedback();
                 return;
             }
@@ -199,7 +199,9 @@ namespace Ee4v.AssetManager.UI
             _nameField.SetValueWithoutNotify(state.Name);
             _descriptionField.SetValueWithoutNotify(
                 state.Description);
-            _tagsField.Values = state.TagNames;
+            _tagsField.SetValues(
+                state.AvailableTagNames,
+                state.TagNames);
             _tagsFieldContainer.style.display = state.ShowTags
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;

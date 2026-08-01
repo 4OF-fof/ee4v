@@ -117,7 +117,6 @@ namespace Ee4v.UI
                 {
                     "Editor/UI/Components/Inputs/Button/ui-button.uss",
                     "Editor/UI/Components/Inputs/InputField/input-field.uss",
-                    "Editor/UI/Components/Inputs/CommaSeparatedListField/comma-separated-list-field.uss",
                     "Editor/UI/Components/Inputs/SearchField/search-field.uss",
                     "Editor/UI/Components/Inputs/NumericSlider/numeric-slider.uss",
                     "Editor/UI/Components/Inputs/ReorderableListField/reorderable-list-field.uss",

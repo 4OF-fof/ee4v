@@ -22,8 +22,8 @@ namespace Ee4v.UI
                     "error-screen",
                     "Content",
                     "ErrorScreen",
-                    "画面全体の進行中、空状態、エラーを中央のアイコンとメッセージで表示するコンポーネントです。",
-                    "一覧を隠して状態だけを伝える場面で使い、文字だけの空画面を残しません。",
+                    "画面全体の進行中、空状態、エラーを中央へ表示するコンポーネントです。",
+                    "短時間の読み込みはメッセージだけを表示し、空状態とエラーにはアイコンを添えます。",
                     new string[0],
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) =>
@@ -58,7 +58,7 @@ namespace Ee4v.UI
 
             var controls = CreateTabbedControlsSection(
                 parent,
-                "状態ごとのアイコンとメッセージを確認します。");
+                "状態ごとのアイコン有無とメッセージを確認します。");
             var messageField = AddTextField(
                 controls.Content,
                 "メッセージ",

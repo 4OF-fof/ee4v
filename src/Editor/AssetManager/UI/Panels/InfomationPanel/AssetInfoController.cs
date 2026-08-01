@@ -259,7 +259,14 @@ namespace Ee4v.AssetManager.UI
                 item.CreatedAt,
                 item.UpdatedAt,
                 showTags: true,
-                canAddFile: true));
+                canAddFile: true,
+                availableTagNames: (_assetManager.GetTags() ??
+                        Array.Empty<AssetTag>())
+                    .Where(tag =>
+                        tag != null &&
+                        !string.IsNullOrWhiteSpace(tag.Name))
+                    .Select(tag => tag.Name)
+                    .ToArray()));
         }
 
         private void ReloadVariantGroup()
@@ -357,7 +364,8 @@ namespace Ee4v.AssetManager.UI
             DateTime createdAt,
             DateTime updatedAt,
             bool showTags,
-            bool canAddFile)
+            bool canAddFile,
+            IReadOnlyList<string> availableTagNames = null)
         {
             var safeFiles = files ?? Array.Empty<AssetFile>();
             var sources = safeFiles
@@ -380,7 +388,8 @@ namespace Ee4v.AssetManager.UI
                 createdAt.ToString("g"),
                 updatedAt.ToString("g"),
                 showTags,
-                canAddFile);
+                canAddFile,
+                availableTagNames);
         }
 
         private static string FormatSource(AssetSourceType source)

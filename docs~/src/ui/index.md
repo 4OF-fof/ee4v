@@ -4,7 +4,7 @@ UI は Unity Editor 上で使う共通 UI コンポーネントと、その実�
 
 `Editor/UI/Foundation` は component が共有する土台です。design token、typography、built-in icon と同梱 Fluent icon asset の解決、共通 resource 読み込みをここへ集約し、module 固有の機能ロジックは置きません。USS は `ui-design-tokens.uss`、C# は `UiDesignTokens.cs` を共通値の入口にします。
 
-`ErrorScreen` は画面全体の読み込み中、空状態、エラーを中央のアイコンとメッセージで表示します。一覧 component の空表示テキストを画面状態として直接使わず、内容を隠してこの component へ状態を渡します。
+`ErrorScreen` は画面全体の読み込み中、空状態、エラーを中央に表示します。短時間の読み込みはメッセージだけを表示し、空状態とエラーにはアイコンを添えます。一覧 component の空表示テキストを画面状態として直接使わず、内容を隠してこの component へ状態を渡します。
 
 ## カテゴリ
 

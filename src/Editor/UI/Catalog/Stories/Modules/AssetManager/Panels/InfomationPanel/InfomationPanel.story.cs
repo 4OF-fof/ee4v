@@ -17,8 +17,8 @@ namespace Ee4v.AssetManager.UI
                 registry.RegisterStyleSheet("Editor/UI/Components/Content/ItemImage/item-image.uss");
                 registry.RegisterStyleSheet("Editor/UI/Components/Content/ImageStack/image-stack.uss");
                 registry.RegisterStyleSheet("Editor/UI/Components/Content/Icon/icon.uss");
+                registry.RegisterStyleSheet("Editor/UI/Components/Inputs/Button/ui-button.uss");
                 registry.RegisterStyleSheet("Editor/UI/Components/Inputs/InputField/input-field.uss");
-                registry.RegisterStyleSheet("Editor/UI/Components/Inputs/CommaSeparatedListField/comma-separated-list-field.uss");
                 registry.RegisterStyleSheet("Editor/UI/Components/Inputs/SearchField/search-field.uss");
                 registry.RegisterStyleSheet("Editor/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss");
                 registry.RegisterStyleSheet("Editor/UI/Components/Content/Interactive/ViewToggleTabs/view-toggle-tabs.uss");
@@ -85,7 +85,17 @@ namespace Ee4v.AssetManager.UI
                 3,
                 "ee4v, Eagle",
                 "2026/07/01 10:00",
-                "2026/07/31 18:30"));
+                "2026/07/31 18:30",
+                availableTagNames: new[]
+                {
+                    "Avatar",
+                    "BoothMeta",
+                    "FREE",
+                    "Sample",
+                    "Swimwear",
+                    "VRCAsset",
+                    "ギプフェル対応"
+                }));
             surface.Add(view);
             preview.Body.Add(surface);
         }
