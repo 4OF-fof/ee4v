@@ -64,6 +64,22 @@
     color: var(--ee4v-color-text-soft);
 }
 
+.ee4v-asset-manager-panel__external-file-drop-overlay {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    border-width: var(--ee4v-border-emphasis);
+    border-color: var(--ee4v-color-info);
+    background-color: var(--ee4v-color-info-surface-strong);
+}
+
+.ee4v-asset-manager-panel--external-file-drop > .ee4v-asset-manager-panel__external-file-drop-overlay {
+    display: flex;
+}
+
 .ee4v-asset-manager-main-message {
     flex-grow: 1;
     min-height: 0;

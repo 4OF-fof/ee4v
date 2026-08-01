@@ -6,8 +6,7 @@ namespace Ee4v.AssetManager.UI
     internal enum AssetItemGridHistoryEntryKind
     {
         View,
-        FileList,
-        FileDetail
+        FileList
     }
 
     internal enum AssetItemGridNodeKind
@@ -43,11 +42,7 @@ namespace Ee4v.AssetManager.UI
             AssetItemGridNodeKind nodeKind = AssetItemGridNodeKind.Item,
             string nodeId = null,
             string nodeName = null,
-            string detailId = null,
-            string detailName = null,
-            string detailParentName = null,
-            IReadOnlyList<AssetItemGridHistoryView> viewPath = null,
-            string detailExtension = null)
+            IReadOnlyList<AssetItemGridHistoryView> viewPath = null)
         {
             Kind = kind;
             ViewId = viewId ?? string.Empty;
@@ -61,12 +56,6 @@ namespace Ee4v.AssetManager.UI
             NodeKind = nodeKind;
             NodeId = nodeId ?? string.Empty;
             NodeName = nodeName ?? string.Empty;
-            DetailId = detailId ?? string.Empty;
-            DetailName = detailName ?? string.Empty;
-            DetailParentName = detailParentName ?? string.Empty;
-            DetailExtension =
-                FileExtensionUtility.Normalize(
-                    detailExtension);
         }
 
         public AssetItemGridHistoryEntryKind Kind { get; }
@@ -87,14 +76,6 @@ namespace Ee4v.AssetManager.UI
 
         public string NodeName { get; }
 
-        public string DetailId { get; }
-
-        public string DetailName { get; }
-
-        public string DetailParentName { get; }
-
-        public string DetailExtension { get; }
-
         public IReadOnlyList<string> Breadcrumbs
         {
             get
@@ -106,37 +87,16 @@ namespace Ee4v.AssetManager.UI
                     breadcrumbs.Add(ViewPath[i].Label);
                 }
 
-                if ((Kind == AssetItemGridHistoryEntryKind.FileList || Kind == AssetItemGridHistoryEntryKind.FileDetail) &&
+                if (Kind == AssetItemGridHistoryEntryKind.FileList &&
                     !string.IsNullOrWhiteSpace(ItemName))
                 {
                     breadcrumbs.Add(ItemName);
-                    if (Kind == AssetItemGridHistoryEntryKind.FileDetail && !string.IsNullOrWhiteSpace(DetailName))
-                    {
-                        if (!string.IsNullOrWhiteSpace(DetailParentName))
-                        {
-                            breadcrumbs.Add(DetailParentName);
-                        }
-
-                        breadcrumbs.Add(DetailName);
-                        return breadcrumbs;
-                    }
-
                     if (!string.IsNullOrWhiteSpace(NodeName))
                     {
                         breadcrumbs.Add(NodeName);
                     }
 
                     return breadcrumbs;
-                }
-
-                if (Kind == AssetItemGridHistoryEntryKind.FileDetail && !string.IsNullOrWhiteSpace(DetailName))
-                {
-                    if (!string.IsNullOrWhiteSpace(DetailParentName))
-                    {
-                        breadcrumbs.Add(DetailParentName);
-                    }
-
-                    breadcrumbs.Add(DetailName);
                 }
 
                 return breadcrumbs;
@@ -150,9 +110,7 @@ namespace Ee4v.AssetManager.UI
                 && string.Equals(ViewId, other.ViewId, StringComparison.Ordinal)
                 && string.Equals(ItemId, other.ItemId, StringComparison.Ordinal)
                 && NodeKind == other.NodeKind
-                && string.Equals(NodeId, other.NodeId, StringComparison.Ordinal)
-                && string.Equals(DetailId, other.DetailId, StringComparison.Ordinal)
-                && string.Equals(DetailParentName, other.DetailParentName, StringComparison.Ordinal);
+                && string.Equals(NodeId, other.NodeId, StringComparison.Ordinal);
         }
 
         private static IReadOnlyList<AssetItemGridHistoryView>

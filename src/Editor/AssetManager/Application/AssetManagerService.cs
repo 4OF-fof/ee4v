@@ -117,9 +117,12 @@ namespace Ee4v.AssetManager.Application
         public IReadOnlyList<AssetFile> GetFiles(string itemId, AssetFileQuery query = null) =>
             _fileReader.GetFiles(itemId, query);
 
+        public IReadOnlyList<AssetFile> GetUnassignedFiles(
+            AssetFileQuery query = null) =>
+            _fileReader.GetUnassignedFiles(query);
+
         public AssetFile RegisterFile(string itemId, RegisterFileRequest request)
         {
-            AssetManagerRequestValidator.Require(itemId, "item id");
             AssetManagerRequestValidator.RequireRequest(request, "Register file request");
             AssetManagerRequestValidator.Require(request.FilePath, "file path");
             return PublishCatalog(_fileWriter.RegisterFile(itemId, request));
@@ -138,6 +141,16 @@ namespace Ee4v.AssetManager.Application
             return PublishCatalog(_fileWriter.CreateVariantGroup(itemId, request));
         }
 
+        public AssetVariantGroup UpdateVariantGroup(
+            string variantGroupId,
+            UpdateVariantGroupRequest request)
+        {
+            AssetManagerRequestValidator.Require(variantGroupId, "variant group id");
+            AssetManagerRequestValidator.RequireRequest(request, "Update variant group request");
+            AssetManagerRequestValidator.Require(request.Name, "variant group name");
+            return PublishCatalog(_fileWriter.UpdateVariantGroup(variantGroupId, request));
+        }
+
         public IReadOnlyList<AssetVersionGroup> GetVersionGroups(string itemId) =>
             _fileReader.GetVersionGroups(itemId);
 
@@ -149,6 +162,16 @@ namespace Ee4v.AssetManager.Application
             AssetManagerRequestValidator.RequireRequest(request, "Create version group request");
             AssetManagerRequestValidator.Require(request.Name, "version group name");
             return PublishCatalog(_fileWriter.CreateVersionGroup(itemId, request));
+        }
+
+        public AssetVersionGroup UpdateVersionGroup(
+            string versionGroupId,
+            UpdateVersionGroupRequest request)
+        {
+            AssetManagerRequestValidator.Require(versionGroupId, "version group id");
+            AssetManagerRequestValidator.RequireRequest(request, "Update version group request");
+            AssetManagerRequestValidator.Require(request.Name, "version group name");
+            return PublishCatalog(_fileWriter.UpdateVersionGroup(versionGroupId, request));
         }
 
         public void SetVersionGroupPrimaryFile(string versionGroupId, string fileId)

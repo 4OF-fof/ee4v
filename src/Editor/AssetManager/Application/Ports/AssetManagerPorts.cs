@@ -45,6 +45,7 @@ namespace Ee4v.AssetManager.Application.Ports
         AssetFile GetFile(string fileId);
         string GetFileOwnerItemId(string fileId);
         IReadOnlyList<AssetFile> GetFiles(string itemId, AssetFileQuery query);
+        IReadOnlyList<AssetFile> GetUnassignedFiles(AssetFileQuery query);
         IReadOnlyList<AssetVariantGroup> GetVariantGroups(string itemId);
         IReadOnlyList<AssetVersionGroup> GetVersionGroups(string itemId);
         AssetFilePathResolution ResolveFilePath(string fileId);
@@ -54,7 +55,9 @@ namespace Ee4v.AssetManager.Application.Ports
     {
         AssetFile RegisterFile(string itemId, RegisterFileRequest request);
         AssetVariantGroup CreateVariantGroup(string itemId, CreateVariantGroupRequest request);
+        AssetVariantGroup UpdateVariantGroup(string variantGroupId, UpdateVariantGroupRequest request);
         AssetVersionGroup CreateVersionGroup(string itemId, CreateVersionGroupRequest request);
+        AssetVersionGroup UpdateVersionGroup(string versionGroupId, UpdateVersionGroupRequest request);
         string SetVersionGroupPrimaryFile(string versionGroupId, string fileId);
         void ArchiveFile(string fileId);
     }

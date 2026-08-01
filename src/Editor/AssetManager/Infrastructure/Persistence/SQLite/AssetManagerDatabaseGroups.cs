@@ -33,13 +33,34 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 var now = Now();
                 var id = NewId();
                 connection.Execute(
-                    "INSERT INTO variant_group(id, item_info_id, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO variant_group(id, item_info_id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
                     id,
                     itemId,
                     request.Name,
+                    request.Description ?? string.Empty,
                     now,
                     now);
                 return ToAssetVariantGroup(connection.Query<VariantGroupRow>("SELECT * FROM variant_group WHERE id = ?", id).First());
+            }
+        }
+
+        public static AssetVariantGroup UpdateVariantGroup(string variantGroupId, UpdateVariantGroupRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(variantGroupId) || request == null || string.IsNullOrWhiteSpace(request.Name))
+            {
+                throw new AssetManagerException(AssetManagerErrorCode.InvalidRequest, "Variant group id and name are required.");
+            }
+
+            using (var connection = OpenConnection())
+            {
+                EnsureVariantGroupExists(connection, variantGroupId);
+                connection.Execute(
+                    "UPDATE variant_group SET name = ?, description = ?, updated_at = ? WHERE id = ?",
+                    request.Name,
+                    request.Description ?? string.Empty,
+                    Now(),
+                    variantGroupId);
+                return ToAssetVariantGroup(connection.Query<VariantGroupRow>("SELECT * FROM variant_group WHERE id = ?", variantGroupId).First());
             }
         }
 
@@ -72,15 +93,36 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 var now = Now();
                 var id = NewId();
                 connection.Execute(
-                    "INSERT INTO version_group(id, item_info_id, variant_group_id, name, primary_file_info_id, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?, ?)",
+                    "INSERT INTO version_group(id, item_info_id, variant_group_id, name, description, primary_file_info_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NULL, ?, ?)",
                     id,
                     itemId,
                     string.IsNullOrWhiteSpace(request.VariantGroupId) ? null : request.VariantGroupId,
                     request.Name,
+                    request.Description ?? string.Empty,
                     now,
                     now);
 
                 return ToAssetVersionGroup(connection.Query<VersionGroupRow>("SELECT * FROM version_group WHERE id = ?", id).First());
+            }
+        }
+
+        public static AssetVersionGroup UpdateVersionGroup(string versionGroupId, UpdateVersionGroupRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(versionGroupId) || request == null || string.IsNullOrWhiteSpace(request.Name))
+            {
+                throw new AssetManagerException(AssetManagerErrorCode.InvalidRequest, "Version group id and name are required.");
+            }
+
+            using (var connection = OpenConnection())
+            {
+                EnsureVersionGroupExists(connection, versionGroupId);
+                connection.Execute(
+                    "UPDATE version_group SET name = ?, description = ?, updated_at = ? WHERE id = ?",
+                    request.Name,
+                    request.Description ?? string.Empty,
+                    Now(),
+                    versionGroupId);
+                return ToAssetVersionGroup(connection.Query<VersionGroupRow>("SELECT * FROM version_group WHERE id = ?", versionGroupId).First());
             }
         }
 

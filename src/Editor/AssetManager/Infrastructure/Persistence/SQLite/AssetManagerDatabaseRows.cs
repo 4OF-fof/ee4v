@@ -77,6 +77,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             public string id { get; set; }
             public string item_info_id { get; set; }
             public string name { get; set; }
+            public string description { get; set; }
             public string created_at { get; set; }
             public string updated_at { get; set; }
         }
@@ -87,6 +88,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             public string item_info_id { get; set; }
             public string variant_group_id { get; set; }
             public string name { get; set; }
+            public string description { get; set; }
             public string primary_file_info_id { get; set; }
             public string created_at { get; set; }
             public string updated_at { get; set; }

@@ -31,6 +31,26 @@
         }
       }
     },
+    "assetInfo": {
+      "name": "Name",
+      "namePlaceholder": "Asset name",
+      "description": "Description",
+      "descriptionPlaceholder": "Asset description",
+      "tags": "Tags",
+      "tagsPlaceholder": "Enter one tag per line",
+      "files": "Files",
+      "sources": "Data sources",
+      "createdAt": "Created",
+      "updatedAt": "Updated",
+      "noSources": "Not registered",
+      "addFile": "Add File",
+      "selectFileTitle": "Select a file to register with AssetManager",
+      "saved": "Asset Info was saved.",
+      "fileAdded": "The file was added to the ee4v data source.",
+      "error": {
+        "nameRequired": "Enter a name."
+      }
+    },
     "archiveDetail": {
       "searchPlaceholder": "Search archive contents",
       "loading": "Checking archive contents...",
@@ -112,6 +132,7 @@
       "loadCanceled": "Asset loading was canceled.",
       "noItems": "No asset items.",
       "noFiles": "This item has no files.",
+      "noUnassignedFiles": "No unassigned files.",
       "noChildren": "No child items to display.",
       "dragItems": "Add items to a collection",
       "preview": {
@@ -132,7 +153,7 @@
       "gridSize": "Grid size",
       "filter": "Filter",
       "sort": "Sort order",
-      "searchPlaceholder": "Search assets"
+      "searchPlaceholder": "Search assets and files"
     },
     "fileDependencies": {
       "title": "File dependencies",

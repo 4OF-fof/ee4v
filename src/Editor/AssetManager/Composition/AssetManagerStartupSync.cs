@@ -21,6 +21,7 @@ namespace Ee4v.AssetManager.Composition
         private static AssetManagerService _assetManager;
         private static ISettingsService _settings;
         private static int _running;
+        private static int _manualReloadRequested;
         private static readonly object CompletionLock = new object();
         private static readonly HashSet<Action> CompletionCallbacks =
             new HashSet<Action>();
@@ -85,8 +86,6 @@ namespace Ee4v.AssetManager.Composition
             {
                 Debug.LogWarning(I18N.Get(
                     "assetManager.background.noDatasource"));
-                InvokeCompletion(completed);
-                return;
             }
 
             if (completed != null)
@@ -97,6 +96,9 @@ namespace Ee4v.AssetManager.Composition
                 }
             }
 
+            Interlocked.Exchange(
+                ref _manualReloadRequested,
+                1);
             StartSync(checkBlm, blmPath, checkEagle, eaglePath);
         }
 
@@ -124,6 +126,9 @@ namespace Ee4v.AssetManager.Composition
 
         private static PreparedStartupSync Prepare(bool checkBlm, string blmPath, bool checkEagle, string eaglePath)
         {
+            // A manual reload must also recreate an absent database before
+            // the open views are asked to read it again.
+            _assetManager.GetCollections();
             return new PreparedStartupSync(
                 checkBlm ? _assetManager.PrepareBlmSync(new BlmSyncRequest(blmPath)) : null,
                 checkEagle ? _assetManager.PrepareEagleSync(new EagleSyncRequest(eaglePath)) : null);
@@ -224,17 +229,22 @@ namespace Ee4v.AssetManager.Composition
                         return;
                     }
 
-                    if (!task.IsCanceled && task.Result.Any(result => result.State != AssetSyncState.Failed))
+                    var catalogNotified =
+                        !task.IsCanceled &&
+                        task.Result.Any(result =>
+                            result.State != AssetSyncState.Failed);
+                    if (catalogNotified)
                     {
                         _assetManager.NotifyCatalogChanged();
                     }
 
-                    CompleteSync();
+                    CompleteSync(catalogNotified);
                 };
             });
         }
 
-        private static void CompleteSync()
+        private static void CompleteSync(
+            bool catalogAlreadyNotified = false)
         {
             Interlocked.Exchange(ref _running, 0);
             Action[] callbacks;
@@ -244,10 +254,29 @@ namespace Ee4v.AssetManager.Composition
                 CompletionCallbacks.Clear();
             }
 
+            var manualReloadRequested =
+                Interlocked.Exchange(
+                    ref _manualReloadRequested,
+                    0) != 0;
+            if (ShouldNotifyManualReload(
+                    catalogAlreadyNotified,
+                    manualReloadRequested))
+            {
+                _assetManager.NotifyCatalogChanged();
+            }
+
             for (var i = 0; i < callbacks.Length; i++)
             {
                 InvokeCompletion(callbacks[i]);
             }
+        }
+
+        internal static bool ShouldNotifyManualReload(
+            bool catalogAlreadyNotified,
+            bool manualReloadRequested)
+        {
+            return !catalogAlreadyNotified &&
+                   manualReloadRequested;
         }
 
         private static void InvokeCompletion(Action completed)

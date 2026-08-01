@@ -614,81 +614,6 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
-        public void FileDetailHistory_SupportsBackAndForward()
-        {
-            var history = new AssetItemGridHistory();
-            var list = new AssetItemGridHistoryEntry(
-                AssetItemGridHistoryEntryKind.FileList,
-                "all-assets",
-                "All Assets",
-                "item-1",
-                "Avatar");
-            var detail = new AssetItemGridHistoryEntry(
-                AssetItemGridHistoryEntryKind.FileDetail,
-                "all-assets",
-                "All Assets",
-                "item-1",
-                "Avatar",
-                detailId: "item-1|preview.png",
-                detailName: "preview.png",
-                detailParentName: "archive.zip",
-                detailExtension: "png");
-
-            history.SetCurrent(list);
-            history.SetCurrent(detail);
-
-            Assert.That(history.State.BackEntries, Is.EqualTo(new[] { list }));
-            Assert.That(history.State.ForwardEntries, Is.Empty);
-            Assert.That(history.State.Current.Breadcrumbs, Is.EqualTo(new[]
-            {
-                "All Assets",
-                "Avatar",
-                "archive.zip",
-                "preview.png"
-            }));
-            Assert.That(history.TryGoBack(out var previous), Is.True);
-            Assert.That(previous.Kind, Is.EqualTo(AssetItemGridHistoryEntryKind.FileList));
-            Assert.That(history.State.ForwardEntries, Is.EqualTo(new[] { detail }));
-            Assert.That(history.TryGoForward(out var next), Is.True);
-            Assert.That(next.Kind, Is.EqualTo(AssetItemGridHistoryEntryKind.FileDetail));
-            Assert.That(next.DetailName, Is.EqualTo("preview.png"));
-            Assert.That(next.DetailParentName, Is.EqualTo("archive.zip"));
-            Assert.That(next.DetailExtension, Is.EqualTo("png"));
-        }
-
-        [Test]
-        public void CollectionFileHistory_IncludesCollectionPath()
-        {
-            var entry = new AssetItemGridHistoryEntry(
-                AssetItemGridHistoryEntryKind.FileDetail,
-                AssetManagerCollectionViewId.Encode("fuga"),
-                "fuga",
-                "item-1",
-                "item",
-                detailId: "item-1|preview.png",
-                detailName: "preview.png",
-                detailParentName: "archive.zip",
-                viewPath: new[]
-                {
-                    new AssetItemGridHistoryView(
-                        AssetManagerCollectionViewId.Encode("hoge"),
-                        "hoge"),
-                    new AssetItemGridHistoryView(
-                        AssetManagerCollectionViewId.Encode("fuga"),
-                        "fuga")
-                });
-
-            Assert.That(entry.Breadcrumbs, Is.EqualTo(new[]
-            {
-                "hoge",
-                "fuga",
-                "item",
-                "archive.zip",
-                "preview.png"
-            }));
-        }
-
-        [Test]
         public void History_CanMoveToSelectedOverlayEntry()
         {
             var history = new AssetItemGridHistory();
@@ -702,22 +627,18 @@ namespace Ee4v.AssetManager.UI.Tests
                 "All Assets",
                 "item-1",
                 "Avatar");
-            var detail = new AssetItemGridHistoryEntry(
-                AssetItemGridHistoryEntryKind.FileDetail,
-                "all-assets",
-                "All Assets",
-                "item-1",
-                "Avatar",
-                detailId: "file-1",
-                detailName: "preview.png");
+            var tags = new AssetItemGridHistoryEntry(
+                AssetItemGridHistoryEntryKind.View,
+                "tags",
+                "Tags");
 
             history.SetCurrent(root);
             history.SetCurrent(list);
-            history.SetCurrent(detail);
+            history.SetCurrent(tags);
 
             Assert.That(history.TryGoBack(2, out var selected), Is.True);
             Assert.That(selected, Is.SameAs(root));
-            Assert.That(history.State.ForwardEntries, Is.EqualTo(new[] { list, detail }));
+            Assert.That(history.State.ForwardEntries, Is.EqualTo(new[] { list, tags }));
         }
 
         [Test]

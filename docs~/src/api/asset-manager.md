@@ -38,7 +38,7 @@ Notes:
 
 ### `AssetFile`
 
-Item に紐付く論理 file です。実体 path は origin から解決します。
+AssetManager が管理する論理 file です。Item 未所属の状態を許可し、実体 path は origin から解決します。
 
 ```csharp
 public sealed class AssetFile
@@ -60,6 +60,7 @@ public sealed class AssetFile
 Notes:
 
 - 代表 origin は `assetManager.sourcePriority` 設定順で解決する。既定値は `ee4v,eagle,blm`。
+- `ItemId`、`VersionGroupId`、`VariantGroupId` がすべて空の場合は未所属 file。
 - `DownloadId` は Booth download ID。NULL でない場合だけ、datasource sync 時の同一 file 判定に使う。
 - `Lifecycle` は `Active` または `Archived`。
 - file を削除する API は物理 file を消さず、原則 `Archived` へ遷移させる。
@@ -302,7 +303,6 @@ public sealed class AssetItemQuery
     public IReadOnlyList<AssetSourceType> SourceTypes { get; set; }
     public AssetFileLifecycle? Lifecycle { get; set; }
     public bool HasBoothInformation { get; set; }
-    public bool UncategorizedOnly { get; set; }
     public bool IncludeUnavailable { get; set; }
     public int Offset { get; set; }
     public int Limit { get; set; }
@@ -330,6 +330,8 @@ public sealed class UpdateAssetItemRequest
 
 public sealed class AssetFileQuery
 {
+    public string FileId { get; set; }
+    public string Keyword { get; set; }
     public AssetSourceType? SourceType { get; set; }
     public AssetFileLifecycle? Lifecycle { get; set; }
     public string Extension { get; set; }
@@ -411,7 +413,7 @@ public AssetSearchResult SearchItems(AssetItemQuery query)
 
 Parameters:
 
-- `query`: keyword、tag、通常 collection、source type、Booth 情報の有無、未分類、file lifecycle、paging を含む検索条件。
+- `query`: keyword、tag、通常 collection、source type、Booth 情報の有無、file lifecycle、paging を含む検索条件。
 
 Returns:
 
@@ -423,7 +425,6 @@ Effects:
 - DB を読み取る。
 - `SourceTypes` は file origin の存在で絞り込む。代表 origin だけでなく、指定 datasource origin を持つ file があれば一致する。
 - `HasBoothInformation` は datasource の種類ではなく、`booth_info` snapshot の存在で絞り込む。
-- `UncategorizedOnly` は通常 Collection に直接所属せず、どの Smart Collection の条件にも一致しない Item だけに絞り込む。
 
 Notes:
 
@@ -454,7 +455,7 @@ public AssetSearchResult SearchItemSummaries(AssetItemQuery query)
 Effects:
 
 - Application service が初回呼び出し時に一覧用 catalog snapshot を構築する。
-- All、Booth 情報の有無、未分類、通常 / Smart Collection、keyword の検索と paging は
+- All、Booth 情報の有無、通常 / Smart Collection、keyword の検索と paging は
   同じ snapshot 上で評価し、表示切替では DB を再読込しない。
 - Main View は条件別の Item 一覧 cache を重ねず、現在描画中の raw list だけを
   Collection card の再合成用 view state として保持する。
@@ -587,9 +588,61 @@ Notes:
 
 - file origin の代表 datasource は `assetManager.sourcePriority` 設定順で解決する。
 
+### `IAssetManager.GetUnassignedFiles`
+
+Item、Version Group、Variant Group のいずれにも属していない file 一覧を取得します。
+
+```csharp
+public IReadOnlyList<AssetFile> GetUnassignedFiles(AssetFileQuery query = null)
+```
+
+Parameters:
+
+- `query`: file ID、keyword、lifecycle、source type、extension の絞り込み。
+
+Returns:
+
+- 条件に一致する未所属 file 一覧。
+
+Effects:
+
+- DB を読み取る。
+
+Notes:
+
+- Main View の `Uncategorized` はこの API の結果を表示する。
+
+### `IAssetManager.UpdateVariantGroup` / `UpdateVersionGroup`
+
+Variant GroupまたはVersion Group自身の表示情報を更新します。
+
+```csharp
+public AssetVariantGroup UpdateVariantGroup(
+    string variantGroupId,
+    UpdateVariantGroupRequest request)
+public AssetVersionGroup UpdateVersionGroup(
+    string versionGroupId,
+    UpdateVersionGroupRequest request)
+```
+
+Parameters:
+
+- `variantGroupId` / `versionGroupId`: 更新対象グループ。
+- `request.Name`: 更新後のグループ名。
+- `request.Description`: 更新後の説明。
+
+Returns:
+
+- 更新後のVariant GroupまたはVersion Group。
+
+Effects:
+
+- 対象グループの`name`、`description`、`updated_at`を更新する。
+- `Catalog` changeを発行する。
+
 ### `IAssetManager.RegisterFile`
 
-Editor 操作で選択された file を Item に追加します。
+Editor 操作で選択された file を登録します。
 
 ```csharp
 public AssetFile RegisterFile(string itemId, RegisterFileRequest request)
@@ -597,8 +650,8 @@ public AssetFile RegisterFile(string itemId, RegisterFileRequest request)
 
 Parameters:
 
-- `itemId`: 親 Item。
-- `request.FileName`: 表示 file 名。
+- `itemId`: 親 Item。未所属として登録する場合は `null`。
+- `request.FileName`: 表示 file 名。空の場合は `FilePath` の file 名から補完する。
 - `request.FilePath`: 追加する file の path。
 - `request.SizeBytes`: file size。
 
@@ -614,6 +667,7 @@ Effects:
 Notes:
 
 - Editor からの手動追加用 API として扱い、origin は常に `ee4v`。
+- Main View へ外部 file をドロップした場合は `itemId = null` で登録する。
 - BLM / Eagle 由来 file はこの API ではなく `SyncBlm(...)` / `SyncEagle(...)` から作成する。
 - `file_path_cache` は最後に解決できた path として保存する。
 
@@ -1142,10 +1196,10 @@ public event Action<AssetManagerChange> Changed;
 
 | kind | `SubjectId` | `RelatedId` / `ImportTargets` | 用途 |
 |---|---|---|---|
-| `Catalog` | 空 | 空 | item 一覧や file tree の構造・内容を再取得する |
-| `ItemCollections` | 空 | `RelatedId` に追加先 Collection ID | 追加先 Collection と Uncategorized の item 一覧だけを再取得する |
+| `Catalog` | 空 | 空 | item 一覧、未所属 file 一覧、file tree の構造・内容を再取得する |
+| `ItemCollections` | 空 | `RelatedId` に追加先 Collection ID | 追加先 Collection の item 一覧だけを再取得する |
 | `Collections` | 空 | 空 | Collection 一覧・親子関係・兄弟順だけを再取得する |
-| `SmartCollectionRule` | Smart Collection ID | 空 | 対象 Smart Collection と Uncategorized の検索結果を再取得する |
+| `SmartCollectionRule` | Smart Collection ID | 空 | 対象 Smart Collection の検索結果を再取得する |
 | `FileTree` | 空 | 空 | File Tree に関係する変更を知らせる |
 | `FileImportTargets` | file ID | 保存後の `ImportTargets` | cache 上の target state だけを更新する |
 | `VersionGroupPrimaryFile` | Version Group ID | `RelatedId` に代表 file ID | cache 上の代表 state だけを更新する |

@@ -12,7 +12,7 @@ namespace Ee4v.AssetManager.Application.Tests
         [Test]
         [FeatureTestCase(
             "一覧切替を同じ catalog snapshot から絞り込む",
-            "All、BOOTH Items、Uncategorized、Collection、検索語の切替で永続 store を再読込しないことを確認します。",
+            "All、BOOTH Items、Collection、検索語の切替で永続 store を再読込しないことを確認します。",
             order: 6)]
         public void Search_ViewSwitches_LoadSnapshotOnlyOnce()
         {
@@ -46,19 +46,6 @@ namespace Ee4v.AssetManager.Application.Tests
                         Limit = 200
                     }),
                 Is.EqualTo(new[] { "booth" }));
-            Assert.That(
-                SearchIds(
-                    cache,
-                    new AssetItemQuery
-                    {
-                        UncategorizedOnly = true,
-                        Limit = 200
-                    }),
-                Is.EqualTo(new[]
-                {
-                    "booth",
-                    "plain"
-                }));
             Assert.That(
                 SearchIds(
                     cache,
@@ -377,7 +364,6 @@ namespace Ee4v.AssetManager.Application.Tests
                         Array.Empty<AssetFileSummary>()
                 },
                 hasBoothInformation,
-                memberships.Count == 0,
                 memberships,
                 keywordValues ?? new[] { name });
         }

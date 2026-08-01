@@ -50,6 +50,7 @@ namespace Ee4v.AssetManager.UI
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/ImageStack/image-stack.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/Icon/icon.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/InputField/input-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/CommaSeparatedListField/comma-separated-list-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/SearchField/search-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/Interactive/ViewToggleTabs/view-toggle-tabs.uss");
@@ -59,7 +60,6 @@ namespace Ee4v.AssetManager.UI
             var body = new VisualElement();
             body.AddToClassList(BodyClassName);
             _infomationPanel = new InfomationPanel();
-            _infomationPanel.FileDetailRequested += MainViewWindow.ShowFileDetail;
             body.Add(_infomationPanel);
 
             root.Add(body);
@@ -73,17 +73,9 @@ namespace Ee4v.AssetManager.UI
                 AssetManagerUiDependencies.StandaloneViewSession;
             _standaloneViewSession.SelectionChanged +=
                 OnStandaloneSelectionChanged;
-            _standaloneViewSession.DetailTabRequested +=
-                OnStandaloneDetailTabRequested;
             OnStandaloneSelectionChanged(
                 _standaloneViewSession.SelectedItems,
                 _standaloneViewSession.SelectionContentKind);
-            if (!string.IsNullOrWhiteSpace(
-                    _standaloneViewSession.SelectedDetailTabId))
-            {
-                OnStandaloneDetailTabRequested(
-                    _standaloneViewSession.SelectedDetailTabId);
-            }
         }
 
         private void UnbindStandaloneSession()
@@ -95,8 +87,6 @@ namespace Ee4v.AssetManager.UI
 
             _standaloneViewSession.SelectionChanged -=
                 OnStandaloneSelectionChanged;
-            _standaloneViewSession.DetailTabRequested -=
-                OnStandaloneDetailTabRequested;
             _standaloneViewSession = null;
         }
 
@@ -107,9 +97,5 @@ namespace Ee4v.AssetManager.UI
             _infomationPanel?.SetSelectedAssetItems(items, contentKind);
         }
 
-        private void OnStandaloneDetailTabRequested(string tabId)
-        {
-            _infomationPanel?.SetSelectedAssetDetailTab(tabId);
-        }
     }
 }

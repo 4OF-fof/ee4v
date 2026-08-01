@@ -34,11 +34,6 @@ namespace Ee4v.UI
                     BuildSearchableFileTree);
                 RegisterComponent(
                     registry,
-                    "file-tree-detail-view",
-                    "FileTreeDetailView",
-                    BuildFileTreeDetailView);
-                RegisterComponent(
-                    registry,
                     "file-icon-catalog",
                     "FileIconCatalog",
                     BuildFileIconCatalog);
@@ -122,6 +117,7 @@ namespace Ee4v.UI
                 {
                     "Editor/UI/Components/Inputs/Button/ui-button.uss",
                     "Editor/UI/Components/Inputs/InputField/input-field.uss",
+                    "Editor/UI/Components/Inputs/CommaSeparatedListField/comma-separated-list-field.uss",
                     "Editor/UI/Components/Inputs/SearchField/search-field.uss",
                     "Editor/UI/Components/Inputs/NumericSlider/numeric-slider.uss",
                     "Editor/UI/Components/Inputs/ReorderableListField/reorderable-list-field.uss",
@@ -187,140 +183,6 @@ namespace Ee4v.UI
                 window,
                 parent,
                 300f).Add(tree);
-        }
-
-        private static void BuildFileTreeDetailView(
-            CatalogWindow window,
-            VisualElement parent)
-        {
-            var dependencyChoice =
-                I18N.Get(
-                    "assetManager.fileDependencies.open");
-            var choices = new List<string>
-            {
-                "ZIP",
-                "UnityPackage",
-                dependencyChoice
-            };
-            var controls = window.CreatePlainControlsSection(
-                parent,
-                "ZIP と UnityPackage の左ツリー・右プレビューを切り替えます。");
-            var selector = new PopupField<string>(
-                choices,
-                0);
-            selector.label = string.Empty;
-            controls.Content.Add(selector);
-
-            var view = new FileTreeDetailView();
-            CatalogCoveragePreview.CreateSurface(
-                window,
-                parent,
-                500f,
-                true).Add(view);
-            System.Action refresh = () =>
-            {
-                var unityPackage =
-                    string.Equals(
-                        selector.value,
-                        "UnityPackage",
-                        System.StringComparison.Ordinal);
-                view.SetState(
-                    CreateArchiveDetailState(
-                        unityPackage));
-                if (string.Equals(
-                        selector.value,
-                        dependencyChoice,
-                        System.StringComparison.Ordinal))
-                {
-                    view.ShowDependencySelection(
-                        CreateDependencySettingsState());
-                }
-            };
-            selector.RegisterValueChangedCallback(
-                _ => refresh());
-            refresh();
-            CatalogWindow.FinalizeControlsSection(
-                parent,
-                controls);
-        }
-
-        private static FileDependencySettingsState
-            CreateDependencySettingsState()
-        {
-            var options =
-                new List<FileDependencyOption>();
-            for (var itemIndex = 0;
-                 itemIndex < 16;
-                 itemIndex++)
-            {
-                options.Add(
-                    new FileDependencyOption(
-                        "item-" + itemIndex,
-                        "Sample Item " + (itemIndex + 1),
-                        "file-" + itemIndex,
-                        "Avatar.prefab",
-                        "prefab"));
-            }
-
-            return new FileDependencySettingsState(
-                "item-0",
-                options,
-                new[] { "file-0" },
-                _ => { });
-        }
-
-        private static FileTreeDetailState
-            CreateArchiveDetailState(
-                bool unityPackage)
-        {
-            var entries = unityPackage
-                ? new[]
-                {
-                    new AssetArchiveContentEntry(
-                        "Assets/Sample",
-                        AssetArchiveContentEntryKind.Directory),
-                    new AssetArchiveContentEntry(
-                        "Assets/Sample/Avatar.prefab",
-                        AssetArchiveContentEntryKind.File),
-                    new AssetArchiveContentEntry(
-                        "Assets/Sample/Materials/Body.mat",
-                        AssetArchiveContentEntryKind.File),
-                    new AssetArchiveContentEntry(
-                        "Assets/Sample/Textures/Body.png",
-                        AssetArchiveContentEntryKind.File)
-                }
-                : new[]
-                {
-                    new AssetArchiveContentEntry(
-                        "Avatar",
-                        AssetArchiveContentEntryKind.Directory),
-                    new AssetArchiveContentEntry(
-                        "Avatar/Avatar.prefab",
-                        AssetArchiveContentEntryKind.File),
-                    new AssetArchiveContentEntry(
-                        "Avatar/Materials/Body.mat",
-                        AssetArchiveContentEntryKind.File),
-                    new AssetArchiveContentEntry(
-                        "Avatar/Textures/Body.png",
-                        AssetArchiveContentEntryKind.File)
-                };
-            var kind = unityPackage
-                ? AssetArchiveContentKind.UnityPackage
-                : AssetArchiveContentKind.Zip;
-            var extension = unityPackage
-                ? "unitypackage"
-                : "zip";
-            return new FileTreeDetailState(
-                "sample-archive",
-                unityPackage
-                    ? "Sample.unitypackage"
-                    : "Sample.zip",
-                CatalogCoveragePreview.SampleCollection,
-                extension,
-                new AssetArchiveContent(
-                    kind,
-                    0L,
-                    entries));
         }
 
         private static void BuildFileIconCatalog(
@@ -493,6 +355,9 @@ namespace Ee4v.UI
             layout.MainToolbarContent.Add(host.Toolbar);
             layout.MainContent.Add(host.MainView);
             layout.RightPaneContent.Add(info);
+            host.MainView.SetExternalFileDropSurface(
+                layout,
+                layout.MainOverlayContent);
             layout.RegisterCallback<DetachFromPanelEvent>(_ =>
                 host.Dispose());
             CatalogCoveragePreview.CreateSurface(
@@ -527,6 +392,7 @@ namespace Ee4v.UI
                 "ee4v-asset-manager-window__main-view-window-content");
             body.Add(host.Toolbar);
             body.Add(host.MainView);
+            host.MainView.SetExternalFileDropSurface(body);
             body.RegisterCallback<DetachFromPanelEvent>(_ =>
                 host.Dispose());
             CatalogCoveragePreview.CreateSurface(

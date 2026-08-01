@@ -14,6 +14,97 @@ namespace Ee4v.AssetManager.UI.Tests
     public sealed class NavigationTests
     {
         [Test]
+        public void InformationDetailTab_DependsOnSelectionKind()
+        {
+            Assert.That(
+                InfomationPanel.ResolveDetailTabId(
+                    AssetSelectionContentKind.AssetItem,
+                    "asset-info"),
+                Is.EqualTo("asset-info"));
+            Assert.That(
+                InfomationPanel.ResolveDetailTabId(
+                    AssetSelectionContentKind.AssetItem,
+                    "file-tree"),
+                Is.EqualTo("file-tree"));
+            Assert.That(
+                InfomationPanel.ResolveDetailTabId(
+                    AssetSelectionContentKind.AssetFile,
+                    "asset-info"),
+                Is.EqualTo("file-tree"));
+            Assert.That(
+                InfomationPanel.ResolveDetailTabId(
+                    AssetSelectionContentKind.AssetVersionGroup,
+                    "asset-info"),
+                Is.EqualTo("asset-info"));
+        }
+
+        [Test]
+        public void AssetInfo_UpdatesOnlyWhenEditedValuesDiffer()
+        {
+            var state = new AssetInfoState(
+                "item-1",
+                "Avatar",
+                "Description",
+                new[] { "Sample" },
+                1,
+                "ee4v",
+                string.Empty,
+                string.Empty);
+
+            Assert.That(
+                AssetInfoView.HasChanges(
+                    new AssetInfoEditRequest(
+                        "Avatar",
+                        "Description",
+                        new[] { "Sample" }),
+                    state),
+                Is.False);
+            Assert.That(
+                AssetInfoView.HasChanges(
+                    new AssetInfoEditRequest(
+                        "Edited",
+                        "Description",
+                        new[] { "Sample" }),
+                    state),
+                Is.True);
+        }
+
+        [Test]
+        public void AssetInfo_GroupStateUsesGroupFieldsAndHidesItemOnlyControls()
+        {
+            var state = AssetInfoController.CreateState(
+                "variant-1",
+                "PC",
+                "PC向けファイル",
+                Array.Empty<string>(),
+                new[]
+                {
+                    new AssetFile
+                    {
+                        Id = "file-1",
+                        Origins = new[]
+                        {
+                            new AssetFileOrigin
+                            {
+                                SourceType = AssetSourceType.Ee4v
+                            }
+                        }
+                    }
+                },
+                DateTime.MinValue,
+                DateTime.MinValue,
+                showTags: false,
+                canAddFile: false);
+
+            Assert.That(state.ItemId, Is.EqualTo("variant-1"));
+            Assert.That(state.Name, Is.EqualTo("PC"));
+            Assert.That(state.Description, Is.EqualTo("PC向けファイル"));
+            Assert.That(state.FileCount, Is.EqualTo(1));
+            Assert.That(state.ShowTags, Is.False);
+            Assert.That(state.CanAddFile, Is.False);
+        }
+
+        [Test]
         public void CreateQuery_UsesBoothInformationInsteadOfSourceType()
         {
             var query = MainViewController.CreateQuery(
@@ -21,15 +112,6 @@ namespace Ee4v.AssetManager.UI.Tests
 
             Assert.That(query.HasBoothInformation, Is.True);
             Assert.That(query.SourceTypes, Is.Null);
-        }
-
-        [Test]
-        public void CreateQuery_RequestsOnlyUncategorizedItems()
-        {
-            var query = MainViewController.CreateQuery(
-                new MainViewRequest("uncategorized"));
-
-            Assert.That(query.UncategorizedOnly, Is.True);
         }
 
         [Test]
@@ -91,6 +173,37 @@ namespace Ee4v.AssetManager.UI.Tests
                     out kind,
                     out id),
                 Is.False);
+        }
+
+        [Test]
+        public void CollectionDrag_SkipsUnassignedFiles()
+        {
+            var itemIds = AssetItemDragAndDrop.GetAssetItemIds(
+                new[]
+                {
+                    new ItemCardState(
+                        AssetItemGridNodeKey.Encode(
+                            AssetItemGridNodeKind.File,
+                            "unassigned-file"),
+                        "Unassigned",
+                        new ItemImageState()),
+                    new ItemCardState(
+                        AssetItemGridNodeKey.Encode(
+                            AssetItemGridNodeKind.File,
+                            "assigned-file"),
+                        "Assigned",
+                        new ItemImageState(),
+                        null,
+                        "item-1"),
+                    new ItemCardState(
+                        "item-2",
+                        "Item",
+                        new ItemImageState())
+                });
+
+            Assert.That(
+                itemIds,
+                Is.EqualTo(new[] { "item-1", "item-2" }));
         }
 
         [Test]
@@ -318,6 +431,32 @@ namespace Ee4v.AssetManager.UI.Tests
                     AssetManagerNavigationCatalog.DefaultItemId));
         }
 
+        [Test]
+        public void CollectionReload_RetriesCatalogChangeAfterLoadFailure()
+        {
+            Assert.That(
+                CollectionNavigationController
+                    .ShouldReloadCollections(
+                        new AssetManagerChange(
+                            AssetManagerChangeKind.Catalog),
+                        collectionLoadFailed: true),
+                Is.True);
+            Assert.That(
+                CollectionNavigationController
+                    .ShouldReloadCollections(
+                        new AssetManagerChange(
+                            AssetManagerChangeKind.Catalog),
+                        collectionLoadFailed: false),
+                Is.False);
+            Assert.That(
+                CollectionNavigationController
+                    .ShouldReloadCollections(
+                        new AssetManagerChange(
+                            AssetManagerChangeKind.Collections),
+                        collectionLoadFailed: false),
+                Is.True);
+        }
+
         private sealed class FailingProjectCacheSource :
             IAssetManagerProjectCacheSource
         {
@@ -379,7 +518,7 @@ namespace Ee4v.AssetManager.UI.Tests
                     .ShouldInvalidateForSmartCollectionRule(
                         change,
                         "uncategorized"),
-                Is.True);
+                Is.False);
             Assert.That(
                 MainViewController
                     .ShouldInvalidateForSmartCollectionRule(
@@ -414,7 +553,7 @@ namespace Ee4v.AssetManager.UI.Tests
                     .ShouldInvalidateForItemCollections(
                         change,
                         "uncategorized"),
-                Is.True);
+                Is.False);
             Assert.That(
                 MainViewController
                     .ShouldInvalidateForItemCollections(

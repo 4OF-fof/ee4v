@@ -18,6 +18,7 @@ namespace Ee4v.AssetManager.UI
         private int _loadVersion;
         private bool _active;
         private bool _disposed;
+        private bool _collectionLoadFailed;
         private IReadOnlyList<AssetCollection> _collections =
             Array.Empty<AssetCollection>();
 
@@ -108,6 +109,7 @@ namespace Ee4v.AssetManager.UI
                     {
                         if (!result.Canceled)
                         {
+                            _collectionLoadFailed = true;
                             ErrorChanged?.Invoke(
                                 result.Error != null
                                     ? FormatError(result.Error)
@@ -117,6 +119,7 @@ namespace Ee4v.AssetManager.UI
                         return;
                     }
 
+                    _collectionLoadFailed = false;
                     ErrorChanged?.Invoke(string.Empty);
                     SetCollections(result.Value);
                 });
@@ -479,8 +482,9 @@ namespace Ee4v.AssetManager.UI
 
         private void OnAssetManagerChanged(AssetManagerChange change)
         {
-            if (change != null &&
-                change.Kind == AssetManagerChangeKind.Collections)
+            if (ShouldReloadCollections(
+                    change,
+                    _collectionLoadFailed))
             {
                 _scheduler.RunOnMainThread(() =>
                 {
@@ -490,6 +494,18 @@ namespace Ee4v.AssetManager.UI
                     }
                 });
             }
+        }
+
+        internal static bool ShouldReloadCollections(
+            AssetManagerChange change,
+            bool collectionLoadFailed)
+        {
+            return change != null &&
+                   (change.Kind ==
+                        AssetManagerChangeKind.Collections ||
+                    collectionLoadFailed &&
+                    change.Kind ==
+                        AssetManagerChangeKind.Catalog);
         }
 
         private void CancelLoad()

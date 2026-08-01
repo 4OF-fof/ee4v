@@ -135,6 +135,14 @@ namespace Ee4v.UI
             _mainPane = CreateMainPane(out var mainBody);
             _rightPane = CreatePane(RightPaneClassName, RightPaneEdgeLineClassName, out var rightBody, out _rightPaneEdgeLine);
 
+            MainOverlayContent = new VisualElement
+            {
+                pickingMode = PickingMode.Ignore
+            };
+            MainOverlayContent.style.position = Position.Absolute;
+            MainOverlayContent.style.top = 0f;
+            MainOverlayContent.style.bottom = 0f;
+
             LeftToolbarContent = leftToolbarContent;
             MainToolbarContent = mainToolbarContent;
             RightToolbarContent = rightToolbarContent;
@@ -167,6 +175,7 @@ namespace Ee4v.UI
 
             Add(_toolbarRow);
             Add(_bodyRow);
+            Add(MainOverlayContent);
             Add(_dragCursorOverlay);
 
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
@@ -182,6 +191,8 @@ namespace Ee4v.UI
         public VisualElement LeftPaneContent { get; }
 
         public VisualElement MainContent { get; }
+
+        public VisualElement MainOverlayContent { get; }
 
         public VisualElement RightPaneContent { get; }
 
@@ -448,6 +459,13 @@ namespace Ee4v.UI
 
             _leftSplitter.style.display = _leftCollapsed ? DisplayStyle.None : DisplayStyle.Flex;
             _rightSplitter.style.display = _rightCollapsed ? DisplayStyle.None : DisplayStyle.Flex;
+
+            MainOverlayContent.style.left = _leftCollapsed
+                ? 0f
+                : _leftWidth + SplitterWidth;
+            MainOverlayContent.style.right = _rightCollapsed
+                ? 0f
+                : _rightWidth + SplitterWidth;
 
             _mainToolbar.EnableInClassList(MainToolbarHasLeftToggleClassName, _leftCollapsed);
             _mainToolbar.EnableInClassList(MainToolbarHasRightToggleClassName, _rightCollapsed);

@@ -154,6 +154,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 Id = row.id,
                 ItemId = row.item_info_id,
                 Name = row.name,
+                Description = row.description,
                 CreatedAt = ParseDate(row.created_at),
                 UpdatedAt = ParseDate(row.updated_at)
             };
@@ -167,6 +168,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 ItemId = row.item_info_id,
                 VariantGroupId = row.variant_group_id,
                 Name = row.name,
+                Description = row.description,
                 PrimaryFileId = row.primary_file_info_id,
                 CreatedAt = ParseDate(row.created_at),
                 UpdatedAt = ParseDate(row.updated_at)

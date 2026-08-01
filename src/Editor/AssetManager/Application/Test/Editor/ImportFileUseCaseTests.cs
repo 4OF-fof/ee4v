@@ -312,6 +312,10 @@ namespace Ee4v.AssetManager.Application.Tests
                 return Files;
             }
 
+            public IReadOnlyList<AssetFile> GetUnassignedFiles(
+                AssetFileQuery query) =>
+                Array.Empty<AssetFile>();
+
             public AssetFilePathResolution ResolveFilePath(string fileId) => Resolution;
 
             public AssetFile GetFile(string fileId) =>

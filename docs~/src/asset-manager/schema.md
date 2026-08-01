@@ -152,6 +152,7 @@ erDiagram
         TEXT id PK
         TEXT item_info_id FK
         TEXT name
+        TEXT description
         TEXT created_at
         TEXT updated_at
     }
@@ -161,6 +162,7 @@ erDiagram
         TEXT item_info_id FK
         TEXT variant_group_id FK
         TEXT name
+        TEXT description
         TEXT primary_file_info_id FK
         TEXT created_at
         TEXT updated_at
@@ -444,7 +446,7 @@ ON item_collection(item_info_id, collection_info_id);
 
 ## Schema Version
 
-AssetManager DB の schema version。現在は `9`。開発段階のため migration は提供せず、version 不一致時は既存 DB を削除して再作成する。
+AssetManager DB の schema version。現在は `11`。開発段階のため migration は提供せず、version 不一致時は既存 DB を削除して再作成する。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
@@ -505,9 +507,9 @@ subdomain を取得できない場合は `unknown-{booth_item_id}` を安定し�
 
 ## File Info
 
-AssetManager 上の論理 file。File Info は Item、Version Group、Variant Group のいずれかの子として配置する。
+AssetManager 上の論理 file。File Info は未所属か、Item、Version Group、Variant Group のいずれかの子として配置する。
 
-File は Item、Version Group、Variant Group のいずれか 1 つを親に持つ。複数の親は持たない。
+未整理の File は親を持たない。整理済みの File は Item、Version Group、Variant Group のいずれか 1 つを親に持ち、複数の親は持たない。
 
 | column | type | required | unique | note |
 |---|---|---:|---|---|
@@ -527,6 +529,8 @@ File は Item、Version Group、Variant Group のいずれか 1 つを親に持�
 ```sql
 CHECK (lifecycle IN ('active', 'archived'))
 CHECK (
+  (item_info_id IS NULL AND version_group_id IS NULL AND variant_group_id IS NULL)
+  OR
   (item_info_id IS NOT NULL AND version_group_id IS NULL AND variant_group_id IS NULL)
   OR
   (item_info_id IS NULL AND version_group_id IS NOT NULL AND variant_group_id IS NULL)
@@ -539,10 +543,11 @@ ON file_info(download_id)
 WHERE download_id IS NOT NULL;
 ```
 
-許可する親は次の 3 種類だけとする。`item -> variant_group -> version_group -> file` の file は Version Group を直接の親に持つ。
+許可する配置は次の 4 種類だけとする。`item -> variant_group -> version_group -> file` の file は Version Group を直接の親に持つ。
 
 | placement | `file_info.item_info_id` | `file_info.version_group_id` | `file_info.variant_group_id` |
 |---|---|---|---|
+| unassigned file | NULL | NULL | NULL |
 | `item -> file` | NOT NULL | NULL | NULL |
 | `version_group -> file` | NULL | NOT NULL | NULL |
 | `variant_group -> file` | NULL | NULL | NOT NULL |
@@ -588,6 +593,7 @@ Variant Group は file を直接持てるほか、配下に Version Group を持
 | `id` | GUID string | Yes |  | Variant Group の識別子 |
 | `item_info_id` | GUID string | Yes |  | 親 Item Info |
 | `name` | TEXT | Yes |  | variant 名 |
+| `description` | TEXT | Yes |  | ユーザー編集可能な説明。未設定時は空文字 |
 | `created_at` | DATETIME | Yes |  | 作成時刻 |
 | `updated_at` | DATETIME | Yes |  | 更新時刻 |
 
@@ -609,6 +615,7 @@ file を持つ Version Group は primary file を 1 つ持つ。自動分類時�
 | `item_info_id` | GUID string | Yes |  | 親 Item Info |
 | `variant_group_id` | GUID string |  |  | 親 Variant Group。NULL の場合は Item 直下の Version Group |
 | `name` | TEXT | Yes |  | version 名 |
+| `description` | TEXT | Yes |  | ユーザー編集可能な説明。未設定時は空文字 |
 | `primary_file_info_id` | GUID string |  |  | primary File Info。NULL 可。参照先は同じ Version Group に属する File Info |
 | `created_at` | DATETIME | Yes |  | 作成時刻 |
 | `updated_at` | DATETIME | Yes |  | 更新時刻 |

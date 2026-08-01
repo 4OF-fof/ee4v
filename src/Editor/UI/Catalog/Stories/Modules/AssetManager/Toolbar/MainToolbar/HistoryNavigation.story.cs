@@ -57,13 +57,9 @@ namespace Ee4v.AssetManager.UI
                 forwardEntries: new[]
                 {
                     new AssetItemGridHistoryEntry(
-                        AssetItemGridHistoryEntryKind.FileDetail,
-                        "booth-library",
-                        "Booth Library",
-                        "sample-item",
-                        "Sample Avatar Pack",
-                        detailId: "sample-file",
-                        detailName: "avatar.unitypackage")
+                        AssetItemGridHistoryEntryKind.View,
+                        "tags",
+                        "Tags")
                 }));
 
             surface.Add(historyNavigation);

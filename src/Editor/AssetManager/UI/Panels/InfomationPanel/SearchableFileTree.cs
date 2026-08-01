@@ -77,7 +77,7 @@ namespace Ee4v.AssetManager.UI
                 SelectionType.Multiple,
                 OnTreeContextClick,
                 node => node == null || !node.IsGroup || node.GroupKind == FileTreeGroupKind.Version,
-                OnTreeItemDoubleClicked,
+                null,
                 searchTooltip,
                 clearTooltip,
                 searchIconState:
@@ -95,18 +95,6 @@ namespace Ee4v.AssetManager.UI
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-        }
-
-        public event Action<FileTreeDetailState> FileDetailRequested;
-
-        private void OnTreeItemDoubleClicked(FileTreeNode node)
-        {
-            if (node == null)
-            {
-                return;
-            }
-
-            FileDetailRequested?.Invoke(node.CreateDetailState(_itemId));
         }
 
         public void SetItemId(string itemId)
@@ -264,7 +252,8 @@ namespace Ee4v.AssetManager.UI
         {
             HideImageTooltip();
             CancelPendingReload();
-            if (string.IsNullOrWhiteSpace(_itemId))
+            if (string.IsNullOrWhiteSpace(_itemId) &&
+                string.IsNullOrWhiteSpace(_fileId))
             {
                 _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.empty"));
                 _treeView.SetItems(null);
@@ -353,10 +342,14 @@ namespace Ee4v.AssetManager.UI
         {
             var files = LoadFiles(itemId, fileId);
             cancellationToken.ThrowIfCancellationRequested();
-            var variants = string.IsNullOrWhiteSpace(fileId)
+            var variants =
+                !string.IsNullOrWhiteSpace(itemId) &&
+                string.IsNullOrWhiteSpace(fileId)
                 ? _assetManager.GetVariantGroups(itemId)
                 : Array.Empty<AssetVariantGroup>();
-            var versions = string.IsNullOrWhiteSpace(fileId)
+            var versions =
+                !string.IsNullOrWhiteSpace(itemId) &&
+                string.IsNullOrWhiteSpace(fileId)
                 ? _assetManager.GetVersionGroups(itemId)
                 : Array.Empty<AssetVersionGroup>();
             var importTargetsByFileId = new Dictionary<string, IReadOnlyList<AssetFileImportTarget>>(StringComparer.Ordinal);
@@ -436,6 +429,19 @@ namespace Ee4v.AssetManager.UI
 
         private IReadOnlyList<AssetFile> LoadFiles(string itemId, string fileId)
         {
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                return string.IsNullOrWhiteSpace(fileId)
+                    ? Array.Empty<AssetFile>()
+                    : _assetManager.GetUnassignedFiles(
+                        new AssetFileQuery
+                        {
+                            FileId = fileId,
+                            Lifecycle =
+                                AssetFileLifecycle.Active
+                        });
+            }
+
             var files = _assetManager.GetFiles(itemId, new AssetFileQuery { Lifecycle = AssetFileLifecycle.Active });
             if (string.IsNullOrWhiteSpace(fileId))
             {

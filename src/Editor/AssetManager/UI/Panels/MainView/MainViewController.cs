@@ -156,6 +156,7 @@ namespace Ee4v.AssetManager.UI
             _snapshotCatalogReader;
         private readonly IAssetManagerUiPreferences _preferences;
         private readonly IAssetManagerUiScheduler _scheduler;
+        private AssetItemCommands _itemCommands;
         private readonly Dictionary<string, AssetItemGridList>
             _childItemCache =
             new Dictionary<string, AssetItemGridList>(StringComparer.Ordinal);
@@ -177,7 +178,8 @@ namespace Ee4v.AssetManager.UI
         public MainViewController(
             IAssetManager assetManager = null,
             IAssetManagerUiPreferences preferences = null,
-            IAssetManagerUiScheduler scheduler = null)
+            IAssetManagerUiScheduler scheduler = null,
+            AssetItemCommands itemCommands = null)
         {
             _assetManager = assetManager ?? AssetManagerUiDependencies.AssetManager;
             _catalogReader =
@@ -191,6 +193,7 @@ namespace Ee4v.AssetManager.UI
                     : null;
             _preferences = preferences ?? AssetManagerUiDependencies.Preferences;
             _scheduler = scheduler ?? AssetManagerUiDependencies.Scheduler;
+            _itemCommands = itemCommands;
             _preferences.Preload();
             _minimumItemsPerRow = _preferences.MinimumItemsPerRow;
             _itemsPerRow = ClampItemsPerRow(_preferences.DefaultItemsPerRow);
@@ -580,6 +583,13 @@ namespace Ee4v.AssetManager.UI
 
         public AssetItemGridList LoadItems(MainViewRequest request, CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (IsUnassignedFileView(request))
+            {
+                return LoadUnassignedFiles(
+                    request,
+                    cancellationToken);
+            }
+
             AssetItemGridList itemList;
             bool thumbnailsReady;
             if (!TryLoadItems(
@@ -603,6 +613,11 @@ namespace Ee4v.AssetManager.UI
         {
             itemList = null;
             requiresThumbnailLoad = false;
+            if (IsUnassignedFileView(request))
+            {
+                return false;
+            }
+
             if (_snapshotCatalogReader == null)
             {
                 return false;
@@ -1051,6 +1066,76 @@ namespace Ee4v.AssetManager.UI
             return tags ?? Array.Empty<AssetTag>();
         }
 
+        internal bool CanRegisterDroppedFiles(
+            IReadOnlyList<string> paths) =>
+            ItemCommands.CanRegisterDroppedFiles(paths);
+
+        internal int RegisterDroppedFiles(
+            IReadOnlyList<string> paths) =>
+            ItemCommands.RegisterDroppedFiles(paths);
+
+        private AssetItemGridList LoadUnassignedFiles(
+            MainViewRequest request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var files = _assetManager.GetUnassignedFiles(
+                new AssetFileQuery
+                {
+                    Keyword = request != null
+                        ? request.Keyword
+                        : string.Empty,
+                    Lifecycle = AssetFileLifecycle.Active
+                });
+            var limit = request != null && request.Limit > 0
+                ? request.Limit
+                : 200;
+            var items = new List<AssetItemGridListItem>();
+            for (var i = 0;
+                 i < files.Count && items.Count < limit;
+                 i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var file = files[i];
+                if (file == null)
+                {
+                    continue;
+                }
+
+                var artwork =
+                    CreateFileArtworkState(file.Extension);
+                items.Add(new AssetItemGridListItem(
+                    AssetItemGridNodeKey.Encode(
+                        AssetItemGridNodeKind.File,
+                        file.Id),
+                    file.FileName,
+                    artwork.ImageState,
+                    artwork.IconState,
+                    string.Empty,
+                    artwork.StackStates,
+                    artwork.IconState));
+            }
+
+            return new AssetItemGridList(
+                items,
+                I18N.Get(
+                    "assetManager.mainView.noUnassignedFiles"));
+        }
+
+        private static bool IsUnassignedFileView(
+            MainViewRequest request) =>
+            request != null &&
+            string.Equals(
+                request.ViewId,
+                "uncategorized",
+                StringComparison.Ordinal);
+
+        private AssetItemCommands ItemCommands =>
+            _itemCommands ??
+            (_itemCommands = new AssetItemCommands(
+                _assetManager,
+                AssetManagerUiDependencies.FilePicker));
+
         internal bool TryCreateImportAction(
             string itemId,
             string fileId,
@@ -1271,12 +1356,6 @@ namespace Ee4v.AssetManager.UI
 
             var refreshCurrent =
                 change.Kind == AssetManagerChangeKind.Catalog ||
-                (change.Kind ==
-                 AssetManagerChangeKind.Collections &&
-                 string.Equals(
-                     _selectedNavigationItemId,
-                     "uncategorized",
-                     StringComparison.Ordinal)) ||
                 ShouldInvalidateForItemCollections(
                     change,
                     _selectedNavigationItemId) ||
@@ -1308,14 +1387,6 @@ namespace Ee4v.AssetManager.UI
                 return false;
             }
 
-            if (string.Equals(
-                    selectedNavigationItemId,
-                    "uncategorized",
-                    StringComparison.Ordinal))
-            {
-                return true;
-            }
-
             string collectionId;
             return AssetManagerCollectionViewId.TryDecode(
                        selectedNavigationItemId,
@@ -1335,14 +1406,6 @@ namespace Ee4v.AssetManager.UI
                 AssetManagerChangeKind.SmartCollectionRule)
             {
                 return false;
-            }
-
-            if (string.Equals(
-                    selectedNavigationItemId,
-                    "uncategorized",
-                    StringComparison.Ordinal))
-            {
-                return true;
             }
 
             string collectionId;
@@ -1391,11 +1454,6 @@ namespace Ee4v.AssetManager.UI
             {
                 query.HasBoothInformation = true;
             }
-            else if (string.Equals(viewId, "uncategorized", StringComparison.Ordinal))
-            {
-                query.UncategorizedOnly = true;
-            }
-
             return query;
         }
 

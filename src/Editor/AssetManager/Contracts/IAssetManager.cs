@@ -15,11 +15,14 @@ namespace Ee4v.AssetManager.Contracts
         AssetItem CreateItem(CreateAssetItemRequest request);
         AssetItem UpdateItem(string itemId, UpdateAssetItemRequest request);
         IReadOnlyList<AssetFile> GetFiles(string itemId, AssetFileQuery query = null);
+        IReadOnlyList<AssetFile> GetUnassignedFiles(AssetFileQuery query = null);
         AssetFile RegisterFile(string itemId, RegisterFileRequest request);
         IReadOnlyList<AssetVariantGroup> GetVariantGroups(string itemId);
         AssetVariantGroup CreateVariantGroup(string itemId, CreateVariantGroupRequest request);
+        AssetVariantGroup UpdateVariantGroup(string variantGroupId, UpdateVariantGroupRequest request);
         IReadOnlyList<AssetVersionGroup> GetVersionGroups(string itemId);
         AssetVersionGroup CreateVersionGroup(string itemId, CreateVersionGroupRequest request);
+        AssetVersionGroup UpdateVersionGroup(string versionGroupId, UpdateVersionGroupRequest request);
         void SetVersionGroupPrimaryFile(string versionGroupId, string fileId);
         void ArchiveFile(string fileId);
         AssetFilePathResolution ResolveFilePath(string fileId);

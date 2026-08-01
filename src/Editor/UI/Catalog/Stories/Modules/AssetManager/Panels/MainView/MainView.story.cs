@@ -34,11 +34,12 @@ namespace Ee4v.AssetManager.UI
             const string DatabaseErrorPresetId = "database-error";
             const string CollectionErrorPresetId = "collection-error";
             const string EmptyPresetId = "empty";
+            const string FileDropPresetId = "file-drop";
             var selectedPresetId = DatabaseErrorPresetId;
             Action<string> applyPreset = null;
             var controls = window.CreateTabbedControlsSection(
                 parent,
-                "MainView 全体を置き換えるエラー状態を切り替えて、中央配置と複数行表示を確認します。");
+                "MainView のエラー、空表示、ファイルのドラッグ中に重なる半透明表示を確認します。");
 
             var preview = window.CreatePreviewSection(parent);
             var surface = window.CreatePreviewSurface();
@@ -70,7 +71,10 @@ namespace Ee4v.AssetManager.UI
                                 "Collection"),
                             new TabCardTabState(
                                 EmptyPresetId,
-                                "Empty")
+                                "Empty"),
+                            new TabCardTabState(
+                                FileDropPresetId,
+                                "File Drop")
                         },
                         selectedPresetId),
                     applyPreset);
@@ -78,12 +82,16 @@ namespace Ee4v.AssetManager.UI
                     selectedPresetId,
                     EmptyPresetId,
                     StringComparison.Ordinal);
+                var fileDrop = string.Equals(
+                    selectedPresetId,
+                    FileDropPresetId,
+                    StringComparison.Ordinal);
                 panel.SetEmptyState(
                     empty
                         ? I18N.Get("assetManager.mainView.noItems")
                         : string.Empty);
                 panel.SetExternalError(
-                    empty
+                    empty || fileDrop
                         ? string.Empty
                         : I18N.Get(
                             string.Equals(
@@ -92,6 +100,7 @@ namespace Ee4v.AssetManager.UI
                                 StringComparison.Ordinal)
                                 ? "assetManager.mainView.preview.collectionError"
                                 : "assetManager.error.databaseSchemaIncompatible"));
+                panel.SetExternalFileDropOverlayVisible(fileDrop);
             };
 
             applyPreset(selectedPresetId);

@@ -10,7 +10,6 @@ namespace Ee4v.AssetManager.Contracts
         public IReadOnlyList<AssetSourceType> SourceTypes { get; set; }
         public AssetFileLifecycle? Lifecycle { get; set; }
         public bool HasBoothInformation { get; set; }
-        public bool UncategorizedOnly { get; set; }
         public int Offset { get; set; }
         public int Limit { get; set; }
         public bool IncludeUnavailable { get; set; }
@@ -38,6 +37,8 @@ namespace Ee4v.AssetManager.Contracts
 
     public sealed class AssetFileQuery
     {
+        public string FileId { get; set; }
+        public string Keyword { get; set; }
         public AssetSourceType? SourceType { get; set; }
         public AssetFileLifecycle? Lifecycle { get; set; }
         public string Extension { get; set; }
@@ -56,12 +57,26 @@ namespace Ee4v.AssetManager.Contracts
     public sealed class CreateVariantGroupRequest
     {
         public string Name { get; set; }
+        public string Description { get; set; }
+    }
+
+    public sealed class UpdateVariantGroupRequest
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
     }
 
     public sealed class CreateVersionGroupRequest
     {
         public string Name { get; set; }
+        public string Description { get; set; }
         public string VariantGroupId { get; set; }
+    }
+
+    public sealed class UpdateVersionGroupRequest
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
     }
 
     public sealed class DependencyEndpointRequest

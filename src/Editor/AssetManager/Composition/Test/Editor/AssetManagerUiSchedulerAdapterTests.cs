@@ -49,4 +49,22 @@ namespace Ee4v.AssetManager.Composition.Tests
             Assert.That(invoked, Is.True);
         }
     }
+
+    public sealed class AssetManagerStartupSyncTests
+    {
+        [TestCase(false, true, true)]
+        [TestCase(true, true, false)]
+        [TestCase(false, false, false)]
+        public void ManualReload_NotifiesCatalogWhenSyncDidNot(
+            bool catalogAlreadyNotified,
+            bool manualReloadRequested,
+            bool expected)
+        {
+            Assert.That(
+                AssetManagerStartupSync.ShouldNotifyManualReload(
+                    catalogAlreadyNotified,
+                    manualReloadRequested),
+                Is.EqualTo(expected));
+        }
+    }
 }

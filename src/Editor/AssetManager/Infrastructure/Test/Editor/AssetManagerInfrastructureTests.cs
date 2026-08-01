@@ -49,10 +49,10 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
-            "schema version 8 の DB 制約を作成する",
+            "schema version 11 の DB 制約を作成する",
             "AssetManager DB が source origin、availability、collection hierarchy trigger を作成することを確認します。",
             order: 301)]
-        public void Schema_CreatesVersion8Constraints()
+        public void Schema_CreatesCurrentConstraints()
         {
             var databasePath = GetDatabasePath();
 
@@ -60,7 +60,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
             using (var connection = new SQLiteConnection(databasePath, SQLiteOpenFlags.ReadOnly | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.PrivateCache))
             {
-                Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(8));
+                Assert.That(connection.ExecuteScalar<int>("SELECT version FROM schema_version LIMIT 1"), Is.EqualTo(11));
                 Assert.That(connection.ExecuteScalar<string>("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'file_info'"), Does.Contain("CHECK"));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'item_source_origin'"), Is.EqualTo(1));
                 Assert.That(connection.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'datasource_tag'"), Is.EqualTo(1));
@@ -848,44 +848,99 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
         [Test]
         [FeatureTestCase(
-            "通常・Smart Collection 未所属の item を絞り込む",
-            "UncategorizedOnly が直接所属と Smart Collection 条件一致の両方を除外することを確認します。",
+            "親のない file を未分類として取得する",
+            "Item を指定せず登録した file が未所属一覧だけに現れ、Item 検索用 snapshot を壊さないことを確認します。",
             order: 337)]
-        public void SearchItems_UncategorizedOnly_ExcludesRegularAndSmartCollectionMembers()
+        public void RegisterFile_WithoutItem_AppearsInUnassignedFiles()
         {
-            var regularCollection = _assetManager.CreateCollection(
-                new CreateCollectionRequest { Name = "Regular" });
-            var uncategorizedItem = _assetManager.CreateItem(
-                new CreateAssetItemRequest { Name = "Uncategorized" });
-            _assetManager.CreateItem(new CreateAssetItemRequest
-            {
-                Name = "Regular Member",
-                CollectionIds = new[] { regularCollection.Id }
-            });
-            _assetManager.CreateItem(new CreateAssetItemRequest { Name = "Smart Member" });
-            _assetManager.CreateSmartCollection(new CreateSmartCollectionRequest
-            {
-                Name = "Smart",
-                MatchMode = SmartCollectionMatchMode.All,
-                Conditions = new[]
+            var filePath = Path.Combine(
+                _tempRoot,
+                "dropped-avatar.unitypackage");
+            File.WriteAllText(filePath, "package");
+
+            var registered = _assetManager.RegisterFile(
+                null,
+                new RegisterFileRequest
                 {
-                    new SmartCollectionCondition
-                    {
-                        Field = SmartCollectionConditionField.Name,
-                        Operator = SmartCollectionConditionOperator.Equals,
-                        QueryText = "Smart Member"
-                    }
-                }
-            });
+                    FilePath = filePath
+                });
+            var files = _assetManager.GetUnassignedFiles(
+                new AssetFileQuery
+                {
+                    FileId = registered.Id,
+                    Keyword = "avatar",
+                    Lifecycle = AssetFileLifecycle.Active
+                });
 
-            var result = _assetManager.SearchItems(new AssetItemQuery
-            {
-                UncategorizedOnly = true
-            });
-
+            Assert.That(registered.ItemId, Is.Null.Or.Empty);
             Assert.That(
-                result.Items.Select(item => item.Id).ToArray(),
-                Is.EqualTo(new[] { uncategorizedItem.Id }));
+                registered.FileName,
+                Is.EqualTo("dropped-avatar.unitypackage"));
+            Assert.That(
+                files.Select(file => file.Id).ToArray(),
+                Is.EqualTo(new[] { registered.Id }));
+            Assert.That(
+                _assetManager.GetUnassignedFiles(
+                    new AssetFileQuery
+                    {
+                        FileId = "missing-file"
+                    }),
+                Is.Empty);
+            Assert.That(
+                _assetManager.SearchItems(new AssetItemQuery
+                {
+                    Limit = 10
+                }).Items,
+                Is.Empty);
+            Assert.That(
+                _assetManager.SearchItemSummaries(
+                    new AssetItemQuery
+                    {
+                        Limit = 10
+                    }).Items,
+                Is.Empty);
+        }
+
+        [Test]
+        public void RegisterFile_WithoutItem_RejectsGroupPlacement()
+        {
+            var filePath = Path.Combine(
+                _tempRoot,
+                "grouped.zip");
+            File.WriteAllText(filePath, "zip");
+
+            Assert.Throws<AssetManagerException>(() =>
+                _assetManager.RegisterFile(
+                    null,
+                    new RegisterFileRequest
+                    {
+                        FilePath = filePath,
+                        VersionGroupId = "group"
+                    }));
+        }
+
+        [Test]
+        public void FilePicker_ReadsOnlyExistingAbsoluteFiles()
+        {
+            var filePath = Path.Combine(
+                _tempRoot,
+                "dropped.txt");
+            File.WriteAllText(filePath, "content");
+            var picker =
+                new UnityAssetManagerFilePicker();
+
+            var file = picker.ReadFile(filePath);
+
+            Assert.That(file, Is.Not.Null);
+            Assert.That(file.Path, Is.EqualTo(filePath));
+            Assert.That(file.FileName, Is.EqualTo("dropped.txt"));
+            Assert.That(file.SizeBytes, Is.EqualTo(7L));
+            Assert.That(
+                picker.ReadFile("Assets/dropped.txt"),
+                Is.Null);
+            Assert.That(
+                picker.ReadFile(_tempRoot),
+                Is.Null);
         }
 
         [Test]
@@ -1171,8 +1226,8 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         public void GroupsAndDependencies_StoreVersionVariantRelations()
         {
             var item = _assetManager.CreateItem(new CreateAssetItemRequest { Name = "Item" });
-            var variant = _assetManager.CreateVariantGroup(item.Id, new CreateVariantGroupRequest { Name = "Quest" });
-            var version = _assetManager.CreateVersionGroup(item.Id, new CreateVersionGroupRequest { Name = "1.0", VariantGroupId = variant.Id });
+            var variant = _assetManager.CreateVariantGroup(item.Id, new CreateVariantGroupRequest { Name = "Quest", Description = "Quest variant" });
+            var version = _assetManager.CreateVersionGroup(item.Id, new CreateVersionGroupRequest { Name = "1.0", Description = "First version", VariantGroupId = variant.Id });
             var versionFilePath = Path.Combine(_tempRoot, "version.zip");
             var variantFilePath = Path.Combine(_tempRoot, "variant.zip");
             File.WriteAllText(versionFilePath, "version");
@@ -1188,11 +1243,29 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             var files = _assetManager.GetFiles(item.Id).OrderBy(file => file.FileName).ToArray();
             var dependencies = _assetManager.GetDependencies(new DependencyEndpointRequest { Type = AssetDependencyEndpointType.VariantGroup, Id = variant.Id });
             var updatedVersion = _assetManager.GetVersionGroups(item.Id).Single(group => group.Id == version.Id);
+            var updatedVariant = _assetManager.UpdateVariantGroup(
+                variant.Id,
+                new UpdateVariantGroupRequest
+                {
+                    Name = "PC",
+                    Description = "PC variant"
+                });
+            updatedVersion = _assetManager.UpdateVersionGroup(
+                version.Id,
+                new UpdateVersionGroupRequest
+                {
+                    Name = "2.0",
+                    Description = "Second version"
+                });
 
             Assert.That(files.Select(file => file.Id).ToArray(), Is.EqualTo(new[] { variantFile.Id, versionFile.Id }));
             Assert.That(versionFile.VersionGroupId, Is.EqualTo(version.Id));
             Assert.That(variantFile.VariantGroupId, Is.EqualTo(variant.Id));
             Assert.That(updatedVersion.PrimaryFileId, Is.EqualTo(versionFile.Id));
+            Assert.That(updatedVariant.Name, Is.EqualTo("PC"));
+            Assert.That(updatedVariant.Description, Is.EqualTo("PC variant"));
+            Assert.That(updatedVersion.Name, Is.EqualTo("2.0"));
+            Assert.That(updatedVersion.Description, Is.EqualTo("Second version"));
             Assert.That(dependencies.Single().Target.Type, Is.EqualTo(AssetDependencyEndpointType.VersionGroup));
             Assert.That(dependencies.Single().Target.Id, Is.EqualTo(version.Id));
         }

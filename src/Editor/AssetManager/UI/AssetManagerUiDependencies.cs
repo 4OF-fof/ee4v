@@ -10,6 +10,7 @@ namespace Ee4v.AssetManager.UI
         private static IAssetArchiveReader _archiveReader;
         private static IAssetFileSystemReader _fileSystemReader;
         private static IAssetManagerUiScheduler _scheduler;
+        private static IAssetManagerFilePicker _filePicker;
         private static StandaloneAssetManagerViewSession _standaloneViewSession;
         private static IAssetManagerProjectActions _projectActions;
         private static IAssetManagerProtectionActions
@@ -45,6 +46,10 @@ namespace Ee4v.AssetManager.UI
         internal static IAssetManagerUiScheduler Scheduler =>
             _scheduler ?? throw new InvalidOperationException(
                 "AssetManager UI scheduler has not been configured.");
+
+        internal static IAssetManagerFilePicker FilePicker =>
+            _filePicker ?? throw new InvalidOperationException(
+                "AssetManager file picker has not been configured.");
 
         internal static StandaloneAssetManagerViewSession StandaloneViewSession =>
             _standaloneViewSession ?? throw new InvalidOperationException(
@@ -106,6 +111,7 @@ namespace Ee4v.AssetManager.UI
             IAssetArchiveReader archiveReader,
             IAssetFileSystemReader fileSystemReader,
             IAssetManagerUiScheduler scheduler,
+            IAssetManagerFilePicker filePicker,
             StandaloneAssetManagerViewSession standaloneViewSession,
             IAssetManagerProjectActions projectActions,
             IAssetManagerProtectionActions protectionActions,
@@ -116,6 +122,7 @@ namespace Ee4v.AssetManager.UI
             _archiveReader = archiveReader ?? throw new ArgumentNullException(nameof(archiveReader));
             _fileSystemReader = fileSystemReader ?? throw new ArgumentNullException(nameof(fileSystemReader));
             _scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
+            _filePicker = filePicker ?? throw new ArgumentNullException(nameof(filePicker));
             _standaloneViewSession = standaloneViewSession ??
                                      throw new ArgumentNullException(
                                          nameof(standaloneViewSession));

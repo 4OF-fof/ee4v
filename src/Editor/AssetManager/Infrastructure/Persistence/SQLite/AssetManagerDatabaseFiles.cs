@@ -60,28 +60,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                        OR version_group_id IN (SELECT id FROM version_group WHERE item_info_id = ?))"
                 };
                 var parameters = new List<object> { itemId, itemId, itemId };
-
-                if (query == null || !query.IncludeUnavailable)
-                {
-                    where.Add("is_available = 1");
-                }
-
-                if (query != null && query.Lifecycle.HasValue)
-                {
-                    where.Add("lifecycle = ?");
-                    parameters.Add(ToDbLifecycle(query.Lifecycle.Value));
-                }
-
-                if (query != null && !string.IsNullOrWhiteSpace(query.Extension))
-                {
-                    where.Add("extension = ?");
-                    parameters.Add(query.Extension.TrimStart('.'));
-                }
-
-                if (query != null && query.SourceType.HasValue)
-                {
-                    where.Add(FileHasSourceClause(query.SourceType.Value));
-                }
+                AddFileQueryConditions(where, parameters, query);
 
                 var rows = connection.Query<FileRow>(
                     "SELECT * FROM file_info WHERE " + string.Join(" AND ", where.ToArray()) + " ORDER BY file_name COLLATE NOCASE, id",
@@ -90,18 +69,45 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             }
         }
 
+        public static IReadOnlyList<AssetFile> GetUnassignedFiles(
+            AssetFileQuery query)
+        {
+            using (var connection = OpenConnection())
+            {
+                var where = new List<string>
+                {
+                    "item_info_id IS NULL",
+                    "version_group_id IS NULL",
+                    "variant_group_id IS NULL"
+                };
+                var parameters = new List<object>();
+                AddFileQueryConditions(where, parameters, query);
+                var rows = connection.Query<FileRow>(
+                    "SELECT * FROM file_info WHERE " +
+                    string.Join(" AND ", where.ToArray()) +
+                    " ORDER BY updated_at DESC, id",
+                    parameters.ToArray());
+                return rows
+                    .Select(row => ToAssetFile(connection, row))
+                    .ToArray();
+            }
+        }
+
         public static AssetFile RegisterFile(string itemId, RegisterFileRequest request)
         {
-            if (string.IsNullOrWhiteSpace(itemId) || request == null || string.IsNullOrWhiteSpace(request.FilePath))
+            if (request == null || string.IsNullOrWhiteSpace(request.FilePath))
             {
-                throw new AssetManagerException(AssetManagerErrorCode.InvalidRequest, "Item id and file path are required.");
+                throw new AssetManagerException(AssetManagerErrorCode.InvalidRequest, "File path is required.");
             }
 
             using (var connection = OpenConnection())
             {
                 var fileId = InTransaction(connection, () =>
                 {
-                    EnsureItemExists(connection, itemId);
+                    if (!string.IsNullOrWhiteSpace(itemId))
+                    {
+                        EnsureItemExists(connection, itemId);
+                    }
                     var now = Now();
                     var id = NewId();
                     var fileName = string.IsNullOrWhiteSpace(request.FileName)
@@ -111,7 +117,9 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                     var parent = ResolveRegisterFileParent(connection, itemId, request, fileName);
                     InsertFileInfo(connection, id, parent.ItemId, parent.VersionGroupId, parent.VariantGroupId, fileName, GetExtension(fileName), request.SizeBytes, null, now);
                     EnsureVersionGroupPrimaryIfMissing(connection, parent.VersionGroupId, id, now);
-                    if (string.IsNullOrWhiteSpace(request.VersionGroupId) && string.IsNullOrWhiteSpace(request.VariantGroupId))
+                    if (!string.IsNullOrWhiteSpace(itemId) &&
+                        string.IsNullOrWhiteSpace(request.VersionGroupId) &&
+                        string.IsNullOrWhiteSpace(request.VariantGroupId))
                     {
                         ReconcileImportedFileGroups(connection, itemId, now);
                     }
@@ -289,6 +297,18 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 throw new AssetManagerException(AssetManagerErrorCode.InvalidRequest, "File parent must be item, version group, or variant group.");
             }
 
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                if (hasVersion || hasVariant)
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "An item id is required for a grouped file.");
+                }
+
+                return new ImportedFileParent(null, null, null);
+            }
+
             if (hasVersion)
             {
                 EnsureVersionGroupBelongsToItem(connection, request.VersionGroupId, itemId);
@@ -302,6 +322,48 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             }
 
             return ResolveImportedFileParent(connection, itemId, fileName);
+        }
+
+        private static void AddFileQueryConditions(
+            ICollection<string> where,
+            ICollection<object> parameters,
+            AssetFileQuery query)
+        {
+            if (query != null &&
+                !string.IsNullOrWhiteSpace(query.FileId))
+            {
+                where.Add("id = ?");
+                parameters.Add(query.FileId);
+            }
+
+            if (query == null || !query.IncludeUnavailable)
+            {
+                where.Add("is_available = 1");
+            }
+
+            if (query != null &&
+                !string.IsNullOrWhiteSpace(query.Keyword))
+            {
+                where.Add("file_name LIKE ?");
+                parameters.Add("%" + query.Keyword + "%");
+            }
+
+            if (query != null && query.Lifecycle.HasValue)
+            {
+                where.Add("lifecycle = ?");
+                parameters.Add(ToDbLifecycle(query.Lifecycle.Value));
+            }
+
+            if (query != null && !string.IsNullOrWhiteSpace(query.Extension))
+            {
+                where.Add("extension = ?");
+                parameters.Add(query.Extension.TrimStart('.'));
+            }
+
+            if (query != null && query.SourceType.HasValue)
+            {
+                where.Add(FileHasSourceClause(query.SourceType.Value));
+            }
         }
 
         private static void InsertFileInfo(SQLiteConnection connection, string fileId, string itemId, string versionGroupId, string variantGroupId, string fileName, string extension, long? sizeBytes, long? downloadId, string now)

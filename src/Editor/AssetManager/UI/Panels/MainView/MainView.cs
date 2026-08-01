@@ -4,6 +4,7 @@ using System.Threading;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
+using UnityEditor;
 using UnityEngine.UIElements;
 using UnityEngine;
 
@@ -20,25 +21,33 @@ namespace Ee4v.AssetManager.UI
             "ee4v-asset-manager-main-message__icon";
         private const string MessageTextClassName =
             "ee4v-asset-manager-main-message__text";
+        private const string ExternalFileDropClassName =
+            "ee4v-asset-manager-panel--external-file-drop";
+        private const string ExternalFileDropOverlayClassName =
+            "ee4v-asset-manager-panel__external-file-drop-overlay";
         private readonly MainViewController _controller;
         private readonly AssetItemGrid _itemGrid;
         private readonly UiTextElement _statusLabel;
         private readonly VisualElement _messageState;
         private readonly Image _messageIcon;
         private readonly UiTextElement _messageText;
-        private readonly FileTreeDetailView _fileDetailView;
         private readonly TagListPage _tagListPage;
+        private readonly VisualElement _externalFileDropOverlay;
+        private VisualElement _externalFileDropEventSurface;
+        private VisualElement _externalFileDropOverlaySurface;
         private string _fileListItemId;
         private string _fileListItemName;
         private AssetItemGridNodeKind _browserNodeKind;
         private string _browserNodeId;
         private string _browserNodeName;
-        private FileTreeDetailState _fileDetailState;
         private string _searchText = string.Empty;
         private string _currentItemContentKey = string.Empty;
         private AssetItemGridList _currentItemList;
         private bool _applyingHistory;
         private ItemCardState[] _selectedAssetItems = System.Array.Empty<ItemCardState>();
+        private string[] _selectionIdsPendingRefresh =
+            System.Array.Empty<string>();
+        private bool _restoreSelectionAfterRefresh;
         private AssetSelectionContentKind _selectionContentKind = AssetSelectionContentKind.AssetItem;
         private string _statusMessage = string.Empty;
         private string _emptyMessage = string.Empty;
@@ -65,18 +74,22 @@ namespace Ee4v.AssetManager.UI
                 MessageTextClassName);
             _messageText.SetWhiteSpace(WhiteSpace.Normal);
             _messageState.Add(_messageText);
-            _fileDetailView = new FileTreeDetailView();
-            _fileDetailView.style.display = DisplayStyle.None;
             _tagListPage = new TagListPage();
             _tagListPage.style.display = DisplayStyle.None;
+            _externalFileDropOverlay = new VisualElement
+            {
+                pickingMode = PickingMode.Ignore
+            };
+            _externalFileDropOverlay.AddToClassList(
+                ExternalFileDropOverlayClassName);
 
             AddToClassList("ee4v-asset-manager-panel");
             AddToClassList(RootClassName);
             Add(_statusLabel);
             Add(_messageState);
-            Add(_fileDetailView);
             Add(_tagListPage);
             Add(_itemGrid);
+            SetExternalFileDropSurface(this);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -121,8 +134,6 @@ namespace Ee4v.AssetManager.UI
 
         public event System.Action<System.Collections.Generic.IReadOnlyList<ItemCardState>, AssetSelectionContentKind> SelectionChanged;
 
-        public event System.Action<string> DetailTabRequested;
-
         internal void SetExternalError(string message)
         {
             _externalErrorMessage = message ?? string.Empty;
@@ -132,35 +143,6 @@ namespace Ee4v.AssetManager.UI
         public void SetGridSize(int value)
         {
             _controller.SetItemsPerRow(value);
-        }
-
-        public void ShowFileDetail(FileTreeDetailState state)
-        {
-            if (state == null)
-            {
-                return;
-            }
-
-            if (_controller.History.State.Current == null)
-            {
-                _controller.History.SetCurrent(CreateCurrentHistoryEntry());
-            }
-
-            var selectedItem = SelectedAssetItem;
-            if (!IsFileListMode &&
-                selectedItem != null &&
-                _selectionContentKind == AssetSelectionContentKind.AssetItem)
-            {
-                _fileListItemId = selectedItem.ItemId;
-                _fileListItemName = selectedItem.ItemName;
-                _browserNodeKind = AssetItemGridNodeKind.Item;
-                _browserNodeId = string.Empty;
-                _browserNodeName = string.Empty;
-            }
-
-            _fileDetailState = state;
-            PushCurrentHistory();
-            RefreshContent();
         }
 
         public void SetSearchText(string value)
@@ -180,6 +162,7 @@ namespace Ee4v.AssetManager.UI
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
+            HideExternalFileDropOverlay();
             _controller.Activate();
             _controller.NavigationChanged += OnSelectedItemChanged;
             _controller.ContentChanged += OnContentChanged;
@@ -197,6 +180,7 @@ namespace Ee4v.AssetManager.UI
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
+            HideExternalFileDropOverlay();
             _controller.NavigationChanged -= OnSelectedItemChanged;
             _controller.ContentChanged -= OnContentChanged;
             _controller.CollectionPresentationChanged -=
@@ -211,6 +195,178 @@ namespace Ee4v.AssetManager.UI
             _controller.CancelPendingLoad();
         }
 
+        private void OnExternalFileDragUpdated(
+            DragUpdatedEvent evt)
+        {
+            var accepted = _controller
+                .CanRegisterDroppedFiles(
+                    DragAndDrop.paths) &&
+                IsInsideExternalFileDropSurface(
+                    evt.mousePosition);
+            SetExternalFileDropOverlayVisible(accepted);
+            DragAndDrop.visualMode = accepted
+                ? DragAndDropVisualMode.Copy
+                : DragAndDropVisualMode.Rejected;
+            if (accepted)
+            {
+                evt.StopPropagation();
+            }
+        }
+
+        private void OnExternalFileDragPerform(
+            DragPerformEvent evt)
+        {
+            if (!_controller.CanRegisterDroppedFiles(
+                    DragAndDrop.paths) ||
+                !IsInsideExternalFileDropSurface(
+                    evt.mousePosition))
+            {
+                HideExternalFileDropOverlay();
+                return;
+            }
+
+            try
+            {
+                var paths =
+                    (string[])DragAndDrop.paths.Clone();
+                DragAndDrop.AcceptDrag();
+                var registered = _controller
+                    .RegisterDroppedFiles(
+                        paths);
+                if (registered > 0)
+                {
+                    SetExternalError(string.Empty);
+                    _controller.SetSelectedNavigationItem(
+                        "uncategorized");
+                }
+            }
+            catch (Exception exception)
+            {
+                SetExternalError(
+                    AssetManagerUiErrorMessage.Format(
+                        exception));
+            }
+            finally
+            {
+                HideExternalFileDropOverlay();
+            }
+
+            evt.StopPropagation();
+        }
+
+        private void OnExternalFileDragLeave(
+            DragLeaveEvent evt)
+        {
+            if (!IsInsideExternalFileDropSurface(
+                    evt.mousePosition))
+            {
+                HideExternalFileDropOverlay();
+            }
+        }
+
+        private void OnExternalFileDragExited(
+            DragExitedEvent evt)
+        {
+            HideExternalFileDropOverlay();
+        }
+
+        internal void SetExternalFileDropOverlayVisible(
+            bool visible)
+        {
+            _externalFileDropOverlaySurface?.EnableInClassList(
+                ExternalFileDropClassName,
+                visible);
+        }
+
+        internal void SetExternalFileDropSurface(
+            VisualElement surface)
+        {
+            SetExternalFileDropSurface(
+                surface,
+                surface);
+        }
+
+        internal void SetExternalFileDropSurface(
+            VisualElement eventSurface,
+            VisualElement overlaySurface)
+        {
+            if (_externalFileDropEventSurface == eventSurface &&
+                _externalFileDropOverlaySurface == overlaySurface)
+            {
+                return;
+            }
+
+            HideExternalFileDropOverlay();
+            UnregisterExternalFileDropCallbacks(
+                _externalFileDropEventSurface);
+            _externalFileDropOverlay.RemoveFromHierarchy();
+            _externalFileDropEventSurface = eventSurface;
+            _externalFileDropOverlaySurface = overlaySurface;
+            if (_externalFileDropEventSurface == null ||
+                _externalFileDropOverlaySurface == null)
+            {
+                return;
+            }
+
+            _externalFileDropOverlaySurface.Add(
+                _externalFileDropOverlay);
+            RegisterExternalFileDropCallbacks(
+                _externalFileDropEventSurface);
+        }
+
+        private void HideExternalFileDropOverlay()
+        {
+            SetExternalFileDropOverlayVisible(false);
+        }
+
+        private bool IsInsideExternalFileDropSurface(
+            Vector2 panelPosition)
+        {
+            return _externalFileDropOverlaySurface != null &&
+                   _externalFileDropOverlaySurface
+                       .worldBound
+                       .Contains(panelPosition);
+        }
+
+        private void RegisterExternalFileDropCallbacks(
+            VisualElement surface)
+        {
+            surface.RegisterCallback<DragUpdatedEvent>(
+                OnExternalFileDragUpdated,
+                TrickleDown.TrickleDown);
+            surface.RegisterCallback<DragPerformEvent>(
+                OnExternalFileDragPerform,
+                TrickleDown.TrickleDown);
+            surface.RegisterCallback<DragLeaveEvent>(
+                OnExternalFileDragLeave,
+                TrickleDown.TrickleDown);
+            surface.RegisterCallback<DragExitedEvent>(
+                OnExternalFileDragExited,
+                TrickleDown.TrickleDown);
+        }
+
+        private void UnregisterExternalFileDropCallbacks(
+            VisualElement surface)
+        {
+            if (surface == null)
+            {
+                return;
+            }
+
+            surface.UnregisterCallback<DragUpdatedEvent>(
+                OnExternalFileDragUpdated,
+                TrickleDown.TrickleDown);
+            surface.UnregisterCallback<DragPerformEvent>(
+                OnExternalFileDragPerform,
+                TrickleDown.TrickleDown);
+            surface.UnregisterCallback<DragLeaveEvent>(
+                OnExternalFileDragLeave,
+                TrickleDown.TrickleDown);
+            surface.UnregisterCallback<DragExitedEvent>(
+                OnExternalFileDragExited,
+                TrickleDown.TrickleDown);
+        }
+
         private void OnSelectedItemChanged(string itemId)
         {
             if (_applyingHistory)
@@ -219,7 +375,6 @@ namespace Ee4v.AssetManager.UI
             }
 
             ClearFileListMode();
-            ClearFileDetailMode();
             ClearCurrentItemList();
             ClearGridSelection();
             PushCurrentHistory();
@@ -228,19 +383,15 @@ namespace Ee4v.AssetManager.UI
 
         private void OnContentChanged()
         {
-            ClearFileListMode();
-            ClearFileDetailMode();
+            PreserveGridSelectionForRefresh();
             ClearCurrentItemList();
-            ClearGridSelection();
             PushCurrentHistory();
             RefreshContent();
         }
 
         private void OnCollectionPresentationChanged()
         {
-            if (IsFileListMode ||
-                IsFileDetailMode ||
-                IsTagListMode)
+            if (IsFileListMode || IsTagListMode)
             {
                 return;
             }
@@ -292,8 +443,6 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            ClearFileDetailMode();
-
             AssetItemGridNodeKind kind;
             string rawId;
             if (!AssetItemGridNodeKey.TryDecode(item.ItemId, out kind, out rawId))
@@ -313,7 +462,6 @@ namespace Ee4v.AssetManager.UI
             }
             else if (kind == AssetItemGridNodeKind.File)
             {
-                ShowFileDetail(FileTreeDetailState.FromAssetFile(rawId, item.ItemName));
                 return;
             }
             else
@@ -323,7 +471,6 @@ namespace Ee4v.AssetManager.UI
                 _browserNodeName = item.ItemName;
             }
 
-            DetailTabRequested?.Invoke("file-tree");
             ClearGridSelection();
             PushCurrentHistory();
             RefreshContent();
@@ -492,10 +639,8 @@ namespace Ee4v.AssetManager.UI
             }
             else if (
                 index == current.ViewPath.Count &&
-                (current.Kind ==
-                 AssetItemGridHistoryEntryKind.FileList ||
-                 current.Kind ==
-                 AssetItemGridHistoryEntryKind.FileDetail))
+                current.Kind ==
+                AssetItemGridHistoryEntryKind.FileList)
             {
                 if (string.IsNullOrWhiteSpace(current.ItemId))
                 {
@@ -528,17 +673,6 @@ namespace Ee4v.AssetManager.UI
         {
             SetEmptyState(string.Empty);
             SetContentError(string.Empty);
-            if (IsFileDetailMode)
-            {
-                _controller.CancelPendingLoad();
-                ClearCurrentItemList();
-                SetStatus(string.Empty);
-                ApplyContentVisibility();
-                _fileDetailView.SetState(_fileDetailState);
-                return;
-            }
-
-            _fileDetailView.SetState(null);
             if (IsTagListMode)
             {
                 ClearCurrentItemList();
@@ -704,6 +838,7 @@ namespace Ee4v.AssetManager.UI
             _itemGrid.SetAssetItems(
                 displayItems,
                 out statusText);
+            RestoreGridSelectionAfterRefresh();
             SetStatus(string.Empty);
             SetEmptyState(ResolveStatusText(statusText));
         }
@@ -770,16 +905,12 @@ namespace Ee4v.AssetManager.UI
         private void ApplyContentVisibility()
         {
             var hasMessage = HasMessage;
-            _fileDetailView.style.display =
-                !hasMessage && IsFileDetailMode
-                    ? DisplayStyle.Flex
-                    : DisplayStyle.None;
             _tagListPage.style.display =
-                !hasMessage && !IsFileDetailMode && IsTagListMode
+                !hasMessage && IsTagListMode
                     ? DisplayStyle.Flex
                     : DisplayStyle.None;
             _itemGrid.style.display =
-                !hasMessage && !IsFileDetailMode && !IsTagListMode
+                !hasMessage && !IsTagListMode
                     ? DisplayStyle.Flex
                     : DisplayStyle.None;
         }
@@ -829,18 +960,52 @@ namespace Ee4v.AssetManager.UI
 
         private void ClearGridSelection()
         {
+            _selectionIdsPendingRefresh =
+                System.Array.Empty<string>();
+            _restoreSelectionAfterRefresh = false;
             _itemGrid.ClearSelection(notify: false);
             SetSelection(null, AssetSelectionContentKind.AssetItem);
+        }
+
+        private void PreserveGridSelectionForRefresh()
+        {
+            var selectedItems = _itemGrid.SelectedItems;
+            if (selectedItems.Count == 0 &&
+                _restoreSelectionAfterRefresh)
+            {
+                return;
+            }
+
+            _selectionIdsPendingRefresh =
+                new string[selectedItems.Count];
+            for (var i = 0; i < selectedItems.Count; i++)
+            {
+                _selectionIdsPendingRefresh[i] =
+                    selectedItems[i].ItemId;
+            }
+
+            _restoreSelectionAfterRefresh =
+                _selectionIdsPendingRefresh.Length > 0;
+            _itemGrid.ClearSelection(notify: false);
+        }
+
+        private void RestoreGridSelectionAfterRefresh()
+        {
+            if (!_restoreSelectionAfterRefresh)
+            {
+                return;
+            }
+
+            var itemIds = _selectionIdsPendingRefresh;
+            _selectionIdsPendingRefresh =
+                System.Array.Empty<string>();
+            _restoreSelectionAfterRefresh = false;
+            _itemGrid.SetSelectedItemIds(itemIds);
         }
 
         private bool IsFileListMode
         {
             get { return !string.IsNullOrWhiteSpace(_fileListItemId); }
-        }
-
-        private bool IsFileDetailMode
-        {
-            get { return _fileDetailState != null; }
         }
 
         private bool IsTagListMode
@@ -913,11 +1078,6 @@ namespace Ee4v.AssetManager.UI
             _browserNodeName = string.Empty;
         }
 
-        private void ClearFileDetailMode()
-        {
-            _fileDetailState = null;
-        }
-
         private void PushCurrentHistory()
         {
             if (_applyingHistory)
@@ -932,24 +1092,6 @@ namespace Ee4v.AssetManager.UI
         {
             var selectedItem = _controller.SelectedNavigationItem;
             var viewPath = _controller.CreateHistoryViewPath();
-            if (IsFileDetailMode)
-            {
-                return new AssetItemGridHistoryEntry(
-                    AssetItemGridHistoryEntryKind.FileDetail,
-                    selectedItem.Id,
-                    selectedItem.Label,
-                    _fileListItemId,
-                    _fileListItemName,
-                    _browserNodeKind,
-                    _browserNodeId,
-                    _browserNodeName,
-                    _fileDetailState.Id,
-                    _fileDetailState.Name,
-                    _fileDetailState.ParentName,
-                    viewPath,
-                    _fileDetailState.Extension);
-            }
-
             if (IsFileListMode)
             {
                 return new AssetItemGridHistoryEntry(
@@ -999,27 +1141,17 @@ namespace Ee4v.AssetManager.UI
             {
                 _applyingHistory = true;
                 _controller.SetSelectedNavigationItem(entry.ViewId);
-                if (entry.Kind == AssetItemGridHistoryEntryKind.FileList ||
-                    entry.Kind == AssetItemGridHistoryEntryKind.FileDetail)
+                if (entry.Kind == AssetItemGridHistoryEntryKind.FileList)
                 {
                     _fileListItemId = entry.ItemId;
                     _fileListItemName = entry.ItemName;
                     _browserNodeKind = entry.NodeKind;
                     _browserNodeId = entry.NodeId;
                     _browserNodeName = entry.NodeName;
-                    DetailTabRequested?.Invoke("file-tree");
-                    _fileDetailState = entry.Kind == AssetItemGridHistoryEntryKind.FileDetail
-                        ? new FileTreeDetailState(
-                            entry.DetailId,
-                            entry.DetailName,
-                            entry.DetailParentName,
-                            entry.DetailExtension)
-                        : null;
                 }
                 else
                 {
                     ClearFileListMode();
-                    ClearFileDetailMode();
                 }
 
                 ClearGridSelection();

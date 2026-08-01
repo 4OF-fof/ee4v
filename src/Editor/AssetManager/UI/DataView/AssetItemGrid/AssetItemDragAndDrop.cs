@@ -72,10 +72,22 @@ namespace Ee4v.AssetManager.UI
                            AssetItemGridNodeKind.Collection;
                 })
                 .Select(item =>
-                    !string.IsNullOrWhiteSpace(
-                        item.ParentItemId)
-                        ? item.ParentItemId
-                        : item.ItemId)
+                {
+                    if (!string.IsNullOrWhiteSpace(
+                            item.ParentItemId))
+                    {
+                        return item.ParentItemId;
+                    }
+
+                    AssetItemGridNodeKind kind;
+                    string id;
+                    return AssetItemGridNodeKey.TryDecode(
+                        item.ItemId,
+                        out kind,
+                        out id)
+                        ? string.Empty
+                        : item.ItemId;
+                })
                 .Where(id => !string.IsNullOrWhiteSpace(id))
                 .Distinct(StringComparer.Ordinal)
                 .ToArray();

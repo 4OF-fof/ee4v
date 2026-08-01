@@ -46,6 +46,77 @@
     overflow: hidden;
 }
 
+.ee4v-asset-manager-asset-info {
+    flex-grow: 1;
+    min-width: 0;
+    min-height: 0;
+}
+
+.ee4v-asset-manager-asset-info > .unity-scroll-view {
+    flex-grow: 1;
+}
+
+.ee4v-asset-manager-asset-info > .unity-scroll-view > .unity-scroll-view__content-container {
+    padding-right: var(--ee4v-space-xs);
+    padding-bottom: var(--ee4v-space-lg);
+}
+
+.ee4v-asset-manager-asset-info__field {
+    margin-bottom: var(--ee4v-space-lg);
+}
+
+.ee4v-asset-manager-asset-info__label {
+    margin-bottom: var(--ee4v-space-xs);
+    color: var(--ee4v-color-text-secondary);
+}
+
+.ee4v-asset-manager-asset-info__metadata {
+    margin-top: var(--ee4v-space-xs);
+    margin-bottom: var(--ee4v-space-lg);
+    padding: var(--ee4v-space-md);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-subtle);
+    border-radius: var(--ee4v-radius-sm);
+    background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-asset-manager-asset-info__metadata-row {
+    min-width: 0;
+    flex-direction: row;
+    margin-bottom: var(--ee4v-space-xs);
+}
+
+.ee4v-asset-manager-asset-info__metadata-label {
+    width: 88px;
+    min-width: 88px;
+    color: var(--ee4v-color-text-muted);
+}
+
+.ee4v-asset-manager-asset-info__metadata-value {
+    min-width: 0;
+    flex-grow: 1;
+    color: var(--ee4v-color-text-primary);
+}
+
+.ee4v-asset-manager-asset-info__feedback {
+    min-height: var(--ee4v-size-20);
+    margin-bottom: var(--ee4v-space-sm);
+    color: var(--ee4v-color-success);
+}
+
+.ee4v-asset-manager-asset-info__feedback--error {
+    color: var(--ee4v-color-error);
+}
+
+.ee4v-asset-manager-asset-info__actions {
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+.ee4v-asset-manager-asset-info__actions > .ee4v-ui-button {
+    margin-left: var(--ee4v-space-sm);
+}
+
 .ee4v-asset-manager-file-tree {
     flex-grow: 1;
     min-height: 0;

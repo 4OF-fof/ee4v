@@ -52,6 +52,11 @@ namespace Ee4v.AssetManager.Infrastructure
         public IReadOnlyList<AssetFile> GetFiles(string itemId, AssetFileQuery query) =>
             Execute(() => AssetManagerDatabase.GetFiles(itemId, query));
 
+        public IReadOnlyList<AssetFile> GetUnassignedFiles(
+            AssetFileQuery query) =>
+            Execute(() =>
+                AssetManagerDatabase.GetUnassignedFiles(query));
+
         public AssetFile GetFile(string fileId) =>
             Execute(() => AssetManagerDatabase.GetFile(fileId));
 
@@ -68,11 +73,17 @@ namespace Ee4v.AssetManager.Infrastructure
         public AssetVariantGroup CreateVariantGroup(string itemId, CreateVariantGroupRequest request) =>
             Execute(() => AssetManagerDatabase.CreateVariantGroup(itemId, request));
 
+        public AssetVariantGroup UpdateVariantGroup(string variantGroupId, UpdateVariantGroupRequest request) =>
+            Execute(() => AssetManagerDatabase.UpdateVariantGroup(variantGroupId, request));
+
         public IReadOnlyList<AssetVersionGroup> GetVersionGroups(string itemId) =>
             Execute(() => AssetManagerDatabase.GetVersionGroups(itemId));
 
         public AssetVersionGroup CreateVersionGroup(string itemId, CreateVersionGroupRequest request) =>
             Execute(() => AssetManagerDatabase.CreateVersionGroup(itemId, request));
+
+        public AssetVersionGroup UpdateVersionGroup(string versionGroupId, UpdateVersionGroupRequest request) =>
+            Execute(() => AssetManagerDatabase.UpdateVersionGroup(versionGroupId, request));
 
         public string SetVersionGroupPrimaryFile(string versionGroupId, string fileId) =>
             Execute(() => AssetManagerDatabase.SetVersionGroupPrimaryFile(versionGroupId, fileId));

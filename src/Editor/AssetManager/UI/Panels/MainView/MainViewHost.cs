@@ -134,6 +134,7 @@ namespace Ee4v.AssetManager.UI
                 OnCollectionOpenRequested;
             _collectionController.ErrorChanged -=
                 MainView.SetExternalError;
+            MainView.SetExternalFileDropSurface(null);
             _collectionController.Dispose();
 
             if (_ownsController)

@@ -17,7 +17,6 @@ namespace Ee4v.AssetManager.UI
         private const string ContentClassName = "ee4v-asset-manager-window__main-view-window-content";
         private MainView _mainView;
         private MainViewHost _mainViewHost;
-        private FileTreeDetailState _pendingFileDetailState;
         private StandaloneAssetManagerViewSession _standaloneViewSession;
 
         [MenuItem("ee4v/Window/Main View", false, 3)]
@@ -27,21 +26,6 @@ namespace Ee4v.AssetManager.UI
             window.titleContent = new GUIContent(WindowTitle);
             window.minSize = new Vector2(640f, 420f);
             window.Show();
-        }
-
-        public static void ShowFileDetail(FileTreeDetailState state)
-        {
-            if (state == null)
-            {
-                return;
-            }
-
-            var window = GetWindow<MainViewWindow>();
-            window._pendingFileDetailState = state;
-            window.titleContent = new GUIContent(WindowTitle);
-            window.minSize = new Vector2(640f, 420f);
-            window.Show();
-            window.ApplyPendingFileDetail();
         }
 
         private void OnEnable()
@@ -96,8 +80,6 @@ namespace Ee4v.AssetManager.UI
                 _standaloneViewSession.SelectedNavigationItemId);
             _mainView.SelectionChanged +=
                 _standaloneViewSession.SetSelection;
-            _mainView.DetailTabRequested +=
-                _standaloneViewSession.RequestDetailTab;
             _standaloneViewSession.NavigationChanged +=
                 OnStandaloneNavigationChanged;
             _standaloneViewSession.SetSelection(
@@ -108,23 +90,11 @@ namespace Ee4v.AssetManager.UI
 
             body.Add(toolbar);
             body.Add(_mainView);
+            _mainView.SetExternalFileDropSurface(body);
 
             root.Add(body);
             WindowToastApi.EnsureHost(this);
             BackgroundStatusOverlayApi.EnsureHost(this);
-            ApplyPendingFileDetail();
-        }
-
-        private void ApplyPendingFileDetail()
-        {
-            if (_mainView == null || _pendingFileDetailState == null)
-            {
-                return;
-            }
-
-            var state = _pendingFileDetailState;
-            _pendingFileDetailState = null;
-            _mainView.ShowFileDetail(state);
         }
 
         private void UnbindStandaloneSession()
@@ -136,8 +106,6 @@ namespace Ee4v.AssetManager.UI
 
             _mainView.SelectionChanged -=
                 _standaloneViewSession.SetSelection;
-            _mainView.DetailTabRequested -=
-                _standaloneViewSession.RequestDetailTab;
             _standaloneViewSession.NavigationChanged -=
                 OnStandaloneNavigationChanged;
             _standaloneViewSession = null;

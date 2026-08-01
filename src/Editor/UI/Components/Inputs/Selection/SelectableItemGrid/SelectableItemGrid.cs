@@ -80,6 +80,40 @@ namespace Ee4v.UI
             }
         }
 
+        public void SetSelectedItemIds(
+            IReadOnlyCollection<string> itemIds,
+            bool notify = true)
+        {
+            var selectedIds = itemIds == null
+                ? new HashSet<string>(StringComparer.Ordinal)
+                : new HashSet<string>(itemIds, StringComparer.Ordinal);
+            _selectedItemIndices.Clear();
+            _selectedItemOrder.Clear();
+            _selectionAnchorIndex = -1;
+            for (var i = 0; i < Items.Count; i++)
+            {
+                var item = Items[i];
+                if (item == null ||
+                    !selectedIds.Contains(item.ItemId))
+                {
+                    continue;
+                }
+
+                _selectedItemIndices.Add(i);
+                _selectedItemOrder.Add(i);
+                if (_selectionAnchorIndex < 0)
+                {
+                    _selectionAnchorIndex = i;
+                }
+            }
+
+            RefreshVisibleSelection();
+            if (notify)
+            {
+                NotifySelectionChanged();
+            }
+        }
+
         protected override void OnCreateSlot(VisualElement slot)
         {
             slot.pickingMode = PickingMode.Position;

@@ -99,6 +99,7 @@ namespace Ee4v.AssetManager.Contracts
         public string Id { get; set; }
         public string ItemId { get; set; }
         public string Name { get; set; }
+        public string Description { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }
@@ -109,6 +110,7 @@ namespace Ee4v.AssetManager.Contracts
         public string ItemId { get; set; }
         public string VariantGroupId { get; set; }
         public string Name { get; set; }
+        public string Description { get; set; }
         public string PrimaryFileId { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

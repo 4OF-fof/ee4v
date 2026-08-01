@@ -95,7 +95,12 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                                file_info.variant_group_id
                           LEFT JOIN version_group
                             ON version_group.id =
-                               file_info.version_group_id");
+                               file_info.version_group_id
+                          WHERE COALESCE(
+                                    file_info.item_info_id,
+                                    variant_group.item_info_id,
+                                    version_group.item_info_id)
+                                IS NOT NULL");
                 AddSnapshotFileValues(
                     keywordValuesByItem,
                     smartValuesByItem,
@@ -171,7 +176,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                         new AssetCatalogSnapshotItem(
                             ToAssetItemSummary(row),
                             boothItemIds.Contains(row.id),
-                            memberships.Length == 0,
                             memberships,
                             keywordValuesByItem[row.id]);
                 }

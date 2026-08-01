@@ -52,6 +52,7 @@
     --ee4v-color-warning: #DCB448;
     --ee4v-color-error: #DC5C5C;
     --ee4v-color-info-surface-soft: rgba(58, 121, 187, 0.10);
+    --ee4v-color-info-surface-strong: rgba(58, 121, 187, 0.22);
     --ee4v-color-warning-surface-soft: rgba(220, 180, 72, 0.10);
     --ee4v-color-error-surface-soft: rgba(220, 92, 92, 0.10);
     --ee4v-color-status-idle: rgba(128, 128, 128, 0.35);

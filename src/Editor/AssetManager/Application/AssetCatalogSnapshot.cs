@@ -17,13 +17,11 @@ namespace Ee4v.AssetManager.Application
         internal AssetCatalogSnapshotItem(
             AssetItem item,
             bool hasBoothInformation,
-            bool isUncategorized,
             IReadOnlyList<string> collectionIds,
             IReadOnlyList<string> keywordValues)
         {
             Item = item ?? throw new ArgumentNullException(nameof(item));
             HasBoothInformation = hasBoothInformation;
-            IsUncategorized = isUncategorized;
             CollectionIds = (collectionIds ??
                              Array.Empty<string>())
                 .ToArray();
@@ -35,8 +33,6 @@ namespace Ee4v.AssetManager.Application
         internal AssetItem Item { get; }
 
         internal bool HasBoothInformation { get; }
-
-        internal bool IsUncategorized { get; }
 
         internal IReadOnlyList<string> CollectionIds { get; }
 
@@ -188,9 +184,7 @@ namespace Ee4v.AssetManager.Application
                 return false;
             }
 
-            return query == null ||
-                   !query.UncategorizedOnly ||
-                   entry.IsUncategorized;
+            return true;
         }
 
         internal void Invalidate()

@@ -96,6 +96,7 @@ namespace Ee4v.AssetManager.Composition
                 new CachedAssetArchiveReader(),
                 new AssetFileSystemReader(),
                 uiScheduler,
+                new UnityAssetManagerFilePicker(),
                 new global::Ee4v.AssetManager.UI.StandaloneAssetManagerViewSession(),
                 _projectDecoration,
                 _assetProtection,

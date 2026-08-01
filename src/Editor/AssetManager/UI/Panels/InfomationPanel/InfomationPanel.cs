@@ -31,6 +31,8 @@ namespace Ee4v.AssetManager.UI
         private readonly UiTextElement _multiPreviewSuffixText;
         private readonly ViewToggleTabs _selectionDetailTabs;
         private readonly VisualElement _detailContent;
+        private readonly AssetInfoView _assetInfo;
+        private readonly AssetInfoController _assetInfoController;
         private readonly SearchableFileTree _fileTree;
         private float _previewSize;
         private IReadOnlyList<ItemCardState> _selectedItems;
@@ -67,16 +69,25 @@ namespace Ee4v.AssetManager.UI
 
             _detailContent = new VisualElement();
             _detailContent.AddToClassList(DetailContentClassName);
+            _assetInfo = new AssetInfoView();
+            _assetInfoController = new AssetInfoController();
+            _assetInfo.UpdateRequested += _assetInfoController.Save;
+            _assetInfo.AddFileRequested += _assetInfoController.AddFile;
+            _assetInfoController.StateChanged += _assetInfo.SetState;
+            _assetInfoController.ErrorChanged += _assetInfo.SetError;
+            _assetInfoController.NoticeChanged += _assetInfo.SetNotice;
+            _detailContent.Add(_assetInfo);
             _fileTree = new SearchableFileTree();
-            _fileTree.FileDetailRequested += state => FileDetailRequested?.Invoke(state);
             _detailContent.Add(_fileTree);
             Add(_detailContent);
 
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            RegisterCallback<AttachToPanelEvent>(_ =>
+                _assetInfoController.Activate());
+            RegisterCallback<DetachFromPanelEvent>(_ =>
+                _assetInfoController.Deactivate());
             SetSelectedAssetItems(null, AssetSelectionContentKind.AssetItem);
         }
-
-        public event Action<FileTreeDetailState> FileDetailRequested;
 
         internal IReadOnlyList<ItemCardState> SelectedItems =>
             _selectedItems ?? Array.Empty<ItemCardState>();
@@ -95,6 +106,7 @@ namespace Ee4v.AssetManager.UI
             _selectionContentKind = contentKind;
             if (items == null || items.Count == 0)
             {
+                _assetInfoController.Clear();
                 _preview.style.display = DisplayStyle.None;
                 ClearPreview();
                 UpdateDetailContent();
@@ -103,16 +115,47 @@ namespace Ee4v.AssetManager.UI
 
             if (items.Count == 1)
             {
+                if (contentKind !=
+                    AssetSelectionContentKind.AssetFile)
+                {
+                    if (contentKind ==
+                        AssetSelectionContentKind.AssetItem)
+                    {
+                        _selectedDetailTabId = AssetInfoTabId;
+                    }
+
+                    _assetInfoController.SetSelection(
+                        items[0],
+                        contentKind);
+                }
+                else
+                {
+                    _selectedDetailTabId = ResolveDetailTabId(
+                        contentKind,
+                        _selectedDetailTabId);
+                    _assetInfoController.Clear();
+                }
+
+                _selectionDetailTabs.SetSelectedTab(
+                    _selectedDetailTabId,
+                    notify: false);
                 _preview.style.display = DisplayStyle.Flex;
                 SetPreview(items, false);
-                _selectionModeRow.style.display = DisplayStyle.Flex;
                 _multiPreviewTextRow.style.display = DisplayStyle.None;
-                _selectionDetailTabs.style.display = DisplayStyle.Flex;
+                var showDetailTabs = contentKind !=
+                                     AssetSelectionContentKind.AssetFile;
+                _selectionModeRow.style.display = showDetailTabs
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+                _selectionDetailTabs.style.display = showDetailTabs
+                        ? DisplayStyle.Flex
+                        : DisplayStyle.None;
                 UpdateDetailContent();
                 return;
             }
 
             _preview.style.display = DisplayStyle.Flex;
+            _assetInfoController.Clear();
             SetPreview(items, true);
             _selectionModeRow.style.display = DisplayStyle.Flex;
             _selectionDetailTabs.style.display = DisplayStyle.None;
@@ -166,11 +209,29 @@ namespace Ee4v.AssetManager.UI
 
         internal void SetSelectedAssetDetailTab(string tabId)
         {
-            _selectedDetailTabId = string.Equals(tabId, FileTreeTabId, StringComparison.Ordinal)
-                ? FileTreeTabId
-                : AssetInfoTabId;
+            _selectedDetailTabId = ResolveDetailTabId(
+                _selectionContentKind,
+                tabId);
             _selectionDetailTabs.SetSelectedTab(_selectedDetailTabId, notify: false);
             UpdateDetailContent();
+        }
+
+        internal static string ResolveDetailTabId(
+            AssetSelectionContentKind contentKind,
+            string requestedTabId)
+        {
+            if (contentKind ==
+                AssetSelectionContentKind.AssetFile)
+            {
+                return FileTreeTabId;
+            }
+
+            return string.Equals(
+                requestedTabId,
+                FileTreeTabId,
+                StringComparison.Ordinal)
+                ? FileTreeTabId
+                : AssetInfoTabId;
         }
 
         private void ClearPreview()
@@ -181,21 +242,40 @@ namespace Ee4v.AssetManager.UI
             _selectionModeRow.style.display = DisplayStyle.None;
             _multiPreviewTextRow.style.display = DisplayStyle.None;
             _selectionDetailTabs.style.display = DisplayStyle.None;
+            _assetInfo.SetState(null);
             _fileTree.ClearTree();
         }
 
         private void UpdateDetailContent()
         {
             var hasSingleSelection = _selectedItems != null && _selectedItems.Count == 1;
-            var canShowFileTree =
-                _selectionContentKind == AssetSelectionContentKind.AssetFile ||
-                _selectionContentKind == AssetSelectionContentKind.AssetItem ||
-                _selectionContentKind == AssetSelectionContentKind.AssetVariantGroup ||
-                _selectionContentKind == AssetSelectionContentKind.AssetVersionGroup;
+            var isFile = _selectionContentKind ==
+                         AssetSelectionContentKind.AssetFile;
+            var usesDetailTabs =
+                _selectionContentKind ==
+                AssetSelectionContentKind.AssetItem ||
+                _selectionContentKind ==
+                AssetSelectionContentKind.AssetVariantGroup ||
+                _selectionContentKind ==
+                AssetSelectionContentKind.AssetVersionGroup;
             var showFileTree = hasSingleSelection &&
-                               canShowFileTree &&
-                               string.Equals(_selectedDetailTabId, FileTreeTabId, StringComparison.Ordinal);
-            _detailContent.style.display = showFileTree ? DisplayStyle.Flex : DisplayStyle.None;
+                               (isFile ||
+                                usesDetailTabs && string.Equals(
+                                    _selectedDetailTabId,
+                                    FileTreeTabId,
+                                    StringComparison.Ordinal));
+            var showAssetInfo = hasSingleSelection &&
+                                usesDetailTabs &&
+                                string.Equals(
+                                    _selectedDetailTabId,
+                                    AssetInfoTabId,
+                                    StringComparison.Ordinal);
+            _detailContent.style.display = showFileTree || showAssetInfo
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+            _assetInfo.style.display = showAssetInfo
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
             _fileTree.style.display = showFileTree ? DisplayStyle.Flex : DisplayStyle.None;
 
             if (showFileTree)

@@ -9,14 +9,11 @@ namespace Ee4v.AssetManager.UI
         private ItemCardState[] _selectedItems = Array.Empty<ItemCardState>();
         private AssetSelectionContentKind _selectionContentKind =
             AssetSelectionContentKind.AssetItem;
-        private string _selectedDetailTabId = string.Empty;
         private string _selectedNavigationItemId =
             AssetManagerNavigationCatalog.DefaultItemId;
 
         public event Action<IReadOnlyList<ItemCardState>, AssetSelectionContentKind>
             SelectionChanged;
-
-        public event Action<string> DetailTabRequested;
 
         public event Action<string> NavigationChanged;
 
@@ -28,11 +25,6 @@ namespace Ee4v.AssetManager.UI
         public AssetSelectionContentKind SelectionContentKind
         {
             get { return _selectionContentKind; }
-        }
-
-        public string SelectedDetailTabId
-        {
-            get { return _selectedDetailTabId; }
         }
 
         public string SelectedNavigationItemId
@@ -67,12 +59,6 @@ namespace Ee4v.AssetManager.UI
             }
 
             SelectionChanged?.Invoke(_selectedItems, _selectionContentKind);
-        }
-
-        public void RequestDetailTab(string tabId)
-        {
-            _selectedDetailTabId = tabId ?? string.Empty;
-            DetailTabRequested?.Invoke(_selectedDetailTabId);
         }
 
         public void SetNavigation(string itemId)

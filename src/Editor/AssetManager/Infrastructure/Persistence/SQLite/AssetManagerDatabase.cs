@@ -13,7 +13,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
 {
     internal static partial class AssetManagerDatabase
     {
-        private const int CurrentSchemaVersion = 9;
+        private const int CurrentSchemaVersion = 11;
 
         private const string DatabaseFileName = "asset-manager.db";
 
@@ -87,11 +87,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                     where.Add("EXISTS (SELECT 1 FROM booth_info WHERE booth_info.item_info_id = item_info.id)");
                 }
 
-                if (query != null && query.UncategorizedOnly)
-                {
-                    where.Add("NOT EXISTS (SELECT 1 FROM item_collection WHERE item_collection.item_info_id = item_info.id)");
-                }
-
                 if (query != null && query.Lifecycle.HasValue)
                 {
                     where.Add(@"EXISTS (
@@ -129,11 +124,10 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                 var limit = query != null && query.Limit > 0 ? query.Limit : 100;
                 var offset = query != null && query.Offset > 0 ? query.Offset : 0;
                 var whereSql = where.Count == 0 ? string.Empty : " WHERE " + string.Join(" AND ", where.ToArray());
-                var uncategorizedOnly = query != null && query.UncategorizedOnly;
                 List<ItemRow> rows;
                 int total;
 
-                if (smartCollection == null && !uncategorizedOnly)
+                if (smartCollection == null)
                 {
                     total = connection.ExecuteScalar<int>("SELECT COUNT(*) FROM item_info" + whereSql, parameters.ToArray());
                     parameters.Add(limit);
@@ -147,14 +141,12 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                     var candidates = connection.Query<ItemRow>(
                         "SELECT * FROM item_info" + whereSql + " ORDER BY updated_at DESC, id",
                         parameters.ToArray());
-                    var smartCollections = uncategorizedOnly
-                        ? connection.Query<SmartCollectionRow>(
-                            "SELECT * FROM smart_collection_info ORDER BY collection_info_id")
-                        : new List<SmartCollectionRow>();
                     var matched = candidates
                         .Where(row =>
-                            (smartCollection == null || MatchesSmartCollection(connection, row.id, smartCollection)) &&
-                            (!uncategorizedOnly || !MatchesAnySmartCollection(connection, row.id, smartCollections)))
+                            MatchesSmartCollection(
+                                connection,
+                                row.id,
+                                smartCollection))
                         .ToArray();
                     total = matched.Length;
                     rows = matched.Skip(offset).Take(limit).ToList();
@@ -168,22 +160,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                     TotalCount = total
                 };
             }
-        }
-
-        private static bool MatchesAnySmartCollection(
-            SQLiteConnection connection,
-            string itemId,
-            IReadOnlyList<SmartCollectionRow> smartCollections)
-        {
-            for (var i = 0; i < smartCollections.Count; i++)
-            {
-                if (MatchesSmartCollection(connection, itemId, smartCollections[i]))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         public static AssetItem GetItem(string itemId)

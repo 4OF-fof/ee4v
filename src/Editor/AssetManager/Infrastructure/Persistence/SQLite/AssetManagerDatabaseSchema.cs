@@ -54,8 +54,8 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
             connection.Execute("CREATE TABLE IF NOT EXISTS item_collection(item_info_id TEXT NOT NULL REFERENCES item_info(id) ON DELETE CASCADE, collection_info_id TEXT NOT NULL REFERENCES collection_info(id) ON DELETE CASCADE, PRIMARY KEY(item_info_id, collection_info_id))");
             connection.Execute("CREATE TABLE IF NOT EXISTS smart_collection_info(collection_info_id TEXT PRIMARY KEY REFERENCES collection_info(id) ON DELETE CASCADE, match_mode TEXT NOT NULL CHECK(match_mode IN ('all', 'any')))");
             connection.Execute("CREATE TABLE IF NOT EXISTS smart_collection_condition(collection_info_id TEXT NOT NULL REFERENCES smart_collection_info(collection_info_id) ON DELETE CASCADE, sort_order INTEGER NOT NULL CHECK(sort_order >= 0), field TEXT NOT NULL CHECK(field IN ('name', 'description', 'tag', 'file_name', 'extension')), operator TEXT NOT NULL CHECK(operator IN ('contains', 'equals', 'in', 'exists')), query_text TEXT, PRIMARY KEY(collection_info_id, sort_order), CHECK(operator = 'exists' OR query_text IS NOT NULL))");
-            connection.Execute("CREATE TABLE IF NOT EXISTS variant_group(id TEXT PRIMARY KEY, item_info_id TEXT NOT NULL REFERENCES item_info(id) ON DELETE CASCADE, name TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
-            connection.Execute("CREATE TABLE IF NOT EXISTS version_group(id TEXT PRIMARY KEY, item_info_id TEXT NOT NULL REFERENCES item_info(id) ON DELETE CASCADE, variant_group_id TEXT REFERENCES variant_group(id) ON DELETE CASCADE, name TEXT NOT NULL, primary_file_info_id TEXT REFERENCES file_info(id) ON DELETE SET NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
+            connection.Execute("CREATE TABLE IF NOT EXISTS variant_group(id TEXT PRIMARY KEY, item_info_id TEXT NOT NULL REFERENCES item_info(id) ON DELETE CASCADE, name TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
+            connection.Execute("CREATE TABLE IF NOT EXISTS version_group(id TEXT PRIMARY KEY, item_info_id TEXT NOT NULL REFERENCES item_info(id) ON DELETE CASCADE, variant_group_id TEXT REFERENCES variant_group(id) ON DELETE CASCADE, name TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', primary_file_info_id TEXT REFERENCES file_info(id) ON DELETE SET NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)");
             connection.Execute(
                 @"CREATE TABLE IF NOT EXISTS file_info(
                     id TEXT PRIMARY KEY,
@@ -71,6 +71,8 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence.SQLite
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
                     CHECK (
+                      (item_info_id IS NULL AND version_group_id IS NULL AND variant_group_id IS NULL)
+                      OR
                       (item_info_id IS NOT NULL AND version_group_id IS NULL AND variant_group_id IS NULL)
                       OR
                       (item_info_id IS NULL AND version_group_id IS NOT NULL AND variant_group_id IS NULL)

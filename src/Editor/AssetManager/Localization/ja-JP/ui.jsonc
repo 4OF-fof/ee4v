@@ -31,6 +31,26 @@
         }
       }
     },
+    "assetInfo": {
+      "name": "名前",
+      "namePlaceholder": "アセット名",
+      "description": "説明",
+      "descriptionPlaceholder": "アセットの説明",
+      "tags": "タグ",
+      "tagsPlaceholder": "タグを 1 行ずつ入力",
+      "files": "ファイル",
+      "sources": "データソース",
+      "createdAt": "作成日時",
+      "updatedAt": "更新日時",
+      "noSources": "未登録",
+      "addFile": "ファイルを追加",
+      "selectFileTitle": "AssetManager へ登録するファイルを選択",
+      "saved": "Asset Info を保存しました。",
+      "fileAdded": "ee4v データソースへファイルを追加しました。",
+      "error": {
+        "nameRequired": "名前を入力してください。"
+      }
+    },
     "archiveDetail": {
       "searchPlaceholder": "アーカイブ内を検索",
       "loading": "アーカイブの内容を確認中...",
@@ -112,6 +132,7 @@
       "loadCanceled": "アセットの読み込みがキャンセルされました。",
       "noItems": "アセット項目がありません。",
       "noFiles": "このアイテムにファイルはありません。",
+      "noUnassignedFiles": "Item に属していないファイルはありません。",
       "noChildren": "表示できる子要素がありません。",
       "dragItems": "アイテムをコレクションに登録",
       "preview": {
@@ -132,7 +153,7 @@
       "gridSize": "グリッドサイズ",
       "filter": "フィルタ",
       "sort": "ソート順",
-      "searchPlaceholder": "アセットを検索"
+      "searchPlaceholder": "アセットとファイルを検索"
     },
     "fileDependencies": {
       "title": "ファイルの依存",

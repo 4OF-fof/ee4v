@@ -24,6 +24,29 @@ namespace Ee4v.AssetManager.Contracts
         void Preload();
     }
 
+    public sealed class AssetManagerFileSelection
+    {
+        public AssetManagerFileSelection(
+            string path,
+            string fileName,
+            long? sizeBytes)
+        {
+            Path = path ?? string.Empty;
+            FileName = fileName ?? string.Empty;
+            SizeBytes = sizeBytes;
+        }
+
+        public string Path { get; }
+        public string FileName { get; }
+        public long? SizeBytes { get; }
+    }
+
+    public interface IAssetManagerFilePicker
+    {
+        AssetManagerFileSelection SelectFile(string title);
+        AssetManagerFileSelection ReadFile(string path);
+    }
+
     public interface IAssetManagerProjectActions
     {
         bool CanHighlightItem(string itemId);

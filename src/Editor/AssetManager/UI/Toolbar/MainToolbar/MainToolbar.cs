@@ -67,11 +67,11 @@ namespace Ee4v.AssetManager.UI
             actions.Add(CreateIconButton(
                 UiFluentIcon.Filter,
                 I18N.Get("assetManager.mainToolbar.filter"),
-                () => FilterClicked?.Invoke()));
+                _ => FilterClicked?.Invoke()));
             actions.Add(CreateIconButton(
                 UiFluentIcon.Options,
                 I18N.Get("assetManager.mainToolbar.sort"),
-                () => SortClicked?.Invoke()));
+                _ => SortClicked?.Invoke()));
 
             var searchTooltip =
                 I18N.GetForScope(
@@ -175,7 +175,7 @@ namespace Ee4v.AssetManager.UI
         private static UiButton CreateIconButton(
             UiFluentIcon fluentIcon,
             string tooltip,
-            Action clicked)
+            Action<VisualElement> clicked)
         {
             var button = new UiButton(
                 new UiButtonState(
@@ -185,8 +185,8 @@ namespace Ee4v.AssetManager.UI
                         size: UiSizeTokens.Size14,
                         tooltip: tooltip),
                     variant: UiButtonVariant.Ghost,
-                    size: UiButtonSize.Compact),
-                clicked);
+                    size: UiButtonSize.Compact));
+            button.clicked += () => clicked?.Invoke(button);
             button.focusable = false;
             button.AddToClassList(IconButtonClassName);
             return button;

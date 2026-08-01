@@ -82,6 +82,7 @@ namespace Ee4v.AssetManager.UI
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/ImageStack/image-stack.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Content/Icon/icon.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/InputField/input-field.uss");
+            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/CommaSeparatedListField/comma-separated-list-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/SearchField/search-field.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/NumericSlider/numeric-slider.uss");
             UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss");
@@ -106,15 +107,16 @@ namespace Ee4v.AssetManager.UI
             var mainView = _mainViewHost.MainView;
             var toolbar = _mainViewHost.Toolbar;
             var infomationPanel = new InfomationPanel();
-            infomationPanel.FileDetailRequested += mainView.ShowFileDetail;
             mainView.SelectionChanged += infomationPanel.SetSelectedAssetItems;
-            mainView.DetailTabRequested += infomationPanel.SetSelectedAssetDetailTab;
             toolbar.style.flexGrow = 1f;
 
             layout.MainToolbarContent.Add(toolbar);
             layout.LeftPaneContent.Add(_mainViewHost.NavigationPanel);
             layout.MainContent.Add(mainView);
             layout.RightPaneContent.Add(infomationPanel);
+            mainView.SetExternalFileDropSurface(
+                layout,
+                layout.MainOverlayContent);
 
             root.Add(layout);
             WindowToastApi.EnsureHost(this);
