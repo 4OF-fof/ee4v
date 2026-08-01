@@ -14,6 +14,8 @@ namespace Ee4v.AssetManager.UI
             string description,
             IReadOnlyList<string> tagNames,
             int fileCount,
+            string totalFileSize,
+            string fileTypes,
             string sources,
             string createdAt,
             string updatedAt,
@@ -26,6 +28,8 @@ namespace Ee4v.AssetManager.UI
             Description = description ?? string.Empty;
             TagNames = tagNames ?? Array.Empty<string>();
             FileCount = Math.Max(0, fileCount);
+            TotalFileSize = totalFileSize ?? string.Empty;
+            FileTypes = fileTypes ?? string.Empty;
             Sources = sources ?? string.Empty;
             CreatedAt = createdAt ?? string.Empty;
             UpdatedAt = updatedAt ?? string.Empty;
@@ -39,6 +43,8 @@ namespace Ee4v.AssetManager.UI
         internal string Description { get; }
         internal IReadOnlyList<string> TagNames { get; }
         internal int FileCount { get; }
+        internal string TotalFileSize { get; }
+        internal string FileTypes { get; }
         internal string Sources { get; }
         internal string CreatedAt { get; }
         internal string UpdatedAt { get; }
@@ -72,6 +78,10 @@ namespace Ee4v.AssetManager.UI
             "ee4v-asset-manager-asset-info__field";
         private const string LabelClassName =
             "ee4v-asset-manager-asset-info__label";
+        private const string SectionClassName =
+            "ee4v-asset-manager-asset-info__section";
+        private const string SectionTitleClassName =
+            "ee4v-asset-manager-asset-info__section-title";
         private const string MetadataClassName =
             "ee4v-asset-manager-asset-info__metadata";
         private const string MetadataRowClassName =
@@ -92,6 +102,8 @@ namespace Ee4v.AssetManager.UI
         private readonly AssetTagField _tagsField;
         private readonly VisualElement _tagsFieldContainer;
         private readonly UiTextElement _fileCount;
+        private readonly UiTextElement _totalFileSize;
+        private readonly UiTextElement _fileTypes;
         private readonly UiTextElement _sources;
         private readonly UiTextElement _createdAt;
         private readonly UiTextElement _updatedAt;
@@ -126,7 +138,7 @@ namespace Ee4v.AssetManager.UI
                 _descriptionField));
 
             _tagsField = new AssetTagField();
-            _tagsFieldContainer = CreateField(
+            _tagsFieldContainer = CreateSection(
                 I18N.Get("assetManager.assetInfo.tags"),
                 _tagsField);
             scroll.Add(_tagsFieldContainer);
@@ -142,6 +154,12 @@ namespace Ee4v.AssetManager.UI
             _fileCount = AddMetadataRow(
                 metadata,
                 I18N.Get("assetManager.assetInfo.files"));
+            _totalFileSize = AddMetadataRow(
+                metadata,
+                I18N.Get("assetManager.assetInfo.totalFileSize"));
+            _fileTypes = AddMetadataRow(
+                metadata,
+                I18N.Get("assetManager.assetInfo.fileTypes"));
             _sources = AddMetadataRow(
                 metadata,
                 I18N.Get("assetManager.assetInfo.sources"));
@@ -151,7 +169,9 @@ namespace Ee4v.AssetManager.UI
             _updatedAt = AddMetadataRow(
                 metadata,
                 I18N.Get("assetManager.assetInfo.updatedAt"));
-            scroll.Add(metadata);
+            scroll.Add(CreateSection(
+                I18N.Get("assetManager.assetInfo.information"),
+                metadata));
 
             _feedback = UiTextFactory.Create(
                 string.Empty,
@@ -209,6 +229,8 @@ namespace Ee4v.AssetManager.UI
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             _fileCount.SetText(state.FileCount.ToString());
+            _totalFileSize.SetText(state.TotalFileSize);
+            _fileTypes.SetText(state.FileTypes);
             _sources.SetText(state.Sources);
             _createdAt.SetText(state.CreatedAt);
             _updatedAt.SetText(state.UpdatedAt);
@@ -303,6 +325,20 @@ namespace Ee4v.AssetManager.UI
                 LabelClassName));
             container.Add(field);
             return container;
+        }
+
+        private static VisualElement CreateSection(
+            string title,
+            VisualElement content)
+        {
+            var section = new VisualElement();
+            section.AddToClassList(SectionClassName);
+            section.Add(UiTextFactory.Create(
+                title,
+                UiClassNames.SectionTitle,
+                SectionTitleClassName));
+            section.Add(content);
+            return section;
         }
 
         private static UiTextElement AddMetadataRow(

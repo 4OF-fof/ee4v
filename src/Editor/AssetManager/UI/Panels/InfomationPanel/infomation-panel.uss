@@ -62,11 +62,27 @@
 }
 
 .ee4v-asset-manager-asset-info__field {
-    margin-bottom: var(--ee4v-space-lg);
+    margin-bottom: var(--ee4v-space-md);
 }
 
 .ee4v-asset-manager-asset-info__label {
     margin-bottom: var(--ee4v-space-xs);
+    color: var(--ee4v-color-text-secondary);
+}
+
+.ee4v-asset-manager-asset-info__field > .ee4v-ui-input-field {
+    margin-bottom: var(--ee4v-space-none);
+}
+
+.ee4v-asset-manager-asset-info__section {
+    margin-top: var(--ee4v-space-md);
+    padding-top: var(--ee4v-space-lg);
+    border-top-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-subtle);
+}
+
+.ee4v-asset-manager-asset-info__section-title {
+    margin-bottom: var(--ee4v-space-sm);
     color: var(--ee4v-color-text-secondary);
 }
 
@@ -178,19 +194,14 @@
 }
 
 .ee4v-asset-manager-asset-info__metadata {
-    margin-top: var(--ee4v-space-xs);
-    margin-bottom: var(--ee4v-space-lg);
-    padding: var(--ee4v-space-md);
-    border-width: var(--ee4v-border-hairline);
-    border-color: var(--ee4v-color-border-subtle);
-    border-radius: var(--ee4v-radius-sm);
-    background-color: var(--ee4v-color-surface-subtle);
+    margin-bottom: var(--ee4v-space-sm);
 }
 
 .ee4v-asset-manager-asset-info__metadata-row {
     min-width: 0;
     flex-direction: row;
-    margin-bottom: var(--ee4v-space-xs);
+    min-height: var(--ee4v-size-20);
+    margin-bottom: var(--ee4v-space-xxs);
 }
 
 .ee4v-asset-manager-asset-info__metadata-label {
@@ -216,12 +227,11 @@
 }
 
 .ee4v-asset-manager-asset-info__actions {
-    flex-direction: row;
-    justify-content: flex-end;
+    width: 100%;
 }
 
 .ee4v-asset-manager-asset-info__actions > .ee4v-ui-button {
-    margin-left: var(--ee4v-space-sm);
+    width: 100%;
 }
 
 .ee4v-asset-manager-file-tree {

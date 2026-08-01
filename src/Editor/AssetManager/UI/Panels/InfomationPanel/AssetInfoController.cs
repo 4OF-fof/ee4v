@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
@@ -376,12 +377,24 @@ namespace Ee4v.AssetManager.UI
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(source => source, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
+            var fileTypes = safeFiles
+                .Where(file => file != null)
+                .Select(file => GetFileType(file))
+                .Where(extension => extension.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(extension => extension, StringComparer.OrdinalIgnoreCase)
+                .Select(extension => extension.ToUpperInvariant())
+                .ToArray();
             return new AssetInfoState(
                 targetId,
                 name,
                 description,
                 tagNames,
                 safeFiles.Count,
+                FormatTotalFileSize(safeFiles),
+                fileTypes.Length == 0
+                    ? I18N.Get("assetManager.assetInfo.noFileTypes")
+                    : string.Join(", ", fileTypes),
                 sources.Length == 0
                     ? I18N.Get("assetManager.assetInfo.noSources")
                     : string.Join(", ", sources),
@@ -390,6 +403,45 @@ namespace Ee4v.AssetManager.UI
                 showTags,
                 canAddFile,
                 availableTagNames);
+        }
+
+        private static string GetFileType(AssetFile file)
+        {
+            if (!string.IsNullOrWhiteSpace(file.Extension))
+            {
+                return FileExtensionUtility.Normalize(file.Extension);
+            }
+
+            var fileName = file.FileName ?? string.Empty;
+            return fileName.LastIndexOf('.') < 0
+                ? string.Empty
+                : FileExtensionUtility.Normalize(fileName);
+        }
+
+        private static string FormatTotalFileSize(
+            IReadOnlyList<AssetFile> files)
+        {
+            if (files.Any(file => file == null || !file.SizeBytes.HasValue))
+            {
+                return I18N.Get("assetManager.assetInfo.unknownFileSize");
+            }
+
+            var totalBytes = files.Sum(file =>
+                Math.Max(0L, file.SizeBytes.Value));
+            var units = new[] { "B", "KB", "MB", "GB", "TB" };
+            var value = (double)totalBytes;
+            var unitIndex = 0;
+            while (value >= 1024d && unitIndex < units.Length - 1)
+            {
+                value /= 1024d;
+                unitIndex++;
+            }
+
+            return string.Format(
+                CultureInfo.CurrentCulture,
+                "{0:0.##} {1}",
+                value,
+                units[unitIndex]);
         }
 
         private static string FormatSource(AssetSourceType source)

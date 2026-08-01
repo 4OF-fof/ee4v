@@ -37,7 +37,7 @@ namespace Ee4v.AssetManager.UI
                     "Domain/AssetManager",
                     "AssetInfo",
                     "AssetManager のアセット情報を表示して編集するコンポーネントです。",
-                    "名前・説明・タグの自動保存と、データソースや登録ファイル数の確認状態を再現します。",
+                    "名前・説明・タグの自動保存と、ファイルの概要やデータソースの確認状態を再現します。",
                     new string[0],
                     CatalogWindow.ComponentImplementationKind.UiToolkit,
                     (window, parent) => BuildAssetInfoStory(window, parent)));
@@ -75,7 +75,7 @@ namespace Ee4v.AssetManager.UI
         {
             var preview = window.CreatePreviewSection(parent);
             var surface = window.CreatePreviewSurface();
-            surface.style.height = 460f;
+            surface.style.height = 560f;
             var view = new AssetInfoView();
             view.SetState(new AssetInfoState(
                 "sample-item",
@@ -83,6 +83,8 @@ namespace Ee4v.AssetManager.UI
                 "Asset Info の編集状態を確認するサンプルです。",
                 new[] { "Avatar", "Sample" },
                 3,
+                "63.47 MB",
+                "UNITYPACKAGE, ZIP",
                 "ee4v, Eagle",
                 "2026/07/01 10:00",
                 "2026/07/31 18:30",
@@ -114,6 +116,8 @@ namespace Ee4v.AssetManager.UI
                 "PC向けのVariant Groupです。",
                 new string[0],
                 2,
+                "18.2 MB",
+                "UNITYPACKAGE",
                 "ee4v",
                 "2026/07/01 10:00",
                 "2026/07/31 18:30",

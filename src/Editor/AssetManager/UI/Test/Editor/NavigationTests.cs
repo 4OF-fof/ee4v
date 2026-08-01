@@ -47,6 +47,8 @@ namespace Ee4v.AssetManager.UI.Tests
                 "Description",
                 new[] { "Sample" },
                 1,
+                "1 MB",
+                "ZIP",
                 "ee4v",
                 string.Empty,
                 string.Empty);
@@ -82,6 +84,8 @@ namespace Ee4v.AssetManager.UI.Tests
                     new AssetFile
                     {
                         Id = "file-1",
+                        FileName = "avatar.unitypackage",
+                        SizeBytes = 2L * 1024L * 1024L,
                         Origins = new[]
                         {
                             new AssetFileOrigin
@@ -100,6 +104,8 @@ namespace Ee4v.AssetManager.UI.Tests
             Assert.That(state.Name, Is.EqualTo("PC"));
             Assert.That(state.Description, Is.EqualTo("PC向けファイル"));
             Assert.That(state.FileCount, Is.EqualTo(1));
+            Assert.That(state.TotalFileSize, Is.EqualTo("2 MB"));
+            Assert.That(state.FileTypes, Is.EqualTo("UNITYPACKAGE"));
             Assert.That(state.ShowTags, Is.False);
             Assert.That(state.CanAddFile, Is.False);
         }
