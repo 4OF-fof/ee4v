@@ -14,10 +14,8 @@ namespace Ee4v.AssetManager.UI
         private const string ContentClassName = "ee4v-asset-manager-tag-list__content";
         private const string ItemClassName = "ee4v-asset-manager-tag-list__item";
         private const string ItemTextClassName = "ee4v-asset-manager-tag-list__item-text";
-        private const string EmptyClassName = "ee4v-asset-manager-tag-list__empty";
         private readonly UiTextElement _header;
         private readonly VisualElement _content;
-        private readonly UiTextElement _empty;
         private IReadOnlyList<AssetTag> _tags = Array.Empty<AssetTag>();
 
         public TagListPage()
@@ -30,13 +28,8 @@ namespace Ee4v.AssetManager.UI
             _header = UiTextFactory.Create(string.Empty, HeaderClassName);
             _content = new VisualElement();
             _content.AddToClassList(ContentClassName);
-            _empty = UiTextFactory.Create(
-                I18N.Get("assetManager.mainView.tags.empty"),
-                EmptyClassName);
-
             scrollView.Add(_header);
             scrollView.Add(_content);
-            scrollView.Add(_empty);
             Add(scrollView);
 
             SetTags(null);
@@ -74,9 +67,6 @@ namespace Ee4v.AssetManager.UI
                 _content.Add(item);
             }
 
-            _empty.style.display = _content.childCount == 0
-                ? DisplayStyle.Flex
-                : DisplayStyle.None;
         }
 
         public void SetLoading()
@@ -86,7 +76,6 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get("assetManager.mainView.tags.title"),
                 0));
             _content.Clear();
-            _empty.style.display = DisplayStyle.None;
         }
     }
 }

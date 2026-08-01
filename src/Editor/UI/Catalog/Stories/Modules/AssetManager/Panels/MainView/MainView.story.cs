@@ -33,6 +33,7 @@ namespace Ee4v.AssetManager.UI
         {
             const string DatabaseErrorPresetId = "database-error";
             const string CollectionErrorPresetId = "collection-error";
+            const string LoadingPresetId = "loading";
             const string EmptyPresetId = "empty";
             const string FileDropPresetId = "file-drop";
             var selectedPresetId = DatabaseErrorPresetId;
@@ -70,6 +71,9 @@ namespace Ee4v.AssetManager.UI
                                 CollectionErrorPresetId,
                                 "Collection"),
                             new TabCardTabState(
+                                LoadingPresetId,
+                                "Loading"),
+                            new TabCardTabState(
                                 EmptyPresetId,
                                 "Empty"),
                             new TabCardTabState(
@@ -82,6 +86,10 @@ namespace Ee4v.AssetManager.UI
                     selectedPresetId,
                     EmptyPresetId,
                     StringComparison.Ordinal);
+                var loading = string.Equals(
+                    selectedPresetId,
+                    LoadingPresetId,
+                    StringComparison.Ordinal);
                 var fileDrop = string.Equals(
                     selectedPresetId,
                     FileDropPresetId,
@@ -90,8 +98,12 @@ namespace Ee4v.AssetManager.UI
                     empty
                         ? I18N.Get("assetManager.mainView.noItems")
                         : string.Empty);
+                panel.SetLoadingState(
+                    loading
+                        ? I18N.Get("assetManager.mainView.loading")
+                        : string.Empty);
                 panel.SetExternalError(
-                    empty || fileDrop
+                    empty || loading || fileDrop
                         ? string.Empty
                         : I18N.Get(
                             string.Equals(

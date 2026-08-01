@@ -14,23 +14,13 @@ namespace Ee4v.AssetManager.UI
     {
         private const string RootClassName = "ee4v-asset-manager-panel--main-view";
         private const string ContentClassName = "ee4v-asset-manager-panel__main-content";
-        private const string StatusClassName = "ee4v-asset-manager-panel__main-status";
-        private const string MessageStateClassName =
-            "ee4v-asset-manager-main-message";
-        private const string MessageIconClassName =
-            "ee4v-asset-manager-main-message__icon";
-        private const string MessageTextClassName =
-            "ee4v-asset-manager-main-message__text";
         private const string ExternalFileDropClassName =
             "ee4v-asset-manager-panel--external-file-drop";
         private const string ExternalFileDropOverlayClassName =
             "ee4v-asset-manager-panel__external-file-drop-overlay";
         private readonly MainViewController _controller;
         private readonly AssetItemGrid _itemGrid;
-        private readonly UiTextElement _statusLabel;
-        private readonly VisualElement _messageState;
-        private readonly Image _messageIcon;
-        private readonly UiTextElement _messageText;
+        private readonly ErrorScreen _errorScreen;
         private readonly TagListPage _tagListPage;
         private readonly VisualElement _externalFileDropOverlay;
         private VisualElement _externalFileDropEventSurface;
@@ -50,6 +40,8 @@ namespace Ee4v.AssetManager.UI
         private bool _restoreSelectionAfterRefresh;
         private AssetSelectionContentKind _selectionContentKind = AssetSelectionContentKind.AssetItem;
         private string _statusMessage = string.Empty;
+        private ErrorScreenKind _statusKind =
+            ErrorScreenKind.Loading;
         private string _emptyMessage = string.Empty;
         private string _contentErrorMessage = string.Empty;
         private string _externalErrorMessage = string.Empty;
@@ -60,20 +52,8 @@ namespace Ee4v.AssetManager.UI
             _itemGrid = new AssetItemGrid();
             ApplyGridSize(_controller.ItemsPerRow);
             _itemGrid.AddToClassList(ContentClassName);
-            _statusLabel = UiTextFactory.Create(string.Empty, StatusClassName);
-            _statusLabel.SetWhiteSpace(WhiteSpace.Normal);
-            _messageState = new VisualElement();
-            _messageState.AddToClassList(MessageStateClassName);
-            _messageState.style.display = DisplayStyle.None;
-            _messageIcon = CreateMessageIcon();
-            _messageIcon.AddToClassList(MessageIconClassName);
-            _messageState.Add(_messageIcon);
-            _messageText = UiTextFactory.Create(
-                string.Empty,
-                UiClassNames.MainViewMessage,
-                MessageTextClassName);
-            _messageText.SetWhiteSpace(WhiteSpace.Normal);
-            _messageState.Add(_messageText);
+            _errorScreen = new ErrorScreen();
+            _errorScreen.style.display = DisplayStyle.None;
             _tagListPage = new TagListPage();
             _tagListPage.style.display = DisplayStyle.None;
             _externalFileDropOverlay = new VisualElement
@@ -85,8 +65,7 @@ namespace Ee4v.AssetManager.UI
 
             AddToClassList("ee4v-asset-manager-panel");
             AddToClassList(RootClassName);
-            Add(_statusLabel);
-            Add(_messageState);
+            Add(_errorScreen);
             Add(_tagListPage);
             Add(_itemGrid);
             SetExternalFileDropSurface(this);
@@ -138,6 +117,11 @@ namespace Ee4v.AssetManager.UI
         {
             _externalErrorMessage = message ?? string.Empty;
             RefreshMessageState();
+        }
+
+        internal void SetLoadingState(string message)
+        {
+            SetStatus(message);
         }
 
         public void SetGridSize(int value)
@@ -777,7 +761,9 @@ namespace Ee4v.AssetManager.UI
                 }
 
                 SetContentError(string.Empty);
-                SetStatus(I18N.Get("assetManager.mainView.loadCanceled"));
+                SetStatus(
+                    I18N.Get("assetManager.mainView.loadCanceled"),
+                    ErrorScreenKind.Info);
                 return;
             }
 
@@ -804,7 +790,9 @@ namespace Ee4v.AssetManager.UI
             if (result.Canceled)
             {
                 SetContentError(string.Empty);
-                SetStatus(I18N.Get("assetManager.mainView.loadCanceled"));
+                SetStatus(
+                    I18N.Get("assetManager.mainView.loadCanceled"),
+                    ErrorScreenKind.Info);
                 return;
             }
 
@@ -856,11 +844,13 @@ namespace Ee4v.AssetManager.UI
                     : string.Empty);
         }
 
-        private void SetStatus(string message)
+        private void SetStatus(
+            string message,
+            ErrorScreenKind kind = ErrorScreenKind.Loading)
         {
             _statusMessage = message ?? string.Empty;
-            _statusLabel.SetText(_statusMessage);
-            RefreshStatusVisibility();
+            _statusKind = kind;
+            RefreshMessageState();
         }
 
         private void SetContentError(string message)
@@ -884,22 +874,25 @@ namespace Ee4v.AssetManager.UI
                 ? _externalErrorMessage
                 : !string.IsNullOrWhiteSpace(_contentErrorMessage)
                     ? _contentErrorMessage
-                    : _emptyMessage;
+                    : !string.IsNullOrWhiteSpace(_statusMessage)
+                        ? _statusMessage
+                        : _emptyMessage;
             var hasMessage = !string.IsNullOrWhiteSpace(message);
-            _messageText.SetText(message);
             if (hasMessage)
             {
-                SetMessageIcon(
+                _errorScreen.SetState(new ErrorScreenState(
+                    message,
                     hasError
-                        ? UiFluentIcon.ErrorCircle
-                        : UiFluentIcon.Info);
+                        ? ErrorScreenKind.Error
+                        : !string.IsNullOrWhiteSpace(_statusMessage)
+                            ? _statusKind
+                            : ErrorScreenKind.Info));
             }
 
-            _messageState.style.display = hasMessage
+            _errorScreen.style.display = hasMessage
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             ApplyContentVisibility();
-            RefreshStatusVisibility();
         }
 
         private void ApplyContentVisibility()
@@ -915,38 +908,6 @@ namespace Ee4v.AssetManager.UI
                     : DisplayStyle.None;
         }
 
-        private void RefreshStatusVisibility()
-        {
-            _statusLabel.style.display =
-                !HasMessage && !string.IsNullOrWhiteSpace(_statusMessage)
-                    ? DisplayStyle.Flex
-                    : DisplayStyle.None;
-        }
-
-        private static Image CreateMessageIcon()
-        {
-            var image = new Image
-            {
-                scaleMode = ScaleMode.ScaleToFit,
-                pickingMode = PickingMode.Ignore
-            };
-            image.style.width =
-                FileIconDefinition.StandardIconSize;
-            image.style.height =
-                FileIconDefinition.StandardIconSize;
-            return image;
-        }
-
-        private void SetMessageIcon(UiFluentIcon icon)
-        {
-            Texture2D texture;
-            UiFluentIconResolver.TryResolve(icon, out texture);
-            _messageIcon.image = texture;
-            _messageIcon.style.display = texture != null
-                ? DisplayStyle.Flex
-                : DisplayStyle.None;
-        }
-
         private bool HasMessage
         {
             get
@@ -954,6 +915,7 @@ namespace Ee4v.AssetManager.UI
                 return
                     !string.IsNullOrWhiteSpace(_externalErrorMessage) ||
                     !string.IsNullOrWhiteSpace(_contentErrorMessage) ||
+                    !string.IsNullOrWhiteSpace(_statusMessage) ||
                     !string.IsNullOrWhiteSpace(_emptyMessage);
             }
         }

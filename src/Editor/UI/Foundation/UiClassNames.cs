@@ -35,8 +35,8 @@ namespace Ee4v.UI
         public const string InfomationPanelSelectionCount = "ee4v-asset-manager-panel__infomation-selection-count";
         public const string InfomationPanelSelectionCountSuffix = "ee4v-asset-manager-panel__infomation-selection-count-suffix";
         public const string FileTreeDetailName = "ee4v-asset-manager-file-detail__typography-name";
-        public const string MainViewMessage =
-            "ee4v-asset-manager-main-message__typography-text";
+        public const string ErrorScreenMessage =
+            "ee4v-ui-error-screen__typography-message";
 
         public const string CatalogPageTitle = "ee4v-ui-catalog-page__title";
         public const string CatalogPageDescription = "ee4v-ui-catalog-page__description";

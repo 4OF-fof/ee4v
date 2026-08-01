@@ -1,0 +1,15 @@
+.ee4v-ui-error-screen {
+    flex-grow: 1;
+    min-height: 0;
+    align-items: center;
+    justify-content: center;
+    padding: var(--ee4v-space-3xl);
+}
+
+.ee4v-ui-error-screen__icon {
+    margin-bottom: var(--ee4v-space-xl);
+}
+
+.ee4v-ui-error-screen__message {
+    width: 70%;
+}

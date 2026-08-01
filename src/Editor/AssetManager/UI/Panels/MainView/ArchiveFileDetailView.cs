@@ -39,12 +39,9 @@ namespace Ee4v.AssetManager.UI
             "ee4v-asset-manager-archive-detail__preview-icon";
         private const string PreviewStatusClassName =
             "ee4v-asset-manager-archive-detail__preview-status";
-        private const string StatusClassName =
-            "ee4v-asset-manager-archive-detail__status";
-
         private readonly UiTextElement _name;
         private readonly VisualElement _body;
-        private readonly UiTextElement _status;
+        private readonly ErrorScreen _errorScreen;
         private readonly SearchableTreeView<
             ArchiveFileDetailNode> _tree;
         private readonly UiTextElement _previewName;
@@ -159,12 +156,9 @@ namespace Ee4v.AssetManager.UI
             _body.Add(previewPane);
             Add(_body);
 
-            _status = UiTextFactory.Create(
-                string.Empty,
-                StatusClassName,
-                UiClassNames.MainViewMessage);
-            _status.SetWhiteSpace(WhiteSpace.Normal);
-            Add(_status);
+            _errorScreen = new ErrorScreen();
+            _errorScreen.style.display = DisplayStyle.None;
+            Add(_errorScreen);
 
             RegisterCallback<DetachFromPanelEvent>(
                 _ =>
@@ -339,8 +333,7 @@ namespace Ee4v.AssetManager.UI
                     content.Entries));
             _body.style.display =
                 DisplayStyle.Flex;
-            _status.SetText(string.Empty);
-            _status.style.display =
+            _errorScreen.style.display =
                 DisplayStyle.None;
             SetPreviewPlaceholder(
                 null,
@@ -358,8 +351,7 @@ namespace Ee4v.AssetManager.UI
             _tree.SetItems(null);
             _body.style.display =
                 DisplayStyle.None;
-            _status.SetText(string.Empty);
-            _status.style.display =
+            _errorScreen.style.display =
                 DisplayStyle.None;
             SetPreviewPlaceholder(null, string.Empty);
         }
@@ -368,10 +360,11 @@ namespace Ee4v.AssetManager.UI
         {
             _body.style.display =
                 DisplayStyle.None;
-            _status.SetText(
+            _errorScreen.SetState(new ErrorScreenState(
                 I18N.Get(
-                    "assetManager.archiveDetail.loading"));
-            _status.style.display =
+                    "assetManager.archiveDetail.loading"),
+                ErrorScreenKind.Loading));
+            _errorScreen.style.display =
                 DisplayStyle.Flex;
         }
 
@@ -379,10 +372,11 @@ namespace Ee4v.AssetManager.UI
         {
             _body.style.display =
                 DisplayStyle.None;
-            _status.SetText(
+            _errorScreen.SetState(new ErrorScreenState(
                 I18N.Get(
-                    "assetManager.archiveDetail.loadFailed"));
-            _status.style.display =
+                    "assetManager.archiveDetail.loadFailed"),
+                ErrorScreenKind.Error));
+            _errorScreen.style.display =
                 DisplayStyle.Flex;
         }
 

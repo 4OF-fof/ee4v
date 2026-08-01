@@ -126,6 +126,7 @@ namespace Ee4v.UI
                     "Editor/UI/Components/Collections/ItemGrid/item-grid.uss",
                     "Editor/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss",
                     "Editor/UI/Components/Content/Icon/icon.uss",
+                    "Editor/UI/Components/Content/ErrorScreen/error-screen.uss",
                     "Editor/UI/Components/Content/ItemCard/item-card.uss",
                     "Editor/UI/Components/Content/ItemImage/item-image.uss",
                     "Editor/UI/Components/Content/ImageStack/image-stack.uss",
