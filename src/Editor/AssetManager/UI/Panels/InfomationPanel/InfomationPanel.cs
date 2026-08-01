@@ -71,13 +71,13 @@ namespace Ee4v.AssetManager.UI
             _detailContent.AddToClassList(DetailContentClassName);
             _assetInfo = new AssetInfoView();
             _assetInfoController = new AssetInfoController();
-            _assetInfo.UpdateRequested += _assetInfoController.Save;
-            _assetInfo.AddFileRequested += _assetInfoController.AddFile;
-            _assetInfoController.StateChanged += _assetInfo.SetState;
-            _assetInfoController.ErrorChanged += _assetInfo.SetError;
-            _assetInfoController.NoticeChanged += _assetInfo.SetNotice;
-            _detailContent.Add(_assetInfo);
             _fileTree = new SearchableFileTree();
+            _assetInfo.UpdateRequested += _assetInfoController.Save;
+            _fileTree.AddFileRequested += _assetInfoController.AddFile;
+            _assetInfoController.StateChanged += _assetInfo.SetState;
+            _assetInfoController.ErrorChanged += SetDetailError;
+            _assetInfoController.NoticeChanged += SetDetailNotice;
+            _detailContent.Add(_assetInfo);
             _detailContent.Add(_fileTree);
             Add(_detailContent);
 
@@ -87,6 +87,18 @@ namespace Ee4v.AssetManager.UI
             RegisterCallback<DetachFromPanelEvent>(_ =>
                 _assetInfoController.Deactivate());
             SetSelectedAssetItems(null, AssetSelectionContentKind.AssetItem);
+        }
+
+        private void SetDetailError(string message)
+        {
+            _assetInfo.SetError(message);
+            _fileTree.SetError(message);
+        }
+
+        private void SetDetailNotice(string message)
+        {
+            _assetInfo.SetNotice(message);
+            _fileTree.SetNotice(message);
         }
 
         internal IReadOnlyList<ItemCardState> SelectedItems =>

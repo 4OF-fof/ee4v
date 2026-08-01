@@ -920,6 +920,18 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         }
 
         [Test]
+        public void FilePicker_PrefersDownloadsDirectory()
+        {
+            var downloads = Directory.CreateDirectory(
+                Path.Combine(_tempRoot, "Downloads"));
+
+            Assert.That(
+                UnityAssetManagerFilePicker.ResolveInitialDirectory(
+                    _tempRoot),
+                Is.EqualTo(downloads.FullName));
+        }
+
+        [Test]
         public void FilePicker_ReadsOnlyExistingAbsoluteFiles()
         {
             var filePath = Path.Combine(

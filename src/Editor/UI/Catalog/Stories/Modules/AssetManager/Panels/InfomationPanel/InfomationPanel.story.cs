@@ -121,8 +121,7 @@ namespace Ee4v.AssetManager.UI
                 "ee4v",
                 "2026/07/01 10:00",
                 "2026/07/31 18:30",
-                showTags: false,
-                canAddFile: false));
+                showTags: false));
             surface.Add(view);
             preview.Body.Add(surface);
         }

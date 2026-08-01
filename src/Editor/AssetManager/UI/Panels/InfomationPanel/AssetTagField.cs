@@ -147,7 +147,8 @@ namespace Ee4v.AssetManager.UI
                     I18N.Get("assetManager.assetInfo.tagsNew"),
                     iconState: IconState.FromFluentIcon(
                         UiFluentIcon.Add,
-                        UiSizeTokens.Size12)));
+                        UiSizeTokens.Size12),
+                    variant: UiButtonVariant.Ghost));
             _addButton.AddToClassList(AddClassName);
             _addButton.RegisterCallback<ClickEvent>(evt =>
                 OpenPicker(ToVector2(evt.position)));

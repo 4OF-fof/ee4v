@@ -20,7 +20,6 @@ namespace Ee4v.AssetManager.UI
             string createdAt,
             string updatedAt,
             bool showTags = true,
-            bool canAddFile = true,
             IReadOnlyList<string> availableTagNames = null)
         {
             ItemId = itemId ?? string.Empty;
@@ -34,7 +33,6 @@ namespace Ee4v.AssetManager.UI
             CreatedAt = createdAt ?? string.Empty;
             UpdatedAt = updatedAt ?? string.Empty;
             ShowTags = showTags;
-            CanAddFile = canAddFile;
             AvailableTagNames = availableTagNames ?? TagNames;
         }
 
@@ -49,7 +47,6 @@ namespace Ee4v.AssetManager.UI
         internal string CreatedAt { get; }
         internal string UpdatedAt { get; }
         internal bool ShowTags { get; }
-        internal bool CanAddFile { get; }
         internal IReadOnlyList<string> AvailableTagNames { get; }
     }
 
@@ -94,9 +91,6 @@ namespace Ee4v.AssetManager.UI
             "ee4v-asset-manager-asset-info__feedback";
         private const string ErrorClassName =
             "ee4v-asset-manager-asset-info__feedback--error";
-        private const string ActionsClassName =
-            "ee4v-asset-manager-asset-info__actions";
-
         private readonly InputField _nameField;
         private readonly InputField _descriptionField;
         private readonly AssetTagField _tagsField;
@@ -108,8 +102,6 @@ namespace Ee4v.AssetManager.UI
         private readonly UiTextElement _createdAt;
         private readonly UiTextElement _updatedAt;
         private readonly UiTextElement _feedback;
-        private readonly UiButton _addFileButton;
-        private readonly VisualElement _actions;
         private AssetInfoState _state;
 
         internal AssetInfoView()
@@ -180,24 +172,10 @@ namespace Ee4v.AssetManager.UI
             _feedback.SetWhiteSpace(WhiteSpace.Normal);
             scroll.Add(_feedback);
 
-            _actions = new VisualElement();
-            _actions.AddToClassList(ActionsClassName);
-            _addFileButton = new UiButton(
-                new UiButtonState(
-                    I18N.Get("assetManager.assetInfo.addFile"),
-                    iconState: IconState.FromFluentIcon(
-                        UiFluentIcon.Attach,
-                        UiSizeTokens.Size12),
-                    variant: UiButtonVariant.Ghost),
-                () => AddFileRequested?.Invoke());
-            _actions.Add(_addFileButton);
-            scroll.Add(_actions);
-
             SetState(null);
         }
 
         internal event Action<AssetInfoEditRequest> UpdateRequested;
-        internal event Action AddFileRequested;
 
         internal void SetState(AssetInfoState state)
         {
@@ -223,9 +201,6 @@ namespace Ee4v.AssetManager.UI
                 state.AvailableTagNames,
                 state.TagNames);
             _tagsFieldContainer.style.display = state.ShowTags
-                ? DisplayStyle.Flex
-                : DisplayStyle.None;
-            _actions.style.display = state.CanAddFile
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             _fileCount.SetText(state.FileCount.ToString());

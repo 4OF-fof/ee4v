@@ -134,6 +134,12 @@
 .ee4v-asset-manager-tag-field__add.ee4v-ui-button {
     width: 100%;
     min-height: var(--ee4v-size-26);
+    border-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-asset-manager-tag-field__add.ee4v-ui-button:hover {
+    background-color: var(--ee4v-color-surface-hover);
 }
 
 .ee4v-asset-manager-tag-picker {
@@ -226,19 +232,36 @@
     color: var(--ee4v-color-error);
 }
 
-.ee4v-asset-manager-asset-info__actions {
-    width: 100%;
-}
-
-.ee4v-asset-manager-asset-info__actions > .ee4v-ui-button {
-    width: 100%;
-}
-
 .ee4v-asset-manager-file-tree {
     flex-grow: 1;
     min-height: 0;
     min-width: 0;
     overflow: hidden;
+}
+
+.ee4v-asset-manager-file-tree__actions {
+    flex-shrink: 0;
+    width: 100%;
+    padding-top: var(--ee4v-space-sm);
+    border-top-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-subtle);
+}
+
+.ee4v-asset-manager-file-tree__feedback {
+    color: var(--ee4v-color-success);
+}
+
+.ee4v-asset-manager-file-tree__feedback--error {
+    color: var(--ee4v-color-error);
+}
+
+.ee4v-asset-manager-file-tree__actions > .ee4v-ui-button {
+    width: 100%;
+    background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-asset-manager-file-tree__actions > .ee4v-ui-button:hover {
+    background-color: var(--ee4v-color-surface-hover);
 }
 
 .ee4v-asset-manager-file-tree__row {

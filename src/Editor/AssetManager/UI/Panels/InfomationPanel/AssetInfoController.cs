@@ -153,15 +153,25 @@ namespace Ee4v.AssetManager.UI
 
         internal void AddFile()
         {
-            if (_targetKind != SelectionTargetKind.Item ||
-                string.IsNullOrWhiteSpace(_targetId))
+            if (string.IsNullOrWhiteSpace(_parentItemId))
             {
                 return;
             }
 
             ExecuteMutation(() =>
             {
-                if (!_commands.AddFile(_targetId))
+                var versionGroupId =
+                    _targetKind == SelectionTargetKind.VersionGroup
+                        ? _targetId
+                        : null;
+                var variantGroupId =
+                    _targetKind == SelectionTargetKind.VariantGroup
+                        ? _targetId
+                        : null;
+                if (!_commands.AddFile(
+                        _parentItemId,
+                        versionGroupId,
+                        variantGroupId))
                 {
                     return;
                 }
@@ -260,7 +270,6 @@ namespace Ee4v.AssetManager.UI
                 item.CreatedAt,
                 item.UpdatedAt,
                 showTags: true,
-                canAddFile: true,
                 availableTagNames: (_assetManager.GetTags() ??
                         Array.Empty<AssetTag>())
                     .Where(tag =>
@@ -315,8 +324,7 @@ namespace Ee4v.AssetManager.UI
                 files,
                 group.CreatedAt,
                 group.UpdatedAt,
-                showTags: false,
-                canAddFile: false));
+                showTags: false));
         }
 
         private void ReloadVersionGroup()
@@ -352,8 +360,7 @@ namespace Ee4v.AssetManager.UI
                 files,
                 group.CreatedAt,
                 group.UpdatedAt,
-                showTags: false,
-                canAddFile: false));
+                showTags: false));
         }
 
         internal static AssetInfoState CreateState(
@@ -365,7 +372,6 @@ namespace Ee4v.AssetManager.UI
             DateTime createdAt,
             DateTime updatedAt,
             bool showTags,
-            bool canAddFile,
             IReadOnlyList<string> availableTagNames = null)
         {
             var safeFiles = files ?? Array.Empty<AssetFile>();
@@ -401,7 +407,6 @@ namespace Ee4v.AssetManager.UI
                 createdAt.ToString("g"),
                 updatedAt.ToString("g"),
                 showTags,
-                canAddFile,
                 availableTagNames);
         }
 

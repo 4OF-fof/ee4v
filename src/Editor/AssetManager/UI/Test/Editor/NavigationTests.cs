@@ -72,7 +72,7 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
-        public void AssetInfo_GroupStateUsesGroupFieldsAndHidesItemOnlyControls()
+        public void AssetInfo_GroupStateUsesGroupFieldsAndHidesTags()
         {
             var state = AssetInfoController.CreateState(
                 "variant-1",
@@ -97,8 +97,7 @@ namespace Ee4v.AssetManager.UI.Tests
                 },
                 DateTime.MinValue,
                 DateTime.MinValue,
-                showTags: false,
-                canAddFile: false);
+                showTags: false);
 
             Assert.That(state.ItemId, Is.EqualTo("variant-1"));
             Assert.That(state.Name, Is.EqualTo("PC"));
@@ -107,7 +106,6 @@ namespace Ee4v.AssetManager.UI.Tests
             Assert.That(state.TotalFileSize, Is.EqualTo("2 MB"));
             Assert.That(state.FileTypes, Is.EqualTo("UNITYPACKAGE"));
             Assert.That(state.ShowTags, Is.False);
-            Assert.That(state.CanAddFile, Is.False);
         }
 
         [Test]

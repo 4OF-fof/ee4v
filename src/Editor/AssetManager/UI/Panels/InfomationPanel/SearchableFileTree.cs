@@ -14,6 +14,12 @@ namespace Ee4v.AssetManager.UI
     internal sealed class SearchableFileTree : VisualElement
     {
         private const string RootClassName = "ee4v-asset-manager-file-tree";
+        private const string ActionsClassName =
+            "ee4v-asset-manager-file-tree__actions";
+        private const string FeedbackClassName =
+            "ee4v-asset-manager-file-tree__feedback";
+        private const string FeedbackErrorClassName =
+            "ee4v-asset-manager-file-tree__feedback--error";
         internal const string RowClassName = "ee4v-asset-manager-file-tree__row";
         private const string RowImportTargetClassName = "ee4v-asset-manager-file-tree__row--import-target";
         private const string RowGroupClassName = "ee4v-asset-manager-file-tree__row--group";
@@ -31,6 +37,8 @@ namespace Ee4v.AssetManager.UI
         private readonly IAssetFileSystemReader _fileSystemReader;
         private readonly IAssetManagerUiScheduler _scheduler;
         private readonly SearchableTreeView<FileTreeNode> _treeView;
+        private readonly VisualElement _actions;
+        private readonly UiTextElement _feedback;
         private readonly Dictionary<string, Texture2D> _imagePreviewCache = new Dictionary<string, Texture2D>(StringComparer.OrdinalIgnoreCase);
         private CancellationTokenSource _reloadCancellation;
         private CancellationTokenSource _imagePreviewCancellation;
@@ -93,13 +101,39 @@ namespace Ee4v.AssetManager.UI
             _treeView.SetViewDataKey("ee4v-asset-manager-infomation-panel-file-tree");
             Add(_treeView);
 
+            _actions = new VisualElement();
+            _actions.AddToClassList(ActionsClassName);
+            _feedback = UiTextFactory.Create(
+                string.Empty,
+                UiClassNames.FormError,
+                FeedbackClassName);
+            _feedback.SetWhiteSpace(WhiteSpace.Normal);
+            _actions.Add(_feedback);
+            var addFileButton = new UiButton(
+                new UiButtonState(
+                    I18N.Get("assetManager.assetInfo.addFile"),
+                    iconState: IconState.FromFluentIcon(
+                        UiFluentIcon.Attach,
+                        UiSizeTokens.Size12),
+                    variant: UiButtonVariant.Ghost),
+                () => AddFileRequested?.Invoke());
+            _actions.Add(addFileButton);
+            _actions.style.display = DisplayStyle.None;
+            Add(_actions);
+
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
+        internal event Action AddFileRequested;
+
         public void SetItemId(string itemId)
         {
             var nextItemId = itemId ?? string.Empty;
+            _actions.style.display = string.IsNullOrWhiteSpace(nextItemId)
+                ? DisplayStyle.None
+                : DisplayStyle.Flex;
+            ClearFeedback();
             if (string.Equals(_itemId, nextItemId, StringComparison.Ordinal) &&
                 string.IsNullOrWhiteSpace(_fileId) &&
                 _groupKind == FileTreeGroupKind.None &&
@@ -120,6 +154,8 @@ namespace Ee4v.AssetManager.UI
 
         public void SetFileId(string itemId, string fileId)
         {
+            _actions.style.display = DisplayStyle.None;
+            ClearFeedback();
             var nextItemId = itemId ?? string.Empty;
             var nextFileId = fileId ?? string.Empty;
             if (string.Equals(_itemId, nextItemId, StringComparison.Ordinal) &&
@@ -147,6 +183,13 @@ namespace Ee4v.AssetManager.UI
         {
             var nextItemId = itemId ?? string.Empty;
             var nextGroupId = groupId ?? string.Empty;
+            _actions.style.display =
+                !string.IsNullOrWhiteSpace(nextItemId) &&
+                groupKind != FileTreeGroupKind.None &&
+                !string.IsNullOrWhiteSpace(nextGroupId)
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+            ClearFeedback();
             if (string.Equals(_itemId, nextItemId, StringComparison.Ordinal) &&
                 string.IsNullOrWhiteSpace(_fileId) &&
                 _groupKind == groupKind &&
@@ -167,6 +210,8 @@ namespace Ee4v.AssetManager.UI
 
         public void ClearTree()
         {
+            _actions.style.display = DisplayStyle.None;
+            ClearFeedback();
             HideImageTooltip();
             CancelPendingReload();
             _itemId = string.Empty;
@@ -175,6 +220,30 @@ namespace Ee4v.AssetManager.UI
             _groupId = string.Empty;
             _treeView.SetEmptyText(I18N.Get("assetManager.infomationPanel.fileTree.empty"));
             _treeView.SetItems(null);
+        }
+
+        internal void SetError(string message)
+        {
+            _feedback.EnableInClassList(
+                FeedbackErrorClassName,
+                true);
+            _feedback.SetText(message ?? string.Empty);
+        }
+
+        internal void SetNotice(string message)
+        {
+            _feedback.EnableInClassList(
+                FeedbackErrorClassName,
+                false);
+            _feedback.SetText(message ?? string.Empty);
+        }
+
+        private void ClearFeedback()
+        {
+            _feedback.EnableInClassList(
+                FeedbackErrorClassName,
+                false);
+            _feedback.SetText(string.Empty);
         }
 
         private void OnAttachToPanel(AttachToPanelEvent evt)

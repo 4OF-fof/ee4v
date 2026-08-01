@@ -87,7 +87,10 @@ namespace Ee4v.AssetManager.UI
             return item;
         }
 
-        internal bool AddFile(string itemId)
+        internal bool AddFile(
+            string itemId,
+            string versionGroupId,
+            string variantGroupId)
         {
             var file = SelectFile();
             if (file == null)
@@ -97,7 +100,10 @@ namespace Ee4v.AssetManager.UI
 
             _assetManager.RegisterFile(
                 itemId,
-                CreateRegisterFileRequest(file));
+                CreateRegisterFileRequest(
+                    file,
+                    versionGroupId,
+                    variantGroupId));
             return true;
         }
 
@@ -200,13 +206,17 @@ namespace Ee4v.AssetManager.UI
         }
 
         private static RegisterFileRequest CreateRegisterFileRequest(
-            AssetManagerFileSelection file)
+            AssetManagerFileSelection file,
+            string versionGroupId = null,
+            string variantGroupId = null)
         {
             return new RegisterFileRequest
             {
                 FileName = file.FileName,
                 FilePath = file.Path,
-                SizeBytes = file.SizeBytes
+                SizeBytes = file.SizeBytes,
+                VersionGroupId = versionGroupId,
+                VariantGroupId = variantGroupId
             };
         }
     }
