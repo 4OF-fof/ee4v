@@ -192,7 +192,7 @@
     right: 0;
     top: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.55);
+    background-color: var(--ee4v-color-overlay-border);
 }
 
 .ee4v-asset-manager-file-detail__dependency-selection {
@@ -225,7 +225,7 @@
     flex-grow: 1;
     flex-shrink: 1;
     min-height: 0;
-    margin-top: 0;
+    margin-top: var(--ee4v-space-none);
     overflow: hidden;
 }
 

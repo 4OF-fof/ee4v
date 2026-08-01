@@ -4,8 +4,8 @@
     --ee4v-font-size-small: 11px;
     --ee4v-font-size-body: 12px;
     --ee4v-font-size-large-body: 13px;
-    --ee4v-font-size-subtitle: 14px;
-    --ee4v-font-size-title: 16px;
-    --ee4v-font-size-heading: 18px;
-    --ee4v-font-size-display: 20px;
+    --ee4v-font-size-subtitle: 13px;
+    --ee4v-font-size-title: 15px;
+    --ee4v-font-size-heading: 16px;
+    --ee4v-font-size-display: 18px;
 }

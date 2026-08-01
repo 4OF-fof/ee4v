@@ -49,10 +49,10 @@
     height: var(--ee4v-size-31);
     min-width: var(--ee4v-size-31);
     min-height: var(--ee4v-size-31);
-    margin-left: 0;
+    margin-left: var(--ee4v-space-none);
     margin-right: var(--ee4v-space-xs);
-    margin-top: 0;
-    margin-bottom: 0;
+    margin-top: var(--ee4v-space-none);
+    margin-bottom: var(--ee4v-space-none);
     padding: var(--ee4v-space-xs);
     border-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-border-default);
@@ -64,7 +64,7 @@
 }
 
 .ee4v-collection-icon-selector__candidate--last {
-    margin-right: 0;
+    margin-right: var(--ee4v-space-none);
 }
 
 .ee4v-collection-icon-selector__candidate:hover {
@@ -97,7 +97,7 @@
     min-width: 120px;
     height: var(--ee4v-size-20);
     flex-grow: 1;
-    margin: 0;
+    margin: var(--ee4v-space-none);
 }
 
 .ee4v-collection-creation-window__conditions {

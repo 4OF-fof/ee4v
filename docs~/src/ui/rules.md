@@ -4,6 +4,8 @@
 
 `Editor/UI/Foundation/ui-design-tokens.uss` が design token の入口です。`common.uss` がこのファイルを import するため、`.ee4v-ui` を root class に持つ window では各 token を利用できます。
 
+共通 UI は Unity Editor の情報密度と階層表現になじませます。標準 control に近い高さと小さな角丸を基準にし、面を重ねて区切るより border、selection、focus を使って状態を示します。大きな角丸や独自の強い背景色は、意味を持つ overlay や状態表示に限定します。
+
 | 定義 | 用途 | C# |
 |---|---|---|
 | `ui-color-tokens.uss` | surface、text、border、state の意味を持つ色 | `UiColorTokens` |

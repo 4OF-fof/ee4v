@@ -1,11 +1,11 @@
 .ee4v-ui-main-toolbar {
-    height: var(--ee4v-size-28);
-    min-height: var(--ee4v-size-28);
-    max-height: var(--ee4v-size-28);
+    height: var(--ee4v-control-height-toolbar);
+    min-height: var(--ee4v-control-height-toolbar);
+    max-height: var(--ee4v-control-height-toolbar);
     padding-left: var(--ee4v-space-md);
     padding-right: var(--ee4v-space-md);
-    padding-top: var(--ee4v-space-xs);
-    padding-bottom: var(--ee4v-space-xs);
+    padding-top: var(--ee4v-space-xxs);
+    padding-bottom: var(--ee4v-space-xxs);
 }
 
 .ee4v-ui-main-toolbar__content {

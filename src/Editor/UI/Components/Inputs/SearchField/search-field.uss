@@ -1,8 +1,8 @@
 .ee4v-ui-search-field {
     flex-direction: row;
     align-items: center;
-    min-height: var(--ee4v-size-24);
-    height: var(--ee4v-size-24);
+    min-height: var(--ee4v-control-height-default);
+    height: var(--ee4v-control-height-default);
     padding-left: var(--ee4v-space-sm);
     padding-right: var(--ee4v-space-xs);
     border-top-width: var(--ee4v-border-hairline);

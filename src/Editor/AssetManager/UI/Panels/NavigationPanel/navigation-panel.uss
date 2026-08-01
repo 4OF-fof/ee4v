@@ -125,13 +125,13 @@
 }
 
 .ee4v-asset-manager-collection-list__row--drop-before {
-    margin-top: -2px;
+    margin-top: var(--ee4v-space-negative-xxs);
     border-top-width: var(--ee4v-border-emphasis);
     border-top-color: var(--ee4v-color-selection);
 }
 
 .ee4v-asset-manager-collection-list__row--drop-after {
-    margin-bottom: -2px;
+    margin-bottom: var(--ee4v-space-negative-xxs);
     border-bottom-width: var(--ee4v-border-emphasis);
     border-bottom-color: var(--ee4v-color-selection);
 }

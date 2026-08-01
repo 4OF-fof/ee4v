@@ -25,14 +25,14 @@ namespace Ee4v.UI
 
     internal static class UiShapeTokens
     {
-        public const float RadiusXs = 3f;
-        public const float RadiusSmall = 4f;
-        public const float RadiusMedium = 5f;
-        public const float RadiusLarge = 6f;
-        public const float RadiusXl = 7f;
-        public const float RadiusXxl = 8f;
-        public const float RadiusXxxl = 10f;
-        public const float RadiusPill = 15f;
+        public const float RadiusXs = 2f;
+        public const float RadiusSmall = 3f;
+        public const float RadiusMedium = 4f;
+        public const float RadiusLarge = 4f;
+        public const float RadiusXl = 5f;
+        public const float RadiusXxl = 6f;
+        public const float RadiusXxxl = 8f;
+        public const float RadiusPill = 12f;
     }
 
     internal static class UiTypographyTokens
@@ -42,10 +42,10 @@ namespace Ee4v.UI
         public const int SmallFontSize = 11;
         public const int BodyFontSize = 12;
         public const int LargeBodyFontSize = 13;
-        public const int SubtitleFontSize = 14;
-        public const int TitleFontSize = 16;
-        public const int HeadingFontSize = 18;
-        public const int DisplayFontSize = 20;
+        public const int SubtitleFontSize = 13;
+        public const int TitleFontSize = 15;
+        public const int HeadingFontSize = 16;
+        public const int DisplayFontSize = 18;
     }
 
     internal static class UiSizeTokens
@@ -68,10 +68,10 @@ namespace Ee4v.UI
         public const float Size28 = 28f;
         public const float Size31 = 31f;
 
-        public const float ControlHeightCompact = Size20;
-        public const float ControlHeightSmall = Size22;
-        public const float ControlHeightDefault = Size24;
-        public const float ControlHeightToolbar = Size28;
+        public const float ControlHeightCompact = Size18;
+        public const float ControlHeightSmall = Size20;
+        public const float ControlHeightDefault = Size22;
+        public const float ControlHeightToolbar = Size24;
 
         public const float ActionButtonWidth = 96f;
         public const float ReferenceActionWidth = 64f;

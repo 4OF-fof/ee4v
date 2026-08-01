@@ -9,9 +9,9 @@
 .ee4v-ui-three-pane-layout__toolbar-row {
     flex-direction: row;
     min-width: 0;
-    min-height: var(--ee4v-size-28);
-    max-height: var(--ee4v-size-28);
-    height: var(--ee4v-size-28);
+    min-height: var(--ee4v-control-height-toolbar);
+    max-height: var(--ee4v-control-height-toolbar);
+    height: var(--ee4v-control-height-toolbar);
     flex-shrink: 0;
 }
 
@@ -40,9 +40,9 @@
 .ee4v-ui-three-pane-layout__toolbar {
     position: relative;
     min-width: 0;
-    min-height: var(--ee4v-size-28);
-    max-height: var(--ee4v-size-28);
-    height: var(--ee4v-size-28);
+    min-height: var(--ee4v-control-height-toolbar);
+    max-height: var(--ee4v-control-height-toolbar);
+    height: var(--ee4v-control-height-toolbar);
     flex-shrink: 0;
     flex-direction: row;
     align-items: center;
@@ -183,7 +183,7 @@
 
 .ee4v-ui-three-pane-layout__pane-toggle {
     position: absolute;
-    top: 6px;
+    top: var(--ee4v-space-xs);
     width: var(--ee4v-size-16);
     min-width: var(--ee4v-size-16);
     height: var(--ee4v-size-16);

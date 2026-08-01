@@ -95,13 +95,13 @@ namespace Ee4v.UI.Tests
                     "radius",
                     CreatePropertyRegex(
                         @"border(?:-(?:top-left|top-right|bottom-left|bottom-right))?-radius",
-                        @"3px|4px|5px|6px|7px|8px|10px|15px")
+                        @"2px|3px|4px|5px|6px|8px|12px")
                 },
                 {
                     "typography",
                     CreatePropertyRegex(
                         @"font-size",
-                        @"7px|10px|11px|12px|13px|14px|16px|18px|20px")
+                        @"7px|10px|11px|12px|13px|15px|16px|18px")
                 },
                 {
                     "size",

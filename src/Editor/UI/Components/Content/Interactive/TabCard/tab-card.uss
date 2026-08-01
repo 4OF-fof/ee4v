@@ -48,11 +48,11 @@
 
 .ee4v-ui-tab-card__tab--selected,
 .ee4v-ui-tab-card__tab--selected:hover {
-    background-color: var(--ee4v-color-surface-raised);
+    background-color: var(--ee4v-color-panel);
     border-top-color: var(--ee4v-color-border-default);
     border-left-color: var(--ee4v-color-border-default);
     border-right-color: var(--ee4v-color-border-default);
-    border-bottom-color: var(--ee4v-color-surface-raised);
+    border-bottom-color: var(--ee4v-color-panel);
     color: var(--ee4v-color-text-on-state);
 }
 
@@ -70,7 +70,7 @@
     border-bottom-color: var(--ee4v-color-border-default);
     border-left-color: var(--ee4v-color-border-default);
     border-right-color: var(--ee4v-color-border-default);
-    background-color: var(--ee4v-color-surface-raised);
+    background-color: var(--ee4v-color-panel);
     border-top-left-radius: var(--ee4v-radius-2xl);
     border-top-right-radius: var(--ee4v-radius-2xl);
     border-bottom-left-radius: var(--ee4v-radius-2xl);

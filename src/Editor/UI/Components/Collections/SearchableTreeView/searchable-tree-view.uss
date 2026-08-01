@@ -22,8 +22,8 @@
 }
 
 .ee4v-ui-searchable-tree-view__search {
-    min-height: var(--ee4v-size-24);
-    height: var(--ee4v-size-24);
+    min-height: var(--ee4v-control-height-default);
+    height: var(--ee4v-control-height-default);
 }
 
 .ee4v-ui-searchable-tree-view__tree {
