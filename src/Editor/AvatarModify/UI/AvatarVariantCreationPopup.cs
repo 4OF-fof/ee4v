@@ -15,7 +15,7 @@ namespace Ee4v.AvatarModify.UI
     internal sealed class AvatarVariantCreationPopup : EditorWindow
     {
         private const float PopupWidth = 520f;
-        private const float PopupBaseHeight = 185f;
+        private const float PopupBaseHeight = 203f;
         internal const float PrefabRowHeight =
             UiSizeTokens.Size31 +
             UiSpacingTokens.Xxs * 2f;
@@ -76,11 +76,20 @@ namespace Ee4v.AvatarModify.UI
 
             _creation = _creation ??
                 _service.GetCreation(_itemId);
-            _view = new AvatarVariantCreationView(
-                CreateText());
-            _view.CancelRequested += Close;
-            _view.CreateRequested += CreateVariant;
-            rootVisualElement.Add(_view);
+            var text = CreateText();
+            _view = new AvatarVariantCreationView(text);
+            var popup = new PopupLayout(
+                _view,
+                new PopupActionState(
+                    text.Cancel,
+                    Close),
+                new PopupActionState(
+                    text.Create,
+                    CreateVariant,
+                    enabled: false));
+            _view.CreateAvailabilityChanged +=
+                popup.SetPrimaryActionEnabled;
+            rootVisualElement.Add(popup);
             Render(string.Empty);
             _view.schedule.Execute(
                 _view.FocusVariantName);
@@ -228,7 +237,6 @@ namespace Ee4v.AvatarModify.UI
             };
         private readonly InputField _name =
             new InputField(new InputFieldState());
-        private readonly UiButton _create;
         private readonly UiTextElement _status;
         private bool _canCreate;
         private string _selectedPrefabGuid = string.Empty;
@@ -257,30 +265,11 @@ namespace Ee4v.AvatarModify.UI
                 "ee4v-avatar-variant-popup__status");
             Add(_status);
 
-            var actions = new VisualElement();
-            actions.AddToClassList(
-                "ee4v-avatar-variant-popup__actions");
-            actions.Add(new UiButton(
-                new UiButtonState(
-                    _text.Cancel,
-                    variant: UiButtonVariant.Ghost,
-                    size: UiButtonSize.Compact),
-                () => CancelRequested?.Invoke()));
-            _create = new UiButton(
-                new UiButtonState(
-                    _text.Create,
-                    variant: UiButtonVariant.Solid,
-                    size: UiButtonSize.Compact),
-                () => CreateRequested?.Invoke());
-            actions.Add(_create);
-            Add(actions);
-
             _name.ValueChanged +=
                 _ => RefreshCreateInteraction();
         }
 
-        internal event Action CancelRequested;
-        internal event Action CreateRequested;
+        internal event Action<bool> CreateAvailabilityChanged;
 
         internal string PrefabGuid =>
             _selectedPrefabGuid;
@@ -316,7 +305,7 @@ namespace Ee4v.AvatarModify.UI
 
         private void RefreshCreateInteraction()
         {
-            _create.SetInteractable(
+            CreateAvailabilityChanged?.Invoke(
                 _canCreate &&
                 !string.IsNullOrWhiteSpace(PrefabGuid) &&
                 !string.IsNullOrWhiteSpace(VariantName));

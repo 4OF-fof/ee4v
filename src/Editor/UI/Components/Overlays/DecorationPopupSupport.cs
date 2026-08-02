@@ -4,9 +4,101 @@ using System.Linq;
 using Ee4v.Core.Internal.EditorAPI;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
+    internal sealed class PopupActionState
+    {
+        internal PopupActionState(
+            string label,
+            Action execute,
+            bool enabled = true)
+        {
+            Label = label ?? string.Empty;
+            Execute = execute;
+            Enabled = enabled;
+        }
+
+        internal string Label { get; }
+
+        internal Action Execute { get; }
+
+        internal bool Enabled { get; }
+    }
+
+    internal sealed class PopupLayout : VisualElement
+    {
+        private const string RootClassName =
+            "ee4v-popup-layout";
+        private const string ContentClassName =
+            "ee4v-popup-layout__content";
+        private const string FooterClassName =
+            "ee4v-popup-layout__footer";
+        private const string ActionClassName =
+            "ee4v-popup-layout__action";
+
+        internal PopupLayout(
+            VisualElement content,
+            PopupActionState cancelAction,
+            PopupActionState primaryAction)
+        {
+            AddToClassList(RootClassName);
+            var body = content ?? new VisualElement();
+            body.AddToClassList(ContentClassName);
+            Add(body);
+
+            Footer = new VisualElement();
+            Footer.AddToClassList(FooterClassName);
+            AddAction(
+                Footer,
+                CreateAction(
+                    cancelAction,
+                    UiButtonVariant.Ghost));
+            _primaryAction = CreateAction(
+                primaryAction,
+                UiButtonVariant.Solid);
+            AddAction(Footer, _primaryAction);
+            Add(Footer);
+        }
+
+        private readonly UiButton _primaryAction;
+
+        internal VisualElement Footer { get; }
+
+        internal void SetPrimaryActionEnabled(bool enabled)
+        {
+            _primaryAction?.SetInteractable(enabled);
+        }
+
+        private static UiButton CreateAction(
+            PopupActionState state,
+            UiButtonVariant variant)
+        {
+            return state == null
+                ? null
+                : new UiButton(
+                    new UiButtonState(
+                        state.Label,
+                        enabled: state.Enabled,
+                        variant: variant),
+                    state.Execute);
+        }
+
+        private static void AddAction(
+            VisualElement footer,
+            UiButton action)
+        {
+            if (action == null)
+            {
+                return;
+            }
+
+            action.AddToClassList(ActionClassName);
+            footer.Add(action);
+        }
+    }
+
     public sealed class DecorationRecentIconSession
     {
         private readonly List<string> _iconGuids;

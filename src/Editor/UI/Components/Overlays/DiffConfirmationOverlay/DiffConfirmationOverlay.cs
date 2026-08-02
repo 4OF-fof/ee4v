@@ -119,8 +119,8 @@ namespace Ee4v.UI
             scrim.AddToClassList(RootClassName + "__scrim");
             Add(scrim);
 
-            var panel = new VisualElement();
-            panel.AddToClassList(RootClassName + "__panel");
+            var content = new VisualElement();
+            content.AddToClassList(RootClassName + "__content");
 
             var header = new VisualElement();
             header.AddToClassList(RootClassName + "__header");
@@ -128,7 +128,7 @@ namespace Ee4v.UI
             var message = UiTextFactory.Create(state.Message, RootClassName + "__message");
             message.SetWhiteSpace(WhiteSpace.Normal);
             header.Add(message);
-            panel.Add(header);
+            content.Add(header);
 
             var scroll = new ScrollView(ScrollViewMode.Vertical);
             scroll.AddToClassList(RootClassName + "__scroll");
@@ -138,26 +138,19 @@ namespace Ee4v.UI
                 scroll.Add(CreateItem(state.Items[i]));
             }
 
-            panel.Add(scroll);
+            content.Add(scroll);
 
-            var actions = new VisualElement();
-            actions.AddToClassList(RootClassName + "__actions");
-            var cancel = new UiButton(
-                new UiButtonState(
-                    label: state.CancelLabel,
-                    variant: UiButtonVariant.Ghost),
-                () => Resolve(DiffConfirmationResult.Cancel));
-            cancel.AddToClassList(RootClassName + "__button");
-            var overwrite = new UiButton(
-                new UiButtonState(
-                    label: state.OverwriteLabel,
-                    selected: true),
-                () => Resolve(DiffConfirmationResult.Overwrite));
-            overwrite.AddToClassList(RootClassName + "__button");
-            overwrite.AddToClassList(RootClassName + "__button--primary");
-            actions.Add(cancel);
-            actions.Add(overwrite);
-            panel.Add(actions);
+            var panel = new PopupLayout(
+                content,
+                new PopupActionState(
+                    state.CancelLabel,
+                    () => Resolve(
+                        DiffConfirmationResult.Cancel)),
+                new PopupActionState(
+                    state.OverwriteLabel,
+                    () => Resolve(
+                        DiffConfirmationResult.Overwrite)));
+            panel.AddToClassList(RootClassName + "__panel");
 
             Add(panel);
         }

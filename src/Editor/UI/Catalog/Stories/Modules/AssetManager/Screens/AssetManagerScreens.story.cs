@@ -419,33 +419,52 @@ namespace Ee4v.UI
             CatalogWindow window,
             VisualElement parent)
         {
-            var form = new VisualElement();
-            form.AddToClassList("ee4v-collection-window__form");
+            var popup = new VisualElement();
+            popup.AddToClassList(
+                "ee4v-collection-creation-window");
+            popup.AddToClassList(UiClassNames.PopupSurface);
+
+            var form = new ScrollView(ScrollViewMode.Vertical);
+            form.AddToClassList(
+                "ee4v-collection-creation-window__form");
             form.Add(UiTextFactory.Create(
                 CatalogCoveragePreview.SampleCollection,
-                UiClassNames.SectionTitle));
-            form.Add(new InputField(new InputFieldState(
+                UiClassNames.SectionTitle,
+                "ee4v-collection-creation-window__title"));
+
+            var nameField = new VisualElement();
+            nameField.AddToClassList(
+                "ee4v-collection-creation-window__field");
+            nameField.Add(UiTextFactory.Create(
                 CatalogCoveragePreview.SampleTitle,
+                UiClassNames.FormLabel,
+                "ee4v-collection-creation-window__label"));
+            nameField.Add(new InputField(new InputFieldState(
                 placeholder:
                     CatalogCoveragePreview.SampleDescription)));
-            form.Add(new AssetCollectionIconSelector(
+            form.Add(nameField);
+
+            var iconField = new VisualElement();
+            iconField.AddToClassList(
+                "ee4v-collection-creation-window__field");
+            iconField.Add(new AssetCollectionIconSelector(
                 AssetCollectionIcon.Folder));
-            var actions = new VisualElement();
-            actions.AddToClassList("ee4v-collection-window__actions");
-            actions.Add(new UiButton(new UiButtonState(
-                CatalogCoveragePreview.SampleClearSelection,
-                variant: UiButtonVariant.Ghost)));
-            actions.Add(new UiButton(new UiButtonState(
-                CatalogCoveragePreview.SampleCreateFormat
-                    .Replace(
-                        "{0}",
-                        CatalogCoveragePreview.SampleCollection),
-                variant: UiButtonVariant.Solid)));
-            form.Add(actions);
+            form.Add(iconField);
+            popup.Add(new PopupLayout(
+                form,
+                new PopupActionState(
+                    CatalogCoveragePreview.SampleClearSelection,
+                    null),
+                new PopupActionState(
+                    CatalogCoveragePreview.SampleCreateFormat
+                        .Replace(
+                            "{0}",
+                            CatalogCoveragePreview.SampleCollection),
+                    null)));
             CatalogCoveragePreview.CreateSurface(
                 window,
                 parent,
-                430f).Add(form);
+                430f).Add(popup);
         }
 
         private static AssetCollection[] CreateCollections()

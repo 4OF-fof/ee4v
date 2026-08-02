@@ -29,6 +29,11 @@
     background-color: var(--ee4v-color-panel);
 }
 
+.ee4v-ui-diff-confirmation__content {
+    flex-grow: 1;
+    min-height: 0;
+}
+
 .ee4v-ui-diff-confirmation__header {
     padding: var(--ee4v-space-2xl);
     border-bottom-width: var(--ee4v-border-hairline);
@@ -116,28 +121,4 @@
 .ee4v-ui-diff-confirmation__value--incoming {
     border-left-width: var(--ee4v-border-hairline);
     border-left-color: var(--ee4v-color-border-subtle);
-}
-
-.ee4v-ui-diff-confirmation__actions {
-    flex-direction: row;
-    justify-content: flex-end;
-    padding: var(--ee4v-space-lg) var(--ee4v-space-2xl);
-    border-top-width: var(--ee4v-border-hairline);
-    border-top-color: var(--ee4v-color-border-default);
-}
-
-.ee4v-ui-diff-confirmation__button {
-    min-width: 100px;
-    height: var(--ee4v-size-28);
-    margin-left: var(--ee4v-space-md);
-}
-
-.ee4v-ui-diff-confirmation__button--primary {
-    background-color: var(--ee4v-color-selection);
-    color: var(--ee4v-color-text-on-state);
-    border-color: var(--ee4v-color-focus);
-}
-
-.ee4v-ui-diff-confirmation__button--primary:hover {
-    background-color: var(--ee4v-color-focus);
 }

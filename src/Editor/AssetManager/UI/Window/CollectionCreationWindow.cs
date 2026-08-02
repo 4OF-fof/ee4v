@@ -40,8 +40,6 @@ namespace Ee4v.AssetManager.UI
             "ee4v-collection-creation-window__condition-query";
         private const string ErrorClassName =
             "ee4v-collection-creation-window__error";
-        private const string ActionsClassName =
-            "ee4v-collection-creation-window__actions";
 
         private CollectionWindowMode _mode;
         private bool _smart;
@@ -55,6 +53,7 @@ namespace Ee4v.AssetManager.UI
         private AssetCollectionIconSelector _iconField;
         private PopupField<SmartCollectionMatchMode> _matchModeField;
         private ScrollView _form;
+        private VisualElement _footer;
         private VisualElement _conditions;
         private UiTextElement _error;
         private bool _popupSizeRefreshQueued;
@@ -172,7 +171,6 @@ namespace Ee4v.AssetManager.UI
             _form.AddToClassList(FormClassName);
             _form.contentContainer.RegisterCallback<
                 GeometryChangedEvent>(OnFormContentGeometryChanged);
-            root.Add(_form);
 
             _form.Add(UiTextFactory.Create(
                 GetTitleText(),
@@ -221,21 +219,32 @@ namespace Ee4v.AssetManager.UI
             _error.SetWhiteSpace(WhiteSpace.Normal);
             _form.Add(_error);
 
-            var actions = new VisualElement();
-            actions.AddToClassList(ActionsClassName);
-            actions.Add(new UiButton(
-                new UiButtonState(
+            var popup = new PopupLayout(
+                _form,
+                new PopupActionState(
                     I18N.Get(
                         "assetManager.collectionCreation.cancel"),
-                    variant: UiButtonVariant.Ghost),
-                Close));
-            actions.Add(new UiButton(
-                new UiButtonState(
-                    GetSubmitLabel()),
-                Submit));
-            _form.Add(actions);
+                    Close),
+                new PopupActionState(
+                    GetSubmitLabel(),
+                    Submit));
+            _footer = popup.Footer;
+            _footer.RegisterCallback<GeometryChangedEvent>(
+                OnFooterGeometryChanged);
+            root.Add(popup);
             QueuePopupSizeRefresh();
             QueueInitialNameFocus();
+        }
+
+        private void OnFooterGeometryChanged(
+            GeometryChangedEvent evt)
+        {
+            if (Mathf.Abs(
+                    evt.newRect.height -
+                    evt.oldRect.height) > 0.5f)
+            {
+                QueuePopupSizeRefresh();
+            }
         }
 
         private void QueueInitialNameFocus()
@@ -425,7 +434,8 @@ namespace Ee4v.AssetManager.UI
                 formStyle.paddingTop +
                 formStyle.paddingBottom +
                 rootStyle.borderTopWidth +
-                rootStyle.borderBottomWidth;
+                rootStyle.borderBottomWidth +
+                ResolveHeight(_footer);
             var size = new Vector2(
                 _smart ? SmartWidth : RegularWidth,
                 CalculatePopupHeight(
@@ -445,6 +455,20 @@ namespace Ee4v.AssetManager.UI
             minSize = size;
             maxSize = size;
             position = nextPosition;
+        }
+
+        private static float ResolveHeight(
+            VisualElement element)
+        {
+            if (element == null)
+            {
+                return 0f;
+            }
+
+            var height = element.resolvedStyle.height;
+            return float.IsNaN(height) || height < 0f
+                ? 0f
+                : height;
         }
 
         internal static Rect CalculateResizedPopupRect(

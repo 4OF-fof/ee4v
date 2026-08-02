@@ -88,14 +88,3 @@
     color: var(--ee4v-color-error);
     white-space: normal;
 }
-
-.ee4v-avatar-variant-popup__actions {
-    min-height: var(--ee4v-control-height-toolbar);
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-top: auto;
-    padding-top: var(--ee4v-space-xs);
-    border-top-width: var(--ee4v-border-hairline);
-    border-top-color: var(--ee4v-color-border-subtle);
-}

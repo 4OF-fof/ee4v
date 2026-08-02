@@ -38,8 +38,19 @@ namespace Ee4v.UI
             CatalogWindow window,
             VisualElement parent)
         {
-            var view = new AvatarVariantCreationView(
-                AvatarVariantCreationPopup.CreateText());
+            var text = AvatarVariantCreationPopup.CreateText();
+            var view = new AvatarVariantCreationView(text);
+            var popup = new PopupLayout(
+                view,
+                new PopupActionState(
+                    text.Cancel,
+                    null),
+                new PopupActionState(
+                    text.Create,
+                    null,
+                    enabled: false));
+            view.CreateAvailabilityChanged +=
+                popup.SetPrimaryActionEnabled;
             view.SetState(
                 new AvatarVariantCreationViewState
                 {
@@ -69,7 +80,7 @@ namespace Ee4v.UI
                 "ee4v-avatar-variant-popup");
             surface.AddToClassList(
                 UiClassNames.PopupSurface);
-            surface.Add(view);
+            surface.Add(popup);
         }
     }
 }
