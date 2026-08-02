@@ -51,7 +51,7 @@ namespace Ee4v.AvatarModify.Infrastructure.Unity
                 request.DestinationRoot);
             if (string.IsNullOrWhiteSpace(destinationRoot))
             {
-                destinationRoot = "Assets/AvatarVariants";
+                destinationRoot = "Assets/!AvatarVariants";
             }
 
             if (!destinationRoot.StartsWith(

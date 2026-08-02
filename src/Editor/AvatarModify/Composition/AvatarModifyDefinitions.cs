@@ -14,7 +14,7 @@ namespace Ee4v.AvatarModify.Composition
                 "settings.section.variant",
                 "settings.variantRoot.label",
                 "settings.variantRoot.tooltip",
-                "Assets/AvatarVariants",
+                "Assets/!AvatarVariants",
                 order: 0,
                 validator: value =>
                     !string.IsNullOrWhiteSpace(value) &&
