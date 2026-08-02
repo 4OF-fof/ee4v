@@ -5,6 +5,58 @@ using System.Threading;
 
 namespace Ee4v.AssetManager.Contracts
 {
+    public sealed class AssetItemContextActionRequest
+    {
+        public AssetItemContextActionRequest(
+            string itemId,
+            float screenX,
+            float screenY)
+        {
+            ItemId = itemId ?? string.Empty;
+            ScreenX = screenX;
+            ScreenY = screenY;
+        }
+
+        public string ItemId { get; }
+        public float ScreenX { get; }
+        public float ScreenY { get; }
+    }
+
+    public sealed class AssetItemContextAction
+    {
+        public AssetItemContextAction(
+            string id,
+            string label,
+            Action execute,
+            bool enabled = true)
+        {
+            Id = id ?? string.Empty;
+            Label = label ?? string.Empty;
+            Execute = execute;
+            Enabled = enabled;
+        }
+
+        public string Id { get; }
+        public string Label { get; }
+        public Action Execute { get; }
+        public bool Enabled { get; }
+    }
+
+    public interface IAssetItemContextActionProvider
+    {
+        bool TryCreate(
+            AssetItemContextActionRequest request,
+            out AssetItemContextAction action);
+    }
+
+    public interface IAssetItemContextActionRegistry
+    {
+        IDisposable Register(IAssetItemContextActionProvider provider);
+
+        IReadOnlyList<AssetItemContextAction> CreateActions(
+            AssetItemContextActionRequest request);
+    }
+
     public enum AssetManagerUiPreference
     {
         HistoryOverlayMaximumItems,
@@ -59,25 +111,13 @@ namespace Ee4v.AssetManager.Contracts
         void ClearHighlights();
     }
 
-    public interface IAssetManagerProtectionActions
+    public interface IAssetManagerProtectionActions :
+        IAssetManagerAssetDerivationService
     {
         event Action Changed;
 
-        bool IsManaged(string assetGuid);
-        bool IsProtected(string assetGuid);
         string GetProtectionRootGuid(string assetGuid);
-        bool CanCreateMaterialVariant(string assetGuid);
-        bool CanCreatePrefabVariant(string assetGuid);
         void SetProtected(string assetGuid, bool isProtected);
-        bool CreateEditableCopy(
-            string assetGuid,
-            string destinationAssetPath);
-        bool CreateMaterialVariant(
-            string assetGuid,
-            string destinationAssetPath);
-        bool CreatePrefabVariant(
-            string assetGuid,
-            string destinationAssetPath);
     }
 
     public sealed class AssetArchiveEntry

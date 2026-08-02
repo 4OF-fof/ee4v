@@ -4,14 +4,6 @@
     padding-right: var(--ee4v-space-md);
     padding-top: var(--ee4v-space-md);
     padding-bottom: var(--ee4v-space-md);
-    border-top-width: var(--ee4v-border-hairline);
-    border-right-width: var(--ee4v-border-hairline);
-    border-bottom-width: var(--ee4v-border-hairline);
-    border-left-width: var(--ee4v-border-hairline);
-    border-top-color: var(--ee4v-color-overlay-border);
-    border-right-color: var(--ee4v-color-overlay-border);
-    border-bottom-color: var(--ee4v-color-overlay-border);
-    border-left-color: var(--ee4v-color-overlay-border);
     background-color: var(--ee4v-color-surface-raised);
     flex-grow: 1;
 }

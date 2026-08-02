@@ -147,6 +147,7 @@ namespace Ee4v.AssetManager.UI
             root.Clear();
             root.AddToClassList("ee4v-ui");
             root.AddToClassList(RootClassName);
+            root.AddToClassList(UiClassNames.PopupSurface);
             UiStyleUtility.AddPackageStyleSheet(
                 root,
                 "Editor/UI/Components/common.uss");

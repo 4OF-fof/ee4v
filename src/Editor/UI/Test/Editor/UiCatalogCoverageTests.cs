@@ -33,6 +33,7 @@ namespace Ee4v.UI.Tests
         {
             "alerts",
             "asset-collection-icon-selector",
+            "avatar-variant-creation-popup",
             "asset-item-grid",
             "asset-manager-infomation-panel",
             "asset-manager-main-view",

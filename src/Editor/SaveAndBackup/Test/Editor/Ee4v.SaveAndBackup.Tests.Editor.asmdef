@@ -1,0 +1,17 @@
+{
+  "name": "Ee4v.SaveAndBackup.Tests.Editor",
+  "rootNamespace": "Ee4v.SaveAndBackup.Tests",
+  "references": [
+    "Ee4v.Testing.Contracts.Editor"
+  ],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": ["TestAssemblies"]
+}

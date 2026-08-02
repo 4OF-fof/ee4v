@@ -513,27 +513,82 @@ namespace Ee4v.AssetManager.UI
                         "assetManager.mainView.context.highlight"),
                     highlight,
                     canHighlight);
-            var menuItems =
-                new List<ContextMenuItemState>();
-            if (canImport)
+            IReadOnlyList<AssetItemContextAction>
+                extensionActions =
+                    Array.Empty<AssetItemContextAction>();
+            if (!isFile)
             {
-                menuItems.Add(
-                    new ContextMenuItemState(
-                        "import",
-                        I18N.Get(
-                            "assetManager.mainView.context.import"),
-                        import));
-                menuItems.Add(
-                    ContextMenuItemState.Separator());
+                var screenPosition =
+                    ContextMenuWindow.GetScreenPosition(
+                        target,
+                        panelPosition);
+                extensionActions =
+                    AssetManagerUiDependencies
+                        .ItemContextActions
+                        .CreateActions(
+                            new AssetItemContextActionRequest(
+                                targetId,
+                                screenPosition.x,
+                                screenPosition.y));
             }
 
-            menuItems.Add(menuItem);
+            var menuItems = CreateContextMenuItems(
+                extensionActions,
+                import,
+                canImport,
+                menuItem);
             var menu = new ContextMenuState(
                 menuItems);
             ContextMenuWindow.Show(
                 target,
                 panelPosition,
                 menu);
+        }
+
+        internal static IReadOnlyList<ContextMenuItemState>
+            CreateContextMenuItems(
+                IReadOnlyList<AssetItemContextAction>
+                    extensionActions,
+                Action import,
+                bool canImport,
+                ContextMenuItemState highlight)
+        {
+            var menuItems =
+                new List<ContextMenuItemState>();
+            menuItems.Add(
+                new ContextMenuItemState(
+                    "import",
+                    I18N.Get(
+                        "assetManager.mainView.context.import"),
+                    import,
+                    canImport));
+
+            var extensions = extensionActions ??
+                Array.Empty<AssetItemContextAction>();
+            for (var i = 0; i < extensions.Count; i++)
+            {
+                var action = extensions[i];
+                if (action == null)
+                {
+                    continue;
+                }
+
+                menuItems.Add(
+                    new ContextMenuItemState(
+                        action.Id,
+                        action.Label,
+                        action.Execute,
+                        action.Enabled));
+            }
+
+            menuItems.Add(
+                ContextMenuItemState.Separator());
+            if (highlight != null)
+            {
+                menuItems.Add(highlight);
+            }
+
+            return menuItems;
         }
 
         internal static bool TryResolveHighlightTarget(

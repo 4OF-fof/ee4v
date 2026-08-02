@@ -1,0 +1,19 @@
+{
+  "name": "Ee4v.Composition.Editor",
+  "rootNamespace": "Ee4v.Composition",
+  "references": [
+    "Ee4v.AssetManager.Composition.Editor",
+    "Ee4v.AssetManager.Contracts.Editor",
+    "Ee4v.AvatarModify.Composition.Editor",
+    "Ee4v.SaveAndBackup.Composition.Editor"
+  ],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

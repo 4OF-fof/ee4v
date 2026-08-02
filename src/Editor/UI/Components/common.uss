@@ -15,6 +15,11 @@
     transition-timing-function: ease-out;
 }
 
+.ee4v-popup-surface {
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-overlay-border);
+}
+
 .ee4v-ui-status {
     padding-left: var(--ee4v-space-lg);
     padding-right: var(--ee4v-space-lg);

@@ -4,6 +4,8 @@
   "references": [
     "Ee4v.AssetManager.Contracts.Editor",
     "Ee4v.AssetManager.UI.Editor",
+    "Ee4v.AvatarModify.Domain.Editor",
+    "Ee4v.AvatarModify.UI.Editor",
     "Ee4v.Core.Contracts.Editor",
     "Ee4v.Core.Editor",
     "Ee4v.Core.Presentation.Editor",

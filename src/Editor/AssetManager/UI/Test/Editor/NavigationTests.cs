@@ -203,6 +203,56 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
+        public void MainContextMenu_KeepsApplicableDisabledActions()
+        {
+            var items = MainView.CreateContextMenuItems(
+                new[]
+                {
+                    new AssetItemContextAction(
+                        "create-variant",
+                        "Create Variant",
+                        () => { },
+                        enabled: false)
+                },
+                import: null,
+                canImport: false,
+                highlight: new ContextMenuItemState(
+                    "highlight",
+                    "Highlight",
+                    () => { },
+                    enabled: false));
+
+            Assert.That(
+                items
+                    .Where(item =>
+                        item.Kind == ContextMenuItemKind.Action)
+                    .Select(item => item.Id),
+                Is.EqualTo(
+                    new[]
+                    {
+                        "import",
+                        "create-variant",
+                        "highlight"
+                    }));
+            Assert.That(
+                items.Select(item => item.Kind),
+                Is.EqualTo(
+                    new[]
+                    {
+                        ContextMenuItemKind.Action,
+                        ContextMenuItemKind.Action,
+                        ContextMenuItemKind.Separator,
+                        ContextMenuItemKind.Action
+                    }));
+            Assert.That(
+                items
+                    .Where(item =>
+                        item.Kind == ContextMenuItemKind.Action)
+                    .All(item => !item.Enabled),
+                Is.True);
+        }
+
+        [Test]
         public void CollectionDrag_SkipsUnassignedFiles()
         {
             var itemIds = AssetItemDragAndDrop.GetAssetItemIds(

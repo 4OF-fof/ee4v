@@ -300,6 +300,7 @@ namespace Ee4v.AssetManager.UI
             root.Clear();
             root.AddToClassList("ee4v-ui");
             root.AddToClassList(RootClassName);
+            root.AddToClassList(UiClassNames.PopupSurface);
             root.focusable = true;
             root.RegisterCallback<KeyDownEvent>(OnKeyDown);
 

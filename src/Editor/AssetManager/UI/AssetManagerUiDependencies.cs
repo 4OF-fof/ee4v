@@ -15,6 +15,8 @@ namespace Ee4v.AssetManager.UI
         private static IAssetManagerProjectActions _projectActions;
         private static IAssetManagerProtectionActions
             _protectionActions;
+        private static IAssetItemContextActionRegistry
+            _itemContextActions;
         private static Action<Action> _requestManualSync;
 
         internal static IAssetManager AssetManager
@@ -58,6 +60,10 @@ namespace Ee4v.AssetManager.UI
         internal static IAssetManagerProjectActions ProjectActions =>
             _projectActions ?? throw new InvalidOperationException(
                 "AssetManager Project actions have not been configured.");
+
+        internal static IAssetItemContextActionRegistry ItemContextActions =>
+            _itemContextActions ?? throw new InvalidOperationException(
+                "AssetManager item context actions have not been configured.");
 
         internal static bool TryGetProjectActions(
             out IAssetManagerProjectActions projectActions)
@@ -115,6 +121,7 @@ namespace Ee4v.AssetManager.UI
             StandaloneAssetManagerViewSession standaloneViewSession,
             IAssetManagerProjectActions projectActions,
             IAssetManagerProtectionActions protectionActions,
+            IAssetItemContextActionRegistry itemContextActions,
             Action<Action> requestManualSync)
         {
             _assetManager = assetManager ?? throw new ArgumentNullException(nameof(assetManager));
@@ -132,6 +139,9 @@ namespace Ee4v.AssetManager.UI
             _protectionActions = protectionActions ??
                 throw new ArgumentNullException(
                     nameof(protectionActions));
+            _itemContextActions = itemContextActions ??
+                throw new ArgumentNullException(
+                    nameof(itemContextActions));
             _requestManualSync = requestManualSync ??
                                  throw new ArgumentNullException(
                                      nameof(requestManualSync));

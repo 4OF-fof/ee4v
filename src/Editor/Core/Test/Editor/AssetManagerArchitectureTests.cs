@@ -147,7 +147,7 @@ namespace Ee4v.Core.Tests
         [Test]
         [FeatureTestCase(
             "AssetManager UI と Module 外部は実装 assembly に依存しない",
-            "UI に storage/settings/datasource 依存がなく、開発用Catalog以外の外部asmdefがContracts以外を参照しないことを確認します。",
+            "UI に storage/settings/datasource 依存がなく、package composition と開発用Catalog以外の外部asmdefがContracts以外を参照しないことを確認します。",
             order: 26,
             category: FeatureTestCategory.StaticAudit)]
         public void UiAndExternalAssemblies_ReferenceOnlyAllowedBoundaries()
@@ -195,6 +195,10 @@ namespace Ee4v.Core.Tests
                 .Where(path => !string.Equals(
                     Path.GetFileName(path),
                     "Ee4v.UI.Catalog.Editor.asmdef",
+                    StringComparison.OrdinalIgnoreCase))
+                .Where(path => !string.Equals(
+                    Path.GetFileName(path),
+                    "Ee4v.Composition.Editor.asmdef",
                     StringComparison.OrdinalIgnoreCase))
                 .Where(path =>
                 {

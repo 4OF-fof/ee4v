@@ -1,8 +1,6 @@
 .ee4v-collection-creation-window {
     flex-grow: 1;
     background-color: var(--ee4v-color-panel);
-    border-width: var(--ee4v-border-hairline);
-    border-color: var(--ee4v-color-border-active);
 }
 
 .ee4v-collection-creation-window__form {

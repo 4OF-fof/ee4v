@@ -1,0 +1,28 @@
+{
+  "action": {
+    "ok": "OK"
+  },
+  "build": {
+    "snapshotRetained": "Snapshot retained for retry: {0}",
+    "unappliedOverrides": {
+      "title": "Unapplied prefab overrides",
+      "message": "The target instance has unapplied prefab overrides. SaveAndBackup will not back it up because it differs from the registered prefab."
+    }
+  },
+  "settings": {
+    "section": {
+      "backup": "Backup"
+    },
+    "trigger": {
+      "label": "Backup timing",
+      "tooltip": "Choose whether backups run after build, after upload, or only manually."
+    },
+    "root": {
+      "label": "Backup destination",
+      "tooltip": "Folder outside the project that stores one Git repository per target."
+    },
+    "validation": {
+      "required": "A value is required."
+    }
+  }
+}

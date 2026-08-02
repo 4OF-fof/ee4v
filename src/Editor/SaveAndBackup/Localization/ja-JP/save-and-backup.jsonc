@@ -1,0 +1,28 @@
+{
+  "action": {
+    "ok": "OK"
+  },
+  "build": {
+    "snapshotRetained": "再試行用snapshotを保持しました: {0}",
+    "unappliedOverrides": {
+      "title": "未適用のPrefab override",
+      "message": "対象instanceに未適用のPrefab overrideがあります。保存対象のPrefabと内容が一致しないためSaveAndBackupはバックアップしません。"
+    }
+  },
+  "settings": {
+    "section": {
+      "backup": "バックアップ"
+    },
+    "trigger": {
+      "label": "バックアップタイミング",
+      "tooltip": "ビルド成功時、アップロード成功時、手動のみから選択します。"
+    },
+    "root": {
+      "label": "バックアップ保存先",
+      "tooltip": "対象ごとのGit repositoryを保存するProject外のfolderです。"
+    },
+    "validation": {
+      "required": "値を入力してください。"
+    }
+  }
+}

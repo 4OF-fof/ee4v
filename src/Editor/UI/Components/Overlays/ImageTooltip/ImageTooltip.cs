@@ -34,6 +34,7 @@ namespace Ee4v.UI
         public ImageTooltip(ImageTooltipState state = null)
         {
             AddToClassList(RootClassName);
+            AddToClassList(UiClassNames.PopupSurface);
             pickingMode = PickingMode.Ignore;
 
             _image = new Image

@@ -1,0 +1,18 @@
+{
+  "name": "Ee4v.AvatarModify.Domain.Tests.Editor",
+  "rootNamespace": "Ee4v.AvatarModify.Domain.Tests",
+  "references": [
+    "Ee4v.AvatarModify.Domain.Editor",
+    "Ee4v.Testing.Contracts.Editor"
+  ],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": ["TestAssemblies"]
+}

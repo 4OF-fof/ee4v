@@ -1,0 +1,36 @@
+{
+  "context": {
+    "createVariant": "Variantを作成"
+  },
+  "popup": {
+    "title": "Avatar Variantを作成",
+    "description": "選択したPrefabにVariantを1段追加します。参照MaterialはMaterial Variantとして作成されます。"
+  },
+  "field": {
+    "prefab": "元 Prefab",
+    "variantName": "Variant 名"
+  },
+  "action": {
+    "cancel": "キャンセル",
+    "createVariant": "作成"
+  },
+  "option": {
+    "avatarDescriptor": "{0}  •  Avatar Descriptor"
+  },
+  "status": {
+    "prefabMissing": "インポート済みアセットからPrefabが見つかりません。",
+    "failed": "作成に失敗しました: {0}"
+  },
+  "settings": {
+    "section": {
+      "variant": "Avatar Variant"
+    },
+    "variantRoot": {
+      "label": "Variant Root",
+      "tooltip": "Avatar VariantとMaterial Variantを作成するAssets配下のpathです。"
+    },
+    "validation": {
+      "assetsPath": "Assets配下のpathを入力してください。"
+    }
+  }
+}

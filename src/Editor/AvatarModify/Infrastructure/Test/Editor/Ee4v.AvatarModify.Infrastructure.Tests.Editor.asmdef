@@ -1,0 +1,20 @@
+{
+  "name": "Ee4v.AvatarModify.Infrastructure.Tests.Editor",
+  "rootNamespace": "Ee4v.AvatarModify.Infrastructure.Tests",
+  "references": [
+    "Ee4v.AssetManager.Contracts.Editor",
+    "Ee4v.AvatarModify.Application.Editor",
+    "Ee4v.AvatarModify.Infrastructure.Editor",
+    "Ee4v.Testing.Contracts.Editor"
+  ],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": ["TestAssemblies"]
+}

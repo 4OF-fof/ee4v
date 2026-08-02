@@ -99,6 +99,7 @@ namespace Ee4v.SceneSwitcher
             root.Clear();
             root.AddToClassList(RootClassName);
             root.AddToClassList(WindowClassName);
+            root.AddToClassList(UiClassNames.PopupSurface);
             UiStyleUtility.AddPackageStyleSheet(
                 root,
                 "Editor/UI/Components/common.uss");

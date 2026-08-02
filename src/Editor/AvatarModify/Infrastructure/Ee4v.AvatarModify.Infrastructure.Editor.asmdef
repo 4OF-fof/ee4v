@@ -1,0 +1,18 @@
+{
+  "name": "Ee4v.AvatarModify.Infrastructure.Editor",
+  "rootNamespace": "Ee4v.AvatarModify.Infrastructure",
+  "references": [
+    "Ee4v.AssetManager.Contracts.Editor",
+    "Ee4v.AvatarModify.Application.Editor",
+    "Ee4v.AvatarModify.Domain.Editor"
+  ],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

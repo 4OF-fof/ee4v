@@ -1,0 +1,36 @@
+{
+  "context": {
+    "createVariant": "Create Variant"
+  },
+  "popup": {
+    "title": "Create Avatar Variant",
+    "description": "Adds one variant level to the selected prefab. Referenced materials are created as Material Variants."
+  },
+  "field": {
+    "prefab": "Source prefab",
+    "variantName": "Variant name"
+  },
+  "action": {
+    "cancel": "Cancel",
+    "createVariant": "Create"
+  },
+  "option": {
+    "avatarDescriptor": "{0}  •  Avatar Descriptor"
+  },
+  "status": {
+    "prefabMissing": "No prefab was found among the imported assets.",
+    "failed": "Creation failed: {0}"
+  },
+  "settings": {
+    "section": {
+      "variant": "Avatar Variant"
+    },
+    "variantRoot": {
+      "label": "Variant root",
+      "tooltip": "Assets path where Avatar Variants and Material Variants are created."
+    },
+    "validation": {
+      "assetsPath": "Enter a path under Assets."
+    }
+  }
+}

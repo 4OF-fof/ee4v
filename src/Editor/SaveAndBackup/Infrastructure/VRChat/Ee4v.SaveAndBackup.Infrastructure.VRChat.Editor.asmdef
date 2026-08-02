@@ -1,0 +1,24 @@
+{
+  "name": "Ee4v.SaveAndBackup.Infrastructure.VRChat.Editor",
+  "rootNamespace": "Ee4v.SaveAndBackup.Infrastructure.VRChat",
+  "references": [
+    "Ee4v.SaveAndBackup.Composition.Editor",
+    "VRC.SDK3A.Editor",
+    "VRC.SDKBase.Editor"
+  ],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": ["EE4V_VRCSDK_AVATARS"],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "[3.0.0,)",
+      "define": "EE4V_VRCSDK_AVATARS"
+    }
+  ],
+  "noEngineReferences": false
+}

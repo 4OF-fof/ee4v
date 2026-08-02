@@ -187,6 +187,30 @@ namespace Ee4v.UI.Tests
                 Does.Contain("@import url(\"../Foundation/ui-design-tokens.uss\");"));
         }
 
+        [Test]
+        public void CommonStyle_DefinesPopupSurfaceBorder()
+        {
+            var editorRoot = GetEditorRootFullPath();
+            var commonStyle = File.ReadAllText(
+                Path.Combine(
+                    editorRoot,
+                    "UI",
+                    "Components",
+                    "common.uss"));
+
+            Assert.That(
+                commonStyle,
+                Does.Contain(".ee4v-popup-surface"));
+            Assert.That(
+                commonStyle,
+                Does.Contain(
+                    "border-width: var(--ee4v-border-hairline)"));
+            Assert.That(
+                commonStyle,
+                Does.Contain(
+                    "border-color: var(--ee4v-color-overlay-border)"));
+        }
+
         private static Regex CreatePropertyRegex(string propertyPattern, string valuePattern)
         {
             return new Regex(

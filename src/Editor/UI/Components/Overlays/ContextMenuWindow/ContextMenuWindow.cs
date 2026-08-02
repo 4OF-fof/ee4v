@@ -84,6 +84,7 @@ namespace Ee4v.UI
         {
             _onSelect = onSelect;
             AddToClassList(RootClassName);
+            AddToClassList(UiClassNames.PopupSurface);
             SetState(state);
         }
 
@@ -176,14 +177,20 @@ namespace Ee4v.UI
                 return Show(panelPosition, state);
             }
 
+            return Show(GetScreenPosition(target, panelPosition), state);
+        }
+
+        internal static Vector2 GetScreenPosition(
+            VisualElement target,
+            Vector2 panelPosition)
+        {
             var root = target.panel != null ? target.panel.visualTree : null;
             var rootOffset = root != null ? root.worldBound.position : Vector2.zero;
             var localPosition = panelPosition - rootOffset;
             var ownerWindow = FindOwnerWindow(target);
-            var screenPosition = ownerWindow != null
+            return ownerWindow != null
                 ? ownerWindow.position.position + localPosition
                 : GUIUtility.GUIToScreenPoint(localPosition);
-            return Show(screenPosition, state);
         }
 
         public static ContextMenuWindow Show(Vector2 screenPosition, ContextMenuState state)

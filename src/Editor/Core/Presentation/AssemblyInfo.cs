@@ -7,3 +7,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Ee4v.UI.Catalog.Editor")]
 [assembly: InternalsVisibleTo("Ee4v.HiddenObjects.Editor")]
 [assembly: InternalsVisibleTo("Ee4v.SceneSwitcher.Editor")]
+[assembly: InternalsVisibleTo("Ee4v.AvatarModify.UI.Editor")]
