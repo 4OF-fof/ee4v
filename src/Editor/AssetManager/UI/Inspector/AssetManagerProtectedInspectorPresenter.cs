@@ -4,7 +4,6 @@ using System.Linq;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.Internal.EditorAPI;
 using UnityEditor;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI
@@ -17,6 +16,9 @@ namespace Ee4v.AssetManager.UI
         private readonly IAssetManagerProtectionActions _actions;
         private readonly Dictionary<int, HostState> _states =
             new Dictionary<int, HostState>();
+        private readonly Dictionary<int, string>
+            _dismissedWarningAssetGuids =
+                new Dictionary<int, string>();
         private double _nextRefresh;
         private bool _initialized;
         private bool _disposed;
@@ -57,6 +59,7 @@ namespace Ee4v.AssetManager.UI
             }
 
             _states.Clear();
+            _dismissedWarningAssetGuids.Clear();
         }
 
         private void OnEditorUpdate()
@@ -104,11 +107,29 @@ namespace Ee4v.AssetManager.UI
                 if (!TryResolveProtectedAsset(
                         snapshot,
                         out var assetGuid,
-                        out var assetPath,
-                        out var assetName))
+                        out var assetPath))
                 {
+                    _dismissedWarningAssetGuids.Remove(
+                        windowId);
                     Restore(windowId);
                     continue;
+                }
+
+                if (_dismissedWarningAssetGuids.TryGetValue(
+                        windowId,
+                        out var dismissedWarningAssetGuid))
+                {
+                    if (string.Equals(
+                            dismissedWarningAssetGuid,
+                            assetGuid,
+                            StringComparison.Ordinal))
+                    {
+                        Restore(windowId);
+                        continue;
+                    }
+
+                    _dismissedWarningAssetGuids.Remove(
+                        windowId);
                 }
 
                 if (_states.TryGetValue(
@@ -118,15 +139,15 @@ namespace Ee4v.AssetManager.UI
                         snapshot,
                         assetGuid))
                 {
-                    current.EnsureHidden();
+                    current.BringOverlayToFront();
                     continue;
                 }
 
                 Restore(windowId);
                 var view = CreateView(
+                    windowId,
                     assetGuid,
-                    assetPath,
-                    assetName);
+                    assetPath);
                 if (HostState.TryCreate(
                         snapshot,
                         assetGuid,
@@ -144,17 +165,24 @@ namespace Ee4v.AssetManager.UI
             {
                 Restore(windowId);
             }
+
+            foreach (var windowId in _dismissedWarningAssetGuids.Keys
+                         .Where(id =>
+                             !activeWindowIds.Contains(id))
+                         .ToArray())
+            {
+                _dismissedWarningAssetGuids.Remove(
+                    windowId);
+            }
         }
 
         private bool TryResolveProtectedAsset(
             InspectorHostSnapshot snapshot,
             out string assetGuid,
-            out string assetPath,
-            out string assetName)
+            out string assetPath)
         {
             assetGuid = string.Empty;
             assetPath = string.Empty;
-            assetName = string.Empty;
             if (snapshot.InspectedObjects == null ||
                 snapshot.InspectedObjects.Count != 1)
             {
@@ -183,54 +211,31 @@ namespace Ee4v.AssetManager.UI
                 return false;
             }
 
-            assetName = System.IO.Path
-                .GetFileName(assetPath);
             return true;
         }
 
         private ProtectedAssetInspectorView CreateView(
+            int windowId,
             string assetGuid,
-            string assetPath,
-            string assetName)
+            string assetPath)
         {
-            var state =
-                new ProtectedAssetInspectorViewState
-                {
-                    AssetName = assetName,
-                    AssetPath = assetPath,
-                    CanCreateMaterialVariant =
-                        _actions
-                            .CanCreateMaterialVariant(
-                                assetGuid),
-                    CanCreatePrefabVariant =
-                        _actions
-                            .CanCreatePrefabVariant(
-                                assetGuid),
-                    CanCreateEditableCopy =
-                        !AssetDatabase.IsValidFolder(
-                            assetPath)
-                };
             return new ProtectedAssetInspectorView(
-                state,
-                () => AssetManagerProtectionMenu
-                    .CreateMaterialVariant(
-                        _actions,
-                        assetGuid,
-                        assetPath),
-                () => AssetManagerProtectionMenu
-                    .CreatePrefabVariant(
-                        _actions,
-                        assetGuid,
-                        assetPath),
-                () => AssetManagerProtectionMenu
-                    .CreateEditableCopy(
-                        _actions,
-                        assetGuid,
-                        assetPath),
+                () => DismissWarning(
+                    windowId,
+                    assetGuid),
                 () => AssetManagerProtectionMenu.Unprotect(
                     _actions,
                     assetGuid,
                     assetPath));
+        }
+
+        private void DismissWarning(
+            int windowId,
+            string assetGuid)
+        {
+            _dismissedWarningAssetGuids[windowId] =
+                assetGuid;
+            Restore(windowId);
         }
 
         private void Restore(int windowId)
@@ -249,14 +254,6 @@ namespace Ee4v.AssetManager.UI
         private sealed class HostState
         {
             private readonly VisualElement _editors;
-            private readonly VisualElement _preview;
-            private readonly VisualElement _versionControl;
-            private readonly StyleEnum<DisplayStyle>
-                _editorsDisplay;
-            private readonly StyleEnum<DisplayStyle>
-                _previewDisplay;
-            private readonly StyleEnum<DisplayStyle>
-                _versionControlDisplay;
             private readonly VisualElement _view;
 
             private HostState(
@@ -267,18 +264,6 @@ namespace Ee4v.AssetManager.UI
                 Window = snapshot.Window;
                 AssetGuid = assetGuid;
                 _editors = snapshot.EditorsElement;
-                _preview = snapshot.PreviewAndLabelElement;
-                _versionControl =
-                    snapshot.VersionControlElement;
-                _editorsDisplay = _editors.style.display;
-                _previewDisplay =
-                    _preview?.style.display ??
-                    new StyleEnum<DisplayStyle>(
-                        StyleKeyword.Null);
-                _versionControlDisplay =
-                    _versionControl?.style.display ??
-                    new StyleEnum<DisplayStyle>(
-                        StyleKeyword.Null);
                 _view = view;
             }
 
@@ -303,25 +288,7 @@ namespace Ee4v.AssetManager.UI
                     snapshot,
                     assetGuid,
                     view);
-                var index =
-                    parent.IndexOf(
-                        snapshot.EditorsElement);
-                parent.Insert(
-                    Math.Max(0, index),
-                    view);
-                snapshot.EditorsElement.style.display =
-                    DisplayStyle.None;
-                if (snapshot.PreviewAndLabelElement != null)
-                {
-                    snapshot.PreviewAndLabelElement
-                        .style.display = DisplayStyle.None;
-                }
-
-                if (snapshot.VersionControlElement != null)
-                {
-                    snapshot.VersionControlElement
-                        .style.display = DisplayStyle.None;
-                }
+                parent.Add(view);
 
                 return true;
             }
@@ -341,47 +308,13 @@ namespace Ee4v.AssetManager.UI
                            StringComparison.Ordinal);
             }
 
-            internal void EnsureHidden()
+            internal void BringOverlayToFront()
             {
-                if (_editors != null)
-                {
-                    _editors.style.display =
-                        DisplayStyle.None;
-                }
-
-                if (_preview != null)
-                {
-                    _preview.style.display =
-                        DisplayStyle.None;
-                }
-
-                if (_versionControl != null)
-                {
-                    _versionControl.style.display =
-                        DisplayStyle.None;
-                }
+                _view?.BringToFront();
             }
 
             internal void Restore()
             {
-                if (_editors != null)
-                {
-                    _editors.style.display =
-                        _editorsDisplay;
-                }
-
-                if (_preview != null)
-                {
-                    _preview.style.display =
-                        _previewDisplay;
-                }
-
-                if (_versionControl != null)
-                {
-                    _versionControl.style.display =
-                        _versionControlDisplay;
-                }
-
                 _view?.RemoveFromHierarchy();
             }
         }

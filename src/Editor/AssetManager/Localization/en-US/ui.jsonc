@@ -119,12 +119,8 @@
         "close": "Close"
       },
       "inspector": {
-        "title": "Protected Asset",
         "message": "This asset is an original managed by AssetManager. Create a variant or copy instead of editing it directly.",
-        "asset": "Asset: {0}",
-        "createMaterialVariant": "Create Material Variant",
-        "createPrefabVariant": "Create Prefab Variant",
-        "createEditableCopy": "Create Editable Copy",
+        "dismissWarning": "Dismiss Warning",
         "unprotect": "Unprotect"
       }
     },

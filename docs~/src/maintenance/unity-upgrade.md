@@ -86,7 +86,8 @@ backend は internal `UnityEditor.InspectorWindow`、`GetInspectedObjects()`、
 `editorsElement`、`previewAndLabelElement`、`versionControlElement` に依存します。
 private member が利用できない場合は通常 Inspector を残す fail-open とし、保護そのものは
 `AssetModificationProcessor` と read-only 属性で継続します。Unity 更新時は通常選択、
-Inspector lock、Material / Prefab / importer asset、保護解除後の通常 Inspector 復帰を確認します。
+Inspector lock、Material / Prefab / importer asset、半透明の警告表示と解除、
+保護解除後の通常 Inspector 復帰を確認します。
 
 ### ProjectBrowser navigation
 

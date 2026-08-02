@@ -119,12 +119,8 @@
         "close": "閉じる"
       },
       "inspector": {
-        "title": "保護されたアセット",
         "message": "このアセットは AssetManager が管理する原本です。直接編集せず、Variant またはコピーを作成してください。",
-        "asset": "アセット: {0}",
-        "createMaterialVariant": "Material Variant を作成",
-        "createPrefabVariant": "Prefab Variant を作成",
-        "createEditableCopy": "編集可能なコピーを作成",
+        "dismissWarning": "警告を解除",
         "unprotect": "保護を解除"
       }
     },

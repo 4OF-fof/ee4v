@@ -1,28 +1,27 @@
 @import url("../../../UI/Foundation/ui-design-tokens.uss");
 
 .ee4v-asset-manager-protected-inspector {
-    flex-grow: 1;
-    background-color: var(--ee4v-color-panel);
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--ee4v-color-overlay-border);
 }
 
 .ee4v-asset-manager-protected-inspector__content {
-    flex-grow: 1;
+    width: 84%;
+    max-width: 420px;
     padding: var(--ee4v-space-2xl);
-}
-
-.ee4v-asset-manager-protected-inspector__title {
-    margin-bottom: var(--ee4v-space-md);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-active);
+    border-radius: var(--ee4v-radius-lg);
+    background-color: var(--ee4v-color-surface-raised);
 }
 
 .ee4v-asset-manager-protected-inspector__message {
-    margin-bottom: var(--ee4v-space-2xl);
-}
-
-.ee4v-asset-manager-protected-inspector__asset {
-    margin-bottom: var(--ee4v-space-xs);
-}
-
-.ee4v-asset-manager-protected-inspector__path {
     margin-bottom: var(--ee4v-space-2xl);
 }
 
