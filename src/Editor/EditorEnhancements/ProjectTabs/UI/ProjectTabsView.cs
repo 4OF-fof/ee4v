@@ -60,16 +60,12 @@ namespace Ee4v.ProjectTabs
             string id,
             string title,
             string tooltip,
-            bool canClose,
-            bool isPinned = false,
-            bool isHome = false)
+            bool isPinned = false)
         {
             Id = id ?? string.Empty;
             Title = title ?? string.Empty;
             Tooltip = tooltip ?? string.Empty;
-            CanClose = canClose;
-            IsPinned = isPinned || isHome;
-            IsHome = isHome;
+            IsPinned = isPinned;
         }
 
         public string Id { get; }
@@ -78,11 +74,8 @@ namespace Ee4v.ProjectTabs
 
         public string Tooltip { get; }
 
-        public bool CanClose { get; }
-
         public bool IsPinned { get; }
 
-        public bool IsHome { get; }
     }
 
     internal sealed class ProjectTabsView : VisualElement
@@ -106,12 +99,8 @@ namespace Ee4v.ProjectTabs
             "ee4v-project-tabs__tab-title";
         private const string PinnedTabClassName =
             "ee4v-project-tabs__tab--pinned";
-        private const string HomeTabClassName =
-            "ee4v-project-tabs__tab--home";
         private const string PinIconClassName =
             "ee4v-project-tabs__pin-icon";
-        private const string HomeIconClassName =
-            "ee4v-project-tabs__home-icon";
         private const string DraggingTabClassName =
             "ee4v-project-tabs__tab--dragging";
         private const string DropIndicatorClassName =
@@ -247,17 +236,11 @@ namespace Ee4v.ProjectTabs
                     continue;
                 }
 
-                var minimumMoveIndex = tab.IsHome
-                    ? 0
-                    : 1;
-                var maximumMoveIndex = tab.IsHome
-                    ? 0
-                    : _state.Tabs.Count - 1;
                 var tabElement = CreateTab(
                     tab,
                     i,
-                    minimumMoveIndex,
-                    maximumMoveIndex);
+                    0,
+                    _state.Tabs.Count - 1);
                 tabElement.EnableInClassList(
                     SelectedTabClassName,
                     string.Equals(
@@ -362,7 +345,6 @@ namespace Ee4v.ProjectTabs
                 state.Id,
                 minimumMoveIndex,
                 maximumMoveIndex,
-                !state.IsHome &&
                 maximumMoveIndex > minimumMoveIndex);
             var tab = new VisualElement
             {
@@ -374,55 +356,35 @@ namespace Ee4v.ProjectTabs
             tab.AddToClassList(TabClassName);
             tab.EnableInClassList(
                 PinnedTabClassName,
-                state.IsPinned && !state.IsHome);
-            tab.EnableInClassList(
-                HomeTabClassName,
-                state.IsHome);
+                state.IsPinned);
 
-            if (state.IsHome)
+            if (state.IsPinned)
             {
-                var homeIcon = new Icon(
+                var pinIcon = new Icon(
                     IconState.FromBuiltinIcon(
-                        UiBuiltinIcon.Home,
-                        UiSizeTokens.Size12,
-                        I18N.Get("toolbar.home.tooltip")));
-                homeIcon.AddToClassList(HomeIconClassName);
-                tab.Add(homeIcon);
-            }
-            else
-            {
-                if (state.IsPinned)
-                {
-                    var pinIcon = new Icon(
-                        IconState.FromBuiltinIcon(
-                            UiBuiltinIcon.Pin,
-                            UiSizeTokens.Size10,
-                            I18N.Get("toolbar.pin.tooltip")));
-                    pinIcon.AddToClassList(PinIconClassName);
-                    tab.Add(pinIcon);
-                }
-
-                var title = UiTextFactory.Create(state.Title);
-                title.AddToClassList(TabTitleClassName);
-                title.SetWhiteSpace(WhiteSpace.NoWrap);
-                title.pickingMode = PickingMode.Ignore;
-                tab.Add(title);
+                        UiBuiltinIcon.Pin,
+                        UiSizeTokens.Size10,
+                        I18N.Get("toolbar.pin.tooltip")));
+                pinIcon.AddToClassList(PinIconClassName);
+                tab.Add(pinIcon);
             }
 
-            Button closeButton = null;
-            if (state.CanClose)
-            {
-                closeButton = new Button(
-                    () => TabCloseRequested?.Invoke(state.Id));
-                closeButton.tooltip = I18N.Get(
-                    "toolbar.close.tooltip");
-                closeButton.AddToClassList(CloseButtonClassName);
-                closeButton.Add(new Icon(
-                    IconState.FromBuiltinIcon(
-                        UiBuiltinIcon.Close,
-                        UiSizeTokens.Size12)));
-                tab.Add(closeButton);
-            }
+            var title = UiTextFactory.Create(state.Title);
+            title.AddToClassList(TabTitleClassName);
+            title.SetWhiteSpace(WhiteSpace.NoWrap);
+            title.pickingMode = PickingMode.Ignore;
+            tab.Add(title);
+
+            var closeButton = new Button(
+                () => TabCloseRequested?.Invoke(state.Id));
+            closeButton.tooltip = I18N.Get(
+                "toolbar.close.tooltip");
+            closeButton.AddToClassList(CloseButtonClassName);
+            closeButton.Add(new Icon(
+                IconState.FromBuiltinIcon(
+                    UiBuiltinIcon.Close,
+                    UiSizeTokens.Size12)));
+            tab.Add(closeButton);
 
             tab.RegisterCallback<ClickEvent>(evt =>
             {
@@ -446,7 +408,7 @@ namespace Ee4v.ProjectTabs
             });
             tab.RegisterCallback<PointerDownEvent>(evt =>
             {
-                if (evt.button == 2 && state.CanClose)
+                if (evt.button == 2)
                 {
                     TabCloseRequested?.Invoke(state.Id);
                     evt.StopPropagation();
@@ -484,8 +446,7 @@ namespace Ee4v.ProjectTabs
             });
             tab.RegisterCallback<ContextClickEvent>(evt =>
             {
-                if (evt.target != closeButton &&
-                    !state.IsHome)
+                if (evt.target != closeButton)
                 {
                     TabPinToggleRequested?.Invoke(state.Id);
                 }

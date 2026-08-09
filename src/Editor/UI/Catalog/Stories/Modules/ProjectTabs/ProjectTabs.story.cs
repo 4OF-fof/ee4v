@@ -69,23 +69,14 @@ namespace Ee4v.UI
                 new[]
                 {
                     new ProjectTabViewState(
-                        "home",
-                        string.Empty,
-                        CatalogCoveragePreview.SampleFolder,
-                        false,
-                        true,
-                        true),
-                    new ProjectTabViewState(
                         "avatars",
                         CatalogCoveragePreview.SampleTagOne,
                         "Assets/Avatars",
-                        true,
                         true),
                     new ProjectTabViewState(
                         "environment",
                         CatalogCoveragePreview.SampleTagTwo,
-                        "Assets/Environment",
-                        true)
+                        "Assets/Environment")
                 },
                 "avatars",
                 true,

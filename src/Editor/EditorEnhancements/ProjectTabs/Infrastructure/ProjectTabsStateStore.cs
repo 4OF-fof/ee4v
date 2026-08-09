@@ -38,7 +38,7 @@ namespace Ee4v.ProjectTabs
         public void Save(ProjectTabsState state)
         {
             _tabs = (state?.Tabs ?? Array.Empty<ProjectTabState>())
-                .Where(tab => tab != null && !tab.IsHome)
+                .Where(tab => tab != null)
                 .Select(tab => new SerializedTab
                 {
                     id = tab.Id,

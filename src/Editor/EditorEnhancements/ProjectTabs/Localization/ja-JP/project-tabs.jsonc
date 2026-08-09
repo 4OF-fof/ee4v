@@ -17,9 +17,6 @@
     },
     "pin": {
       "tooltip": "ピン止めされたタブ"
-    },
-    "home": {
-      "tooltip": "Assets を開く"
     }
   }
 }

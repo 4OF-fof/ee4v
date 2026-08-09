@@ -6,8 +6,6 @@ namespace Ee4v.ProjectTabs
 {
     internal sealed class ProjectTabsSession
     {
-        internal const string HomeTabId =
-            "__ee4v_project_tabs_home__";
         private const int MaximumHistoryEntries = 50;
         private readonly IProjectTabsStateStore _store;
         private readonly Func<string> _idFactory;
@@ -70,7 +68,7 @@ namespace Ee4v.ProjectTabs
         {
             var currentIndex = FindIndex(tabId);
             if (currentIndex < 0 ||
-                targetIndex < 1 ||
+                targetIndex < 0 ||
                 targetIndex >= _tabs.Count ||
                 currentIndex == targetIndex)
             {
@@ -78,11 +76,6 @@ namespace Ee4v.ProjectTabs
             }
 
             var tab = _tabs[currentIndex];
-            if (tab.IsHome)
-            {
-                return false;
-            }
-
             _tabs.RemoveAt(currentIndex);
             _tabs.Insert(targetIndex, tab);
             PersistAndNotify();
@@ -92,12 +85,17 @@ namespace Ee4v.ProjectTabs
         public bool Remove(string tabId)
         {
             var index = FindIndex(tabId);
-            if (index < 0 || _tabs[index].IsHome)
+            if (index < 0)
             {
                 return false;
             }
 
             _tabs.RemoveAt(index);
+            if (_tabs.Count == 0)
+            {
+                _tabs.Add(CreateTab(_defaultLocation));
+            }
+
             PersistAndNotify();
             return true;
         }
@@ -111,7 +109,7 @@ namespace Ee4v.ProjectTabs
             }
 
             var tab = _tabs[index];
-            if (tab.IsHome || tab.IsPinned == isPinned)
+            if (tab.IsPinned == isPinned)
             {
                 return false;
             }
@@ -140,15 +138,9 @@ namespace Ee4v.ProjectTabs
                 return false;
             }
 
-            var normalized = NormalizeLocation(location);
-            if (tab.IsHome)
-            {
-                return !IsHomeRoot(normalized);
-            }
-
             return !HasSameFolder(
                 tab.CurrentLocation,
-                normalized);
+                NormalizeLocation(location));
         }
 
         public bool RecordNavigation(
@@ -166,18 +158,6 @@ namespace Ee4v.ProjectTabs
             if (normalized.Equals(current))
             {
                 return false;
-            }
-
-            if (tab.IsHome)
-            {
-                if (!IsHomeRoot(normalized))
-                {
-                    return false;
-                }
-
-                tab.History[tab.HistoryIndex] = normalized;
-                PersistAndNotify();
-                return true;
             }
 
             if (tab.IsPinned)
@@ -270,11 +250,6 @@ namespace Ee4v.ProjectTabs
                 {
                     var tab = restored.Tabs[i];
                     if (tab == null ||
-                        tab.IsHome ||
-                        string.Equals(
-                            tab.Id,
-                            HomeTabId,
-                            StringComparison.Ordinal) ||
                         string.IsNullOrWhiteSpace(tab.Id) ||
                         _tabs.Any(existing =>
                             string.Equals(
@@ -310,17 +285,14 @@ namespace Ee4v.ProjectTabs
                         tab.Id,
                         history,
                         historyIndex,
-                        tab.IsPinned,
-                        false));
+                        tab.IsPinned));
                 }
             }
 
-            _tabs.Insert(0, new MutableTab(
-                HomeTabId,
-                new[] { _defaultLocation },
-                0,
-                true,
-                true));
+            if (_tabs.Count == 0)
+            {
+                _tabs.Add(CreateTab(_defaultLocation));
+            }
         }
 
         private ProjectTabsState CreateSnapshot()
@@ -330,8 +302,7 @@ namespace Ee4v.ProjectTabs
                         tab.Id,
                         tab.History.ToArray(),
                         tab.HistoryIndex,
-                        tab.IsPinned,
-                        tab.IsHome))
+                        tab.IsPinned))
                     .ToArray());
         }
 
@@ -364,26 +335,12 @@ namespace Ee4v.ProjectTabs
                     StringComparison.Ordinal);
         }
 
-        private static bool IsHomeRoot(ProjectTabLocation location)
-        {
-            return location != null &&
-                (string.Equals(
-                     location.FolderPath,
-                     "Assets",
-                     StringComparison.Ordinal) ||
-                 string.Equals(
-                     location.FolderPath,
-                     "Packages",
-                     StringComparison.Ordinal));
-        }
-
         private MutableTab CreateTab(ProjectTabLocation location)
         {
             return new MutableTab(
                 CreateUniqueId(),
                 new[] { NormalizeLocation(location) },
                 0,
-                false,
                 false);
         }
 
@@ -425,14 +382,12 @@ namespace Ee4v.ProjectTabs
                 string id,
                 IEnumerable<ProjectTabLocation> history,
                 int historyIndex,
-                bool isPinned,
-                bool isHome)
+                bool isPinned)
             {
                 Id = id;
                 History = new List<ProjectTabLocation>(history);
                 HistoryIndex = historyIndex;
-                IsPinned = isPinned || isHome;
-                IsHome = isHome;
+                IsPinned = isPinned;
             }
 
             public string Id { get; }
@@ -442,8 +397,6 @@ namespace Ee4v.ProjectTabs
             public int HistoryIndex { get; set; }
 
             public bool IsPinned { get; set; }
-
-            public bool IsHome { get; }
 
             public ProjectTabLocation CurrentLocation
             {

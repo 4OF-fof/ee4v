@@ -17,9 +17,6 @@
     },
     "pin": {
       "tooltip": "Pinned tab"
-    },
-    "home": {
-      "tooltip": "Open Assets"
     }
   }
 }

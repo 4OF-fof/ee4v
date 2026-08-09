@@ -17,21 +17,12 @@ namespace Ee4v.ProjectTabs.Tests
             new ProjectTabLocation(
                 "prefabs-guid",
                 "Assets/Prefabs");
-        private static readonly ProjectTabLocation Packages =
-            new ProjectTabLocation(
-                "packages-guid",
-                "Packages");
-        private static readonly ProjectTabLocation PackageFolder =
-            new ProjectTabLocation(
-                "package-folder-guid",
-                "Packages/dev.4of.ee4v");
-
         [Test]
         [FeatureTestCase(
-            "Assets の Home タブを常に左端へ構成する",
-            "保存tabがないsessionでも、名前を持たない解除・削除不能なHome tabだけが存在することを確認します。",
+            "保存タブがなければ Assets タブを構成する",
+            "空のsessionでも、通常操作できるAssets tabが1つ存在することを確認します。",
             order: 5)]
-        public void Restore_AlwaysPrependsFixedHomeTab()
+        public void Restore_EmptyStateCreatesAssetsTab()
         {
             var session = new ProjectTabsSession(
                 new MemoryStore(),
@@ -39,8 +30,8 @@ namespace Ee4v.ProjectTabs.Tests
                 () => "tab");
 
             Assert.That(session.State.Tabs.Count, Is.EqualTo(1));
-            Assert.That(session.State.Tabs[0].IsHome, Is.True);
-            Assert.That(session.State.Tabs[0].IsPinned, Is.True);
+            Assert.That(session.State.Tabs[0].Id, Is.EqualTo("tab"));
+            Assert.That(session.State.Tabs[0].IsPinned, Is.False);
             Assert.That(
                 session.State.Tabs[0].CurrentLocation,
                 Is.EqualTo(Assets));
@@ -54,7 +45,7 @@ namespace Ee4v.ProjectTabs.Tests
         public void RecordNavigation_KeepsHistoryPerTab()
         {
             var session = CreateSession();
-            var firstId = GetFirstRegularTabId(session);
+            var firstId = GetFirstTabId(session);
             var secondId = session.Add(Prefabs);
 
             session.RecordNavigation(firstId, Materials);
@@ -75,7 +66,7 @@ namespace Ee4v.ProjectTabs.Tests
         public void History_CanMoveBackAndForward()
         {
             var session = CreateSession();
-            var tabId = GetFirstRegularTabId(session);
+            var tabId = GetFirstTabId(session);
             session.RecordNavigation(tabId, Materials);
             session.RecordNavigation(tabId, Prefabs);
 
@@ -95,7 +86,7 @@ namespace Ee4v.ProjectTabs.Tests
         public void History_CanMoveBySelectedStepCount()
         {
             var session = CreateSession();
-            var tabId = GetFirstRegularTabId(session);
+            var tabId = GetFirstTabId(session);
             session.RecordNavigation(tabId, Materials);
             session.RecordNavigation(tabId, Prefabs);
 
@@ -129,7 +120,7 @@ namespace Ee4v.ProjectTabs.Tests
         public void RecordNavigation_AfterBack_TruncatesForwardHistory()
         {
             var session = CreateSession();
-            var tabId = GetFirstRegularTabId(session);
+            var tabId = GetFirstTabId(session);
             session.RecordNavigation(tabId, Materials);
             session.RecordNavigation(tabId, Prefabs);
             session.GoBack(tabId);
@@ -151,7 +142,7 @@ namespace Ee4v.ProjectTabs.Tests
         public void RecordNavigation_SearchChange_ReplacesCurrentEntry()
         {
             var session = CreateSession();
-            var tabId = GetFirstRegularTabId(session);
+            var tabId = GetFirstTabId(session);
 
             session.RecordNavigation(
                 tabId,
@@ -175,28 +166,27 @@ namespace Ee4v.ProjectTabs.Tests
         public void Move_ReordersTabsWithoutChangingTheirHistory()
         {
             var session = CreateSession();
-            var assetsId = GetFirstRegularTabId(session);
+            var assetsId = GetFirstTabId(session);
             session.RecordNavigation(assetsId, Materials);
             var prefabsId = session.Add(Prefabs);
             var materialsId = session.Add(Materials);
 
-            Assert.That(session.Move(assetsId, 3), Is.True);
+            Assert.That(session.Move(assetsId, 2), Is.True);
 
             Assert.That(
                 session.State.Tabs.Count,
-                Is.EqualTo(4));
-            Assert.That(session.State.Tabs[0].IsHome, Is.True);
+                Is.EqualTo(3));
             Assert.That(
-                session.State.Tabs[1].Id,
+                session.State.Tabs[0].Id,
                 Is.EqualTo(prefabsId));
             Assert.That(
-                session.State.Tabs[2].Id,
+                session.State.Tabs[1].Id,
                 Is.EqualTo(materialsId));
             Assert.That(
-                session.State.Tabs[3].Id,
+                session.State.Tabs[2].Id,
                 Is.EqualTo(assetsId));
             Assert.That(
-                session.State.Tabs[3].CurrentLocation,
+                session.State.Tabs[2].CurrentLocation,
                 Is.EqualTo(Materials));
         }
 
@@ -216,51 +206,41 @@ namespace Ee4v.ProjectTabs.Tests
 
             Assert.That(addedIds.Count, Is.EqualTo(2));
             Assert.That(changeCount, Is.EqualTo(1));
-            Assert.That(session.State.Tabs.Count, Is.EqualTo(4));
-            Assert.That(session.State.Tabs[0].IsHome, Is.True);
+            Assert.That(session.State.Tabs.Count, Is.EqualTo(3));
             Assert.That(
-                session.State.Tabs[2].CurrentLocation,
+                session.State.Tabs[1].CurrentLocation,
                 Is.EqualTo(Materials));
             Assert.That(
-                session.State.Tabs[3].CurrentLocation,
+                session.State.Tabs[2].CurrentLocation,
                 Is.EqualTo(Prefabs));
         }
 
         [Test]
         [FeatureTestCase(
-            "最後の通常タブを閉じても Home を再生成しない",
-            "新しいAssets tabを作らず、既存の解除・削除不能なHomeだけがそのまま残ることを確認します。",
+            "最後のタブを閉じたら Assets タブを生成する",
+            "タブが0件になる操作では、新しいIDを持つ通常のAssets tabを1つ追加することを確認します。",
             order: 50)]
-        public void Remove_LastRegularTab_PreservesHomeTab()
+        public void Remove_LastTabCreatesAssetsTab()
         {
             var nextId = 0;
             var session = new ProjectTabsSession(
                 new MemoryStore(),
                 Assets,
                 () => "tab-" + nextId++);
-            var tabId = session.Add(Assets);
+            var tabId = session.State.Tabs[0].Id;
             session.RecordNavigation(tabId, Materials);
 
             Assert.That(session.Remove(tabId), Is.True);
-            Assert.That(nextId, Is.EqualTo(1));
+            Assert.That(nextId, Is.EqualTo(2));
             Assert.That(session.State.Tabs.Count, Is.EqualTo(1));
             Assert.That(
                 session.State.Tabs[0].Id,
-                Is.EqualTo(ProjectTabsSession.HomeTabId));
-            Assert.That(session.State.Tabs[0].IsHome, Is.True);
-            Assert.That(session.State.Tabs[0].IsPinned, Is.True);
+                Is.EqualTo("tab-1"));
+            Assert.That(session.State.Tabs[0].IsPinned, Is.False);
             Assert.That(session.State.Tabs[0].History.Count, Is.EqualTo(1));
             Assert.That(
                 session.State.Tabs[0].CurrentLocation,
                 Is.EqualTo(Assets));
-            Assert.That(
-                session.Remove(ProjectTabsSession.HomeTabId),
-                Is.False);
-            Assert.That(
-                session.SetPinned(
-                    ProjectTabsSession.HomeTabId,
-                    false),
-                Is.False);
         }
 
         [Test]
@@ -271,49 +251,43 @@ namespace Ee4v.ProjectTabs.Tests
         public void SetPinned_PreservesMixedTabOrder()
         {
             var session = CreateSession();
-            var assetsId = GetFirstRegularTabId(session);
+            var assetsId = GetFirstTabId(session);
             var prefabsId = session.Add(Prefabs);
 
             Assert.That(session.SetPinned(prefabsId, true), Is.True);
-            Assert.That(session.State.Tabs[0].IsHome, Is.True);
-            Assert.That(session.State.Tabs[1].Id, Is.EqualTo(assetsId));
-            Assert.That(session.State.Tabs[1].IsPinned, Is.False);
-            Assert.That(session.State.Tabs[2].Id, Is.EqualTo(prefabsId));
-            Assert.That(session.State.Tabs[2].IsPinned, Is.True);
+            Assert.That(session.State.Tabs[0].Id, Is.EqualTo(assetsId));
+            Assert.That(session.State.Tabs[0].IsPinned, Is.False);
+            Assert.That(session.State.Tabs[1].Id, Is.EqualTo(prefabsId));
+            Assert.That(session.State.Tabs[1].IsPinned, Is.True);
             Assert.That(session.SetPinned(assetsId, true), Is.True);
             Assert.That(
-                session.State.Tabs.Skip(1).Take(2).Select(tab => tab.Id),
+                session.State.Tabs.Select(tab => tab.Id),
                 Is.EqualTo(new[] { assetsId, prefabsId }));
 
             Assert.That(session.SetPinned(assetsId, false), Is.True);
-            Assert.That(session.State.Tabs[0].IsHome, Is.True);
-            Assert.That(session.State.Tabs[1].Id, Is.EqualTo(assetsId));
-            Assert.That(session.State.Tabs[2].Id, Is.EqualTo(prefabsId));
-            Assert.That(session.State.Tabs[1].IsPinned, Is.False);
-            Assert.That(session.State.Tabs[2].IsPinned, Is.True);
+            Assert.That(session.State.Tabs[0].Id, Is.EqualTo(assetsId));
+            Assert.That(session.State.Tabs[1].Id, Is.EqualTo(prefabsId));
+            Assert.That(session.State.Tabs[0].IsPinned, Is.False);
+            Assert.That(session.State.Tabs[1].IsPinned, Is.True);
         }
 
         [Test]
         [FeatureTestCase(
             "pin tabと通常tabを混在して並び替える",
-            "pin境界を設けずに相互の順序を変更でき、Homeだけは左端から移動できないことを確認します。",
+            "pin境界を設けずに、先頭を含む任意の位置へ相互の順序を変更できることを確認します。",
             order: 53)]
-        public void Move_AllowsMixedTabsButKeepsHomeFixed()
+        public void Move_AllowsMixedTabsAtEveryIndex()
         {
             var session = CreateSession();
-            var pinnedId = GetFirstRegularTabId(session);
+            var pinnedId = GetFirstTabId(session);
             session.SetPinned(pinnedId, true);
             var regularId = session.Add(Prefabs);
 
-            Assert.That(session.Move(regularId, 1), Is.True);
-            Assert.That(
-                session.Move(ProjectTabsSession.HomeTabId, 2),
-                Is.False);
-            Assert.That(session.State.Tabs[0].IsHome, Is.True);
-            Assert.That(session.State.Tabs[1].Id, Is.EqualTo(regularId));
-            Assert.That(session.State.Tabs[1].IsPinned, Is.False);
-            Assert.That(session.State.Tabs[2].Id, Is.EqualTo(pinnedId));
-            Assert.That(session.State.Tabs[2].IsPinned, Is.True);
+            Assert.That(session.Move(regularId, 0), Is.True);
+            Assert.That(session.State.Tabs[0].Id, Is.EqualTo(regularId));
+            Assert.That(session.State.Tabs[0].IsPinned, Is.False);
+            Assert.That(session.State.Tabs[1].Id, Is.EqualTo(pinnedId));
+            Assert.That(session.State.Tabs[1].IsPinned, Is.True);
         }
 
         [Test]
@@ -324,7 +298,7 @@ namespace Ee4v.ProjectTabs.Tests
         public void PinnedTab_DifferentNavigationRequiresNewTab()
         {
             var session = CreateSession();
-            var tabId = GetFirstRegularTabId(session);
+            var tabId = GetFirstTabId(session);
             session.RecordNavigation(tabId, Materials);
             session.RecordNavigation(tabId, Prefabs);
             Assert.That(session.SetPinned(tabId, true), Is.True);
@@ -345,72 +319,13 @@ namespace Ee4v.ProjectTabs.Tests
 
         [Test]
         [FeatureTestCase(
-            "Home では Assets と Packages の root を開ける",
-            "AssetsとPackagesのroot間はHome内で切り替え、どちらかの配下へ" +
-            "移動した場合だけ通常tabが必要になることを確認します。",
-            order: 54)]
-        public void HomeNavigation_KeepsRootsAndOpensChildrenInNewTabs()
-        {
-            var session = new ProjectTabsSession(
-                new MemoryStore(),
-                Assets,
-                () => "tab");
-
-            Assert.That(
-                session.ShouldOpenInNewTab(
-                    ProjectTabsSession.HomeTabId,
-                    Packages),
-                Is.False);
-            Assert.That(
-                session.RecordNavigation(
-                    ProjectTabsSession.HomeTabId,
-                    Packages),
-                Is.True);
-            Assert.That(
-                session.State.Tabs[0].CurrentLocation,
-                Is.EqualTo(Packages));
-            Assert.That(
-                session.ShouldOpenInNewTab(
-                    ProjectTabsSession.HomeTabId,
-                    Assets),
-                Is.False);
-            Assert.That(
-                session.RecordNavigation(
-                    ProjectTabsSession.HomeTabId,
-                    Assets),
-                Is.True);
-            Assert.That(
-                session.State.Tabs[0].CurrentLocation,
-                Is.EqualTo(Assets));
-            Assert.That(
-                session.ShouldOpenInNewTab(
-                    ProjectTabsSession.HomeTabId,
-                    Materials),
-                Is.True);
-            Assert.That(
-                session.ShouldOpenInNewTab(
-                    ProjectTabsSession.HomeTabId,
-                    PackageFolder),
-                Is.True);
-            Assert.That(
-                session.RecordNavigation(
-                    ProjectTabsSession.HomeTabId,
-                    PackageFolder),
-                Is.False);
-            Assert.That(
-                session.State.Tabs[0].CurrentLocation,
-                Is.EqualTo(Assets));
-        }
-
-        [Test]
-        [FeatureTestCase(
             "ピン止めタブでは同じフォルダの検索状態を更新できる",
             "検索文字列だけの変更では新規tabを作らず、固定folder pathを保ったまま現在状態を更新することを確認します。",
             order: 55)]
         public void PinnedTab_SearchChangeKeepsPinnedFolder()
         {
             var session = CreateSession();
-            var tabId = GetFirstRegularTabId(session);
+            var tabId = GetFirstTabId(session);
             session.RecordNavigation(tabId, Prefabs);
             Assert.That(session.SetPinned(tabId, true), Is.True);
             var searchedPrefabs = new ProjectTabLocation(
@@ -434,10 +349,10 @@ namespace Ee4v.ProjectTabs.Tests
 
         [Test]
         [FeatureTestCase(
-            "ピン止め状態を復元してHomeを重複させない",
-            "保存snapshotの通常・pin混在順を維持し、固定Home tabを左端へ1つだけ再構成することを確認します。",
+            "ピン止め状態とタブ順を復元する",
+            "保存snapshotの通常・pin混在順を維持し、追加の固定tabを生成しないことを確認します。",
             order: 56)]
-        public void Restore_PreservesPinnedTabsAndRecreatesSingleHome()
+        public void Restore_PreservesPinnedTabsWithoutAddingFixedTab()
         {
             var store = new MemoryStore();
             var nextId = 0;
@@ -455,14 +370,10 @@ namespace Ee4v.ProjectTabs.Tests
                 () => "restored-" + nextId++);
 
             Assert.That(restored.State.Tabs.Count, Is.EqualTo(3));
-            Assert.That(restored.State.Tabs[0].IsHome, Is.True);
             Assert.That(restored.State.Tabs[1].Id, Is.EqualTo(regularId));
             Assert.That(restored.State.Tabs[1].IsPinned, Is.False);
             Assert.That(restored.State.Tabs[2].Id, Is.EqualTo(pinnedId));
             Assert.That(restored.State.Tabs[2].IsPinned, Is.True);
-            Assert.That(
-                restored.State.Tabs.Count(tab => tab.IsHome),
-                Is.EqualTo(1));
         }
 
         [Test]
@@ -473,10 +384,11 @@ namespace Ee4v.ProjectTabs.Tests
         public void Restore_FindsExistingTabByCurrentLocation()
         {
             var store = new MemoryStore();
+            var nextId = 0;
             var first = new ProjectTabsSession(
                 store,
                 Assets,
-                () => "tab");
+                () => "tab-" + nextId++);
             var tabId = first.Add(Materials);
 
             var restored = new ProjectTabsSession(
@@ -499,7 +411,7 @@ namespace Ee4v.ProjectTabs.Tests
         public void FavoriteSync_InitialMergePreservesBothSides()
         {
             var session = CreateSession();
-            var assetsId = GetFirstRegularTabId(session);
+            var assetsId = GetFirstTabId(session);
             session.SetPinned(assetsId, true);
             var materialsId = session.Add(Materials);
             var favorites = new MemoryFavoriteStore(Prefabs, Materials);
@@ -522,7 +434,6 @@ namespace Ee4v.ProjectTabs.Tests
                     Is.True);
                 Assert.That(
                     session.State.Tabs.Any(tab =>
-                        !tab.IsHome &&
                         tab.IsPinned &&
                         tab.CurrentLocation.Equals(Prefabs)),
                     Is.True);
@@ -537,7 +448,7 @@ namespace Ee4v.ProjectTabs.Tests
         public void FavoriteSync_TabPinChangesFavorites()
         {
             var session = CreateSession();
-            var assetsId = GetFirstRegularTabId(session);
+            var assetsId = GetFirstTabId(session);
             var duplicateId = session.Add(Assets);
             var favorites = new MemoryFavoriteStore();
 
@@ -628,15 +539,14 @@ namespace Ee4v.ProjectTabs.Tests
                 new MemoryStore(),
                 Assets,
                 () => "tab-" + nextId++);
-            session.Add(Assets);
             return session;
         }
 
-        private static string GetFirstRegularTabId(
+        private static string GetFirstTabId(
             ProjectTabsSession session)
         {
             return session.State.Tabs
-                .First(tab => !tab.IsHome)
+                .First()
                 .Id;
         }
 

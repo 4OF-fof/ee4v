@@ -85,14 +85,12 @@ namespace Ee4v.ProjectTabs
             string id,
             IReadOnlyList<ProjectTabLocation> history,
             int historyIndex,
-            bool isPinned = false,
-            bool isHome = false)
+            bool isPinned = false)
         {
             Id = id ?? string.Empty;
             History = history ?? Array.Empty<ProjectTabLocation>();
             HistoryIndex = historyIndex;
-            IsPinned = isPinned || isHome;
-            IsHome = isHome;
+            IsPinned = isPinned;
         }
 
         public string Id { get; }
@@ -102,8 +100,6 @@ namespace Ee4v.ProjectTabs
         public int HistoryIndex { get; }
 
         public bool IsPinned { get; }
-
-        public bool IsHome { get; }
 
         public ProjectTabLocation CurrentLocation
         {

@@ -97,7 +97,7 @@ namespace Ee4v.ProjectTabs
                 }
             }
 
-            if (index <= 0)
+            if (index < 0)
             {
                 return;
             }
@@ -107,9 +107,10 @@ namespace Ee4v.ProjectTabs
                 tabId,
                 StringComparison.Ordinal);
             ProjectTabLocation replacementLocation = null;
-            if (wasSelected)
+            if (wasSelected && state.Tabs.Count > 1)
             {
-                var replacement = state.Tabs[index - 1];
+                var replacement = state.Tabs[
+                    index > 0 ? index - 1 : index + 1];
                 _selectedTabId = replacement.Id;
                 replacementLocation = replacement.CurrentLocation;
             }
@@ -128,7 +129,7 @@ namespace Ee4v.ProjectTabs
         private void TogglePinned(string tabId)
         {
             var tab = _session.State.Find(tabId);
-            if (tab != null && !tab.IsHome)
+            if (tab != null)
             {
                 _session.SetPinned(tabId, !tab.IsPinned);
             }
@@ -252,9 +253,9 @@ namespace Ee4v.ProjectTabs
             var state = _session.State;
             if (state.Find(_selectedTabId) == null)
             {
-                var home = state.Tabs[0];
-                _selectedTabId = home.Id;
-                Open(home.CurrentLocation);
+                var firstTab = state.Tabs[0];
+                _selectedTabId = firstTab.Id;
+                Open(firstTab.CurrentLocation);
             }
 
             Refresh();
@@ -268,14 +269,10 @@ namespace Ee4v.ProjectTabs
                 .Select(tab =>
                 {
                     var location = tab.CurrentLocation;
-                    var title = tab.IsHome
-                        ? string.Empty
-                        : location?.DisplayName;
+                    var title = location?.DisplayName;
                     if (string.IsNullOrWhiteSpace(title))
                     {
-                        title = tab.IsHome
-                            ? string.Empty
-                            : "Assets";
+                        title = "Assets";
                     }
 
                     var tooltip = location?.FolderPath ?? "Assets";
@@ -288,9 +285,7 @@ namespace Ee4v.ProjectTabs
                         tab.Id,
                         title,
                         tooltip,
-                        !tab.IsHome,
-                        tab.IsPinned,
-                        tab.IsHome);
+                        tab.IsPinned);
                 })
                 .ToArray();
 

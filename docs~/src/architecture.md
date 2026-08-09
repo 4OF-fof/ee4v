@@ -166,10 +166,8 @@ Applicationのsessionへ最終indexだけを通知し、Project folderのdropは
 folder pathを検証してから新しいtabとして一括追加します。右クリックでpin留めした
 tabは位置を変えずにfolder pathを固定し、別folderへのnavigationは通常tabを新規作成
 します。同じfolder内の検索状態はpin tab自身へ反映します。pin tabと通常tabは同じ
-並び替え領域で混在できます。AssetsとPackagesのrootを開くHome tabだけは例外として、
-解除・削除・移動できない固定tabとしてtab列の左端へ常設します。通常tabが0件になっても
-Home自体が残るため、代替のAssets tabは生成しません。HomeではAssetsとPackagesの
-rootを切り替えられ、どちらかの配下へ移動した場合は通常tabを新規作成します。
+並び替え領域で混在でき、すべてのtabを移動・削除できます。最後のtabを削除して0件に
+なった場合は、Assetsを開く通常tabを新しいIDで1つ生成します。
 通常tabのpin folderはUnity標準Favoritesのfolderと双方向同期します。pin操作では
 同じfolderをFavoriteへ追加・削除し、Favorites側の変更では既存の通常tabを優先して
 pin化し、該当tabがなければ新しいpin tabを追加します。同じfolderのpin tabが複数ある

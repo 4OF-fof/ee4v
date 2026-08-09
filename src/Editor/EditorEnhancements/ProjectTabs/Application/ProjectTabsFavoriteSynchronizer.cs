@@ -100,7 +100,6 @@ namespace Ee4v.ProjectTabs
         {
             return _session.State.Tabs
                 .Where(tab =>
-                    !tab.IsHome &&
                     tab.IsPinned &&
                     tab.CurrentLocation != null)
                 .Select(tab => tab.CurrentLocation)
@@ -155,7 +154,6 @@ namespace Ee4v.ProjectTabs
                 }
 
                 var existingTab = _session.State.Tabs.FirstOrDefault(tab =>
-                    !tab.IsHome &&
                     !tab.IsPinned &&
                     HasSameFolder(
                         tab.CurrentLocation,
@@ -185,7 +183,6 @@ namespace Ee4v.ProjectTabs
 
             var tabIds = _session.State.Tabs
                 .Where(tab =>
-                    !tab.IsHome &&
                     tab.IsPinned &&
                     tab.CurrentLocation != null &&
                     missingPaths.Contains(
