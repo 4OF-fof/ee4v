@@ -1,0 +1,70 @@
+.ee4v-ui-info-card__header-right {
+    margin-left: var(--ee4v-space-md);
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.ee4v-ui-info-card__header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.ee4v-ui-info-card__header--single-line {
+    align-items: center;
+    min-height: var(--ee4v-size-20);
+}
+
+.ee4v-ui-info-card__title {
+    font-size: var(--ee4v-font-size-subtitle);
+    margin-bottom: var(--ee4v-space-none);
+}
+
+.ee4v-ui-info-card__title--with-description {
+    margin-bottom: var(--ee4v-space-xxs);
+}
+
+.ee4v-ui-info-card__eyebrow {
+    margin-bottom: var(--ee4v-space-xxs);
+    font-size: var(--ee4v-font-size-small);
+    color: var(--ee4v-color-text-primary);
+}
+
+.ee4v-ui-info-card__description {
+    color: var(--ee4v-color-text-secondary);
+    white-space: normal;
+}
+
+.ee4v-ui-info-card__body {
+    margin-top: var(--ee4v-space-none);
+}
+
+.ee4v-ui-info-card__body--with-header {
+    margin-top: var(--ee4v-space-lg);
+}
+
+.ee4v-ui-info-card__body--compact {
+    margin-top: var(--ee4v-space-sm);
+}
+
+.ee4v-ui-info-card {
+    padding-left: var(--ee4v-space-xl);
+    padding-right: var(--ee4v-space-xl);
+    padding-top: var(--ee4v-space-xl);
+    padding-bottom: var(--ee4v-space-xl);
+    margin-bottom: var(--ee4v-space-lg);
+    border-top-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-left-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-default);
+    border-bottom-color: var(--ee4v-color-border-default);
+    border-left-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
+    background-color: var(--ee4v-color-surface-subtle);
+    border-top-left-radius: var(--ee4v-radius-2xl);
+    border-top-right-radius: var(--ee4v-radius-2xl);
+    border-bottom-left-radius: var(--ee4v-radius-2xl);
+    border-bottom-right-radius: var(--ee4v-radius-2xl);
+}

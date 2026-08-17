@@ -1,0 +1,10 @@
+.ee4v-ui-comma-separated-list-field {
+    align-self: stretch;
+    min-width: 0;
+}
+
+.ee4v-ui-comma-separated-list-field__editor {
+    align-self: stretch;
+    min-width: 0;
+    margin-bottom: var(--ee4v-space-none);
+}

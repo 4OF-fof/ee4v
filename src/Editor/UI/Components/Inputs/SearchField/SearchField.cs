@@ -1,0 +1,169 @@
+using System;
+using UnityEngine.UIElements;
+
+namespace Ee4v.UI
+{
+    public sealed class SearchFieldState
+    {
+        public SearchFieldState(
+            string value = null,
+            string placeholder = null,
+            string searchTooltip = null,
+            string clearTooltip = null,
+            IconState searchIconState = null,
+            IconState clearIconState = null)
+        {
+            Value = value ?? string.Empty;
+            Placeholder = placeholder ?? string.Empty;
+            SearchTooltip = searchTooltip ?? string.Empty;
+            ClearTooltip = clearTooltip ?? string.Empty;
+            SearchIconState =
+                searchIconState ??
+                IconState.FromBuiltinIcon(
+                    UiBuiltinIcon.Search,
+                    size: UiSizeTokens.Size14,
+                    tooltip: SearchTooltip);
+            ClearIconState =
+                clearIconState ??
+                IconState.FromBuiltinIcon(
+                    UiBuiltinIcon.Close,
+                    size: UiSizeTokens.Size10,
+                    tooltip: ClearTooltip);
+        }
+
+        public string Value { get; }
+
+        public string Placeholder { get; }
+
+        public string SearchTooltip { get; }
+
+        public string ClearTooltip { get; }
+
+        public IconState SearchIconState { get; }
+
+        public IconState ClearIconState { get; }
+    }
+
+    public sealed class SearchField : VisualElement
+    {
+        private const string RootClassName = "ee4v-ui-search-field";
+        private const string HasValueClassName = "ee4v-ui-search-field--has-value";
+        private const string FocusedClassName = "ee4v-ui-search-field--focused";
+        private const string IconClassName = "ee4v-ui-search-field__icon";
+        private const string InputHostClassName = "ee4v-ui-search-field__input-host";
+        private const string InputClassName = "ee4v-ui-search-field__input";
+        private const string PlaceholderClassName = "ee4v-ui-search-field__placeholder";
+        private const string ClearClassName = "ee4v-ui-search-field__clear";
+        private readonly Icon _searchIcon;
+        private readonly VisualElement _inputHost;
+        private readonly TextField _input;
+        private readonly UiTextElement _placeholderLabel;
+        private readonly Button _clearButton;
+        private readonly Icon _clearIcon;
+        private bool _isFocused;
+
+        public SearchField(SearchFieldState state = null)
+        {
+            state = state ?? new SearchFieldState();
+            AddToClassList(RootClassName);
+
+            _searchIcon =
+                new Icon(state.SearchIconState);
+            _searchIcon.AddToClassList(IconClassName);
+
+            _inputHost = new VisualElement();
+            _inputHost.AddToClassList(InputHostClassName);
+
+            _input = UiTextFactory.CreateTextField();
+            _input.AddToClassList(InputClassName);
+            _input.RegisterValueChangedCallback(evt =>
+            {
+                RefreshVisualState();
+                ValueChanged?.Invoke(evt.newValue ?? string.Empty);
+            });
+            _input.RegisterCallback<FocusInEvent>(_ =>
+            {
+                _isFocused = true;
+                RefreshVisualState();
+            });
+            _input.RegisterCallback<FocusOutEvent>(_ =>
+            {
+                _isFocused = false;
+                RefreshVisualState();
+            });
+
+            _placeholderLabel = UiTextFactory.Create(
+                string.Empty,
+                UiClassNames.InputPlaceholder,
+                PlaceholderClassName);
+            _placeholderLabel.pickingMode = PickingMode.Ignore;
+
+            _clearButton = UiTextFactory.CreateButton(onClick: ClearValue);
+            _clearButton.AddToClassList(ClearClassName);
+            _clearIcon =
+                new Icon(state.ClearIconState);
+            _clearButton.Add(_clearIcon);
+
+            _inputHost.Add(_input);
+            _inputHost.Add(_placeholderLabel);
+
+            Add(_searchIcon);
+            Add(_inputHost);
+            Add(_clearButton);
+
+            SetState(state);
+        }
+
+        public event Action<string> ValueChanged;
+
+        public string Value
+        {
+            get { return _input.value ?? string.Empty; }
+            set { _input.value = value ?? string.Empty; }
+        }
+
+        public void SetState(SearchFieldState state)
+        {
+            state = state ?? new SearchFieldState();
+            _searchIcon.SetState(
+                state.SearchIconState);
+            _clearIcon.SetState(
+                state.ClearIconState);
+            SetValueWithoutNotify(state.Value);
+            SetPlaceholder(state.Placeholder);
+        }
+
+        public void SetValueWithoutNotify(string value)
+        {
+            _input.SetValueWithoutNotify(value ?? string.Empty);
+            RefreshVisualState();
+        }
+
+        public void SetPlaceholder(string placeholder)
+        {
+            _placeholderLabel.SetText(placeholder ?? string.Empty);
+            RefreshVisualState();
+        }
+
+        public void ClearValue()
+        {
+            if (string.IsNullOrEmpty(Value))
+            {
+                return;
+            }
+
+            Value = string.Empty;
+        }
+
+        private void RefreshVisualState()
+        {
+            var hasValue = !string.IsNullOrWhiteSpace(Value);
+            var showPlaceholder = !hasValue && !_isFocused && !string.IsNullOrWhiteSpace(_placeholderLabel.Text);
+
+            EnableInClassList(HasValueClassName, hasValue);
+            EnableInClassList(FocusedClassName, _isFocused);
+            _clearButton.style.display = hasValue ? DisplayStyle.Flex : DisplayStyle.None;
+            _placeholderLabel.style.display = showPlaceholder ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+    }
+}

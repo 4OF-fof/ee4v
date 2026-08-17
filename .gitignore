@@ -17,6 +17,7 @@ docs~/.vitepress/dist/
 docs~/vitepress-dev.*.log
 
 # Test and repository-local temporary outputs
-/Unity-*.log
+/Unity*.log
 /TestResults*.xml
+/TestResults*.log
 Temp~/

@@ -1,0 +1,47 @@
+{
+  "ui": {
+    "search": {
+      "placeholder": "Search",
+      "tooltip": "Search"
+    },
+    "clear": {
+      "tooltip": "Clear"
+    },
+    "dismiss": {
+      "tooltip": "Dismiss"
+    }
+  },
+  "catalog": {
+    "window": {
+      "title": "Catalog",
+      "navigatorEmpty": "No matching components."
+    },
+    "common": {
+      "details": "Details",
+      "none": "None",
+      "implementation": "Implementation",
+      "dependencies": "Dependencies",
+      "usageLocations": "Usage locations",
+      "controls": "Controls",
+      "preview": "Preview",
+      "previewDescription": "Control changes are reflected in the preview immediately.",
+      "uiToolkitVisual": "UI Toolkit",
+      "imguiVisual": "IMGUI"
+    },
+    "status": {
+      "idle": "Idle",
+      "running": "Running",
+      "passed": "Passed",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "inconclusive": "Inconclusive"
+    },
+    "listInput": {
+      "description": "An input that converts comma-, semicolon-, or newline-delimited text into a list.",
+      "details": "It trims entries, removes empty values, and normalizes the display to one item per line. The consumer owns conversion to its persistence format.",
+      "sampleTooltip": "Avatar names used for grouping.",
+      "itemPlaceholder": "Enter one avatar name per line",
+      "savedValue": "Example storage value: {0}"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+.ee4v-ui-icon {
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ee4v-ui-icon__image {
+    flex-shrink: 0;
+}

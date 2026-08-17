@@ -1,0 +1,15 @@
+{
+  "name": "Ee4v.UI.Tests.Editor",
+  "rootNamespace": "Ee4v.UI.Tests",
+  "references": [
+    "Ee4v.Core.Editor",
+    "Ee4v.UI.Catalog.Editor",
+    "Ee4v.UI.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

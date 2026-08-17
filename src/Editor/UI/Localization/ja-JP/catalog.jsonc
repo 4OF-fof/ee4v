@@ -1,0 +1,47 @@
+{
+  "ui": {
+    "search": {
+      "placeholder": "検索",
+      "tooltip": "検索"
+    },
+    "clear": {
+      "tooltip": "クリア"
+    },
+    "dismiss": {
+      "tooltip": "閉じる"
+    }
+  },
+  "catalog": {
+    "window": {
+      "title": "Catalog",
+      "navigatorEmpty": "一致するコンポーネントがありません。"
+    },
+    "common": {
+      "details": "詳細",
+      "none": "なし",
+      "implementation": "実装",
+      "dependencies": "依存コンポーネント",
+      "usageLocations": "使用箇所",
+      "controls": "コントロール",
+      "preview": "プレビュー",
+      "previewDescription": "コントロールの変更はすぐにプレビューへ反映されます。",
+      "uiToolkitVisual": "UI Toolkit",
+      "imguiVisual": "IMGUI"
+    },
+    "status": {
+      "idle": "待機中",
+      "running": "実行中",
+      "passed": "成功",
+      "failed": "失敗",
+      "skipped": "スキップ",
+      "inconclusive": "未確定"
+    },
+    "listInput": {
+      "description": "カンマ・セミコロン・改行で区切った入力をリスト値として通知する入力コンポーネントです。",
+      "details": "入力を分割して前後の空白と空要素を除き、画面上では1行1要素へ正規化します。保存形式への変換は利用側が担当します。",
+      "sampleTooltip": "グループ判定に使うアバター名です。",
+      "itemPlaceholder": "1行に1つアバター名を入力",
+      "savedValue": "保存形式の例: {0}"
+    }
+  }
+}
