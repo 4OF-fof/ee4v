@@ -1,8 +1,10 @@
 using System;
+using System.Collections;
 using System.Threading.Tasks;
 using Ee4v.Core.Background;
 using NUnit.Framework;
 using UnityEditor;
+using UnityEngine.TestTools;
 
 namespace Ee4v.Core.Tests
 {
@@ -29,8 +31,8 @@ namespace Ee4v.Core.Tests
             Assert.That(tracker.GetState().IsActive, Is.False);
         }
 
-        [Test]
-        public async Task Run_TracksProgressAndSuccessfulCompletion()
+        [UnityTest]
+        public IEnumerator Run_TracksProgressAndSuccessfulCompletion()
         {
             var tracker = new BackgroundActivityTracker();
             var release = new TaskCompletionSource<object>();
@@ -49,7 +51,7 @@ namespace Ee4v.Core.Tests
                 BackgroundTaskStatus.Running));
 
             release.SetResult(null);
-            await task.Completion;
+            yield return WaitForCompletion(task.Completion);
 
             Assert.That(task.State.Status, Is.EqualTo(
                 BackgroundTaskStatus.Succeeded));
@@ -60,8 +62,8 @@ namespace Ee4v.Core.Tests
             Assert.That(tracker.GetTasks(), Is.Empty);
         }
 
-        [Test]
-        public async Task Run_RecordsFailure()
+        [UnityTest]
+        public IEnumerator Run_RecordsFailure()
         {
             var tracker = new BackgroundActivityTracker();
             var task = tracker.Run(
@@ -69,22 +71,16 @@ namespace Ee4v.Core.Tests
                 _ => Task.FromException(
                     new InvalidOperationException("failure")));
 
-            try
-            {
-                await task.Completion;
-                Assert.Fail("The failed operation must fault completion.");
-            }
-            catch (InvalidOperationException)
-            {
-            }
+            yield return WaitForCompletion(task.Completion);
 
+            Assert.That(task.Completion.IsFaulted, Is.True);
             Assert.That(task.State.Status, Is.EqualTo(
                 BackgroundTaskStatus.Failed));
             Assert.That(task.State.ErrorMessage, Is.EqualTo("failure"));
         }
 
-        [Test]
-        public async Task Cancel_RequestsCancellationAndRecordsCanceled()
+        [UnityTest]
+        public IEnumerator Cancel_RequestsCancellationAndRecordsCanceled()
         {
             var tracker = new BackgroundActivityTracker();
             var cancellationObserved = new TaskCompletionSource<object>();
@@ -102,15 +98,9 @@ namespace Ee4v.Core.Tests
                 });
 
             task.Cancel();
-            try
-            {
-                await task.Completion;
-                Assert.Fail("The canceled operation must cancel completion.");
-            }
-            catch (OperationCanceledException)
-            {
-            }
+            yield return WaitForCompletion(task.Completion);
 
+            Assert.That(task.Completion.IsCanceled, Is.True);
             Assert.That(task.State.Status, Is.EqualTo(
                 BackgroundTaskStatus.Canceled));
             Assert.That(tracker.GetState().IsActive, Is.False);
@@ -134,6 +124,14 @@ namespace Ee4v.Core.Tests
             {
                 UnityEngine.Object.DestroyImmediate(window);
                 BackgroundStatusOverlay.ResetAllHosts();
+            }
+        }
+
+        private static IEnumerator WaitForCompletion(Task task)
+        {
+            while (!task.IsCompleted)
+            {
+                yield return null;
             }
         }
     }

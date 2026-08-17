@@ -1,0 +1,14 @@
+{
+  "settings": {
+    "section": {
+      "hierarchy": "Hierarchy Enhancements"
+    },
+    "enabled": {
+      "label": "Show hierarchy decorations",
+      "tooltip": "Draw a root, childless GameObject created with Create Empty whose name starts with --- as a separator line in the Hierarchy."
+    }
+  },
+  "undo": {
+    "createDivider": "Create hierarchy divider"
+  }
+}

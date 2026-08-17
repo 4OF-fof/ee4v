@@ -10,6 +10,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Ee4v.Testing.Infrastructure.StaticAnalysis.Editor")]
 [assembly: InternalsVisibleTo("Ee4v.ProjectTabs.Editor")]
 [assembly: InternalsVisibleTo("Ee4v.FolderStyle.Editor")]
-[assembly: InternalsVisibleTo("Ee4v.HierarchyDecoration.Editor")]
 [assembly: InternalsVisibleTo("Ee4v.HierarchyStyle.Editor")]
-[assembly: InternalsVisibleTo("Ee4v.DepthIndicator.Editor")]

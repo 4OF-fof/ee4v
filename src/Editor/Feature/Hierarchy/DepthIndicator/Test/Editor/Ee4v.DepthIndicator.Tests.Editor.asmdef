@@ -1,0 +1,21 @@
+{
+  "name": "Ee4v.DepthIndicator.Tests.Editor",
+  "rootNamespace": "Ee4v.DepthIndicator.Tests",
+  "references": [
+    "Ee4v.DepthIndicator.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

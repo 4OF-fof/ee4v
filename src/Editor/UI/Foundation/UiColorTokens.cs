@@ -1,3 +1,4 @@
+using UnityEditor;
 using UnityEngine;
 
 namespace Ee4v.UI
@@ -104,6 +105,14 @@ namespace Ee4v.UI
     public static class UiColorTokens
     {
         public static readonly Color32 Transparent = new Color32(0, 0, 0, 0);
+        private static readonly Color32 DarkHierarchyGuide =
+            new Color32(104, 104, 104, 255);
+        private static readonly Color32 LightHierarchyBackground =
+            new Color32(200, 200, 200, 255);
+        private static readonly Color32 LightHierarchyGuide =
+            new Color32(142, 142, 142, 255);
+        private static readonly Color32 LightHierarchyText =
+            new Color32(56, 56, 56, 255);
 
         public static UiColorPalette Current => UiColorPalettes.UnityDark;
         public static Color32 ChromeDeep => Current.ChromeDeep;
@@ -127,5 +136,17 @@ namespace Ee4v.UI
         public static Color32 StatusFailedText => Current.StatusFailedText;
         public static Color32 StatusSkippedText => Current.StatusSkippedText;
         public static Color32 StatusInconclusiveText => Current.StatusInconclusiveText;
+        public static Color32 HierarchyDecorationBackground =>
+            EditorGUIUtility.isProSkin
+                ? Current.Panel
+                : LightHierarchyBackground;
+        public static Color32 HierarchyDecorationGuide =>
+            EditorGUIUtility.isProSkin
+                ? DarkHierarchyGuide
+                : LightHierarchyGuide;
+        public static Color32 HierarchyDecorationText =>
+            EditorGUIUtility.isProSkin
+                ? Current.TextPrimary
+                : LightHierarchyText;
     }
 }
