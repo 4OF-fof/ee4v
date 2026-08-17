@@ -1,7 +1,0 @@
-.ee4v-ui-single-select-button-group {
-    flex-direction: column;
-}
-
-.ee4v-ui-single-select-button-group__button {
-    margin-bottom: var(--ee4v-space-xxs);
-}
