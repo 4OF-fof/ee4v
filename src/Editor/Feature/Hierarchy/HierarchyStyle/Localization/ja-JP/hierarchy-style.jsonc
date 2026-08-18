@@ -11,8 +11,6 @@
   "window": {
     "title": "ヒエラルキースタイル",
     "multipleTitle": "{0}個のオブジェクトを装飾",
-    "singleSubtitle": "ヒエラルキー項目の見た目を変更",
-    "multipleSubtitle": "選択中のすべてのオブジェクトへ適用",
     "closeTooltip": "閉じる"
   },
   "editor": {

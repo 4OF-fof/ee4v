@@ -105,6 +105,9 @@ namespace Ee4v.SceneSwitcher
                 "Editor/UI/Components/common.uss");
             UiStyleUtility.AddPackageStyleSheet(
                 root,
+                "Editor/UI/Components/Inputs/ui-button.uss");
+            UiStyleUtility.AddPackageStyleSheet(
+                root,
                 "Editor/UI/Components/Inputs/SearchField/search-field.uss");
             UiStyleUtility.AddPackageStyleSheet(
                 root,

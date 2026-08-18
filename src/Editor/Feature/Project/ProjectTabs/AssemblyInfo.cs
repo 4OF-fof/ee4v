@@ -1,3 +1,3 @@
 using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("Ee4v.EditorFeatures.Tests.Editor")]
+[assembly: InternalsVisibleTo("Ee4v.ProjectTabs.Tests.Editor")]

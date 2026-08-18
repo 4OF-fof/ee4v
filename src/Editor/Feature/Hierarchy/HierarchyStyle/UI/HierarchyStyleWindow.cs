@@ -82,9 +82,6 @@ namespace Ee4v.HierarchyStyle
                         "window.multipleTitle",
                         validTargets.Length)
                     : validTargets[0].name,
-                validTargets.Length > 1
-                    ? I18N.Get("window.multipleSubtitle")
-                    : I18N.Get("window.singleSubtitle"),
                 CreateTargetTooltip(validTargets),
                 GetColors(),
                 typeof(Texture2D),
@@ -94,14 +91,22 @@ namespace Ee4v.HierarchyStyle
                 () => InjectorApi.Repaint(
                     InjectionChannel.HierarchyItem))
             {
+                CloseTooltip = I18N.Get("window.closeTooltip"),
                 ColorLabel = I18N.Get("editor.color.label"),
+                ColorTooltip = I18N.Get("editor.color.tooltip"),
+                CustomColorLabel = I18N.Get(
+                    "editor.color.customLabel"),
                 ClearColorLabel = I18N.Get(
                     "editor.color.clearLabel"),
                 IconLabel = I18N.Get("editor.icon.label"),
+                IconTooltip = I18N.Get("editor.icon.tooltip"),
+                ChooseIconLabel = I18N.Get(
+                    "editor.icon.chooseLabel"),
                 ClearIconLabel = I18N.Get(
                     "editor.icon.clearLabel"),
                 RecentIconsLabel = I18N.Get(
                     "editor.icon.recentLabel"),
+                PreviewColorAsBackground = true,
                 ActionLabel = validTargets.Length > 1
                     ? I18N.Get(
                         "editor.hide.multipleLabel",

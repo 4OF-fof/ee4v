@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using NUnit.Framework;
+using UnityEngine.UIElements;
 
 namespace Ee4v.UI.Tests
 {
@@ -40,6 +41,22 @@ namespace Ee4v.UI.Tests
                     .Where(story => story.Group != "Foundation")
                     .All(story => story.UsageLocations.Count > 0),
                 Is.True);
+        }
+
+        [TestCase("scene-switcher-view")]
+        [TestCase("project-style-window")]
+        [TestCase("hierarchy-style-window")]
+        public void FeatureStory_IsRegisteredAndBuilds(string storyId)
+        {
+            var story = CatalogWindow
+                .GetRegisteredStoriesForTests()
+                .SingleOrDefault(item => item.Id == storyId);
+            Assert.That(
+                story,
+                Is.Not.Null);
+            Assert.That(
+                () => story.Build(null, new VisualElement()),
+                Throws.Nothing);
         }
     }
 }

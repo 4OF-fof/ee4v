@@ -1,15 +1,10 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using Ee4v.HiddenObjects;
-using Ee4v.HierarchyStyle;
 using Ee4v.ItemStyle;
-using Ee4v.ProjectTabs;
-using Ee4v.SceneSwitcher;
 using NUnit.Framework;
 using UnityEngine;
 
-namespace Ee4v.EditorFeatures.Tests
+namespace Ee4v.HierarchyStyle.Tests
 {
     public sealed class HierarchyStyleTests
     {
@@ -77,7 +72,7 @@ namespace Ee4v.EditorFeatures.Tests
             }
             finally
             {
-                UnityEngine.Object.DestroyImmediate(gameObject);
+                Object.DestroyImmediate(gameObject);
             }
         }
 
@@ -91,80 +86,6 @@ namespace Ee4v.EditorFeatures.Tests
 
             public Node Parent { get; }
             public ItemStyleValue Style { get; }
-        }
-    }
-
-    public sealed class ProjectTabsTests
-    {
-        [Test]
-        public void PinnedTab_RejectsNavigationToAnotherFolder()
-        {
-            var defaultLocation = new ProjectTabLocation(
-                "assets-guid",
-                "Assets");
-            var session = new ProjectTabsSession(
-                new MemoryProjectTabsStore(),
-                defaultLocation,
-                () => "tab");
-            var tabId = session.State.Tabs[0].Id;
-            session.SetPinned(tabId, true);
-            var other = new ProjectTabLocation(
-                "other-guid",
-                "Assets/Other");
-
-            Assert.That(
-                session.ShouldOpenInNewTab(tabId, other),
-                Is.True);
-            Assert.That(session.RecordNavigation(tabId, other), Is.False);
-            Assert.That(
-                session.State.Find(tabId).CurrentLocation,
-                Is.EqualTo(defaultLocation));
-        }
-
-        private sealed class MemoryProjectTabsStore
-            : IProjectTabsStateStore
-        {
-            private ProjectTabsState _state;
-
-            public ProjectTabsState Load()
-            {
-                return _state;
-            }
-
-            public void Save(ProjectTabsState state)
-            {
-                _state = state;
-            }
-        }
-    }
-
-    public sealed class SceneSwitcherTests
-    {
-        [Test]
-        public void View_OrdersOpenFavoriteThenOtherAndAllowsNewName()
-        {
-            var records = new[]
-            {
-                new SceneSwitcherRecord("Assets/Other.unity"),
-                new SceneSwitcherRecord(
-                    "Assets/Favorite.unity",
-                    isFavorite: true),
-                new SceneSwitcherRecord("Assets/Open.unity")
-            };
-
-            var state = SceneSwitcherPolicy.BuildView(
-                records,
-                new[] { "Assets/Open.unity" },
-                string.Empty);
-            var createState = SceneSwitcherPolicy.BuildView(
-                records,
-                Array.Empty<string>(),
-                "New Scene");
-
-            Assert.That(
-                state.Items.Select(item => item.Name),
-                Is.EqualTo(new[] { "Open", "Favorite", "Other" }));
-            Assert.That(createState.CanCreate, Is.True);
         }
     }
 

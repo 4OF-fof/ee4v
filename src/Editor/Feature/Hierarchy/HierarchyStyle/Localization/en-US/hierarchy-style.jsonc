@@ -11,8 +11,6 @@
   "window": {
     "title": "Hierarchy Style",
     "multipleTitle": "Style {0} objects",
-    "singleSubtitle": "Customize this Hierarchy item",
-    "multipleSubtitle": "Apply changes to every selected object",
     "closeTooltip": "Close"
   },
   "editor": {

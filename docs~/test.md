@@ -31,6 +31,7 @@
 | `UiStoryTests.StoryContract_RejectsMissingIdentity` | 識別子がないStoryを拒否する | カタログ内でStoryを一意に管理するため |
 | `UiStoryTests.Catalog_DiscoversExternalStoryProviders` | 外部のStory providerからStoryを検出する | UIカタログを機能アセンブリから拡張できるようにするため |
 | `UiStoryTests.CatalogStories_DeclareUsageLocations` | Foundation以外のStoryが実際の使用箇所を宣言する | 使用されていないUI componentを把握できるようにするため |
+| `UiStoryTests.FeatureStory_IsRegisteredAndBuilds` | SceneSwitcher、ProjectStyle、HierarchyStyleのStoryをカタログから検出して構築する | 機能UIのStory登録漏れと構築失敗を検出するため |
 | `UiIconTests.UiBuiltinIconResolver_TryResolve_AllRegisteredIcons` | 登録済みの組み込みアイコンをすべてテクスチャへ解決する | アイコン名の変更やUnityバージョン差による欠落を検出するため |
 | `UiDesignTokenTests.UssAndCSharpPrimitiveTokens_AreInSync` | USSとC#のプリミティブなデザイントークン値を一致させる | UI ToolkitとIMGUIで寸法や文字サイズがずれるのを防ぐため |
 | `UiDesignTokenTests.UssFiles_UseSharedDesignTokens` | USSが対象プロパティへ未定義の生値を直接指定しない | 寸法、余白、角丸、文字サイズを共通トークンで管理するため |

@@ -1,0 +1,21 @@
+{
+  "name": "Ee4v.ProjectTabs.Tests.Editor",
+  "rootNamespace": "Ee4v.ProjectTabs.Tests",
+  "references": [
+    "Ee4v.ProjectTabs.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

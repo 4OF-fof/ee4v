@@ -61,9 +61,6 @@ namespace Ee4v.ProjectStyle
                 folderGuids,
                 screenPosition,
                 CreateTitle(folderGuids),
-                folderGuids.Count > 1
-                    ? I18N.Get("window.multipleSubtitle")
-                    : I18N.Get("window.singleSubtitle"),
                 CreateTargetTooltip(folderGuids),
                 GetColors(),
                 typeof(Texture),
@@ -71,10 +68,17 @@ namespace Ee4v.ProjectStyle
                 () => InjectorApi.Repaint(
                     InjectionChannel.ProjectItem))
             {
+                CloseTooltip = I18N.Get("window.closeTooltip"),
                 ColorLabel = I18N.Get("editor.color.label"),
+                ColorTooltip = I18N.Get("editor.color.tooltip"),
+                CustomColorLabel = I18N.Get(
+                    "editor.color.customLabel"),
                 ClearColorLabel = I18N.Get(
                     "editor.color.clearLabel"),
                 IconLabel = I18N.Get("editor.icon.label"),
+                IconTooltip = I18N.Get("editor.icon.tooltip"),
+                ChooseIconLabel = I18N.Get(
+                    "editor.icon.chooseLabel"),
                 ClearIconLabel = I18N.Get(
                     "editor.icon.clearLabel"),
                 RecentIconsLabel = I18N.Get(
