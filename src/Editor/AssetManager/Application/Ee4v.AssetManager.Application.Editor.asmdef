@@ -1,0 +1,19 @@
+{
+  "name": "Ee4v.AssetManager.Application.Editor",
+  "rootNamespace": "Ee4v.AssetManager.Application",
+  "references": [
+    "Ee4v.AssetManager.Contracts.Editor",
+    "Ee4v.AssetManager.Domain.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": true
+}
