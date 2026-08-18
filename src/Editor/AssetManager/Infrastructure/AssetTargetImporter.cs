@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Ee4v.AssetManager.Application.Ports;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.EditorIntegration;
+using UnityEditor;
 
 namespace Ee4v.AssetManager.Infrastructure
 {
@@ -14,6 +17,7 @@ namespace Ee4v.AssetManager.Infrastructure
         private readonly string _assetsDirectory;
         private readonly Action _refresh;
         private readonly Action<string, Action<bool>> _importPackage;
+        private readonly Func<string, string> _assetGuid;
 
         internal AssetTargetImporter()
             : this(
@@ -22,7 +26,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 (path, completed) => AssetImportApi.ImportPackage(
                     path,
                     false,
-                    completed))
+                    completed),
+                ResolveAssetGuid)
         {
         }
 
@@ -35,7 +40,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 (path, completed) => AssetImportApi.ImportPackage(
                     path,
                     false,
-                    completed))
+                    completed),
+                ResolveAssetGuid)
         {
         }
 
@@ -43,6 +49,19 @@ namespace Ee4v.AssetManager.Infrastructure
             string assetsDirectory,
             Action refresh,
             Action<string, Action<bool>> importPackage)
+            : this(
+                assetsDirectory,
+                refresh,
+                importPackage,
+                ResolveAssetGuid)
+        {
+        }
+
+        internal AssetTargetImporter(
+            string assetsDirectory,
+            Action refresh,
+            Action<string, Action<bool>> importPackage,
+            Func<string, string> assetGuid)
         {
             _assetsDirectory = assetsDirectory ??
                 throw new ArgumentNullException(nameof(assetsDirectory));
@@ -50,14 +69,17 @@ namespace Ee4v.AssetManager.Infrastructure
                 throw new ArgumentNullException(nameof(refresh));
             _importPackage = importPackage ??
                 throw new ArgumentNullException(nameof(importPackage));
+            _assetGuid = assetGuid ??
+                throw new ArgumentNullException(nameof(assetGuid));
         }
 
-        public void Import(
+        public Task<AssetImportResult> Import(
             AssetItem item,
             AssetFile file,
             IReadOnlyList<string> targetPaths,
-            Action<bool> completed)
+            CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (string.IsNullOrWhiteSpace(file.SourcePath) ||
                 !File.Exists(file.SourcePath))
             {
@@ -72,15 +94,33 @@ namespace Ee4v.AssetManager.Infrastructure
                 SanitizeName(
                     Path.GetFileNameWithoutExtension(file.FileName),
                     "File"));
-            var copied = false;
+            var copiedPaths = new List<string>();
+            var importedGuids = new HashSet<string>(StringComparer.Ordinal);
             var pendingPackages = 0;
             var scheduling = true;
             var packagesSucceeded = true;
+            var completion = new TaskCompletionSource<AssetImportResult>();
+            var cancellation = cancellationToken.Register(() =>
+                completion.TrySetResult(new AssetImportResult(
+                    AssetImportState.Canceled,
+                    new[] { file.Id },
+                    Array.Empty<string>(),
+                    "Asset import was canceled.")));
             Action completeIfReady = () =>
             {
                 if (!scheduling && pendingPackages == 0)
                 {
-                    completed?.Invoke(packagesSucceeded);
+                    completion.TrySetResult(new AssetImportResult(
+                        packagesSucceeded
+                            ? AssetImportState.Success
+                            : AssetImportState.Failed,
+                        new[] { file.Id },
+                        packagesSucceeded
+                            ? importedGuids.ToArray()
+                            : Array.Empty<string>(),
+                        packagesSucceeded
+                            ? string.Empty
+                            : "UnityPackage import failed."));
                 }
             };
             Action<bool> packageCompleted = succeeded =>
@@ -91,6 +131,11 @@ namespace Ee4v.AssetManager.Infrastructure
             };
             for (var i = 0; i < targetPaths.Count; i++)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
                 var targetPath = targetPaths[i];
                 if (targetPath.Length == 0)
                 {
@@ -99,11 +144,16 @@ namespace Ee4v.AssetManager.Infrastructure
                         pendingPackages++;
                     }
 
-                    copied |= ImportFile(
+                    var copiedPath = ImportFile(
                         file.SourcePath,
                         file.FileName,
                         destinationRoot,
-                        packageCompleted);
+                        packageCompleted,
+                        importedGuids);
+                    if (copiedPath != null)
+                    {
+                        copiedPaths.Add(copiedPath);
+                    }
                     continue;
                 }
 
@@ -112,32 +162,56 @@ namespace Ee4v.AssetManager.Infrastructure
                     pendingPackages++;
                 }
 
-                copied |= ImportArchiveEntry(
+                var extractedPath = ImportArchiveEntry(
                     file.SourcePath,
                     targetPath,
                     destinationRoot,
-                    packageCompleted);
+                    packageCompleted,
+                    importedGuids);
+                if (extractedPath != null)
+                {
+                    copiedPaths.Add(extractedPath);
+                }
             }
 
-            if (copied)
+            if (copiedPaths.Count > 0)
             {
                 _refresh();
+                for (var i = 0; i < copiedPaths.Count; i++)
+                {
+                    var guid = _assetGuid(copiedPaths[i]);
+                    if (!string.IsNullOrWhiteSpace(guid))
+                    {
+                        importedGuids.Add(guid.Trim().ToLowerInvariant());
+                    }
+                }
             }
 
             scheduling = false;
             completeIfReady();
+            return completion.Task.ContinueWith(
+                task =>
+                {
+                    cancellation.Dispose();
+                    return task.Result;
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
         }
 
-        private bool ImportFile(
+        private string ImportFile(
             string sourcePath,
             string targetPath,
             string destinationRoot,
-            Action<bool> completed)
+            Action<bool> completed,
+            ISet<string> importedGuids)
         {
             if (IsUnityPackage(targetPath))
             {
+                AddPackageGuids(sourcePath, importedGuids);
                 _importPackage(sourcePath, completed);
-                return false;
+                return null;
             }
 
             var destinationPath = DestinationPath(
@@ -146,14 +220,15 @@ namespace Ee4v.AssetManager.Infrastructure
             Directory.CreateDirectory(
                 Path.GetDirectoryName(destinationPath));
             File.Copy(sourcePath, destinationPath, true);
-            return true;
+            return destinationPath;
         }
 
-        private bool ImportArchiveEntry(
+        private string ImportArchiveEntry(
             string archivePath,
             string targetPath,
             string destinationRoot,
-            Action<bool> completed)
+            Action<bool> completed,
+            ISet<string> importedGuids)
         {
             if (!string.Equals(
                     Path.GetExtension(archivePath),
@@ -184,8 +259,12 @@ namespace Ee4v.AssetManager.Infrastructure
 
                 if (IsUnityPackage(targetPath))
                 {
-                    ImportPackageEntry(entry, targetPath, completed);
-                    return false;
+                    ImportPackageEntry(
+                        entry,
+                        targetPath,
+                        completed,
+                        importedGuids);
+                    return null;
                 }
 
                 var destinationPath = DestinationPath(
@@ -199,7 +278,7 @@ namespace Ee4v.AssetManager.Infrastructure
                     source.CopyTo(destination);
                 }
 
-                return true;
+                return destinationPath;
             }
         }
 
@@ -242,7 +321,8 @@ namespace Ee4v.AssetManager.Infrastructure
         private void ImportPackageEntry(
             ZipArchiveEntry entry,
             string targetPath,
-            Action<bool> completed)
+            Action<bool> completed,
+            ISet<string> importedGuids)
         {
             var temporaryDirectory = Path.Combine(
                 Path.GetTempPath(),
@@ -258,6 +338,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 {
                     source.CopyTo(destination);
                 }
+
+                AddPackageGuids(packagePath, importedGuids);
 
                 _importPackage(
                     packagePath,
@@ -324,6 +406,36 @@ namespace Ee4v.AssetManager.Infrastructure
                 Path.GetExtension(path),
                 ".unitypackage",
                 StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void AddPackageGuids(
+            string path,
+            ISet<string> importedGuids)
+        {
+            var guids = UnityPackageReader.ReadGuids(path);
+            for (var i = 0; i < guids.Count; i++)
+            {
+                importedGuids.Add(guids[i]);
+            }
+        }
+
+        private static string ResolveAssetGuid(string absolutePath)
+        {
+            var assets = Path.GetFullPath(AssetImportApi.AssetsDirectory)
+                .TrimEnd(
+                    Path.DirectorySeparatorChar,
+                    Path.AltDirectorySeparatorChar);
+            var candidate = Path.GetFullPath(absolutePath);
+            if (!candidate.StartsWith(
+                    assets + Path.DirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
+            var relative = candidate.Substring(assets.Length + 1)
+                .Replace('\\', '/');
+            return AssetDatabase.AssetPathToGUID("Assets/" + relative);
         }
 
         private static string SanitizeName(

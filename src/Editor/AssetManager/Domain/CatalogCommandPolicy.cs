@@ -68,6 +68,29 @@ namespace Ee4v.AssetManager.Domain
             return extension.ToLowerInvariant();
         }
 
+        internal static string NormalizeAssetGuid(string value)
+        {
+            var guid = (value ?? string.Empty).Trim().ToLowerInvariant();
+            if (guid.Length != 32)
+            {
+                throw new AssetRuleException(
+                    "Unity asset GUID must contain 32 hexadecimal characters.");
+            }
+
+            for (var i = 0; i < guid.Length; i++)
+            {
+                var character = guid[i];
+                if (!(character >= '0' && character <= '9') &&
+                    !(character >= 'a' && character <= 'f'))
+                {
+                    throw new AssetRuleException(
+                        "Unity asset GUID must contain 32 hexadecimal characters.");
+                }
+            }
+
+            return guid;
+        }
+
         internal static string NormalizeTargetPath(string value)
         {
             if (value == null)
@@ -120,28 +143,6 @@ namespace Ee4v.AssetManager.Domain
 
             var visited = new HashSet<AssetFilterNode>();
             ValidateNode(root, visited);
-        }
-
-        internal static bool Matches(AssetItem item, AssetFilterNode root)
-        {
-            if (root == null)
-            {
-                return true;
-            }
-
-            switch (root.Type)
-            {
-                case AssetFilterNodeType.And:
-                    return All(item, root.Children);
-                case AssetFilterNodeType.Or:
-                    return Any(item, root.Children);
-                case AssetFilterNodeType.Not:
-                    return !Matches(item, root.Children[0]);
-                case AssetFilterNodeType.Condition:
-                    return MatchesCondition(item, root);
-                default:
-                    return false;
-            }
         }
 
         private static void ValidateNode(
@@ -227,108 +228,5 @@ namespace Ee4v.AssetManager.Domain
             }
         }
 
-        private static bool All(
-            AssetItem item,
-            IReadOnlyList<AssetFilterNode> children)
-        {
-            for (var i = 0; i < children.Count; i++)
-            {
-                if (!Matches(item, children[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private static bool Any(
-            AssetItem item,
-            IReadOnlyList<AssetFilterNode> children)
-        {
-            for (var i = 0; i < children.Count; i++)
-            {
-                if (Matches(item, children[i]))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool MatchesCondition(
-            AssetItem item,
-            AssetFilterNode condition)
-        {
-            var value = condition.Value ?? string.Empty;
-            switch (condition.ConditionType.Value)
-            {
-                case AssetFilterConditionType.NameContains:
-                    return Contains(item.Name, value);
-                case AssetFilterConditionType.DescriptionContains:
-                    return Contains(item.Description, value);
-                case AssetFilterConditionType.HasTag:
-                    return HasTag(item.Tags, NormalizeTagPath(value));
-                case AssetFilterConditionType.HasFileExtension:
-                    return HasExtension(
-                        item.Files,
-                        NormalizeExtension(value));
-                default:
-                    return false;
-            }
-        }
-
-        private static bool Contains(string source, string value)
-        {
-            return (source ?? string.Empty).IndexOf(
-                       value,
-                       StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
-        private static bool HasTag(
-            IReadOnlyList<AssetTag> tags,
-            string path)
-        {
-            var prefix = path + "/";
-            var source = tags ?? Array.Empty<AssetTag>();
-            for (var i = 0; i < source.Count; i++)
-            {
-                var candidate = source[i].Path ?? string.Empty;
-                if (string.Equals(
-                        candidate,
-                        path,
-                        StringComparison.Ordinal) ||
-                    candidate.StartsWith(
-                        prefix,
-                        StringComparison.Ordinal))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool HasExtension(
-            IReadOnlyList<AssetFile> files,
-            string extension)
-        {
-            var source = files ?? Array.Empty<AssetFile>();
-            for (var i = 0; i < source.Count; i++)
-            {
-                if (!source[i].IsArchived &&
-                    source[i].IsAvailable &&
-                    string.Equals(
-                        source[i].Extension,
-                        extension,
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
     }
 }

@@ -8,6 +8,7 @@ namespace Ee4v.AssetManager.Contracts
         public string Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
+        public string ThumbnailUrl { get; set; }
         public AssetSourceType? SourceType { get; set; }
         public string SourceId { get; set; }
         public IReadOnlyList<AssetTag> Tags { get; set; }
@@ -15,6 +16,15 @@ namespace Ee4v.AssetManager.Contracts
         public bool IsArchived { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+    }
+
+    public sealed class AssetThumbnail
+    {
+        public bool Found { get; set; }
+        public byte[] Data { get; set; }
+        public string Path { get; set; }
+        public string SourceUrl { get; set; }
+        public string MissingReason { get; set; }
     }
 
     public sealed class AssetFile
@@ -26,7 +36,6 @@ namespace Ee4v.AssetManager.Contracts
         public AssetSourceType SourceType { get; set; }
         public string SourceId { get; set; }
         public string SourcePath { get; set; }
-        public bool IsAvailable { get; set; }
         public bool IsArchived { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
@@ -42,6 +51,51 @@ namespace Ee4v.AssetManager.Contracts
     {
         public string DependentFileId { get; set; }
         public string DependencyFileId { get; set; }
+    }
+
+    public sealed class AssetImportedAssetAssociation
+    {
+        public string ItemId { get; set; }
+        public string FileId { get; set; }
+        public string AssetGuid { get; set; }
+        public DateTime ImportedAt { get; set; }
+    }
+
+    public sealed class AssetFileAnalysis
+    {
+        public string FileId { get; set; }
+        public AssetFileAnalysisKind Kind { get; set; }
+        public IReadOnlyList<AssetFileContentEntry> Entries { get; set; }
+    }
+
+    public sealed class AssetFileContentEntry
+    {
+        public string Path { get; set; }
+        public AssetFileContentEntryKind Kind { get; set; }
+        public long SizeBytes { get; set; }
+        public string AssetGuid { get; set; }
+    }
+
+    public sealed class AssetImportResult
+    {
+        public AssetImportResult(
+            AssetImportState state,
+            IReadOnlyList<string> fileIds,
+            IReadOnlyList<string> assetGuids,
+            string errorMessage = null)
+        {
+            State = state;
+            FileIds = fileIds ?? Array.Empty<string>();
+            AssetGuids = assetGuids ?? Array.Empty<string>();
+            ErrorMessage = errorMessage ?? string.Empty;
+        }
+
+        public AssetImportState State { get; }
+        public bool Succeeded => State == AssetImportState.Success;
+        public bool Canceled => State == AssetImportState.Canceled;
+        public IReadOnlyList<string> FileIds { get; }
+        public IReadOnlyList<string> AssetGuids { get; }
+        public string ErrorMessage { get; }
     }
 
     public sealed class AssetTag

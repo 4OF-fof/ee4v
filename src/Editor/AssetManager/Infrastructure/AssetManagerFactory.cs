@@ -22,7 +22,9 @@ namespace Ee4v.AssetManager.Infrastructure
                 new SqliteAssetManagerStore(databasePath),
                 new EagleAssetSource(),
                 new Ee4vAssetSource(),
-                new AssetTargetImporter());
+                new AssetTargetImporter(),
+                new AssetFileAnalyzer(),
+                new AssetThumbnailProvider(databasePath));
         }
     }
 }

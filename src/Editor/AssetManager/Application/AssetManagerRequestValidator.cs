@@ -80,12 +80,12 @@ namespace Ee4v.AssetManager.Application
         }
 
         internal static void ValidateDependencyReplacement(
-            string dependentFileId,
+            IReadOnlyList<string> dependentFileIds,
             IReadOnlyList<string> dependencyFileIds,
             Func<string, IReadOnlyList<string>> getDependencies)
         {
             Execute(() => FileDependencyGraphPolicy.EnsureCanReplace(
-                dependentFileId,
+                dependentFileIds,
                 dependencyFileIds,
                 getDependencies));
         }
@@ -114,6 +114,25 @@ namespace Ee4v.AssetManager.Application
                 if (seen.Add(path))
                 {
                     normalized.Add(path);
+                }
+            }
+
+            return normalized;
+        }
+
+        internal static IReadOnlyList<string> NormalizeAssetGuids(
+            IReadOnlyList<string> guids)
+        {
+            var normalized = new List<string>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            var source = guids ?? Array.Empty<string>();
+            for (var i = 0; i < source.Count; i++)
+            {
+                var guid = Execute(
+                    () => AssetManagerRules.NormalizeAssetGuid(source[i]));
+                if (seen.Add(guid))
+                {
+                    normalized.Add(guid);
                 }
             }
 

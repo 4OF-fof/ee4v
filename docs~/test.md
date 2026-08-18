@@ -2,6 +2,25 @@
 
 `src/Editor` にあるUnity 2022.3のEditModeテストを、テストが保証する振る舞いと維持する理由に分けて記載する。
 
+## AssetManager
+
+| テスト | 保証する振る舞い | 理由 |
+| --- | --- | --- |
+| `AssetManagerApiTests.CollectionSearch_UsesNestedLogicAndHierarchicalTags` | SQLite上の入れ子条件、階層Tag、総件数、ページングが完全なItemを返す | Catalog全件を復元せず検索結果ページだけを読み込むため |
+| `AssetManagerApiTests.MatchesCollection_ReevaluatesOnlyTheRequestedItem` | 指定ItemだけでCollection条件への一致を再評価できる | 変更通知後にCatalog全体を再取得せずCollection表示を更新するため |
+| `AssetManagerApiTests.ItemAndCollectionChanges_IdentifyMutationAndSubjects` | ItemとCollectionの各変更通知が操作種別と対象IDを含む | UIがCatalog全体を再取得せず、変更対象だけを更新できるようにするため |
+| `AssetManagerApiTests.FileChanges_IdentifyFilesAndAffectedItems` | Fileの各変更通知が対象File IDと影響を受けるItem IDを含む | File所属やアーカイブの変更時に関連Itemだけを再取得できるようにするため |
+| `AssetManagerApiTests.EagleSync_ReusesIdsAndDeletesMissingFile` | Eagle由来Itemの値を正本へ合わせ、Tagだけの更新とFile削除を同期結果・対象ID通知へ反映する | UIが同期後もCatalog全体を再取得せず、Sourceにない行を残さないため |
+| `AssetManagerApiTests.EagleSync_MissingTargetPreservesDataAndDeletesRemovedItem` | 存在しない対象rootではDBを変更せず理由を返し、存在する空rootでは消えたItemとFileのIDを返して削除する | 設定誤りによる全削除を防ぎ、正常な完全同期ではEagle側の削除をDBへ反映するため |
+| `AssetManagerApiTests.ThumbnailApis_ReturnMissingWithoutAThumbnailSource` | 非同期の単体・一括取得がmissing結果を返し、キャンセル済み要求を中止する | 画像がないItemと画面破棄時の中止をUIが同じ非同期契約で扱うため |
+| `AssetManagerApiTests.Ee4vDeleteStaging_RestoresSourceUntilCommitted` | ee4v Sourceの削除準備を確定前に破棄すると実体を元へ戻し、確定時だけ削除する | DB更新失敗時にSourceだけが失われることを防ぐため |
+| `AssetManagerApiTests.FileRegistration_RejectsDirectoriesFromEverySource` | Eagleとee4vのどちらからもdirectoryをFileとして登録しない | 取り込み処理が扱えない実体種別をDBへ保存しないため |
+| `AssetManagerApiTests.AnalyzeFile_ReadsZipAndUnityPackageContents` | ZIPのroot省略後pathとUnityPackageのAsset path・GUIDを返す | UIが外部形式を直接解析せずTarget候補を構築できるようにするため |
+| `AssetManagerApiTests.FileDependencies_UpdateMultipleFilesAndRejectCycles` | 複数Fileの依存先を同時置換し、全置換後の循環を拒否し、依存先削除で影響を受けたFileを通知する | Version／Variant Groupなしで依存設定を一括操作し、連鎖変更をUIへ伝えるため |
+| `AssetManagerApiTests.ImportFileTargets_ImportsDependenciesBeforeDependent` | 非同期に依存順で取り込んだFileとGUIDを結果・変更通知・逆引きAPIから取得できる | 取り込み完了をUIへ返し、Project上のGUIDから管理元を特定するため |
+| `AssetManagerApiTests.ImportFileEntries_ImportsTemporaryZipSelectionWithoutSavingTarget` | ZIP内の指定要素だけを取り込み、保存済みTargetを変更せず、Target取り込みも同じ経路で動作する | File Treeから一時的に選んだ要素と保存済み設定の取り込み経路が分岐することを防ぐため |
+| `AssetManagerApiTests.TargetImporter_ReportsPackageFailureAfterCleanup` | UnityPackage完了待ち中は一時Fileを維持し、失敗結果を返して完了後に削除する | 非同期取り込みの失敗を呼び出し側へ確実に返し、一時Fileを残さないため |
+
 ## Core
 
 | テスト | 保証する振る舞い | 理由 |

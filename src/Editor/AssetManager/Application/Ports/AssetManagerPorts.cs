@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Ee4v.AssetManager.Contracts;
 
 namespace Ee4v.AssetManager.Application.Ports
 {
     internal interface IAssetManagerStore
     {
-        IReadOnlyList<AssetItem> GetItems();
+        AssetSearchResult SearchItems(AssetItemQuery query);
+        bool MatchesItem(string itemId, AssetFilterNode filter);
         AssetItem GetItem(string itemId);
         AssetItem CreateItem(CreateAssetItemRequest request);
         AssetItem UpdateItem(
@@ -36,8 +39,25 @@ namespace Ee4v.AssetManager.Application.Ports
         IReadOnlyList<AssetFileDependency> GetFileDependencies(
             string fileId);
         IReadOnlyList<AssetFileDependency> ReplaceFileDependencies(
-            string dependentFileId,
+            IReadOnlyList<string> dependentFileIds,
             IReadOnlyList<string> dependencyFileIds);
+        IReadOnlyList<string> GetDependentFileIds(
+            IReadOnlyList<string> dependencyFileIds);
+        IReadOnlyList<string> GetFileImportedAssetGuids(string fileId);
+        IReadOnlyList<string> GetItemImportedAssetGuids(string itemId);
+        IReadOnlyList<AssetImportedAssetAssociation>
+            GetImportedAssetAssociations(
+                IReadOnlyList<string> assetGuids);
+        void ReplaceFileImportedAssetGuids(
+            string fileId,
+            IReadOnlyList<string> assetGuids);
+        AssetFile ApplySourceFile(
+            AssetSourceType sourceType,
+            AssetSourceSnapshotFile file,
+            string itemId);
+        AssetItem ApplySourceItem(
+            AssetSourceType sourceType,
+            AssetSourceSnapshotItem item);
 
         IReadOnlyList<AssetTag> GetTags();
         IReadOnlyList<AssetItem> SetItemTags(
@@ -55,8 +75,7 @@ namespace Ee4v.AssetManager.Application.Ports
 
         AssetSyncResult ApplySourceSnapshot(
             AssetSourceType sourceType,
-            AssetSourceSnapshot snapshot,
-            bool markMissingFiles);
+            AssetSourceSnapshot snapshot);
         AssetItem GetItemBySource(
             AssetSourceType sourceType,
             string sourceId);
@@ -77,7 +96,8 @@ namespace Ee4v.AssetManager.Application.Ports
             ImportEe4vFileRequest request,
             IReadOnlyList<string> normalizedTags);
         AssetSourceSnapshotFile Register(RegisterFileRequest request);
-        void Delete(IReadOnlyList<AssetFile> files);
+        IEe4vDeleteOperation BeginDelete(
+            IReadOnlyList<AssetFile> files);
         void Update(
             AssetFile sourceFile,
             string name,
@@ -85,13 +105,33 @@ namespace Ee4v.AssetManager.Application.Ports
             IReadOnlyList<string> normalizedTags);
     }
 
+    internal interface IEe4vDeleteOperation : IDisposable
+    {
+        void Commit();
+    }
+
     internal interface IAssetTargetImporter
     {
-        void Import(
+        Task<AssetImportResult> Import(
             AssetItem item,
             AssetFile file,
             IReadOnlyList<string> targetPaths,
-            Action<bool> completed);
+            CancellationToken cancellationToken);
+    }
+
+    internal interface IAssetFileAnalyzer
+    {
+        AssetFileAnalysis Analyze(AssetFile file);
+    }
+
+    internal interface IAssetThumbnailProvider
+    {
+        Task<AssetThumbnail> Get(
+            AssetItem item,
+            CancellationToken cancellationToken);
+        Task<IReadOnlyDictionary<string, AssetThumbnail>> GetMany(
+            IReadOnlyList<AssetItem> items,
+            CancellationToken cancellationToken);
     }
 
     internal sealed class AssetSourceSnapshot
@@ -113,6 +153,7 @@ namespace Ee4v.AssetManager.Application.Ports
         internal string SourceId { get; set; }
         internal string Name { get; set; }
         internal string Description { get; set; }
+        internal string ThumbnailUrl { get; set; }
         internal IReadOnlyList<string> Tags { get; set; }
         internal IReadOnlyList<AssetSourceSnapshotFile> Files { get; set; }
     }
@@ -123,6 +164,5 @@ namespace Ee4v.AssetManager.Application.Ports
         internal string FileName { get; set; }
         internal string Extension { get; set; }
         internal string SourcePath { get; set; }
-        internal bool IsAvailable { get; set; }
     }
 }

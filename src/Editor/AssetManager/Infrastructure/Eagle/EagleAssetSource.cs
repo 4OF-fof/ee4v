@@ -47,7 +47,14 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                     folderMetadata == null
                         ? null
                         : folderMetadata.folders,
-                    targetRoot);
+                    targetRoot,
+                    out var targetFound);
+                if (!targetFound)
+                {
+                    throw Error(
+                        "Eagle target folder was not found: " +
+                        targetRoot);
+                }
 
                 var entries = ReadEntries(imagesPath);
                 var claimedFiles = new HashSet<string>(
@@ -79,7 +86,11 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                             continue;
                         }
 
-                        files.Add(ToFile(entry));
+                        var file = ToFile(entry);
+                        if (file != null)
+                        {
+                            files.Add(file);
+                        }
                     }
 
                     items.Add(new AssetSourceSnapshotItem
@@ -92,6 +103,15 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                         Description = booth == null
                             ? string.Empty
                             : booth.description ?? string.Empty,
+                        ThumbnailUrl = booth == null
+                            ? null
+                            : booth.thumbnailUrl,
+                        Tags = folderEntries
+                            .SelectMany(entry =>
+                                entry.Metadata.tags ??
+                                Array.Empty<string>())
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .ToArray(),
                         Files = files
                     });
                 }
@@ -114,9 +134,11 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
         private static IReadOnlyList<EagleFolderTarget>
             FindTargetFolders(
                 IReadOnlyList<EagleFolderNode> roots,
-                string targetRoot)
+                string targetRoot,
+                out bool targetFound)
         {
             var result = new List<EagleFolderTarget>();
+            targetFound = false;
             var normalizedTarget = NormalizePath(targetRoot);
             var source = roots ?? Array.Empty<EagleFolderNode>();
             for (var i = 0; i < source.Count; i++)
@@ -125,7 +147,8 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                     source[i],
                     string.Empty,
                     normalizedTarget,
-                    result);
+                    result,
+                    ref targetFound);
             }
 
             return result;
@@ -135,7 +158,8 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
             EagleFolderNode node,
             string parentPath,
             string targetRoot,
-            ICollection<EagleFolderTarget> result)
+            ICollection<EagleFolderTarget> result,
+            ref bool targetFound)
         {
             if (node == null || string.IsNullOrWhiteSpace(node.id))
             {
@@ -154,6 +178,7 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                     targetRoot,
                     StringComparison.OrdinalIgnoreCase))
             {
+                targetFound = true;
                 AddDescendants(node, path, result);
                 return;
             }
@@ -166,7 +191,8 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                     children[i],
                     path,
                     targetRoot,
-                    result);
+                    result,
+                    ref targetFound);
             }
         }
 
@@ -262,6 +288,14 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                 entry.DirectoryPath,
                 fileName,
                 metadata.name);
+            if (metadata.isDeleted ||
+                string.IsNullOrWhiteSpace(sourcePath) ||
+                !File.Exists(sourcePath) ||
+                Directory.Exists(sourcePath))
+            {
+                return null;
+            }
+
             return new AssetSourceSnapshotFile
             {
                 SourceId = metadata.id,
@@ -269,9 +303,7 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                 Extension = string.IsNullOrWhiteSpace(metadata.ext)
                     ? GetExtension(fileName)
                     : metadata.ext.Trim().TrimStart('.').ToLowerInvariant(),
-                SourcePath = sourcePath,
-                IsAvailable = !metadata.isDeleted &&
-                              !string.IsNullOrWhiteSpace(sourcePath)
+                SourcePath = sourcePath
             };
         }
 
@@ -384,6 +416,7 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
             public string name;
             public string ext;
             public string[] folders;
+            public string[] tags;
             public bool isDeleted;
         }
 
@@ -393,6 +426,7 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
             public long boothItemId;
             public string name;
             public string description;
+            public string thumbnailUrl;
         }
 
         private sealed class EagleEntry

@@ -19,7 +19,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                      file_name AS FileName, extension AS Extension,
                      source_type AS SourceType,
                      source_id AS SourceId, source_path AS SourcePath,
-                     is_available AS IsAvailable,
                      is_archived AS IsArchived,
                      created_at AS CreatedAt, updated_at AS UpdatedAt
               FROM file";
@@ -31,19 +30,76 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             InitializeDatabase();
         }
 
-        public IReadOnlyList<AssetItem> GetItems()
+        public AssetSearchResult SearchItems(AssetItemQuery query)
         {
             return Run(() =>
             {
                 using (var connection = OpenConnection())
                 {
-                    var ids = QueryStrings(
-                        connection,
-                        null,
-                        "SELECT id FROM item ORDER BY name, id");
-                    return ids
-                        .Select(id => ReadItem(connection, id))
+                    query = query ?? new AssetItemQuery();
+                    var parameters = new List<object>();
+                    var conditions = new List<string>();
+                    if (!query.IncludeArchived)
+                    {
+                        conditions.Add("item.is_archived = 0");
+                    }
+
+                    if (query.Filter != null)
+                    {
+                        conditions.Add(BuildFilterSql(
+                            query.Filter,
+                            parameters));
+                    }
+
+                    var where = conditions.Count == 0
+                        ? string.Empty
+                        : " WHERE " + string.Join(" AND ", conditions);
+                    var total = connection.ExecuteScalar<int>(
+                        "SELECT COUNT(*) FROM item" + where,
+                        parameters.ToArray());
+                    var pageParameters = new List<object>(parameters)
+                    {
+                        query.Limit == 0 ? -1 : query.Limit,
+                        query.Offset
+                    };
+                    var ids = connection.Query<IdRow>(
+                            "SELECT item.id AS Id FROM item" + where +
+                            " ORDER BY item.name COLLATE NOCASE, item.id" +
+                            " LIMIT ? OFFSET ?",
+                            pageParameters.ToArray())
+                        .Select(row => row.Id)
                         .ToArray();
+                    return new AssetSearchResult
+                    {
+                        Items = ids
+                            .Select(id => ReadItem(connection, id))
+                            .ToArray(),
+                        TotalCount = total
+                    };
+                }
+            });
+        }
+
+        public bool MatchesItem(
+            string itemId,
+            AssetFilterNode filter)
+        {
+            return Run(() =>
+            {
+                using (var connection = OpenConnection())
+                {
+                    RequireItem(connection, itemId, null);
+                    var parameters = new List<object> { itemId };
+                    var condition = filter == null
+                        ? "1"
+                        : BuildFilterSql(filter, parameters);
+                    return connection.ExecuteScalar<int>(
+                        @"SELECT EXISTS(
+                            SELECT 1 FROM item
+                            WHERE item.id = ?
+                              AND item.is_archived = 0
+                              AND " + condition + ")",
+                        parameters.ToArray()) != 0;
                 }
             });
         }
@@ -71,10 +127,12 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                         connection,
                         null,
                         @"INSERT INTO item(
-                            id, name, description, source_type, source_id,
+                            id, name, description, thumbnail_url,
+                            source_type, source_id,
                             is_archived, created_at, updated_at)
                           VALUES(
-                            @p0, @p1, @p2, NULL, NULL, 0, @p3, @p3)",
+                            @p0, @p1, @p2, NULL, NULL, NULL,
+                            0, @p3, @p3)",
                         id,
                         request.Name.Trim(),
                         request.Description ?? string.Empty,
@@ -454,7 +512,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
         }
 
         public IReadOnlyList<AssetFileDependency> ReplaceFileDependencies(
-            string dependentFileId,
+            IReadOnlyList<string> dependentFileIds,
             IReadOnlyList<string> dependencyFileIds)
         {
             return Run(() =>
@@ -462,7 +520,14 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 using (var connection = OpenConnection())
                 using (var transaction = new DatabaseTransaction(connection))
                 {
-                    RequireFile(connection, dependentFileId, transaction);
+                    for (var i = 0; i < dependentFileIds.Count; i++)
+                    {
+                        RequireFile(
+                            connection,
+                            dependentFileIds[i],
+                            transaction);
+                    }
+
                     for (var i = 0; i < dependencyFileIds.Count; i++)
                     {
                         RequireFile(
@@ -471,28 +536,190 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                             transaction);
                     }
 
-                    Execute(
-                        connection,
-                        transaction,
-                        @"DELETE FROM file_dependency
-                          WHERE dependent_file_id = @p0",
-                        dependentFileId);
-                    for (var i = 0; i < dependencyFileIds.Count; i++)
+                    for (var dependentIndex = 0;
+                         dependentIndex < dependentFileIds.Count;
+                         dependentIndex++)
                     {
                         Execute(
                             connection,
                             transaction,
-                            @"INSERT INTO file_dependency(
-                                dependent_file_id, dependency_file_id)
-                              VALUES(@p0, @p1)",
-                            dependentFileId,
-                            dependencyFileIds[i]);
+                            @"DELETE FROM file_dependency
+                              WHERE dependent_file_id = @p0",
+                            dependentFileIds[dependentIndex]);
+                    }
+
+                    for (var dependentIndex = 0;
+                         dependentIndex < dependentFileIds.Count;
+                         dependentIndex++)
+                    {
+                        for (var dependencyIndex = 0;
+                             dependencyIndex < dependencyFileIds.Count;
+                             dependencyIndex++)
+                        {
+                            Execute(
+                                connection,
+                                transaction,
+                                @"INSERT INTO file_dependency(
+                                    dependent_file_id, dependency_file_id)
+                                  VALUES(@p0, @p1)",
+                                dependentFileIds[dependentIndex],
+                                dependencyFileIds[dependencyIndex]);
+                        }
                     }
 
                     transaction.Commit();
-                    return ReadFileDependencies(
+                    return dependentFileIds
+                        .SelectMany(id => ReadFileDependencies(
+                            connection,
+                            id))
+                        .ToArray();
+                }
+            });
+        }
+
+        public IReadOnlyList<string> GetDependentFileIds(
+            IReadOnlyList<string> dependencyFileIds)
+        {
+            return Run(() =>
+            {
+                if (dependencyFileIds == null ||
+                    dependencyFileIds.Count == 0)
+                {
+                    return Array.Empty<string>();
+                }
+
+                using (var connection = OpenConnection())
+                {
+                    return QueryStrings(
                         connection,
-                        dependentFileId);
+                        null,
+                        "SELECT DISTINCT dependent_file_id " +
+                        "FROM file_dependency " +
+                        "WHERE dependency_file_id IN (" +
+                        string.Join(",", Enumerable.Repeat(
+                            "?",
+                            dependencyFileIds.Count)) + ") " +
+                        "ORDER BY dependent_file_id",
+                        dependencyFileIds.Cast<object>().ToArray());
+                }
+            });
+        }
+
+        public IReadOnlyList<string> GetFileImportedAssetGuids(
+            string fileId)
+        {
+            return Run(() =>
+            {
+                using (var connection = OpenConnection())
+                {
+                    RequireFile(connection, fileId, null);
+                    return ReadFileImportedAssetGuids(connection, fileId);
+                }
+            });
+        }
+
+        public IReadOnlyList<string> GetItemImportedAssetGuids(
+            string itemId)
+        {
+            return Run(() =>
+            {
+                using (var connection = OpenConnection())
+                {
+                    RequireItem(connection, itemId, null);
+                    return QueryStrings(
+                        connection,
+                        null,
+                        @"SELECT DISTINCT imported.asset_guid
+                          FROM file_imported_asset_guid imported
+                          INNER JOIN file
+                            ON file.id = imported.file_id
+                          WHERE file.item_id = @p0
+                          ORDER BY imported.asset_guid",
+                        itemId);
+                }
+            });
+        }
+
+        public IReadOnlyList<AssetImportedAssetAssociation>
+            GetImportedAssetAssociations(
+                IReadOnlyList<string> assetGuids)
+        {
+            return Run(() =>
+            {
+                if (assetGuids != null && assetGuids.Count == 0)
+                {
+                    return Array.Empty<AssetImportedAssetAssociation>();
+                }
+
+                using (var connection = OpenConnection())
+                {
+                    var where = assetGuids == null
+                        ? string.Empty
+                        : " WHERE imported.asset_guid IN (" +
+                          string.Join(
+                              ",",
+                              Enumerable.Repeat("?", assetGuids.Count)) +
+                          ")";
+                    var parameters = assetGuids == null
+                        ? Array.Empty<object>()
+                        : assetGuids.Cast<object>().ToArray();
+                    return connection.Query<ImportedAssetGuidRow>(
+                            @"SELECT file.item_id AS ItemId,
+                                     imported.file_id AS FileId,
+                                     imported.asset_guid AS AssetGuid,
+                                     imported.imported_at AS ImportedAt
+                              FROM file_imported_asset_guid imported
+                              INNER JOIN file
+                                ON file.id = imported.file_id" +
+                            where +
+                            " ORDER BY imported.imported_at, " +
+                            "imported.asset_guid, imported.file_id",
+                            parameters)
+                        .Select(row =>
+                            new AssetImportedAssetAssociation
+                            {
+                                ItemId = row.ItemId,
+                                FileId = row.FileId,
+                                AssetGuid = row.AssetGuid,
+                                ImportedAt = ParseDate(row.ImportedAt)
+                            })
+                        .ToArray();
+                }
+            });
+        }
+
+        public void ReplaceFileImportedAssetGuids(
+            string fileId,
+            IReadOnlyList<string> assetGuids)
+        {
+            Run(() =>
+            {
+                using (var connection = OpenConnection())
+                using (var transaction = new DatabaseTransaction(connection))
+                {
+                    RequireFile(connection, fileId, transaction);
+                    Execute(
+                        connection,
+                        transaction,
+                        @"DELETE FROM file_imported_asset_guid
+                          WHERE file_id = @p0",
+                        fileId);
+                    var importedAt = Now();
+                    for (var i = 0; i < assetGuids.Count; i++)
+                    {
+                        Execute(
+                            connection,
+                            transaction,
+                            @"INSERT INTO file_imported_asset_guid(
+                                file_id, asset_guid, imported_at)
+                              VALUES(@p0, @p1, @p2)",
+                            fileId,
+                            assetGuids[i],
+                            importedAt);
+                    }
+
+                    transaction.Commit();
+                    return true;
                 }
             });
         }
@@ -672,31 +899,35 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
 
         public AssetSyncResult ApplySourceSnapshot(
             AssetSourceType sourceType,
-            AssetSourceSnapshot snapshot,
-            bool markMissingFiles)
+            AssetSourceSnapshot snapshot)
         {
             return Run(() =>
             {
                 using (var connection = OpenConnection())
                 using (var transaction = new DatabaseTransaction(connection))
                 {
-                    var created = 0;
-                    var updated = 0;
-                    var unchanged = 0;
-                    var errors = 0;
+                    var errorMessages = new List<string>();
+                    var seenItems = new HashSet<string>(
+                        StringComparer.Ordinal);
                     var seenFiles = new HashSet<string>(
                         StringComparer.Ordinal);
                     var items = snapshot == null
                         ? Array.Empty<AssetSourceSnapshotItem>()
                         : snapshot.Items;
                     var source = ToSourceType(sourceType);
+                    var before = ReadSourceState(
+                        connection,
+                        transaction,
+                        source);
                     for (var i = 0; i < items.Count; i++)
                     {
                         var item = items[i];
                         if (item == null ||
-                            string.IsNullOrWhiteSpace(item.SourceId))
+                            string.IsNullOrWhiteSpace(item.SourceId) ||
+                            !seenItems.Add(item.SourceId))
                         {
-                            errors++;
+                            errorMessages.Add(
+                                "A source item has a missing or duplicate id.");
                             continue;
                         }
 
@@ -704,10 +935,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                             connection,
                             transaction,
                             source,
-                            item,
-                            ref created,
-                            ref updated,
-                            ref unchanged);
+                            item);
                         var files = item.Files ??
                                     Array.Empty<AssetSourceSnapshotFile>();
                         for (var fileIndex = 0;
@@ -719,7 +947,8 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                                 string.IsNullOrWhiteSpace(file.SourceId) ||
                                 !seenFiles.Add(file.SourceId))
                             {
-                                errors++;
+                                errorMessages.Add(
+                                    "A source file has a missing or duplicate id.");
                                 continue;
                             }
 
@@ -728,10 +957,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                                 transaction,
                                 source,
                                 itemId,
-                                file,
-                                ref created,
-                                ref updated,
-                                ref unchanged);
+                                file);
                         }
 
                         if (item.Tags != null)
@@ -754,7 +980,8 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                             string.IsNullOrWhiteSpace(file.SourceId) ||
                             !seenFiles.Add(file.SourceId))
                         {
-                            errors++;
+                            errorMessages.Add(
+                                "A source file has a missing or duplicate id.");
                             continue;
                         }
 
@@ -763,34 +990,134 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                             transaction,
                             source,
                             null,
-                            file,
-                            ref created,
-                            ref updated,
-                            ref unchanged);
+                            file);
                     }
 
-                    if (markMissingFiles)
+                    DeleteMissingSourceFiles(
+                        connection,
+                        transaction,
+                        source,
+                        seenFiles);
+                    DeleteMissingSourceItems(
+                        connection,
+                        transaction,
+                        source,
+                        seenItems);
+
+                    DeleteUnusedTags(connection, transaction);
+                    var after = ReadSourceState(
+                        connection,
+                        transaction,
+                        source);
+                    var result = BuildSyncResult(
+                        before,
+                        after,
+                        errorMessages);
+                    transaction.Commit();
+                    return result;
+                }
+            });
+        }
+
+        public AssetFile ApplySourceFile(
+            AssetSourceType sourceType,
+            AssetSourceSnapshotFile file,
+            string itemId)
+        {
+            return Run(() =>
+            {
+                if (file == null ||
+                    string.IsNullOrWhiteSpace(file.SourceId))
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "Source file id is required.");
+                }
+
+                using (var connection = OpenConnection())
+                using (var transaction = new DatabaseTransaction(connection))
+                {
+                    if (!string.IsNullOrWhiteSpace(itemId))
                     {
-                        MarkMissingSourceFiles(
+                        RequireItem(connection, itemId, transaction);
+                    }
+
+                    var source = ToSourceType(sourceType);
+                    UpsertSourceFile(
+                        connection,
+                        transaction,
+                        source,
+                        string.IsNullOrWhiteSpace(itemId) ? null : itemId,
+                        file);
+                    var fileId = ScalarString(
+                        connection,
+                        transaction,
+                        @"SELECT id FROM file
+                          WHERE source_type = @p0 AND source_id = @p1",
+                        source,
+                        file.SourceId);
+                    var result = ReadFile(connection, fileId);
+                    transaction.Commit();
+                    return result;
+                }
+            });
+        }
+
+        public AssetItem ApplySourceItem(
+            AssetSourceType sourceType,
+            AssetSourceSnapshotItem item)
+        {
+            return Run(() =>
+            {
+                if (item == null ||
+                    string.IsNullOrWhiteSpace(item.SourceId))
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "Source item id is required.");
+                }
+
+                using (var connection = OpenConnection())
+                using (var transaction = new DatabaseTransaction(connection))
+                {
+                    var source = ToSourceType(sourceType);
+                    var itemId = UpsertSourceItem(
+                        connection,
+                        transaction,
+                        source,
+                        item);
+                    var seenFiles = new HashSet<string>(
+                        StringComparer.Ordinal);
+                    var files = item.Files ??
+                                Array.Empty<AssetSourceSnapshotFile>();
+                    for (var i = 0; i < files.Count; i++)
+                    {
+                        if (files[i] == null ||
+                            string.IsNullOrWhiteSpace(files[i].SourceId) ||
+                            !seenFiles.Add(files[i].SourceId))
+                        {
+                            throw new AssetManagerException(
+                                AssetManagerErrorCode.InvalidRequest,
+                                "Source file id must be unique.");
+                        }
+
+                        UpsertSourceFile(
                             connection,
                             transaction,
                             source,
-                            seenFiles);
+                            itemId,
+                            files[i]);
                     }
 
+                    ReplaceItemTags(
+                        connection,
+                        transaction,
+                        itemId,
+                        item.Tags ?? Array.Empty<string>());
                     DeleteUnusedTags(connection, transaction);
+                    var result = ReadItem(connection, itemId);
                     transaction.Commit();
-                    var state = errors == 0
-                        ? AssetSyncState.Success
-                        : created + updated + unchanged > 0
-                            ? AssetSyncState.Partial
-                            : AssetSyncState.Failed;
-                    return new AssetSyncResult(
-                        created,
-                        updated,
-                        unchanged,
-                        errors,
-                        state);
+                    return result;
                 }
             });
         }
@@ -836,6 +1163,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     id TEXT PRIMARY KEY,
                     name TEXT NOT NULL CHECK(trim(name) <> ''),
                     description TEXT NOT NULL DEFAULT '',
+                    thumbnail_url TEXT,
                     source_type TEXT,
                     source_id TEXT,
                     is_archived INTEGER NOT NULL DEFAULT 0
@@ -858,8 +1186,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                       'eagle', 'ee4v')),
                     source_id TEXT NOT NULL,
                     source_path TEXT,
-                    is_available INTEGER NOT NULL
-                      CHECK(is_available IN (0, 1)),
                     is_archived INTEGER NOT NULL DEFAULT 0
                       CHECK(is_archived IN (0, 1)),
                     created_at TEXT NOT NULL,
@@ -903,6 +1229,18 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     ix_file_dependency_reverse
                     ON file_dependency(
                       dependency_file_id, dependent_file_id)",
+                @"CREATE TABLE IF NOT EXISTS file_imported_asset_guid(
+                    file_id TEXT NOT NULL
+                      REFERENCES file(id) ON DELETE CASCADE,
+                    asset_guid TEXT NOT NULL
+                      CHECK(length(asset_guid) = 32)
+                      CHECK(asset_guid = lower(asset_guid))
+                      CHECK(asset_guid NOT GLOB '*[^0-9a-f]*'),
+                    imported_at TEXT NOT NULL,
+                    PRIMARY KEY(file_id, asset_guid)
+                  )",
+                @"CREATE INDEX IF NOT EXISTS ix_file_imported_asset_guid
+                    ON file_imported_asset_guid(asset_guid, file_id)",
                 @"CREATE TRIGGER IF NOT EXISTS
                     prevent_file_dependency_cycle
                   BEFORE INSERT ON file_dependency
@@ -1012,6 +1350,110 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             }
         }
 
+        private static string BuildFilterSql(
+            AssetFilterNode node,
+            ICollection<object> parameters)
+        {
+            switch (node.Type)
+            {
+                case AssetFilterNodeType.And:
+                    return BuildFilterGroup(node, " AND ", parameters);
+                case AssetFilterNodeType.Or:
+                    return BuildFilterGroup(node, " OR ", parameters);
+                case AssetFilterNodeType.Not:
+                    return "NOT (" + BuildFilterSql(
+                        node.Children[0],
+                        parameters) + ")";
+                case AssetFilterNodeType.Condition:
+                    return BuildFilterCondition(node, parameters);
+                default:
+                    throw new InvalidOperationException(
+                        "Unsupported asset filter node.");
+            }
+        }
+
+        private static string BuildFilterGroup(
+            AssetFilterNode node,
+            string separator,
+            ICollection<object> parameters)
+        {
+            return "(" + string.Join(
+                separator,
+                node.Children
+                    .Select(child => BuildFilterSql(child, parameters))
+                    .ToArray()) + ")";
+        }
+
+        private static string BuildFilterCondition(
+            AssetFilterNode node,
+            ICollection<object> parameters)
+        {
+            switch (node.ConditionType.Value)
+            {
+                case AssetFilterConditionType.NameContains:
+                    parameters.Add(node.Value ?? string.Empty);
+                    return "instr(lower(item.name), lower(?)) > 0";
+                case AssetFilterConditionType.DescriptionContains:
+                    parameters.Add(node.Value ?? string.Empty);
+                    return "instr(lower(item.description), lower(?)) > 0";
+                case AssetFilterConditionType.HasTag:
+                    var tag = NormalizeTagFilter(node.Value);
+                    parameters.Add(tag);
+                    parameters.Add(EscapeLike(tag) + "/%");
+                    return @"EXISTS(
+                        SELECT 1 FROM item_tag filter_item_tag
+                        INNER JOIN tag filter_tag
+                          ON filter_tag.id = filter_item_tag.tag_id
+                        WHERE filter_item_tag.item_id = item.id
+                          AND (filter_tag.path = ? OR
+                               filter_tag.path LIKE ? ESCAPE '\'))";
+                case AssetFilterConditionType.HasFileExtension:
+                    parameters.Add(NormalizeExtensionFilter(node.Value));
+                    return @"EXISTS(
+                        SELECT 1 FROM file filter_file
+                        WHERE filter_file.item_id = item.id
+                          AND filter_file.is_archived = 0
+                          AND filter_file.extension = ?)";
+                default:
+                    throw new InvalidOperationException(
+                        "Unsupported asset filter condition.");
+            }
+        }
+
+        private static string NormalizeTagFilter(string value)
+        {
+            var path = (value ?? string.Empty).Trim();
+            if (path.StartsWith("#", StringComparison.Ordinal))
+            {
+                path = path.Substring(1);
+            }
+
+            return string.Join(
+                "/",
+                path.Split('/')
+                    .Select(segment => segment.Trim().ToLowerInvariant())
+                    .ToArray());
+        }
+
+        private static string NormalizeExtensionFilter(string value)
+        {
+            var extension = (value ?? string.Empty).Trim();
+            while (extension.StartsWith(".", StringComparison.Ordinal))
+            {
+                extension = extension.Substring(1);
+            }
+
+            return extension.ToLowerInvariant();
+        }
+
+        private static string EscapeLike(string value)
+        {
+            return (value ?? string.Empty)
+                .Replace("\\", "\\\\")
+                .Replace("%", "\\%")
+                .Replace("_", "\\_");
+        }
+
         private static AssetItem ReadItem(
             SQLiteConnection connection,
             string itemId)
@@ -1019,6 +1461,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             var row = connection.Query<ItemRow>(
                     @"SELECT id AS Id, name AS Name,
                              description AS Description,
+                             thumbnail_url AS ThumbnailUrl,
                              source_type AS SourceType,
                              source_id AS SourceId,
                              is_archived AS IsArchived,
@@ -1037,6 +1480,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 Id = row.Id,
                 Name = row.Name,
                 Description = row.Description,
+                ThumbnailUrl = row.ThumbnailUrl,
                 SourceType = row.SourceType == null
                     ? (AssetSourceType?)null
                     : ParseSourceType(row.SourceType),
@@ -1094,7 +1538,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 SourceType = ParseSourceType(row.SourceType),
                 SourceId = row.SourceId,
                 SourcePath = row.SourcePath,
-                IsAvailable = row.IsAvailable != 0,
                 IsArchived = row.IsArchived != 0,
                 CreatedAt = ParseDate(row.CreatedAt),
                 UpdatedAt = ParseDate(row.UpdatedAt)
@@ -1138,6 +1581,20 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     DependencyFileId = row.DependencyFileId
                 })
                 .ToArray();
+        }
+
+        private static IReadOnlyList<string> ReadFileImportedAssetGuids(
+            SQLiteConnection connection,
+            string fileId)
+        {
+            return QueryStrings(
+                connection,
+                null,
+                @"SELECT asset_guid
+                  FROM file_imported_asset_guid
+                  WHERE file_id = @p0
+                  ORDER BY asset_guid",
+                fileId);
         }
 
         private static IReadOnlyList<AssetTag> ReadTags(
@@ -1323,10 +1780,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             SQLiteConnection connection,
             DatabaseTransaction transaction,
             string source,
-            AssetSourceSnapshotItem item,
-            ref int created,
-            ref int updated,
-            ref int unchanged)
+            AssetSourceSnapshotItem item)
         {
             var itemId = ScalarString(
                 connection,
@@ -1347,39 +1801,36 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     connection,
                     transaction,
                     @"INSERT INTO item(
-                        id, name, description, source_type, source_id,
+                        id, name, description, thumbnail_url,
+                        source_type, source_id,
                         is_archived, created_at, updated_at)
                       VALUES(
-                        @p0, @p1, @p2, @p3, @p4, 0, @p5, @p5)",
+                        @p0, @p1, @p2, @p3, @p4, @p5,
+                        0, @p6, @p6)",
                     itemId,
                     name,
                     description,
+                    NullIfWhiteSpace(item.ThumbnailUrl),
                     source,
                     item.SourceId,
                     now);
-                created++;
                 return itemId;
             }
 
-            var changed = Execute(
+            Execute(
                 connection,
                 transaction,
                 @"UPDATE item
-                  SET name = @p0, description = @p1, updated_at = @p2
-                  WHERE id = @p3
-                    AND (name <> @p0 OR description <> @p1)",
+                  SET name = @p0, description = @p1,
+                      thumbnail_url = @p2, updated_at = @p3
+                  WHERE id = @p4 AND (
+                    name <> @p0 OR description <> @p1 OR
+                    thumbnail_url IS NOT @p2)",
                 name,
                 description,
+                NullIfWhiteSpace(item.ThumbnailUrl),
                 now,
                 itemId);
-            if (changed > 0)
-            {
-                updated++;
-            }
-            else
-            {
-                unchanged++;
-            }
 
             return itemId;
         }
@@ -1389,10 +1840,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             DatabaseTransaction transaction,
             string source,
             string itemId,
-            AssetSourceSnapshotFile file,
-            ref int created,
-            ref int updated,
-            ref int unchanged)
+            AssetSourceSnapshotFile file)
         {
             var fileId = ScalarString(
                 connection,
@@ -1415,11 +1863,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     transaction,
                     @"INSERT INTO file(
                         id, item_id, file_name, extension, source_type,
-                        source_id, source_path, is_available,
+                        source_id, source_path,
                         is_archived, created_at, updated_at)
                       VALUES(
-                        @p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7,
-                        0, @p8, @p8)",
+                        @p0, @p1, @p2, @p3, @p4, @p5, @p6,
+                        0, @p7, @p7)",
                     NewId(),
                     itemId,
                     fileName,
@@ -1427,13 +1875,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     source,
                     file.SourceId,
                     file.SourcePath,
-                    file.IsAvailable ? 1 : 0,
                     now);
-                created++;
                 return;
             }
 
-            var changed = Execute(
+            Execute(
                 connection,
                 transaction,
                 @"UPDATE file
@@ -1444,32 +1890,21 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                       file_name = @p1,
                       extension = @p2,
                       source_path = @p3,
-                      is_available = @p4,
-                      updated_at = @p5
-                  WHERE id = @p6 AND (
+                      updated_at = @p4
+                  WHERE id = @p5 AND (
                     (@p0 IS NOT NULL AND item_id IS NOT @p0) OR
                     file_name <> @p1 OR
                     extension IS NOT @p2 OR
-                    source_path IS NOT @p3 OR
-                    is_available <> @p4)",
+                    source_path IS NOT @p3)",
                 itemId,
                 fileName,
                 extension,
                 file.SourcePath,
-                file.IsAvailable ? 1 : 0,
                 now,
                 fileId);
-            if (changed > 0)
-            {
-                updated++;
-            }
-            else
-            {
-                unchanged++;
-            }
         }
 
-        private static void MarkMissingSourceFiles(
+        private static void DeleteMissingSourceFiles(
             SQLiteConnection connection,
             DatabaseTransaction transaction,
             string source,
@@ -1491,14 +1926,228 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 Execute(
                     connection,
                     transaction,
-                    @"UPDATE file
-                      SET is_available = 0, updated_at = @p0
-                      WHERE source_type = @p1
-                        AND source_id = @p2
-                        AND is_available <> 0",
-                    Now(),
+                    @"DELETE FROM file
+                      WHERE source_type = @p0
+                        AND source_id = @p1",
                     source,
                     sourceId);
+            }
+        }
+
+        private static void DeleteMissingSourceItems(
+            SQLiteConnection connection,
+            DatabaseTransaction transaction,
+            string source,
+            ISet<string> seenItems)
+        {
+            var sourceIds = QueryStrings(
+                connection,
+                transaction,
+                @"SELECT source_id FROM item
+                  WHERE source_type = @p0",
+                source);
+            foreach (var sourceId in sourceIds)
+            {
+                if (seenItems.Contains(sourceId))
+                {
+                    continue;
+                }
+
+                Execute(
+                    connection,
+                    transaction,
+                    @"DELETE FROM item
+                      WHERE source_type = @p0
+                        AND source_id = @p1",
+                    source,
+                    sourceId);
+            }
+        }
+
+        private static SourceState ReadSourceState(
+            SQLiteConnection connection,
+            DatabaseTransaction transaction,
+            string source)
+        {
+            var state = new SourceState();
+            var itemIds = QueryStrings(
+                connection,
+                transaction,
+                @"SELECT id FROM item
+                  WHERE source_type = @p0",
+                source);
+            for (var i = 0; i < itemIds.Count; i++)
+            {
+                var item = ReadItem(connection, itemIds[i]);
+                state.Items[item.Id] = new SourceItemState(item);
+            }
+
+            var files = connection.Query<FileRow>(
+                    FileSelect + " WHERE source_type = ?",
+                    source)
+                .Select(MapFile)
+                .ToArray();
+            for (var i = 0; i < files.Length; i++)
+            {
+                state.Files[files[i].Id] =
+                    new SourceFileState(files[i]);
+            }
+
+            var dependentIds = QueryStrings(
+                connection,
+                transaction,
+                @"SELECT DISTINCT dependency.dependent_file_id
+                  FROM file_dependency dependency
+                  INNER JOIN file source_file
+                    ON source_file.id = dependency.dependency_file_id
+                  WHERE source_file.source_type = @p0",
+                source);
+            state.DependentFileIds.UnionWith(dependentIds);
+            var attachments = connection.Query<FileAttachmentRow>(
+                @"SELECT file.id AS FileId, file.item_id AS ItemId
+                  FROM file
+                  INNER JOIN item ON item.id = file.item_id
+                  WHERE item.source_type = ?
+                    AND file.source_type <> ?",
+                source,
+                source);
+            for (var i = 0; i < attachments.Count; i++)
+            {
+                state.ExternalAttachments[attachments[i].FileId] =
+                    attachments[i].ItemId;
+            }
+
+            return state;
+        }
+
+        private static AssetSyncResult BuildSyncResult(
+            SourceState before,
+            SourceState after,
+            IReadOnlyList<string> errorMessages)
+        {
+            var createdItems = NewIds(after.Items, before.Items);
+            var deletedItems = NewIds(before.Items, after.Items);
+            var updatedItems = ChangedIds(
+                before.Items,
+                after.Items,
+                (left, right) => left.Equals(right));
+            var createdFiles = NewIds(after.Files, before.Files);
+            var deletedFiles = NewIds(before.Files, after.Files);
+            var updatedFiles = ChangedIds(
+                before.Files,
+                after.Files,
+                (left, right) => left.Equals(right));
+            var affectedItems = new HashSet<string>(
+                createdItems
+                    .Concat(updatedItems)
+                    .Concat(deletedItems),
+                StringComparer.Ordinal);
+            var affectedFiles = new HashSet<string>(
+                createdFiles
+                    .Concat(updatedFiles)
+                    .Concat(deletedFiles),
+                StringComparer.Ordinal);
+            foreach (var fileId in createdFiles.Concat(updatedFiles))
+            {
+                AddId(affectedItems, after.Files[fileId].ItemId);
+            }
+
+            foreach (var fileId in deletedFiles.Concat(updatedFiles))
+            {
+                AddId(affectedItems, before.Files[fileId].ItemId);
+            }
+
+            foreach (var fileId in before.DependentFileIds.Except(
+                         after.DependentFileIds,
+                         StringComparer.Ordinal))
+            {
+                affectedFiles.Add(fileId);
+            }
+
+            var attachmentIds = new HashSet<string>(
+                before.ExternalAttachments.Keys.Concat(
+                    after.ExternalAttachments.Keys),
+                StringComparer.Ordinal);
+            foreach (var fileId in attachmentIds)
+            {
+                before.ExternalAttachments.TryGetValue(
+                    fileId,
+                    out var beforeItemId);
+                after.ExternalAttachments.TryGetValue(
+                    fileId,
+                    out var afterItemId);
+                if (string.Equals(
+                        beforeItemId,
+                        afterItemId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                affectedFiles.Add(fileId);
+                AddId(affectedItems, beforeItemId);
+                AddId(affectedItems, afterItemId);
+            }
+
+            var unchangedCount = UnchangedCount(
+                                     before.Items,
+                                     after.Items,
+                                     (left, right) => left.Equals(right)) +
+                                 UnchangedCount(
+                                     before.Files,
+                                     after.Files,
+                                     (left, right) => left.Equals(right));
+            return new AssetSyncResult(
+                createdItems,
+                updatedItems,
+                deletedItems,
+                createdFiles,
+                updatedFiles,
+                deletedFiles,
+                affectedItems.OrderBy(id => id, StringComparer.Ordinal)
+                    .ToArray(),
+                affectedFiles.OrderBy(id => id, StringComparer.Ordinal)
+                    .ToArray(),
+                unchangedCount,
+                errorMessages);
+        }
+
+        private static string[] NewIds<T>(
+            IReadOnlyDictionary<string, T> source,
+            IReadOnlyDictionary<string, T> other)
+        {
+            return source.Keys
+                .Where(id => !other.ContainsKey(id))
+                .OrderBy(id => id, StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        private static string[] ChangedIds<T>(
+            IReadOnlyDictionary<string, T> before,
+            IReadOnlyDictionary<string, T> after,
+            Func<T, T, bool> equals)
+        {
+            return before.Keys
+                .Where(after.ContainsKey)
+                .Where(id => !equals(before[id], after[id]))
+                .OrderBy(id => id, StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        private static int UnchangedCount<T>(
+            IReadOnlyDictionary<string, T> before,
+            IReadOnlyDictionary<string, T> after,
+            Func<T, T, bool> equals)
+        {
+            return before.Keys.Count(id =>
+                after.ContainsKey(id) && equals(before[id], after[id]));
+        }
+
+        private static void AddId(ISet<string> ids, string id)
+        {
+            if (!string.IsNullOrWhiteSpace(id))
+            {
+                ids.Add(id);
             }
         }
 
@@ -1626,6 +2275,13 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
         private static string Now()
         {
             return DateTime.UtcNow.ToString("O");
+        }
+
+        private static string NullIfWhiteSpace(string value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? null
+                : value.Trim();
         }
 
         private static DateTime ParseDate(string value)
@@ -1770,11 +2426,114 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             public string Id { get; set; }
             public string Name { get; set; }
             public string Description { get; set; }
+            public string ThumbnailUrl { get; set; }
             public string SourceType { get; set; }
             public string SourceId { get; set; }
             public int IsArchived { get; set; }
             public string CreatedAt { get; set; }
             public string UpdatedAt { get; set; }
+        }
+
+        private sealed class IdRow
+        {
+            public string Id { get; set; }
+        }
+
+        private sealed class SourceState
+        {
+            internal Dictionary<string, SourceItemState> Items { get; } =
+                new Dictionary<string, SourceItemState>(
+                    StringComparer.Ordinal);
+            internal Dictionary<string, SourceFileState> Files { get; } =
+                new Dictionary<string, SourceFileState>(
+                    StringComparer.Ordinal);
+            internal HashSet<string> DependentFileIds { get; } =
+                new HashSet<string>(StringComparer.Ordinal);
+            internal Dictionary<string, string> ExternalAttachments { get; } =
+                new Dictionary<string, string>(StringComparer.Ordinal);
+        }
+
+        private sealed class SourceItemState
+        {
+            internal SourceItemState(AssetItem item)
+            {
+                Name = item.Name ?? string.Empty;
+                Description = item.Description ?? string.Empty;
+                ThumbnailUrl = item.ThumbnailUrl ?? string.Empty;
+                IsArchived = item.IsArchived;
+                Tags = (item.Tags ?? Array.Empty<AssetTag>())
+                    .Select(tag => tag.Path ?? string.Empty)
+                    .OrderBy(path => path, StringComparer.Ordinal)
+                    .ToArray();
+            }
+
+            private string Name { get; }
+            private string Description { get; }
+            private string ThumbnailUrl { get; }
+            private bool IsArchived { get; }
+            private IReadOnlyList<string> Tags { get; }
+
+            internal bool Equals(SourceItemState other)
+            {
+                return other != null &&
+                       string.Equals(Name, other.Name, StringComparison.Ordinal) &&
+                       string.Equals(
+                           Description,
+                           other.Description,
+                           StringComparison.Ordinal) &&
+                       string.Equals(
+                           ThumbnailUrl,
+                           other.ThumbnailUrl,
+                           StringComparison.Ordinal) &&
+                       IsArchived == other.IsArchived &&
+                       Tags.SequenceEqual(other.Tags, StringComparer.Ordinal);
+            }
+        }
+
+        private sealed class SourceFileState
+        {
+            internal SourceFileState(AssetFile file)
+            {
+                ItemId = file.ItemId ?? string.Empty;
+                FileName = file.FileName ?? string.Empty;
+                Extension = file.Extension ?? string.Empty;
+                SourcePath = file.SourcePath ?? string.Empty;
+                IsArchived = file.IsArchived;
+            }
+
+            internal string ItemId { get; }
+            private string FileName { get; }
+            private string Extension { get; }
+            private string SourcePath { get; }
+            private bool IsArchived { get; }
+
+            internal bool Equals(SourceFileState other)
+            {
+                return other != null &&
+                       string.Equals(
+                           ItemId,
+                           other.ItemId,
+                           StringComparison.Ordinal) &&
+                       string.Equals(
+                           FileName,
+                           other.FileName,
+                           StringComparison.Ordinal) &&
+                       string.Equals(
+                           Extension,
+                           other.Extension,
+                           StringComparison.Ordinal) &&
+                       string.Equals(
+                           SourcePath,
+                           other.SourcePath,
+                           StringComparison.Ordinal) &&
+                       IsArchived == other.IsArchived;
+            }
+        }
+
+        private sealed class FileAttachmentRow
+        {
+            public string FileId { get; set; }
+            public string ItemId { get; set; }
         }
 
         private sealed class FileRow
@@ -1786,7 +2545,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             public string SourceType { get; set; }
             public string SourceId { get; set; }
             public string SourcePath { get; set; }
-            public int IsAvailable { get; set; }
             public int IsArchived { get; set; }
             public string CreatedAt { get; set; }
             public string UpdatedAt { get; set; }
@@ -1802,6 +2560,14 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
         {
             public string DependentFileId { get; set; }
             public string DependencyFileId { get; set; }
+        }
+
+        private sealed class ImportedAssetGuidRow
+        {
+            public string ItemId { get; set; }
+            public string FileId { get; set; }
+            public string AssetGuid { get; set; }
+            public string ImportedAt { get; set; }
         }
 
         private sealed class TagRow

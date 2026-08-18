@@ -79,7 +79,11 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
                     }
                     else
                     {
-                        files.Add(ToFileSnapshot(metadata, entryPath));
+                        var file = ToFileSnapshot(metadata, entryPath);
+                        if (file != null)
+                        {
+                            files.Add(file);
+                        }
                     }
                 }
 
@@ -183,7 +187,8 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
             }
         }
 
-        public void Delete(IReadOnlyList<AssetFile> files)
+        public IEe4vDeleteOperation BeginDelete(
+            IReadOnlyList<AssetFile> files)
         {
             try
             {
@@ -230,10 +235,46 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
                     entryPaths.Add(entryPath);
                 }
 
-                foreach (var entryPath in entryPaths)
+                var moves = new List<StagedEntry>();
+                try
                 {
-                    Directory.Delete(entryPath, true);
+                    foreach (var entryPath in entryPaths)
+                    {
+                        var assetsPath = Path.GetDirectoryName(entryPath);
+                        var libraryPath = string.IsNullOrWhiteSpace(assetsPath)
+                            ? null
+                            : Path.GetDirectoryName(assetsPath);
+                        if (string.IsNullOrWhiteSpace(libraryPath) ||
+                            !string.Equals(
+                                Path.GetFileName(assetsPath),
+                                AssetsDirectoryName,
+                                StringComparison.OrdinalIgnoreCase))
+                        {
+                            throw Error(
+                                "ee4v source directory is invalid.");
+                        }
+
+                        var trashPath = Path.Combine(
+                            libraryPath,
+                            ".trash");
+                        Directory.CreateDirectory(trashPath);
+                        var stagedPath = Path.Combine(
+                            trashPath,
+                            Path.GetFileName(entryPath) + "-" +
+                            Guid.NewGuid().ToString("N"));
+                        Directory.Move(entryPath, stagedPath);
+                        moves.Add(new StagedEntry(
+                            entryPath,
+                            stagedPath));
+                    }
                 }
+                catch
+                {
+                    Restore(moves);
+                    throw;
+                }
+
+                return new Ee4vDeleteOperation(moves);
             }
             catch (AssetManagerException)
             {
@@ -242,8 +283,22 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
             catch (Exception exception)
             {
                 throw Error(
-                    "ee4v source file could not be deleted.",
+                    "ee4v source file could not be staged for deletion.",
                     exception);
+            }
+        }
+
+        private static void Restore(IReadOnlyList<StagedEntry> entries)
+        {
+            for (var i = entries.Count - 1; i >= 0; i--)
+            {
+                if (Directory.Exists(entries[i].StagedPath) &&
+                    !Directory.Exists(entries[i].OriginalPath))
+                {
+                    Directory.Move(
+                        entries[i].StagedPath,
+                        entries[i].OriginalPath);
+                }
             }
         }
 
@@ -289,13 +344,17 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
             string entryPath)
         {
             Validate(metadata);
+            var file = ToFileSnapshot(metadata, entryPath);
             return new AssetSourceSnapshotItem
             {
                 SourceId = metadata.id,
                 Name = metadata.name,
                 Description = metadata.description ?? string.Empty,
+                ThumbnailUrl = metadata.thumbnailUrl,
                 Tags = metadata.tags ?? Array.Empty<string>(),
-                Files = new[] { ToFileSnapshot(metadata, entryPath) }
+                Files = file == null
+                    ? Array.Empty<AssetSourceSnapshotFile>()
+                    : new[] { file }
             };
         }
 
@@ -307,6 +366,11 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
             var sourcePath = Path.Combine(
                 entryPath,
                 metadata.fileName);
+            if (!File.Exists(sourcePath) || Directory.Exists(sourcePath))
+            {
+                return null;
+            }
+
             return new AssetSourceSnapshotFile
             {
                 SourceId = metadata.id,
@@ -314,8 +378,7 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
                 Extension = Path.GetExtension(metadata.fileName)
                     .TrimStart('.')
                     .ToLowerInvariant(),
-                SourcePath = sourcePath,
-                IsAvailable = File.Exists(sourcePath)
+                SourcePath = sourcePath
             };
         }
 
@@ -332,6 +395,11 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
 
             var sourcePath = Path.GetFullPath(
                 Environment.ExpandEnvironmentVariables(sourceValue));
+            if (Directory.Exists(sourcePath))
+            {
+                throw Error("Directories cannot be registered as files.");
+            }
+
             if (!File.Exists(sourcePath))
             {
                 throw Error("File was not found.");
@@ -523,6 +591,7 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
             public string id;
             public string name;
             public string description;
+            public string thumbnailUrl;
             public string[] tags;
             public string fileName;
         }
@@ -539,6 +608,66 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
 
             internal Ee4vMetadata Metadata { get; }
             internal string EntryPath { get; }
+        }
+
+        private sealed class StagedEntry
+        {
+            internal StagedEntry(
+                string originalPath,
+                string stagedPath)
+            {
+                OriginalPath = originalPath;
+                StagedPath = stagedPath;
+            }
+
+            internal string OriginalPath { get; }
+            internal string StagedPath { get; }
+        }
+
+        private sealed class Ee4vDeleteOperation
+            : IEe4vDeleteOperation
+        {
+            private readonly IReadOnlyList<StagedEntry> _entries;
+            private bool _committed;
+
+            internal Ee4vDeleteOperation(
+                IReadOnlyList<StagedEntry> entries)
+            {
+                _entries = entries ?? Array.Empty<StagedEntry>();
+            }
+
+            public void Commit()
+            {
+                if (_committed)
+                {
+                    return;
+                }
+
+                _committed = true;
+                for (var i = 0; i < _entries.Count; i++)
+                {
+                    try
+                    {
+                        if (Directory.Exists(_entries[i].StagedPath))
+                        {
+                            Directory.Delete(
+                                _entries[i].StagedPath,
+                                true);
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            public void Dispose()
+            {
+                if (!_committed)
+                {
+                    Restore(_entries);
+                }
+            }
         }
     }
 }

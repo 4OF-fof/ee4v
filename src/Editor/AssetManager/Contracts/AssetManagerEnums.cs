@@ -6,6 +6,18 @@ namespace Ee4v.AssetManager.Contracts
         Ee4v
     }
 
+    public enum AssetFileAnalysisKind
+    {
+        Zip,
+        UnityPackage
+    }
+
+    public enum AssetFileContentEntryKind
+    {
+        File,
+        Directory
+    }
+
     public enum AssetFilterNodeType
     {
         And,
@@ -29,6 +41,13 @@ namespace Ee4v.AssetManager.Contracts
         InvalidRequest,
         DatabaseError,
         DatasourceError
+    }
+
+    public enum AssetImportState
+    {
+        Success,
+        Failed,
+        Canceled
     }
 
     public enum AssetSyncState

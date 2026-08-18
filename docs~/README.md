@@ -10,10 +10,7 @@ ee4v の実装を利用する開発者向け資料です。
   - 各機能の概要
   - ProjectStyle、HierarchyStyle、ProjectTabs の API リファレンス
 - [AssetManager](./asset-manager.md)
-  - UI向けAPI、ドメイン規則、SQLite保存、Eagle同期
-- [AssetManager DB 設計](./asset-manager-db.md)
-  - 永続化する値、その目的、table ごとの制約
-  - DB に保持しない一時データ
+  - UI向けAPI、ドメイン規則、Source同期、SQLite設計
 - [Unity 6 移行メモ](./unity6.md)
   - Unity 6 で不要にする仕組み
   - Unity に依存する主なファイル

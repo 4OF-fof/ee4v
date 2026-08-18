@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Ee4v.AssetManager.Contracts
 {
@@ -12,7 +14,14 @@ namespace Ee4v.AssetManager.Contracts
             string collectionId,
             int offset = 0,
             int limit = 0);
+        bool MatchesCollection(string collectionId, string itemId);
         AssetItem GetItem(string itemId);
+        Task<AssetThumbnail> GetThumbnail(
+            string itemId,
+            CancellationToken cancellationToken = default);
+        Task<IReadOnlyDictionary<string, AssetThumbnail>> GetThumbnails(
+            IReadOnlyList<string> itemIds,
+            CancellationToken cancellationToken = default);
         AssetItem CreateItem(CreateAssetItemRequest request);
         AssetItem UpdateItem(string itemId, UpdateAssetItemRequest request);
         IReadOnlyList<AssetItem> SetItemArchived(
@@ -40,12 +49,24 @@ namespace Ee4v.AssetManager.Contracts
         IReadOnlyList<AssetFileTarget> SetFileTargets(
             string fileId,
             IReadOnlyList<string> targetPaths);
-        void ImportFileTargets(string fileId);
+        Task<AssetImportResult> ImportFileEntries(
+            string fileId,
+            IReadOnlyList<string> paths,
+            CancellationToken cancellationToken = default);
+        Task<AssetImportResult> ImportFileTargets(
+            string fileId,
+            CancellationToken cancellationToken = default);
         IReadOnlyList<AssetFileDependency> GetFileDependencies(
             string fileId);
         IReadOnlyList<AssetFileDependency> SetFileDependencies(
-            string dependentFileId,
+            IReadOnlyList<string> dependentFileIds,
             IReadOnlyList<string> dependencyFileIds);
+        AssetFileAnalysis AnalyzeFile(string fileId);
+        IReadOnlyList<string> GetFileImportedAssetGuids(string fileId);
+        IReadOnlyList<string> GetItemImportedAssetGuids(string itemId);
+        IReadOnlyList<AssetImportedAssetAssociation>
+            GetImportedAssetAssociations(
+                IReadOnlyList<string> assetGuids = null);
 
         IReadOnlyList<AssetTag> GetTags();
         IReadOnlyList<AssetItem> SetItemTags(
@@ -68,21 +89,63 @@ namespace Ee4v.AssetManager.Contracts
 
     public enum AssetManagerChangeKind
     {
-        Catalog,
-        Collections
+        ItemCreated,
+        ItemUpdated,
+        ItemArchiveChanged,
+        ItemDeleted,
+        ItemTagsChanged,
+        FileCreated,
+        FilePlacementChanged,
+        FileArchiveChanged,
+        FileDeleted,
+        FileTargetsChanged,
+        FileDependenciesChanged,
+        FileImportedAssetGuidsChanged,
+        CollectionCreated,
+        CollectionUpdated,
+        CollectionDeleted,
+        SourceSynchronized
     }
 
     public sealed class AssetManagerChange
     {
         public AssetManagerChange(
             AssetManagerChangeKind kind,
-            string subjectId = null)
+            IReadOnlyList<string> subjectIds = null,
+            IReadOnlyList<string> relatedIds = null,
+            AssetSourceType? sourceType = null)
         {
             Kind = kind;
-            SubjectId = subjectId ?? string.Empty;
+            SubjectIds = NormalizeIds(subjectIds);
+            RelatedIds = NormalizeIds(relatedIds);
+            SourceType = sourceType;
         }
 
         public AssetManagerChangeKind Kind { get; }
-        public string SubjectId { get; }
+        public IReadOnlyList<string> SubjectIds { get; }
+        public IReadOnlyList<string> RelatedIds { get; }
+        public AssetSourceType? SourceType { get; }
+
+        private static IReadOnlyList<string> NormalizeIds(
+            IReadOnlyList<string> ids)
+        {
+            if (ids == null || ids.Count == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            var result = new List<string>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < ids.Count; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(ids[i]) &&
+                    seen.Add(ids[i]))
+                {
+                    result.Add(ids[i]);
+                }
+            }
+
+            return result.ToArray();
+        }
     }
 }

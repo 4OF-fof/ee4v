@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Ee4v.AssetManager.Application.Ports;
 using Ee4v.AssetManager.Contracts;
-using Ee4v.AssetManager.Domain;
 
 namespace Ee4v.AssetManager.Application
 {
@@ -11,8 +12,7 @@ namespace Ee4v.AssetManager.Application
     {
         private sealed class FileImportPlan
         {
-            internal AssetItem Item { get; set; }
-            internal AssetFile File { get; set; }
+            internal string FileId { get; set; }
             internal IReadOnlyList<string> TargetPaths { get; set; }
         }
 
@@ -20,13 +20,16 @@ namespace Ee4v.AssetManager.Application
         private readonly IEagleAssetSource _eagle;
         private readonly IEe4vAssetSource _ee4v;
         private readonly IAssetTargetImporter _targetImporter;
-        private readonly AssetManagerChangePublisher _changes;
+        private readonly IAssetFileAnalyzer _fileAnalyzer;
+        private readonly IAssetThumbnailProvider _thumbnailProvider;
 
         internal AssetManagerService(
             IAssetManagerStore store,
             IEagleAssetSource eagle,
             IEe4vAssetSource ee4v,
-            IAssetTargetImporter targetImporter)
+            IAssetTargetImporter targetImporter,
+            IAssetFileAnalyzer fileAnalyzer,
+            IAssetThumbnailProvider thumbnailProvider)
         {
             _store = store ??
                      throw new ArgumentNullException(nameof(store));
@@ -36,14 +39,13 @@ namespace Ee4v.AssetManager.Application
                     throw new ArgumentNullException(nameof(ee4v));
             _targetImporter = targetImporter ??
                 throw new ArgumentNullException(nameof(targetImporter));
-            _changes = new AssetManagerChangePublisher();
+            _fileAnalyzer = fileAnalyzer ??
+                throw new ArgumentNullException(nameof(fileAnalyzer));
+            _thumbnailProvider = thumbnailProvider ??
+                throw new ArgumentNullException(nameof(thumbnailProvider));
         }
 
-        public event Action<AssetManagerChange> Changed
-        {
-            add { _changes.Changed += value; }
-            remove { _changes.Changed -= value; }
-        }
+        public event Action<AssetManagerChange> Changed;
 
         public AssetSearchResult SearchItems(AssetItemQuery query = null)
         {
@@ -60,24 +62,7 @@ namespace Ee4v.AssetManager.Application
                 AssetManagerRequestValidator.ValidateFilter(query.Filter);
             }
 
-            var matches = _store.GetItems()
-                .Where(item => query.IncludeArchived || !item.IsArchived)
-                .Where(item =>
-                    AssetManagerRules.Matches(item, query.Filter))
-                .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(item => item.Id, StringComparer.Ordinal)
-                .ToArray();
-            var page = matches
-                .Skip(query.Offset)
-                .Take(query.Limit == 0
-                    ? matches.Length
-                    : query.Limit)
-                .ToArray();
-            return new AssetSearchResult
-            {
-                Items = page,
-                TotalCount = matches.Length
-            };
+            return _store.SearchItems(query);
         }
 
         public AssetSearchResult SearchCollection(
@@ -96,10 +81,42 @@ namespace Ee4v.AssetManager.Application
             });
         }
 
+        public bool MatchesCollection(string collectionId, string itemId)
+        {
+            AssetManagerRequestValidator.Require(
+                collectionId,
+                "collection id");
+            AssetManagerRequestValidator.Require(itemId, "item id");
+            var collection = _store.GetCollection(collectionId.Trim());
+            return _store.MatchesItem(itemId.Trim(), collection.Root);
+        }
+
         public AssetItem GetItem(string itemId)
         {
             AssetManagerRequestValidator.Require(itemId, "item id");
             return _store.GetItem(itemId);
+        }
+
+        public Task<AssetThumbnail> GetThumbnail(
+            string itemId,
+            CancellationToken cancellationToken = default)
+        {
+            AssetManagerRequestValidator.Require(itemId, "item id");
+            return _thumbnailProvider.Get(
+                _store.GetItem(itemId.Trim()),
+                cancellationToken);
+        }
+
+        public Task<IReadOnlyDictionary<string, AssetThumbnail>> GetThumbnails(
+            IReadOnlyList<string> itemIds,
+            CancellationToken cancellationToken = default)
+        {
+            var ids = AssetManagerRequestValidator.NormalizeOptionalIds(
+                itemIds,
+                "item ids");
+            return _thumbnailProvider.GetMany(
+                ids.Select(_store.GetItem).ToArray(),
+                cancellationToken);
         }
 
         public AssetItem CreateItem(CreateAssetItemRequest request)
@@ -111,7 +128,9 @@ namespace Ee4v.AssetManager.Application
                 request.Name,
                 "item name");
             var item = _store.CreateItem(request);
-            Publish(AssetManagerChangeKind.Catalog, item.Id);
+            Publish(
+                AssetManagerChangeKind.ItemCreated,
+                new[] { item.Id });
             return item;
         }
 
@@ -123,7 +142,7 @@ namespace Ee4v.AssetManager.Application
                 itemIds,
                 "item ids");
             var items = _store.SetItemArchived(ids, archived);
-            PublishCatalog(ids);
+            Publish(AssetManagerChangeKind.ItemArchiveChanged, ids);
             return items;
         }
 
@@ -137,6 +156,12 @@ namespace Ee4v.AssetManager.Application
                 .SelectMany(item => item.Files ?? Array.Empty<AssetFile>())
                 .GroupBy(file => file.Id, StringComparer.Ordinal)
                 .Select(group => group.First())
+                .ToArray();
+            var dependentFileIds = _store.GetDependentFileIds(
+                    files.Select(file => file.Id).ToArray())
+                .Except(
+                    files.Select(file => file.Id),
+                    StringComparer.Ordinal)
                 .ToArray();
             for (var i = 0; i < items.Length; i++)
             {
@@ -169,9 +194,19 @@ namespace Ee4v.AssetManager.Application
                     "Items containing non-ee4v sources cannot be deleted.");
             }
 
-            _ee4v.Delete(files);
-            _store.DeleteItem(ids);
-            PublishCatalog(ids);
+            using (var deletion = _ee4v.BeginDelete(files))
+            {
+                _store.DeleteItem(ids);
+                deletion.Commit();
+            }
+            Publish(
+                AssetManagerChangeKind.FileDeleted,
+                files.Select(file => file.Id).ToArray(),
+                ItemIds(files));
+            Publish(AssetManagerChangeKind.ItemDeleted, ids);
+            Publish(
+                AssetManagerChangeKind.FileDependenciesChanged,
+                dependentFileIds);
         }
 
         public AssetItem UpdateItem(
@@ -186,6 +221,7 @@ namespace Ee4v.AssetManager.Application
                 request.Name,
                 "item name");
             var original = _store.GetItem(itemId);
+            EnsureItemEditable(original);
             UpdateEe4vSource(
                 original,
                 request.Name.Trim(),
@@ -202,7 +238,9 @@ namespace Ee4v.AssetManager.Application
                 throw;
             }
 
-            Publish(AssetManagerChangeKind.Catalog, item.Id);
+            Publish(
+                AssetManagerChangeKind.ItemUpdated,
+                new[] { item.Id });
             return item;
         }
 
@@ -248,24 +286,26 @@ namespace Ee4v.AssetManager.Application
             }
 
             var sourceFile = _ee4v.Register(request);
-            _store.ApplySourceSnapshot(
-                AssetSourceType.Ee4v,
-                new AssetSourceSnapshot(
-                    Array.Empty<AssetSourceSnapshotItem>(),
-                    new[] { sourceFile }),
-                false);
-            var file = _store.GetFileBySource(
-                AssetSourceType.Ee4v,
-                sourceFile.SourceId);
-            if (normalizedItemId != null)
+            AssetFile file;
+            try
             {
-                file = _store.SetFileItem(
-                        new[] { file.Id },
-                        normalizedItemId)
-                    .Single();
+                file = _store.ApplySourceFile(
+                    AssetSourceType.Ee4v,
+                    sourceFile,
+                    normalizedItemId);
+            }
+            catch (Exception operationException)
+            {
+                DeleteNewSource(
+                    new[] { sourceFile },
+                    operationException);
+                throw;
             }
 
-            Publish(AssetManagerChangeKind.Catalog, file.Id);
+            Publish(
+                AssetManagerChangeKind.FileCreated,
+                new[] { file.Id },
+                ItemIds(new[] { file }));
             return file;
         }
 
@@ -276,10 +316,22 @@ namespace Ee4v.AssetManager.Application
             var ids = AssetManagerRequestValidator.NormalizeIds(
                 fileIds,
                 "file ids");
+            var existingFiles = ids.Select(_store.GetFile).ToArray();
+            if (existingFiles.Any(file =>
+                    file.SourceType == AssetSourceType.Eagle))
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidRequest,
+                    "Eagle file placement is controlled by Eagle.");
+            }
+
             var files = _store.SetFileItem(
                 ids,
                 string.IsNullOrWhiteSpace(itemId) ? null : itemId);
-            PublishCatalog(ids);
+            Publish(
+                AssetManagerChangeKind.FilePlacementChanged,
+                ids,
+                MergeIds(ItemIds(existingFiles), ItemIds(files)));
             return files;
         }
 
@@ -291,7 +343,10 @@ namespace Ee4v.AssetManager.Application
                 fileIds,
                 "file ids");
             var files = _store.SetFileArchived(ids, archived);
-            PublishCatalog(ids);
+            Publish(
+                AssetManagerChangeKind.FileArchiveChanged,
+                ids,
+                ItemIds(files));
             return files;
         }
 
@@ -301,6 +356,9 @@ namespace Ee4v.AssetManager.Application
                 fileIds,
                 "file ids");
             var files = ids.Select(_store.GetFile).ToArray();
+            var dependentFileIds = _store.GetDependentFileIds(ids)
+                .Except(ids, StringComparer.Ordinal)
+                .ToArray();
             if (files.Any(file =>
                     file.SourceType != AssetSourceType.Ee4v))
             {
@@ -309,9 +367,18 @@ namespace Ee4v.AssetManager.Application
                     "Only ee4v source files can be deleted.");
             }
 
-            _ee4v.Delete(files);
-            _store.DeleteFile(ids);
-            PublishCatalog(ids);
+            using (var deletion = _ee4v.BeginDelete(files))
+            {
+                _store.DeleteFile(ids);
+                deletion.Commit();
+            }
+            Publish(
+                AssetManagerChangeKind.FileDeleted,
+                ids,
+                ItemIds(files));
+            Publish(
+                AssetManagerChangeKind.FileDependenciesChanged,
+                dependentFileIds);
         }
 
         public IReadOnlyList<AssetFileTarget> GetFileTargets(
@@ -330,26 +397,169 @@ namespace Ee4v.AssetManager.Application
                 fileId.Trim(),
                 AssetManagerRequestValidator.NormalizeTargetPaths(
                     targetPaths));
-            Publish(AssetManagerChangeKind.Catalog, fileId.Trim());
+            Publish(
+                AssetManagerChangeKind.FileTargetsChanged,
+                new[] { fileId.Trim() });
             return targets;
         }
 
-        public void ImportFileTargets(string fileId)
+        public async Task<AssetImportResult> ImportFileTargets(
+            string fileId,
+            CancellationToken cancellationToken = default)
         {
             AssetManagerRequestValidator.Require(fileId, "file id");
             var normalizedFileId = fileId.Trim();
             if (_store.GetFileTargets(normalizedFileId).Count == 0)
             {
-                return;
+                return new AssetImportResult(
+                    AssetImportState.Success,
+                    Array.Empty<string>(),
+                    Array.Empty<string>());
             }
 
-            var order = AssetManagerRequestValidator.ResolveDependencyOrder(
-                normalizedFileId,
-                GetDependencyIds);
-            var plans = order
-                .Select(CreateImportPlan)
-                .ToArray();
-            ImportNext(plans, 0);
+            FileImportPlan[] plans;
+            try
+            {
+                var order =
+                    AssetManagerRequestValidator.ResolveDependencyOrder(
+                        normalizedFileId,
+                        GetDependencyIds);
+                plans = order
+                    .Select(CreateImportPlan)
+                    .ToArray();
+            }
+            catch (Exception exception)
+            {
+                return new AssetImportResult(
+                    AssetImportState.Failed,
+                    new[] { normalizedFileId },
+                    Array.Empty<string>(),
+                    exception.Message);
+            }
+            var importedFileIds = new List<string>();
+            var importedGuids = new HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < plans.Length; i++)
+            {
+                if (plans[i].TargetPaths.Count == 0)
+                {
+                    continue;
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return new AssetImportResult(
+                        AssetImportState.Canceled,
+                        importedFileIds,
+                        importedGuids.ToArray(),
+                        "Asset import was canceled.");
+                }
+
+                var result = await ImportFileEntries(
+                    plans[i].FileId,
+                    plans[i].TargetPaths,
+                    cancellationToken);
+                if (!result.Succeeded)
+                {
+                    return new AssetImportResult(
+                        result.State,
+                        importedFileIds
+                            .Concat(result.FileIds)
+                            .Distinct(StringComparer.Ordinal)
+                            .ToArray(),
+                        importedGuids.ToArray(),
+                        result.ErrorMessage);
+                }
+
+                importedFileIds.Add(plans[i].FileId);
+                for (var guidIndex = 0;
+                     guidIndex < result.AssetGuids.Count;
+                     guidIndex++)
+                {
+                    importedGuids.Add(result.AssetGuids[guidIndex]);
+                }
+            }
+
+            return new AssetImportResult(
+                AssetImportState.Success,
+                importedFileIds,
+                importedGuids.ToArray());
+        }
+
+        public async Task<AssetImportResult> ImportFileEntries(
+            string fileId,
+            IReadOnlyList<string> paths,
+            CancellationToken cancellationToken = default)
+        {
+            AssetManagerRequestValidator.Require(fileId, "file id");
+            var normalizedFileId = fileId.Trim();
+            try
+            {
+                var normalizedPaths =
+                    AssetManagerRequestValidator.NormalizeTargetPaths(paths);
+                if (normalizedPaths.Count == 0)
+                {
+                    return new AssetImportResult(
+                        AssetImportState.Success,
+                        Array.Empty<string>(),
+                        Array.Empty<string>());
+                }
+
+                var file = _store.GetFile(normalizedFileId);
+                if (file.IsArchived)
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "Archived files cannot be imported.");
+                }
+
+                if (string.IsNullOrWhiteSpace(file.ItemId))
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "The file must belong to an item before import.");
+                }
+
+                var result = await _targetImporter.Import(
+                    _store.GetItem(file.ItemId),
+                    file,
+                    normalizedPaths,
+                    cancellationToken);
+                if (!result.Succeeded)
+                {
+                    return result;
+                }
+
+                var normalizedGuids =
+                    AssetManagerRequestValidator.NormalizeAssetGuids(
+                        result.AssetGuids);
+                _store.ReplaceFileImportedAssetGuids(
+                    file.Id,
+                    normalizedGuids);
+                Publish(
+                    AssetManagerChangeKind.FileImportedAssetGuidsChanged,
+                    new[] { file.Id },
+                    new[] { file.ItemId });
+                return new AssetImportResult(
+                    AssetImportState.Success,
+                    new[] { file.Id },
+                    normalizedGuids);
+            }
+            catch (OperationCanceledException)
+            {
+                return new AssetImportResult(
+                    AssetImportState.Canceled,
+                    new[] { normalizedFileId },
+                    Array.Empty<string>(),
+                    "Asset import was canceled.");
+            }
+            catch (Exception exception)
+            {
+                return new AssetImportResult(
+                    AssetImportState.Failed,
+                    new[] { normalizedFileId },
+                    Array.Empty<string>(),
+                    exception.Message);
+            }
         }
 
         public IReadOnlyList<AssetFileDependency> GetFileDependencies(
@@ -360,26 +570,32 @@ namespace Ee4v.AssetManager.Application
         }
 
         public IReadOnlyList<AssetFileDependency> SetFileDependencies(
-            string dependentFileId,
+            IReadOnlyList<string> dependentFileIds,
             IReadOnlyList<string> dependencyFileIds)
         {
-            AssetManagerRequestValidator.Require(
-                dependentFileId,
-                "dependent file id");
-            var normalizedFileId = dependentFileId.Trim();
-            _store.GetFile(normalizedFileId);
+            var normalizedFileIds =
+                AssetManagerRequestValidator.NormalizeIds(
+                    dependentFileIds,
+                    "dependent file ids");
+            for (var i = 0; i < normalizedFileIds.Count; i++)
+            {
+                _store.GetFile(normalizedFileIds[i]);
+            }
+
             var dependencyIds =
                 AssetManagerRequestValidator.NormalizeOptionalIds(
                     dependencyFileIds,
                     "dependency file ids");
             AssetManagerRequestValidator.ValidateDependencyReplacement(
-                normalizedFileId,
+                normalizedFileIds,
                 dependencyIds,
                 GetDependencyIds);
             var dependencies = _store.ReplaceFileDependencies(
-                normalizedFileId,
+                normalizedFileIds,
                 dependencyIds);
-            Publish(AssetManagerChangeKind.Catalog, normalizedFileId);
+            Publish(
+                AssetManagerChangeKind.FileDependenciesChanged,
+                normalizedFileIds);
             return dependencies;
         }
 
@@ -393,16 +609,16 @@ namespace Ee4v.AssetManager.Application
             {
                 return new FileImportPlan
                 {
-                    File = file,
+                    FileId = file.Id,
                     TargetPaths = targets
                 };
             }
 
-            if (!file.IsAvailable || file.IsArchived)
+            if (file.IsArchived)
             {
                 throw new AssetManagerException(
                     AssetManagerErrorCode.InvalidRequest,
-                    "Unavailable or archived files cannot be imported.");
+                    "Archived files cannot be imported.");
             }
 
             if (string.IsNullOrWhiteSpace(file.ItemId))
@@ -412,42 +628,12 @@ namespace Ee4v.AssetManager.Application
                     "The file must belong to an item before import.");
             }
 
+            _store.GetItem(file.ItemId);
             return new FileImportPlan
             {
-                Item = _store.GetItem(file.ItemId),
-                File = file,
+                FileId = file.Id,
                 TargetPaths = targets
             };
-        }
-
-        private void ImportNext(
-            IReadOnlyList<FileImportPlan> plans,
-            int index)
-        {
-            while (index < plans.Count &&
-                   plans[index].TargetPaths.Count == 0)
-            {
-                index++;
-            }
-
-            if (index >= plans.Count)
-            {
-                return;
-            }
-
-            var nextIndex = index + 1;
-            var plan = plans[index];
-            _targetImporter.Import(
-                plan.Item,
-                plan.File,
-                plan.TargetPaths,
-                succeeded =>
-                {
-                    if (succeeded)
-                    {
-                        ImportNext(plans, nextIndex);
-                    }
-                });
         }
 
         private IReadOnlyList<string> GetDependencyIds(string fileId)
@@ -455,6 +641,37 @@ namespace Ee4v.AssetManager.Application
             return _store.GetFileDependencies(fileId)
                 .Select(dependency => dependency.DependencyFileId)
                 .ToArray();
+        }
+
+        public AssetFileAnalysis AnalyzeFile(string fileId)
+        {
+            AssetManagerRequestValidator.Require(fileId, "file id");
+            return _fileAnalyzer.Analyze(_store.GetFile(fileId.Trim()));
+        }
+
+        public IReadOnlyList<string> GetFileImportedAssetGuids(
+            string fileId)
+        {
+            AssetManagerRequestValidator.Require(fileId, "file id");
+            return _store.GetFileImportedAssetGuids(fileId.Trim());
+        }
+
+        public IReadOnlyList<string> GetItemImportedAssetGuids(
+            string itemId)
+        {
+            AssetManagerRequestValidator.Require(itemId, "item id");
+            return _store.GetItemImportedAssetGuids(itemId.Trim());
+        }
+
+        public IReadOnlyList<AssetImportedAssetAssociation>
+            GetImportedAssetAssociations(
+                IReadOnlyList<string> assetGuids = null)
+        {
+            return _store.GetImportedAssetAssociations(
+                assetGuids == null
+                    ? null
+                    : AssetManagerRequestValidator.NormalizeAssetGuids(
+                        assetGuids));
         }
 
         public IReadOnlyList<AssetTag> GetTags()
@@ -472,6 +689,11 @@ namespace Ee4v.AssetManager.Application
             var normalized = AssetManagerRequestValidator.NormalizeTags(
                 tagPaths);
             var originals = ids.Select(_store.GetItem).ToArray();
+            for (var i = 0; i < originals.Length; i++)
+            {
+                EnsureItemEditable(originals[i]);
+            }
+
             IReadOnlyList<AssetItem> items;
             try
             {
@@ -496,7 +718,7 @@ namespace Ee4v.AssetManager.Application
                 throw;
             }
 
-            PublishCatalog(ids);
+            Publish(AssetManagerChangeKind.ItemTagsChanged, ids);
             return items;
         }
 
@@ -524,7 +746,9 @@ namespace Ee4v.AssetManager.Application
                 "collection name");
             AssetManagerRequestValidator.ValidateFilter(request.Root);
             var collection = _store.CreateCollection(request);
-            Publish(AssetManagerChangeKind.Collections, collection.Id);
+            Publish(
+                AssetManagerChangeKind.CollectionCreated,
+                new[] { collection.Id });
             return collection;
         }
 
@@ -545,7 +769,9 @@ namespace Ee4v.AssetManager.Application
             var collection = _store.UpdateCollection(
                 collectionId,
                 request);
-            Publish(AssetManagerChangeKind.Collections, collection.Id);
+            Publish(
+                AssetManagerChangeKind.CollectionUpdated,
+                new[] { collection.Id });
             return collection;
         }
 
@@ -555,7 +781,9 @@ namespace Ee4v.AssetManager.Application
                 collectionId,
                 "collection id");
             _store.DeleteCollection(collectionId);
-            Publish(AssetManagerChangeKind.Collections, collectionId);
+            Publish(
+                AssetManagerChangeKind.CollectionDeleted,
+                new[] { collectionId });
         }
 
         public AssetSyncResult SyncEagle(EagleSyncRequest request)
@@ -563,27 +791,9 @@ namespace Ee4v.AssetManager.Application
             AssetManagerRequestValidator.RequireRequest(
                 request,
                 "Eagle sync request");
-            AssetSourceSnapshot snapshot;
-            try
-            {
-                snapshot = _eagle.Read(request);
-            }
-            catch (AssetManagerException)
-            {
-                return new AssetSyncResult(
-                    0,
-                    0,
-                    0,
-                    1,
-                    AssetSyncState.Failed);
-            }
-
-            var result = _store.ApplySourceSnapshot(
+            return SyncSource(
                 AssetSourceType.Eagle,
-                snapshot,
-                true);
-            Publish(AssetManagerChangeKind.Catalog);
-            return result;
+                () => _eagle.Read(request));
         }
 
         public AssetSyncResult SyncEe4v(Ee4vSyncRequest request)
@@ -594,27 +804,44 @@ namespace Ee4v.AssetManager.Application
             AssetManagerRequestValidator.Require(
                 request.LibraryPath,
                 "ee4v library path");
+            return SyncSource(
+                AssetSourceType.Ee4v,
+                () => _ee4v.Read(request));
+        }
+
+        private AssetSyncResult SyncSource(
+            AssetSourceType sourceType,
+            Func<AssetSourceSnapshot> read)
+        {
             AssetSourceSnapshot snapshot;
             try
             {
-                snapshot = _ee4v.Read(request);
+                snapshot = read();
                 NormalizeSnapshotTags(snapshot);
             }
-            catch (AssetManagerException)
+            catch (AssetManagerException exception)
             {
                 return new AssetSyncResult(
+                    Array.Empty<string>(),
+                    Array.Empty<string>(),
+                    Array.Empty<string>(),
+                    Array.Empty<string>(),
+                    Array.Empty<string>(),
+                    Array.Empty<string>(),
+                    Array.Empty<string>(),
+                    Array.Empty<string>(),
                     0,
-                    0,
-                    0,
-                    1,
-                    AssetSyncState.Failed);
+                    new[] { exception.Message });
             }
 
             var result = _store.ApplySourceSnapshot(
-                AssetSourceType.Ee4v,
-                snapshot,
-                true);
-            Publish(AssetManagerChangeKind.Catalog);
+                sourceType,
+                snapshot);
+            Publish(
+                AssetManagerChangeKind.SourceSynchronized,
+                result.AffectedItemIds,
+                result.AffectedFileIds,
+                sourceType: sourceType);
             return result;
         }
 
@@ -633,14 +860,30 @@ namespace Ee4v.AssetManager.Application
             var sourceItem = _ee4v.Import(
                 request,
                 AssetManagerRequestValidator.NormalizeTags(request.Tags));
-            _store.ApplySourceSnapshot(
-                AssetSourceType.Ee4v,
-                new AssetSourceSnapshot(new[] { sourceItem }),
-                false);
-            var item = _store.GetItemBySource(
-                AssetSourceType.Ee4v,
-                sourceItem.SourceId);
-            Publish(AssetManagerChangeKind.Catalog, item.Id);
+            AssetItem item;
+            try
+            {
+                item = _store.ApplySourceItem(
+                    AssetSourceType.Ee4v,
+                    sourceItem);
+            }
+            catch (Exception operationException)
+            {
+                DeleteNewSource(
+                    sourceItem.Files ??
+                    Array.Empty<AssetSourceSnapshotFile>(),
+                    operationException);
+                throw;
+            }
+            Publish(
+                AssetManagerChangeKind.ItemCreated,
+                new[] { item.Id });
+            Publish(
+                AssetManagerChangeKind.FileCreated,
+                (item.Files ?? Array.Empty<AssetFile>())
+                    .Select(file => file.Id)
+                    .ToArray(),
+                new[] { item.Id });
             return item;
         }
 
@@ -686,6 +929,16 @@ namespace Ee4v.AssetManager.Application
                 .ToArray();
         }
 
+        private static void EnsureItemEditable(AssetItem item)
+        {
+            if (item.SourceType == AssetSourceType.Eagle)
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidRequest,
+                    "Eagle item metadata is controlled by Eagle.");
+            }
+        }
+
         private static void NormalizeSnapshotTags(
             AssetSourceSnapshot snapshot)
         {
@@ -703,18 +956,92 @@ namespace Ee4v.AssetManager.Application
             }
         }
 
-        private void PublishCatalog(IReadOnlyList<string> ids)
+        private static IReadOnlyList<string> ItemIds(
+            IEnumerable<AssetFile> files)
         {
-            Publish(
-                AssetManagerChangeKind.Catalog,
-                ids.Count == 1 ? ids[0] : null);
+            return files
+                .Select(file => file.ItemId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        private static IReadOnlyList<string> MergeIds(
+            params IEnumerable<string>[] groups)
+        {
+            return groups
+                .SelectMany(group => group)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        private void DeleteNewSource(
+            IReadOnlyList<AssetSourceSnapshotFile> sourceFiles,
+            Exception operationException)
+        {
+            try
+            {
+                using (var deletion = _ee4v.BeginDelete(
+                           (sourceFiles ??
+                            Array.Empty<AssetSourceSnapshotFile>())
+                           .Select(file => new AssetFile
+                           {
+                               SourceType = AssetSourceType.Ee4v,
+                               SourceId = file.SourceId,
+                               SourcePath = file.SourcePath
+                           })
+                           .ToArray()))
+                {
+                    deletion.Commit();
+                }
+            }
+            catch (Exception cleanupException)
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.DatasourceError,
+                    "The ee4v source rollback failed.",
+                    new AggregateException(
+                        operationException,
+                        cleanupException));
+            }
         }
 
         private void Publish(
             AssetManagerChangeKind kind,
-            string subjectId = null)
+            IReadOnlyList<string> subjectIds = null,
+            IReadOnlyList<string> relatedIds = null,
+            AssetSourceType? sourceType = null)
         {
-            _changes.Publish(new AssetManagerChange(kind, subjectId));
+            var change = new AssetManagerChange(
+                kind,
+                subjectIds,
+                relatedIds,
+                sourceType);
+            if (change.SubjectIds.Count == 0 &&
+                change.RelatedIds.Count == 0 &&
+                !change.SourceType.HasValue)
+            {
+                return;
+            }
+
+            var handlers = Changed;
+            if (handlers == null)
+            {
+                return;
+            }
+
+            foreach (Action<AssetManagerChange> handler in
+                     handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler(change);
+                }
+                catch
+                {
+                }
+            }
         }
     }
 }
