@@ -1,0 +1,21 @@
+{
+  "name": "Ee4v.ItemStyle.Tests.Editor",
+  "rootNamespace": "Ee4v.ItemStyle.Tests",
+  "references": [
+    "Ee4v.ItemStyle.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

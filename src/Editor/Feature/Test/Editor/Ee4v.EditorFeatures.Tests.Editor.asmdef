@@ -1,0 +1,24 @@
+{
+  "name": "Ee4v.EditorFeatures.Tests.Editor",
+  "rootNamespace": "Ee4v.EditorFeatures.Tests",
+  "references": [
+    "Ee4v.ItemStyle.Editor",
+    "Ee4v.ProjectTabs.Editor",
+    "Ee4v.HierarchyStyle.Editor",
+    "Ee4v.SceneSwitcher.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

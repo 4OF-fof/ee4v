@@ -1,0 +1,22 @@
+{
+  "settings": {
+    "section": {
+      "project": "Project"
+    },
+    "enabled": {
+      "label": "Project tabs",
+      "tooltip": "Show tabs in the Project window, each with its own navigation history."
+    }
+  },
+  "toolbar": {
+    "add": {
+      "tooltip": "Open the current location in a new tab"
+    },
+    "close": {
+      "tooltip": "Close tab"
+    },
+    "pin": {
+      "tooltip": "Pinned tab"
+    }
+  }
+}

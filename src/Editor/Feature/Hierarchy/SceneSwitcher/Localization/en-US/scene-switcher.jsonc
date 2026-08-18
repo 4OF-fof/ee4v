@@ -1,0 +1,46 @@
+{
+  "settings": {
+    "section": {
+      "hierarchy": "Hierarchy",
+      "creation": "Scene Creation"
+    },
+    "enabled": {
+      "label": "Scene Switcher",
+      "tooltip": "Opens the Scene Switcher by clicking a Scene header in the Hierarchy."
+    },
+    "createFolder": {
+      "label": "New Scene folder",
+      "tooltip": "Folder used for scenes created from the switcher. TEMPLATE.unity in this folder is used as the template.",
+      "dialogTitle": "Select the New Scene Folder",
+      "browseTooltip": "Select a folder under Assets"
+    }
+  },
+  "hierarchy": {
+    "tooltip": "Open Scene Switcher"
+  },
+  "window": {
+    "title": "Scene Switcher",
+    "search": {
+      "placeholder": "Search scenes or folders",
+      "tooltip": "Filter scenes by name or folder",
+      "clearTooltip": "Clear search"
+    },
+    "empty": "No Scene assets were found under Assets.",
+    "noMatches": "No scenes match this search.",
+    "open": "OPEN",
+    "openTooltip": "This Scene is currently open. Click it to make it active.",
+    "favorite": "Add to favorites",
+    "unfavorite": "Remove from favorites",
+    "create": "Create \"{0}\""
+  },
+  "error": {
+    "title": "Scene Switcher",
+    "invalidName": "Enter a valid Scene name without folder separators.",
+    "invalidFolder": "The new Scene folder must be under Assets.",
+    "alreadyExists": "A Scene already exists at \"{0}\".",
+    "failed": "The Scene operation could not be completed."
+  },
+  "action": {
+    "ok": "OK"
+  }
+}

@@ -1,0 +1,25 @@
+# Editor 機能
+
+`Editor/Feature` にある機能の概要です。公開 API を持つ機能は個別のリファレンスへリンクします。
+
+## Project
+
+| 機能 | 概要 | API リファレンス |
+|---|---|---|
+| FolderContentOverlay | Project のフォルダーへ配下の代表的なアセットアイコンを重ねて表示します。アセット変更時は対象フォルダーと祖先のキャッシュを更新します。 | なし |
+| ProjectStyle | Project のフォルダーへ背景色とアイコンを設定します。 | [ProjectStyle](./project-style.md) |
+| ProjectTabs | Project ウィンドウへフォルダータブ、移動履歴、固定タブを追加します。 | [ProjectTabs](./project-tabs.md) |
+
+## Hierarchy
+
+| 機能 | 概要 | API リファレンス |
+|---|---|---|
+| DepthIndicator | GameObject の親子関係を示すガイド線を Hierarchy に描画します。`HideInHierarchy` の対象は階層計算から除きます。 | なし |
+| HierarchyDecoration | `---` で始まる空の GameObject を区切り線として描画します。`GameObject/HierarchyDecoration/div` から区切りを作成できます。 | なし |
+| HierarchyStyle | GameObject の背景色とアイコンを設定します。Hidden Objects の一覧表示、非表示、再表示もこの機能に含みます。 | [HierarchyStyle](./hierarchy-style.md) |
+| SceneSwitcher | Hierarchy のシーン見出しからシーンを検索し、置換、追加、作成を行います。 | なし |
+
+## 共有実装
+
+ProjectStyle と HierarchyStyle は `Ee4v.ItemStyle.Editor` の値、保存処理、編集ウィンドウを共有します。外部コードから各機能を操作する場合は `ProjectStyleApi` または `HierarchyStyleApi` を使用します。
+

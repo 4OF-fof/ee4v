@@ -18,7 +18,7 @@ namespace Ee4v.DepthIndicator.Tests
                 hidden.hideFlags |= HideFlags.HideInHierarchy;
 
                 Assert.That(
-                    DepthIndicator.IsLastVisibleSibling(
+                    DepthIndicatorRenderer.IsLastVisibleSibling(
                         visible.transform),
                     Is.True);
             }
@@ -39,7 +39,7 @@ namespace Ee4v.DepthIndicator.Tests
                 hidden.hideFlags |= HideFlags.HideInHierarchy;
 
                 Assert.That(
-                    DepthIndicator.HasVisibleChild(
+                    DepthIndicatorRenderer.HasVisibleChild(
                         parent.transform),
                     Is.False);
             }

@@ -6,6 +6,9 @@ ee4v の実装を利用する開発者向け資料です。
 
 - [Core](./core/README.md)
   - 機能、公開インターフェース、副作用
+- [Editor 機能](./features/README.md)
+  - 各機能の概要
+  - ProjectStyle、HierarchyStyle、ProjectTabs の API リファレンス
 - [Unity 6 移行メモ](./unity6.md)
   - Unity 6 で不要にする仕組み
   - Unity に依存する主なファイル

@@ -11,7 +11,8 @@ namespace Ee4v.FolderContentOverlay.Tests
         {
             var affectedFolders = new HashSet<string>();
 
-            FolderContentOverlay.CollectFolderAndAncestors(
+            FolderContentOverlayAssetPostprocessor
+                .CollectFolderAndAncestors(
                     "Assets/Avatar/Animation",
                     affectedFolders);
 
@@ -40,7 +41,7 @@ namespace Ee4v.FolderContentOverlay.Tests
             try
             {
                 Assert.That(
-                    FolderContentOverlay
+                    FolderContentOverlayIconCache
                         .SummarizeIcons(new Texture[]
                         {
                             primary,
@@ -49,7 +50,7 @@ namespace Ee4v.FolderContentOverlay.Tests
                         .PropagatedIcon,
                     Is.Null);
                 Assert.That(
-                    FolderContentOverlay
+                    FolderContentOverlayIconCache
                         .SummarizeIcons(new Texture[]
                         {
                             primary,
@@ -81,7 +82,7 @@ namespace Ee4v.FolderContentOverlay.Tests
             try
             {
                 Assert.That(
-                    FolderContentOverlay.SummarizeIcons(
+                    FolderContentOverlayIconCache.SummarizeIcons(
                             new Texture[]
                             {
                                 primary,
@@ -90,7 +91,7 @@ namespace Ee4v.FolderContentOverlay.Tests
                         .DisplayIcon,
                     Is.Null);
                 Assert.That(
-                    FolderContentOverlay.SummarizeIcons(
+                    FolderContentOverlayIconCache.SummarizeIcons(
                             new Texture[]
                             {
                                 primary,

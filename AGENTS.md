@@ -19,3 +19,4 @@
 - `Label`、`Button`、`Toggle`、入力フィールド、`HelpBox` など、文字を描画する可能性がある UI 要素は `UiTextFactory` 経由で作成する。表示文字の更新も同 Factory または Factory が返す要素の API を使用し、標準 UI 要素の `text` を直接操作しない
 - UI component の Story には、Story 自身を除いた実際の使用ファイルを使用箇所として記載する。使用箇所がなくなった component は Story だけを維持せず削除する
 - 仕様と設計を確認するときは `docs~` を参照
+  - 機能やテストの追加、変更があれば`docs~`も併せて更新する

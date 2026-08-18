@@ -1,0 +1,46 @@
+{
+  "settings": {
+    "section": {
+      "hierarchy": "ヒエラルキー",
+      "creation": "シーン作成"
+    },
+    "enabled": {
+      "label": "シーン切替",
+      "tooltip": "ヒエラルキーのシーン見出しをクリックすると Scene Switcher を開きます。"
+    },
+    "createFolder": {
+      "label": "新規シーンの保存先",
+      "tooltip": "Scene Switcher から作成するシーンの保存先です。同じフォルダーの TEMPLATE.unity をテンプレートとして使用します。",
+      "dialogTitle": "新規シーンの保存先を選択",
+      "browseTooltip": "Assets 配下のフォルダーを選択"
+    }
+  },
+  "hierarchy": {
+    "tooltip": "Scene Switcher を開く"
+  },
+  "window": {
+    "title": "Scene Switcher",
+    "search": {
+      "placeholder": "シーン名またはフォルダーを検索",
+      "tooltip": "シーン名またはフォルダーで絞り込みます",
+      "clearTooltip": "検索をクリア"
+    },
+    "empty": "Assets 配下にシーンがありません。",
+    "noMatches": "検索に一致するシーンはありません。",
+    "open": "OPEN",
+    "openTooltip": "現在開いているシーンです。クリックするとアクティブシーンへ切り替えます。",
+    "favorite": "お気に入りに追加",
+    "unfavorite": "お気に入りから削除",
+    "create": "「{0}」を作成"
+  },
+  "error": {
+    "title": "Scene Switcher",
+    "invalidName": "フォルダー区切りを含まない有効なシーン名を入力してください。",
+    "invalidFolder": "新規シーンの保存先は Assets 配下に設定してください。",
+    "alreadyExists": "「{0}」には既にシーンがあります。",
+    "failed": "シーン操作を完了できませんでした。"
+  },
+  "action": {
+    "ok": "OK"
+  }
+}

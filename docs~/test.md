@@ -56,6 +56,24 @@
 | `FolderContentOverlayTests.RepresentativeIcon_RequiresStrictMajorityToPropagate` | 親へ伝播するアイコンには過半数を要求する | 少数派や同数の内容を親フォルダーの代表として誤表示しないため |
 | `FolderContentOverlayTests.RepresentativeIcon_ReturnsNullWhenMostCommonIsTied` | 最多アイコンが同数の場合は表示アイコンを返さない | 同順位から不定な代表を選ぶのを防ぐため |
 
+## ItemStyle
+
+| テスト | 保証する振る舞い | 理由 |
+| --- | --- | --- |
+| `ItemStyleServiceTests.Update_DeduplicatesIdentityAndSeparatesScopes` | 重複した識別子を一度だけ更新し、Project と Hierarchy の同じ識別子を別の値として扱う | 共有化によって異なる表示領域の設定が混ざるのを防ぐため |
+| `ItemStyleServiceTests.SetIcon_UsesBoundedRecentHistoryContract` | アイコン更新時に対象スコープと最大8件の履歴契約を保存先へ渡す | 最近使ったアイコンが無制限に増えるのを防ぐため |
+| `ItemStyleInteractionTests.Selection_UsesGroupOnlyWhenHoveredFolderIsSelected` | 指している項目が選択中の場合だけ複数項目を一括編集する | 選択外の項目から意図せず複数対象を変更するのを防ぐため |
+
+## Editor 機能
+
+| テスト | 保証する振る舞い | 理由 |
+| --- | --- | --- |
+| `HierarchyStyleTests.Inheritance_UsesNearestExplicitColor` | 対象に明示色があれば親の色より優先する | 背景色の継承順を維持するため |
+| `HierarchyStyleTests.VisibilityApi_RestoresActiveStateAndTag` | 公開 API で非表示にした GameObject を再表示すると active state と tag が復元される | HierarchyStyle へ統合した HiddenObjects の永続化境界と副作用を確認するため |
+| `ProjectTabsTests.PinnedTab_RejectsNavigationToAnotherFolder` | 固定タブが別フォルダーへの移動を履歴へ記録しない | 固定したフォルダーが移動操作で置き換わるのを防ぐため |
+| `SceneSwitcherTests.View_OrdersOpenFavoriteThenOtherAndAllowsNewName` | シーンを読み込み中、お気に入り、その他の順に並べ、一致しない有効名の作成を許可する | 一覧の優先順と作成入口を同時に維持するため |
+| `HiddenObjectsTests.Exclusion_RemovesMatchedObjectAndItsDescendants` | 名前で除外した GameObject の子孫も一覧から除く | 除外対象の内部オブジェクトだけが一覧へ残るのを防ぐため |
+
 ## 実行と判定
 
 Codexからの実行コマンド、Licensing ClientのIPC待ちを避ける条件、結果XMLによる成否判定は、リポジトリルートの `AGENTS.md` を正とする。
