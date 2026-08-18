@@ -117,7 +117,7 @@ namespace Ee4v.ProjectTabs
         private readonly Button _forwardButton;
         private readonly ScrollView _scroll;
         private readonly VisualElement _strip;
-        private readonly Button _addButton;
+        private readonly UiButton _addButton;
         private readonly Action<
             VisualElement,
             IReadOnlyList<ProjectHistoryEntryViewState>,
@@ -146,6 +146,9 @@ namespace Ee4v.ProjectTabs
             UiStyleUtility.AddPackageStyleSheet(
                 this,
                 "Editor/UI/Components/common.uss");
+            UiStyleUtility.AddPackageStyleSheet(
+                this,
+                "Editor/UI/Components/Inputs/ui-button.uss");
             UiStyleUtility.AddPackageStyleSheet(
                 this,
                 "Editor/Feature/Project/ProjectTabs/UI/project-tabs.uss");
@@ -180,10 +183,12 @@ namespace Ee4v.ProjectTabs
             RegisterTabDragEvents();
             RegisterFolderDropEvents();
 
-            _addButton = UiTextFactory.CreateButton(
+            _addButton = new UiButton(
                 "+",
-                () => AddRequested?.Invoke());
-            _addButton.tooltip = I18N.Get("toolbar.add.tooltip");
+                () => AddRequested?.Invoke(),
+                I18N.Get("toolbar.add.tooltip"),
+                variant: UiButtonVariant.Ghost,
+                compact: true);
             _addButton.AddToClassList(AddButtonClassName);
 
             _state = new ProjectTabsViewState(
