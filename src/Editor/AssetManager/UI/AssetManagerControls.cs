@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
@@ -29,6 +31,7 @@ namespace Ee4v.AssetManager.UI
             return CreateFluentIconButton(
                 I18N.Get("toolbar.reload"),
                 "arrow_clockwise.png",
+                UiSizeTokens.Size12,
                 onClick,
                 classNames);
         }
@@ -40,6 +43,7 @@ namespace Ee4v.AssetManager.UI
             return CreateFluentIconButton(
                 I18N.Get("toolbar.sort.button"),
                 "arrow_sort.png",
+                UiSizeTokens.Size12,
                 onClick,
                 classNames);
         }
@@ -51,6 +55,7 @@ namespace Ee4v.AssetManager.UI
             return CreateFluentIconButton(
                 I18N.Get("toolbar.search.options"),
                 "search.png",
+                UiSizeTokens.Size12,
                 onClick,
                 classNames);
         }
@@ -64,6 +69,22 @@ namespace Ee4v.AssetManager.UI
             return CreateFluentIconButton(
                 tooltip,
                 iconFileName,
+                UiSizeTokens.Size12,
+                onClick,
+                classNames);
+        }
+
+        public static AssetManagerButton CreateIconButton(
+            string tooltip,
+            string iconFileName,
+            float iconSize,
+            Action onClick = null,
+            params string[] classNames)
+        {
+            return CreateFluentIconButton(
+                tooltip,
+                iconFileName,
+                iconSize,
                 onClick,
                 classNames);
         }
@@ -85,6 +106,39 @@ namespace Ee4v.AssetManager.UI
                     "ee4v-asset-manager-control-button--icon-leading");
                 button.SetIcon(texture, UiSizeTokens.Size12);
             }
+            return button;
+        }
+
+        public static AssetManagerButton CreateBuiltinIconTextButton(
+            string text,
+            UiBuiltinIcon icon,
+            Action onClick = null,
+            params string[] classNames)
+        {
+            var button = new AssetManagerButton(
+                text,
+                onClick,
+                classNames);
+            button.AddToClassList(
+                "ee4v-asset-manager-control-button--icon-leading");
+            button.SetIcon(icon, UiSizeTokens.Size14);
+            return button;
+        }
+
+        public static AssetManagerButton CreateNavigationButton(
+            string text,
+            UiBuiltinIcon icon,
+            Action onClick = null,
+            params string[] classNames)
+        {
+            var button = new AssetManagerButton(
+                text,
+                UiClassNames.NavigationItemLabel,
+                onClick,
+                classNames);
+            button.AddToClassList(
+                "ee4v-asset-manager-control-button--icon-leading");
+            button.SetIcon(icon, UiSizeTokens.Size12);
             return button;
         }
 
@@ -113,6 +167,7 @@ namespace Ee4v.AssetManager.UI
         private static AssetManagerButton CreateFluentIconButton(
             string tooltip,
             string iconFileName,
+            float iconSize,
             Action onClick,
             string[] classNames)
         {
@@ -126,7 +181,7 @@ namespace Ee4v.AssetManager.UI
             {
                 button.AddToClassList(
                     "ee4v-asset-manager-control-button--icon-only");
-                button.SetIcon(texture, UiSizeTokens.Size12);
+                button.SetIcon(texture, iconSize);
             }
 
             return button;
@@ -175,9 +230,34 @@ namespace Ee4v.AssetManager.UI
         public static AssetManagerEnumField CreateEnumField(
             string label,
             Enum value,
+            Func<Enum, string> formatter = null,
             params string[] classNames)
         {
-            return new AssetManagerEnumField(label, value, classNames);
+            return new AssetManagerEnumField(
+                label,
+                value,
+                formatter,
+                classNames);
+        }
+
+        public static string FormatFilterCondition(Enum value)
+        {
+            if (!(value is AssetFilterConditionType condition))
+            {
+                return value?.ToString() ?? string.Empty;
+            }
+
+            switch (condition)
+            {
+                case AssetFilterConditionType.DescriptionContains:
+                    return I18N.Get("filterCondition.descriptionContains");
+                case AssetFilterConditionType.HasTag:
+                    return I18N.Get("filterCondition.hasTag");
+                case AssetFilterConditionType.HasFileExtension:
+                    return I18N.Get("filterCondition.hasFileExtension");
+                default:
+                    return I18N.Get("filterCondition.nameContains");
+            }
         }
 
         public static AssetManagerFoldout CreateFoldout(
@@ -217,10 +297,23 @@ namespace Ee4v.AssetManager.UI
     internal sealed class AssetManagerButton : Button
     {
         private readonly UiTextElement _label;
-        private Image _icon;
+        private VisualElement _icon;
 
         public AssetManagerButton(
             string text,
+            Action onClick,
+            params string[] classNames)
+            : this(
+                text,
+                UiClassNames.ButtonLabel,
+                onClick,
+                classNames)
+        {
+        }
+
+        internal AssetManagerButton(
+            string text,
+            string typographyClassName,
             Action onClick,
             params string[] classNames)
             : base(onClick)
@@ -230,7 +323,7 @@ namespace Ee4v.AssetManager.UI
 
             _label = UiTextFactory.Create(
                 text,
-                UiClassNames.ButtonLabel,
+                typographyClassName,
                 "ee4v-asset-manager-control-button__label");
             if (HasClass(classNames, "ee4v-asset-manager__danger-action"))
             {
@@ -245,6 +338,17 @@ namespace Ee4v.AssetManager.UI
             _label.SetText(text);
         }
 
+        public void SetSelected(bool selected)
+        {
+            EnableInClassList(
+                "ee4v-asset-manager__nav-button--selected",
+                selected);
+            _label.SetColor(
+                selected
+                    ? UiColorTokens.TextOnState
+                    : UiColorTokens.TextPrimary);
+        }
+
         public void SetIcon(Texture texture, float size)
         {
             if (texture == null)
@@ -254,22 +358,33 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            if (_icon == null)
+            if (!(_icon is Image image))
             {
-                _icon = new Image
+                _icon?.RemoveFromHierarchy();
+                image = new Image
                 {
                     tintColor = UiColorTokens.TextPrimary,
                     scaleMode = ScaleMode.ScaleToFit,
                     pickingMode = PickingMode.Ignore
                 };
+                _icon = image;
                 _icon.AddToClassList(
                     "ee4v-asset-manager-control-button__icon");
                 hierarchy.Insert(0, _icon);
             }
 
-            _icon.image = texture;
+            image.image = texture;
             _icon.style.width = size;
             _icon.style.height = size;
+        }
+
+        public void SetIcon(UiBuiltinIcon icon, float size)
+        {
+            _icon?.RemoveFromHierarchy();
+            _icon = new Icon(IconState.FromBuiltinIcon(icon, size));
+            _icon.AddToClassList(
+                "ee4v-asset-manager-control-button__icon");
+            hierarchy.Insert(0, _icon);
         }
 
         private static bool HasClass(string[] classNames, string target)
@@ -350,6 +465,11 @@ namespace Ee4v.AssetManager.UI
             EventCallback<ChangeEvent<string>> callback)
         {
             _field.RegisterValueChangedCallback(callback);
+        }
+
+        public void FocusInput()
+        {
+            _field.Focus();
         }
     }
 
@@ -529,11 +649,12 @@ namespace Ee4v.AssetManager.UI
 
     internal sealed class AssetManagerEnumField : VisualElement
     {
-        private readonly EnumField _field;
+        private readonly BaseField<Enum> _field;
 
         public AssetManagerEnumField(
             string label,
             Enum value,
+            Func<Enum, string> formatter,
             params string[] classNames)
         {
             AddToClassList("ee4v-asset-manager-control-field");
@@ -550,10 +671,36 @@ namespace Ee4v.AssetManager.UI
             var fieldContainer = new VisualElement();
             fieldContainer.AddToClassList(
                 "ee4v-asset-manager-control-field__container");
-            _field = UiTextFactory.CreateEnumField(
-                string.Empty,
-                value,
-                "ee4v-asset-manager-control-field__input");
+            if (formatter == null)
+            {
+                _field = UiTextFactory.CreateEnumField(
+                    string.Empty,
+                    value,
+                    "ee4v-asset-manager-control-field__input");
+            }
+            else
+            {
+                var values = Enum.GetValues(value.GetType());
+                var choices = new List<Enum>(values.Length);
+                var selectedIndex = 0;
+                for (var i = 0; i < values.Length; i++)
+                {
+                    var choice = (Enum)values.GetValue(i);
+                    choices.Add(choice);
+                    if (choice.Equals(value))
+                    {
+                        selectedIndex = i;
+                    }
+                }
+
+                _field = UiTextFactory.CreatePopupField(
+                    string.Empty,
+                    choices,
+                    selectedIndex,
+                    formatter,
+                    formatter,
+                    "ee4v-asset-manager-control-field__input");
+            }
             _field.RegisterCallback<FocusInEvent>(_ => EnableInClassList(
                 "ee4v-asset-manager-control-field--focused",
                 true));
@@ -567,6 +714,11 @@ namespace Ee4v.AssetManager.UI
         public Enum value
         {
             get { return _field.value; }
+        }
+
+        public void SetValueWithoutNotify(Enum value)
+        {
+            _field.SetValueWithoutNotify(value);
         }
     }
 
@@ -655,26 +807,4 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class AssetManagerCard : VisualElement
-    {
-        private readonly VisualElement _body;
-
-        public AssetManagerCard(string title, string description)
-        {
-            AddToClassList("ee4v-asset-manager__source-card");
-            hierarchy.Add(UiTextFactory.Create(
-                title,
-                UiClassNames.InfoCardTitle,
-                "ee4v-asset-manager__source-title"));
-            hierarchy.Add(UiTextFactory.Create(
-                description,
-                UiClassNames.InfoCardDescription,
-                "ee4v-asset-manager__source-description"));
-            _body = new VisualElement();
-            _body.AddToClassList("ee4v-asset-manager__source-card-body");
-            hierarchy.Add(_body);
-        }
-
-        public override VisualElement contentContainer => _body;
-    }
 }

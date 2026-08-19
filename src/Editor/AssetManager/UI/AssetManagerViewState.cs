@@ -15,9 +15,9 @@ namespace Ee4v.AssetManager.UI
     {
         Library,
         Archived,
+        Tags,
         Collection,
-        UnassignedFiles,
-        Sources
+        UnassignedFiles
     }
 
     internal enum AssetManagerViewStateChange
@@ -33,8 +33,7 @@ namespace Ee4v.AssetManager.UI
     internal enum AssetManagerInformationContent
     {
         Selection,
-        NewItem,
-        CollectionEditor
+        NewItem
     }
 
     internal sealed class AssetManagerViewState
@@ -50,6 +49,7 @@ namespace Ee4v.AssetManager.UI
 
         public AssetManagerPage Page { get; private set; }
         public string CollectionId { get; private set; }
+        public string TagPath { get; private set; }
         public string BrowsingItemId { get; private set; }
         public IReadOnlyList<string> SelectedItemIds => _selectedItemIds;
         public string SelectedItemId { get; private set; }
@@ -61,7 +61,6 @@ namespace Ee4v.AssetManager.UI
             get;
             private set;
         }
-        public string EditingCollectionId { get; private set; }
         public AssetManagerItemSortField ItemSortField { get; private set; } =
             AssetManagerItemSortField.Name;
         public bool IsItemSortReversed { get; private set; }
@@ -83,6 +82,21 @@ namespace Ee4v.AssetManager.UI
                 null));
         }
 
+        public void SelectTag(string tagPath)
+        {
+            if (string.IsNullOrWhiteSpace(tagPath))
+            {
+                SelectPage(AssetManagerPage.Tags);
+                return;
+            }
+
+            Navigate(new NavigationLocation(
+                AssetManagerPage.Tags,
+                null,
+                null,
+                tagPath));
+        }
+
         public void BrowseItemFiles(string itemId)
         {
             if (string.IsNullOrWhiteSpace(itemId))
@@ -93,7 +107,8 @@ namespace Ee4v.AssetManager.UI
             Navigate(new NavigationLocation(
                 Page,
                 CollectionId,
-                itemId));
+                itemId,
+                TagPath));
         }
 
         public void ShowPageRoot()
@@ -101,7 +116,8 @@ namespace Ee4v.AssetManager.UI
             Navigate(new NavigationLocation(
                 Page,
                 CollectionId,
-                null));
+                null,
+                TagPath));
         }
 
         public void GoBack()
@@ -168,7 +184,6 @@ namespace Ee4v.AssetManager.UI
             SelectedItemId = nextPrimary;
             SelectedFileId = null;
             InformationContent = AssetManagerInformationContent.Selection;
-            EditingCollectionId = null;
             Changed?.Invoke(AssetManagerViewStateChange.ItemSelection);
         }
 
@@ -178,22 +193,12 @@ namespace Ee4v.AssetManager.UI
                 ? null
                 : fileId;
             InformationContent = AssetManagerInformationContent.Selection;
-            EditingCollectionId = null;
             Changed?.Invoke(AssetManagerViewStateChange.FileSelection);
         }
 
         public void ShowNewItem()
         {
             InformationContent = AssetManagerInformationContent.NewItem;
-            EditingCollectionId = null;
-            Changed?.Invoke(AssetManagerViewStateChange.Information);
-        }
-
-        public void ShowCollectionEditor(string collectionId)
-        {
-            InformationContent =
-                AssetManagerInformationContent.CollectionEditor;
-            EditingCollectionId = collectionId;
             Changed?.Invoke(AssetManagerViewStateChange.Information);
         }
 
@@ -254,6 +259,7 @@ namespace Ee4v.AssetManager.UI
             _location = location;
             Page = location.Page;
             CollectionId = location.CollectionId;
+            TagPath = location.TagPath;
             BrowsingItemId = location.ItemId;
             ResetSelectionAndInformation();
             Changed?.Invoke(AssetManagerViewStateChange.Navigation);
@@ -265,7 +271,6 @@ namespace Ee4v.AssetManager.UI
             SelectedItemId = null;
             SelectedFileId = null;
             InformationContent = AssetManagerInformationContent.Selection;
-            EditingCollectionId = null;
         }
 
         private bool HasSameItemSelection(
@@ -299,16 +304,19 @@ namespace Ee4v.AssetManager.UI
             public NavigationLocation(
                 AssetManagerPage page,
                 string collectionId,
-                string itemId)
+                string itemId,
+                string tagPath = null)
             {
                 Page = page;
                 CollectionId = collectionId;
                 ItemId = itemId;
+                TagPath = tagPath;
             }
 
             public AssetManagerPage Page { get; }
             public string CollectionId { get; }
             public string ItemId { get; }
+            public string TagPath { get; }
 
             public bool IsSame(NavigationLocation other)
             {
@@ -321,6 +329,10 @@ namespace Ee4v.AssetManager.UI
                     string.Equals(
                         ItemId,
                         other.ItemId,
+                        StringComparison.Ordinal) &&
+                    string.Equals(
+                        TagPath,
+                        other.TagPath,
                         StringComparison.Ordinal);
             }
         }

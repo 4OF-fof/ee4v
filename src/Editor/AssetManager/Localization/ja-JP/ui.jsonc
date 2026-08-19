@@ -6,7 +6,6 @@
     "informationTitle": "Asset Manager · 情報"
   },
   "pane": {
-    "brand": "ASSET MANAGER",
     "information": "情報"
   },
   "toolbar": {
@@ -15,7 +14,7 @@
     "gridColumns": "グリッドの列数",
     "gridDecrease": "列数を減らす",
     "gridIncrease": "列数を増やす",
-    "reload": "再読み込み",
+    "reload": "Sourceと同期して再読み込み",
     "search": {
       "placeholder": "Itemを検索",
       "tooltip": "Itemを検索",
@@ -43,16 +42,17 @@
     "none": "なし"
   },
   "navigation": {
-    "library": "ライブラリ",
-    "archived": "アーカイブ済み",
-    "unassignedFiles": "未所属File",
-    "sources": "データソースと取り込み",
-    "collections": "コレクション",
+    "library": "全件",
+    "archived": "アーカイブ",
+    "unassignedFiles": "未所属",
+    "tags": "タグ",
+    "collectionsWithCount": "コレクション ({0})",
     "newCollection": "コレクションを作成",
     "newItem": "Itemを作成"
   },
   "notice": {
     "noItems": "この表示に一致するItemはありません。",
+    "noTags": "タグはありません。",
     "selectedItemMissing": "選択したItemは存在しません。",
     "selectedFileMissing": "選択したFileは存在しません。",
     "selectFile": "所属先や取り込み設定を編集するFileを選択してください。",
@@ -60,11 +60,11 @@
     "itemMissing": "Itemは存在しません。",
     "noAssignedFiles": "このItemに所属するFileはありません。",
     "noUnassignedFiles": "未所属のFileはありません。",
-    "collectionCondition": "この画面で作成できる条件は1つです。入れ子のAND、OR、NOTフィルターはAPIから引き続き使用できます。"
+    "collectionNameRequired": "コレクション名を入力してください。",
+    "collectionSaveFailed": "コレクションを保存できませんでした。Consoleを確認してください。"
   },
   "detail": {
     "createEyebrow": "作成",
-    "collectionEyebrow": "コレクション",
     "files": "FILE",
     "importedAssetGuids": "取り込み済みASSET GUID",
     "item": {
@@ -88,12 +88,32 @@
     "targetPaths": "Targetパス（1行に1件）",
     "dependencyFileIds": "依存File ID（1行に1件）",
     "archiveEntries": "アーカイブ内の項目（1行に1件）",
-    "itemNameOptional": "Item名（任意）",
-    "descriptionOptional": "説明（任意）",
-    "tagsCommaSeparated": "タグ（カンマ区切り）",
-    "guids": "GUID（1行に1件、空欄ですべて）",
-    "condition": "条件",
     "value": "値"
+  },
+  "filterCondition": {
+    "nameContains": "名前に含む",
+    "descriptionContains": "説明に含む",
+    "hasTag": "タグを含む",
+    "hasFileExtension": "拡張子を含む"
+  },
+  "filterEditor": {
+    "matchMode": "条件の一致方法",
+    "matchAll": "すべての条件に一致",
+    "matchAny": "いずれかの条件に一致",
+    "conditions": "条件",
+    "addCondition": "条件を追加",
+    "addGroup": "条件グループを追加",
+    "removeCondition": "条件を削除",
+    "removeGroup": "条件グループを削除",
+    "inverted": "反転",
+    "invertGroup": "グループを反転",
+    "groupConditionRequired": "すべてのグループに条件または条件グループを1つ以上追加してください。",
+    "valueRequired": "すべての条件に値を入力してください。"
+  },
+  "filterSummary": {
+    "and": "かつ",
+    "or": "または",
+    "not": "反転（{0}）"
   },
   "action": {
     "save": "保存",
@@ -108,33 +128,10 @@
     "analyze": "解析",
     "importEntries": "項目を取り込み",
     "importTargets": "Targetを取り込み",
-    "importFile": "Fileを取り込み",
     "edit": "編集",
     "createItem": "Itemを作成",
     "createCollection": "コレクションを作成",
     "saveCollection": "コレクションを保存"
-  },
-  "source": {
-    "eagle": {
-      "title": "Eagleを同期",
-      "description": "Preferences/4OF/ee4vで設定したEagleライブラリを同期します。",
-      "action": "Eagleを同期"
-    },
-    "ee4v": {
-      "title": "ee4vを同期",
-      "description": "Preferences/4OF/ee4vで設定したee4vライブラリを同期します。",
-      "action": "ee4vを同期"
-    },
-    "import": {
-      "title": "ee4vへ取り込み",
-      "description": "設定済みのee4vライブラリへFileをコピーし、カタログにItemを作成します。"
-    },
-    "lookup": {
-      "title": "取り込み済みAssetを検索",
-      "description": "Unity Asset GUIDに関連付けられたカタログのFileを検索します。",
-      "empty": "まだ検索していません。",
-      "action": "関連付けを検索"
-    }
   },
   "confirm": {
     "deleteItem": {

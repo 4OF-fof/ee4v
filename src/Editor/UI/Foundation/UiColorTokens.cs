@@ -105,6 +105,8 @@ namespace Ee4v.UI
     public static class UiColorTokens
     {
         public static readonly Color32 Transparent = new Color32(0, 0, 0, 0);
+        public static readonly Color32 TextOnState =
+            new Color32(249, 249, 249, 255);
         private static readonly Color32 DarkHierarchyGuide =
             new Color32(104, 104, 104, 255);
         private static readonly Color32 LightHierarchyBackground =

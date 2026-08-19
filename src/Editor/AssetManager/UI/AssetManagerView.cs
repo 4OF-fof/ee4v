@@ -70,15 +70,20 @@ namespace Ee4v.AssetManager.UI
             _detail = new ScrollView();
             _detail.AddToClassList("ee4v-asset-manager__detail");
             var layout = new AssetManagerThreePaneLayout(mode);
-            layout.LeftToolbarContent.Add(UiTextFactory.Create(
-                I18N.Get("pane.brand"),
-                "ee4v-asset-manager__brand"));
             layout.MainToolbarContent.Add(BuildToolbar());
             layout.RightToolbarContent.Add(UiTextFactory.Create(
                 I18N.Get("pane.information"),
                 "ee4v-asset-manager__pane-title"));
             layout.LeftContent.Add(_navigation);
             layout.MainContent.Add(_content);
+            var createItemButton = AssetManagerControls.CreateIconButton(
+                I18N.Get("navigation.newItem"),
+                "add.png",
+                UiSizeTokens.Size18,
+                ShowNewItem,
+                "ee4v-asset-manager__floating-create",
+                "ee4v-asset-manager__primary-action");
+            layout.MainContent.Add(createItemButton);
             layout.RightContent.Add(_detail);
             Add(layout);
 
@@ -319,7 +324,7 @@ namespace Ee4v.AssetManager.UI
                     pageTitle,
                     _viewState.ShowPageRoot),
                 new AssetManagerBreadcrumbItem(
-                    FindItem(_viewState.BrowsingItemId)?.Name ??
+                    _manager.GetItem(_viewState.BrowsingItemId)?.Name ??
                     I18N.Get("common.item"))
             });
         }
@@ -327,69 +332,78 @@ namespace Ee4v.AssetManager.UI
         private void RebuildNavigation()
         {
             _navigation.Clear();
-            _navigation.Add(CreateNavigationButton(
+            var primary = new VisualElement();
+            primary.AddToClassList("ee4v-asset-manager__nav-primary");
+            primary.Add(CreateNavigationButton(
                 I18N.Get("navigation.library"),
-                AssetManagerPage.Library));
-            _navigation.Add(CreateNavigationButton(
-                I18N.Get("navigation.archived"),
-                AssetManagerPage.Archived));
-            _navigation.Add(CreateNavigationButton(
+                AssetManagerPage.Library,
+                UiBuiltinIcon.Grid));
+            primary.Add(CreateNavigationButton(
                 I18N.Get("navigation.unassignedFiles"),
-                AssetManagerPage.UnassignedFiles));
-            _navigation.Add(CreateNavigationButton(
-                I18N.Get("navigation.sources"),
-                AssetManagerPage.Sources));
+                AssetManagerPage.UnassignedFiles,
+                UiBuiltinIcon.Uncategorized));
+            primary.Add(CreateNavigationButton(
+                I18N.Get("navigation.archived"),
+                AssetManagerPage.Archived,
+                UiBuiltinIcon.ArchiveFile));
+            primary.Add(CreateNavigationButton(
+                I18N.Get("navigation.tags"),
+                AssetManagerPage.Tags,
+                UiBuiltinIcon.Tag));
+            _navigation.Add(primary);
 
-            _navigation.Add(UiTextFactory.Create(
-                I18N.Get("navigation.collections"),
+            var collections = _manager.GetCollections();
+            var section = new VisualElement();
+            section.AddToClassList(
+                "ee4v-asset-manager__nav-section-header");
+            section.Add(UiTextFactory.Create(
+                string.Format(
+                    I18N.Get("navigation.collectionsWithCount"),
+                    collections.Count),
                 "ee4v-asset-manager__nav-section"));
-            var collections = GetCollections();
+            AssetManagerButton createCollectionButton = null;
+            createCollectionButton = AssetManagerControls.CreateIconButton(
+                I18N.Get("navigation.newCollection"),
+                "add.png",
+                () => ShowNewCollection(createCollectionButton),
+                "ee4v-asset-manager__nav-section-action");
+            section.Add(createCollectionButton);
+            _navigation.Add(section);
+
             for (var i = 0; i < collections.Count; i++)
             {
                 var collection = collections[i];
-                var button = AssetManagerControls.CreateButton(
+                var button = AssetManagerControls.CreateBuiltinIconTextButton(
                     collection.Name,
+                    UiBuiltinIcon.Folder,
                     () => SelectCollection(collection.Id));
-                button.EnableInClassList(
-                    "ee4v-asset-manager__nav-button--selected",
+                button.SetSelected(
                     _viewState.Page == AssetManagerPage.Collection &&
                     string.Equals(
                         _viewState.CollectionId,
                         collection.Id,
                         StringComparison.Ordinal));
                 button.AddToClassList("ee4v-asset-manager__nav-button");
+                button.Add(UiTextFactory.Create(
+                    _manager.SearchCollection(collection.Id, limit: 1)
+                        .TotalCount.ToString(),
+                    "ee4v-asset-manager__nav-count"));
                 _navigation.Add(button);
             }
 
-            _navigation.Add(AssetManagerControls.CreateIconTextButton(
-                I18N.Get("navigation.newCollection"),
-                "add.png",
-                ShowNewCollection,
-                "ee4v-asset-manager__nav-button",
-                "ee4v-asset-manager__nav-create"));
-
-            var spacer = new VisualElement();
-            spacer.AddToClassList("ee4v-asset-manager__nav-spacer");
-            _navigation.Add(spacer);
-            _navigation.Add(AssetManagerControls.CreateButton(
-                I18N.Get("navigation.newItem"),
-                ShowNewItem,
-                "ee4v-asset-manager__nav-button",
-                "ee4v-asset-manager__nav-new-item",
-                "ee4v-asset-manager__primary-action"));
         }
 
         private AssetManagerButton CreateNavigationButton(
             string label,
-            AssetManagerPage page)
+            AssetManagerPage page,
+            UiBuiltinIcon icon)
         {
-            var button = AssetManagerControls.CreateButton(
+            var button = AssetManagerControls.CreateNavigationButton(
                 label,
+                icon,
                 () => SelectPage(page),
                 "ee4v-asset-manager__nav-button");
-            button.EnableInClassList(
-                "ee4v-asset-manager__nav-button--selected",
-                _viewState.Page == page);
+            button.SetSelected(_viewState.Page == page);
             return button;
         }
 
@@ -420,11 +434,19 @@ namespace Ee4v.AssetManager.UI
                     {
                         switch (_viewState.Page)
                         {
+                            case AssetManagerPage.Tags:
+                                if (string.IsNullOrEmpty(
+                                        _viewState.TagPath))
+                                {
+                                    BuildTags();
+                                }
+                                else
+                                {
+                                    BuildItems();
+                                }
+                                break;
                             case AssetManagerPage.UnassignedFiles:
                                 BuildUnassignedFiles();
-                                break;
-                            case AssetManagerPage.Sources:
-                                BuildSources();
                                 break;
                             default:
                                 BuildItems();
@@ -447,7 +469,23 @@ namespace Ee4v.AssetManager.UI
         private void Reload()
         {
             _itemGrid.ClearThumbnails();
-            Refresh();
+            _defersManagerRefresh = true;
+            try
+            {
+                Run(() => _manager.SyncEagle(new EagleSyncRequest(
+                    AssetManagerSettings.EagleLibraryPath,
+                    AssetManagerSettings.EagleTargetRoot)),
+                    refresh: false);
+                Run(() => _manager.SyncEe4v(new Ee4vSyncRequest(
+                    AssetManagerSettings.Ee4vLibraryPath)),
+                    refresh: false);
+            }
+            finally
+            {
+                _defersManagerRefresh = false;
+                _managerRefreshPending = false;
+                RefreshAfterManagerChange();
+            }
         }
 
         private void BuildItems()
@@ -480,6 +518,47 @@ namespace Ee4v.AssetManager.UI
                 _viewState.SelectedItemId);
             _content.Add(_itemGrid);
             LoadGridThumbnails(items);
+        }
+
+        private void BuildTags()
+        {
+            CancelGridThumbnails();
+            _content.Clear();
+            _search.style.display = DisplayStyle.None;
+            _sortButton.style.display = DisplayStyle.None;
+            _gridControls.style.display = DisplayStyle.None;
+
+            var items = _manager.SearchItems(new AssetItemQuery()).Items;
+            var tags = (_manager.GetTags() ?? Array.Empty<AssetTag>())
+                .Where(tag => !string.IsNullOrWhiteSpace(tag.Path))
+                .GroupBy(tag => tag.Path, StringComparer.Ordinal)
+                .Select(group => group.First())
+                .OrderBy(tag => tag.Path, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (tags.Length == 0)
+            {
+                _content.Add(AssetManagerControls.CreateNotice(
+                    I18N.Get("notice.noTags")));
+                return;
+            }
+
+            var list = new ScrollView();
+            list.AddToClassList("ee4v-asset-manager__tag-list");
+            for (var i = 0; i < tags.Length; i++)
+            {
+                var tag = tags[i];
+                var button = AssetManagerControls.CreateBuiltinIconTextButton(
+                    tag.Path,
+                    UiBuiltinIcon.Tag,
+                    () => _viewState.SelectTag(tag.Path),
+                    "ee4v-asset-manager__tag-row");
+                button.Add(UiTextFactory.Create(
+                    items.Count(item => MatchesTag(item, tag.Path))
+                        .ToString(),
+                    "ee4v-asset-manager__nav-count"));
+                list.Add(button);
+            }
+            _content.Add(list);
         }
 
         private void SelectItems(
@@ -603,7 +682,7 @@ namespace Ee4v.AssetManager.UI
             _detail.Add(description);
             _detail.Add(tags);
 
-            var actions = CreateActionRow();
+            var actions = new AssetManagerActionRow();
             actions.Add(AssetManagerControls.CreateButton(
                 I18N.Get("action.save"),
                 () => SaveItem(item.Id, name.value, description.value, tags.value),
@@ -638,7 +717,7 @@ namespace Ee4v.AssetManager.UI
             _detail.Add(UiTextFactory.Create(
                 string.Join(
                     "\n",
-                    GetItemGuids(item.Id).DefaultIfEmpty(
+                    _manager.GetItemImportedAssetGuids(item.Id).DefaultIfEmpty(
                         I18N.Get("common.none"))),
                 "ee4v-asset-manager__mono"));
 
@@ -697,21 +776,6 @@ namespace Ee4v.AssetManager.UI
                 case AssetManagerInformationContent.NewItem:
                     RenderNewItem();
                     return;
-                case AssetManagerInformationContent.CollectionEditor:
-                    RenderCollectionEditor(
-                        string.IsNullOrEmpty(
-                            _viewState.EditingCollectionId)
-                            ? null
-                            : _manager.GetCollection(
-                                _viewState.EditingCollectionId));
-                    return;
-            }
-
-            if (_viewState.Page == AssetManagerPage.Sources)
-            {
-                _detail.Clear();
-                _detail.Add(BuildAssociationLookup());
-                return;
             }
 
             if (!string.IsNullOrEmpty(_viewState.SelectedFileId))
@@ -723,7 +787,7 @@ namespace Ee4v.AssetManager.UI
 
             if (!string.IsNullOrEmpty(_viewState.SelectedItemId))
             {
-                ShowItemDetail(FindItem(
+                ShowItemDetail(_manager.GetItem(
                     _viewState.SelectedItemId));
                 return;
             }
@@ -784,7 +848,10 @@ namespace Ee4v.AssetManager.UI
             var targets = AssetManagerControls.CreateTextField(
                 I18N.Get("field.targetPaths"));
             targets.multiline = true;
-            targets.value = string.Join("\n", GetTargets(file.Id).Select(target => target.TargetPath));
+            targets.value = string.Join(
+                "\n",
+                _manager.GetFileTargets(file.Id)
+                    .Select(target => target.TargetPath));
             _detail.Add(targets);
             _detail.Add(AssetManagerControls.CreateButton(
                 I18N.Get("action.saveTargets"),
@@ -795,7 +862,8 @@ namespace Ee4v.AssetManager.UI
             dependencies.multiline = true;
             dependencies.value = string.Join(
                 "\n",
-                GetDependencies(file.Id).Select(dependency => dependency.DependencyFileId));
+                _manager.GetFileDependencies(file.Id)
+                    .Select(dependency => dependency.DependencyFileId));
             _detail.Add(dependencies);
             _detail.Add(AssetManagerControls.CreateButton(
                 I18N.Get("action.saveDependencies"),
@@ -805,7 +873,7 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get("field.archiveEntries"));
             entries.multiline = true;
             _detail.Add(entries);
-            var importActions = CreateActionRow();
+            var importActions = new AssetManagerActionRow();
             importActions.Add(AssetManagerControls.CreateButton(
                 I18N.Get("action.analyze"),
                 () => AnalyzeFile(file.Id, entries)));
@@ -823,11 +891,11 @@ namespace Ee4v.AssetManager.UI
             _detail.Add(UiTextFactory.Create(
                 string.Join(
                     "\n",
-                    GetFileGuids(file.Id).DefaultIfEmpty(
+                    _manager.GetFileImportedAssetGuids(file.Id).DefaultIfEmpty(
                         I18N.Get("common.none"))),
                 "ee4v-asset-manager__mono"));
 
-            var actions = CreateActionRow();
+            var actions = new AssetManagerActionRow();
             actions.Add(AssetManagerControls.CreateButton(
                 I18N.Get(
                     file.IsArchived
@@ -858,7 +926,7 @@ namespace Ee4v.AssetManager.UI
         {
             CancelGridThumbnails();
             _content.Clear();
-            var item = FindItem(_viewState.BrowsingItemId);
+            var item = _manager.GetItem(_viewState.BrowsingItemId);
             _search.style.display = DisplayStyle.Flex;
             _sortButton.style.display = DisplayStyle.Flex;
             _gridControls.style.display = DisplayStyle.Flex;
@@ -923,102 +991,9 @@ namespace Ee4v.AssetManager.UI
             _fileGrid.SetSelectedItemId(_viewState.SelectedFileId);
         }
 
-        private void BuildSources()
-        {
-            CancelGridThumbnails();
-            _content.Clear();
-            _search.style.display = DisplayStyle.None;
-            _sortButton.style.display = DisplayStyle.None;
-            _gridControls.style.display = DisplayStyle.None;
-            var scroll = CreateContentScroll();
-            _content.Add(scroll);
-
-            scroll.Add(BuildEagleSource());
-            scroll.Add(BuildEe4vSource());
-            scroll.Add(BuildEe4vImport());
-        }
-
-        private static ScrollView CreateContentScroll()
-        {
-            var scroll = new ScrollView();
-            scroll.AddToClassList("ee4v-asset-manager__content-scroll");
-            return scroll;
-        }
-
-        private VisualElement BuildEagleSource()
-        {
-            var card = CreateSourceCard(
-                I18N.Get("source.eagle.title"),
-                I18N.Get("source.eagle.description"));
-            card.Add(AssetManagerControls.CreateButton(
-                I18N.Get("source.eagle.action"),
-                SyncEagle,
-                "ee4v-asset-manager__primary-action"));
-            return card;
-        }
-
-        private VisualElement BuildEe4vSource()
-        {
-            var card = CreateSourceCard(
-                I18N.Get("source.ee4v.title"),
-                I18N.Get("source.ee4v.description"));
-            card.Add(AssetManagerControls.CreateButton(
-                I18N.Get("source.ee4v.action"),
-                SyncEe4v,
-                "ee4v-asset-manager__primary-action"));
-            return card;
-        }
-
-        private VisualElement BuildEe4vImport()
-        {
-            var card = CreateSourceCard(
-                I18N.Get("source.import.title"),
-                I18N.Get("source.import.description"));
-            var file = AssetManagerControls.CreateTextField(
-                I18N.Get("field.filePath"));
-            var name = AssetManagerControls.CreateTextField(
-                I18N.Get("field.itemNameOptional"));
-            var description = AssetManagerControls.CreateTextField(
-                I18N.Get("field.descriptionOptional"));
-            var tags = AssetManagerControls.CreateTextField(
-                I18N.Get("field.tagsCommaSeparated"));
-            card.Add(file);
-            card.Add(name);
-            card.Add(description);
-            card.Add(tags);
-            card.Add(AssetManagerControls.CreateButton(
-                I18N.Get("action.importFile"),
-                () => ImportEe4vFile(
-                    file.value,
-                    name.value,
-                    description.value,
-                    tags.value),
-                "ee4v-asset-manager__primary-action"));
-            return card;
-        }
-
-        private VisualElement BuildAssociationLookup()
-        {
-            var card = CreateSourceCard(
-                I18N.Get("source.lookup.title"),
-                I18N.Get("source.lookup.description"));
-            var guids = AssetManagerControls.CreateTextField(
-                I18N.Get("field.guids"));
-            guids.multiline = true;
-            var results = UiTextFactory.Create(
-                I18N.Get("source.lookup.empty"),
-                "ee4v-asset-manager__mono");
-            card.Add(guids);
-            card.Add(AssetManagerControls.CreateButton(
-                I18N.Get("source.lookup.action"),
-                () => ShowAssociations(guids.value, results)));
-            card.Add(results);
-            return card;
-        }
-
         private VisualElement BuildCollectionHeader()
         {
-            var collection = GetCollections().FirstOrDefault(candidate =>
+            var collection = _manager.GetCollections().FirstOrDefault(candidate =>
                 string.Equals(
                     candidate.Id,
                     _viewState.CollectionId,
@@ -1028,10 +1003,11 @@ namespace Ee4v.AssetManager.UI
             bar.Add(UiTextFactory.Create(
                 DescribeFilter(collection?.Root),
                 "ee4v-asset-manager__collection-filter"));
-            bar.Add(AssetManagerControls.CreateButton(
+            AssetManagerButton editButton = null;
+            editButton = AssetManagerControls.CreateButton(
                 I18N.Get("action.edit"),
-                () => _viewState.ShowCollectionEditor(
-                    collection?.Id)));
+                () => ShowCollectionEditor(editButton, collection));
+            bar.Add(editButton);
             bar.Add(AssetManagerControls.CreateButton(
                 I18N.Get("action.delete"),
                 () => DeleteCollection(collection?.Id),
@@ -1063,47 +1039,30 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-asset-manager__primary-action"));
         }
 
-        private void ShowNewCollection()
+        private void ShowNewCollection(VisualElement anchor)
         {
-            _viewState.ShowCollectionEditor(null);
+            AssetCollectionCreationPopup.Show(
+                anchor,
+                null,
+                CreateCollection);
         }
 
-        private void RenderCollectionEditor(AssetCollection collection)
+        private void ShowCollectionEditor(
+            VisualElement anchor,
+            AssetCollection collection)
         {
-            _detail.Clear();
-            _detail.Add(CreateDetailTitle(
-                collection == null
-                    ? I18N.Get("common.newCollection")
-                    : collection.Name,
-                I18N.Get(
-                    collection == null
-                        ? "detail.createEyebrow"
-                        : "detail.collectionEyebrow")));
-            var name = AssetManagerControls.CreateTextField(
-                I18N.Get("field.name"));
-            name.value = collection?.Name ?? string.Empty;
-            var condition = AssetManagerControls.CreateEnumField(
-                I18N.Get("field.condition"),
-                GetConditionType(collection?.Root));
-            var value = AssetManagerControls.CreateTextField(
-                I18N.Get("field.value"));
-            value.value = GetConditionValue(collection?.Root);
-            _detail.Add(name);
-            _detail.Add(condition);
-            _detail.Add(value);
-            _detail.Add(AssetManagerControls.CreateNotice(
-                I18N.Get("notice.collectionCondition")));
-            _detail.Add(AssetManagerControls.CreateButton(
-                I18N.Get(
-                    collection == null
-                        ? "action.createCollection"
-                        : "action.saveCollection"),
-                () => SaveCollection(
-                    collection?.Id,
-                    name.value,
-                    (AssetFilterConditionType)condition.value,
-                    value.value),
-                "ee4v-asset-manager__primary-action"));
+            if (collection == null)
+            {
+                return;
+            }
+
+            AssetCollectionCreationPopup.Show(
+                anchor,
+                collection,
+                (name, root) => UpdateCollection(
+                    collection.Id,
+                    name,
+                    root));
         }
 
         private void CreateItem(string name, string description)
@@ -1241,35 +1200,33 @@ namespace Ee4v.AssetManager.UI
                 () => _manager.ImportFileTargets(fileId));
         }
 
-        private void SaveCollection(
+        private bool UpdateCollection(
             string id,
             string name,
-            AssetFilterConditionType condition,
-            string value)
+            AssetFilterNode root)
         {
-            Run(() =>
+            return Run(() => _manager.UpdateCollection(
+                id,
+                new UpdateAssetCollectionRequest
+                {
+                    Name = name,
+                    Root = root
+                }));
+        }
+
+        private bool CreateCollection(
+            string name,
+            AssetFilterNode root)
+        {
+            return Run(() =>
             {
-                var root = AssetFilterNode.Condition(condition, value);
-                if (string.IsNullOrEmpty(id))
-                {
-                    var created = _manager.CreateCollection(
-                        new CreateAssetCollectionRequest
-                        {
-                            Name = name,
-                            Root = root
-                        });
-                    _viewState.SelectCollection(created.Id);
-                }
-                else
-                {
-                    _manager.UpdateCollection(
-                        id,
-                        new UpdateAssetCollectionRequest
-                        {
-                            Name = name,
-                            Root = root
-                        });
-                }
+                var created = _manager.CreateCollection(
+                    new CreateAssetCollectionRequest
+                    {
+                        Name = name,
+                        Root = root
+                    });
+                _viewState.SelectCollection(created.Id);
             });
         }
 
@@ -1288,56 +1245,6 @@ namespace Ee4v.AssetManager.UI
                 _manager.DeleteCollection(id);
                 _viewState.SelectPage(AssetManagerPage.Library);
             });
-        }
-
-        private void SyncEagle()
-        {
-            Run(() =>
-                _manager.SyncEagle(new EagleSyncRequest(
-                    EmptyToNull(AssetManagerSettings.EagleLibraryPath),
-                    EmptyToNull(AssetManagerSettings.EagleTargetRoot))),
-                refresh: false);
-        }
-
-        private void SyncEe4v()
-        {
-            Run(() =>
-                _manager.SyncEe4v(new Ee4vSyncRequest(
-                    AssetManagerSettings.Ee4vLibraryPath)),
-                refresh: false);
-        }
-
-        private void ImportEe4vFile(
-            string filePath,
-            string name,
-            string description,
-            string tags)
-        {
-            Run(() =>
-                _manager.ImportEe4vFile(new ImportEe4vFileRequest(
-                    AssetManagerSettings.Ee4vLibraryPath,
-                    filePath,
-                    EmptyToNull(name),
-                    EmptyToNull(description),
-                    SplitCommaSeparated(tags))));
-        }
-
-        private void ShowAssociations(string guidText, UiTextElement output)
-        {
-            try
-            {
-                var guids = SplitLines(guidText);
-                var associations = _manager.GetImportedAssetAssociations(
-                    guids.Count == 0 ? null : guids);
-                output.SetText(string.Join(
-                    "\n",
-                    associations.Select(association =>
-                        association.AssetGuid + "  →  " + association.FileId)));
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception);
-            }
         }
 
         private async System.Threading.Tasks.Task RunImport(
@@ -1359,10 +1266,11 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private void Run(Action operation, bool refresh = true)
+        private bool Run(Action operation, bool refresh = true)
         {
             var succeeded = false;
-            _defersManagerRefresh = refresh;
+            var wasDeferringRefresh = _defersManagerRefresh;
+            _defersManagerRefresh = wasDeferringRefresh || refresh;
             try
             {
                 operation();
@@ -1374,14 +1282,16 @@ namespace Ee4v.AssetManager.UI
             }
             finally
             {
-                _defersManagerRefresh = false;
-                if (refresh &&
+                _defersManagerRefresh = wasDeferringRefresh;
+                if (!wasDeferringRefresh && refresh &&
                     (succeeded || _managerRefreshPending))
                 {
                     _managerRefreshPending = false;
                     RefreshAfterManagerChange();
                 }
             }
+
+            return succeeded;
         }
 
         private IReadOnlyList<AssetItem> GetVisibleItems()
@@ -1409,6 +1319,9 @@ namespace Ee4v.AssetManager.UI
                 .Where(item =>
                     _viewState.Page != AssetManagerPage.Archived ||
                     item.IsArchived)
+                .Where(item =>
+                    _viewState.Page != AssetManagerPage.Tags ||
+                    MatchesTag(item, _viewState.TagPath))
                 .Where(item => AssetManagerSearch.MatchesItem(
                     item,
                     _search.value,
@@ -1419,9 +1332,23 @@ namespace Ee4v.AssetManager.UI
                 _viewState.IsItemSortReversed);
         }
 
-        private IReadOnlyList<AssetCollection> GetCollections()
+        private static bool MatchesTag(AssetItem item, string tagPath)
         {
-            return _manager.GetCollections();
+            if (item == null || string.IsNullOrWhiteSpace(tagPath))
+            {
+                return false;
+            }
+
+            return (item.Tags ?? Array.Empty<AssetTag>()).Any(tag =>
+                tag != null &&
+                !string.IsNullOrEmpty(tag.Path) &&
+                (string.Equals(
+                    tag.Path,
+                    tagPath,
+                    StringComparison.Ordinal) ||
+                 tag.Path.StartsWith(
+                    tagPath + "/",
+                    StringComparison.Ordinal)));
         }
 
         private IReadOnlyList<AssetFile> GetFiles(string itemId)
@@ -1434,64 +1361,61 @@ namespace Ee4v.AssetManager.UI
             return _manager.GetUnassignedFiles(includeArchived: true);
         }
 
-        private IReadOnlyList<AssetFileTarget> GetTargets(string fileId)
-        {
-            return _manager.GetFileTargets(fileId);
-        }
-
-        private IReadOnlyList<AssetFileDependency> GetDependencies(string fileId)
-        {
-            return _manager.GetFileDependencies(fileId);
-        }
-
-        private IReadOnlyList<string> GetFileGuids(string fileId)
-        {
-            return _manager.GetFileImportedAssetGuids(fileId);
-        }
-
-        private IReadOnlyList<string> GetItemGuids(string itemId)
-        {
-            return _manager.GetItemImportedAssetGuids(itemId);
-        }
-
-        private AssetItem FindItem(string itemId)
-        {
-            return _manager.GetItem(itemId);
-        }
-
         private string GetPageTitle()
         {
             switch (_viewState.Page)
             {
                 case AssetManagerPage.Archived:
                     return I18N.Get("navigation.archived");
+                case AssetManagerPage.Tags:
+                    return string.IsNullOrEmpty(_viewState.TagPath)
+                        ? I18N.Get("navigation.tags")
+                        : _viewState.TagPath;
                 case AssetManagerPage.Collection:
-                    return GetCollections()
+                    return _manager.GetCollections()
                         .FirstOrDefault(collection =>
                             collection.Id == _viewState.CollectionId)
                         ?.Name ?? I18N.Get("common.collection");
                 case AssetManagerPage.UnassignedFiles:
                     return I18N.Get("navigation.unassignedFiles");
-                case AssetManagerPage.Sources:
-                    return I18N.Get("navigation.sources");
                 default:
                     return I18N.Get("navigation.library");
             }
         }
 
-        private static AssetFilterConditionType GetConditionType(AssetFilterNode root)
-        {
-            return root?.ConditionType ?? AssetFilterConditionType.NameContains;
-        }
-
-        private static string GetConditionValue(AssetFilterNode root)
-        {
-            return root?.Value ?? string.Empty;
-        }
-
         private static string DescribeFilter(AssetFilterNode root)
         {
-            return root?.ConditionType + ": " + root?.Value;
+            if (root == null)
+            {
+                return string.Empty;
+            }
+
+            if (root.Type == AssetFilterNodeType.Condition)
+            {
+                return AssetManagerControls.FormatFilterCondition(
+                           root.ConditionType.HasValue
+                               ? (Enum)root.ConditionType.Value
+                               : null) +
+                       ": " + root.Value;
+            }
+
+            var children = root.Children ?? Array.Empty<AssetFilterNode>();
+            if (root.Type == AssetFilterNodeType.Not)
+            {
+                return string.Format(
+                    I18N.Get("filterSummary.not"),
+                    children.Count > 0
+                        ? DescribeFilter(children[0])
+                        : string.Empty);
+            }
+
+            var separator = " " + I18N.Get(
+                root.Type == AssetFilterNodeType.Or
+                    ? "filterSummary.or"
+                    : "filterSummary.and") + " ";
+            return string.Join(
+                separator,
+                children.Select(DescribeFilter));
         }
 
         private static VisualElement CreateDetailTitle(string title, string eyebrow)
@@ -1525,16 +1449,6 @@ namespace Ee4v.AssetManager.UI
                 value,
                 "ee4v-asset-manager__value"));
             return row;
-        }
-
-        private static VisualElement CreateActionRow()
-        {
-            return new AssetManagerActionRow();
-        }
-
-        private static VisualElement CreateSourceCard(string title, string description)
-        {
-            return new AssetManagerCard(title, description);
         }
 
         private void ShowEmptyDetail(string text)
@@ -1675,11 +1589,6 @@ namespace Ee4v.AssetManager.UI
                 message,
                 I18N.Get("action.delete"),
                 I18N.Get("action.cancel"));
-        }
-
-        private static string EmptyToNull(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
         private static IReadOnlyList<string> SplitLines(string value)

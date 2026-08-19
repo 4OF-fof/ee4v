@@ -19,7 +19,7 @@ namespace Ee4v.AssetManager.UI
                     "Domain/AssetManager",
                     "AssetManagerView",
                     "AssetManager のナビゲーション、一覧、詳細操作を確認する画面です。",
-                    "実画面と同じ AssetManagerView をサンプルデータで表示します。Library、Collection、未所属ファイル、Source 画面を操作できます。",
+                    "実画面と同じ AssetManagerView をサンプルデータで表示します。全件、未所属、アーカイブ、タグ、コレクションを操作できます。",
                     Build,
                     dependencies: new[]
                     {
@@ -28,7 +28,8 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerWindow.cs"
+                        "Editor/AssetManager/UI/AssetManagerWindow.cs",
+                        "Editor/AssetManager/UI/AssetManagerStandaloneWindows.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -71,22 +72,6 @@ namespace Ee4v.AssetManager.UI
                         "Editor/AssetManager/UI/asset-manager.uss"
                     }),
                 new UiStory(
-                    "asset-manager-three-pane",
-                    "Domain/AssetManager",
-                    "AssetManagerThreePaneLayout",
-                    "masterに近い固定幅の3ペイン構成を確認するStoryです。",
-                    "左ナビゲーション240px、右情報300pxを固定し、中央一覧だけが残り幅へ追従する構成を確認できます。",
-                    BuildThreePane,
-                    dependencies: new[] { "UiTextFactory" },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss"
-                    }),
-                new UiStory(
                     "asset-manager-breadcrumb",
                     "Domain/AssetManager",
                     "AssetManagerBreadcrumb",
@@ -105,7 +90,7 @@ namespace Ee4v.AssetManager.UI
                 new UiStory(
                     "asset-manager-separated-windows",
                     "Domain/AssetManager",
-                    "AssetManagerSeparatedWindows",
+                    "AssetManagerView · Separated modes",
                     "分離した3ウィンドウの連動状態を確認するStoryです。",
                     "同じIAssetManagerと表示状態を共有するNavigation、Main、Informationを並べ、ページ切替と選択が別ペインへ反映されることを確認できます。",
                     BuildSeparatedWindows,
@@ -123,10 +108,30 @@ namespace Ee4v.AssetManager.UI
                         "Editor/AssetManager/UI/asset-manager.uss"
                     }),
                 new UiStory(
+                    "asset-manager-collection-popup",
+                    "Domain/AssetManager",
+                    "AssetCollectionCreationPopup",
+                    "コレクションの作成と条件編集を確認するStoryです。",
+                    "ボタンから実際のポップアップを開き、入れ子のAND、OR、条件とグループの反転、条件とグループの追加と削除を確認できます。Story内の保存操作はデータを変更しません。",
+                    BuildCollectionPopup,
+                    dependencies: new[]
+                    {
+                        "UiTextFactory",
+                        "AssetManagerControls"
+                    },
+                    usageLocations: new[]
+                    {
+                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                    },
+                    styleSheetPaths: new[]
+                    {
+                        "Editor/AssetManager/UI/asset-manager.uss"
+                    }),
+                new UiStory(
                     "asset-manager-controls",
                     "Domain/AssetManager",
                     "AssetManagerControls",
-                    "AssetManager専用のボタン、入力、通知、カードを確認するStoryです。",
+                    "AssetManager専用のボタン、入力、通知を確認するStoryです。",
                     "masterの状態表現を参考に、現行画面向けに再設計した内部コンポーネントを一覧表示します。",
                     BuildControls,
                     dependencies: new[]
@@ -136,7 +141,8 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.cs",
+                        "Editor/AssetManager/UI/AssetCollectionCreationPopup.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -206,65 +212,6 @@ namespace Ee4v.AssetManager.UI
             surface.Add(slider);
             surface.Add(grid);
             parent.Add(surface);
-        }
-
-        private static void BuildThreePane(VisualElement parent)
-        {
-            var layout = new AssetManagerThreePaneLayout();
-            layout.style.height = 520f;
-            layout.style.minWidth = 920f;
-            layout.LeftToolbarContent.Add(UiTextFactory.Create(
-                "ASSET MANAGER",
-                "ee4v-asset-manager__brand"));
-            layout.MainToolbarContent.Add(UiTextFactory.Create(
-                "Library",
-                "ee4v-asset-manager__breadcrumb-current"));
-            layout.RightToolbarContent.Add(UiTextFactory.Create(
-                "INFORMATION",
-                "ee4v-asset-manager__pane-title"));
-
-            var navigation = new ScrollView();
-            navigation.AddToClassList("ee4v-asset-manager__navigation");
-            navigation.Add(AssetManagerControls.CreateButton(
-                "Library",
-                () => { },
-                "ee4v-asset-manager__nav-button",
-                "ee4v-asset-manager__nav-button--selected"));
-            navigation.Add(AssetManagerControls.CreateButton(
-                "Archived",
-                () => { },
-                "ee4v-asset-manager__nav-button"));
-            navigation.Add(UiTextFactory.Create(
-                "COLLECTIONS",
-                "ee4v-asset-manager__nav-section"));
-            navigation.Add(AssetManagerControls.CreateButton(
-                "Favorites",
-                () => { },
-                "ee4v-asset-manager__nav-button"));
-            layout.LeftContent.Add(navigation);
-
-            var main = new VisualElement();
-            main.AddToClassList("ee4v-asset-manager__content");
-            var grid = new AssetItemGridView();
-            grid.SetItems(new[]
-            {
-                new AssetItemGridEntry("avatar-base", "Avatar Base"),
-                new AssetItemGridEntry("summer-costume", "Summer Costume"),
-                new AssetItemGridEntry("city-stage", "City Stage")
-            });
-            grid.RegisterCallback<DetachFromPanelEvent>(_ => grid.Dispose());
-            main.Add(grid);
-            layout.MainContent.Add(main);
-
-            var information = new ScrollView();
-            information.AddToClassList("ee4v-asset-manager__detail");
-            information.Add(UiTextFactory.Create(
-                "Summer Costume",
-                "ee4v-asset-manager__detail-title"));
-            information.Add(AssetManagerControls.CreateNotice(
-                "Select an item to edit its metadata and files."));
-            layout.RightContent.Add(information);
-            parent.Add(layout);
         }
 
         private static void BuildFileGrid(VisualElement parent)
@@ -379,6 +326,56 @@ namespace Ee4v.AssetManager.UI
             parent.Add(surface);
         }
 
+        private static void BuildCollectionPopup(VisualElement parent)
+        {
+            var surface = new VisualElement();
+            surface.style.width = 420f;
+            surface.AddToClassList("ee4v-asset-manager-controls-story");
+            surface.Add(AssetManagerControls.CreateNotice(
+                "各ボタンの直下にコレクション編集ポップアップを表示します。"));
+
+            var createButton = AssetManagerControls.CreateButton(
+                "新規コレクションを開く",
+                () => { });
+            createButton.clicked += () =>
+                AssetCollectionCreationPopup.Show(
+                    createButton,
+                    null,
+                    (_, __) => true);
+            surface.Add(createButton);
+
+            var sample = new AssetCollection
+            {
+                Id = "collection-story",
+                Name = "Avatar favorites",
+                Root = AssetFilterNode.Or(
+                    AssetFilterNode.And(
+                        AssetFilterNode.Condition(
+                            AssetFilterConditionType.HasTag,
+                            "Avatar"),
+                        AssetFilterNode.Or(
+                            AssetFilterNode.Condition(
+                                AssetFilterConditionType.NameContains,
+                                "Summer"),
+                            AssetFilterNode.Condition(
+                                AssetFilterConditionType.DescriptionContains,
+                                "Favorite"))),
+                    AssetFilterNode.Not(AssetFilterNode.Condition(
+                        AssetFilterConditionType.HasFileExtension,
+                        "zip")))
+            };
+            var editButton = AssetManagerControls.CreateButton(
+                "既存コレクションを編集",
+                () => { });
+            editButton.clicked += () =>
+                AssetCollectionCreationPopup.Show(
+                    editButton,
+                    sample,
+                    (_, __) => true);
+            surface.Add(editButton);
+            parent.Add(surface);
+        }
+
         private static void BuildControls(VisualElement parent)
         {
             var surface = new VisualElement();
@@ -423,15 +420,6 @@ namespace Ee4v.AssetManager.UI
             foldout.Add(AssetManagerControls.CreateTextField("Display name"));
             surface.Add(foldout);
 
-            var card = new AssetManagerCard(
-                "Import source",
-                "Card and form spacing are owned by AssetManager.");
-            card.Add(AssetManagerControls.CreateTextField("Source path"));
-            card.Add(AssetManagerControls.CreateButton(
-                "Import",
-                () => { },
-                "ee4v-asset-manager__primary-action"));
-            surface.Add(card);
             parent.Add(surface);
         }
 

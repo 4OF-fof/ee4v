@@ -6,7 +6,6 @@
     "informationTitle": "Asset Manager · Information"
   },
   "pane": {
-    "brand": "ASSET MANAGER",
     "information": "INFORMATION"
   },
   "toolbar": {
@@ -15,7 +14,7 @@
     "gridColumns": "Grid columns",
     "gridDecrease": "Show fewer columns",
     "gridIncrease": "Show more columns",
-    "reload": "Reload",
+    "reload": "Sync sources and reload",
     "search": {
       "placeholder": "Search items",
       "tooltip": "Search items",
@@ -43,16 +42,17 @@
     "none": "None"
   },
   "navigation": {
-    "library": "Library",
+    "library": "All",
     "archived": "Archived",
-    "unassignedFiles": "Unassigned files",
-    "sources": "Sources & import",
-    "collections": "COLLECTIONS",
+    "unassignedFiles": "Unassigned",
+    "tags": "Tags",
+    "collectionsWithCount": "COLLECTIONS ({0})",
     "newCollection": "New collection",
     "newItem": "New item"
   },
   "notice": {
     "noItems": "No items match this view.",
+    "noTags": "There are no tags.",
     "selectedItemMissing": "The selected item no longer exists.",
     "selectedFileMissing": "The selected file no longer exists.",
     "selectFile": "Select a file to assign it or edit import settings.",
@@ -60,11 +60,11 @@
     "itemMissing": "The item no longer exists.",
     "noAssignedFiles": "There are no files assigned to this item.",
     "noUnassignedFiles": "There are no unassigned files.",
-    "collectionCondition": "This editor creates one condition. Nested AND, OR and NOT filters remain supported by the backend API."
+    "collectionNameRequired": "Enter a collection name.",
+    "collectionSaveFailed": "The collection could not be saved. Check the Console."
   },
   "detail": {
     "createEyebrow": "CREATE",
-    "collectionEyebrow": "COLLECTION",
     "files": "FILES",
     "importedAssetGuids": "IMPORTED ASSET GUIDS",
     "item": {
@@ -88,12 +88,32 @@
     "targetPaths": "Target paths (one per line)",
     "dependencyFileIds": "Dependency file IDs (one per line)",
     "archiveEntries": "Archive entries (one per line)",
-    "itemNameOptional": "Item name (optional)",
-    "descriptionOptional": "Description (optional)",
-    "tagsCommaSeparated": "Tags (comma separated)",
-    "guids": "GUIDs (one per line, empty for all)",
-    "condition": "Condition",
     "value": "Value"
+  },
+  "filterCondition": {
+    "nameContains": "Name contains",
+    "descriptionContains": "Description contains",
+    "hasTag": "Has tag",
+    "hasFileExtension": "Has file extension"
+  },
+  "filterEditor": {
+    "matchMode": "Condition matching",
+    "matchAll": "Match all conditions",
+    "matchAny": "Match any condition",
+    "conditions": "Conditions",
+    "addCondition": "Add condition",
+    "addGroup": "Add group",
+    "removeCondition": "Remove condition",
+    "removeGroup": "Remove group",
+    "inverted": "Invert",
+    "invertGroup": "Invert group",
+    "groupConditionRequired": "Add at least one condition or group to every group.",
+    "valueRequired": "Enter a value for every condition."
+  },
+  "filterSummary": {
+    "and": "AND",
+    "or": "OR",
+    "not": "NOT ({0})"
   },
   "action": {
     "save": "Save",
@@ -108,33 +128,10 @@
     "analyze": "Analyze",
     "importEntries": "Import entries",
     "importTargets": "Import targets",
-    "importFile": "Import file",
     "edit": "Edit",
     "createItem": "Create item",
     "createCollection": "Create collection",
     "saveCollection": "Save collection"
-  },
-  "source": {
-    "eagle": {
-      "title": "Eagle sync",
-      "description": "Synchronize the Eagle library configured in Preferences/4OF/ee4v.",
-      "action": "Sync Eagle"
-    },
-    "ee4v": {
-      "title": "ee4v sync",
-      "description": "Synchronize the ee4v library configured in Preferences/4OF/ee4v.",
-      "action": "Sync ee4v"
-    },
-    "import": {
-      "title": "Import into ee4v",
-      "description": "Copy a file into the configured ee4v library and create its catalog item."
-    },
-    "lookup": {
-      "title": "Imported asset lookup",
-      "description": "Find catalog files associated with Unity Asset GUIDs.",
-      "empty": "No lookup has been run.",
-      "action": "Find associations"
-    }
   },
   "confirm": {
     "deleteItem": {

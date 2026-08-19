@@ -332,7 +332,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         }
 
         [Test]
-        public void EagleSync_NormalizesImportedTextForUiFonts()
+        public void EagleSync_NormalizesTextAndExcludesMetadataTags()
         {
             var library = Path.Combine(_root, "normalized.library");
             var entry = Path.Combine(
@@ -345,10 +345,21 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 "Ｌｅｍｏｎ\u2B52\u260E🍋");
             File.WriteAllText(
                 Path.Combine(entry, "metadata.json"),
-                "{\"id\":\"file-entry\",\"name\":\"𝑵𝒐𝒊𝒓\u2B52\u260E🍋\",\"ext\":\"ｚｉｐ🍋\",\"folders\":[\"avatar-folder\"],\"tags\":[\"Ｆｏｏ\u2B52\u260E🍋\"],\"isDeleted\":false}");
+                "{\"id\":\"file-entry\",\"name\":\"𝑵𝒐𝒊𝒓\u2B52\u260E🍋\",\"ext\":\"ｚｉｐ🍋\",\"folders\":[\"avatar-folder\"],\"tags\":[\"Ｆｏｏ\u2B52\u260E🍋\",\"boothmeta\",\"VRCMeta\"],\"isDeleted\":false}");
             File.WriteAllText(
                 Path.Combine(entry, "payload.zip"),
                 "payload");
+            var metadataEntry = Path.Combine(
+                library,
+                "images",
+                "booth-entry.info");
+            Directory.CreateDirectory(metadataEntry);
+            File.WriteAllText(
+                Path.Combine(metadataEntry, "metadata.json"),
+                "{\"id\":\"booth-entry\",\"name\":\"booth\",\"ext\":\"json\",\"folders\":[\"avatar-folder\"],\"tags\":[\"BoothMeta\",\"internal-only\"],\"isDeleted\":false}");
+            File.WriteAllText(
+                Path.Combine(metadataEntry, "booth.json"),
+                "{\"boothItemId\":1,\"name\":\"Ｌｅｍｏｎ\u2B52\u260E🍋\",\"description\":\"\",\"thumbnailUrl\":\"\"}");
 
             _manager.SyncEagle(new EagleSyncRequest(library));
             var item = _manager.SearchItems().Items.Single();

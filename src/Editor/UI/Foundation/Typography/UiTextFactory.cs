@@ -106,6 +106,24 @@ namespace Ee4v.UI
                 classNames);
         }
 
+        public static PopupField<T> CreatePopupField<T>(
+            string label,
+            List<T> choices,
+            int defaultIndex,
+            Func<T, string> formatSelectedValue,
+            Func<T, string> formatListItem,
+            params string[] classNames)
+        {
+            return ConfigureNativeTextElement(
+                new PopupField<T>(
+                    label,
+                    choices,
+                    defaultIndex,
+                    formatSelectedValue,
+                    formatListItem),
+                classNames);
+        }
+
         public static HelpBox CreateHelpBox(
             string text,
             HelpBoxMessageType messageType,

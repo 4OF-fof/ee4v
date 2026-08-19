@@ -17,18 +17,20 @@ namespace Ee4v.AssetManager.UI
 
             var leftPane = CreatePane(
                 "ee4v-asset-manager-three-pane__pane--left",
-                out var leftToolbar,
+                false,
+                out _,
                 out var leftContent);
             var mainPane = CreatePane(
                 "ee4v-asset-manager-three-pane__pane--main",
+                true,
                 out var mainToolbar,
                 out var mainContent);
             var rightPane = CreatePane(
                 "ee4v-asset-manager-three-pane__pane--right",
+                true,
                 out var rightToolbar,
                 out var rightContent);
 
-            LeftToolbarContent = leftToolbar;
             MainToolbarContent = mainToolbar;
             RightToolbarContent = rightToolbar;
             LeftContent = leftContent;
@@ -40,7 +42,6 @@ namespace Ee4v.AssetManager.UI
             Add(rightPane);
         }
 
-        public VisualElement LeftToolbarContent { get; }
         public VisualElement MainToolbarContent { get; }
         public VisualElement RightToolbarContent { get; }
         public VisualElement LeftContent { get; }
@@ -49,6 +50,7 @@ namespace Ee4v.AssetManager.UI
 
         private static VisualElement CreatePane(
             string modifierClass,
+            bool hasToolbar,
             out VisualElement toolbarContent,
             out VisualElement body)
         {
@@ -56,18 +58,22 @@ namespace Ee4v.AssetManager.UI
             pane.AddToClassList("ee4v-asset-manager-three-pane__pane");
             pane.AddToClassList(modifierClass);
 
-            var toolbar = new VisualElement();
-            toolbar.AddToClassList(
-                "ee4v-asset-manager-three-pane__toolbar");
-            toolbarContent = new VisualElement();
-            toolbarContent.AddToClassList(
-                "ee4v-asset-manager-three-pane__toolbar-content");
-            toolbar.Add(toolbarContent);
+            toolbarContent = null;
+            if (hasToolbar)
+            {
+                var toolbar = new VisualElement();
+                toolbar.AddToClassList(
+                    "ee4v-asset-manager-three-pane__toolbar");
+                toolbarContent = new VisualElement();
+                toolbarContent.AddToClassList(
+                    "ee4v-asset-manager-three-pane__toolbar-content");
+                toolbar.Add(toolbarContent);
+                pane.Add(toolbar);
+            }
 
             body = new VisualElement();
             body.AddToClassList(
                 "ee4v-asset-manager-three-pane__body");
-            pane.Add(toolbar);
             pane.Add(body);
             return pane;
         }
