@@ -74,21 +74,6 @@ namespace Ee4v.AssetManager.UI
                 classNames);
         }
 
-        public static AssetManagerButton CreateIconButton(
-            string tooltip,
-            string iconFileName,
-            float iconSize,
-            Action onClick = null,
-            params string[] classNames)
-        {
-            return CreateFluentIconButton(
-                tooltip,
-                iconFileName,
-                iconSize,
-                onClick,
-                classNames);
-        }
-
         public static AssetManagerButton CreateIconTextButton(
             string text,
             string iconFileName,

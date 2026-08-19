@@ -47,8 +47,7 @@
     "unassignedFiles": "未所属",
     "tags": "タグ",
     "collectionsWithCount": "コレクション ({0})",
-    "newCollection": "コレクションを作成",
-    "newItem": "Itemを作成"
+    "newCollection": "コレクションを作成"
   },
   "notice": {
     "noItems": "この表示に一致するItemはありません。",
@@ -64,7 +63,6 @@
     "collectionSaveFailed": "コレクションを保存できませんでした。Consoleを確認してください。"
   },
   "detail": {
-    "createEyebrow": "作成",
     "files": "FILE",
     "importedAssetGuids": "取り込み済みASSET GUID",
     "item": {
@@ -129,7 +127,6 @@
     "importEntries": "項目を取り込み",
     "importTargets": "Targetを取り込み",
     "edit": "編集",
-    "createItem": "Itemを作成",
     "createCollection": "コレクションを作成",
     "saveCollection": "コレクションを保存"
   },

@@ -907,29 +907,6 @@
     background-color: var(--ee4v-color-tool-active);
 }
 
-.ee4v-asset-manager__floating-create {
-    position: absolute;
-    right: var(--ee4v-space-xl);
-    bottom: var(--ee4v-space-xl);
-    width: 60px;
-    min-width: 60px;
-    height: 60px;
-    min-height: 60px;
-    padding: var(--ee4v-space-none);
-    border-color: var(--ee4v-color-selection);
-    border-radius: 30px;
-    background-color: var(--ee4v-color-selection);
-}
-
-.ee4v-asset-manager__floating-create:hover {
-    border-color: var(--ee4v-color-focus);
-    background-color: var(--ee4v-color-tool-active-hover);
-}
-
-.ee4v-asset-manager__floating-create:active {
-    background-color: var(--ee4v-color-selection-pressed);
-}
-
 .ee4v-asset-manager__danger-action {
     color: var(--ee4v-color-status-failed-text);
     border-color: var(--ee4v-color-error);

@@ -76,14 +76,6 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-asset-manager__pane-title"));
             layout.LeftContent.Add(_navigation);
             layout.MainContent.Add(_content);
-            var createItemButton = AssetManagerControls.CreateIconButton(
-                I18N.Get("navigation.newItem"),
-                "add.png",
-                UiSizeTokens.Size18,
-                ShowNewItem,
-                "ee4v-asset-manager__floating-create",
-                "ee4v-asset-manager__primary-action");
-            layout.MainContent.Add(createItemButton);
             layout.RightContent.Add(_detail);
             Add(layout);
 
@@ -771,13 +763,6 @@ namespace Ee4v.AssetManager.UI
         {
             CancelThumbnail();
             ClearDetailThumbnail();
-            switch (_viewState.InformationContent)
-            {
-                case AssetManagerInformationContent.NewItem:
-                    RenderNewItem();
-                    return;
-            }
-
             if (!string.IsNullOrEmpty(_viewState.SelectedFileId))
             {
                 ShowFileDetail(_manager.GetFile(
@@ -1015,30 +1000,6 @@ namespace Ee4v.AssetManager.UI
             return bar;
         }
 
-        private void ShowNewItem()
-        {
-            _viewState.ShowNewItem();
-        }
-
-        private void RenderNewItem()
-        {
-            _detail.Clear();
-            _detail.Add(CreateDetailTitle(
-                I18N.Get("navigation.newItem"),
-                I18N.Get("detail.createEyebrow")));
-            var name = AssetManagerControls.CreateTextField(
-                I18N.Get("field.name"));
-            var description = AssetManagerControls.CreateTextField(
-                I18N.Get("field.description"));
-            description.multiline = true;
-            _detail.Add(name);
-            _detail.Add(description);
-            _detail.Add(AssetManagerControls.CreateButton(
-                I18N.Get("action.createItem"),
-                () => CreateItem(name.value, description.value),
-                "ee4v-asset-manager__primary-action"));
-        }
-
         private void ShowNewCollection(VisualElement anchor)
         {
             AssetCollectionCreationPopup.Show(
@@ -1063,19 +1024,6 @@ namespace Ee4v.AssetManager.UI
                     collection.Id,
                     name,
                     root));
-        }
-
-        private void CreateItem(string name, string description)
-        {
-            Run(() =>
-            {
-                var item = _manager.CreateItem(new CreateAssetItemRequest
-                {
-                    Name = name,
-                    Description = description
-                });
-                _viewState.SelectItem(item.Id);
-            });
         }
 
         private void SaveItem(string id, string name, string description, string tags)
@@ -1512,12 +1460,6 @@ namespace Ee4v.AssetManager.UI
                         _fileGrid.SetSelectedItemId(
                             _viewState.SelectedFileId);
                     }
-                    if (ShowsInformation)
-                    {
-                        RefreshDetail();
-                    }
-                    break;
-                case AssetManagerViewStateChange.Information:
                     if (ShowsInformation)
                     {
                         RefreshDetail();

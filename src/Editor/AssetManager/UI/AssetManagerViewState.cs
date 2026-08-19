@@ -25,15 +25,8 @@ namespace Ee4v.AssetManager.UI
         Navigation,
         ItemSelection,
         FileSelection,
-        Information,
         ItemSort,
         SearchTargets
-    }
-
-    internal enum AssetManagerInformationContent
-    {
-        Selection,
-        NewItem
     }
 
     internal sealed class AssetManagerViewState
@@ -56,11 +49,6 @@ namespace Ee4v.AssetManager.UI
         public string SelectedFileId { get; private set; }
         public bool CanGoBack => _backHistory.Count > 0;
         public bool CanGoForward => _forwardHistory.Count > 0;
-        public AssetManagerInformationContent InformationContent
-        {
-            get;
-            private set;
-        }
         public AssetManagerItemSortField ItemSortField { get; private set; } =
             AssetManagerItemSortField.Name;
         public bool IsItemSortReversed { get; private set; }
@@ -183,7 +171,6 @@ namespace Ee4v.AssetManager.UI
             _selectedItemIds = selected.ToArray();
             SelectedItemId = nextPrimary;
             SelectedFileId = null;
-            InformationContent = AssetManagerInformationContent.Selection;
             Changed?.Invoke(AssetManagerViewStateChange.ItemSelection);
         }
 
@@ -192,14 +179,7 @@ namespace Ee4v.AssetManager.UI
             SelectedFileId = string.IsNullOrEmpty(fileId)
                 ? null
                 : fileId;
-            InformationContent = AssetManagerInformationContent.Selection;
             Changed?.Invoke(AssetManagerViewStateChange.FileSelection);
-        }
-
-        public void ShowNewItem()
-        {
-            InformationContent = AssetManagerInformationContent.NewItem;
-            Changed?.Invoke(AssetManagerViewStateChange.Information);
         }
 
         public void SetItemSortField(AssetManagerItemSortField field)
@@ -270,7 +250,6 @@ namespace Ee4v.AssetManager.UI
             _selectedItemIds = Array.Empty<string>();
             SelectedItemId = null;
             SelectedFileId = null;
-            InformationContent = AssetManagerInformationContent.Selection;
         }
 
         private bool HasSameItemSelection(

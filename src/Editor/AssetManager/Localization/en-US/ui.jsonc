@@ -47,8 +47,7 @@
     "unassignedFiles": "Unassigned",
     "tags": "Tags",
     "collectionsWithCount": "COLLECTIONS ({0})",
-    "newCollection": "New collection",
-    "newItem": "New item"
+    "newCollection": "New collection"
   },
   "notice": {
     "noItems": "No items match this view.",
@@ -64,7 +63,6 @@
     "collectionSaveFailed": "The collection could not be saved. Check the Console."
   },
   "detail": {
-    "createEyebrow": "CREATE",
     "files": "FILES",
     "importedAssetGuids": "IMPORTED ASSET GUIDS",
     "item": {
@@ -129,7 +127,6 @@
     "importEntries": "Import entries",
     "importTargets": "Import targets",
     "edit": "Edit",
-    "createItem": "Create item",
     "createCollection": "Create collection",
     "saveCollection": "Save collection"
   },
