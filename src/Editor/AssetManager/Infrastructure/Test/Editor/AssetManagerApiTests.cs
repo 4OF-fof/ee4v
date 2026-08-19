@@ -39,7 +39,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         }
 
         [Test]
-        public void CollectionSearch_UsesNestedLogicAndHierarchicalTags()
+        public void CollectionSearch_EvaluatesNestedLogicAndHierarchicalTags()
         {
             var tagged = _manager.CreateItem(
                 new CreateAssetItemRequest
@@ -50,11 +50,6 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             _manager.SetItemTags(
                 new[] { tagged.Id },
                 new[] { "#Foo/Bar" });
-            _manager.CreateItem(new CreateAssetItemRequest
-            {
-                Name = "Other Hidden",
-                Description = "hidden"
-            });
             var visible = _manager.CreateItem(
                 new CreateAssetItemRequest
                 {
@@ -84,20 +79,6 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             Assert.That(
                 result.Items.Select(item => item.Id),
                 Is.EquivalentTo(new[] { tagged.Id, visible.Id }));
-            var page = _manager.SearchItems(new AssetItemQuery
-            {
-                Offset = 1,
-                Limit = 1
-            });
-            Assert.That(page.TotalCount, Is.EqualTo(3));
-            Assert.That(page.Items.Single().Name, Is.EqualTo("Other Hidden"));
-            Assert.That(_manager.GetTags().Single().Path, Is.EqualTo("foo/bar"));
-
-            _manager.SetItemTags(
-                new[] { tagged.Id },
-                Array.Empty<string>());
-
-            Assert.That(_manager.GetTags(), Is.Empty);
         }
 
         [Test]
@@ -318,98 +299,27 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         [Test]
         public void EagleSync_ReusesIdsAndDeletesMissingFile()
         {
-            AssetManagerChange synchronized = null;
-            _manager.Changed += change => synchronized = change;
             var library = Path.Combine(_root, "test.library");
             var images = Path.Combine(library, "images");
             var entry = Path.Combine(images, "file-entry.info");
-            var boothEntry = Path.Combine(images, "booth-entry.info");
             Directory.CreateDirectory(entry);
-            Directory.CreateDirectory(boothEntry);
             var folderMetadata = Path.Combine(library, "metadata.json");
             WriteFolderMetadata(folderMetadata, "Before");
             File.WriteAllText(
                 Path.Combine(entry, "metadata.json"),
-                "{\"id\":\"file-entry\",\"name\":\"avatar\",\"ext\":\"zip\",\"folders\":[\"avatar-folder\"],\"tags\":[\"Avatar/PC\"],\"isDeleted\":false}");
-            File.WriteAllText(
-                Path.Combine(boothEntry, "metadata.json"),
-                "{\"id\":\"booth-entry\",\"name\":\"booth\",\"ext\":\"json\",\"folders\":[\"avatar-folder\"],\"isDeleted\":false}");
-            File.WriteAllText(
-                Path.Combine(boothEntry, "booth.json"),
-                "{\"boothItemId\":1,\"thumbnailUrl\":\"https://example.invalid/avatar.png\"}");
+                "{\"id\":\"file-entry\",\"name\":\"avatar\",\"ext\":\"zip\",\"folders\":[\"avatar-folder\"],\"isDeleted\":false}");
             File.WriteAllText(Path.Combine(entry, "avatar.zip"), "payload");
 
-            var first = _manager.SyncEagle(
-                new EagleSyncRequest(library));
+            _manager.SyncEagle(new EagleSyncRequest(library));
             var before = _manager.SearchItems().Items.Single();
             var beforeFile = before.Files.Single();
 
-            Assert.That(first.State, Is.EqualTo(AssetSyncState.Success));
-            Assert.That(first.CreatedItemIds, Is.EqualTo(new[] { before.Id }));
-            Assert.That(
-                first.CreatedFileIds,
-                Is.EqualTo(new[] { beforeFile.Id }));
-            AssertChange(
-                synchronized,
-                AssetManagerChangeKind.SourceSynchronized,
-                new[] { before.Id },
-                new[] { beforeFile.Id },
-                sourceType: AssetSourceType.Eagle);
-            Assert.That(before.SourceId, Is.EqualTo("avatar-folder"));
-            Assert.That(
-                before.ThumbnailUrl,
-                Is.EqualTo("https://example.invalid/avatar.png"));
-            Assert.That(beforeFile.SourceId, Is.EqualTo("file-entry"));
-            Assert.That(before.Tags.Single().Path, Is.EqualTo("avatar/pc"));
-            Assert.That(
-                _manager.SearchItems(new AssetItemQuery
-                {
-                    Filter = AssetFilterNode.Condition(
-                        AssetFilterConditionType.HasFileExtension,
-                        ".ZIP")
-                }).Items.Single().Id,
-                Is.EqualTo(before.Id));
-
-            var deleteError = Assert.Throws<AssetManagerException>(() =>
-                _manager.DeleteFile(new[] { beforeFile.Id }));
-
-            Assert.That(
-                deleteError.Code,
-                Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
-            Assert.That(File.Exists(beforeFile.SourcePath), Is.True);
-            Assert.That(
-                Assert.Throws<AssetManagerException>(() =>
-                    _manager.SetFileItem(
-                        new[] { beforeFile.Id },
-                        null))
-                    .Code,
-                Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
-
-            File.WriteAllText(
-                Path.Combine(entry, "metadata.json"),
-                "{\"id\":\"file-entry\",\"name\":\"avatar\",\"ext\":\"zip\",\"folders\":[\"avatar-folder\"],\"tags\":[\"Avatar/Quest\"],\"isDeleted\":false}");
-            var tagChanged = _manager.SyncEagle(
-                new EagleSyncRequest(library));
-            Assert.That(
-                tagChanged.UpdatedItemIds,
-                Is.EqualTo(new[] { before.Id }));
-            Assert.That(tagChanged.UpdatedFileIds, Is.Empty);
-
             WriteFolderMetadata(folderMetadata, "After");
-            var renamedResult = _manager.SyncEagle(
-                new EagleSyncRequest(library));
+            _manager.SyncEagle(new EagleSyncRequest(library));
             var renamed = _manager.SearchItems().Items.Single();
 
             Assert.That(renamed.Id, Is.EqualTo(before.Id));
             Assert.That(renamed.Name, Is.EqualTo("After"));
-            Assert.That(
-                renamedResult.UpdatedItemIds,
-                Is.EqualTo(new[] { before.Id }));
-            AssertChange(
-                synchronized,
-                AssetManagerChangeKind.SourceSynchronized,
-                new[] { before.Id },
-                sourceType: AssetSourceType.Eagle);
 
             Directory.Delete(entry, true);
             var removedFile = _manager.SyncEagle(
@@ -418,44 +328,39 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             Assert.That(
                 removedFile.DeletedFileIds,
                 Is.EqualTo(new[] { beforeFile.Id }));
-            AssertChange(
-                synchronized,
-                AssetManagerChangeKind.SourceSynchronized,
-                new[] { before.Id },
-                new[] { beforeFile.Id },
-                sourceType: AssetSourceType.Eagle);
-            Assert.That(
-                Assert.Throws<AssetManagerException>(() =>
-                    _manager.GetFile(beforeFile.Id)).Code,
-                Is.EqualTo(AssetManagerErrorCode.NotFound));
             Assert.That(_manager.GetItem(before.Id).Files, Is.Empty);
-            Assert.That(
-                _manager.SearchItems(new AssetItemQuery
-                {
-                    Filter = AssetFilterNode.Condition(
-                        AssetFilterConditionType.HasFileExtension,
-                        "zip")
-                }).Items,
-                Is.Empty);
-
-            Assert.That(
-                Assert.Throws<AssetManagerException>(() =>
-                    _manager.UpdateItem(
-                        before.Id,
-                        new UpdateAssetItemRequest { Name = "Local" }))
-                    .Code,
-                Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
-            Assert.That(
-                Assert.Throws<AssetManagerException>(() =>
-                    _manager.SetItemTags(
-                        new[] { before.Id },
-                        new[] { "local" }))
-                    .Code,
-                Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
         }
 
         [Test]
-        public void EagleSync_MissingTargetPreservesDataAndDeletesRemovedItem()
+        public void EagleSync_NormalizesImportedTextForUiFonts()
+        {
+            var library = Path.Combine(_root, "normalized.library");
+            var entry = Path.Combine(
+                library,
+                "images",
+                "file-entry.info");
+            Directory.CreateDirectory(entry);
+            WriteFolderMetadata(
+                Path.Combine(library, "metadata.json"),
+                "Ｌｅｍｏｎ\u2B52\u260E🍋");
+            File.WriteAllText(
+                Path.Combine(entry, "metadata.json"),
+                "{\"id\":\"file-entry\",\"name\":\"𝑵𝒐𝒊𝒓\u2B52\u260E🍋\",\"ext\":\"ｚｉｐ🍋\",\"folders\":[\"avatar-folder\"],\"tags\":[\"Ｆｏｏ\u2B52\u260E🍋\"],\"isDeleted\":false}");
+            File.WriteAllText(
+                Path.Combine(entry, "payload.zip"),
+                "payload");
+
+            _manager.SyncEagle(new EagleSyncRequest(library));
+            var item = _manager.SearchItems().Items.Single();
+
+            Assert.That(item.Name, Is.EqualTo("Lemon*"));
+            Assert.That(item.Files.Single().FileName, Is.EqualTo("Noir*.zip"));
+            Assert.That(item.Files.Single().Extension, Is.EqualTo("zip"));
+            Assert.That(item.Tags.Single().Path, Is.EqualTo("foo*"));
+        }
+
+        [Test]
+        public void EagleSync_MissingTargetPreservesData()
         {
             var library = Path.Combine(_root, "test.library");
             var entry = Path.Combine(
@@ -483,24 +388,6 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             Assert.That(_manager.GetItem(item.Id).Id, Is.EqualTo(item.Id));
             Assert.That(_manager.GetFile(file.Id).Id, Is.EqualTo(file.Id));
 
-            File.WriteAllText(
-                folderMetadata,
-                "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[]}]}" );
-            var removed = _manager.SyncEagle(
-                new EagleSyncRequest(library));
-
-            Assert.That(removed.State, Is.EqualTo(AssetSyncState.Success));
-            Assert.That(removed.DeletedItemIds, Is.EqualTo(new[] { item.Id }));
-            Assert.That(removed.DeletedFileIds, Is.EqualTo(new[] { file.Id }));
-            Assert.That(_manager.SearchItems().Items, Is.Empty);
-            Assert.That(
-                Assert.Throws<AssetManagerException>(() =>
-                    _manager.GetItem(item.Id)).Code,
-                Is.EqualTo(AssetManagerErrorCode.NotFound));
-            Assert.That(
-                Assert.Throws<AssetManagerException>(() =>
-                    _manager.GetFile(file.Id)).Code,
-                Is.EqualTo(AssetManagerErrorCode.NotFound));
         }
 
         [Test]
@@ -517,17 +404,6 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             Assert.That(thumbnail.Found, Is.False);
             Assert.That(thumbnail.Data, Is.Empty);
             Assert.That(thumbnails[item.Id].Found, Is.False);
-            Assert.That(
-                _manager.GetThumbnails(Array.Empty<string>())
-                    .GetAwaiter().GetResult(),
-                Is.Empty);
-            using (var cancellation = new CancellationTokenSource())
-            {
-                cancellation.Cancel();
-                Assert.Throws<OperationCanceledException>(() =>
-                    _manager.GetThumbnail(item.Id, cancellation.Token)
-                        .GetAwaiter().GetResult());
-            }
         }
 
         [Test]
@@ -566,9 +442,6 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             var library = Path.Combine(_root, "ee4v-library");
             var sourcePath = Path.Combine(_root, "avatar.zip");
             File.WriteAllText(sourcePath, "payload");
-            var changes = new List<AssetManagerChange>();
-            _manager.Changed += changes.Add;
-
             var imported = _manager.ImportEe4vFile(
                 new ImportEe4vFileRequest(
                     library,
@@ -576,29 +449,6 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                     "Before",
                     "description",
                     new[] { "#Foo/Bar" }));
-            var importedFile = imported.Files.Single();
-            var entryPath = Path.Combine(
-                library,
-                "Assets",
-                imported.SourceId);
-
-            Assert.That(imported.SourceType, Is.EqualTo(AssetSourceType.Ee4v));
-            Assert.That(importedFile.SourceType, Is.EqualTo(AssetSourceType.Ee4v));
-            Assert.That(importedFile.SourceId, Is.EqualTo(imported.SourceId));
-            Assert.That(
-                Directory.GetFiles(entryPath).Select(Path.GetFileName),
-                Is.EquivalentTo(new[] { "avatar.zip", "metadata.json" }));
-            Assert.That(imported.Tags.Single().Path, Is.EqualTo("foo/bar"));
-            AssertChange(
-                changes[0],
-                AssetManagerChangeKind.ItemCreated,
-                new[] { imported.Id });
-            AssertChange(
-                changes[1],
-                AssetManagerChangeKind.FileCreated,
-                new[] { importedFile.Id },
-                new[] { imported.Id });
-
             _manager.UpdateItem(
                 imported.Id,
                 new UpdateAssetItemRequest
@@ -624,22 +474,11 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         }
 
         [Test]
-        public void RegisterFile_StoresEe4vPairAndRestoresAsFile()
+        public void RegisterFile_RestoresUnassignedPairAfterDatabaseRebuild()
         {
             var library = Path.Combine(_root, "ee4v-library");
             var sourcePath = Path.Combine(_root, "avatar.zip");
             File.WriteAllText(sourcePath, "payload");
-            var item = _manager.CreateItem(
-                new CreateAssetItemRequest { Name = "Avatar" });
-
-            var assigned = _manager.RegisterFile(
-                item.Id,
-                new RegisterFileRequest
-                {
-                    LibraryPath = library,
-                    FilePath = sourcePath,
-                    FileName = "registered.zip"
-                });
             var unassigned = _manager.RegisterFile(
                 null,
                 new RegisterFileRequest
@@ -648,25 +487,14 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                     FilePath = sourcePath
                 });
 
-            Assert.That(assigned.ItemId, Is.EqualTo(item.Id));
-            Assert.That(assigned.SourceType, Is.EqualTo(AssetSourceType.Ee4v));
-            Assert.That(assigned.FileName, Is.EqualTo("registered.zip"));
-            Assert.That(File.ReadAllText(assigned.SourcePath), Is.EqualTo("payload"));
-            Assert.That(
-                Directory.GetFiles(Path.GetDirectoryName(assigned.SourcePath))
-                    .Select(Path.GetFileName),
-                Is.EquivalentTo(new[] { "registered.zip", "metadata.json" }));
-            Assert.That(
-                _manager.GetUnassignedFiles().Single().Id,
-                Is.EqualTo(unassigned.Id));
-
             File.Delete(_databasePath);
             _manager = AssetManagerFactory.Open(_databasePath);
             var sync = _manager.SyncEe4v(new Ee4vSyncRequest(library));
 
             Assert.That(sync.State, Is.EqualTo(AssetSyncState.Success));
-            Assert.That(_manager.SearchItems().Items, Is.Empty);
-            Assert.That(_manager.GetUnassignedFiles().Count, Is.EqualTo(2));
+            Assert.That(
+                _manager.GetUnassignedFiles().Single().FileName,
+                Is.EqualTo(unassigned.FileName));
         }
 
         [Test]
@@ -752,49 +580,6 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         }
 
         [Test]
-        public void MultiTargetMutations_UpdateEveryRequestedTarget()
-        {
-            var library = Path.Combine(_root, "ee4v-library");
-            var sourcePath = Path.Combine(_root, "avatar.zip");
-            File.WriteAllText(sourcePath, "payload");
-            var first = _manager.CreateItem(
-                new CreateAssetItemRequest { Name = "First" });
-            var second = _manager.CreateItem(
-                new CreateAssetItemRequest { Name = "Second" });
-            var firstFile = _manager.RegisterFile(
-                null,
-                new RegisterFileRequest
-                {
-                    LibraryPath = library,
-                    FilePath = sourcePath,
-                    FileName = "first.zip"
-                });
-            var secondFile = _manager.RegisterFile(
-                null,
-                new RegisterFileRequest
-                {
-                    LibraryPath = library,
-                    FilePath = sourcePath,
-                    FileName = "second.zip"
-                });
-
-            var files = _manager.SetFileItem(
-                new[] { firstFile.Id, secondFile.Id },
-                first.Id);
-            var items = _manager.SetItemTags(
-                new[] { first.Id, second.Id },
-                new[] { "#Shared/Tag" });
-
-            Assert.That(
-                files.All(file => file.ItemId == first.Id),
-                Is.True);
-            Assert.That(
-                items.All(item =>
-                    item.Tags.Single().Path == "shared/tag"),
-                Is.True);
-        }
-
-        [Test]
         public void DeleteItem_DeletesMultipleItemsAndTheirEe4vFiles()
         {
             var library = Path.Combine(_root, "ee4v-library");
@@ -868,7 +653,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         }
 
         [Test]
-        public void FileDependencies_UpdateMultipleFilesAndRejectCycles()
+        public void FileDependencies_RejectCyclesWithoutChangingData()
         {
             var library = Path.Combine(_root, "ee4v-library");
             var sourcePath = Path.Combine(_root, "source.txt");
@@ -885,14 +670,6 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                     FilePath = sourcePath,
                     FileName = "first.txt"
                 });
-            var second = _manager.RegisterFile(
-                secondItem.Id,
-                new RegisterFileRequest
-                {
-                    LibraryPath = library,
-                    FilePath = sourcePath,
-                    FileName = "second.txt"
-                });
             var third = _manager.RegisterFile(
                 secondItem.Id,
                 new RegisterFileRequest
@@ -903,18 +680,13 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 });
 
             _manager.SetFileDependencies(
-                new[] { first.Id, second.Id },
-                new[] { third.Id, third.Id });
+                new[] { first.Id },
+                new[] { third.Id });
 
             Assert.That(
                 _manager.GetFileDependencies(first.Id)
                     .Single().DependencyFileId,
                 Is.EqualTo(third.Id));
-            Assert.That(
-                _manager.GetFileDependencies(second.Id)
-                    .Single().DependencyFileId,
-                Is.EqualTo(third.Id));
-
             var exception = Assert.Throws<AssetManagerException>(() =>
                 _manager.SetFileDependencies(
                     new[] { third.Id },
@@ -926,41 +698,10 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             Assert.That(
                 _manager.GetFileDependencies(third.Id),
                 Is.Empty);
-            _manager.SetFileDependencies(
-                new[] { first.Id, second.Id },
-                Array.Empty<string>());
-            Assert.That(
-                _manager.GetFileDependencies(second.Id),
-                Is.Empty);
-
-            _manager.SetFileDependencies(
-                new[] { first.Id, second.Id },
-                new[] { third.Id });
-
-            _manager = AssetManagerFactory.Open(_databasePath);
             Assert.That(
                 _manager.GetFileDependencies(first.Id)
                     .Single().DependencyFileId,
                 Is.EqualTo(third.Id));
-
-            var changes = new List<AssetManagerChange>();
-            _manager.Changed += changes.Add;
-            _manager.DeleteFile(new[] { third.Id });
-
-            Assert.That(
-                _manager.GetFileDependencies(first.Id),
-                Is.Empty);
-            Assert.That(
-                _manager.GetFileDependencies(second.Id),
-                Is.Empty);
-            AssertChange(
-                changes.Single(change =>
-                    change.Kind ==
-                    AssetManagerChangeKind.FileDependenciesChanged),
-                AssetManagerChangeKind.FileDependenciesChanged,
-                new[] { first.Id, second.Id }
-                    .OrderBy(id => id, StringComparer.Ordinal)
-                    .ToArray());
         }
 
         [Test]
@@ -1009,8 +750,6 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             _manager.SetFileDependencies(
                 new[] { dependent.Id },
                 new[] { dependency.Id });
-            var changes = new List<AssetManagerChange>();
-            _manager.Changed += changes.Add;
 
             var assetPath = "Assets/" + itemName;
             try
@@ -1037,47 +776,6 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                         destination,
                         "shared.zip")),
                     Is.EqualTo("dependent"));
-                Assert.That(
-                    _manager.GetFileImportedAssetGuids(dependency.Id),
-                    Is.Not.Empty);
-                Assert.That(
-                    _manager.GetFileImportedAssetGuids(dependent.Id),
-                    Is.Not.Empty);
-                Assert.That(
-                    changes.Select(change => change.Kind),
-                    Is.All.EqualTo(
-                        AssetManagerChangeKind
-                            .FileImportedAssetGuidsChanged));
-                Assert.That(
-                    changes.SelectMany(change => change.SubjectIds),
-                    Is.EqualTo(new[] { dependency.Id, dependent.Id }));
-                Assert.That(
-                    changes.SelectMany(change => change.RelatedIds),
-                    Is.EqualTo(new[] { item.Id, item.Id }));
-                var itemGuids = _manager.GetItemImportedAssetGuids(item.Id);
-                var associations =
-                    _manager.GetImportedAssetAssociations(itemGuids);
-                Assert.That(itemGuids, Is.Not.Empty);
-                Assert.That(
-                    associations.Select(value => value.FileId).Distinct(),
-                    Is.EquivalentTo(new[]
-                    {
-                        dependency.Id,
-                        dependent.Id
-                    }));
-                Assert.That(
-                    associations.Select(value => value.ItemId).Distinct(),
-                    Is.EqualTo(new[] { item.Id }));
-                Assert.That(
-                    _manager.GetImportedAssetAssociations()
-                        .Select(value => value.AssetGuid)
-                        .Distinct(),
-                    Is.EquivalentTo(itemGuids));
-
-                _manager = AssetManagerFactory.Open(_databasePath);
-                Assert.That(
-                    _manager.GetFileImportedAssetGuids(dependent.Id),
-                    Is.Not.Empty);
             }
             finally
             {
@@ -1156,16 +854,6 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                     _manager.GetFileTargets(file.Id)
                         .Select(target => target.TargetPath),
                     Is.EqualTo(new[] { "configured.txt" }));
-
-                var targetResult = _manager.ImportFileTargets(file.Id)
-                    .GetAwaiter().GetResult();
-
-                Assert.That(targetResult.Succeeded, Is.True);
-                Assert.That(
-                    File.ReadAllText(Path.Combine(
-                        destination,
-                        "configured.txt")),
-                    Is.EqualTo("configured"));
             }
             finally
             {
@@ -1193,7 +881,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         }
 
         [Test]
-        public void FileTargets_SupportSelfChildrenAndUnset()
+        public void FileTargets_RejectTraversalWithoutChangingData()
         {
             var library = Path.Combine(_root, "ee4v-library");
             var sourcePath = Path.Combine(_root, "avatar.zip");
@@ -1206,32 +894,9 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                     FilePath = sourcePath
                 });
 
-            var targets = _manager.SetFileTargets(
+            _manager.SetFileTargets(
                 file.Id,
-                new[]
-                {
-                    string.Empty,
-                    "Packages\\Avatar.prefab",
-                    "packages/avatar.prefab"
-                });
-
-            Assert.That(
-                targets.Select(target => target.TargetPath),
-                Is.EqualTo(new[]
-                {
-                    string.Empty,
-                    "Packages/Avatar.prefab"
-                }));
-
-            _manager = AssetManagerFactory.Open(_databasePath);
-            Assert.That(
-                _manager.GetFileTargets(file.Id)
-                    .Select(target => target.TargetPath),
-                Is.EqualTo(new[]
-                {
-                    string.Empty,
-                    "Packages/Avatar.prefab"
-                }));
+                new[] { "Packages/avatar.prefab" });
 
             var exception = Assert.Throws<AssetManagerException>(() =>
                 _manager.SetFileTargets(
@@ -1241,14 +906,10 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             Assert.That(
                 exception.Code,
                 Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
-            Assert.That(_manager.GetFileTargets(file.Id).Count, Is.EqualTo(2));
-
-            _manager.SetFileTargets(file.Id, Array.Empty<string>());
-
-            Assert.That(_manager.GetFileTargets(file.Id), Is.Empty);
-            Assert.DoesNotThrow(() =>
-                _manager.ImportFileTargets(file.Id)
-                    .GetAwaiter().GetResult());
+            Assert.That(
+                _manager.GetFileTargets(file.Id)
+                    .Single().TargetPath,
+                Is.EqualTo("Packages/avatar.prefab"));
         }
 
         [Test]

@@ -285,7 +285,13 @@ namespace Ee4v.AssetManager.Application
                 _store.GetItem(normalizedItemId);
             }
 
-            var sourceFile = _ee4v.Register(request);
+            var sourceFile = NormalizeSourceFile(_ee4v.Register(
+                new RegisterFileRequest
+                {
+                    LibraryPath = request.LibraryPath,
+                    FilePath = request.FilePath,
+                    FileName = AssetSourceText.Normalize(request.FileName)
+                }));
             AssetFile file;
             try
             {
@@ -817,7 +823,7 @@ namespace Ee4v.AssetManager.Application
             try
             {
                 snapshot = read();
-                NormalizeSnapshotTags(snapshot);
+                NormalizeSourceSnapshot(snapshot);
             }
             catch (AssetManagerException exception)
             {
@@ -857,9 +863,15 @@ namespace Ee4v.AssetManager.Application
             AssetManagerRequestValidator.Require(
                 request.FilePath,
                 "import file path");
-            var sourceItem = _ee4v.Import(
-                request,
-                AssetManagerRequestValidator.NormalizeTags(request.Tags));
+            var normalizedTags = NormalizeSourceTags(request.Tags);
+            var sourceItem = NormalizeSourceItem(_ee4v.Import(
+                new ImportEe4vFileRequest(
+                    request.LibraryPath,
+                    request.FilePath,
+                    AssetSourceText.Normalize(request.Name),
+                    AssetSourceText.Normalize(request.Description),
+                    normalizedTags),
+                normalizedTags));
             AssetItem item;
             try
             {
@@ -939,7 +951,7 @@ namespace Ee4v.AssetManager.Application
             }
         }
 
-        private static void NormalizeSnapshotTags(
+        private static void NormalizeSourceSnapshot(
             AssetSourceSnapshot snapshot)
         {
             var items = snapshot == null
@@ -947,13 +959,59 @@ namespace Ee4v.AssetManager.Application
                 : snapshot.Items;
             for (var i = 0; i < items.Count; i++)
             {
-                if (items[i].Tags != null)
-                {
-                    items[i].Tags =
-                        AssetManagerRequestValidator.NormalizeTags(
-                            items[i].Tags);
-                }
+                NormalizeSourceItem(items[i]);
             }
+
+            var files = snapshot == null
+                ? Array.Empty<AssetSourceSnapshotFile>()
+                : snapshot.Files;
+            for (var i = 0; i < files.Count; i++)
+            {
+                NormalizeSourceFile(files[i]);
+            }
+        }
+
+        private static AssetSourceSnapshotItem NormalizeSourceItem(
+            AssetSourceSnapshotItem item)
+        {
+            if (item == null)
+            {
+                return null;
+            }
+
+            item.Name = AssetSourceText.Normalize(item.Name);
+            item.Description = AssetSourceText.Normalize(item.Description);
+            item.Tags = NormalizeSourceTags(item.Tags);
+            var files = item.Files ??
+                        Array.Empty<AssetSourceSnapshotFile>();
+            for (var i = 0; i < files.Count; i++)
+            {
+                NormalizeSourceFile(files[i]);
+            }
+
+            return item;
+        }
+
+        private static AssetSourceSnapshotFile NormalizeSourceFile(
+            AssetSourceSnapshotFile file)
+        {
+            if (file != null)
+            {
+                file.FileName = AssetSourceText.Normalize(file.FileName);
+                file.Extension = AssetSourceText.Normalize(file.Extension);
+            }
+
+            return file;
+        }
+
+        private static IReadOnlyList<string> NormalizeSourceTags(
+            IReadOnlyList<string> tags)
+        {
+            return AssetManagerRequestValidator.NormalizeTags(
+                (tags ?? Array.Empty<string>())
+                .Select(AssetSourceText.Normalize)
+                .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                .ToArray());
         }
 
         private static IReadOnlyList<string> ItemIds(

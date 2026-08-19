@@ -1,0 +1,152 @@
+using System;
+using System.IO;
+using Ee4v.AssetManager.Contracts;
+using Ee4v.AssetManager.Infrastructure;
+using Ee4v.Core.EditorIntegration;
+using Ee4v.UI;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace Ee4v.AssetManager.UI
+{
+    [InitializeOnLoad]
+    internal static class AssetManagerWindowSession
+    {
+        private const string StartupSyncSessionKey =
+            "ee4v.assetManager.startupSync.started";
+        private static readonly AssetManagerViewState ViewState =
+            new AssetManagerViewState();
+        private static IAssetManager _manager;
+
+        static AssetManagerWindowSession()
+        {
+            EditorApplication.delayCall -= SyncSourcesOnStartup;
+            EditorApplication.delayCall += SyncSourcesOnStartup;
+        }
+
+        public static AssetManagerView CreateView(
+            AssetManagerViewMode mode)
+        {
+            return new AssetManagerView(
+                GetManager(),
+                ViewState,
+                mode);
+        }
+
+        public static void PrepareRoot(VisualElement root)
+        {
+            UiComposition.Prepare(root);
+            var packageRoot = PackageAssetApi.GetPackageRootAssetPath();
+            if (string.IsNullOrEmpty(packageRoot))
+            {
+                return;
+            }
+
+            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(
+                packageRoot +
+                "/Editor/AssetManager/UI/asset-manager.uss");
+            if (styleSheet != null)
+            {
+                root.styleSheets.Add(styleSheet);
+            }
+        }
+
+        private static IAssetManager GetManager()
+        {
+            if (_manager != null)
+            {
+                return _manager;
+            }
+
+            _manager = AssetManagerFactory.Open(Path.Combine(
+                Environment.ExpandEnvironmentVariables(
+                    AssetManagerSettings.Ee4vLibraryPath),
+                "asset-manager-v1.db"));
+            return _manager;
+        }
+
+        private static void SyncSourcesOnStartup()
+        {
+            EditorApplication.delayCall -= SyncSourcesOnStartup;
+            if (Application.isBatchMode ||
+                SessionState.GetBool(StartupSyncSessionKey, false))
+            {
+                return;
+            }
+
+            SessionState.SetBool(StartupSyncSessionKey, true);
+            var eaglePath = ExistingDirectory(
+                AssetManagerSettings.EagleLibraryPath);
+            var ee4vPath = ExistingDirectory(
+                AssetManagerSettings.Ee4vLibraryPath);
+            var syncEagle =
+                AssetManagerSettings.AutoSyncEagleOnStartup &&
+                eaglePath != null;
+            var syncEe4v =
+                AssetManagerSettings.AutoSyncEe4vOnStartup &&
+                ee4vPath != null;
+            if (!syncEagle && !syncEe4v)
+            {
+                return;
+            }
+
+            try
+            {
+                var manager = GetManager();
+                if (syncEagle)
+                {
+                    ReportSyncErrors(
+                        "Eagle",
+                        manager.SyncEagle(new EagleSyncRequest(
+                            eaglePath,
+                            AssetManagerSettings.EagleTargetRoot)));
+                }
+
+                if (syncEe4v)
+                {
+                    ReportSyncErrors(
+                        "ee4v",
+                        manager.SyncEe4v(new Ee4vSyncRequest(ee4vPath)));
+                }
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
+        }
+
+        private static string ExistingDirectory(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            try
+            {
+                var path = Path.GetFullPath(
+                    Environment.ExpandEnvironmentVariables(value));
+                return Directory.Exists(path) ? path : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static void ReportSyncErrors(
+            string source,
+            AssetSyncResult result)
+        {
+            if (result.ErrorCount == 0)
+            {
+                return;
+            }
+
+            Debug.LogWarning(
+                "AssetManager startup " + source + " sync: " +
+                string.Join(Environment.NewLine, result.ErrorMessages));
+        }
+    }
+}

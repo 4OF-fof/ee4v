@@ -2,13 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Ee4v.Core.Injector;
 using Ee4v.Core.Settings;
 using UnityEditor;
-
-[assembly: InternalsVisibleTo(
-    "Ee4v.FolderContentOverlay.Tests.Editor")]
 
 namespace Ee4v.FolderContentOverlay
 {

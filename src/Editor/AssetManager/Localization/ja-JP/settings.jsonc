@@ -1,0 +1,30 @@
+{
+  "settings": {
+    "section": {
+      "assetManager": {
+        "paths": "AssetManager パス",
+        "source": "AssetManager データソース"
+      }
+    },
+    "eagleLibraryPath": {
+      "label": "Eagle ライブラリのパス",
+      "tooltip": "AssetManager の同期に使う Eagle の .library フォルダーを指定します。"
+    },
+    "eagleTargetRoot": {
+      "label": "Eagle の同期対象ルート",
+      "tooltip": "Eagle ライブラリ内で同期対象にするフォルダー名またはパスです。既定値は VRCAsset です。"
+    },
+    "ee4vGlobalPath": {
+      "label": "ee4v 共通データの保存先",
+      "tooltip": "AssetManager が管理する ee4v のソースファイルを保存するフォルダーです。既定値は Documents/ee4v です。"
+    },
+    "autoSyncEagleOnStartup": {
+      "label": "起動時に Eagle を自動同期",
+      "tooltip": "Unity エディターのセッション開始時に、設定済みの Eagle ライブラリを1回同期します。"
+    },
+    "autoSyncEe4vOnStartup": {
+      "label": "起動時に ee4v を自動同期",
+      "tooltip": "Unity エディターのセッション開始時に、設定済みの ee4v ソースを1回同期します。"
+    }
+  }
+}

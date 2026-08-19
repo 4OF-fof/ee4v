@@ -1,6 +1,14 @@
 # AssetManager
 
-AssetManagerはItem、File、Target、Dependency、Tag、Collection、取り込み済みAsset GUIDをSQLiteへ保存し、UIから利用できるEditor APIを提供します。UI自体はまだ含みません。
+AssetManagerはItem、File、Target、Dependency、Tag、Collection、取り込み済みAsset GUIDをSQLiteへ保存し、Editor APIとUIを提供します。
+
+`ee4v/Asset Manager`から管理画面を開けます。画面は左のナビゲーション、中央の一覧、右の情報表示からなる固定幅の3ペイン構成です。左ペインは240px、右ペインは300pxで、中央ペインだけがウィンドウ幅へ追従します。ペイン境界のドラッグ操作はありません。Library、Archived、Collection、未所属File、Sourceと取り込みを切り替えられます。New itemはナビゲーション最下部に配置します。中央ツールバーは列数スライダーを中央に置き、右端の再読み込みボタンとその左の検索欄を操作領域としてまとめます。再読み込みにはmasterと同じMicrosoft Fluent UI System Iconsの`Arrow Clockwise`を使用し、使用する1点だけをruntime assetとして保持します。Item一覧は表示範囲の行だけをプールする可変列Gridです。masterと同じ1〜12列を設定範囲とし、表示領域から算出した推奨最小列数をスライダーの下限へ反映します。スライダーと±ボタンは、入力処理内で表示中の行を新しい列数へ組み替えます。全行の再生成や次のUI更新を待ちません。表示幅と高さが変わると列間隔、カード幅、固定行高もまとめて再計算します。カード選択とサムネイル表示にも対応します。Itemの編集とTag設定、Fileの登録と所属変更、TargetとDependencyの設定、Archive解析とUnity projectへの取り込みを同じ画面から実行できます。Source画面ではEagleとee4vの同期、ee4v libraryへのFile取り込み、取り込み済みAsset GUIDの逆引きを行えます。Eagleとee4vのパス設定はAssetManager画面には置かず、`Preferences/4OF/ee4v`のUser Settingsで管理します。
+
+`ee4v/Asset Manager (Separated)`はNavigation、Main、Informationの3ウィンドウをまとめて開きます。各ウィンドウは同じ`IAssetManager`と表示状態を共有するため、Navigationでのページ切替とMainでのItem選択がほかのウィンドウへ反映されます。個別に開く場合は`ee4v/Window/Asset Manager Navigation`、`Asset Manager Main`、`Asset Manager Information`を使用します。
+
+実画面と同じ`AssetManagerView`は`ee4v/Debug/Catalog`の`Domain/AssetManager/AssetManagerView` Storyでサンプルデータを使って確認できます。Grid単体は同じGroupの`AssetItemGridView` Storyで列組み、選択状態、サムネイルの有無を確認できます。`AssetManagerThreePaneLayout` Storyでは固定幅の3ペイン構成を確認できます。`AssetManagerSeparatedWindows` Storyでは分離表示間の状態連動を確認できます。`AssetManagerControls` Storyではボタン、入力、列挙選択、折りたたみ、通知、カードの各状態を確認できます。Storyの操作はSQLiteや外部Sourceを変更しません。
+
+内部操作部品は`Editor/AssetManager/UI/AssetManagerControls.cs`に置き、`AssetManagerView`はUnity標準部品を直接生成しません。文字はすべて`UiTextFactory`を通します。通常ボタンはmasterの`UiButton`、入力欄は`InputField`、検索欄は`SearchField`、Sourceカードは`InfoCard`の寸法、余白、hover／active／focus表現を踏襲します。現行APIとの接続と状態管理はAssetManager向けに実装し直しています。これはAssetManager内だけの境界であり、ほかの機能で実利用されるまではCoreまたは共有UIへ移しません。
 
 ## 構成
 
@@ -10,6 +18,7 @@ AssetManagerはItem、File、Target、Dependency、Tag、Collection、取り込�
 | `Ee4v.AssetManager.Domain.Editor` | 入力の正規化、Collection式の検証と評価 | なし |
 | `Ee4v.AssetManager.Application.Editor` | 公開APIのユースケース、検索、同期の調整 | なし |
 | `Ee4v.AssetManager.Infrastructure.Editor` | SQLite保存、Sourceの読み書き、Unityへの取り込み | あり |
+| `Ee4v.AssetManager.UI.Editor` | 管理画面、backend操作との接続、UI Story | あり |
 
 公開入口は`AssetManagerFactory.Open(databasePath)`です。返された`IAssetManager`をUIなどの利用側が保持します。外部SourceとDBはApplicationの小さなportの外側に置き、APIの処理から実装詳細を分離しています。
 
@@ -86,7 +95,13 @@ Eagle同期で作成したItemの名前、説明、TagはEagleを正本とし、
 
 ## Source同期
 
+AssetManager UIは`Preferences/4OF/ee4v`のUser Settingsから、Eagleライブラリのパス、Eagleの同期対象ルート、ee4v共通データの保存先を操作時に読み取ります。設定値はAssetManager内へ複製しません。公開APIを直接利用する場合は、従来どおり各requestへパスを指定できます。
+
+Unityエディターのセッション開始時には、存在するEagleとee4vのSourceを1回ずつ自動同期します。スクリプトの再コンパイルでは同じセッション中の同期を繰り返しません。各Sourceの自動同期はUser Settingsで個別に無効化できます。バッチモードでは利用者のDBを変更しないため実行しません。
+
 既定ではEagle library内の`VRCAsset`配下のfolderをItemとして同期します。folder IDとEagle item IDを安定IDとして使用するため、名前やpathの変更ではDB内のIDを維持します。Itemの名前、説明、サムネイルURL、Tagは同期のたびにEagleの値へ合わせます。同じEagle itemが複数folderに属する場合は、1つのFileが複数Itemに属さないよう最初のItemだけへ関連付けます。完全同期で見つからなくなったItemとFileはDBから削除します。削除されたItemへ別Source由来のFileが所属していた場合、そのFileは削除せず未所属へ戻します。directory payloadとBooth metadata JSONはFileとして登録しません。
+
+Eagleとee4vから取り込むItem名、説明、File名、Tagは保存前にUnicode NFKCで正規化します。全角文字と数学英数字は通常の文字へ寄せ、BMP内の星記号は`*`、著作権記号はASCII表記へ変換します。対応する通常文字がない`OtherSymbol`、補助文字、異体字セレクター、ゼロ幅結合子、不要な制御文字は除去します。これによりUI用フォントに存在しない絵文字や装飾記号が表示文字列へ入ることを防ぎます。
 
 `EagleSyncRequest`でlibrary pathと対象rootを指定できます。対象rootが存在しない場合は失敗として扱い、既存状態を変更しません。対象rootが存在して子Itemが0件の場合は正常な空スナップショットとして扱います。読み取りまたは形式の問題は失敗結果として返し、DBへの反映は1 transactionで行います。
 
@@ -100,7 +115,7 @@ Source同期は既存のアーカイブ状態を変更しません。完全同�
 
 ## Itemサムネイル
 
-`AssetItem.ThumbnailUrl`はItemに対応するサムネイルの取得元です。Eagle同期では同FolderのBooth metadataにある`thumbnailUrl`を正本として保存します。`GetThumbnail`と`GetThumbnails`は`Task`を返し、HTTP通信とcacheの読み書きを呼び出し元を止めずに行います。`CancellationToken`で待機中の通信と一括取得を中止できます。画像はDBと同じdirectoryの`cache/asset-manager/thumbnails/`へItem IDとURL単位で保存します。取得元がない場合や取得に失敗した場合は例外ではなく`AssetThumbnail.Found = false`と理由を返します。一括取得は重複Item IDを除外し、最大4並列で未cache画像を取得します。
+`AssetItem.ThumbnailUrl`はItemに対応するサムネイルの取得元です。Eagle同期では同FolderのBooth metadataにある`thumbnailUrl`を正本として保存します。`GetThumbnail`と`GetThumbnails`は`Task`を返し、HTTP通信とcacheの読み書きを呼び出し元を止めずに行います。`CancellationToken`で待機中の通信と一括取得を中止できます。画像はDBと同じdirectoryの`cache/asset-manager/thumbnails/`へItem IDとURL単位で保存します。取得元がない場合や取得に失敗した場合は例外ではなく`AssetThumbnail.Found = false`と理由を返します。一括取得は重複Item IDを除外し、最大4並列で未cache画像を取得します。Item一覧は表示対象を`GetThumbnails`へ一括要求し、画面遷移または再検索時に進行中の要求を中止します。Gridは表示中ItemのTextureを再利用し、列変更では同じ画像を再デコードしません。画面外になったTextureは破棄します。
 
 ## File内容の解析
 
@@ -124,7 +139,7 @@ Fileに依存先が設定されている場合は推移的な依存先を解決�
 
 ## 永続化
 
-AssetManagerはSQLiteを1ファイル使用します。論理構造は次のとおりです。
+AssetManagerはSQLiteを1ファイル使用します。DBはUser Settingsの`ee4v 共通データの保存先`直下に`asset-manager-v1.db`として保存します。論理構造は次のとおりです。
 
 ```text
 file       ── 0..1 item
@@ -234,6 +249,5 @@ PKと一意制約に加え、次の検索用索引を作成します。
 
 ## 未実装範囲
 
-- EditorWindow、Inspector、Project Window装飾を含むUI
-- 設定画面、起動時の自動同期
+- Inspector、Project Window装飾
 - Eagleとee4v以外のSource

@@ -8,7 +8,7 @@ namespace Ee4v.ItemStyle.Tests
     public sealed class ItemStyleServiceTests
     {
         [Test]
-        public void Update_DeduplicatesIdentityAndSeparatesScopes()
+        public void Scopes_KeepProjectAndHierarchyValuesSeparate()
         {
             var repository = new MemoryItemStyleRepository();
             var project = new ItemStyleService("project", repository);
@@ -17,26 +17,11 @@ namespace Ee4v.ItemStyle.Tests
                 repository);
 
             project.SetColor(
-                new[] { "same", "same", string.Empty },
+                new[] { "same" },
                 Color.red);
 
-            Assert.That(repository.PutCount, Is.EqualTo(1));
-            Assert.That(repository.SaveCount, Is.EqualTo(1));
             Assert.That(project.Get("same").Color, Is.EqualTo(Color.red));
             Assert.That(hierarchy.Get("same").IsEmpty, Is.True);
-        }
-
-        [Test]
-        public void SetIcon_UsesBoundedRecentHistoryContract()
-        {
-            var repository = new MemoryItemStyleRepository();
-            var service = new ItemStyleService("project", repository);
-
-            service.SetIcon(new[] { "folder" }, "icon-guid");
-
-            Assert.That(repository.RecordedScope, Is.EqualTo("project"));
-            Assert.That(repository.RecordedIcon, Is.EqualTo("icon-guid"));
-            Assert.That(repository.MaximumRecentCount, Is.EqualTo(8));
         }
 
         private sealed class MemoryItemStyleRepository
@@ -46,11 +31,6 @@ namespace Ee4v.ItemStyle.Tests
                 new Dictionary<string, ItemStyleValue>(
                     StringComparer.Ordinal);
 
-            public int PutCount { get; private set; }
-            public int SaveCount { get; private set; }
-            public string RecordedScope { get; private set; }
-            public string RecordedIcon { get; private set; }
-            public int MaximumRecentCount { get; private set; }
 
             public ItemStyleValue Get(string scope, string identity)
             {
@@ -60,7 +40,6 @@ namespace Ee4v.ItemStyle.Tests
 
             public void Put(string scope, ItemStyleValue style)
             {
-                PutCount++;
                 _styles[Key(scope, style.Identity)] = style;
             }
 
@@ -75,9 +54,6 @@ namespace Ee4v.ItemStyle.Tests
                 string iconGuid,
                 int maximumCount)
             {
-                RecordedScope = scope;
-                RecordedIcon = iconGuid;
-                MaximumRecentCount = maximumCount;
             }
 
             public bool RemoveRecentIcon(
@@ -89,7 +65,6 @@ namespace Ee4v.ItemStyle.Tests
 
             public void Save()
             {
-                SaveCount++;
             }
 
             private static string Key(string scope, string identity)

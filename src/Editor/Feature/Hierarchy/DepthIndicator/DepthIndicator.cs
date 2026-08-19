@@ -1,10 +1,6 @@
-using System.Runtime.CompilerServices;
 using Ee4v.Core.Injector;
 using Ee4v.Core.Settings;
 using UnityEditor;
-
-[assembly: InternalsVisibleTo(
-    "Ee4v.DepthIndicator.Tests.Editor")]
 
 namespace Ee4v.DepthIndicator
 {

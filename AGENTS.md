@@ -9,7 +9,7 @@
 ## 作業方針
 
 - コード変更には `tiny-code` skill を使用
-- テストの実行は毎回行わない。既存範囲に大幅な変更があった場合、新規テストを追加した場合に関連するテストのみを実行する。
+- テストの実行は毎回行わない。既存範囲に大幅な変更があった場合、新規テストを追加した場合に関連するテストのみを実行する。修正の再発防止テストは実装しない。
   - Unity6での動作確認は指示があった場合のみ行う
   - Codex から Unity のテストを実行するときは、`exec_command` に `sandbox_permissions: "require_escalated"` を指定する。通常のサンドボックス内では Licensing Client の IPC 接続がタイムアウトするため、Unity を起動しない
   - Unity 2022.3 の EditMode テストには `& 'C:\Program Files\Unity\Hub\Editor\2022.3.22f1\Editor\Unity.exe' -batchmode -nographics -projectPath '<workspace>\Temp~\VerifyProject~' -runTests -testPlatform EditMode -testResults '<result.xml>' -logFile '<test.log>'` を使用する。`-quit` を付けるとテスト開始前に終了するため指定しない

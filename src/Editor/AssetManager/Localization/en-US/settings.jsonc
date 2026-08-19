@@ -1,0 +1,30 @@
+{
+  "settings": {
+    "section": {
+      "assetManager": {
+        "paths": "AssetManager paths",
+        "source": "AssetManager sources"
+      }
+    },
+    "eagleLibraryPath": {
+      "label": "Eagle library path",
+      "tooltip": "Path to the Eagle .library directory used by AssetManager synchronization."
+    },
+    "eagleTargetRoot": {
+      "label": "Eagle target root",
+      "tooltip": "Folder name or path inside the Eagle library whose descendants are synchronized. The default is VRCAsset."
+    },
+    "ee4vGlobalPath": {
+      "label": "ee4v global data path",
+      "tooltip": "Directory where AssetManager stores managed ee4v source files. The default is Documents/ee4v."
+    },
+    "autoSyncEagleOnStartup": {
+      "label": "Sync Eagle on startup",
+      "tooltip": "Synchronize the configured Eagle library once when the Unity editor session starts."
+    },
+    "autoSyncEe4vOnStartup": {
+      "label": "Sync ee4v on startup",
+      "tooltip": "Synchronize the configured ee4v source once when the Unity editor session starts."
+    }
+  }
+}
