@@ -2,6 +2,7 @@
   "name": "Ee4v.AssetManager.UI.Tests.Editor",
   "rootNamespace": "Ee4v.AssetManager.UI.Tests",
   "references": [
+    "Ee4v.AssetManager.Contracts.Editor",
     "Ee4v.AssetManager.UI.Editor"
   ],
   "includePlatforms": [

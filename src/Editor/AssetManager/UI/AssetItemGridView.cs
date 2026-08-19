@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.Core.Images;
 using Ee4v.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -11,21 +12,19 @@ namespace Ee4v.AssetManager.UI
         public AssetItemGridEntry(
             string id,
             string name,
-            byte[] thumbnailData = null)
+            byte[] thumbnailData = null,
+            Texture2D icon = null)
         {
             Id = id ?? string.Empty;
             Name = name ?? string.Empty;
             ThumbnailData = thumbnailData ?? Array.Empty<byte>();
+            Icon = icon;
         }
 
         public string Id { get; }
         public string Name { get; }
-        public byte[] ThumbnailData { get; private set; }
-
-        public void SetThumbnail(byte[] data)
-        {
-            ThumbnailData = data ?? Array.Empty<byte>();
-        }
+        public byte[] ThumbnailData { get; }
+        public Texture2D Icon { get; }
     }
 
     internal sealed class AssetItemGridView : VisualElement, IDisposable
@@ -44,9 +43,12 @@ namespace Ee4v.AssetManager.UI
         private readonly ScrollView _scroll;
         private readonly List<VisualElement> _rowPool =
             new List<VisualElement>();
-        private readonly Dictionary<string, ThumbnailTexture> _thumbnails =
-            new Dictionary<string, ThumbnailTexture>(
-                StringComparer.Ordinal);
+        private readonly CachedImageCache _imageCache;
+        private readonly bool _ownsImageCache;
+        private readonly Dictionary<string, int> _itemIndices =
+            new Dictionary<string, int>(StringComparer.Ordinal);
+        private readonly HashSet<string> _selectedItemIds =
+            new HashSet<string>(StringComparer.Ordinal);
         private IReadOnlyList<AssetItemGridEntry> _items =
             Array.Empty<AssetItemGridEntry>();
         private int _itemsPerRow = 6;
@@ -57,10 +59,31 @@ namespace Ee4v.AssetManager.UI
             MinimumItemsPerRow;
         private float _viewportWidth;
         private float _viewportHeight;
-        private string _selectedItemId = string.Empty;
+        private string _primarySelectedItemId = string.Empty;
+        private string _selectionAnchorItemId = string.Empty;
+        private int _boundFirstRow = -1;
+        private int _boundVisibleRowCount = -1;
+        private float _boundContentHeight = -1f;
 
         public AssetItemGridView()
+            : this(new CachedImageCache(), true)
         {
+        }
+
+        public AssetItemGridView(CachedImageCache imageCache)
+            : this(
+                imageCache ?? throw new ArgumentNullException(
+                    nameof(imageCache)),
+                false)
+        {
+        }
+
+        private AssetItemGridView(
+            CachedImageCache imageCache,
+            bool ownsImageCache)
+        {
+            _ownsImageCache = ownsImageCache;
+            _imageCache = imageCache;
             AddToClassList("ee4v-asset-grid");
             focusable = true;
 
@@ -76,19 +99,38 @@ namespace Ee4v.AssetManager.UI
             _scroll.verticalScroller.valueChanged += _ =>
                 UpdateVisibleRows();
             Add(_scroll);
+            RegisterCallback<PointerDownEvent>(OnGridPointerDown);
+            RegisterCallback<KeyDownEvent>(OnGridKeyDown);
         }
 
-        public event Action<string> ItemSelected;
+        public event Action<IReadOnlyList<string>, string> SelectionChanged;
+        public event Action<string> ItemDoubleClicked;
         public event Action<int> RecommendedMinimumItemsPerRowChanged;
 
         public int ItemsPerRow => _itemsPerRow;
         public int RecommendedMinimumItemsPerRow =>
             _recommendedMinimumItemsPerRow;
+        internal IReadOnlyList<string> SelectedItemIds =>
+            CreateSelectionSnapshot();
+        internal string PrimarySelectedItemId => _primarySelectedItemId;
 
         public void SetItems(IReadOnlyList<AssetItemGridEntry> items)
         {
             _items = items ?? Array.Empty<AssetItemGridEntry>();
-            UpdateVisibleRows();
+            _itemIndices.Clear();
+            for (var i = 0; i < _items.Count; i++)
+            {
+                var item = _items[i];
+                _itemIndices[item.Id] = i;
+                if (item.ThumbnailData.Length > 0)
+                {
+                    _imageCache.SetSource(
+                        item.Id,
+                        item.ThumbnailData);
+                }
+            }
+
+            InvalidateVisibleRows();
         }
 
         public void SetItemsPerRow(int value)
@@ -104,48 +146,80 @@ namespace Ee4v.AssetManager.UI
 
             _itemsPerRow = nextValue;
             RecalculateLayout(_viewportWidth, _viewportHeight);
-            UpdateVisibleRows();
+            InvalidateVisibleRows();
         }
 
         public void SetSelectedItemId(string itemId)
         {
-            var nextValue = itemId ?? string.Empty;
-            if (string.Equals(
-                    _selectedItemId,
-                    nextValue,
+            SetSelectedItemIds(
+                string.IsNullOrEmpty(itemId)
+                    ? Array.Empty<string>()
+                    : new[] { itemId },
+                itemId);
+        }
+
+        public void SetSelectedItemIds(
+            IEnumerable<string> itemIds,
+            string primaryItemId = null)
+        {
+            var nextSelection = new HashSet<string>(
+                StringComparer.Ordinal);
+            if (itemIds != null)
+            {
+                foreach (var itemId in itemIds)
+                {
+                    if (!string.IsNullOrEmpty(itemId))
+                    {
+                        nextSelection.Add(itemId);
+                    }
+                }
+            }
+
+            var nextPrimary = !string.IsNullOrEmpty(primaryItemId) &&
+                              nextSelection.Contains(primaryItemId)
+                ? primaryItemId
+                : GetPreferredSelectedItemId(nextSelection);
+            if (_selectedItemIds.SetEquals(nextSelection) &&
+                string.Equals(
+                    _primarySelectedItemId,
+                    nextPrimary,
                     StringComparison.Ordinal))
             {
                 return;
             }
 
-            _selectedItemId = nextValue;
-            UpdateVisibleRows();
+            _selectedItemIds.Clear();
+            _selectedItemIds.UnionWith(nextSelection);
+            _primarySelectedItemId = nextPrimary;
+            _selectionAnchorItemId = nextPrimary;
+            InvalidateVisibleRows();
         }
 
-        public void SetThumbnails(
-            IReadOnlyDictionary<string, byte[]> thumbnails)
+        public void SetThumbnail(string itemId, byte[] data)
         {
-            if (thumbnails == null || thumbnails.Count == 0)
+            if (string.IsNullOrEmpty(itemId))
             {
                 return;
             }
 
-            var changed = false;
-            for (var i = 0; i < _items.Count; i++)
+            var thumbnail = data ?? Array.Empty<byte>();
+            _imageCache.SetSource(itemId, thumbnail);
+            if (IsItemVisible(itemId))
             {
-                if (thumbnails.TryGetValue(
-                        _items[i].Id,
-                        out var data))
-                {
-                    _items[i].SetThumbnail(data);
-                    changed = true;
-                }
+                InvalidateVisibleRows();
             }
+        }
 
-            if (changed)
-            {
-                UpdateVisibleRows();
-            }
+        public bool HasThumbnailResult(string itemId)
+        {
+            return !string.IsNullOrEmpty(itemId) &&
+                _imageCache.HasSource(itemId);
+        }
+
+        public void ClearThumbnails()
+        {
+            _imageCache.Clear();
+            InvalidateVisibleRows();
         }
 
         public void Dispose()
@@ -164,7 +238,10 @@ namespace Ee4v.AssetManager.UI
                 }
             }
 
-            ClearThumbnailCache();
+            if (_ownsImageCache)
+            {
+                _imageCache.Dispose();
+            }
         }
 
         private VisualElement CreateRow()
@@ -180,8 +257,7 @@ namespace Ee4v.AssetManager.UI
 
         private void BindRow(
             VisualElement row,
-            int rowIndex,
-            ISet<string> visibleItemIds)
+            int rowIndex)
         {
             EnsureSlotCount(row);
             row.style.top = rowIndex * _rowHeight;
@@ -216,15 +292,10 @@ namespace Ee4v.AssetManager.UI
                     continue;
                 }
 
-                visibleItemIds.Add(item.Id);
                 card.SetWidth(_cardWidth);
                 card.SetState(
                     item,
-                    string.Equals(
-                        item.Id,
-                        _selectedItemId,
-                        StringComparison.Ordinal),
-                    GetThumbnail(item));
+                    _selectedItemIds.Contains(item.Id));
             }
         }
 
@@ -232,8 +303,9 @@ namespace Ee4v.AssetManager.UI
         {
             while (row.childCount < _itemsPerRow)
             {
-                var card = new AssetItemGridCard();
+                var card = new AssetItemGridCard(_imageCache);
                 card.Clicked += SelectItem;
+                card.DoubleClicked += OpenItem;
                 var slot = new VisualElement();
                 slot.AddToClassList("ee4v-asset-grid__slot");
                 slot.Add(card);
@@ -248,10 +320,163 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private void SelectItem(string itemId)
+        internal void SelectItem(
+            string itemId,
+            bool toggle,
+            bool range)
         {
-            SetSelectedItemId(itemId);
-            ItemSelected?.Invoke(itemId);
+            if (string.IsNullOrEmpty(itemId) ||
+                !_itemIndices.ContainsKey(itemId))
+            {
+                return;
+            }
+
+            if (range)
+            {
+                SelectRange(itemId, toggle);
+            }
+            else if (toggle)
+            {
+                if (!_selectedItemIds.Add(itemId))
+                {
+                    _selectedItemIds.Remove(itemId);
+                }
+                _selectionAnchorItemId = itemId;
+            }
+            else
+            {
+                _selectedItemIds.Clear();
+                _selectedItemIds.Add(itemId);
+                _selectionAnchorItemId = itemId;
+            }
+
+            _primarySelectedItemId = _selectedItemIds.Contains(itemId)
+                ? itemId
+                : GetPreferredSelectedItemId(_selectedItemIds);
+            InvalidateVisibleRows();
+            SelectionChanged?.Invoke(
+                CreateSelectionSnapshot(),
+                _primarySelectedItemId);
+        }
+
+        internal void ClearSelection()
+        {
+            var hadSelection = _selectedItemIds.Count > 0 ||
+                !string.IsNullOrEmpty(_primarySelectedItemId);
+            _selectedItemIds.Clear();
+            _primarySelectedItemId = string.Empty;
+            _selectionAnchorItemId = string.Empty;
+            if (!hadSelection)
+            {
+                return;
+            }
+
+            InvalidateVisibleRows();
+            SelectionChanged?.Invoke(
+                Array.Empty<string>(),
+                string.Empty);
+        }
+
+        private void SelectRange(string itemId, bool additive)
+        {
+            if (!_itemIndices.TryGetValue(
+                    _selectionAnchorItemId,
+                    out var anchorIndex))
+            {
+                anchorIndex = _itemIndices[itemId];
+                _selectionAnchorItemId = itemId;
+            }
+
+            if (!additive)
+            {
+                _selectedItemIds.Clear();
+            }
+
+            var itemIndex = _itemIndices[itemId];
+            var start = Math.Min(anchorIndex, itemIndex);
+            var end = Math.Max(anchorIndex, itemIndex);
+            for (var index = start; index <= end; index++)
+            {
+                _selectedItemIds.Add(_items[index].Id);
+            }
+        }
+
+        private string GetPreferredSelectedItemId(
+            HashSet<string> selectedItemIds)
+        {
+            for (var index = _items.Count - 1; index >= 0; index--)
+            {
+                if (selectedItemIds.Contains(_items[index].Id))
+                {
+                    return _items[index].Id;
+                }
+            }
+
+            var fallback = string.Empty;
+            foreach (var itemId in selectedItemIds)
+            {
+                if (string.IsNullOrEmpty(fallback) ||
+                    StringComparer.Ordinal.Compare(
+                        itemId,
+                        fallback) < 0)
+                {
+                    fallback = itemId;
+                }
+            }
+            return fallback;
+        }
+
+        private IReadOnlyList<string> CreateSelectionSnapshot()
+        {
+            var selected = new List<string>(_selectedItemIds.Count);
+            for (var index = 0; index < _items.Count; index++)
+            {
+                var itemId = _items[index].Id;
+                if (_selectedItemIds.Contains(itemId))
+                {
+                    selected.Add(itemId);
+                }
+            }
+
+            var hidden = new List<string>();
+            foreach (var itemId in _selectedItemIds)
+            {
+                if (!_itemIndices.ContainsKey(itemId))
+                {
+                    hidden.Add(itemId);
+                }
+            }
+            hidden.Sort(StringComparer.Ordinal);
+            selected.AddRange(hidden);
+            return selected;
+        }
+
+        private void OpenItem(string itemId)
+        {
+            ItemDoubleClicked?.Invoke(itemId);
+        }
+
+        private void OnGridPointerDown(PointerDownEvent evt)
+        {
+            if (evt.button != (int)MouseButton.LeftMouse)
+            {
+                return;
+            }
+
+            Focus();
+            ClearSelection();
+            evt.StopPropagation();
+        }
+
+        internal void OnGridKeyDown(KeyDownEvent evt)
+        {
+            if (evt.keyCode != KeyCode.Escape)
+            {
+                return;
+            }
+
+            ClearSelection();
+            evt.StopPropagation();
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
@@ -268,7 +493,7 @@ namespace Ee4v.AssetManager.UI
                 _viewportWidth,
                 _viewportHeight);
             RecalculateLayout(_viewportWidth, _viewportHeight);
-            UpdateVisibleRows();
+            InvalidateVisibleRows();
         }
 
         private bool RecalculateLayout(float width, float height)
@@ -435,8 +660,14 @@ namespace Ee4v.AssetManager.UI
             var rowCount = Mathf.CeilToInt(
                 (float)_items.Count / _itemsPerRow);
             var contentHeight = rowCount * _rowHeight;
-            _scroll.contentContainer.style.height = contentHeight;
-            _scroll.contentContainer.style.minHeight = contentHeight;
+            if (!Mathf.Approximately(
+                    _boundContentHeight,
+                    contentHeight))
+            {
+                _scroll.contentContainer.style.height = contentHeight;
+                _scroll.contentContainer.style.minHeight = contentHeight;
+                _boundContentHeight = contentHeight;
+            }
 
             var viewportHeight = IsValidDimension(_viewportHeight)
                 ? _viewportHeight
@@ -465,32 +696,85 @@ namespace Ee4v.AssetManager.UI
                     rowCount - firstRow,
                     Mathf.CeilToInt(viewportHeight / _rowHeight) +
                     OverscanRowCount);
+            if (_boundFirstRow == firstRow &&
+                _boundVisibleRowCount == visibleRowCount)
+            {
+                return;
+            }
+
             EnsureRowPoolCount(visibleRowCount);
-            var visibleItemIds = new HashSet<string>(
-                StringComparer.Ordinal);
+            var lastRow = firstRow + visibleRowCount;
+            var retainedRows = new HashSet<int>();
+            var reusableRows = new Queue<VisualElement>();
             for (var poolIndex = 0;
                  poolIndex < _rowPool.Count;
                  poolIndex++)
             {
                 var row = _rowPool[poolIndex];
-                var visible = poolIndex < visibleRowCount;
-                row.style.display = visible
-                    ? DisplayStyle.Flex
-                    : DisplayStyle.None;
-                if (visible)
+                if (row.userData is int boundRow &&
+                    boundRow >= firstRow &&
+                    boundRow < lastRow &&
+                    retainedRows.Add(boundRow))
                 {
-                    BindRow(
-                        row,
-                        firstRow + poolIndex,
-                        visibleItemIds);
+                    row.style.display = DisplayStyle.Flex;
                 }
                 else
                 {
-                    ClearRowThumbnails(row);
+                    row.userData = null;
+                    reusableRows.Enqueue(row);
                 }
             }
 
-            RemoveHiddenThumbnails(visibleItemIds);
+            for (var rowIndex = firstRow;
+                 rowIndex < lastRow;
+                 rowIndex++)
+            {
+                if (retainedRows.Contains(rowIndex))
+                {
+                    continue;
+                }
+
+                var row = reusableRows.Dequeue();
+                row.userData = rowIndex;
+                row.style.display = DisplayStyle.Flex;
+                BindRow(row, rowIndex);
+            }
+
+            while (reusableRows.Count > 0)
+            {
+                var row = reusableRows.Dequeue();
+                row.style.display = DisplayStyle.None;
+                ClearRowImages(row);
+            }
+
+            _boundFirstRow = firstRow;
+            _boundVisibleRowCount = visibleRowCount;
+        }
+
+        private void InvalidateVisibleRows()
+        {
+            _boundFirstRow = -1;
+            _boundVisibleRowCount = -1;
+            for (var i = 0; i < _rowPool.Count; i++)
+            {
+                _rowPool[i].userData = null;
+            }
+
+            UpdateVisibleRows();
+        }
+
+        private bool IsItemVisible(string itemId)
+        {
+            if (!_itemIndices.TryGetValue(itemId, out var itemIndex) ||
+                _boundFirstRow < 0 ||
+                _boundVisibleRowCount <= 0)
+            {
+                return false;
+            }
+
+            var rowIndex = itemIndex / _itemsPerRow;
+            return rowIndex >= _boundFirstRow &&
+                rowIndex < _boundFirstRow + _boundVisibleRowCount;
         }
 
         private void EnsureRowPoolCount(int count)
@@ -503,58 +787,7 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private Texture2D GetThumbnail(AssetItemGridEntry item)
-        {
-            if (_thumbnails.TryGetValue(item.Id, out var cached) &&
-                ReferenceEquals(cached.Data, item.ThumbnailData))
-            {
-                return cached.Texture;
-            }
-
-            RemoveThumbnail(item.Id);
-            Texture2D texture = null;
-            if (item.ThumbnailData.Length > 0)
-            {
-                var candidate = new Texture2D(2, 2)
-                {
-                    hideFlags = HideFlags.HideAndDontSave
-                };
-                if (candidate.LoadImage(item.ThumbnailData))
-                {
-                    texture = candidate;
-                }
-                else
-                {
-                    UnityEngine.Object.DestroyImmediate(candidate);
-                }
-            }
-
-            _thumbnails[item.Id] = new ThumbnailTexture(
-                item.ThumbnailData,
-                texture);
-            return texture;
-        }
-
-        private void RemoveHiddenThumbnails(ISet<string> visibleItemIds)
-        {
-            var hiddenItemIds = new List<string>();
-            foreach (var itemId in _thumbnails.Keys)
-            {
-                if (!visibleItemIds.Contains(itemId))
-                {
-                    hiddenItemIds.Add(itemId);
-                }
-            }
-
-            for (var index = 0;
-                 index < hiddenItemIds.Count;
-                 index++)
-            {
-                RemoveThumbnail(hiddenItemIds[index]);
-            }
-        }
-
-        private static void ClearRowThumbnails(VisualElement row)
+        private static void ClearRowImages(VisualElement row)
         {
             for (var column = 0; column < row.childCount; column++)
             {
@@ -562,81 +795,50 @@ namespace Ee4v.AssetManager.UI
                     AssetItemGridCard)?.Dispose();
             }
         }
-
-        private void ClearThumbnailCache()
-        {
-            foreach (var thumbnail in _thumbnails.Values)
-            {
-                if (thumbnail.Texture != null)
-                {
-                    UnityEngine.Object.DestroyImmediate(
-                        thumbnail.Texture);
-                }
-            }
-
-            _thumbnails.Clear();
-        }
-
-        private void RemoveThumbnail(string itemId)
-        {
-            if (!_thumbnails.TryGetValue(itemId, out var thumbnail))
-            {
-                return;
-            }
-
-            if (thumbnail.Texture != null)
-            {
-                UnityEngine.Object.DestroyImmediate(thumbnail.Texture);
-            }
-
-            _thumbnails.Remove(itemId);
-        }
-
-        private sealed class ThumbnailTexture
-        {
-            public ThumbnailTexture(byte[] data, Texture2D texture)
-            {
-                Data = data;
-                Texture = texture;
-            }
-
-            public byte[] Data { get; }
-            public Texture2D Texture { get; }
-        }
     }
 
     internal sealed class AssetItemGridCard : VisualElement, IDisposable
     {
         private readonly VisualElement _imageFrame;
-        private readonly Image _image;
+        private readonly CachedImage _image;
+        private readonly Image _icon;
         private readonly VisualElement _placeholder;
         private readonly UiTextElement _name;
         private string _itemId = string.Empty;
 
-        public AssetItemGridCard()
+        public AssetItemGridCard(CachedImageCache imageCache)
         {
             AddToClassList("ee4v-asset-grid-card");
             focusable = true;
 
             _imageFrame = new VisualElement();
             _imageFrame.AddToClassList("ee4v-asset-grid-card__image-frame");
-            _image = new Image
+            _image = new CachedImage(imageCache)
             {
                 scaleMode = ScaleMode.ScaleAndCrop,
                 pickingMode = PickingMode.Ignore
             };
             _image.AddToClassList("ee4v-asset-grid-card__image");
+            _icon = new Image
+            {
+                scaleMode = ScaleMode.ScaleToFit,
+                pickingMode = PickingMode.Ignore,
+                tintColor = UiColorTokens.TextPrimary
+            };
+            _icon.AddToClassList("ee4v-asset-grid-card__file-icon");
             _placeholder = new VisualElement();
             _placeholder.AddToClassList(
                 "ee4v-asset-grid-card__placeholder");
             _placeholder.pickingMode = PickingMode.Ignore;
             _imageFrame.Add(_placeholder);
             _imageFrame.Add(_image);
+            _imageFrame.Add(_icon);
 
             _name = UiTextFactory.Create(
                 string.Empty,
                 "ee4v-asset-grid-card__name");
             _name.SetWhiteSpace(WhiteSpace.NoWrap);
+            _name.SetTextAlign(TextAnchor.MiddleCenter);
 
             Add(_imageFrame);
             Add(_name);
@@ -645,19 +847,31 @@ namespace Ee4v.AssetManager.UI
             RegisterCallback<KeyDownEvent>(OnKeyDown);
         }
 
-        public event Action<string> Clicked;
+        public event Action<string, bool, bool> Clicked;
+        public event Action<string> DoubleClicked;
 
         public void SetState(
             AssetItemGridEntry state,
-            bool selected,
-            Texture2D thumbnail)
+            bool selected)
         {
             _itemId = state.Id;
             _name.SetText(state.Name);
             EnableInClassList(
                 "ee4v-asset-grid-card--selected",
                 selected);
-            SetThumbnail(thumbnail);
+            _imageFrame.EnableInClassList(
+                "ee4v-asset-grid-card__image-frame--file",
+                state.Icon != null);
+            _icon.image = state.Icon;
+            if (state.Icon == null)
+            {
+                _image.SetSource(state.Id);
+            }
+            else
+            {
+                _image.ClearSource();
+            }
+            UpdateImageVisibility();
         }
 
         public void SetWidth(float width)
@@ -675,23 +889,26 @@ namespace Ee4v.AssetManager.UI
 
         public void Dispose()
         {
-            SetThumbnail(null);
+            _image.ClearSource();
+            _icon.image = null;
+            _imageFrame.RemoveFromClassList(
+                "ee4v-asset-grid-card__image-frame--file");
+            UpdateImageVisibility();
         }
 
-        private void SetThumbnail(Texture2D texture)
+        private void UpdateImageVisibility()
         {
-            if (ReferenceEquals(_image.image, texture))
-            {
-                return;
-            }
-
-            _image.image = texture;
-            _image.style.display = texture == null
-                ? DisplayStyle.None
-                : DisplayStyle.Flex;
-            _placeholder.style.display = texture == null
+            var hasIcon = _icon.image != null;
+            var hasImage = !hasIcon && _image.DisplayedTexture != null;
+            _icon.style.display = hasIcon
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
+            _image.style.display = hasImage
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+            _placeholder.style.display = hasImage || hasIcon
+                ? DisplayStyle.None
+                : DisplayStyle.Flex;
         }
 
         private void OnPointerDown(PointerDownEvent evt)
@@ -702,7 +919,14 @@ namespace Ee4v.AssetManager.UI
             }
 
             Focus();
-            Clicked?.Invoke(_itemId);
+            Clicked?.Invoke(
+                _itemId,
+                evt.ctrlKey || evt.commandKey,
+                evt.shiftKey);
+            if (evt.clickCount == 2)
+            {
+                DoubleClicked?.Invoke(_itemId);
+            }
             evt.StopPropagation();
         }
 
@@ -714,7 +938,10 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            Clicked?.Invoke(_itemId);
+            Clicked?.Invoke(
+                _itemId,
+                evt.ctrlKey || evt.commandKey,
+                evt.shiftKey);
             evt.StopPropagation();
         }
     }

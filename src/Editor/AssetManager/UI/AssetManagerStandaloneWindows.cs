@@ -1,3 +1,4 @@
+using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -31,6 +32,10 @@ namespace Ee4v.AssetManager.UI
 
         protected virtual void OnEnable()
         {
+            AssetManagerWindowSession.ManagerInvalidated -= CreateGUI;
+            AssetManagerWindowSession.ManagerInvalidated += CreateGUI;
+            I18N.Reloaded -= OnLocalizationReloaded;
+            I18N.Reloaded += OnLocalizationReloaded;
             ConfigureWindow();
         }
 
@@ -45,8 +50,16 @@ namespace Ee4v.AssetManager.UI
 
         protected virtual void OnDisable()
         {
+            AssetManagerWindowSession.ManagerInvalidated -= CreateGUI;
+            I18N.Reloaded -= OnLocalizationReloaded;
             _view?.Dispose();
             _view = null;
+        }
+
+        private void OnLocalizationReloaded()
+        {
+            ConfigureWindow();
+            CreateGUI();
         }
     }
 
@@ -54,7 +67,7 @@ namespace Ee4v.AssetManager.UI
         AssetManagerPaneWindow
     {
         protected override string WindowTitle =>
-            "Asset Manager · Navigation";
+            I18N.Get("window.navigationTitle");
         protected override Vector2 MinimumSize =>
             new Vector2(240f, 420f);
         protected override AssetManagerViewMode ViewMode =>
@@ -72,7 +85,7 @@ namespace Ee4v.AssetManager.UI
     internal sealed class AssetManagerMainWindow : AssetManagerPaneWindow
     {
         protected override string WindowTitle =>
-            "Asset Manager · Main";
+            I18N.Get("window.mainTitle");
         protected override Vector2 MinimumSize =>
             new Vector2(640f, 420f);
         protected override AssetManagerViewMode ViewMode =>
@@ -91,7 +104,7 @@ namespace Ee4v.AssetManager.UI
         AssetManagerPaneWindow
     {
         protected override string WindowTitle =>
-            "Asset Manager · Information";
+            I18N.Get("window.informationTitle");
         protected override Vector2 MinimumSize =>
             new Vector2(300f, 420f);
         protected override AssetManagerViewMode ViewMode =>

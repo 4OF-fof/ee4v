@@ -1,0 +1,153 @@
+{
+  "window": {
+    "title": "Asset Manager",
+    "navigationTitle": "Asset Manager · ナビゲーション",
+    "mainTitle": "Asset Manager · メイン",
+    "informationTitle": "Asset Manager · 情報"
+  },
+  "pane": {
+    "brand": "ASSET MANAGER",
+    "information": "情報"
+  },
+  "toolbar": {
+    "back": "戻る",
+    "forward": "進む",
+    "gridColumns": "グリッドの列数",
+    "gridDecrease": "列数を減らす",
+    "gridIncrease": "列数を増やす",
+    "reload": "再読み込み",
+    "search": {
+      "placeholder": "Itemを検索",
+      "tooltip": "Itemを検索",
+      "clear": "検索を消去",
+      "options": "検索対象を選択",
+      "name": "名前",
+      "description": "説明",
+      "tags": "タグ"
+    },
+    "sort": {
+      "button": "Itemを並び替え",
+      "tooltip": "並び替え: {0} · {1}",
+      "name": "名前",
+      "createdAt": "作成日",
+      "updatedAt": "更新日",
+      "fileCount": "File数",
+      "forward": "昇順",
+      "reverse": "降順"
+    }
+  },
+  "common": {
+    "item": "Item",
+    "collection": "コレクション",
+    "newCollection": "新規コレクション",
+    "none": "なし"
+  },
+  "navigation": {
+    "library": "ライブラリ",
+    "archived": "アーカイブ済み",
+    "unassignedFiles": "未所属File",
+    "sources": "データソースと取り込み",
+    "collections": "コレクション",
+    "newCollection": "コレクションを作成",
+    "newItem": "Itemを作成"
+  },
+  "notice": {
+    "noItems": "この表示に一致するItemはありません。",
+    "selectedItemMissing": "選択したItemは存在しません。",
+    "selectedFileMissing": "選択したFileは存在しません。",
+    "selectFile": "所属先や取り込み設定を編集するFileを選択してください。",
+    "selectItem": "Fileやメタデータを確認するItemを選択してください。",
+    "itemMissing": "Itemは存在しません。",
+    "noAssignedFiles": "このItemに所属するFileはありません。",
+    "noUnassignedFiles": "未所属のFileはありません。",
+    "collectionCondition": "この画面で作成できる条件は1つです。入れ子のAND、OR、NOTフィルターはAPIから引き続き使用できます。"
+  },
+  "detail": {
+    "createEyebrow": "作成",
+    "collectionEyebrow": "コレクション",
+    "files": "FILE",
+    "importedAssetGuids": "取り込み済みASSET GUID",
+    "item": {
+      "eyebrow": "ITEM",
+      "noThumbnail": "サムネイルなし"
+    },
+    "file": {
+      "eyebrow": "FILE",
+      "register": "Fileを登録"
+    }
+  },
+  "field": {
+    "name": "名前",
+    "description": "説明",
+    "tags": "タグ",
+    "filePath": "Fileパス",
+    "displayName": "表示名",
+    "source": "データソース",
+    "fileId": "File ID",
+    "assignedItemId": "所属Item ID",
+    "targetPaths": "Targetパス（1行に1件）",
+    "dependencyFileIds": "依存File ID（1行に1件）",
+    "archiveEntries": "アーカイブ内の項目（1行に1件）",
+    "itemNameOptional": "Item名（任意）",
+    "descriptionOptional": "説明（任意）",
+    "tagsCommaSeparated": "タグ（カンマ区切り）",
+    "guids": "GUID（1行に1件、空欄ですべて）",
+    "condition": "条件",
+    "value": "値"
+  },
+  "action": {
+    "save": "保存",
+    "restore": "復元",
+    "archive": "アーカイブ",
+    "delete": "削除",
+    "cancel": "キャンセル",
+    "register": "登録",
+    "moveFile": "Fileを移動",
+    "saveTargets": "Targetを保存",
+    "saveDependencies": "依存関係を保存",
+    "analyze": "解析",
+    "importEntries": "項目を取り込み",
+    "importTargets": "Targetを取り込み",
+    "importFile": "Fileを取り込み",
+    "edit": "編集",
+    "createItem": "Itemを作成",
+    "createCollection": "コレクションを作成",
+    "saveCollection": "コレクションを保存"
+  },
+  "source": {
+    "eagle": {
+      "title": "Eagleを同期",
+      "description": "Preferences/4OF/ee4vで設定したEagleライブラリを同期します。",
+      "action": "Eagleを同期"
+    },
+    "ee4v": {
+      "title": "ee4vを同期",
+      "description": "Preferences/4OF/ee4vで設定したee4vライブラリを同期します。",
+      "action": "ee4vを同期"
+    },
+    "import": {
+      "title": "ee4vへ取り込み",
+      "description": "設定済みのee4vライブラリへFileをコピーし、カタログにItemを作成します。"
+    },
+    "lookup": {
+      "title": "取り込み済みAssetを検索",
+      "description": "Unity Asset GUIDに関連付けられたカタログのFileを検索します。",
+      "empty": "まだ検索していません。",
+      "action": "関連付けを検索"
+    }
+  },
+  "confirm": {
+    "deleteItem": {
+      "title": "Itemを削除",
+      "message": "このItemと所属Fileを削除しますか？"
+    },
+    "deleteFile": {
+      "title": "Fileを削除",
+      "message": "このFileの登録を削除しますか？"
+    },
+    "deleteCollection": {
+      "title": "コレクションを削除",
+      "message": "このコレクションを削除しますか？"
+    }
+  }
+}

@@ -444,13 +444,17 @@ namespace Ee4v.AssetManager.UI
                     "Astral Avatar",
                     "Avatar package with gestures and materials.",
                     "Avatar",
-                    files),
+                    files,
+                    new DateTime(2026, 1, 12),
+                    new DateTime(2026, 5, 8)),
                 CreateItem(
                     "item-world",
                     "Night Pool",
                     "A compact world environment.",
                     "World",
-                    files),
+                    files,
+                    new DateTime(2025, 9, 20),
+                    new DateTime(2026, 7, 3)),
                 new AssetItem
                 {
                     Id = "item-archived",
@@ -458,7 +462,9 @@ namespace Ee4v.AssetManager.UI
                     Description = "Archived compatibility shader.",
                     Tags = Array.Empty<AssetTag>(),
                     Files = Array.Empty<AssetFile>(),
-                    IsArchived = true
+                    IsArchived = true,
+                    CreatedAt = new DateTime(2024, 4, 2),
+                    UpdatedAt = new DateTime(2025, 2, 14)
                 }
             };
         }
@@ -468,7 +474,9 @@ namespace Ee4v.AssetManager.UI
             string name,
             string description,
             string tag,
-            IReadOnlyList<AssetFile> files)
+            IReadOnlyList<AssetFile> files,
+            DateTime createdAt,
+            DateTime updatedAt)
         {
             return new AssetItem
             {
@@ -479,7 +487,9 @@ namespace Ee4v.AssetManager.UI
                 {
                     new AssetTag { Id = "tag-" + tag, Path = tag }
                 },
-                Files = files.Where(file => file.ItemId == id).ToArray()
+                Files = files.Where(file => file.ItemId == id).ToArray(),
+                CreatedAt = createdAt,
+                UpdatedAt = updatedAt
             };
         }
     }

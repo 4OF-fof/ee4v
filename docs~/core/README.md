@@ -9,6 +9,7 @@ Core は機能横断の契約、共通実装、Unity Editor との接続部を�
 | 設定の定義と永続化 | [Setting](./setting.md) | `ISettingsService`、`SettingDefinition<T>` |
 | 翻訳カタログと文字列取得 | [I18n](./i18n.md) | `ILocalizationService`、`I18N` |
 | 非同期処理のライフサイクル | [Background](./background.md) | `IBackgroundTaskManager` |
+| 画像表示とTexture cache | [Images](./images.md) | `CachedImage`、`CachedImageCache` |
 | Project Browser への表示追加 | [Project](./project.md) | `InjectorApi`、`ItemInjectionRegistration` |
 | Hierarchy への表示追加 | [Hierarchy](./hierarchy.md) | `InjectorApi`、`ItemInjectionRegistration` |
 | Unity Editor の操作 | [EditorIntegration](./editor-integration.md) | `Ee4v.Core.EditorIntegration` |

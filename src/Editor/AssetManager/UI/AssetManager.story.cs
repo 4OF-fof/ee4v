@@ -24,7 +24,7 @@ namespace Ee4v.AssetManager.UI
                     dependencies: new[]
                     {
                         "UiTextFactory",
-                        "Icon"
+                        "Fluent UI System Icons"
                     },
                     usageLocations: new[]
                     {
@@ -38,10 +38,30 @@ namespace Ee4v.AssetManager.UI
                     "asset-manager-grid",
                     "Domain/AssetManager",
                     "AssetItemGridView",
-                    "Item一覧の可変列Gridと選択状態を確認するStoryです。",
-                    "現行AssetItem向けの行仮想化Gridを、サムネイル有無を含むサンプルデータで表示します。スライダーで1〜12列へ変更し、表示領域に応じた最小値、カード幅、行高、選択状態を確認できます。",
+                    "Item一覧の可変列Gridと複数選択を確認するStoryです。",
+                    "現行AssetItem向けの行仮想化Gridを、サムネイル有無を含むサンプルデータで表示します。スライダーで1〜12列へ変更し、Ctrl追加選択、Shift範囲選択、Escapeと空白クリックによる選択解除を確認できます。",
                     BuildGrid,
                     dependencies: new[] { "UiTextFactory", "ListView" },
+                    usageLocations: new[]
+                    {
+                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                    },
+                    styleSheetPaths: new[]
+                    {
+                        "Editor/AssetManager/UI/asset-manager.uss"
+                    }),
+                new UiStory(
+                    "asset-manager-file-grid",
+                    "Domain/AssetManager",
+                    "AssetItemGridView · File icons",
+                    "File一覧のGridと拡張子別アイコンを確認するStoryです。",
+                    "画像、音声、動画、アーカイブ、コード、3Dモデル、その他のFileをFluent UI System Iconsで表示し、透過したアイコン背景を確認します。",
+                    BuildFileGrid,
+                    dependencies: new[]
+                    {
+                        "UiTextFactory",
+                        "Fluent UI System Icons"
+                    },
                     usageLocations: new[]
                     {
                         "Editor/AssetManager/UI/AssetManagerView.cs"
@@ -57,6 +77,22 @@ namespace Ee4v.AssetManager.UI
                     "masterに近い固定幅の3ペイン構成を確認するStoryです。",
                     "左ナビゲーション240px、右情報300pxを固定し、中央一覧だけが残り幅へ追従する構成を確認できます。",
                     BuildThreePane,
+                    dependencies: new[] { "UiTextFactory" },
+                    usageLocations: new[]
+                    {
+                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                    },
+                    styleSheetPaths: new[]
+                    {
+                        "Editor/AssetManager/UI/asset-manager.uss"
+                    }),
+                new UiStory(
+                    "asset-manager-breadcrumb",
+                    "Domain/AssetManager",
+                    "AssetManagerBreadcrumb",
+                    "現在位置の末尾と、ホバー中のフルパスを確認するStoryです。",
+                    "通常時は末尾のItem名だけを表示します。ホバーすると親階層を選択できるフルパスを表示します。",
+                    BuildBreadcrumb,
                     dependencies: new[] { "UiTextFactory" },
                     usageLocations: new[]
                     {
@@ -96,7 +132,7 @@ namespace Ee4v.AssetManager.UI
                     dependencies: new[]
                     {
                         "UiTextFactory",
-                        "Icon"
+                        "Fluent UI System Icons"
                     },
                     usageLocations: new[]
                     {
@@ -150,7 +186,9 @@ namespace Ee4v.AssetManager.UI
                     "sound-effects",
                     "Sound Effects")
             });
-            grid.SetSelectedItemId("summer-costume");
+            grid.SetSelectedItemIds(
+                new[] { "summer-costume", "gesture-pack" },
+                "gesture-pack");
             var slider = AssetManagerControls.CreateGridSizeSlider(
                 grid.ItemsPerRow,
                 grid.RecommendedMinimumItemsPerRow,
@@ -180,7 +218,7 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-asset-manager__brand"));
             layout.MainToolbarContent.Add(UiTextFactory.Create(
                 "Library",
-                "ee4v-asset-manager__title"));
+                "ee4v-asset-manager__breadcrumb-current"));
             layout.RightToolbarContent.Add(UiTextFactory.Create(
                 "INFORMATION",
                 "ee4v-asset-manager__pane-title"));
@@ -227,6 +265,78 @@ namespace Ee4v.AssetManager.UI
                 "Select an item to edit its metadata and files."));
             layout.RightContent.Add(information);
             parent.Add(layout);
+        }
+
+        private static void BuildFileGrid(VisualElement parent)
+        {
+            var surface = new VisualElement();
+            surface.style.minWidth = 760f;
+            var grid = new AssetItemGridView();
+            grid.style.height = 500f;
+            grid.SetItems(new[]
+            {
+                CreateFileEntry("image", "preview.png"),
+                CreateFileEntry("audio", "ambient.wav"),
+                CreateFileEntry("video", "trailer.mp4"),
+                CreateFileEntry("archive", "avatar.unitypackage"),
+                CreateFileEntry("code", "AvatarController.cs"),
+                CreateFileEntry("model", "character.fbx"),
+                CreateFileEntry("document", "license.pdf")
+            });
+            grid.SetSelectedItemId("archive");
+            var slider = AssetManagerControls.CreateGridSizeSlider(
+                grid.ItemsPerRow,
+                grid.RecommendedMinimumItemsPerRow,
+                AssetItemGridView.MaximumItemsPerRow);
+            slider.ValueChanged += grid.SetItemsPerRow;
+            grid.RecommendedMinimumItemsPerRowChanged += value =>
+            {
+                slider.SetRangeWithoutNotify(
+                    value,
+                    AssetItemGridView.MaximumItemsPerRow);
+                slider.SetValueWithoutNotify(grid.ItemsPerRow);
+            };
+            grid.RegisterCallback<DetachFromPanelEvent>(_ =>
+                grid.Dispose());
+            surface.Add(slider);
+            surface.Add(grid);
+            parent.Add(surface);
+        }
+
+        private static AssetItemGridEntry CreateFileEntry(
+            string id,
+            string fileName)
+        {
+            var file = new AssetFile
+            {
+                Id = id,
+                FileName = fileName,
+                SourcePath = fileName
+            };
+            return new AssetItemGridEntry(
+                file.Id,
+                file.FileName,
+                icon: AssetFileIconResolver.Resolve(file));
+        }
+
+        private static void BuildBreadcrumb(VisualElement parent)
+        {
+            var surface = new VisualElement();
+            surface.AddToClassList("ee4v-asset-manager");
+            surface.style.height = 120f;
+            surface.style.paddingLeft = 12f;
+            surface.style.paddingTop = 12f;
+
+            var breadcrumb = new AssetManagerBreadcrumb();
+            breadcrumb.SetItems(new[]
+            {
+                new AssetManagerBreadcrumbItem("Library", () => { }),
+                new AssetManagerBreadcrumbItem("Summer Costume")
+            });
+            surface.RegisterCallback<DetachFromPanelEvent>(_ =>
+                breadcrumb.Dispose());
+            surface.Add(breadcrumb);
+            parent.Add(surface);
         }
 
         private static void BuildSeparatedWindows(VisualElement parent)
@@ -276,6 +386,7 @@ namespace Ee4v.AssetManager.UI
             surface.AddToClassList("ee4v-asset-manager-controls-story");
 
             var actions = new AssetManagerActionRow();
+            actions.Add(AssetManagerControls.CreateSortButton(() => { }));
             actions.Add(AssetManagerControls.CreateButton("Default", () => { }));
             actions.Add(AssetManagerControls.CreateButton(
                 "Primary",

@@ -9,6 +9,7 @@ Core は feature 横断の契約と接続部を提供します。
 - `ILocalizationService` と `I18N`
 - `InjectorApi` と注入 registration
 - `IBackgroundTaskManager`、`CoreBackgroundActivities`、`BackgroundStatusOverlay`
+- `CachedImage` と `CachedImageCache`
 - `Ee4v.Core.EditorIntegration` の用途別 API
 
 `EditorIntegration` の公開型は Unity の内部型や reflection backend を返しません。

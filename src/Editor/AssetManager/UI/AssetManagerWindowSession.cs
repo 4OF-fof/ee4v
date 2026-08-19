@@ -15,12 +15,18 @@ namespace Ee4v.AssetManager.UI
     {
         private const string StartupSyncSessionKey =
             "ee4v.assetManager.startupSync.started";
-        private static readonly AssetManagerViewState ViewState =
+        private static AssetManagerViewState _viewState =
             new AssetManagerViewState();
         private static IAssetManager _manager;
 
+        internal static event Action ManagerInvalidated;
+
         static AssetManagerWindowSession()
         {
+            AssetManagerSettings.Ee4vLibraryPathChanged -=
+                InvalidateManager;
+            AssetManagerSettings.Ee4vLibraryPathChanged +=
+                InvalidateManager;
             EditorApplication.delayCall -= SyncSourcesOnStartup;
             EditorApplication.delayCall += SyncSourcesOnStartup;
         }
@@ -30,7 +36,7 @@ namespace Ee4v.AssetManager.UI
         {
             return new AssetManagerView(
                 GetManager(),
-                ViewState,
+                _viewState,
                 mode);
         }
 
@@ -64,6 +70,29 @@ namespace Ee4v.AssetManager.UI
                     AssetManagerSettings.Ee4vLibraryPath),
                 "asset-manager-v1.db"));
             return _manager;
+        }
+
+        private static void InvalidateManager()
+        {
+            _manager = null;
+            _viewState = new AssetManagerViewState();
+            var handlers = ManagerInvalidated;
+            if (handlers == null)
+            {
+                return;
+            }
+
+            foreach (Action handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler();
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception);
+                }
+            }
         }
 
         private static void SyncSourcesOnStartup()

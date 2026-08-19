@@ -1,5 +1,6 @@
 using System;
 using Ee4v.Core.EditorIntegration;
+using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -9,9 +10,9 @@ namespace Ee4v.AssetManager.UI
 {
     internal static class AssetManagerControls
     {
-        private const string ReloadIconPath =
+        private const string FluentIconDirectory =
             "/Editor/ThirdParty/FluentUiSystemIcons/" +
-            "Png512/arrow_clockwise.png";
+            "Png512/";
 
         public static AssetManagerButton CreateButton(
             string text = "",
@@ -25,16 +26,102 @@ namespace Ee4v.AssetManager.UI
             Action onClick = null,
             params string[] classNames)
         {
-            var packageRoot = PackageAssetApi.GetPackageRootAssetPath();
-            var texture = string.IsNullOrEmpty(packageRoot)
-                ? null
-                : AssetDatabase.LoadAssetAtPath<Texture2D>(
-                    packageRoot + ReloadIconPath);
-            var button = new AssetManagerButton(
-                texture == null ? "Reload" : string.Empty,
+            return CreateFluentIconButton(
+                I18N.Get("toolbar.reload"),
+                "arrow_clockwise.png",
                 onClick,
                 classNames);
-            button.tooltip = "Reload";
+        }
+
+        public static AssetManagerButton CreateSortButton(
+            Action onClick = null,
+            params string[] classNames)
+        {
+            return CreateFluentIconButton(
+                I18N.Get("toolbar.sort.button"),
+                "arrow_sort.png",
+                onClick,
+                classNames);
+        }
+
+        public static AssetManagerButton CreateSearchOptionsButton(
+            Action onClick = null,
+            params string[] classNames)
+        {
+            return CreateFluentIconButton(
+                I18N.Get("toolbar.search.options"),
+                "search.png",
+                onClick,
+                classNames);
+        }
+
+        public static AssetManagerButton CreateIconButton(
+            string tooltip,
+            string iconFileName,
+            Action onClick = null,
+            params string[] classNames)
+        {
+            return CreateFluentIconButton(
+                tooltip,
+                iconFileName,
+                onClick,
+                classNames);
+        }
+
+        public static AssetManagerButton CreateIconTextButton(
+            string text,
+            string iconFileName,
+            Action onClick = null,
+            params string[] classNames)
+        {
+            var button = new AssetManagerButton(
+                text,
+                onClick,
+                classNames);
+            var texture = LoadFluentIconTexture(iconFileName);
+            if (texture != null)
+            {
+                button.AddToClassList(
+                    "ee4v-asset-manager-control-button--icon-leading");
+                button.SetIcon(texture, UiSizeTokens.Size12);
+            }
+            return button;
+        }
+
+        public static Image CreateIcon(
+            string iconFileName,
+            float size)
+        {
+            var texture = LoadFluentIconTexture(iconFileName);
+            if (texture == null)
+            {
+                return null;
+            }
+
+            var icon = new Image
+            {
+                image = texture,
+                tintColor = UiColorTokens.TextPrimary,
+                scaleMode = ScaleMode.ScaleToFit,
+                pickingMode = PickingMode.Ignore
+            };
+            icon.style.width = size;
+            icon.style.height = size;
+            return icon;
+        }
+
+        private static AssetManagerButton CreateFluentIconButton(
+            string tooltip,
+            string iconFileName,
+            Action onClick,
+            string[] classNames)
+        {
+            var texture = LoadFluentIconTexture(iconFileName);
+            var button = new AssetManagerButton(
+                texture == null ? tooltip : string.Empty,
+                onClick,
+                classNames);
+            button.tooltip = tooltip;
             if (texture != null)
             {
                 button.AddToClassList(
@@ -43,6 +130,17 @@ namespace Ee4v.AssetManager.UI
             }
 
             return button;
+        }
+
+        internal static Texture2D LoadFluentIconTexture(
+            string iconFileName)
+        {
+            var packageRoot = PackageAssetApi.GetPackageRootAssetPath();
+            return string.IsNullOrEmpty(packageRoot) ||
+                   string.IsNullOrEmpty(iconFileName)
+                ? null
+                : AssetDatabase.LoadAssetAtPath<Texture2D>(
+                    packageRoot + FluentIconDirectory + iconFileName);
         }
 
         public static AssetManagerTextField CreateTextField(
@@ -119,6 +217,7 @@ namespace Ee4v.AssetManager.UI
     internal sealed class AssetManagerButton : Button
     {
         private readonly UiTextElement _label;
+        private Image _icon;
 
         public AssetManagerButton(
             string text,
@@ -126,7 +225,6 @@ namespace Ee4v.AssetManager.UI
             params string[] classNames)
             : base(onClick)
         {
-            base.text = string.Empty;
             AddToClassList("ee4v-asset-manager-control-button");
             AssetManagerControls.AddClasses(this, classNames);
 
@@ -151,21 +249,27 @@ namespace Ee4v.AssetManager.UI
         {
             if (texture == null)
             {
+                _icon?.RemoveFromHierarchy();
+                _icon = null;
                 return;
             }
 
-            var icon = new Image
+            if (_icon == null)
             {
-                image = texture,
-                tintColor = UiColorTokens.TextPrimary,
-                scaleMode = ScaleMode.ScaleToFit,
-                pickingMode = PickingMode.Ignore
-            };
-            icon.AddToClassList(
-                "ee4v-asset-manager-control-button__icon");
-            icon.style.width = size;
-            icon.style.height = size;
-            hierarchy.Insert(0, icon);
+                _icon = new Image
+                {
+                    tintColor = UiColorTokens.TextPrimary,
+                    scaleMode = ScaleMode.ScaleToFit,
+                    pickingMode = PickingMode.Ignore
+                };
+                _icon.AddToClassList(
+                    "ee4v-asset-manager-control-button__icon");
+                hierarchy.Insert(0, _icon);
+            }
+
+            _icon.image = texture;
+            _icon.style.width = size;
+            _icon.style.height = size;
         }
 
         private static bool HasClass(string[] classNames, string target)
@@ -254,6 +358,7 @@ namespace Ee4v.AssetManager.UI
         private readonly TextField _field;
         private readonly UiTextElement _placeholder;
         private readonly AssetManagerButton _clearButton;
+        private readonly AssetManagerButton _optionsButton;
         private bool _isFocused;
 
         public AssetManagerSearchField(
@@ -263,11 +368,10 @@ namespace Ee4v.AssetManager.UI
             AddToClassList("ee4v-asset-manager-control-search");
             AssetManagerControls.AddClasses(this, classNames);
 
-            var searchIcon = new Icon(IconState.FromBuiltinIcon(
-                UiBuiltinIcon.Search,
-                size: UiSizeTokens.Size14));
-            searchIcon.AddToClassList(
-                "ee4v-asset-manager-control-search__icon");
+            _optionsButton =
+                AssetManagerControls.CreateSearchOptionsButton(
+                    () => SearchOptionsClicked?.Invoke(),
+                    "ee4v-asset-manager-control-search__options");
 
             var inputHost = new VisualElement();
             inputHost.AddToClassList(
@@ -294,16 +398,13 @@ namespace Ee4v.AssetManager.UI
             inputHost.Add(_field);
             inputHost.Add(_placeholder);
 
-            _clearButton = AssetManagerControls.CreateButton(
-                string.Empty,
+            _clearButton = AssetManagerControls.CreateIconButton(
+                I18N.Get("toolbar.search.clear"),
+                "dismiss.png",
                 ClearSearch,
                 "ee4v-asset-manager-control-search__clear");
-            _clearButton.tooltip = "Clear search";
-            _clearButton.Add(new Icon(IconState.FromBuiltinIcon(
-                UiBuiltinIcon.Close,
-                size: UiSizeTokens.Size10)));
 
-            hierarchy.Add(searchIcon);
+            hierarchy.Add(_optionsButton);
             hierarchy.Add(inputHost);
             hierarchy.Add(_clearButton);
             RefreshState();
@@ -314,6 +415,10 @@ namespace Ee4v.AssetManager.UI
             get { return _field.value ?? string.Empty; }
             set { _field.value = value ?? string.Empty; }
         }
+
+        public VisualElement SearchOptionsAnchor => _optionsButton;
+
+        public event Action SearchOptionsClicked;
 
         public void RegisterValueChangedCallback(
             EventCallback<ChangeEvent<string>> callback)
@@ -359,7 +464,10 @@ namespace Ee4v.AssetManager.UI
             AddToClassList("ee4v-asset-manager-grid-slider");
             AssetManagerControls.AddClasses(this, classNames);
 
-            hierarchy.Add(CreateEndpointButton("−", -1));
+            hierarchy.Add(CreateEndpointButton(
+                I18N.Get("toolbar.gridDecrease"),
+                "subtract.png",
+                -1));
             _slider = new SliderInt(safeMinimum, safeMaximum)
             {
                 showInputField = false
@@ -373,7 +481,10 @@ namespace Ee4v.AssetManager.UI
             _slider.RegisterValueChangedCallback(evt =>
                 ValueChanged?.Invoke(evt.newValue));
             hierarchy.Add(_slider);
-            hierarchy.Add(CreateEndpointButton("+", 1));
+            hierarchy.Add(CreateEndpointButton(
+                I18N.Get("toolbar.gridIncrease"),
+                "add.png",
+                1));
         }
 
         public event Action<int> ValueChanged;
@@ -403,37 +514,16 @@ namespace Ee4v.AssetManager.UI
                 _slider.highValue);
         }
 
-        private UiTextElement CreateEndpointButton(
-            string text,
+        private AssetManagerButton CreateEndpointButton(
+            string tooltip,
+            string iconFileName,
             int delta)
         {
-            var button = UiTextFactory.Create(
-                text,
+            return AssetManagerControls.CreateIconButton(
+                tooltip,
+                iconFileName,
+                () => SetValue(_slider.value + delta),
                 "ee4v-asset-manager-grid-slider__endpoint");
-            button.focusable = true;
-            button.RegisterCallback<PointerDownEvent>(evt =>
-            {
-                if (evt.button != (int)MouseButton.LeftMouse)
-                {
-                    return;
-                }
-
-                button.Focus();
-                SetValue(_slider.value + delta);
-                evt.StopPropagation();
-            });
-            button.RegisterCallback<KeyDownEvent>(evt =>
-            {
-                if (evt.keyCode != KeyCode.Return &&
-                    evt.keyCode != KeyCode.Space)
-                {
-                    return;
-                }
-
-                SetValue(_slider.value + delta);
-                evt.StopPropagation();
-            });
-            return button;
         }
     }
 
@@ -518,7 +608,13 @@ namespace Ee4v.AssetManager.UI
         private void SetExpanded(bool expanded)
         {
             _value = expanded;
-            _header.SetText((expanded ? "▾ " : "▸ ") + _text);
+            _header.SetText(_text);
+            _header.SetIcon(
+                AssetManagerControls.LoadFluentIconTexture(
+                    expanded
+                        ? "chevron_down.png"
+                        : "chevron_right.png"),
+                UiSizeTokens.Size12);
             _body.style.display = expanded
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
@@ -536,9 +632,15 @@ namespace Ee4v.AssetManager.UI
         {
             AddToClassList("ee4v-asset-manager-control-notice");
             AssetManagerControls.AddClasses(this, classNames);
-            Add(UiTextFactory.Create(
-                "i",
-                "ee4v-asset-manager-control-notice__icon"));
+            var icon = AssetManagerControls.CreateIcon(
+                "info.png",
+                UiSizeTokens.Size18);
+            if (icon != null)
+            {
+                icon.AddToClassList(
+                    "ee4v-asset-manager-control-notice__icon");
+                Add(icon);
+            }
             Add(UiTextFactory.Create(
                 text,
                 "ee4v-asset-manager-control-notice__text"));

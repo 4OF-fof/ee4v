@@ -1,0 +1,153 @@
+{
+  "window": {
+    "title": "Asset Manager",
+    "navigationTitle": "Asset Manager · Navigation",
+    "mainTitle": "Asset Manager · Main",
+    "informationTitle": "Asset Manager · Information"
+  },
+  "pane": {
+    "brand": "ASSET MANAGER",
+    "information": "INFORMATION"
+  },
+  "toolbar": {
+    "back": "Back",
+    "forward": "Forward",
+    "gridColumns": "Grid columns",
+    "gridDecrease": "Show fewer columns",
+    "gridIncrease": "Show more columns",
+    "reload": "Reload",
+    "search": {
+      "placeholder": "Search items",
+      "tooltip": "Search items",
+      "clear": "Clear search",
+      "options": "Choose search targets",
+      "name": "Name",
+      "description": "Description",
+      "tags": "Tags"
+    },
+    "sort": {
+      "button": "Sort items",
+      "tooltip": "Sort: {0} · {1}",
+      "name": "Name",
+      "createdAt": "Created date",
+      "updatedAt": "Updated date",
+      "fileCount": "File count",
+      "forward": "Forward",
+      "reverse": "Reverse"
+    }
+  },
+  "common": {
+    "item": "Item",
+    "collection": "Collection",
+    "newCollection": "New collection",
+    "none": "None"
+  },
+  "navigation": {
+    "library": "Library",
+    "archived": "Archived",
+    "unassignedFiles": "Unassigned files",
+    "sources": "Sources & import",
+    "collections": "COLLECTIONS",
+    "newCollection": "New collection",
+    "newItem": "New item"
+  },
+  "notice": {
+    "noItems": "No items match this view.",
+    "selectedItemMissing": "The selected item no longer exists.",
+    "selectedFileMissing": "The selected file no longer exists.",
+    "selectFile": "Select a file to assign it or edit import settings.",
+    "selectItem": "Select an item to inspect its files and metadata.",
+    "itemMissing": "The item no longer exists.",
+    "noAssignedFiles": "There are no files assigned to this item.",
+    "noUnassignedFiles": "There are no unassigned files.",
+    "collectionCondition": "This editor creates one condition. Nested AND, OR and NOT filters remain supported by the backend API."
+  },
+  "detail": {
+    "createEyebrow": "CREATE",
+    "collectionEyebrow": "COLLECTION",
+    "files": "FILES",
+    "importedAssetGuids": "IMPORTED ASSET GUIDS",
+    "item": {
+      "eyebrow": "ITEM",
+      "noThumbnail": "No thumbnail"
+    },
+    "file": {
+      "eyebrow": "FILE",
+      "register": "Register file"
+    }
+  },
+  "field": {
+    "name": "Name",
+    "description": "Description",
+    "tags": "Tags",
+    "filePath": "File path",
+    "displayName": "Display name",
+    "source": "Source",
+    "fileId": "File ID",
+    "assignedItemId": "Assigned item ID",
+    "targetPaths": "Target paths (one per line)",
+    "dependencyFileIds": "Dependency file IDs (one per line)",
+    "archiveEntries": "Archive entries (one per line)",
+    "itemNameOptional": "Item name (optional)",
+    "descriptionOptional": "Description (optional)",
+    "tagsCommaSeparated": "Tags (comma separated)",
+    "guids": "GUIDs (one per line, empty for all)",
+    "condition": "Condition",
+    "value": "Value"
+  },
+  "action": {
+    "save": "Save",
+    "restore": "Restore",
+    "archive": "Archive",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "register": "Register",
+    "moveFile": "Move file",
+    "saveTargets": "Save targets",
+    "saveDependencies": "Save dependencies",
+    "analyze": "Analyze",
+    "importEntries": "Import entries",
+    "importTargets": "Import targets",
+    "importFile": "Import file",
+    "edit": "Edit",
+    "createItem": "Create item",
+    "createCollection": "Create collection",
+    "saveCollection": "Save collection"
+  },
+  "source": {
+    "eagle": {
+      "title": "Eagle sync",
+      "description": "Synchronize the Eagle library configured in Preferences/4OF/ee4v.",
+      "action": "Sync Eagle"
+    },
+    "ee4v": {
+      "title": "ee4v sync",
+      "description": "Synchronize the ee4v library configured in Preferences/4OF/ee4v.",
+      "action": "Sync ee4v"
+    },
+    "import": {
+      "title": "Import into ee4v",
+      "description": "Copy a file into the configured ee4v library and create its catalog item."
+    },
+    "lookup": {
+      "title": "Imported asset lookup",
+      "description": "Find catalog files associated with Unity Asset GUIDs.",
+      "empty": "No lookup has been run.",
+      "action": "Find associations"
+    }
+  },
+  "confirm": {
+    "deleteItem": {
+      "title": "Delete item",
+      "message": "Delete this item and its files?"
+    },
+    "deleteFile": {
+      "title": "Delete file",
+      "message": "Delete this file record?"
+    },
+    "deleteCollection": {
+      "title": "Delete collection",
+      "message": "Delete this collection?"
+    }
+  }
+}

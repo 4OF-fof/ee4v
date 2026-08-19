@@ -103,6 +103,8 @@ namespace Ee4v.AssetManager.UI
 
         private static ISettingsService _registeredSettings;
 
+        internal static event Action Ee4vLibraryPathChanged;
+
         static AssetManagerSettings()
         {
             EnsureRegistered();
@@ -137,13 +139,29 @@ namespace Ee4v.AssetManager.UI
                 return settings;
             }
 
+            if (_registeredSettings != null)
+            {
+                _registeredSettings.Changed -= OnSettingChanged;
+            }
+
             settings.Register(EagleLibrary);
             settings.Register(EagleTarget);
             settings.Register(Ee4vLibrary);
             settings.Register(AutoSyncEagle);
             settings.Register(AutoSyncEe4v);
+            settings.Changed += OnSettingChanged;
             _registeredSettings = settings;
             return settings;
+        }
+
+        private static void OnSettingChanged(
+            object sender,
+            SettingChangedEventArgs args)
+        {
+            if (ReferenceEquals(args.Definition, Ee4vLibrary))
+            {
+                Ee4vLibraryPathChanged?.Invoke();
+            }
         }
     }
 }

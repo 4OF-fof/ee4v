@@ -243,6 +243,11 @@ namespace Ee4v.UI
             {
                 _label.style.color = color;
             }
+
+            public override void SetTextAlign(TextAnchor alignment)
+            {
+                _label.style.unityTextAlign = alignment;
+            }
         }
 
         private sealed class ImguiUiTextElement : UiTextElement
@@ -297,6 +302,12 @@ namespace Ee4v.UI
             public override void SetColor(Color color)
             {
                 _guiStyle.normal.textColor = color;
+                _container.MarkDirtyRepaint();
+            }
+
+            public override void SetTextAlign(TextAnchor alignment)
+            {
+                _guiStyle.alignment = alignment;
                 _container.MarkDirtyRepaint();
             }
 
