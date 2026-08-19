@@ -12,19 +12,16 @@ namespace Ee4v.AssetManager.UI
         public AssetItemGridEntry(
             string id,
             string name,
-            byte[] thumbnailData = null,
-            Texture2D icon = null)
+            byte[] thumbnailData = null)
         {
             Id = id ?? string.Empty;
             Name = name ?? string.Empty;
             ThumbnailData = thumbnailData ?? Array.Empty<byte>();
-            Icon = icon;
         }
 
         public string Id { get; }
         public string Name { get; }
         public byte[] ThumbnailData { get; }
-        public Texture2D Icon { get; }
     }
 
     internal sealed class AssetItemGridView : VisualElement, IDisposable
@@ -105,6 +102,7 @@ namespace Ee4v.AssetManager.UI
 
         public event Action<IReadOnlyList<string>, string> SelectionChanged;
         public event Action<string> ItemDoubleClicked;
+        public event Action<IReadOnlyList<string>> ContextMenuRequested;
         public event Action<int> RecommendedMinimumItemsPerRowChanged;
 
         public int ItemsPerRow => _itemsPerRow;
@@ -306,6 +304,7 @@ namespace Ee4v.AssetManager.UI
                 var card = new AssetItemGridCard(_imageCache);
                 card.Clicked += SelectItem;
                 card.DoubleClicked += OpenItem;
+                card.ContextClicked += OpenContextMenu;
                 var slot = new VisualElement();
                 slot.AddToClassList("ee4v-asset-grid__slot");
                 slot.Add(card);
@@ -454,6 +453,16 @@ namespace Ee4v.AssetManager.UI
         private void OpenItem(string itemId)
         {
             ItemDoubleClicked?.Invoke(itemId);
+        }
+
+        private void OpenContextMenu(string itemId)
+        {
+            if (!_selectedItemIds.Contains(itemId))
+            {
+                SelectItem(itemId, toggle: false, range: false);
+            }
+
+            ContextMenuRequested?.Invoke(CreateSelectionSnapshot());
         }
 
         private void OnGridPointerDown(PointerDownEvent evt)
@@ -801,7 +810,6 @@ namespace Ee4v.AssetManager.UI
     {
         private readonly VisualElement _imageFrame;
         private readonly CachedImage _image;
-        private readonly Image _icon;
         private readonly VisualElement _placeholder;
         private readonly UiTextElement _name;
         private string _itemId = string.Empty;
@@ -819,20 +827,12 @@ namespace Ee4v.AssetManager.UI
                 pickingMode = PickingMode.Ignore
             };
             _image.AddToClassList("ee4v-asset-grid-card__image");
-            _icon = new Image
-            {
-                scaleMode = ScaleMode.ScaleToFit,
-                pickingMode = PickingMode.Ignore,
-                tintColor = UiColorTokens.TextPrimary
-            };
-            _icon.AddToClassList("ee4v-asset-grid-card__file-icon");
             _placeholder = new VisualElement();
             _placeholder.AddToClassList(
                 "ee4v-asset-grid-card__placeholder");
             _placeholder.pickingMode = PickingMode.Ignore;
             _imageFrame.Add(_placeholder);
             _imageFrame.Add(_image);
-            _imageFrame.Add(_icon);
 
             _name = UiTextFactory.Create(
                 string.Empty,
@@ -844,11 +844,13 @@ namespace Ee4v.AssetManager.UI
             Add(_name);
 
             RegisterCallback<PointerDownEvent>(OnPointerDown);
+            RegisterCallback<ContextClickEvent>(OnContextClick);
             RegisterCallback<KeyDownEvent>(OnKeyDown);
         }
 
         public event Action<string, bool, bool> Clicked;
         public event Action<string> DoubleClicked;
+        public event Action<string> ContextClicked;
 
         public void SetState(
             AssetItemGridEntry state,
@@ -859,18 +861,7 @@ namespace Ee4v.AssetManager.UI
             EnableInClassList(
                 "ee4v-asset-grid-card--selected",
                 selected);
-            _imageFrame.EnableInClassList(
-                "ee4v-asset-grid-card__image-frame--file",
-                state.Icon != null);
-            _icon.image = state.Icon;
-            if (state.Icon == null)
-            {
-                _image.SetSource(state.Id);
-            }
-            else
-            {
-                _image.ClearSource();
-            }
+            _image.SetSource(state.Id);
             UpdateImageVisibility();
         }
 
@@ -890,23 +881,16 @@ namespace Ee4v.AssetManager.UI
         public void Dispose()
         {
             _image.ClearSource();
-            _icon.image = null;
-            _imageFrame.RemoveFromClassList(
-                "ee4v-asset-grid-card__image-frame--file");
             UpdateImageVisibility();
         }
 
         private void UpdateImageVisibility()
         {
-            var hasIcon = _icon.image != null;
-            var hasImage = !hasIcon && _image.DisplayedTexture != null;
-            _icon.style.display = hasIcon
-                ? DisplayStyle.Flex
-                : DisplayStyle.None;
+            var hasImage = _image.DisplayedTexture != null;
             _image.style.display = hasImage
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
-            _placeholder.style.display = hasImage || hasIcon
+            _placeholder.style.display = hasImage
                 ? DisplayStyle.None
                 : DisplayStyle.Flex;
         }
@@ -942,6 +926,13 @@ namespace Ee4v.AssetManager.UI
                 _itemId,
                 evt.ctrlKey || evt.commandKey,
                 evt.shiftKey);
+            evt.StopPropagation();
+        }
+
+        private void OnContextClick(ContextClickEvent evt)
+        {
+            Focus();
+            ContextClicked?.Invoke(_itemId);
             evt.StopPropagation();
         }
     }

@@ -129,10 +129,10 @@ namespace Ee4v.AssetManager.UI
                 {
                     var separator = AssetManagerControls.CreateIcon(
                         "chevron_right.png",
-                        UiSizeTokens.Size10);
+                        UiSizeTokens.Size10,
+                        UiColorTokens.TextMuted);
                     if (separator != null)
                     {
-                        separator.tintColor = UiColorTokens.TextMuted;
                         separator.AddToClassList(
                             "ee4v-asset-manager__breadcrumb-tooltip-separator");
                         Add(separator);

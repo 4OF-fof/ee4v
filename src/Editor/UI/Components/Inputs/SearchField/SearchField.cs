@@ -11,7 +11,8 @@ namespace Ee4v.UI
             string searchTooltip = null,
             string clearTooltip = null,
             IconState searchIconState = null,
-            IconState clearIconState = null)
+            IconState clearIconState = null,
+            bool searchActionEnabled = false)
         {
             Value = value ?? string.Empty;
             Placeholder = placeholder ?? string.Empty;
@@ -29,6 +30,7 @@ namespace Ee4v.UI
                     UiBuiltinIcon.Close,
                     size: UiSizeTokens.Size10,
                     tooltip: ClearTooltip);
+            SearchActionEnabled = searchActionEnabled;
         }
 
         public string Value { get; }
@@ -42,6 +44,8 @@ namespace Ee4v.UI
         public IconState SearchIconState { get; }
 
         public IconState ClearIconState { get; }
+
+        public bool SearchActionEnabled { get; }
     }
 
     public sealed class SearchField : VisualElement
@@ -50,10 +54,15 @@ namespace Ee4v.UI
         private const string HasValueClassName = "ee4v-ui-search-field--has-value";
         private const string FocusedClassName = "ee4v-ui-search-field--focused";
         private const string IconClassName = "ee4v-ui-search-field__icon";
+        private const string SearchActionClassName =
+            "ee4v-ui-search-field__search-action";
+        private const string SearchActionInteractiveClassName =
+            "ee4v-ui-search-field__search-action--interactive";
         private const string InputHostClassName = "ee4v-ui-search-field__input-host";
         private const string InputClassName = "ee4v-ui-search-field__input";
         private const string PlaceholderClassName = "ee4v-ui-search-field__placeholder";
         private const string ClearClassName = "ee4v-ui-search-field__clear";
+        private readonly Button _searchAction;
         private readonly Icon _searchIcon;
         private readonly VisualElement _inputHost;
         private readonly TextField _input;
@@ -61,15 +70,19 @@ namespace Ee4v.UI
         private readonly Button _clearButton;
         private readonly Icon _clearIcon;
         private bool _isFocused;
+        private bool _searchActionEnabled;
 
         public SearchField(SearchFieldState state = null)
         {
             state = state ?? new SearchFieldState();
             AddToClassList(RootClassName);
 
-            _searchIcon =
-                new Icon(state.SearchIconState);
+            _searchAction = UiTextFactory.CreateButton(
+                onClick: RequestSearchAction);
+            _searchAction.AddToClassList(SearchActionClassName);
+            _searchIcon = new Icon(state.SearchIconState);
             _searchIcon.AddToClassList(IconClassName);
+            _searchAction.Add(_searchIcon);
 
             _inputHost = new VisualElement();
             _inputHost.AddToClassList(InputHostClassName);
@@ -107,7 +120,7 @@ namespace Ee4v.UI
             _inputHost.Add(_input);
             _inputHost.Add(_placeholderLabel);
 
-            Add(_searchIcon);
+            Add(_searchAction);
             Add(_inputHost);
             Add(_clearButton);
 
@@ -115,6 +128,13 @@ namespace Ee4v.UI
         }
 
         public event Action<string> ValueChanged;
+
+        public event Action SearchActionRequested;
+
+        public VisualElement SearchActionAnchor
+        {
+            get { return _searchAction; }
+        }
 
         public string Value
         {
@@ -129,6 +149,15 @@ namespace Ee4v.UI
                 state.SearchIconState);
             _clearIcon.SetState(
                 state.ClearIconState);
+            _searchActionEnabled = state.SearchActionEnabled;
+            _searchAction.focusable = _searchActionEnabled;
+            _searchAction.pickingMode = _searchActionEnabled
+                ? PickingMode.Position
+                : PickingMode.Ignore;
+            _searchAction.EnableInClassList(
+                SearchActionInteractiveClassName,
+                _searchActionEnabled);
+            _searchAction.tooltip = state.SearchTooltip;
             SetValueWithoutNotify(state.Value);
             SetPlaceholder(state.Placeholder);
         }
@@ -153,6 +182,14 @@ namespace Ee4v.UI
             }
 
             Value = string.Empty;
+        }
+
+        private void RequestSearchAction()
+        {
+            if (_searchActionEnabled)
+            {
+                SearchActionRequested?.Invoke();
+            }
         }
 
         private void RefreshVisualState()

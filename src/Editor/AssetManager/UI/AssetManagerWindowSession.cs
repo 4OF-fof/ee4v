@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.AssetManager.Infrastructure;
-using Ee4v.Core.EditorIntegration;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -43,19 +42,16 @@ namespace Ee4v.AssetManager.UI
         public static void PrepareRoot(VisualElement root)
         {
             UiComposition.Prepare(root);
-            var packageRoot = PackageAssetApi.GetPackageRootAssetPath();
-            if (string.IsNullOrEmpty(packageRoot))
-            {
-                return;
-            }
-
-            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(
-                packageRoot +
-                "/Editor/AssetManager/UI/asset-manager.uss");
-            if (styleSheet != null)
-            {
-                root.styleSheets.Add(styleSheet);
-            }
+            UiStyleUtility.AddPackageStyleSheet(
+                root,
+                "Editor/UI/Components/Inputs/ui-button.uss");
+            UiStyleUtility.AddPackageStyleSheet(
+                root,
+                "Editor/UI/Components/Overlays/CustomPopup/" +
+                "custom-popup.uss");
+            UiStyleUtility.AddPackageStyleSheet(
+                root,
+                "Editor/AssetManager/UI/asset-manager.uss");
         }
 
         private static IAssetManager GetManager()

@@ -10,6 +10,7 @@ Core は機能横断の契約、共通実装、Unity Editor との接続部を�
 | 翻訳カタログと文字列取得 | [I18n](./i18n.md) | `ILocalizationService`、`I18N` |
 | 非同期処理のライフサイクル | [Background](./background.md) | `IBackgroundTaskManager` |
 | 画像表示とTexture cache | [Images](./images.md) | `CachedImage`、`CachedImageCache` |
+| 共通UIコンポーネント | [Core UI](./ui.md) | `UiButton`、`InputField`、`SearchField`、`Icon`、`CustomPopup` |
 | Project Browser への表示追加 | [Project](./project.md) | `InjectorApi`、`ItemInjectionRegistration` |
 | Hierarchy への表示追加 | [Hierarchy](./hierarchy.md) | `InjectorApi`、`ItemInjectionRegistration` |
 | Unity Editor の操作 | [EditorIntegration](./editor-integration.md) | `Ee4v.Core.EditorIntegration` |
@@ -25,6 +26,7 @@ Core は機能横断の契約、共通実装、Unity Editor との接続部を�
 | `Ee4v.Core.Unity.Editor` | Settings の保存と JSON 変換 | あり |
 | `Ee4v.Core.Editor` | Unity Editor 操作と内部 API の隔離 | あり |
 | `Ee4v.Core.Presentation.Editor` | Settings 画面、表示注入、状態表示 | あり |
+| `Ee4v.UI.Editor` | 機能横断のUI Toolkitコンポーネント | あり |
 
 `Ee4v.Core.Contracts.Editor` と `Ee4v.Core.Services.Editor` は `noEngineReferences: true` です。Unity への接続は外側の assembly にあります。
 

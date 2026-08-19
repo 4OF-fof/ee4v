@@ -301,7 +301,8 @@ namespace Ee4v.UI
             Texture texture = null,
             UiBuiltinIcon builtinIcon = UiBuiltinIcon.Search,
             float size = 16f,
-            string tooltip = null)
+            string tooltip = null,
+            Color? tintColor = null)
         {
             if (sourceKind == UiIconSourceKind.Texture && texture == null)
             {
@@ -313,6 +314,7 @@ namespace Ee4v.UI
             BuiltinIcon = builtinIcon;
             Size = size < 0f ? 0f : size;
             Tooltip = tooltip ?? string.Empty;
+            TintColor = tintColor;
         }
 
         public UiIconSourceKind SourceKind { get; }
@@ -325,9 +327,20 @@ namespace Ee4v.UI
 
         public string Tooltip { get; }
 
-        public static IconState FromTexture(Texture texture, float size = 16f, string tooltip = null)
+        public Color? TintColor { get; }
+
+        public static IconState FromTexture(
+            Texture texture,
+            float size = 16f,
+            string tooltip = null,
+            Color? tintColor = null)
         {
-            return new IconState(UiIconSourceKind.Texture, texture, size: size, tooltip: tooltip);
+            return new IconState(
+                UiIconSourceKind.Texture,
+                texture,
+                size: size,
+                tooltip: tooltip,
+                tintColor: tintColor);
         }
 
         public static IconState FromBuiltinIcon(
@@ -389,7 +402,7 @@ namespace Ee4v.UI
         private void ApplySource(IconState state)
         {
             _image.image = null;
-            _image.tintColor = Color.white;
+            _image.tintColor = state.TintColor ?? Color.white;
 
             switch (state.SourceKind)
             {
@@ -411,4 +424,3 @@ namespace Ee4v.UI
         }
     }
 }
-

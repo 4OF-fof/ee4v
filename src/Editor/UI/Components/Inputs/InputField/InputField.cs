@@ -94,6 +94,12 @@ namespace Ee4v.UI
             }
         }
 
+        public bool IsReadOnly
+        {
+            get { return _textField.isReadOnly; }
+            set { _textField.isReadOnly = value; }
+        }
+
         protected VisualElement FieldContainer
         {
             get { return _fieldContainer; }

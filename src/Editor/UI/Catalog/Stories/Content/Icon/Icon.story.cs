@@ -28,7 +28,8 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/UI/Components/Inputs/SearchField/SearchField.cs",
-                        "Editor/UI/Components/Overlays/WindowToast/WindowToast.cs"
+                        "Editor/UI/Components/Overlays/WindowToast/WindowToast.cs",
+                        "Editor/AssetManager/UI/AssetManagerControls.cs"
                     }));
             }
         }

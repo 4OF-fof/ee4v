@@ -19,7 +19,7 @@
 | `ItemAndCollectionChanges_IdentifyMutationAndSubjects` | ItemとCollectionの通知が種別と対象IDを含む | UIの差分更新が依存する公開イベント契約である |
 | `FileChanges_IdentifyFilesAndAffectedItems` | File通知が対象Fileと影響Itemを含む | 関連Itemだけを更新する公開イベント契約である |
 | `EagleSync_ReusesIdsAndDeletesMissingFile` | Eagleの再同期でItem IDを維持し、消えたFileを除く | 外部SourceとDBの同一性を保つ接続契約である |
-| `EagleSync_NormalizesImportedTextForUiFonts` | Eagle由来のItem、File、TagをUI表示可能な文字へ正規化する | 外部文字列とUIフォントの接続境界である |
+| `EagleSync_IgnoresSourceTagsAndPreservesManagedTags` | Eagle由来Tagを取り込まず、AssetManagerで設定したTagを再同期後も保持する | 外部Sourceと管理対象Tagの所有境界である |
 | `EagleSync_MissingTargetPreservesData` | 対象rootがない同期で既存データを保持する | 設定誤りによる全削除を防ぐデータ保全である |
 | `ThumbnailApis_ReturnMissingWithoutAThumbnailSource` | サムネイル元がない場合に単体・一括APIがmissingを返す | 非同期画像取得の欠落結果を統一する公開契約である |
 | `FileRegistration_RejectsDirectoriesFromEverySource` | Eagleとee4vのどちらでもdirectoryをFileにしない | 外部Sourceから扱えない実体がDBへ入るのを防ぐ |
@@ -35,7 +35,7 @@
 | `FileTargets_RejectTraversalWithoutChangingData` | 親directoryへのTargetを拒否して既存値を保持する | 書き込み範囲逸脱と部分更新を防ぐ安全契約である |
 | `TargetImporter_CopiesFileAndZipEntry` | 通常FileとZIP内要素を指定先へ書き込む | ファイルシステムとZIPの接続部を確認する |
 | `TargetImporter_ReportsPackageFailureAfterCleanup` | UnityPackage失敗を返して一時Fileを削除する | Unityの非同期完了契約と一時データ保全を確認する |
-| `AnalyzeFile_ReadsZipAndUnityPackageContents` | ZIPとUnityPackageを共通の解析結果へ変換する | 外部形式を公開モデルへ変換する接続契約である |
+| `AnalyzeFile_ReadsZipAndUnityPackageContents` | 同期・非同期APIでZIPとUnityPackageを共通の解析結果へ変換する | 外部形式を公開モデルへ変換し、UIスレッド外からも利用する接続契約である |
 | `Ee4vSync_InvalidMetadataDoesNotChangeCatalog` | 壊れたmetadataで既存Catalogを変更しない | 外部入力不正時のデータ保全を確認する |
 | `ItemsPerRow_UpdatesVisibleGridImmediately` | 列数変更と同じ処理内で表示行を組み替える | 遅延した更新は操作直後の画面状態だけで検出できる |
 | `Selection_CtrlTogglesItems` | Ctrl操作でItemを選択集合へ追加または削除する | 単一選択への巻き戻りと選択解除漏れを検出する |
@@ -43,7 +43,6 @@
 | `Selection_EscapeReturnsGridToUnselectedState` | Escapeで選択集合と主選択を空へ戻す | 選択解除後に詳細表示だけが残る問題を検出する |
 | `AssetManagerItemSortTests.Apply_OrdersBySelectedField` | Itemを名前、日付、File数と反転指定で安定して並べる | 複数の並び順と反転方向の組み合わせ違いを検出する |
 | `AssetManagerItemSortTests.Apply_OrdersFilesByAvailableField` | Fileを名前、作成日、更新日と反転指定で安定して並べる | File画面だけ並び替えが表示順へ反映されない問題を検出する |
-| `AssetFileIconResolverTests.GetIconFileName_MapsFileExtension` | File名またはSourceパスの拡張子を表示アイコンへ分類する | 形式追加や大文字拡張子で誤ったアイコンへ戻る問題を検出する |
 | `AssetManagerSearchTests.MatchesItem_UsesOnlyEnabledTargets` | Item検索が有効な名前、説明、タグだけを部分一致対象にする | 検索対象の切替が別項目へ漏れる問題を検出する |
 | `AssetManagerSearchTests.MatchesFile_UsesNameTarget` | File名検索を名前対象の有効時だけ行う | ItemとFileで検索対象の意味がずれる問題を検出する |
 | `ImagesWithTheSameSource_ReuseDecodedTexture` | 同じ画像Sourceを表示する要素がデコード済みTextureを共有する | スクロール中の再デコードは最終表示だけでは検出できない |

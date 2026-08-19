@@ -52,26 +52,6 @@ namespace Ee4v.AssetManager.UI
                         "Editor/AssetManager/UI/asset-manager.uss"
                     }),
                 new UiStory(
-                    "asset-manager-file-grid",
-                    "Domain/AssetManager",
-                    "AssetItemGridView · File icons",
-                    "File一覧のGridと拡張子別アイコンを確認するStoryです。",
-                    "画像、音声、動画、アーカイブ、コード、3Dモデル、その他のFileをFluent UI System Iconsで表示し、透過したアイコン背景を確認します。",
-                    BuildFileGrid,
-                    dependencies: new[]
-                    {
-                        "UiTextFactory",
-                        "Fluent UI System Icons"
-                    },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss"
-                    }),
-                new UiStory(
                     "asset-manager-breadcrumb",
                     "Domain/AssetManager",
                     "AssetManagerBreadcrumb",
@@ -128,6 +108,46 @@ namespace Ee4v.AssetManager.UI
                         "Editor/AssetManager/UI/asset-manager.uss"
                     }),
                 new UiStory(
+                    "asset-manager-tag-field",
+                    "Domain/AssetManager",
+                    "AssetTagField",
+                    "ItemのTagをチップと検索ポップアップで編集するコンポーネントです。",
+                    "選択済みTagの削除、既存Tagの検索と選択、新しいTagの作成を確認できます。",
+                    BuildTagField,
+                    dependencies: new[]
+                    {
+                        "UiTextFactory",
+                        "SearchField"
+                    },
+                    usageLocations: new[]
+                    {
+                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                    },
+                    styleSheetPaths: new[]
+                    {
+                        "Editor/AssetManager/UI/asset-manager.uss"
+                    }),
+                new UiStory(
+                    "asset-manager-file-tree",
+                    "Domain/AssetManager",
+                    "SearchableFileTree",
+                    "Item詳細で使用する検索付きFile Treeです。",
+                    "FileをルートにしてZIPやUnityPackageの内容を階層表示し、選択した要素を右ペインへ渡します。",
+                    BuildFileTree,
+                    dependencies: new[]
+                    {
+                        "SearchableTreeView",
+                        "UiTextFactory"
+                    },
+                    usageLocations: new[]
+                    {
+                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                    },
+                    styleSheetPaths: new[]
+                    {
+                        "Editor/AssetManager/UI/asset-manager.uss"
+                    }),
+                new UiStory(
                     "asset-manager-controls",
                     "Domain/AssetManager",
                     "AssetManagerControls",
@@ -149,6 +169,41 @@ namespace Ee4v.AssetManager.UI
                         "Editor/AssetManager/UI/asset-manager.uss"
                     })
             };
+        }
+
+        private static void BuildFileTree(VisualElement parent)
+        {
+            var manager = new AssetManagerStoryManager();
+            var surface = new VisualElement();
+            surface.AddToClassList("ee4v-asset-manager");
+            surface.style.width = 360f;
+            surface.style.height = 420f;
+            var tree = new SearchableFileTree(manager);
+            tree.SetItem(
+                "item-avatar",
+                manager.GetFiles("item-avatar"));
+            surface.RegisterCallback<DetachFromPanelEvent>(_ => tree.Dispose());
+            surface.Add(tree);
+            parent.Add(surface);
+        }
+
+        private static void BuildTagField(VisualElement parent)
+        {
+            var surface = new VisualElement();
+            surface.style.width = 300f;
+            var field = new AssetTagField();
+            field.SetValues(
+                new[]
+                {
+                    new AssetTagOption("avatar", 12),
+                    new AssetTagOption("costume", 8),
+                    new AssetTagOption("free", 5),
+                    new AssetTagOption("gimmick", 3),
+                    new AssetTagOption("world", 2)
+                },
+                new[] { "avatar", "costume" });
+            surface.Add(field);
+            parent.Add(surface);
         }
 
         private static void Build(VisualElement parent)
@@ -212,58 +267,6 @@ namespace Ee4v.AssetManager.UI
             surface.Add(slider);
             surface.Add(grid);
             parent.Add(surface);
-        }
-
-        private static void BuildFileGrid(VisualElement parent)
-        {
-            var surface = new VisualElement();
-            surface.style.minWidth = 760f;
-            var grid = new AssetItemGridView();
-            grid.style.height = 500f;
-            grid.SetItems(new[]
-            {
-                CreateFileEntry("image", "preview.png"),
-                CreateFileEntry("audio", "ambient.wav"),
-                CreateFileEntry("video", "trailer.mp4"),
-                CreateFileEntry("archive", "avatar.unitypackage"),
-                CreateFileEntry("code", "AvatarController.cs"),
-                CreateFileEntry("model", "character.fbx"),
-                CreateFileEntry("document", "license.pdf")
-            });
-            grid.SetSelectedItemId("archive");
-            var slider = AssetManagerControls.CreateGridSizeSlider(
-                grid.ItemsPerRow,
-                grid.RecommendedMinimumItemsPerRow,
-                AssetItemGridView.MaximumItemsPerRow);
-            slider.ValueChanged += grid.SetItemsPerRow;
-            grid.RecommendedMinimumItemsPerRowChanged += value =>
-            {
-                slider.SetRangeWithoutNotify(
-                    value,
-                    AssetItemGridView.MaximumItemsPerRow);
-                slider.SetValueWithoutNotify(grid.ItemsPerRow);
-            };
-            grid.RegisterCallback<DetachFromPanelEvent>(_ =>
-                grid.Dispose());
-            surface.Add(slider);
-            surface.Add(grid);
-            parent.Add(surface);
-        }
-
-        private static AssetItemGridEntry CreateFileEntry(
-            string id,
-            string fileName)
-        {
-            var file = new AssetFile
-            {
-                Id = id,
-                FileName = fileName,
-                SourcePath = fileName
-            };
-            return new AssetItemGridEntry(
-                file.Id,
-                file.FileName,
-                icon: AssetFileIconResolver.Resolve(file));
         }
 
         private static void BuildBreadcrumb(VisualElement parent)
@@ -382,17 +385,17 @@ namespace Ee4v.AssetManager.UI
             surface.style.width = 520f;
             surface.AddToClassList("ee4v-asset-manager-controls-story");
 
-            var actions = new AssetManagerActionRow();
+            var actions = new VisualElement();
+            actions.AddToClassList("ee4v-asset-manager__actions");
             actions.Add(AssetManagerControls.CreateSortButton(() => { }));
             actions.Add(AssetManagerControls.CreateButton("Default", () => { }));
             actions.Add(AssetManagerControls.CreateButton(
                 "Primary",
                 () => { },
                 "ee4v-asset-manager__primary-action"));
-            actions.Add(AssetManagerControls.CreateButton(
+            actions.Add(AssetManagerControls.CreateDangerButton(
                 "Danger",
-                () => { },
-                "ee4v-asset-manager__danger-action"));
+                () => { }));
             surface.Add(actions);
 
             var name = AssetManagerControls.CreateTextField("Name");

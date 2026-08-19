@@ -221,7 +221,7 @@ namespace Ee4v.AssetManager.Application
                 request.Name,
                 "item name");
             var original = _store.GetItem(itemId);
-            EnsureItemEditable(original);
+            EnsureItemMetadataEditable(original);
             UpdateEe4vSource(
                 original,
                 request.Name.Trim(),
@@ -651,8 +651,24 @@ namespace Ee4v.AssetManager.Application
 
         public AssetFileAnalysis AnalyzeFile(string fileId)
         {
+            return _fileAnalyzer.Analyze(GetFileForAnalysis(fileId));
+        }
+
+        public Task<AssetFileAnalysis> AnalyzeFileAsync(
+            string fileId,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var file = GetFileForAnalysis(fileId);
+            return Task.Run(
+                () => _fileAnalyzer.Analyze(file, cancellationToken),
+                cancellationToken);
+        }
+
+        private AssetFile GetFileForAnalysis(string fileId)
+        {
             AssetManagerRequestValidator.Require(fileId, "file id");
-            return _fileAnalyzer.Analyze(_store.GetFile(fileId.Trim()));
+            return _store.GetFile(fileId.Trim());
         }
 
         public IReadOnlyList<string> GetFileImportedAssetGuids(
@@ -695,10 +711,6 @@ namespace Ee4v.AssetManager.Application
             var normalized = AssetManagerRequestValidator.NormalizeTags(
                 tagPaths);
             var originals = ids.Select(_store.GetItem).ToArray();
-            for (var i = 0; i < originals.Length; i++)
-            {
-                EnsureItemEditable(originals[i]);
-            }
 
             IReadOnlyList<AssetItem> items;
             try
@@ -941,7 +953,7 @@ namespace Ee4v.AssetManager.Application
                 .ToArray();
         }
 
-        private static void EnsureItemEditable(AssetItem item)
+        private static void EnsureItemMetadataEditable(AssetItem item)
         {
             if (item.SourceType == AssetSourceType.Eagle)
             {
@@ -981,7 +993,10 @@ namespace Ee4v.AssetManager.Application
 
             item.Name = AssetSourceText.Normalize(item.Name);
             item.Description = AssetSourceText.Normalize(item.Description);
-            item.Tags = NormalizeSourceTags(item.Tags);
+            if (item.Tags != null)
+            {
+                item.Tags = NormalizeSourceTags(item.Tags);
+            }
             var files = item.Files ??
                         Array.Empty<AssetSourceSnapshotFile>();
             for (var i = 0; i < files.Count; i++)

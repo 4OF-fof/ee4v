@@ -106,15 +106,7 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                         ThumbnailUrl = booth == null
                             ? null
                             : booth.thumbnailUrl,
-                        Tags = folderEntries
-                            .Where(entry =>
-                                ReadBoothMetadata(entry) == null)
-                            .SelectMany(entry =>
-                                entry.Metadata.tags ??
-                                Array.Empty<string>())
-                            .Where(tag => !IsSystemMetadataTag(tag))
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .ToArray(),
+                        Tags = null,
                         Files = files
                     });
                 }
@@ -381,19 +373,6 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
             }
 
             return false;
-        }
-
-        private static bool IsSystemMetadataTag(string tag)
-        {
-            var normalized = (tag ?? string.Empty).Trim();
-            return string.Equals(
-                       normalized,
-                       "BoothMeta",
-                       StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(
-                       normalized,
-                       "VRCMeta",
-                       StringComparison.OrdinalIgnoreCase);
         }
 
         private static string NormalizePath(string value)

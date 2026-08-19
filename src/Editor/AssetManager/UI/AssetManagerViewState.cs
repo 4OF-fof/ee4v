@@ -43,7 +43,7 @@ namespace Ee4v.AssetManager.UI
         public AssetManagerPage Page { get; private set; }
         public string CollectionId { get; private set; }
         public string TagPath { get; private set; }
-        public string BrowsingItemId { get; private set; }
+        public string DetailItemId { get; private set; }
         public IReadOnlyList<string> SelectedItemIds => _selectedItemIds;
         public string SelectedItemId { get; private set; }
         public string SelectedFileId { get; private set; }
@@ -85,7 +85,7 @@ namespace Ee4v.AssetManager.UI
                 tagPath));
         }
 
-        public void BrowseItemFiles(string itemId)
+        public void OpenItemDetail(string itemId)
         {
             if (string.IsNullOrWhiteSpace(itemId))
             {
@@ -240,7 +240,7 @@ namespace Ee4v.AssetManager.UI
             Page = location.Page;
             CollectionId = location.CollectionId;
             TagPath = location.TagPath;
-            BrowsingItemId = location.ItemId;
+            DetailItemId = location.ItemId;
             ResetSelectionAndInformation();
             Changed?.Invoke(AssetManagerViewStateChange.Navigation);
         }

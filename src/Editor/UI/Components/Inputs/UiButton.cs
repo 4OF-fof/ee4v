@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -33,7 +34,8 @@ namespace Ee4v.UI
             string tooltip = null,
             IconState icon = null,
             UiButtonVariant variant = UiButtonVariant.Solid,
-            bool compact = false)
+            bool compact = false,
+            string labelTypographyClassName = null)
             : base(onClick)
         {
             AddToClassList(RootClassName);
@@ -58,7 +60,9 @@ namespace Ee4v.UI
             _icon.AddToClassList(IconClassName);
             _label = UiTextFactory.Create(
                 string.Empty,
-                UiClassNames.ButtonLabel,
+                string.IsNullOrWhiteSpace(labelTypographyClassName)
+                    ? UiClassNames.ButtonLabel
+                    : labelTypographyClassName,
                 LabelClassName);
             _label.pickingMode = PickingMode.Ignore;
             _label.SetWhiteSpace(WhiteSpace.NoWrap);
@@ -74,6 +78,11 @@ namespace Ee4v.UI
         {
             _label.SetText(label);
             RefreshLayout();
+        }
+
+        public void SetLabelColor(Color color)
+        {
+            _label.SetColor(color);
         }
 
         public void SetIcon(IconState icon)

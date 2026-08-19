@@ -5,9 +5,6 @@
     "mainTitle": "Asset Manager · Main",
     "informationTitle": "Asset Manager · Information"
   },
-  "pane": {
-    "information": "INFORMATION"
-  },
   "toolbar": {
     "back": "Back",
     "forward": "Forward",
@@ -62,16 +59,38 @@
     "collectionNameRequired": "Enter a collection name.",
     "collectionSaveFailed": "The collection could not be saved. Check the Console."
   },
+  "fileTree": {
+    "empty": "There are no files assigned to this item.",
+    "searchPlaceholder": "Search file tree",
+    "searchTooltip": "Search file tree",
+    "analysisFailed": "Some files could not be analyzed: {0}",
+    "analysisUnavailable": "The file tree could not be loaded. Check the Console."
+  },
   "detail": {
+    "information": "INFORMATION",
     "files": "FILES",
     "importedAssetGuids": "IMPORTED ASSET GUIDS",
     "item": {
       "eyebrow": "ITEM",
-      "noThumbnail": "No thumbnail"
+      "selectedCount": "{0} items selected",
+      "tagsNew": "Add Tag",
+      "tagsRemove": "Remove \"{0}\"",
+      "tagsPickerTitle": "Select Tag",
+      "tagsClose": "Close",
+      "tagsSearch": "Search tags",
+      "tagsCreate": "Create '{0}'",
+      "tagsWithCount": "{0} ({1})",
+      "tagsEmpty": "No tags available",
+      "tagsNoMatch": "No matching tags",
+      "active": "Active",
+      "archived": "Archived"
     },
     "file": {
       "eyebrow": "FILE",
-      "register": "Register file"
+      "entryEyebrow": "FILE TREE",
+      "register": "Register file",
+      "file": "File",
+      "directory": "Directory"
     }
   },
   "field": {
@@ -81,11 +100,23 @@
     "filePath": "File path",
     "displayName": "Display name",
     "source": "Source",
+    "sourceId": "Source ID",
+    "itemId": "Item ID",
     "fileId": "File ID",
+    "fileCount": "File count",
+    "fileTypes": "File types",
+    "createdAt": "Created",
+    "updatedAt": "Updated",
+    "status": "Status",
     "assignedItemId": "Assigned item ID",
     "targetPaths": "Target paths (one per line)",
     "dependencyFileIds": "Dependency file IDs (one per line)",
     "archiveEntries": "Archive entries (one per line)",
+    "file": "File",
+    "path": "Path",
+    "kind": "Kind",
+    "size": "Size",
+    "assetGuid": "Asset GUID",
     "value": "Value"
   },
   "filterCondition": {
@@ -114,10 +145,12 @@
     "not": "NOT ({0})"
   },
   "action": {
-    "save": "Save",
     "restore": "Restore",
+    "restoreItems": "Restore {0} items",
     "archive": "Archive",
+    "archiveItems": "Archive {0} items",
     "delete": "Delete",
+    "deleteItems": "Delete {0} items",
     "cancel": "Cancel",
     "register": "Register",
     "moveFile": "Move file",
@@ -134,6 +167,10 @@
     "deleteItem": {
       "title": "Delete item",
       "message": "Delete this item and its files?"
+    },
+    "deleteItems": {
+      "title": "Delete items",
+      "message": "Delete the selected {0} items and their files?"
     },
     "deleteFile": {
       "title": "Delete file",

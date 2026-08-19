@@ -20,8 +20,8 @@ namespace Ee4v.UI
                     "search-field",
                     "Inputs",
                     "SearchField",
-                    "検索入力と clear 操作をまとめた単体利用向けの検索コンポーネントです。",
-                    "一覧やカード列の絞り込みに使う軽量な検索入力です。placeholder と clear button を持ち、SearchableTreeView の検索 UI と同じ見た目・挙動を単体でも使えます。",
+                    "検索入力と消去操作をまとめた単体利用向けの検索コンポーネントです。",
+                    "一覧やカード列の絞り込みに使う軽量な検索入力です。先頭アイコンは任意の操作ボタンとしても使用できます。",
                     new[]
                     {
                         "Icon"
@@ -30,7 +30,9 @@ namespace Ee4v.UI
                     (window, parent) => window.BuildSearchFieldStory(parent),
                     new[]
                     {
-                        "Editor/UI/Components/Collections/SearchableTreeView/SearchableTreeView.cs"
+                        "Editor/UI/Components/Collections/SearchableTreeView/SearchableTreeView.cs",
+                        "Editor/AssetManager/UI/AssetManagerControls.cs",
+                        "Editor/AssetManager/UI/AssetTagField.cs"
                     }));
             }
         }
@@ -39,6 +41,7 @@ namespace Ee4v.UI
         {
             var value = string.Empty;
             var placeholder = "suite 名、説明、テスト名で検索";
+            var searchActionEnabled = false;
             Action refresh = null;
 
             var controls = CreatePlainControlsSection(parent, "placeholder と入力値を変えながら、一覧絞り込み用の単体 search field を確認します。");
@@ -52,22 +55,38 @@ namespace Ee4v.UI
                 placeholder = nextValue;
                 refresh();
             });
+            var actionToggle = UiTextFactory.CreateToggle("先頭操作");
+            actionToggle.value = searchActionEnabled;
+            actionToggle.RegisterValueChangedCallback(evt =>
+            {
+                searchActionEnabled = evt.newValue;
+                refresh();
+            });
+            controls.Content.Add(actionToggle);
 
             var preview = CreatePreviewSection(parent);
             var surface = CreatePreviewSurface(true);
             var searchField = new SearchField();
+            var actionStatus = UiTextFactory.Create(
+                "先頭アイコンを押すとここへ表示します。",
+                UiClassNames.SecondaryText);
+            searchField.SearchActionRequested += () =>
+                actionStatus.SetText("先頭操作を実行しました。");
             surface.Add(searchField);
+            surface.Add(actionStatus);
             preview.Body.Add(surface);
 
             refresh = () =>
             {
                 valueField.SetValueWithoutNotify(value);
                 placeholderField.SetValueWithoutNotify(placeholder);
+                actionToggle.SetValueWithoutNotify(searchActionEnabled);
                 searchField.SetState(new SearchFieldState(
                     value,
                     placeholder,
                     I18N.Get("ui.search.tooltip"),
-                    I18N.Get("ui.clear.tooltip")));
+                    I18N.Get("ui.clear.tooltip"),
+                    searchActionEnabled: searchActionEnabled));
             };
 
             refresh();

@@ -29,16 +29,10 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            anchor.Blur();
             var window = CreateInstance<AssetCollectionCreationPopup>();
             window._initialCollection = initialCollection;
             window._save = save;
-            window.minSize = PopupSize;
-            window.maxSize = PopupSize;
-            window.ShowAsDropDown(
-                ResolveElementAnchor(anchor),
-                PopupSize);
-            window.Focus();
+            CustomPopup.ShowAsDropDown(window, anchor, PopupSize);
         }
 
         private void CreateGUI()
@@ -47,19 +41,16 @@ namespace Ee4v.AssetManager.UI
             root.Clear();
             AssetManagerWindowSession.PrepareRoot(root);
             root.AddToClassList("ee4v-asset-manager");
-            root.AddToClassList(UiClassNames.PopupSurface);
-            root.AddToClassList("ee4v-asset-manager__collection-popup");
             root.RegisterCallback<KeyDownEvent>(OnKeyDown);
 
-            var form = new ScrollView(ScrollViewMode.Vertical);
-            form.AddToClassList(
-                "ee4v-asset-manager__collection-popup-form");
-            form.Add(UiTextFactory.Create(
+            var popup = new CustomPopup(
                 _initialCollection == null
                     ? I18N.Get("common.newCollection")
                     : _initialCollection.Name,
-                UiClassNames.SectionTitle,
-                "ee4v-asset-manager__collection-popup-title"));
+                showFooter: true);
+            var form = new ScrollView(ScrollViewMode.Vertical);
+            form.AddToClassList(
+                "ee4v-asset-manager__collection-popup-form");
 
             _name = AssetManagerControls.CreateTextField(
                 I18N.Get("field.name"));
@@ -79,22 +70,19 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-asset-manager__collection-popup-error");
             _error.SetWhiteSpace(WhiteSpace.Normal);
             form.Add(_error);
-            root.Add(form);
+            popup.Content.Add(form);
 
-            var actions = new VisualElement();
-            actions.AddToClassList(
-                "ee4v-asset-manager__collection-popup-actions");
-            actions.Add(AssetManagerControls.CreateButton(
+            popup.Footer.Add(AssetManagerControls.CreateButton(
                 I18N.Get("action.cancel"),
                 Close));
-            actions.Add(AssetManagerControls.CreateButton(
+            popup.Footer.Add(AssetManagerControls.CreateButton(
                 I18N.Get(
                     _initialCollection == null
                         ? "action.createCollection"
                         : "action.saveCollection"),
                 Submit,
                 "ee4v-asset-manager__primary-action"));
-            root.Add(actions);
+            root.Add(popup);
             root.schedule.Execute(_name.FocusInput);
         }
 
@@ -217,43 +205,6 @@ namespace Ee4v.AssetManager.UI
                 mode == FilterMatchMode.Any
                     ? "filterEditor.matchAny"
                     : "filterEditor.matchAll");
-        }
-
-        private static Rect ResolveElementAnchor(VisualElement anchor)
-        {
-            if (anchor == null || anchor.panel == null)
-            {
-                var point = GUIUtility.GUIToScreenPoint(Vector2.zero);
-                return new Rect(point, Vector2.zero);
-            }
-
-            var root = anchor.panel.visualTree;
-            var rootOffset = root != null
-                ? root.worldBound.position
-                : Vector2.zero;
-            var localPosition = anchor.worldBound.position - rootOffset;
-            var owner = FindOwnerWindow(anchor);
-            var screenPosition = owner != null
-                ? owner.position.position + localPosition
-                : GUIUtility.GUIToScreenPoint(localPosition);
-            return new Rect(screenPosition, anchor.worldBound.size);
-        }
-
-        private static EditorWindow FindOwnerWindow(VisualElement target)
-        {
-            var windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
-            for (var i = 0; i < windows.Length; i++)
-            {
-                var window = windows[i];
-                if (window != null &&
-                    window.rootVisualElement != null &&
-                    window.rootVisualElement.panel == target.panel)
-                {
-                    return window;
-                }
-            }
-
-            return EditorWindow.mouseOverWindow ?? EditorWindow.focusedWindow;
         }
 
         private enum FilterMatchMode

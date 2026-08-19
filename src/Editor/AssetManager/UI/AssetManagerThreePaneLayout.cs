@@ -27,12 +27,11 @@ namespace Ee4v.AssetManager.UI
                 out var mainContent);
             var rightPane = CreatePane(
                 "ee4v-asset-manager-three-pane__pane--right",
-                true,
-                out var rightToolbar,
+                false,
+                out _,
                 out var rightContent);
 
             MainToolbarContent = mainToolbar;
-            RightToolbarContent = rightToolbar;
             LeftContent = leftContent;
             MainContent = mainContent;
             RightContent = rightContent;
@@ -43,7 +42,6 @@ namespace Ee4v.AssetManager.UI
         }
 
         public VisualElement MainToolbarContent { get; }
-        public VisualElement RightToolbarContent { get; }
         public VisualElement LeftContent { get; }
         public VisualElement MainContent { get; }
         public VisualElement RightContent { get; }

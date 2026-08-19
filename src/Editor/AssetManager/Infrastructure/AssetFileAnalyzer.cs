@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Ee4v.AssetManager.Application.Ports;
 using Ee4v.AssetManager.Contracts;
 
@@ -11,7 +12,9 @@ namespace Ee4v.AssetManager.Infrastructure
 {
     internal sealed class AssetFileAnalyzer : IAssetFileAnalyzer
     {
-        public AssetFileAnalysis Analyze(AssetFile file)
+        public AssetFileAnalysis Analyze(
+            AssetFile file,
+            CancellationToken cancellationToken = default)
         {
             if (file == null)
             {
@@ -26,6 +29,7 @@ namespace Ee4v.AssetManager.Infrastructure
                     "The source file was not found.");
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             try
             {
                 var extension = Path.GetExtension(file.SourcePath);
@@ -38,7 +42,9 @@ namespace Ee4v.AssetManager.Infrastructure
                     {
                         FileId = file.Id,
                         Kind = AssetFileAnalysisKind.Zip,
-                        Entries = ReadZip(file.SourcePath)
+                        Entries = ReadZip(
+                            file.SourcePath,
+                            cancellationToken)
                     };
                 }
 
@@ -52,7 +58,8 @@ namespace Ee4v.AssetManager.Infrastructure
                         FileId = file.Id,
                         Kind = AssetFileAnalysisKind.UnityPackage,
                         Entries = UnityPackageReader.ReadEntries(
-                            file.SourcePath)
+                            file.SourcePath,
+                            cancellationToken)
                     };
                 }
             }
@@ -77,7 +84,8 @@ namespace Ee4v.AssetManager.Infrastructure
         }
 
         private static IReadOnlyList<AssetFileContentEntry> ReadZip(
-            string path)
+            string path,
+            CancellationToken cancellationToken)
         {
             using (var stream = File.Open(
                        path,
@@ -88,14 +96,20 @@ namespace Ee4v.AssetManager.Infrastructure
                        stream,
                        ZipArchiveMode.Read))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var source = archive.Entries
-                    .Select(entry => new
+                    .Select(entry =>
                     {
-                        Entry = entry,
-                        Path = NormalizePath(entry.FullName)
+                        cancellationToken.ThrowIfCancellationRequested();
+                        return new
+                        {
+                            Entry = entry,
+                            Path = NormalizePath(entry.FullName)
+                        };
                     })
                     .Where(value => value.Path.Length > 0)
                     .ToArray();
+                cancellationToken.ThrowIfCancellationRequested();
                 var root = Path.GetFileNameWithoutExtension(path);
                 var prefix = root + "/";
                 var omitRoot = source.Length > 0 && source.All(value =>
@@ -107,12 +121,16 @@ namespace Ee4v.AssetManager.Infrastructure
                         prefix,
                         StringComparison.OrdinalIgnoreCase));
                 return source
-                    .Select(value => new
+                    .Select(value =>
                     {
-                        value.Entry,
-                        Path = omitRoot
-                            ? RemoveRoot(value.Path, root, prefix)
-                            : value.Path
+                        cancellationToken.ThrowIfCancellationRequested();
+                        return new
+                        {
+                            value.Entry,
+                            Path = omitRoot
+                                ? RemoveRoot(value.Path, root, prefix)
+                                : value.Path
+                        };
                     })
                     .Where(value => value.Path.Length > 0)
                     .GroupBy(
@@ -166,7 +184,8 @@ namespace Ee4v.AssetManager.Infrastructure
         private const int MaximumPathBytes = 1024 * 1024;
 
         internal static IReadOnlyList<AssetFileContentEntry> ReadEntries(
-            string path)
+            string path,
+            CancellationToken cancellationToken = default)
         {
             using (var stream = File.Open(
                        path,
@@ -174,7 +193,7 @@ namespace Ee4v.AssetManager.Infrastructure
                        FileAccess.Read,
                        FileShare.ReadWrite))
             {
-                return ReadEntries(stream);
+                return ReadEntries(stream, cancellationToken);
             }
         }
 
@@ -198,7 +217,8 @@ namespace Ee4v.AssetManager.Infrastructure
         }
 
         private static IReadOnlyList<AssetFileContentEntry> ReadEntries(
-            Stream packageStream)
+            Stream packageStream,
+            CancellationToken cancellationToken)
         {
             var records = new Dictionary<string, PackageRecord>(
                 StringComparer.OrdinalIgnoreCase);
@@ -211,6 +231,7 @@ namespace Ee4v.AssetManager.Infrastructure
                 var header = new byte[TarBlockSize];
                 while (ReadBlock(gzip, header))
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (IsEmptyBlock(header))
                     {
                         break;

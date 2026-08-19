@@ -45,6 +45,12 @@
     --ee4v-color-control-pressed: #4E4E4E;
     --ee4v-color-tool-active-hover: #547394;
 
+    /* Asset tag picker colors retained from the master UI. */
+    --ee4v-color-tag-pill: #4D4D4D;
+    --ee4v-color-tag-pill-hover: #666666;
+    --ee4v-color-tag-create: #2E7D32;
+    --ee4v-color-tag-create-hover: #388E3C;
+
     /* Semantic colors stay centralized because Unity has no success token. */
     --ee4v-color-info: #3A79BB;
     --ee4v-color-success: #70B460;

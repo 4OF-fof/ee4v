@@ -332,7 +332,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         }
 
         [Test]
-        public void EagleSync_NormalizesTextAndExcludesMetadataTags()
+        public void EagleSync_IgnoresSourceTagsAndPreservesManagedTags()
         {
             var library = Path.Combine(_root, "normalized.library");
             var entry = Path.Combine(
@@ -367,7 +367,16 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             Assert.That(item.Name, Is.EqualTo("Lemon*"));
             Assert.That(item.Files.Single().FileName, Is.EqualTo("Noir*.zip"));
             Assert.That(item.Files.Single().Extension, Is.EqualTo("zip"));
-            Assert.That(item.Tags.Single().Path, Is.EqualTo("foo*"));
+            Assert.That(item.Tags, Is.Empty);
+
+            _manager.SetItemTags(
+                new[] { item.Id },
+                new[] { "Managed" });
+            _manager.SyncEagle(new EagleSyncRequest(library));
+
+            Assert.That(
+                _manager.GetItem(item.Id).Tags.Single().Path,
+                Is.EqualTo("managed"));
         }
 
         [Test]
@@ -1072,11 +1081,18 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 });
 
             var zipAnalysis = _manager.AnalyzeFile(zip.Id);
+            var asyncZipAnalysis = _manager
+                .AnalyzeFileAsync(zip.Id)
+                .GetAwaiter()
+                .GetResult();
             var packageAnalysis = _manager.AnalyzeFile(package.Id);
 
             Assert.That(zipAnalysis.Kind, Is.EqualTo(AssetFileAnalysisKind.Zip));
             Assert.That(
                 zipAnalysis.Entries.Single().Path,
+                Is.EqualTo("Prefabs/avatar.prefab"));
+            Assert.That(
+                asyncZipAnalysis.Entries.Single().Path,
                 Is.EqualTo("Prefabs/avatar.prefab"));
             Assert.That(
                 packageAnalysis.Kind,

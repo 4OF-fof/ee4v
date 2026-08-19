@@ -22,14 +22,16 @@ namespace Ee4v.UI
                     "Inputs",
                     "InputField",
                     "1行または複数行のテキストを編集する汎用入力コンポーネントです。",
-                    "共通の境界線、背景、focus 表現を持つ text field です。CommaSeparatedListField と Catalog の短文・長文編集で使用します。",
+                    "共通の境界線、背景、focus 表現を持つ text field です。読み取り専用を含む短文・長文編集で使用します。",
                     new string[0],
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildInputFieldStory(parent),
                     new[]
                     {
                         "Editor/UI/Components/Inputs/CommaSeparatedListField/CommaSeparatedListField.cs",
-                        "Editor/UI/Catalog/helper/Controls.cs"
+                        "Editor/UI/Catalog/helper/Controls.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.cs",
+                        "Editor/AssetManager/UI/AssetManagerControls.cs"
                     }));
             }
         }
@@ -67,6 +69,17 @@ namespace Ee4v.UI
             var multilineInput = new InputField(new InputFieldState(string.Empty, true, maxHeight, placeholder));
             surface.Add(multilineInput);
 
+            var readonlyInput = new InputField(new InputFieldState(
+                "読み取り専用でも長い説明をスクロールして確認できます。",
+                true,
+                maxHeight,
+                placeholder))
+            {
+                IsReadOnly = true
+            };
+            readonlyInput.style.marginTop = UiSpacingTokens.Xl;
+            surface.Add(readonlyInput);
+
             preview.Body.Add(surface);
 
             refresh = () =>
@@ -77,6 +90,7 @@ namespace Ee4v.UI
                 multilineInput.SetPlaceholder(placeholder);
                 singleLineInput.SetMaxHeight(maxHeight);
                 multilineInput.SetMaxHeight(maxHeight);
+                readonlyInput.SetMaxHeight(maxHeight);
             };
 
             refresh();

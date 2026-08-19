@@ -121,7 +121,9 @@ namespace Ee4v.AssetManager.Application.Ports
 
     internal interface IAssetFileAnalyzer
     {
-        AssetFileAnalysis Analyze(AssetFile file);
+        AssetFileAnalysis Analyze(
+            AssetFile file,
+            CancellationToken cancellationToken = default);
     }
 
     internal interface IAssetThumbnailProvider
