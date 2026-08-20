@@ -1,0 +1,73 @@
+{
+  "window": {
+    "title": "表情エディター"
+  },
+  "assignmentWindow": {
+    "title": "ジェスチャー割り当て"
+  },
+  "groupWindow": {
+    "title": "表情グループ"
+  },
+  "settings": {
+    "section": {
+      "editor": "表情エディター"
+    },
+    "blendShapeSeparators": {
+      "label": "BlendShapeの区切り文字",
+      "tooltip": "グループ境界に使う区切り文字を複数登録できます。例: -、=、_"
+    }
+  },
+  "field": {
+    "avatar": "アバター",
+    "clip": "表情クリップ"
+  },
+  "section": {
+    "blendShapes": "BlendShape",
+    "groups": "Group"
+  },
+  "group": {
+    "all": "すべて"
+  },
+  "search": {
+    "placeholder": "BlendShape を検索",
+    "tooltip": "BlendShape 名で絞り込みます",
+    "clearTooltip": "検索をクリア"
+  },
+  "filter": {
+    "clipOnly": "クリップ内のみ",
+    "clipOnlyTooltip": "表情クリップに含まれるBlendShapeだけを表示します"
+  },
+  "assignments": {
+    "hint": "左右で異なる表情が競合した場合は左手を優先します。"
+  },
+  "empty": {
+    "blendShapes": "BlendShape がありません。"
+  },
+  "action": {
+    "newClip": "新規表情",
+    "resetView": "表示をリセット",
+    "apply": "アバターへ適用"
+  },
+  "gesture": {
+    "Neutral": "Neutral",
+    "Fist": "Fist",
+    "Open": "Open",
+    "Point": "Point",
+    "Victory": "Victory",
+    "RockNRoll": "RockNRoll",
+    "HandGun": "HandGun",
+    "ThumbsUp": "ThumbsUp"
+  },
+  "dialog": {
+    "createTitle": "表情クリップを作成",
+    "defaultName": "New Face Expression",
+    "createMessage": "表情クリップの保存先を選択してください。"
+  },
+  "status": {
+    "descriptorMissing": "VRChat Avatar Descriptor が見つかりません。表情の編集はできますが割り当てはできません。",
+    "clipRequired": "先に表情クリップを作成または選択してください。",
+    "applied": "ジェスチャー割り当てを FX Controller へ適用しました。",
+    "controllerCreateFailed": "FX Controller を作成できませんでした。",
+    "applyFailed": "ジェスチャー割り当てを適用できませんでした。"
+  }
+}

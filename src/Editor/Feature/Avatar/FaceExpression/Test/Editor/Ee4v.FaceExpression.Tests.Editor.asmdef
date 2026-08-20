@@ -1,0 +1,21 @@
+{
+  "name": "Ee4v.FaceExpression.Tests.Editor",
+  "rootNamespace": "Ee4v.FaceExpression.Tests",
+  "references": [
+    "Ee4v.FaceExpression.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

@@ -21,6 +21,12 @@
 | HierarchyStyle | GameObject の背景色とアイコンを設定します。Hidden Objects の一覧表示、非表示、再表示もこの機能に含みます。 | [HierarchyStyle](./hierarchy-style.md) |
 | SceneSwitcher | Hierarchy のシーン見出しからシーンを検索し、置換、追加、作成を行います。 | なし |
 
+## Avatar
+
+| 機能 | 概要 | API リファレンス |
+|---|---|---|
+| Face Expression | BlendShape表情を作成し、標準ハンドジェスチャーへ割り当てます。アバター複製を保持する軽量プレビューを使用します。 | [Face Expression](./face-expression.md) |
+
 ## Editor
 
 | 機能 | 概要 | API リファレンス |

@@ -1,0 +1,73 @@
+{
+  "window": {
+    "title": "Face Expression Editor"
+  },
+  "assignmentWindow": {
+    "title": "Gesture Assignments"
+  },
+  "groupWindow": {
+    "title": "Expression Groups"
+  },
+  "settings": {
+    "section": {
+      "editor": "Face Expression Editor"
+    },
+    "blendShapeSeparators": {
+      "label": "BlendShape separators",
+      "tooltip": "Add multiple separators used for group boundaries. Examples: -, =, _"
+    }
+  },
+  "field": {
+    "avatar": "Avatar",
+    "clip": "Expression clip"
+  },
+  "section": {
+    "blendShapes": "BlendShapes",
+    "groups": "Group"
+  },
+  "group": {
+    "all": "All"
+  },
+  "search": {
+    "placeholder": "Search BlendShapes",
+    "tooltip": "Filter BlendShapes by name",
+    "clearTooltip": "Clear search"
+  },
+  "filter": {
+    "clipOnly": "In clip only",
+    "clipOnlyTooltip": "Show only BlendShapes stored in the expression clip"
+  },
+  "assignments": {
+    "hint": "The left hand takes priority when both hands use assigned gestures."
+  },
+  "empty": {
+    "blendShapes": "No BlendShapes were found."
+  },
+  "action": {
+    "newClip": "New expression",
+    "resetView": "Reset view",
+    "apply": "Apply to avatar"
+  },
+  "gesture": {
+    "Neutral": "Neutral",
+    "Fist": "Fist",
+    "Open": "Open",
+    "Point": "Point",
+    "Victory": "Victory",
+    "RockNRoll": "RockNRoll",
+    "HandGun": "HandGun",
+    "ThumbsUp": "ThumbsUp"
+  },
+  "dialog": {
+    "createTitle": "Create an Expression Clip",
+    "defaultName": "New Face Expression",
+    "createMessage": "Choose where to save the expression clip."
+  },
+  "status": {
+    "descriptorMissing": "A VRChat Avatar Descriptor was not found. Expressions can be edited, but assignments cannot be applied.",
+    "clipRequired": "Create or select an expression clip first.",
+    "applied": "The gesture assignments were applied to the FX Controller.",
+    "controllerCreateFailed": "The FX Controller could not be created.",
+    "applyFailed": "The gesture assignments could not be applied."
+  }
+}
