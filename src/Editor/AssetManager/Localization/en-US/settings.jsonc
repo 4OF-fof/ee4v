@@ -3,7 +3,8 @@
     "section": {
       "assetManager": {
         "paths": "AssetManager paths",
-        "source": "AssetManager sources"
+        "source": "AssetManager sources",
+        "view": "AssetManager view"
       }
     },
     "eagleLibraryPath": {
@@ -25,6 +26,10 @@
     "autoSyncEe4vOnStartup": {
       "label": "Sync ee4v on startup",
       "tooltip": "Synchronize the configured ee4v source once when the Unity editor session starts."
+    },
+    "showProjectWindowIcons": {
+      "label": "Show AssetManager icons in Project",
+      "tooltip": "Replace imported folder icons with their AssetManager item thumbnails."
     }
   }
 }

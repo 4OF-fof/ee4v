@@ -82,7 +82,6 @@
     "dependencyTargetPickerTitle": "Edit Dependency Targets",
     "entryInformation": "ENTRY INFORMATION",
     "files": "FILES",
-    "importedAssetGuids": "IMPORTED ASSET GUIDS",
     "item": {
       "eyebrow": "ITEM",
       "selectedCount": "{0} items selected",
@@ -176,7 +175,6 @@
     "saveDependencies": "Save dependencies",
     "addTarget": "Add Target",
     "removeTarget": "Remove Target",
-    "copyAssetGuid": "Copy Asset GUID",
     "analyze": "Analyze",
     "importEntries": "Import entries",
     "importEntry": "Import this entry",

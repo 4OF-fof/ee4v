@@ -3,7 +3,8 @@
     "section": {
       "assetManager": {
         "paths": "AssetManager パス",
-        "source": "AssetManager データソース"
+        "source": "AssetManager データソース",
+        "view": "AssetManager 表示"
       }
     },
     "eagleLibraryPath": {
@@ -25,6 +26,10 @@
     "autoSyncEe4vOnStartup": {
       "label": "起動時に ee4v を自動同期",
       "tooltip": "Unity エディターのセッション開始時に、設定済みの ee4v ソースを1回同期します。"
+    },
+    "showProjectWindowIcons": {
+      "label": "Project に AssetManager アイコンを表示",
+      "tooltip": "有効にすると、AssetManager から取り込んだフォルダーのアイコンを Item のサムネイルに置き換えます。"
     }
   }
 }

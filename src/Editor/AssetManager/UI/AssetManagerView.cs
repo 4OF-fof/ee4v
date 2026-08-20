@@ -2064,6 +2064,9 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get("field.size"),
                 UiTextFactory.Create(
                     entry.SizeBytes.ToString("N0") + " B")));
+            settingList.Add(new AssetDetailSettingRow(
+                I18N.Get("field.assetGuid"),
+                CreateGuidValue(ResolveEntryAssetGuids(file, entry))));
             information.Add(settingList);
             if (entry.Kind != AssetFileContentEntryKind.Directory &&
                 file != null)
@@ -2147,6 +2150,79 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-asset-manager__mono");
             text.SetWhiteSpace(WhiteSpace.Normal);
             return text;
+        }
+
+        private static UiTextElement CreateGuidValue(
+            IEnumerable<string> guids)
+        {
+            var values = (guids ?? Array.Empty<string>())
+                .Where(guid => !string.IsNullOrWhiteSpace(guid))
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(guid => guid, StringComparer.Ordinal)
+                .ToArray();
+            return CreateMonoValue(values.Length == 0
+                ? I18N.Get("common.none")
+                : string.Join("\n", values));
+        }
+
+        private IEnumerable<string> ResolveEntryAssetGuids(
+            AssetFile file,
+            AssetFileContentEntry entry)
+        {
+            if (file != null &&
+                string.Equals(
+                    Path.GetExtension(entry?.Path),
+                    ".unitypackage",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return _manager.GetFileImportedAssetGuids(file.Id);
+            }
+
+            if (!string.IsNullOrWhiteSpace(entry?.AssetGuid))
+            {
+                return new[] { entry.AssetGuid };
+            }
+
+            if (file == null || string.IsNullOrWhiteSpace(entry?.Path))
+            {
+                return Array.Empty<string>();
+            }
+
+            var targetPath = entry.Path
+                .Replace('\\', '/')
+                .Trim()
+                .Trim('/');
+            if (targetPath.EndsWith(
+                    ".meta",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                targetPath = targetPath.Substring(
+                    0,
+                    targetPath.Length - ".meta".Length);
+            }
+
+            return _manager.GetFileImportedAssetGuids(file.Id)
+                .Where(guid => IsEntryAssetPath(
+                    AssetDatabase.GUIDToAssetPath(guid),
+                    targetPath))
+                .ToArray();
+        }
+
+        private static bool IsEntryAssetPath(
+            string assetPath,
+            string targetPath)
+        {
+            var normalizedAssetPath = (assetPath ?? string.Empty)
+                .Replace('\\', '/')
+                .TrimEnd('/');
+            return targetPath.Length > 0 &&
+                   (string.Equals(
+                        normalizedAssetPath,
+                        targetPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    normalizedAssetPath.EndsWith(
+                        "/" + targetPath,
+                        StringComparison.OrdinalIgnoreCase));
         }
 
         private static string GetFileMeta(AssetFile file)
@@ -2988,6 +3064,21 @@ namespace Ee4v.AssetManager.UI
             if (_defersManagerRefresh)
             {
                 _managerRefreshPending = true;
+                return;
+            }
+
+            if (change.Kind ==
+                AssetManagerChangeKind.FileImportedAssetGuidsChanged)
+            {
+                if (ShowsMain &&
+                    !string.IsNullOrEmpty(_viewState.DetailItemId))
+                {
+                    RefreshItemDetailPane();
+                }
+                if (ShowsInformation)
+                {
+                    RefreshDetail();
+                }
                 return;
             }
 

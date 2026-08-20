@@ -101,9 +101,29 @@ namespace Ee4v.AssetManager.UI
                     "startup"
                 });
 
+        private static readonly SettingDefinition<bool>
+            ShowProjectWindowIcons =
+                new SettingDefinition<bool>(
+                    "assetManager.showProjectWindowIcons",
+                    SettingScope.User,
+                    "AssetManager",
+                    "settings.section.assetManager.view",
+                    "settings.showProjectWindowIcons.label",
+                    "settings.showProjectWindowIcons.tooltip",
+                    true,
+                    order: 0,
+                    keywords: new[]
+                    {
+                        "asset manager",
+                        "project",
+                        "thumbnail",
+                        "icon"
+                    });
+
         private static ISettingsService _registeredSettings;
 
         internal static event Action Ee4vLibraryPathChanged;
+        internal static event Action ProjectWindowIconsChanged;
 
         static AssetManagerSettings()
         {
@@ -124,6 +144,9 @@ namespace Ee4v.AssetManager.UI
 
         internal static bool AutoSyncEe4vOnStartup =>
             Get(AutoSyncEe4v);
+
+        internal static bool ShowProjectWindowIconsEnabled =>
+            Get(ShowProjectWindowIcons);
 
         private static T Get<T>(SettingDefinition<T> definition)
         {
@@ -149,6 +172,7 @@ namespace Ee4v.AssetManager.UI
             settings.Register(Ee4vLibrary);
             settings.Register(AutoSyncEagle);
             settings.Register(AutoSyncEe4v);
+            settings.Register(ShowProjectWindowIcons);
             settings.Changed += OnSettingChanged;
             _registeredSettings = settings;
             return settings;
@@ -161,6 +185,13 @@ namespace Ee4v.AssetManager.UI
             if (ReferenceEquals(args.Definition, Ee4vLibrary))
             {
                 Ee4vLibraryPathChanged?.Invoke();
+            }
+
+            if (ReferenceEquals(
+                    args.Definition,
+                    ShowProjectWindowIcons))
+            {
+                ProjectWindowIconsChanged?.Invoke();
             }
         }
     }

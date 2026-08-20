@@ -82,7 +82,6 @@
     "dependencyTargetPickerTitle": "依存Targetを編集",
     "entryInformation": "項目の情報",
     "files": "FILE",
-    "importedAssetGuids": "取り込み済みASSET GUID",
     "item": {
       "eyebrow": "ITEM",
       "selectedCount": "{0}件を選択中",
@@ -176,7 +175,6 @@
     "saveDependencies": "依存関係を保存",
     "addTarget": "Targetに追加",
     "removeTarget": "Targetから解除",
-    "copyAssetGuid": "Asset GUIDをコピー",
     "analyze": "解析",
     "importEntries": "項目を取り込み",
     "importEntry": "この項目を取り込む",

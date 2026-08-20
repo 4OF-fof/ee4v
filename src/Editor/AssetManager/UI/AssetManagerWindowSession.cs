@@ -60,7 +60,7 @@ namespace Ee4v.AssetManager.UI
                 "Editor/AssetManager/UI/asset-detail.uss");
         }
 
-        private static IAssetManager GetManager()
+        internal static IAssetManager GetManager()
         {
             if (_manager != null)
             {

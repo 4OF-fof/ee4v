@@ -177,13 +177,21 @@ namespace Ee4v.AssetManager.Infrastructure
             if (copiedPaths.Count > 0)
             {
                 _refresh();
+                AddResolvedGuid(destinationRoot, importedGuids);
                 for (var i = 0; i < copiedPaths.Count; i++)
                 {
-                    var guid = _assetGuid(copiedPaths[i]);
-                    if (!string.IsNullOrWhiteSpace(guid))
+                    var importedPath = copiedPaths[i];
+                    if (string.Equals(
+                            Path.GetExtension(importedPath),
+                            ".meta",
+                            StringComparison.OrdinalIgnoreCase))
                     {
-                        importedGuids.Add(guid.Trim().ToLowerInvariant());
+                        importedPath = importedPath.Substring(
+                            0,
+                            importedPath.Length - ".meta".Length);
                     }
+
+                    AddResolvedGuid(importedPath, importedGuids);
                 }
             }
 
@@ -416,6 +424,17 @@ namespace Ee4v.AssetManager.Infrastructure
             for (var i = 0; i < guids.Count; i++)
             {
                 importedGuids.Add(guids[i]);
+            }
+        }
+
+        private void AddResolvedGuid(
+            string path,
+            ISet<string> importedGuids)
+        {
+            var guid = _assetGuid(path);
+            if (!string.IsNullOrWhiteSpace(guid))
+            {
+                importedGuids.Add(guid.Trim().ToLowerInvariant());
             }
         }
 

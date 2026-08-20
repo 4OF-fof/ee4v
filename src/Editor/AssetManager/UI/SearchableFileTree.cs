@@ -590,22 +590,6 @@ namespace Ee4v.AssetManager.UI
                         configuredTarget != null));
             }
 
-            menu.AddSeparator(string.Empty);
-            var assetGuid = node.Entry?.AssetGuid;
-            if (!string.IsNullOrWhiteSpace(assetGuid))
-            {
-                menu.AddItem(
-                    UiTextFactory.CreateGuiContent(
-                        I18N.Get("action.copyAssetGuid")),
-                    false,
-                    () => EditorGUIUtility.systemCopyBuffer = assetGuid);
-            }
-            else
-            {
-                menu.AddDisabledItem(UiTextFactory.CreateGuiContent(
-                    I18N.Get("action.copyAssetGuid")));
-            }
-
             menu.ShowAsContext();
         }
 
