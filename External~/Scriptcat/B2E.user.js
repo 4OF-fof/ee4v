@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Booth to Ealge
 // @namespace    https://4of.dev
-// @version      0.1.3
+// @version      0.1.4
 // @description  Add Eagle import badges and actions to the BOOTH library and item pages.
 // @match        https://accounts.booth.pm/library*
 // @match        https://accounts.booth.pm/library/gifts*
@@ -33,6 +33,7 @@
     actionHost: ".ee4v-booth-inline-action-host",
     productBadgeHost: ".ee4v-booth-product-badge-host",
     downloadBadgeHost: ".ee4v-booth-download-badge-host",
+    libraryImportPanel: ".ee4v-booth-library-import-panel",
   };
 
   const BOOTH_LIBRARY_SELECTORS = {
@@ -80,6 +81,7 @@
     productStates: new Map(),
     downloadStates: new Map(),
     pendingDownloads: new Map(),
+    importAllRunning: false,
   };
 
   init();
@@ -149,6 +151,86 @@
         border-color: #fde68a !important;
         background: #fffbeb !important;
         color: #92400e !important;
+      }
+
+      .ee4v-booth-library-import-panel {
+        position: fixed !important;
+        right: 20px !important;
+        bottom: 20px !important;
+        z-index: 10000 !important;
+        box-sizing: border-box !important;
+        width: min(360px, calc(100vw - 40px)) !important;
+        padding: 16px !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 12px !important;
+        background: #ffffff !important;
+        color: #1f2937 !important;
+        box-shadow: 0 12px 32px rgb(0 0 0 / 18%) !important;
+        font-size: 13px !important;
+      }
+
+      .ee4v-booth-library-import-panel__title {
+        margin: 0 0 10px !important;
+        font-size: 14px !important;
+        font-weight: 700 !important;
+      }
+
+      .ee4v-booth-library-import-panel__list {
+        max-height: min(40vh, 320px) !important;
+        margin: 0 0 12px !important;
+        padding: 0 !important;
+        overflow-y: auto !important;
+        list-style: none !important;
+      }
+
+      .ee4v-booth-library-import-panel__item {
+        padding: 8px 0 !important;
+        border-bottom: 1px solid #e5e7eb !important;
+      }
+
+      .ee4v-booth-library-import-panel__item:first-child {
+        padding-top: 0 !important;
+      }
+
+      .ee4v-booth-library-import-panel__product,
+      .ee4v-booth-library-import-panel__filename {
+        display: block !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+      }
+
+      .ee4v-booth-library-import-panel__product {
+        font-weight: 700 !important;
+      }
+
+      .ee4v-booth-library-import-panel__filename {
+        margin-top: 2px !important;
+        color: #6b7280 !important;
+        font-size: 12px !important;
+      }
+
+      .ee4v-booth-library-import-panel__pending {
+        margin-left: 6px !important;
+        color: #92400e !important;
+        font-size: 11px !important;
+      }
+
+      .ee4v-booth-library-import-panel__button {
+        width: 100% !important;
+        min-height: 36px !important;
+        padding: 8px 12px !important;
+        border: 1px solid #2563eb !important;
+        border-radius: 8px !important;
+        background: #2563eb !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        cursor: pointer !important;
+      }
+
+      .ee4v-booth-library-import-panel__button:disabled {
+        cursor: default !important;
+        opacity: 0.6 !important;
       }
     `;
     document.head.appendChild(style);
@@ -261,6 +343,7 @@
         ensureInlineImportAction(context, download);
       });
     });
+    renderLibraryImportPanel(contexts);
   }
 
   function ensureInlineImportAction(context, download) {
@@ -306,16 +389,167 @@
     const enabled =
       state.bridgeConnected &&
       state.rootFolderAvailable &&
+      !state.importAllRunning &&
       !pending &&
       !imported;
     item.setAttribute("aria-disabled", enabled ? "false" : "true");
     item.disabled = !enabled;
     item.dataset.state = imported ? "imported" : pending ? "pending" : "ready";
-    item.textContent = imported
+    const label = imported
       ? "取込済み"
       : pending
         ? "取込待ち"
         : "Import Eagle";
+    if (item.textContent !== label) {
+      item.textContent = label;
+    }
+  }
+
+  function renderLibraryImportPanel(contexts) {
+    const existing = document.querySelector(OWNED_SELECTORS.libraryImportPanel);
+    if (!isBoothLibraryPage()) {
+      existing?.remove();
+      return;
+    }
+
+    const targets = collectUnimportedTargets(contexts);
+    if (targets.length === 0) {
+      existing?.remove();
+      return;
+    }
+
+    const signature = JSON.stringify({
+      running: state.importAllRunning,
+      targets: targets.map((target) => ({
+        key: target.downloadKey,
+        pending: target.pending,
+        productName: target.context.product.name,
+        filename: target.download.download.filename,
+      })),
+    });
+    if (existing?.dataset.signature === signature) {
+      return;
+    }
+
+    const panel = document.createElement("aside");
+    panel.className = "ee4v-booth-library-import-panel";
+    panel.dataset.signature = signature;
+    panel.setAttribute("aria-label", "Eagleへの未取り込み一覧");
+
+    const title = document.createElement("h2");
+    title.className = "ee4v-booth-library-import-panel__title";
+    title.textContent = `未取り込み ${targets.length}件`;
+    panel.appendChild(title);
+
+    const list = document.createElement("ul");
+    list.className = "ee4v-booth-library-import-panel__list";
+    targets.forEach((target) => {
+      const item = document.createElement("li");
+      item.className = "ee4v-booth-library-import-panel__item";
+
+      const productName = document.createElement("span");
+      productName.className = "ee4v-booth-library-import-panel__product";
+      productName.textContent = target.context.product.name || "名称未取得の商品";
+      item.appendChild(productName);
+
+      const filename = document.createElement("span");
+      filename.className = "ee4v-booth-library-import-panel__filename";
+      filename.textContent = target.download.download.filename;
+      filename.title = target.download.download.filename;
+      if (target.pending) {
+        const pending = document.createElement("span");
+        pending.className = "ee4v-booth-library-import-panel__pending";
+        pending.textContent = "取込待ち";
+        filename.appendChild(pending);
+      }
+      item.appendChild(filename);
+      list.appendChild(item);
+    });
+    panel.appendChild(list);
+
+    const readyTargets = targets.filter((target) => !target.pending);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "ee4v-booth-library-import-panel__button";
+    button.disabled = state.importAllRunning || readyTargets.length === 0;
+    button.textContent = state.importAllRunning
+      ? "取り込み中…"
+      : "すべて取り込む";
+    button.addEventListener("click", () => {
+      handleImportAllClick().catch((error) => {
+        console.error(error);
+      });
+    });
+    panel.appendChild(button);
+
+    existing?.replaceWith(panel);
+    if (!existing) {
+      document.body.appendChild(panel);
+    }
+  }
+
+  function collectUnimportedTargets(contexts) {
+    const targets = [];
+    const addedDownloadKeys = new Set();
+    contexts.forEach((context) => {
+      context.downloads.forEach((download) => {
+        const downloadKey = buildDownloadKey(download);
+        const downloadState = state.downloadStates.get(downloadKey);
+        if (
+          (downloadState && downloadState.imported) ||
+          addedDownloadKeys.has(downloadKey)
+        ) {
+          return;
+        }
+
+        addedDownloadKeys.add(downloadKey);
+        targets.push({
+          context,
+          download,
+          downloadKey,
+          pending:
+            state.pendingDownloads.has(downloadKey) ||
+            Boolean(downloadState && downloadState.pending),
+        });
+      });
+    });
+    return targets;
+  }
+
+  async function handleImportAllClick() {
+    if (state.importAllRunning) {
+      return;
+    }
+
+    const targets = collectUnimportedTargets(collectCardContexts()).filter(
+      (target) => !target.pending,
+    );
+    if (targets.length === 0) {
+      return;
+    }
+
+    state.importAllRunning = true;
+    renderContexts(collectCardContexts());
+    try {
+      for (const target of targets) {
+        try {
+          await handleImportClick(target.context, target.download);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    } finally {
+      state.importAllRunning = false;
+      renderContexts(collectCardContexts());
+      scheduleStatusRefresh();
+    }
+  }
+
+  function isBoothLibraryPage() {
+    return (
+      window.location.hostname.toLowerCase() === "accounts.booth.pm" &&
+      /^\/library(?:\/gifts)?\/?$/.test(window.location.pathname)
+    );
   }
 
   function clearAddedElements() {

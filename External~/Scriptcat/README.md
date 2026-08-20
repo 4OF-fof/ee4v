@@ -10,5 +10,6 @@
 - `GET /health`, `POST /v1/status`, `POST /v1/import` を使う
 - `/health` で取得した session token を後続 POST の `X-EE4V-Bridge-Token` header に自動設定する
 - import action は bridge に BoothMeta / download request を登録してから BOOTH の通常 download button を発火する
+- library と gifts では未取り込みのdownloadを右下へ一覧表示し、`すべて取り込む`で取り込み待ちを除く対象を順番に取り込む
 - library の解析は `data-test` と商品・download action の包含関係を優先し、BOOTH の utility class 変更時は既存 class selector を fallback として扱う
 - 商品ページの解析は canonical item URL、`#variations` 配下の `/downloadables/` link、`data-test="other-downloads-button"` を優先し、localized URL と shop subdomain の両方を扱う

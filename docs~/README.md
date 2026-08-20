@@ -11,6 +11,8 @@ ee4v の実装を利用する開発者向け資料です。
   - ProjectStyle、HierarchyStyle、ProjectTabs の API リファレンス
 - [AssetManager](./asset-manager.md)
   - UI向けAPI、ドメイン規則、Source同期、SQLite設計
+- [BOOTH userscript](./scriptcat.md)
+  - Eagle連携状態、単品取り込み、一括取り込み
 - [Unity 6 移行メモ](./unity6.md)
   - Unity 6 で不要にする仕組み
   - Unity に依存する主なファイル
