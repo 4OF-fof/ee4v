@@ -486,14 +486,123 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                         Execute(
                             connection,
                             transaction,
-                            @"INSERT INTO file_target(file_id, target_path)
+                            @"INSERT INTO file_target(
+                                file_id, target_path)
                               VALUES(@p0, @p1)",
                             fileId,
                             normalizedTargetPaths[i]);
                     }
-
                     transaction.Commit();
                     return ReadFileTargets(connection, fileId);
+                }
+            });
+        }
+
+        public IReadOnlyList<AssetFileTarget> GetItemTargets(
+            string itemId)
+        {
+            return Run(() =>
+            {
+                using (var connection = OpenConnection())
+                {
+                    RequireItem(connection, itemId, null);
+                    return ReadItemTargets(connection, itemId);
+                }
+            });
+        }
+
+        public IReadOnlyList<AssetFileTarget> ReplaceItemTargets(
+            string itemId,
+            IReadOnlyList<AssetFileTarget> normalizedTargets)
+        {
+            return Run(() =>
+            {
+                using (var connection = OpenConnection())
+                using (var transaction = new DatabaseTransaction(connection))
+                {
+                    RequireItem(connection, itemId, transaction);
+                    var groupNames = ReadItemTargets(connection, itemId)
+                        .ToDictionary(
+                            target => target.FileId + "\n" +
+                                      target.TargetPath,
+                            target => target.GroupName,
+                            StringComparer.OrdinalIgnoreCase);
+                    Execute(
+                        connection,
+                        transaction,
+                        "DELETE FROM item_target WHERE item_id = @p0",
+                        itemId);
+                    for (var i = 0; i < normalizedTargets.Count; i++)
+                    {
+                        var target = normalizedTargets[i];
+                        RequireFile(
+                            connection,
+                            target.FileId,
+                            transaction);
+                        var key = target.FileId + "\n" + target.TargetPath;
+                        Execute(
+                            connection,
+                            transaction,
+                            @"INSERT INTO item_target(
+                                item_id, file_id, target_path, group_name)
+                              VALUES(@p0, @p1, @p2, @p3)",
+                            itemId,
+                            target.FileId,
+                            target.TargetPath,
+                            groupNames.TryGetValue(key, out var groupName)
+                                ? groupName
+                                : null);
+                    }
+                    transaction.Commit();
+                    return ReadItemTargets(connection, itemId);
+                }
+            });
+        }
+
+        public AssetFileTarget SetItemTargetGroup(
+            string itemId,
+            string fileId,
+            string normalizedTargetPath,
+            string normalizedGroupName)
+        {
+            return Run(() =>
+            {
+                using (var connection = OpenConnection())
+                using (var transaction = new DatabaseTransaction(connection))
+                {
+                    RequireItem(connection, itemId, transaction);
+                    RequireFile(connection, fileId, transaction);
+                    var changed = Execute(
+                        connection,
+                        transaction,
+                        @"UPDATE item_target
+                          SET group_name = @p3
+                          WHERE item_id = @p0
+                            AND file_id = @p1
+                            AND target_path = @p2",
+                        normalizedGroupName,
+                        itemId,
+                        fileId,
+                        normalizedTargetPath);
+                    if (changed == 0)
+                    {
+                        throw new AssetManagerException(
+                            AssetManagerErrorCode.NotFound,
+                            "Item target was not found: " +
+                            normalizedTargetPath);
+                    }
+
+                    transaction.Commit();
+                    return ReadItemTargets(connection, itemId)
+                        .Single(target =>
+                            string.Equals(
+                                target.FileId,
+                                fileId,
+                                StringComparison.Ordinal) &&
+                            string.Equals(
+                                target.TargetPath,
+                                normalizedTargetPath,
+                                StringComparison.OrdinalIgnoreCase));
                 }
             });
         }
@@ -1177,6 +1286,13 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 @"CREATE UNIQUE INDEX IF NOT EXISTS ux_item_source
                     ON item(source_type, source_id)
                     WHERE source_type IS NOT NULL",
+                @"CREATE TABLE IF NOT EXISTS item_booth_metadata(
+                    item_id TEXT PRIMARY KEY
+                      REFERENCES item(id) ON DELETE CASCADE,
+                    item_url TEXT,
+                    shop_name TEXT,
+                    shop_url TEXT
+                  )",
                 @"CREATE TABLE IF NOT EXISTS file(
                     id TEXT PRIMARY KEY,
                     item_id TEXT REFERENCES item(id) ON DELETE SET NULL,
@@ -1216,6 +1332,56 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                       CHECK(target_path NOT LIKE '%/..'),
                     PRIMARY KEY(file_id, target_path)
                   )",
+                @"CREATE TABLE IF NOT EXISTS item_target(
+                    item_id TEXT NOT NULL
+                      REFERENCES item(id) ON DELETE CASCADE,
+                    file_id TEXT NOT NULL
+                      REFERENCES file(id) ON DELETE CASCADE,
+                    target_path TEXT NOT NULL COLLATE NOCASE
+                      CHECK(target_path = trim(target_path))
+                      CHECK(instr(target_path, '\') = 0)
+                      CHECK(instr(target_path, ':') = 0)
+                      CHECK(instr(target_path, char(0)) = 0)
+                      CHECK(substr(target_path, 1, 1) <> '/')
+                      CHECK(substr(target_path, -1, 1) <> '/')
+                      CHECK(instr(target_path, '//') = 0)
+                      CHECK(target_path NOT IN ('.', '..'))
+                      CHECK(target_path NOT LIKE './%')
+                      CHECK(target_path NOT LIKE '../%')
+                      CHECK(target_path NOT LIKE '%/./%')
+                      CHECK(target_path NOT LIKE '%/../%')
+                      CHECK(target_path NOT LIKE '%/.')
+                      CHECK(target_path NOT LIKE '%/..'),
+                    group_name TEXT COLLATE NOCASE
+                      CHECK(group_name IS NULL OR (
+                        trim(group_name) <> '' AND
+                        group_name = trim(group_name) AND
+                        instr(group_name, char(0)) = 0 AND
+                        instr(group_name, char(10)) = 0 AND
+                        instr(group_name, char(13)) = 0)),
+                    PRIMARY KEY(item_id, file_id, target_path)
+                  )",
+                @"CREATE INDEX IF NOT EXISTS ix_item_target_file
+                    ON item_target(file_id, item_id)",
+                @"CREATE TRIGGER IF NOT EXISTS
+                    validate_item_target_file_item
+                  BEFORE INSERT ON item_target
+                  BEGIN
+                    SELECT RAISE(
+                      ABORT, 'item target file must belong to item')
+                    WHERE NOT EXISTS(
+                      SELECT 1 FROM file
+                      WHERE id = NEW.file_id
+                        AND item_id = NEW.item_id);
+                  END",
+                @"CREATE TRIGGER IF NOT EXISTS
+                    cleanup_item_target_on_file_move
+                  AFTER UPDATE OF item_id ON file
+                  WHEN OLD.item_id IS NOT NEW.item_id
+                  BEGIN
+                    DELETE FROM item_target
+                    WHERE file_id = NEW.id;
+                  END",
                 @"CREATE TABLE IF NOT EXISTS file_dependency(
                     dependent_file_id TEXT NOT NULL
                       REFERENCES file(id) ON DELETE CASCADE,
@@ -1480,6 +1646,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 Id = row.Id,
                 Name = row.Name,
                 Description = row.Description,
+                Booth = ReadItemBoothMetadata(connection, itemId),
                 ThumbnailUrl = row.ThumbnailUrl,
                 SourceType = row.SourceType == null
                     ? (AssetSourceType?)null
@@ -1496,6 +1663,27 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 "item_id = @p0",
                 itemId);
             return item;
+        }
+
+        private static AssetBoothMetadata ReadItemBoothMetadata(
+            SQLiteConnection connection,
+            string itemId)
+        {
+            var row = connection.Query<BoothMetadataRow>(
+                    @"SELECT item_url AS ItemUrl,
+                             shop_name AS ShopName,
+                             shop_url AS ShopUrl
+                      FROM item_booth_metadata WHERE item_id = ?",
+                    itemId)
+                .SingleOrDefault();
+            return row == null
+                ? null
+                : new AssetBoothMetadata
+                {
+                    ItemUrl = row.ItemUrl,
+                    ShopName = row.ShopName,
+                    ShopUrl = row.ShopUrl
+                };
         }
 
         private static AssetFile ReadFile(
@@ -1559,6 +1747,27 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 {
                     FileId = row.FileId,
                     TargetPath = row.TargetPath
+                })
+                .ToArray();
+        }
+
+        private static IReadOnlyList<AssetFileTarget> ReadItemTargets(
+            SQLiteConnection connection,
+            string itemId)
+        {
+            return connection.Query<FileTargetRow>(
+                    @"SELECT file_id AS FileId,
+                             target_path AS TargetPath,
+                             group_name AS GroupName
+                      FROM item_target
+                      WHERE item_id = ?
+                      ORDER BY file_id, target_path COLLATE NOCASE",
+                    itemId)
+                .Select(row => new AssetFileTarget
+                {
+                    FileId = row.FileId,
+                    TargetPath = row.TargetPath,
+                    GroupName = row.GroupName
                 })
                 .ToArray();
         }
@@ -1814,9 +2023,19 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     source,
                     item.SourceId,
                     now);
+                ReplaceItemBoothMetadata(
+                    connection,
+                    transaction,
+                    itemId,
+                    item.Booth);
                 return itemId;
             }
 
+            var boothChanged = ReplaceItemBoothMetadata(
+                connection,
+                transaction,
+                itemId,
+                item.Booth);
             Execute(
                 connection,
                 transaction,
@@ -1825,14 +2044,73 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                       thumbnail_url = @p2, updated_at = @p3
                   WHERE id = @p4 AND (
                     name <> @p0 OR description <> @p1 OR
-                    thumbnail_url IS NOT @p2)",
+                    thumbnail_url IS NOT @p2 OR @p5 <> 0)",
                 name,
                 description,
                 NullIfWhiteSpace(item.ThumbnailUrl),
                 now,
-                itemId);
+                itemId,
+                boothChanged ? 1 : 0);
 
             return itemId;
+        }
+
+        private static bool ReplaceItemBoothMetadata(
+            SQLiteConnection connection,
+            DatabaseTransaction transaction,
+            string itemId,
+            AssetBoothMetadata booth)
+        {
+            var existing = connection.Query<BoothMetadataRow>(
+                    @"SELECT item_url AS ItemUrl,
+                             shop_name AS ShopName,
+                             shop_url AS ShopUrl
+                      FROM item_booth_metadata WHERE item_id = ?",
+                    itemId)
+                .SingleOrDefault();
+            var itemUrl = NullIfWhiteSpace(booth?.ItemUrl);
+            var shopName = NullIfWhiteSpace(booth?.ShopName);
+            var shopUrl = NullIfWhiteSpace(booth?.ShopUrl);
+            var changed = existing == null
+                ? itemUrl != null || shopName != null || shopUrl != null
+                : !string.Equals(
+                      existing.ItemUrl,
+                      itemUrl,
+                      StringComparison.Ordinal) ||
+                  !string.Equals(
+                      existing.ShopName,
+                      shopName,
+                      StringComparison.Ordinal) ||
+                  !string.Equals(
+                      existing.ShopUrl,
+                      shopUrl,
+                      StringComparison.Ordinal);
+            if (!changed)
+            {
+                return false;
+            }
+
+            if (itemUrl == null && shopName == null && shopUrl == null)
+            {
+                Execute(
+                    connection,
+                    transaction,
+                    "DELETE FROM item_booth_metadata WHERE item_id = @p0",
+                    itemId);
+                return true;
+            }
+
+            Execute(
+                connection,
+                transaction,
+                @"INSERT OR REPLACE INTO item_booth_metadata(
+                    item_id, item_url, shop_name, shop_url)
+                  VALUES(@p0, @p1, @p2, @p3)",
+                itemId,
+                itemUrl,
+                shopName,
+                shopUrl);
+            return true;
         }
 
         private static void UpsertSourceFile(
@@ -2434,6 +2712,13 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             public string UpdatedAt { get; set; }
         }
 
+        private sealed class BoothMetadataRow
+        {
+            public string ItemUrl { get; set; }
+            public string ShopName { get; set; }
+            public string ShopUrl { get; set; }
+        }
+
         private sealed class IdRow
         {
             public string Id { get; set; }
@@ -2460,6 +2745,9 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 Name = item.Name ?? string.Empty;
                 Description = item.Description ?? string.Empty;
                 ThumbnailUrl = item.ThumbnailUrl ?? string.Empty;
+                BoothItemUrl = item.Booth?.ItemUrl ?? string.Empty;
+                BoothShopName = item.Booth?.ShopName ?? string.Empty;
+                BoothShopUrl = item.Booth?.ShopUrl ?? string.Empty;
                 IsArchived = item.IsArchived;
                 Tags = (item.Tags ?? Array.Empty<AssetTag>())
                     .Select(tag => tag.Path ?? string.Empty)
@@ -2470,6 +2758,9 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             private string Name { get; }
             private string Description { get; }
             private string ThumbnailUrl { get; }
+            private string BoothItemUrl { get; }
+            private string BoothShopName { get; }
+            private string BoothShopUrl { get; }
             private bool IsArchived { get; }
             private IReadOnlyList<string> Tags { get; }
 
@@ -2484,6 +2775,18 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                        string.Equals(
                            ThumbnailUrl,
                            other.ThumbnailUrl,
+                           StringComparison.Ordinal) &&
+                       string.Equals(
+                           BoothItemUrl,
+                           other.BoothItemUrl,
+                           StringComparison.Ordinal) &&
+                       string.Equals(
+                           BoothShopName,
+                           other.BoothShopName,
+                           StringComparison.Ordinal) &&
+                       string.Equals(
+                           BoothShopUrl,
+                           other.BoothShopUrl,
                            StringComparison.Ordinal) &&
                        IsArchived == other.IsArchived &&
                        Tags.SequenceEqual(other.Tags, StringComparer.Ordinal);
@@ -2554,6 +2857,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
         {
             public string FileId { get; set; }
             public string TargetPath { get; set; }
+            public string GroupName { get; set; }
         }
 
         private sealed class FileDependencyRow

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,11 +16,49 @@ namespace Ee4v.AssetManager.UI
         private readonly IReadOnlyList<AssetFile> _files;
         private readonly IReadOnlyList<AssetItem> _items;
         private readonly IReadOnlyList<AssetCollection> _collections;
+        private readonly Dictionary<string, IReadOnlyList<AssetFileTarget>>
+            _targets;
+        private readonly Dictionary<string, IReadOnlyList<AssetFileTarget>>
+            _itemTargets;
 
         public AssetManagerStoryManager()
         {
             _files = CreateFiles();
             _items = CreateItems(_files);
+            _targets = _files.ToDictionary(
+                file => file.Id,
+                file => (IReadOnlyList<AssetFileTarget>)(string.Equals(
+                        Path.GetExtension(file.FileName),
+                        ".zip",
+                        StringComparison.OrdinalIgnoreCase)
+                    ? new[]
+                    {
+                        new AssetFileTarget
+                        {
+                            FileId = file.Id,
+                            TargetPath = "Packages/Sample.unitypackage"
+                        }
+                    }
+                    : new[]
+                    {
+                        new AssetFileTarget
+                        {
+                            FileId = file.Id,
+                            TargetPath = string.Empty
+                        }
+                    }));
+            _itemTargets = _items.ToDictionary(
+                item => item.Id,
+                item => (IReadOnlyList<AssetFileTarget>)_files
+                    .Where(file => file.ItemId == item.Id)
+                    .SelectMany(file => _targets[file.Id])
+                    .Select(target => new AssetFileTarget
+                    {
+                        FileId = target.FileId,
+                        TargetPath = target.TargetPath,
+                        GroupName = target.GroupName
+                    })
+                    .ToArray());
             _collections = new[]
             {
                 new AssetCollection
@@ -175,21 +214,97 @@ namespace Ee4v.AssetManager.UI
 
         public IReadOnlyList<AssetFileTarget> GetFileTargets(string fileId)
         {
-            return new[]
-            {
-                new AssetFileTarget
-                {
-                    FileId = fileId,
-                    TargetPath = "Assets/Imported"
-                }
-            };
+            return CopyTargets(_targets.TryGetValue(fileId, out var targets)
+                ? targets
+                : Array.Empty<AssetFileTarget>());
         }
 
         public IReadOnlyList<AssetFileTarget> SetFileTargets(
             string fileId,
             IReadOnlyList<string> targetPaths)
         {
+            _targets[fileId] = (targetPaths ?? Array.Empty<string>())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Select(path => new AssetFileTarget
+                {
+                    FileId = fileId,
+                    TargetPath = path
+                })
+                .ToArray();
             return GetFileTargets(fileId);
+        }
+
+        public IReadOnlyList<AssetFileTarget> GetItemTargets(string itemId)
+        {
+            return CopyTargets(_itemTargets.TryGetValue(
+                    itemId,
+                    out var targets)
+                ? targets
+                : Array.Empty<AssetFileTarget>());
+        }
+
+        private static IReadOnlyList<AssetFileTarget> CopyTargets(
+            IEnumerable<AssetFileTarget> targets)
+        {
+            return targets.Select(target => new AssetFileTarget
+                {
+                    FileId = target.FileId,
+                    TargetPath = target.TargetPath,
+                    GroupName = target.GroupName
+                })
+                .ToArray();
+        }
+
+        public IReadOnlyList<AssetFileTarget> SetItemTargets(
+            string itemId,
+            IReadOnlyList<AssetFileTarget> targets)
+        {
+            var existing = GetItemTargets(itemId);
+            _itemTargets[itemId] = (targets ??
+                                    Array.Empty<AssetFileTarget>())
+                .GroupBy(
+                    target => target.FileId + "\n" + target.TargetPath,
+                    StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .Select(target => new AssetFileTarget
+                {
+                    FileId = target.FileId,
+                    TargetPath = target.TargetPath,
+                    GroupName = existing.FirstOrDefault(current =>
+                        string.Equals(
+                            current.FileId,
+                            target.FileId,
+                            StringComparison.Ordinal) &&
+                        string.Equals(
+                            current.TargetPath,
+                            target.TargetPath,
+                            StringComparison.OrdinalIgnoreCase))?.GroupName
+                })
+                .ToArray();
+            return GetItemTargets(itemId);
+        }
+
+        public AssetFileTarget SetItemTargetGroup(
+            string itemId,
+            string fileId,
+            string targetPath,
+            string groupName)
+        {
+            var targets = GetItemTargets(itemId).ToArray();
+            var target = targets.First(entry =>
+                string.Equals(
+                    entry.FileId,
+                    fileId,
+                    StringComparison.Ordinal) &&
+                string.Equals(
+                    entry.TargetPath,
+                    targetPath,
+                    StringComparison.OrdinalIgnoreCase));
+            target.GroupName = string.IsNullOrWhiteSpace(groupName)
+                ? null
+                : groupName.Trim();
+            _itemTargets[itemId] = targets;
+            return target;
         }
 
         public Task<AssetImportResult> ImportFileEntries(
@@ -204,6 +319,15 @@ namespace Ee4v.AssetManager.UI
             string fileId,
             CancellationToken cancellationToken = default)
         {
+            return Import(fileId, cancellationToken);
+        }
+
+        public Task<AssetImportResult> ImportItemTargets(
+            string itemId,
+            IReadOnlyList<AssetFileTarget> selectedTargets,
+            CancellationToken cancellationToken = default)
+        {
+            var fileId = GetFiles(itemId).FirstOrDefault()?.Id;
             return Import(fileId, cancellationToken);
         }
 
@@ -222,15 +346,24 @@ namespace Ee4v.AssetManager.UI
 
         public AssetFileAnalysis AnalyzeFile(string fileId)
         {
+            var file = GetFile(fileId);
+            var isZip = string.Equals(
+                Path.GetExtension(file.FileName),
+                ".zip",
+                StringComparison.OrdinalIgnoreCase);
             return new AssetFileAnalysis
             {
                 FileId = fileId,
-                Kind = AssetFileAnalysisKind.Zip,
+                Kind = isZip
+                    ? AssetFileAnalysisKind.Zip
+                    : AssetFileAnalysisKind.UnityPackage,
                 Entries = new[]
                 {
                     new AssetFileContentEntry
                     {
-                        Path = "Assets/Sample.prefab",
+                        Path = isZip
+                            ? "Packages/Sample.unitypackage"
+                            : "Assets/Sample.prefab",
                         Kind = AssetFileContentEntryKind.File,
                         AssetGuid = SampleGuid
                     }
@@ -454,7 +587,13 @@ namespace Ee4v.AssetManager.UI
                     "Avatar",
                     files,
                     new DateTime(2026, 1, 12),
-                    new DateTime(2026, 5, 8)),
+                    new DateTime(2026, 5, 8),
+                    new AssetBoothMetadata
+                    {
+                        ItemUrl = "https://booth.pm/ja/items/1234567",
+                        ShopName = "Astral Workshop",
+                        ShopUrl = "https://example.booth.pm"
+                    }),
                 CreateItem(
                     "item-world",
                     "Night Pool",
@@ -484,18 +623,23 @@ namespace Ee4v.AssetManager.UI
             string tag,
             IReadOnlyList<AssetFile> files,
             DateTime createdAt,
-            DateTime updatedAt)
+            DateTime updatedAt,
+            AssetBoothMetadata booth = null)
         {
+            var itemFiles = files
+                .Where(file => file.ItemId == id)
+                .ToArray();
             return new AssetItem
             {
                 Id = id,
                 Name = name,
                 Description = description,
+                Booth = booth,
                 Tags = new[]
                 {
                     new AssetTag { Id = "tag-" + tag, Path = tag }
                 },
-                Files = files.Where(file => file.ItemId == id).ToArray(),
+                Files = itemFiles,
                 CreatedAt = createdAt,
                 UpdatedAt = updatedAt
             };

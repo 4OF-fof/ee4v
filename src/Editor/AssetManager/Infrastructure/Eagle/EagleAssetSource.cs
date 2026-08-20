@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Ee4v.AssetManager.Application.Ports;
 using Ee4v.AssetManager.Contracts;
+using Newtonsoft.Json;
 using UnityEngine;
 
 namespace Ee4v.AssetManager.Infrastructure.Eagle
@@ -36,7 +37,7 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
 
             try
             {
-                var folderMetadata = JsonUtility.FromJson<
+                var folderMetadata = JsonConvert.DeserializeObject<
                     EagleFolderMetadata>(
                     File.ReadAllText(folderMetadataPath));
                 var targetRoot = string.IsNullOrWhiteSpace(
@@ -103,6 +104,7 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                         Description = booth == null
                             ? string.Empty
                             : booth.description ?? string.Empty,
+                        Booth = ToBoothMetadata(booth),
                         ThumbnailUrl = booth == null
                             ? null
                             : booth.thumbnailUrl,
@@ -302,6 +304,28 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
             };
         }
 
+        private static AssetBoothMetadata ToBoothMetadata(
+            EagleBoothMetadata booth)
+        {
+            if (booth == null)
+            {
+                return null;
+            }
+
+            var itemUrl = booth.itemUrl;
+            if (string.IsNullOrWhiteSpace(itemUrl) && booth.boothItemId > 0)
+            {
+                itemUrl = "https://booth.pm/items/" + booth.boothItemId;
+            }
+
+            return new AssetBoothMetadata
+            {
+                ItemUrl = itemUrl,
+                ShopName = booth.shopName,
+                ShopUrl = booth.shopUrl
+            };
+        }
+
         private static string GetFileName(EagleItemMetadata metadata)
         {
             var name = metadata.name ?? string.Empty;
@@ -419,9 +443,12 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
         private sealed class EagleBoothMetadata
         {
             public long boothItemId;
+            public string itemUrl;
             public string name;
             public string description;
             public string thumbnailUrl;
+            public string shopName;
+            public string shopUrl;
         }
 
         private sealed class EagleEntry

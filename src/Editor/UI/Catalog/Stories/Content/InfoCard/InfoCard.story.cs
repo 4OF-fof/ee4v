@@ -28,7 +28,8 @@ namespace Ee4v.UI
                     {
                         "Editor/UI/Catalog/CatalogWindow.cs",
                         "Editor/UI/Catalog/helper/PreviewHelper.cs",
-                        "Editor/UI/Catalog/helper/Controls.cs"
+                        "Editor/UI/Catalog/helper/Controls.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.cs"
                     }));
             }
         }

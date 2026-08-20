@@ -49,12 +49,25 @@ namespace Ee4v.AssetManager.Contracts
         IReadOnlyList<AssetFileTarget> SetFileTargets(
             string fileId,
             IReadOnlyList<string> targetPaths);
+        IReadOnlyList<AssetFileTarget> GetItemTargets(string itemId);
+        IReadOnlyList<AssetFileTarget> SetItemTargets(
+            string itemId,
+            IReadOnlyList<AssetFileTarget> targets);
+        AssetFileTarget SetItemTargetGroup(
+            string itemId,
+            string fileId,
+            string targetPath,
+            string groupName);
         Task<AssetImportResult> ImportFileEntries(
             string fileId,
             IReadOnlyList<string> paths,
             CancellationToken cancellationToken = default);
         Task<AssetImportResult> ImportFileTargets(
             string fileId,
+            CancellationToken cancellationToken = default);
+        Task<AssetImportResult> ImportItemTargets(
+            string itemId,
+            IReadOnlyList<AssetFileTarget> selectedTargets,
             CancellationToken cancellationToken = default);
         IReadOnlyList<AssetFileDependency> GetFileDependencies(
             string fileId);
@@ -102,6 +115,7 @@ namespace Ee4v.AssetManager.Contracts
         FileArchiveChanged,
         FileDeleted,
         FileTargetsChanged,
+        ItemTargetsChanged,
         FileDependenciesChanged,
         FileImportedAssetGuidsChanged,
         CollectionCreated,

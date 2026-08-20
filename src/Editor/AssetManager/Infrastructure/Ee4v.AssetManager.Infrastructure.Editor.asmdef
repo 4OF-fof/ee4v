@@ -14,6 +14,7 @@
   "allowUnsafeCode": false,
   "overrideReferences": true,
   "precompiledReferences": [
+    "Newtonsoft.Json.dll",
     "SQLitePCLRaw.core.dll",
     "SQLitePCLRaw.provider.e_sqlite3.dll",
     "SQLite-net.dll"

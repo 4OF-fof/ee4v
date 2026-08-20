@@ -399,14 +399,78 @@ namespace Ee4v.AssetManager.Application
             IReadOnlyList<string> targetPaths)
         {
             AssetManagerRequestValidator.Require(fileId, "file id");
-            var targets = _store.ReplaceFileTargets(
-                fileId.Trim(),
+            var normalizedFileId = fileId.Trim();
+            var normalizedTargetPaths =
                 AssetManagerRequestValidator.NormalizeTargetPaths(
-                    targetPaths));
+                    targetPaths);
+            var file = _store.GetFile(normalizedFileId);
+            AssetManagerRequestValidator
+                .EnsureImportTargetsDoNotContainZip(
+                    file,
+                    normalizedTargetPaths);
+            var targets = _store.ReplaceFileTargets(
+                normalizedFileId,
+                normalizedTargetPaths);
             Publish(
                 AssetManagerChangeKind.FileTargetsChanged,
-                new[] { fileId.Trim() });
+                new[] { normalizedFileId },
+                ItemIds(new[] { file }));
             return targets;
+        }
+
+        public IReadOnlyList<AssetFileTarget> GetItemTargets(
+            string itemId)
+        {
+            AssetManagerRequestValidator.Require(itemId, "item id");
+            return _store.GetItemTargets(itemId.Trim());
+        }
+
+        public IReadOnlyList<AssetFileTarget> SetItemTargets(
+            string itemId,
+            IReadOnlyList<AssetFileTarget> targets)
+        {
+            AssetManagerRequestValidator.Require(itemId, "item id");
+            var normalizedItemId = itemId.Trim();
+            _store.GetItem(normalizedItemId);
+            var normalized = NormalizeItemTargets(
+                normalizedItemId,
+                targets);
+            var result = _store.ReplaceItemTargets(
+                normalizedItemId,
+                normalized);
+            Publish(
+                AssetManagerChangeKind.ItemTargetsChanged,
+                new[] { normalizedItemId },
+                result.Select(target => target.FileId).Distinct().ToArray());
+            return result;
+        }
+
+        public AssetFileTarget SetItemTargetGroup(
+            string itemId,
+            string fileId,
+            string targetPath,
+            string groupName)
+        {
+            AssetManagerRequestValidator.Require(itemId, "item id");
+            AssetManagerRequestValidator.Require(fileId, "file id");
+            var normalizedItemId = itemId.Trim();
+            var normalizedFileId = fileId.Trim();
+            var normalizedTargetPath =
+                AssetManagerRequestValidator.NormalizeTargetPaths(
+                    new[] { targetPath }).Single();
+            var normalizedGroupName =
+                AssetManagerRequestValidator.NormalizeTargetGroupName(
+                    groupName);
+            var target = _store.SetItemTargetGroup(
+                normalizedItemId,
+                normalizedFileId,
+                normalizedTargetPath,
+                normalizedGroupName);
+            Publish(
+                AssetManagerChangeKind.ItemTargetsChanged,
+                new[] { normalizedItemId },
+                new[] { normalizedFileId });
+            return target;
         }
 
         public async Task<AssetImportResult> ImportFileTargets(
@@ -442,53 +506,109 @@ namespace Ee4v.AssetManager.Application
                     Array.Empty<string>(),
                     exception.Message);
             }
-            var importedFileIds = new List<string>();
-            var importedGuids = new HashSet<string>(StringComparer.Ordinal);
-            for (var i = 0; i < plans.Length; i++)
+            return await ImportPlans(plans, cancellationToken);
+        }
+
+        public async Task<AssetImportResult> ImportItemTargets(
+            string itemId,
+            IReadOnlyList<AssetFileTarget> selectedTargets,
+            CancellationToken cancellationToken = default)
+        {
+            AssetManagerRequestValidator.Require(itemId, "item id");
+            var normalizedItemId = itemId.Trim();
+            try
             {
-                if (plans[i].TargetPaths.Count == 0)
-                {
-                    continue;
-                }
-
-                if (cancellationToken.IsCancellationRequested)
+                _store.GetItem(normalizedItemId);
+                var files = _store.GetFiles(normalizedItemId, true);
+                var targets = _store.GetItemTargets(normalizedItemId);
+                if (targets.Count == 0)
                 {
                     return new AssetImportResult(
-                        AssetImportState.Canceled,
-                        importedFileIds,
-                        importedGuids.ToArray(),
-                        "Asset import was canceled.");
+                        AssetImportState.Success,
+                        Array.Empty<string>(),
+                        Array.Empty<string>());
                 }
 
-                var result = await ImportFileEntries(
-                    plans[i].FileId,
-                    plans[i].TargetPaths,
-                    cancellationToken);
-                if (!result.Succeeded)
+                var groups = targets
+                    .Where(target => !string.IsNullOrWhiteSpace(
+                        target.GroupName))
+                    .GroupBy(
+                        target => target.GroupName,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                var choices = NormalizeTargetChoices(
+                    selectedTargets,
+                    targets);
+                if (choices.Count != groups.Length)
                 {
-                    return new AssetImportResult(
-                        result.State,
-                        importedFileIds
-                            .Concat(result.FileIds)
-                            .Distinct(StringComparer.Ordinal)
-                            .ToArray(),
-                        importedGuids.ToArray(),
-                        result.ErrorMessage);
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "Select exactly one target from every target group.");
                 }
 
-                importedFileIds.Add(plans[i].FileId);
-                for (var guidIndex = 0;
-                     guidIndex < result.AssetGuids.Count;
-                     guidIndex++)
+                for (var i = 0; i < groups.Length; i++)
                 {
-                    importedGuids.Add(result.AssetGuids[guidIndex]);
+                    if (choices.Count(choice => groups[i].Any(target =>
+                            SameTarget(target, choice))) != 1)
+                    {
+                        throw new AssetManagerException(
+                            AssetManagerErrorCode.InvalidRequest,
+                            "Select exactly one target from group: " +
+                            groups[i].Key);
+                    }
                 }
+
+                var selected = targets
+                    .Where(target => string.IsNullOrWhiteSpace(
+                        target.GroupName))
+                    .Concat(choices)
+                    .ToArray();
+                var itemPaths = files.ToDictionary(
+                    file => file.Id,
+                    file => (IReadOnlyList<string>)selected
+                        .Where(target => string.Equals(
+                            target.FileId,
+                            file.Id,
+                            StringComparison.Ordinal))
+                        .Select(target => target.TargetPath)
+                        .ToArray(),
+                    StringComparer.Ordinal);
+                var order = new List<string>();
+                var seen = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var fileId in selected
+                             .Select(target => target.FileId)
+                             .Distinct(StringComparer.Ordinal))
+                {
+                    foreach (var dependencyFileId in
+                             AssetManagerRequestValidator
+                                 .ResolveDependencyOrder(
+                                     fileId,
+                                     GetDependencyIds))
+                    {
+                        if (seen.Add(dependencyFileId))
+                        {
+                            order.Add(dependencyFileId);
+                        }
+                    }
+                }
+
+                var plans = order
+                    .Select(fileId => itemPaths.TryGetValue(
+                            fileId,
+                            out var paths)
+                        ? CreateImportPlan(fileId, paths)
+                        : CreateImportPlan(fileId))
+                    .ToArray();
+                return await ImportPlans(plans, cancellationToken);
             }
-
-            return new AssetImportResult(
-                AssetImportState.Success,
-                importedFileIds,
-                importedGuids.ToArray());
+            catch (Exception exception)
+            {
+                return new AssetImportResult(
+                    AssetImportState.Failed,
+                    Array.Empty<string>(),
+                    Array.Empty<string>(),
+                    exception.Message);
+            }
         }
 
         public async Task<AssetImportResult> ImportFileEntries(
@@ -511,6 +631,10 @@ namespace Ee4v.AssetManager.Application
                 }
 
                 var file = _store.GetFile(normalizedFileId);
+                AssetManagerRequestValidator
+                    .EnsureImportTargetsDoNotContainZip(
+                        file,
+                        normalizedPaths);
                 if (file.IsArchived)
                 {
                     throw new AssetManagerException(
@@ -605,13 +729,191 @@ namespace Ee4v.AssetManager.Application
             return dependencies;
         }
 
+        private static IReadOnlyList<AssetFileTarget> NormalizeTargetChoices(
+            IReadOnlyList<AssetFileTarget> selectedTargets,
+            IReadOnlyList<AssetFileTarget> storedTargets)
+        {
+            var result = new List<AssetFileTarget>();
+            foreach (var selected in selectedTargets ??
+                     Array.Empty<AssetFileTarget>())
+            {
+                if (selected == null)
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "Selected target is required.");
+                }
+
+                AssetManagerRequestValidator.Require(
+                    selected.FileId,
+                    "selected target file id");
+                var normalizedPath =
+                    AssetManagerRequestValidator.NormalizeTargetPaths(
+                        new[] { selected.TargetPath }).Single();
+                var stored = storedTargets.SingleOrDefault(target =>
+                    string.Equals(
+                        target.FileId,
+                        selected.FileId.Trim(),
+                        StringComparison.Ordinal) &&
+                    string.Equals(
+                        target.TargetPath,
+                        normalizedPath,
+                        StringComparison.OrdinalIgnoreCase));
+                if (stored == null ||
+                    string.IsNullOrWhiteSpace(stored.GroupName))
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "Selected target must belong to a target group.");
+                }
+
+                if (result.Any(choice => SameTarget(choice, stored)))
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "Selected targets cannot contain duplicates.");
+                }
+
+                result.Add(stored);
+            }
+
+            return result;
+        }
+
+        private IReadOnlyList<AssetFileTarget> NormalizeItemTargets(
+            string itemId,
+            IReadOnlyList<AssetFileTarget> targets)
+        {
+            var result = new List<AssetFileTarget>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var target in targets ??
+                     Array.Empty<AssetFileTarget>())
+            {
+                if (target == null)
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "Item target is required.");
+                }
+
+                AssetManagerRequestValidator.Require(
+                    target.FileId,
+                    "item target file id");
+                var fileId = target.FileId.Trim();
+                var path = AssetManagerRequestValidator
+                    .NormalizeTargetPaths(new[] { target.TargetPath })
+                    .Single();
+                var file = _store.GetFile(fileId);
+                if (!string.Equals(
+                        file.ItemId,
+                        itemId,
+                        StringComparison.Ordinal))
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "Item targets must belong to the item.");
+                }
+
+                AssetManagerRequestValidator
+                    .EnsureImportTargetsDoNotContainZip(
+                        file,
+                        new[] { path });
+                if (!seen.Add(fileId + "\n" + path))
+                {
+                    continue;
+                }
+
+                result.Add(new AssetFileTarget
+                {
+                    FileId = fileId,
+                    TargetPath = path
+                });
+            }
+            return result;
+        }
+
+        private static bool SameTarget(
+            AssetFileTarget first,
+            AssetFileTarget second)
+        {
+            return string.Equals(
+                       first?.FileId,
+                       second?.FileId,
+                       StringComparison.Ordinal) &&
+                   string.Equals(
+                       first?.TargetPath,
+                       second?.TargetPath,
+                       StringComparison.OrdinalIgnoreCase);
+        }
+
+        private async Task<AssetImportResult> ImportPlans(
+            IReadOnlyList<FileImportPlan> plans,
+            CancellationToken cancellationToken)
+        {
+            var importedFileIds = new List<string>();
+            var importedGuids = new HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < plans.Count; i++)
+            {
+                if (plans[i].TargetPaths.Count == 0)
+                {
+                    continue;
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return new AssetImportResult(
+                        AssetImportState.Canceled,
+                        importedFileIds,
+                        importedGuids.ToArray(),
+                        "Asset import was canceled.");
+                }
+
+                var result = await ImportFileEntries(
+                    plans[i].FileId,
+                    plans[i].TargetPaths,
+                    cancellationToken);
+                if (!result.Succeeded)
+                {
+                    return new AssetImportResult(
+                        result.State,
+                        importedFileIds
+                            .Concat(result.FileIds)
+                            .Distinct(StringComparer.Ordinal)
+                            .ToArray(),
+                        importedGuids.ToArray(),
+                        result.ErrorMessage);
+                }
+
+                importedFileIds.Add(plans[i].FileId);
+                for (var guidIndex = 0;
+                     guidIndex < result.AssetGuids.Count;
+                     guidIndex++)
+                {
+                    importedGuids.Add(result.AssetGuids[guidIndex]);
+                }
+            }
+
+            return new AssetImportResult(
+                AssetImportState.Success,
+                importedFileIds,
+                importedGuids.ToArray());
+        }
+
         private FileImportPlan CreateImportPlan(string fileId)
         {
-            var file = _store.GetFile(fileId);
-            var targets = _store.GetFileTargets(file.Id)
+            var targets = _store.GetFileTargets(fileId);
+            return CreateImportPlan(fileId, targets
                 .Select(target => target.TargetPath)
-                .ToArray();
-            if (targets.Length == 0)
+                .ToArray());
+        }
+
+        private FileImportPlan CreateImportPlan(
+            string fileId,
+            IReadOnlyList<string> targetPaths)
+        {
+            var file = _store.GetFile(fileId);
+            var targets = targetPaths ?? Array.Empty<string>();
+            if (targets.Count == 0)
             {
                 return new FileImportPlan
                 {
@@ -993,6 +1295,11 @@ namespace Ee4v.AssetManager.Application
 
             item.Name = AssetSourceText.Normalize(item.Name);
             item.Description = AssetSourceText.Normalize(item.Description);
+            if (item.Booth != null)
+            {
+                item.Booth.ShopName = AssetSourceText.Normalize(
+                    item.Booth.ShopName);
+            }
             if (item.Tags != null)
             {
                 item.Tags = NormalizeSourceTags(item.Tags);

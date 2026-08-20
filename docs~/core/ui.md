@@ -22,4 +22,4 @@
 | `SetFooterVisible(bool)` | フッターの表示を切り替える |
 | `ShowAsDropDown(EditorWindow, VisualElement, Vector2)` | anchor直下へ固定サイズで表示する |
 
-AssetManagerのタグ選択画面とコレクション作成画面が使用します。表示は`ee4v/Debug/Catalog`の`Overlays/CustomPopup` Storyで確認できます。
+AssetManagerのタグ選択画面、Target選択画面、コレクション作成画面が使用します。表示は`ee4v/Debug/Catalog`の`Overlays/CustomPopup` Storyで確認できます。

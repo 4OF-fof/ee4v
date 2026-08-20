@@ -85,6 +85,11 @@ namespace Ee4v.UI
             _label.SetColor(color);
         }
 
+        public void SetLabelTextAlign(TextAnchor alignment)
+        {
+            _label.SetTextAlign(alignment);
+        }
+
         public void SetIcon(IconState icon)
         {
             _hasIcon = icon != null;

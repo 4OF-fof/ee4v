@@ -46,6 +46,8 @@ namespace Ee4v.UI
 
         public abstract void SetTextAlign(TextAnchor alignment);
 
+        public abstract void SetFontSize(int fontSize);
+
         private void ApplyRootStyle()
         {
             if (StyleDefinition.MarginBottom > 0f)

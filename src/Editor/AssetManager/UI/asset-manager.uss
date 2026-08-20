@@ -1,5 +1,8 @@
 @import url("../../UI/Foundation/ui-design-tokens.uss");
 @import url("../../UI/Components/Content/Icon/icon.uss");
+@import url("../../UI/Components/Content/StatusBadge/status-badge.uss");
+@import url("../../UI/Components/Content/InfoCard/info-card.uss");
+@import url("../../UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss");
 @import url("../../UI/Components/Inputs/InputField/input-field.uss");
 @import url("../../UI/Components/Inputs/SearchField/search-field.uss");
 
@@ -390,100 +393,12 @@
     margin-bottom: var(--ee4v-space-lg);
 }
 
-.ee4v-asset-manager,
-.ee4v-asset-manager-three-pane {
+.ee4v-asset-manager {
     flex-grow: 1;
     min-width: 0;
     min-height: 0;
     background-color: var(--ee4v-color-panel);
-}
-
-.ee4v-asset-manager {
     position: relative;
-}
-
-.ee4v-asset-manager-three-pane {
-    flex-direction: row;
-}
-
-.ee4v-asset-manager-three-pane__pane {
-    flex-shrink: 0;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
-    background-color: var(--ee4v-color-transparent);
-}
-
-.ee4v-asset-manager-three-pane__pane--left {
-    width: 240px;
-    min-width: 240px;
-    max-width: 240px;
-    border-right-width: var(--ee4v-border-hairline);
-    border-right-color: var(--ee4v-color-border-subtle);
-}
-
-.ee4v-asset-manager-three-pane__pane--main {
-    flex-grow: 1;
-    flex-shrink: 1;
-    min-width: 320px;
-}
-
-.ee4v-asset-manager-three-pane__pane--right {
-    width: 300px;
-    min-width: 300px;
-    max-width: 300px;
-    border-left-width: var(--ee4v-border-hairline);
-    border-left-color: var(--ee4v-color-border-subtle);
-}
-
-.ee4v-asset-manager-three-pane--navigation .ee4v-asset-manager-three-pane__pane--main,
-.ee4v-asset-manager-three-pane--navigation .ee4v-asset-manager-three-pane__pane--right,
-.ee4v-asset-manager-three-pane--main .ee4v-asset-manager-three-pane__pane--left,
-.ee4v-asset-manager-three-pane--main .ee4v-asset-manager-three-pane__pane--right,
-.ee4v-asset-manager-three-pane--information .ee4v-asset-manager-three-pane__pane--left,
-.ee4v-asset-manager-three-pane--information .ee4v-asset-manager-three-pane__pane--main {
-    display: none;
-}
-
-.ee4v-asset-manager-three-pane--navigation .ee4v-asset-manager-three-pane__pane--left,
-.ee4v-asset-manager-three-pane--main .ee4v-asset-manager-three-pane__pane--main,
-.ee4v-asset-manager-three-pane--information .ee4v-asset-manager-three-pane__pane--right {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    flex-grow: 1;
-}
-
-.ee4v-asset-manager-three-pane__toolbar {
-    height: var(--ee4v-control-height-toolbar);
-    min-height: var(--ee4v-control-height-toolbar);
-    max-height: var(--ee4v-control-height-toolbar);
-    flex-shrink: 0;
-    flex-direction: row;
-    align-items: center;
-    border-top-width: var(--ee4v-border-hairline);
-    border-bottom-width: var(--ee4v-border-hairline);
-    border-top-color: var(--ee4v-color-border-subtle);
-    border-bottom-color: var(--ee4v-color-border-subtle);
-    background-color: var(--ee4v-color-transparent);
-}
-
-.ee4v-asset-manager-three-pane__toolbar-content {
-    flex-grow: 1;
-    min-width: 0;
-    height: var(--ee4v-control-height-toolbar);
-    flex-direction: row;
-    align-items: center;
-    padding-left: var(--ee4v-space-lg);
-    padding-right: var(--ee4v-space-lg);
-}
-
-.ee4v-asset-manager-three-pane__body {
-    position: relative;
-    flex-grow: 1;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
 }
 
 .ee4v-asset-manager__navigation {
@@ -506,13 +421,9 @@
     border-bottom-color: var(--ee4v-color-border-subtle);
 }
 
-.ee4v-asset-manager__nav-section,
-.ee4v-asset-manager__section-title,
-.ee4v-asset-manager__eyebrow {
+.ee4v-asset-manager__nav-section {
     margin-top: var(--ee4v-space-xl);
     margin-bottom: var(--ee4v-space-sm);
-    font-size: var(--ee4v-font-size-small);
-    color: var(--ee4v-color-text-secondary);
 }
 
 .ee4v-asset-manager__nav-section-header {
@@ -580,11 +491,21 @@
 }
 
 .ee4v-asset-manager__toolbar {
-    flex-grow: 1;
+    flex-grow: 0;
+    flex-shrink: 0;
     min-width: 0;
     height: var(--ee4v-control-height-toolbar);
+    min-height: var(--ee4v-control-height-toolbar);
+    max-height: var(--ee4v-control-height-toolbar);
     flex-direction: row;
     align-items: center;
+    padding-left: var(--ee4v-space-lg);
+    padding-right: var(--ee4v-space-lg);
+    border-top-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-subtle);
+    border-bottom-color: var(--ee4v-color-border-subtle);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-asset-manager__history-navigation {
@@ -680,11 +601,6 @@
 .ee4v-asset-manager__breadcrumb-tooltip-separator {
     flex-shrink: 0;
     color: var(--ee4v-color-text-muted);
-}
-
-.ee4v-asset-manager__detail-title {
-    font-size: var(--ee4v-font-size-subtitle);
-    -unity-font-style: bold;
 }
 
 .ee4v-asset-manager__search {
@@ -795,110 +711,9 @@
     overflow: hidden;
 }
 
-.ee4v-asset-manager__item-detail-layout,
 .ee4v-asset-manager__file-list {
     flex-grow: 1;
     min-height: 0;
-}
-
-.ee4v-asset-manager__item-detail-layout {
-    flex-direction: row;
-    min-width: 0;
-    overflow: hidden;
-}
-
-.ee4v-asset-manager__item-detail-tree-pane {
-    flex-grow: 1;
-    flex-basis: 0;
-    min-width: 180px;
-    max-width: 42%;
-    min-height: 0;
-    padding-right: var(--ee4v-space-lg);
-    border-right-width: var(--ee4v-border-hairline);
-    border-right-color: var(--ee4v-color-border-subtle);
-    overflow: hidden;
-}
-
-.ee4v-asset-manager__item-detail-pane {
-    flex-grow: 1;
-    flex-basis: 0;
-    min-width: 0;
-    min-height: 0;
-    margin-left: var(--ee4v-space-lg);
-}
-
-.ee4v-asset-manager__item-detail-pane > .unity-scroll-view__content-container > * {
-    margin-bottom: var(--ee4v-space-md);
-}
-
-.ee4v-asset-manager-file-tree {
-    flex-grow: 1;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
-}
-
-.ee4v-asset-manager-file-tree > .ee4v-ui-searchable-tree-view {
-    flex-grow: 1;
-    min-height: 0;
-}
-
-.ee4v-asset-manager-file-tree__feedback {
-    flex-shrink: 0;
-    margin-top: var(--ee4v-space-sm);
-}
-
-.ee4v-asset-manager-file-tree__row {
-    flex-direction: row;
-    align-items: center;
-    min-width: 0;
-    width: 100%;
-    min-height: var(--ee4v-size-20);
-    overflow: hidden;
-}
-
-.ee4v-asset-manager-file-tree__title {
-    flex-grow: 1;
-    flex-shrink: 1;
-    flex-basis: 0;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    -unity-text-overflow-position: end;
-}
-
-.ee4v-asset-manager-file-tree__meta {
-    flex-shrink: 0;
-    max-width: 88px;
-    margin-left: var(--ee4v-space-md);
-    color: var(--ee4v-color-text-muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    -unity-text-overflow-position: end;
-}
-
-.ee4v-asset-manager__item-detail-section {
-    margin-top: var(--ee4v-space-md);
-    padding-top: var(--ee4v-space-lg);
-    border-top-width: var(--ee4v-border-hairline);
-    border-top-color: var(--ee4v-color-border-subtle);
-}
-
-.ee4v-asset-manager__item-detail-section > .ee4v-asset-manager__section-title {
-    margin-bottom: var(--ee4v-space-sm);
-    color: var(--ee4v-color-text-secondary);
-}
-
-.ee4v-asset-manager__item-detail-section .ee4v-asset-manager__key-value {
-    min-width: 0;
-    min-height: var(--ee4v-size-20);
-    margin-bottom: var(--ee4v-space-xxs);
-}
-
-.ee4v-asset-manager__item-detail-section .ee4v-asset-manager__key {
-    width: 108px;
-    min-width: 108px;
-    color: var(--ee4v-color-text-muted);
 }
 
 .ee4v-asset-manager__tag-list {
@@ -1022,6 +837,23 @@
     min-height: var(--ee4v-size-18);
     margin-bottom: var(--ee4v-space-sm);
     color: var(--ee4v-color-status-failed-text);
+}
+
+.ee4v-asset-manager__target-import-popup-content {
+    flex-grow: 1;
+    min-height: 0;
+    padding: var(--ee4v-space-xl);
+}
+
+.ee4v-asset-manager__target-import-popup-note,
+.ee4v-asset-manager__target-import-popup-field {
+    margin-bottom: var(--ee4v-space-lg);
+}
+
+.ee4v-asset-manager__item-target-picker-tree {
+    flex-grow: 1;
+    min-width: 0;
+    min-height: 0;
 }
 
 .ee4v-asset-manager__detail {

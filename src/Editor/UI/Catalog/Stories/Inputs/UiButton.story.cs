@@ -23,7 +23,8 @@ namespace Ee4v.UI
                     {
                         "Editor/Feature/Hierarchy/SceneSwitcher/UI/SceneSwitcherView.cs",
                         "Editor/Feature/Shared/ItemStyle/ItemStyleWindow.cs",
-                        "Editor/AssetManager/UI/AssetManagerControls.cs"
+                        "Editor/AssetManager/UI/AssetManagerControls.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.cs"
                     },
                     styleSheetPaths: new[]
                     {

@@ -33,7 +33,7 @@ namespace Ee4v.UI
         public IReadOnlyList<SearchableTreeItemData<TData>> Children { get; }
     }
 
-    public sealed class SearchableTreeView<TData> : VisualElement
+    public class SearchableTreeView<TData> : VisualElement
     {
         private const string RootClassName = "ee4v-ui-searchable-tree-view";
         private const string SearchClassName = "ee4v-ui-searchable-tree-view__search";
@@ -43,10 +43,11 @@ namespace Ee4v.UI
         private readonly TreeView _treeView;
         private readonly UiTextElement _emptyLabel;
         private readonly Action<VisualElement, TData> _bindItem;
-        private readonly Action<IReadOnlyList<TData>> _onSelectionChanged;
-        private readonly Action<VisualElement, TData, IReadOnlyList<TData>, Vector2> _onContextClick;
+        private Action<IReadOnlyList<TData>> _onSelectionChanged;
+        private Action<VisualElement, TData, IReadOnlyList<TData>, Vector2> _onContextClick;
         private readonly Func<TData, bool> _canInteractWithItem;
         private readonly Action<TData> _onItemDoubleClicked;
+        private readonly bool _selectOnContextClick;
         private readonly string _searchTooltip;
         private readonly string _clearTooltip;
         private readonly IconState _searchIconState;
@@ -68,7 +69,9 @@ namespace Ee4v.UI
             string searchTooltip = null,
             string clearTooltip = null,
             IconState searchIconState = null,
-            IconState clearIconState = null)
+            IconState clearIconState = null,
+            float fixedItemHeight = 20f,
+            bool selectOnContextClick = true)
         {
             if (makeItem == null)
             {
@@ -80,6 +83,7 @@ namespace Ee4v.UI
             _onContextClick = onContextClick;
             _canInteractWithItem = canInteractWithItem;
             _onItemDoubleClicked = onItemDoubleClicked;
+            _selectOnContextClick = selectOnContextClick;
             _searchTooltip = searchTooltip ?? string.Empty;
             _clearTooltip = clearTooltip ?? string.Empty;
             _searchIconState = searchIconState;
@@ -108,7 +112,7 @@ namespace Ee4v.UI
             _treeView = new TreeView();
             _treeView.AddToClassList(TreeClassName);
             _treeView.selectionType = selectionType;
-            _treeView.fixedItemHeight = 20;
+            _treeView.fixedItemHeight = Mathf.Max(1f, fixedItemHeight);
             _treeView.makeItem = () => CreateItemElement(makeItem);
             _treeView.bindItem = BindItem;
             _treeView.selectionChanged += OnSelectionChanged;
@@ -173,6 +177,15 @@ namespace Ee4v.UI
             _treeView.viewDataKey = viewDataKey ?? string.Empty;
         }
 
+        protected void SetInteractionHandlers(
+            Action<IReadOnlyList<TData>> onSelectionChanged,
+            Action<VisualElement, TData, IReadOnlyList<TData>, Vector2>
+                onContextClick)
+        {
+            _onSelectionChanged = onSelectionChanged;
+            _onContextClick = onContextClick;
+        }
+
         private void BindItem(VisualElement element, int index)
         {
             var item = _treeView.GetItemDataForIndex<SearchableTreeItemData<TData>>(index);
@@ -230,6 +243,13 @@ namespace Ee4v.UI
 
             var element = evt.currentTarget as VisualElement;
             var item = element != null ? element.userData as SearchableTreeItemData<TData> : null;
+            if (evt.button == (int)MouseButton.RightMouse &&
+                !_selectOnContextClick)
+            {
+                evt.StopImmediatePropagation();
+                return;
+            }
+
             if (evt.button == (int)MouseButton.LeftMouse &&
                 evt.clickCount >= 2 &&
                 item != null &&
@@ -265,6 +285,22 @@ namespace Ee4v.UI
             if (!CanInteractWithItem(item))
             {
                 evt.StopImmediatePropagation();
+                return;
+            }
+
+            if (!_selectOnContextClick)
+            {
+                var selectedWithoutContextItem = _selectedTreeItems
+                    .Select(selectedItem => selectedItem.Data)
+                    .ToArray();
+                var panelPositionWithoutSelection =
+                    element.LocalToWorld(evt.localPosition);
+                evt.StopImmediatePropagation();
+                _onContextClick(
+                    element,
+                    item.Data,
+                    selectedWithoutContextItem,
+                    panelPositionWithoutSelection);
                 return;
             }
 
@@ -453,4 +489,3 @@ namespace Ee4v.UI
         }
     }
 }
-

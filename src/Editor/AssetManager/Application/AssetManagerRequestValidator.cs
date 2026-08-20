@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.AssetManager.Domain;
 
@@ -118,6 +119,48 @@ namespace Ee4v.AssetManager.Application
             }
 
             return normalized;
+        }
+
+        internal static string NormalizeTargetGroupName(string groupName)
+        {
+            if (string.IsNullOrWhiteSpace(groupName))
+            {
+                return null;
+            }
+
+            var normalized = groupName.Trim();
+            if (normalized.IndexOfAny(new[] { '\r', '\n', '\0' }) >= 0)
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidRequest,
+                    "Target group names cannot contain line breaks.");
+            }
+
+            return normalized;
+        }
+
+        internal static void EnsureImportTargetsDoNotContainZip(
+            AssetFile file,
+            IReadOnlyList<string> paths)
+        {
+            var source = paths ?? Array.Empty<string>();
+            for (var i = 0; i < source.Count; i++)
+            {
+                var target = source[i].Length == 0
+                    ? string.IsNullOrWhiteSpace(file?.FileName)
+                        ? file?.SourcePath
+                        : file.FileName
+                    : source[i];
+                if (string.Equals(
+                        Path.GetExtension(target),
+                        ".zip",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "ZIP files cannot be import targets.");
+                }
+            }
         }
 
         internal static IReadOnlyList<string> NormalizeAssetGuids(

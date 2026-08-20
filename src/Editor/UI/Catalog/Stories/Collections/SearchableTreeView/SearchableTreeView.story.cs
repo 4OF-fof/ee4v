@@ -30,7 +30,8 @@ namespace Ee4v.UI
                     (window, parent) => window.BuildSearchableTreeViewStory(parent),
                     new[]
                     {
-                        "Editor/UI/Catalog/CatalogWindow.cs"
+                        "Editor/UI/Catalog/CatalogWindow.cs",
+                        "Editor/AssetManager/UI/SearchableFileTree.cs"
                     }));
             }
         }

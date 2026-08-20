@@ -8,6 +8,7 @@ namespace Ee4v.AssetManager.Contracts
         public string Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
+        public AssetBoothMetadata Booth { get; set; }
         public string ThumbnailUrl { get; set; }
         public AssetSourceType? SourceType { get; set; }
         public string SourceId { get; set; }
@@ -16,6 +17,13 @@ namespace Ee4v.AssetManager.Contracts
         public bool IsArchived { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+    }
+
+    public sealed class AssetBoothMetadata
+    {
+        public string ItemUrl { get; set; }
+        public string ShopName { get; set; }
+        public string ShopUrl { get; set; }
     }
 
     public sealed class AssetThumbnail
@@ -45,6 +53,7 @@ namespace Ee4v.AssetManager.Contracts
     {
         public string FileId { get; set; }
         public string TargetPath { get; set; }
+        public string GroupName { get; set; }
     }
 
     public sealed class AssetFileDependency

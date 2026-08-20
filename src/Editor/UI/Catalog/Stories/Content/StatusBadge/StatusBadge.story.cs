@@ -27,7 +27,8 @@ namespace Ee4v.UI
                     (window, parent) => window.BuildStatusBadgeStory(parent),
                     new[]
                     {
-                        "Editor/UI/Components/Content/InfoCard/InfoCard.cs"
+                        "Editor/UI/Components/Content/InfoCard/InfoCard.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.cs"
                     }));
             }
         }

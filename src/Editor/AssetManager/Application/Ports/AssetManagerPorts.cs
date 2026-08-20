@@ -36,6 +36,15 @@ namespace Ee4v.AssetManager.Application.Ports
         IReadOnlyList<AssetFileTarget> ReplaceFileTargets(
             string fileId,
             IReadOnlyList<string> normalizedTargetPaths);
+        IReadOnlyList<AssetFileTarget> GetItemTargets(string itemId);
+        IReadOnlyList<AssetFileTarget> ReplaceItemTargets(
+            string itemId,
+            IReadOnlyList<AssetFileTarget> normalizedTargets);
+        AssetFileTarget SetItemTargetGroup(
+            string itemId,
+            string fileId,
+            string normalizedTargetPath,
+            string normalizedGroupName);
         IReadOnlyList<AssetFileDependency> GetFileDependencies(
             string fileId);
         IReadOnlyList<AssetFileDependency> ReplaceFileDependencies(
@@ -155,6 +164,7 @@ namespace Ee4v.AssetManager.Application.Ports
         internal string SourceId { get; set; }
         internal string Name { get; set; }
         internal string Description { get; set; }
+        internal AssetBoothMetadata Booth { get; set; }
         internal string ThumbnailUrl { get; set; }
         internal IReadOnlyList<string> Tags { get; set; }
         internal IReadOnlyList<AssetSourceSnapshotFile> Files { get; set; }

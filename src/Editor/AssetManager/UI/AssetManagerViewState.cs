@@ -5,7 +5,6 @@ namespace Ee4v.AssetManager.UI
 {
     internal enum AssetManagerViewMode
     {
-        Combined,
         Navigation,
         Main,
         Information

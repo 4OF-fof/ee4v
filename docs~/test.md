@@ -17,9 +17,9 @@
 | `CollectionName_MustBeUnique` | 重複Collection名を`Duplicate`として拒否する | DBの一意制約を利用側のエラーへ変換する境界である |
 | `ChangeSubscriberFailure_DoesNotStopOtherSubscribers` | 一購読者の例外が更新と他購読者を止めない | 購読者間の障害分離は通常操作では原因を特定しにくい |
 | `ItemAndCollectionChanges_IdentifyMutationAndSubjects` | ItemとCollectionの通知が種別と対象IDを含む | UIの差分更新が依存する公開イベント契約である |
-| `FileChanges_IdentifyFilesAndAffectedItems` | File通知が対象Fileと影響Itemを含む | 関連Itemだけを更新する公開イベント契約である |
+| `FileChanges_IdentifyFilesAndAffectedItems` | File通知が対象Fileと影響Itemを含み、Item Target通知が対象Itemと参照Fileを含む | 関連Itemだけを更新する公開イベント契約である |
 | `EagleSync_ReusesIdsAndDeletesMissingFile` | Eagleの再同期でItem IDを維持し、消えたFileを除く | 外部SourceとDBの同一性を保つ接続契約である |
-| `EagleSync_IgnoresSourceTagsAndPreservesManagedTags` | Eagle由来Tagを取り込まず、AssetManagerで設定したTagを再同期後も保持する | 外部Sourceと管理対象Tagの所有境界である |
+| `EagleSync_PreservesManagedTagsAndTargets` | Booth商品・ストア情報を取り込み、AssetManagerで設定したTagとTargetを再同期後も保持する | 外部Sourceのメタデータ変換とAssetManager管理状態の所有境界である |
 | `EagleSync_MissingTargetPreservesData` | 対象rootがない同期で既存データを保持する | 設定誤りによる全削除を防ぐデータ保全である |
 | `ThumbnailApis_ReturnMissingWithoutAThumbnailSource` | サムネイル元がない場合に単体・一括APIがmissingを返す | 非同期画像取得の欠落結果を統一する公開契約である |
 | `FileRegistration_RejectsDirectoriesFromEverySource` | Eagleとee4vのどちらでもdirectoryをFileにしない | 外部Sourceから扱えない実体がDBへ入るのを防ぐ |
@@ -32,7 +32,9 @@
 | `FileDependencies_RejectCyclesWithoutChangingData` | 循環依存を拒否して既存依存を保持する | 取り込み順を解決不能にする状態と部分更新を防ぐ |
 | `ImportFileTargets_ImportsDependenciesBeforeDependent` | 依存Fileを先にUnity Projectへ取り込む | ファイル名衝突時の最終内容で順序契約を観測できる |
 | `ImportFileEntries_ImportsTemporaryZipSelectionWithoutSavingTarget` | 一時選択だけを取り込み、保存Targetを変更しない | UIの一時操作と永続設定の境界を確認する |
-| `FileTargets_RejectTraversalWithoutChangingData` | 親directoryへのTargetを拒否して既存値を保持する | 書き込み範囲逸脱と部分更新を防ぐ安全契約である |
+| `ImportItemTargets_ImportsOneChoicePerGroupAndEveryUngroupedTarget` | Item TargetだけからGroup選択1件とGroup外の全Targetを取り込み、File Targetとは独立して保存する | Item Targetの選択取り込み契約と保存境界を確認する |
+| `FileTargets_RejectInvalidTargetsWithoutChangingData` | 親directoryへのpathとZIP Targetを拒否して既存値を保持する | 書き込み範囲逸脱、ZIPの二重取り込み、部分更新を防ぐ安全契約である |
+| `FileTargets_AllowMultipleEntriesInsideZip` | ZIP内のUnityPackageを含む複数の実体をTargetに指定できる | 複数Targetを保持する公開契約である |
 | `TargetImporter_CopiesFileAndZipEntry` | 通常FileとZIP内要素を指定先へ書き込む | ファイルシステムとZIPの接続部を確認する |
 | `TargetImporter_ReportsPackageFailureAfterCleanup` | UnityPackage失敗を返して一時Fileを削除する | Unityの非同期完了契約と一時データ保全を確認する |
 | `AnalyzeFile_ReadsZipAndUnityPackageContents` | 同期・非同期APIでZIPとUnityPackageを共通の解析結果へ変換する | 外部形式を公開モデルへ変換し、UIスレッド外からも利用する接続契約である |

@@ -266,6 +266,11 @@ namespace Ee4v.UI
             {
                 _label.style.unityTextAlign = alignment;
             }
+
+            public override void SetFontSize(int fontSize)
+            {
+                _label.style.fontSize = Mathf.Max(1, fontSize);
+            }
         }
 
         private sealed class ImguiUiTextElement : UiTextElement
@@ -326,6 +331,13 @@ namespace Ee4v.UI
             public override void SetTextAlign(TextAnchor alignment)
             {
                 _guiStyle.alignment = alignment;
+                _container.MarkDirtyRepaint();
+            }
+
+            public override void SetFontSize(int fontSize)
+            {
+                _guiStyle.fontSize = Mathf.Max(1, fontSize);
+                UpdateMeasure();
                 _container.MarkDirtyRepaint();
             }
 

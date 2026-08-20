@@ -272,10 +272,30 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 new[] { second.Id });
 
             changes.Clear();
-            _manager.SetFileTargets(file.Id, new[] { string.Empty });
+            _manager.SetFileTargets(
+                file.Id,
+                new[] { "Assets/Sample.prefab" });
             AssertChange(
                 changes.Single(),
                 AssetManagerChangeKind.FileTargetsChanged,
+                new[] { file.Id },
+                new[] { second.Id });
+
+            changes.Clear();
+            _manager.SetItemTargets(
+                second.Id,
+                new[]
+                {
+                    new AssetFileTarget
+                    {
+                        FileId = file.Id,
+                        TargetPath = "Assets/Sample.prefab"
+                    }
+                });
+            AssertChange(
+                changes.Single(),
+                AssetManagerChangeKind.ItemTargetsChanged,
+                new[] { second.Id },
                 new[] { file.Id });
 
             changes.Clear();
@@ -332,7 +352,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         }
 
         [Test]
-        public void EagleSync_IgnoresSourceTagsAndPreservesManagedTags()
+        public void EagleSync_PreservesManagedTagsAndTargets()
         {
             var library = Path.Combine(_root, "normalized.library");
             var entry = Path.Combine(
@@ -346,9 +366,16 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             File.WriteAllText(
                 Path.Combine(entry, "metadata.json"),
                 "{\"id\":\"file-entry\",\"name\":\"𝑵𝒐𝒊𝒓\u2B52\u260E🍋\",\"ext\":\"ｚｉｐ🍋\",\"folders\":[\"avatar-folder\"],\"tags\":[\"Ｆｏｏ\u2B52\u260E🍋\",\"boothmeta\",\"VRCMeta\"],\"isDeleted\":false}");
-            File.WriteAllText(
-                Path.Combine(entry, "payload.zip"),
-                "payload");
+            using (var stream = File.Create(
+                       Path.Combine(entry, "payload.zip")))
+            using (var archive = new ZipArchive(
+                       stream,
+                       ZipArchiveMode.Create))
+            using (var writer = new StreamWriter(
+                       archive.CreateEntry("Assets/Sample.prefab").Open()))
+            {
+                writer.Write("prefab");
+            }
             var metadataEntry = Path.Combine(
                 library,
                 "images",
@@ -359,7 +386,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 "{\"id\":\"booth-entry\",\"name\":\"booth\",\"ext\":\"json\",\"folders\":[\"avatar-folder\"],\"tags\":[\"BoothMeta\",\"internal-only\"],\"isDeleted\":false}");
             File.WriteAllText(
                 Path.Combine(metadataEntry, "booth.json"),
-                "{\"boothItemId\":1,\"name\":\"Ｌｅｍｏｎ\u2B52\u260E🍋\",\"description\":\"\",\"thumbnailUrl\":\"\"}");
+                "{\"boothItemId\":1,\"itemUrl\":\"https://booth.pm/ja/items/1\",\"name\":\"Ｌｅｍｏｎ\u2B52\u260E🍋\",\"description\":\"\",\"thumbnailUrl\":\"\",\"shopName\":\"Ｌｅｍｏｎ Ｓｔｏｒｅ🍋\",\"shopUrl\":\"https://lemon.booth.pm\"}");
 
             _manager.SyncEagle(new EagleSyncRequest(library));
             var item = _manager.SearchItems().Items.Single();
@@ -368,15 +395,30 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             Assert.That(item.Files.Single().FileName, Is.EqualTo("Noir*.zip"));
             Assert.That(item.Files.Single().Extension, Is.EqualTo("zip"));
             Assert.That(item.Tags, Is.Empty);
+            Assert.That(
+                item.Booth.ItemUrl,
+                Is.EqualTo("https://booth.pm/ja/items/1"));
+            Assert.That(item.Booth.ShopName, Is.EqualTo("Lemon Store"));
+            Assert.That(
+                item.Booth.ShopUrl,
+                Is.EqualTo("https://lemon.booth.pm"));
 
             _manager.SetItemTags(
                 new[] { item.Id },
                 new[] { "Managed" });
+            var file = item.Files.Single();
+            _manager.SetFileTargets(
+                file.Id,
+                new[] { "Assets/Sample.prefab" });
             _manager.SyncEagle(new EagleSyncRequest(library));
 
+            var synchronized = _manager.GetItem(item.Id);
             Assert.That(
-                _manager.GetItem(item.Id).Tags.Single().Path,
+                synchronized.Tags.Single().Path,
                 Is.EqualTo("managed"));
+            Assert.That(
+                _manager.GetFileTargets(file.Id).Single().TargetPath,
+                Is.EqualTo("Assets/Sample.prefab"));
         }
 
         [Test]
@@ -728,18 +770,9 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         public void ImportFileTargets_ImportsDependenciesBeforeDependent()
         {
             var library = Path.Combine(_root, "ee4v-library");
-            var dependencySource = Path.Combine(_root, "dependency.zip");
-            using (var archiveStream = File.Create(dependencySource))
-            using (var archive = new ZipArchive(
-                       archiveStream,
-                       ZipArchiveMode.Create))
-            using (var writer = new StreamWriter(
-                       archive.CreateEntry("marker.txt").Open()))
-            {
-                writer.Write("dependency");
-            }
-
-            var dependentSource = Path.Combine(_root, "dependent.zip");
+            var dependencySource = Path.Combine(_root, "dependency.txt");
+            File.WriteAllText(dependencySource, "dependency");
+            var dependentSource = Path.Combine(_root, "dependent.txt");
             File.WriteAllText(dependentSource, "dependent");
             var itemName = "DependencyOrder" +
                            Guid.NewGuid().ToString("N");
@@ -751,7 +784,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 {
                     LibraryPath = library,
                     FilePath = dependencySource,
-                    FileName = "shared.zip"
+                    FileName = "shared.txt"
                 });
             var dependent = _manager.RegisterFile(
                 item.Id,
@@ -759,11 +792,11 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 {
                     LibraryPath = library,
                     FilePath = dependentSource,
-                    FileName = "shared.zip"
+                    FileName = "shared.txt"
                 });
             _manager.SetFileTargets(
                 dependency.Id,
-                new[] { string.Empty, "marker.txt" });
+                new[] { string.Empty });
             _manager.SetFileTargets(
                 dependent.Id,
                 new[] { string.Empty });
@@ -789,12 +822,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 Assert.That(
                     File.ReadAllText(Path.Combine(
                         destination,
-                        "marker.txt")),
-                    Is.EqualTo("dependency"));
-                Assert.That(
-                    File.ReadAllText(Path.Combine(
-                        destination,
-                        "shared.zip")),
+                        "shared.txt")),
                     Is.EqualTo("dependent"));
             }
             finally
@@ -882,6 +910,140 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             }
         }
 
+        [Test]
+        public void ImportItemTargets_ImportsOneChoicePerGroupAndEveryUngroupedTarget()
+        {
+            var library = Path.Combine(_root, "ee4v-library");
+            var sourcePath = Path.Combine(_root, "choices.zip");
+            using (var archiveStream = File.Create(sourcePath))
+            using (var archive = new ZipArchive(
+                       archiveStream,
+                       ZipArchiveMode.Create))
+            {
+                WriteArchiveEntry(archive, "a.pdf", "a");
+                WriteArchiveEntry(
+                    archive,
+                    "a_variation.pdf",
+                    "variation");
+                WriteArchiveEntry(
+                    archive,
+                    "c.png",
+                    Convert.FromBase64String(
+                        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwC" +
+                        "AAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="));
+            }
+
+            var itemName = "TargetChoices" +
+                           Guid.NewGuid().ToString("N");
+            var item = _manager.CreateItem(
+                new CreateAssetItemRequest { Name = itemName });
+            var file = _manager.RegisterFile(
+                item.Id,
+                new RegisterFileRequest
+                {
+                    LibraryPath = library,
+                    FilePath = sourcePath
+                });
+            _manager.SetItemTargets(
+                item.Id,
+                new[]
+                {
+                    new AssetFileTarget
+                    {
+                        FileId = file.Id,
+                        TargetPath = "a.pdf"
+                    },
+                    new AssetFileTarget
+                    {
+                        FileId = file.Id,
+                        TargetPath = "a_variation.pdf"
+                    },
+                    new AssetFileTarget
+                    {
+                        FileId = file.Id,
+                        TargetPath = "c.png"
+                    }
+                });
+            _manager.SetItemTargetGroup(
+                item.Id,
+                file.Id,
+                "a.pdf",
+                "a");
+            _manager.SetItemTargetGroup(
+                item.Id,
+                file.Id,
+                "a_variation.pdf",
+                "a");
+            Assert.That(
+                _manager.GetItemTargets(item.Id)
+                    .Where(target => target.GroupName == "a")
+                    .Select(target => target.TargetPath),
+                Is.EquivalentTo(new[] { "a.pdf", "a_variation.pdf" }));
+            Assert.That(_manager.GetFileTargets(file.Id), Is.Empty);
+
+            var assetPath = "Assets/" + itemName;
+            try
+            {
+                var result = _manager.ImportItemTargets(
+                        item.Id,
+                        new[]
+                        {
+                            new AssetFileTarget
+                            {
+                                FileId = file.Id,
+                                TargetPath = "a_variation.pdf"
+                            }
+                        })
+                    .GetAwaiter().GetResult();
+                var destination = Path.Combine(
+                    UnityEngine.Application.dataPath,
+                    itemName,
+                    "choices");
+
+                Assert.That(result.Succeeded, Is.True);
+                Assert.That(result.FileIds, Is.EqualTo(new[] { file.Id }));
+                Assert.That(
+                    File.Exists(Path.Combine(destination, "a.pdf")),
+                    Is.False);
+                Assert.That(
+                    File.ReadAllText(Path.Combine(
+                        destination,
+                        "a_variation.pdf")),
+                    Is.EqualTo("variation"));
+                Assert.That(
+                    File.Exists(Path.Combine(destination, "c.png")),
+                    Is.True);
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(assetPath);
+                AssetDatabase.Refresh();
+            }
+        }
+
+        private static void WriteArchiveEntry(
+            ZipArchive archive,
+            string path,
+            string contents)
+        {
+            using (var writer = new StreamWriter(
+                       archive.CreateEntry(path).Open()))
+            {
+                writer.Write(contents);
+            }
+        }
+
+        private static void WriteArchiveEntry(
+            ZipArchive archive,
+            string path,
+            byte[] contents)
+        {
+            using (var stream = archive.CreateEntry(path).Open())
+            {
+                stream.Write(contents, 0, contents.Length);
+            }
+        }
+
         private static void AssertChange(
             AssetManagerChange change,
             AssetManagerChangeKind kind,
@@ -901,7 +1063,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         }
 
         [Test]
-        public void FileTargets_RejectTraversalWithoutChangingData()
+        public void FileTargets_RejectInvalidTargetsWithoutChangingData()
         {
             var library = Path.Combine(_root, "ee4v-library");
             var sourcePath = Path.Combine(_root, "avatar.zip");
@@ -927,9 +1089,72 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 exception.Code,
                 Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
             Assert.That(
+                Assert.Throws<AssetManagerException>(() =>
+                    _manager.SetFileTargets(
+                        file.Id,
+                        new[] { string.Empty })).Code,
+                Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
+            Assert.That(
+                Assert.Throws<AssetManagerException>(() =>
+                    _manager.SetFileTargets(
+                        file.Id,
+                        new[] { "Packages/nested.ZIP" })).Code,
+                Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
+            Assert.That(
                 _manager.GetFileTargets(file.Id)
                     .Single().TargetPath,
                 Is.EqualTo("Packages/avatar.prefab"));
+        }
+
+        [Test]
+        public void FileTargets_AllowMultipleEntriesInsideZip()
+        {
+            var library = Path.Combine(_root, "ee4v-library");
+            var sourcePath = Path.Combine(_root, "avatar.zip");
+            using (var stream = File.Create(sourcePath))
+            using (var archive = new ZipArchive(stream, ZipArchiveMode.Create))
+            {
+                archive.CreateEntry("Packages/");
+                using (var writer = new StreamWriter(
+                           archive.CreateEntry(
+                                   "Packages/avatar.unitypackage")
+                               .Open()))
+                {
+                    writer.Write("package");
+                }
+                using (var writer = new StreamWriter(
+                           archive.CreateEntry("Packages/avatar.prefab")
+                               .Open()))
+                {
+                    writer.Write("prefab");
+                }
+            }
+
+            var item = _manager.CreateItem(
+                new CreateAssetItemRequest { Name = "Avatar" });
+            var file = _manager.RegisterFile(
+                item.Id,
+                new RegisterFileRequest
+                {
+                    LibraryPath = library,
+                    FilePath = sourcePath
+                });
+            _manager.SetFileTargets(
+                file.Id,
+                new[]
+                {
+                    "Packages/avatar.unitypackage",
+                    "Packages/avatar.prefab"
+                });
+
+            Assert.That(
+                _manager.GetFileTargets(file.Id)
+                    .Select(target => target.TargetPath),
+                Is.EquivalentTo(new[]
+                {
+                    "Packages/avatar.unitypackage",
+                    "Packages/avatar.prefab"
+                }));
         }
 
         [Test]

@@ -17,23 +17,27 @@ namespace Ee4v.AssetManager.UI
                 new UiStory(
                     "asset-manager-view",
                     "Domain/AssetManager",
-                    "AssetManagerView",
-                    "AssetManager のナビゲーション、一覧、詳細操作を確認する画面です。",
-                    "実画面と同じ AssetManagerView をサンプルデータで表示します。全件、未所属、アーカイブ、タグ、コレクションを操作できます。",
+                    "AssetManagerView · Main",
+                    "AssetManager Main Windowの一覧と詳細操作を確認する画面です。",
+                    "実画面と同じMain modeのAssetManagerViewをサンプルデータで表示します。Item一覧、File Tree、Target設定を操作できます。",
                     Build,
                     dependencies: new[]
                     {
                         "UiTextFactory",
+                        "InfoCard",
+                        "StatusBadge",
+                        "AssetDetailComponents",
                         "Fluent UI System Icons"
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerWindow.cs",
                         "Editor/AssetManager/UI/AssetManagerStandaloneWindows.cs"
                     },
                     styleSheetPaths: new[]
                     {
-                        "Editor/AssetManager/UI/asset-manager.uss"
+                        "Editor/AssetManager/UI/asset-manager.uss",
+                        "Editor/AssetManager/UI/searchable-file-tree.uss",
+                        "Editor/AssetManager/UI/asset-detail.uss"
                     }),
                 new UiStory(
                     "asset-manager-grid",
@@ -85,7 +89,9 @@ namespace Ee4v.AssetManager.UI
                     },
                     styleSheetPaths: new[]
                     {
-                        "Editor/AssetManager/UI/asset-manager.uss"
+                        "Editor/AssetManager/UI/asset-manager.uss",
+                        "Editor/AssetManager/UI/searchable-file-tree.uss",
+                        "Editor/AssetManager/UI/asset-detail.uss"
                     }),
                 new UiStory(
                     "asset-manager-collection-popup",
@@ -145,7 +151,8 @@ namespace Ee4v.AssetManager.UI
                     },
                     styleSheetPaths: new[]
                     {
-                        "Editor/AssetManager/UI/asset-manager.uss"
+                        "Editor/AssetManager/UI/asset-manager.uss",
+                        "Editor/AssetManager/UI/searchable-file-tree.uss"
                     }),
                 new UiStory(
                     "asset-manager-controls",

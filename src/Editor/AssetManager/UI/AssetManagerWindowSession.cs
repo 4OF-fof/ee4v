@@ -52,6 +52,12 @@ namespace Ee4v.AssetManager.UI
             UiStyleUtility.AddPackageStyleSheet(
                 root,
                 "Editor/AssetManager/UI/asset-manager.uss");
+            UiStyleUtility.AddPackageStyleSheet(
+                root,
+                "Editor/AssetManager/UI/searchable-file-tree.uss");
+            UiStyleUtility.AddPackageStyleSheet(
+                root,
+                "Editor/AssetManager/UI/asset-detail.uss");
         }
 
         private static IAssetManager GetManager()

@@ -2,9 +2,11 @@
 
 AssetManagerはItem、File、Target、Dependency、Tag、Collection、取り込み済みAsset GUIDをSQLiteへ保存し、Editor APIとUIを提供します。
 
-Informationペインはマウスホイールなどによるスクロール操作を維持したまま、外側のスクロールバーを表示しません。Information見出し用のツールバーは置かず、Itemサムネイルをペイン最上部からペイン幅の約80%、最大288pxの正方形プレビューとして表示します。その上にItem名や種別の見出しは置きません。複数のItemを選択した場合は末尾3件までをmasterと同じオフセットと回転角のstack形式で表示します。最後に選択したItemを最上面へ置き、編集フォームは表示しません。単一選択ではFileとAsset GUIDを表示せず、名前、説明、Tagだけを表示します。説明欄には共通`InputField`を使用し、144pxの固定高を超える内容には欄内スクロールバーを表示します。Eagle由来Itemでは名前と説明だけを読み取り専用にし、長い説明も入力欄内でスクロールして確認できます。TagはSourceに関係なく、masterと同じチップ表示と専用UIから編集できます。タグ選択画面は追加ボタンを押したカーソル位置を起点に開く300×400pxのポップアップとし、見出し、検索欄、使用数順の件数付きタグピル、新規作成ピルを表示します。キーボード操作では追加ボタンを起点にします。検索・閉じるアイコンとタグ名は各コントロールの高さ中央へ揃えます。タグ選択画面とコレクション作成画面は共有`CustomPopup`を使用し、外枠、背景、ヘッダー、フッターとドロップダウン配置を共通化します。名前と説明はフォーカスが外れた時点、Tagは選択画面を閉じた時点に保存し、保存ボタンは置きません。
+Information Windowはマウスホイールなどによるスクロール操作を維持したまま、外側のスクロールバーを表示しません。Information見出し用のツールバーは置かず、ItemサムネイルをWindow最上部から幅の約80%、最大288pxの正方形プレビューとして表示します。その上にItem名や種別の見出しは置きません。複数のItemを選択した場合は末尾3件までをmasterと同じオフセットと回転角のstack形式で表示します。最後に選択したItemを最上面へ置き、編集フォームは表示しません。単一選択ではFileとAsset GUIDを表示せず、名前、説明、Tagを表示します。Item詳細と同じ情報セクションも表示し、Boothストア、Booth商品リンク、Fileの合計サイズ、作成日時、更新日時を確認できます。説明欄には共通`InputField`を使用し、144pxの固定高を超える内容には欄内スクロールバーを表示します。Eagle由来Itemでは名前と説明だけを読み取り専用にし、長い説明も入力欄内でスクロールして確認できます。TagはSourceに関係なく、masterと同じチップ表示と専用UIから編集できます。タグ選択画面は追加ボタンを押したカーソル位置を起点に開く300×400pxのポップアップとし、見出し、検索欄、使用数順の件数付きタグピル、新規作成ピルを表示します。キーボード操作では追加ボタンを起点にします。検索・閉じるアイコンとタグ名は各コントロールの高さ中央へ揃えます。タグ選択画面、Target選択画面、コレクション作成画面は共有`CustomPopup`を使用し、外枠、背景、ヘッダー、フッターとドロップダウン配置を共通化します。名前と説明はフォーカスが外れた時点、Tagは選択画面を閉じた時点に保存し、保存ボタンは置きません。
 
-`ee4v/Asset Manager`から管理画面を開けます。画面は左のナビゲーション、中央の一覧、右の情報表示からなる固定幅の3ペイン構成です。左ペインは240px、右ペインは300pxで、中央ペインだけがウィンドウ幅へ追従します。ペイン境界のドラッグ操作はありません。ナビゲーション上部では全件、未所属、アーカイブ、タグを切り替えます。コレクションは件数付きのフォルダ行として並び、見出し右端の追加ボタンから作成します。タグ画面では既存タグと該当Item数を表示し、タグを選ぶとそのタグまたは下位タグを持つItemへ絞り込みます。中央ツールバーは戻る・進む履歴とパンくずリストを左端に置き、列数スライダーを中央に配置します。パンくずは現在位置の末尾だけを表示し、2階層以上ではホバー中にフルパスを表示します。ホバー表示の親階層を選ぶとその位置へ移動できます。画面名はパンくずだけに表示し、重複する見出しと件数は置きません。右端の再読み込みボタンはEagleとee4vを同期した後に一覧を更新します。その左の検索欄と合わせて操作領域としてまとめ、Main View下部に状態フッターは置きません。検索欄のFluent UI System Icons `Search`を選ぶとUnity標準メニューを開き、名前、説明、タグを検索対象へ含めるか個別に切り替えられます。未所属File一覧では名前の指定をFile名へ適用します。Itemをダブルクリックすると中央ペインをItem詳細へ切り替えます。Item詳細は左の検索付きFile Treeと右の詳細表示からなる2ペイン構成です。左ペインはmasterの`SearchableFileTree`の検索、階層、行レイアウトを現行モデルへ移植し、所属Fileをルート、ZIPとUnityPackageの内容を子階層として表示します。右ペインは未選択時にItemの名前、説明、Tag、File数、形式、Source、作成日時、更新日時、状態、Item ID、Source IDと取り込み済みAsset GUIDを表示し、Fileまたは内容を選択するとその設定またはPath、種別、Size、Asset GUIDへ切り替わります。Item詳細を開いている間、独立したInformation Windowは中央のFile選択に影響されず、そのItemを表示し続けます。パンくずまたは履歴から元の一覧へ移動できます。再読み込みにはmasterと同じMicrosoft Fluent UI System Iconsの`Arrow Clockwise`を使用し、必要なアイコンだけをruntime assetとして保持します。Item一覧は表示範囲の行だけをプールする可変列Gridです。masterと同じ1〜12列を設定範囲とし、表示領域から算出した推奨最小列数をスライダーの下限へ反映します。スライダーと±ボタンは、入力処理内で表示中の行を新しい列数へ組み替えます。全行の再生成や次のUI更新を待ちません。表示幅と高さが変わると列間隔、カード幅、固定行高もまとめて再計算します。カード名は横方向と縦方向の中央へ揃え、表示幅を超える場合は末尾を`…`で省略します。カード選択とサムネイル表示にも対応し、選択中のカードへホバーした場合は青系の選択表現を維持した専用スタイルを使用します。Itemの編集とTag設定、Fileの登録と所属変更、TargetとDependencyの設定、Archive解析とUnity projectへの取り込みを同じ画面から実行できます。Eagleとee4vのパス設定はAssetManager画面には置かず、`Preferences/4OF/ee4v`のUser Settingsで管理します。
+`ee4v/Asset Manager`からNavigation、Main、Informationの3つの独立Windowをまとめて開きます。統合Windowは提供しません。Navigation Windowは240px、Information Windowは300pxを最小幅とし、Main Windowは作業領域へ追従します。ナビゲーション上部では全件、未所属、アーカイブ、タグを切り替えます。コレクションは件数付きのフォルダ行として並び、見出し右端の追加ボタンから作成します。タグ画面では既存タグと該当Item数を表示し、タグを選ぶとそのタグまたは下位タグを持つItemへ絞り込みます。Main Windowのツールバーは戻る・進む履歴とパンくずリストを左端に置き、列数スライダーを中央に配置します。パンくずは現在位置の末尾だけを表示し、2階層以上ではホバー中にフルパスを表示します。ホバー表示の親階層を選ぶとその位置へ移動できます。画面名はパンくずだけに表示し、重複する見出しと件数は置きません。右端の再読み込みボタンはEagleとee4vを順番に再同期した後に一覧を更新します。片方の同期に失敗しても残りを実行し、同期エラーはConsoleへ表示します。その左の検索欄と合わせて操作領域としてまとめ、Main Window下部に状態フッターは置きません。検索欄のFluent UI System Icons `Search`を選ぶとUnity標準メニューを開き、名前、説明、タグを検索対象へ含めるか個別に切り替えられます。未所属File一覧では名前の指定をFile名へ適用します。ItemをダブルクリックするとMain WindowをItem詳細へ切り替えます。Item詳細は左の検索付きFile Treeと右の詳細表示からなる2ペイン構成です。左ペインの先頭には概要を置き、その下へ所属Fileをルート、ZIPとUnityPackageの内容を子階層として表示します。右ペインは概要選択時にItemの名前、Tag、Item Target、File数、形式とSourceを表示します。情報セクションにはリンク付きBoothストア名、Booth商品リンク、Fileの合計サイズ、作成日時、更新日時を左寄せで表示します。Boothメタデータまたは有効なURLがない項目は表示しません。File選択時はFile TargetとDependencyを含む設定、内容選択時はPath、種別、Sizeを表示します。File TreeのFileまたは内容を右クリックすると選択状態を変えずにコンテキストメニューだけを開き、Item Targetだけを追加または解除できます。File Targetは変更しません。Asset GUIDのコピーは同じメニューへ常に表示し、GUIDがまだ記録されていない行では無効化します。GUID専用表示欄は置きません。Item詳細を開いている間、Information WindowはMain WindowのFile選択に影響されず、そのItemを表示し続けます。パンくずまたは履歴から元の一覧へ移動できます。再読み込みにはmasterと同じMicrosoft Fluent UI System Iconsの`Arrow Clockwise`を使用し、必要なアイコンだけをruntime assetとして保持します。Item一覧は表示範囲の行だけをプールする可変列Gridです。masterと同じ1〜12列を設定範囲とし、表示領域から算出した推奨最小列数をスライダーの下限へ反映します。スライダーと±ボタンは、入力処理内で表示中の行を新しい列数へ組み替えます。全行の再生成や次のUI更新を待ちません。表示幅と高さが変わると列間隔、カード幅、固定行高もまとめて再計算します。カード名は横方向と縦方向の中央へ揃え、表示幅を超える場合は末尾を`…`で省略します。カード選択とサムネイル表示にも対応し、選択中のカードへホバーした場合は青系の選択表現を維持した専用スタイルを使用します。Itemの編集とTag設定、Fileの登録と所属変更、Item Target、File TargetとDependencyの設定、Archive解析とUnity projectへの取り込みを同じ画面から実行できます。Eagleとee4vのパス設定はAssetManager画面には置かず、`Preferences/4OF/ee4v`のUser Settingsで管理します。
+
+Item詳細はHTMLモックの比率と視覚階層を基準にします。File Treeは詳細領域の31%を基本幅とし、見出しとFile登録ボタン、検索欄、30pxのアイコン付き行を配置します。右側は上下20px、左右24pxを基準に余白を取り、概要の先頭へ128pxのサムネイル、15pxのItem名、12pxのTagをまとめます。ItemのImportボタンは名前とTagに隣接する概要上部へ常に表示します。状態バッジはアーカイブ時だけ表示し、有効時は表示しません。その下へFile数、形式、データソースを3列で表示します。取り込み設定はItem Targetを境界線付きツリーで表示し、TargetはFile Treeと同じアイコンを実体名の前だけに付け、`実体名(File名)`で表示します。Target一覧右端の編集ボタンは検索付きFile Tree形式のポップアップを開き、FileまたはFile内実体のトグルからItem Targetを追加・解除します。Target一覧はGroupを親、そのGroupのTargetだけを子とする30px行で構成します。GroupなしのTargetは専用Groupを置かずルート直下へ表示し、複数行では項目名を一覧全体の高さ中央へ揃えます。ルート直下のTarget同士を重ねるとGroupを作成し、既存GroupまたはTargetへのドロップで移動・統合します。Target項目名または一覧の空き領域へドロップするとGroupを解除します。一覧には選択欄や操作説明を置かず、Importボタンを押した時だけGroupごとにTargetを1件選ぶポップアップを表示します。個別FileのFile Targetと依存関係はFile詳細の設定一覧で個別に編集します。File詳細は形式付き見出し、操作ボタン、設定一覧、内容操作の順に配置します。長い見出しとSource pathは右端で切り、全文をツールチップで確認できるようにします。右ペインは縦方向だけをスクロールします。
 
 Item Gridでは検索欄の左にソートボタンを表示します。Unity標準メニューから名前、作成日、更新日、File数を選択でき、逆順指定で方向を反転します。同値の場合は名前とIDを使って安定した順序にします。ボタンにはMicrosoft Fluent UI System Iconsの`Arrow Sort`を使用し、固定したvendor版の元SVGと生成PNGだけを保持します。
 
@@ -26,11 +28,11 @@ Itemに所属するFileはItem詳細のFile Treeへ表示し、未所属Fileは�
 
 Item GridはEscapeまたはカード外の空白を左クリックすると全選択を解除し、情報ペインを未選択表示へ戻します。Ctrlで選択中の最後のカードを解除した場合も同じ未選択状態になります。Item詳細のFile Treeで選んだ内容は中央右ペインへ表示します。未所属File一覧でFile行を選んだ場合だけ、InformationペインへFile詳細を表示します。
 
-`ee4v/Asset Manager (Separated)`はNavigation、Main、Informationの3ウィンドウをまとめて開きます。各ウィンドウは同じ`IAssetManager`と表示状態を共有するため、Navigationでのページ切替とMainでのItem選択がほかのウィンドウへ反映されます。個別に開く場合は`ee4v/Window/Asset Manager Navigation`、`Asset Manager Main`、`Asset Manager Information`を使用します。
+3つのWindowは同じ`IAssetManager`と表示状態を共有するため、Navigationでのページ切替とMainでのItem選択がほかのWindowへ反映されます。各Window型は同名のスクリプト資産として保持し、Unityのレイアウト保存から再起動後も復元します。個別に開く場合は`ee4v/Window/Asset Manager Navigation`、`Asset Manager Main`、`Asset Manager Information`を使用します。
 
-実画面と同じ`AssetManagerView`は`ee4v/Debug/Catalog`の`Domain/AssetManager/AssetManagerView` Storyでサンプルデータを使って確認できます。Grid単体は同じGroupの`AssetItemGridView` Storyで列組み、選択状態、サムネイルの有無を確認できます。`SearchableFileTree` Storyでは検索、Fileルート、Archive内の階層を確認できます。`AssetManagerBreadcrumb` Storyでは末尾表示とホバー中のフルパスを表示します。`AssetManagerView · Separated modes` Storyでは分離表示間の状態連動を確認できます。`AssetCollectionCreationPopup` Storyでは作成と編集のポップアップ、入れ子のAND、OR、NOT、条件とグループの追加と削除を確認できます。共有外枠は`Overlays/CustomPopup` Storyで確認できます。`AssetManagerControls` Storyではボタン、入力、列挙選択、折りたたみ、通知の各状態を確認できます。`AssetManagerThreePaneLayout`は`AssetManagerView`と表示内容が重複するため、単独Storyを持ちません。Storyの操作はSQLiteや外部Sourceを変更しません。
+実画面と同じ`AssetManagerView`は`ee4v/Debug/Catalog`の`Domain/AssetManager/AssetManagerView` Storyでサンプルデータを使って確認できます。Grid単体は同じGroupの`AssetItemGridView` Storyで列組み、選択状態、サムネイルの有無を確認できます。`SearchableFileTree` Storyでは検索、Fileルート、Archive内の階層を確認できます。`AssetManagerBreadcrumb` Storyでは末尾表示とホバー中のフルパスを表示します。`AssetManagerView · Separated modes` Storyでは分離表示間の状態連動を確認できます。`AssetCollectionCreationPopup` Storyでは作成と編集のポップアップ、入れ子のAND、OR、NOT、条件とグループの追加と削除を確認できます。共有外枠は`Overlays/CustomPopup` Storyで確認できます。`AssetManagerControls` Storyではボタン、入力、列挙選択、折りたたみ、通知の各状態を確認できます。Storyの操作はSQLiteや外部Sourceを変更しません。
 
-内部操作部品は`Editor/AssetManager/UI/AssetManagerControls.cs`に置き、`AssetManagerView`はUnity標準部品を直接生成しません。文字はすべて`UiTextFactory`を通します。通常ボタンとアイコンは共有`UiButton`と`Icon`を使用します。入力欄はラベルだけをAssetManager側で構成し、入力本体に共有`InputField`を使用します。検索欄は先頭操作に対応した共有`SearchField`を使用します。Fluentアイコンの読込とAssetManager固有の選択状態だけを機能側へ残します。UIからの更新操作中はmanagerの変更通知を蓄積し、操作完了時に一覧と詳細を1回だけ再描画します。
+内部操作部品は`Editor/AssetManager/UI/AssetManagerControls.cs`に置き、`AssetManagerView`はUnity標準部品を直接生成しません。文字はすべて`UiTextFactory`を通します。通常ボタンとアイコンは共有`UiButton`と`Icon`を使用します。入力欄はラベルだけをAssetManager側で構成し、入力本体に共有`InputField`を使用します。検索欄は先頭操作に対応した共有`SearchField`を使用します。`SearchableFileTree`は共有`SearchableTreeView<FileTreeNode>`から派生し、File解析と行表示だけを追加します。詳細の見出し、セクション、概要値、設定行は`AssetDetailComponents.cs`へ集約します。File Treeと詳細領域の追加スタイルは`searchable-file-tree.uss`と`asset-detail.uss`へ分け、`asset-manager.uss`は画面全体の構成を担当します。Fluentアイコンの読込とAssetManager固有の選択状態だけを機能側へ残します。UIからの更新操作中はmanagerの変更通知を蓄積し、操作完了時に一覧と詳細を1回だけ再描画します。
 
 ## 構成
 
@@ -54,7 +56,8 @@ SQLite接続はmasterと同じ`Ee4v.SQLite.Editor`境界とvendor済みの`sqlit
 - 手動Itemの作成、取得、更新、アーカイブ、削除
 - Itemサムネイルの単体・一括取得
 - Fileの取得、ee4v Sourceへの登録、所属変更、アーカイブ、削除
-- File Targetの取得、完全置換、Unity projectへの取り込み
+- File Targetの取得、完全置換、File単位でのUnity projectへの取り込み
+- Item Targetの取得、完全置換、Group設定、Item単位でのUnity projectへの取り込み
 - File Dependencyの取得と完全置換
 - ZIPとUnityPackageの同期・非同期内容解析
 - File・Item単位の取り込み済みUnity Asset GUID取得とGUIDからの関連逆引き
@@ -79,13 +82,14 @@ SQLite接続はmasterと同じ`Ee4v.SQLite.Editor`境界とvendor済みの`sqlit
 | `ItemArchiveChanged` | `SetItemArchived` | 対象Item | なし |
 | `ItemDeleted` | `DeleteItem` | 削除Item | なし |
 | `ItemTagsChanged` | `SetItemTags` | 対象Item | なし |
+| `ItemTargetsChanged` | `SetItemTargets`、`SetItemTargetGroup` | 対象Item | Targetが参照するFile |
 | `FileCreated` | `RegisterFile`、`ImportEe4vFile` | 作成File | 所属Item |
 | `FilePlacementChanged` | `SetFileItem` | 対象File | 変更前と変更後の所属Item |
 | `FileArchiveChanged` | `SetFileArchived` | 対象File | 所属Item |
 | `FileDeleted` | `DeleteFile`、所属Fileを持つ`DeleteItem` | 削除File | 削除前の所属Item |
-| `FileTargetsChanged` | `SetFileTargets` | 対象File | なし |
+| `FileTargetsChanged` | `SetFileTargets` | 対象File | 所属Item |
 | `FileDependenciesChanged` | `SetFileDependencies`、依存先を削除する`DeleteFile`／`DeleteItem` | 依存関係が変わった依存元File | なし |
-| `FileImportedAssetGuidsChanged` | 成功した`ImportFileEntries`、`ImportFileTargets` | 取り込みが完了したFile | 所属Item |
+| `FileImportedAssetGuidsChanged` | 成功した`ImportFileEntries`、`ImportFileTargets`、`ImportItemTargets` | 取り込みが完了したFile | 所属Item |
 | `CollectionCreated` | `CreateCollection` | 作成Collection | なし |
 | `CollectionUpdated` | `UpdateCollection` | 更新Collection | なし |
 | `CollectionDeleted` | `DeleteCollection` | 削除Collection | なし |
@@ -97,7 +101,7 @@ SQLite接続はmasterと同じ`Ee4v.SQLite.Editor`境界とvendor済みの`sqlit
 
 Item削除は所属Fileも削除します。File実体の削除はee4v Sourceだけを許可し、JSONとFileを含むSource directoryを削除します。削除時はSource directoryを`<library>/.trash/`へ退避してからDBを更新し、DB更新に失敗した場合は元へ戻します。DB更新に成功した場合だけ退避内容を削除します。Eagle由来FileやEagle由来Fileを含むItemの削除は拒否します。ee4vへの新規登録後にDB更新が失敗した場合も、作成したSource directoryを削除します。
 
-Eagle同期で作成したItemの名前と説明はEagleを正本とし、`UpdateItem`による変更を拒否します。TagはAssetManagerを正本として`SetItemTags`で変更でき、Eagle由来Tagは取り込みません。Eagle由来Fileの所属もEagle folderを正本とし、`SetFileItem`による変更を拒否します。アーカイブ状態、Tag、Target、DependencyはAssetManager固有の状態として変更できます。
+Eagle同期で作成したItemの名前と説明はEagleを正本とし、`UpdateItem`による変更を拒否します。TagはAssetManagerを正本として変更でき、Eagle由来Tagは取り込みません。Eagle由来Fileの所属もEagle folderを正本とし、`SetFileItem`による変更を拒否します。アーカイブ状態、Tag、Target、DependencyはAssetManager固有の状態として変更できます。
 
 ## 規則
 
@@ -109,7 +113,11 @@ Eagle同期で作成したItemの名前と説明はEagleを正本とし、`Updat
 - 名前と説明は大文字小文字を区別しない部分一致とする
 - Tag条件`foo`は`foo`と`foo/*`へ一致する
 - 拡張子は先頭の`.`を除き、小文字へ正規化する
-- Targetの空pathはFile自身、空path以外はZIP内の相対pathを表す
+- Targetの空pathはFile自身、空path以外はFile内の相対pathを表す
+- ZIP自身とFile内のZIPは取り込みTargetに指定できない
+- File TreeではFile自身またはFile内に存在するDirectory以外のentryをItem Targetとして複数選択でき、File Targetは変更しない
+- Item Target選択ポップアップには概要を表示しない
+- Item TargetのGroup名はItem内で共通に扱い、同じGroup名のTargetを選択肢とする。GroupなしのTargetは常に取り込む
 - Target pathは区切りを`/`へ統一し、絶対path、空segment、`.`、`..`を拒否する
 - File Dependencyは別Itemと別SourceのFile間も許可する
 - 自己依存と直接または間接的な循環を拒否する
@@ -121,7 +129,7 @@ AssetManager UIは`Preferences/4OF/ee4v`のUser Settingsから、Eagleライブ�
 
 Unityエディターのセッション開始時には、存在するEagleとee4vのSourceを1回ずつ自動同期します。スクリプトの再コンパイルでは同じセッション中の同期を繰り返しません。各Sourceの自動同期はUser Settingsで個別に無効化できます。バッチモードでは利用者のDBを変更しないため実行しません。
 
-既定ではEagle library内の`VRCAsset`配下のfolderをItemとして同期します。folder IDとEagle item IDを安定IDとして使用するため、名前やpathの変更ではDB内のIDを維持します。Itemの名前、説明、サムネイルURLは同期のたびにEagleの値へ合わせます。Eagle itemに付いたTagはItemへ取り込まず、AssetManagerで設定したTagを再同期後も維持します。同じEagle itemが複数folderに属する場合は、1つのFileが複数Itemに属さないよう最初のItemだけへ関連付けます。完全同期で見つからなくなったItemとFileはDBから削除します。削除されたItemへ別Source由来のFileが所属していた場合、そのFileは削除せず未所属へ戻します。directory payloadとBooth metadata JSONはFileとして登録しません。
+既定ではEagle library内の`VRCAsset`配下のfolderをItemとして同期します。folder IDとEagle item IDを安定IDとして使用するため、名前やpathの変更ではDB内のIDを維持します。Itemの名前、説明、サムネイルURLとBooth商品・ストア情報は同期のたびにEagleの値へ合わせます。Eagle itemに付いたTagはItemへ取り込まず、AssetManagerで設定したTagを再同期後も維持します。同じEagle itemが複数folderに属する場合は、1つのFileが複数Itemに属さないよう最初のItemだけへ関連付けます。完全同期で見つからなくなったItemとFileはDBから削除します。削除されたItemへ別Source由来のFileが所属していた場合、そのFileは削除せず未所属へ戻します。directory payloadとBooth metadata JSONはFileとして登録しません。Eagleのfolder metadataはUnityのシリアライズ深度制限を受けないJSONパーサーで読み込み、10階層を超えるfolderも同期対象にします。
 
 Eagleとee4vから取り込むItem名、説明、File名と、ee4vから取り込むTagは保存前にUnicode NFKCで正規化します。全角文字と数学英数字は通常の文字へ寄せ、BMP内の星記号は`*`、著作権記号はASCII表記へ変換します。対応する通常文字がない`OtherSymbol`、補助文字、異体字セレクター、ゼロ幅結合子、不要な制御文字は除去します。これによりUI用フォントに存在しない絵文字や装飾記号が表示文字列へ入ることを防ぎます。
 
@@ -147,13 +155,13 @@ Gridは表示範囲の行だけを保持します。スクロール位置が同�
 
 ## Targetの取り込み
 
-`SetFileTargets`は1つのFileに対するTarget一覧を完全置換します。空の一覧でTarget未設定へ戻します。同じTargetの大文字小文字違いは重複として除外します。
+`SetFileTargets`は1つのFileに対するFile Target一覧を完全置換します。`SetItemTargets`は1つのItemに対するItem Target一覧を、参照するFile IDとFile内pathの組み合わせで完全置換します。両者は独立して保存し、片方の設定で他方を変更しません。空の一覧で各Targetを未設定へ戻し、同じTargetの大文字小文字違いは重複として除外します。GroupはItem Targetだけが持ち、置換前後に残るGroup名を保持します。`SetItemTargetGroup`はItem TargetへGroup名を設定し、空のGroup名でGroupから外します。ZIP自身を表す空pathと、拡張子が`.zip`の内部entryは拒否します。
 
 `SetFileDependencies`は複数の依存元Fileを受け取り、全Fileの依存先を1 transactionで同じ一覧へ完全置換します。複数Fileを同時に変更した結果も含めて循環を検証し、失敗時はどのFileも変更しません。
 
-`ImportFileEntries(fileId, paths)`は指定したpathだけを`Assets/<Item名>/<File名から拡張子を除いた名前>/`へ取り込み、Fileに保存したTargetは変更しません。これにより`AnalyzeFile`で得たZIP内の1要素を一時的に選んで取り込めます。空pathはFile自身を表します。ZIP内要素は相対pathを保って展開し、ZIP名と同じ単一root directoryは省略して指定できます。`.unitypackage`はコピーせずUnity packageとして取り込みます。
+`ImportFileEntries(fileId, paths)`は指定したpathだけを`Assets/<Item名>/<File名から拡張子を除いた名前>/`へ取り込み、Fileに保存したTargetは変更しません。これにより`AnalyzeFile`で得たZIP内の1要素を一時的に選んで取り込めます。空pathはFile自身を表しますが、File自身がZIPの場合は拒否します。ZIP内要素は相対pathを保って展開し、ZIP名と同じ単一root directoryは省略して指定できます。内部のZIPも拒否し、`.unitypackage`はコピーせずUnity packageとして取り込みます。
 
-`ImportFileTargets`は保存済みTargetを読み、依存先から順に各Fileの`ImportFileEntries`を呼びます。両APIは`Task<AssetImportResult>`を返し、結果は成功・失敗・キャンセル、処理対象File ID、取り込んだGUID、失敗理由を保持します。キャンセル時は後続Fileとentryの開始を止めますが、Unityへ既に渡したUnityPackageの処理自体は停止できません。
+`ImportFileTargets`は保存済みFile Targetを読み、依存先から順に各Fileの`ImportFileEntries`を呼びます。`ImportItemTargets`は保存済みItem TargetからGroupごとに選択した1件とGroupなしの全Targetを取り込み、File Targetは参照しません。選択漏れ、同一Groupの複数選択、別ItemやGroup外のTarget指定は拒否します。各APIは`Task<AssetImportResult>`を返し、結果は成功・失敗・キャンセル、処理対象File ID、取り込んだGUID、失敗理由を保持します。キャンセル時は後続Fileとentryの開始を止めますが、Unityへ既に渡したUnityPackageの処理自体は停止できません。
 
 Target未設定での取り込みは何も行いません。未所属またはアーカイブ済みのFileにTargetが設定されている場合は取り込みを拒否します。
 
@@ -168,6 +176,9 @@ AssetManagerはSQLiteを1ファイル使用します。DBはUser Settingsの`ee4
 ```text
 file       ── 0..1 item
 file       ── 0..* file_target
+item       ── 0..* item_target
+file       ── 0..* item_target
+item       ── 0..1 item_booth_metadata
 file       ── 0..* file_dependency
 file       ── 0..* file_imported_asset_guid
 item       ── 0..* tag       （item_tag経由）
@@ -191,6 +202,17 @@ collection ── 1..* collection_node
 | `updated_at` | 更新時刻 | UTC |
 
 手動Itemは`source_type`と`source_id`を両方NULLにします。Source由来Itemは両方に値を持ち、組み合わせを一意にします。FileやTagを持たないItemも保存できます。
+
+### `item_booth_metadata`
+
+| column | 保持する値 | 制約 |
+| --- | --- | --- |
+| `item_id` | Booth情報を持つItem | PK、Item FK |
+| `item_url` | Booth商品URL | NULL可 |
+| `shop_name` | Boothストア名 | NULL可 |
+| `shop_url` | BoothストアURL | NULL可 |
+
+EagleのBooth metadataがあるItemだけに保存します。再同期でBooth情報がなくなった場合は行を削除します。
 
 ### `file`
 
@@ -216,7 +238,18 @@ collection ── 1..* collection_node
 | `file_id` | Targetを所有するFile | File FK |
 | `target_path` | File内の相対path | NULL不可。大文字小文字を区別せずFile内で一意 |
 
-`file_id`と`target_path`を複合PKにします。空文字はFile自身を表します。空文字以外は区切りを`/`に統一し、絶対pathとpath traversalをDB制約でも拒否します。File削除時はTargetを連鎖削除します。
+`file_id`と`target_path`を複合PKにします。空文字はFile自身を表します。空文字以外は区切りを`/`に統一し、絶対pathとpath traversalをDB制約でも拒否します。ApplicationはZIP自身を表す空文字と、拡張子が`.zip`の内部entryを拒否します。File削除時はTargetを連鎖削除します。
+
+### `item_target`
+
+| column | 保持する値 | 制約 |
+| --- | --- | --- |
+| `item_id` | Targetを所有するItem | Item FK |
+| `file_id` | Targetの実体を持つFile | File FK。対象Itemへの所属が必要 |
+| `target_path` | File内の相対path | NULL不可。大文字小文字を区別せずItem・File内で一意 |
+| `group_name` | Item取り込み時の選択Group | NULL可。空文字と改行不可。大文字小文字を区別しない |
+
+`item_id`、`file_id`、`target_path`を複合PKにします。同じItem内で`group_name`が一致するTargetを1つの選択Groupとして扱います。Fileが別Itemへ移動した場合はそのFileを参照するItem Targetを削除し、ItemまたはFileの削除時も連鎖削除します。pathとZIPに関する制約は`file_target`と同じです。
 
 ### `file_dependency`
 
@@ -268,8 +301,9 @@ PKと一意制約に加え、次の検索用索引を作成します。
 - `collection_node(collection_id, parent_node_id, sort_order)`
 - `file_dependency(dependency_file_id, dependent_file_id)`
 - `file_imported_asset_guid(asset_guid, file_id)`
+- `item_target(file_id, item_id)`
 
-`file_target`と依存先一覧は複合PKを検索に使用します。
+`file_target`、`item_target`と依存先一覧は複合PKを検索に使用します。
 
 ## 未実装範囲
 

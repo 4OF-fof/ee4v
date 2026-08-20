@@ -91,6 +91,11 @@ namespace Ee4v.UI
 
         public InfoCardBodyElement Body { get; }
 
+        public UiTextElement TitleText
+        {
+            get { return _titleLabel; }
+        }
+
         public StatusBadge Badge
         {
             get { return _badge; }
@@ -205,4 +210,3 @@ namespace Ee4v.UI
         }
     }
 }
-

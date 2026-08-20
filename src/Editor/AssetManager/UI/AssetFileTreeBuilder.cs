@@ -14,12 +14,28 @@ namespace Ee4v.AssetManager.UI
             Build(
                 IReadOnlyList<AssetFile> files,
                 IReadOnlyDictionary<string, AssetFileAnalysis> analyses,
-                CancellationToken cancellationToken)
+                CancellationToken cancellationToken,
+                string overviewTitle,
+                string overviewMeta,
+                bool includeOverview)
         {
             var source = files ?? Array.Empty<AssetFile>();
             var usedIds = new HashSet<int>();
             var items = new List<SearchableTreeItemData<FileTreeNode>>(
-                source.Count);
+                source.Count + (includeOverview ? 1 : 0));
+            if (includeOverview)
+            {
+                items.Add(CreateTreeItem(
+                    CreateKey(string.Empty, "overview"),
+                    new FileTreeNode(
+                        overviewTitle,
+                        overviewMeta,
+                        null,
+                        null),
+                    Array.Empty<SearchableTreeItemData<FileTreeNode>>(),
+                    usedIds,
+                    cancellationToken));
+            }
             for (var index = 0; index < source.Count; index++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -178,7 +194,7 @@ namespace Ee4v.AssetManager.UI
                 AllocateTreeId(key, usedIds),
                 node,
                 searchText,
-                node.Entry?.Path ?? node.File.FileName,
+                node.Entry?.Path ?? node.File?.FileName ?? node.Title,
                 children);
         }
 
@@ -239,7 +255,7 @@ namespace Ee4v.AssetManager.UI
                 .Trim('/');
         }
 
-        private static string FormatSize(long sizeBytes)
+        internal static string FormatSize(long sizeBytes)
         {
             if (sizeBytes < 1024)
             {
@@ -249,7 +265,17 @@ namespace Ee4v.AssetManager.UI
             {
                 return (sizeBytes / 1024d).ToString("0.#") + " KB";
             }
-            return (sizeBytes / (1024d * 1024d)).ToString("0.#") + " MB";
+            if (sizeBytes < 1024L * 1024L * 1024L)
+            {
+                return (sizeBytes / (1024d * 1024d)).ToString("0.#") + " MB";
+            }
+            if (sizeBytes < 1024L * 1024L * 1024L * 1024L)
+            {
+                return (sizeBytes / (1024d * 1024d * 1024d))
+                    .ToString("0.#") + " GB";
+            }
+            return (sizeBytes / (1024d * 1024d * 1024d * 1024d))
+                .ToString("0.#") + " TB";
         }
 
         private sealed class PathNode
@@ -302,5 +328,8 @@ namespace Ee4v.AssetManager.UI
         internal string Meta { get; }
         internal AssetFile File { get; }
         internal AssetFileContentEntry Entry { get; }
+        internal bool ShowsTargetToggle { get; set; }
+        internal bool IsTarget { get; set; }
+        internal Action<FileTreeNode, bool> TargetChanged { get; set; }
     }
 }
