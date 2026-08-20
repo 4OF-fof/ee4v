@@ -13,3 +13,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Ee4v.SceneSwitcher.Editor")]
 [assembly: InternalsVisibleTo("Ee4v.ItemStyle.Editor")]
 [assembly: InternalsVisibleTo("Ee4v.AvatarModify.UI.Editor")]
+[assembly: InternalsVisibleTo("Ee4v.WindowGroup.Editor")]

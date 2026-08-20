@@ -1,0 +1,21 @@
+{
+  "name": "Ee4v.WindowGroup.Tests.Editor",
+  "rootNamespace": "Ee4v.WindowGroup.Tests",
+  "references": [
+    "Ee4v.WindowGroup.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

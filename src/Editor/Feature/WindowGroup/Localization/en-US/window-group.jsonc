@@ -1,0 +1,28 @@
+{
+  "window": {
+    "title": "Window Groups",
+    "action": {
+      "createGroup": "New Group",
+      "delete": "Delete Group",
+      "focus": "Show"
+    },
+    "group": {
+      "heading": "Groups",
+      "empty": "No groups have been created.",
+      "newName": "New Group",
+      "name": "Group Name"
+    },
+    "detail": {
+      "emptyTitle": "Create a group",
+      "emptyMessage": "Create a group to assign open Editor windows."
+    },
+    "windows": {
+      "heading": "Windows",
+      "description": "Select a window type to move it into this group. Assignments are retained while windows are closed.",
+      "empty": "No windows are available. Open an Editor window and refresh the list."
+    },
+    "feedback": {
+      "invalidName": "Use a non-empty name that is not already used by another group."
+    }
+  }
+}

@@ -1,0 +1,178 @@
+.ee4v-window-group-settings {
+    min-width: 0;
+    min-height: 0;
+    flex-grow: 1;
+}
+
+.ee4v-window-group-settings__section-description,
+.ee4v-window-group-settings__empty {
+    white-space: normal;
+}
+
+.ee4v-window-group-settings__body {
+    min-width: 0;
+    min-height: 0;
+    flex-grow: 1;
+    flex-direction: row;
+    overflow: hidden;
+}
+
+.ee4v-window-group-settings__sidebar {
+    width: 220px;
+    min-width: 180px;
+    padding: var(--ee4v-space-xl);
+    border-right-width: var(--ee4v-border-hairline);
+    border-right-color: var(--ee4v-color-border-subtle);
+    background-color: var(--ee4v-color-surface-subtle);
+    overflow: hidden;
+}
+
+.ee4v-window-group-settings__section-title {
+    margin-bottom: var(--ee4v-space-md);
+}
+
+.ee4v-window-group-settings__section-description {
+    margin-top: var(--ee4v-space-negative-xs);
+    margin-bottom: var(--ee4v-space-lg);
+}
+
+.ee4v-window-group-settings__group-list,
+.ee4v-window-group-settings__window-list {
+    min-width: 0;
+    min-height: 0;
+    flex-grow: 1;
+}
+
+.ee4v-window-group-settings__create-group {
+    margin-top: var(--ee4v-space-md);
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+}
+
+.ee4v-window-group-settings__window-list .unity-scroll-view__content-container {
+    min-width: 0;
+    padding-right: var(--ee4v-space-md);
+}
+
+.ee4v-window-group-settings__group {
+    height: 32px;
+    min-height: 32px;
+    margin-bottom: var(--ee4v-space-xs);
+    padding-left: var(--ee4v-space-lg);
+    padding-right: var(--ee4v-space-lg);
+    padding-top: var(--ee4v-space-none);
+    padding-bottom: var(--ee4v-space-none);
+    align-items: center;
+    justify-content: center;
+    border-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-window-group-settings__group:hover {
+    background-color: var(--ee4v-color-surface-hover);
+}
+
+.ee4v-window-group-settings__group.ee4v-window-group-settings__group--selected {
+    border-color: var(--ee4v-color-border-active);
+    background-color: var(--ee4v-color-selection-soft);
+}
+
+.ee4v-window-group-settings__detail {
+    min-width: 0;
+    min-height: 0;
+    padding: var(--ee4v-space-2xl);
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.ee4v-window-group-settings__group-editor {
+    min-width: 0;
+    margin-bottom: var(--ee4v-space-2xl);
+    padding-bottom: var(--ee4v-space-xl);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-bottom-color: var(--ee4v-color-border-subtle);
+}
+
+.ee4v-window-group-settings__name-row {
+    min-width: 0;
+    min-height: 34px;
+    flex-direction: row;
+    align-items: center;
+}
+
+.ee4v-window-group-settings__name-label {
+    width: 112px;
+    min-width: 80px;
+    flex-shrink: 1;
+}
+
+.ee4v-window-group-settings__name-field {
+    min-width: 0;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.ee4v-window-group-settings__feedback {
+    margin-top: var(--ee4v-space-xs);
+    white-space: normal;
+}
+
+.ee4v-window-group-settings__window-row {
+    min-width: 0;
+    min-height: 34px;
+    margin-bottom: var(--ee4v-space-xs);
+    padding-left: var(--ee4v-space-lg);
+    padding-right: var(--ee4v-space-lg);
+    padding-top: var(--ee4v-space-sm);
+    padding-bottom: var(--ee4v-space-sm);
+    flex-direction: row;
+    align-items: center;
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-subtle);
+    border-radius: var(--ee4v-radius-md);
+    background-color: var(--ee4v-color-surface-raised);
+}
+
+.ee4v-window-group-settings__window-row:hover {
+    border-color: var(--ee4v-color-border-default);
+    background-color: var(--ee4v-color-surface-hover);
+}
+
+.ee4v-window-group-settings__window-row.ee4v-window-group-settings__window-row--assigned {
+    border-color: var(--ee4v-color-border-active);
+    background-color: var(--ee4v-color-selection-soft);
+}
+
+.ee4v-window-group-settings__window-toggle {
+    width: var(--ee4v-size-20);
+    min-width: var(--ee4v-size-20);
+    margin-right: var(--ee4v-space-sm);
+    flex-shrink: 0;
+}
+
+.ee4v-window-group-settings__window-name {
+    min-width: 0;
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ee4v-window-group-settings__window-focus {
+    min-width: 0;
+    min-height: var(--ee4v-control-height-default);
+    margin-left: var(--ee4v-space-md);
+    padding-left: var(--ee4v-space-lg);
+    padding-right: var(--ee4v-space-lg);
+    padding-top: var(--ee4v-space-none);
+    padding-bottom: var(--ee4v-space-none);
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+}
+
+.ee4v-window-group-settings__empty-title {
+    margin-top: var(--ee4v-space-3xl);
+    margin-bottom: var(--ee4v-space-sm);
+}

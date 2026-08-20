@@ -21,6 +21,12 @@
 | HierarchyStyle | GameObject の背景色とアイコンを設定します。Hidden Objects の一覧表示、非表示、再表示もこの機能に含みます。 | [HierarchyStyle](./hierarchy-style.md) |
 | SceneSwitcher | Hierarchy のシーン見出しからシーンを検索し、置換、追加、作成を行います。 | なし |
 
+## Editor
+
+| 機能 | 概要 | API リファレンス |
+|---|---|---|
+| WindowGroup | 同じグループのウィンドウをまとめて前面へ移します。 | [WindowGroup](./window-group.md) |
+
 ## 共有実装
 
 ProjectStyle と HierarchyStyle は `Ee4v.ItemStyle.Editor` の値、保存処理、編集ウィンドウを共有します。外部コードから各機能を操作する場合は `ProjectStyleApi` または `HierarchyStyleApi` を使用します。

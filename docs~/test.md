@@ -95,6 +95,9 @@
 | `ItemStyleInteractionTests.Selection_UsesGroupOnlyWhenHoveredFolderIsSelected` | 選択中項目からだけ一括編集する | 意図しない複数対象の変更を防ぐ |
 | `ProjectTabsTests.PinnedTab_RejectsNavigationToAnotherFolder` | 固定tabが別folderへ移動しない | 固定位置を失う状態変更を防ぐ |
 | `HierarchyStyleTests.VisibilityApi_RestoresActiveStateAndTag` | 非表示解除時にactive stateとtagを戻す | GameObjectの状態を失う破壊的副作用を防ぐ |
+| `WindowGroupTests.EnteringGroup_FocusesPeersAndRestoresOriginalFocus` | グループ外から入ると同じグループのほかのWindowを前面化し、起点へfocusを戻す | 複数dockとfocus変更にまたがる状態遷移は最終focusだけでは検出できない |
+| `WindowGroupTests.ReplacingRegistration_IgnoresDisposalOfOldRegistration` | Windowの再登録後に古い登録を破棄しても新しい所属を維持する | lifecycle順序の前後で有効な登録が消える問題を防ぐ |
+| `WindowGroupTests.AssigningWindowType_MovesItBetweenGroupsAndPersists` | Window種類を別Groupへ移すと旧Groupから除かれ、保存後も新しい所属を復元する | 重複所属と設定再読込後の消失は画面上の一時状態だけでは検出できない |
 
 ## 実行と判定
 
