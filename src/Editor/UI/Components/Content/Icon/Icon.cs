@@ -1,9 +1,42 @@
+using Ee4v.Core.EditorIntegration;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
+    public static class FluentUiIcons
+    {
+        private const string IconDirectory =
+            "/Editor/ThirdParty/FluentUiSystemIcons/Png512/";
+
+        public static Texture2D LoadTexture(string iconFileName)
+        {
+            var packageRoot = PackageAssetApi.GetPackageRootAssetPath();
+            return string.IsNullOrEmpty(packageRoot) ||
+                   string.IsNullOrWhiteSpace(iconFileName)
+                ? null
+                : AssetDatabase.LoadAssetAtPath<Texture2D>(
+                    packageRoot + IconDirectory + iconFileName);
+        }
+
+        public static IconState CreateState(
+            string iconFileName,
+            float size = UiSizeTokens.Size16,
+            string tooltip = null,
+            Color? tintColor = null)
+        {
+            var texture = LoadTexture(iconFileName);
+            return texture == null
+                ? null
+                : IconState.FromTexture(
+                    texture,
+                    size,
+                    tooltip,
+                    tintColor ?? UiColorTokens.TextPrimary);
+        }
+    }
+
     public enum UiIconSourceKind
     {
         Texture,
@@ -29,6 +62,8 @@ namespace Ee4v.UI
         Store,
         Folder,
         FolderEmpty,
+        Scene,
+        GameObject,
         Uncategorized,
         Tag,
         SmartCollection,
@@ -47,8 +82,13 @@ namespace Ee4v.UI
         Error
     }
 
-    internal static class UiBuiltinIconResolver
+    public static class UiBuiltinIconResolver
     {
+        public static Texture LoadTexture(UiBuiltinIcon icon)
+        {
+            return TryResolve(icon, out var texture) ? texture : null;
+        }
+
         public static bool TryResolve(UiBuiltinIcon icon, out Texture texture)
         {
             var iconNames = GetIconNames(icon);
@@ -211,6 +251,18 @@ namespace Ee4v.UI
                         "Folder Icon",
                         "d_Folder Icon"
                     };
+                case UiBuiltinIcon.Scene:
+                    return new[]
+                    {
+                        "SceneAsset Icon",
+                        "d_SceneAsset Icon"
+                    };
+                case UiBuiltinIcon.GameObject:
+                    return new[]
+                    {
+                        "GameObject Icon",
+                        "d_GameObject Icon"
+                    };
                 case UiBuiltinIcon.Uncategorized:
                     return new[]
                     {
@@ -372,12 +424,12 @@ namespace Ee4v.UI
             _image.AddToClassList(ImageClassName);
             Add(_image);
 
-            SetState(state ?? IconState.FromBuiltinIcon(UiBuiltinIcon.Search));
+            SetState(state ?? CreateDefaultState());
         }
 
         public void SetState(IconState state)
         {
-            state = state ?? IconState.FromBuiltinIcon(UiBuiltinIcon.Search);
+            state = state ?? CreateDefaultState();
 
             var size = state.Size;
 
@@ -421,6 +473,12 @@ namespace Ee4v.UI
                 default:
                     throw new System.ArgumentOutOfRangeException(nameof(state.SourceKind), state.SourceKind, null);
             }
+        }
+
+        private static IconState CreateDefaultState()
+        {
+            return FluentUiIcons.CreateState("search.png") ??
+                   IconState.FromBuiltinIcon(UiBuiltinIcon.Search);
         }
     }
 }

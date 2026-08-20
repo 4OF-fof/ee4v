@@ -40,15 +40,15 @@ namespace Ee4v.UI
             column.style.width = 260f;
             var primary = new UiButton(
                 "Primary action",
-                icon: IconState.FromBuiltinIcon(
-                    UiBuiltinIcon.Package,
+                icon: FluentUiIcons.CreateState(
+                    "archive.png",
                     UiSizeTokens.Size12));
             primary.style.marginBottom = UiSpacingTokens.Medium;
             column.Add(primary);
             var ghost = new UiButton(
                 "Ghost action",
-                icon: IconState.FromBuiltinIcon(
-                    UiBuiltinIcon.Refresh,
+                icon: FluentUiIcons.CreateState(
+                    "arrow_clockwise.png",
                     UiSizeTokens.Size12),
                 variant: UiButtonVariant.Ghost);
             ghost.style.marginBottom = UiSpacingTokens.Medium;
@@ -56,8 +56,8 @@ namespace Ee4v.UI
             column.Add(new UiButton(
                 string.Empty,
                 tooltip: "Close",
-                icon: IconState.FromBuiltinIcon(
-                    UiBuiltinIcon.Close,
+                icon: FluentUiIcons.CreateState(
+                    "dismiss.png",
                     UiSizeTokens.Size12),
                 variant: UiButtonVariant.Ghost,
                 compact: true));

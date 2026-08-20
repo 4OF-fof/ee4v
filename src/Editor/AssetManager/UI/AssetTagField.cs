@@ -263,7 +263,7 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class AssetTagPickerWindow : EditorWindow
+    internal sealed class AssetTagPickerWindow : CustomPopupWindow
     {
         private const float PopupWidth = 300f;
         private const float PopupHeight = 400f;
@@ -349,7 +349,7 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-asset-manager-tag-picker__tags");
             body.Add(scroll);
             popup.Content.Add(body);
-            root.Add(popup);
+            SetPopup(popup);
             RebuildOptions();
 
             _search.schedule.Execute(() =>

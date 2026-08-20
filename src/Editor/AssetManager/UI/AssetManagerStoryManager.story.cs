@@ -17,46 +17,25 @@ namespace Ee4v.AssetManager.UI
         private readonly IReadOnlyList<AssetItem> _items;
         private readonly IReadOnlyList<AssetCollection> _collections;
         private readonly Dictionary<string, IReadOnlyList<AssetFileTarget>>
-            _targets;
-        private readonly Dictionary<string, IReadOnlyList<AssetFileTarget>>
             _itemTargets;
 
         public AssetManagerStoryManager()
         {
             _files = CreateFiles();
             _items = CreateItems(_files);
-            _targets = _files.ToDictionary(
-                file => file.Id,
-                file => (IReadOnlyList<AssetFileTarget>)(string.Equals(
-                        Path.GetExtension(file.FileName),
-                        ".zip",
-                        StringComparison.OrdinalIgnoreCase)
-                    ? new[]
-                    {
-                        new AssetFileTarget
-                        {
-                            FileId = file.Id,
-                            TargetPath = "Packages/Sample.unitypackage"
-                        }
-                    }
-                    : new[]
-                    {
-                        new AssetFileTarget
-                        {
-                            FileId = file.Id,
-                            TargetPath = string.Empty
-                        }
-                    }));
             _itemTargets = _items.ToDictionary(
                 item => item.Id,
                 item => (IReadOnlyList<AssetFileTarget>)_files
                     .Where(file => file.ItemId == item.Id)
-                    .SelectMany(file => _targets[file.Id])
-                    .Select(target => new AssetFileTarget
+                    .Select(file => new AssetFileTarget
                     {
-                        FileId = target.FileId,
-                        TargetPath = target.TargetPath,
-                        GroupName = target.GroupName
+                        FileId = file.Id,
+                        TargetPath = string.Equals(
+                            Path.GetExtension(file.FileName),
+                            ".zip",
+                            StringComparison.OrdinalIgnoreCase)
+                            ? "Packages/Sample.unitypackage"
+                            : string.Empty
                     })
                     .ToArray());
             _collections = new[]
@@ -212,28 +191,6 @@ namespace Ee4v.AssetManager.UI
         {
         }
 
-        public IReadOnlyList<AssetFileTarget> GetFileTargets(string fileId)
-        {
-            return CopyTargets(_targets.TryGetValue(fileId, out var targets)
-                ? targets
-                : Array.Empty<AssetFileTarget>());
-        }
-
-        public IReadOnlyList<AssetFileTarget> SetFileTargets(
-            string fileId,
-            IReadOnlyList<string> targetPaths)
-        {
-            _targets[fileId] = (targetPaths ?? Array.Empty<string>())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Select(path => new AssetFileTarget
-                {
-                    FileId = fileId,
-                    TargetPath = path
-                })
-                .ToArray();
-            return GetFileTargets(fileId);
-        }
-
         public IReadOnlyList<AssetFileTarget> GetItemTargets(string itemId)
         {
             return CopyTargets(_itemTargets.TryGetValue(
@@ -315,13 +272,6 @@ namespace Ee4v.AssetManager.UI
             return Import(fileId, cancellationToken);
         }
 
-        public Task<AssetImportResult> ImportFileTargets(
-            string fileId,
-            CancellationToken cancellationToken = default)
-        {
-            return Import(fileId, cancellationToken);
-        }
-
         public Task<AssetImportResult> ImportItemTargets(
             string itemId,
             IReadOnlyList<AssetFileTarget> selectedTargets,
@@ -339,7 +289,7 @@ namespace Ee4v.AssetManager.UI
 
         public IReadOnlyList<AssetFileDependency> SetFileDependencies(
             IReadOnlyList<string> dependentFileIds,
-            IReadOnlyList<string> dependencyFileIds)
+            IReadOnlyList<AssetFileTarget> dependencyTargets)
         {
             return Array.Empty<AssetFileDependency>();
         }

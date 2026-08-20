@@ -51,6 +51,8 @@ Hidden Objects も HierarchyStyle に含まれます。非表示にした GameOb
 
 Hidden Objects ウィンドウでは `HideInHierarchy` が設定された GameObject をシーン単位で表示します。設定で除外したシーンと GameObject は一覧に含めず、除外対象の GameObject の子孫も除きます。
 
+GameObjectとSceneを表す既定アイコンにはUnity組み込みアイコンを使用します。検索、消去、空状態などの汎用操作・状態にはFluent UI System Iconsを使用します。Hierarchyのシーン見出しからHidden Objectsを開くアイコンも、Unityの非表示状態と揃えるためUnity組み込みアイコンを使用します。
+
 ## 永続化
 
 | 内容 | 保存先 |

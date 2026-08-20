@@ -86,7 +86,7 @@ namespace Ee4v.HiddenObjects
             });
 
             _icon = new Icon(IconState.FromBuiltinIcon(
-                UiBuiltinIcon.GenericFile,
+                UiBuiltinIcon.GameObject,
                 UiSizeTokens.Size16));
             _icon.AddToClassList(IconClassName);
             _name = UiTextFactory.Create(string.Empty, NameClassName);
@@ -125,7 +125,7 @@ namespace Ee4v.HiddenObjects
                     : DisplayStyle.None;
             _selection.SetValueWithoutNotify(_state.IsSelected);
             _icon.SetState(_state.Icon ?? IconState.FromBuiltinIcon(
-                UiBuiltinIcon.GenericFile,
+                UiBuiltinIcon.GameObject,
                 UiSizeTokens.Size16));
             _name.SetText(_state.Name);
             _meta.SetText(_state.Meta);
@@ -193,8 +193,8 @@ namespace Ee4v.HiddenObjects
 
             _empty = new VisualElement();
             _empty.AddToClassList(EmptyClassName);
-            var emptyIcon = new Icon(IconState.FromBuiltinIcon(
-                UiBuiltinIcon.VisibilityHidden,
+            var emptyIcon = new Icon(FluentUiIcons.CreateState(
+                "eye_off.png",
                 UiSizeTokens.Size24));
             emptyIcon.AddToClassList(EmptyIconClassName);
             _emptyTitle = UiTextFactory.Create(
@@ -304,7 +304,7 @@ namespace Ee4v.HiddenObjects
                     false,
                     false,
                     IconState.FromBuiltinIcon(
-                        UiBuiltinIcon.UnityFile,
+                        UiBuiltinIcon.Scene,
                         UiSizeTokens.Size16));
                 items.Add(
                     new TreeViewItemData<HiddenObjectTreeItemViewState>(

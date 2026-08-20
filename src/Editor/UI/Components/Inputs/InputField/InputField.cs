@@ -147,6 +147,9 @@ namespace Ee4v.UI
             _multiline = multiline;
             _textField.multiline = multiline;
             EnableInClassList(MultilineClassName, multiline);
+            EnableInClassList(
+                UiClassNames.ThinVerticalScrollbar,
+                multiline);
             ApplyHeightConstraints();
         }
 

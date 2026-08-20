@@ -2,6 +2,8 @@
 
 `Editor/Feature` にある機能の概要です。公開 API を持つ機能は個別のリファレンスへリンクします。
 
+検索、追加、閉じる、固定などの汎用操作・状態アイコンにはMicrosoft Fluent UI System Iconsを使用します。Scene、GameObject、FolderなどUnityの実体やEditor概念を指すアイコンにはUnity組み込みアイコンを使用します。Project内アセットのサムネイルと利用者が指定したTextureは実体表現として維持します。
+
 ## Project
 
 | 機能 | 概要 | API リファレンス |
@@ -22,4 +24,3 @@
 ## 共有実装
 
 ProjectStyle と HierarchyStyle は `Ee4v.ItemStyle.Editor` の値、保存処理、編集ウィンドウを共有します。外部コードから各機能を操作する場合は `ProjectStyleApi` または `HierarchyStyleApi` を使用します。
-

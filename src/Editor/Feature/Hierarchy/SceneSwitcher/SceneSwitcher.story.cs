@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Ee4v.UI;
-using UnityEditor;
 using UnityEngine.UIElements;
 
 namespace Ee4v.SceneSwitcher
@@ -50,8 +49,9 @@ namespace Ee4v.SceneSwitcher
                     UnfavoriteTooltip = "Remove from favorites",
                     CreateFormat = "Create \"{0}\""
                 },
-                EditorGUIUtility.IconContent("SceneAsset Icon").image,
-                EditorGUIUtility.IconContent("Favorite Icon").image);
+                UiBuiltinIconResolver.LoadTexture(
+                    UiBuiltinIcon.Scene),
+                FluentUiIcons.LoadTexture("star.png"));
             view.SetState(new SceneSwitcherViewState(
                 string.Empty,
                 new[]

@@ -20,14 +20,14 @@ namespace Ee4v.UI
             ClearTooltip = clearTooltip ?? string.Empty;
             SearchIconState =
                 searchIconState ??
-                IconState.FromBuiltinIcon(
-                    UiBuiltinIcon.Search,
+                FluentUiIcons.CreateState(
+                    "search.png",
                     size: UiSizeTokens.Size14,
                     tooltip: SearchTooltip);
             ClearIconState =
                 clearIconState ??
-                IconState.FromBuiltinIcon(
-                    UiBuiltinIcon.Close,
+                FluentUiIcons.CreateState(
+                    "dismiss.png",
                     size: UiSizeTokens.Size10,
                     tooltip: ClearTooltip);
             SearchActionEnabled = searchActionEnabled;

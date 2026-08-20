@@ -3,6 +3,7 @@ using System.Linq;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Injector;
 using Ee4v.ItemStyle;
+using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
 
@@ -85,9 +86,7 @@ namespace Ee4v.HierarchyStyle
                 CreateTargetTooltip(validTargets),
                 GetColors(),
                 typeof(Texture2D),
-                EditorGUIUtility.ObjectContent(
-                    validTargets[0],
-                    typeof(GameObject)).image,
+                UiBuiltinIconResolver.LoadTexture(UiBuiltinIcon.GameObject),
                 () => InjectorApi.Repaint(
                     InjectionChannel.HierarchyItem))
             {

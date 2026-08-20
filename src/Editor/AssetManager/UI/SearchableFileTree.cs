@@ -26,6 +26,10 @@ namespace Ee4v.AssetManager.UI
             "ee4v-asset-manager-file-tree__meta";
         private const string RowOverviewClassName =
             "ee4v-asset-manager-file-tree__row--overview";
+        private const string RowGroupClassName =
+            "ee4v-asset-manager-file-tree__row--group";
+        private const string RowSectionClassName =
+            "ee4v-asset-manager-file-tree__row--new-section";
         private const string IconElementName = "file-tree-icon";
         private const string TitleElementName = "file-tree-title";
         private const string MetaElementName = "file-tree-meta";
@@ -34,6 +38,7 @@ namespace Ee4v.AssetManager.UI
         private readonly IAssetManager _manager;
         private readonly UiTextElement _feedback;
         private readonly bool _showsTargetToggles;
+        private readonly Action<FileTreeSelection> _importRequested;
         private readonly Dictionary<string, AssetFileTarget>
             _targetSelection =
                 new Dictionary<string, AssetFileTarget>(
@@ -41,14 +46,20 @@ namespace Ee4v.AssetManager.UI
         private readonly Dictionary<string, CachedAnalysis> _analysisCache =
             new Dictionary<string, CachedAnalysis>(StringComparer.Ordinal);
         private CancellationTokenSource _reloadCancellation;
+        private IReadOnlyList<SearchableTreeItemData<FileTreeNode>>
+            _pendingTreeItems;
         private IReadOnlyList<AssetFile> _files = Array.Empty<AssetFile>();
+        private IReadOnlyList<FileTreeGroup> _groups =
+            Array.Empty<FileTreeGroup>();
         private string _itemId = string.Empty;
         private int _reloadVersion;
+        private bool _isPointerOverTree;
         private bool _suppressSelectionChanged;
 
         internal SearchableFileTree(
             IAssetManager manager,
             Action registerFileRequested = null,
+            Action<FileTreeSelection> importRequested = null,
             bool showTargetToggles = false)
             : base(
                 CreateTreeItem,
@@ -74,6 +85,7 @@ namespace Ee4v.AssetManager.UI
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
             _showsTargetToggles = showTargetToggles;
+            _importRequested = importRequested;
             AddToClassList(RootClassName);
             SetInteractionHandlers(
                 OnTreeSelectionChanged,
@@ -105,7 +117,18 @@ namespace Ee4v.AssetManager.UI
             _feedback.style.display = DisplayStyle.None;
             Add(_feedback);
 
-            RegisterCallback<DetachFromPanelEvent>(_ => CancelReload());
+            RegisterCallback<PointerEnterEvent>(_ =>
+                _isPointerOverTree = true);
+            RegisterCallback<PointerLeaveEvent>(_ =>
+            {
+                _isPointerOverTree = false;
+                ApplyPendingTreeItems();
+            });
+            RegisterCallback<DetachFromPanelEvent>(_ =>
+            {
+                _pendingTreeItems = null;
+                CancelReload();
+            });
         }
 
         internal event Action<FileTreeSelection> SelectionChanged;
@@ -113,9 +136,13 @@ namespace Ee4v.AssetManager.UI
         internal void SetItem(
             string itemId,
             IReadOnlyList<AssetFile> files,
-            IReadOnlyList<AssetFileTarget> targets = null)
+            IReadOnlyList<AssetFileTarget> targets = null,
+            IReadOnlyDictionary<string, AssetFileAnalysis>
+                initialAnalyses = null,
+            IReadOnlyList<FileTreeGroup> groups = null)
         {
             CancelReload();
+            _pendingTreeItems = null;
             var nextItemId = itemId ?? string.Empty;
             if (!string.Equals(_itemId, nextItemId, StringComparison.Ordinal))
             {
@@ -138,6 +165,9 @@ namespace Ee4v.AssetManager.UI
                 .OrderBy(file => file.FileName, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(file => file.Id, StringComparer.Ordinal)
                 .ToArray();
+            _groups = (groups ?? Array.Empty<FileTreeGroup>())
+                .Where(group => group != null)
+                .ToArray();
             var currentFileIds = new HashSet<string>(
                 _files.Select(file => file.Id),
                 StringComparer.Ordinal);
@@ -147,15 +177,18 @@ namespace Ee4v.AssetManager.UI
             {
                 _analysisCache.Remove(cachedFileId);
             }
+            SeedAnalysisCache(initialAnalyses);
+            var analyses = CreateCachedAnalyses();
             _feedback.SetText(string.Empty);
             _feedback.style.display = DisplayStyle.None;
             ApplyTreeItems(AssetFileTreeBuilder.Build(
                 _files,
-                null,
+                analyses,
                 CancellationToken.None,
                 I18N.Get("fileTree.overview"),
                 I18N.Get("fileTree.itemMeta"),
-                includeOverview: !_showsTargetToggles));
+                includeOverview: !_showsTargetToggles,
+                groups: _groups));
 
             if (!_files.Any(AssetFileTreeBuilder.CanAnalyze))
             {
@@ -165,7 +198,11 @@ namespace Ee4v.AssetManager.UI
             var version = ++_reloadVersion;
             var cancellation = new CancellationTokenSource();
             _reloadCancellation = cancellation;
-            LoadAnalysesAsync(version, cancellation, _files);
+            LoadAnalysesAsync(
+                version,
+                cancellation,
+                _files,
+                analyses);
         }
 
         public void Dispose()
@@ -185,13 +222,37 @@ namespace Ee4v.AssetManager.UI
                 .ToArray();
         }
 
-        private async void LoadAnalysesAsync(
-            int version,
-            CancellationTokenSource cancellation,
-            IReadOnlyList<AssetFile> files)
+        internal IReadOnlyDictionary<string, AssetFileAnalysis>
+            GetCachedAnalyses()
+        {
+            return CreateCachedAnalyses();
+        }
+
+        private Dictionary<string, AssetFileAnalysis>
+            CreateCachedAnalyses()
         {
             var analyses = new Dictionary<string, AssetFileAnalysis>(
                 StringComparer.Ordinal);
+            foreach (var file in _files)
+            {
+                if (_analysisCache.TryGetValue(file.Id, out var cached) &&
+                    string.Equals(
+                        cached.Version,
+                        CreateCacheKey(file),
+                        StringComparison.Ordinal))
+                {
+                    analyses[file.Id] = cached.Analysis;
+                }
+            }
+            return analyses;
+        }
+
+        private async void LoadAnalysesAsync(
+            int version,
+            CancellationTokenSource cancellation,
+            IReadOnlyList<AssetFile> files,
+            Dictionary<string, AssetFileAnalysis> analyses)
+        {
             var failures = new List<string>();
             try
             {
@@ -204,17 +265,11 @@ namespace Ee4v.AssetManager.UI
                     }
 
                     cancellation.Token.ThrowIfCancellationRequested();
-                    var cacheKey = CreateCacheKey(file);
-                    if (_analysisCache.TryGetValue(file.Id, out var cached) &&
-                        string.Equals(
-                            cached.Version,
-                            cacheKey,
-                            StringComparison.Ordinal))
+                    if (analyses.ContainsKey(file.Id))
                     {
-                        analyses[file.Id] = cached.Analysis;
                         continue;
                     }
-
+                    var cacheKey = CreateCacheKey(file);
                     try
                     {
                         var analysis = await _manager.AnalyzeFileAsync(
@@ -228,6 +283,14 @@ namespace Ee4v.AssetManager.UI
                         _analysisCache[file.Id] = new CachedAnalysis(
                             cacheKey,
                             analysis);
+                        if (_showsTargetToggles)
+                        {
+                            await ApplyAnalysesAsync(
+                                version,
+                                cancellation,
+                                files,
+                                analyses);
+                        }
                     }
                     catch (AssetManagerException)
                     {
@@ -240,23 +303,14 @@ namespace Ee4v.AssetManager.UI
                     return;
                 }
 
-                var overviewTitle = I18N.Get("fileTree.overview");
-                var overviewMeta = I18N.Get("fileTree.itemMeta");
-                var items = await Task.Run(
-                    () => AssetFileTreeBuilder.Build(
-                        files,
-                        analyses,
-                        cancellation.Token,
-                        overviewTitle,
-                        overviewMeta,
-                        includeOverview: !_showsTargetToggles),
-                    cancellation.Token);
-                if (!IsCurrentReload(version, cancellation))
+                if (!_showsTargetToggles)
                 {
-                    return;
+                    await ApplyAnalysesAsync(
+                        version,
+                        cancellation,
+                        files,
+                        analyses);
                 }
-
-                ApplyTreeItems(items);
                 if (failures.Count > 0)
                 {
                     _feedback.SetText(string.Format(
@@ -283,6 +337,68 @@ namespace Ee4v.AssetManager.UI
                 {
                     cancellation.Dispose();
                     _reloadCancellation = null;
+                }
+            }
+        }
+
+        private async Task ApplyAnalysesAsync(
+            int version,
+            CancellationTokenSource cancellation,
+            IReadOnlyList<AssetFile> files,
+            IReadOnlyDictionary<string, AssetFileAnalysis> analyses)
+        {
+            var overviewTitle = I18N.Get("fileTree.overview");
+            var overviewMeta = I18N.Get("fileTree.itemMeta");
+            var items = await Task.Run(
+                () => AssetFileTreeBuilder.Build(
+                    files,
+                    analyses,
+                    cancellation.Token,
+                    overviewTitle,
+                    overviewMeta,
+                    includeOverview: !_showsTargetToggles,
+                    groups: _groups),
+                cancellation.Token);
+            if (IsCurrentReload(version, cancellation))
+            {
+                if (_showsTargetToggles && _isPointerOverTree)
+                {
+                    _pendingTreeItems = items;
+                }
+                else
+                {
+                    ApplyTreeItems(items);
+                }
+            }
+        }
+
+        private void ApplyPendingTreeItems()
+        {
+            if (_pendingTreeItems == null)
+            {
+                return;
+            }
+
+            var items = _pendingTreeItems;
+            _pendingTreeItems = null;
+            ApplyTreeItems(items);
+        }
+
+        private void SeedAnalysisCache(
+            IReadOnlyDictionary<string, AssetFileAnalysis> analyses)
+        {
+            if (analyses == null)
+            {
+                return;
+            }
+
+            foreach (var file in _files)
+            {
+                if (analyses.TryGetValue(file.Id, out var analysis))
+                {
+                    _analysisCache[file.Id] = new CachedAnalysis(
+                        CreateCacheKey(file),
+                        analysis);
                 }
             }
         }
@@ -360,7 +476,13 @@ namespace Ee4v.AssetManager.UI
         {
             element.EnableInClassList(
                 RowOverviewClassName,
-                node?.File == null);
+                node?.IsOverview == true);
+            element.EnableInClassList(
+                RowGroupClassName,
+                node?.IsGroup == true);
+            element.EnableInClassList(
+                RowSectionClassName,
+                node?.StartsNewSection == true);
             var targetToggle = element.Q<Toggle>(
                 TargetToggleElementName);
             if (targetToggle != null)
@@ -391,13 +513,16 @@ namespace Ee4v.AssetManager.UI
 
         private static Texture2D ResolveTreeIcon(FileTreeNode node)
         {
-            var iconName = node?.File == null
-                ? "info.png"
-                : node.Entry == null
-                    ? "folder_zip.png"
-                    : node.Entry.Kind == AssetFileContentEntryKind.Directory
-                        ? "folder.png"
-                        : "cube.png";
+            var iconName = node?.IsGroup == true
+                ? "folder.png"
+                : node == null || node.IsOverview
+                    ? "info.png"
+                    : node.Entry == null
+                        ? "folder_zip.png"
+                        : node.Entry.Kind ==
+                          AssetFileContentEntryKind.Directory
+                            ? "folder.png"
+                            : "cube.png";
             return AssetManagerControls.LoadFluentIconTexture(iconName);
         }
 
@@ -414,6 +539,24 @@ namespace Ee4v.AssetManager.UI
 
             var menu = new GenericMenu();
             var targetPath = node.Entry?.Path ?? string.Empty;
+            var canImport = _importRequested != null && CanImport(node);
+            if (canImport)
+            {
+                menu.AddItem(
+                    UiTextFactory.CreateGuiContent(
+                        I18N.Get("action.import")),
+                    false,
+                    () => _importRequested(new FileTreeSelection(
+                        node.File,
+                        node.Entry)));
+            }
+            else
+            {
+                menu.AddDisabledItem(UiTextFactory.CreateGuiContent(
+                    I18N.Get("action.import")));
+            }
+
+            menu.AddSeparator(string.Empty);
             var configuredTargets = _manager
                 .GetItemTargets(_itemId);
             var configuredTarget = configuredTargets
@@ -544,6 +687,11 @@ namespace Ee4v.AssetManager.UI
         }
 
         private static bool CanSetTarget(FileTreeNode node)
+        {
+            return CanImport(node);
+        }
+
+        private static bool CanImport(FileTreeNode node)
         {
             if (node?.File == null)
             {

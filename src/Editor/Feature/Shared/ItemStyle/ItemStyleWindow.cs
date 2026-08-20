@@ -473,8 +473,8 @@ namespace Ee4v.ItemStyle
                 string.Empty,
                 closeRequested,
                 text.CloseTooltip,
-                IconState.FromBuiltinIcon(
-                    UiBuiltinIcon.Close,
+                FluentUiIcons.CreateState(
+                    "dismiss.png",
                     UiSizeTokens.Size14),
                 UiButtonVariant.Ghost,
                 compact: true);
@@ -533,8 +533,8 @@ namespace Ee4v.ItemStyle
                     text.ActionLabel,
                     actionRequested,
                     text.ActionTooltip,
-                    IconState.FromBuiltinIcon(
-                        UiBuiltinIcon.VisibilityHidden,
+                    FluentUiIcons.CreateState(
+                        "eye_off.png",
                         UiSizeTokens.Size16));
                 action.AddToClassList("ee4v-item-style__action");
                 Add(action);
@@ -590,8 +590,8 @@ namespace Ee4v.ItemStyle
             clear.EnableInClassList(
                 SelectedClassName,
                 !state.ColorIsMixed && state.Color == Color.clear);
-            clear.Add(new Icon(IconState.FromBuiltinIcon(
-                UiBuiltinIcon.Close,
+            clear.Add(new Icon(FluentUiIcons.CreateState(
+                "dismiss.png",
                 UiSizeTokens.Size12)));
             _palette.Add(clear);
             for (var i = 0; i < state.ColorPresets.Count; i++)
@@ -625,8 +625,8 @@ namespace Ee4v.ItemStyle
             clear.EnableInClassList(
                 SelectedClassName,
                 !state.IconIsMixed && state.Icon == null);
-            clear.Add(new Icon(IconState.FromBuiltinIcon(
-                UiBuiltinIcon.Close,
+            clear.Add(new Icon(FluentUiIcons.CreateState(
+                "dismiss.png",
                 UiSizeTokens.Size12)));
             _recentIcons.Add(clear);
             for (var i = 0; i < state.RecentIcons.Count; i++)

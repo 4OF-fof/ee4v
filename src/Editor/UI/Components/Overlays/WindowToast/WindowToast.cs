@@ -169,8 +169,8 @@ namespace Ee4v.UI
             _messageLabel.style.display = string.IsNullOrWhiteSpace(_state.Message) ? DisplayStyle.None : DisplayStyle.Flex;
 
             _closeButton.style.display = _state.Dismissible ? DisplayStyle.Flex : DisplayStyle.None;
-            _closeIcon.SetState(IconState.FromBuiltinIcon(
-                UiBuiltinIcon.Close,
+            _closeIcon.SetState(FluentUiIcons.CreateState(
+                "dismiss.png",
                 size: UiSizeTokens.Size10,
                 tooltip: _state.DismissTooltip));
 

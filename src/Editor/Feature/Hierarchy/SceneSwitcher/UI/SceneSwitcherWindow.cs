@@ -115,10 +115,9 @@ namespace Ee4v.SceneSwitcher
 
             _view = new SceneSwitcherView(
                 CreateText(),
-                EditorGUIUtility.IconContent(
-                    "SceneAsset Icon").image,
-                EditorGUIUtility.IconContent(
-                    "Favorite Icon").image);
+                UiBuiltinIconResolver.LoadTexture(
+                    UiBuiltinIcon.Scene),
+                FluentUiIcons.LoadTexture("star.png"));
             _view.QueryChanged += _controller.SetQuery;
             _view.ActivateRequested += Activate;
             _view.AddRequested += Add;

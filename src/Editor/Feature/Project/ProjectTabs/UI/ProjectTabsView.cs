@@ -85,8 +85,6 @@ namespace Ee4v.ProjectTabs
             "ee4v-project-tabs__navigation";
         private const string NavigationButtonClassName =
             "ee4v-project-tabs__navigation-button";
-        private const string NavigationLabelClassName =
-            "ee4v-project-tabs__navigation-label";
         private const string ScrollClassName =
             "ee4v-project-tabs__scroll";
         private const string StripClassName =
@@ -157,10 +155,10 @@ namespace Ee4v.ProjectTabs
             navigation.AddToClassList(NavigationClassName);
 
             _backButton = CreateNavigationButton(
-                "\u2190",
+                "arrow_left.png",
                 () => BackRequested?.Invoke());
             _forwardButton = CreateNavigationButton(
-                "\u2192",
+                "arrow_right.png",
                 () => ForwardRequested?.Invoke());
             RegisterHistoryButton(
                 _backButton,
@@ -184,9 +182,12 @@ namespace Ee4v.ProjectTabs
             RegisterFolderDropEvents();
 
             _addButton = new UiButton(
-                "+",
+                string.Empty,
                 () => AddRequested?.Invoke(),
                 I18N.Get("toolbar.add.tooltip"),
+                FluentUiIcons.CreateState(
+                    "add.png",
+                    UiSizeTokens.Size12),
                 variant: UiButtonVariant.Ghost,
                 compact: true);
             _addButton.AddToClassList(AddButtonClassName);
@@ -370,8 +371,8 @@ namespace Ee4v.ProjectTabs
             if (state.IsPinned)
             {
                 var pinIcon = new Icon(
-                    IconState.FromBuiltinIcon(
-                        UiBuiltinIcon.Pin,
+                    FluentUiIcons.CreateState(
+                        "pin.png",
                         UiSizeTokens.Size10,
                         I18N.Get("toolbar.pin.tooltip")));
                 pinIcon.AddToClassList(PinIconClassName);
@@ -391,8 +392,8 @@ namespace Ee4v.ProjectTabs
                 "toolbar.close.tooltip");
             closeButton.AddToClassList(CloseButtonClassName);
             closeButton.Add(new Icon(
-                IconState.FromBuiltinIcon(
-                    UiBuiltinIcon.Close,
+                FluentUiIcons.CreateState(
+                    "dismiss.png",
                     UiSizeTokens.Size12)));
             tab.Add(closeButton);
 
@@ -803,15 +804,16 @@ namespace Ee4v.ProjectTabs
         }
 
         private static Button CreateNavigationButton(
-            string text,
+            string iconFileName,
             Action clicked)
         {
-            var button = UiTextFactory.CreateButton(text, clicked);
+            var button = UiTextFactory.CreateButton(
+                string.Empty,
+                clicked);
             button.AddToClassList(NavigationButtonClassName);
-
-            button.TextElement.AddToClassList(
-                NavigationLabelClassName);
-            button.TextElement.SetWhiteSpace(WhiteSpace.NoWrap);
+            button.Add(new Icon(FluentUiIcons.CreateState(
+                iconFileName,
+                UiSizeTokens.Size12)));
             return button;
         }
 

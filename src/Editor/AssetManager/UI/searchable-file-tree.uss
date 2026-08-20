@@ -63,6 +63,15 @@
     border-bottom-color: var(--ee4v-color-border-subtle);
 }
 
+.ee4v-asset-manager-file-tree__row--group .ee4v-asset-manager-file-tree__title {
+    -unity-font-style: bold;
+}
+
+.ee4v-asset-manager-file-tree__row--new-section {
+    border-top-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-default);
+}
+
 .ee4v-asset-manager-file-tree__icon {
     flex-shrink: 0;
     width: var(--ee4v-size-14);

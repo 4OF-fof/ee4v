@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Ee4v.AssetManager.Contracts;
-using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -14,10 +12,6 @@ namespace Ee4v.AssetManager.UI
     {
         private const string DangerActionClassName =
             "ee4v-asset-manager__danger-action";
-        private const string FluentIconDirectory =
-            "/Editor/ThirdParty/FluentUiSystemIcons/" +
-            "Png512/";
-
         public static UiButton CreateButton(
             string text = "",
             Action onClick = null,
@@ -172,12 +166,7 @@ namespace Ee4v.AssetManager.UI
         internal static Texture2D LoadFluentIconTexture(
             string iconFileName)
         {
-            var packageRoot = PackageAssetApi.GetPackageRootAssetPath();
-            return string.IsNullOrEmpty(packageRoot) ||
-                   string.IsNullOrEmpty(iconFileName)
-                ? null
-                : AssetDatabase.LoadAssetAtPath<Texture2D>(
-                    packageRoot + FluentIconDirectory + iconFileName);
+            return FluentUiIcons.LoadTexture(iconFileName);
         }
 
         internal static IconState LoadFluentIconState(
@@ -186,14 +175,11 @@ namespace Ee4v.AssetManager.UI
             string tooltip = null,
             Color? tintColor = null)
         {
-            var texture = LoadFluentIconTexture(iconFileName);
-            return texture == null
-                ? null
-                : IconState.FromTexture(
-                    texture,
-                    size,
-                    tooltip,
-                    tintColor ?? UiColorTokens.TextPrimary);
+            return FluentUiIcons.CreateState(
+                iconFileName,
+                size,
+                tooltip,
+                tintColor);
         }
 
         public static AssetManagerTextField CreateTextField(

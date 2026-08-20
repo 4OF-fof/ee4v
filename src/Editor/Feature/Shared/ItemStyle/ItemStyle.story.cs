@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Ee4v.UI;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -81,8 +80,8 @@ namespace Ee4v.ItemStyle
                 text,
                 () => { },
                 hierarchy ? new Action(() => { }) : null);
-            var defaultIcon = EditorGUIUtility.IconContent(
-                hierarchy ? "GameObject Icon" : "Folder Icon").image;
+            var defaultIcon = UiBuiltinIconResolver.LoadTexture(
+                hierarchy ? UiBuiltinIcon.GameObject : UiBuiltinIcon.Folder);
             view.SetState(new ItemStyleEditorState
             {
                 Color = new Color(
@@ -102,14 +101,14 @@ namespace Ee4v.ItemStyle
                 {
                     new ItemStyleIconCandidate
                     {
-                        Texture = EditorGUIUtility.IconContent(
-                            "Folder Icon").image,
+                        Texture = UiBuiltinIconResolver.LoadTexture(
+                            UiBuiltinIcon.Folder),
                         Tooltip = "Folder icon"
                     },
                     new ItemStyleIconCandidate
                     {
-                        Texture = EditorGUIUtility.IconContent(
-                            "Prefab Icon").image,
+                        Texture = UiBuiltinIconResolver.LoadTexture(
+                            UiBuiltinIcon.ModelFile),
                         Tooltip = "Prefab icon"
                     }
                 },

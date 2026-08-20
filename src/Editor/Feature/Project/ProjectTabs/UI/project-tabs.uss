@@ -50,13 +50,6 @@
     opacity: 0.72;
 }
 
-.ee4v-project-tabs__navigation-label {
-    width: var(--ee4v-size-16);
-    height: var(--ee4v-size-18);
-    color: var(--ee4v-color-text-secondary);
-    -unity-text-align: middle-center;
-}
-
 .ee4v-project-tabs__navigation-button:hover,
 .ee4v-project-tabs__add:hover,
 .ee4v-project-tabs__close:hover {

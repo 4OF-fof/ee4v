@@ -116,6 +116,9 @@ namespace Ee4v.UI
             _treeView.makeItem = () => CreateItemElement(makeItem);
             _treeView.bindItem = BindItem;
             _treeView.selectionChanged += OnSelectionChanged;
+            _treeView.RegisterCallback<WheelEvent>(
+                OnTreeWheel,
+                TrickleDown.TrickleDown);
             Add(_treeView);
 
             _emptyLabel = UiTextFactory.Create(
@@ -386,6 +389,9 @@ namespace Ee4v.UI
 
         private void RefreshTree(bool preserveExpansion)
         {
+            IReadOnlyList<int> expandedItemIds = preserveExpansion
+                ? GetExpandedItemIds(_sourceItems)
+                : Array.Empty<int>();
             var filteredItems = FilterItems(_sourceItems, _searchField.Value);
             _treeView.SetRootItems(filteredItems);
             _treeView.Rebuild();
@@ -395,7 +401,12 @@ namespace Ee4v.UI
             }
             else if (preserveExpansion)
             {
-                // Leave the TreeView expansion state untouched while rebinding item data.
+                for (var index = 0; index < expandedItemIds.Count; index++)
+                {
+                    _treeView.ExpandItem(
+                        expandedItemIds[index],
+                        expandAllChildren: false);
+                }
             }
             else
             {
@@ -406,6 +417,30 @@ namespace Ee4v.UI
             _treeView.style.display = hasItems ? DisplayStyle.Flex : DisplayStyle.None;
             _emptyLabel.style.display = hasItems ? DisplayStyle.None : DisplayStyle.Flex;
             HideScrollbars();
+        }
+
+        private List<int> GetExpandedItemIds(
+            IReadOnlyList<SearchableTreeItemData<TData>> items)
+        {
+            var expandedItemIds = new List<int>();
+            AddExpandedItemIds(items, expandedItemIds);
+            return expandedItemIds;
+        }
+
+        private void AddExpandedItemIds(
+            IReadOnlyList<SearchableTreeItemData<TData>> items,
+            ICollection<int> expandedItemIds)
+        {
+            for (var index = 0; index < items.Count; index++)
+            {
+                var item = items[index];
+                if (!_treeView.IsExpanded(item.Id))
+                {
+                    continue;
+                }
+                expandedItemIds.Add(item.Id);
+                AddExpandedItemIds(item.Children, expandedItemIds);
+            }
         }
 
         private void SetSearchState(string value, string placeholder = null, Action<string> onValueChanged = null)
@@ -431,15 +466,13 @@ namespace Ee4v.UI
             HideScrollbars();
         }
 
+        private void OnTreeWheel(WheelEvent evt)
+        {
+            _treeView.Focus();
+        }
+
         private void HideScrollbars()
         {
-            var scrollers = _treeView.Query<Scroller>().ToList();
-            for (var i = 0; i < scrollers.Count; i++)
-            {
-                scrollers[i].style.display = DisplayStyle.None;
-                scrollers[i].style.visibility = Visibility.Hidden;
-            }
-
             var scrollViews = _treeView.Query<ScrollView>().ToList();
             for (var i = 0; i < scrollViews.Count; i++)
             {

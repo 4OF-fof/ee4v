@@ -17,5 +17,46 @@ namespace Ee4v.UI.Tests
             }
         }
 
+        [Test]
+        public void FluentUiIcons_LoadsSelectedRuntimeIcons()
+        {
+            var iconFileNames = new[]
+            {
+                "add.png",
+                "archive.png",
+                "arrow_clockwise.png",
+                "arrow_left.png",
+                "arrow_right.png",
+                "arrow_sort.png",
+                "chevron_down.png",
+                "chevron_right.png",
+                "code.png",
+                "cube.png",
+                "dismiss.png",
+                "document.png",
+                "eye_off.png",
+                "folder.png",
+                "folder_zip.png",
+                "image.png",
+                "info.png",
+                "library.png",
+                "music_note_2.png",
+                "pin.png",
+                "search.png",
+                "star.png",
+                "subtract.png",
+                "tag.png",
+                "video.png"
+            };
+
+            foreach (var iconFileName in iconFileNames)
+            {
+                Assert.That(
+                    FluentUiIcons.LoadTexture(iconFileName),
+                    Is.Not.Null,
+                    iconFileName);
+            }
+        }
+
     }
 }

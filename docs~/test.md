@@ -30,11 +30,11 @@
 | `DeleteItem_DeletesMultipleItemsAndTheirEe4vFiles` | Item削除が所属ee4v実体も削除する | 破壊的操作のDBとSourceの整合性を確認する |
 | `DeleteFile_DeletesMultipleEe4vSourcePairs` | File削除が対象ee4v pairを削除する | 破壊的操作でSourceだけ残る不整合を検出する |
 | `FileDependencies_RejectCyclesWithoutChangingData` | 循環依存を拒否して既存依存を保持する | 取り込み順を解決不能にする状態と部分更新を防ぐ |
-| `ImportFileTargets_ImportsDependenciesBeforeDependent` | 依存Fileを先にUnity Projectへ取り込む | ファイル名衝突時の最終内容で順序契約を観測できる |
-| `ImportFileEntries_ImportsTemporaryZipSelectionWithoutSavingTarget` | 一時選択だけを取り込み、保存Targetを変更しない | UIの一時操作と永続設定の境界を確認する |
-| `ImportItemTargets_ImportsOneChoicePerGroupAndEveryUngroupedTarget` | Item TargetだけからGroup選択1件とGroup外の全Targetを取り込み、File Targetとは独立して保存する | Item Targetの選択取り込み契約と保存境界を確認する |
-| `FileTargets_RejectInvalidTargetsWithoutChangingData` | 親directoryへのpathとZIP Targetを拒否して既存値を保持する | 書き込み範囲逸脱、ZIPの二重取り込み、部分更新を防ぐ安全契約である |
-| `FileTargets_AllowMultipleEntriesInsideZip` | ZIP内のUnityPackageを含む複数の実体をTargetに指定できる | 複数Targetを保持する公開契約である |
+| `ImportItemTargets_ImportsDependencyTargetsBeforeDependent` | 指定した依存実体を依存元より先にUnity Projectへ取り込む | 実体選択と依存順序を結ぶ公開契約である |
+| `ImportFileEntries_ImportsTemporaryZipSelectionWithoutSavingTarget` | 一時選択だけを取り込み、保存済みItem Targetを変更しない | UIの一時操作と永続設定の境界を確認する |
+| `ImportItemTargets_ImportsOneChoicePerGroupAndEveryUngroupedTarget` | Group選択1件とGroup外の全Item Targetを取り込む | Item Targetの選択取り込み契約を確認する |
+| `FileDependencies_RejectInvalidTargetsWithoutChangingData` | 親directoryへのpathとZIP Targetを拒否して既存依存を保持する | 書き込み範囲逸脱、ZIPの二重取り込み、部分更新を防ぐ安全契約である |
+| `FileDependencies_AllowMultipleEntriesInsideZip` | 同じ依存File内のUnityPackageを含む複数実体を指定できる | 実体単位の依存Targetを保持する公開契約である |
 | `TargetImporter_CopiesFileAndZipEntry` | 通常FileとZIP内要素を指定先へ書き込む | ファイルシステムとZIPの接続部を確認する |
 | `TargetImporter_ReportsPackageFailureAfterCleanup` | UnityPackage失敗を返して一時Fileを削除する | Unityの非同期完了契約と一時データ保全を確認する |
 | `AnalyzeFile_ReadsZipAndUnityPackageContents` | 同期・非同期APIでZIPとUnityPackageを共通の解析結果へ変換する | 外部形式を公開モデルへ変換し、UIスレッド外からも利用する接続契約である |
@@ -78,6 +78,7 @@
 | `UiStoryTests.Catalog_DiscoversExternalStoryProviders` | 別assemblyのStory providerを検出する | reflectionによる拡張境界を確認する |
 | `UiStoryTests.CatalogStories_DeclareUsageLocations` | 機能Storyが実使用箇所を宣言する | 未使用componentの残存を通常の表示確認では検出できない |
 | `UiIconTests.UiBuiltinIconResolver_TryResolve_AllRegisteredIcons` | 全登録アイコンをUnity textureへ解決する | Unity versionで変わり得る外部アイコン契約である |
+| `UiIconTests.FluentUiIcons_LoadsSelectedRuntimeIcons` | 選定済みFluent UI System IconsをすべてTextureへ解決する | 同梱するサードパーティーアセットと実行時パスの契約である |
 
 ## SQLite
 

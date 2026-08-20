@@ -272,16 +272,6 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 new[] { second.Id });
 
             changes.Clear();
-            _manager.SetFileTargets(
-                file.Id,
-                new[] { "Assets/Sample.prefab" });
-            AssertChange(
-                changes.Single(),
-                AssetManagerChangeKind.FileTargetsChanged,
-                new[] { file.Id },
-                new[] { second.Id });
-
-            changes.Clear();
             _manager.SetItemTargets(
                 second.Id,
                 new[]
@@ -301,7 +291,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             changes.Clear();
             _manager.SetFileDependencies(
                 new[] { file.Id },
-                Array.Empty<string>());
+                Array.Empty<AssetFileTarget>());
             AssertChange(
                 changes.Single(),
                 AssetManagerChangeKind.FileDependenciesChanged,
@@ -407,9 +397,9 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 new[] { item.Id },
                 new[] { "Managed" });
             var file = item.Files.Single();
-            _manager.SetFileTargets(
-                file.Id,
-                new[] { "Assets/Sample.prefab" });
+            _manager.SetItemTargets(
+                item.Id,
+                new[] { Target(file, "Assets/Sample.prefab") });
             _manager.SyncEagle(new EagleSyncRequest(library));
 
             var synchronized = _manager.GetItem(item.Id);
@@ -417,7 +407,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 synchronized.Tags.Single().Path,
                 Is.EqualTo("managed"));
             Assert.That(
-                _manager.GetFileTargets(file.Id).Single().TargetPath,
+                _manager.GetItemTargets(item.Id).Single().TargetPath,
                 Is.EqualTo("Assets/Sample.prefab"));
         }
 
@@ -743,7 +733,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
 
             _manager.SetFileDependencies(
                 new[] { first.Id },
-                new[] { third.Id });
+                new[] { Target(third) });
 
             Assert.That(
                 _manager.GetFileDependencies(first.Id)
@@ -752,7 +742,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             var exception = Assert.Throws<AssetManagerException>(() =>
                 _manager.SetFileDependencies(
                     new[] { third.Id },
-                    new[] { first.Id }));
+                    new[] { Target(first) }));
 
             Assert.That(
                 exception.Code,
@@ -767,11 +757,18 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         }
 
         [Test]
-        public void ImportFileTargets_ImportsDependenciesBeforeDependent()
+        public void ImportItemTargets_ImportsDependencyTargetsBeforeDependent()
         {
             var library = Path.Combine(_root, "ee4v-library");
-            var dependencySource = Path.Combine(_root, "dependency.txt");
-            File.WriteAllText(dependencySource, "dependency");
+            var dependencySource = Path.Combine(_root, "dependency.zip");
+            using (var stream = File.Create(dependencySource))
+            using (var archive = new ZipArchive(
+                       stream,
+                       ZipArchiveMode.Create))
+            {
+                WriteArchiveEntry(archive, "shared.txt", "dependency");
+                WriteArchiveEntry(archive, "ignored.txt", "ignored");
+            }
             var dependentSource = Path.Combine(_root, "dependent.txt");
             File.WriteAllText(dependentSource, "dependent");
             var itemName = "DependencyOrder" +
@@ -784,7 +781,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 {
                     LibraryPath = library,
                     FilePath = dependencySource,
-                    FileName = "shared.txt"
+                    FileName = "shared.zip"
                 });
             var dependent = _manager.RegisterFile(
                 item.Id,
@@ -794,20 +791,19 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                     FilePath = dependentSource,
                     FileName = "shared.txt"
                 });
-            _manager.SetFileTargets(
-                dependency.Id,
-                new[] { string.Empty });
-            _manager.SetFileTargets(
-                dependent.Id,
-                new[] { string.Empty });
+            _manager.SetItemTargets(
+                item.Id,
+                new[] { Target(dependent) });
             _manager.SetFileDependencies(
                 new[] { dependent.Id },
-                new[] { dependency.Id });
+                new[] { Target(dependency, "shared.txt") });
 
             var assetPath = "Assets/" + itemName;
             try
             {
-                var result = _manager.ImportFileTargets(dependent.Id)
+                var result = _manager.ImportItemTargets(
+                        item.Id,
+                        Array.Empty<AssetFileTarget>())
                     .GetAwaiter().GetResult();
 
                 Assert.That(result.Succeeded, Is.True);
@@ -824,6 +820,9 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                         destination,
                         "shared.txt")),
                     Is.EqualTo("dependent"));
+                Assert.That(
+                    File.Exists(Path.Combine(destination, "ignored.txt")),
+                    Is.False);
             }
             finally
             {
@@ -870,9 +869,9 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                     LibraryPath = library,
                     FilePath = sourcePath
                 });
-            _manager.SetFileTargets(
-                file.Id,
-                new[] { "configured.txt" });
+            _manager.SetItemTargets(
+                item.Id,
+                new[] { Target(file, "configured.txt") });
 
             var assetPath = "Assets/" + itemName;
             try
@@ -899,7 +898,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                         "configured.txt")),
                     Is.False);
                 Assert.That(
-                    _manager.GetFileTargets(file.Id)
+                    _manager.GetItemTargets(item.Id)
                         .Select(target => target.TargetPath),
                     Is.EqualTo(new[] { "configured.txt" }));
             }
@@ -979,8 +978,6 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                     .Where(target => target.GroupName == "a")
                     .Select(target => target.TargetPath),
                 Is.EquivalentTo(new[] { "a.pdf", "a_variation.pdf" }));
-            Assert.That(_manager.GetFileTargets(file.Id), Is.Empty);
-
             var assetPath = "Assets/" + itemName;
             try
             {
@@ -1062,52 +1059,76 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             Assert.That(change.SourceType, Is.EqualTo(sourceType));
         }
 
+        private static AssetFileTarget Target(
+            AssetFile file,
+            string targetPath = "")
+        {
+            return new AssetFileTarget
+            {
+                FileId = file.Id,
+                TargetPath = targetPath
+            };
+        }
+
         [Test]
-        public void FileTargets_RejectInvalidTargetsWithoutChangingData()
+        public void FileDependencies_RejectInvalidTargetsWithoutChangingData()
         {
             var library = Path.Combine(_root, "ee4v-library");
             var sourcePath = Path.Combine(_root, "avatar.zip");
             File.WriteAllText(sourcePath, "payload");
-            var file = _manager.RegisterFile(
-                null,
+            var item = _manager.CreateItem(
+                new CreateAssetItemRequest { Name = "Avatar" });
+            var dependency = _manager.RegisterFile(
+                item.Id,
                 new RegisterFileRequest
                 {
                     LibraryPath = library,
                     FilePath = sourcePath
                 });
+            var dependent = _manager.RegisterFile(
+                item.Id,
+                new RegisterFileRequest
+                {
+                    LibraryPath = library,
+                    FilePath = sourcePath,
+                    FileName = "dependent.txt"
+                });
 
-            _manager.SetFileTargets(
-                file.Id,
-                new[] { "Packages/avatar.prefab" });
+            _manager.SetFileDependencies(
+                new[] { dependent.Id },
+                new[] { Target(dependency, "Packages/avatar.prefab") });
 
             var exception = Assert.Throws<AssetManagerException>(() =>
-                _manager.SetFileTargets(
-                    file.Id,
-                    new[] { "../outside.prefab" }));
+                _manager.SetFileDependencies(
+                    new[] { dependent.Id },
+                    new[] { Target(dependency, "../outside.prefab") }));
 
             Assert.That(
                 exception.Code,
                 Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
             Assert.That(
                 Assert.Throws<AssetManagerException>(() =>
-                    _manager.SetFileTargets(
-                        file.Id,
-                        new[] { string.Empty })).Code,
+                    _manager.SetFileDependencies(
+                        new[] { dependent.Id },
+                        new[] { Target(dependency) })).Code,
                 Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
             Assert.That(
                 Assert.Throws<AssetManagerException>(() =>
-                    _manager.SetFileTargets(
-                        file.Id,
-                        new[] { "Packages/nested.ZIP" })).Code,
+                    _manager.SetFileDependencies(
+                        new[] { dependent.Id },
+                        new[]
+                        {
+                            Target(dependency, "Packages/nested.ZIP")
+                        })).Code,
                 Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
             Assert.That(
-                _manager.GetFileTargets(file.Id)
+                _manager.GetFileDependencies(dependent.Id)
                     .Single().TargetPath,
                 Is.EqualTo("Packages/avatar.prefab"));
         }
 
         [Test]
-        public void FileTargets_AllowMultipleEntriesInsideZip()
+        public void FileDependencies_AllowMultipleEntriesInsideZip()
         {
             var library = Path.Combine(_root, "ee4v-library");
             var sourcePath = Path.Combine(_root, "avatar.zip");
@@ -1139,17 +1160,25 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                     LibraryPath = library,
                     FilePath = sourcePath
                 });
-            _manager.SetFileTargets(
-                file.Id,
+            var dependent = _manager.RegisterFile(
+                item.Id,
+                new RegisterFileRequest
+                {
+                    LibraryPath = library,
+                    FilePath = sourcePath,
+                    FileName = "dependent.txt"
+                });
+            _manager.SetFileDependencies(
+                new[] { dependent.Id },
                 new[]
                 {
-                    "Packages/avatar.unitypackage",
-                    "Packages/avatar.prefab"
+                    Target(file, "Packages/avatar.unitypackage"),
+                    Target(file, "Packages/avatar.prefab")
                 });
 
             Assert.That(
-                _manager.GetFileTargets(file.Id)
-                    .Select(target => target.TargetPath),
+                _manager.GetFileDependencies(dependent.Id)
+                    .Select(dependency => dependency.TargetPath),
                 Is.EquivalentTo(new[]
                 {
                     "Packages/avatar.unitypackage",

@@ -1,6 +1,6 @@
 # Eagle Plugins
 
-`new/External~/Eagle` は Eagle 連携 plugin の単一 npm project。
+`External~/Eagle` は Eagle 連携 plugin の単一 npm project。
 ビルド前の実装は `src` 配下の TypeScript を正本とし、`npm run build` で `dist` 配下へ Eagle plugin として出力する。
 
 ## Build
@@ -9,16 +9,18 @@
 npm run build
 ```
 
-型チェック、ビルド出力、日英 locale のキー一致をまとめて確認する場合:
+型チェック、配布物、manifest、日英 locale のキー一致をまとめて確認する場合:
 
 ```sh
 npm run check
 ```
 
+この確認は配布時の契約を対象とし、関数名や処理順などの内部実装は固定しない。
+
 ビルド後の plugin path:
 
-- `new/External~/Eagle/dist/BoothCompat`
-- `new/External~/Eagle/dist/BoothCompatService`
+- `External~/Eagle/dist/BoothCompat`
+- `External~/Eagle/dist/BoothCompatService`
 
 ## BoothCompat
 

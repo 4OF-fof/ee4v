@@ -8,6 +8,26 @@ using Ee4v.UI;
 
 namespace Ee4v.AssetManager.UI
 {
+    internal sealed class FileTreeGroup
+    {
+        internal FileTreeGroup(
+            string id,
+            string title,
+            IReadOnlyList<AssetFile> files,
+            bool startsNewSection = false)
+        {
+            Id = id ?? string.Empty;
+            Title = title ?? string.Empty;
+            Files = files ?? Array.Empty<AssetFile>();
+            StartsNewSection = startsNewSection;
+        }
+
+        internal string Id { get; }
+        internal string Title { get; }
+        internal IReadOnlyList<AssetFile> Files { get; }
+        internal bool StartsNewSection { get; }
+    }
+
     internal static class AssetFileTreeBuilder
     {
         internal static IReadOnlyList<SearchableTreeItemData<FileTreeNode>>
@@ -17,12 +37,15 @@ namespace Ee4v.AssetManager.UI
                 CancellationToken cancellationToken,
                 string overviewTitle,
                 string overviewMeta,
-                bool includeOverview)
+                bool includeOverview,
+                IReadOnlyList<FileTreeGroup> groups = null)
         {
             var source = files ?? Array.Empty<AssetFile>();
+            var sourceGroups = groups ?? Array.Empty<FileTreeGroup>();
             var usedIds = new HashSet<int>();
             var items = new List<SearchableTreeItemData<FileTreeNode>>(
-                source.Count + (includeOverview ? 1 : 0));
+                (sourceGroups.Count > 0 ? sourceGroups.Count : source.Count) +
+                (includeOverview ? 1 : 0));
             if (includeOverview)
             {
                 items.Add(CreateTreeItem(
@@ -35,6 +58,40 @@ namespace Ee4v.AssetManager.UI
                     Array.Empty<SearchableTreeItemData<FileTreeNode>>(),
                     usedIds,
                     cancellationToken));
+            }
+            if (sourceGroups.Count > 0)
+            {
+                for (var index = 0; index < sourceGroups.Count; index++)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var group = sourceGroups[index];
+                    var children = group.Files
+                        .Where(file => file != null)
+                        .Select(file =>
+                        {
+                            AssetFileAnalysis analysis = null;
+                            analyses?.TryGetValue(file.Id, out analysis);
+                            return CreateFileItem(
+                                file,
+                                analysis,
+                                usedIds,
+                                cancellationToken);
+                        })
+                        .ToArray();
+                    items.Add(CreateTreeItem(
+                        "item:" + group.Id,
+                        new FileTreeNode(
+                            group.Title,
+                            children.Length.ToString(),
+                            null,
+                            null,
+                            isGroup: true,
+                            startsNewSection: group.StartsNewSection),
+                        children,
+                        usedIds,
+                        cancellationToken));
+                }
+                return items;
             }
             for (var index = 0; index < source.Count; index++)
             {
@@ -316,18 +373,25 @@ namespace Ee4v.AssetManager.UI
             string title,
             string meta,
             AssetFile file,
-            AssetFileContentEntry entry)
+            AssetFileContentEntry entry,
+            bool isGroup = false,
+            bool startsNewSection = false)
         {
             Title = title ?? string.Empty;
             Meta = meta ?? string.Empty;
             File = file;
             Entry = entry;
+            IsGroup = isGroup;
+            StartsNewSection = startsNewSection;
         }
 
         internal string Title { get; }
         internal string Meta { get; }
         internal AssetFile File { get; }
         internal AssetFileContentEntry Entry { get; }
+        internal bool IsGroup { get; }
+        internal bool IsOverview => File == null && !IsGroup;
+        internal bool StartsNewSection { get; }
         internal bool ShowsTargetToggle { get; set; }
         internal bool IsTarget { get; set; }
         internal Action<FileTreeNode, bool> TargetChanged { get; set; }

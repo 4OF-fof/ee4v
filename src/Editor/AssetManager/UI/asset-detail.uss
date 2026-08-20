@@ -162,6 +162,10 @@
     border-right-color: var(--ee4v-color-border-subtle);
 }
 
+.ee4v-asset-manager__overview-fact--last {
+    border-right-width: 0;
+}
+
 .ee4v-asset-manager__overview-fact-value {
     margin-top: var(--ee4v-space-xxs);
 }
@@ -269,6 +273,10 @@
 .ee4v-asset-manager__target-setting .ee4v-asset-manager__setting-value,
 .ee4v-asset-manager__target-list {
     align-items: stretch;
+}
+
+.ee4v-asset-manager__target-setting .ee4v-asset-manager__setting-action {
+    align-self: center;
 }
 
 .ee4v-asset-manager__target-list {

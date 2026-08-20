@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI
 {
-    internal sealed class AssetCollectionCreationPopup : EditorWindow
+    internal sealed class AssetCollectionCreationPopup : CustomPopupWindow
     {
         private static readonly Vector2 PopupSize = new Vector2(620f, 520f);
 
@@ -82,7 +82,7 @@ namespace Ee4v.AssetManager.UI
                         : "action.saveCollection"),
                 Submit,
                 "ee4v-asset-manager__primary-action"));
-            root.Add(popup);
+            SetPopup(popup);
             root.schedule.Execute(_name.FocusInput);
         }
 

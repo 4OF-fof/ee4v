@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Ee4v.Core.Injector;
 using Ee4v.ItemStyle;
+using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
 
@@ -96,8 +97,8 @@ namespace Ee4v.ProjectStyle
                 return;
             }
 
-            var folderIcon =
-                EditorGUIUtility.IconContent("Folder Icon").image;
+            var folderIcon = UiBuiltinIconResolver.LoadTexture(
+                UiBuiltinIcon.Folder);
             if (folderIcon == null)
             {
                 return;

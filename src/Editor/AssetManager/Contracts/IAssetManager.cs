@@ -45,10 +45,6 @@ namespace Ee4v.AssetManager.Contracts
             IReadOnlyList<string> fileIds,
             bool archived);
         void DeleteFile(IReadOnlyList<string> fileIds);
-        IReadOnlyList<AssetFileTarget> GetFileTargets(string fileId);
-        IReadOnlyList<AssetFileTarget> SetFileTargets(
-            string fileId,
-            IReadOnlyList<string> targetPaths);
         IReadOnlyList<AssetFileTarget> GetItemTargets(string itemId);
         IReadOnlyList<AssetFileTarget> SetItemTargets(
             string itemId,
@@ -62,9 +58,6 @@ namespace Ee4v.AssetManager.Contracts
             string fileId,
             IReadOnlyList<string> paths,
             CancellationToken cancellationToken = default);
-        Task<AssetImportResult> ImportFileTargets(
-            string fileId,
-            CancellationToken cancellationToken = default);
         Task<AssetImportResult> ImportItemTargets(
             string itemId,
             IReadOnlyList<AssetFileTarget> selectedTargets,
@@ -73,7 +66,7 @@ namespace Ee4v.AssetManager.Contracts
             string fileId);
         IReadOnlyList<AssetFileDependency> SetFileDependencies(
             IReadOnlyList<string> dependentFileIds,
-            IReadOnlyList<string> dependencyFileIds);
+            IReadOnlyList<AssetFileTarget> dependencyTargets);
         AssetFileAnalysis AnalyzeFile(string fileId);
         Task<AssetFileAnalysis> AnalyzeFileAsync(
             string fileId,
@@ -114,7 +107,6 @@ namespace Ee4v.AssetManager.Contracts
         FilePlacementChanged,
         FileArchiveChanged,
         FileDeleted,
-        FileTargetsChanged,
         ItemTargetsChanged,
         FileDependenciesChanged,
         FileImportedAssetGuidsChanged,

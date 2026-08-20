@@ -451,53 +451,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             });
         }
 
-        public IReadOnlyList<AssetFileTarget> GetFileTargets(
-            string fileId)
-        {
-            return Run(() =>
-            {
-                using (var connection = OpenConnection())
-                {
-                    RequireFile(connection, fileId, null);
-                    return ReadFileTargets(connection, fileId);
-                }
-            });
-        }
-
-        public IReadOnlyList<AssetFileTarget> ReplaceFileTargets(
-            string fileId,
-            IReadOnlyList<string> normalizedTargetPaths)
-        {
-            return Run(() =>
-            {
-                using (var connection = OpenConnection())
-                using (var transaction = new DatabaseTransaction(connection))
-                {
-                    RequireFile(connection, fileId, transaction);
-                    Execute(
-                        connection,
-                        transaction,
-                        "DELETE FROM file_target WHERE file_id = @p0",
-                        fileId);
-                    for (var i = 0;
-                         i < normalizedTargetPaths.Count;
-                         i++)
-                    {
-                        Execute(
-                            connection,
-                            transaction,
-                            @"INSERT INTO file_target(
-                                file_id, target_path)
-                              VALUES(@p0, @p1)",
-                            fileId,
-                            normalizedTargetPaths[i]);
-                    }
-                    transaction.Commit();
-                    return ReadFileTargets(connection, fileId);
-                }
-            });
-        }
-
         public IReadOnlyList<AssetFileTarget> GetItemTargets(
             string itemId)
         {
@@ -622,7 +575,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
 
         public IReadOnlyList<AssetFileDependency> ReplaceFileDependencies(
             IReadOnlyList<string> dependentFileIds,
-            IReadOnlyList<string> dependencyFileIds)
+            IReadOnlyList<AssetFileTarget> dependencyTargets)
         {
             return Run(() =>
             {
@@ -637,11 +590,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                             transaction);
                     }
 
-                    for (var i = 0; i < dependencyFileIds.Count; i++)
+                    for (var i = 0; i < dependencyTargets.Count; i++)
                     {
                         RequireFile(
                             connection,
-                            dependencyFileIds[i],
+                            dependencyTargets[i].FileId,
                             transaction);
                     }
 
@@ -662,17 +615,21 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                          dependentIndex++)
                     {
                         for (var dependencyIndex = 0;
-                             dependencyIndex < dependencyFileIds.Count;
+                             dependencyIndex < dependencyTargets.Count;
                              dependencyIndex++)
                         {
+                            var target = dependencyTargets[dependencyIndex];
                             Execute(
                                 connection,
                                 transaction,
                                 @"INSERT INTO file_dependency(
-                                    dependent_file_id, dependency_file_id)
-                                  VALUES(@p0, @p1)",
+                                    dependent_file_id,
+                                    dependency_file_id,
+                                    target_path)
+                                  VALUES(@p0, @p1, @p2)",
                                 dependentFileIds[dependentIndex],
-                                dependencyFileIds[dependencyIndex]);
+                                target.FileId,
+                                target.TargetPath);
                         }
                     }
 
@@ -1312,26 +1269,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     ON file(item_id)",
                 @"CREATE INDEX IF NOT EXISTS ix_file_extension_item
                     ON file(extension, item_id)",
-                @"CREATE TABLE IF NOT EXISTS file_target(
-                    file_id TEXT NOT NULL
-                      REFERENCES file(id) ON DELETE CASCADE,
-                    target_path TEXT NOT NULL COLLATE NOCASE
-                      CHECK(target_path = trim(target_path))
-                      CHECK(instr(target_path, '\') = 0)
-                      CHECK(instr(target_path, ':') = 0)
-                      CHECK(instr(target_path, char(0)) = 0)
-                      CHECK(substr(target_path, 1, 1) <> '/')
-                      CHECK(substr(target_path, -1, 1) <> '/')
-                      CHECK(instr(target_path, '//') = 0)
-                      CHECK(target_path NOT IN ('.', '..'))
-                      CHECK(target_path NOT LIKE './%')
-                      CHECK(target_path NOT LIKE '../%')
-                      CHECK(target_path NOT LIKE '%/./%')
-                      CHECK(target_path NOT LIKE '%/../%')
-                      CHECK(target_path NOT LIKE '%/.')
-                      CHECK(target_path NOT LIKE '%/..'),
-                    PRIMARY KEY(file_id, target_path)
-                  )",
                 @"CREATE TABLE IF NOT EXISTS item_target(
                     item_id TEXT NOT NULL
                       REFERENCES item(id) ON DELETE CASCADE,
@@ -1387,8 +1324,25 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                       REFERENCES file(id) ON DELETE CASCADE,
                     dependency_file_id TEXT NOT NULL
                       REFERENCES file(id) ON DELETE CASCADE,
+                    target_path TEXT NOT NULL COLLATE NOCASE
+                      CHECK(target_path = trim(target_path))
+                      CHECK(instr(target_path, '\') = 0)
+                      CHECK(instr(target_path, ':') = 0)
+                      CHECK(instr(target_path, char(0)) = 0)
+                      CHECK(substr(target_path, 1, 1) <> '/')
+                      CHECK(substr(target_path, -1, 1) <> '/')
+                      CHECK(instr(target_path, '//') = 0)
+                      CHECK(target_path NOT IN ('.', '..'))
+                      CHECK(target_path NOT LIKE './%')
+                      CHECK(target_path NOT LIKE '../%')
+                      CHECK(target_path NOT LIKE '%/./%')
+                      CHECK(target_path NOT LIKE '%/../%')
+                      CHECK(target_path NOT LIKE '%/.')
+                      CHECK(target_path NOT LIKE '%/..'),
                     PRIMARY KEY(
-                      dependent_file_id, dependency_file_id),
+                      dependent_file_id,
+                      dependency_file_id,
+                      target_path),
                     CHECK(dependent_file_id <> dependency_file_id)
                   )",
                 @"CREATE INDEX IF NOT EXISTS
@@ -1732,25 +1686,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             };
         }
 
-        private static IReadOnlyList<AssetFileTarget> ReadFileTargets(
-            SQLiteConnection connection,
-            string fileId)
-        {
-            return connection.Query<FileTargetRow>(
-                    @"SELECT file_id AS FileId,
-                             target_path AS TargetPath
-                      FROM file_target
-                      WHERE file_id = ?
-                      ORDER BY target_path COLLATE NOCASE",
-                    fileId)
-                .Select(row => new AssetFileTarget
-                {
-                    FileId = row.FileId,
-                    TargetPath = row.TargetPath
-                })
-                .ToArray();
-        }
-
         private static IReadOnlyList<AssetFileTarget> ReadItemTargets(
             SQLiteConnection connection,
             string itemId)
@@ -1779,15 +1714,18 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
         {
             return connection.Query<FileDependencyRow>(
                     @"SELECT dependent_file_id AS DependentFileId,
-                             dependency_file_id AS DependencyFileId
+                             dependency_file_id AS DependencyFileId,
+                             target_path AS TargetPath
                       FROM file_dependency
                       WHERE dependent_file_id = ?
-                      ORDER BY dependency_file_id",
+                      ORDER BY dependency_file_id,
+                               target_path COLLATE NOCASE",
                     fileId)
                 .Select(row => new AssetFileDependency
                 {
                     DependentFileId = row.DependentFileId,
-                    DependencyFileId = row.DependencyFileId
+                    DependencyFileId = row.DependencyFileId,
+                    TargetPath = row.TargetPath
                 })
                 .ToArray();
         }
@@ -2864,6 +2802,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
         {
             public string DependentFileId { get; set; }
             public string DependencyFileId { get; set; }
+            public string TargetPath { get; set; }
         }
 
         private sealed class ImportedAssetGuidRow

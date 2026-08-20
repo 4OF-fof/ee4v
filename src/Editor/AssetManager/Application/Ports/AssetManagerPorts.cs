@@ -32,10 +32,6 @@ namespace Ee4v.AssetManager.Application.Ports
             IReadOnlyList<string> fileIds,
             bool archived);
         void DeleteFile(IReadOnlyList<string> fileIds);
-        IReadOnlyList<AssetFileTarget> GetFileTargets(string fileId);
-        IReadOnlyList<AssetFileTarget> ReplaceFileTargets(
-            string fileId,
-            IReadOnlyList<string> normalizedTargetPaths);
         IReadOnlyList<AssetFileTarget> GetItemTargets(string itemId);
         IReadOnlyList<AssetFileTarget> ReplaceItemTargets(
             string itemId,
@@ -49,7 +45,7 @@ namespace Ee4v.AssetManager.Application.Ports
             string fileId);
         IReadOnlyList<AssetFileDependency> ReplaceFileDependencies(
             IReadOnlyList<string> dependentFileIds,
-            IReadOnlyList<string> dependencyFileIds);
+            IReadOnlyList<AssetFileTarget> dependencyTargets);
         IReadOnlyList<string> GetDependentFileIds(
             IReadOnlyList<string> dependencyFileIds);
         IReadOnlyList<string> GetFileImportedAssetGuids(string fileId);

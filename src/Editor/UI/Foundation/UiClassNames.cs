@@ -6,6 +6,8 @@ namespace Ee4v.UI
         public const string SectionTitle = "ee4v-ui-section-title";
         public const string SecondaryText = "ee4v-ui-secondary-text";
         public const string PopupSurface = "ee4v-popup-surface";
+        public const string ThinVerticalScrollbar =
+            "ee4v-ui-thin-vertical-scrollbar";
         public const string InfoCardEyebrow = "ee4v-ui-info-card__eyebrow";
         public const string InfoCardTitle = "ee4v-ui-info-card__title";
         public const string InfoCardDescription = "ee4v-ui-info-card__description";

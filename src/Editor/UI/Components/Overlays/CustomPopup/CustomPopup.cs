@@ -5,6 +5,130 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
+    public abstract class CustomPopupWindow : EditorWindow
+    {
+        private VisualElement _dragHandle;
+        private VisualElement _headerActions;
+        private int _dragPointerId = -1;
+        private Vector2 _dragPointerOffset;
+
+        protected void SetPopup(CustomPopup popup)
+        {
+            if (popup == null)
+            {
+                throw new ArgumentNullException(nameof(popup));
+            }
+
+            UnregisterDragHandle();
+            _dragHandle = popup.Header;
+            _headerActions = popup.HeaderActions;
+            _dragHandle.RegisterCallback<PointerDownEvent>(
+                OnHeaderPointerDown);
+            _dragHandle.RegisterCallback<PointerMoveEvent>(
+                OnHeaderPointerMove);
+            _dragHandle.RegisterCallback<PointerUpEvent>(
+                OnHeaderPointerUp);
+            _dragHandle.RegisterCallback<PointerCaptureOutEvent>(
+                OnHeaderPointerCaptureOut);
+            rootVisualElement.Add(popup);
+        }
+
+        private void OnHeaderPointerDown(PointerDownEvent evt)
+        {
+            if (evt.button != (int)MouseButton.LeftMouse ||
+                IsHeaderAction(evt.target))
+            {
+                return;
+            }
+
+            EndDrag();
+            _dragPointerId = evt.pointerId;
+            _dragPointerOffset = new Vector2(
+                evt.position.x,
+                evt.position.y);
+            _dragHandle.CapturePointer(evt.pointerId);
+            evt.StopPropagation();
+        }
+
+        private void OnHeaderPointerMove(PointerMoveEvent evt)
+        {
+            if (evt.pointerId != _dragPointerId ||
+                !_dragHandle.HasPointerCapture(evt.pointerId))
+            {
+                return;
+            }
+
+            var pointerScreenPosition = position.position +
+                                        new Vector2(
+                                            evt.position.x,
+                                            evt.position.y);
+            var windowPosition = position;
+            windowPosition.position = pointerScreenPosition -
+                                      _dragPointerOffset;
+            position = windowPosition;
+            evt.StopPropagation();
+        }
+
+        private void OnHeaderPointerUp(PointerUpEvent evt)
+        {
+            if (evt.pointerId != _dragPointerId)
+            {
+                return;
+            }
+
+            EndDrag();
+            evt.StopPropagation();
+        }
+
+        private void OnHeaderPointerCaptureOut(
+            PointerCaptureOutEvent evt)
+        {
+            if (evt.pointerId == _dragPointerId)
+            {
+                _dragPointerId = -1;
+            }
+        }
+
+        private bool IsHeaderAction(IEventHandler target)
+        {
+            return target is VisualElement element &&
+                   _headerActions != null &&
+                   _headerActions.Contains(element);
+        }
+
+        private void EndDrag()
+        {
+            var pointerId = _dragPointerId;
+            _dragPointerId = -1;
+            if (pointerId >= 0 &&
+                _dragHandle != null &&
+                _dragHandle.HasPointerCapture(pointerId))
+            {
+                _dragHandle.ReleasePointer(pointerId);
+            }
+        }
+
+        private void UnregisterDragHandle()
+        {
+            EndDrag();
+            if (_dragHandle == null)
+            {
+                return;
+            }
+
+            _dragHandle.UnregisterCallback<PointerDownEvent>(
+                OnHeaderPointerDown);
+            _dragHandle.UnregisterCallback<PointerMoveEvent>(
+                OnHeaderPointerMove);
+            _dragHandle.UnregisterCallback<PointerUpEvent>(
+                OnHeaderPointerUp);
+            _dragHandle.UnregisterCallback<PointerCaptureOutEvent>(
+                OnHeaderPointerCaptureOut);
+            _dragHandle = null;
+            _headerActions = null;
+        }
+    }
+
     public sealed class CustomPopup : VisualElement
     {
         private const string RootClassName =
@@ -31,17 +155,17 @@ namespace Ee4v.UI
             AddToClassList(RootClassName);
             AddToClassList(UiClassNames.PopupSurface);
 
-            var header = new VisualElement();
-            header.AddToClassList(HeaderClassName);
+            Header = new VisualElement();
+            Header.AddToClassList(HeaderClassName);
             _title = UiTextFactory.Create(
                 title ?? string.Empty,
                 UiClassNames.SectionTitle,
                 TitleClassName);
             HeaderActions = new VisualElement();
             HeaderActions.AddToClassList(HeaderActionsClassName);
-            header.Add(_title);
-            header.Add(HeaderActions);
-            hierarchy.Add(header);
+            Header.Add(_title);
+            Header.Add(HeaderActions);
+            hierarchy.Add(Header);
 
             Content = new VisualElement();
             Content.AddToClassList(ContentClassName);
@@ -54,6 +178,8 @@ namespace Ee4v.UI
         }
 
         public VisualElement HeaderActions { get; }
+
+        internal VisualElement Header { get; }
 
         public VisualElement Content { get; }
 

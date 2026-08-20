@@ -216,7 +216,7 @@ namespace Ee4v.HiddenObjects
                     texture,
                     UiSizeTokens.Size16)
                 : IconState.FromBuiltinIcon(
-                    UiBuiltinIcon.GenericFile,
+                    UiBuiltinIcon.GameObject,
                     UiSizeTokens.Size16);
             var children = node.Children
                 .Select(child => CreateNodeState(

@@ -75,7 +75,7 @@ namespace Ee4v.HiddenObjects
             IsHidden = isHidden;
             IsSelected = isSelected;
             Icon = icon ?? IconState.FromBuiltinIcon(
-                UiBuiltinIcon.GenericFile,
+                UiBuiltinIcon.GameObject,
                 UiSizeTokens.Size16);
             Children = children ?? Array.Empty<HiddenObjectNodeViewState>();
         }

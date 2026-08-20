@@ -6,6 +6,8 @@ ProjectTabs は Project ウィンドウのツールバーへフォルダータ�
 
 固定タブは Unity の Project Favorites と同期します。固定タブから別のフォルダーへ移動する UI 操作では通常タブを追加し、固定タブの位置を維持します。
 
+タブ追加はFluent UI System Iconsの12pxアイコンを使用します。
+
 ## 公開型
 
 | 型 | 役割 |

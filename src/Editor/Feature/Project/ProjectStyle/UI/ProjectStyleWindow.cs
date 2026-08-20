@@ -3,6 +3,7 @@ using System.IO;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Injector;
 using Ee4v.ItemStyle;
+using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
 
@@ -64,7 +65,7 @@ namespace Ee4v.ProjectStyle
                 CreateTargetTooltip(folderGuids),
                 GetColors(),
                 typeof(Texture),
-                EditorGUIUtility.IconContent("Folder Icon").image,
+                UiBuiltinIconResolver.LoadTexture(UiBuiltinIcon.Folder),
                 () => InjectorApi.Repaint(
                     InjectionChannel.ProjectItem))
             {

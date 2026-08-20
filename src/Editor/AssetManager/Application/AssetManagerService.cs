@@ -387,37 +387,6 @@ namespace Ee4v.AssetManager.Application
                 dependentFileIds);
         }
 
-        public IReadOnlyList<AssetFileTarget> GetFileTargets(
-            string fileId)
-        {
-            AssetManagerRequestValidator.Require(fileId, "file id");
-            return _store.GetFileTargets(fileId);
-        }
-
-        public IReadOnlyList<AssetFileTarget> SetFileTargets(
-            string fileId,
-            IReadOnlyList<string> targetPaths)
-        {
-            AssetManagerRequestValidator.Require(fileId, "file id");
-            var normalizedFileId = fileId.Trim();
-            var normalizedTargetPaths =
-                AssetManagerRequestValidator.NormalizeTargetPaths(
-                    targetPaths);
-            var file = _store.GetFile(normalizedFileId);
-            AssetManagerRequestValidator
-                .EnsureImportTargetsDoNotContainZip(
-                    file,
-                    normalizedTargetPaths);
-            var targets = _store.ReplaceFileTargets(
-                normalizedFileId,
-                normalizedTargetPaths);
-            Publish(
-                AssetManagerChangeKind.FileTargetsChanged,
-                new[] { normalizedFileId },
-                ItemIds(new[] { file }));
-            return targets;
-        }
-
         public IReadOnlyList<AssetFileTarget> GetItemTargets(
             string itemId)
         {
@@ -473,42 +442,6 @@ namespace Ee4v.AssetManager.Application
             return target;
         }
 
-        public async Task<AssetImportResult> ImportFileTargets(
-            string fileId,
-            CancellationToken cancellationToken = default)
-        {
-            AssetManagerRequestValidator.Require(fileId, "file id");
-            var normalizedFileId = fileId.Trim();
-            if (_store.GetFileTargets(normalizedFileId).Count == 0)
-            {
-                return new AssetImportResult(
-                    AssetImportState.Success,
-                    Array.Empty<string>(),
-                    Array.Empty<string>());
-            }
-
-            FileImportPlan[] plans;
-            try
-            {
-                var order =
-                    AssetManagerRequestValidator.ResolveDependencyOrder(
-                        normalizedFileId,
-                        GetDependencyIds);
-                plans = order
-                    .Select(CreateImportPlan)
-                    .ToArray();
-            }
-            catch (Exception exception)
-            {
-                return new AssetImportResult(
-                    AssetImportState.Failed,
-                    new[] { normalizedFileId },
-                    Array.Empty<string>(),
-                    exception.Message);
-            }
-            return await ImportPlans(plans, cancellationToken);
-        }
-
         public async Task<AssetImportResult> ImportItemTargets(
             string itemId,
             IReadOnlyList<AssetFileTarget> selectedTargets,
@@ -519,7 +452,6 @@ namespace Ee4v.AssetManager.Application
             try
             {
                 _store.GetItem(normalizedItemId);
-                var files = _store.GetFiles(normalizedItemId, true);
                 var targets = _store.GetItemTargets(normalizedItemId);
                 if (targets.Count == 0)
                 {
@@ -563,16 +495,17 @@ namespace Ee4v.AssetManager.Application
                         target.GroupName))
                     .Concat(choices)
                     .ToArray();
-                var itemPaths = files.ToDictionary(
-                    file => file.Id,
-                    file => (IReadOnlyList<string>)selected
-                        .Where(target => string.Equals(
-                            target.FileId,
-                            file.Id,
-                            StringComparison.Ordinal))
-                        .Select(target => target.TargetPath)
-                        .ToArray(),
+                var targetPaths = new Dictionary<string, List<string>>(
                     StringComparer.Ordinal);
+                for (var targetIndex = 0;
+                     targetIndex < selected.Length;
+                     targetIndex++)
+                {
+                    AddTargetPath(
+                        targetPaths,
+                        selected[targetIndex].FileId,
+                        selected[targetIndex].TargetPath);
+                }
                 var order = new List<string>();
                 var seen = new HashSet<string>(StringComparer.Ordinal);
                 foreach (var fileId in selected
@@ -592,12 +525,31 @@ namespace Ee4v.AssetManager.Application
                     }
                 }
 
+                for (var fileIndex = 0;
+                     fileIndex < order.Count;
+                     fileIndex++)
+                {
+                    var dependencies = _store.GetFileDependencies(
+                        order[fileIndex]);
+                    for (var dependencyIndex = 0;
+                         dependencyIndex < dependencies.Count;
+                         dependencyIndex++)
+                    {
+                        AddTargetPath(
+                            targetPaths,
+                            dependencies[dependencyIndex].DependencyFileId,
+                            dependencies[dependencyIndex].TargetPath);
+                    }
+                }
+
                 var plans = order
-                    .Select(fileId => itemPaths.TryGetValue(
+                    .Select(fileId => targetPaths.TryGetValue(
                             fileId,
                             out var paths)
                         ? CreateImportPlan(fileId, paths)
-                        : CreateImportPlan(fileId))
+                        : CreateImportPlan(
+                            fileId,
+                            Array.Empty<string>()))
                     .ToArray();
                 return await ImportPlans(plans, cancellationToken);
             }
@@ -701,7 +653,7 @@ namespace Ee4v.AssetManager.Application
 
         public IReadOnlyList<AssetFileDependency> SetFileDependencies(
             IReadOnlyList<string> dependentFileIds,
-            IReadOnlyList<string> dependencyFileIds)
+            IReadOnlyList<AssetFileTarget> dependencyTargets)
         {
             var normalizedFileIds =
                 AssetManagerRequestValidator.NormalizeIds(
@@ -712,21 +664,71 @@ namespace Ee4v.AssetManager.Application
                 _store.GetFile(normalizedFileIds[i]);
             }
 
-            var dependencyIds =
-                AssetManagerRequestValidator.NormalizeOptionalIds(
-                    dependencyFileIds,
-                    "dependency file ids");
+            var normalizedTargets = NormalizeDependencyTargets(
+                dependencyTargets);
+            var dependencyIds = normalizedTargets
+                .Select(target => target.FileId)
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
             AssetManagerRequestValidator.ValidateDependencyReplacement(
                 normalizedFileIds,
                 dependencyIds,
                 GetDependencyIds);
             var dependencies = _store.ReplaceFileDependencies(
                 normalizedFileIds,
-                dependencyIds);
+                normalizedTargets);
             Publish(
                 AssetManagerChangeKind.FileDependenciesChanged,
                 normalizedFileIds);
             return dependencies;
+        }
+
+        private IReadOnlyList<AssetFileTarget> NormalizeDependencyTargets(
+            IReadOnlyList<AssetFileTarget> dependencyTargets)
+        {
+            var result = new List<AssetFileTarget>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var target in dependencyTargets ??
+                     Array.Empty<AssetFileTarget>())
+            {
+                if (target == null)
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "Dependency target is required.");
+                }
+
+                AssetManagerRequestValidator.Require(
+                    target.FileId,
+                    "dependency target file id");
+                var fileId = target.FileId.Trim();
+                var path = AssetManagerRequestValidator
+                    .NormalizeTargetPaths(new[] { target.TargetPath })
+                    .Single();
+                var file = _store.GetFile(fileId);
+                if (string.IsNullOrWhiteSpace(file.ItemId))
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "Dependency targets must belong to an item.");
+                }
+
+                AssetManagerRequestValidator
+                    .EnsureImportTargetsDoNotContainZip(
+                        file,
+                        new[] { path });
+                if (!seen.Add(fileId + "\n" + path))
+                {
+                    continue;
+                }
+
+                result.Add(new AssetFileTarget
+                {
+                    FileId = fileId,
+                    TargetPath = path
+                });
+            }
+            return result;
         }
 
         private static IReadOnlyList<AssetFileTarget> NormalizeTargetChoices(
@@ -846,6 +848,25 @@ namespace Ee4v.AssetManager.Application
                        StringComparison.OrdinalIgnoreCase);
         }
 
+        private static void AddTargetPath(
+            IDictionary<string, List<string>> targetPaths,
+            string fileId,
+            string targetPath)
+        {
+            if (!targetPaths.TryGetValue(fileId, out var paths))
+            {
+                paths = new List<string>();
+                targetPaths[fileId] = paths;
+            }
+
+            if (!paths.Contains(
+                    targetPath,
+                    StringComparer.OrdinalIgnoreCase))
+            {
+                paths.Add(targetPath);
+            }
+        }
+
         private async Task<AssetImportResult> ImportPlans(
             IReadOnlyList<FileImportPlan> plans,
             CancellationToken cancellationToken)
@@ -897,14 +918,6 @@ namespace Ee4v.AssetManager.Application
                 AssetImportState.Success,
                 importedFileIds,
                 importedGuids.ToArray());
-        }
-
-        private FileImportPlan CreateImportPlan(string fileId)
-        {
-            var targets = _store.GetFileTargets(fileId);
-            return CreateImportPlan(fileId, targets
-                .Select(target => target.TargetPath)
-                .ToArray());
         }
 
         private FileImportPlan CreateImportPlan(

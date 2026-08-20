@@ -60,6 +60,7 @@ namespace Ee4v.AssetManager.Contracts
     {
         public string DependentFileId { get; set; }
         public string DependencyFileId { get; set; }
+        public string TargetPath { get; set; }
     }
 
     public sealed class AssetImportedAssetAssociation
