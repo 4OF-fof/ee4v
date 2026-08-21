@@ -269,6 +269,10 @@
     background-color: var(--ee4v-color-surface-pressed);
 }
 
+.ee4v-asset-manager-grid-slider__endpoint.ee4v-ui-button:focus {
+    border-color: var(--ee4v-color-transparent);
+}
+
 .ee4v-asset-manager-grid-slider__slider {
     flex-grow: 1;
     flex-shrink: 1;
