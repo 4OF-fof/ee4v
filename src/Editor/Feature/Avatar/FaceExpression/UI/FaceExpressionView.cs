@@ -33,6 +33,7 @@ namespace Ee4v.FaceExpression
         private readonly SearchField _search;
         private readonly Toggle _clipOnly;
         private readonly ListView _blendShapeList;
+        private readonly ScrollView _blendShapeScrollView;
         private readonly UiTextElement _empty;
         private readonly string _noBlendShapes;
         private readonly string _clipRequired;
@@ -40,6 +41,10 @@ namespace Ee4v.FaceExpression
         private List<BlendShapeChannel> _visibleChannels = new List<BlendShapeChannel>();
         private bool _rendering;
         private bool _hasClip;
+        private int _animationDragPointerId = -1;
+        private bool _animationDragValue;
+        private float _animationDragPointerY;
+        private int _animationDragLastIndex = -1;
 
         public FaceExpressionView(FaceExpressionViewText text, Action<Rect> drawPreview)
         {
@@ -143,9 +148,24 @@ namespace Ee4v.FaceExpression
                 bindItem = BindBlendShapeRow
             };
             _blendShapeList.AddToClassList("ee4v-face-expression__blend-shapes");
-            _blendShapeList.Q<ScrollView>()?.verticalScroller.AddToClassList(
-                "ee4v-face-expression__vertical-scroller");
+            _blendShapeScrollView = _blendShapeList.Q<ScrollView>();
+            if (_blendShapeScrollView != null)
+            {
+                _blendShapeScrollView.verticalScroller.AddToClassList(
+                    "ee4v-face-expression__vertical-scroller");
+                _blendShapeScrollView.verticalScroller.valueChanged += _ =>
+                {
+                    if (_animationDragPointerId >= 0)
+                    {
+                        ApplyAnimationDragAtPointer();
+                    }
+                };
+            }
             editorPane.Add(_blendShapeList);
+            RegisterCallback<PointerMoveEvent>(OnAnimationDragPointerMove);
+            RegisterCallback<PointerUpEvent>(OnAnimationDragPointerUp);
+            RegisterCallback<PointerCaptureOutEvent>(
+                OnAnimationDragPointerCaptureOut);
             _empty = UiTextFactory.Create(
                 string.Empty,
                 UiClassNames.SecondaryText,
@@ -187,14 +207,167 @@ namespace Ee4v.FaceExpression
         {
             var row = new BlendShapeRow();
             row.Changed += channel => ChannelChanged?.Invoke(channel);
-            row.AnimationChanged += () =>
+            row.AnimationDragStarted += BeginAnimationDrag;
+            row.AnimationChanged += ChangeAnimation;
+            return row;
+        }
+
+        private void ChangeAnimation(BlendShapeChannel channel, bool animated)
+        {
+            if (SetAnimated(channel, animated))
             {
-                if (_clipOnly.value)
+                RefreshAfterAnimationChanges();
+            }
+        }
+
+        private void BeginAnimationDrag(
+            BlendShapeChannel channel,
+            int pointerId,
+            bool value,
+            float pointerY)
+        {
+            _animationDragPointerId = pointerId;
+            _animationDragValue = value;
+            _animationDragLastIndex = _visibleChannels.IndexOf(channel);
+            _animationDragPointerY = pointerY;
+            this.CapturePointer(pointerId);
+            ApplyAnimationRange(_animationDragLastIndex);
+        }
+
+        private void OnAnimationDragPointerMove(PointerMoveEvent evt)
+        {
+            if (evt.pointerId != _animationDragPointerId ||
+                !this.HasPointerCapture(evt.pointerId))
+            {
+                return;
+            }
+
+            _animationDragPointerY = evt.position.y;
+            ApplyAnimationDragAtPointer();
+            evt.StopPropagation();
+        }
+
+        private void ApplyAnimationDragAtPointer()
+        {
+            if (_animationDragPointerId < 0 ||
+                _visibleChannels.Count == 0 ||
+                _blendShapeScrollView == null)
+            {
+                return;
+            }
+
+            var viewport = _blendShapeScrollView.contentViewport.worldBound;
+            var pointerY = Mathf.Clamp(
+                _animationDragPointerY,
+                viewport.yMin,
+                Mathf.Max(viewport.yMin, viewport.yMax - 0.01f));
+            var contentY = _blendShapeScrollView.verticalScroller.value +
+                           pointerY - viewport.yMin;
+            var targetIndex = Mathf.Clamp(
+                Mathf.FloorToInt(contentY / _blendShapeList.fixedItemHeight),
+                0,
+                _visibleChannels.Count - 1);
+            ApplyAnimationRange(targetIndex);
+        }
+
+        private void ApplyAnimationRange(int targetIndex)
+        {
+            if (targetIndex < 0)
+            {
+                return;
+            }
+
+            if (_animationDragLastIndex < 0)
+            {
+                _animationDragLastIndex = targetIndex;
+            }
+
+            var firstIndex = Mathf.Min(_animationDragLastIndex, targetIndex);
+            var lastIndex = Mathf.Max(_animationDragLastIndex, targetIndex);
+            var changed = false;
+            for (var index = firstIndex; index <= lastIndex; index++)
+            {
+                changed |= SetAnimated(
+                    _visibleChannels[index],
+                    _animationDragValue);
+            }
+
+            _animationDragLastIndex = targetIndex;
+            if (changed)
+            {
+                RefreshAfterAnimationChanges();
+            }
+        }
+
+        private bool SetAnimated(BlendShapeChannel channel, bool animated)
+        {
+            if (channel == null ||
+                channel.IsHeader ||
+                channel.Animated == animated)
+            {
+                return false;
+            }
+
+            channel.Animated = animated;
+            ChannelChanged?.Invoke(channel);
+            return true;
+        }
+
+        private void RefreshAfterAnimationChanges()
+        {
+            if (_clipOnly.value)
+            {
+                if (_animationDragPointerId < 0)
                 {
                     RefreshFilter();
+                    return;
                 }
-            };
-            return row;
+            }
+
+            _blendShapeList.RefreshItems();
+        }
+
+        private void OnAnimationDragPointerUp(PointerUpEvent evt)
+        {
+            if (evt.pointerId == _animationDragPointerId)
+            {
+                EndAnimationDrag();
+                evt.StopPropagation();
+            }
+        }
+
+        private void OnAnimationDragPointerCaptureOut(
+            PointerCaptureOutEvent evt)
+        {
+            if (evt.pointerId == _animationDragPointerId)
+            {
+                ApplyAnimationDragAtPointer();
+                _animationDragPointerId = -1;
+                _animationDragLastIndex = -1;
+                CompleteAnimationDrag();
+            }
+        }
+
+        private void EndAnimationDrag()
+        {
+            ApplyAnimationDragAtPointer();
+            var pointerId = _animationDragPointerId;
+            _animationDragPointerId = -1;
+            _animationDragLastIndex = -1;
+            if (pointerId >= 0 && this.HasPointerCapture(pointerId))
+            {
+                this.ReleasePointer(pointerId);
+            }
+
+            CompleteAnimationDrag();
+        }
+
+        private void CompleteAnimationDrag()
+        {
+            if (_clipOnly.value)
+            {
+                RefreshFilter();
+            }
         }
 
         private void BindBlendShapeRow(VisualElement element, int index)
@@ -306,15 +479,14 @@ namespace Ee4v.FaceExpression
                 "ee4v-face-expression-row__animation-toggle");
             _toggle.RegisterValueChangedCallback(evt =>
             {
-                if (_rendering || _channel == null)
+                if (!_rendering && _channel != null)
                 {
-                    return;
+                    AnimationChanged?.Invoke(_channel, evt.newValue);
                 }
-
-                _channel.Animated = evt.newValue;
-                Changed?.Invoke(_channel);
-                AnimationChanged?.Invoke();
             });
+            RegisterCallback<PointerDownEvent>(
+                OnTogglePointerDown,
+                TrickleDown.TrickleDown);
             Add(_toggle);
             _name = UiTextFactory.Create(string.Empty, "ee4v-face-expression-row__name");
             Add(_name);
@@ -332,7 +504,9 @@ namespace Ee4v.FaceExpression
         }
 
         public event Action<BlendShapeChannel> Changed;
-        public event Action AnimationChanged;
+        public event Action<BlendShapeChannel, bool> AnimationChanged;
+        public event Action<BlendShapeChannel, int, bool, float>
+            AnimationDragStarted;
 
         public void SetChannel(BlendShapeChannel channel)
         {
@@ -349,6 +523,27 @@ namespace Ee4v.FaceExpression
             _toggle.style.display = isHeader ? DisplayStyle.None : DisplayStyle.Flex;
             _controls.style.display = isHeader ? DisplayStyle.None : DisplayStyle.Flex;
             _rendering = false;
+        }
+
+        private void OnTogglePointerDown(PointerDownEvent evt)
+        {
+            if (evt.button != (int)MouseButton.LeftMouse ||
+                _channel == null ||
+                _channel.IsHeader ||
+                !(evt.target is VisualElement target) ||
+                !_toggle.Contains(target))
+            {
+                return;
+            }
+
+            _toggle.Focus();
+            AnimationDragStarted?.Invoke(
+                _channel,
+                evt.pointerId,
+                !_channel.Animated,
+                evt.position.y);
+            evt.PreventDefault();
+            evt.StopPropagation();
         }
 
         private void SetValue(float value)
