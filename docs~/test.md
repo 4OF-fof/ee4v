@@ -55,10 +55,10 @@
 | --- | --- | --- |
 | `Apply_GeneratesGestureMatrixAndControlsBlinkAndMouthBindings` | 左右ジェスチャーとExpression Menuの状態を生成し、表情ごとのまばたきと口固定をカーブへ反映してメニュー専用表情を復元する | 64通りとメニュー優先の遷移条件、表情切替後の値残り、VRChatのまばたきとリップシンクへ制御を戻す契約は元クリップの確認だけでは検出できない |
 | `Read_ConvertsHeadersAndIncludesSelectedMeshes` | 複数の区切り文字をヘッダーとして読み、グループウィンドウで選択した各RendererパスのBlendShapeを列挙する | 複数メッシュの同名BlendShapeを正しいAnimationカーブへ結ぶ契約を維持する |
-| `BlendShapeRows_GroupRoleAndSwitchVariationAndSide` | 正規表現で同じ役割のBlendShapeをまとめ、バリエーションと左右を切り替える | 一覧上の1行から別々のBlendShapeカーブを選ぶ対応関係は実名一覧だけでは確認できない |
-| `BlendShapeRows_KeepParsedOptionsSeparate` | 命名規則で解析した各BlendShapeを個別行にし、バリエーションと左右指定を読み取り専用の操作部で示す | クリップ内表示で使用中カーブが再集約される問題と、固定値の表示位置が通常表示からずれる問題を防ぐ |
-| `BlendShapeRows_SupportSpaceParenthesesPreset` | 空白・括弧形式の組み込みプリセットで、アンダースコアを含む役割、バリエーション、左右を対応付ける | 同じ役割に数値と括弧のバリエーションが混在する命名はアンダースコア形式の確認では検出できない |
-| `BlendShapeNamePresets_RoundTripNamedCustomPattern` | 名前付きユーザープリセットの正規表現と選択状態を保存して復元する | 設定画面上の選択だけでは再起動後の保存契約を確認できない |
+| `BlendShapeRows_GroupRoleAndSwitchVariationAndSide` | FBX別プリセットで同じ見出し内の役割をまとめて種類と左右を切り替え、見出しをまたぐ同名役割は分ける | 一覧上の1行から別々のBlendShapeカーブを選ぶ対応関係と見出し境界は実名一覧だけでは確認できない |
+| `BlendShapeRows_KeepParsedOptionsSeparate` | FBX別プリセットで対応した各BlendShapeを個別行にし、種類と左右指定を読み取り専用の操作部で示す | クリップ内表示で使用中カーブが再集約される問題と、固定値の表示位置が通常表示からずれる問題を防ぐ |
+| `BlendShapePresetClassifier_SeedsSupportedAvatarConventions` | Chiffon、Kipfel、Shinano、Manukaの命名形式から編集可能な初期分類を作る | 似た末尾表現が役割、種類、左右指定のどれとして初期分類されたかは一覧表示だけでは確認できない |
+| `BlendShapePresets_RoundTripManualFbxMapping` | FBXとメッシュに結び付いた手動分類を保存して復元し、別FBXには適用しない | 再起動後や複数FBX利用時の対応表の取り違えは設定画面だけでは確認できない |
 | `Groups_FilterHeadersAndTreatAddedMeshesAsGroups` | ヘッダー間の分類に加え、追加メッシュをメッシュ名のグループとして絞り込む | 追加メッシュのShapeが別Groupへ混入する問題と、メッシュ全体を選べない問題を防ぐ |
 
 ## Core

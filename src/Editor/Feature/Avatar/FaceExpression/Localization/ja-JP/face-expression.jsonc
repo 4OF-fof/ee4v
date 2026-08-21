@@ -19,20 +19,31 @@
       "label": "BlendShapeの区切り文字",
       "tooltip": "グループ境界に使う区切り文字を複数登録できます。例: -、=、_"
     },
-    "blendShapeNamePattern": {
-      "label": "BlendShape名のプリセット",
-      "tooltip": "名前付きキャプチャ group、role、variation、side を使う正規表現を選択または保存します。role は必須で、side は L または R として扱います。",
-      "preset": "プリセット",
-      "name": "名前",
-      "pattern": "正規表現",
-      "save": "保存",
-      "delete": "削除",
-      "underscorePreset": "アンダースコア形式",
-      "spaceParenthesesPreset": "空白・括弧形式",
-      "nameRequired": "プリセット名を入力してください。",
-      "invalidPattern": "正規表現が無効です。名前付きキャプチャ role が必要です。",
-      "duplicateName": "同じ名前のプリセットが既にあります。"
+    "blendShapePresets": {
+      "label": "FBX別BlendShapeプリセット",
+      "tooltip": "ベースFBXごとのBlendShape分類を追加または編集します。",
+      "count": "登録済み: {0}件",
+      "open": "プリセットを編集"
     }
+  },
+  "presetWindow": {
+    "title": "BlendShapeプリセット",
+    "avatar": "アバター",
+    "detectedFbx": "検出したベースFBX: {0}",
+    "search": "絞り込み",
+    "source": "メッシュ / BlendShape",
+    "variation": "種類",
+    "side": "左右",
+    "roleCount": "{0}（{1}件）",
+    "noRoles": "編集できるBlendShapeがありません",
+    "save": "保存",
+    "reclassify": "自動分類",
+    "selectAvatar": "Avatar Prefabまたはシーン上のPrefabインスタンスを選択してください。",
+    "invalidAvatar": "ベースFBXを検出できるアバターを選択してください。",
+    "autoClassified": "名前から大まかに分類しました。内容を確認して保存してください。",
+    "loaded": "保存済みの分類を読み込みました。",
+    "unsaved": "未保存の変更があります。",
+    "saved": "FBX別プリセットを保存しました。"
   },
   "field": {
     "avatar": "アバター",

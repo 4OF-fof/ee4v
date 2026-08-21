@@ -116,6 +116,7 @@ namespace Ee4v.FaceExpression
             _preview?.SetAvatar(avatar);
             FaceExpressionGroupSession.SetAvatar(avatar);
             _view?.SetAvatar(avatar);
+            FaceExpressionSettings.EnsureNamePreset(avatar, _settings);
         }
 
         private void SetClip(AnimationClip clip)
@@ -177,7 +178,7 @@ namespace Ee4v.FaceExpression
                     FaceExpressionSettings.BlendShapeSeparators) ||
                 ReferenceEquals(
                     args.Definition,
-                    FaceExpressionSettings.BlendShapeNamePattern))
+                    FaceExpressionSettings.BlendShapePresets))
             {
                 RefreshClip();
             }
@@ -200,7 +201,7 @@ namespace Ee4v.FaceExpression
                 string.IsNullOrEmpty(selectedGroupName)
                     ? I18N.Get("group.all")
                     : selectedGroupName,
-                FaceExpressionSettings.GetNamePattern(_settings),
+                FaceExpressionSettings.GetNameRule(_settings),
                 !string.IsNullOrEmpty(
                     FaceExpressionGroupSession.SelectedGroupKey));
         }

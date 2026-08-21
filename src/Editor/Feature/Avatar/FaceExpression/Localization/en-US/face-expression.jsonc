@@ -19,20 +19,31 @@
       "label": "BlendShape separators",
       "tooltip": "Add multiple separators used for group boundaries. Examples: -, =, _"
     },
-    "blendShapeNamePattern": {
-      "label": "BlendShape name presets",
-      "tooltip": "Select or save a regular expression using the named groups group, role, variation, and side. role is required, and side is treated as L or R.",
-      "preset": "Preset",
-      "name": "Name",
-      "pattern": "Regular expression",
-      "save": "Save",
-      "delete": "Delete",
-      "underscorePreset": "Underscore format",
-      "spaceParenthesesPreset": "Space and parentheses format",
-      "nameRequired": "Enter a preset name.",
-      "invalidPattern": "The regular expression is invalid. A named role group is required.",
-      "duplicateName": "A preset with the same name already exists."
+    "blendShapePresets": {
+      "label": "BlendShape presets by FBX",
+      "tooltip": "Add or edit BlendShape classifications for each base FBX.",
+      "count": "Registered: {0}",
+      "open": "Edit presets"
     }
+  },
+  "presetWindow": {
+    "title": "BlendShape Presets",
+    "avatar": "Avatar",
+    "detectedFbx": "Detected base FBX: {0}",
+    "search": "Filter",
+    "source": "Mesh / BlendShape",
+    "variation": "Variation",
+    "side": "Side",
+    "roleCount": "{0} ({1})",
+    "noRoles": "No editable BlendShapes were found",
+    "save": "Save",
+    "reclassify": "Auto classify",
+    "selectAvatar": "Select an Avatar Prefab or a Prefab instance in the scene.",
+    "invalidAvatar": "Select an avatar whose base FBX can be detected.",
+    "autoClassified": "A rough classification was generated from the names. Review it, then save.",
+    "loaded": "The saved classification was loaded.",
+    "unsaved": "There are unsaved changes.",
+    "saved": "The FBX preset was saved."
   },
   "field": {
     "avatar": "Avatar",

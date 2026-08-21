@@ -16,7 +16,9 @@ namespace Ee4v.FaceExpression
             float value,
             bool animated,
             string headerText = null,
-            string rendererDisplayName = null)
+            string rendererDisplayName = null,
+            string sourceAssetGuid = null,
+            long sourceMeshLocalId = 0L)
         {
             RendererPath = rendererPath ?? string.Empty;
             Name = name ?? string.Empty;
@@ -24,6 +26,8 @@ namespace Ee4v.FaceExpression
             Animated = animated;
             HeaderText = headerText;
             RendererDisplayName = rendererDisplayName;
+            SourceAssetGuid = sourceAssetGuid ?? string.Empty;
+            SourceMeshLocalId = sourceMeshLocalId;
         }
 
         public string RendererPath { get; }
@@ -36,6 +40,8 @@ namespace Ee4v.FaceExpression
         public bool Animated { get; set; }
         public string HeaderText { get; }
         public string RendererDisplayName { get; }
+        public string SourceAssetGuid { get; }
+        public long SourceMeshLocalId { get; }
         public bool IsHeader => !string.IsNullOrEmpty(HeaderText);
         public string DisplayName => string.IsNullOrEmpty(RendererDisplayName)
             ? Name
@@ -72,6 +78,19 @@ namespace Ee4v.FaceExpression
                     renderer.transform,
                     avatar.transform);
                 var mesh = renderer.sharedMesh;
+                var sourceAssetGuid = string.Empty;
+                var sourceMeshLocalId = 0L;
+                var meshAssetPath = AssetDatabase.GetAssetPath(mesh);
+                if (string.Equals(
+                        System.IO.Path.GetExtension(meshAssetPath),
+                        ".fbx",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    AssetDatabase.TryGetGUIDAndLocalFileIdentifier(
+                        mesh,
+                        out sourceAssetGuid,
+                        out sourceMeshLocalId);
+                }
                 for (var index = 0; index < mesh.blendShapeCount; index++)
                 {
                     var name = mesh.GetBlendShapeName(index);
@@ -87,7 +106,9 @@ namespace Ee4v.FaceExpression
                         curve == null ? renderer.GetBlendShapeWeight(index) : curve.Evaluate(0f),
                         curve != null,
                         headerText,
-                        renderers.Count > 1 ? renderer.name : null));
+                        renderers.Count > 1 ? renderer.name : null,
+                        sourceAssetGuid,
+                        sourceMeshLocalId));
                 }
             }
 
@@ -171,7 +192,7 @@ namespace Ee4v.FaceExpression
             return clip;
         }
 
-        private static bool TryGetHeader(
+        internal static bool TryGetHeader(
             string shapeName,
             IReadOnlyList<string> separators,
             out string headerText)

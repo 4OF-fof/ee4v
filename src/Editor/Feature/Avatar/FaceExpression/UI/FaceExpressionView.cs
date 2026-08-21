@@ -41,7 +41,7 @@ namespace Ee4v.FaceExpression
         private readonly string _clipRequired;
         private List<BlendShapeChannel> _channels = new List<BlendShapeChannel>();
         private List<BlendShapeRowItem> _visibleItems = new List<BlendShapeRowItem>();
-        private string _namePattern;
+        private BlendShapeNamingRule _namingRule;
         private bool _hideHeaders;
         private bool _rendering;
         private bool _hasClip;
@@ -206,11 +206,11 @@ namespace Ee4v.FaceExpression
         public void SetChannels(
             IReadOnlyList<BlendShapeChannel> channels,
             string sectionTitle = null,
-            string namePattern = null,
+            BlendShapeNamingRule namingRule = null,
             bool hideHeaders = false)
         {
             _channels = channels?.ToList() ?? new List<BlendShapeChannel>();
-            _namePattern = namePattern;
+            _namingRule = namingRule;
             _hideHeaders = hideHeaders;
             _sectionTitle.SetText(string.IsNullOrEmpty(sectionTitle)
                 ? _defaultSectionTitle
@@ -416,7 +416,7 @@ namespace Ee4v.FaceExpression
                     _clipOnly.value);
             _visibleItems = BlendShapeRowItem.Create(
                     visibleChannels,
-                    BlendShapeNamingRule.Create(_namePattern),
+                    _namingRule,
                     _hideHeaders,
                     groupOptions: !_clipOnly.value)
                 .ToList();
@@ -547,7 +547,7 @@ namespace Ee4v.FaceExpression
                 }
 
                 if (namingRule == null ||
-                    !namingRule.TryParse(channel.Name, out var parsedName))
+                    !namingRule.TryParse(channel, out var parsedName))
                 {
                     result.Add(new BlendShapeRowItem(channel, null));
                     continue;
@@ -559,9 +559,7 @@ namespace Ee4v.FaceExpression
                     continue;
                 }
 
-                var key = channel.RendererPath + "\n" +
-                          parsedName.Group + "\n" +
-                          parsedName.Role;
+                var key = channel.RendererPath + "\n" + parsedName.Role;
                 if (!grouped.TryGetValue(key, out var rows))
                 {
                     rows = new List<BlendShapeRowItem>();

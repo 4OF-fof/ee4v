@@ -266,21 +266,35 @@ namespace Ee4v.FaceExpression.Tests
         {
             var channels = new[]
             {
-                new BlendShapeChannel("Body", "eye_blink_1", 10f, true),
-                new BlendShapeChannel("Body", "eye_blink_1_L", 20f, true),
-                new BlendShapeChannel("Body", "eye_blink_1_R", 30f, true),
-                new BlendShapeChannel("Body", "eye_blink_2", 40f, true),
-                new BlendShapeChannel("Body", "eye_blink_2_L", 50f, true),
-                new BlendShapeChannel("Body", "eye_blink_2_R", 60f, true)
+                new BlendShapeChannel(
+                    "Body",
+                    "---EYE---",
+                    0f,
+                    false,
+                    "EYE"),
+                CreateMappedChannel("eye_blink_1", 10f),
+                CreateMappedChannel("eye_blink_1_L", 20f),
+                CreateMappedChannel("eye_blink_1_R", 30f),
+                CreateMappedChannel("eye_blink_2", 40f),
+                CreateMappedChannel("eye_blink_2_L", 50f),
+                CreateMappedChannel("eye_blink_2_R", 60f),
+                new BlendShapeChannel(
+                    "Body",
+                    "---MOUTH---",
+                    0f,
+                    false,
+                    "MOUTH"),
+                CreateMappedChannel("mouth_blink_1", 70f),
+                CreateMappedChannel("mouth_blink_1_L", 80f),
+                CreateMappedChannel("mouth_blink_1_R", 90f)
             };
 
             var rows = BlendShapeRowItem.Create(
                 channels,
-                BlendShapeNamingRule.Create(
-                    FaceExpressionSettings.DefaultBlendShapeNamePattern),
+                CreateMappedRule(channels),
                 hideHeaders: true);
 
-            Assert.That(rows.Count, Is.EqualTo(1));
+            Assert.That(rows.Count, Is.EqualTo(2));
             Assert.That(rows[0].DisplayName, Is.EqualTo("blink"));
             Assert.That(rows[0].Variations, Is.EqualTo(new[] { "1", "2" }));
             Assert.That(rows[0].ActiveChannel.Name, Is.EqualTo("eye_blink_1"));
@@ -288,6 +302,8 @@ namespace Ee4v.FaceExpression.Tests
             Assert.That(rows[0].ActiveChannel.Name, Is.EqualTo("eye_blink_1_L"));
             rows[0].SelectVariation("2");
             Assert.That(rows[0].ActiveChannel.Name, Is.EqualTo("eye_blink_2_L"));
+            Assert.That(rows[1].DisplayName, Is.EqualTo("blink"));
+            Assert.That(rows[1].ActiveChannel.Name, Is.EqualTo("mouth_blink_1"));
         }
 
         [Test]
@@ -295,16 +311,15 @@ namespace Ee4v.FaceExpression.Tests
         {
             var channels = new[]
             {
-                new BlendShapeChannel("Body", "eye_brink_1", 10f, true),
-                new BlendShapeChannel("Body", "eye_brink_2", 20f, true),
-                new BlendShapeChannel("Body", "eye_brink_2_L", 30f, true),
-                new BlendShapeChannel("Body", "eye_brink_2_R", 40f, true)
+                CreateMappedChannel("eye_brink_1", 10f),
+                CreateMappedChannel("eye_brink_2", 20f),
+                CreateMappedChannel("eye_brink_2_L", 30f),
+                CreateMappedChannel("eye_brink_2_R", 40f)
             };
 
             var rows = BlendShapeRowItem.Create(
                 channels,
-                BlendShapeNamingRule.Create(
-                    FaceExpressionSettings.DefaultBlendShapeNamePattern),
+                CreateMappedRule(channels),
                 hideHeaders: true,
                 groupOptions: false);
 
@@ -337,80 +352,105 @@ namespace Ee4v.FaceExpression.Tests
             Assert.That(sides[1].enabledSelf, Is.False);
         }
 
-        [Test]
-        public void BlendShapeRows_SupportSpaceParenthesesPreset()
+        [TestCase("mouth_smile_1_R", "smile", "1", "R")]
+        [TestCase("eye_nagomi2_left", "nagomi", "2", "L")]
+        [TestCase("eyelid_under_up2_R", "under_up", "2", "R")]
+        [TestCase("other_sweat _1", "sweat", "1", "")]
+        [TestCase(
+            "mouth_grin 2 (no tooth)_L",
+            "grin",
+            "2 / no tooth",
+            "L")]
+        [TestCase(
+            "option_tear_under_L 1",
+            "tear_under",
+            "1",
+            "L")]
+        public void BlendShapePresetClassifier_SeedsSupportedAvatarConventions(
+            string shapeName,
+            string expectedRole,
+            string expectedVariation,
+            string expectedSide)
         {
-            var channels = new[]
-            {
-                new BlendShapeChannel("Body", "eye_close", 10f, true),
-                new BlendShapeChannel("Body", "eye_close_L", 20f, true),
-                new BlendShapeChannel("Body", "eye_close_R", 30f, true),
-                new BlendShapeChannel("Body", "eye_close (wide)", 40f, true),
-                new BlendShapeChannel("Body", "eye_close_L (wide)", 50f, true),
-                new BlendShapeChannel("Body", "eye_close_R (wide)", 60f, true),
-                new BlendShapeChannel("Body", "eye_nagomi 2", 70f, true),
-                new BlendShapeChannel("Body", "eye_nagomi 2_L", 80f, true),
-                new BlendShapeChannel("Body", "eye_nagomi 2_R", 90f, true),
-                new BlendShapeChannel("Body", "eye_under_up", 10f, true),
-                new BlendShapeChannel("Body", "eye_under_up_L", 20f, true),
-                new BlendShapeChannel("Body", "eye_under_up_R", 30f, true),
-                new BlendShapeChannel("Body", "eye_under_up 2", 40f, true),
-                new BlendShapeChannel("Body", "eye_under_up 2_L", 50f, true),
-                new BlendShapeChannel("Body", "eye_under_up 2_R", 60f, true)
-            };
+            var mapping = BlendShapeNameClassifier.Classify(
+                123L,
+                "Body",
+                shapeName);
 
-            var presetState = BlendShapeNamePresetSetting.Parse(
-                BlendShapeNamePresetSetting.DefaultValue);
-            presetState.selectedId =
-                BlendShapeNamePresetSetting.SpaceParenthesesPresetId;
-            var rows = BlendShapeRowItem.Create(
-                channels,
-                BlendShapeNamingRule.Create(
-                    BlendShapeNamePresetSetting.GetPattern(
-                        BlendShapeNamePresetSetting.Serialize(presetState))),
-                hideHeaders: true);
-
-            Assert.That(rows.Select(row => row.DisplayName),
-                Is.EqualTo(new[] { "close", "nagomi", "under_up" }));
-            Assert.That(rows[0].Variations,
-                Is.EqualTo(new[] { string.Empty, "wide" }));
-            rows[0].SelectVariation("wide");
-            rows[0].ToggleSide("R");
-            Assert.That(rows[0].ActiveChannel.Name,
-                Is.EqualTo("eye_close_R (wide)"));
-            Assert.That(rows[1].Variations, Is.EqualTo(new[] { "2" }));
-            Assert.That(rows[2].Variations,
-                Is.EqualTo(new[] { string.Empty, "2" }));
-            rows[2].SelectVariation("2");
-            rows[2].ToggleSide("L");
-            Assert.That(rows[2].ActiveChannel.Name,
-                Is.EqualTo("eye_under_up 2_L"));
+            Assert.That((mapping.role ?? string.Empty), Is.EqualTo(expectedRole));
+            Assert.That((mapping.variation ?? string.Empty), Is.EqualTo(expectedVariation));
+            Assert.That((mapping.side ?? string.Empty), Is.EqualTo(expectedSide));
         }
 
         [Test]
-        public void BlendShapeNamePresets_RoundTripNamedCustomPattern()
+        public void BlendShapePresets_RoundTripManualFbxMapping()
         {
-            var migrated = BlendShapeNamePresetSetting.Parse(
-                FaceExpressionSettings.DefaultBlendShapeNamePattern);
-            Assert.That(migrated.selectedId,
-                Is.EqualTo(BlendShapeNamePresetSetting.UnderscorePresetId));
+            var state = new BlendShapeNamePresetState();
+            var mapping = BlendShapeNameClassifier.Classify(
+                123L,
+                "Body",
+                "eye_blink_2_R");
+            mapping.role = "manual blink";
+            state.presets.Add(new BlendShapeFbxPreset
+            {
+                assetGuid = "fbx-guid",
+                assetPath = "Assets/Avatar.fbx",
+                name = "Avatar",
+                mappings = new List<BlendShapeNameMapping> { mapping }
+            });
 
-            var state = BlendShapeNamePresetSetting.Parse(
-                BlendShapeNamePresetSetting.DefaultValue);
-            BlendShapeNamePresetSetting.SaveCustom(
-                state,
-                state.selectedId,
-                "Avatar naming",
-                BlendShapeNamePresetSetting.SpaceParenthesesPattern);
+            var restored = BlendShapeNamePresetSetting.Parse(
+                BlendShapeNamePresetSetting.Serialize(state));
+            var rule = new BlendShapeNamingRule(restored);
+            var channel = CreateMappedChannel("eye_blink_2_R", 0f);
 
-            var serialized = BlendShapeNamePresetSetting.Serialize(state);
-            var restored = BlendShapeNamePresetSetting.Parse(serialized);
+            Assert.That(restored.presets.Count, Is.EqualTo(1));
+            Assert.That(rule.TryParse(channel, out var parsed), Is.True);
+            Assert.That(parsed.Role, Is.EqualTo("manual blink"));
+            Assert.That(parsed.Variation, Is.EqualTo("2"));
+            Assert.That(parsed.Side, Is.EqualTo("R"));
+            Assert.That(
+                rule.TryParse(
+                    new BlendShapeChannel(
+                        "Body",
+                        "eye_blink_2_R",
+                        0f,
+                        false,
+                        sourceAssetGuid: "different-fbx",
+                        sourceMeshLocalId: 123L),
+                    out _),
+                Is.False);
+        }
 
-            Assert.That(restored.customPresets.Count, Is.EqualTo(1));
-            Assert.That(restored.customPresets[0].name,
-                Is.EqualTo("Avatar naming"));
-            Assert.That(BlendShapeNamePresetSetting.GetPattern(serialized),
-                Is.EqualTo(BlendShapeNamePresetSetting.SpaceParenthesesPattern));
+        private static BlendShapeChannel CreateMappedChannel(
+            string name,
+            float value)
+        {
+            return new BlendShapeChannel(
+                "Body",
+                name,
+                value,
+                true,
+                sourceAssetGuid: "fbx-guid",
+                sourceMeshLocalId: 123L);
+        }
+
+        private static BlendShapeNamingRule CreateMappedRule(
+            IEnumerable<BlendShapeChannel> channels)
+        {
+            var preset = new BlendShapeFbxPreset
+            {
+                assetGuid = "fbx-guid",
+                name = "Avatar",
+                mappings = channels.Select(channel =>
+                    BlendShapeNameClassifier.Classify(
+                        123L,
+                        "Body",
+                        channel.Name)).ToList()
+            };
+            var state = new BlendShapeNamePresetState();
+            state.presets.Add(preset);
+            return new BlendShapeNamingRule(state);
         }
 
         private static GameObject CreateAvatar(

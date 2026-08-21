@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using Ee4v.UI;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,106 +14,65 @@ namespace Ee4v.FaceExpression
     [Serializable]
     internal sealed class BlendShapeNamePresetState
     {
-        public string selectedId;
-        public List<BlendShapeNameCustomPreset> customPresets =
-            new List<BlendShapeNameCustomPreset>();
+        public List<BlendShapeFbxPreset> presets = new List<BlendShapeFbxPreset>();
     }
 
     [Serializable]
-    internal sealed class BlendShapeNameCustomPreset
+    internal sealed class BlendShapeFbxPreset
     {
-        public string id;
+        public string assetGuid;
+        public string assetPath;
         public string name;
-        public string pattern;
+        public List<BlendShapeNameMapping> mappings = new List<BlendShapeNameMapping>();
+    }
+
+    [Serializable]
+    internal sealed class BlendShapeNameMapping
+    {
+        public long meshLocalId;
+        public string meshName;
+        public string shapeName;
+        public string headerText;
+        public string role;
+        public string variation;
+        public string side;
     }
 
     internal static class BlendShapeNamePresetSetting
     {
-        internal const string UnderscorePresetId = "builtin:underscore";
-        internal const string SpaceParenthesesPresetId =
-            "builtin:space-parentheses";
-        internal const string SpaceParenthesesPattern =
-            @"^(?<group>[^_ ]+)_(?<role>.+?)(?:(?: (?<variation>\d+))?_(?<side>L|R)(?: \((?<variation>[^)]+)\))?|(?: (?<variation>\d+))?(?: \((?<variation>[^)]+)\))?)$";
+        internal static string DefaultValue => Serialize(new BlendShapeNamePresetState());
 
-        internal static string DefaultValue => Serialize(
-            new BlendShapeNamePresetState
+        internal static void RegisterDrawer(SettingDefinition<string> definition)
+        {
+            SettingDrawerApi.Register(definition, context =>
             {
-                selectedId = UnderscorePresetId
+                var root = new VisualElement();
+                var count = Parse(context.Value).presets.Count;
+                root.Add(UiTextFactory.Create(string.Format(
+                    I18N.Get("settings.blendShapePresets.count"),
+                    count)));
+                var open = UiTextFactory.CreateButton(
+                    I18N.Get("settings.blendShapePresets.open"),
+                    BlendShapePresetWindow.ShowWindow);
+                open.tooltip = context.Tooltip ?? string.Empty;
+                root.Add(open);
+                return root;
             });
-
-        internal static void RegisterDrawer(
-            SettingDefinition<string> definition)
-        {
-            SettingDrawerApi.Register(
-                definition,
-                context => new PresetField(
-                    context.Value,
-                    context.Tooltip,
-                    context.NotifyValueChanged));
-        }
-
-        internal static string GetPattern(string value)
-        {
-            var state = Parse(value);
-            if (TryGetBuiltInPattern(state.selectedId, out var builtIn))
-            {
-                return builtIn;
-            }
-
-            return state.customPresets.FirstOrDefault(preset =>
-                    string.Equals(
-                        preset.id,
-                        state.selectedId,
-                        StringComparison.Ordinal))
-                ?.pattern ?? FaceExpressionSettings.DefaultBlendShapeNamePattern;
-        }
-
-        internal static SettingValidationResult Validate(string value)
-        {
-            var state = Parse(value);
-            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (var index = 0; index < state.customPresets.Count; index++)
-            {
-                var preset = state.customPresets[index];
-                if (string.IsNullOrWhiteSpace(preset.name) ||
-                    !names.Add(preset.name.Trim()))
-                {
-                    return SettingValidationResult.Error(
-                        "Preset names must be unique and non-empty.");
-                }
-
-                var patternValidation = BlendShapeNamingRule.Validate(
-                    preset.pattern);
-                if (!patternValidation.IsValid)
-                {
-                    return patternValidation;
-                }
-            }
-
-            return SettingValidationResult.Success;
         }
 
         internal static BlendShapeNamePresetState Parse(string value)
         {
-            var trimmed = (value ?? string.Empty).Trim();
-            if (trimmed.StartsWith("{", StringComparison.Ordinal))
+            try
             {
-                try
-                {
-                    var parsed = JsonUtility.FromJson<BlendShapeNamePresetState>(
-                        trimmed);
-                    if (parsed != null)
-                    {
-                        Normalize(parsed);
-                        return parsed;
-                    }
-                }
-                catch (ArgumentException)
-                {
-                }
+                var parsed = JsonUtility.FromJson<BlendShapeNamePresetState>(
+                    value ?? string.Empty) ?? new BlendShapeNamePresetState();
+                Normalize(parsed);
+                return parsed;
             }
-
-            return MigratePattern(value ?? string.Empty);
+            catch (ArgumentException)
+            {
+                return new BlendShapeNamePresetState();
+            }
         }
 
         internal static string Serialize(BlendShapeNamePresetState state)
@@ -121,335 +82,141 @@ namespace Ee4v.FaceExpression
             return JsonUtility.ToJson(state);
         }
 
-        internal static string SaveCustom(
+        internal static BlendShapeFbxPreset Find(
             BlendShapeNamePresetState state,
-            string selectedId,
-            string name,
-            string pattern)
+            string assetGuid)
         {
-            Normalize(state);
-            var preset = state.customPresets.FirstOrDefault(candidate =>
-                string.Equals(
-                    candidate.id,
-                    selectedId,
+            return state?.presets?.FirstOrDefault(preset =>
+                preset != null && string.Equals(
+                    preset.assetGuid,
+                    assetGuid,
                     StringComparison.Ordinal));
-            if (preset == null)
-            {
-                preset = new BlendShapeNameCustomPreset
-                {
-                    id = Guid.NewGuid().ToString("N")
-                };
-                state.customPresets.Add(preset);
-            }
-
-            preset.name = name.Trim();
-            preset.pattern = pattern ?? string.Empty;
-            state.selectedId = preset.id;
-            return preset.id;
         }
 
-        private static BlendShapeNamePresetState MigratePattern(string pattern)
+        internal static BlendShapeFbxPreset CreatePreset(
+            GameObject fbxAsset,
+            IReadOnlyList<string> separators)
         {
-            if (string.Equals(
-                    pattern,
-                    FaceExpressionSettings.DefaultBlendShapeNamePattern,
-                    StringComparison.Ordinal))
+            var assetPath = AssetDatabase.GetAssetPath(fbxAsset);
+            if (!IsFbxAssetPath(assetPath))
             {
-                return new BlendShapeNamePresetState
-                {
-                    selectedId = UnderscorePresetId
-                };
+                return null;
             }
 
-            if (string.Equals(
-                    pattern,
-                    SpaceParenthesesPattern,
-                    StringComparison.Ordinal))
+            var preset = new BlendShapeFbxPreset
             {
-                return new BlendShapeNamePresetState
+                assetGuid = AssetDatabase.AssetPathToGUID(assetPath),
+                assetPath = assetPath,
+                name = Path.GetFileNameWithoutExtension(assetPath)
+            };
+            var meshes = AssetDatabase.LoadAllAssetsAtPath(assetPath)
+                .OfType<Mesh>()
+                .OrderBy(mesh => mesh.name, StringComparer.Ordinal)
+                .ToArray();
+            for (var meshIndex = 0; meshIndex < meshes.Length; meshIndex++)
+            {
+                var mesh = meshes[meshIndex];
+                AssetDatabase.TryGetGUIDAndLocalFileIdentifier(
+                    mesh,
+                    out _,
+                    out long meshLocalId);
+                for (var shapeIndex = 0; shapeIndex < mesh.blendShapeCount; shapeIndex++)
                 {
-                    selectedId = SpaceParenthesesPresetId
-                };
+                    preset.mappings.Add(BlendShapeNameClassifier.Classify(
+                        meshLocalId,
+                        mesh.name,
+                        mesh.GetBlendShapeName(shapeIndex)));
+                }
             }
 
-            var state = new BlendShapeNamePresetState();
-            SaveCustom(state, null, "Custom", pattern);
-            return state;
+            ApplyHeaders(preset, separators);
+            return preset;
+        }
+
+        internal static void ApplyHeaders(
+            BlendShapeFbxPreset preset,
+            IReadOnlyList<string> separators)
+        {
+            for (var index = 0; index < (preset?.mappings?.Count ?? 0); index++)
+            {
+                var mapping = preset.mappings[index];
+                mapping.headerText = FaceExpressionClipEditor.TryGetHeader(
+                    mapping.shapeName,
+                    separators,
+                    out var headerText)
+                    ? headerText
+                    : string.Empty;
+            }
+        }
+
+        internal static void Upsert(
+            BlendShapeNamePresetState state,
+            BlendShapeFbxPreset preset)
+        {
+            Normalize(state);
+            if (preset == null || string.IsNullOrEmpty(preset.assetGuid))
+            {
+                return;
+            }
+
+            state.presets.RemoveAll(candidate => string.Equals(
+                candidate.assetGuid,
+                preset.assetGuid,
+                StringComparison.Ordinal));
+            state.presets.Add(preset);
+            Normalize(state);
+        }
+
+        internal static GameObject ResolveSourceFbx(GameObject avatar)
+        {
+            if (avatar == null)
+            {
+                return null;
+            }
+
+            var avatarPath = AssetDatabase.GetAssetPath(avatar);
+            if (IsFbxAssetPath(avatarPath))
+            {
+                return AssetDatabase.LoadAssetAtPath<GameObject>(avatarPath);
+            }
+
+            var originalSource =
+                PrefabUtility.GetCorrespondingObjectFromOriginalSource(avatar);
+            var sourcePath = originalSource == null
+                ? string.Empty
+                : AssetDatabase.GetAssetPath(originalSource);
+            return IsFbxAssetPath(sourcePath)
+                ? AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath)
+                : null;
+        }
+
+        private static bool IsFbxAssetPath(string assetPath)
+        {
+            return !string.IsNullOrEmpty(assetPath) &&
+                   string.Equals(
+                       Path.GetExtension(assetPath),
+                       ".fbx",
+                       StringComparison.OrdinalIgnoreCase);
         }
 
         private static void Normalize(BlendShapeNamePresetState state)
         {
-            state.customPresets = (state.customPresets ??
-                    new List<BlendShapeNameCustomPreset>())
-                .Where(preset => preset != null &&
-                                 !string.IsNullOrEmpty(preset.id))
+            state.presets = (state.presets ?? new List<BlendShapeFbxPreset>())
+                .Where(preset => preset != null && !string.IsNullOrEmpty(preset.assetGuid))
+                .GroupBy(preset => preset.assetGuid, StringComparer.Ordinal)
+                .Select(group => group.Last())
+                .OrderBy(preset => preset.name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            if (!IsBuiltIn(state.selectedId) &&
-                state.customPresets.All(preset => !string.Equals(
-                    preset.id,
-                    state.selectedId,
-                    StringComparison.Ordinal)))
+            for (var index = 0; index < state.presets.Count; index++)
             {
-                state.selectedId = UnderscorePresetId;
-            }
-        }
-
-        private static bool TryGetBuiltInPattern(
-            string id,
-            out string pattern)
-        {
-            if (string.Equals(id, UnderscorePresetId, StringComparison.Ordinal))
-            {
-                pattern = FaceExpressionSettings.DefaultBlendShapeNamePattern;
-                return true;
-            }
-
-            if (string.Equals(
-                    id,
-                    SpaceParenthesesPresetId,
-                    StringComparison.Ordinal))
-            {
-                pattern = SpaceParenthesesPattern;
-                return true;
-            }
-
-            pattern = null;
-            return false;
-        }
-
-        private static bool IsBuiltIn(string id)
-        {
-            return TryGetBuiltInPattern(id, out _);
-        }
-
-        private sealed class PresetChoice
-        {
-            internal PresetChoice(
-                string id,
-                string name,
-                string pattern,
-                bool builtIn)
-            {
-                Id = id;
-                Name = name;
-                Pattern = pattern;
-                BuiltIn = builtIn;
-            }
-
-            internal string Id { get; }
-            internal string Name { get; }
-            internal string Pattern { get; }
-            internal bool BuiltIn { get; }
-        }
-
-        private sealed class PresetField : VisualElement
-        {
-            private readonly Action<string> _notify;
-            private readonly PopupField<PresetChoice> _preset;
-            private readonly TextField _name;
-            private readonly TextField _pattern;
-            private readonly UiTextButton _delete;
-            private readonly HelpBox _error;
-            private BlendShapeNamePresetState _state;
-            private bool _rendering;
-
-            internal PresetField(
-                string value,
-                string tooltip,
-                Action<string> notify)
-            {
-                _notify = notify;
-                _state = Parse(value);
-                tooltip = tooltip ?? string.Empty;
-                UiStyleUtility.AddPackageStyleSheet(
-                    this,
-                    "Editor/UI/Components/Inputs/ui-button.uss");
-
-                _preset = UiTextFactory.CreatePopupField(
-                    I18N.Get("settings.blendShapeNamePattern.preset"),
-                    CreateChoices(),
-                    0,
-                    choice => choice?.Name ?? string.Empty,
-                    choice => choice?.Name ?? string.Empty);
-                _preset.tooltip = tooltip;
-                _preset.RegisterValueChangedCallback(evt =>
-                {
-                    if (_rendering || evt.newValue == null)
-                    {
-                        return;
-                    }
-
-                    _state.selectedId = evt.newValue.Id;
-                    Notify();
-                    ShowChoice(evt.newValue);
-                });
-                Add(_preset);
-
-                _name = UiTextFactory.CreateTextField(
-                    I18N.Get("settings.blendShapeNamePattern.name"));
-                _name.tooltip = tooltip;
-                Add(_name);
-
-                _pattern = UiTextFactory.CreateTextField(
-                    I18N.Get("settings.blendShapeNamePattern.pattern"));
-                _pattern.multiline = true;
-                _pattern.style.minHeight = 64f;
-                _pattern.tooltip = tooltip;
-                Add(_pattern);
-
-                var actions = new VisualElement();
-                actions.style.flexDirection = FlexDirection.Row;
-                actions.style.justifyContent = Justify.FlexEnd;
-                var save = UiTextFactory.CreateButton(
-                    I18N.Get("settings.blendShapeNamePattern.save"),
-                    Save);
-                actions.Add(save);
-                _delete = UiTextFactory.CreateButton(
-                    I18N.Get("settings.blendShapeNamePattern.delete"),
-                    Delete);
-                _delete.style.marginLeft = UiSpacingTokens.Xs;
-                actions.Add(_delete);
-                Add(actions);
-
-                _error = UiTextFactory.CreateHelpBox(
-                    string.Empty,
-                    HelpBoxMessageType.Error);
-                _error.style.display = DisplayStyle.None;
-                Add(_error);
-                RefreshChoices();
-            }
-
-            private List<PresetChoice> CreateChoices()
-            {
-                var choices = new List<PresetChoice>
-                {
-                    new PresetChoice(
-                        UnderscorePresetId,
-                        I18N.Get(
-                            "settings.blendShapeNamePattern.underscorePreset"),
-                        FaceExpressionSettings.DefaultBlendShapeNamePattern,
-                        true),
-                    new PresetChoice(
-                        SpaceParenthesesPresetId,
-                        I18N.Get(
-                            "settings.blendShapeNamePattern.spaceParenthesesPreset"),
-                        SpaceParenthesesPattern,
-                        true)
-                };
-                choices.AddRange(_state.customPresets.Select(preset =>
-                    new PresetChoice(
-                        preset.id,
-                        preset.name,
-                        preset.pattern,
-                        false)));
-                return choices;
-            }
-
-            private void RefreshChoices()
-            {
-                var choices = CreateChoices();
-                var selected = choices.FirstOrDefault(choice => string.Equals(
-                                   choice.Id,
-                                   _state.selectedId,
-                                   StringComparison.Ordinal)) ??
-                               choices[0];
-                _rendering = true;
-                _preset.choices = choices;
-                _preset.SetValueWithoutNotify(selected);
-                _rendering = false;
-                ShowChoice(selected);
-            }
-
-            private void ShowChoice(PresetChoice choice)
-            {
-                _rendering = true;
-                _name.SetValueWithoutNotify(choice.Name);
-                _pattern.SetValueWithoutNotify(choice.Pattern);
-                _delete.SetEnabled(!choice.BuiltIn);
-                _rendering = false;
-                HideError();
-            }
-
-            private void Save()
-            {
-                var name = (_name.value ?? string.Empty).Trim();
-                if (name.Length == 0)
-                {
-                    ShowError(I18N.Get(
-                        "settings.blendShapeNamePattern.nameRequired"));
-                    return;
-                }
-
-                var pattern = _pattern.value ?? string.Empty;
-                if (!BlendShapeNamingRule.Validate(pattern).IsValid)
-                {
-                    ShowError(I18N.Get(
-                        "settings.blendShapeNamePattern.invalidPattern"));
-                    return;
-                }
-
-                var selectedCustom = _state.customPresets.FirstOrDefault(
-                    preset => string.Equals(
-                        preset.id,
-                        _state.selectedId,
-                        StringComparison.Ordinal));
-                var duplicate = CreateChoices().Any(choice =>
-                    !string.Equals(
-                        choice.Id,
-                        selectedCustom?.id,
-                        StringComparison.Ordinal) &&
-                    string.Equals(
-                        choice.Name,
-                        name,
-                        StringComparison.OrdinalIgnoreCase));
-                if (duplicate)
-                {
-                    ShowError(I18N.Get(
-                        "settings.blendShapeNamePattern.duplicateName"));
-                    return;
-                }
-
-                SaveCustom(
-                    _state,
-                    selectedCustom?.id,
-                    name,
-                    pattern);
-                Notify();
-                RefreshChoices();
-            }
-
-            private void Delete()
-            {
-                var removed = _state.customPresets.RemoveAll(preset =>
-                    string.Equals(
-                        preset.id,
-                        _state.selectedId,
-                        StringComparison.Ordinal));
-                if (removed == 0)
-                {
-                    return;
-                }
-
-                _state.selectedId = UnderscorePresetId;
-                Notify();
-                RefreshChoices();
-            }
-
-            private void Notify()
-            {
-                _notify?.Invoke(Serialize(_state));
-            }
-
-            private void ShowError(string message)
-            {
-                UiTextFactory.SetText(_error, message);
-                _error.style.display = DisplayStyle.Flex;
-            }
-
-            private void HideError()
-            {
-                UiTextFactory.SetText(_error, string.Empty);
-                _error.style.display = DisplayStyle.None;
+                var preset = state.presets[index];
+                preset.assetPath = preset.assetPath ?? string.Empty;
+                preset.name = string.IsNullOrWhiteSpace(preset.name)
+                    ? Path.GetFileNameWithoutExtension(preset.assetPath)
+                    : preset.name.Trim();
+                preset.mappings = (preset.mappings ?? new List<BlendShapeNameMapping>())
+                    .Where(mapping => mapping != null && !string.IsNullOrEmpty(mapping.shapeName))
+                    .ToList();
             }
         }
     }

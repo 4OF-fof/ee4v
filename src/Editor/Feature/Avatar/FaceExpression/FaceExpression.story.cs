@@ -99,22 +99,66 @@ namespace Ee4v.FaceExpression
             view.SetChannels(
                 new[]
                 {
-                    new BlendShapeChannel("Body", "eye_blink_1", 80f, true),
-                    new BlendShapeChannel("Body", "eye_blink_1_L", 0f, false),
-                    new BlendShapeChannel("Body", "eye_blink_1_R", 0f, false),
-                    new BlendShapeChannel("Body", "eye_blink_2", 100f, true),
-                    new BlendShapeChannel("Body", "eye_blink_2_L", 0f, false),
-                    new BlendShapeChannel("Body", "eye_blink_2_R", 0f, false),
-                    new BlendShapeChannel("Body", "eye_smile_1", 30f, true)
+                    CreateStoryChannel("eye_blink_1", 80f, true),
+                    CreateStoryChannel("eye_blink_1_L", 0f, false),
+                    CreateStoryChannel("eye_blink_1_R", 0f, false),
+                    CreateStoryChannel("eye_blink_2", 100f, true),
+                    CreateStoryChannel("eye_blink_2_L", 0f, false),
+                    CreateStoryChannel("eye_blink_2_R", 0f, false),
+                    CreateStoryChannel("eye_smile_1", 30f, true)
                 },
                 "Eye",
-                FaceExpressionSettings.DefaultBlendShapeNamePattern,
+                CreateStoryRule(),
                 true);
             var surface = new VisualElement();
             surface.style.width = 920f;
             surface.style.height = 640f;
             surface.Add(view);
             parent.Add(surface);
+        }
+
+        private static BlendShapeChannel CreateStoryChannel(
+            string name,
+            float value,
+            bool animated)
+        {
+            return new BlendShapeChannel(
+                "Body",
+                name,
+                value,
+                animated,
+                sourceAssetGuid: "story-fbx",
+                sourceMeshLocalId: 1L);
+        }
+
+        private static BlendShapeNamingRule CreateStoryRule()
+        {
+            var names = new[]
+            {
+                "eye_blink_1",
+                "eye_blink_1_L",
+                "eye_blink_1_R",
+                "eye_blink_2",
+                "eye_blink_2_L",
+                "eye_blink_2_R",
+                "eye_smile_1"
+            };
+            var preset = new BlendShapeFbxPreset
+            {
+                assetGuid = "story-fbx",
+                name = "Story"
+            };
+            for (var index = 0; index < names.Length; index++)
+            {
+                preset.mappings.Add(BlendShapeNameClassifier.Classify(
+                    1L,
+                    "Body",
+                    names[index]));
+            }
+
+            var state = new BlendShapeNamePresetState();
+            state.presets.Add(preset);
+            return new BlendShapeNamingRule(state);
         }
 
         private static void BuildAssignments(VisualElement parent)
