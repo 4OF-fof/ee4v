@@ -9,7 +9,6 @@ namespace Ee4v.FaceExpression
     internal sealed class FaceExpressionGroupWindow : EditorWindow
     {
         private FaceExpressionGroupView _view;
-        private string _removeMeshText;
 
         [MenuItem("ee4v/Avatar/Face Expression Groups")]
         internal static void ShowWindow()
@@ -71,12 +70,11 @@ namespace Ee4v.FaceExpression
                 {
                     Groups = I18N.Get("section.groups"),
                     All = I18N.Get("group.all"),
-                    Meshes = I18N.Get("section.meshes"),
                     AddMesh = I18N.Get("action.addMesh"),
+                    RemoveMesh = I18N.Get("action.remove"),
                     MeshGroupSection = I18N.Get("group.sectionMeshes"),
-                    BlendShapeGroupSection = I18N.Get("group.sectionBlendShapes")
+                    BodySection = I18N.Get("group.sectionBody")
                 });
-            _removeMeshText = I18N.Get("action.removeMesh");
             _view.GroupSelected += FaceExpressionGroupSession.SelectGroup;
             _view.AddMeshRequested += ShowMeshMenu;
             _view.RemoveMeshRequested += FaceExpressionGroupSession.RemoveMesh;
@@ -89,9 +87,6 @@ namespace Ee4v.FaceExpression
                 FaceExpressionGroupSession.Groups,
                 FaceExpressionGroupSession.TotalCount,
                 FaceExpressionGroupSession.SelectedGroupKey);
-            _view?.SetMeshes(
-                FaceExpressionGroupSession.SelectedMeshes,
-                _removeMeshText);
         }
 
         private void ShowMeshMenu()

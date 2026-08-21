@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Ee4v.UI;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,19 +13,19 @@ namespace Ee4v.FaceExpression
     {
         internal string Groups { get; set; }
         internal string All { get; set; }
-        internal string Meshes { get; set; }
         internal string AddMesh { get; set; }
+        internal string RemoveMesh { get; set; }
         internal string MeshGroupSection { get; set; }
-        internal string BlendShapeGroupSection { get; set; }
+        internal string BodySection { get; set; }
     }
 
     internal sealed class FaceExpressionGroupView : VisualElement
     {
         private readonly string _allText;
+        private readonly string _removeMeshText;
         private readonly string _meshGroupSectionText;
-        private readonly string _blendShapeGroupSectionText;
+        private readonly string _bodySectionText;
         private readonly ListView _list;
-        private readonly VisualElement _meshList;
         private List<GroupOption> _options = new List<GroupOption>();
         private string _selectedGroupKey;
         private bool _rendering;
@@ -33,30 +34,22 @@ namespace Ee4v.FaceExpression
         {
             text = text ?? new FaceExpressionGroupViewText();
             _allText = text.All;
+            _removeMeshText = text.RemoveMesh;
             _meshGroupSectionText = text.MeshGroupSection;
-            _blendShapeGroupSectionText = text.BlendShapeGroupSection;
+            _bodySectionText = text.BodySection;
             AddToClassList("ee4v-face-expression-groups");
 
-            var meshHeader = new VisualElement();
-            meshHeader.AddToClassList("ee4v-face-expression-groups__mesh-header");
-            meshHeader.Add(UiTextFactory.Create(
-                text.Meshes,
-                UiClassNames.SectionTitle,
-                "ee4v-face-expression-groups__mesh-title"));
-            meshHeader.Add(UiTextFactory.CreateButton(
-                text.AddMesh,
-                () => AddMeshRequested?.Invoke(),
-                "ee4v-face-expression-groups__add-mesh"));
-            Add(meshHeader);
-
-            _meshList = new VisualElement();
-            _meshList.AddToClassList("ee4v-face-expression-groups__meshes");
-            Add(_meshList);
-
-            Add(UiTextFactory.Create(
+            var header = new VisualElement();
+            header.AddToClassList("ee4v-face-expression-groups__header");
+            header.Add(UiTextFactory.Create(
                 text.Groups,
                 UiClassNames.SectionTitle,
                 "ee4v-face-expression-groups__title"));
+            header.Add(UiTextFactory.CreateButton(
+                text.AddMesh,
+                () => AddMeshRequested?.Invoke(),
+                "ee4v-face-expression-groups__add-mesh"));
+            Add(header);
 
             _list = new ListView
             {
@@ -64,7 +57,7 @@ namespace Ee4v.FaceExpression
                 virtualizationMethod =
                     CollectionVirtualizationMethod.FixedHeight,
                 selectionType = SelectionType.Single,
-                makeItem = () => new GroupRow(),
+                makeItem = () => new GroupRow(ShowMeshContextMenu),
                 bindItem = BindRow
             };
             _list.AddToClassList("ee4v-face-expression-groups__list");
@@ -91,31 +84,6 @@ namespace Ee4v.FaceExpression
         internal event Action AddMeshRequested;
         internal event Action<string> RemoveMeshRequested;
 
-        internal void SetMeshes(
-            IReadOnlyList<FaceMeshOption> meshes,
-            string removeText)
-        {
-            _meshList.Clear();
-            for (var index = 0; index < (meshes?.Count ?? 0); index++)
-            {
-                var mesh = meshes[index];
-                var row = new VisualElement();
-                row.AddToClassList("ee4v-face-expression-groups__mesh-row");
-                row.Add(UiTextFactory.Create(
-                    mesh.DisplayName,
-                    "ee4v-face-expression-groups__mesh-name"));
-                if (!mesh.IsBody)
-                {
-                    row.Add(UiTextFactory.CreateButton(
-                        removeText,
-                        () => RemoveMeshRequested?.Invoke(mesh.Path),
-                        "ee4v-face-expression-groups__remove-mesh"));
-                }
-
-                _meshList.Add(row);
-            }
-        }
-
         internal void SetGroups(
             IReadOnlyList<BlendShapeGroup> groups,
             int totalCount,
@@ -129,7 +97,7 @@ namespace Ee4v.FaceExpression
             {
                 AddSection(
                     groups.Where(group => string.IsNullOrEmpty(group.RendererPath)),
-                    _blendShapeGroupSectionText);
+                    _bodySectionText);
                 AddSection(
                     groups.Where(group => !string.IsNullOrEmpty(group.RendererPath)),
                     _meshGroupSectionText);
@@ -147,6 +115,16 @@ namespace Ee4v.FaceExpression
                     StringComparison.Ordinal));
             _list.selectedIndex = Mathf.Max(0, selectedIndex);
             _rendering = false;
+        }
+
+        private void ShowMeshContextMenu(string rendererPath)
+        {
+            var menu = new GenericMenu();
+            menu.AddItem(
+                UiTextFactory.CreateGuiContent(_removeMeshText),
+                false,
+                () => RemoveMeshRequested?.Invoke(rendererPath));
+            menu.ShowAsContext();
         }
 
         private void AddSection(
@@ -167,7 +145,8 @@ namespace Ee4v.FaceExpression
                     group.Key,
                     group.Name,
                     group.Count,
-                    false));
+                    false,
+                    group.RendererPath));
             }
         }
 
@@ -200,27 +179,33 @@ namespace Ee4v.FaceExpression
                 string groupKey,
                 string displayName,
                 int count,
-                bool isSectionHeader)
+                bool isSectionHeader,
+                string rendererPath = null)
             {
                 GroupKey = groupKey;
                 DisplayName = displayName;
                 Count = count;
                 IsSectionHeader = isSectionHeader;
+                RendererPath = rendererPath;
             }
 
             internal string GroupKey { get; }
             internal string DisplayName { get; }
             internal int Count { get; }
             internal bool IsSectionHeader { get; }
+            internal string RendererPath { get; }
         }
 
         private sealed class GroupRow : VisualElement
         {
             private readonly UiTextElement _name;
             private readonly UiTextElement _count;
+            private readonly Action<string> _showMeshContextMenu;
+            private string _rendererPath;
 
-            internal GroupRow()
+            internal GroupRow(Action<string> showMeshContextMenu)
             {
+                _showMeshContextMenu = showMeshContextMenu;
                 AddToClassList("ee4v-face-expression-group-row");
                 _name = UiTextFactory.Create(
                     string.Empty,
@@ -231,10 +216,12 @@ namespace Ee4v.FaceExpression
                     "ee4v-face-expression-group-row__count");
                 Add(_name);
                 Add(_count);
+                RegisterCallback<ContextClickEvent>(OnContextClick);
             }
 
             internal void SetOption(GroupOption option)
             {
+                _rendererPath = option?.RendererPath;
                 _name.SetText(option?.DisplayName ?? string.Empty);
                 EnableInClassList(
                     "ee4v-face-expression-group-row--section",
@@ -242,6 +229,17 @@ namespace Ee4v.FaceExpression
                 _count.SetText(option?.IsSectionHeader == true
                     ? string.Empty
                     : (option?.Count ?? 0).ToString());
+            }
+
+            private void OnContextClick(ContextClickEvent evt)
+            {
+                if (string.IsNullOrEmpty(_rendererPath))
+                {
+                    return;
+                }
+
+                _showMeshContextMenu?.Invoke(_rendererPath);
+                evt.StopPropagation();
             }
         }
     }

@@ -587,46 +587,20 @@
     padding: var(--ee4v-space-lg);
 }
 
+.ee4v-face-expression-groups__header {
+    flex-shrink: 0;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: var(--ee4v-space-sm);
+}
+
 .ee4v-face-expression-groups__title {
-    flex-shrink: 0;
-    margin-bottom: var(--ee4v-space-sm);
-}
-
-.ee4v-face-expression-groups__mesh-header {
-    flex-shrink: 0;
-    flex-direction: row;
-    align-items: center;
-    margin-bottom: var(--ee4v-space-sm);
-}
-
-.ee4v-face-expression-groups__mesh-title {
     flex-grow: 1;
     min-width: 0;
 }
 
-.ee4v-face-expression-groups__add-mesh,
-.ee4v-face-expression-groups__remove-mesh {
+.ee4v-face-expression-groups__add-mesh {
     flex-shrink: 0;
-}
-
-.ee4v-face-expression-groups__meshes {
-    flex-shrink: 0;
-    margin-bottom: var(--ee4v-space-lg);
-}
-
-.ee4v-face-expression-groups__mesh-row {
-    min-height: 28px;
-    flex-direction: row;
-    align-items: center;
-    padding-left: var(--ee4v-space-sm);
-}
-
-.ee4v-face-expression-groups__mesh-name {
-    flex-grow: 1;
-    min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    margin-right: var(--ee4v-space-sm);
 }
 
 .ee4v-face-expression-groups__list {

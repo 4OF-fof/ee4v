@@ -26,14 +26,13 @@
   },
   "section": {
     "blendShapes": "BlendShapes",
-    "groups": "Group",
-    "meshes": "Meshes"
+    "groups": "Group"
   },
   "group": {
     "all": "All",
     "noMeshes": "No meshes are available to add",
     "sectionMeshes": "Added meshes",
-    "sectionBlendShapes": "BlendShape groups"
+    "sectionBody": "Body"
   },
   "search": {
     "placeholder": "Search BlendShapes",
@@ -64,8 +63,7 @@
     "apply": "Apply to Avatar",
     "addMenuExpression": "Add menu-only expression",
     "remove": "Remove",
-    "addMesh": "Add mesh",
-    "removeMesh": "Remove"
+    "addMesh": "Add mesh"
   },
   "gesture": {
     "Neutral": "Neutral",

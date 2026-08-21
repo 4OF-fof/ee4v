@@ -174,26 +174,21 @@ namespace Ee4v.FaceExpression
             eyes.AddShape();
             var mouth = new BlendShapeGroup("Mouth");
             mouth.AddShape();
+            var accessory = new BlendShapeGroup("Face/Eyes", "Face/Eyes");
+            accessory.AddShape();
             var view = new FaceExpressionGroupView(
                 new FaceExpressionGroupViewText
                 {
                     Groups = "Group",
                     All = "All",
-                    Meshes = "Meshes",
                     AddMesh = "Add mesh",
+                    RemoveMesh = "Remove",
                     MeshGroupSection = "Added meshes",
-                    BlendShapeGroupSection = "BlendShape groups"
+                    BodySection = "Body"
                 });
-            view.SetMeshes(
-                new[]
-                {
-                    new FaceMeshOption("Body", "Body", true),
-                    new FaceMeshOption("Face/Eyes", "Face/Eyes", false)
-                },
-                "Remove");
             view.SetGroups(
-                new[] { eyes, mouth },
-                3,
+                new[] { accessory, eyes, mouth },
+                4,
                 eyes.Key);
             var surface = new VisualElement();
             surface.style.width = 260f;

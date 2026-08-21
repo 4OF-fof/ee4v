@@ -26,14 +26,13 @@
   },
   "section": {
     "blendShapes": "BlendShape",
-    "groups": "Group",
-    "meshes": "メッシュ"
+    "groups": "Group"
   },
   "group": {
     "all": "すべて",
     "noMeshes": "追加できるメッシュがありません",
     "sectionMeshes": "追加メッシュ",
-    "sectionBlendShapes": "BlendShapeグループ"
+    "sectionBody": "Body"
   },
   "search": {
     "placeholder": "BlendShape を検索",
@@ -64,8 +63,7 @@
     "apply": "アバターに適用",
     "addMenuExpression": "メニュー専用表情を追加",
     "remove": "削除",
-    "addMesh": "メッシュ追加",
-    "removeMesh": "解除"
+    "addMesh": "メッシュ追加"
   },
   "gesture": {
     "Neutral": "Neutral",
