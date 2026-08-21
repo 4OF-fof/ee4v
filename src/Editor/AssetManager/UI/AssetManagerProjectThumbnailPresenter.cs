@@ -215,7 +215,8 @@ namespace Ee4v.AssetManager.UI
             {
                 if (association == null ||
                     string.IsNullOrWhiteSpace(association.AssetGuid) ||
-                    string.IsNullOrWhiteSpace(association.ItemId))
+                    string.IsNullOrWhiteSpace(association.ItemId) ||
+                    string.IsNullOrWhiteSpace(association.FileId))
                 {
                     continue;
                 }
@@ -230,10 +231,12 @@ namespace Ee4v.AssetManager.UI
             }
 
             var candidates = latestByGuid.Values
-                .Select(association => new FolderCandidate(
-                    association.AssetGuid,
-                    AssetDatabase.GUIDToAssetPath(association.AssetGuid),
-                    association.ItemId))
+                .GroupBy(
+                    association => association.FileId,
+                    StringComparer.Ordinal)
+                .SelectMany(group => SelectImportedRootCandidates(
+                    group,
+                    latestByGuid))
                 .Where(candidate =>
                     !string.IsNullOrWhiteSpace(candidate.Path) &&
                     AssetDatabase.IsValidFolder(candidate.Path))
@@ -261,6 +264,91 @@ namespace Ee4v.AssetManager.UI
             }
 
             return selected;
+        }
+
+        private static IEnumerable<FolderCandidate>
+            SelectImportedRootCandidates(
+                IGrouping<string, AssetImportedAssetAssociation>
+                    fileAssociations,
+                IReadOnlyDictionary<
+                    string,
+                    AssetImportedAssetAssociation> latestByGuid)
+        {
+            var importedAssets = fileAssociations
+                .Select(association => new
+                {
+                    Association = association,
+                    Path = AssetDatabase.GUIDToAssetPath(
+                        association.AssetGuid)
+                })
+                .Where(asset =>
+                    !string.IsNullOrWhiteSpace(asset.Path))
+                .ToArray();
+            var contentPaths = importedAssets
+                .Where(asset =>
+                    !AssetDatabase.IsValidFolder(asset.Path))
+                .Select(asset => asset.Path)
+                .ToArray();
+            var contentRoot = FindCommonParentFolder(contentPaths);
+            if (!string.IsNullOrWhiteSpace(contentRoot) &&
+                !string.Equals(
+                    contentRoot,
+                    "Assets",
+                    StringComparison.OrdinalIgnoreCase) &&
+                AssetDatabase.IsValidFolder(contentRoot))
+            {
+                var rootGuid = AssetDatabase.AssetPathToGUID(contentRoot);
+                var itemId = latestByGuid.TryGetValue(
+                    rootGuid,
+                    out var rootAssociation)
+                        ? rootAssociation.ItemId
+                        : fileAssociations
+                            .OrderByDescending(
+                                association => association.ImportedAt)
+                            .First()
+                            .ItemId;
+                yield return new FolderCandidate(
+                    rootGuid,
+                    contentRoot,
+                    itemId);
+                yield break;
+            }
+
+            foreach (var asset in importedAssets.Where(asset =>
+                         AssetDatabase.IsValidFolder(asset.Path)))
+            {
+                yield return new FolderCandidate(
+                    asset.Association.AssetGuid,
+                    asset.Path,
+                    asset.Association.ItemId);
+            }
+        }
+
+        private static string FindCommonParentFolder(
+            IReadOnlyList<string> assetPaths)
+        {
+            if (assetPaths == null || assetPaths.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var parent = ParentPath(assetPaths[0]);
+            while (!string.IsNullOrEmpty(parent) &&
+                   assetPaths.Any(path =>
+                       !IsSameOrDescendant(parent, path)))
+            {
+                parent = ParentPath(parent);
+            }
+
+            return parent;
+        }
+
+        private static string ParentPath(string path)
+        {
+            var separator = path.LastIndexOf('/');
+            return separator <= 0
+                ? string.Empty
+                : path.Substring(0, separator);
         }
 
         private static bool AffectsProjectThumbnails(
