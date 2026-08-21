@@ -79,8 +79,10 @@ namespace Ee4v.Core.Tests
                 ProjectAssetSettings.GetAssetFolder("Scene", service),
                 Is.EqualTo("Assets/AvatarAssets/Scene"));
             Assert.That(
-                ProjectAssetSettings.GetAssetFolder("FaceClip", service),
-                Is.EqualTo("Assets/AvatarAssets/FaceClip"));
+                ProjectAssetSettings.GetAssetFolder(
+                    "Animation/Facial",
+                    service),
+                Is.EqualTo("Assets/AvatarAssets/Animation/Facial"));
 
             service.Set(
                 ProjectAssetSettings.UseProjectRootFolderName,

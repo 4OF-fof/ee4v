@@ -109,8 +109,6 @@ namespace Ee4v.FaceExpression
         private const string GestureRight = "GestureRight";
         private const string StateTagPrefix = "ee4v-face:2:";
         private const string MenuTagPrefix = "ee4v-menu:1:";
-        private const float ClipLength = 1f / 60f;
-
         public static bool OwnsLayer(AnimatorController controller)
         {
             return controller != null && controller.layers.Any(layer => layer.name == LayerName);
@@ -565,7 +563,7 @@ namespace Ee4v.FaceExpression
                 AnimationUtility.SetEditorCurve(
                     generated,
                     binding,
-                    AnimationCurve.Constant(0f, ClipLength, value));
+                    new AnimationCurve(new Keyframe(0f, value)));
             }
 
             generated.frameRate = 60f;

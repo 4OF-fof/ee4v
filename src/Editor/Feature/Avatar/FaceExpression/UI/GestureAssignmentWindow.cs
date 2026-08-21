@@ -14,8 +14,8 @@ namespace Ee4v.FaceExpression
         private GestureAssignmentView _view;
         private GameObject _avatar;
         private FaceExpressionPreview _preview;
-        private readonly Dictionary<AnimationClip, Texture2D> _thumbnails =
-            new Dictionary<AnimationClip, Texture2D>();
+        private readonly Dictionary<AnimationClip, ThumbnailEntry> _thumbnails =
+            new Dictionary<AnimationClip, ThumbnailEntry>();
         private IReadOnlyList<string> _previewRendererPaths = Array.Empty<string>();
 
         [MenuItem("ee4v/Avatar/Gesture Assignments")]
@@ -119,42 +119,64 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            if (!_thumbnails.TryGetValue(clip, out var texture) || texture == null)
+            var dirtyCount = EditorUtility.GetDirtyCount(clip);
+            if (!_thumbnails.TryGetValue(clip, out var entry) ||
+                entry.Texture == null ||
+                entry.DirtyCount != dirtyCount)
             {
+                if (entry.Texture != null)
+                {
+                    DestroyImmediate(entry.Texture);
+                }
+
                 var channels = FaceExpressionClipEditor.Read(
                     _avatar,
                     clip,
                     Array.Empty<string>(),
                     _previewRendererPaths);
-                texture = _preview.RenderThumbnail(channels, 160, 160);
+                var texture = _preview.RenderThumbnail(channels, 160, 160);
                 if (texture != null)
                 {
                     texture.hideFlags = HideFlags.HideAndDontSave;
-                    _thumbnails[clip] = texture;
                 }
+
+                entry = new ThumbnailEntry(texture, dirtyCount);
+                _thumbnails[clip] = entry;
             }
 
-            if (texture == null)
+            if (entry.Texture == null)
             {
                 EditorGUI.DrawRect(rect, new Color(0.1f, 0.1f, 0.1f, 1f));
                 return;
             }
 
-            GUI.DrawTexture(rect, texture, ScaleMode.ScaleAndCrop, false);
+            GUI.DrawTexture(rect, entry.Texture, ScaleMode.ScaleAndCrop, false);
         }
 
         private void ClearThumbnails()
         {
-            foreach (var texture in _thumbnails.Values)
+            foreach (var entry in _thumbnails.Values)
             {
-                if (texture != null)
+                if (entry.Texture != null)
                 {
-                    DestroyImmediate(texture);
+                    DestroyImmediate(entry.Texture);
                 }
             }
 
             _thumbnails.Clear();
             _view?.MarkDirtyRepaint();
+        }
+
+        private readonly struct ThumbnailEntry
+        {
+            internal ThumbnailEntry(Texture2D texture, int dirtyCount)
+            {
+                Texture = texture;
+                DirtyCount = dirtyCount;
+            }
+
+            internal Texture2D Texture { get; }
+            internal int DirtyCount { get; }
         }
 
         private void RefreshAssignments()

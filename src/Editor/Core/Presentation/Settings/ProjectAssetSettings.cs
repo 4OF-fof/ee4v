@@ -89,18 +89,18 @@ namespace Ee4v.Core.Settings
         }
 
         internal static string GetAssetFolder(
-            string childFolderName,
+            string childFolderPath,
             ISettingsService settings = null)
         {
-            if (!IsValidFolderName(childFolderName))
+            if (!IsValidChildFolderPath(childFolderPath))
             {
                 throw new ArgumentException(
-                    "Asset child folder name is invalid.",
-                    nameof(childFolderName));
+                    "Asset child folder path is invalid.",
+                    nameof(childFolderPath));
             }
 
             return GetRootAssetFolder(settings) +
-                   "/" + childFolderName;
+                   "/" + childFolderPath;
         }
 
         internal static string GetRootAssetFolder(
@@ -115,10 +115,10 @@ namespace Ee4v.Core.Settings
         }
 
         internal static string EnsureAssetFolder(
-            string childFolderName,
+            string childFolderPath,
             ISettingsService settings = null)
         {
-            var path = GetAssetFolder(childFolderName, settings);
+            var path = GetAssetFolder(childFolderPath, settings);
             var parent = "Assets";
             var segments = path.Substring("Assets/".Length)
                 .Split('/');
@@ -191,6 +191,15 @@ namespace Ee4v.Core.Settings
                    value.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 &&
                    value.IndexOf('/') < 0 &&
                    value.IndexOf('\\') < 0;
+        }
+
+        private static bool IsValidChildFolderPath(string value)
+        {
+            return !string.IsNullOrWhiteSpace(value) &&
+                   value.IndexOf('\\') < 0 &&
+                   Array.TrueForAll(
+                       value.Split('/'),
+                       IsValidFolderName);
         }
     }
 }

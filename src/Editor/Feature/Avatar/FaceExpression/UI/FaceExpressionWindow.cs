@@ -150,7 +150,7 @@ namespace Ee4v.FaceExpression
         private void CreateClip()
         {
             var folder = ProjectAssetSettings.EnsureAssetFolder(
-                "FaceClip",
+                "Animation/Facial",
                 _settings);
             var path = EditorUtility.SaveFilePanelInProject(
                 I18N.Get("dialog.createTitle"),

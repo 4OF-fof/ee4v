@@ -52,8 +52,6 @@ namespace Ee4v.FaceExpression
 
     internal static class FaceExpressionClipEditor
     {
-        private const float ClipLength = 1f / 60f;
-
         public static IReadOnlyList<BlendShapeChannel> Read(
             GameObject avatar,
             AnimationClip clip,
@@ -149,10 +147,7 @@ namespace Ee4v.FaceExpression
                 clip,
                 channel.Binding,
                 channel.Animated
-                    ? AnimationCurve.Constant(
-                        0f,
-                        ClipLength,
-                        channel.Value)
+                    ? new AnimationCurve(new Keyframe(0f, channel.Value))
                     : null);
             clip.frameRate = 60f;
             EditorUtility.SetDirty(clip);

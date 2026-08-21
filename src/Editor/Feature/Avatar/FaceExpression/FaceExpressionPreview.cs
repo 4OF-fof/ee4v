@@ -53,6 +53,7 @@ namespace Ee4v.FaceExpression
                     continue;
                 }
 
+                renderer.forceMatrixRecalculationPerRender = true;
                 var path = AnimationUtility.CalculateTransformPath(
                     renderer.transform,
                     _clone.transform);
