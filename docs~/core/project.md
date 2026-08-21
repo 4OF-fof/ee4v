@@ -87,7 +87,7 @@ registration は `Priority` の昇順、その後 `Id` の ordinal 順で実行�
 | `Repaint(ProjectItem)` | Project window の再描画を要求する |
 | `Repaint(ProjectToolbar)` | toolbar host を dirty にし、Project window の再描画を要求する |
 
-toolbar host の同期は dirty 時、または前回確認から1秒経過した後の Editor update で行われます。閉じた window の内部記録は同期時に削除されます。
+toolbar host の同期は dirty 時、または前回確認から1秒経過した後の Editor update で行われます。閉じた window の内部記録は同期時に削除されます。Unity が表示階層を作り直して host が失われた場合は、同じ Project Browser window でも新しい host の内容を再構築します。host は Project Browser の幅に追従し、右側に固定幅を確保しません。
 
 modifier key が変化すると Project window と Hierarchy window の再描画を要求します。toolbar の `IsEnabled` 結果だけが変わった場合は `Repaint(ProjectToolbar)` が必要です。
 

@@ -44,14 +44,14 @@ namespace Ee4v.ProjectTabs
             _view.FolderDropAcceptanceRequested +=
                 CanAcceptFolderDrop;
             _view.FolderDropRequested += AddDroppedFolders;
-            _session.Changed += OnSessionChanged;
 
             Add(_view);
             Refresh();
 
             schedule.Execute(TrackCurrentLocation)
                 .Every(TrackingIntervalMilliseconds);
-            RegisterCallback<DetachFromPanelEvent>(_ => Dispose());
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
         private void SelectTab(string tabId)
@@ -327,21 +327,16 @@ namespace Ee4v.ProjectTabs
                 : displayName + " · " + location.SearchText;
         }
 
-        private void Dispose()
+        private void OnAttachToPanel(AttachToPanelEvent evt)
         {
             _session.Changed -= OnSessionChanged;
-            _view.BackRequested -= GoBack;
-            _view.ForwardRequested -= GoForward;
-            _view.BackHistoryRequested -= GoBack;
-            _view.ForwardHistoryRequested -= GoForward;
-            _view.AddRequested -= AddTab;
-            _view.TabSelected -= SelectTab;
-            _view.TabCloseRequested -= CloseTab;
-            _view.TabMoveRequested -= MoveTab;
-            _view.TabPinToggleRequested -= TogglePinned;
-            _view.FolderDropAcceptanceRequested -=
-                CanAcceptFolderDrop;
-            _view.FolderDropRequested -= AddDroppedFolders;
+            _session.Changed += OnSessionChanged;
+            Refresh();
+        }
+
+        private void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            _session.Changed -= OnSessionChanged;
         }
     }
 }

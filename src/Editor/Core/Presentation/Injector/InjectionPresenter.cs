@@ -147,13 +147,15 @@ namespace Ee4v.Core.Injector
                 var root = window.rootVisualElement;
                 var host = root.Q<VisualElement>(
                     ProjectToolbarHostName);
+                var hostCreated = host == null;
                 if (host == null)
                 {
                     host = CreateHost(ProjectToolbarHostName);
                     root.Add(host);
                 }
 
-                if (!_projectHostVersions.TryGetValue(
+                if (hostCreated ||
+                    !_projectHostVersions.TryGetValue(
                         windowId,
                         out var currentVersion) ||
                     currentVersion != _hostVersion)
@@ -184,7 +186,6 @@ namespace Ee4v.Core.Injector
             host.style.flexDirection = FlexDirection.Row;
             host.style.height = 20f;
             host.style.marginLeft = 36f;
-            host.style.marginRight = 470f;
             host.style.overflow = Overflow.Hidden;
             return host;
         }
