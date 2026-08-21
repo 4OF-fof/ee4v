@@ -8,6 +8,7 @@
 
 | 機能 | 概要 | API リファレンス |
 |---|---|---|
+| Asset Protection | AssetManagerから取り込んだAssetをGUIDで判定し、直接編集と保存を防ぎます。 | [Asset Protection](./asset-protection.md) |
 | FolderContentOverlay | Project のフォルダーへ配下の代表的なアセットアイコンを重ねて表示します。アセット変更時は対象フォルダーと祖先のキャッシュを更新します。 | なし |
 | ProjectStyle | Project のフォルダーへ背景色とアイコンを設定します。 | [ProjectStyle](./project-style.md) |
 | ProjectTabs | Project ウィンドウへフォルダータブ、移動履歴、固定タブを追加します。 | [ProjectTabs](./project-tabs.md) |

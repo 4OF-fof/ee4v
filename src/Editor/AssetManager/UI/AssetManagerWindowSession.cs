@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.AssetManager.Infrastructure;
+using Ee4v.AssetProtection;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -28,6 +29,7 @@ namespace Ee4v.AssetManager.UI
                 InvalidateManager;
             EditorApplication.delayCall -= SyncSourcesOnStartup;
             EditorApplication.delayCall += SyncSourcesOnStartup;
+            EditorApplication.delayCall += InitializeProtection;
         }
 
         public static AssetManagerView CreateView(
@@ -63,13 +65,17 @@ namespace Ee4v.AssetManager.UI
                 Environment.ExpandEnvironmentVariables(
                     AssetManagerSettings.Ee4vLibraryPath),
                 "asset-manager-v1.db"));
+            AssetProtectionModule.Configure(_manager);
             return _manager;
         }
 
         private static void InvalidateManager()
         {
+            AssetProtectionModule.Configure(null);
             _manager = null;
             _viewState = new AssetManagerViewState();
+            EditorApplication.delayCall -= InitializeProtection;
+            EditorApplication.delayCall += InitializeProtection;
             var handlers = ManagerInvalidated;
             if (handlers == null)
             {
@@ -86,6 +92,19 @@ namespace Ee4v.AssetManager.UI
                 {
                     Debug.LogException(exception);
                 }
+            }
+        }
+
+        private static void InitializeProtection()
+        {
+            EditorApplication.delayCall -= InitializeProtection;
+            try
+            {
+                GetManager();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
             }
         }
 
