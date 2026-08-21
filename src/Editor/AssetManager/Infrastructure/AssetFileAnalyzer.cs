@@ -166,7 +166,7 @@ namespace Ee4v.AssetManager.Infrastructure
                 : path.Substring(prefix.Length);
         }
 
-        private static string NormalizePath(string path)
+        internal static string NormalizePath(string path)
         {
             return (path ?? string.Empty)
                 .Replace('\\', '/')
@@ -294,7 +294,8 @@ namespace Ee4v.AssetManager.Infrastructure
                     !string.IsNullOrWhiteSpace(record.Path))
                 .Select(record => new AssetFileContentEntry
                 {
-                    Path = NormalizePath(record.Path),
+                    Path = AssetFileAnalyzer.NormalizePath(
+                        record.Path),
                     Kind = record.HasAsset
                         ? AssetFileContentEntryKind.File
                         : AssetFileContentEntryKind.Directory,
@@ -468,14 +469,6 @@ namespace Ee4v.AssetManager.Infrastructure
             }
 
             return true;
-        }
-
-        private static string NormalizePath(string path)
-        {
-            return (path ?? string.Empty)
-                .Replace('\\', '/')
-                .Trim()
-                .Trim('/');
         }
 
         private sealed class PackageRecord

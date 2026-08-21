@@ -14,7 +14,15 @@
     },
     "assetRootFolderName": {
       "label": "生成アセットのルートフォルダー名",
-      "tooltip": "ee4vが作成するアセットをまとめるAssets直下のフォルダー名です。"
+      "tooltip": "すべてのプロジェクトで使う、Assets直下の生成アセット用フォルダー名です。"
+    },
+    "useProjectAssetRootFolderName": {
+      "label": "このプロジェクトで上書き",
+      "tooltip": "グローバルなルートフォルダー名をこのプロジェクト専用の値で上書きします。"
+    },
+    "projectAssetRootFolderName": {
+      "label": "プロジェクトのルートフォルダー名",
+      "tooltip": "上書きが有効な場合に使う、Assets直下の生成アセット用フォルダー名です。"
     },
     "listInput": {
       "itemPlaceholder": "1行に1項目を入力"

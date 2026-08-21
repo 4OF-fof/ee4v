@@ -13,7 +13,15 @@ namespace Ee4v.Core.Settings
                 "Preferences/4OF/ee4v",
                 SettingsScope.User,
                 SettingScope.User,
-                new[] { "ee4v", "settings", "localization" });
+                new[]
+                {
+                    "ee4v",
+                    "settings",
+                    "localization",
+                    "assets",
+                    "folder",
+                    "root"
+                });
         }
 
         [SettingsProvider]
@@ -23,7 +31,16 @@ namespace Ee4v.Core.Settings
                 "Project/4OF/ee4v",
                 SettingsScope.Project,
                 SettingScope.Project,
-                new[] { "ee4v", "settings", "project", "injector" });
+                new[]
+                {
+                    "ee4v",
+                    "settings",
+                    "project",
+                    "injector",
+                    "assets",
+                    "folder",
+                    "root"
+                });
         }
 
         private static SettingsProvider CreateProvider(

@@ -52,7 +52,7 @@ namespace Ee4v.Core.Tests
         }
 
         [Test]
-        public void ProjectAssetSettings_UsesConfiguredRootForFeatureFolders()
+        public void ProjectAssetSettings_UsesGlobalRootUnlessProjectOverrideEnabled()
         {
             var service = new SettingsService(
                 new Dictionary<SettingScope, ISettingStore>
@@ -70,6 +70,10 @@ namespace Ee4v.Core.Tests
                 ProjectAssetSettings.RootFolderName,
                 "AvatarAssets",
                 saveImmediately: false);
+            service.Set(
+                ProjectAssetSettings.ProjectRootFolderName,
+                "ProjectAssets",
+                saveImmediately: false);
 
             Assert.That(
                 ProjectAssetSettings.GetAssetFolder("Scene", service),
@@ -77,6 +81,15 @@ namespace Ee4v.Core.Tests
             Assert.That(
                 ProjectAssetSettings.GetAssetFolder("FaceClip", service),
                 Is.EqualTo("Assets/AvatarAssets/FaceClip"));
+
+            service.Set(
+                ProjectAssetSettings.UseProjectRootFolderName,
+                true,
+                saveImmediately: false);
+
+            Assert.That(
+                ProjectAssetSettings.GetAssetFolder("Scene", service),
+                Is.EqualTo("Assets/ProjectAssets/Scene"));
         }
 
         [TestCase("")]
@@ -90,6 +103,11 @@ namespace Ee4v.Core.Tests
         {
             Assert.That(
                 ProjectAssetSettings.RootFolderName
+                    .Validate(value)
+                    .IsValid,
+                Is.False);
+            Assert.That(
+                ProjectAssetSettings.ProjectRootFolderName
                     .Validate(value)
                     .IsValid,
                 Is.False);

@@ -1,7 +1,9 @@
 using System;
 using System.IO;
 using Ee4v.Core.I18n;
+using Ee4v.UI;
 using UnityEditor;
+using UnityEngine.UIElements;
 
 namespace Ee4v.Core.Settings
 {
@@ -13,7 +15,7 @@ namespace Ee4v.Core.Settings
         internal static readonly SettingDefinition<string> RootFolderName =
             new SettingDefinition<string>(
                 "core.assets.rootFolderName",
-                SettingScope.Project,
+                SettingScope.User,
                 "Core",
                 "settings.section.assets",
                 "settings.assetRootFolderName.label",
@@ -29,9 +31,49 @@ namespace Ee4v.Core.Settings
                     "face clip"
                 });
 
+        internal static readonly SettingDefinition<bool> UseProjectRootFolderName =
+            new SettingDefinition<bool>(
+                "core.assets.useProjectRootFolderName",
+                SettingScope.Project,
+                "Core",
+                "settings.section.assets",
+                "settings.useProjectAssetRootFolderName.label",
+                "settings.useProjectAssetRootFolderName.tooltip",
+                false,
+                order: 0,
+                keywords: new[]
+                {
+                    "assets",
+                    "folder",
+                    "root",
+                    "override"
+                });
+
+        internal static readonly SettingDefinition<string> ProjectRootFolderName =
+            new SettingDefinition<string>(
+                "core.assets.projectRootFolderName",
+                SettingScope.Project,
+                "Core",
+                "settings.section.assets",
+                "settings.projectAssetRootFolderName.label",
+                "settings.projectAssetRootFolderName.tooltip",
+                DefaultRootFolderName,
+                order: 1,
+                validator: ValidateRootFolderName,
+                keywords: new[]
+                {
+                    "assets",
+                    "folder",
+                    "root",
+                    "project"
+                });
+
         static ProjectAssetSettings()
         {
             Register(CoreSettings.Current);
+            SettingDrawerApi.Register(
+                ProjectRootFolderName,
+                CreateProjectRootFolderNameField);
         }
 
         internal static void Register(ISettingsService settings)
@@ -42,6 +84,8 @@ namespace Ee4v.Core.Settings
             }
 
             settings.Register(RootFolderName);
+            settings.Register(UseProjectRootFolderName);
+            settings.Register(ProjectRootFolderName);
         }
 
         internal static string GetAssetFolder(
@@ -64,7 +108,10 @@ namespace Ee4v.Core.Settings
         {
             settings = settings ?? CoreSettings.Current;
             Register(settings);
-            return "Assets/" + settings.Get(RootFolderName);
+            var definition = settings.Get(UseProjectRootFolderName)
+                ? ProjectRootFolderName
+                : RootFolderName;
+            return "Assets/" + settings.Get(definition);
         }
 
         internal static string EnsureAssetFolder(
@@ -94,6 +141,35 @@ namespace Ee4v.Core.Settings
             }
 
             return path;
+        }
+
+        private static VisualElement CreateProjectRootFolderNameField(
+            SettingDrawerContext<string> context)
+        {
+            var settings = CoreSettings.Current;
+            var field = UiTextFactory.CreateTextField();
+            field.tooltip = context.Tooltip;
+            field.value = context.Value ?? string.Empty;
+            field.SetEnabled(settings.Get(UseProjectRootFolderName));
+            field.RegisterValueChangedCallback(
+                evt => context.NotifyValueChanged(evt.newValue));
+
+            void OnSettingChanged(
+                object sender,
+                SettingChangedEventArgs args)
+            {
+                if (ReferenceEquals(
+                        args.Definition,
+                        UseProjectRootFolderName))
+                {
+                    field.SetEnabled((bool)args.Value);
+                }
+            }
+
+            settings.Changed += OnSettingChanged;
+            field.RegisterCallback<DetachFromPanelEvent>(
+                _ => settings.Changed -= OnSettingChanged);
+            return field;
         }
 
         private static SettingValidationResult ValidateRootFolderName(

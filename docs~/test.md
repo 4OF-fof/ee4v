@@ -62,7 +62,7 @@
 | テスト | 保証する契約 | 残す理由 |
 | --- | --- | --- |
 | `SettingsServiceTests.Instances_DoNotShareState` | SettingsService間で状態を共有しない | 独立した利用コンテキストの設定混入を防ぐ |
-| `SettingsServiceTests.ProjectAssetSettings_UsesConfiguredRootForFeatureFolders` | 既定ルート`!ee4vAsset`と任意のルート名をScene・FaceClipへ反映する | 先頭表示用の既定名と機能ごとの保存先がずれる問題を防ぐ |
+| `SettingsServiceTests.ProjectAssetSettings_UsesGlobalRootUnlessProjectOverrideEnabled` | 既定値とグローバル値を使い、Project上書きの有効時だけProject値をScene・FaceClipへ反映する | スコープ間の優先順位と機能ごとの保存先がずれる問題を防ぐ |
 | `SettingsServiceTests.ProjectAssetSettings_RejectsInvalidRootFolderNames` | 空値、相対要素、パス区切りを含むルート名を拒否する | Assets外や意図しない階層への生成を防ぐ |
 | `SettingsServiceTests.InvalidPersistedValue_FallsBackToDefault` | 無効な永続値を既定値へ戻す | 保存形式境界の不正値でEditorを壊さないため |
 | `SettingsServiceTests.Changed_IsRaisedAfterSuccessfulUpdate` | 成功した更新後に定義と値を通知する | 設定連動機能が依存する公開イベント契約である |

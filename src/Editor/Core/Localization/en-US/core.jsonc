@@ -14,7 +14,15 @@
     },
     "assetRootFolderName": {
       "label": "Generated asset root folder",
-      "tooltip": "Name of the folder directly under Assets that contains assets created by ee4v."
+      "tooltip": "Default folder directly under Assets for generated ee4v assets in every project."
+    },
+    "useProjectAssetRootFolderName": {
+      "label": "Override for this project",
+      "tooltip": "Overrides the global generated asset root folder for this project."
+    },
+    "projectAssetRootFolderName": {
+      "label": "Project asset root folder",
+      "tooltip": "Folder directly under Assets used when the project override is enabled."
     },
     "listInput": {
       "itemPlaceholder": "Enter one item per line"
