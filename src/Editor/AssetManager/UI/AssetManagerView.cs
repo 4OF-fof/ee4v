@@ -862,6 +862,12 @@ namespace Ee4v.AssetManager.UI
 
         private void OpenItemDetail(string itemId)
         {
+            var item = _manager.GetItem(itemId);
+            if (item == null || item.IsArchived)
+            {
+                return;
+            }
+
             _viewState.OpenItemDetail(itemId);
         }
 
@@ -881,24 +887,27 @@ namespace Ee4v.AssetManager.UI
             var ids = items.Select(item => item.Id).ToArray();
             var archived = items.All(item => item.IsArchived);
             var menu = new GenericMenu();
-            var importContent = UiTextFactory.CreateGuiContent(
-                I18N.Get("action.import"));
-            if (items.Length == 1 && HasItemTargets(items[0].Id))
+            if (!archived)
             {
-                var itemId = items[0].Id;
-                menu.AddItem(
-                    importContent,
-                    false,
-                    () => ShowItemTargetImport(
-                        anchor,
-                        itemId,
-                        _manager.GetFiles(itemId, true)));
+                var importContent = UiTextFactory.CreateGuiContent(
+                    I18N.Get("action.import"));
+                if (items.Length == 1 && HasItemTargets(items[0].Id))
+                {
+                    var itemId = items[0].Id;
+                    menu.AddItem(
+                        importContent,
+                        false,
+                        () => ShowItemTargetImport(
+                            anchor,
+                            itemId,
+                            _manager.GetFiles(itemId, true)));
+                }
+                else
+                {
+                    menu.AddDisabledItem(importContent);
+                }
+                menu.AddSeparator(string.Empty);
             }
-            else
-            {
-                menu.AddDisabledItem(importContent);
-            }
-            menu.AddSeparator(string.Empty);
             menu.AddItem(
                 UiTextFactory.CreateGuiContent(I18N.Get(
                     ids.Length == 1
@@ -1036,8 +1045,9 @@ namespace Ee4v.AssetManager.UI
                 GetAvailableTagOptions(),
                 GetTagPaths(item));
             tagsContainer.Add(tags);
-            var canEditMetadata = !item.SourceType.HasValue ||
-                                  item.SourceType == AssetSourceType.Ee4v;
+            var canEditMetadata = !item.IsArchived &&
+                                  (!item.SourceType.HasValue ||
+                                   item.SourceType == AssetSourceType.Ee4v);
             name.isReadOnly = !canEditMetadata;
             description.IsReadOnly = !canEditMetadata;
             if (canEditMetadata)
@@ -1049,16 +1059,20 @@ namespace Ee4v.AssetManager.UI
                 name.RegisterCallback<FocusOutEvent>(_ => save());
                 description.RegisterCallback<FocusOutEvent>(_ => save());
             }
-            tags.ValuesCommitted += () =>
+            tags.SetEnabled(!item.IsArchived);
+            if (!item.IsArchived)
             {
-                SaveItemTagsAutomatically(item.Id, tags.Values);
-                var current = _manager.GetItem(item.Id);
-                tags.SetValues(
-                    GetAvailableTagOptions(),
-                    current == null
-                        ? Array.Empty<string>()
-                        : GetTagPaths(current));
-            };
+                tags.ValuesCommitted += () =>
+                {
+                    SaveItemTagsAutomatically(item.Id, tags.Values);
+                    var current = _manager.GetItem(item.Id);
+                    tags.SetValues(
+                        GetAvailableTagOptions(),
+                        current == null
+                            ? Array.Empty<string>()
+                            : GetTagPaths(current));
+                };
+            }
             _detail.Add(name);
             _detail.Add(descriptionContainer);
             _detail.Add(tagsContainer);
