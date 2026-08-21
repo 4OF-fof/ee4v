@@ -1,7 +1,8 @@
 {
   "settings": {
     "section": {
-      "localization": "Localization"
+      "localization": "Localization",
+      "assets": "Assets"
     },
     "language": {
       "label": "Language",
@@ -11,12 +12,17 @@
       "label": "Fallback language",
       "tooltip": "Secondary language used before falling back to en-US."
     },
+    "assetRootFolderName": {
+      "label": "Generated asset root folder",
+      "tooltip": "Name of the folder directly under Assets that contains assets created by ee4v."
+    },
     "listInput": {
       "itemPlaceholder": "Enter one item per line"
     },
     "unsupportedType": "Unsupported setting type: {0}",
     "validation": {
-      "locale": "Locale is required."
+      "locale": "Locale is required.",
+      "assetRootFolderName": "Enter a valid folder name without path separators."
     }
   }
 }

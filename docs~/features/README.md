@@ -19,7 +19,7 @@
 | DepthIndicator | GameObject の親子関係を示すガイド線を Hierarchy に描画します。`HideInHierarchy` の対象は階層計算から除きます。 | なし |
 | HierarchyDecoration | `---` で始まる空の GameObject を区切り線として描画します。`GameObject/HierarchyDecoration/div` から区切りを作成できます。 | なし |
 | HierarchyStyle | GameObject の背景色とアイコンを設定します。Hidden Objects の一覧表示、非表示、再表示もこの機能に含みます。 | [HierarchyStyle](./hierarchy-style.md) |
-| SceneSwitcher | Hierarchy のシーン見出しからシーンを検索し、置換、追加、作成を行います。 | なし |
+| SceneSwitcher | Hierarchy のシーン見出しからシーンを検索し、置換、追加、作成を行います。新規シーンは共通アセットルート配下の`Scene`へ保存します。 | なし |
 
 ## Avatar
 

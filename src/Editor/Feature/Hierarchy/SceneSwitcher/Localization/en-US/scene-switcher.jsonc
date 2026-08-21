@@ -1,18 +1,11 @@
 {
   "settings": {
     "section": {
-      "hierarchy": "Hierarchy",
-      "creation": "Scene Creation"
+      "hierarchy": "Hierarchy"
     },
     "enabled": {
       "label": "Scene Switcher",
       "tooltip": "Opens the Scene Switcher by clicking a Scene header in the Hierarchy."
-    },
-    "createFolder": {
-      "label": "New Scene folder",
-      "tooltip": "Folder used for scenes created from the switcher. TEMPLATE.unity in this folder is used as the template.",
-      "dialogTitle": "Select the New Scene Folder",
-      "browseTooltip": "Select a folder under Assets"
     }
   },
   "hierarchy": {

@@ -26,24 +26,6 @@ namespace Ee4v.SceneSwitcher
                     "switcher"
                 });
 
-        internal static readonly SettingDefinition<string> CreateFolder =
-            new SettingDefinition<string>(
-                "sceneSwitcher.createFolder",
-                SettingScope.User,
-                "SceneSwitcher",
-                "settings.section.creation",
-                "settings.createFolder.label",
-                "settings.createFolder.tooltip",
-                "Assets/Scene",
-                order: 0,
-                keywords: new[]
-                {
-                    "scene",
-                    "create",
-                    "folder",
-                    "template"
-                });
-
         private static bool _initialized;
         private static ISettingsService _settings;
         private static IDisposable _registration;
@@ -66,7 +48,9 @@ namespace Ee4v.SceneSwitcher
         internal static string GetCreateFolder()
         {
             EnsureInitialized();
-            return _settings.Get(CreateFolder);
+            return ProjectAssetSettings.GetAssetFolder(
+                "Scene",
+                _settings);
         }
 
         internal static void EnsureInitialized()
@@ -84,8 +68,6 @@ namespace Ee4v.SceneSwitcher
             _settings = settings;
 
             settings.Register(Enabled);
-            settings.Register(CreateFolder);
-            SceneSwitcherSettingDrawers.Register();
             _controller = new SceneSwitcherController(
                 SceneSwitcherStateStore.instance,
                 new UnitySceneSwitcherGateway());

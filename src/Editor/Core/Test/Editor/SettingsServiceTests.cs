@@ -51,6 +51,50 @@ namespace Ee4v.Core.Tests
             Assert.That(received.Value, Is.EqualTo(5));
         }
 
+        [Test]
+        public void ProjectAssetSettings_UsesConfiguredRootForFeatureFolders()
+        {
+            var service = new SettingsService(
+                new Dictionary<SettingScope, ISettingStore>
+                {
+                    { SettingScope.User, new MemoryStore() },
+                    { SettingScope.Project, new MemoryStore() }
+                },
+                new NewtonsoftSettingValueSerializer());
+            ProjectAssetSettings.Register(service);
+            Assert.That(
+                ProjectAssetSettings.GetRootAssetFolder(service),
+                Is.EqualTo("Assets/!ee4vAsset"));
+
+            service.Set(
+                ProjectAssetSettings.RootFolderName,
+                "AvatarAssets",
+                saveImmediately: false);
+
+            Assert.That(
+                ProjectAssetSettings.GetAssetFolder("Scene", service),
+                Is.EqualTo("Assets/AvatarAssets/Scene"));
+            Assert.That(
+                ProjectAssetSettings.GetAssetFolder("FaceClip", service),
+                Is.EqualTo("Assets/AvatarAssets/FaceClip"));
+        }
+
+        [TestCase("")]
+        [TestCase(" ")]
+        [TestCase(".")]
+        [TestCase("..")]
+        [TestCase("Parent/Child")]
+        [TestCase("Parent\\Child")]
+        public void ProjectAssetSettings_RejectsInvalidRootFolderNames(
+            string value)
+        {
+            Assert.That(
+                ProjectAssetSettings.RootFolderName
+                    .Validate(value)
+                    .IsValid,
+                Is.False);
+        }
+
         private static SettingDefinition<int> CreateDefinition()
         {
             return new SettingDefinition<int>(

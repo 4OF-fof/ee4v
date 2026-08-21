@@ -1029,22 +1029,9 @@
     -unity-text-align: middle-center;
 }
 
-.ee4v-asset-manager__actions,
-.ee4v-asset-manager__collection-bar {
+.ee4v-asset-manager__actions {
     flex-direction: row;
     align-items: center;
-}
-
-.ee4v-asset-manager__collection-bar {
-    margin-bottom: var(--ee4v-space-xl);
-    padding: var(--ee4v-space-md);
-    border-radius: var(--ee4v-radius-md);
-    background-color: var(--ee4v-color-surface-subtle);
-}
-
-.ee4v-asset-manager__collection-filter {
-    flex-grow: 1;
-    color: var(--ee4v-color-text-secondary);
 }
 
 .ee4v-asset-manager__file-button {

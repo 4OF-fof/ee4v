@@ -637,6 +637,11 @@ namespace Ee4v.AssetManager.UI
                         collection.Id,
                         StringComparison.Ordinal));
                 button.AddToClassList("ee4v-asset-manager__nav-button");
+                button.RegisterCallback<ContextClickEvent>(evt =>
+                {
+                    ShowCollectionContextMenu(button, collection);
+                    evt.StopPropagation();
+                });
                 button.Add(UiTextFactory.Create(
                     _manager.SearchCollection(collection.Id, limit: 1)
                         .TotalCount.ToString(),
@@ -785,11 +790,6 @@ namespace Ee4v.AssetManager.UI
             _sortButton.style.display = DisplayStyle.Flex;
             _gridControls.style.display = DisplayStyle.Flex;
 
-            if (_viewState.Page == AssetManagerPage.Collection)
-            {
-                _content.Add(BuildCollectionHeader());
-            }
-
             if (items.Count == 0)
             {
                 _content.Add(AssetManagerControls.CreateNotice(
@@ -863,7 +863,8 @@ namespace Ee4v.AssetManager.UI
         }
 
         private void ShowItemContextMenu(
-            IReadOnlyList<string> itemIds)
+            IReadOnlyList<string> itemIds,
+            VisualElement anchor)
         {
             var items = (itemIds ?? Array.Empty<string>())
                 .Select(_manager.GetItem)
@@ -877,6 +878,24 @@ namespace Ee4v.AssetManager.UI
             var ids = items.Select(item => item.Id).ToArray();
             var archived = items.All(item => item.IsArchived);
             var menu = new GenericMenu();
+            var importContent = UiTextFactory.CreateGuiContent(
+                I18N.Get("action.import"));
+            if (items.Length == 1 && HasItemTargets(items[0].Id))
+            {
+                var itemId = items[0].Id;
+                menu.AddItem(
+                    importContent,
+                    false,
+                    () => ShowItemTargetImport(
+                        anchor,
+                        itemId,
+                        _manager.GetFiles(itemId, true)));
+            }
+            else
+            {
+                menu.AddDisabledItem(importContent);
+            }
+            menu.AddSeparator(string.Empty);
             menu.AddItem(
                 UiTextFactory.CreateGuiContent(I18N.Get(
                     ids.Length == 1
@@ -890,14 +909,22 @@ namespace Ee4v.AssetManager.UI
                 false,
                 () => SetItemsArchived(ids, !archived));
             menu.AddSeparator(string.Empty);
-            menu.AddItem(
-                UiTextFactory.CreateGuiContent(I18N.Get(
-                    ids.Length == 1
-                        ? "action.delete"
-                        : "action.deleteItems",
-                    ids.Length)),
-                false,
-                () => DeleteItems(ids));
+            var deleteContent = UiTextFactory.CreateGuiContent(I18N.Get(
+                ids.Length == 1
+                    ? "action.delete"
+                    : "action.deleteItems",
+                ids.Length));
+            if (archived)
+            {
+                menu.AddItem(
+                    deleteContent,
+                    false,
+                    () => DeleteItems(ids));
+            }
+            else
+            {
+                menu.AddDisabledItem(deleteContent);
+            }
             menu.ShowAsContext();
         }
 
@@ -1267,9 +1294,11 @@ namespace Ee4v.AssetManager.UI
                     ? "action.restore"
                     : "action.archive"),
                 () => ArchiveFile(file.Id, !file.IsArchived)));
-            header.AddAction(AssetManagerControls.CreateDangerButton(
+            var deleteButton = AssetManagerControls.CreateDangerButton(
                 I18N.Get("action.delete"),
-                () => DeleteFile(file.Id)));
+                () => DeleteFile(file.Id));
+            deleteButton.SetEnabled(file.IsArchived);
+            header.AddAction(deleteButton);
             host.Add(header);
 
             var settings = new AssetDetailSection(
@@ -1516,8 +1545,7 @@ namespace Ee4v.AssetManager.UI
                 importButton,
                 item.Id,
                 files);
-            importButton.SetEnabled(
-                _manager.GetItemTargets(item.Id).Count > 0);
+            importButton.SetEnabled(HasItemTargets(item.Id));
             hero.Add(summary);
             hero.Add(importButton);
             detail.Add(hero);
@@ -2292,28 +2320,20 @@ namespace Ee4v.AssetManager.UI
                 : value.ToString("g");
         }
 
-        private VisualElement BuildCollectionHeader()
+        private void ShowCollectionContextMenu(
+            VisualElement anchor,
+            AssetCollection collection)
         {
-            var collection = _manager.GetCollections().FirstOrDefault(candidate =>
-                string.Equals(
-                    candidate.Id,
-                    _viewState.CollectionId,
-                    StringComparison.Ordinal));
-            var bar = new VisualElement();
-            bar.AddToClassList("ee4v-asset-manager__collection-bar");
-            bar.Add(UiTextFactory.Create(
-                DescribeFilter(collection?.Root),
-                UiClassNames.SecondaryText,
-                "ee4v-asset-manager__collection-filter"));
-            UiButton editButton = null;
-            editButton = AssetManagerControls.CreateButton(
-                I18N.Get("action.edit"),
-                () => ShowCollectionEditor(editButton, collection));
-            bar.Add(editButton);
-            bar.Add(AssetManagerControls.CreateDangerButton(
-                I18N.Get("action.delete"),
-                () => DeleteCollection(collection?.Id)));
-            return bar;
+            var menu = new GenericMenu();
+            menu.AddItem(
+                UiTextFactory.CreateGuiContent(I18N.Get("action.edit")),
+                false,
+                () => ShowCollectionEditor(anchor, collection));
+            menu.AddItem(
+                UiTextFactory.CreateGuiContent(I18N.Get("action.delete")),
+                false,
+                () => DeleteCollection(collection?.Id));
+            menu.ShowAsContext();
         }
 
         private void ShowNewCollection(VisualElement anchor)
@@ -2782,6 +2802,11 @@ namespace Ee4v.AssetManager.UI
                 selections => ImportItemTargets(itemId, selections));
         }
 
+        private bool HasItemTargets(string itemId)
+        {
+            return _manager.GetItemTargets(itemId).Count > 0;
+        }
+
         private async void ImportItemTargets(
             string itemId,
             IReadOnlyList<AssetFileTarget> selections)
@@ -2998,41 +3023,6 @@ namespace Ee4v.AssetManager.UI
                 default:
                     return I18N.Get("navigation.library");
             }
-        }
-
-        private static string DescribeFilter(AssetFilterNode root)
-        {
-            if (root == null)
-            {
-                return string.Empty;
-            }
-
-            if (root.Type == AssetFilterNodeType.Condition)
-            {
-                return AssetManagerControls.FormatFilterCondition(
-                           root.ConditionType.HasValue
-                               ? (Enum)root.ConditionType.Value
-                               : null) +
-                       ": " + root.Value;
-            }
-
-            var children = root.Children ?? Array.Empty<AssetFilterNode>();
-            if (root.Type == AssetFilterNodeType.Not)
-            {
-                return string.Format(
-                    I18N.Get("filterSummary.not"),
-                    children.Count > 0
-                        ? DescribeFilter(children[0])
-                        : string.Empty);
-            }
-
-            var separator = " " + I18N.Get(
-                root.Type == AssetFilterNodeType.Or
-                    ? "filterSummary.or"
-                    : "filterSummary.and") + " ";
-            return string.Join(
-                separator,
-                children.Select(DescribeFilter));
         }
 
         private static StatusBadgeState CreateAssetStatusState(

@@ -102,7 +102,8 @@ namespace Ee4v.AssetManager.UI
 
         public event Action<IReadOnlyList<string>, string> SelectionChanged;
         public event Action<string> ItemDoubleClicked;
-        public event Action<IReadOnlyList<string>> ContextMenuRequested;
+        public event Action<IReadOnlyList<string>, VisualElement>
+            ContextMenuRequested;
         public event Action<int> RecommendedMinimumItemsPerRowChanged;
 
         public int ItemsPerRow => _itemsPerRow;
@@ -455,14 +456,16 @@ namespace Ee4v.AssetManager.UI
             ItemDoubleClicked?.Invoke(itemId);
         }
 
-        private void OpenContextMenu(string itemId)
+        private void OpenContextMenu(string itemId, VisualElement anchor)
         {
             if (!_selectedItemIds.Contains(itemId))
             {
                 SelectItem(itemId, toggle: false, range: false);
             }
 
-            ContextMenuRequested?.Invoke(CreateSelectionSnapshot());
+            ContextMenuRequested?.Invoke(
+                CreateSelectionSnapshot(),
+                anchor);
         }
 
         private void OnGridPointerDown(PointerDownEvent evt)
@@ -850,7 +853,7 @@ namespace Ee4v.AssetManager.UI
 
         public event Action<string, bool, bool> Clicked;
         public event Action<string> DoubleClicked;
-        public event Action<string> ContextClicked;
+        public event Action<string, VisualElement> ContextClicked;
 
         public void SetState(
             AssetItemGridEntry state,
@@ -932,7 +935,7 @@ namespace Ee4v.AssetManager.UI
         private void OnContextClick(ContextClickEvent evt)
         {
             Focus();
-            ContextClicked?.Invoke(_itemId);
+            ContextClicked?.Invoke(_itemId, this);
             evt.StopPropagation();
         }
     }

@@ -27,8 +27,8 @@
 | `RegisterFile_RestoresUnassignedPairAfterDatabaseRebuild` | 未所属ee4v pairをDB再生成後も未所属Fileとして戻す | Itemを持たないSource情報が失われるのを防ぐ |
 | `Ee4vDeleteStaging_RestoresSourceUntilCommitted` | 削除準備の破棄ではSourceを戻し、確定時だけ消す | DB更新失敗時の実体消失を防ぐ |
 | `ArchiveOperations_UpdateMultipleTargetsAndCanRestore` | 複数Item・Fileをアーカイブして復元できる | 一括操作で一部だけ状態が変わる不具合を検出する |
-| `DeleteItem_DeletesMultipleItemsAndTheirEe4vFiles` | Item削除が所属ee4v実体も削除する | 破壊的操作のDBとSourceの整合性を確認する |
-| `DeleteFile_DeletesMultipleEe4vSourcePairs` | File削除が対象ee4v pairを削除する | 破壊的操作でSourceだけ残る不整合を検出する |
+| `DeleteItem_DeletesMultipleItemsAndTheirEe4vFiles` | 未アーカイブItemの削除を拒否し、アーカイブ済みItemと所属ee4v実体を削除する | 破壊的操作の事前条件とDB・Sourceの整合性を確認する |
+| `DeleteFile_DeletesMultipleEe4vSourcePairs` | 未アーカイブFileの削除を拒否し、アーカイブ済みee4v pairを削除する | 破壊的操作の事前条件とSourceだけ残る不整合を確認する |
 | `FileDependencies_RejectCyclesWithoutChangingData` | 循環依存を拒否して既存依存を保持する | 取り込み順を解決不能にする状態と部分更新を防ぐ |
 | `ImportItemTargets_ImportsDependencyTargetsBeforeDependent` | 指定した依存実体を依存元より先にUnity Projectへ取り込む | 実体選択と依存順序を結ぶ公開契約である |
 | `ImportFileEntries_ImportsTemporaryZipSelectionWithoutSavingTarget` | 一時選択だけを取り込み、保存済みItem Targetを変更しない | UIの一時操作と永続設定の境界を確認する |
@@ -62,6 +62,8 @@
 | テスト | 保証する契約 | 残す理由 |
 | --- | --- | --- |
 | `SettingsServiceTests.Instances_DoNotShareState` | SettingsService間で状態を共有しない | 独立した利用コンテキストの設定混入を防ぐ |
+| `SettingsServiceTests.ProjectAssetSettings_UsesConfiguredRootForFeatureFolders` | 既定ルート`!ee4vAsset`と任意のルート名をScene・FaceClipへ反映する | 先頭表示用の既定名と機能ごとの保存先がずれる問題を防ぐ |
+| `SettingsServiceTests.ProjectAssetSettings_RejectsInvalidRootFolderNames` | 空値、相対要素、パス区切りを含むルート名を拒否する | Assets外や意図しない階層への生成を防ぐ |
 | `SettingsServiceTests.InvalidPersistedValue_FallsBackToDefault` | 無効な永続値を既定値へ戻す | 保存形式境界の不正値でEditorを壊さないため |
 | `SettingsServiceTests.Changed_IsRaisedAfterSuccessfulUpdate` | 成功した更新後に定義と値を通知する | 設定連動機能が依存する公開イベント契約である |
 | `LocalizationServiceTests.ScopedLocalizer_UsesCurrentFallbackAndEnglishInOrder` | 現在言語からキー名まで所定順で解決する | 欠落翻訳を含む複数Catalogの優先契約である |

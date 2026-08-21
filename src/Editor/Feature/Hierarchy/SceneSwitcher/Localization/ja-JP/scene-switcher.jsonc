@@ -1,18 +1,11 @@
 {
   "settings": {
     "section": {
-      "hierarchy": "ヒエラルキー",
-      "creation": "シーン作成"
+      "hierarchy": "ヒエラルキー"
     },
     "enabled": {
       "label": "シーン切替",
       "tooltip": "ヒエラルキーのシーン見出しをクリックすると Scene Switcher を開きます。"
-    },
-    "createFolder": {
-      "label": "新規シーンの保存先",
-      "tooltip": "Scene Switcher から作成するシーンの保存先です。同じフォルダーの TEMPLATE.unity をテンプレートとして使用します。",
-      "dialogTitle": "新規シーンの保存先を選択",
-      "browseTooltip": "Assets 配下のフォルダーを選択"
     }
   },
   "hierarchy": {

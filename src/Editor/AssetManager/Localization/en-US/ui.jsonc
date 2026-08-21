@@ -156,11 +156,6 @@
     "groupConditionRequired": "Add at least one condition or group to every group.",
     "valueRequired": "Enter a value for every condition."
   },
-  "filterSummary": {
-    "and": "AND",
-    "or": "OR",
-    "not": "NOT ({0})"
-  },
   "action": {
     "restore": "Restore",
     "restoreItems": "Restore {0} items",

@@ -1,5 +1,6 @@
 using System;
 using Ee4v.Core.I18n;
+using Ee4v.Core.Settings;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -60,7 +61,9 @@ namespace Ee4v.SceneSwitcher
         {
             _sourceSceneHandle = sourceSceneHandle;
             _controller = controller;
-            _createFolder = createFolder ?? (() => "Assets/Scene");
+            _createFolder = createFolder ??
+                            (() => ProjectAssetSettings.GetAssetFolder(
+                                "Scene"));
             titleContent = UiTextFactory.CreateGuiContent(
                 I18N.Get("window.title"));
             minSize = new Vector2(WindowWidth, WindowHeight);

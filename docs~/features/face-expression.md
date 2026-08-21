@@ -2,6 +2,8 @@
 
 `ee4v/Avatar/Face Expression Editor`は、VRChatアバター向けの単一フレーム表情クリップを作成します。標準ハンドジェスチャーへの割り当ては、`ee4v/Avatar/Gesture Assignments`から開く独立ウィンドウで行います。
 
+新規表情クリップの保存ダイアログは、共通アセットルート配下の`FaceClip`を既定の保存先として開きます。フォルダーがない場合は作成します。
+
 ## 対象範囲
 
 - 名前が`Body`の`SkinnedMeshRenderer`を既定メッシュとしてBlendShapeを列挙する

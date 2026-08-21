@@ -152,6 +152,13 @@ namespace Ee4v.AssetManager.Application
                 itemIds,
                 "item ids");
             var items = ids.Select(_store.GetItem).ToArray();
+            if (items.Any(item => !item.IsArchived))
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidRequest,
+                    "Only archived items can be deleted.");
+            }
+
             var files = items
                 .SelectMany(item => item.Files ?? Array.Empty<AssetFile>())
                 .GroupBy(file => file.Id, StringComparer.Ordinal)
@@ -362,6 +369,13 @@ namespace Ee4v.AssetManager.Application
                 fileIds,
                 "file ids");
             var files = ids.Select(_store.GetFile).ToArray();
+            if (files.Any(file => !file.IsArchived))
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidRequest,
+                    "Only archived files can be deleted.");
+            }
+
             var dependentFileIds = _store.GetDependentFileIds(ids)
                 .Except(ids, StringComparer.Ordinal)
                 .ToArray();

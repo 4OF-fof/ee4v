@@ -156,11 +156,6 @@
     "groupConditionRequired": "すべてのグループに条件または条件グループを1つ以上追加してください。",
     "valueRequired": "すべての条件に値を入力してください。"
   },
-  "filterSummary": {
-    "and": "かつ",
-    "or": "または",
-    "not": "反転（{0}）"
-  },
   "action": {
     "restore": "復元",
     "restoreItems": "{0}件のItemを復元",

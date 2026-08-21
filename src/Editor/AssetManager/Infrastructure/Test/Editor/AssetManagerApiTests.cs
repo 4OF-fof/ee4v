@@ -570,6 +570,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             }
 
             Assert.That(File.Exists(file.SourcePath), Is.True);
+            _manager.SetFileArchived(new[] { file.Id }, true);
             _manager.DeleteFile(new[] { file.Id });
             Assert.That(File.Exists(file.SourcePath), Is.False);
         }
@@ -660,6 +661,17 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             var firstEntry = Path.GetDirectoryName(firstFile.SourcePath);
             var secondEntry = Path.GetDirectoryName(secondFile.SourcePath);
 
+            var exception = Assert.Throws<AssetManagerException>(() =>
+                _manager.DeleteItem(new[] { first.Id, second.Id }));
+            Assert.That(
+                exception.Code,
+                Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
+            Assert.That(Directory.Exists(firstEntry), Is.True);
+            Assert.That(Directory.Exists(secondEntry), Is.True);
+
+            _manager.SetItemArchived(
+                new[] { first.Id, second.Id },
+                true);
             _manager.DeleteItem(new[] { first.Id, second.Id });
 
             Assert.That(Directory.Exists(firstEntry), Is.False);
@@ -695,6 +707,17 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             var firstEntry = Path.GetDirectoryName(first.SourcePath);
             var secondEntry = Path.GetDirectoryName(second.SourcePath);
 
+            var exception = Assert.Throws<AssetManagerException>(() =>
+                _manager.DeleteFile(new[] { first.Id, second.Id }));
+            Assert.That(
+                exception.Code,
+                Is.EqualTo(AssetManagerErrorCode.InvalidRequest));
+            Assert.That(Directory.Exists(firstEntry), Is.True);
+            Assert.That(Directory.Exists(secondEntry), Is.True);
+
+            _manager.SetFileArchived(
+                new[] { first.Id, second.Id },
+                true);
             _manager.DeleteFile(new[] { first.Id, second.Id });
 
             Assert.That(Directory.Exists(firstEntry), Is.False);
