@@ -37,6 +37,7 @@ namespace Ee4v.FaceExpression
             _settings = CoreSettings.Current;
             _settings.Changed += OnSettingChanged;
             FaceExpressionGroupSession.Changed += ApplyGroupFilter;
+            FaceExpressionGroupSession.MeshesChanged += RefreshClip;
             _preview = new FaceExpressionPreview(Repaint);
             Undo.undoRedoPerformed += RefreshClip;
             I18N.Reloaded += Rebuild;
@@ -52,6 +53,7 @@ namespace Ee4v.FaceExpression
             Undo.undoRedoPerformed -= RefreshClip;
             I18N.Reloaded -= Rebuild;
             FaceExpressionGroupSession.Changed -= ApplyGroupFilter;
+            FaceExpressionGroupSession.MeshesChanged -= RefreshClip;
             _preview?.Dispose();
             _preview = null;
         }
@@ -112,7 +114,7 @@ namespace Ee4v.FaceExpression
             _avatar = avatar;
             _clip = null;
             _preview?.SetAvatar(avatar);
-            RefreshClip();
+            FaceExpressionGroupSession.SetAvatar(avatar);
             _view?.SetAvatar(avatar);
         }
 
@@ -127,7 +129,8 @@ namespace Ee4v.FaceExpression
             _channels = FaceExpressionClipEditor.Read(
                 _avatar,
                 _clip,
-                FaceExpressionSettings.GetSeparators(_settings));
+                FaceExpressionSettings.GetSeparators(_settings),
+                FaceExpressionGroupSession.RendererPaths);
             _view?.SetClip(_clip);
             FaceExpressionGroupSession.UpdateChannels(_channels);
             _preview?.SetChannels(_channels);

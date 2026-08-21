@@ -5,6 +5,9 @@
   "assignmentWindow": {
     "title": "ジェスチャー割り当て"
   },
+  "assignmentSettingsWindow": {
+    "title": "表情割り当て設定"
+  },
   "groupWindow": {
     "title": "表情グループ"
   },
@@ -23,10 +26,14 @@
   },
   "section": {
     "blendShapes": "BlendShape",
-    "groups": "Group"
+    "groups": "Group",
+    "meshes": "メッシュ"
   },
   "group": {
-    "all": "すべて"
+    "all": "すべて",
+    "noMeshes": "追加できるメッシュがありません",
+    "sectionMeshes": "追加メッシュ",
+    "sectionBlendShapes": "BlendShapeグループ"
   },
   "search": {
     "placeholder": "BlendShape を検索",
@@ -38,7 +45,15 @@
     "clipOnlyTooltip": "表情クリップに含まれるBlendShapeだけを表示します"
   },
   "assignments": {
-    "hint": "左右で異なる表情が競合した場合は左手を優先します。"
+    "leftHand": "左手",
+    "rightHand": "右手",
+    "selection": "選択中",
+    "enableBlink": "まばたきを有効化",
+    "fixMouth": "口の動きを固定",
+    "unassigned": "未割り当て",
+    "menuOnly": "Extra（メニュー限定）",
+    "menuOnlyHint": "メニューからだけ選ぶ表情です。太線より下のセルを選ぶと設定ウィンドウで編集できます。",
+    "menuName": "メニュー名"
   },
   "empty": {
     "blendShapes": "BlendShape がありません。"
@@ -46,7 +61,11 @@
   "action": {
     "newClip": "新規表情",
     "resetView": "表示をリセット",
-    "apply": "アバターへ適用"
+    "apply": "アバターに適用",
+    "addMenuExpression": "メニュー専用表情を追加",
+    "remove": "削除",
+    "addMesh": "メッシュ追加",
+    "removeMesh": "解除"
   },
   "gesture": {
     "Neutral": "Neutral",
@@ -68,6 +87,7 @@
     "clipRequired": "先に表情クリップを作成または選択してください。",
     "applied": "ジェスチャー割り当てを FX Controller へ適用しました。",
     "controllerCreateFailed": "FX Controller を作成できませんでした。",
+    "modularAvatarMissing": "Modular Avatar が見つかりません。VCCからModular Avatarを導入してください。",
     "applyFailed": "ジェスチャー割り当てを適用できませんでした。"
   }
 }

@@ -15,13 +15,15 @@ namespace Ee4v.FaceExpression
             string name,
             float value,
             bool animated,
-            string headerText = null)
+            string headerText = null,
+            string rendererDisplayName = null)
         {
             RendererPath = rendererPath ?? string.Empty;
             Name = name ?? string.Empty;
             Value = value;
             Animated = animated;
             HeaderText = headerText;
+            RendererDisplayName = rendererDisplayName;
         }
 
         public string RendererPath { get; }
@@ -33,7 +35,14 @@ namespace Ee4v.FaceExpression
         }
         public bool Animated { get; set; }
         public string HeaderText { get; }
+        public string RendererDisplayName { get; }
         public bool IsHeader => !string.IsNullOrEmpty(HeaderText);
+        public string DisplayName => string.IsNullOrEmpty(RendererDisplayName)
+            ? Name
+            : RendererDisplayName + " / " + Name;
+        public string DisplayHeaderText => string.IsNullOrEmpty(RendererDisplayName)
+            ? HeaderText
+            : RendererDisplayName + " / " + HeaderText;
 
         public EditorCurveBinding Binding => EditorCurveBinding.FloatCurve(
             RendererPath,
@@ -48,7 +57,8 @@ namespace Ee4v.FaceExpression
         public static IReadOnlyList<BlendShapeChannel> Read(
             GameObject avatar,
             AnimationClip clip,
-            IReadOnlyList<string> separators)
+            IReadOnlyList<string> separators,
+            IReadOnlyList<string> rendererPaths = null)
         {
             if (avatar == null)
             {
@@ -56,34 +66,65 @@ namespace Ee4v.FaceExpression
             }
 
             var channels = new List<BlendShapeChannel>();
-            var renderer = FindBodyRenderer(avatar);
-            if (renderer == null)
+            var renderers = ResolveRenderers(avatar, rendererPaths);
+            for (var rendererIndex = 0; rendererIndex < renderers.Count; rendererIndex++)
             {
-                return channels;
-            }
-
-            var path = AnimationUtility.CalculateTransformPath(
-                renderer.transform,
-                avatar.transform);
-            var mesh = renderer.sharedMesh;
-            for (var index = 0; index < mesh.blendShapeCount; index++)
-            {
-                var name = mesh.GetBlendShapeName(index);
-                var binding = EditorCurveBinding.FloatCurve(
-                    path,
-                    typeof(SkinnedMeshRenderer),
-                    "blendShape." + name);
-                var curve = clip == null ? null : AnimationUtility.GetEditorCurve(clip, binding);
-                TryGetHeader(name, separators, out var headerText);
-                channels.Add(new BlendShapeChannel(
-                    path,
-                    name,
-                    curve == null ? renderer.GetBlendShapeWeight(index) : curve.Evaluate(0f),
-                    curve != null,
-                    headerText));
+                var renderer = renderers[rendererIndex];
+                var path = AnimationUtility.CalculateTransformPath(
+                    renderer.transform,
+                    avatar.transform);
+                var mesh = renderer.sharedMesh;
+                for (var index = 0; index < mesh.blendShapeCount; index++)
+                {
+                    var name = mesh.GetBlendShapeName(index);
+                    var binding = EditorCurveBinding.FloatCurve(
+                        path,
+                        typeof(SkinnedMeshRenderer),
+                        "blendShape." + name);
+                    var curve = clip == null ? null : AnimationUtility.GetEditorCurve(clip, binding);
+                    TryGetHeader(name, separators, out var headerText);
+                    channels.Add(new BlendShapeChannel(
+                        path,
+                        name,
+                        curve == null ? renderer.GetBlendShapeWeight(index) : curve.Evaluate(0f),
+                        curve != null,
+                        headerText,
+                        renderers.Count > 1 ? renderer.name : null));
+                }
             }
 
             return channels;
+        }
+
+        private static IReadOnlyList<SkinnedMeshRenderer> ResolveRenderers(
+            GameObject avatar,
+            IReadOnlyList<string> rendererPaths)
+        {
+            if (rendererPaths == null)
+            {
+                var body = FindBodyRenderer(avatar);
+                return body == null
+                    ? Array.Empty<SkinnedMeshRenderer>()
+                    : new[] { body };
+            }
+
+            var result = new List<SkinnedMeshRenderer>();
+            for (var index = 0; index < rendererPaths.Count; index++)
+            {
+                var path = rendererPaths[index] ?? string.Empty;
+                var target = string.IsNullOrEmpty(path)
+                    ? avatar.transform
+                    : avatar.transform.Find(path);
+                var renderer = target == null
+                    ? null
+                    : target.GetComponent<SkinnedMeshRenderer>();
+                if (renderer?.sharedMesh != null && !result.Contains(renderer))
+                {
+                    result.Add(renderer);
+                }
+            }
+
+            return result;
         }
 
         public static void Write(AnimationClip clip, BlendShapeChannel channel)
@@ -241,6 +282,22 @@ namespace Ee4v.FaceExpression
                             renderer.name,
                             "Body",
                             StringComparison.OrdinalIgnoreCase));
+        }
+
+        internal static IReadOnlyList<string> GetRendererPaths(GameObject avatar)
+        {
+            if (avatar == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            return avatar.GetComponentsInChildren<SkinnedMeshRenderer>(true)
+                .Where(renderer => renderer.sharedMesh != null &&
+                                   renderer.sharedMesh.blendShapeCount > 0)
+                .Select(renderer => AnimationUtility.CalculateTransformPath(
+                    renderer.transform,
+                    avatar.transform))
+                .ToArray();
         }
     }
 }

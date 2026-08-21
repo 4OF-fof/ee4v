@@ -242,15 +242,24 @@ namespace Ee4v.FaceExpression
             BlendShapeChannel header = null;
             var headerAdded = false;
             var headerMatches = false;
+            string rendererPath = null;
             for (var index = 0; index < channels.Count; index++)
             {
                 var channel = channels[index];
+                if (!string.Equals(rendererPath, channel.RendererPath, StringComparison.Ordinal))
+                {
+                    rendererPath = channel.RendererPath;
+                    header = null;
+                    headerAdded = false;
+                    headerMatches = false;
+                }
+
                 if (channel.IsHeader)
                 {
                     header = channel;
                     headerAdded = false;
                     headerMatches = !string.IsNullOrEmpty(query) &&
-                                    channel.HeaderText.IndexOf(
+                                    channel.DisplayHeaderText.IndexOf(
                                         query,
                                         StringComparison.OrdinalIgnoreCase) >= 0;
                     continue;
@@ -259,7 +268,7 @@ namespace Ee4v.FaceExpression
                 if ((clipOnly && !channel.Animated) ||
                     (!string.IsNullOrEmpty(query) &&
                      !headerMatches &&
-                     channel.Name.IndexOf(
+                     channel.DisplayName.IndexOf(
                          query,
                          StringComparison.OrdinalIgnoreCase) < 0))
                 {
@@ -332,8 +341,8 @@ namespace Ee4v.FaceExpression
             _rendering = true;
             EnableInClassList("ee4v-face-expression-row--header", isHeader);
             _name.SetText(isHeader
-                ? channel.HeaderText
-                : channel?.Name ?? string.Empty);
+                ? channel.DisplayHeaderText
+                : channel?.DisplayName ?? string.Empty);
             _toggle.SetValueWithoutNotify(channel?.Animated == true);
             _slider.SetValueWithoutNotify(channel?.Value ?? 0f);
             _value.SetValueWithoutNotify(channel?.Value ?? 0f);

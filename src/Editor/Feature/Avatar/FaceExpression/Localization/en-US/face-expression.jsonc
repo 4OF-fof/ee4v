@@ -5,6 +5,9 @@
   "assignmentWindow": {
     "title": "Gesture Assignments"
   },
+  "assignmentSettingsWindow": {
+    "title": "Expression Assignment Settings"
+  },
   "groupWindow": {
     "title": "Expression Groups"
   },
@@ -23,10 +26,14 @@
   },
   "section": {
     "blendShapes": "BlendShapes",
-    "groups": "Group"
+    "groups": "Group",
+    "meshes": "Meshes"
   },
   "group": {
-    "all": "All"
+    "all": "All",
+    "noMeshes": "No meshes are available to add",
+    "sectionMeshes": "Added meshes",
+    "sectionBlendShapes": "BlendShape groups"
   },
   "search": {
     "placeholder": "Search BlendShapes",
@@ -38,7 +45,15 @@
     "clipOnlyTooltip": "Show only BlendShapes stored in the expression clip"
   },
   "assignments": {
-    "hint": "The left hand takes priority when both hands use assigned gestures."
+    "leftHand": "Left hand",
+    "rightHand": "Right hand",
+    "selection": "Selected",
+    "enableBlink": "Enable blinking",
+    "fixMouth": "Fix mouth movement",
+    "unassigned": "Unassigned",
+    "menuOnly": "Extra (menu only)",
+    "menuOnlyHint": "Menu-only expressions. Select a cell below the divider to edit it in the settings window.",
+    "menuName": "Menu name"
   },
   "empty": {
     "blendShapes": "No BlendShapes were found."
@@ -46,7 +61,11 @@
   "action": {
     "newClip": "New expression",
     "resetView": "Reset view",
-    "apply": "Apply to avatar"
+    "apply": "Apply to Avatar",
+    "addMenuExpression": "Add menu-only expression",
+    "remove": "Remove",
+    "addMesh": "Add mesh",
+    "removeMesh": "Remove"
   },
   "gesture": {
     "Neutral": "Neutral",
@@ -68,6 +87,7 @@
     "clipRequired": "Create or select an expression clip first.",
     "applied": "The gesture assignments were applied to the FX Controller.",
     "controllerCreateFailed": "The FX Controller could not be created.",
+    "modularAvatarMissing": "Modular Avatar was not found. Install Modular Avatar through VCC.",
     "applyFailed": "The gesture assignments could not be applied."
   }
 }

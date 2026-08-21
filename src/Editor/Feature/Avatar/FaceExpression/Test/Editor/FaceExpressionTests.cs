@@ -27,29 +27,60 @@ namespace Ee4v.FaceExpression.Tests
         }
 
         [Test]
-        public void Apply_PreservesExistingLayersAndNormalizesExpressionClips()
+        public void Apply_GeneratesGestureMatrixAndControlsBlinkAndMouthBindings()
         {
-            var avatar = CreateAvatar(out var mesh);
+            var avatar = CreateAvatar(
+                out var mesh,
+                "Smile",
+                "Angry",
+                "Blink",
+                "vrc.v_aa");
             try
             {
                 var smile = CreateClip(
                     "Smile.anim",
-                    ("blendShape.Smile", 80f));
+                    ("blendShape.Smile", 80f),
+                    ("blendShape.Blink", 70f),
+                    ("blendShape.vrc.v_aa", 60f));
                 var angry = CreateClip(
                     "Angry.anim",
-                    ("blendShape.Angry", 65f));
+                    ("blendShape.Angry", 65f),
+                    ("blendShape.Blink", 75f),
+                    ("blendShape.vrc.v_aa", 55f));
                 var controller = AnimatorController.CreateAnimatorControllerAtPath(
                     TestFolder + "/Avatar.controller");
                 controller.AddLayer("Existing Layer");
+                var fistOpen = new GestureCombination(FaceGesture.Fist, FaceGesture.Open);
+                var victoryGun = new GestureCombination(
+                    FaceGesture.Victory,
+                    FaceGesture.HandGun);
+                var avatarBindings = new FaceExpressionAvatarBindings(
+                    new[] { Binding("blendShape.Blink") },
+                    new[] { Binding("blendShape.vrc.v_aa") });
 
-                FaceExpressionControllerWriter.Apply(
+                GestureMatrixControllerWriter.Apply(
                     controller,
                     avatar,
-                    new Dictionary<FaceGesture, AnimationClip>
+                    new Dictionary<GestureCombination, FaceExpressionAssignment>
                     {
-                        [FaceGesture.Fist] = smile,
-                        [FaceGesture.Victory] = angry
+                        [fistOpen] = new FaceExpressionAssignment(
+                            smile,
+                            enableBlink: false),
+                        [victoryGun] = new FaceExpressionAssignment(
+                            angry,
+                            enableBlink: true,
+                            fixMouth: true)
                     },
+                    new[]
+                    {
+                        new FaceExpressionMenuEntry(
+                            "Menu Angry",
+                            new FaceExpressionAssignment(
+                                angry,
+                                enableBlink: true,
+                                fixMouth: true))
+                    },
+                    avatarBindings,
                     TestFolder);
 
                 Assert.That(
@@ -57,32 +88,62 @@ namespace Ee4v.FaceExpression.Tests
                     Does.Contain("Existing Layer"));
                 Assert.That(
                     controller.layers.Count(layer =>
-                        layer.name == FaceExpressionControllerWriter.LayerName),
+                        layer.name == GestureMatrixControllerWriter.LayerName),
                     Is.EqualTo(1));
-                var assignments = FaceExpressionControllerWriter.Read(controller);
-                Assert.That(assignments[FaceGesture.Fist], Is.SameAs(smile));
-                Assert.That(assignments[FaceGesture.Victory], Is.SameAs(angry));
+                var assignments = GestureMatrixControllerWriter.Read(controller);
+                Assert.That(assignments[fistOpen].Clip, Is.SameAs(smile));
+                Assert.That(assignments[fistOpen].EnableBlink, Is.False);
+                Assert.That(assignments[fistOpen].FixMouth, Is.False);
+                Assert.That(assignments[victoryGun].Clip, Is.SameAs(angry));
+                Assert.That(assignments[victoryGun].EnableBlink, Is.True);
+                Assert.That(assignments[victoryGun].FixMouth, Is.True);
+                var menuEntries = GestureMatrixControllerWriter.ReadMenuEntries(controller);
+                Assert.That(menuEntries.Count, Is.EqualTo(1));
+                Assert.That(menuEntries[0].Name, Is.EqualTo("Menu Angry"));
+                Assert.That(menuEntries[0].Assignment.Clip, Is.SameAs(angry));
 
                 var layer = controller.layers.Single(candidate =>
-                    candidate.name == FaceExpressionControllerWriter.LayerName);
+                    candidate.name == GestureMatrixControllerWriter.LayerName);
                 var fist = layer.stateMachine.states
                     .Select(child => child.state)
-                    .Single(state => state.name == "01 Fist");
-                var generated = (AnimationClip)fist.motion;
-                Assert.That(ReadValue(generated, "blendShape.Smile"), Is.EqualTo(80f));
-                Assert.That(ReadValue(generated, "blendShape.Angry"), Is.EqualTo(5f));
+                    .Single(state => state.name == "01-02 Fist + Open");
+                var fistClip = (AnimationClip)fist.motion;
+                Assert.That(ReadValue(fistClip, "blendShape.Smile"), Is.EqualTo(80f));
+                Assert.That(ReadValue(fistClip, "blendShape.Angry"), Is.EqualTo(5f));
+                Assert.That(ReadValue(fistClip, "blendShape.Blink"), Is.EqualTo(70f));
+                Assert.That(ReadOptionalValue(fistClip, "blendShape.vrc.v_aa"), Is.Null);
 
-                FaceExpressionControllerWriter.Apply(
+                var victory = layer.stateMachine.states
+                    .Select(child => child.state)
+                    .Single(state => state.name == "04-06 Victory + HandGun");
+                var victoryClip = (AnimationClip)victory.motion;
+                Assert.That(ReadOptionalValue(victoryClip, "blendShape.Blink"), Is.Null);
+                Assert.That(ReadValue(victoryClip, "blendShape.vrc.v_aa"), Is.EqualTo(55f));
+                var transition = layer.stateMachine.anyStateTransitions
+                    .Single(candidate => candidate.destinationState == victory);
+                Assert.That(
+                    transition.conditions.Select(condition =>
+                        (condition.parameter, condition.threshold)),
+                    Is.EquivalentTo(new[]
+                    {
+                        ("GestureLeft", 4f),
+                        ("GestureRight", 6f),
+                        (GestureMatrixControllerWriter.MenuParameter, 0f)
+                    }));
+
+                GestureMatrixControllerWriter.Apply(
                     controller,
                     avatar,
-                    new Dictionary<FaceGesture, AnimationClip>
+                    new Dictionary<GestureCombination, FaceExpressionAssignment>
                     {
-                        [FaceGesture.Fist] = smile
+                        [fistOpen] = new FaceExpressionAssignment(smile)
                     },
+                    new FaceExpressionMenuEntry[0],
+                    avatarBindings,
                     TestFolder);
                 Assert.That(
                     controller.layers.Count(candidate =>
-                        candidate.name == FaceExpressionControllerWriter.LayerName),
+                        candidate.name == GestureMatrixControllerWriter.LayerName),
                     Is.EqualTo(1));
             }
             finally
@@ -93,7 +154,7 @@ namespace Ee4v.FaceExpression.Tests
         }
 
         [Test]
-        public void Read_ConvertsConfiguredSeparatorShapesToHeaders()
+        public void Read_ConvertsHeadersAndIncludesSelectedMeshes()
         {
             var avatar = CreateAvatar(
                 out var mesh,
@@ -101,29 +162,50 @@ namespace Ee4v.FaceExpression.Tests
                 "Blink",
                 "====MOUTH====",
                 "Smile");
+            var accessory = new GameObject("Accessory");
+            accessory.transform.SetParent(avatar.transform, false);
+            var accessoryRenderer = accessory.AddComponent<SkinnedMeshRenderer>();
+            var accessoryMesh = CreateMesh("Sparkle");
+            accessoryRenderer.sharedMesh = accessoryMesh;
             try
             {
+                FaceExpressionGroupSession.SetAvatar(avatar);
+                FaceExpressionGroupSession.AddMesh("Accessory");
                 var channels = FaceExpressionClipEditor.Read(
                     avatar,
                     null,
-                    new[] { "=", "-" });
+                    new[] { "=", "-" },
+                    FaceExpressionGroupSession.RendererPaths);
 
                 Assert.That(channels[0].IsHeader, Is.True);
                 Assert.That(channels[0].HeaderText, Is.EqualTo("EYE"));
                 Assert.That(channels[1].IsHeader, Is.False);
                 Assert.That(channels[2].IsHeader, Is.True);
                 Assert.That(channels[2].HeaderText, Is.EqualTo("MOUTH"));
+                Assert.That(channels[4].RendererPath, Is.EqualTo("Accessory"));
+                Assert.That(channels[4].Name, Is.EqualTo("Sparkle"));
+                Assert.That(
+                    FaceExpressionGroupSession.SelectedMeshes.Select(item => item.Path),
+                    Is.EqualTo(new[] { "Body", "Accessory" }));
             }
             finally
             {
+                FaceExpressionGroupSession.SelectGroup(null);
+                FaceExpressionGroupSession.SetAvatar(null);
                 Object.DestroyImmediate(avatar);
                 Object.DestroyImmediate(mesh);
+                Object.DestroyImmediate(accessoryMesh);
             }
         }
 
         [Test]
-        public void Groups_CountAndFilterShapesBetweenHeaders()
+        public void Groups_FilterHeadersAndTreatAddedMeshesAsGroups()
         {
+            var avatar = CreateAvatar(out var bodyMesh, "Smile");
+            var hair = new GameObject("Hair");
+            hair.transform.SetParent(avatar.transform, false);
+            var hairMesh = CreateMesh("Loose");
+            hair.AddComponent<SkinnedMeshRenderer>().sharedMesh = hairMesh;
             var channels = new[]
             {
                 new BlendShapeChannel("Body", "Smile", 0f, false),
@@ -131,23 +213,51 @@ namespace Ee4v.FaceExpression.Tests
                 new BlendShapeChannel("Body", "Blink", 0f, false),
                 new BlendShapeChannel("Body", "Wide", 0f, false),
                 new BlendShapeChannel("Body", "---MOUTH---", 0f, false, "MOUTH"),
-                new BlendShapeChannel("Body", "Aa", 0f, false)
+                new BlendShapeChannel("Body", "Aa", 0f, false),
+                new BlendShapeChannel("Hair", "Loose", 0f, false)
             };
 
-            FaceExpressionGroupSession.UpdateChannels(channels);
+            try
+            {
+                FaceExpressionGroupSession.SetAvatar(avatar);
+                FaceExpressionGroupSession.AddMesh("Hair");
+                FaceExpressionGroupSession.UpdateChannels(channels);
 
-            Assert.That(FaceExpressionGroupSession.TotalCount, Is.EqualTo(4));
-            Assert.That(
-                FaceExpressionGroupSession.Groups.Select(group =>
-                    (group.Name, group.Count)),
-                Is.EqualTo(new[] { ("EYES", 2), ("MOUTH", 1) }));
+                Assert.That(FaceExpressionGroupSession.TotalCount, Is.EqualTo(5));
+                Assert.That(
+                    FaceExpressionGroupSession.Groups.Select(group =>
+                        (group.Name, group.Count)),
+                    Is.EqualTo(new[]
+                    {
+                        ("Hair", 1),
+                        ("EYES", 2),
+                        ("MOUTH", 1)
+                    }));
 
-            FaceExpressionGroupSession.SelectGroup("MOUTH");
-            Assert.That(
-                FaceExpressionGroupSession.Filter(channels)
-                    .Select(channel => channel.Name),
-                Is.EqualTo(new[] { "---MOUTH---", "Aa" }));
-            FaceExpressionGroupSession.SelectGroup(null);
+                var hairGroup = FaceExpressionGroupSession.Groups.Single(group =>
+                    group.RendererPath == "Hair");
+                FaceExpressionGroupSession.SelectGroup(hairGroup.Key);
+                Assert.That(
+                    FaceExpressionGroupSession.Filter(channels)
+                        .Select(channel => channel.Name),
+                    Is.EqualTo(new[] { "Loose" }));
+
+                var mouthGroup = FaceExpressionGroupSession.Groups.Single(group =>
+                    group.RendererPath == null && group.Name == "MOUTH");
+                FaceExpressionGroupSession.SelectGroup(mouthGroup.Key);
+                Assert.That(
+                    FaceExpressionGroupSession.Filter(channels)
+                        .Select(channel => channel.Name),
+                    Is.EqualTo(new[] { "---MOUTH---", "Aa" }));
+            }
+            finally
+            {
+                FaceExpressionGroupSession.SelectGroup(null);
+                FaceExpressionGroupSession.SetAvatar(null);
+                Object.DestroyImmediate(avatar);
+                Object.DestroyImmediate(bodyMesh);
+                Object.DestroyImmediate(hairMesh);
+            }
         }
 
         private static GameObject CreateAvatar(
@@ -158,7 +268,26 @@ namespace Ee4v.FaceExpression.Tests
             var body = new GameObject("Body");
             body.transform.SetParent(avatar.transform, false);
             var renderer = body.AddComponent<SkinnedMeshRenderer>();
-            mesh = new Mesh
+            mesh = CreateMesh(shapeNames.Length == 0
+                ? new[] { "Smile", "Angry" }
+                : shapeNames);
+            if (shapeNames.Length == 0)
+            {
+                shapeNames = new[] { "Smile", "Angry" };
+            }
+
+            renderer.sharedMesh = mesh;
+            if (shapeNames.Length > 1 && shapeNames[1] == "Angry")
+            {
+                renderer.SetBlendShapeWeight(1, 5f);
+            }
+
+            return avatar;
+        }
+
+        private static Mesh CreateMesh(params string[] shapeNames)
+        {
+            var mesh = new Mesh
             {
                 vertices = new[]
                 {
@@ -169,23 +298,12 @@ namespace Ee4v.FaceExpression.Tests
                 triangles = new[] { 0, 1, 2 }
             };
             var delta = new[] { Vector3.zero, Vector3.zero, Vector3.zero };
-            if (shapeNames.Length == 0)
-            {
-                shapeNames = new[] { "Smile", "Angry" };
-            }
-
             foreach (var shapeName in shapeNames)
             {
                 mesh.AddBlendShapeFrame(shapeName, 100f, delta, delta, delta);
             }
 
-            renderer.sharedMesh = mesh;
-            if (shapeNames.Length > 1 && shapeNames[1] == "Angry")
-            {
-                renderer.SetBlendShapeWeight(1, 5f);
-            }
-
-            return avatar;
+            return mesh;
         }
 
         private static AnimationClip CreateClip(
@@ -210,14 +328,23 @@ namespace Ee4v.FaceExpression.Tests
 
         private static float ReadValue(AnimationClip clip, string property)
         {
-            var curve = AnimationUtility.GetEditorCurve(
-                clip,
-                EditorCurveBinding.FloatCurve(
-                    "Body",
-                    typeof(SkinnedMeshRenderer),
-                    property));
+            var curve = AnimationUtility.GetEditorCurve(clip, Binding(property));
             Assert.That(curve, Is.Not.Null);
             return curve.Evaluate(0f);
+        }
+
+        private static float? ReadOptionalValue(AnimationClip clip, string property)
+        {
+            var curve = AnimationUtility.GetEditorCurve(clip, Binding(property));
+            return curve == null ? (float?)null : curve.Evaluate(0f);
+        }
+
+        private static EditorCurveBinding Binding(string property)
+        {
+            return EditorCurveBinding.FloatCurve(
+                "Body",
+                typeof(SkinnedMeshRenderer),
+                property);
         }
     }
 }

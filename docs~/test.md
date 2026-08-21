@@ -53,9 +53,9 @@
 
 | テスト | 保証する契約 | 残す理由 |
 | --- | --- | --- |
-| `Apply_PreservesExistingLayersAndNormalizesExpressionClips` | 既存FXレイヤーを維持し、専用レイヤーを重複させず、未指定BlendShapeを既定値で補う | アバター設定のデータ保全と表情切替後の値残りは通常のクリップ確認だけでは検出できない |
-| `Read_ConvertsConfiguredSeparatorShapesToHeaders` | 複数の区切り文字で囲まれたBlendShapeを編集対象外のヘッダーとして読む | 左右の区切り文字数が異なる実アセットを含む複数の命名規則を維持する |
-| `Groups_CountAndFilterShapesBetweenHeaders` | ヘッダー間のBlendShapeをグループとして数え、選択グループだけを返す | 分割ウィンドウ間で共有する分類と絞り込みの契約を維持する |
+| `Apply_GeneratesGestureMatrixAndControlsBlinkAndMouthBindings` | 左右ジェスチャーとExpression Menuの状態を生成し、表情ごとのまばたきと口固定をカーブへ反映してメニュー専用表情を復元する | 64通りとメニュー優先の遷移条件、表情切替後の値残り、VRChatのまばたきとリップシンクへ制御を戻す契約は元クリップの確認だけでは検出できない |
+| `Read_ConvertsHeadersAndIncludesSelectedMeshes` | 複数の区切り文字をヘッダーとして読み、グループウィンドウで選択した各RendererパスのBlendShapeを列挙する | 複数メッシュの同名BlendShapeを正しいAnimationカーブへ結ぶ契約を維持する |
+| `Groups_FilterHeadersAndTreatAddedMeshesAsGroups` | ヘッダー間の分類に加え、追加メッシュをメッシュ名のグループとして絞り込む | 追加メッシュのShapeが別Groupへ混入する問題と、メッシュ全体を選べない問題を防ぐ |
 
 ## Core
 

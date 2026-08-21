@@ -14,7 +14,8 @@ namespace Ee4v.FaceExpression
         private PreviewRenderUtility _utility;
         private GameObject _clone;
         private SkinnedMeshRenderer _bodyRenderer;
-        private float[] _defaultWeights = Array.Empty<float>();
+        private readonly Dictionary<string, RendererPreviewState> _renderers =
+            new Dictionary<string, RendererPreviewState>(StringComparer.Ordinal);
         private Vector3 _target;
         private float _distance = 1f;
         private float _yaw;
@@ -45,30 +46,34 @@ namespace Ee4v.FaceExpression
             _utility.AddSingleGO(_clone);
 
             _bodyRenderer = FaceExpressionClipEditor.FindBodyRenderer(_clone);
-            if (_bodyRenderer != null)
+            foreach (var renderer in _clone.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
-                _defaultWeights = new float[
-                    _bodyRenderer.sharedMesh.blendShapeCount];
-                for (var index = 0; index < _defaultWeights.Length; index++)
+                if (renderer.sharedMesh == null)
                 {
-                    _defaultWeights[index] =
-                        _bodyRenderer.GetBlendShapeWeight(index);
+                    continue;
                 }
+
+                var path = AnimationUtility.CalculateTransformPath(
+                    renderer.transform,
+                    _clone.transform);
+                _renderers[path] = new RendererPreviewState(renderer);
             }
 
             ResetView();
         }
 
-        public void SetChannels(IReadOnlyList<BlendShapeChannel> channels)
+        public void SetChannels(
+            IReadOnlyList<BlendShapeChannel> channels,
+            bool repaint = true)
         {
-            if (_bodyRenderer == null)
+            if (_clone == null)
             {
                 return;
             }
 
-            for (var index = 0; index < _defaultWeights.Length; index++)
+            foreach (var renderer in _renderers.Values)
             {
-                _bodyRenderer.SetBlendShapeWeight(index, _defaultWeights[index]);
+                renderer.Reset();
             }
 
             if (channels != null)
@@ -82,18 +87,25 @@ namespace Ee4v.FaceExpression
                         continue;
                     }
 
-                    var shapeIndex =
-                        _bodyRenderer.sharedMesh.GetBlendShapeIndex(channel.Name);
+                    if (!_renderers.TryGetValue(channel.RendererPath, out var renderer))
+                    {
+                        continue;
+                    }
+
+                    var shapeIndex = renderer.Renderer.sharedMesh.GetBlendShapeIndex(channel.Name);
                     if (shapeIndex >= 0)
                     {
-                        _bodyRenderer.SetBlendShapeWeight(
+                        renderer.Renderer.SetBlendShapeWeight(
                             shapeIndex,
                             channel.Value);
                     }
                 }
             }
 
-            _repaint?.Invoke();
+            if (repaint)
+            {
+                _repaint?.Invoke();
+            }
         }
 
         public void ResetView()
@@ -137,17 +149,28 @@ namespace Ee4v.FaceExpression
             }
 
             HandleInput(rect);
-            var rotation = Quaternion.Euler(_pitch, _yaw, 0f);
-            var direction = _clone.transform.rotation * rotation * Vector3.forward;
-            var up = _clone.transform.rotation * rotation * Vector3.up;
-            _utility.camera.transform.position = _target + direction * _distance;
-            _utility.camera.transform.rotation = Quaternion.LookRotation(-direction, up);
-            _utility.camera.nearClipPlane = Mathf.Max(0.001f, _distance * 0.01f);
-            _utility.camera.farClipPlane = Mathf.Max(100f, _distance * 20f);
+            ConfigureCamera();
             _utility.BeginPreview(rect, GUIStyle.none);
             _utility.camera.Render();
             var texture = _utility.EndPreview();
             GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, false);
+        }
+
+        public Texture2D RenderThumbnail(
+            IReadOnlyList<BlendShapeChannel> channels,
+            int width,
+            int height)
+        {
+            if (_utility == null || _clone == null || width < 2 || height < 2)
+            {
+                return null;
+            }
+
+            SetChannels(channels, false);
+            ConfigureCamera();
+            _utility.BeginStaticPreview(new Rect(0f, 0f, width, height));
+            _utility.camera.Render();
+            return _utility.EndStaticPreview();
         }
 
         public void Dispose()
@@ -245,6 +268,17 @@ namespace Ee4v.FaceExpression
             SetView(new Bounds(center, Vector3.one * size));
         }
 
+        private void ConfigureCamera()
+        {
+            var rotation = Quaternion.Euler(_pitch, _yaw, 0f);
+            var direction = _clone.transform.rotation * rotation * Vector3.forward;
+            var up = _clone.transform.rotation * rotation * Vector3.up;
+            _utility.camera.transform.position = _target + direction * _distance;
+            _utility.camera.transform.rotation = Quaternion.LookRotation(-direction, up);
+            _utility.camera.nearClipPlane = Mathf.Max(0.001f, _distance * 0.01f);
+            _utility.camera.farClipPlane = Mathf.Max(100f, _distance * 20f);
+        }
+
         private Bounds CalculateBounds()
         {
             var hasBounds = false;
@@ -277,7 +311,7 @@ namespace Ee4v.FaceExpression
         private void Cleanup()
         {
             _bodyRenderer = null;
-            _defaultWeights = Array.Empty<float>();
+            _renderers.Clear();
             if (_utility != null)
             {
                 _utility.Cleanup();
@@ -288,6 +322,31 @@ namespace Ee4v.FaceExpression
             {
                 UnityEngine.Object.DestroyImmediate(_clone);
                 _clone = null;
+            }
+        }
+
+        private sealed class RendererPreviewState
+        {
+            private readonly float[] _defaultWeights;
+
+            internal RendererPreviewState(SkinnedMeshRenderer renderer)
+            {
+                Renderer = renderer;
+                _defaultWeights = new float[renderer.sharedMesh.blendShapeCount];
+                for (var index = 0; index < _defaultWeights.Length; index++)
+                {
+                    _defaultWeights[index] = renderer.GetBlendShapeWeight(index);
+                }
+            }
+
+            internal SkinnedMeshRenderer Renderer { get; }
+
+            internal void Reset()
+            {
+                for (var index = 0; index < _defaultWeights.Length; index++)
+                {
+                    Renderer.SetBlendShapeWeight(index, _defaultWeights[index]);
+                }
             }
         }
     }

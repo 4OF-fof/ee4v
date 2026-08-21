@@ -44,8 +44,8 @@ namespace Ee4v.FaceExpression
                     "gesture-assignment",
                     "Domain/FaceExpression",
                     "Gesture Assignments",
-                    "表情クリップを標準ハンドジェスチャーへ割り当てる画面です。",
-                    "FaceExpressionWindow から独立したウィンドウで表示します。",
+                    "左右ジェスチャー64通りをサムネイル付きセルで設定する画面です。",
+                    "グリッドと設定画面が一つのセッションを共有し、Modular Avatar用データを生成します。",
                     BuildAssignments,
                     dependencies: new[] { "UiButton", "UiTextFactory" },
                     usageLocations: new[]
@@ -61,16 +61,17 @@ namespace Ee4v.FaceExpression
                     "face-expression-groups",
                     "Domain/FaceExpression",
                     "Expression Groups",
-                    "区切り用BlendShapeから作成したグループと件数を表示します。",
-                    "選択したグループを表情エディターの一覧へ反映します。",
+                    "編集対象メッシュと区切り用BlendShapeのグループを表示します。",
+                    "メッシュ追加とグループ選択を表情エディターへ反映します。",
                     BuildGroups,
-                    dependencies: new[] { "UiTextFactory" },
+                    dependencies: new[] { "UiButton", "UiTextFactory" },
                     usageLocations: new[]
                     {
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionGroupWindow.cs"
                     },
                     styleSheetPaths: new[]
                     {
+                        "Editor/UI/Components/Inputs/ui-button.uss",
                         "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss"
                     })
             };
@@ -120,16 +121,50 @@ namespace Ee4v.FaceExpression
                 new GestureAssignmentViewText
                 {
                     Avatar = "Avatar",
-                    Hint = "The left hand takes priority when both hands use assigned gestures.",
                     Apply = "Apply to avatar",
+                    LeftHand = "Left hand",
+                    RightHand = "Right hand",
+                    Selection = "Selected",
+                    Clip = "Expression clip",
+                    EnableBlink = "Enable blinking",
+                    FixMouth = "Fix mouth movement",
+                    Unassigned = "Unassigned",
+                    MenuOnly = "Extra (menu only)",
+                    MenuOnlyHint = "Select an Extra cell below the divider to edit it in the settings window.",
+                    MenuName = "Menu name",
+                    AddMenuExpression = "Add menu-only expression",
+                    Remove = "Remove",
                     GestureName = gesture => gesture.ToString()
                 });
-            view.SetAssignments(new Dictionary<FaceGesture, AnimationClip>());
+            view.SetConfiguration(new FaceExpressionConfiguration(
+                new Dictionary<GestureCombination, FaceExpressionAssignment>(),
+                new[]
+                {
+                    new FaceExpressionMenuEntry(
+                        "Menu expression",
+                        FaceExpressionAssignment.Default)
+                }));
             var surface = new VisualElement();
-            surface.style.width = 520f;
-            surface.style.height = 340f;
+            surface.style.width = 1200f;
+            surface.style.height = 640f;
             surface.Add(view);
             parent.Add(surface);
+
+            var settingsSurface = new VisualElement();
+            settingsSurface.style.width = 420f;
+            settingsSurface.style.height = 150f;
+            settingsSurface.Add(new GestureAssignmentSettingsView(
+                new GestureAssignmentViewText
+                {
+                    Selection = "Selected",
+                    EnableBlink = "Enable blinking",
+                    FixMouth = "Fix mouth movement",
+                    MenuOnly = "Extra (menu only)",
+                    MenuName = "Menu name",
+                    Remove = "Remove",
+                    GestureName = gesture => gesture.ToString()
+                }));
+            parent.Add(settingsSurface);
         }
 
         private static void BuildGroups(VisualElement parent)
@@ -143,12 +178,23 @@ namespace Ee4v.FaceExpression
                 new FaceExpressionGroupViewText
                 {
                     Groups = "Group",
-                    All = "All"
+                    All = "All",
+                    Meshes = "Meshes",
+                    AddMesh = "Add mesh",
+                    MeshGroupSection = "Added meshes",
+                    BlendShapeGroupSection = "BlendShape groups"
                 });
+            view.SetMeshes(
+                new[]
+                {
+                    new FaceMeshOption("Body", "Body", true),
+                    new FaceMeshOption("Face/Eyes", "Face/Eyes", false)
+                },
+                "Remove");
             view.SetGroups(
                 new[] { eyes, mouth },
                 3,
-                "Eyes");
+                eyes.Key);
             var surface = new VisualElement();
             surface.style.width = 260f;
             surface.style.height = 480f;
