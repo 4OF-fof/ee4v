@@ -3,6 +3,21 @@ using System.Collections.Generic;
 
 namespace Ee4v.WindowGroup
 {
+    internal readonly struct WindowGroupMembership
+    {
+        internal WindowGroupMembership(
+            string groupId,
+            bool isFollower)
+        {
+            GroupId = groupId;
+            IsFollower = isFollower;
+        }
+
+        internal string GroupId { get; }
+
+        internal bool IsFollower { get; }
+    }
+
     internal sealed class WindowGroupRegistry<TWindow>
         where TWindow : class
     {
@@ -13,28 +28,39 @@ namespace Ee4v.WindowGroup
 
         internal IDisposable Register(
             TWindow window,
-            string groupId)
+            string groupId,
+            bool isFollower = false)
         {
-            Remove(window);
+            if (!isFollower && HasRegularMembership(
+                    _entries,
+                    window,
+                    groupId))
+            {
+                throw new InvalidOperationException(
+                    "A window can be a regular member of only one group.");
+            }
+
+            Remove(_entries, window, groupId);
             var registrationId = ++_nextRegistrationId;
             _entries.Add(new Entry(
                 window,
                 groupId,
+                isFollower,
                 registrationId));
             return new Registration(
                 () => Remove(window, registrationId));
         }
 
-        internal bool TryGetGroupId(
+        internal bool TryGetRegularGroupId(
             TWindow window,
             out string groupId)
         {
-            var entry = Find(window);
-            if (entry == null)
-            {
-                entry = Find(_managedEntries, window);
-            }
-
+            var entries = Find(window) == null
+                ? _managedEntries
+                : _entries;
+            var entry = entries.Find(candidate =>
+                ReferenceEquals(candidate.Window, window) &&
+                !candidate.IsFollower);
             groupId = entry?.GroupId;
             return entry != null;
         }
@@ -70,12 +96,31 @@ namespace Ee4v.WindowGroup
 
         internal void SetManaged(
             TWindow window,
-            string groupId)
+            IReadOnlyList<WindowGroupMembership> memberships)
         {
-            Remove(_managedEntries, window);
-            if (!string.IsNullOrWhiteSpace(groupId))
+            var hasRegularMembership = false;
+            for (var i = 0; i < memberships.Count; i++)
             {
-                _managedEntries.Add(new Entry(window, groupId, 0));
+                if (!memberships[i].IsFollower &&
+                    hasRegularMembership)
+                {
+                    throw new ArgumentException(
+                        "A window can be a regular member of only one group.",
+                        nameof(memberships));
+                }
+
+                hasRegularMembership |= !memberships[i].IsFollower;
+            }
+
+            Remove(_managedEntries, window);
+            for (var i = 0; i < memberships.Count; i++)
+            {
+                var membership = memberships[i];
+                _managedEntries.Add(new Entry(
+                    window,
+                    membership.GroupId,
+                    membership.IsFollower,
+                    0));
             }
         }
 
@@ -99,17 +144,39 @@ namespace Ee4v.WindowGroup
                 ReferenceEquals(entry.Window, window));
         }
 
-        private void Remove(TWindow window)
-        {
-            Remove(_entries, window);
-        }
-
         private static void Remove(
             List<Entry> entries,
             TWindow window)
         {
             entries.RemoveAll(entry =>
                 ReferenceEquals(entry.Window, window));
+        }
+
+        private static void Remove(
+            List<Entry> entries,
+            TWindow window,
+            string groupId)
+        {
+            entries.RemoveAll(entry =>
+                ReferenceEquals(entry.Window, window) &&
+                string.Equals(
+                    entry.GroupId,
+                    groupId,
+                    StringComparison.Ordinal));
+        }
+
+        private static bool HasRegularMembership(
+            List<Entry> entries,
+            TWindow window,
+            string excludedGroupId)
+        {
+            return entries.Exists(entry =>
+                ReferenceEquals(entry.Window, window) &&
+                !entry.IsFollower &&
+                !string.Equals(
+                    entry.GroupId,
+                    excludedGroupId,
+                    StringComparison.Ordinal));
         }
 
         private void Remove(TWindow window, long registrationId)
@@ -124,16 +191,20 @@ namespace Ee4v.WindowGroup
             internal Entry(
                 TWindow window,
                 string groupId,
+                bool isFollower,
                 long registrationId)
             {
                 Window = window;
                 GroupId = groupId;
+                IsFollower = isFollower;
                 RegistrationId = registrationId;
             }
 
             internal TWindow Window { get; }
 
             internal string GroupId { get; }
+
+            internal bool IsFollower { get; }
 
             internal long RegistrationId { get; }
         }

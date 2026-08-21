@@ -35,9 +35,13 @@ namespace Ee4v.WindowGroup
 
         internal static IDisposable Register(
             EditorWindow window,
-            string groupId)
+            string groupId,
+            bool isFollower)
         {
-            var registration = Registry.Register(window, groupId);
+            var registration = Registry.Register(
+                window,
+                groupId,
+                isFollower);
             Coordinator.Reset();
             return registration;
         }
@@ -81,7 +85,7 @@ namespace Ee4v.WindowGroup
                     window.GetType());
                 Registry.SetManaged(
                     window,
-                    Configuration.GetGroupId(typeId));
+                    Configuration.GetMemberships(typeId));
             }
         }
     }

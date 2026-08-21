@@ -186,6 +186,7 @@ namespace Ee4v.WindowGroup
                 "ee4v-window-group-settings__section-description",
                 UiClassNames.SecondaryText));
             detail.Add(CreateWindowList(group));
+
             return detail;
         }
 
@@ -255,11 +256,13 @@ namespace Ee4v.WindowGroup
             WindowTypeOption option,
             WindowGroupDefinition selectedGroup)
         {
-            var ownerId = _configuration.GetGroupId(option.TypeId);
-            var isSelected = string.Equals(
-                ownerId,
-                selectedGroup.Id,
-                StringComparison.Ordinal);
+            var isSelected = _configuration.IsAssigned(
+                option.TypeId,
+                selectedGroup.Id);
+            var followerRequired =
+                _configuration.HasRegularMembershipInOtherGroup(
+                    option.TypeId,
+                    selectedGroup.Id);
             var row = new VisualElement();
             row.AddToClassList(
                 "ee4v-window-group-settings__window-row");
@@ -273,15 +276,47 @@ namespace Ee4v.WindowGroup
             toggle.SetValueWithoutNotify(isSelected);
             toggle.RegisterValueChangedCallback(evt =>
             {
-                _configuration.AssignWindowType(
+                _configuration.SetWindowTypeAssigned(
                     option.TypeId,
-                    evt.newValue ? selectedGroup.Id : null);
+                    selectedGroup.Id,
+                    evt.newValue);
             });
+
+            var follower = UiTextFactory.CreateToggle(
+                I18N.Get("window.windows.follower"),
+                "ee4v-window-group-settings__follower-toggle");
+            follower.SetValueWithoutNotify(
+                followerRequired ||
+                (isSelected && _configuration.IsFollower(
+                     option.TypeId,
+                     selectedGroup.Id)));
+            follower.SetEnabled(isSelected && !followerRequired);
+            follower.RegisterValueChangedCallback(evt =>
+                _configuration.SetFollower(
+                    option.TypeId,
+                    selectedGroup.Id,
+                    evt.newValue));
 
             var name = UiTextFactory.Create(
                 option.DisplayName,
                 UiClassNames.NavigationItemLabel,
                 "ee4v-window-group-settings__window-name");
+            var nameColumn = new VisualElement();
+            nameColumn.AddToClassList(
+                "ee4v-window-group-settings__window-name-column");
+            nameColumn.Add(name);
+            var otherRegularMembership =
+                CreateOtherRegularMembershipText(
+                    option.TypeId,
+                    selectedGroup.Id);
+            if (!string.IsNullOrEmpty(otherRegularMembership))
+            {
+                nameColumn.Add(UiTextFactory.Create(
+                    otherRegularMembership,
+                    UiClassNames.SecondaryText,
+                    "ee4v-window-group-settings__window-memberships"));
+            }
+
             var focus = UiTextFactory.CreateButton(
                 I18N.Get("window.action.focus"),
                 option.Focus);
@@ -292,7 +327,8 @@ namespace Ee4v.WindowGroup
             focus.SetEnabled(option.Window != null);
 
             row.Add(toggle);
-            row.Add(name);
+            row.Add(nameColumn);
+            row.Add(follower);
             row.Add(focus);
             return row;
         }
@@ -324,16 +360,34 @@ namespace Ee4v.WindowGroup
 
             return options.Values
                 .OrderBy(option =>
-                    string.Equals(
-                        _configuration.GetGroupId(option.TypeId),
-                        selectedGroupId,
-                        StringComparison.Ordinal)
+                    _configuration.IsAssigned(
+                        option.TypeId,
+                        selectedGroupId)
                         ? 0
                         : 1)
                 .ThenBy(
                     option => option.DisplayName,
                     StringComparer.CurrentCultureIgnoreCase)
                 .ToArray();
+        }
+
+        private string CreateOtherRegularMembershipText(
+            string windowTypeId,
+            string selectedGroupId)
+        {
+            var group = _configuration.Groups.FirstOrDefault(candidate =>
+                !string.Equals(
+                    candidate.Id,
+                    selectedGroupId,
+                    StringComparison.Ordinal) &&
+                candidate.WindowTypeIds.Contains(windowTypeId) &&
+                !_configuration.IsFollower(
+                    windowTypeId,
+                    candidate.Id));
+            return group == null
+                ? string.Empty
+                : I18N.Get("window.windows.memberships") + " " +
+                  group.Name;
         }
 
         private void CreateGroup()

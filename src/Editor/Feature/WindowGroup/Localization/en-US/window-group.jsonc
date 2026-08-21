@@ -18,7 +18,9 @@
     },
     "windows": {
       "heading": "Windows",
-      "description": "Select a window type to move it into this group. Assignments are retained while windows are closed.",
+      "description": "Select a window type to add it to this group. A window can be a regular member of only one group. If it is regular elsewhere, it becomes a Follower here and that group appears in the row.",
+      "follower": "Follower",
+      "memberships": "Member of:",
       "empty": "No windows are available. Open an Editor window and refresh the list."
     },
     "feedback": {

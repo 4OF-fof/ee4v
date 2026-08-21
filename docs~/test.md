@@ -106,8 +106,11 @@
 | `ProjectTabsTests.PinnedTab_RejectsNavigationToAnotherFolder` | 固定tabが別folderへ移動しない | 固定位置を失う状態変更を防ぐ |
 | `HierarchyStyleTests.VisibilityApi_RestoresActiveStateAndTag` | 非表示解除時にactive stateとtagを戻す | GameObjectの状態を失う破壊的副作用を防ぐ |
 | `WindowGroupTests.EnteringGroup_FocusesPeersAndRestoresOriginalFocus` | グループ外から入ると同じグループのほかのWindowを前面化し、起点へfocusを戻す | 複数dockとfocus変更にまたがる状態遷移は最終focusだけでは検出できない |
-| `WindowGroupTests.ReplacingRegistration_IgnoresDisposalOfOldRegistration` | Windowの再登録後に古い登録を破棄しても新しい所属を維持する | lifecycle順序の前後で有効な登録が消える問題を防ぐ |
-| `WindowGroupTests.AssigningWindowType_MovesItBetweenGroupsAndPersists` | Window種類を別Groupへ移すと旧Groupから除かれ、保存後も新しい所属を復元する | 重複所属と設定再読込後の消失は画面上の一時状態だけでは検出できない |
+| `WindowGroupTests.FollowerRole_IsEvaluatedPerGroup` | 同じWindowが通常メンバーのGroupだけを起動し、FollowerのGroupには起点にならず追従だけする | 複数Group間の所属役割が混同される問題を防ぐ |
+| `WindowGroupTests.RegisteringWindowAsRegularInMultipleGroups_IsRejected` | 同じWindowを複数Groupの通常メンバーとして登録できない | 複数Groupが意図せず同時に起動する構成を防ぐ |
+| `WindowGroupTests.ReplacingSameGroupRegistration_IgnoresOldDisposal` | 同じGroupへの再登録後に古い登録を破棄しても新しい所属を維持する | lifecycle順序の前後で有効な登録が消える問題を防ぐ |
+| `WindowGroupTests.AdditionalMembership_BecomesFollowerAndPersists` | 通常所属があるWindow種類を別Groupへ追加するとFollowerになり、通常所属への変更を拒否して保存する | 通常所属の重複と設定再読込後の制約消失を防ぐ |
+| `WindowGroupTests.LoadingMultipleRegularMemberships_ConvertsExtrasToFollowers` | 通常所属が重複した保存設定を読み込むと2つ目以降をFollowerへ補正する | 旧設定による起動時の制約違反と複数Groupの同時起動を防ぐ |
 
 ## 実行と判定
 

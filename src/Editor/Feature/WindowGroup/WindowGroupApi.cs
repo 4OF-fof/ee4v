@@ -9,6 +9,14 @@ namespace Ee4v.WindowGroup
             EditorWindow window,
             string groupId)
         {
+            return Register(window, groupId, false);
+        }
+
+        public static IDisposable Register(
+            EditorWindow window,
+            string groupId,
+            bool isFollower)
+        {
             if (window == null)
             {
                 throw new ArgumentNullException(nameof(window));
@@ -21,7 +29,10 @@ namespace Ee4v.WindowGroup
                     nameof(groupId));
             }
 
-            return WindowGroupBootstrap.Register(window, groupId);
+            return WindowGroupBootstrap.Register(
+                window,
+                groupId,
+                isFollower);
         }
     }
 }

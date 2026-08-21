@@ -31,7 +31,7 @@ namespace Ee4v.WindowGroup
 
             _lastFocusedWindow = focusedWindow;
             if (focusedWindow == null ||
-                !_registry.TryGetGroupId(
+                !_registry.TryGetRegularGroupId(
                     focusedWindow,
                     out var groupId))
             {

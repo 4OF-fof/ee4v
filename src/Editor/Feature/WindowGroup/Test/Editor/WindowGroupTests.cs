@@ -35,23 +35,86 @@ namespace Ee4v.WindowGroup.Tests
         }
 
         [Test]
-        public void ReplacingRegistration_IgnoresDisposalOfOldRegistration()
+        public void FollowerRole_IsEvaluatedPerGroup()
         {
             var registry = new WindowGroupRegistry<object>();
-            var window = new object();
-            var oldRegistration = registry.Register(window, "old");
-            registry.Register(window, "new");
+            var sharedWindow = new object();
+            var firstPeer = new object();
+            var secondLeader = new object();
+            var outsideWindow = new object();
+            registry.Register(firstPeer, "first");
+            registry.Register(secondLeader, "second");
+            registry.SetManaged(
+                sharedWindow,
+                new[]
+                {
+                    new WindowGroupMembership("first", false),
+                    new WindowGroupMembership("second", true)
+                });
+            var focused = new List<object>();
+            var coordinator = new WindowGroupCoordinator<object>(
+                registry,
+                focused.Add);
 
-            oldRegistration.Dispose();
+            coordinator.ProcessFocus(outsideWindow);
+            coordinator.ProcessFocus(sharedWindow);
 
             Assert.That(
-                registry.TryGetGroupId(window, out var groupId),
-                Is.True);
-            Assert.That(groupId, Is.EqualTo("new"));
+                focused,
+                Is.EqualTo(new[] { firstPeer, sharedWindow }));
+
+            coordinator.ProcessFocus(outsideWindow);
+            coordinator.ProcessFocus(secondLeader);
+
+            Assert.That(
+                focused,
+                Is.EqualTo(new[]
+                {
+                    firstPeer,
+                    sharedWindow,
+                    sharedWindow,
+                    secondLeader
+                }));
         }
 
         [Test]
-        public void AssigningWindowType_MovesItBetweenGroupsAndPersists()
+        public void RegisteringWindowAsRegularInMultipleGroups_IsRejected()
+        {
+            var registry = new WindowGroupRegistry<object>();
+            var window = new object();
+            registry.Register(window, "first");
+
+            Assert.Throws<System.InvalidOperationException>(() =>
+                registry.Register(window, "second"));
+        }
+
+        [Test]
+        public void ReplacingSameGroupRegistration_IgnoresOldDisposal()
+        {
+            var registry = new WindowGroupRegistry<object>();
+            var window = new object();
+            var peer = new object();
+            var outsideWindow = new object();
+            var oldRegistration = registry.Register(window, "tools");
+            registry.Register(window, "tools");
+            registry.Register(peer, "tools");
+
+            oldRegistration.Dispose();
+
+            var focused = new List<object>();
+            var coordinator = new WindowGroupCoordinator<object>(
+                registry,
+                focused.Add);
+            coordinator.ProcessFocus(outsideWindow);
+            coordinator.ProcessFocus(window);
+
+            Assert.That(
+                focused,
+                Is.EqualTo(new[] { peer, window }));
+        }
+
+        [Test]
+        public void AdditionalMembership_BecomesFollowerAndPersists()
         {
             var store = new MemoryWindowGroupStore();
             var configuration = new WindowGroupConfiguration(store);
@@ -59,24 +122,64 @@ namespace Ee4v.WindowGroup.Tests
             var secondGroupId = configuration.CreateGroup("Second");
             const string windowTypeId =
                 "UnityEditor.ConsoleWindow, UnityEditor.CoreModule";
-            configuration.AssignWindowType(
+            configuration.SetWindowTypeAssigned(
                 windowTypeId,
-                firstGroupId);
-
-            configuration.AssignWindowType(
+                firstGroupId,
+                true);
+            configuration.SetWindowTypeAssigned(
                 windowTypeId,
-                secondGroupId);
+                secondGroupId,
+                true);
 
             Assert.That(
-                configuration.GetGroup(firstGroupId).WindowTypeIds,
-                Does.Not.Contain(windowTypeId));
-            Assert.That(
-                configuration.GetGroup(secondGroupId).WindowTypeIds,
-                Is.EqualTo(new[] { windowTypeId }));
+                configuration.SetFollower(
+                    windowTypeId,
+                    secondGroupId,
+                    false),
+                Is.False);
+
             var reloaded = new WindowGroupConfiguration(store);
             Assert.That(
-                reloaded.GetGroupId(windowTypeId),
-                Is.EqualTo(secondGroupId));
+                reloaded.IsAssigned(windowTypeId, firstGroupId),
+                Is.True);
+            Assert.That(
+                reloaded.IsAssigned(windowTypeId, secondGroupId),
+                Is.True);
+            Assert.That(
+                reloaded.IsFollower(windowTypeId, firstGroupId),
+                Is.False);
+            Assert.That(
+                reloaded.IsFollower(windowTypeId, secondGroupId),
+                Is.True);
+        }
+
+        [Test]
+        public void LoadingMultipleRegularMemberships_ConvertsExtrasToFollowers()
+        {
+            const string windowTypeId =
+                "UnityEditor.ConsoleWindow, UnityEditor.CoreModule";
+            var document = new WindowGroupDocument();
+            var firstGroup = new WindowGroupDefinition(
+                "first",
+                "First");
+            var secondGroup = new WindowGroupDefinition(
+                "second",
+                "Second");
+            firstGroup.WindowTypeIds.Add(windowTypeId);
+            secondGroup.WindowTypeIds.Add(windowTypeId);
+            document.Groups.Add(firstGroup);
+            document.Groups.Add(secondGroup);
+            var store = new MemoryWindowGroupStore();
+            store.Save(document);
+
+            var configuration = new WindowGroupConfiguration(store);
+
+            Assert.That(
+                configuration.IsFollower(windowTypeId, firstGroup.Id),
+                Is.False);
+            Assert.That(
+                configuration.IsFollower(windowTypeId, secondGroup.Id),
+                Is.True);
         }
 
         private sealed class MemoryWindowGroupStore

@@ -38,6 +38,10 @@ namespace Ee4v.WindowGroup
         [SerializeField]
         private List<string> _windowTypeIds = new List<string>();
 
+        [SerializeField]
+        private List<string> _followerWindowTypeIds =
+            new List<string>();
+
         internal WindowGroupDefinition(string id, string name)
         {
             _id = id;
@@ -66,6 +70,19 @@ namespace Ee4v.WindowGroup
                 }
 
                 return _windowTypeIds;
+            }
+        }
+
+        internal List<string> FollowerWindowTypeIds
+        {
+            get
+            {
+                if (_followerWindowTypeIds == null)
+                {
+                    _followerWindowTypeIds = new List<string>();
+                }
+
+                return _followerWindowTypeIds;
             }
         }
     }
@@ -137,22 +154,53 @@ namespace Ee4v.WindowGroup
                     StringComparison.Ordinal));
         }
 
-        internal string GetGroupId(string windowTypeId)
+        internal bool IsAssigned(
+            string windowTypeId,
+            string groupId)
         {
-            if (string.IsNullOrWhiteSpace(windowTypeId))
-            {
-                return null;
-            }
+            var group = GetGroup(groupId);
+            return group != null &&
+                   group.WindowTypeIds.Contains(windowTypeId);
+        }
 
+        internal bool IsFollower(
+            string windowTypeId,
+            string groupId)
+        {
+            var group = GetGroup(groupId);
+            return group != null &&
+                   group.FollowerWindowTypeIds.Contains(windowTypeId);
+        }
+
+        internal bool HasRegularMembershipInOtherGroup(
+            string windowTypeId,
+            string groupId)
+        {
+            return _document.Groups.Exists(group =>
+                !string.Equals(
+                    group.Id,
+                    groupId,
+                    StringComparison.Ordinal) &&
+                group.WindowTypeIds.Contains(windowTypeId) &&
+                !group.FollowerWindowTypeIds.Contains(windowTypeId));
+        }
+
+        internal IReadOnlyList<WindowGroupMembership> GetMemberships(
+            string windowTypeId)
+        {
+            var memberships = new List<WindowGroupMembership>();
             foreach (var group in _document.Groups)
             {
                 if (group.WindowTypeIds.Contains(windowTypeId))
                 {
-                    return group.Id;
+                    memberships.Add(new WindowGroupMembership(
+                        group.Id,
+                        group.FollowerWindowTypeIds.Contains(
+                            windowTypeId)));
                 }
             }
 
-            return null;
+            return memberships;
         }
 
         internal string CreateGroup(string baseName)
@@ -209,9 +257,10 @@ namespace Ee4v.WindowGroup
             return removed;
         }
 
-        internal bool AssignWindowType(
+        internal bool SetWindowTypeAssigned(
             string windowTypeId,
-            string groupId)
+            string groupId,
+            bool isAssigned)
         {
             if (string.IsNullOrWhiteSpace(windowTypeId))
             {
@@ -220,35 +269,77 @@ namespace Ee4v.WindowGroup
                     nameof(windowTypeId));
             }
 
-            var target = string.IsNullOrWhiteSpace(groupId)
-                ? null
-                : GetGroup(groupId);
-            if (!string.IsNullOrWhiteSpace(groupId) && target == null)
+            var group = GetGroup(groupId);
+            if (group == null)
             {
                 throw new ArgumentException(
                     "The window group does not exist.",
                     nameof(groupId));
             }
 
-            var currentGroupId = GetGroupId(windowTypeId);
-            if (string.Equals(
-                    currentGroupId,
-                    groupId,
-                    StringComparison.Ordinal))
+            if (group.WindowTypeIds.Contains(windowTypeId) == isAssigned)
             {
                 return false;
             }
 
-            foreach (var group in _document.Groups)
+            if (isAssigned)
+            {
+                group.WindowTypeIds.Add(windowTypeId);
+                if (HasRegularMembershipInOtherGroup(
+                        windowTypeId,
+                        groupId))
+                {
+                    group.FollowerWindowTypeIds.Add(windowTypeId);
+                }
+            }
+            else
             {
                 group.WindowTypeIds.RemoveAll(typeId =>
                     string.Equals(
                         typeId,
                         windowTypeId,
                         StringComparison.Ordinal));
+                group.FollowerWindowTypeIds.RemoveAll(typeId =>
+                    string.Equals(
+                        typeId,
+                        windowTypeId,
+                        StringComparison.Ordinal));
             }
 
-            target?.WindowTypeIds.Add(windowTypeId);
+            Persist();
+            return true;
+        }
+
+        internal bool SetFollower(
+            string windowTypeId,
+            string groupId,
+            bool isFollower)
+        {
+            var group = GetGroup(groupId);
+            if (group == null ||
+                !group.WindowTypeIds.Contains(windowTypeId) ||
+                group.FollowerWindowTypeIds.Contains(windowTypeId) ==
+                isFollower ||
+                (!isFollower && HasRegularMembershipInOtherGroup(
+                     windowTypeId,
+                     groupId)))
+            {
+                return false;
+            }
+
+            if (isFollower)
+            {
+                group.FollowerWindowTypeIds.Add(windowTypeId);
+            }
+            else
+            {
+                group.FollowerWindowTypeIds.RemoveAll(typeId =>
+                    string.Equals(
+                        typeId,
+                        windowTypeId,
+                        StringComparison.Ordinal));
+            }
+
             Persist();
             return true;
         }
@@ -259,8 +350,6 @@ namespace Ee4v.WindowGroup
             var groupIds = new HashSet<string>(StringComparer.Ordinal);
             var groupNames = new HashSet<string>(
                 StringComparer.OrdinalIgnoreCase);
-            var windowTypeIds = new HashSet<string>(
-                StringComparer.Ordinal);
 
             foreach (var group in _document.Groups)
             {
@@ -282,9 +371,31 @@ namespace Ee4v.WindowGroup
                 }
 
                 group.Name = name;
+                var windowTypeIds = new HashSet<string>(
+                    StringComparer.Ordinal);
                 group.WindowTypeIds.RemoveAll(typeId =>
                     string.IsNullOrWhiteSpace(typeId) ||
                     !windowTypeIds.Add(typeId));
+                var followerWindowTypeIds =
+                    new HashSet<string>(StringComparer.Ordinal);
+                group.FollowerWindowTypeIds.RemoveAll(typeId =>
+                    !group.WindowTypeIds.Contains(typeId) ||
+                    !followerWindowTypeIds.Add(typeId));
+            }
+
+            var regularWindowTypeIds = new HashSet<string>(
+                StringComparer.Ordinal);
+            foreach (var group in _document.Groups)
+            {
+                foreach (var windowTypeId in group.WindowTypeIds)
+                {
+                    if (!group.FollowerWindowTypeIds.Contains(
+                            windowTypeId) &&
+                        !regularWindowTypeIds.Add(windowTypeId))
+                    {
+                        group.FollowerWindowTypeIds.Add(windowTypeId);
+                    }
+                }
             }
         }
 
