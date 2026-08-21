@@ -174,7 +174,10 @@ namespace Ee4v.FaceExpression
         {
             if (ReferenceEquals(
                     args.Definition,
-                    FaceExpressionSettings.BlendShapeSeparators))
+                    FaceExpressionSettings.BlendShapeSeparators) ||
+                ReferenceEquals(
+                    args.Definition,
+                    FaceExpressionSettings.BlendShapeNamePattern))
             {
                 RefreshClip();
             }
@@ -190,8 +193,16 @@ namespace Ee4v.FaceExpression
 
         private void ApplyGroupFilter()
         {
+            var selectedGroupName =
+                FaceExpressionGroupSession.SelectedGroupName;
             _view?.SetChannels(
-                FaceExpressionGroupSession.Filter(_channels));
+                FaceExpressionGroupSession.Filter(_channels),
+                string.IsNullOrEmpty(selectedGroupName)
+                    ? I18N.Get("group.all")
+                    : selectedGroupName,
+                FaceExpressionSettings.GetNamePattern(_settings),
+                !string.IsNullOrEmpty(
+                    FaceExpressionGroupSession.SelectedGroupKey));
         }
 
         private static FaceExpressionViewText CreateText()

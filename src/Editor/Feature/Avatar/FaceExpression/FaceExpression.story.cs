@@ -96,18 +96,20 @@ namespace Ee4v.FaceExpression
                     ClipRequired = "Create or select an expression clip first."
                 },
                 rect => EditorGUI.DrawRect(rect, new Color(0.1f, 0.1f, 0.1f, 1f)));
-            view.SetChannels(new[]
-            {
-                new BlendShapeChannel(
-                    "Body",
-                    "----------EYE----------",
-                    0f,
-                    false,
-                    "EYE"),
-                new BlendShapeChannel("Body", "Smile", 80f, true),
-                new BlendShapeChannel("Body", "Blink", 0f, false),
-                new BlendShapeChannel("Body", "Angry", 100f, true)
-            });
+            view.SetChannels(
+                new[]
+                {
+                    new BlendShapeChannel("Body", "eye_blink_1", 80f, true),
+                    new BlendShapeChannel("Body", "eye_blink_1_L", 0f, false),
+                    new BlendShapeChannel("Body", "eye_blink_1_R", 0f, false),
+                    new BlendShapeChannel("Body", "eye_blink_2", 100f, true),
+                    new BlendShapeChannel("Body", "eye_blink_2_L", 0f, false),
+                    new BlendShapeChannel("Body", "eye_blink_2_R", 0f, false),
+                    new BlendShapeChannel("Body", "eye_smile_1", 30f, true)
+                },
+                "Eye",
+                FaceExpressionSettings.DefaultBlendShapeNamePattern,
+                true);
             var surface = new VisualElement();
             surface.style.width = 920f;
             surface.style.height = 640f;

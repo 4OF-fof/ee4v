@@ -18,6 +18,20 @@
     "blendShapeSeparators": {
       "label": "BlendShape separators",
       "tooltip": "Add multiple separators used for group boundaries. Examples: -, =, _"
+    },
+    "blendShapeNamePattern": {
+      "label": "BlendShape name presets",
+      "tooltip": "Select or save a regular expression using the named groups group, role, variation, and side. role is required, and side is treated as L or R.",
+      "preset": "Preset",
+      "name": "Name",
+      "pattern": "Regular expression",
+      "save": "Save",
+      "delete": "Delete",
+      "underscorePreset": "Underscore format",
+      "spaceParenthesesPreset": "Space and parentheses format",
+      "nameRequired": "Enter a preset name.",
+      "invalidPattern": "The regular expression is invalid. A named role group is required.",
+      "duplicateName": "A preset with the same name already exists."
     }
   },
   "field": {

@@ -4,6 +4,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Ee4v.FaceExpression.Tests
 {
@@ -258,6 +259,158 @@ namespace Ee4v.FaceExpression.Tests
                 Object.DestroyImmediate(bodyMesh);
                 Object.DestroyImmediate(hairMesh);
             }
+        }
+
+        [Test]
+        public void BlendShapeRows_GroupRoleAndSwitchVariationAndSide()
+        {
+            var channels = new[]
+            {
+                new BlendShapeChannel("Body", "eye_blink_1", 10f, true),
+                new BlendShapeChannel("Body", "eye_blink_1_L", 20f, true),
+                new BlendShapeChannel("Body", "eye_blink_1_R", 30f, true),
+                new BlendShapeChannel("Body", "eye_blink_2", 40f, true),
+                new BlendShapeChannel("Body", "eye_blink_2_L", 50f, true),
+                new BlendShapeChannel("Body", "eye_blink_2_R", 60f, true)
+            };
+
+            var rows = BlendShapeRowItem.Create(
+                channels,
+                BlendShapeNamingRule.Create(
+                    FaceExpressionSettings.DefaultBlendShapeNamePattern),
+                hideHeaders: true);
+
+            Assert.That(rows.Count, Is.EqualTo(1));
+            Assert.That(rows[0].DisplayName, Is.EqualTo("blink"));
+            Assert.That(rows[0].Variations, Is.EqualTo(new[] { "1", "2" }));
+            Assert.That(rows[0].ActiveChannel.Name, Is.EqualTo("eye_blink_1"));
+            rows[0].ToggleSide("L");
+            Assert.That(rows[0].ActiveChannel.Name, Is.EqualTo("eye_blink_1_L"));
+            rows[0].SelectVariation("2");
+            Assert.That(rows[0].ActiveChannel.Name, Is.EqualTo("eye_blink_2_L"));
+        }
+
+        [Test]
+        public void BlendShapeRows_KeepParsedOptionsSeparate()
+        {
+            var channels = new[]
+            {
+                new BlendShapeChannel("Body", "eye_brink_1", 10f, true),
+                new BlendShapeChannel("Body", "eye_brink_2", 20f, true),
+                new BlendShapeChannel("Body", "eye_brink_2_L", 30f, true),
+                new BlendShapeChannel("Body", "eye_brink_2_R", 40f, true)
+            };
+
+            var rows = BlendShapeRowItem.Create(
+                channels,
+                BlendShapeNamingRule.Create(
+                    FaceExpressionSettings.DefaultBlendShapeNamePattern),
+                hideHeaders: true,
+                groupOptions: false);
+
+            Assert.That(rows.Select(row => row.DisplayName),
+                Is.EqualTo(new[] { "brink", "brink", "brink", "brink" }));
+            Assert.That(rows.Select(row => row.ActiveChannel.Name),
+                Is.EqualTo(channels.Select(channel => channel.Name)));
+            Assert.That(rows.Select(row => row.SelectedVariation),
+                Is.EqualTo(new[] { "1", "2", "2", "2" }));
+            Assert.That(rows.Select(row => row.SelectedSide),
+                Is.EqualTo(new[] { string.Empty, string.Empty, "L", "R" }));
+
+            var row = new BlendShapeRow();
+            row.SetItem(rows[2], optionsReadOnly: true);
+            var variation = row.Q<PopupField<string>>(
+                className: "ee4v-face-expression-row__variation");
+            var sides = row.Query<Toggle>(
+                    className: "ee4v-face-expression-row__side")
+                .ToList();
+            Assert.That(variation.value, Is.EqualTo("2"));
+            Assert.That(variation.enabledSelf, Is.False);
+            Assert.That(variation.style.visibility.value,
+                Is.EqualTo(Visibility.Visible));
+            Assert.That(sides.Count, Is.EqualTo(2));
+            Assert.That(sides[0].style.visibility.value,
+                Is.EqualTo(Visibility.Hidden));
+            Assert.That(sides[1].style.visibility.value,
+                Is.EqualTo(Visibility.Visible));
+            Assert.That(sides[1].value, Is.True);
+            Assert.That(sides[1].enabledSelf, Is.False);
+        }
+
+        [Test]
+        public void BlendShapeRows_SupportSpaceParenthesesPreset()
+        {
+            var channels = new[]
+            {
+                new BlendShapeChannel("Body", "eye_close", 10f, true),
+                new BlendShapeChannel("Body", "eye_close_L", 20f, true),
+                new BlendShapeChannel("Body", "eye_close_R", 30f, true),
+                new BlendShapeChannel("Body", "eye_close (wide)", 40f, true),
+                new BlendShapeChannel("Body", "eye_close_L (wide)", 50f, true),
+                new BlendShapeChannel("Body", "eye_close_R (wide)", 60f, true),
+                new BlendShapeChannel("Body", "eye_nagomi 2", 70f, true),
+                new BlendShapeChannel("Body", "eye_nagomi 2_L", 80f, true),
+                new BlendShapeChannel("Body", "eye_nagomi 2_R", 90f, true),
+                new BlendShapeChannel("Body", "eye_under_up", 10f, true),
+                new BlendShapeChannel("Body", "eye_under_up_L", 20f, true),
+                new BlendShapeChannel("Body", "eye_under_up_R", 30f, true),
+                new BlendShapeChannel("Body", "eye_under_up 2", 40f, true),
+                new BlendShapeChannel("Body", "eye_under_up 2_L", 50f, true),
+                new BlendShapeChannel("Body", "eye_under_up 2_R", 60f, true)
+            };
+
+            var presetState = BlendShapeNamePresetSetting.Parse(
+                BlendShapeNamePresetSetting.DefaultValue);
+            presetState.selectedId =
+                BlendShapeNamePresetSetting.SpaceParenthesesPresetId;
+            var rows = BlendShapeRowItem.Create(
+                channels,
+                BlendShapeNamingRule.Create(
+                    BlendShapeNamePresetSetting.GetPattern(
+                        BlendShapeNamePresetSetting.Serialize(presetState))),
+                hideHeaders: true);
+
+            Assert.That(rows.Select(row => row.DisplayName),
+                Is.EqualTo(new[] { "close", "nagomi", "under_up" }));
+            Assert.That(rows[0].Variations,
+                Is.EqualTo(new[] { string.Empty, "wide" }));
+            rows[0].SelectVariation("wide");
+            rows[0].ToggleSide("R");
+            Assert.That(rows[0].ActiveChannel.Name,
+                Is.EqualTo("eye_close_R (wide)"));
+            Assert.That(rows[1].Variations, Is.EqualTo(new[] { "2" }));
+            Assert.That(rows[2].Variations,
+                Is.EqualTo(new[] { string.Empty, "2" }));
+            rows[2].SelectVariation("2");
+            rows[2].ToggleSide("L");
+            Assert.That(rows[2].ActiveChannel.Name,
+                Is.EqualTo("eye_under_up 2_L"));
+        }
+
+        [Test]
+        public void BlendShapeNamePresets_RoundTripNamedCustomPattern()
+        {
+            var migrated = BlendShapeNamePresetSetting.Parse(
+                FaceExpressionSettings.DefaultBlendShapeNamePattern);
+            Assert.That(migrated.selectedId,
+                Is.EqualTo(BlendShapeNamePresetSetting.UnderscorePresetId));
+
+            var state = BlendShapeNamePresetSetting.Parse(
+                BlendShapeNamePresetSetting.DefaultValue);
+            BlendShapeNamePresetSetting.SaveCustom(
+                state,
+                state.selectedId,
+                "Avatar naming",
+                BlendShapeNamePresetSetting.SpaceParenthesesPattern);
+
+            var serialized = BlendShapeNamePresetSetting.Serialize(state);
+            var restored = BlendShapeNamePresetSetting.Parse(serialized);
+
+            Assert.That(restored.customPresets.Count, Is.EqualTo(1));
+            Assert.That(restored.customPresets[0].name,
+                Is.EqualTo("Avatar naming"));
+            Assert.That(BlendShapeNamePresetSetting.GetPattern(serialized),
+                Is.EqualTo(BlendShapeNamePresetSetting.SpaceParenthesesPattern));
         }
 
         private static GameObject CreateAvatar(

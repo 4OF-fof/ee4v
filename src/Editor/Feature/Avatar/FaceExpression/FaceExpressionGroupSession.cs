@@ -67,6 +67,9 @@ namespace Ee4v.FaceExpression
 
         internal static string SelectedGroupKey { get; private set; }
 
+        internal static string SelectedGroupName =>
+            FindGroup(SelectedGroupKey)?.Name;
+
         internal static void SetAvatar(GameObject avatar)
         {
             var body = FaceExpressionClipEditor.FindBodyRenderer(avatar);

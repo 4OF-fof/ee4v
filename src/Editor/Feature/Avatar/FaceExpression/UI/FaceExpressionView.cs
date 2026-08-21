@@ -31,14 +31,18 @@ namespace Ee4v.FaceExpression
         private readonly ObjectField _avatarField;
         private readonly ObjectField _clipField;
         private readonly SearchField _search;
+        private readonly UiTextElement _sectionTitle;
         private readonly Toggle _clipOnly;
         private readonly ListView _blendShapeList;
         private readonly ScrollView _blendShapeScrollView;
         private readonly UiTextElement _empty;
+        private readonly string _defaultSectionTitle;
         private readonly string _noBlendShapes;
         private readonly string _clipRequired;
         private List<BlendShapeChannel> _channels = new List<BlendShapeChannel>();
-        private List<BlendShapeChannel> _visibleChannels = new List<BlendShapeChannel>();
+        private List<BlendShapeRowItem> _visibleItems = new List<BlendShapeRowItem>();
+        private string _namePattern;
+        private bool _hideHeaders;
         private bool _rendering;
         private bool _hasClip;
         private int _animationDragPointerId = -1;
@@ -49,6 +53,7 @@ namespace Ee4v.FaceExpression
         public FaceExpressionView(FaceExpressionViewText text, Action<Rect> drawPreview)
         {
             text = text ?? new FaceExpressionViewText();
+            _defaultSectionTitle = text.BlendShapes ?? string.Empty;
             _noBlendShapes = text.NoBlendShapes ?? string.Empty;
             _clipRequired = text.ClipRequired ?? string.Empty;
             AddToClassList("ee4v-face-expression");
@@ -123,9 +128,10 @@ namespace Ee4v.FaceExpression
             editorPane.AddToClassList("ee4v-face-expression__editor-pane");
             var sectionHeader = new VisualElement();
             sectionHeader.AddToClassList("ee4v-face-expression__section-header");
-            sectionHeader.Add(UiTextFactory.Create(
-                text.BlendShapes,
-                UiClassNames.SectionTitle));
+            _sectionTitle = UiTextFactory.Create(
+                _defaultSectionTitle,
+                UiClassNames.SectionTitle);
+            sectionHeader.Add(_sectionTitle);
             _clipOnly = UiTextFactory.CreateToggle(
                 text.ClipOnly,
                 "ee4v-face-expression__clip-only");
@@ -197,9 +203,18 @@ namespace Ee4v.FaceExpression
             RefreshFilter();
         }
 
-        public void SetChannels(IReadOnlyList<BlendShapeChannel> channels)
+        public void SetChannels(
+            IReadOnlyList<BlendShapeChannel> channels,
+            string sectionTitle = null,
+            string namePattern = null,
+            bool hideHeaders = false)
         {
             _channels = channels?.ToList() ?? new List<BlendShapeChannel>();
+            _namePattern = namePattern;
+            _hideHeaders = hideHeaders;
+            _sectionTitle.SetText(string.IsNullOrEmpty(sectionTitle)
+                ? _defaultSectionTitle
+                : sectionTitle);
             RefreshFilter();
         }
 
@@ -228,7 +243,8 @@ namespace Ee4v.FaceExpression
         {
             _animationDragPointerId = pointerId;
             _animationDragValue = value;
-            _animationDragLastIndex = _visibleChannels.IndexOf(channel);
+            _animationDragLastIndex = _visibleItems.FindIndex(item =>
+                ReferenceEquals(item.ActiveChannel, channel));
             _animationDragPointerY = pointerY;
             this.CapturePointer(pointerId);
             ApplyAnimationRange(_animationDragLastIndex);
@@ -250,7 +266,7 @@ namespace Ee4v.FaceExpression
         private void ApplyAnimationDragAtPointer()
         {
             if (_animationDragPointerId < 0 ||
-                _visibleChannels.Count == 0 ||
+                _visibleItems.Count == 0 ||
                 _blendShapeScrollView == null)
             {
                 return;
@@ -266,7 +282,7 @@ namespace Ee4v.FaceExpression
             var targetIndex = Mathf.Clamp(
                 Mathf.FloorToInt(contentY / _blendShapeList.fixedItemHeight),
                 0,
-                _visibleChannels.Count - 1);
+                _visibleItems.Count - 1);
             ApplyAnimationRange(targetIndex);
         }
 
@@ -288,7 +304,7 @@ namespace Ee4v.FaceExpression
             for (var index = firstIndex; index <= lastIndex; index++)
             {
                 changed |= SetAnimated(
-                    _visibleChannels[index],
+                    _visibleItems[index].ActiveChannel,
                     _animationDragValue);
             }
 
@@ -372,9 +388,9 @@ namespace Ee4v.FaceExpression
 
         private void BindBlendShapeRow(VisualElement element, int index)
         {
-            if (element is BlendShapeRow row && index >= 0 && index < _visibleChannels.Count)
+            if (element is BlendShapeRow row && index >= 0 && index < _visibleItems.Count)
             {
-                row.SetChannel(_visibleChannels[index]);
+                row.SetItem(_visibleItems[index], _clipOnly.value);
             }
         }
 
@@ -382,8 +398,8 @@ namespace Ee4v.FaceExpression
         {
             if (!_hasClip)
             {
-                _visibleChannels.Clear();
-                _blendShapeList.itemsSource = (IList)_visibleChannels;
+                _visibleItems.Clear();
+                _blendShapeList.itemsSource = (IList)_visibleItems;
                 _blendShapeList.Rebuild();
                 _blendShapeList.style.display = DisplayStyle.None;
                 _empty.SetText(_clipRequired);
@@ -392,15 +408,21 @@ namespace Ee4v.FaceExpression
             }
 
             var query = (_search?.Value ?? string.Empty).Trim();
-            _visibleChannels = string.IsNullOrEmpty(query) && !_clipOnly.value
+            var visibleChannels = string.IsNullOrEmpty(query) && !_clipOnly.value
                 ? _channels.ToList()
                 : FilterWithHeaders(
                     _channels,
                     query,
                     _clipOnly.value);
-            _blendShapeList.itemsSource = (IList)_visibleChannels;
+            _visibleItems = BlendShapeRowItem.Create(
+                    visibleChannels,
+                    BlendShapeNamingRule.Create(_namePattern),
+                    _hideHeaders,
+                    groupOptions: !_clipOnly.value)
+                .ToList();
+            _blendShapeList.itemsSource = (IList)_visibleItems;
             _blendShapeList.Rebuild();
-            var hasItems = _visibleChannels.Count > 0;
+            var hasItems = _visibleItems.Count > 0;
             _blendShapeList.style.display = hasItems ? DisplayStyle.Flex : DisplayStyle.None;
             _empty.SetText(_noBlendShapes);
             _empty.style.display = hasItems ? DisplayStyle.None : DisplayStyle.Flex;
@@ -461,15 +483,236 @@ namespace Ee4v.FaceExpression
         }
     }
 
+    internal sealed class BlendShapeRowItem
+    {
+        private readonly List<BlendShapeOption> _options =
+            new List<BlendShapeOption>();
+
+        private BlendShapeRowItem(
+            BlendShapeChannel channel,
+            BlendShapeName parsedName)
+        {
+            if (channel.IsHeader)
+            {
+                Header = channel;
+                DisplayName = channel.DisplayHeaderText;
+                return;
+            }
+
+            DisplayName = parsedName == null
+                ? channel.DisplayName
+                : string.IsNullOrEmpty(channel.RendererDisplayName)
+                    ? parsedName.Role
+                    : channel.RendererDisplayName + " / " + parsedName.Role;
+            AddChannel(channel, parsedName);
+        }
+
+        internal BlendShapeChannel Header { get; }
+        internal bool IsHeader => Header != null;
+        internal string DisplayName { get; }
+        internal BlendShapeChannel ActiveChannel { get; private set; }
+        internal string SelectedVariation => FindActive()?.Variation ?? string.Empty;
+        internal string SelectedSide => FindActive()?.Side ?? string.Empty;
+        internal IReadOnlyList<string> Variations => _options
+            .Select(option => option.Variation)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        internal string Tooltip => IsHeader
+            ? Header.DisplayHeaderText
+            : string.Join(", ", _options
+                .Select(option => option.Channel.DisplayName)
+                .Distinct(StringComparer.Ordinal));
+
+        internal static IReadOnlyList<BlendShapeRowItem> Create(
+            IReadOnlyList<BlendShapeChannel> channels,
+            BlendShapeNamingRule namingRule,
+            bool hideHeaders,
+            bool groupOptions = true)
+        {
+            var result = new List<BlendShapeRowItem>();
+            var grouped = new Dictionary<string, List<BlendShapeRowItem>>(
+                StringComparer.Ordinal);
+            for (var index = 0; index < (channels?.Count ?? 0); index++)
+            {
+                var channel = channels[index];
+                if (channel.IsHeader)
+                {
+                    grouped.Clear();
+                    if (!hideHeaders)
+                    {
+                        result.Add(new BlendShapeRowItem(channel, null));
+                    }
+
+                    continue;
+                }
+
+                if (namingRule == null ||
+                    !namingRule.TryParse(channel.Name, out var parsedName))
+                {
+                    result.Add(new BlendShapeRowItem(channel, null));
+                    continue;
+                }
+
+                if (!groupOptions)
+                {
+                    result.Add(new BlendShapeRowItem(channel, parsedName));
+                    continue;
+                }
+
+                var key = channel.RendererPath + "\n" +
+                          parsedName.Group + "\n" +
+                          parsedName.Role;
+                if (!grouped.TryGetValue(key, out var rows))
+                {
+                    rows = new List<BlendShapeRowItem>();
+                    grouped.Add(key, rows);
+                }
+
+                var added = false;
+                for (var rowIndex = 0; rowIndex < rows.Count; rowIndex++)
+                {
+                    if (rows[rowIndex].AddChannel(channel, parsedName))
+                    {
+                        added = true;
+                        break;
+                    }
+                }
+
+                if (added)
+                {
+                    continue;
+                }
+
+                var row = new BlendShapeRowItem(channel, parsedName);
+                rows.Add(row);
+                result.Add(row);
+            }
+
+            for (var index = 0; index < result.Count; index++)
+            {
+                result[index].SelectDefault();
+            }
+
+            return result;
+        }
+
+        internal bool HasSide(string side)
+        {
+            return _options.Any(option =>
+                string.Equals(
+                    option.Variation,
+                    SelectedVariation,
+                    StringComparison.Ordinal) &&
+                string.Equals(option.Side, side, StringComparison.Ordinal));
+        }
+
+        internal void SelectVariation(string variation)
+        {
+            var selectedSide = SelectedSide;
+            ActiveChannel = FindChannel(variation, selectedSide) ??
+                            FindChannel(variation, string.Empty) ??
+                            _options.FirstOrDefault(option => string.Equals(
+                                option.Variation,
+                                variation,
+                                StringComparison.Ordinal))?.Channel ??
+                            ActiveChannel;
+        }
+
+        internal void ToggleSide(string side)
+        {
+            var nextSide = string.Equals(
+                SelectedSide,
+                side,
+                StringComparison.Ordinal)
+                ? string.Empty
+                : side;
+            ActiveChannel = FindChannel(SelectedVariation, nextSide) ??
+                            ActiveChannel;
+        }
+
+        private bool AddChannel(
+            BlendShapeChannel channel,
+            BlendShapeName parsedName)
+        {
+            var variation = parsedName?.Variation ?? string.Empty;
+            var side = parsedName?.Side ?? string.Empty;
+            if (_options.Any(option =>
+                    string.Equals(
+                        option.Variation,
+                        variation,
+                        StringComparison.Ordinal) &&
+                    string.Equals(option.Side, side, StringComparison.Ordinal)))
+            {
+                return false;
+            }
+
+            _options.Add(new BlendShapeOption(channel, variation, side));
+            ActiveChannel = ActiveChannel ?? channel;
+            return true;
+        }
+
+        private void SelectDefault()
+        {
+            if (IsHeader || _options.Count == 0)
+            {
+                return;
+            }
+
+            var firstVariation = _options[0].Variation;
+            ActiveChannel = FindChannel(firstVariation, string.Empty) ??
+                            _options[0].Channel;
+        }
+
+        private BlendShapeChannel FindChannel(string variation, string side)
+        {
+            return _options.FirstOrDefault(option =>
+                string.Equals(
+                    option.Variation,
+                    variation,
+                    StringComparison.Ordinal) &&
+                string.Equals(option.Side, side, StringComparison.Ordinal))
+                ?.Channel;
+        }
+
+        private BlendShapeOption FindActive()
+        {
+            return _options.FirstOrDefault(option =>
+                ReferenceEquals(option.Channel, ActiveChannel));
+        }
+
+        private sealed class BlendShapeOption
+        {
+            internal BlendShapeOption(
+                BlendShapeChannel channel,
+                string variation,
+                string side)
+            {
+                Channel = channel;
+                Variation = variation;
+                Side = side;
+            }
+
+            internal BlendShapeChannel Channel { get; }
+            internal string Variation { get; }
+            internal string Side { get; }
+        }
+    }
+
     internal sealed class BlendShapeRow : VisualElement
     {
         private readonly Toggle _toggle;
         private readonly UiTextElement _name;
         private readonly VisualElement _controls;
+        private readonly VisualElement _options;
+        private readonly PopupField<string> _variation;
+        private readonly UiTextElement _variationText;
+        private readonly Toggle _left;
+        private readonly Toggle _right;
         private readonly Slider _slider;
         private readonly FloatField _value;
-        private BlendShapeChannel _channel;
+        private BlendShapeRowItem _item;
         private bool _rendering;
+        private bool _optionsReadOnly;
 
         public BlendShapeRow()
         {
@@ -479,9 +722,10 @@ namespace Ee4v.FaceExpression
                 "ee4v-face-expression-row__animation-toggle");
             _toggle.RegisterValueChangedCallback(evt =>
             {
-                if (!_rendering && _channel != null)
+                var channel = _item?.ActiveChannel;
+                if (!_rendering && channel != null)
                 {
-                    AnimationChanged?.Invoke(_channel, evt.newValue);
+                    AnimationChanged?.Invoke(channel, evt.newValue);
                 }
             });
             RegisterCallback<PointerDownEvent>(
@@ -501,6 +745,38 @@ namespace Ee4v.FaceExpression
             _value.AddToClassList("ee4v-face-expression-row__value");
             _value.RegisterValueChangedCallback(evt => SetValue(evt.newValue));
             _controls.Add(_value);
+            _options = new VisualElement();
+            _options.AddToClassList("ee4v-face-expression-row__options");
+            _controls.Add(_options);
+            _variation = UiTextFactory.CreatePopupField(
+                string.Empty,
+                new List<string> { string.Empty },
+                0,
+                FormatVariation,
+                FormatVariation,
+                "ee4v-face-expression-row__variation");
+            _variationText = UiTextFactory.Create(
+                string.Empty,
+                "ee4v-face-expression-row__variation-text");
+            _variationText.pickingMode = PickingMode.Ignore;
+            var variationInput = _variation.Q<VisualElement>(
+                className: "unity-base-field__input");
+            (variationInput ?? _variation).Insert(0, _variationText);
+            _variation.RegisterValueChangedCallback(evt =>
+            {
+                if (_rendering || _item == null)
+                {
+                    return;
+                }
+
+                _item.SelectVariation(evt.newValue);
+                RefreshControls();
+            });
+            _options.Add(_variation);
+            _right = CreateSideToggle("R");
+            _options.Add(_right);
+            _left = CreateSideToggle("L");
+            _options.Add(_left);
         }
 
         public event Action<BlendShapeChannel> Changed;
@@ -508,28 +784,90 @@ namespace Ee4v.FaceExpression
         public event Action<BlendShapeChannel, int, bool, float>
             AnimationDragStarted;
 
-        public void SetChannel(BlendShapeChannel channel)
+        public void SetItem(BlendShapeRowItem item, bool optionsReadOnly)
         {
-            _channel = channel;
-            var isHeader = channel?.IsHeader == true;
-            _rendering = true;
+            _item = item;
+            _optionsReadOnly = optionsReadOnly;
+            var isHeader = item?.IsHeader == true;
             EnableInClassList("ee4v-face-expression-row--header", isHeader);
-            _name.SetText(isHeader
-                ? channel.DisplayHeaderText
-                : channel?.DisplayName ?? string.Empty);
+            _name.SetText(item?.DisplayName ?? string.Empty);
+            _name.tooltip = item?.Tooltip ?? string.Empty;
+            _toggle.style.display = isHeader ? DisplayStyle.None : DisplayStyle.Flex;
+            _controls.style.display = isHeader ? DisplayStyle.None : DisplayStyle.Flex;
+            RefreshControls();
+        }
+
+        private void RefreshControls()
+        {
+            var channel = _item?.ActiveChannel;
+            var variations = _item?.Variations.ToList() ?? new List<string>();
+            if (variations.Count == 0)
+            {
+                variations.Add(string.Empty);
+            }
+
+            _rendering = true;
+            _variation.choices = variations;
+            var selectedVariation =
+                _item?.SelectedVariation ?? variations[0];
+            _variation.SetValueWithoutNotify(selectedVariation);
+            _variationText.SetText(FormatVariation(selectedVariation));
+            var showVariation = variations.Count > 1 ||
+                                (_optionsReadOnly &&
+                                 !string.IsNullOrEmpty(selectedVariation));
+            _variation.style.visibility = showVariation
+                ? Visibility.Visible
+                : Visibility.Hidden;
+            _variation.SetEnabled(showVariation && !_optionsReadOnly);
+            SetSideToggle(_left, "L");
+            SetSideToggle(_right, "R");
             _toggle.SetValueWithoutNotify(channel?.Animated == true);
             _slider.SetValueWithoutNotify(channel?.Value ?? 0f);
             _value.SetValueWithoutNotify(channel?.Value ?? 0f);
-            _toggle.style.display = isHeader ? DisplayStyle.None : DisplayStyle.Flex;
-            _controls.style.display = isHeader ? DisplayStyle.None : DisplayStyle.Flex;
             _rendering = false;
+        }
+
+        private Toggle CreateSideToggle(string side)
+        {
+            var toggle = UiTextFactory.CreateToggle(
+                side,
+                "ee4v-face-expression-row__side");
+            toggle.RegisterValueChangedCallback(_ =>
+            {
+                if (_rendering || _item == null)
+                {
+                    return;
+                }
+
+                _item.ToggleSide(side);
+                RefreshControls();
+            });
+            return toggle;
+        }
+
+        private void SetSideToggle(Toggle toggle, string side)
+        {
+            var visible = _item?.HasSide(side) == true;
+            toggle.style.visibility = visible
+                ? Visibility.Visible
+                : Visibility.Hidden;
+            toggle.SetEnabled(visible && !_optionsReadOnly);
+            toggle.SetValueWithoutNotify(visible && string.Equals(
+                _item.SelectedSide,
+                side,
+                StringComparison.Ordinal));
+        }
+
+        private static string FormatVariation(string variation)
+        {
+            return string.IsNullOrEmpty(variation) ? "-" : variation;
         }
 
         private void OnTogglePointerDown(PointerDownEvent evt)
         {
             if (evt.button != (int)MouseButton.LeftMouse ||
-                _channel == null ||
-                _channel.IsHeader ||
+                _item?.ActiveChannel == null ||
+                _item.IsHeader ||
                 !(evt.target is VisualElement target) ||
                 !_toggle.Contains(target))
             {
@@ -537,10 +875,11 @@ namespace Ee4v.FaceExpression
             }
 
             _toggle.Focus();
+            var channel = _item.ActiveChannel;
             AnimationDragStarted?.Invoke(
-                _channel,
+                channel,
                 evt.pointerId,
-                !_channel.Animated,
+                !channel.Animated,
                 evt.position.y);
             evt.PreventDefault();
             evt.StopPropagation();
@@ -548,7 +887,8 @@ namespace Ee4v.FaceExpression
 
         private void SetValue(float value)
         {
-            if (_rendering || _channel == null)
+            var channel = _item?.ActiveChannel;
+            if (_rendering || channel == null)
             {
                 return;
             }
@@ -559,13 +899,13 @@ namespace Ee4v.FaceExpression
             }
 
             _rendering = true;
-            _channel.Value = value;
-            _channel.Animated = true;
+            channel.Value = value;
+            channel.Animated = true;
             _toggle.SetValueWithoutNotify(true);
-            _slider.SetValueWithoutNotify(_channel.Value);
-            _value.SetValueWithoutNotify(_channel.Value);
+            _slider.SetValueWithoutNotify(channel.Value);
+            _value.SetValueWithoutNotify(channel.Value);
             _rendering = false;
-            Changed?.Invoke(_channel);
+            Changed?.Invoke(channel);
         }
     }
 }

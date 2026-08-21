@@ -185,8 +185,8 @@
 }
 
 .ee4v-face-expression-row__name {
-    width: 150px;
-    min-width: 80px;
+    width: 112px;
+    min-width: 64px;
     flex-shrink: 1;
     overflow: hidden;
     white-space: nowrap;
@@ -200,6 +200,66 @@
     flex-direction: row;
     align-items: center;
     overflow: hidden;
+}
+
+.ee4v-face-expression-row__options {
+    width: 176px;
+    min-width: 176px;
+    max-width: 176px;
+    flex-shrink: 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    overflow: hidden;
+    margin-left: var(--ee4v-space-sm);
+}
+
+.ee4v-face-expression-row__variation {
+    width: 88px;
+    min-width: 88px;
+    flex-shrink: 0;
+    margin-left: var(--ee4v-space-xs);
+    margin-right: 0;
+}
+
+.ee4v-face-expression-row__variation > .unity-base-field__label {
+    display: none;
+}
+
+.ee4v-face-expression-row__variation .unity-base-popup-field__text {
+    display: none;
+}
+
+.ee4v-face-expression-row__variation-text {
+    min-width: 0;
+    flex-grow: 1;
+    flex-shrink: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    margin-left: var(--ee4v-space-xs);
+}
+
+.ee4v-face-expression-row__side {
+    width: 34px;
+    min-width: 34px;
+    flex-shrink: 0;
+    margin-left: var(--ee4v-space-xs);
+    margin-right: 0;
+}
+
+.ee4v-face-expression-row__side > .unity-base-field__label {
+    width: auto;
+    min-width: 0;
+    flex-basis: auto;
+    flex-shrink: 0;
+    margin-right: var(--ee4v-space-xxs);
+}
+
+.ee4v-face-expression-row__side > .unity-base-field__input {
+    width: auto;
+    min-width: 0;
+    flex-grow: 0;
+    flex-shrink: 0;
 }
 
 .ee4v-face-expression-row__slider {
