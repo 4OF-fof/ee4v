@@ -27,9 +27,9 @@
       "label": "Sync ee4v on startup",
       "tooltip": "Synchronize the configured ee4v source once when the Unity editor session starts."
     },
-    "showProjectWindowIcons": {
-      "label": "Show AssetManager icons in Project",
-      "tooltip": "Replace imported folder icons with their AssetManager item thumbnails."
+    "applyProjectThumbnailOnImport": {
+      "label": "Set thumbnails in Project Style on import",
+      "tooltip": "When enabled, set an item's thumbnail as the initial Project Style icon for an imported folder only when it has no icon. You can change it later in Project Style."
     }
   }
 }

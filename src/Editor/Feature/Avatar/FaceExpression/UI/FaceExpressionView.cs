@@ -31,11 +31,11 @@ namespace Ee4v.FaceExpression
         private readonly ObjectField _avatarField;
         private readonly ObjectField _clipField;
         private readonly SearchField _search;
-        private readonly UiTextElement _sectionTitle;
+        private readonly SectionHeader _sectionHeader;
         private readonly Toggle _clipOnly;
         private readonly ListView _blendShapeList;
         private readonly ScrollView _blendShapeScrollView;
-        private readonly UiTextElement _empty;
+        private readonly EmptyState _empty;
         private readonly string _defaultSectionTitle;
         private readonly string _noBlendShapes;
         private readonly string _clipRequired;
@@ -58,7 +58,7 @@ namespace Ee4v.FaceExpression
             _clipRequired = text.ClipRequired ?? string.Empty;
             AddToClassList("ee4v-face-expression");
 
-            var toolbar = new VisualElement();
+            var toolbar = new ActionBar();
             toolbar.AddToClassList("ee4v-face-expression__toolbar");
             _avatarField = UiTextFactory.CreateObjectField(
                 text.Avatar,
@@ -72,7 +72,7 @@ namespace Ee4v.FaceExpression
                     AvatarChanged?.Invoke(evt.newValue as GameObject);
                 }
             });
-            toolbar.Add(_avatarField);
+            toolbar.Leading.Add(_avatarField);
 
             _clipField = UiTextFactory.CreateObjectField(
                 text.Clip,
@@ -86,17 +86,17 @@ namespace Ee4v.FaceExpression
                     ClipChanged?.Invoke(evt.newValue as AnimationClip);
                 }
             });
-            toolbar.Add(_clipField);
+            toolbar.Leading.Add(_clipField);
             var create = UiTextFactory.CreateButton(
                 text.NewClip,
                 () => NewClipRequested?.Invoke());
             create.AddToClassList("ee4v-face-expression__new-clip");
-            toolbar.Add(create);
+            toolbar.Actions.Add(create);
             Add(toolbar);
 
             var content = new VisualElement();
             content.AddToClassList("ee4v-face-expression__content");
-            var previewPane = new VisualElement();
+            var previewPane = new PreviewSurface();
             previewPane.AddToClassList("ee4v-face-expression__preview-pane");
             var preview = new IMGUIContainer(() =>
             {
@@ -110,7 +110,7 @@ namespace Ee4v.FaceExpression
                 drawPreview?.Invoke(rect);
             });
             preview.AddToClassList("ee4v-face-expression__preview");
-            previewPane.Add(preview);
+            previewPane.Content.Add(preview);
             var resetView = new UiButton(
                 string.Empty,
                 () => ResetViewRequested?.Invoke(),
@@ -121,24 +121,22 @@ namespace Ee4v.FaceExpression
                 UiButtonVariant.Ghost,
                 compact: true);
             resetView.AddToClassList("ee4v-face-expression__reset-view");
-            previewPane.Add(resetView);
+            previewPane.Overlay.Add(resetView);
+            previewPane.SetHasContent(true);
             content.Add(previewPane);
 
             var editorPane = new VisualElement();
             editorPane.AddToClassList("ee4v-face-expression__editor-pane");
-            var sectionHeader = new VisualElement();
-            sectionHeader.AddToClassList("ee4v-face-expression__section-header");
-            _sectionTitle = UiTextFactory.Create(
-                _defaultSectionTitle,
-                UiClassNames.SectionTitle);
-            sectionHeader.Add(_sectionTitle);
+            _sectionHeader = new SectionHeader(_defaultSectionTitle);
+            _sectionHeader.AddToClassList(
+                "ee4v-face-expression__section-header");
             _clipOnly = UiTextFactory.CreateToggle(
                 text.ClipOnly,
                 "ee4v-face-expression__clip-only");
             _clipOnly.tooltip = text.ClipOnlyTooltip;
             _clipOnly.RegisterValueChangedCallback(_ => RefreshFilter());
-            sectionHeader.Add(_clipOnly);
-            editorPane.Add(sectionHeader);
+            _sectionHeader.Actions.Add(_clipOnly);
+            editorPane.Add(_sectionHeader);
             _search = new SearchField(new SearchFieldState(
                 placeholder: text.SearchPlaceholder,
                 searchTooltip: text.SearchTooltip,
@@ -157,8 +155,6 @@ namespace Ee4v.FaceExpression
             _blendShapeScrollView = _blendShapeList.Q<ScrollView>();
             if (_blendShapeScrollView != null)
             {
-                _blendShapeScrollView.verticalScroller.AddToClassList(
-                    "ee4v-face-expression__vertical-scroller");
                 _blendShapeScrollView.verticalScroller.valueChanged += _ =>
                 {
                     if (_animationDragPointerId >= 0)
@@ -172,10 +168,8 @@ namespace Ee4v.FaceExpression
             RegisterCallback<PointerUpEvent>(OnAnimationDragPointerUp);
             RegisterCallback<PointerCaptureOutEvent>(
                 OnAnimationDragPointerCaptureOut);
-            _empty = UiTextFactory.Create(
-                string.Empty,
-                UiClassNames.SecondaryText,
-                "ee4v-face-expression__empty");
+            _empty = new EmptyState();
+            _empty.AddToClassList("ee4v-face-expression__empty");
             editorPane.Add(_empty);
             content.Add(editorPane);
             Add(content);
@@ -212,7 +206,7 @@ namespace Ee4v.FaceExpression
             _channels = channels?.ToList() ?? new List<BlendShapeChannel>();
             _namingRule = namingRule;
             _hideHeaders = hideHeaders;
-            _sectionTitle.SetText(string.IsNullOrEmpty(sectionTitle)
+            _sectionHeader.SetTitle(string.IsNullOrEmpty(sectionTitle)
                 ? _defaultSectionTitle
                 : sectionTitle);
             RefreshFilter();
@@ -402,7 +396,9 @@ namespace Ee4v.FaceExpression
                 _blendShapeList.itemsSource = (IList)_visibleItems;
                 _blendShapeList.Rebuild();
                 _blendShapeList.style.display = DisplayStyle.None;
-                _empty.SetText(_clipRequired);
+                _empty.SetState(new EmptyStateState(
+                    string.Empty,
+                    _clipRequired));
                 _empty.style.display = DisplayStyle.Flex;
                 return;
             }
@@ -424,7 +420,9 @@ namespace Ee4v.FaceExpression
             _blendShapeList.Rebuild();
             var hasItems = _visibleItems.Count > 0;
             _blendShapeList.style.display = hasItems ? DisplayStyle.Flex : DisplayStyle.None;
-            _empty.SetText(_noBlendShapes);
+            _empty.SetState(new EmptyStateState(
+                string.Empty,
+                _noBlendShapes));
             _empty.style.display = hasItems ? DisplayStyle.None : DisplayStyle.Flex;
         }
 

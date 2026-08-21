@@ -77,13 +77,11 @@ namespace Ee4v.AssetManager.UI
         {
             AddToClassList(
                 "ee4v-asset-manager__item-detail-section");
-            var header = new VisualElement();
+            var header = new SectionHeader(title);
             header.AddToClassList(
                 "ee4v-asset-manager__section-header");
-            header.Add(UiTextFactory.Create(
-                title,
-                UiClassNames.SectionTitle,
-                "ee4v-asset-manager__section-title"));
+            header.TitleText.AddToClassList(
+                "ee4v-asset-manager__section-title");
             if (!string.IsNullOrWhiteSpace(note))
             {
                 var noteText = UiTextFactory.Create(
@@ -91,7 +89,7 @@ namespace Ee4v.AssetManager.UI
                     UiClassNames.SecondaryText,
                     "ee4v-asset-manager__section-note");
                 noteText.SetTextAlign(TextAnchor.MiddleRight);
-                header.Add(noteText);
+                header.Actions.Add(noteText);
             }
             Add(header);
         }
@@ -123,10 +121,8 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class AssetDetailSettingRow : VisualElement
+    internal sealed class AssetDetailSettingRow : LabeledContentRow
     {
-        private readonly VisualElement _value;
-
         internal AssetDetailSettingRow(
             string label,
             VisualElement value,
@@ -137,27 +133,24 @@ namespace Ee4v.AssetManager.UI
             {
                 value.AddToClassList(
                     "ee4v-asset-manager__setting-value-content");
-                _value.Add(value);
+                Content.Add(value);
             }
             if (action != null)
             {
                 action.AddToClassList(
                     "ee4v-asset-manager__setting-action");
-                _value.Add(action);
+                Content.Add(action);
             }
         }
 
         private AssetDetailSettingRow(string label)
+            : base(label)
         {
             AddToClassList("ee4v-asset-manager__setting-row");
-            Add(UiTextFactory.Create(
-                label,
-                UiClassNames.FormLabel,
-                "ee4v-asset-manager__setting-label"));
-            _value = new VisualElement();
-            _value.AddToClassList(
+            LabelText.AddToClassList(
+                "ee4v-asset-manager__setting-label");
+            Content.AddToClassList(
                 "ee4v-asset-manager__setting-value");
-            Add(_value);
         }
 
         internal static AssetDetailSettingRow Editable(
@@ -195,13 +188,13 @@ namespace Ee4v.AssetManager.UI
                     editor.FocusInput();
                 },
                 "ee4v-asset-manager__inline-action"));
-            row._value.Add(display);
-            row._value.Add(editorRow);
+            row.Content.Add(display);
+            row.Content.Add(editorRow);
             return row;
         }
     }
 
-    internal sealed class AssetDetailKeyValueRow : VisualElement
+    internal sealed class AssetDetailKeyValueRow : LabeledContentRow
     {
         internal AssetDetailKeyValueRow(string key, string value)
             : this(key, CreateValue(value))
@@ -211,16 +204,14 @@ namespace Ee4v.AssetManager.UI
         internal AssetDetailKeyValueRow(
             string key,
             VisualElement value)
+            : base(key)
         {
             AddToClassList("ee4v-asset-manager__key-value");
-            Add(UiTextFactory.Create(
-                key,
-                UiClassNames.FormLabel,
-                "ee4v-asset-manager__key"));
+            LabelText.AddToClassList("ee4v-asset-manager__key");
             if (value != null)
             {
                 value.AddToClassList("ee4v-asset-manager__value");
-                Add(value);
+                Content.Add(value);
             }
         }
 

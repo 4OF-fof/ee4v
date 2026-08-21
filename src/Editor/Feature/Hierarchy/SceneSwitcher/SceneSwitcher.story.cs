@@ -29,6 +29,26 @@ namespace Ee4v.SceneSwitcher
                         "Editor/UI/Components/Inputs/ui-button.uss",
                         "Editor/UI/Components/Inputs/SearchField/search-field.uss",
                         "Editor/Feature/Hierarchy/SceneSwitcher/UI/scene-switcher-window.uss"
+                    }),
+                new UiStory(
+                    "scene-switcher-row",
+                    "Domain/SceneSwitcher/Components",
+                    "SceneSwitcherRow",
+                    "Scene一件の状態とお気に入り操作を表示する行です。",
+                    "Scene名と開いている状態を表示し、起動、追加、お気に入り切り替えを通知します。",
+                    BuildRow,
+                    dependencies: new[]
+                    {
+                        "ContentRow",
+                        "UiTextFactory"
+                    },
+                    usageLocations: new[]
+                    {
+                        "Editor/Feature/Hierarchy/SceneSwitcher/UI/SceneSwitcherView.cs"
+                    },
+                    styleSheetPaths: new[]
+                    {
+                        "Editor/Feature/Hierarchy/SceneSwitcher/UI/scene-switcher-window.uss"
                     })
             };
         }
@@ -72,6 +92,37 @@ namespace Ee4v.SceneSwitcher
             surface.style.height = 300f;
             surface.Add(view);
             parent.Add(surface);
+        }
+
+        private static void BuildRow(VisualElement parent)
+        {
+            var row = new SceneSwitcherRow(
+                CreateText(),
+                UiBuiltinIconResolver.LoadTexture(UiBuiltinIcon.Scene),
+                FluentUiIcons.LoadTexture("star.png"));
+            row.SetState(new SceneSwitcherItem(
+                "Assets/Scenes/Main.unity",
+                true,
+                true));
+            row.style.width = 320f;
+            parent.Add(row);
+        }
+
+        private static SceneSwitcherViewText CreateText()
+        {
+            return new SceneSwitcherViewText
+            {
+                SearchPlaceholder = "Search scenes or folders",
+                SearchTooltip = "Filter scenes by name or folder",
+                ClearSearchTooltip = "Clear search",
+                Empty = "No Scene assets were found under Assets.",
+                NoMatches = "No scenes match this search.",
+                Open = "OPEN",
+                OpenTooltip = "This Scene is currently open.",
+                FavoriteTooltip = "Add to favorites",
+                UnfavoriteTooltip = "Remove from favorites",
+                CreateFormat = "Create \"{0}\""
+            };
         }
     }
 }

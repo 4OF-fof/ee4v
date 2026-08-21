@@ -7,7 +7,7 @@ namespace Ee4v.AssetManager.UI
 {
     internal static class AssetManagerSeparatedWindows
     {
-        [MenuItem("ee4v/Asset Manager")]
+        [MenuItem("ee4v/Window/Asset Manager/Open All")]
         private static void ShowAll()
         {
             AssetManagerNavigationWindow.ShowWindow();

@@ -16,7 +16,7 @@ namespace Ee4v.FaceExpression
                 "settings.section.editor",
                 "settings.blendShapeSeparators.label",
                 "settings.blendShapeSeparators.tooltip",
-                "-,*,=",
+                "-,─,=,*",
                 keywords: new[]
                 {
                     "avatar",

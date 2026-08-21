@@ -1,4 +1,3 @@
-using Ee4v.Core.Injector;
 using UnityEditor;
 using UnityEngine;
 
@@ -7,7 +6,7 @@ namespace Ee4v.AssetManager.UI
     [InitializeOnLoad]
     internal static class AssetManagerProjectThumbnailBootstrap
     {
-        private static AssetManagerProjectThumbnailPresenter _presenter;
+        private static AssetManagerProjectThumbnailImporter _importer;
 
         static AssetManagerProjectThumbnailBootstrap()
         {
@@ -16,39 +15,25 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            InjectorApi.Register(
-                new ItemInjectionRegistration(
-                    "asset-manager.project-thumbnails",
-                    InjectionChannel.ProjectItem,
-                    context => _presenter?.Draw(context),
-                    priority: -100,
-                    isEnabled: () => AssetManagerSettings
-                        .ShowProjectWindowIconsEnabled));
             AssetManagerWindowSession.ManagerInvalidated +=
-                RefreshPresenter;
-            AssetManagerSettings.ProjectWindowIconsChanged +=
-                RefreshPresenter;
-            RefreshPresenter();
+                RefreshImporter;
+            AssetManagerSettings.ProjectThumbnailImportChanged +=
+                RefreshImporter;
+            RefreshImporter();
         }
 
-        private static void RefreshPresenter()
+        private static void RefreshImporter()
         {
-            _presenter?.Dispose();
-            _presenter = null;
-            if (!AssetManagerSettings.ShowProjectWindowIconsEnabled)
+            _importer?.Dispose();
+            _importer = null;
+            if (!AssetManagerSettings
+                    .ApplyProjectThumbnailOnImportEnabled)
             {
-                RepaintProjectWindow();
                 return;
             }
 
-            _presenter = new AssetManagerProjectThumbnailPresenter(
+            _importer = new AssetManagerProjectThumbnailImporter(
                 AssetManagerWindowSession.GetManager());
-            RepaintProjectWindow();
-        }
-
-        private static void RepaintProjectWindow()
-        {
-            InjectorApi.Repaint(InjectionChannel.ProjectItem);
         }
     }
 }

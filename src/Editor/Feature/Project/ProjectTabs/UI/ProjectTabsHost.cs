@@ -69,9 +69,8 @@ namespace Ee4v.ProjectTabs
 
         private void AddTab()
         {
-            var location = GetCurrentOrSelectedLocation();
-            _selectedTabId = _session.Add(location);
-            Open(location);
+            _selectedTabId = _session.Add(null);
+            Open(_session.State.Find(_selectedTabId)?.CurrentLocation);
             Refresh();
         }
 
@@ -218,17 +217,6 @@ namespace Ee4v.ProjectTabs
             _selectedTabId = restoredTab.Id;
             Refresh();
             return true;
-        }
-
-        private ProjectTabLocation GetCurrentOrSelectedLocation()
-        {
-            if (_navigator.TryGetCurrentLocation(out var location))
-            {
-                return location;
-            }
-
-            return _session.State.Find(_selectedTabId)?.CurrentLocation ??
-                UnityProjectBrowserNavigator.CreateDefaultLocation();
         }
 
         private void Open(ProjectTabLocation location)

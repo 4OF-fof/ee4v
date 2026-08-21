@@ -31,14 +31,6 @@ namespace Ee4v.UI
             Result
         }
 
-        private enum WindowToastStoryPreset
-        {
-            Info,
-            Success,
-            Warning,
-            Error
-        }
-
         private static readonly List<StoryRegistration> RegisteredStories = new List<StoryRegistration>();
         private static readonly List<string> RegisteredStyleSheetPaths = new List<string>();
         private static bool _registrationsLoaded;
@@ -97,8 +89,6 @@ namespace Ee4v.UI
             shell.Add(_navigatorHost);
             shell.Add(_contentHost);
             root.Add(shell);
-            WindowToastApi.EnsureHost(this);
-
             BuildNavigator();
             ShowStory(_selectedStory);
         }

@@ -18,7 +18,7 @@ namespace Ee4v.FaceExpression
             new Dictionary<AnimationClip, ThumbnailEntry>();
         private IReadOnlyList<string> _previewRendererPaths = Array.Empty<string>();
 
-        [MenuItem("ee4v/Avatar/Gesture Assignments")]
+        [MenuItem("ee4v/Window/Gesture Assignment/Gesture Assignments")]
         private static void Open()
         {
             ShowFor(Selection.activeGameObject);
@@ -83,15 +83,9 @@ namespace Ee4v.FaceExpression
                 I18N.Get("assignmentWindow.title"));
             var root = rootVisualElement;
             root.Clear();
-            root.AddToClassList("ee4v-ui");
-            UiStyleUtility.AddPackageStyleSheet(
+            UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
-                "Editor/UI/Components/Inputs/ui-button.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
+                "Editor/UI/Components/Inputs/ui-button.uss",
                 "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss");
 
             _view = new GestureAssignmentView(

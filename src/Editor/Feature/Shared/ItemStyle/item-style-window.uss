@@ -22,7 +22,7 @@
     margin-right: var(--ee4v-space-md);
     padding: var(--ee4v-space-xs);
     border-radius: var(--ee4v-radius-sm);
-    background-color: var(--ee4v-color-field);
+    background-color: var(--ee4v-color-transparent);
     flex-shrink: 0;
     align-items: center;
     justify-content: center;

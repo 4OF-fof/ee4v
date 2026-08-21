@@ -100,11 +100,7 @@ namespace Ee4v.UI
                         new SearchableTreeItemData<SampleTreeNode>(
                             13,
                             new SampleTreeNode("StatusOverlay", "Status"),
-                            "StatusOverlay background task status"),
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            14,
-                            new SampleTreeNode("WindowToast", "Toast"),
-                            "WindowToast editor window overlay toast")
+                            "StatusOverlay background task status")
                     })
             };
         }

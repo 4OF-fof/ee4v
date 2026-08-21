@@ -41,7 +41,6 @@
     "selectAvatar": "Select an Avatar Prefab or a Prefab instance in the scene.",
     "invalidAvatar": "Select an avatar whose base FBX can be detected.",
     "autoClassified": "A rough classification was generated from the names. Review it, then save.",
-    "loaded": "The saved classification was loaded.",
     "unsaved": "There are unsaved changes.",
     "saved": "The FBX preset was saved."
   },

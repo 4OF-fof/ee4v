@@ -4,7 +4,7 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.HiddenObjects
 {
-    internal sealed class HiddenObjectsFooter : VisualElement
+    internal sealed class HiddenObjectsFooter : ActionBar
     {
         private const string RootClassName =
             "ee4v-hidden-objects-footer";
@@ -33,8 +33,7 @@ namespace Ee4v.HiddenObjects
                 SummaryClassName,
                 UiClassNames.SecondaryText);
 
-            var actions = new VisualElement();
-            actions.AddToClassList(ActionsClassName);
+            Actions.AddToClassList(ActionsClassName);
             _selectAllButton = UiTextFactory.CreateButton(
                 text.SelectAllText,
                 () => SelectAllRequested?.Invoke());
@@ -46,11 +45,10 @@ namespace Ee4v.HiddenObjects
                 () => RevealRequested?.Invoke());
             _revealButton.AddToClassList(RevealClassName);
 
-            actions.Add(_selectAllButton);
-            actions.Add(_clearSelectionButton);
-            actions.Add(_revealButton);
-            Add(_summary);
-            Add(actions);
+            Actions.Add(_selectAllButton);
+            Actions.Add(_clearSelectionButton);
+            Actions.Add(_revealButton);
+            Leading.Add(_summary);
         }
 
         public event Action SelectAllRequested;

@@ -98,17 +98,10 @@ namespace Ee4v.HiddenObjects
             root.Clear();
             root.AddToClassList(RootClassName);
             root.AddToClassList(WindowClassName);
-            UiStyleUtility.AddPackageStyleSheet(
+            UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
-                "Editor/UI/Components/Content/Icon/icon.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
-                "Editor/UI/Components/Inputs/SearchField/search-field.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
+                "Editor/UI/Components/Content/Icon/icon.uss",
+                "Editor/UI/Components/Inputs/SearchField/search-field.uss",
                 "Editor/Feature/Hierarchy/HierarchyStyle/HiddenObjects/UI/hidden-objects-window.uss");
 
             _view = new HiddenObjectsView(CreateViewText());

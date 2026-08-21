@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Ee4v.AssetManager.Contracts;
+using Ee4v.Core.Images;
 using Ee4v.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -57,7 +58,7 @@ namespace Ee4v.AssetManager.UI
                     }),
                 new UiStory(
                     "asset-manager-breadcrumb",
-                    "Domain/AssetManager",
+                    "Domain/AssetManager/Components",
                     "AssetManagerBreadcrumb",
                     "現在位置の末尾と、ホバー中のフルパスを確認するStoryです。",
                     "通常時は末尾のItem名だけを表示します。ホバーすると親階層を選択できるフルパスを表示します。",
@@ -115,7 +116,7 @@ namespace Ee4v.AssetManager.UI
                     }),
                 new UiStory(
                     "asset-manager-tag-field",
-                    "Domain/AssetManager",
+                    "Domain/AssetManager/Components",
                     "AssetTagField",
                     "ItemのTagをチップと検索ポップアップで編集するコンポーネントです。",
                     "選択済みTagの削除、既存Tagの検索と選択、新しいTagの作成を確認できます。",
@@ -123,7 +124,8 @@ namespace Ee4v.AssetManager.UI
                     dependencies: new[]
                     {
                         "UiTextFactory",
-                        "SearchField"
+                        "SearchField",
+                        "TagPill"
                     },
                     usageLocations: new[]
                     {
@@ -156,7 +158,7 @@ namespace Ee4v.AssetManager.UI
                     }),
                 new UiStory(
                     "asset-manager-controls",
-                    "Domain/AssetManager",
+                    "Domain/AssetManager/Components",
                     "AssetManagerControls",
                     "AssetManager専用のボタン、入力、通知を確認するStoryです。",
                     "masterの状態表現を参考に、現行画面向けに再設計した内部コンポーネントを一覧表示します。",
@@ -174,8 +176,185 @@ namespace Ee4v.AssetManager.UI
                     styleSheetPaths: new[]
                     {
                         "Editor/AssetManager/UI/asset-manager.uss"
+                    }),
+                new UiStory(
+                    "asset-manager-grid-card",
+                    "Domain/AssetManager/Components",
+                    "AssetItemGridCard",
+                    "Assetのサムネイル、名前、選択状態をまとめるCardです。",
+                    "サムネイルの有無、選択状態、名前を一枚のCardとして表示し、クリック操作を通知します。",
+                    BuildGridCard,
+                    dependencies: new[]
+                    {
+                        "PreviewSurface",
+                        "CachedImage",
+                        "UiTextFactory"
+                    },
+                    usageLocations: new[]
+                    {
+                        "Editor/AssetManager/UI/AssetItemGridView.cs"
+                    },
+                    styleSheetPaths: new[]
+                    {
+                        "Editor/AssetManager/UI/asset-manager.uss"
+                    }),
+                new UiStory(
+                    "asset-manager-filter-editor",
+                    "Domain/AssetManager/Components",
+                    "AssetFilterEditor",
+                    "Collection条件を入れ子で編集するパーツです。",
+                    "条件GroupをANDまたはORで組み合わせ、反転、追加、削除を編集できます。",
+                    BuildFilterEditor,
+                    dependencies: new[]
+                    {
+                        "ActionBar",
+                        "LabeledContentRow",
+                        "UiTextFactory"
+                    },
+                    usageLocations: new[]
+                    {
+                        "Editor/AssetManager/UI/AssetCollectionCreationPopup.cs"
+                    },
+                    styleSheetPaths: new[]
+                    {
+                        "Editor/AssetManager/UI/asset-manager.uss"
+                    }),
+                new UiStory(
+                    "asset-manager-thumbnail-stack",
+                    "Domain/AssetManager/Components",
+                    "AssetThumbnailStack",
+                    "最大3枚のAsset画像を重ねるPreviewパーツです。",
+                    "最大3件のサムネイルをずらして重ね、複数Itemの概要を視覚的に表します。",
+                    BuildThumbnailStack,
+                    dependencies: new[]
+                    {
+                        "PreviewSurface",
+                        "CachedImage"
+                    },
+                    usageLocations: new[]
+                    {
+                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                    },
+                    styleSheetPaths: new[]
+                    {
+                        "Editor/AssetManager/UI/asset-manager.uss"
+                    }),
+                new UiStory(
+                    "asset-manager-detail-components",
+                    "Domain/AssetManager/Components",
+                    "AssetDetail components",
+                    "Asset詳細を構成するHeader、Section、Fact、設定行です。",
+                    "HeaderでAsset概要を示し、Section、Fact、設定行で情報と操作を整理します。",
+                    BuildDetailComponents,
+                    dependencies: new[]
+                    {
+                        "SectionHeader",
+                        "LabeledContentRow",
+                        "StatusBadge",
+                        "UiTextFactory"
+                    },
+                    usageLocations: new[]
+                    {
+                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                    },
+                    styleSheetPaths: new[]
+                    {
+                        "Editor/AssetManager/UI/asset-manager.uss",
+                        "Editor/AssetManager/UI/asset-detail.uss"
                     })
             };
+        }
+
+        private static void BuildGridCard(VisualElement parent)
+        {
+            var cache = new CachedImageCache();
+            cache.SetSource(
+                "story-grid-card",
+                CreateSampleThumbnail());
+            var card = new AssetItemGridCard(cache);
+            card.SetWidth(180f);
+            card.SetState(
+                new AssetItemGridEntry(
+                    "story-grid-card",
+                    "Summer Costume"),
+                true);
+            card.RegisterCallback<DetachFromPanelEvent>(_ =>
+            {
+                card.Dispose();
+                cache.Dispose();
+            });
+            parent.Add(card);
+        }
+
+        private static void BuildFilterEditor(VisualElement parent)
+        {
+            var editor = new AssetFilterEditor(AssetFilterNode.And(
+                AssetFilterNode.Condition(
+                    AssetFilterConditionType.HasTag,
+                    "Avatar"),
+                AssetFilterNode.Not(AssetFilterNode.Condition(
+                    AssetFilterConditionType.HasFileExtension,
+                    "zip"))));
+            editor.style.width = 620f;
+            parent.Add(editor);
+        }
+
+        private static void BuildThumbnailStack(VisualElement parent)
+        {
+            var cache = new CachedImageCache();
+            var ids = new[] { "story-a", "story-b", "story-c" };
+            for (var index = 0; index < ids.Length; index++)
+            {
+                cache.SetSource(ids[index], CreateSampleThumbnail());
+            }
+
+            var stack = new AssetThumbnailStack(cache, ids);
+            stack.style.width = 240f;
+            stack.RegisterCallback<DetachFromPanelEvent>(_ =>
+            {
+                stack.Dispose();
+                cache.Dispose();
+            });
+            parent.Add(stack);
+        }
+
+        private static void BuildDetailComponents(VisualElement parent)
+        {
+            var surface = new VisualElement();
+            surface.AddToClassList("ee4v-asset-manager");
+            surface.style.width = 620f;
+
+            var header = new AssetDetailHeader(
+                "Summer Costume",
+                "Asset",
+                "Assets/Avatar/Summer Costume",
+                new StatusBadgeState("Imported", UiStatusTone.Passed));
+            header.AddAction(AssetManagerControls.CreateButton(
+                "Open",
+                () => { }));
+            surface.Add(header);
+
+            var overview = new AssetDetailSection(
+                "Overview",
+                "Updated just now");
+            var facts = new VisualElement();
+            facts.style.flexDirection = FlexDirection.Row;
+            facts.Add(new AssetDetailFact("Files", "12"));
+            facts.Add(new AssetDetailFact("Tags", "3"));
+            overview.Add(facts);
+            surface.Add(overview);
+
+            var settings = new AssetDetailSection("Settings");
+            var list = new AssetDetailSettingList();
+            list.Add(new AssetDetailSettingRow(
+                "Target",
+                UiTextFactory.Create("Avatar")));
+            list.Add(new AssetDetailKeyValueRow(
+                "Source",
+                "Eagle / Summer Costume"));
+            settings.Add(list);
+            surface.Add(settings);
+            parent.Add(surface);
         }
 
         private static void BuildFileTree(VisualElement parent)
@@ -423,12 +602,6 @@ namespace Ee4v.AssetManager.UI
                 AssetFilterConditionType.HasTag));
             surface.Add(AssetManagerControls.CreateNotice(
                 "These controls are local to AssetManager."));
-
-            var foldout = AssetManagerControls.CreateFoldout(
-                "Optional metadata",
-                true);
-            foldout.Add(AssetManagerControls.CreateTextField("Display name"));
-            surface.Add(foldout);
 
             parent.Add(surface);
         }

@@ -37,6 +37,7 @@
 .ee4v-ui-input-field--multiline .ee4v-ui-input-field__field-container {
     min-height: 72px;
     height: auto;
+    padding-right: var(--ee4v-space-none);
     padding-top: 5px;
     padding-bottom: 5px;
     overflow: hidden;
@@ -161,4 +162,8 @@
 .ee4v-ui-input-field--multiline .unity-scroll-view,
 .ee4v-ui-input-field--multiline .unity-scroll-view__content-container {
     background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-ui-input-field--multiline .unity-scroll-view__content-container {
+    padding-right: var(--ee4v-space-sm);
 }

@@ -86,24 +86,21 @@ namespace Ee4v.Core.Background
         void Cancel();
     }
 
-    public interface IBackgroundActivityTracker
+    public interface IBackgroundTaskManager
     {
         IDisposable Begin(string message);
 
-        BackgroundActivityState GetState();
-
-        void Clear();
-    }
-
-    public interface IBackgroundTaskManager : IBackgroundActivityTracker
-    {
         IBackgroundTaskHandle Run(
             string message,
             Func<IBackgroundTaskContext, Task> operation);
 
+        BackgroundActivityState GetState();
+
         IReadOnlyList<BackgroundTaskState> GetTasks();
 
         bool TryGetTask(long id, out BackgroundTaskState state);
+
+        void Clear();
 
         void ClearCompleted();
     }

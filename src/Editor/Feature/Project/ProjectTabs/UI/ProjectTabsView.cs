@@ -139,16 +139,10 @@ namespace Ee4v.ProjectTabs
                 showHistoryMenu = null)
         {
             _showHistoryMenu = showHistoryMenu;
-            AddToClassList("ee4v-ui");
             AddToClassList(RootClassName);
-            UiStyleUtility.AddPackageStyleSheet(
+            UiComposition.Prepare(
                 this,
-                "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                this,
-                "Editor/UI/Components/Inputs/ui-button.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                this,
+                "Editor/UI/Components/Inputs/ui-button.uss",
                 "Editor/Feature/Project/ProjectTabs/UI/project-tabs.uss");
 
             var navigation = new VisualElement();
@@ -368,22 +362,19 @@ namespace Ee4v.ProjectTabs
                 PinnedTabClassName,
                 state.IsPinned);
 
-            if (state.IsPinned)
-            {
-                var pinIcon = new Icon(
-                    FluentUiIcons.CreateState(
+            var content = new ContentRow(new ContentRowState(
+                state.Title,
+                icon: state.IsPinned
+                    ? FluentUiIcons.CreateState(
                         "pin.png",
                         UiSizeTokens.Size10,
-                        I18N.Get("toolbar.pin.tooltip")));
-                pinIcon.AddToClassList(PinIconClassName);
-                tab.Add(pinIcon);
-            }
-
-            var title = UiTextFactory.Create(state.Title);
-            title.AddToClassList(TabTitleClassName);
-            title.SetWhiteSpace(WhiteSpace.NoWrap);
-            title.pickingMode = PickingMode.Ignore;
-            tab.Add(title);
+                        I18N.Get("toolbar.pin.tooltip"))
+                    : null));
+            content.AddToClassList(
+                "ee4v-project-tabs__tab-content");
+            content.TitleText.AddToClassList(TabTitleClassName);
+            content.IconElement.AddToClassList(PinIconClassName);
+            tab.Add(content);
 
             var closeButton = UiTextFactory.CreateButton(
                 string.Empty,

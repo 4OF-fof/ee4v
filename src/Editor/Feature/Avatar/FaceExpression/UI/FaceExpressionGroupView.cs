@@ -39,13 +39,11 @@ namespace Ee4v.FaceExpression
             _bodySectionText = text.BodySection;
             AddToClassList("ee4v-face-expression-groups");
 
-            var header = new VisualElement();
+            var header = new SectionHeader(text.Groups);
             header.AddToClassList("ee4v-face-expression-groups__header");
-            header.Add(UiTextFactory.Create(
-                text.Groups,
-                UiClassNames.SectionTitle,
-                "ee4v-face-expression-groups__title"));
-            header.Add(UiTextFactory.CreateButton(
+            header.TitleText.AddToClassList(
+                "ee4v-face-expression-groups__title");
+            header.Actions.Add(UiTextFactory.CreateButton(
                 text.AddMesh,
                 () => AddMeshRequested?.Invoke(),
                 "ee4v-face-expression-groups__add-mesh"));
@@ -196,10 +194,9 @@ namespace Ee4v.FaceExpression
             internal string RendererPath { get; }
         }
 
-        private sealed class GroupRow : VisualElement
+        private sealed class GroupRow : ContentRow
         {
-            private readonly UiTextElement _name;
-            private readonly UiTextElement _count;
+            private readonly Badge _count;
             private readonly Action<string> _showMeshContextMenu;
             private string _rendererPath;
 
@@ -207,28 +204,27 @@ namespace Ee4v.FaceExpression
             {
                 _showMeshContextMenu = showMeshContextMenu;
                 AddToClassList("ee4v-face-expression-group-row");
-                _name = UiTextFactory.Create(
-                    string.Empty,
+                TitleText.AddToClassList(
                     "ee4v-face-expression-group-row__name");
-                _count = UiTextFactory.Create(
-                    string.Empty,
-                    UiClassNames.SecondaryText,
+                _count = new Badge();
+                _count.AddToClassList(
                     "ee4v-face-expression-group-row__count");
-                Add(_name);
-                Add(_count);
+                Trailing.Add(_count);
                 RegisterCallback<ContextClickEvent>(OnContextClick);
             }
 
             internal void SetOption(GroupOption option)
             {
                 _rendererPath = option?.RendererPath;
-                _name.SetText(option?.DisplayName ?? string.Empty);
+                base.SetState(new ContentRowState(
+                    option?.DisplayName ?? string.Empty));
                 EnableInClassList(
                     "ee4v-face-expression-group-row--section",
                     option?.IsSectionHeader == true);
-                _count.SetText(option?.IsSectionHeader == true
-                    ? string.Empty
-                    : (option?.Count ?? 0).ToString());
+                _count.SetState(new BadgeState(
+                    option?.IsSectionHeader == true
+                        ? string.Empty
+                        : (option?.Count ?? 0).ToString()));
             }
 
             private void OnContextClick(ContextClickEvent evt)

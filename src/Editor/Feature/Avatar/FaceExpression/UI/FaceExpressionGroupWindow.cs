@@ -10,7 +10,7 @@ namespace Ee4v.FaceExpression
     {
         private FaceExpressionGroupView _view;
 
-        [MenuItem("ee4v/Avatar/Face Expression Groups")]
+        [MenuItem("ee4v/Window/Face Expression/Face Expression Groups")]
         internal static void ShowWindow()
         {
             var window = GetWindow<FaceExpressionGroupWindow>();
@@ -55,15 +55,9 @@ namespace Ee4v.FaceExpression
             ConfigureWindow();
             var root = rootVisualElement;
             root.Clear();
-            root.AddToClassList("ee4v-ui");
-            UiStyleUtility.AddPackageStyleSheet(
+            UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
-                "Editor/UI/Components/Inputs/ui-button.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
+                "Editor/UI/Components/Inputs/ui-button.uss",
                 "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss");
             _view = new FaceExpressionGroupView(
                 new FaceExpressionGroupViewText

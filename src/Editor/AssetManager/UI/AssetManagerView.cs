@@ -390,7 +390,7 @@ namespace Ee4v.AssetManager.UI
 
         private VisualElement BuildToolbar()
         {
-            var toolbar = new VisualElement();
+            var toolbar = new ActionBar();
             toolbar.AddToClassList("ee4v-asset-manager__toolbar");
 
             var history = new VisualElement();
@@ -410,7 +410,7 @@ namespace Ee4v.AssetManager.UI
             history.Add(_backButton);
             history.Add(_forwardButton);
             history.Add(_breadcrumbs);
-            toolbar.Add(history);
+            toolbar.Leading.Add(history);
 
             _search = AssetManagerControls.CreateSearchField(
                 I18N.Get("toolbar.search.placeholder"),
@@ -431,20 +431,19 @@ namespace Ee4v.AssetManager.UI
             _gridSizeSlider.tooltip = I18N.Get("toolbar.gridColumns");
             _gridSizeSlider.ValueChanged += SetGridSize;
             _gridControls.Add(_gridSizeSlider);
-            toolbar.Add(_gridControls);
+            toolbar.Center.Add(_gridControls);
 
-            var actions = new VisualElement();
-            actions.AddToClassList("ee4v-asset-manager__toolbar-actions");
+            toolbar.Actions.AddToClassList(
+                "ee4v-asset-manager__toolbar-actions");
             _sortButton = AssetManagerControls.CreateSortButton(
                 ShowSortMenu,
                 "ee4v-asset-manager__sort");
             RefreshSortButton();
-            actions.Add(_sortButton);
-            actions.Add(_search);
-            actions.Add(AssetManagerControls.CreateReloadButton(
+            toolbar.Actions.Add(_sortButton);
+            toolbar.Actions.Add(_search);
+            toolbar.Actions.Add(AssetManagerControls.CreateReloadButton(
                 Reload,
                 "ee4v-asset-manager__reload"));
-            toolbar.Add(actions);
             return toolbar;
         }
 
@@ -604,30 +603,31 @@ namespace Ee4v.AssetManager.UI
             _navigation.Add(primary);
 
             var collections = _manager.GetCollections();
-            var section = new VisualElement();
+            var section = new SectionHeader(string.Format(
+                I18N.Get("navigation.collectionsWithCount"),
+                collections.Count));
             section.AddToClassList(
                 "ee4v-asset-manager__nav-section-header");
-            section.Add(UiTextFactory.Create(
-                string.Format(
-                    I18N.Get("navigation.collectionsWithCount"),
-                    collections.Count),
-                UiClassNames.SectionTitle,
-                "ee4v-asset-manager__nav-section"));
+            section.TitleText.AddToClassList(
+                "ee4v-asset-manager__nav-section");
             UiButton createCollectionButton = null;
             createCollectionButton = AssetManagerControls.CreateIconButton(
                 I18N.Get("navigation.newCollection"),
                 "add.png",
                 () => ShowNewCollection(createCollectionButton),
                 "ee4v-asset-manager__nav-section-action");
-            section.Add(createCollectionButton);
+            section.Actions.Add(createCollectionButton);
             _navigation.Add(section);
 
             for (var i = 0; i < collections.Count; i++)
             {
                 var collection = collections[i];
-                var button = AssetManagerControls.CreateIconTextButton(
-                    collection.Name,
-                    "folder.png",
+                var button = new NavigationItem(
+                    new NavigationItemState(
+                        collection.Name,
+                        icon: AssetManagerControls.LoadFluentIconState(
+                            "folder.png",
+                            UiSizeTokens.Size12)),
                     () => SelectCollection(collection.Id));
                 AssetManagerControls.SetNavigationSelected(
                     button,
@@ -642,17 +642,17 @@ namespace Ee4v.AssetManager.UI
                     ShowCollectionContextMenu(button, collection);
                     evt.StopPropagation();
                 });
-                button.Add(UiTextFactory.Create(
+                var count = new Badge(new BadgeState(
                     _manager.SearchCollection(collection.Id, limit: 1)
-                        .TotalCount.ToString(),
-                    UiClassNames.SecondaryText,
-                    "ee4v-asset-manager__nav-count"));
+                        .TotalCount.ToString()));
+                count.AddToClassList("ee4v-asset-manager__nav-count");
+                button.Trailing.Add(count);
                 _navigation.Add(button);
             }
 
         }
 
-        private UiButton CreateNavigationButton(
+        private NavigationItem CreateNavigationButton(
             string label,
             AssetManagerPage page,
             string iconFileName)
@@ -835,16 +835,19 @@ namespace Ee4v.AssetManager.UI
             for (var i = 0; i < tags.Length; i++)
             {
                 var tag = tags[i];
-                var button = AssetManagerControls.CreateIconTextButton(
-                    tag.Path,
-                    "tag.png",
-                    () => _viewState.SelectTag(tag.Path),
-                    "ee4v-asset-manager__tag-row");
-                button.Add(UiTextFactory.Create(
+                var button = new NavigationItem(
+                    new NavigationItemState(
+                        tag.Path,
+                        icon: AssetManagerControls.LoadFluentIconState(
+                            "tag.png",
+                            UiSizeTokens.Size12)),
+                    () => _viewState.SelectTag(tag.Path));
+                button.AddToClassList("ee4v-asset-manager__tag-row");
+                var count = new Badge(new BadgeState(
                     items.Count(item => MatchesTag(item, tag.Path))
-                        .ToString(),
-                    UiClassNames.SecondaryText,
-                    "ee4v-asset-manager__nav-count"));
+                        .ToString()));
+                count.AddToClassList("ee4v-asset-manager__nav-count");
+                button.Trailing.Add(count);
                 list.Add(button);
             }
             _content.Add(list);
@@ -1410,8 +1413,6 @@ namespace Ee4v.AssetManager.UI
                 ScrollerVisibility.Hidden;
             _itemDetailPane.AddToClassList(
                 "ee4v-asset-manager__item-detail-pane");
-            _itemDetailPane.AddToClassList(
-                UiClassNames.ThinVerticalScrollbar);
             _itemDetailPane.contentContainer.AddToClassList(
                 "ee4v-asset-manager__item-detail-content");
             layout.Add(_itemDetailPane);
@@ -3200,174 +3201,5 @@ namespace Ee4v.AssetManager.UI
                 .ToArray();
         }
 
-    }
-
-    internal sealed class AssetThumbnailStack : VisualElement, IDisposable
-    {
-        private const int MaximumThumbnailCount = 3;
-        private const float MinimumSize = 48f;
-        private const float MaximumSize = 288f;
-        private const float MultiImageInsetMultiplier = 2f;
-        private static readonly float[] SlotLeftOffsetMultipliers =
-            { -0.85f, 0f, 0.85f };
-        private static readonly float[] SlotTopOffsetMultipliers =
-            { -0.55f, 0f, 0.85f };
-        private static readonly float[] SlotRotations =
-            { -4.5f, 0.8f, 4.2f };
-        private readonly List<ThumbnailSlot> _slots =
-            new List<ThumbnailSlot>();
-
-        public AssetThumbnailStack(
-            CachedImageCache imageCache,
-            IReadOnlyList<string> itemIds)
-        {
-            if (imageCache == null)
-            {
-                throw new ArgumentNullException(nameof(imageCache));
-            }
-
-            AddToClassList("ee4v-asset-manager__thumbnail-stack");
-            var safeIds = itemIds ?? Array.Empty<string>();
-            var firstIndex = Math.Max(
-                0,
-                safeIds.Count - MaximumThumbnailCount);
-            for (var index = firstIndex; index < safeIds.Count; index++)
-            {
-                var slot = new ThumbnailSlot(
-                    imageCache,
-                    safeIds[index]);
-                _slots.Add(slot);
-                Add(slot.Root);
-            }
-
-            RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-        }
-
-        public void Refresh(string itemId)
-        {
-            for (var index = 0; index < _slots.Count; index++)
-            {
-                if (string.Equals(
-                        _slots[index].ItemId,
-                        itemId,
-                        StringComparison.Ordinal))
-                {
-                    _slots[index].Refresh();
-                }
-            }
-        }
-
-        public void Dispose()
-        {
-            UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-            for (var index = 0; index < _slots.Count; index++)
-            {
-                _slots[index].Dispose();
-            }
-            _slots.Clear();
-        }
-
-        private void OnGeometryChanged(GeometryChangedEvent evt)
-        {
-            var size = Mathf.Clamp(
-                evt.newRect.width,
-                MinimumSize,
-                MaximumSize);
-            if (float.IsNaN(size) || size <= 0f)
-            {
-                return;
-            }
-
-            style.height = size;
-            style.minHeight = size;
-            style.maxHeight = size;
-            if (_slots.Count == 1)
-            {
-                ApplySlotLayout(0, size, 0f, 0f, 0f);
-                return;
-            }
-
-            var offset = Mathf.Clamp(size * 0.065f, 6f, 18f);
-            var imageSize = Mathf.Max(
-                MinimumSize,
-                size - (offset * MultiImageInsetMultiplier));
-            var centerOffset = (size - imageSize) * 0.5f;
-            for (var index = 0; index < _slots.Count; index++)
-            {
-                ApplySlotLayout(
-                    index,
-                    imageSize,
-                    centerOffset +
-                    (offset * SlotLeftOffsetMultipliers[index]),
-                    centerOffset +
-                    (offset * SlotTopOffsetMultipliers[index]),
-                    SlotRotations[index]);
-            }
-        }
-
-        private void ApplySlotLayout(
-            int index,
-            float size,
-            float left,
-            float top,
-            float rotation)
-        {
-            var slot = _slots[index].Root;
-            slot.style.width = size;
-            slot.style.height = size;
-            slot.style.left = left;
-            slot.style.top = top;
-            slot.style.rotate = new Rotate(new Angle(
-                rotation,
-                AngleUnit.Degree));
-        }
-
-        private sealed class ThumbnailSlot : IDisposable
-        {
-            private readonly CachedImage _image;
-            private readonly VisualElement _placeholder;
-
-            public ThumbnailSlot(
-                CachedImageCache imageCache,
-                string itemId)
-            {
-                ItemId = itemId ?? string.Empty;
-                Root = new VisualElement();
-                Root.AddToClassList(
-                    "ee4v-asset-manager__thumbnail-stack-image");
-                _placeholder = new VisualElement();
-                _placeholder.AddToClassList(
-                    "ee4v-asset-manager__thumbnail-placeholder");
-                _image = new CachedImage(imageCache)
-                {
-                    scaleMode = ScaleMode.ScaleAndCrop
-                };
-                _image.AddToClassList(
-                    "ee4v-asset-manager__thumbnail-image");
-                Root.Add(_placeholder);
-                Root.Add(_image);
-                Refresh();
-            }
-
-            public string ItemId { get; }
-            public VisualElement Root { get; }
-
-            public void Refresh()
-            {
-                _image.SetSource(ItemId);
-                var hasImage = _image.DisplayedTexture != null;
-                _image.style.display = hasImage
-                    ? DisplayStyle.Flex
-                    : DisplayStyle.None;
-                _placeholder.style.display = hasImage
-                    ? DisplayStyle.None
-                    : DisplayStyle.Flex;
-            }
-
-            public void Dispose()
-            {
-                _image.Dispose();
-            }
-        }
     }
 }

@@ -45,14 +45,6 @@ namespace Ee4v.SceneSwitcher
             }
         }
 
-        internal static string GetCreateFolder()
-        {
-            EnsureInitialized();
-            return ProjectAssetSettings.GetAssetFolder(
-                "Scene",
-                _settings);
-        }
-
         internal static void EnsureInitialized()
         {
             var settings = CoreSettings.Current;

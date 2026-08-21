@@ -44,8 +44,7 @@ namespace Ee4v.SceneSwitcher
             SceneSwitcherWindow.ShowAt(
                 new Rect(screenPosition, hitRect.size),
                 context.HierarchyScene.handle,
-                SceneSwitcherBootstrap.Controller,
-                SceneSwitcherBootstrap.GetCreateFolder);
+                SceneSwitcherBootstrap.Controller);
             current.Use();
         }
 

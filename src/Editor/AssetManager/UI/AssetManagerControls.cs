@@ -87,26 +87,25 @@ namespace Ee4v.AssetManager.UI
             return button;
         }
 
-        public static UiButton CreateNavigationButton(
+        public static NavigationItem CreateNavigationButton(
             string text,
             string iconFileName,
             Action onClick = null,
             params string[] classNames)
         {
-            var button = new UiButton(
-                text,
-                onClick,
-                icon: LoadFluentIconState(
-                    iconFileName,
-                    UiSizeTokens.Size12),
-                labelTypographyClassName:
-                    UiClassNames.NavigationItemLabel);
+            var button = new NavigationItem(
+                new NavigationItemState(
+                    text,
+                    icon: LoadFluentIconState(
+                        iconFileName,
+                        UiSizeTokens.Size12)),
+                onClick);
             AddClasses(button, classNames);
             return button;
         }
 
         public static void SetNavigationSelected(
-            UiButton button,
+            NavigationItem button,
             bool selected)
         {
             if (button == null)
@@ -117,10 +116,7 @@ namespace Ee4v.AssetManager.UI
             button.EnableInClassList(
                 "ee4v-asset-manager__nav-button--selected",
                 selected);
-            button.SetLabelColor(
-                selected
-                    ? UiColorTokens.TextOnState
-                    : UiColorTokens.TextPrimary);
+            button.SetSelected(selected);
         }
 
         public static Icon CreateIcon(
@@ -255,14 +251,6 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        public static AssetManagerFoldout CreateFoldout(
-            string text,
-            bool value = false,
-            params string[] classNames)
-        {
-            return new AssetManagerFoldout(text, value, classNames);
-        }
-
         public static AssetManagerNotice CreateNotice(
             string text,
             params string[] classNames)
@@ -290,7 +278,7 @@ namespace Ee4v.AssetManager.UI
 
     }
 
-    internal sealed class AssetManagerTextField : VisualElement
+    internal sealed class AssetManagerTextField : LabeledContentRow
     {
         private readonly InputField _field;
         private bool _multiline;
@@ -298,21 +286,17 @@ namespace Ee4v.AssetManager.UI
         public AssetManagerTextField(
             string label,
             params string[] classNames)
+            : base(label)
         {
             AddToClassList("ee4v-asset-manager-control-field");
             AssetManagerControls.AddClasses(this, classNames);
-            if (!string.IsNullOrWhiteSpace(label))
-            {
-                hierarchy.Add(UiTextFactory.Create(
-                    label,
-                    UiClassNames.FormLabel,
-                    "ee4v-asset-manager-control-field__label"));
-            }
+            LabelText.AddToClassList(
+                "ee4v-asset-manager-control-field__label");
 
             _field = new InputField();
             _field.AddToClassList(
                 "ee4v-asset-manager-control-field__input");
-            hierarchy.Add(_field);
+            Content.Add(_field);
         }
 
         public string value
@@ -423,7 +407,7 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class AssetManagerEnumField : VisualElement
+    internal sealed class AssetManagerEnumField : LabeledContentRow
     {
         private readonly BaseField<Enum> _field;
 
@@ -432,17 +416,13 @@ namespace Ee4v.AssetManager.UI
             Enum value,
             Func<Enum, string> formatter,
             params string[] classNames)
+            : base(label)
         {
             AddToClassList("ee4v-asset-manager-control-field");
             AddToClassList("ee4v-asset-manager-control-field--enum");
             AssetManagerControls.AddClasses(this, classNames);
-            if (!string.IsNullOrWhiteSpace(label))
-            {
-                hierarchy.Add(UiTextFactory.Create(
-                    label,
-                    UiClassNames.FormLabel,
-                    "ee4v-asset-manager-control-field__label"));
-            }
+            LabelText.AddToClassList(
+                "ee4v-asset-manager-control-field__label");
 
             var fieldContainer = new VisualElement();
             fieldContainer.AddToClassList(
@@ -484,7 +464,7 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-asset-manager-control-field--focused",
                 false));
             fieldContainer.Add(_field);
-            hierarchy.Add(fieldContainer);
+            Content.Add(fieldContainer);
         }
 
         public Enum value
@@ -498,80 +478,24 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class AssetManagerFoldout : VisualElement
-    {
-        private readonly UiButton _header;
-        private readonly VisualElement _body;
-        private readonly string _text;
-        private bool _value;
-
-        public AssetManagerFoldout(
-            string text,
-            bool value,
-            params string[] classNames)
-        {
-            _text = text ?? string.Empty;
-            AddToClassList("ee4v-asset-manager-control-foldout");
-            AssetManagerControls.AddClasses(this, classNames);
-
-            _header = AssetManagerControls.CreateButton(
-                string.Empty,
-                Toggle,
-                "ee4v-asset-manager-control-foldout__header");
-            _body = new VisualElement();
-            _body.AddToClassList(
-                "ee4v-asset-manager-control-foldout__body");
-            hierarchy.Add(_header);
-            hierarchy.Add(_body);
-            SetExpanded(value);
-        }
-
-        public override VisualElement contentContainer => _body;
-
-        private void Toggle()
-        {
-            SetExpanded(!_value);
-        }
-
-        private void SetExpanded(bool expanded)
-        {
-            _value = expanded;
-            _header.SetLabel(_text);
-            _header.SetIcon(
-                AssetManagerControls.LoadFluentIconState(
-                    expanded
-                        ? "chevron_down.png"
-                        : "chevron_right.png",
-                    UiSizeTokens.Size12));
-            _body.style.display = expanded
-                ? DisplayStyle.Flex
-                : DisplayStyle.None;
-            EnableInClassList(
-                "ee4v-asset-manager-control-foldout--expanded",
-                expanded);
-        }
-    }
-
-    internal sealed class AssetManagerNotice : VisualElement
+    internal sealed class AssetManagerNotice : InlineMessage
     {
         public AssetManagerNotice(
             string text,
             params string[] classNames)
+            : base(new InlineMessageState(
+                text,
+                UiStatusTone.Idle,
+                AssetManagerControls.LoadFluentIconState(
+                    "info.png",
+                    UiSizeTokens.Size18)))
         {
             AddToClassList("ee4v-asset-manager-control-notice");
+            IconElement.AddToClassList(
+                "ee4v-asset-manager-control-notice__icon");
+            TextElement.AddToClassList(
+                "ee4v-asset-manager-control-notice__text");
             AssetManagerControls.AddClasses(this, classNames);
-            var icon = AssetManagerControls.CreateIcon(
-                "info.png",
-                UiSizeTokens.Size18);
-            if (icon != null)
-            {
-                icon.AddToClassList(
-                    "ee4v-asset-manager-control-notice__icon");
-                Add(icon);
-            }
-            Add(UiTextFactory.Create(
-                text,
-                "ee4v-asset-manager-control-notice__text"));
         }
     }
 

@@ -44,110 +44,6 @@ namespace Ee4v.HiddenObjects
         public IconState Icon { get; }
     }
 
-    internal sealed class HiddenObjectTreeRow : VisualElement
-    {
-        private const string RootClassName =
-            "ee4v-hidden-object-tree-row";
-        private const string SceneClassName =
-            "ee4v-hidden-object-tree-row--scene";
-        private const string AncestorClassName =
-            "ee4v-hidden-object-tree-row--ancestor";
-        private const string SelectionClassName =
-            "ee4v-hidden-object-tree-row__selection";
-        private const string IconClassName =
-            "ee4v-hidden-object-tree-row__icon";
-        private const string NameClassName =
-            "ee4v-hidden-object-tree-row__name";
-        private const string MetaClassName =
-            "ee4v-hidden-object-tree-row__meta";
-
-        private readonly Toggle _selection;
-        private readonly Icon _icon;
-        private readonly UiTextElement _name;
-        private readonly UiTextElement _meta;
-        private HiddenObjectTreeItemViewState _state;
-
-        public HiddenObjectTreeRow()
-        {
-            AddToClassList(RootClassName);
-
-            _selection = UiTextFactory.CreateToggle();
-            _selection.AddToClassList(SelectionClassName);
-            _selection.RegisterValueChangedCallback(evt =>
-            {
-                if (_state != null &&
-                    !_state.IsScene &&
-                    _state.IsHidden)
-                {
-                    SelectionChanged?.Invoke(
-                        _state.InstanceId,
-                        evt.newValue);
-                }
-            });
-
-            _icon = new Icon(IconState.FromBuiltinIcon(
-                UiBuiltinIcon.GameObject,
-                UiSizeTokens.Size16));
-            _icon.AddToClassList(IconClassName);
-            _name = UiTextFactory.Create(string.Empty, NameClassName);
-            _meta = UiTextFactory.Create(
-                string.Empty,
-                MetaClassName,
-                UiClassNames.SecondaryText);
-
-            Add(_selection);
-            Add(_icon);
-            Add(_name);
-            Add(_meta);
-
-            RegisterCallback<ClickEvent>(OnClicked);
-        }
-
-        public event Action<int, bool> SelectionChanged;
-
-        public event Action<int> FocusRequested;
-
-        public void SetState(HiddenObjectTreeItemViewState state)
-        {
-            _state = state;
-            if (_state == null)
-            {
-                return;
-            }
-
-            EnableInClassList(SceneClassName, _state.IsScene);
-            EnableInClassList(
-                AncestorClassName,
-                !_state.IsScene && !_state.IsHidden);
-            _selection.style.display =
-                !_state.IsScene && _state.IsHidden
-                    ? DisplayStyle.Flex
-                    : DisplayStyle.None;
-            _selection.SetValueWithoutNotify(_state.IsSelected);
-            _icon.SetState(_state.Icon ?? IconState.FromBuiltinIcon(
-                UiBuiltinIcon.GameObject,
-                UiSizeTokens.Size16));
-            _name.SetText(_state.Name);
-            _meta.SetText(_state.Meta);
-            _meta.style.display = string.IsNullOrWhiteSpace(_state.Meta)
-                ? DisplayStyle.None
-                : DisplayStyle.Flex;
-        }
-
-        private void OnClicked(ClickEvent evt)
-        {
-            if (_state == null ||
-                _state.IsScene ||
-                evt.target is VisualElement target &&
-                _selection.Contains(target))
-            {
-                return;
-            }
-
-            FocusRequested?.Invoke(_state.InstanceId);
-        }
-    }
-
     internal sealed class HiddenObjectTreeView : VisualElement
     {
         private const string RootClassName =
@@ -156,17 +52,8 @@ namespace Ee4v.HiddenObjects
             "ee4v-hidden-object-tree__view";
         private const string EmptyClassName =
             "ee4v-hidden-object-tree__empty";
-        private const string EmptyIconClassName =
-            "ee4v-hidden-object-tree__empty-icon";
-        private const string EmptyTitleClassName =
-            "ee4v-hidden-object-tree__empty-title";
-        private const string EmptyMessageClassName =
-            "ee4v-hidden-object-tree__empty-message";
-
         private readonly TreeView _treeView;
-        private readonly VisualElement _empty;
-        private readonly UiTextElement _emptyTitle;
-        private readonly UiTextElement _emptyMessage;
+        private readonly EmptyState _empty;
         private readonly Dictionary<long, int> _itemIdByKey =
             new Dictionary<long, int>();
         private readonly Dictionary<long, int> _branchIdByKey =
@@ -191,24 +78,13 @@ namespace Ee4v.HiddenObjects
             };
             _treeView.AddToClassList(TreeClassName);
 
-            _empty = new VisualElement();
+            _empty = new EmptyState(new EmptyStateState(
+                string.Empty,
+                string.Empty,
+                FluentUiIcons.CreateState(
+                    "eye_off.png",
+                    UiSizeTokens.Size24)));
             _empty.AddToClassList(EmptyClassName);
-            var emptyIcon = new Icon(FluentUiIcons.CreateState(
-                "eye_off.png",
-                UiSizeTokens.Size24));
-            emptyIcon.AddToClassList(EmptyIconClassName);
-            _emptyTitle = UiTextFactory.Create(
-                string.Empty,
-                EmptyTitleClassName,
-                UiClassNames.SectionTitle);
-            _emptyMessage = UiTextFactory.Create(
-                string.Empty,
-                EmptyMessageClassName,
-                UiClassNames.SecondaryText);
-            _emptyMessage.SetWhiteSpace(WhiteSpace.Normal);
-            _empty.Add(emptyIcon);
-            _empty.Add(_emptyTitle);
-            _empty.Add(_emptyMessage);
 
             Add(_treeView);
             Add(_empty);
@@ -242,8 +118,12 @@ namespace Ee4v.HiddenObjects
                 hasItems ? DisplayStyle.Flex : DisplayStyle.None;
             _empty.style.display =
                 hasItems ? DisplayStyle.None : DisplayStyle.Flex;
-            _emptyTitle.SetText(state.EmptyTitle);
-            _emptyMessage.SetText(state.EmptyMessage);
+            _empty.SetState(new EmptyStateState(
+                state.EmptyTitle,
+                state.EmptyMessage,
+                FluentUiIcons.CreateState(
+                    "eye_off.png",
+                    UiSizeTokens.Size24)));
 
             if (hasItems)
             {

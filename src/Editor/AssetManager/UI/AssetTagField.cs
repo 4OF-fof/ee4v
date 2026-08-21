@@ -208,22 +208,15 @@ namespace Ee4v.AssetManager.UI
             for (var index = 0; index < _values.Count; index++)
             {
                 var tag = _values[index];
-                var chip = new VisualElement();
+                var chip = new TagPill(
+                    new TagPillState(
+                        tag,
+                        string.Format(
+                            I18N.Get("detail.item.tagsRemove"),
+                            tag)),
+                    () => Remove(tag));
                 chip.AddToClassList(
-                    "ee4v-asset-manager-tag-field__chip");
-                chip.Add(UiTextFactory.Create(
-                    tag,
-                    UiClassNames.ButtonLabel,
-                    "ee4v-asset-manager-tag-field__chip-label"));
-
-                var remove = AssetManagerControls.CreateIconButton(
-                    string.Format(
-                        I18N.Get("detail.item.tagsRemove"),
-                        tag),
-                    "dismiss.png",
-                    () => Remove(tag),
-                    "ee4v-asset-manager-tag-field__remove");
-                chip.Add(remove);
+                    "ee4v-asset-manager-tag-field__tag");
                 _tags.Add(chip);
             }
         }
@@ -372,7 +365,7 @@ namespace Ee4v.AssetManager.UI
             if (normalizedQuery.Length > 0 &&
                 !_selection.ContainsOption(normalizedQuery))
             {
-                _tagContainer.Add(CreateOptionButton(
+                _tagContainer.Add(CreateOptionTag(
                     string.Format(
                         I18N.Get("detail.item.tagsCreate"),
                         normalizedQuery),
@@ -383,7 +376,7 @@ namespace Ee4v.AssetManager.UI
             for (var index = 0; index < options.Count; index++)
             {
                 var option = options[index];
-                _tagContainer.Add(CreateOptionButton(
+                _tagContainer.Add(CreateOptionTag(
                     string.Format(
                         I18N.Get("detail.item.tagsWithCount"),
                         option.Path,
@@ -395,42 +388,45 @@ namespace Ee4v.AssetManager.UI
 
             if (_tagContainer.childCount == 0)
             {
-                _tagContainer.Add(UiTextFactory.Create(
+                var empty = new EmptyState(new EmptyStateState(
+                    string.Empty,
                     string.IsNullOrWhiteSpace(query)
                         ? I18N.Get("detail.item.tagsEmpty")
-                        : I18N.Get("detail.item.tagsNoMatch"),
-                    UiClassNames.SecondaryText,
-                    "ee4v-asset-manager-tag-picker__empty"));
+                        : I18N.Get("detail.item.tagsNoMatch")));
+                empty.AddToClassList(
+                    "ee4v-asset-manager-tag-picker__empty");
+                _tagContainer.Add(empty);
             }
         }
 
-        private static UiButton CreateOptionButton(
+        private static TagPill CreateOptionTag(
             string text,
             Action clicked,
             bool create,
             string tooltip = null)
         {
-            var button = create
-                ? AssetManagerControls.CreateIconTextButton(
+            var tag = new TagPill(
+                new TagPillState(
                     text,
-                    "add.png",
-                    clicked,
-                    "ee4v-asset-manager-tag-picker__tag")
-                : AssetManagerControls.CreateButton(
-                    text,
-                    clicked,
-                    "ee4v-asset-manager-tag-picker__tag");
+                    icon: create
+                        ? FluentUiIcons.CreateState(
+                            "add.png",
+                            UiSizeTokens.Size12)
+                        : null),
+                onClick: clicked);
+            tag.AddToClassList(
+                "ee4v-asset-manager-tag-picker__tag");
             if (create)
             {
-                button.AddToClassList(
+                tag.AddToClassList(
                     "ee4v-asset-manager-tag-picker__tag--create");
             }
             if (!string.IsNullOrEmpty(tooltip))
             {
-                button.tooltip = tooltip;
+                tag.tooltip = tooltip;
             }
 
-            return button;
+            return tag;
         }
 
         private void Add(string value)

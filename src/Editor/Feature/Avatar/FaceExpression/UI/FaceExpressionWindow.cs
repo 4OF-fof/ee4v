@@ -17,7 +17,7 @@ namespace Ee4v.FaceExpression
         private AnimationClip _clip;
         private IReadOnlyList<BlendShapeChannel> _channels = Array.Empty<BlendShapeChannel>();
 
-        [MenuItem("ee4v/Avatar/Face Expression Editor")]
+        [MenuItem("ee4v/Window/Face Expression/Face Expression Editor")]
         private static void Open()
         {
             ShowWindow();
@@ -87,17 +87,11 @@ namespace Ee4v.FaceExpression
             titleContent = UiTextFactory.CreateGuiContent(I18N.Get("window.title"));
             var root = rootVisualElement;
             root.Clear();
-            root.AddToClassList("ee4v-ui");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(
+            UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/Content/Icon/icon.uss");
-            UiStyleUtility.AddPackageStyleSheet(root, "Editor/UI/Components/Inputs/ui-button.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
-                "Editor/UI/Components/Inputs/SearchField/search-field.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
+                "Editor/UI/Components/Content/Icon/icon.uss",
+                "Editor/UI/Components/Inputs/ui-button.uss",
+                "Editor/UI/Components/Inputs/SearchField/search-field.uss",
                 "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss");
 
             _view = new FaceExpressionView(CreateText(), rect => _preview?.Draw(rect));

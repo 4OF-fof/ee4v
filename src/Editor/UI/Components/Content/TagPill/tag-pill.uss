@@ -1,0 +1,58 @@
+.ee4v-ui-tag-pill {
+    min-width: 0;
+    min-height: var(--ee4v-size-24);
+    flex-direction: row;
+    align-items: center;
+    padding-left: var(--ee4v-space-md);
+    padding-right: var(--ee4v-space-xxs);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-subtle);
+    border-radius: var(--ee4v-radius-pill);
+    background-color: var(--ee4v-color-tag-pill);
+}
+
+.ee4v-ui-tag-pill--without-remove {
+    padding-right: var(--ee4v-space-md);
+}
+
+.ee4v-ui-tag-pill--clickable:hover {
+    background-color: var(--ee4v-color-tag-pill-hover);
+}
+
+.ee4v-ui-tag-pill--clickable:active {
+    background-color: var(--ee4v-color-surface-pressed);
+}
+
+.ee4v-ui-tag-pill__icon {
+    flex-shrink: 0;
+    margin-right: var(--ee4v-space-xs);
+}
+
+.ee4v-ui-tag-pill__text {
+    min-width: 0;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ee4v-ui-tag-pill__remove.ee4v-ui-button {
+    width: var(--ee4v-size-20);
+    min-width: var(--ee4v-size-20);
+    height: var(--ee4v-size-20);
+    min-height: var(--ee4v-size-20);
+    margin-left: var(--ee4v-space-xxs);
+    padding: var(--ee4v-space-none);
+    border-color: var(--ee4v-color-transparent);
+    border-radius: var(--ee4v-radius-pill);
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-ui-tag-pill__remove.ee4v-ui-button:hover {
+    border-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-color-surface-hover-strong);
+}
+
+.ee4v-ui-tag-pill__remove.ee4v-ui-button:active {
+    background-color: var(--ee4v-color-surface-pressed);
+}

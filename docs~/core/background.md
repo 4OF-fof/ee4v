@@ -8,8 +8,7 @@ Background は処理の開始、進捗、成功、失敗、キャンセルを一
 
 | 型 | 役割 |
 |---|---|
-| `IBackgroundActivityTracker` | 同期処理の追跡と現在状態を定義する |
-| `IBackgroundTaskManager` | 非同期処理の実行と履歴管理を追加する |
+| `IBackgroundTaskManager` | 同期・非同期処理の追跡、現在状態、履歴を管理する |
 | `IBackgroundTaskContext` | 処理へキャンセル token と進捗通知を渡す |
 | `IBackgroundTaskHandle` | 実行中または完了済みタスクの操作窓口 |
 | `BackgroundTaskState` | 一つのタスクの snapshot |
@@ -18,24 +17,19 @@ Background は処理の開始、進捗、成功、失敗、キャンセルを一
 | `BackgroundActivityTracker` | Unity 非依存の標準実装 |
 | `BackgroundStatusOverlay` | EditorWindow に共有状態を表示する |
 
-## `IBackgroundActivityTracker`
-
-| メンバー | 戻り値・動作 |
-|---|---|
-| `Begin(message)` | 同期処理の開始を登録し、終了用 `IDisposable` を返す |
-| `GetState()` | 実行中件数と最新メッセージを返す |
-| `Clear()` | 実行中処理をキャンセル要求状態にして全履歴を削除する |
-
-`Begin` が返す handle を破棄すると `Succeeded` になります。処理中の例外を自動判定しないため、失敗とキャンセルを記録する処理には `Run` を使います。
-
 ## `IBackgroundTaskManager`
 
 | メンバー | 戻り値・動作 |
 |---|---|
+| `Begin(message)` | 同期処理の開始を登録し、終了用 `IDisposable` を返す |
 | `Run(message, operation)` | タスクを登録して処理を開始し、`IBackgroundTaskHandle` を返す |
+| `GetState()` | 実行中件数と最新メッセージを返す |
 | `GetTasks()` | 保持中の全タスクを ID 順で返す |
 | `TryGetTask(id, out state)` | 指定 ID の snapshot があれば返す |
+| `Clear()` | 実行中処理をキャンセル要求状態にして全履歴を削除する |
 | `ClearCompleted()` | active ではない履歴を削除する |
+
+`Begin` が返す handle を破棄すると `Succeeded` になります。処理中の例外を自動判定しないため、失敗とキャンセルを記録する処理には `Run` を使います。
 
 `Run` は `operation` を別スレッドへ移しません。呼び出し元の実行 context で処理を開始します。
 

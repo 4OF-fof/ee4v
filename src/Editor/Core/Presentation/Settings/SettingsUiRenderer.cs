@@ -40,21 +40,15 @@ namespace Ee4v.Core.Settings
             }
 
             root.Clear();
-            root.AddToClassList("ee4v-ui");
             root.AddToClassList(RootClassName);
             root.style.flexGrow = 1f;
             root.style.minHeight = 0f;
-            UiStyleUtility.AddPackageStyleSheet(
+            UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
-                "Editor/UI/Components/Inputs/InputField/input-field.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
-                "Editor/UI/Components/Inputs/CommaSeparatedListField/comma-separated-list-field.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
+                "Editor/UI/Components/Inputs/ui-button.uss",
+                "Editor/UI/Components/Inputs/InputField/input-field.uss",
+                "Editor/UI/Components/Inputs/CommaSeparatedListField/" +
+                "comma-separated-list-field.uss",
                 "Editor/Core/Presentation/Settings/settings-ui.uss");
 
             var scrollView = new ScrollView(ScrollViewMode.Vertical);
@@ -85,14 +79,13 @@ namespace Ee4v.Core.Settings
                 }
 
                 var firstDefinition = visibleDefinitions[0];
-                var section = UiTextFactory.CreateFoldout(
+                var section = new DisclosureSection(
                     Translate(
                         firstDefinition.SectionKey,
                         firstDefinition.LocalizationScope),
-                    true,
-                    UiClassNames.SectionTitle,
-                    SectionLabelClassName);
+                    true);
                 section.AddToClassList(SectionClassName);
+                section.Header.AddToClassList(SectionLabelClassName);
 
                 foreach (var definition in visibleDefinitions)
                 {
@@ -128,10 +121,6 @@ namespace Ee4v.Core.Settings
             var labelText = Translate(
                 definition.DisplayNameKey,
                 definition.LocalizationScope);
-            var label = UiTextFactory.Create(labelText);
-            label.AddToClassList(LabelClassName);
-            label.tooltip = tooltip;
-
             var field = SettingDrawerApi.Create(
                 definition,
                 tooltip,
@@ -140,10 +129,11 @@ namespace Ee4v.Core.Settings
                 value => ApplyValue(settings, definition, value, errorBox));
             field.AddToClassList(FieldClassName);
 
-            var fieldLayout = new VisualElement();
+            var fieldLayout = new LabeledContentRow(labelText);
             fieldLayout.AddToClassList(FieldLayoutClassName);
-            fieldLayout.Add(label);
-            fieldLayout.Add(field);
+            fieldLayout.LabelText.AddToClassList(LabelClassName);
+            fieldLayout.LabelText.tooltip = tooltip;
+            fieldLayout.Content.Add(field);
             row.Add(fieldLayout);
             row.Add(errorBox);
 

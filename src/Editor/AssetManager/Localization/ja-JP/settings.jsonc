@@ -27,9 +27,9 @@
       "label": "起動時に ee4v を自動同期",
       "tooltip": "Unity エディターのセッション開始時に、設定済みの ee4v ソースを1回同期します。"
     },
-    "showProjectWindowIcons": {
-      "label": "Project に AssetManager アイコンを表示",
-      "tooltip": "有効にすると、AssetManager から取り込んだフォルダーのアイコンを Item のサムネイルに置き換えます。"
+    "applyProjectThumbnailOnImport": {
+      "label": "Import時にサムネイルをProject Styleへ設定",
+      "tooltip": "有効にすると、Importしたフォルダーにアイコンが未設定の場合だけ、ItemのサムネイルをProject Styleの初期アイコンとして設定します。あとからProject Styleで変更できます。"
     }
   }
 }

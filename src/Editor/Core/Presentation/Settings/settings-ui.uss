@@ -14,13 +14,15 @@
     min-width: 0;
 }
 
-.ee4v-settings__section > .unity-foldout__toggle {
+.ee4v-settings__section > .ee4v-ui-disclosure-section__header {
+    align-self: stretch;
+    width: auto;
     min-height: var(--ee4v-control-height-default);
     margin-bottom: var(--ee4v-space-xs);
 }
 
 .ee4v-settings__section-label {
-    align-self: center;
+    align-self: stretch;
     flex-shrink: 1;
     min-width: 0;
 }
@@ -35,9 +37,10 @@
 }
 
 .ee4v-settings__field {
-    flex-grow: 1;
-    flex-shrink: 1;
-    flex-basis: 0;
+    align-self: stretch;
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
     width: auto;
     min-width: 0;
 }

@@ -30,13 +30,10 @@ namespace Ee4v.AssetManager.UI
             "ee4v-asset-manager-file-tree__row--group";
         private const string RowSectionClassName =
             "ee4v-asset-manager-file-tree__row--new-section";
-        private const string IconElementName = "file-tree-icon";
-        private const string TitleElementName = "file-tree-title";
-        private const string MetaElementName = "file-tree-meta";
         private const string TargetToggleElementName = "file-tree-target";
 
         private readonly IAssetManager _manager;
-        private readonly UiTextElement _feedback;
+        private readonly InlineMessage _feedback;
         private readonly bool _showsTargetToggles;
         private readonly Action<FileTreeSelection> _importRequested;
         private readonly Dictionary<string, AssetFileTarget>
@@ -91,15 +88,13 @@ namespace Ee4v.AssetManager.UI
                 OnTreeSelectionChanged,
                 showTargetToggles ? null : OnTreeContextClick);
 
-            var header = new VisualElement();
+            var header = new SectionHeader(I18N.Get("fileTree.title"));
             header.AddToClassList(RootClassName + "__header");
-            header.Add(UiTextFactory.Create(
-                I18N.Get("fileTree.title"),
-                UiClassNames.SectionTitle,
-                RootClassName + "__heading"));
+            header.TitleText.AddToClassList(
+                RootClassName + "__heading");
             if (registerFileRequested != null)
             {
-                header.Add(AssetManagerControls.CreateButton(
+                header.Actions.Add(AssetManagerControls.CreateButton(
                     I18N.Get("detail.file.register"),
                     registerFileRequested,
                     RootClassName + "__register"));
@@ -109,12 +104,8 @@ namespace Ee4v.AssetManager.UI
             SetViewDataKey(
                 "ee4v-asset-manager-item-detail-file-tree");
 
-            _feedback = UiTextFactory.Create(
-                string.Empty,
-                UiClassNames.FormError,
-                RootClassName + "__feedback");
-            _feedback.SetWhiteSpace(WhiteSpace.Normal);
-            _feedback.style.display = DisplayStyle.None;
+            _feedback = new InlineMessage();
+            _feedback.AddToClassList(RootClassName + "__feedback");
             Add(_feedback);
 
             RegisterCallback<PointerEnterEvent>(_ =>
@@ -179,8 +170,7 @@ namespace Ee4v.AssetManager.UI
             }
             SeedAnalysisCache(initialAnalyses);
             var analyses = CreateCachedAnalyses();
-            _feedback.SetText(string.Empty);
-            _feedback.style.display = DisplayStyle.None;
+            _feedback.SetState(new InlineMessageState(string.Empty));
             ApplyTreeItems(AssetFileTreeBuilder.Build(
                 _files,
                 analyses,
@@ -313,10 +303,11 @@ namespace Ee4v.AssetManager.UI
                 }
                 if (failures.Count > 0)
                 {
-                    _feedback.SetText(string.Format(
-                        I18N.Get("fileTree.analysisFailed"),
-                        string.Join(", ", failures)));
-                    _feedback.style.display = DisplayStyle.Flex;
+                    _feedback.SetState(new InlineMessageState(
+                        string.Format(
+                            I18N.Get("fileTree.analysisFailed"),
+                            string.Join(", ", failures)),
+                        UiStatusTone.Failed));
                 }
             }
             catch (OperationCanceledException)
@@ -327,8 +318,9 @@ namespace Ee4v.AssetManager.UI
                 if (IsCurrentReload(version, cancellation))
                 {
                     Debug.LogException(exception);
-                    _feedback.SetText(I18N.Get("fileTree.analysisUnavailable"));
-                    _feedback.style.display = DisplayStyle.Flex;
+                    _feedback.SetState(new InlineMessageState(
+                        I18N.Get("fileTree.analysisUnavailable"),
+                        UiStatusTone.Failed));
                 }
             }
             finally
@@ -431,7 +423,7 @@ namespace Ee4v.AssetManager.UI
 
         private static VisualElement CreateTreeItem()
         {
-            var row = new VisualElement();
+            var row = new ContentRow();
             row.AddToClassList(RowClassName);
             var targetToggle = UiTextFactory.CreateToggle(
                 string.Empty,
@@ -444,29 +436,10 @@ namespace Ee4v.AssetManager.UI
                     node.TargetChanged?.Invoke(node, evt.newValue);
                 }
             });
-            row.Add(targetToggle);
-            var icon = new Image
-            {
-                name = IconElementName,
-                scaleMode = ScaleMode.ScaleToFit,
-                pickingMode = PickingMode.Ignore
-            };
-            icon.AddToClassList(RootClassName + "__icon");
-            row.Add(icon);
-            var title = UiTextFactory.Create(
-                string.Empty,
-                UiClassNames.NavigationItemLabel,
-                RowTitleClassName);
-            title.name = TitleElementName;
-            title.SetWhiteSpace(WhiteSpace.NoWrap);
-            row.Add(title);
-            var meta = UiTextFactory.Create(
-                string.Empty,
-                UiClassNames.SecondaryText,
-                RowMetaClassName);
-            meta.name = MetaElementName;
-            meta.SetWhiteSpace(WhiteSpace.NoWrap);
-            row.Add(meta);
+            row.Leading.Add(targetToggle);
+            row.IconElement.AddToClassList(RootClassName + "__icon");
+            row.TitleText.AddToClassList(RowTitleClassName);
+            row.DescriptionText.AddToClassList(RowMetaClassName);
             return row;
         }
 
@@ -494,20 +467,14 @@ namespace Ee4v.AssetManager.UI
                     : DisplayStyle.None;
                 targetToggle.SetValueWithoutNotify(node?.IsTarget == true);
             }
-            var icon = element.Q<Image>(IconElementName);
-            if (icon != null)
+            if (element is ContentRow row)
             {
-                icon.image = ResolveTreeIcon(node);
-            }
-            element.Q<UiTextElement>(TitleElementName)?.SetText(
-                node?.Title ?? string.Empty);
-            var meta = element.Q<UiTextElement>(MetaElementName);
-            meta?.SetText(node?.Meta ?? string.Empty);
-            if (meta != null)
-            {
-                meta.style.display = string.IsNullOrEmpty(node?.Meta)
-                    ? DisplayStyle.None
-                    : DisplayStyle.Flex;
+                row.SetState(new ContentRowState(
+                    node?.Title ?? string.Empty,
+                    node?.Meta ?? string.Empty,
+                    IconState.FromTexture(
+                        ResolveTreeIcon(node),
+                        UiSizeTokens.Size14)));
             }
         }
 

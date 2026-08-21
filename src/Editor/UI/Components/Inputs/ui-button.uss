@@ -20,10 +20,6 @@
     background-color: var(--ee4v-color-control-pressed);
 }
 
-.ee4v-ui-button:focus {
-    border-color: var(--ee4v-color-focus);
-}
-
 .ee4v-ui-button--ghost {
     border-color: var(--ee4v-color-transparent);
     background-color: var(--ee4v-color-transparent);

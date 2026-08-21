@@ -21,7 +21,7 @@ namespace Ee4v.UI
                     "Collections",
                     "SearchableTreeView",
                     "検索窓と tree view をまとめて提供する、絞り込み可能なツリーコンポーネントです。",
-                    "呼び出し側は階層データと row 描画だけを渡し、検索文字列の状態管理や tree の絞り込みは component 側に任せます。検索欄は SearchField を内部利用し、tree 本体と同じ面の中で扱います。各 row 右側の短い文字列は component が自動生成するものではなく、bindItem で描画する row data 側の meta 表示です。",
+                    "検索欄とTreeViewを一つの面にまとめ、階層データの絞り込みと展開状態の維持を行います。各行はbindItemで任意の表示へ構成できます。",
                     new[]
                     {
                         "SearchField"
@@ -43,7 +43,7 @@ namespace Ee4v.UI
 
             var controls = CreatePlainControlsSection(
                 parent,
-                "行右側の短い文字列は SearchableTreeView 固有の列ではなく、Catalog story では bindItem が SampleTreeNode.Meta を描画しています。");
+                "行右側の文字列は、bindItemがSampleTreeNode.Metaを表示する例です。");
             var searchableTreeViewMetaField = AddTextField(controls.Content, "SampleTreeNode.Meta (SearchableTreeView)", searchableTreeViewMeta, value =>
             {
                 searchableTreeViewMeta = value;

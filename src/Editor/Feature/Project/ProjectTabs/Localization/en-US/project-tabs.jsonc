@@ -10,7 +10,7 @@
   },
   "toolbar": {
     "add": {
-      "tooltip": "Open the current location in a new tab"
+      "tooltip": "Open Assets in a new tab"
     },
     "close": {
       "tooltip": "Close tab"

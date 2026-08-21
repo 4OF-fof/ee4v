@@ -21,8 +21,7 @@ namespace Ee4v.Core.Background
             }
 
             var root = window.rootVisualElement;
-            UiComposition.Prepare(root);
-            UiStyleUtility.AddPackageStyleSheet(
+            UiComposition.Prepare(
                 root,
                 "Editor/UI/Components/Overlays/StatusOverlay/status-overlay.uss");
 

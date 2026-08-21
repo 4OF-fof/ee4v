@@ -1,4 +1,3 @@
-using System;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using Ee4v.UI;
@@ -17,15 +16,13 @@ namespace Ee4v.SceneSwitcher
             "ee4v-scene-switcher-window";
 
         private SceneSwitcherController _controller;
-        private Func<string> _createFolder;
         private SceneSwitcherView _view;
         private int _sourceSceneHandle;
 
         internal static void ShowAt(
             Rect anchor,
             int sourceSceneHandle,
-            SceneSwitcherController controller,
-            Func<string> createFolder)
+            SceneSwitcherController controller)
         {
             if (controller == null)
             {
@@ -36,8 +33,7 @@ namespace Ee4v.SceneSwitcher
             var window = CreateInstance<SceneSwitcherWindow>();
             window.Initialize(
                 sourceSceneHandle,
-                controller,
-                createFolder);
+                controller);
             window.ShowAsDropDown(
                 anchor,
                 new Vector2(WindowWidth, WindowHeight));
@@ -56,14 +52,10 @@ namespace Ee4v.SceneSwitcher
 
         private void Initialize(
             int sourceSceneHandle,
-            SceneSwitcherController controller,
-            Func<string> createFolder)
+            SceneSwitcherController controller)
         {
             _sourceSceneHandle = sourceSceneHandle;
             _controller = controller;
-            _createFolder = createFolder ??
-                            (() => ProjectAssetSettings.GetAssetFolder(
-                                "Scene"));
             titleContent = UiTextFactory.CreateGuiContent(
                 I18N.Get("window.title"));
             minSize = new Vector2(WindowWidth, WindowHeight);
@@ -103,17 +95,10 @@ namespace Ee4v.SceneSwitcher
             root.AddToClassList(RootClassName);
             root.AddToClassList(WindowClassName);
             root.AddToClassList(UiClassNames.PopupSurface);
-            UiStyleUtility.AddPackageStyleSheet(
+            UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/common.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
-                "Editor/UI/Components/Inputs/ui-button.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
-                "Editor/UI/Components/Inputs/SearchField/search-field.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
+                "Editor/UI/Components/Inputs/ui-button.uss",
+                "Editor/UI/Components/Inputs/SearchField/search-field.uss",
                 "Editor/Feature/Hierarchy/SceneSwitcher/UI/scene-switcher-window.uss");
 
             _view = new SceneSwitcherView(
@@ -184,7 +169,7 @@ namespace Ee4v.SceneSwitcher
         {
             if (_controller.Create(
                     sceneName,
-                    _createFolder()))
+                    ProjectAssetSettings.GetAssetFolder("Scene")))
             {
                 Close();
             }

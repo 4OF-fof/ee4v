@@ -1,5 +1,7 @@
 # Setting
 
+PreferencesとProject Settingsで使用する実画面は`ee4v/Debug/Catalog`の`Domain/Core/Settings UI` Storyで確認できます。Storyはメモリ上のサンプル設定だけを変更し、設定ファイルを保存しません。セクション見出しには背景を持たない`DisclosureSection`のGhost Headerを使用します。
+
 ## 機能
 
 Setting は設定定義の登録、値の検証、読込、保存、変更通知を扱います。既定実装は User と Project の二つのスコープを持ちます。

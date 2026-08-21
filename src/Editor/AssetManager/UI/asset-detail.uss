@@ -60,7 +60,7 @@
     margin-bottom: var(--ee4v-space-lg);
 }
 
-.ee4v-asset-manager__section-header > .ee4v-asset-manager__section-title {
+.ee4v-asset-manager__section-header .ee4v-asset-manager__section-title {
     flex-grow: 1;
     min-width: 0;
     margin-top: var(--ee4v-space-none);

@@ -102,14 +102,14 @@ namespace Ee4v.AssetManager.UI
                 });
 
         private static readonly SettingDefinition<bool>
-            ShowProjectWindowIcons =
+            ApplyProjectThumbnailOnImport =
                 new SettingDefinition<bool>(
-                    "assetManager.showProjectWindowIcons",
+                    "assetManager.applyProjectThumbnailOnImport",
                     SettingScope.User,
                     "AssetManager",
                     "settings.section.assetManager.view",
-                    "settings.showProjectWindowIcons.label",
-                    "settings.showProjectWindowIcons.tooltip",
+                    "settings.applyProjectThumbnailOnImport.label",
+                    "settings.applyProjectThumbnailOnImport.tooltip",
                     true,
                     order: 0,
                     keywords: new[]
@@ -123,7 +123,7 @@ namespace Ee4v.AssetManager.UI
         private static ISettingsService _registeredSettings;
 
         internal static event Action Ee4vLibraryPathChanged;
-        internal static event Action ProjectWindowIconsChanged;
+        internal static event Action ProjectThumbnailImportChanged;
 
         static AssetManagerSettings()
         {
@@ -145,8 +145,8 @@ namespace Ee4v.AssetManager.UI
         internal static bool AutoSyncEe4vOnStartup =>
             Get(AutoSyncEe4v);
 
-        internal static bool ShowProjectWindowIconsEnabled =>
-            Get(ShowProjectWindowIcons);
+        internal static bool ApplyProjectThumbnailOnImportEnabled =>
+            Get(ApplyProjectThumbnailOnImport);
 
         private static T Get<T>(SettingDefinition<T> definition)
         {
@@ -172,7 +172,7 @@ namespace Ee4v.AssetManager.UI
             settings.Register(Ee4vLibrary);
             settings.Register(AutoSyncEagle);
             settings.Register(AutoSyncEe4v);
-            settings.Register(ShowProjectWindowIcons);
+            settings.Register(ApplyProjectThumbnailOnImport);
             settings.Changed += OnSettingChanged;
             _registeredSettings = settings;
             return settings;
@@ -189,9 +189,9 @@ namespace Ee4v.AssetManager.UI
 
             if (ReferenceEquals(
                     args.Definition,
-                    ShowProjectWindowIcons))
+                    ApplyProjectThumbnailOnImport))
             {
-                ProjectWindowIconsChanged?.Invoke();
+                ProjectThumbnailImportChanged?.Invoke();
             }
         }
     }

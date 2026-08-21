@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
@@ -11,12 +10,13 @@ namespace Ee4v.AssetManager.UI
 {
     internal sealed class AssetCollectionCreationPopup : CustomPopupWindow
     {
-        private static readonly Vector2 PopupSize = new Vector2(620f, 520f);
+        private static readonly Vector2 PopupSize =
+            new Vector2(620f, 520f);
 
         private Func<string, AssetFilterNode, bool> _save;
         private AssetCollection _initialCollection;
         private AssetManagerTextField _name;
-        private FilterGroupEditor _rootGroup;
+        private AssetFilterEditor _filterEditor;
         private UiTextElement _error;
 
         public static void Show(
@@ -61,8 +61,9 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get("filterEditor.conditions"),
                 UiClassNames.FormLabel,
                 "ee4v-asset-manager__collection-popup-conditions-title"));
-            _rootGroup = CreateRootEditor(_initialCollection?.Root);
-            form.Add(_rootGroup.Root);
+            _filterEditor = new AssetFilterEditor(
+                _initialCollection?.Root);
+            form.Add(_filterEditor);
 
             _error = UiTextFactory.Create(
                 string.Empty,
@@ -84,73 +85,6 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-asset-manager__primary-action"));
             SetPopup(popup);
             root.schedule.Execute(_name.FocusInput);
-        }
-
-        private static FilterGroupEditor CreateRootEditor(
-            AssetFilterNode root)
-        {
-            var inverted = false;
-            root = UnwrapNot(root, ref inverted);
-            if (root != null &&
-                (root.Type == AssetFilterNodeType.And ||
-                 root.Type == AssetFilterNodeType.Or))
-            {
-                return new FilterGroupEditor(
-                    root.Type,
-                    root.Children,
-                    inverted,
-                    null,
-                    true);
-            }
-
-            return new FilterGroupEditor(
-                AssetFilterNodeType.And,
-                root == null ? null : new[] { root },
-                inverted,
-                null,
-                true);
-        }
-
-        private static IFilterNodeEditor CreateNodeEditor(
-            AssetFilterNode node,
-            Action<IFilterNodeEditor> remove)
-        {
-            var inverted = false;
-            node = UnwrapNot(node, ref inverted);
-            if (node != null &&
-                (node.Type == AssetFilterNodeType.And ||
-                 node.Type == AssetFilterNodeType.Or))
-            {
-                return new FilterGroupEditor(
-                    node.Type,
-                    node.Children,
-                    inverted,
-                    remove);
-            }
-
-            return new ConditionRow(
-                node != null &&
-                node.Type == AssetFilterNodeType.Condition
-                    ? node
-                    : null,
-                inverted,
-                remove);
-        }
-
-        private static AssetFilterNode UnwrapNot(
-            AssetFilterNode node,
-            ref bool inverted)
-        {
-            while (node != null &&
-                   node.Type == AssetFilterNodeType.Not &&
-                   node.Children != null &&
-                   node.Children.Count == 1)
-            {
-                inverted = !inverted;
-                node = node.Children[0];
-            }
-
-            return node;
         }
 
         private void OnKeyDown(KeyDownEvent evt)
@@ -177,13 +111,14 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            if (!_rootGroup.TryCreateNode(
+            if (!_filterEditor.TryCreateNode(
                     out var root,
                     out var errorKey))
             {
                 SetError(I18N.Get(errorKey));
                 return;
             }
+
             if (_save(name, root))
             {
                 Close();
@@ -196,263 +131,6 @@ namespace Ee4v.AssetManager.UI
         private void SetError(string message)
         {
             _error.SetText(message ?? string.Empty);
-        }
-
-        private static string FormatMatchMode(Enum value)
-        {
-            return I18N.Get(
-                value is FilterMatchMode mode &&
-                mode == FilterMatchMode.Any
-                    ? "filterEditor.matchAny"
-                    : "filterEditor.matchAll");
-        }
-
-        private enum FilterMatchMode
-        {
-            All,
-            Any
-        }
-
-        private interface IFilterNodeEditor
-        {
-            VisualElement Root { get; }
-
-            bool TryCreateNode(
-                out AssetFilterNode node,
-                out string errorKey);
-        }
-
-        private sealed class FilterGroupEditor : IFilterNodeEditor
-        {
-            private readonly List<IFilterNodeEditor> _children =
-                new List<IFilterNodeEditor>();
-            private readonly AssetManagerEnumField _matchMode;
-            private readonly Toggle _inverted;
-            private readonly VisualElement _childrenRoot;
-
-            public FilterGroupEditor(
-                AssetFilterNodeType type,
-                IReadOnlyList<AssetFilterNode> initialChildren,
-                bool inverted,
-                Action<IFilterNodeEditor> remove,
-                bool isRoot = false)
-            {
-                Root = new VisualElement();
-                Root.AddToClassList(
-                    "ee4v-asset-manager__collection-popup-group");
-                if (isRoot)
-                {
-                    Root.AddToClassList(
-                        "ee4v-asset-manager__collection-popup-group--root");
-                }
-
-                var header = new VisualElement();
-                header.AddToClassList(
-                    "ee4v-asset-manager__collection-popup-group-header");
-                _matchMode = AssetManagerControls.CreateEnumField(
-                    I18N.Get("filterEditor.matchMode"),
-                    type == AssetFilterNodeType.Or
-                        ? FilterMatchMode.Any
-                        : FilterMatchMode.All,
-                    FormatMatchMode,
-                    "ee4v-asset-manager__collection-popup-group-mode");
-                _inverted = UiTextFactory.CreateToggle(
-                    I18N.Get("filterEditor.invertGroup"),
-                    "ee4v-asset-manager__collection-popup-group-inverted");
-                _inverted.value = inverted;
-                header.Add(_matchMode);
-                header.Add(_inverted);
-                if (!isRoot)
-                {
-                    header.Add(AssetManagerControls.CreateIconButton(
-                        I18N.Get("filterEditor.removeGroup"),
-                        "dismiss.png",
-                        () => remove?.Invoke(this),
-                        "ee4v-asset-manager__collection-popup-remove-group"));
-                }
-                Root.Add(header);
-
-                _childrenRoot = new VisualElement();
-                _childrenRoot.AddToClassList(
-                    "ee4v-asset-manager__collection-popup-group-children");
-                Root.Add(_childrenRoot);
-
-                var actions = new VisualElement();
-                actions.AddToClassList(
-                    "ee4v-asset-manager__collection-popup-group-actions");
-                actions.Add(AssetManagerControls.CreateIconTextButton(
-                    I18N.Get("filterEditor.addCondition"),
-                    "add.png",
-                    AddCondition));
-                actions.Add(AssetManagerControls.CreateIconTextButton(
-                    I18N.Get("filterEditor.addGroup"),
-                    "add.png",
-                    AddGroup));
-                Root.Add(actions);
-
-                var children = initialChildren ??
-                               Array.Empty<AssetFilterNode>();
-                for (var i = 0; i < children.Count; i++)
-                {
-                    AddEditor(CreateNodeEditor(
-                        children[i],
-                        RemoveChild));
-                }
-
-                if (_children.Count == 0)
-                {
-                    AddCondition();
-                }
-            }
-
-            public VisualElement Root { get; }
-
-            public bool TryCreateNode(
-                out AssetFilterNode node,
-                out string errorKey)
-            {
-                if (_children.Count == 0)
-                {
-                    node = null;
-                    errorKey = "filterEditor.groupConditionRequired";
-                    return false;
-                }
-
-                var nodes = new AssetFilterNode[_children.Count];
-                for (var i = 0; i < _children.Count; i++)
-                {
-                    if (!_children[i].TryCreateNode(
-                            out nodes[i],
-                            out errorKey))
-                    {
-                        node = null;
-                        return false;
-                    }
-                }
-
-                node = nodes.Length == 1
-                    ? nodes[0]
-                    : (FilterMatchMode)_matchMode.value ==
-                      FilterMatchMode.Any
-                        ? AssetFilterNode.Or(nodes)
-                        : AssetFilterNode.And(nodes);
-                if (_inverted.value)
-                {
-                    node = AssetFilterNode.Not(node);
-                }
-
-                errorKey = null;
-                return true;
-            }
-
-            private void AddCondition()
-            {
-                AddEditor(new ConditionRow(
-                    null,
-                    false,
-                    RemoveChild));
-            }
-
-            private void AddGroup()
-            {
-                AddEditor(new FilterGroupEditor(
-                    AssetFilterNodeType.And,
-                    null,
-                    false,
-                    RemoveChild));
-            }
-
-            private void AddEditor(IFilterNodeEditor editor)
-            {
-                if (editor == null)
-                {
-                    return;
-                }
-
-                _children.Add(editor);
-                _childrenRoot.Add(editor.Root);
-            }
-
-            private void RemoveChild(IFilterNodeEditor editor)
-            {
-                if (editor == null || !_children.Remove(editor))
-                {
-                    return;
-                }
-
-                editor.Root.RemoveFromHierarchy();
-            }
-        }
-
-        private sealed class ConditionRow : IFilterNodeEditor
-        {
-            private readonly AssetManagerEnumField _condition;
-            private readonly AssetManagerTextField _value;
-            private readonly Toggle _inverted;
-
-            public ConditionRow(
-                AssetFilterNode initialCondition,
-                bool inverted,
-                Action<IFilterNodeEditor> remove)
-            {
-                Root = new VisualElement();
-                Root.AddToClassList(
-                    "ee4v-asset-manager__collection-popup-condition");
-
-                var controls = new VisualElement();
-                controls.AddToClassList(
-                    "ee4v-asset-manager__collection-popup-condition-controls");
-                _condition = AssetManagerControls.CreateEnumField(
-                    string.Empty,
-                    initialCondition?.ConditionType ??
-                    AssetFilterConditionType.NameContains,
-                    AssetManagerControls.FormatFilterCondition,
-                    "ee4v-asset-manager__collection-popup-condition-type");
-                _inverted = UiTextFactory.CreateToggle(
-                    I18N.Get("filterEditor.inverted"),
-                    "ee4v-asset-manager__collection-popup-condition-inverted");
-                _inverted.value = inverted;
-                controls.Add(_condition);
-                controls.Add(_inverted);
-                controls.Add(AssetManagerControls.CreateIconButton(
-                    I18N.Get("filterEditor.removeCondition"),
-                    "dismiss.png",
-                    () => remove?.Invoke(this),
-                    "ee4v-asset-manager__collection-popup-remove-condition"));
-                Root.Add(controls);
-
-                _value = AssetManagerControls.CreateTextField(
-                    I18N.Get("field.value"),
-                    "ee4v-asset-manager__collection-popup-condition-value");
-                _value.value = initialCondition?.Value ?? string.Empty;
-                Root.Add(_value);
-            }
-
-            public VisualElement Root { get; }
-
-            public bool TryCreateNode(
-                out AssetFilterNode node,
-                out string errorKey)
-            {
-                var value = (_value.value ?? string.Empty).Trim();
-                if (string.IsNullOrEmpty(value))
-                {
-                    node = null;
-                    errorKey = "filterEditor.valueRequired";
-                    return false;
-                }
-
-                node = AssetFilterNode.Condition(
-                    (AssetFilterConditionType)_condition.value,
-                    value);
-                if (_inverted.value)
-                {
-                    node = AssetFilterNode.Not(node);
-                }
-
-                errorKey = null;
-                return true;
-            }
         }
     }
 }

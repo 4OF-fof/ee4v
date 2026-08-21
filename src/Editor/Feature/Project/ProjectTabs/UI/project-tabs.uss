@@ -146,6 +146,17 @@
     border-left-color: var(--ee4v-color-border-active);
 }
 
+.ee4v-project-tabs__tab-content {
+    min-width: 0;
+    height: var(--ee4v-size-18);
+    flex-grow: 1;
+}
+
+.ee4v-project-tabs__tab-content .ee4v-ui-content-row__text {
+    min-width: 0;
+    height: var(--ee4v-size-18);
+}
+
 .ee4v-project-tabs__tab-title {
     height: var(--ee4v-size-18);
     min-width: 0;

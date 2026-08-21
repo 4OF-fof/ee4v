@@ -8,7 +8,9 @@
     "Ee4v.Core.Editor",
     "Ee4v.Core.Presentation.Editor",
     "Ee4v.Core.Unity.Editor",
-    "Ee4v.UI.Editor"
+    "Ee4v.UI.Editor",
+    "Ee4v.ProjectStyle.Editor",
+    "Ee4v.ItemStyle.Editor"
   ],
   "includePlatforms": [
     "Editor"

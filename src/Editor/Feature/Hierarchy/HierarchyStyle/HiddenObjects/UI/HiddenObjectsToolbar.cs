@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.HiddenObjects
 {
-    internal sealed class HiddenObjectsToolbar : VisualElement
+    internal sealed class HiddenObjectsToolbar : ActionBar
     {
         private const string RootClassName =
             "ee4v-hidden-objects-toolbar";
@@ -61,9 +61,9 @@ namespace Ee4v.HiddenObjects
             refreshButton.tooltip = _text.RefreshTooltip;
             refreshButton.AddToClassList(RefreshClassName);
 
-            Add(_searchField);
-            Add(_scenePopup);
-            Add(refreshButton);
+            Leading.Add(_searchField);
+            Leading.Add(_scenePopup);
+            Actions.Add(refreshButton);
         }
 
         public event Action<string> QueryChanged;

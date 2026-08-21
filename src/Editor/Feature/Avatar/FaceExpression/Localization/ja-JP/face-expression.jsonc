@@ -41,7 +41,6 @@
     "selectAvatar": "Avatar Prefabまたはシーン上のPrefabインスタンスを選択してください。",
     "invalidAvatar": "ベースFBXを検出できるアバターを選択してください。",
     "autoClassified": "名前から大まかに分類しました。内容を確認して保存してください。",
-    "loaded": "保存済みの分類を読み込みました。",
     "unsaved": "未保存の変更があります。",
     "saved": "FBX別プリセットを保存しました。"
   },

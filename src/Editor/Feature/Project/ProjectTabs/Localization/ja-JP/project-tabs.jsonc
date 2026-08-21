@@ -10,7 +10,7 @@
   },
   "toolbar": {
     "add": {
-      "tooltip": "現在の場所を新しいタブで開く"
+      "tooltip": "Assetsを新しいタブで開く"
     },
     "close": {
       "tooltip": "タブを閉じる"

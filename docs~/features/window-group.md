@@ -4,7 +4,7 @@
 
 ## 管理ウィンドウ
 
-`ee4v/Window Groups` から管理ウィンドウを開きます。
+`ee4v/Window/Window Groups` から管理ウィンドウを開きます。
 
 - 左側の一覧下部にある `新規グループ` でグループを作成します。同名のグループがある場合は連番を付けます。
 - 左側の一覧で編集するグループを選びます。グループ名は入力欄からフォーカスが外れた時点で保存し、右クリックメニューからグループを削除できます。
@@ -16,6 +16,10 @@
 - 閉じたウィンドウの割り当ては保持されます。次回その種類を開いた時点で自動的にグループへ復帰します。
 
 グループ設定は利用者ごとの `EditorPrefs` に保存します。型の識別には完全な型名と assembly 名を使い、Unity の版番号は含めません。
+
+実画面は`ee4v/Debug/Catalog`の`Domain/WindowGroup/Window Groups` Storyで確認できます。Storyの操作は`EditorPrefs`を変更しません。
+
+UIは`WindowGroupSettingsView`へ分離し、`WindowGroupSettingsWindow`はWindowの生成、共通styleの適用、実設定との接続だけを行います。Group一件分にはCoreの`NavigationItem`、空表示には`EmptyState`、見出しには`SectionHeader`を使用します。Storyは同じViewへメモリ上の設定とWindow候補を渡します。
 
 ## API
 

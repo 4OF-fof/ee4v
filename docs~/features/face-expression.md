@@ -1,8 +1,10 @@
 # Face Expression
 
-`ee4v/Avatar/Face Expression Editor`は、VRChatアバター向けの単一フレーム表情クリップを作成します。標準ハンドジェスチャーへの割り当ては、`ee4v/Avatar/Gesture Assignments`から開く独立ウィンドウで行います。
+`ee4v/Window/Face Expression/Face Expression Editor`は、VRChatアバター向けの単一フレーム表情クリップを作成します。表情編集、Expression Groups、BlendShape Presetsは`ee4v/Window/Face Expression`へまとめます。標準ハンドジェスチャーへの割り当てと設定は`ee4v/Window/Gesture Assignment`へまとめ、`Gesture Assignments`から独立ウィンドウを開きます。
 
 新規表情クリップの保存ダイアログは、共通アセットルート配下の`Animation/Facial`を既定の保存先として開きます。フォルダーがない場合は作成します。
+
+上部のアバター入力と表情Animation入力は、作成ボタンを除いた横幅を均等に使用します。ウィンドウ幅に応じて両方を同じ割合で縮め、一方だけを0幅にしません。
 
 ## 対象範囲
 
@@ -41,11 +43,11 @@ Expression Menu、表情ロック、トリガー量による変化は対象外�
 
 ## BlendShapeヘッダー
 
-Preferencesの`4OF/ee4v`設定にある「BlendShapeの区切り文字」で、ヘッダー判定に使う文字列を複数登録できます。この設定はプロジェクト間で共有するユーザー設定で、既定値は`-`、`*`、`=`です。すべて削除した場合は変換しません。
+Preferencesの`4OF/ee4v`設定にある「BlendShapeの区切り文字」で、ヘッダー判定に使う文字列を複数登録できます。この設定はプロジェクト間で共有するユーザー設定で、既定値は`-`、`─`、`=`、`*`です。すべて削除した場合は変換しません。
 
 表情エディタでAvatar Prefabまたはシーン上のPrefabインスタンスを選ぶと、Prefab Variantの対応元を最初のModel Prefabまでたどり、その`.fbx`をベースFBXとして検出します。Rendererの`sharedMesh`は検出に使いません。ベースFBXのプリセットが未登録なら、Chiffon、Kipfel、Shinano、Manukaで使われる末尾の数値、括弧、左右表記を基に大まかな分類を作り、プロジェクト設定へ自動保存します。既存プリセットは上書きしません。
 
-同じ設定画面の「FBX別BlendShapeプリセット」から専用ウィンドウを開くと、自動作成されたプリセットを編集できます。左ペインには区切り見出しごとの役割カード、右ペインには選択した役割に属するBlendShapeと種類・左右を表示し、最上部の入力欄で役割名を直接編集します。役割カードを別のカードへドラッグすると役割を統合し、右ペインのBlendShapeをドラッグすると個別に所属を変更します。各見出し末尾の「＋」カードへドロップすると新規役割を作成します。役割名が空の既存データはBlendShape名ごとの単独カードとして表示し、別のカードへ重ねると所属を設定できます。区切り用BlendShapeは表情エディタと同じ設定で判定し、左ペインの見出しとして扱います。「自動分類」で現在の命名から分類案を作り直せます。
+同じ設定画面の「FBX別BlendShapeプリセット」から専用ウィンドウを開くと、自動作成されたプリセットを編集できます。左ペインには区切り見出しごとの役割カード、右ペインには選択した役割に属するBlendShapeと種類・左右を表示し、最上部の130px幅の入力欄で役割名を直接編集します。役割カードを別のカードへドラッグすると役割を統合し、右ペインのBlendShapeをドラッグすると個別に所属を変更します。各見出し末尾の「＋」は通常の役割カードと同じNavigation Itemで表示し、ここへドロップすると新規役割を作成します。役割名が空の既存データはBlendShape名ごとの単独カードとして表示し、別のカードへ重ねると所属を設定できます。区切り用BlendShapeは表情エディタと同じ設定で判定し、左ペインの見出しとして扱います。「自動分類」で現在の命名から分類案を作り直せます。保存済み分類を開いただけでは完了メッセージを表示せず、未保存、保存完了、自動分類など操作結果だけを表示します。
 
 プリセットはプロジェクト設定としてFBXのGUIDとメッシュのローカルIDへ関連付けます。複数FBX由来のRendererを同時に編集する場合も、それぞれの保存済みプリセットを自動で参照します。表情エディターの更新時にはBlendShape名を解析せず、保存済みの対応表だけを使います。正規表現と旧命名規則の設定は廃止し、旧設定の移行は行いません。
 
@@ -55,7 +57,11 @@ Preferencesの`4OF/ee4v`設定にある「BlendShapeの区切り文字」で、�
 
 ## グループウィンドウ
 
-`ee4v/Avatar/Face Expression Editor`を開くと、表情エディターと`Expression Groups`ウィンドウを同時に開きます。グループウィンドウだけを`ee4v/Avatar/Face Expression Groups`から開くこともできます。
+`ee4v/Window/Face Expression/Face Expression Editor`を開くと、表情エディターと`Expression Groups`ウィンドウを同時に開きます。グループウィンドウだけを`ee4v/Window/Face Expression/Face Expression Groups`から開くこともできます。
+
+各画面は`ee4v/Debug/Catalog`の`Domain/FaceExpression` Storyで確認できます。`BlendShape Presets` Storyは実際の編集画面をサンプルmappingで表示し、設定を保存しません。`Gesture Assignments` Storyには独立したAssignment Settings画面も含みます。一件分の`GestureAssignmentCell`、`BlendShapePresetMappingRow`、`BlendShapeRow`は画面やGridから分離し、`Domain/FaceExpression/Components` Storyでも確認できます。Toolbar、Preview、見出し、件数表示はCoreの`ActionBar`、`PreviewSurface`、`SectionHeader`、`Badge`を組み合わせます。
+
+BlendShape PresetsのUIは`BlendShapePresetView`へ分離し、`BlendShapePresetWindow`はWindowの生成と実設定への接続を担当します。Storyは同じViewへメモリ上の設定を渡します。
 
 グループウィンドウのGroup見出し横にある「メッシュ追加」から、アバター内にありBlendShapeを持つ`SkinnedMeshRenderer`を追加できます。`Body`は既定で選択されます。追加メッシュはメッシュ名のグループとしてグループ一覧にも表示し、選択するとそのメッシュ内のBlendShapeをすべて表示します。追加メッシュの行を右クリックして「削除」を選ぶと選択対象から外せます。グループ一覧は「Body」と「追加メッシュ」に分けて表示します。アバターを変更した場合は追加メッシュの選択を破棄し、新しいアバターの`Body`だけを選択します。
 

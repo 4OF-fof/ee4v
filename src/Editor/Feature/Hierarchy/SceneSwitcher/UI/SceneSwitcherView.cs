@@ -42,7 +42,7 @@ namespace Ee4v.SceneSwitcher
         private readonly Texture _favoriteIcon;
         private readonly SearchField _search;
         private readonly ListView _list;
-        private readonly UiTextElement _empty;
+        private readonly EmptyState _empty;
         private readonly VisualElement _footer;
         private readonly UiButton _create;
         private List<SceneSwitcherItem> _items =
@@ -91,9 +91,9 @@ namespace Ee4v.SceneSwitcher
             _list.itemIndexChanged += OnItemIndexChanged;
             Add(_list);
 
-            _empty = UiTextFactory.Create(
-                _text.Empty,
-                UiClassNames.SecondaryText);
+            _empty = new EmptyState(new EmptyStateState(
+                string.Empty,
+                _text.Empty));
             _empty.AddToClassList(EmptyClassName);
             Add(_empty);
 
@@ -142,9 +142,11 @@ namespace Ee4v.SceneSwitcher
             _list.style.display = hasItems
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
-            _empty.SetText(_state.IsFiltered
-                ? _text.NoMatches
-                : _text.Empty);
+            _empty.SetState(new EmptyStateState(
+                string.Empty,
+                _state.IsFiltered
+                    ? _text.NoMatches
+                    : _text.Empty));
             _empty.style.display = hasItems
                 ? DisplayStyle.None
                 : DisplayStyle.Flex;
@@ -203,7 +205,7 @@ namespace Ee4v.SceneSwitcher
         }
     }
 
-    internal sealed class SceneSwitcherRow : VisualElement
+    internal sealed class SceneSwitcherRow : ContentRow
     {
         private const string RootClassName =
             "ee4v-scene-switcher-row";
@@ -221,8 +223,7 @@ namespace Ee4v.SceneSwitcher
             "ee4v-scene-switcher-row__favorite--active";
 
         private readonly SceneSwitcherViewText _text;
-        private readonly UiTextElement _name;
-        private readonly UiTextElement _badge;
+        private readonly IconState _sceneIcon;
         private readonly Button _favorite;
         private readonly Image _favoriteImage;
         private Vector2 _pointerStart;
@@ -237,28 +238,14 @@ namespace Ee4v.SceneSwitcher
             Texture favoriteIcon)
         {
             _text = text ?? new SceneSwitcherViewText();
+            _sceneIcon = IconState.FromTexture(
+                sceneIcon,
+                UiSizeTokens.Size14);
             AddToClassList(RootClassName);
-
-            var icon = new Image
-            {
-                image = sceneIcon,
-                scaleMode = ScaleMode.ScaleToFit,
-                pickingMode = PickingMode.Ignore
-            };
-            icon.AddToClassList(IconClassName);
-            Add(icon);
-
-            _name = UiTextFactory.Create(string.Empty);
-            _name.AddToClassList(NameClassName);
-            _name.SetWhiteSpace(WhiteSpace.NoWrap);
-            Add(_name);
-
-            _badge = UiTextFactory.Create(
-                _text.Open,
-                UiClassNames.SecondaryText);
-            _badge.AddToClassList(BadgeClassName);
-            _badge.tooltip = _text.OpenTooltip;
-            Add(_badge);
+            IconElement.AddToClassList(IconClassName);
+            TitleText.AddToClassList(NameClassName);
+            DescriptionText.AddToClassList(BadgeClassName);
+            DescriptionText.tooltip = _text.OpenTooltip;
 
             _favoriteImage = new Image
             {
@@ -279,7 +266,7 @@ namespace Ee4v.SceneSwitcher
                 evt => evt.StopPropagation());
             _favorite.RegisterCallback<PointerUpEvent>(
                 evt => evt.StopPropagation());
-            Add(_favorite);
+            Trailing.Add(_favorite);
 
             RegisterCallback<PointerDownEvent>(OnPointerDown);
             RegisterCallback<PointerMoveEvent>(OnPointerMove);
@@ -295,13 +282,13 @@ namespace Ee4v.SceneSwitcher
         public void SetState(SceneSwitcherItem item)
         {
             _item = item;
-            _name.SetText(item?.Name ?? string.Empty);
             var isOpen = item?.IsOpen == true;
             var isFavorite = item?.IsFavorite == true;
+            base.SetState(new ContentRowState(
+                item?.Name ?? string.Empty,
+                isOpen ? _text.Open : string.Empty,
+                _sceneIcon));
             EnableInClassList(OpenClassName, isOpen);
-            _badge.style.display = isOpen
-                ? DisplayStyle.Flex
-                : DisplayStyle.None;
             _favorite.EnableInClassList(
                 FavoriteActiveClassName,
                 isFavorite);

@@ -41,22 +41,14 @@ namespace Ee4v.AssetManager.UI
 
         public static void PrepareRoot(VisualElement root)
         {
-            UiComposition.Prepare(root);
-            UiStyleUtility.AddPackageStyleSheet(
+            UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/Inputs/ui-button.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
+                "Editor/UI/Components/Inputs/ui-button.uss",
+                "Editor/UI/Components/Content/TagPill/tag-pill.uss",
                 "Editor/UI/Components/Overlays/CustomPopup/" +
-                "custom-popup.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
-                "Editor/AssetManager/UI/asset-manager.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
-                "Editor/AssetManager/UI/searchable-file-tree.uss");
-            UiStyleUtility.AddPackageStyleSheet(
-                root,
+                "custom-popup.uss",
+                "Editor/AssetManager/UI/asset-manager.uss",
+                "Editor/AssetManager/UI/searchable-file-tree.uss",
                 "Editor/AssetManager/UI/asset-detail.uss");
         }
 
