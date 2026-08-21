@@ -64,17 +64,16 @@ namespace Ee4v.FaceExpression
         private void BuildContent(VisualElement root)
         {
             root.Clear();
+            root.AddToClassList("ee4v-blend-shape-preset");
 
             var avatarRow = new VisualElement();
-            avatarRow.style.paddingLeft = 8f;
-            avatarRow.style.paddingRight = 8f;
-            avatarRow.style.paddingTop = 8f;
+            avatarRow.AddToClassList("ee4v-blend-shape-preset__avatar-row");
             _avatarField = UiTextFactory.CreateObjectField(
                 I18N.Get("presetWindow.avatar"));
             _avatarField.objectType = typeof(GameObject);
             _avatarField.allowSceneObjects = true;
-            _avatarField.style.flexGrow = 1f;
-            _avatarField.style.minWidth = 0f;
+            _avatarField.AddToClassList(
+                "ee4v-blend-shape-preset__avatar-field");
             _avatarField.RegisterValueChangedCallback(evt =>
             {
                 if (!_settingAsset)
@@ -86,74 +85,57 @@ namespace Ee4v.FaceExpression
             root.Add(avatarRow);
 
             var toolbar = new ActionBar();
-            toolbar.style.flexDirection = FlexDirection.Row;
-            toolbar.style.alignItems = Align.Center;
-            toolbar.style.paddingLeft = 8f;
-            toolbar.style.paddingRight = 8f;
-            toolbar.style.paddingTop = 6f;
-            toolbar.style.paddingBottom = 8f;
+            toolbar.AddToClassList("ee4v-blend-shape-preset__toolbar");
             _sourceFbx = UiTextFactory.Create(
                 string.Empty,
                 UiClassNames.SecondaryText);
-            _sourceFbx.style.flexGrow = 1f;
-            _sourceFbx.style.minWidth = 0f;
+            _sourceFbx.AddToClassList(
+                "ee4v-blend-shape-preset__source");
             toolbar.Leading.Add(_sourceFbx);
 
             _save = UiTextFactory.CreateButton(
                 I18N.Get("presetWindow.save"),
                 Save);
-            _save.style.marginLeft = 8f;
-            _save.style.flexShrink = 0f;
+            _save.AddToClassList("ee4v-blend-shape-preset__action");
             toolbar.Actions.Add(_save);
             _reclassify = UiTextFactory.CreateButton(
                 I18N.Get("presetWindow.reclassify"),
                 Reclassify);
-            _reclassify.style.marginLeft = 4f;
-            _reclassify.style.flexShrink = 0f;
+            _reclassify.AddToClassList("ee4v-blend-shape-preset__action");
             toolbar.Actions.Add(_reclassify);
             root.Add(toolbar);
 
-            var searchRow = new VisualElement();
-            searchRow.style.flexDirection = FlexDirection.Row;
-            searchRow.style.paddingLeft = 8f;
-            searchRow.style.paddingRight = 8f;
-            searchRow.style.paddingBottom = 6f;
-            _searchField = UiTextFactory.CreateTextField(
-                I18N.Get("presetWindow.search"));
-            _searchField.style.flexGrow = 1f;
-            _searchField.RegisterValueChangedCallback(_ => RefreshFilter());
-            searchRow.Add(_searchField);
             _status = new InlineMessage();
-            _status.style.marginLeft = 12f;
+            _status.AddToClassList("ee4v-blend-shape-preset__status");
             _status.style.display = DisplayStyle.None;
-            searchRow.Add(_status);
-            root.Add(searchRow);
+            root.Add(_status);
 
             var workspace = new VisualElement();
-            workspace.style.flexDirection = FlexDirection.Row;
-            workspace.style.flexGrow = 1f;
-            workspace.style.minHeight = 0f;
+            workspace.AddToClassList("ee4v-blend-shape-preset__workspace");
+
+            var navigation = new VisualElement();
+            navigation.AddToClassList("ee4v-blend-shape-preset__navigation");
+            navigation.Add(new SectionHeader(I18N.Get("presetWindow.roles")));
+            _searchField = UiTextFactory.CreateTextField(
+                I18N.Get("presetWindow.search"));
+            _searchField.AddToClassList(
+                "ee4v-blend-shape-preset__search");
+            _searchField.RegisterValueChangedCallback(_ => RefreshFilter());
+            navigation.Add(_searchField);
             _groupList = new ScrollView(ScrollViewMode.Vertical);
-            _groupList.style.width = 280f;
-            _groupList.style.flexShrink = 0f;
-            _groupList.style.paddingLeft = 8f;
-            _groupList.style.paddingRight = 8f;
-            workspace.Add(_groupList);
+            _groupList.AddToClassList(
+                "ee4v-blend-shape-preset__role-list");
+            navigation.Add(_groupList);
+            workspace.Add(navigation);
 
             var detail = new VisualElement();
-            detail.style.flexGrow = 1f;
-            detail.style.minWidth = 0f;
+            detail.AddToClassList("ee4v-blend-shape-preset__detail");
             var roleRow = new LabeledContentRow();
-            roleRow.style.flexDirection = FlexDirection.Row;
-            roleRow.style.alignItems = Align.Center;
-            roleRow.style.paddingLeft = 8f;
-            roleRow.style.paddingRight = 8f;
-            roleRow.style.paddingBottom = 6f;
+            roleRow.AddToClassList("ee4v-blend-shape-preset__role-row");
             _detailTitle = roleRow.LabelText;
-            _detailTitle.style.flexShrink = 0f;
             _roleEditor = UiTextFactory.CreateTextField();
-            _roleEditor.style.width = 130f;
-            _roleEditor.style.marginLeft = 4f;
+            _roleEditor.AddToClassList(
+                "ee4v-blend-shape-preset__role-editor");
             _roleEditor.RegisterCallback<FocusOutEvent>(_ => RenameSelectedRole());
             roleRow.Content.Add(_roleEditor);
             detail.Add(roleRow);
@@ -172,7 +154,7 @@ namespace Ee4v.FaceExpression
                     ((BlendShapePresetMappingRow)element).Bind(
                         _filtered[index])
             };
-            _list.style.flexGrow = 1f;
+            _list.AddToClassList("ee4v-blend-shape-preset__mapping-list");
             detail.Add(_list);
             workspace.Add(detail);
             root.Add(workspace);

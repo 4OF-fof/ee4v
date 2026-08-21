@@ -41,7 +41,10 @@ namespace Ee4v.FaceExpression
         {
             var root = rootVisualElement;
             root.Clear();
-            UiComposition.Prepare(root);
+            UiComposition.Prepare(
+                root,
+                "Editor/UI/Components/Inputs/ui-button.uss",
+                "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss");
             _view?.Dispose();
             _view = new BlendShapePresetView(CoreSettings.Current);
             root.Add(_view);
