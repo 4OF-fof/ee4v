@@ -37,7 +37,9 @@
     "collection": "コレクション",
     "newCollection": "新規コレクション",
     "none": "なし",
-    "unknown": "不明"
+    "unknown": "不明",
+    "yes": "はい",
+    "no": "いいえ"
   },
   "navigation": {
     "library": "全件",
@@ -133,7 +135,7 @@
     "path": "パス",
     "kind": "種別",
     "size": "サイズ",
-    "assetGuid": "Asset GUID",
+    "imported": "取り込み済み",
     "value": "値"
   },
   "filterCondition": {

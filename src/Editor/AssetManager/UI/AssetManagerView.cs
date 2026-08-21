@@ -911,22 +911,17 @@ namespace Ee4v.AssetManager.UI
                     ids.Length)),
                 false,
                 () => SetItemsArchived(ids, !archived));
-            menu.AddSeparator(string.Empty);
-            var deleteContent = UiTextFactory.CreateGuiContent(I18N.Get(
-                ids.Length == 1
-                    ? "action.delete"
-                    : "action.deleteItems",
-                ids.Length));
             if (archived)
             {
+                menu.AddSeparator(string.Empty);
                 menu.AddItem(
-                    deleteContent,
+                    UiTextFactory.CreateGuiContent(I18N.Get(
+                        ids.Length == 1
+                            ? "action.delete"
+                            : "action.deleteItems",
+                        ids.Length)),
                     false,
                     () => DeleteItems(ids));
-            }
-            else
-            {
-                menu.AddDisabledItem(deleteContent);
             }
             menu.ShowAsContext();
         }
@@ -1297,11 +1292,12 @@ namespace Ee4v.AssetManager.UI
                     ? "action.restore"
                     : "action.archive"),
                 () => ArchiveFile(file.Id, !file.IsArchived)));
-            var deleteButton = AssetManagerControls.CreateDangerButton(
-                I18N.Get("action.delete"),
-                () => DeleteFile(file.Id));
-            deleteButton.SetEnabled(file.IsArchived);
-            header.AddAction(deleteButton);
+            if (file.IsArchived)
+            {
+                header.AddAction(AssetManagerControls.CreateDangerButton(
+                    I18N.Get("action.delete"),
+                    () => DeleteFile(file.Id)));
+            }
             host.Add(header);
 
             var settings = new AssetDetailSection(
@@ -2094,8 +2090,11 @@ namespace Ee4v.AssetManager.UI
                 UiTextFactory.Create(
                     entry.SizeBytes.ToString("N0") + " B")));
             settingList.Add(new AssetDetailSettingRow(
-                I18N.Get("field.assetGuid"),
-                CreateGuidValue(ResolveEntryAssetGuids(file, entry))));
+                I18N.Get("field.imported"),
+                UiTextFactory.Create(I18N.Get(
+                    IsEntryImported(file, entry)
+                        ? "common.yes"
+                        : "common.no"))));
             information.Add(settingList);
             if (entry.Kind != AssetFileContentEntryKind.Directory &&
                 file != null)
@@ -2181,40 +2180,34 @@ namespace Ee4v.AssetManager.UI
             return text;
         }
 
-        private static UiTextElement CreateGuidValue(
-            IEnumerable<string> guids)
-        {
-            var values = (guids ?? Array.Empty<string>())
-                .Where(guid => !string.IsNullOrWhiteSpace(guid))
-                .Distinct(StringComparer.Ordinal)
-                .OrderBy(guid => guid, StringComparer.Ordinal)
-                .ToArray();
-            return CreateMonoValue(values.Length == 0
-                ? I18N.Get("common.none")
-                : string.Join("\n", values));
-        }
-
-        private IEnumerable<string> ResolveEntryAssetGuids(
+        private bool IsEntryImported(
             AssetFile file,
             AssetFileContentEntry entry)
         {
-            if (file != null &&
-                string.Equals(
-                    Path.GetExtension(entry?.Path),
+            if (file == null || entry == null)
+            {
+                return false;
+            }
+
+            var importedGuids = _manager.GetFileImportedAssetGuids(file.Id);
+            if (string.Equals(
+                    Path.GetExtension(entry.Path),
                     ".unitypackage",
                     StringComparison.OrdinalIgnoreCase))
             {
-                return _manager.GetFileImportedAssetGuids(file.Id);
+                return importedGuids.Count > 0;
             }
 
-            if (!string.IsNullOrWhiteSpace(entry?.AssetGuid))
+            if (!string.IsNullOrWhiteSpace(entry.AssetGuid))
             {
-                return new[] { entry.AssetGuid };
+                return importedGuids.Contains(
+                    entry.AssetGuid,
+                    StringComparer.OrdinalIgnoreCase);
             }
 
-            if (file == null || string.IsNullOrWhiteSpace(entry?.Path))
+            if (string.IsNullOrWhiteSpace(entry.Path))
             {
-                return Array.Empty<string>();
+                return false;
             }
 
             var targetPath = entry.Path
@@ -2230,11 +2223,9 @@ namespace Ee4v.AssetManager.UI
                     targetPath.Length - ".meta".Length);
             }
 
-            return _manager.GetFileImportedAssetGuids(file.Id)
-                .Where(guid => IsEntryAssetPath(
+            return importedGuids.Any(guid => IsEntryAssetPath(
                     AssetDatabase.GUIDToAssetPath(guid),
-                    targetPath))
-                .ToArray();
+                    targetPath));
         }
 
         private static bool IsEntryAssetPath(

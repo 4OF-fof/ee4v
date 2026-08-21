@@ -37,7 +37,9 @@
     "collection": "Collection",
     "newCollection": "New collection",
     "none": "None",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "yes": "Yes",
+    "no": "No"
   },
   "navigation": {
     "library": "All",
@@ -133,7 +135,7 @@
     "path": "Path",
     "kind": "Kind",
     "size": "Size",
-    "assetGuid": "Asset GUID",
+    "imported": "Imported",
     "value": "Value"
   },
   "filterCondition": {
