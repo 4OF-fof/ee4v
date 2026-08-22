@@ -86,7 +86,8 @@
     "apply": "Apply to Avatar",
     "addMenuExpression": "Add menu-only expression",
     "remove": "Remove",
-    "addMesh": "Add mesh"
+    "addMesh": "Add mesh",
+    "copyBlendShapes": "Copy as BlendShapes"
   },
   "gesture": {
     "Neutral": "Neutral",

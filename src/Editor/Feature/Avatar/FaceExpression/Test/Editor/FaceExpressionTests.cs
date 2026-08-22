@@ -263,6 +263,34 @@ namespace Ee4v.FaceExpression.Tests
         }
 
         [Test]
+        public void BlendShapeClipboard_PastesMatchingNamesWithoutUsingIndices()
+        {
+            var avatar = CreateAvatar(out var mesh, "Smile", "Angry");
+            var renderer = avatar.GetComponentInChildren<SkinnedMeshRenderer>();
+            var previousClipboard = EditorGUIUtility.systemCopyBuffer;
+            var channels = new[]
+            {
+                new BlendShapeChannel("Body", "Angry", 65f, true),
+                new BlendShapeChannel("Body", "Missing", 80f, true)
+            };
+
+            try
+            {
+                Assert.That(BlendShapeClipboard.Copy(channels), Is.True);
+                Assert.That(BlendShapeClipboard.CanPaste(renderer), Is.True);
+                Assert.That(BlendShapeClipboard.Paste(renderer), Is.EqualTo(1));
+                Assert.That(renderer.GetBlendShapeWeight(0), Is.Zero);
+                Assert.That(renderer.GetBlendShapeWeight(1), Is.EqualTo(65f));
+            }
+            finally
+            {
+                EditorGUIUtility.systemCopyBuffer = previousClipboard;
+                Object.DestroyImmediate(avatar);
+                Object.DestroyImmediate(mesh);
+            }
+        }
+
+        [Test]
         public void BlendShapeRows_GroupOnlyNormalAndSides()
         {
             var channels = new[]

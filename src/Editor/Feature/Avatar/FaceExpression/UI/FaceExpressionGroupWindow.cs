@@ -66,12 +66,16 @@ namespace Ee4v.FaceExpression
                     All = I18N.Get("group.all"),
                     AddMesh = I18N.Get("action.addMesh"),
                     RemoveMesh = I18N.Get("action.remove"),
+                    CopyBlendShapes = I18N.Get("action.copyBlendShapes"),
                     MeshGroupSection = I18N.Get("group.sectionMeshes"),
                     BodySection = I18N.Get("group.sectionBody")
                 });
             _view.GroupSelected += FaceExpressionGroupSession.SelectGroup;
             _view.AddMeshRequested += ShowMeshMenu;
             _view.RemoveMeshRequested += FaceExpressionGroupSession.RemoveMesh;
+            _view.CopyBodyBlendShapesRequested += () =>
+                BlendShapeClipboard.Copy(
+                    FaceExpressionGroupSession.BodyChannels);
             root.Add(_view);
         }
 

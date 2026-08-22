@@ -361,6 +361,7 @@ namespace Ee4v.FaceExpression
                     All = "All",
                     AddMesh = "Add mesh",
                     RemoveMesh = "Remove",
+                    CopyBlendShapes = "Copy as BlendShapes",
                     MeshGroupSection = "Added meshes",
                     BodySection = "Body"
                 });

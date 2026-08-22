@@ -86,7 +86,8 @@
     "apply": "アバターに適用",
     "addMenuExpression": "メニュー専用表情を追加",
     "remove": "削除",
-    "addMesh": "メッシュ追加"
+    "addMesh": "メッシュ追加",
+    "copyBlendShapes": "BlendShapeとしてコピー"
   },
   "gesture": {
     "Neutral": "Neutral",

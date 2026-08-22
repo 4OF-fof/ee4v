@@ -48,6 +48,8 @@ namespace Ee4v.FaceExpression
             Array.Empty<BlendShapeGroup>();
         private static IReadOnlyList<FaceMeshOption> _availableMeshes =
             Array.Empty<FaceMeshOption>();
+        private static IReadOnlyList<BlendShapeChannel> _channels =
+            Array.Empty<BlendShapeChannel>();
         private static readonly List<string> SelectedMeshPaths = new List<string>();
 
         internal static event Action Changed;
@@ -65,6 +67,23 @@ namespace Ee4v.FaceExpression
 
         internal static IReadOnlyList<string> RendererPaths => SelectedMeshPaths;
 
+        internal static IReadOnlyList<BlendShapeChannel> BodyChannels
+        {
+            get
+            {
+                var body = _availableMeshes.FirstOrDefault(mesh => mesh.IsBody);
+                return body == null
+                    ? Array.Empty<BlendShapeChannel>()
+                    : _channels.Where(channel =>
+                            !channel.IsHeader &&
+                            string.Equals(
+                                channel.RendererPath,
+                                body.Path,
+                                StringComparison.Ordinal))
+                        .ToArray();
+            }
+        }
+
         internal static string SelectedGroupKey { get; private set; }
 
         internal static string SelectedGroupName =>
@@ -73,6 +92,7 @@ namespace Ee4v.FaceExpression
         internal static void SetAvatar(GameObject avatar)
         {
             var body = FaceExpressionClipEditor.FindBodyRenderer(avatar);
+            _channels = Array.Empty<BlendShapeChannel>();
             _availableMeshes = avatar == null
                 ? Array.Empty<FaceMeshOption>()
                 : avatar.GetComponentsInChildren<SkinnedMeshRenderer>(true)
@@ -128,7 +148,8 @@ namespace Ee4v.FaceExpression
         internal static void UpdateChannels(
             IReadOnlyList<BlendShapeChannel> channels)
         {
-            _groups = CreateGroups(channels, out var totalCount);
+            _channels = channels ?? Array.Empty<BlendShapeChannel>();
+            _groups = CreateGroups(_channels, out var totalCount);
             TotalCount = totalCount;
             if (!ContainsGroup(SelectedGroupKey))
             {

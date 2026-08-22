@@ -15,6 +15,7 @@ namespace Ee4v.FaceExpression
         internal string All { get; set; }
         internal string AddMesh { get; set; }
         internal string RemoveMesh { get; set; }
+        internal string CopyBlendShapes { get; set; }
         internal string MeshGroupSection { get; set; }
         internal string BodySection { get; set; }
     }
@@ -23,6 +24,7 @@ namespace Ee4v.FaceExpression
     {
         private readonly string _allText;
         private readonly string _removeMeshText;
+        private readonly string _copyBlendShapesText;
         private readonly string _meshGroupSectionText;
         private readonly string _bodySectionText;
         private readonly ListView _list;
@@ -35,6 +37,7 @@ namespace Ee4v.FaceExpression
             text = text ?? new FaceExpressionGroupViewText();
             _allText = text.All;
             _removeMeshText = text.RemoveMesh;
+            _copyBlendShapesText = text.CopyBlendShapes;
             _meshGroupSectionText = text.MeshGroupSection;
             _bodySectionText = text.BodySection;
             AddToClassList("ee4v-face-expression-groups");
@@ -55,7 +58,7 @@ namespace Ee4v.FaceExpression
                 virtualizationMethod =
                     CollectionVirtualizationMethod.FixedHeight,
                 selectionType = SelectionType.Single,
-                makeItem = () => new GroupRow(ShowMeshContextMenu),
+                makeItem = () => new GroupRow(ShowContextMenu),
                 bindItem = BindRow
             };
             _list.AddToClassList("ee4v-face-expression-groups__list");
@@ -81,6 +84,7 @@ namespace Ee4v.FaceExpression
         internal event Action<string> GroupSelected;
         internal event Action AddMeshRequested;
         internal event Action<string> RemoveMeshRequested;
+        internal event Action CopyBodyBlendShapesRequested;
 
         internal void SetGroups(
             IReadOnlyList<BlendShapeGroup> groups,
@@ -95,7 +99,8 @@ namespace Ee4v.FaceExpression
             {
                 AddSection(
                     groups.Where(group => string.IsNullOrEmpty(group.RendererPath)),
-                    _bodySectionText);
+                    _bodySectionText,
+                    isBodySection: true);
                 AddSection(
                     groups.Where(group => !string.IsNullOrEmpty(group.RendererPath)),
                     _meshGroupSectionText);
@@ -115,19 +120,31 @@ namespace Ee4v.FaceExpression
             _rendering = false;
         }
 
-        private void ShowMeshContextMenu(string rendererPath)
+        private void ShowContextMenu(GroupOption option)
         {
             var menu = new GenericMenu();
-            menu.AddItem(
-                UiTextFactory.CreateGuiContent(_removeMeshText),
-                false,
-                () => RemoveMeshRequested?.Invoke(rendererPath));
+            if (option.IsBodySection)
+            {
+                menu.AddItem(
+                    UiTextFactory.CreateGuiContent(_copyBlendShapesText),
+                    false,
+                    () => CopyBodyBlendShapesRequested?.Invoke());
+            }
+            else
+            {
+                menu.AddItem(
+                    UiTextFactory.CreateGuiContent(_removeMeshText),
+                    false,
+                    () => RemoveMeshRequested?.Invoke(option.RendererPath));
+            }
+
             menu.ShowAsContext();
         }
 
         private void AddSection(
             IEnumerable<BlendShapeGroup> groups,
-            string sectionName)
+            string sectionName,
+            bool isBodySection = false)
         {
             var sectionGroups = groups.ToArray();
             if (sectionGroups.Length == 0)
@@ -135,7 +152,12 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            _options.Add(new GroupOption(null, sectionName, 0, true));
+            _options.Add(new GroupOption(
+                null,
+                sectionName,
+                0,
+                true,
+                isBodySection: isBodySection));
             for (var index = 0; index < sectionGroups.Length; index++)
             {
                 var group = sectionGroups[index];
@@ -178,13 +200,15 @@ namespace Ee4v.FaceExpression
                 string displayName,
                 int count,
                 bool isSectionHeader,
-                string rendererPath = null)
+                string rendererPath = null,
+                bool isBodySection = false)
             {
                 GroupKey = groupKey;
                 DisplayName = displayName;
                 Count = count;
                 IsSectionHeader = isSectionHeader;
                 RendererPath = rendererPath;
+                IsBodySection = isBodySection;
             }
 
             internal string GroupKey { get; }
@@ -192,17 +216,18 @@ namespace Ee4v.FaceExpression
             internal int Count { get; }
             internal bool IsSectionHeader { get; }
             internal string RendererPath { get; }
+            internal bool IsBodySection { get; }
         }
 
         private sealed class GroupRow : ContentRow
         {
             private readonly Badge _count;
-            private readonly Action<string> _showMeshContextMenu;
-            private string _rendererPath;
+            private readonly Action<GroupOption> _showContextMenu;
+            private GroupOption _option;
 
-            internal GroupRow(Action<string> showMeshContextMenu)
+            internal GroupRow(Action<GroupOption> showContextMenu)
             {
-                _showMeshContextMenu = showMeshContextMenu;
+                _showContextMenu = showContextMenu;
                 AddToClassList("ee4v-face-expression-group-row");
                 TitleText.AddToClassList(
                     "ee4v-face-expression-group-row__name");
@@ -215,7 +240,7 @@ namespace Ee4v.FaceExpression
 
             internal void SetOption(GroupOption option)
             {
-                _rendererPath = option?.RendererPath;
+                _option = option;
                 base.SetState(new ContentRowState(
                     option?.DisplayName ?? string.Empty));
                 EnableInClassList(
@@ -229,12 +254,14 @@ namespace Ee4v.FaceExpression
 
             private void OnContextClick(ContextClickEvent evt)
             {
-                if (string.IsNullOrEmpty(_rendererPath))
+                if (_option == null ||
+                    (!_option.IsBodySection &&
+                     string.IsNullOrEmpty(_option.RendererPath)))
                 {
                     return;
                 }
 
-                _showMeshContextMenu?.Invoke(_rendererPath);
+                _showContextMenu?.Invoke(_option);
                 evt.StopPropagation();
             }
         }

@@ -59,6 +59,7 @@
 | `Read_ConvertsHeadersAndIncludesSelectedMeshes` | 複数の区切り文字をヘッダーとして読み、グループウィンドウで選択した各RendererパスのBlendShapeを列挙する | 複数メッシュの同名BlendShapeを正しいAnimationカーブへ結ぶ契約を維持する |
 | `BlendShapeRows_GroupOnlyNormalAndSides` | FBX別プリセットで同じ見出し内の役割について通常、L、Rだけを1行へまとめ、番号などが異なる役割は別行にする | 左右以外の名前まで誤って同じカーブ選択へまとめる問題は実名一覧だけでは検出できない |
 | `BlendShapeRows_KeepClipChannelsSeparate` | FBX別プリセットで対応した各BlendShapeを個別行にし、左右指定を読み取り専用のトグルで示す | クリップ内表示で使用中カーブが再集約される問題と、固定値の表示位置が通常表示からずれる問題を防ぐ |
+| `BlendShapeClipboard_PastesMatchingNamesWithoutUsingIndices` | 表情のBodyからコピーした値を、並び順ではなく名前が一致するPrefabのBlendShapeだけへ貼り付ける | アバター間でBlendShapeの順序や構成が異なるとき、別の表情値を上書きする問題は同一メッシュへの貼り付けだけでは検出できない |
 | `BlendShapePresetClassifier_SeedsSupportedAvatarConventions` | Chiffon、Kipfel、Shinano、Manukaの命名形式から役割と左右指定の初期分類を作る | 左右表記だけを役割名から除き、番号や括弧表記を維持する条件は一覧表示だけでは確認できない |
 | `BlendShapePresets_RoundTripManualFbxMapping` | `<FBX名>.json`へFBXとメッシュに結び付いた手動分類を保存して復元し、別FBXには適用しない | 再起動後や複数FBX利用時のファイル形式と対応表の取り違えは設定画面だけでは確認できない |
 | `Groups_FilterHeadersAndTreatAddedMeshesAsGroups` | ヘッダー間の分類に加え、追加メッシュをメッシュ名のグループとして絞り込む | 追加メッシュのShapeが別Groupへ混入する問題と、メッシュ全体を選べない問題を防ぐ |
