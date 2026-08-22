@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
@@ -29,6 +30,10 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
         private static readonly FieldInfo SceneHierarchyField =
             SceneHierarchyWindowType?.GetField(
                 "m_SceneHierarchy",
+                InstanceFlags);
+        private static readonly PropertyInfo TreeViewRectProperty =
+            SceneHierarchyType?.GetProperty(
+                "treeViewRect",
                 InstanceFlags);
         private static readonly FieldInfo TreeViewField =
             SceneHierarchyType?.GetField(
@@ -69,13 +74,13 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
                 return false;
             }
 
-            var windows = Resources
-                .FindObjectsOfTypeAll(
-                    SceneHierarchyWindowType)
-                .OfType<EditorWindow>()
-                .ToArray();
+            if (!TryGetOpenWindows(out var windows))
+            {
+                return false;
+            }
+
             var updated = false;
-            for (var i = 0; i < windows.Length; i++)
+            for (var i = 0; i < windows.Count; i++)
             {
                 updated |= TrySetItemIcon(
                     windows[i],
@@ -84,6 +89,58 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
             }
 
             return updated;
+        }
+
+        public static bool TryGetOpenWindows(
+            out IReadOnlyList<EditorWindow> windows)
+        {
+            if (SceneHierarchyWindowType == null)
+            {
+                windows = Array.Empty<EditorWindow>();
+                return false;
+            }
+
+            windows = Resources
+                .FindObjectsOfTypeAll(
+                    SceneHierarchyWindowType)
+                .OfType<EditorWindow>()
+                .ToArray();
+            return true;
+        }
+
+        public static bool TryGetTreeViewRect(
+            EditorWindow window,
+            out Rect rect)
+        {
+            rect = default;
+            if (window == null ||
+                SceneHierarchyWindowType == null ||
+                !SceneHierarchyWindowType.IsInstanceOfType(window) ||
+                SceneHierarchyField == null ||
+                TreeViewRectProperty == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                var sceneHierarchy =
+                    SceneHierarchyField.GetValue(window);
+                if (sceneHierarchy == null ||
+                    !(TreeViewRectProperty.GetValue(
+                        sceneHierarchy) is Rect resolved))
+                {
+                    return false;
+                }
+
+                rect = resolved;
+                return rect.width > 0f && rect.height > 0f;
+            }
+            catch (Exception)
+            {
+                rect = default;
+                return false;
+            }
         }
 
         private static bool TrySetItemIcon(

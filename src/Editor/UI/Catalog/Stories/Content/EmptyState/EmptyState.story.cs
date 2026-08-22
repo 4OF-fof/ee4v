@@ -25,6 +25,7 @@ namespace Ee4v.UI
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
                         "Editor/Feature/Hierarchy/HierarchyStyle/HiddenObjects/UI/HiddenObjectTreeView.cs",
                         "Editor/Feature/Hierarchy/SceneSwitcher/UI/SceneSwitcherView.cs",
+                        "Editor/Feature/Project/AssetProtection/AssetProtectionModificationProcessor.cs",
                         "Editor/Feature/WindowGroup/UI/WindowGroupSettingsView.cs"
                     }));
             }

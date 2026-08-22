@@ -3,8 +3,14 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Ee4v.AssetManager.Contracts;
+using Ee4v.Core.EditorIntegration;
+using Ee4v.Core.I18n;
+using Ee4v.UI;
 using UnityEditor;
+using UnityEditor.Animations;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 [assembly: InternalsVisibleTo("Ee4v.AssetManager.UI.Editor")]
 
@@ -32,6 +38,10 @@ namespace Ee4v.AssetProtection
                 ClearProtection;
             EditorApplication.quitting += ClearProtection;
             EditorApplication.update += ApplyEditorObjectProtection;
+            EditorApplication.update +=
+                AssetInspectorProtectionOverlay.Update;
+            EditorApplication.update +=
+                PrefabStageProtectionOverlay.Update;
         }
 
         internal static void Configure(IAssetManager manager)
@@ -136,17 +146,21 @@ namespace Ee4v.AssetProtection
             }
         }
 
-        private static void ProtectObject(UnityEngine.Object asset)
+        internal static bool ProtectObject(UnityEngine.Object asset)
         {
             if (asset == null ||
-                !IsProtected(AssetDatabase.GetAssetPath(asset)) ||
-                (asset.hideFlags & HideFlags.NotEditable) != 0)
+                !IsProtected(AssetDatabase.GetAssetPath(asset)))
             {
-                return;
+                return false;
             }
 
-            asset.hideFlags |= HideFlags.NotEditable;
-            ManagedNotEditableObjects.Add(asset);
+            if ((asset.hideFlags & HideFlags.NotEditable) == 0)
+            {
+                asset.hideFlags |= HideFlags.NotEditable;
+                ManagedNotEditableObjects.Add(asset);
+            }
+
+            return true;
         }
 
         private static void ClearProtection()
@@ -169,6 +183,379 @@ namespace Ee4v.AssetProtection
             }
 
             ManagedDisabledWindows.Clear();
+            AssetInspectorProtectionOverlay.Clear();
+            PrefabStageProtectionOverlay.Clear();
+        }
+    }
+
+    internal static class AssetInspectorProtectionOverlay
+    {
+        private const string ElementName =
+            "ee4v-asset-protection-asset-inspector-overlay";
+
+        internal static void Update()
+        {
+            if (!InspectorApi.TryGetStates(out var states))
+            {
+                return;
+            }
+
+            for (var i = 0; i < states.Count; i++)
+            {
+                Sync(states[i]);
+            }
+        }
+
+        internal static void Clear()
+        {
+            if (!InspectorApi.TryGetStates(out var states))
+            {
+                return;
+            }
+
+            for (var i = 0; i < states.Count; i++)
+            {
+                states[i]?.Window?.rootVisualElement
+                    ?.Q<VisualElement>(ElementName)
+                    ?.RemoveFromHierarchy();
+            }
+        }
+
+        private static void Sync(InspectorState state)
+        {
+            var root = state?.Window?.rootVisualElement;
+            var overlay = root?.Q<VisualElement>(ElementName);
+            var viewportRect = state?.EditorsViewportRect ?? Rect.zero;
+            if (root == null ||
+                !ContainsProtectedBlendTree(state) ||
+                viewportRect.width <= 0f ||
+                viewportRect.height <= 0f)
+            {
+                overlay?.RemoveFromHierarchy();
+                return;
+            }
+
+            if (overlay == null)
+            {
+                overlay = Create();
+                root.Add(overlay);
+            }
+
+            if (overlay.parent != null &&
+                overlay.parent.IndexOf(overlay) <
+                overlay.parent.childCount - 1)
+            {
+                overlay.BringToFront();
+            }
+
+            overlay.style.left = viewportRect.x;
+            overlay.style.top = viewportRect.y;
+            overlay.style.width = viewportRect.width;
+            overlay.style.height = viewportRect.height;
+        }
+
+        private static bool ContainsProtectedBlendTree(
+            InspectorState state)
+        {
+            for (var targetIndex = 0;
+                 targetIndex < state.EditorTargets.Count;
+                 targetIndex++)
+            {
+                var target = state.EditorTargets[targetIndex];
+                if (target is BlendTree &&
+                    EditorUtility.IsPersistent(target) &&
+                    AssetProtectionModule.ProtectObject(target))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static VisualElement Create()
+        {
+            var overlay = new VisualElement
+            {
+                name = ElementName,
+                focusable = true
+            };
+            overlay.style.position = Position.Absolute;
+            overlay.style.backgroundColor =
+                new Color(0.08f, 0.08f, 0.08f, 0.82f);
+            UiComposition.Prepare(overlay);
+            overlay.Add(new EmptyState(new EmptyStateState(
+                I18N.Get("asset.warning.title"))));
+            overlay.RegisterCallback<PointerDownEvent>(
+                _ => overlay.Focus());
+            overlay.RegisterCallback<KeyDownEvent>(
+                evt => evt.StopPropagation());
+            return overlay;
+        }
+    }
+
+    internal static class PrefabStageProtectionOverlay
+    {
+        private const string HierarchyElementName =
+            "ee4v-asset-protection-hierarchy-overlay";
+        private const string InspectorElementName =
+            "ee4v-asset-protection-inspector-overlay";
+        private static PrefabStage _continuedStage;
+
+        internal static void Update()
+        {
+            var stage = PrefabStageUtility.GetCurrentPrefabStage();
+            if (stage == null)
+            {
+                _continuedStage = null;
+            }
+
+            var shouldShow =
+                stage != null &&
+                stage != _continuedStage &&
+                AssetProtectionModule.IsProtected(stage.assetPath);
+            SyncHierarchyWindows(stage, shouldShow);
+            SyncInspectorWindows(stage, shouldShow);
+        }
+
+        internal static void Clear()
+        {
+            _continuedStage = null;
+            RemoveFromAllWindows();
+        }
+
+        private static void SyncHierarchyWindows(
+            PrefabStage stage,
+            bool shouldShow)
+        {
+            if (!HierarchyItemApi.TryGetOpenWindows(out var windows))
+            {
+                return;
+            }
+
+            for (var i = 0; i < windows.Count; i++)
+            {
+                SyncHierarchyWindow(
+                    windows[i],
+                    stage,
+                    shouldShow);
+            }
+        }
+
+        private static void SyncHierarchyWindow(
+            EditorWindow window,
+            PrefabStage stage,
+            bool shouldShow)
+        {
+            var root = window?.rootVisualElement;
+            var overlay = root?.Q<VisualElement>(
+                HierarchyElementName);
+            if (root == null ||
+                !shouldShow ||
+                !HierarchyItemApi.TryGetTreeViewRect(
+                    window,
+                    out var treeViewRect))
+            {
+                overlay?.RemoveFromHierarchy();
+                return;
+            }
+
+            overlay = EnsureOverlay(
+                root,
+                overlay,
+                HierarchyElementName,
+                stage);
+            SetRect(overlay, treeViewRect);
+        }
+
+        private static void SyncInspectorWindows(
+            PrefabStage stage,
+            bool shouldShow)
+        {
+            if (!InspectorApi.TryGetStates(out var states))
+            {
+                return;
+            }
+
+            for (var i = 0; i < states.Count; i++)
+            {
+                SyncInspectorWindow(
+                    states[i],
+                    stage,
+                    shouldShow);
+            }
+        }
+
+        private static void SyncInspectorWindow(
+            InspectorState state,
+            PrefabStage stage,
+            bool shouldShow)
+        {
+            var root = state?.Window?.rootVisualElement;
+            var overlay = root?.Q<VisualElement>(
+                InspectorElementName);
+            var viewportRect = state?.EditorsViewportRect ?? Rect.zero;
+            if (root == null ||
+                !shouldShow ||
+                !IsInspectingStage(state, stage) ||
+                viewportRect.width <= 0f ||
+                viewportRect.height <= 0f)
+            {
+                overlay?.RemoveFromHierarchy();
+                return;
+            }
+
+            overlay = EnsureOverlay(
+                root,
+                overlay,
+                InspectorElementName,
+                stage);
+            SetRect(overlay, viewportRect);
+        }
+
+        private static VisualElement EnsureOverlay(
+            VisualElement root,
+            VisualElement overlay,
+            string elementName,
+            PrefabStage stage)
+        {
+            if (overlay == null ||
+                !ReferenceEquals(overlay.userData, stage))
+            {
+                overlay?.RemoveFromHierarchy();
+                overlay = Create(elementName, stage);
+                root.Add(overlay);
+            }
+
+            if (overlay.parent != null &&
+                overlay.parent.IndexOf(overlay) <
+                overlay.parent.childCount - 1)
+            {
+                overlay.BringToFront();
+            }
+
+            return overlay;
+        }
+
+        private static VisualElement Create(
+            string elementName,
+            PrefabStage stage)
+        {
+            var overlay = new VisualElement
+            {
+                name = elementName,
+                focusable = true,
+                userData = stage
+            };
+            overlay.style.position = Position.Absolute;
+            overlay.style.backgroundColor =
+                new Color(0.08f, 0.08f, 0.08f, 0.82f);
+            UiComposition.Prepare(
+                overlay,
+                "Editor/UI/Components/Inputs/ui-button.uss");
+
+            var warning = new EmptyState(new EmptyStateState(
+                I18N.Get("prefabStage.warning.title")));
+            var continueButton = UiTextFactory.CreateButton(
+                I18N.Get("prefabStage.warning.continue"),
+                () => ContinueEditing(stage));
+            continueButton.AddToClassList("ee4v-ui-button");
+            continueButton.style.minWidth =
+                UiSizeTokens.ActionButtonWidth;
+            warning.Actions.Add(continueButton);
+            overlay.Add(warning);
+
+            overlay.RegisterCallback<PointerDownEvent>(
+                _ => overlay.Focus());
+            overlay.RegisterCallback<KeyDownEvent>(
+                evt => evt.StopPropagation());
+            return overlay;
+        }
+
+        private static void SetRect(
+            VisualElement overlay,
+            Rect rect)
+        {
+            overlay.style.left = rect.x;
+            overlay.style.top = rect.y;
+            overlay.style.width = rect.width;
+            overlay.style.height = rect.height;
+        }
+
+        private static bool IsInspectingStage(
+            InspectorState state,
+            PrefabStage stage)
+        {
+            if (state == null || stage == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < state.InspectedObjects.Count; i++)
+            {
+                var inspected = state.InspectedObjects[i];
+                var gameObject = inspected as GameObject;
+                if (gameObject == null && inspected is Component component)
+                {
+                    gameObject = component.gameObject;
+                }
+
+                if (gameObject != null &&
+                    gameObject.scene == stage.scene)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void ContinueEditing(PrefabStage stage)
+        {
+            if (stage == null ||
+                PrefabStageUtility.GetCurrentPrefabStage() != stage)
+            {
+                return;
+            }
+
+            _continuedStage = stage;
+            RemoveFromAllWindows();
+        }
+
+        private static void RemoveFromAllWindows()
+        {
+            RemoveFromHierarchyWindows();
+            RemoveFromInspectorWindows();
+        }
+
+        private static void RemoveFromHierarchyWindows()
+        {
+            if (!HierarchyItemApi.TryGetOpenWindows(out var windows))
+            {
+                return;
+            }
+
+            for (var i = 0; i < windows.Count; i++)
+            {
+                windows[i]?.rootVisualElement
+                    ?.Q<VisualElement>(HierarchyElementName)
+                    ?.RemoveFromHierarchy();
+            }
+        }
+
+        private static void RemoveFromInspectorWindows()
+        {
+            if (!InspectorApi.TryGetStates(out var states))
+            {
+                return;
+            }
+
+            for (var i = 0; i < states.Count; i++)
+            {
+                states[i]?.Window?.rootVisualElement
+                    ?.Q<VisualElement>(InspectorElementName)
+                    ?.RemoveFromHierarchy();
+            }
         }
     }
 

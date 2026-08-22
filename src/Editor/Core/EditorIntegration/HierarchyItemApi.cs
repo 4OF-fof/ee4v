@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using Ee4v.Core.Internal.EditorAPI.Backends;
+using UnityEditor;
 using UnityEngine;
 
 namespace Ee4v.Core.EditorIntegration
@@ -15,6 +17,22 @@ namespace Ee4v.Core.EditorIntegration
             return SceneHierarchyBackend.TrySetItemIcon(
                 instanceId,
                 icon);
+        }
+
+        public static bool TryGetOpenWindows(
+            out IReadOnlyList<EditorWindow> windows)
+        {
+            return SceneHierarchyBackend.TryGetOpenWindows(
+                out windows);
+        }
+
+        public static bool TryGetTreeViewRect(
+            EditorWindow window,
+            out Rect rect)
+        {
+            return SceneHierarchyBackend.TryGetTreeViewRect(
+                window,
+                out rect);
         }
     }
 }

@@ -56,7 +56,9 @@
 |---|---|
 | `Window` | 対象 Inspector window |
 | `InspectedObjects` | Inspector が現在扱う object |
+| `EditorTargets` | 実際に描画中のEditorが扱うobject |
 | `EditorsElement` | editor 本体を含む要素。状態生成に必須 |
+| `EditorsViewportRect` | editor 本体を表示するviewport領域 |
 | `PreviewAndLabelElement` | preview と label の要素。取得できない場合は `null` |
 | `VersionControlElement` | version control の要素。取得できない場合は `null` |
 
@@ -68,6 +70,8 @@
 | `TryGetState(window, out state)` | 指定 Inspector の snapshot を返す | なし |
 
 返される `EditorWindow` と `VisualElement` は live object です。API 自体は変更しませんが、呼び出し側が要素を変更すると Inspector の表示へ影響します。
+
+Inspector全体の選択と個別Editorのtargetが異なる場合は`EditorTargets`を使用します。
 
 ## `EditorPopupApi`
 
@@ -104,8 +108,10 @@
 |---|---|---|
 | `IsIconSupported` | 必要な Hierarchy 内部 API を利用できるか返す | なし |
 | `TrySetIcon(instanceId, icon)` | 開いている各 Hierarchy の対象項目へ icon を設定する | Hierarchy の内部 tree item を変更する |
+| `TryGetOpenWindows(out windows)` | 開いている Hierarchy Window を返す | なし |
+| `TryGetTreeViewRect(window, out rect)` | GameObjectを表示するtree view領域を返す | なし |
 
-instance ID が `0`、内部 API が非対応、対象項目がない場合は `false` です。一つ以上の Hierarchy で更新できた場合に `true` を返します。永続化は行いません。
+instance ID が `0`、内部 API が非対応、対象項目がない場合は `false` です。一つ以上の Hierarchy で更新できた場合に `true` を返します。tree view領域を取得できない場合は空の`Rect`を返します。永続化は行いません。
 
 ## `EditorTextFieldApi`
 

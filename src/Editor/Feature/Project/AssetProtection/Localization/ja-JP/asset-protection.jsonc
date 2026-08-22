@@ -1,0 +1,13 @@
+{
+  "asset": {
+    "warning": {
+      "title": "保護されたアセットです"
+    }
+  },
+  "prefabStage": {
+    "warning": {
+      "title": "保護された Prefab です",
+      "continue": "編集を続ける"
+    }
+  }
+}

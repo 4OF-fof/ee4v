@@ -1,0 +1,13 @@
+{
+  "asset": {
+    "warning": {
+      "title": "This asset is protected"
+    }
+  },
+  "prefabStage": {
+    "warning": {
+      "title": "This Prefab is protected",
+      "continue": "Continue editing"
+    }
+  }
+}

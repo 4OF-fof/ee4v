@@ -9,6 +9,7 @@ Hierarchy は各行への IMGUI 描画追加を提供します。描画には `I
 | 型 | 役割 |
 |---|---|
 | `InjectorApi` | registration の登録、解除、再描画 |
+| `HierarchyItemApi` | 項目アイコンの設定と開いているHierarchy Windowの取得 |
 | `InjectionChannel.HierarchyItem` | Hierarchy 項目の channel |
 | `ItemInjectionRegistration` | 項目の描画 callback を表す |
 | `ItemInjectionContext` | 対象 object、scene、描画領域を callback へ渡す |
@@ -25,6 +26,8 @@ Hierarchy は各行への IMGUI 描画追加を提供します。描画には `I
 | `Repaint(HierarchyItem)` | Hierarchy window の再描画を要求する |
 
 Hierarchy では `InjectionChannel.HierarchyItem` と `ItemInjectionRegistration` を組み合わせます。
+
+`HierarchyItemApi.TryGetOpenWindows`はUnityの内部型をCore内で解決し、開いているHierarchy Windowのsnapshotを返します。`TryGetTreeViewRect`は指定WindowでGameObjectを表示するtree view領域を返します。内部型や必要なmemberを解決できない場合、前者は`false`と空の一覧を返し、後者は`false`と空の`Rect`を返します。
 
 registration は `Priority` の昇順、その後 `Id` の ordinal 順で実行されます。同じ channel と ID の登録は新しい instance へ置き換わります。
 

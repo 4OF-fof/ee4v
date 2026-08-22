@@ -12,14 +12,18 @@ namespace Ee4v.Core.EditorIntegration
         {
             Window = snapshot.Window;
             InspectedObjects = snapshot.InspectedObjects;
+            EditorTargets = snapshot.EditorTargets;
             EditorsElement = snapshot.EditorsElement;
+            EditorsViewportRect = snapshot.EditorsViewportRect;
             PreviewAndLabelElement = snapshot.PreviewAndLabelElement;
             VersionControlElement = snapshot.VersionControlElement;
         }
 
         public EditorWindow Window { get; }
         public IReadOnlyList<Object> InspectedObjects { get; }
+        public IReadOnlyList<Object> EditorTargets { get; }
         public VisualElement EditorsElement { get; }
+        public Rect EditorsViewportRect { get; }
         public VisualElement PreviewAndLabelElement { get; }
         public VisualElement VersionControlElement { get; }
     }

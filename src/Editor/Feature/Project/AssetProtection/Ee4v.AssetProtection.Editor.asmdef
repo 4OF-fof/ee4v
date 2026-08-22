@@ -2,7 +2,10 @@
   "name": "Ee4v.AssetProtection.Editor",
   "rootNamespace": "Ee4v.AssetProtection",
   "references": [
-    "Ee4v.AssetManager.Contracts.Editor"
+    "Ee4v.AssetManager.Contracts.Editor",
+    "Ee4v.Core.Editor",
+    "Ee4v.Core.Presentation.Editor",
+    "Ee4v.UI.Editor"
   ],
   "includePlatforms": [
     "Editor"
