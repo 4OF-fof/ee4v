@@ -113,6 +113,11 @@ namespace Ee4v.FaceExpression
         private const string StateTagPrefix = "ee4v-face:3:";
         private const string LegacyStateTagPrefix = "ee4v-face:2:";
         private const string MenuTagPrefix = "ee4v-menu:1:";
+        private static readonly string[] TrackingControlTypeNames =
+        {
+            "VRC.SDKBase.VRC_AnimatorTrackingControl",
+            "VRC.SDK3.Avatars.Components.VRCAnimatorTrackingControl"
+        };
         public static bool OwnsLayer(AnimatorController controller)
         {
             return controller != null && controller.layers.Any(layer => layer.name == LayerName);
@@ -140,21 +145,56 @@ namespace Ee4v.FaceExpression
                 return result;
             }
 
-            var layer = controller.layers.FirstOrDefault(candidate => candidate.name == MenuLayerName);
+            var layer = controller.layers.FirstOrDefault(
+                candidate => candidate.name == LayerName);
             if (layer?.stateMachine == null)
             {
-                return result;
+                layer = controller.layers.FirstOrDefault(
+                    candidate => candidate.name == MenuLayerName);
             }
 
-            foreach (var child in layer.stateMachine.states.OrderBy(item => item.state.name))
+            var foundMenuState = ReadMenuEntries(
+                layer?.stateMachine,
+                result);
+            if (!foundMenuState && layer?.name != MenuLayerName)
             {
-                if (TryReadMenuTag(child.state.tag, out var entry, out var isExplicit) && isExplicit)
+                var legacyLayer = controller.layers.FirstOrDefault(
+                    candidate => candidate.name == MenuLayerName);
+                ReadMenuEntries(legacyLayer?.stateMachine, result);
+            }
+
+            return result;
+        }
+
+        private static bool ReadMenuEntries(
+            AnimatorStateMachine stateMachine,
+            ICollection<FaceExpressionMenuEntry> result)
+        {
+            var foundMenuState = false;
+            if (stateMachine == null)
+            {
+                return false;
+            }
+
+            foreach (var child in stateMachine.states.OrderBy(
+                         item => item.state.name))
+            {
+                if (!TryReadMenuTag(
+                        child.state.tag,
+                        out var entry,
+                        out var isExplicit))
+                {
+                    continue;
+                }
+
+                foundMenuState = true;
+                if (isExplicit)
                 {
                     result.Add(entry);
                 }
             }
 
-            return result;
+            return foundMenuState;
         }
 
         public static IReadOnlyList<EffectiveMenuEntry> GetEffectiveMenuEntries(
@@ -192,34 +232,47 @@ namespace Ee4v.FaceExpression
             RemoveOwnedLayer(controller);
             RemoveLayer(controller, MenuLayerName);
 
-            var configured = assignments
-                .Where(pair => !pair.Value.IsDefault)
-                .ToDictionary(pair => pair.Key, pair => pair.Value);
-            var neutralKey = new GestureCombination(FaceGesture.Neutral, FaceGesture.Neutral);
-            if (!configured.ContainsKey(neutralKey))
+            var configured = new Dictionary<GestureCombination, FaceExpressionAssignment>();
+            foreach (FaceGesture left in Enum.GetValues(typeof(FaceGesture)))
             {
-                configured.Add(neutralKey, GetAssignment(assignments, neutralKey));
+                foreach (FaceGesture right in Enum.GetValues(typeof(FaceGesture)))
+                {
+                    var combination = new GestureCombination(left, right);
+                    configured.Add(
+                        combination,
+                        GetAssignment(assignments, combination));
+                }
             }
 
+            var neutralKey = new GestureCombination(FaceGesture.Neutral, FaceGesture.Neutral);
+            var neutralAssignment = configured[neutralKey];
+            var effectiveAssignments = configured.ToDictionary(
+                pair => pair.Key,
+                pair => pair.Value.IsDefault
+                    ? neutralAssignment
+                    : pair.Value);
             var effectiveMenuEntries = BuildEffectiveMenuEntries(assignments, menuEntries);
-            var allAssignments = configured.Values
+            var allAssignments = effectiveAssignments.Values
                 .Concat(effectiveMenuEntries.Select(item => item.Entry.Assignment));
-            var bindings = CollectBindings(allAssignments, avatarBindings);
-            var blinkKeys = CreateBindingKeys(avatarBindings.Blink);
-            var mouthKeys = CreateBindingKeys(avatarBindings.Mouth);
+            var bindings = CollectBindings(
+                avatar,
+                allAssignments,
+                avatarBindings);
             var motions = new Dictionary<GestureCombination, AnimationClip>();
+            var normalizedMotions =
+                new Dictionary<NormalizedMotionKey, AnimationClip>();
+            var usedGeneratedClipPaths = new HashSet<string>(
+                StringComparer.Ordinal);
             foreach (var pair in Order(configured))
             {
-                motions[pair.Key] = CreateNormalizedClip(
+                motions[pair.Key] = GetOrCreateNormalizedMotion(
                     controller,
                     avatar,
-                    pair.Value,
+                    effectiveAssignments[pair.Key],
                     bindings,
-                    blinkKeys,
-                    mouthKeys,
-                    "L" + ((int)pair.Key.Left).ToString("00") +
-                    " R" + ((int)pair.Key.Right).ToString("00"),
-                    outputFolder);
+                    outputFolder,
+                    normalizedMotions,
+                    usedGeneratedClipPaths);
             }
 
             var stateMachine = new AnimatorStateMachine { name = LayerName };
@@ -236,30 +289,41 @@ namespace Ee4v.FaceExpression
                 stateMachine,
                 neutralKey,
                 motions[neutralKey],
-                configured[neutralKey]);
+                configured[neutralKey],
+                effectiveAssignments[neutralKey]);
             stateMachine.defaultState = neutral;
 
             foreach (var pair in Order(configured).Where(pair => !pair.Key.Equals(neutralKey)))
             {
-                var state = AddState(stateMachine, pair.Key, motions[pair.Key], pair.Value);
+                var state = AddState(
+                    stateMachine,
+                    pair.Key,
+                    motions[pair.Key],
+                    pair.Value,
+                    effectiveAssignments[pair.Key]);
                 AddAnyStateTransition(stateMachine, state, pair.Key);
-                AddResetTransition(state, neutral, GestureLeft, pair.Key.Left);
-                AddResetTransition(state, neutral, GestureRight, pair.Key.Right);
             }
 
-            AddMenuOverrideState(stateMachine, neutral);
+            AddAnyStateTransition(stateMachine, neutral, neutralKey);
+
             if (effectiveMenuEntries.Count > 0)
             {
-                AddMenuLayer(
+                AddMenuStates(
+                    stateMachine,
+                    neutral,
                     controller,
                     avatar,
                     effectiveMenuEntries,
                     bindings,
-                    blinkKeys,
-                    mouthKeys,
-                    outputFolder);
+                    outputFolder,
+                    normalizedMotions,
+                    usedGeneratedClipPaths);
             }
 
+            DeleteUnusedGeneratedClips(
+                controller,
+                outputFolder,
+                usedGeneratedClipPaths);
             EditorUtility.SetDirty(stateMachine);
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
@@ -311,7 +375,8 @@ namespace Ee4v.FaceExpression
             AnimatorStateMachine stateMachine,
             GestureCombination combination,
             AnimationClip motion,
-            FaceExpressionAssignment assignment)
+            FaceExpressionAssignment storedAssignment,
+            FaceExpressionAssignment effectiveAssignment)
         {
             var state = stateMachine.AddState(
                 ((int)combination.Left).ToString("00") + "-" +
@@ -319,7 +384,8 @@ namespace Ee4v.FaceExpression
                 combination.Left + " + " + combination.Right);
             state.motion = motion;
             state.writeDefaultValues = false;
-            state.tag = CreateTag(combination, assignment);
+            state.tag = CreateTag(combination, storedAssignment);
+            ConfigureTracking(state, effectiveAssignment);
             return state;
         }
 
@@ -342,85 +408,45 @@ namespace Ee4v.FaceExpression
             transition.AddCondition(AnimatorConditionMode.Equals, 0f, MenuParameter);
         }
 
-        private static void AddResetTransition(
-            AnimatorState state,
-            AnimatorState neutral,
-            string parameter,
-            FaceGesture gesture)
-        {
-            var reset = state.AddTransition(neutral);
-            ConfigureTransition(reset);
-            reset.AddCondition(AnimatorConditionMode.NotEqual, (int)gesture, parameter);
-        }
-
-        private static void AddMenuOverrideState(
+        private static void AddMenuStates(
             AnimatorStateMachine stateMachine,
-            AnimatorState neutral)
-        {
-            var state = stateMachine.AddState("Menu Override");
-            state.writeDefaultValues = false;
-            var activate = stateMachine.AddAnyStateTransition(state);
-            ConfigureTransition(activate);
-            activate.canTransitionToSelf = false;
-            activate.AddCondition(AnimatorConditionMode.NotEqual, 0f, MenuParameter);
-
-            var reset = state.AddTransition(neutral);
-            ConfigureTransition(reset);
-            reset.AddCondition(AnimatorConditionMode.Equals, 0f, MenuParameter);
-        }
-
-        private static void AddMenuLayer(
+            AnimatorState neutral,
             AnimatorController controller,
             GameObject avatar,
             IReadOnlyList<EffectiveMenuEntry> entries,
             IReadOnlyList<EditorCurveBinding> bindings,
-            ISet<string> blinkKeys,
-            ISet<string> mouthKeys,
-            string outputFolder)
+            string outputFolder,
+            IDictionary<NormalizedMotionKey, AnimationClip> normalizedMotions,
+            ISet<string> usedGeneratedClipPaths)
         {
-            var stateMachine = new AnimatorStateMachine { name = MenuLayerName };
-            AssetDatabase.AddObjectToAsset(stateMachine, controller);
-            Undo.RegisterCreatedObjectUndo(stateMachine, "Create Face Expression Menu Layer");
-            controller.AddLayer(new AnimatorControllerLayer
-            {
-                name = MenuLayerName,
-                defaultWeight = 1f,
-                stateMachine = stateMachine
-            });
-
-            var off = stateMachine.AddState("000 Gesture Assignments");
-            off.writeDefaultValues = false;
-            stateMachine.defaultState = off;
             for (var index = 0; index < entries.Count; index++)
             {
                 var value = index + 1;
                 var item = entries[index];
-                var motion = CreateNormalizedClip(
+                var motion = GetOrCreateNormalizedMotion(
                     controller,
                     avatar,
                     item.Entry.Assignment,
                     bindings,
-                    blinkKeys,
-                    mouthKeys,
-                    "M" + value.ToString("000"),
-                    outputFolder);
+                    outputFolder,
+                    normalizedMotions,
+                    usedGeneratedClipPaths);
                 var state = stateMachine.AddState(
-                    value.ToString("000") + " " + item.Entry.Name);
+                    "M" + value.ToString("000") + " " + item.Entry.Name);
                 state.motion = motion;
                 state.writeDefaultValues = false;
                 state.tag = CreateMenuTag(item);
+                ConfigureTracking(state, item.Entry.Assignment);
 
                 var activate = stateMachine.AddAnyStateTransition(state);
                 ConfigureTransition(activate);
                 activate.canTransitionToSelf = false;
                 activate.AddCondition(AnimatorConditionMode.Equals, value, MenuParameter);
 
-                var reset = state.AddTransition(off);
+                var reset = state.AddTransition(neutral);
                 ConfigureTransition(reset);
-                reset.AddCondition(AnimatorConditionMode.NotEqual, value, MenuParameter);
+                reset.AddCondition(AnimatorConditionMode.Equals, 0f, MenuParameter);
             }
-
-            EditorUtility.SetDirty(stateMachine);
         }
 
         private static void ConfigureTransition(AnimatorStateTransition transition)
@@ -472,26 +498,40 @@ namespace Ee4v.FaceExpression
         }
 
         private static IReadOnlyList<EditorCurveBinding> CollectBindings(
+            GameObject avatar,
             IEnumerable<FaceExpressionAssignment> assignments,
             FaceExpressionAvatarBindings avatarBindings)
         {
             var result = new Dictionary<string, EditorCurveBinding>(StringComparer.Ordinal);
+            AddBindings(result, avatarBindings.Blink);
+            AddBindings(result, avatarBindings.Mouth);
             foreach (var assignment in assignments)
             {
                 if (assignment.Clip != null)
                 {
                     AddBindings(result, AnimationUtility.GetCurveBindings(assignment.Clip));
                 }
+            }
 
-                if (!assignment.EnableBlink)
-                {
-                    AddBindings(result, avatarBindings.Blink);
-                }
+            var rendererPaths = new HashSet<string>(
+                result.Values
+                    .Where(IsBlendShape)
+                    .Select(binding => binding.path),
+                StringComparer.Ordinal);
+            var body = FaceExpressionClipEditor.FindBodyRenderer(avatar);
+            if (body != null)
+            {
+                rendererPaths.Add(AnimationUtility.CalculateTransformPath(
+                    body.transform,
+                    avatar.transform));
+            }
 
-                if (assignment.FixMouth)
-                {
-                    AddBindings(result, avatarBindings.Mouth);
-                }
+            foreach (var rendererPath in rendererPaths)
+            {
+                AddRendererBindings(
+                    result,
+                    avatar,
+                    rendererPath);
             }
 
             return result.Values
@@ -510,10 +550,31 @@ namespace Ee4v.FaceExpression
             }
         }
 
-        private static HashSet<string> CreateBindingKeys(
-            IEnumerable<EditorCurveBinding> bindings)
+        private static void AddRendererBindings(
+            IDictionary<string, EditorCurveBinding> result,
+            GameObject avatar,
+            string rendererPath)
         {
-            return new HashSet<string>(bindings.Select(BindingKey), StringComparer.Ordinal);
+            var target = string.IsNullOrEmpty(rendererPath)
+                ? avatar.transform
+                : avatar.transform.Find(rendererPath);
+            var renderer = target == null
+                ? null
+                : target.GetComponent<SkinnedMeshRenderer>();
+            var mesh = renderer == null ? null : renderer.sharedMesh;
+            if (mesh == null)
+            {
+                return;
+            }
+
+            for (var index = 0; index < mesh.blendShapeCount; index++)
+            {
+                var binding = EditorCurveBinding.FloatCurve(
+                    rendererPath,
+                    typeof(SkinnedMeshRenderer),
+                    "blendShape." + mesh.GetBlendShapeName(index));
+                result[BindingKey(binding)] = binding;
+            }
         }
 
         private static AnimationClip CreateNormalizedClip(
@@ -521,8 +582,6 @@ namespace Ee4v.FaceExpression
             GameObject avatar,
             FaceExpressionAssignment assignment,
             IReadOnlyList<EditorCurveBinding> bindings,
-            ISet<string> blinkKeys,
-            ISet<string> mouthKeys,
             string identity,
             string outputFolder)
         {
@@ -551,13 +610,6 @@ namespace Ee4v.FaceExpression
 
             foreach (var binding in bindings)
             {
-                var key = BindingKey(binding);
-                if ((blinkKeys.Contains(key) && assignment.EnableBlink) ||
-                    (mouthKeys.Contains(key) && !assignment.FixMouth))
-                {
-                    continue;
-                }
-
                 var curve = assignment.Clip == null
                     ? null
                     : AnimationUtility.GetEditorCurve(assignment.Clip, binding);
@@ -571,6 +623,103 @@ namespace Ee4v.FaceExpression
             generated.frameRate = 60f;
             EditorUtility.SetDirty(generated);
             return generated;
+        }
+
+        private static void ConfigureTracking(
+            AnimatorState state,
+            FaceExpressionAssignment assignment)
+        {
+            var type = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(assembly => TrackingControlTypeNames.Select(name =>
+                    assembly.GetType(name, false)))
+                .FirstOrDefault(candidate => candidate != null);
+            if (type == null)
+            {
+                return;
+            }
+
+            var behaviour = state.AddStateMachineBehaviour(type);
+            SetTrackingField(
+                behaviour,
+                "trackingEyes",
+                assignment.EnableBlink ? "Tracking" : "Animation");
+            SetTrackingField(
+                behaviour,
+                "trackingMouth",
+                assignment.FixMouth ? "Animation" : "Tracking");
+        }
+
+        private static void SetTrackingField(
+            StateMachineBehaviour behaviour,
+            string fieldName,
+            string value)
+        {
+            var field = behaviour.GetType().GetField(fieldName);
+            if (field == null || !field.FieldType.IsEnum)
+            {
+                return;
+            }
+
+            field.SetValue(behaviour, Enum.Parse(field.FieldType, value));
+            EditorUtility.SetDirty(behaviour);
+        }
+
+        private static AnimationClip GetOrCreateNormalizedMotion(
+            AnimatorController controller,
+            GameObject avatar,
+            FaceExpressionAssignment assignment,
+            IReadOnlyList<EditorCurveBinding> bindings,
+            string outputFolder,
+            IDictionary<NormalizedMotionKey, AnimationClip> motions,
+            ISet<string> usedGeneratedClipPaths)
+        {
+            var key = new NormalizedMotionKey(assignment);
+            if (!motions.TryGetValue(key, out var motion))
+            {
+                motion = CreateNormalizedClip(
+                    controller,
+                    avatar,
+                    assignment,
+                    bindings,
+                    "Motion " + (motions.Count + 1).ToString("000"),
+                    outputFolder);
+                motions.Add(key, motion);
+            }
+
+            usedGeneratedClipPaths.Add(AssetDatabase.GetAssetPath(motion));
+            return motion;
+        }
+
+        private static void DeleteUnusedGeneratedClips(
+            AnimatorController controller,
+            string outputFolder,
+            ISet<string> usedPaths)
+        {
+            var controllerPath = AssetDatabase.GetAssetPath(controller);
+            var prefix = Path.GetFileNameWithoutExtension(controllerPath) + " ";
+            var folder = outputFolder.TrimEnd('/');
+            foreach (var guid in AssetDatabase.FindAssets(
+                         "t:AnimationClip",
+                         new[] { folder }))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (!string.Equals(
+                        Path.GetDirectoryName(path)?.Replace('\\', '/'),
+                        folder,
+                        StringComparison.Ordinal) ||
+                    usedPaths.Contains(path))
+                {
+                    continue;
+                }
+
+                var name = Path.GetFileNameWithoutExtension(path);
+                if (name.StartsWith(prefix + "Motion ", StringComparison.Ordinal) ||
+                    name.StartsWith(prefix + "L", StringComparison.Ordinal) ||
+                    name.StartsWith(prefix + "M", StringComparison.Ordinal))
+                {
+                    AssetDatabase.DeleteAsset(path);
+                }
+            }
         }
 
         private static float GetDefaultValue(GameObject avatar, EditorCurveBinding binding)
@@ -781,9 +930,7 @@ namespace Ee4v.FaceExpression
                 if (result.Any(item =>
                         item.LeftGesture == leftGesture &&
                         item.Entry.Name == name &&
-                        item.Entry.Assignment.Clip == assignment.Clip &&
-                        item.Entry.Assignment.EnableBlink == assignment.EnableBlink &&
-                        item.Entry.Assignment.FixMouth == assignment.FixMouth))
+                        item.Entry.Assignment.Clip == assignment.Clip))
                 {
                     continue;
                 }
@@ -826,6 +973,34 @@ namespace Ee4v.FaceExpression
             public FaceExpressionAssignment Assignment => Entry.Assignment;
             public bool IsExplicit { get; }
             public FaceGesture? LeftGesture { get; }
+        }
+
+        private readonly struct NormalizedMotionKey : IEquatable<NormalizedMotionKey>
+        {
+            public NormalizedMotionKey(FaceExpressionAssignment assignment)
+            {
+                Clip = assignment.Clip;
+            }
+
+            private AnimationClip Clip { get; }
+
+            public bool Equals(NormalizedMotionKey other)
+            {
+                return Clip == other.Clip;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is NormalizedMotionKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return Clip == null ? 0 : Clip.GetInstanceID();
+                }
+            }
         }
     }
 }

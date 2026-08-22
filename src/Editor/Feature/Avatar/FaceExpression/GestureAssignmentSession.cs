@@ -10,6 +10,10 @@ namespace Ee4v.FaceExpression
             Assignments = new Dictionary<GestureCombination, FaceExpressionAssignment>();
         private static readonly List<FaceExpressionMenuEntry> Entries =
             new List<FaceExpressionMenuEntry>();
+        private static readonly HashSet<FaceGesture> SyncedLeftGestures =
+            new HashSet<FaceGesture>();
+        private static readonly HashSet<FaceGesture> SyncedRightGestures =
+            new HashSet<FaceGesture>();
         private static GestureCombination _selectedCombination =
             new GestureCombination(FaceGesture.Neutral, FaceGesture.Neutral);
         private static FaceExpressionMenuEntry _selectedMenuEntry;
@@ -20,6 +24,10 @@ namespace Ee4v.FaceExpression
         internal static GestureCombination SelectedCombination => _selectedCombination;
         internal static FaceExpressionMenuEntry SelectedMenuEntry => _selectedMenuEntry;
         internal static bool IsMenuSelection => _selectedMenuEntry != null;
+        internal static bool IsSelectedLeftSynced =>
+            !IsMenuSelection && SyncedLeftGestures.Contains(_selectedCombination.Left);
+        internal static bool IsSelectedRightSynced =>
+            !IsMenuSelection && SyncedRightGestures.Contains(_selectedCombination.Right);
         internal static string SelectedMenuName =>
             _selectedMenuEntry?.Name ?? SelectedAssignment.MenuName;
 
@@ -102,11 +110,11 @@ namespace Ee4v.FaceExpression
             AnimationClip clip)
         {
             var current = GetAssignment(combination);
-            Assignments[combination] = new FaceExpressionAssignment(
+            SetAssignment(combination, new FaceExpressionAssignment(
                 clip,
                 current.EnableBlink,
                 current.FixMouth,
-                current.MenuName);
+                current.MenuName));
             _selectedCombination = combination;
             _selectedMenuEntry = null;
             Changed?.Invoke();
@@ -144,7 +152,7 @@ namespace Ee4v.FaceExpression
             }
             else
             {
-                Assignments[_selectedCombination] = assignment;
+                SetAssignment(_selectedCombination, assignment);
             }
 
             Changed?.Invoke();
@@ -160,12 +168,108 @@ namespace Ee4v.FaceExpression
             }
 
             var current = GetAssignment(_selectedCombination);
-            Assignments[_selectedCombination] = new FaceExpressionAssignment(
+            SetAssignment(_selectedCombination, new FaceExpressionAssignment(
                 current.Clip,
                 current.EnableBlink,
                 current.FixMouth,
-                name);
+                name));
             Changed?.Invoke();
+        }
+
+        internal static void SetSelectedLeftSynchronized(bool synchronized)
+        {
+            if (_selectedMenuEntry != null)
+            {
+                return;
+            }
+
+            if (synchronized)
+            {
+                SyncedLeftGestures.Add(_selectedCombination.Left);
+                SynchronizeAssignment(
+                    _selectedCombination,
+                    SelectedAssignment);
+            }
+            else
+            {
+                SyncedLeftGestures.Remove(_selectedCombination.Left);
+            }
+
+            Changed?.Invoke();
+        }
+
+        internal static void SetSelectedRightSynchronized(bool synchronized)
+        {
+            if (_selectedMenuEntry != null)
+            {
+                return;
+            }
+
+            if (synchronized)
+            {
+                SyncedRightGestures.Add(_selectedCombination.Right);
+                SynchronizeAssignment(
+                    _selectedCombination,
+                    SelectedAssignment);
+            }
+            else
+            {
+                SyncedRightGestures.Remove(_selectedCombination.Right);
+            }
+
+            Changed?.Invoke();
+        }
+
+        internal static void ResetSynchronization()
+        {
+            SyncedLeftGestures.Clear();
+            SyncedRightGestures.Clear();
+        }
+
+        private static void SetAssignment(
+            GestureCombination combination,
+            FaceExpressionAssignment assignment)
+        {
+            Assignments[combination] = assignment;
+            SynchronizeAssignment(combination, assignment);
+        }
+
+        private static void SynchronizeAssignment(
+            GestureCombination source,
+            FaceExpressionAssignment assignment)
+        {
+            var pending = new Queue<GestureCombination>();
+            var visited = new HashSet<GestureCombination>();
+            pending.Enqueue(source);
+            while (pending.Count > 0)
+            {
+                var combination = pending.Dequeue();
+                if (!visited.Add(combination))
+                {
+                    continue;
+                }
+
+                Assignments[combination] = assignment;
+                if (SyncedLeftGestures.Contains(combination.Left))
+                {
+                    foreach (FaceGesture right in Enum.GetValues(typeof(FaceGesture)))
+                    {
+                        pending.Enqueue(new GestureCombination(
+                            combination.Left,
+                            right));
+                    }
+                }
+
+                if (SyncedRightGestures.Contains(combination.Right))
+                {
+                    foreach (FaceGesture left in Enum.GetValues(typeof(FaceGesture)))
+                    {
+                        pending.Enqueue(new GestureCombination(
+                            left,
+                            combination.Right));
+                    }
+                }
+            }
         }
 
         internal static void AddMenuExpression()

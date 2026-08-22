@@ -525,34 +525,48 @@ namespace Ee4v.FaceExpression
             string safeAvatarName)
         {
             var result = new Texture2D[entries.Count];
+            var usedPaths = new HashSet<string>(StringComparer.Ordinal);
             if (FaceExpressionSettings.GetMenuIconsDisabled() || entries.Count == 0)
             {
+                DeleteUnusedMenuIcons(
+                    assetsFolder,
+                    safeAvatarName,
+                    usedPaths);
                 return result;
             }
 
             var rendererPaths = FaceExpressionClipEditor.GetRendererPaths(avatar);
+            var iconsByClip = new Dictionary<AnimationClip, Texture2D>();
             using (var preview = new FaceExpressionPreview(null))
             {
                 preview.SetAvatar(avatar);
                 for (var index = 0; index < entries.Count; index++)
                 {
+                    var clip = entries[index].Assignment.Clip;
+                    if (iconsByClip.TryGetValue(clip, out var existingIcon))
+                    {
+                        result[index] = existingIcon;
+                        continue;
+                    }
+
                     Texture2D rendered = null;
                     try
                     {
                         var channels = FaceExpressionClipEditor.Read(
                             avatar,
-                            entries[index].Assignment.Clip,
+                            clip,
                             Array.Empty<string>(),
                             rendererPaths);
                         rendered = preview.RenderThumbnail(channels, 256, 256);
                         if (rendered == null)
                         {
+                            iconsByClip.Add(clip, null);
                             continue;
                         }
 
                         var assetPath = assetsFolder + "/" + safeAvatarName +
                                         " FacialSet Icon " +
-                                        (index + 1).ToString("000") + ".png";
+                                        (usedPaths.Count + 1).ToString("000") + ".png";
                         var fullPath = Path.Combine(
                             Application.dataPath,
                             assetPath.Substring("Assets/".Length)
@@ -564,6 +578,8 @@ namespace Ee4v.FaceExpression
                         ConfigureIconImporter(assetPath);
                         result[index] = AssetDatabase.LoadAssetAtPath<Texture2D>(
                             assetPath);
+                        iconsByClip.Add(clip, result[index]);
+                        usedPaths.Add(assetPath);
                     }
                     catch (Exception exception)
                     {
@@ -578,10 +594,46 @@ namespace Ee4v.FaceExpression
                             UnityEngine.Object.DestroyImmediate(rendered);
                         }
                     }
+                    if (!iconsByClip.ContainsKey(clip))
+                    {
+                        iconsByClip.Add(clip, null);
+                    }
                 }
             }
 
+            DeleteUnusedMenuIcons(
+                assetsFolder,
+                safeAvatarName,
+                usedPaths);
             return result;
+        }
+
+        private static void DeleteUnusedMenuIcons(
+            string assetsFolder,
+            string safeAvatarName,
+            ISet<string> usedPaths)
+        {
+            var folder = assetsFolder.TrimEnd('/');
+            var prefix = safeAvatarName + " FacialSet Icon ";
+            foreach (var guid in AssetDatabase.FindAssets(
+                         "t:Texture2D",
+                         new[] { folder }))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (!string.Equals(
+                        Path.GetDirectoryName(path)?.Replace('\\', '/'),
+                        folder,
+                        StringComparison.Ordinal) ||
+                    usedPaths.Contains(path) ||
+                    !Path.GetFileNameWithoutExtension(path).StartsWith(
+                        prefix,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                AssetDatabase.DeleteAsset(path);
+            }
         }
 
         private static void ConfigureIconImporter(string assetPath)

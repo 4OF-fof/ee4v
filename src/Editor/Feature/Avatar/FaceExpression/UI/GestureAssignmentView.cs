@@ -18,6 +18,9 @@ namespace Ee4v.FaceExpression
         public string RightHand { get; set; }
         public string Selection { get; set; }
         public string ExpressionSettings { get; set; }
+        public string Synchronization { get; set; }
+        public string SynchronizeLeft { get; set; }
+        public string SynchronizeRight { get; set; }
         public string GlobalSettings { get; set; }
         public string Clip { get; set; }
         public string EnableBlink { get; set; }
@@ -322,6 +325,8 @@ namespace Ee4v.FaceExpression
         private readonly UiTextButton _removeMenuButton;
         private readonly Toggle _blinkToggle;
         private readonly Toggle _mouthToggle;
+        private readonly Toggle _synchronizeLeftToggle;
+        private readonly Toggle _synchronizeRightToggle;
         private readonly Toggle _menuIconsToggle;
         private readonly ISettingsService _settings;
         private bool _rendering;
@@ -406,6 +411,41 @@ namespace Ee4v.FaceExpression
             expressionControls.Add(_mouthToggle);
             Add(expressionControls);
 
+            var synchronizationHeader = new SectionHeader(
+                _text.Synchronization);
+            synchronizationHeader.AddToClassList(
+                "ee4v-gesture-assignment__settings-section");
+            Add(synchronizationHeader);
+
+            var synchronizationControls = new VisualElement();
+            synchronizationControls.AddToClassList(
+                "ee4v-gesture-assignment__controls");
+            _synchronizeLeftToggle = UiTextFactory.CreateToggle(
+                _text.SynchronizeLeft,
+                "ee4v-gesture-assignment__toggle");
+            _synchronizeLeftToggle.RegisterValueChangedCallback(evt =>
+            {
+                if (!_rendering)
+                {
+                    GestureAssignmentSession.SetSelectedLeftSynchronized(
+                        evt.newValue);
+                }
+            });
+            synchronizationControls.Add(_synchronizeLeftToggle);
+            _synchronizeRightToggle = UiTextFactory.CreateToggle(
+                _text.SynchronizeRight,
+                "ee4v-gesture-assignment__toggle");
+            _synchronizeRightToggle.RegisterValueChangedCallback(evt =>
+            {
+                if (!_rendering)
+                {
+                    GestureAssignmentSession.SetSelectedRightSynchronized(
+                        evt.newValue);
+                }
+            });
+            synchronizationControls.Add(_synchronizeRightToggle);
+            Add(synchronizationControls);
+
             var globalHeader = new SectionHeader(
                 _text.GlobalSettings);
             globalHeader.AddToClassList(
@@ -489,6 +529,12 @@ namespace Ee4v.FaceExpression
                 : DisplayStyle.None;
             _blinkToggle.SetValueWithoutNotify(assignment.EnableBlink);
             _mouthToggle.SetValueWithoutNotify(assignment.FixMouth);
+            _synchronizeLeftToggle.SetValueWithoutNotify(
+                GestureAssignmentSession.IsSelectedLeftSynced);
+            _synchronizeRightToggle.SetValueWithoutNotify(
+                GestureAssignmentSession.IsSelectedRightSynced);
+            _synchronizeLeftToggle.SetEnabled(!isExtra);
+            _synchronizeRightToggle.SetEnabled(!isExtra);
             _menuIconsToggle.SetValueWithoutNotify(
                 FaceExpressionSettings.GetMenuIconsDisabled(_settings));
             _rendering = false;

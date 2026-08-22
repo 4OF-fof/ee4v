@@ -36,9 +36,12 @@ namespace Ee4v.FaceExpression.Tests
                 "Smile",
                 "Angry",
                 "Blink",
-                "vrc.v_aa");
+                "vrc.v_aa",
+                "LegacyGesture");
             try
             {
+                avatar.GetComponentInChildren<SkinnedMeshRenderer>()
+                    .SetBlendShapeWeight(4, 12f);
                 var smile = CreateClip(
                     "Smile.anim",
                     ("blendShape.Smile", 80f),
@@ -49,10 +52,18 @@ namespace Ee4v.FaceExpression.Tests
                     ("blendShape.Angry", 65f),
                     ("blendShape.Blink", 75f),
                     ("blendShape.vrc.v_aa", 55f));
+                var neutral = CreateClip(
+                    "Neutral.anim",
+                    ("blendShape.Smile", 25f));
                 var controller = AnimatorController.CreateAnimatorControllerAtPath(
                     TestFolder + "/Avatar.controller");
                 controller.AddLayer("Existing Layer");
                 var fistOpen = new GestureCombination(FaceGesture.Fist, FaceGesture.Open);
+                var fistPoint = new GestureCombination(FaceGesture.Fist, FaceGesture.Point);
+                var fistFist = new GestureCombination(FaceGesture.Fist, FaceGesture.Fist);
+                var neutralNeutral = new GestureCombination(
+                    FaceGesture.Neutral,
+                    FaceGesture.Neutral);
                 var victoryGun = new GestureCombination(
                     FaceGesture.Victory,
                     FaceGesture.HandGun);
@@ -65,9 +76,15 @@ namespace Ee4v.FaceExpression.Tests
                     avatar,
                     new Dictionary<GestureCombination, FaceExpressionAssignment>
                     {
+                        [neutralNeutral] = new FaceExpressionAssignment(neutral),
                         [fistOpen] = new FaceExpressionAssignment(
                             smile,
                             enableBlink: false,
+                            menuName: "Smile Pair"),
+                        [fistPoint] = new FaceExpressionAssignment(
+                            smile,
+                            enableBlink: true,
+                            fixMouth: true,
                             menuName: "Smile Pair"),
                         [victoryGun] = new FaceExpressionAssignment(
                             angry,
@@ -98,6 +115,7 @@ namespace Ee4v.FaceExpression.Tests
                 Assert.That(assignments[fistOpen].EnableBlink, Is.False);
                 Assert.That(assignments[fistOpen].FixMouth, Is.False);
                 Assert.That(assignments[fistOpen].MenuName, Is.EqualTo("Smile Pair"));
+                Assert.That(assignments[fistFist].IsDefault, Is.True);
                 Assert.That(assignments[victoryGun].Clip, Is.SameAs(angry));
                 Assert.That(assignments[victoryGun].EnableBlink, Is.True);
                 Assert.That(assignments[victoryGun].FixMouth, Is.True);
@@ -110,10 +128,10 @@ namespace Ee4v.FaceExpression.Tests
                         assignments,
                         menuEntries);
                 Assert.That(
-                    effectiveEntries.Any(entry =>
+                    effectiveEntries.Count(entry =>
                         entry.Name == "Smile Pair" &&
                         entry.LeftGesture == FaceGesture.Fist),
-                    Is.True);
+                    Is.EqualTo(1));
                 Assert.That(
                     effectiveEntries.Any(entry =>
                         entry.Name == "Menu Angry" &&
@@ -129,14 +147,51 @@ namespace Ee4v.FaceExpression.Tests
                 Assert.That(ReadValue(fistClip, "blendShape.Smile"), Is.EqualTo(80f));
                 Assert.That(ReadValue(fistClip, "blendShape.Angry"), Is.EqualTo(5f));
                 Assert.That(ReadValue(fistClip, "blendShape.Blink"), Is.EqualTo(70f));
-                Assert.That(ReadOptionalValue(fistClip, "blendShape.vrc.v_aa"), Is.Null);
+                Assert.That(
+                    ReadValue(fistClip, "blendShape.LegacyGesture"),
+                    Is.EqualTo(12f));
+                Assert.That(ReadValue(fistClip, "blendShape.vrc.v_aa"), Is.EqualTo(60f));
+                Assert.That(fist.transitions, Is.Empty);
+                Assert.That(
+                    layer.stateMachine.states.Count(child =>
+                        child.state.tag.StartsWith("ee4v-face:")),
+                    Is.EqualTo(64));
+                var neutralState = layer.stateMachine.states
+                    .Select(child => child.state)
+                    .Single(state => state.name == "00-00 Neutral + Neutral");
+                var fistFistState = layer.stateMachine.states
+                    .Select(child => child.state)
+                    .Single(state => state.name == "01-01 Fist + Fist");
+                Assert.That(fistFistState.motion, Is.SameAs(neutralState.motion));
+                Assert.That(
+                    ReadValue((AnimationClip)fistFistState.motion, "blendShape.Smile"),
+                    Is.EqualTo(25f));
 
                 var victory = layer.stateMachine.states
                     .Select(child => child.state)
                     .Single(state => state.name == "04-06 Victory + HandGun");
                 var victoryClip = (AnimationClip)victory.motion;
-                Assert.That(ReadOptionalValue(victoryClip, "blendShape.Blink"), Is.Null);
+                Assert.That(ReadValue(victoryClip, "blendShape.Blink"), Is.EqualTo(75f));
                 Assert.That(ReadValue(victoryClip, "blendShape.vrc.v_aa"), Is.EqualTo(55f));
+                Assert.That(
+                    controller.layers.Any(candidate =>
+                        candidate.name == GestureMatrixControllerWriter.MenuLayerName),
+                    Is.False);
+                var menuAngry = layer.stateMachine.states
+                    .Select(child => child.state)
+                    .Single(state => state.name.EndsWith(" Menu Angry"));
+                Assert.That(menuAngry.motion, Is.SameAs(victory.motion));
+                Assert.That(
+                    menuAngry.transitions.Single().conditions.Select(condition =>
+                        (condition.parameter, condition.mode, condition.threshold)),
+                    Is.EquivalentTo(new[]
+                    {
+                        (
+                            GestureMatrixControllerWriter.MenuParameter,
+                            AnimatorConditionMode.Equals,
+                            0f)
+                    }));
+                Assert.That(GetGeneratedExpressionClipPaths().Count, Is.EqualTo(3));
                 var transition = layer.stateMachine.anyStateTransitions
                     .Single(candidate => candidate.destinationState == victory);
                 Assert.That(
@@ -149,6 +204,11 @@ namespace Ee4v.FaceExpression.Tests
                         (GestureMatrixControllerWriter.MenuParameter, 0f)
                     }));
 
+                const string legacyGeneratedPath =
+                    TestFolder + "/Avatar L07 R07.anim";
+                AssetDatabase.CreateAsset(
+                    new AnimationClip(),
+                    legacyGeneratedPath);
                 GestureMatrixControllerWriter.Apply(
                     controller,
                     avatar,
@@ -163,6 +223,10 @@ namespace Ee4v.FaceExpression.Tests
                     controller.layers.Count(candidate =>
                         candidate.name == GestureMatrixControllerWriter.LayerName),
                     Is.EqualTo(1));
+                Assert.That(GetGeneratedExpressionClipPaths().Count, Is.EqualTo(2));
+                Assert.That(
+                    AssetDatabase.LoadMainAssetAtPath(legacyGeneratedPath),
+                    Is.Null);
             }
             finally
             {
@@ -484,6 +548,17 @@ namespace Ee4v.FaceExpression.Tests
                 sourceMeshLocalId: 123L);
         }
 
+        private static IReadOnlyList<string> GetGeneratedExpressionClipPaths()
+        {
+            return AssetDatabase.FindAssets(
+                    "t:AnimationClip",
+                    new[] { TestFolder })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Where(path => Path.GetFileNameWithoutExtension(path)
+                    .StartsWith("Avatar Motion "))
+                .ToArray();
+        }
+
         private static BlendShapeNamingRule CreateMappedRule(
             IEnumerable<BlendShapeChannel> channels)
         {
@@ -573,12 +648,6 @@ namespace Ee4v.FaceExpression.Tests
             var curve = AnimationUtility.GetEditorCurve(clip, Binding(property));
             Assert.That(curve, Is.Not.Null);
             return curve.Evaluate(0f);
-        }
-
-        private static float? ReadOptionalValue(AnimationClip clip, string property)
-        {
-            var curve = AnimationUtility.GetEditorCurve(clip, Binding(property));
-            return curve == null ? (float?)null : curve.Evaluate(0f);
         }
 
         private static EditorCurveBinding Binding(string property)

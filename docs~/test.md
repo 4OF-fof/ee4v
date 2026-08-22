@@ -55,7 +55,7 @@
 
 | テスト | 保証する契約 | 残す理由 |
 | --- | --- | --- |
-| `Apply_GeneratesGestureMatrixAndControlsBlinkAndMouthBindings` | 左右ジェスチャーとExpression Menuの状態を生成し、表情ごとの表示名・左手グループ・まばたき・口固定を保持してメニュー専用表情を復元する | 64通りとメニュー優先の遷移条件、表情切替後の値残り、VRChatのまばたきとリップシンクへ制御を戻す契約は元クリップの確認だけでは検出できない |
+| `Apply_GeneratesGestureMatrixAndControlsBlinkAndMouthBindings` | 左右ジェスチャーとExpression Menuを排他的に遷移させ、未割り当てをNeutral＋Neutralへ戻し、顔メッシュの未指定BlendShapeを既定値で上書きする | メニューとジェスチャーの競合、未割り当ての既定表情、元FXからの表情値残り、生成物の重複、VRChatのまばたきとリップシンクへ制御を戻す契約は元クリップの確認だけでは検出できない |
 | `Read_ConvertsHeadersAndIncludesSelectedMeshes` | 複数の区切り文字をヘッダーとして読み、グループウィンドウで選択した各RendererパスのBlendShapeを列挙する | 複数メッシュの同名BlendShapeを正しいAnimationカーブへ結ぶ契約を維持する |
 | `BlendShapeRows_GroupOnlyNormalAndSides` | FBX別プリセットで同じ見出し内の役割について通常、L、Rだけを1行へまとめ、番号などが異なる役割は別行にする | 左右以外の名前まで誤って同じカーブ選択へまとめる問題は実名一覧だけでは検出できない |
 | `BlendShapeRows_KeepClipChannelsSeparate` | FBX別プリセットで対応した各BlendShapeを個別行にし、左右指定を読み取り専用のトグルで示す | クリップ内表示で使用中カーブが再集約される問題と、固定値の表示位置が通常表示からずれる問題を防ぐ |

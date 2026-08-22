@@ -98,6 +98,11 @@ namespace Ee4v.FaceExpression
 
         private void SetAvatar(GameObject avatar)
         {
+            if (_avatar != avatar)
+            {
+                GestureAssignmentSession.ResetSynchronization();
+            }
+
             _avatar = avatar;
             ClearThumbnails();
             _preview?.SetAvatar(avatar);
@@ -218,6 +223,9 @@ namespace Ee4v.FaceExpression
                 RightHand = I18N.Get("assignments.rightHand"),
                 Selection = I18N.Get("assignments.selection"),
                 ExpressionSettings = I18N.Get("assignments.expressionSettings"),
+                Synchronization = I18N.Get("assignments.synchronization"),
+                SynchronizeLeft = I18N.Get("assignments.synchronizeLeft"),
+                SynchronizeRight = I18N.Get("assignments.synchronizeRight"),
                 GlobalSettings = I18N.Get("assignments.globalSettings"),
                 Clip = I18N.Get("field.clip"),
                 EnableBlink = I18N.Get("assignments.enableBlink"),

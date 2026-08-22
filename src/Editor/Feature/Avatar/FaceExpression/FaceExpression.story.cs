@@ -304,6 +304,9 @@ namespace Ee4v.FaceExpression
                     RightHand = "Right hand",
                     Selection = "Selected",
                     ExpressionSettings = "Expression settings",
+                    Synchronization = "Synchronization",
+                    SynchronizeLeft = "Synchronize the same left hand",
+                    SynchronizeRight = "Synchronize the same right hand",
                     GlobalSettings = "Global settings",
                     Clip = "Expression clip",
                     EnableBlink = "Enable blinking",
@@ -333,12 +336,15 @@ namespace Ee4v.FaceExpression
 
             var settingsSurface = new VisualElement();
             settingsSurface.style.width = 420f;
-            settingsSurface.style.height = 280f;
+            settingsSurface.style.height = 400f;
             settingsSurface.Add(new GestureAssignmentSettingsView(
                 new GestureAssignmentViewText
                 {
                     Selection = "Selected",
                     ExpressionSettings = "Expression settings",
+                    Synchronization = "Synchronization",
+                    SynchronizeLeft = "Synchronize the same left hand",
+                    SynchronizeRight = "Synchronize the same right hand",
                     GlobalSettings = "Global settings",
                     EnableBlink = "Enable blinking",
                     FixMouth = "Fix mouth movement",
