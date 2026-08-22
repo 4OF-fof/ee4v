@@ -40,16 +40,19 @@ namespace Ee4v.FaceExpression
         public FaceExpressionAssignment(
             AnimationClip clip,
             bool enableBlink = true,
-            bool fixMouth = false)
+            bool fixMouth = false,
+            string menuName = null)
         {
             Clip = clip;
             EnableBlink = enableBlink;
             FixMouth = fixMouth;
+            MenuName = menuName ?? string.Empty;
         }
 
         public AnimationClip Clip { get; }
         public bool EnableBlink { get; }
         public bool FixMouth { get; }
+        public string MenuName { get; }
         public bool IsDefault => Clip == null && EnableBlink && !FixMouth;
 
         public static FaceExpressionAssignment Default =>
@@ -107,7 +110,8 @@ namespace Ee4v.FaceExpression
         internal const string MenuParameter = "ee4v/FaceExpression";
         private const string GestureLeft = "GestureLeft";
         private const string GestureRight = "GestureRight";
-        private const string StateTagPrefix = "ee4v-face:2:";
+        private const string StateTagPrefix = "ee4v-face:3:";
+        private const string LegacyStateTagPrefix = "ee4v-face:2:";
         private const string MenuTagPrefix = "ee4v-menu:1:";
         public static bool OwnsLayer(AnimatorController controller)
         {
@@ -153,13 +157,11 @@ namespace Ee4v.FaceExpression
             return result;
         }
 
-        public static IReadOnlyList<FaceExpressionMenuEntry> GetEffectiveMenuEntries(
+        public static IReadOnlyList<EffectiveMenuEntry> GetEffectiveMenuEntries(
             IReadOnlyDictionary<GestureCombination, FaceExpressionAssignment> assignments,
             IReadOnlyList<FaceExpressionMenuEntry> menuEntries)
         {
-            return BuildEffectiveMenuEntries(assignments, menuEntries)
-                .Select(item => item.Entry)
-                .ToArray();
+            return BuildEffectiveMenuEntries(assignments, menuEntries);
         }
 
         public static void Apply(
@@ -610,7 +612,8 @@ namespace Ee4v.FaceExpression
             return StateTagPrefix + (int)combination.Left + ":" +
                    (int)combination.Right + ":" + guid + ":" +
                    (assignment.EnableBlink ? "1" : "0") + ":" +
-                   (assignment.FixMouth ? "1" : "0");
+                   (assignment.FixMouth ? "1" : "0") + ":" +
+                   Uri.EscapeDataString(assignment.MenuName);
         }
 
         private static bool TryReadTag(
@@ -620,13 +623,23 @@ namespace Ee4v.FaceExpression
         {
             combination = default;
             assignment = FaceExpressionAssignment.Default;
-            if (string.IsNullOrEmpty(tag) || !tag.StartsWith(StateTagPrefix, StringComparison.Ordinal))
+            if (string.IsNullOrEmpty(tag))
             {
                 return false;
             }
 
-            var parts = tag.Substring(StateTagPrefix.Length).Split(':');
-            if (parts.Length != 5 ||
+            var prefix = tag.StartsWith(StateTagPrefix, StringComparison.Ordinal)
+                ? StateTagPrefix
+                : tag.StartsWith(LegacyStateTagPrefix, StringComparison.Ordinal)
+                    ? LegacyStateTagPrefix
+                    : null;
+            if (prefix == null)
+            {
+                return false;
+            }
+
+            var parts = tag.Substring(prefix.Length).Split(':');
+            if ((parts.Length != 5 && parts.Length != 6) ||
                 !TryReadGesture(parts[0], out var left) ||
                 !TryReadGesture(parts[1], out var right) ||
                 !TryReadBoolean(parts[3], out var enableBlink) ||
@@ -639,7 +652,10 @@ namespace Ee4v.FaceExpression
             assignment = new FaceExpressionAssignment(
                 LoadClip(parts[2]),
                 enableBlink,
-                fixMouth);
+                fixMouth,
+                parts.Length == 6
+                    ? Uri.UnescapeDataString(parts[5])
+                    : string.Empty);
             return true;
         }
 
@@ -751,12 +767,20 @@ namespace Ee4v.FaceExpression
             IReadOnlyList<FaceExpressionMenuEntry> menuEntries)
         {
             var result = new List<EffectiveMenuEntry>();
-            foreach (var assignment in Order(
+            foreach (var pair in Order(
                          assignments ?? new Dictionary<GestureCombination, FaceExpressionAssignment>())
-                     .Select(pair => pair.Value)
-                     .Where(value => value.Clip != null))
+                     .Where(item => item.Value.Clip != null))
             {
+                var assignment = pair.Value;
+                var leftGesture = pair.Key.Left == FaceGesture.Neutral
+                    ? (FaceGesture?)null
+                    : pair.Key.Left;
+                var name = string.IsNullOrWhiteSpace(assignment.MenuName)
+                    ? assignment.Clip.name
+                    : assignment.MenuName.Trim();
                 if (result.Any(item =>
+                        item.LeftGesture == leftGesture &&
+                        item.Entry.Name == name &&
                         item.Entry.Assignment.Clip == assignment.Clip &&
                         item.Entry.Assignment.EnableBlink == assignment.EnableBlink &&
                         item.Entry.Assignment.FixMouth == assignment.FixMouth))
@@ -765,8 +789,9 @@ namespace Ee4v.FaceExpression
                 }
 
                 result.Add(new EffectiveMenuEntry(
-                    new FaceExpressionMenuEntry(assignment.Clip.name, assignment),
-                    false));
+                    new FaceExpressionMenuEntry(name, assignment),
+                    false,
+                    leftGesture));
             }
 
             foreach (var entry in (menuEntries ?? Array.Empty<FaceExpressionMenuEntry>())
@@ -777,22 +802,30 @@ namespace Ee4v.FaceExpression
                     : entry.Name.Trim();
                 result.Add(new EffectiveMenuEntry(
                     new FaceExpressionMenuEntry(name, entry.Assignment),
-                    true));
+                    true,
+                    null));
             }
 
             return result.Take(255).ToArray();
         }
 
-        private sealed class EffectiveMenuEntry
+        internal sealed class EffectiveMenuEntry
         {
-            public EffectiveMenuEntry(FaceExpressionMenuEntry entry, bool isExplicit)
+            public EffectiveMenuEntry(
+                FaceExpressionMenuEntry entry,
+                bool isExplicit,
+                FaceGesture? leftGesture)
             {
                 Entry = entry;
                 IsExplicit = isExplicit;
+                LeftGesture = leftGesture;
             }
 
             public FaceExpressionMenuEntry Entry { get; }
+            public string Name => Entry.Name;
+            public FaceExpressionAssignment Assignment => Entry.Assignment;
             public bool IsExplicit { get; }
+            public FaceGesture? LeftGesture { get; }
         }
     }
 }

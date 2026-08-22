@@ -23,6 +23,10 @@
       "label": "BlendShape presets by FBX",
       "tooltip": "Shows saved BlendShape presets for each base FBX.",
       "openFolder": "Open storage folder"
+    },
+    "menuIconsDisabled": {
+      "label": "Disable expression preview menu icons",
+      "tooltip": "When enabled, expression preview icons are not assigned to the FacialSet menu."
     }
   },
   "presetWindow": {
@@ -70,12 +74,15 @@
     "leftHand": "Left hand",
     "rightHand": "Right hand",
     "selection": "Selected",
+    "expressionSettings": "Selected expression settings",
+    "globalSettings": "Global settings",
     "enableBlink": "Enable blinking",
     "fixMouth": "Fix mouth movement",
     "unassigned": "Unassigned",
     "menuOnly": "Extra (menu only)",
     "menuOnlyHint": "Menu-only expressions. Select a cell below the divider to edit it in the settings window.",
-    "menuName": "Menu name"
+    "menuName": "Menu name",
+    "disableMenuIcons": "Disable preview menu icons"
   },
   "empty": {
     "blendShapes": "No BlendShapes were found."

@@ -23,6 +23,10 @@
       "label": "FBX別BlendShapeプリセット",
       "tooltip": "ベースFBXごとの保存済みBlendShapeプリセットを表示します。",
       "openFolder": "保存先をエクスプローラーで開く"
+    },
+    "menuIconsDisabled": {
+      "label": "表情メニューのプレビューアイコンを無効化",
+      "tooltip": "有効にすると、FacialSetメニューへ表情のプレビューアイコンを設定しません。"
     }
   },
   "presetWindow": {
@@ -70,12 +74,15 @@
     "leftHand": "左手",
     "rightHand": "右手",
     "selection": "選択中",
+    "expressionSettings": "選択中の表情設定",
+    "globalSettings": "グローバル設定",
     "enableBlink": "まばたきを有効化",
     "fixMouth": "口の動きを固定",
     "unassigned": "未割り当て",
     "menuOnly": "Extra（メニュー限定）",
     "menuOnlyHint": "メニューからだけ選ぶ表情です。太線より下のセルを選ぶと設定ウィンドウで編集できます。",
-    "menuName": "メニュー名"
+    "menuName": "メニュー名",
+    "disableMenuIcons": "プレビューアイコンを無効化"
   },
   "empty": {
     "blendShapes": "BlendShape がありません。"

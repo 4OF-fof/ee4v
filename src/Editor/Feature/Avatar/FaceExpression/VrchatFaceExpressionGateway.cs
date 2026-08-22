@@ -95,13 +95,22 @@ namespace Ee4v.FaceExpression
                     configuration?.MenuEntries,
                     ReadAvatarBindings(descriptor, avatar),
                     assetsFolder);
+                var menuEntries = GestureMatrixControllerWriter.GetEffectiveMenuEntries(
+                    configuration?.Assignments,
+                    configuration?.MenuEntries);
+                var menuIcons = GenerateMenuIcons(
+                    avatar,
+                    menuEntries,
+                    assetsFolder,
+                    safeName);
                 ConfigureGeneratedPrefab(
                     avatar,
                     prefabPath,
                     generatedRootName,
                     controller,
-                    configuration ?? new FaceExpressionConfiguration(null, null),
-                    modularAvatarTypes);
+                    modularAvatarTypes,
+                    menuEntries,
+                    menuIcons);
                 return true;
             }
             catch (Exception exception)
@@ -162,8 +171,9 @@ namespace Ee4v.FaceExpression
             string prefabPath,
             string generatedRootName,
             AnimatorController controller,
-            FaceExpressionConfiguration configuration,
-            ModularAvatarTypes types)
+            ModularAvatarTypes types,
+            IReadOnlyList<GestureMatrixControllerWriter.EffectiveMenuEntry> menuEntries,
+            IReadOnlyList<Texture2D> menuIcons)
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
             var root = avatar.transform.Find(generatedRootName)?.gameObject;
@@ -175,10 +185,11 @@ namespace Ee4v.FaceExpression
                     ConfigureModularAvatar(
                         contents,
                         controller,
-                        configuration,
                         types,
                         generatedRootName,
-                        false);
+                        false,
+                        menuEntries,
+                        menuIcons);
                     if (PrefabUtility.SaveAsPrefabAsset(
                             contents,
                             prefabPath) == null)
@@ -239,10 +250,11 @@ namespace Ee4v.FaceExpression
             ConfigureModularAvatar(
                 root,
                 controller,
-                configuration,
                 types,
                 generatedRootName,
-                true);
+                true,
+                menuEntries,
+                menuIcons);
             prefab = PrefabUtility.SaveAsPrefabAssetAndConnect(
                 root,
                 prefabPath,
@@ -273,10 +285,11 @@ namespace Ee4v.FaceExpression
         private static void ConfigureModularAvatar(
             GameObject root,
             AnimatorController controller,
-            FaceExpressionConfiguration configuration,
             ModularAvatarTypes types,
             string generatedRootName,
-            bool recordUndo)
+            bool recordUndo,
+            IReadOnlyList<GestureMatrixControllerWriter.EffectiveMenuEntry> menuEntries,
+            IReadOnlyList<Texture2D> menuIcons)
         {
             if (recordUndo)
             {
@@ -311,10 +324,11 @@ namespace Ee4v.FaceExpression
                 recordUndo);
             ConfigureMenuItem(
                 rootMenuItem,
-                "ee4v Expressions",
+                "FacialSet",
                 "SubMenu",
                 string.Empty,
-                0f);
+                0f,
+                null);
             SetEnumField(rootMenuItem, "MenuSource", "Children");
 
             for (var index = root.transform.childCount - 1; index >= 0; index--)
@@ -333,26 +347,33 @@ namespace Ee4v.FaceExpression
                 }
             }
 
-            CreateMenuItem(
-                root,
-                types.MenuItem,
-                "ee4v Menu 000",
-                "Gesture Assignments",
-                0f,
-                recordUndo);
-            var entries = GestureMatrixControllerWriter.GetEffectiveMenuEntries(
-                configuration.Assignments,
-                configuration.MenuEntries);
-            for (var index = 0; index < entries.Count; index++)
+            var groups = new Dictionary<FaceGesture, GameObject>();
+            for (var index = 0; index < menuEntries.Count; index++)
             {
-                var entry = entries[index];
+                var entry = menuEntries[index];
+                var parent = root;
+                if (entry.LeftGesture.HasValue)
+                {
+                    var gesture = entry.LeftGesture.Value;
+                    if (!groups.TryGetValue(gesture, out parent))
+                    {
+                        parent = CreateMenuGroup(
+                            root,
+                            types.MenuItem,
+                            gesture,
+                            recordUndo);
+                        groups.Add(gesture, parent);
+                    }
+                }
+
                 CreateMenuItem(
-                    root,
+                    parent,
                     types.MenuItem,
                     "ee4v Menu " + (index + 1).ToString("000"),
                     entry.Name,
                     index + 1,
-                    recordUndo);
+                    recordUndo,
+                    index < menuIcons.Count ? menuIcons[index] : null);
             }
 
             EditorUtility.SetDirty(root);
@@ -394,12 +415,13 @@ namespace Ee4v.FaceExpression
         }
 
         private static void CreateMenuItem(
-            GameObject root,
+            GameObject parent,
             Type menuItemType,
             string objectName,
             string label,
             float value,
-            bool recordUndo)
+            bool recordUndo,
+            Texture2D icon)
         {
             var child = new GameObject(objectName);
             if (recordUndo)
@@ -409,12 +431,12 @@ namespace Ee4v.FaceExpression
                     "Create Face Expression Menu Item");
                 Undo.SetTransformParent(
                     child.transform,
-                    root.transform,
+                    parent.transform,
                     "Attach Face Expression Menu Item");
             }
             else
             {
-                child.transform.SetParent(root.transform, false);
+                child.transform.SetParent(parent.transform, false);
             }
 
             var item = recordUndo
@@ -425,7 +447,45 @@ namespace Ee4v.FaceExpression
                 label,
                 "Toggle",
                 GestureMatrixControllerWriter.MenuParameter,
-                value);
+                value,
+                icon);
+        }
+
+        private static GameObject CreateMenuGroup(
+            GameObject root,
+            Type menuItemType,
+            FaceGesture gesture,
+            bool recordUndo)
+        {
+            var group = new GameObject(
+                "ee4v Menu Group " + ((int)gesture).ToString("00"));
+            if (recordUndo)
+            {
+                Undo.RegisterCreatedObjectUndo(
+                    group,
+                    "Create Face Expression Menu Group");
+                Undo.SetTransformParent(
+                    group.transform,
+                    root.transform,
+                    "Attach Face Expression Menu Group");
+            }
+            else
+            {
+                group.transform.SetParent(root.transform, false);
+            }
+
+            var item = recordUndo
+                ? Undo.AddComponent(group, menuItemType)
+                : group.AddComponent(menuItemType);
+            ConfigureMenuItem(
+                item,
+                gesture.ToString(),
+                "SubMenu",
+                string.Empty,
+                0f,
+                null);
+            SetEnumField(item, "MenuSource", "Children");
+            return group;
         }
 
         private static void ConfigureMenuItem(
@@ -433,7 +493,8 @@ namespace Ee4v.FaceExpression
             string label,
             string controlType,
             string parameter,
-            float value)
+            float value,
+            Texture2D icon)
         {
             SetField(item, "label", label);
             SetField(item, "isSynced", true);
@@ -453,7 +514,91 @@ namespace Ee4v.FaceExpression
             SetEnumProperty(portable, "Type", controlType);
             SetProperty(portable, "Parameter", parameter);
             SetProperty(portable, "Value", value);
+            SetProperty(portable, "Icon", icon);
             EditorUtility.SetDirty(item);
+        }
+
+        private static IReadOnlyList<Texture2D> GenerateMenuIcons(
+            GameObject avatar,
+            IReadOnlyList<GestureMatrixControllerWriter.EffectiveMenuEntry> entries,
+            string assetsFolder,
+            string safeAvatarName)
+        {
+            var result = new Texture2D[entries.Count];
+            if (FaceExpressionSettings.GetMenuIconsDisabled() || entries.Count == 0)
+            {
+                return result;
+            }
+
+            var rendererPaths = FaceExpressionClipEditor.GetRendererPaths(avatar);
+            using (var preview = new FaceExpressionPreview(null))
+            {
+                preview.SetAvatar(avatar);
+                for (var index = 0; index < entries.Count; index++)
+                {
+                    Texture2D rendered = null;
+                    try
+                    {
+                        var channels = FaceExpressionClipEditor.Read(
+                            avatar,
+                            entries[index].Assignment.Clip,
+                            Array.Empty<string>(),
+                            rendererPaths);
+                        rendered = preview.RenderThumbnail(channels, 256, 256);
+                        if (rendered == null)
+                        {
+                            continue;
+                        }
+
+                        var assetPath = assetsFolder + "/" + safeAvatarName +
+                                        " FacialSet Icon " +
+                                        (index + 1).ToString("000") + ".png";
+                        var fullPath = Path.Combine(
+                            Application.dataPath,
+                            assetPath.Substring("Assets/".Length)
+                                .Replace('/', Path.DirectorySeparatorChar));
+                        File.WriteAllBytes(fullPath, rendered.EncodeToPNG());
+                        AssetDatabase.ImportAsset(
+                            assetPath,
+                            ImportAssetOptions.ForceUpdate);
+                        ConfigureIconImporter(assetPath);
+                        result[index] = AssetDatabase.LoadAssetAtPath<Texture2D>(
+                            assetPath);
+                    }
+                    catch (Exception exception)
+                    {
+                        Debug.LogWarning(
+                            "A FacialSet menu icon could not be generated: " +
+                            exception.Message);
+                    }
+                    finally
+                    {
+                        if (rendered != null)
+                        {
+                            UnityEngine.Object.DestroyImmediate(rendered);
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private static void ConfigureIconImporter(string assetPath)
+        {
+            var importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+            if (importer == null)
+            {
+                return;
+            }
+
+            importer.textureType = TextureImporterType.Default;
+            importer.mipmapEnabled = false;
+            importer.alphaIsTransparency = true;
+            importer.sRGBTexture = true;
+            importer.maxTextureSize = 256;
+            importer.textureCompression = TextureImporterCompression.Compressed;
+            importer.SaveAndReimport();
         }
 
         private static Component GetOrAddComponent(

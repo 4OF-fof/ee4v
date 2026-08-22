@@ -67,7 +67,8 @@ namespace Ee4v.FaceExpression.Tests
                     {
                         [fistOpen] = new FaceExpressionAssignment(
                             smile,
-                            enableBlink: false),
+                            enableBlink: false,
+                            menuName: "Smile Pair"),
                         [victoryGun] = new FaceExpressionAssignment(
                             angry,
                             enableBlink: true,
@@ -96,6 +97,7 @@ namespace Ee4v.FaceExpression.Tests
                 Assert.That(assignments[fistOpen].Clip, Is.SameAs(smile));
                 Assert.That(assignments[fistOpen].EnableBlink, Is.False);
                 Assert.That(assignments[fistOpen].FixMouth, Is.False);
+                Assert.That(assignments[fistOpen].MenuName, Is.EqualTo("Smile Pair"));
                 Assert.That(assignments[victoryGun].Clip, Is.SameAs(angry));
                 Assert.That(assignments[victoryGun].EnableBlink, Is.True);
                 Assert.That(assignments[victoryGun].FixMouth, Is.True);
@@ -103,6 +105,20 @@ namespace Ee4v.FaceExpression.Tests
                 Assert.That(menuEntries.Count, Is.EqualTo(1));
                 Assert.That(menuEntries[0].Name, Is.EqualTo("Menu Angry"));
                 Assert.That(menuEntries[0].Assignment.Clip, Is.SameAs(angry));
+                var effectiveEntries =
+                    GestureMatrixControllerWriter.GetEffectiveMenuEntries(
+                        assignments,
+                        menuEntries);
+                Assert.That(
+                    effectiveEntries.Any(entry =>
+                        entry.Name == "Smile Pair" &&
+                        entry.LeftGesture == FaceGesture.Fist),
+                    Is.True);
+                Assert.That(
+                    effectiveEntries.Any(entry =>
+                        entry.Name == "Menu Angry" &&
+                        entry.LeftGesture == null),
+                    Is.True);
 
                 var layer = controller.layers.Single(candidate =>
                     candidate.name == GestureMatrixControllerWriter.LayerName);

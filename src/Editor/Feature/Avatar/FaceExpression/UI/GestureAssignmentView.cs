@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.Core.Settings;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -16,6 +17,8 @@ namespace Ee4v.FaceExpression
         public string LeftHand { get; set; }
         public string RightHand { get; set; }
         public string Selection { get; set; }
+        public string ExpressionSettings { get; set; }
+        public string GlobalSettings { get; set; }
         public string Clip { get; set; }
         public string EnableBlink { get; set; }
         public string FixMouth { get; set; }
@@ -23,6 +26,7 @@ namespace Ee4v.FaceExpression
         public string MenuOnly { get; set; }
         public string MenuOnlyHint { get; set; }
         public string MenuName { get; set; }
+        public string DisableMenuIcons { get; set; }
         public string AddMenuExpression { get; set; }
         public string Remove { get; set; }
         public Func<FaceGesture, string> GestureName { get; set; }
@@ -310,7 +314,7 @@ namespace Ee4v.FaceExpression
 
     }
 
-    internal sealed class GestureAssignmentSettingsView : VisualElement
+    internal sealed class GestureAssignmentSettingsView : ScrollView
     {
         private readonly GestureAssignmentViewText _text;
         private readonly UiTextElement _selectionLabel;
@@ -318,12 +322,19 @@ namespace Ee4v.FaceExpression
         private readonly UiTextButton _removeMenuButton;
         private readonly Toggle _blinkToggle;
         private readonly Toggle _mouthToggle;
+        private readonly Toggle _menuIconsToggle;
+        private readonly ISettingsService _settings;
         private bool _rendering;
         private bool _subscribed;
 
-        internal GestureAssignmentSettingsView(GestureAssignmentViewText text)
+        internal GestureAssignmentSettingsView(
+            GestureAssignmentViewText text,
+            ISettingsService settings = null)
+            : base(ScrollViewMode.Vertical)
         {
             _text = text ?? new GestureAssignmentViewText();
+            _settings = settings ?? CoreSettings.Current;
+            _settings.Register(FaceExpressionSettings.MenuIconsDisabled);
             AddToClassList("ee4v-gesture-assignment-settings");
 
             var selectionHeader = new SectionHeader();
@@ -336,11 +347,13 @@ namespace Ee4v.FaceExpression
             menuControls.AddToClassList(
                 "ee4v-gesture-assignment__extra-controls");
             _menuNameField = UiTextFactory.CreateTextField();
+            _menuNameField.isDelayed = true;
             _menuNameField.AddToClassList(
                 "ee4v-gesture-assignment__extra-name");
             _menuNameField.RegisterValueChangedCallback(evt =>
             {
-                if (!_rendering)
+                if (!_rendering &&
+                    evt.newValue != GestureAssignmentSession.SelectedMenuName)
                 {
                     GestureAssignmentSession.SetSelectedMenuName(evt.newValue);
                 }
@@ -355,8 +368,15 @@ namespace Ee4v.FaceExpression
             menuControls.Actions.Add(_removeMenuButton);
             Add(menuControls);
 
-            var controls = new VisualElement();
-            controls.AddToClassList("ee4v-gesture-assignment__controls");
+            var expressionHeader = new SectionHeader(
+                _text.ExpressionSettings);
+            expressionHeader.AddToClassList(
+                "ee4v-gesture-assignment__settings-section");
+            Add(expressionHeader);
+
+            var expressionControls = new VisualElement();
+            expressionControls.AddToClassList(
+                "ee4v-gesture-assignment__controls");
             _blinkToggle = UiTextFactory.CreateToggle(
                 _text.EnableBlink,
                 "ee4v-gesture-assignment__toggle");
@@ -369,7 +389,7 @@ namespace Ee4v.FaceExpression
                         _mouthToggle.value);
                 }
             });
-            controls.Add(_blinkToggle);
+            expressionControls.Add(_blinkToggle);
 
             _mouthToggle = UiTextFactory.CreateToggle(
                 _text.FixMouth,
@@ -383,8 +403,32 @@ namespace Ee4v.FaceExpression
                         evt.newValue);
                 }
             });
-            controls.Add(_mouthToggle);
-            Add(controls);
+            expressionControls.Add(_mouthToggle);
+            Add(expressionControls);
+
+            var globalHeader = new SectionHeader(
+                _text.GlobalSettings);
+            globalHeader.AddToClassList(
+                "ee4v-gesture-assignment__settings-section");
+            Add(globalHeader);
+
+            var globalControls = new VisualElement();
+            globalControls.AddToClassList(
+                "ee4v-gesture-assignment__controls");
+            _menuIconsToggle = UiTextFactory.CreateToggle(
+                _text.DisableMenuIcons,
+                "ee4v-gesture-assignment__toggle");
+            _menuIconsToggle.RegisterValueChangedCallback(evt =>
+            {
+                if (!_rendering)
+                {
+                    _settings.Set(
+                        FaceExpressionSettings.MenuIconsDisabled,
+                        evt.newValue);
+                }
+            });
+            globalControls.Add(_menuIconsToggle);
+            Add(globalControls);
 
             RegisterCallback<AttachToPanelEvent>(_ => Subscribe());
             RegisterCallback<DetachFromPanelEvent>(_ => Unsubscribe());
@@ -399,6 +443,7 @@ namespace Ee4v.FaceExpression
             }
 
             GestureAssignmentSession.Changed += RefreshState;
+            _settings.Changed += OnSettingChanged;
             _subscribed = true;
             RefreshState();
         }
@@ -411,7 +456,18 @@ namespace Ee4v.FaceExpression
             }
 
             GestureAssignmentSession.Changed -= RefreshState;
+            _settings.Changed -= OnSettingChanged;
             _subscribed = false;
+        }
+
+        private void OnSettingChanged(
+            object sender,
+            SettingChangedEventArgs args)
+        {
+            if (args.Definition.Key == FaceExpressionSettings.MenuIconsDisabled.Key)
+            {
+                RefreshState();
+            }
         }
 
         private void RefreshState()
@@ -426,15 +482,15 @@ namespace Ee4v.FaceExpression
                   " + " +
                   GetGestureName(GestureAssignmentSession.SelectedCombination.Right));
             _menuNameField.SetValueWithoutNotify(
-                GestureAssignmentSession.SelectedMenuEntry?.Name ?? string.Empty);
-            _menuNameField.style.display = isExtra
-                ? DisplayStyle.Flex
-                : DisplayStyle.None;
+                GestureAssignmentSession.SelectedMenuName);
+            _menuNameField.style.display = DisplayStyle.Flex;
             _removeMenuButton.style.display = isExtra
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             _blinkToggle.SetValueWithoutNotify(assignment.EnableBlink);
             _mouthToggle.SetValueWithoutNotify(assignment.FixMouth);
+            _menuIconsToggle.SetValueWithoutNotify(
+                FaceExpressionSettings.GetMenuIconsDisabled(_settings));
             _rendering = false;
         }
 

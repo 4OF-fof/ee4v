@@ -20,6 +20,8 @@ namespace Ee4v.FaceExpression
         internal static GestureCombination SelectedCombination => _selectedCombination;
         internal static FaceExpressionMenuEntry SelectedMenuEntry => _selectedMenuEntry;
         internal static bool IsMenuSelection => _selectedMenuEntry != null;
+        internal static string SelectedMenuName =>
+            _selectedMenuEntry?.Name ?? SelectedAssignment.MenuName;
 
         internal static FaceExpressionAssignment SelectedAssignment =>
             _selectedMenuEntry?.Assignment ?? GetAssignment(_selectedCombination);
@@ -103,7 +105,8 @@ namespace Ee4v.FaceExpression
             Assignments[combination] = new FaceExpressionAssignment(
                 clip,
                 current.EnableBlink,
-                current.FixMouth);
+                current.FixMouth,
+                current.MenuName);
             _selectedCombination = combination;
             _selectedMenuEntry = null;
             Changed?.Invoke();
@@ -121,7 +124,8 @@ namespace Ee4v.FaceExpression
             entry.Assignment = new FaceExpressionAssignment(
                 clip,
                 entry.Assignment.EnableBlink,
-                entry.Assignment.FixMouth);
+                entry.Assignment.FixMouth,
+                entry.Assignment.MenuName);
             _selectedMenuEntry = entry;
             Changed?.Invoke();
         }
@@ -132,7 +136,8 @@ namespace Ee4v.FaceExpression
             var assignment = new FaceExpressionAssignment(
                 current.Clip,
                 enableBlink,
-                fixMouth);
+                fixMouth,
+                current.MenuName);
             if (_selectedMenuEntry != null)
             {
                 _selectedMenuEntry.Assignment = assignment;
@@ -147,12 +152,19 @@ namespace Ee4v.FaceExpression
 
         internal static void SetSelectedMenuName(string name)
         {
-            if (_selectedMenuEntry == null)
+            if (_selectedMenuEntry != null)
             {
+                _selectedMenuEntry.Name = name ?? string.Empty;
+                Changed?.Invoke();
                 return;
             }
 
-            _selectedMenuEntry.Name = name ?? string.Empty;
+            var current = GetAssignment(_selectedCombination);
+            Assignments[_selectedCombination] = new FaceExpressionAssignment(
+                current.Clip,
+                current.EnableBlink,
+                current.FixMouth,
+                name);
             Changed?.Invoke();
         }
 

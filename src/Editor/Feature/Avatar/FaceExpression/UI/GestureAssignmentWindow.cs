@@ -217,6 +217,8 @@ namespace Ee4v.FaceExpression
                 LeftHand = I18N.Get("assignments.leftHand"),
                 RightHand = I18N.Get("assignments.rightHand"),
                 Selection = I18N.Get("assignments.selection"),
+                ExpressionSettings = I18N.Get("assignments.expressionSettings"),
+                GlobalSettings = I18N.Get("assignments.globalSettings"),
                 Clip = I18N.Get("field.clip"),
                 EnableBlink = I18N.Get("assignments.enableBlink"),
                 FixMouth = I18N.Get("assignments.fixMouth"),
@@ -224,6 +226,7 @@ namespace Ee4v.FaceExpression
                 MenuOnly = I18N.Get("assignments.menuOnly"),
                 MenuOnlyHint = I18N.Get("assignments.menuOnlyHint"),
                 MenuName = I18N.Get("assignments.menuName"),
+                DisableMenuIcons = I18N.Get("assignments.disableMenuIcons"),
                 AddMenuExpression = I18N.Get("action.addMenuExpression"),
                 Remove = I18N.Get("action.remove"),
                 GestureName = gesture => I18N.Get("gesture." + gesture)

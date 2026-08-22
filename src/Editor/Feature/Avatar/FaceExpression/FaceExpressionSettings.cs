@@ -46,6 +46,25 @@ namespace Ee4v.FaceExpression
                     "side"
                 });
 
+        internal static readonly SettingDefinition<bool> MenuIconsDisabled =
+            new SettingDefinition<bool>(
+                "faceExpression.menuIconsDisabled",
+                SettingScope.User,
+                "FaceExpression",
+                "settings.section.editor",
+                "settings.menuIconsDisabled.label",
+                "settings.menuIconsDisabled.tooltip",
+                false,
+                order: 20,
+                keywords: new[]
+                {
+                    "avatar",
+                    "expression",
+                    "menu",
+                    "icon",
+                    "preview"
+                });
+
         static FaceExpressionSettings()
         {
             CommaSeparatedListSettingDrawer.Register(
@@ -55,6 +74,7 @@ namespace Ee4v.FaceExpression
                 BlendShapePresetStorage.Shared);
             CoreSettings.Current.Register(BlendShapeSeparators);
             CoreSettings.Current.Register(BlendShapePresets);
+            CoreSettings.Current.Register(MenuIconsDisabled);
         }
 
         internal static IReadOnlyList<string> GetSeparators(
@@ -77,6 +97,14 @@ namespace Ee4v.FaceExpression
 
             return new BlendShapeNamingRule(
                 presetStore.Load());
+        }
+
+        internal static bool GetMenuIconsDisabled(
+            ISettingsService settings = null)
+        {
+            settings = settings ?? CoreSettings.Current;
+            settings.Register(MenuIconsDisabled);
+            return settings.Get(MenuIconsDisabled);
         }
 
         internal static bool EnsureNamePreset(

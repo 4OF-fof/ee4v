@@ -58,7 +58,7 @@ namespace Ee4v.FaceExpression
         {
             titleContent = UiTextFactory.CreateGuiContent(
                 I18N.Get("assignmentSettingsWindow.title"));
-            minSize = new Vector2(360f, 120f);
+            minSize = new Vector2(360f, 260f);
         }
     }
 }

@@ -473,8 +473,13 @@
 }
 
 .ee4v-gesture-assignment__controls {
-    flex-direction: row;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.ee4v-gesture-assignment__settings-section {
+    margin-top: var(--ee4v-space-md);
+    margin-bottom: var(--ee4v-space-xs);
 }
 
 .ee4v-gesture-assignment__extra-controls {
@@ -485,7 +490,7 @@
 
 .ee4v-gesture-assignment__extra-name {
     flex-grow: 1;
-    min-width: 240px;
+    min-width: 0;
     margin-right: var(--ee4v-space-sm);
 }
 
@@ -495,7 +500,7 @@
 
 .ee4v-gesture-assignment__toggle {
     flex-shrink: 0;
-    margin-right: var(--ee4v-space-lg);
+    margin-bottom: var(--ee4v-space-xs);
 }
 
 .ee4v-face-expression-groups {
