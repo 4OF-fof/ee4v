@@ -12,6 +12,8 @@ namespace Ee4v.HiddenObjects
         private const string HiddenTag = "EditorOnly";
 
         private readonly IHiddenObjectRestoreStateStore _restoreStates;
+        private readonly Dictionary<string, HiddenObjectRestoreState>
+            _sessionStates;
 
         public UnityHiddenObjectVisibilityService(
             IHiddenObjectRestoreStateStore restoreStates)
@@ -19,6 +21,10 @@ namespace Ee4v.HiddenObjects
             _restoreStates = restoreStates ??
                 throw new ArgumentNullException(
                     nameof(restoreStates));
+            _sessionStates = _restoreStates.GetAll()
+                .ToDictionary(
+                    state => state.ObjectId,
+                    StringComparer.Ordinal);
         }
 
         public int Hide(
@@ -39,11 +45,12 @@ namespace Ee4v.HiddenObjects
             for (var i = 0; i < objects.Length; i++)
             {
                 var gameObject = objects[i];
-                _restoreStates.Put(
-                    new HiddenObjectRestoreState(
-                        GetObjectId(gameObject),
-                        gameObject.activeSelf,
-                        gameObject.tag));
+                var state = new HiddenObjectRestoreState(
+                    GetObjectId(gameObject),
+                    gameObject.activeSelf,
+                    gameObject.tag);
+                _sessionStates[state.ObjectId] = state;
+                _restoreStates.Put(state);
             }
 
             _restoreStates.Save();
@@ -64,6 +71,92 @@ namespace Ee4v.HiddenObjects
 
             EditorApplication.RepaintHierarchyWindow();
             return objects.Length;
+        }
+
+        public int RestorePersistedVisibility()
+        {
+            var states = _restoreStates.GetAll();
+            var dirtyScenes = new HashSet<int>();
+            var restoredCount = 0;
+            for (var i = 0; i < states.Count; i++)
+            {
+                var state = states[i];
+                if (!TryResolveGameObject(
+                        state.ObjectId,
+                        out var gameObject))
+                {
+                    continue;
+                }
+
+                var isAlreadyHidden =
+                    !gameObject.activeSelf &&
+                    string.Equals(
+                        gameObject.tag,
+                        HiddenTag,
+                        StringComparison.Ordinal) &&
+                    (gameObject.hideFlags &
+                     HideFlags.HideInHierarchy) != 0;
+                if (isAlreadyHidden)
+                {
+                    continue;
+                }
+
+                gameObject.SetActive(false);
+                gameObject.tag = HiddenTag;
+                gameObject.hideFlags |=
+                    HideFlags.HideInHierarchy;
+                MarkDirty(gameObject, dirtyScenes);
+                restoredCount++;
+            }
+
+            if (restoredCount > 0)
+            {
+                EditorApplication.RepaintHierarchyWindow();
+            }
+
+            return restoredCount;
+        }
+
+        public void SynchronizePersistedVisibility()
+        {
+            var states = _sessionStates.Values.ToArray();
+            var changed = false;
+            for (var i = 0; i < states.Length; i++)
+            {
+                var state = states[i];
+                if (!TryResolveGameObject(
+                        state.ObjectId,
+                        out var gameObject))
+                {
+                    continue;
+                }
+
+                var isHidden =
+                    (gameObject.hideFlags &
+                     HideFlags.HideInHierarchy) != 0;
+                var isPersisted =
+                    _restoreStates.Get(state.ObjectId) != null;
+                if (isPersisted == isHidden)
+                {
+                    continue;
+                }
+
+                if (isHidden)
+                {
+                    _restoreStates.Put(state);
+                }
+                else
+                {
+                    _restoreStates.Remove(state.ObjectId);
+                }
+
+                changed = true;
+            }
+
+            if (changed)
+            {
+                _restoreStates.Save();
+            }
         }
 
         public int Reveal(
@@ -88,8 +181,15 @@ namespace Ee4v.HiddenObjects
             for (var i = 0; i < objects.Length; i++)
             {
                 var gameObject = objects[i];
-                var state = _restoreStates.Get(
-                    GetObjectId(gameObject));
+                var objectId = GetObjectId(gameObject);
+                var state = _restoreStates.Get(objectId);
+                if (state == null)
+                {
+                    _sessionStates.TryGetValue(
+                        objectId,
+                        out state);
+                }
+
                 gameObject.hideFlags &=
                     ~HideFlags.HideInHierarchy;
                 if (state != null)
@@ -99,8 +199,10 @@ namespace Ee4v.HiddenObjects
                 }
 
                 MarkDirty(gameObject, dirtyScenes);
+                _restoreStates.Remove(objectId);
             }
 
+            _restoreStates.Save();
             EditorApplication.RepaintHierarchyWindow();
             return objects.Length;
         }
@@ -131,6 +233,25 @@ namespace Ee4v.HiddenObjects
                     ? objectId.ToString()
                     : "instance:" +
                       gameObject.GetInstanceID();
+        }
+
+        private static bool TryResolveGameObject(
+            string serializedObjectId,
+            out GameObject gameObject)
+        {
+            gameObject = null;
+            if (!GlobalObjectId.TryParse(
+                    serializedObjectId,
+                    out var objectId))
+            {
+                return false;
+            }
+
+            gameObject = GlobalObjectId
+                .GlobalObjectIdentifierToObjectSlow(
+                    objectId) as GameObject;
+            return gameObject != null &&
+                gameObject.scene.IsValid();
         }
 
         private static void RestoreTag(

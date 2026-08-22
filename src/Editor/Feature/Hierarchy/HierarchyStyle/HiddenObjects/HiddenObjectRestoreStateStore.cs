@@ -28,7 +28,11 @@ namespace Ee4v.HiddenObjects
     {
         HiddenObjectRestoreState Get(string objectId);
 
+        IReadOnlyList<HiddenObjectRestoreState> GetAll();
+
         void Put(HiddenObjectRestoreState state);
+
+        void Remove(string objectId);
 
         void Save();
     }
@@ -70,6 +74,27 @@ namespace Ee4v.HiddenObjects
             return null;
         }
 
+        public IReadOnlyList<HiddenObjectRestoreState> GetAll()
+        {
+            var states = new List<HiddenObjectRestoreState>();
+            for (var i = 0; i < _states.Count; i++)
+            {
+                var state = _states[i];
+                if (state == null ||
+                    string.IsNullOrEmpty(state.objectId))
+                {
+                    continue;
+                }
+
+                states.Add(new HiddenObjectRestoreState(
+                    state.objectId,
+                    state.activeSelf,
+                    state.tag));
+            }
+
+            return states;
+        }
+
         public void Put(HiddenObjectRestoreState state)
         {
             if (state == null ||
@@ -99,6 +124,21 @@ namespace Ee4v.HiddenObjects
             }
 
             _states.Add(serialized);
+        }
+
+        public void Remove(string objectId)
+        {
+            if (string.IsNullOrEmpty(objectId))
+            {
+                return;
+            }
+
+            _states.RemoveAll(state =>
+                state != null &&
+                string.Equals(
+                    state.objectId,
+                    objectId,
+                    StringComparison.Ordinal));
         }
 
         public void Save()

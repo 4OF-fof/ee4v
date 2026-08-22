@@ -47,7 +47,11 @@ Hidden Objects も HierarchyStyle に含まれます。非表示にした GameOb
 
 `Hide` は対象の active state と tag を保存してから、非アクティブ化、`EditorOnly` tag の設定、`HideFlags.HideInHierarchy` の追加を行います。
 
+非表示にした対象の `GlobalObjectId` も保存します。エディターの再起動、スクリプトの再読み込み、シーンの開き直し後に対象のシーンが読み込まれると、保存した非表示状態を再適用します。
+
 `Reveal` は `HideFlags.HideInHierarchy` を外します。保存した状態がある場合は tag と active state も復元します。保存した tag が現在の Tag Manager に存在しない場合は `Untagged` を設定します。
+
+`Reveal` の完了後は復元記録を削除し、保存先には現在非表示の対象だけを保持します。Undo と Redo に必要な復元記録は、そのエディターセッション中だけメモリに保持します。
 
 Hidden Objects ウィンドウでは `HideInHierarchy` が設定された GameObject をシーン単位で表示します。設定で除外したシーンと GameObject は一覧に含めず、除外対象の GameObject の子孫も除きます。
 
@@ -60,7 +64,7 @@ Hidden Objectsの実画面は`ee4v/Debug/Catalog`の`Domain/HierarchyStyle/Hidde
 | 内容 | 保存先 |
 |---|---|
 | 背景色、アイコン、最近使ったアイコン | `UserSettings/ee4v.item-styles.asset` の `hierarchy` スコープ |
-| 非表示前の active state と tag | `UserSettings/ee4v.hidden-object-restore-states.asset` |
+| 非表示対象の `GlobalObjectId`、非表示前の active state と tag | `UserSettings/ee4v.hidden-object-restore-states.asset` |
 
 ## 副作用
 
@@ -68,6 +72,7 @@ Hidden Objectsの実画面は`ee4v/Debug/Catalog`の`Domain/HierarchyStyle/Hidde
 |---|---|
 | `SetColor`、`SetIcon`、`Clear` | 設定を保存し、Hierarchy 項目の再描画を要求する |
 | `Hide`、`Reveal` | Undo を記録し、対象 GameObject、Prefab instance、対象シーンを dirty にして Hierarchy を再描画する |
+| 保存した非表示状態の再適用 | 対象 GameObject、Prefab instance、対象シーンを dirty にして Hierarchy を再描画する |
 | `OpenHiddenObjects` | EditorWindow を開く |
 | `RefreshHiddenObjects` | 開いている Hidden Objects ウィンドウの一覧を再構築する |
 

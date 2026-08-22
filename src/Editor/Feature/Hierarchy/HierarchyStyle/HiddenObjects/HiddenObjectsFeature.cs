@@ -2,6 +2,8 @@ using System;
 using Ee4v.Core.Injector;
 using Ee4v.Core.Settings;
 using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine.SceneManagement;
 
 namespace Ee4v.HiddenObjects
 {
@@ -80,6 +82,10 @@ namespace Ee4v.HiddenObjects
             _initialized = true;
             DetachSettings();
             _registration?.Dispose();
+            EditorSceneManager.sceneOpened -= OnSceneOpened;
+            EditorApplication.delayCall -=
+                RestorePersistedVisibility;
+            Undo.undoRedoPerformed -= OnUndoRedo;
             _settings = settings;
             _visibility =
                 new UnityHiddenObjectVisibilityService(
@@ -99,6 +105,10 @@ namespace Ee4v.HiddenObjects
                         HierarchyButtonEnabled)));
 
             settings.Changed += OnSettingChanged;
+            EditorSceneManager.sceneOpened += OnSceneOpened;
+            EditorApplication.delayCall +=
+                RestorePersistedVisibility;
+            Undo.undoRedoPerformed += OnUndoRedo;
         }
 
         internal static HiddenObjectsController CreateController()
@@ -138,6 +148,23 @@ namespace Ee4v.HiddenObjects
             {
                 HiddenObjectsWindow.RefreshAll();
             }
+        }
+
+        private static void OnSceneOpened(
+            Scene scene,
+            OpenSceneMode mode)
+        {
+            RestorePersistedVisibility();
+        }
+
+        private static void RestorePersistedVisibility()
+        {
+            _visibility?.RestorePersistedVisibility();
+        }
+
+        private static void OnUndoRedo()
+        {
+            _visibility?.SynchronizePersistedVisibility();
         }
 
         private static void DetachSettings()
