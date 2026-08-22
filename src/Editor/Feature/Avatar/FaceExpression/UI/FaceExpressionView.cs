@@ -215,7 +215,14 @@ namespace Ee4v.FaceExpression
         private VisualElement CreateBlendShapeRow()
         {
             var row = new BlendShapeRow();
-            row.Changed += channel => ChannelChanged?.Invoke(channel);
+            row.Changed += channel =>
+            {
+                ChannelChanged?.Invoke(channel);
+                if (_clipOnly.value && !channel.Animated)
+                {
+                    RefreshFilter();
+                }
+            };
             row.AnimationDragStarted += BeginAnimationDrag;
             row.AnimationChanged += ChangeAnimation;
             return row;
@@ -414,7 +421,7 @@ namespace Ee4v.FaceExpression
                     visibleChannels,
                     _namingRule,
                     _hideHeaders,
-                    groupOptions: !_clipOnly.value)
+                    groupSides: !_clipOnly.value)
                 .ToList();
             _blendShapeList.itemsSource = (IList)_visibleItems;
             _blendShapeList.Rebuild();
@@ -488,7 +495,8 @@ namespace Ee4v.FaceExpression
 
         private BlendShapeRowItem(
             BlendShapeChannel channel,
-            BlendShapeName parsedName)
+            BlendShapeName parsedName,
+            bool showChannelName = false)
         {
             if (channel.IsHeader)
             {
@@ -497,7 +505,7 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            DisplayName = parsedName == null
+            DisplayName = parsedName == null || showChannelName
                 ? channel.DisplayName
                 : string.IsNullOrEmpty(channel.RendererDisplayName)
                     ? parsedName.Role
@@ -509,12 +517,7 @@ namespace Ee4v.FaceExpression
         internal bool IsHeader => Header != null;
         internal string DisplayName { get; }
         internal BlendShapeChannel ActiveChannel { get; private set; }
-        internal string SelectedVariation => FindActive()?.Variation ?? string.Empty;
         internal string SelectedSide => FindActive()?.Side ?? string.Empty;
-        internal IReadOnlyList<string> Variations => _options
-            .Select(option => option.Variation)
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
         internal string Tooltip => IsHeader
             ? Header.DisplayHeaderText
             : string.Join(", ", _options
@@ -525,7 +528,7 @@ namespace Ee4v.FaceExpression
             IReadOnlyList<BlendShapeChannel> channels,
             BlendShapeNamingRule namingRule,
             bool hideHeaders,
-            bool groupOptions = true)
+            bool groupSides = true)
         {
             var result = new List<BlendShapeRowItem>();
             var grouped = new Dictionary<string, List<BlendShapeRowItem>>(
@@ -551,9 +554,12 @@ namespace Ee4v.FaceExpression
                     continue;
                 }
 
-                if (!groupOptions)
+                if (!groupSides)
                 {
-                    result.Add(new BlendShapeRowItem(channel, parsedName));
+                    result.Add(new BlendShapeRowItem(
+                        channel,
+                        parsedName,
+                        showChannelName: true));
                     continue;
                 }
 
@@ -594,24 +600,10 @@ namespace Ee4v.FaceExpression
 
         internal bool HasSide(string side)
         {
-            return _options.Any(option =>
-                string.Equals(
-                    option.Variation,
-                    SelectedVariation,
-                    StringComparison.Ordinal) &&
-                string.Equals(option.Side, side, StringComparison.Ordinal));
-        }
-
-        internal void SelectVariation(string variation)
-        {
-            var selectedSide = SelectedSide;
-            ActiveChannel = FindChannel(variation, selectedSide) ??
-                            FindChannel(variation, string.Empty) ??
-                            _options.FirstOrDefault(option => string.Equals(
-                                option.Variation,
-                                variation,
-                                StringComparison.Ordinal))?.Channel ??
-                            ActiveChannel;
+            return _options.Any(option => string.Equals(
+                option.Side,
+                side,
+                StringComparison.Ordinal));
         }
 
         internal void ToggleSide(string side)
@@ -622,7 +614,7 @@ namespace Ee4v.FaceExpression
                 StringComparison.Ordinal)
                 ? string.Empty
                 : side;
-            ActiveChannel = FindChannel(SelectedVariation, nextSide) ??
+            ActiveChannel = FindChannel(nextSide) ??
                             ActiveChannel;
         }
 
@@ -630,19 +622,14 @@ namespace Ee4v.FaceExpression
             BlendShapeChannel channel,
             BlendShapeName parsedName)
         {
-            var variation = parsedName?.Variation ?? string.Empty;
             var side = parsedName?.Side ?? string.Empty;
             if (_options.Any(option =>
-                    string.Equals(
-                        option.Variation,
-                        variation,
-                        StringComparison.Ordinal) &&
                     string.Equals(option.Side, side, StringComparison.Ordinal)))
             {
                 return false;
             }
 
-            _options.Add(new BlendShapeOption(channel, variation, side));
+            _options.Add(new BlendShapeOption(channel, side));
             ActiveChannel = ActiveChannel ?? channel;
             return true;
         }
@@ -654,18 +641,13 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            var firstVariation = _options[0].Variation;
-            ActiveChannel = FindChannel(firstVariation, string.Empty) ??
+            ActiveChannel = FindChannel(string.Empty) ??
                             _options[0].Channel;
         }
 
-        private BlendShapeChannel FindChannel(string variation, string side)
+        private BlendShapeChannel FindChannel(string side)
         {
             return _options.FirstOrDefault(option =>
-                string.Equals(
-                    option.Variation,
-                    variation,
-                    StringComparison.Ordinal) &&
                 string.Equals(option.Side, side, StringComparison.Ordinal))
                 ?.Channel;
         }
@@ -680,16 +662,13 @@ namespace Ee4v.FaceExpression
         {
             internal BlendShapeOption(
                 BlendShapeChannel channel,
-                string variation,
                 string side)
             {
                 Channel = channel;
-                Variation = variation;
                 Side = side;
             }
 
             internal BlendShapeChannel Channel { get; }
-            internal string Variation { get; }
             internal string Side { get; }
         }
     }
@@ -700,8 +679,6 @@ namespace Ee4v.FaceExpression
         private readonly UiTextElement _name;
         private readonly VisualElement _controls;
         private readonly VisualElement _options;
-        private readonly PopupField<string> _variation;
-        private readonly UiTextElement _variationText;
         private readonly Toggle _left;
         private readonly Toggle _right;
         private readonly Slider _slider;
@@ -744,31 +721,6 @@ namespace Ee4v.FaceExpression
             _options = new VisualElement();
             _options.AddToClassList("ee4v-face-expression-row__options");
             _controls.Add(_options);
-            _variation = UiTextFactory.CreatePopupField(
-                string.Empty,
-                new List<string> { string.Empty },
-                0,
-                FormatVariation,
-                FormatVariation,
-                "ee4v-face-expression-row__variation");
-            _variationText = UiTextFactory.Create(
-                string.Empty,
-                "ee4v-face-expression-row__variation-text");
-            _variationText.pickingMode = PickingMode.Ignore;
-            var variationInput = _variation.Q<VisualElement>(
-                className: "unity-base-field__input");
-            (variationInput ?? _variation).Insert(0, _variationText);
-            _variation.RegisterValueChangedCallback(evt =>
-            {
-                if (_rendering || _item == null)
-                {
-                    return;
-                }
-
-                _item.SelectVariation(evt.newValue);
-                RefreshControls();
-            });
-            _options.Add(_variation);
             _right = CreateSideToggle("R");
             _options.Add(_right);
             _left = CreateSideToggle("L");
@@ -796,25 +748,7 @@ namespace Ee4v.FaceExpression
         private void RefreshControls()
         {
             var channel = _item?.ActiveChannel;
-            var variations = _item?.Variations.ToList() ?? new List<string>();
-            if (variations.Count == 0)
-            {
-                variations.Add(string.Empty);
-            }
-
             _rendering = true;
-            _variation.choices = variations;
-            var selectedVariation =
-                _item?.SelectedVariation ?? variations[0];
-            _variation.SetValueWithoutNotify(selectedVariation);
-            _variationText.SetText(FormatVariation(selectedVariation));
-            var showVariation = variations.Count > 1 ||
-                                (_optionsReadOnly &&
-                                 !string.IsNullOrEmpty(selectedVariation));
-            _variation.style.visibility = showVariation
-                ? Visibility.Visible
-                : Visibility.Hidden;
-            _variation.SetEnabled(showVariation && !_optionsReadOnly);
             SetSideToggle(_left, "L");
             SetSideToggle(_right, "R");
             _toggle.SetValueWithoutNotify(channel?.Animated == true);
@@ -854,11 +788,6 @@ namespace Ee4v.FaceExpression
                 StringComparison.Ordinal));
         }
 
-        private static string FormatVariation(string variation)
-        {
-            return string.IsNullOrEmpty(variation) ? "-" : variation;
-        }
-
         private void OnTogglePointerDown(PointerDownEvent evt)
         {
             if (evt.button != (int)MouseButton.LeftMouse ||
@@ -896,8 +825,10 @@ namespace Ee4v.FaceExpression
 
             _rendering = true;
             channel.Value = value;
-            channel.Animated = true;
-            _toggle.SetValueWithoutNotify(true);
+            channel.Animated = !Mathf.Approximately(
+                channel.Value,
+                channel.InitialValue);
+            _toggle.SetValueWithoutNotify(channel.Animated);
             _slider.SetValueWithoutNotify(channel.Value);
             _value.SetValueWithoutNotify(channel.Value);
             _rendering = false;

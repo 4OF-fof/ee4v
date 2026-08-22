@@ -263,7 +263,7 @@ namespace Ee4v.FaceExpression.Tests
         }
 
         [Test]
-        public void BlendShapeRows_GroupRoleAndSwitchVariationAndSide()
+        public void BlendShapeRows_GroupOnlyNormalAndSides()
         {
             var channels = new[]
             {
@@ -295,20 +295,19 @@ namespace Ee4v.FaceExpression.Tests
                 CreateMappedRule(channels),
                 hideHeaders: true);
 
-            Assert.That(rows.Count, Is.EqualTo(2));
-            Assert.That(rows[0].DisplayName, Is.EqualTo("blink"));
-            Assert.That(rows[0].Variations, Is.EqualTo(new[] { "1", "2" }));
+            Assert.That(rows.Count, Is.EqualTo(3));
+            Assert.That(rows.Select(row => row.DisplayName),
+                Is.EqualTo(new[] { "blink_1", "blink_2", "blink_1" }));
             Assert.That(rows[0].ActiveChannel.Name, Is.EqualTo("eye_blink_1"));
             rows[0].ToggleSide("L");
-            Assert.That(rows[0].ActiveChannel.Name, Is.EqualTo("eye_blink_1_L"));
-            rows[0].SelectVariation("2");
-            Assert.That(rows[0].ActiveChannel.Name, Is.EqualTo("eye_blink_2_L"));
-            Assert.That(rows[1].DisplayName, Is.EqualTo("blink"));
-            Assert.That(rows[1].ActiveChannel.Name, Is.EqualTo("mouth_blink_1"));
+            Assert.That(rows[0].ActiveChannel.Name,
+                Is.EqualTo("eye_blink_1_L"));
+            Assert.That(rows[1].ActiveChannel.Name, Is.EqualTo("eye_blink_2"));
+            Assert.That(rows[2].ActiveChannel.Name, Is.EqualTo("mouth_blink_1"));
         }
 
         [Test]
-        public void BlendShapeRows_KeepParsedOptionsSeparate()
+        public void BlendShapeRows_KeepClipChannelsSeparate()
         {
             var channels = new[]
             {
@@ -322,28 +321,21 @@ namespace Ee4v.FaceExpression.Tests
                 channels,
                 CreateMappedRule(channels),
                 hideHeaders: true,
-                groupOptions: false);
+                groupSides: false);
 
             Assert.That(rows.Select(row => row.DisplayName),
-                Is.EqualTo(new[] { "brink", "brink", "brink", "brink" }));
+                Is.EqualTo(channels.Select(channel => channel.Name)));
             Assert.That(rows.Select(row => row.ActiveChannel.Name),
                 Is.EqualTo(channels.Select(channel => channel.Name)));
-            Assert.That(rows.Select(row => row.SelectedVariation),
-                Is.EqualTo(new[] { "1", "2", "2", "2" }));
             Assert.That(rows.Select(row => row.SelectedSide),
                 Is.EqualTo(new[] { string.Empty, string.Empty, "L", "R" }));
 
             var row = new BlendShapeRow();
             row.SetItem(rows[2], optionsReadOnly: true);
-            var variation = row.Q<PopupField<string>>(
-                className: "ee4v-face-expression-row__variation");
             var sides = row.Query<Toggle>(
                     className: "ee4v-face-expression-row__side")
                 .ToList();
-            Assert.That(variation.value, Is.EqualTo("2"));
-            Assert.That(variation.enabledSelf, Is.False);
-            Assert.That(variation.style.visibility.value,
-                Is.EqualTo(Visibility.Visible));
+            Assert.That(row.Query<PopupField<string>>().ToList(), Is.Empty);
             Assert.That(sides.Count, Is.EqualTo(2));
             Assert.That(sides[0].style.visibility.value,
                 Is.EqualTo(Visibility.Hidden));
@@ -353,24 +345,21 @@ namespace Ee4v.FaceExpression.Tests
             Assert.That(sides[1].enabledSelf, Is.False);
         }
 
-        [TestCase("mouth_smile_1_R", "smile", "1", "R")]
-        [TestCase("eye_nagomi2_left", "nagomi", "2", "L")]
-        [TestCase("eyelid_under_up2_R", "under_up", "2", "R")]
-        [TestCase("other_sweat _1", "sweat", "1", "")]
+        [TestCase("mouth_smile_1_R", "smile_1", "R")]
+        [TestCase("eye_nagomi2_left", "nagomi2", "L")]
+        [TestCase("eyelid_under_up2_R", "under_up2", "R")]
+        [TestCase("other_sweat _1", "sweat _1", "")]
         [TestCase(
             "mouth_grin 2 (no tooth)_L",
-            "grin",
-            "2 / no tooth",
+            "grin 2 (no tooth)",
             "L")]
         [TestCase(
             "option_tear_under_L 1",
-            "tear_under",
-            "1",
+            "tear_under 1",
             "L")]
         public void BlendShapePresetClassifier_SeedsSupportedAvatarConventions(
             string shapeName,
             string expectedRole,
-            string expectedVariation,
             string expectedSide)
         {
             var mapping = BlendShapeNameClassifier.Classify(
@@ -379,7 +368,6 @@ namespace Ee4v.FaceExpression.Tests
                 shapeName);
 
             Assert.That((mapping.role ?? string.Empty), Is.EqualTo(expectedRole));
-            Assert.That((mapping.variation ?? string.Empty), Is.EqualTo(expectedVariation));
             Assert.That((mapping.side ?? string.Empty), Is.EqualTo(expectedSide));
         }
 
@@ -417,7 +405,6 @@ namespace Ee4v.FaceExpression.Tests
                 Assert.That(restored.presets.Count, Is.EqualTo(1));
                 Assert.That(rule.TryParse(channel, out var parsed), Is.True);
                 Assert.That(parsed.Role, Is.EqualTo("manual blink"));
-                Assert.That(parsed.Variation, Is.EqualTo("2"));
                 Assert.That(parsed.Side, Is.EqualTo("R"));
                 Assert.That(
                     rule.TryParse(

@@ -176,8 +176,7 @@ namespace Ee4v.FaceExpression
             header.style.paddingLeft = 8f;
             header.style.paddingRight = 8f;
             header.style.paddingBottom = 4f;
-            header.Add(CreateHeaderText("presetWindow.source", 2.2f));
-            header.Add(CreateHeaderText("presetWindow.variation", 1f));
+            header.Add(CreateHeaderText("presetWindow.source", 3.2f));
             header.Add(CreateHeaderText("presetWindow.side", 0.55f));
             return header;
         }
@@ -626,7 +625,6 @@ namespace Ee4v.FaceExpression
             return search.Length == 0 || Contains(mapping.meshName, search) ||
                    Contains(mapping.shapeName, search) ||
                    Contains(mapping.role, search) ||
-                   Contains(mapping.variation, search) ||
                    Contains(mapping.side, search);
         }
 

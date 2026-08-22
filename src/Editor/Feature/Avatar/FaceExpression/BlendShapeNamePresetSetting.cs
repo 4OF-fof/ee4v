@@ -34,7 +34,6 @@ namespace Ee4v.FaceExpression
         public string shapeName;
         public string headerText;
         public string role;
-        public string variation;
         public string side;
     }
 

@@ -43,7 +43,6 @@ namespace Ee4v.FaceExpression
                     "fbx",
                     "preset",
                     "role",
-                    "variation",
                     "side"
                 });
 

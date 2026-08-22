@@ -17,7 +17,6 @@ namespace Ee4v.FaceExpression
             BlendShapePresetView.MappingDragPayload,
             BlendShapeNameMapping> _drop;
         private readonly UiTextElement _source;
-        private readonly TextField _variation;
         private readonly PopupField<string> _side;
         private BlendShapeNameMapping _mapping;
         private bool _binding;
@@ -38,7 +37,7 @@ namespace Ee4v.FaceExpression
             style.paddingRight = 8f;
 
             _source = UiTextFactory.Create();
-            Configure(_source, 2.2f);
+            Configure(_source, 3.2f);
             Add(_source);
             BlendShapePresetView.RegisterPresetDrag(
                 _source,
@@ -55,11 +54,6 @@ namespace Ee4v.FaceExpression
                 },
                 payload => _drop?.Invoke(payload, _mapping));
 
-            _variation = UiTextFactory.CreateTextField();
-            Configure(_variation, 1f);
-            _variation.RegisterValueChangedCallback(evt => Change(
-                mapping => mapping.variation = evt.newValue));
-            Add(_variation);
             _side = UiTextFactory.CreatePopupField(
                 string.Empty,
                 SideChoices,
@@ -77,8 +71,6 @@ namespace Ee4v.FaceExpression
             _binding = true;
             _mapping = mapping;
             _source.SetText(mapping.meshName + " / " + mapping.shapeName);
-            _variation.SetValueWithoutNotify(
-                mapping.variation ?? string.Empty);
             var side = SideChoices.Contains(mapping.side)
                 ? mapping.side
                 : string.Empty;

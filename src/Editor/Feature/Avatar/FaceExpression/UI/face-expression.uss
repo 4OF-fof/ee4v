@@ -165,40 +165,15 @@
 }
 
 .ee4v-face-expression-row__options {
-    width: 176px;
-    min-width: 176px;
-    max-width: 176px;
+    width: 76px;
+    min-width: 76px;
+    max-width: 76px;
     flex-shrink: 0;
     flex-direction: row;
     align-items: center;
     justify-content: flex-end;
     overflow: hidden;
     margin-left: var(--ee4v-space-sm);
-}
-
-.ee4v-face-expression-row__variation {
-    width: 88px;
-    min-width: 88px;
-    flex-shrink: 0;
-    margin-left: var(--ee4v-space-xs);
-    margin-right: 0;
-}
-
-.ee4v-face-expression-row__variation > .unity-base-field__label {
-    display: none;
-}
-
-.ee4v-face-expression-row__variation .unity-base-popup-field__text {
-    display: none;
-}
-
-.ee4v-face-expression-row__variation-text {
-    min-width: 0;
-    flex-grow: 1;
-    flex-shrink: 1;
-    overflow: hidden;
-    white-space: nowrap;
-    margin-left: var(--ee4v-space-xs);
 }
 
 .ee4v-face-expression-row__side {

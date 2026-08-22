@@ -118,8 +118,8 @@ namespace Ee4v.FaceExpression
                     "blend-shape-preset-mapping-row",
                     "Domain/FaceExpression/Components",
                     "BlendShapePresetMappingRow",
-                    "BlendShape名にVariationとSideを割り当てる編集行です。",
-                    "Source名を確認しながらVariationとSideを編集し、Drag & Dropによる移動を処理します。",
+                    "BlendShape名にSideを割り当てる編集行です。",
+                    "Source名を確認しながらSideを編集し、Drag & Dropによる移動を処理します。",
                     BuildPresetMappingRow,
                     dependencies: new[] { "UiTextFactory" },
                     usageLocations: new[]
@@ -134,8 +134,8 @@ namespace Ee4v.FaceExpression
                     "blend-shape-row",
                     "Domain/FaceExpression/Components",
                     "BlendShapeRow",
-                    "BlendShape一件のAnimation、値、Variation、Sideを編集する行です。",
-                    "Animation対象の切り替え、値の調整、VariationとSideの選択を一行で行います。",
+                    "BlendShape一件のAnimation、値、Sideを編集する行です。",
+                    "通常と左右のBlendShapeを切り替え、値と使用状態を編集します。",
                     BuildBlendShapeRow,
                     dependencies: new[]
                     {
@@ -185,7 +185,6 @@ namespace Ee4v.FaceExpression
             {
                 meshName = "Body",
                 shapeName = "eye_blink_1_L",
-                variation = "1",
                 side = "L"
             });
             row.style.width = 620f;
@@ -406,16 +405,14 @@ namespace Ee4v.FaceExpression
                         meshName = "Body",
                         shapeName = "eye_blink_1",
                         headerText = "Eyes",
-                        role = "blink",
-                        variation = "1"
+                        role = "blink_1"
                     },
                     new BlendShapeNameMapping
                     {
                         meshLocalId = 1L,
                         meshName = "Body",
                         shapeName = "eye_blink_1_L",
-                        role = "blink",
-                        variation = "1",
+                        role = "blink_1",
                         side = "L"
                     },
                     new BlendShapeNameMapping
@@ -423,8 +420,7 @@ namespace Ee4v.FaceExpression
                         meshLocalId = 1L,
                         meshName = "Body",
                         shapeName = "eye_blink_1_R",
-                        role = "blink",
-                        variation = "1",
+                        role = "blink_1",
                         side = "R"
                     },
                     new BlendShapeNameMapping
@@ -433,8 +429,7 @@ namespace Ee4v.FaceExpression
                         meshName = "Body",
                         shapeName = "mouth_smile_1",
                         headerText = "Mouth",
-                        role = "smile",
-                        variation = "1"
+                        role = "smile_1"
                     }
                 }
             };

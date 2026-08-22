@@ -57,9 +57,9 @@
 | --- | --- | --- |
 | `Apply_GeneratesGestureMatrixAndControlsBlinkAndMouthBindings` | 左右ジェスチャーとExpression Menuの状態を生成し、表情ごとのまばたきと口固定をカーブへ反映してメニュー専用表情を復元する | 64通りとメニュー優先の遷移条件、表情切替後の値残り、VRChatのまばたきとリップシンクへ制御を戻す契約は元クリップの確認だけでは検出できない |
 | `Read_ConvertsHeadersAndIncludesSelectedMeshes` | 複数の区切り文字をヘッダーとして読み、グループウィンドウで選択した各RendererパスのBlendShapeを列挙する | 複数メッシュの同名BlendShapeを正しいAnimationカーブへ結ぶ契約を維持する |
-| `BlendShapeRows_GroupRoleAndSwitchVariationAndSide` | FBX別プリセットで同じ見出し内の役割をまとめて種類と左右を切り替え、見出しをまたぐ同名役割は分ける | 一覧上の1行から別々のBlendShapeカーブを選ぶ対応関係と見出し境界は実名一覧だけでは確認できない |
-| `BlendShapeRows_KeepParsedOptionsSeparate` | FBX別プリセットで対応した各BlendShapeを個別行にし、種類と左右指定を読み取り専用の操作部で示す | クリップ内表示で使用中カーブが再集約される問題と、固定値の表示位置が通常表示からずれる問題を防ぐ |
-| `BlendShapePresetClassifier_SeedsSupportedAvatarConventions` | Chiffon、Kipfel、Shinano、Manukaの命名形式から編集可能な初期分類を作る | 似た末尾表現が役割、種類、左右指定のどれとして初期分類されたかは一覧表示だけでは確認できない |
+| `BlendShapeRows_GroupOnlyNormalAndSides` | FBX別プリセットで同じ見出し内の役割について通常、L、Rだけを1行へまとめ、番号などが異なる役割は別行にする | 左右以外の名前まで誤って同じカーブ選択へまとめる問題は実名一覧だけでは検出できない |
+| `BlendShapeRows_KeepClipChannelsSeparate` | FBX別プリセットで対応した各BlendShapeを個別行にし、左右指定を読み取り専用のトグルで示す | クリップ内表示で使用中カーブが再集約される問題と、固定値の表示位置が通常表示からずれる問題を防ぐ |
+| `BlendShapePresetClassifier_SeedsSupportedAvatarConventions` | Chiffon、Kipfel、Shinano、Manukaの命名形式から役割と左右指定の初期分類を作る | 左右表記だけを役割名から除き、番号や括弧表記を維持する条件は一覧表示だけでは確認できない |
 | `BlendShapePresets_RoundTripManualFbxMapping` | `<FBX名>.json`へFBXとメッシュに結び付いた手動分類を保存して復元し、別FBXには適用しない | 再起動後や複数FBX利用時のファイル形式と対応表の取り違えは設定画面だけでは確認できない |
 | `Groups_FilterHeadersAndTreatAddedMeshesAsGroups` | ヘッダー間の分類に加え、追加メッシュをメッシュ名のグループとして絞り込む | 追加メッシュのShapeが別Groupへ混入する問題と、メッシュ全体を選べない問題を防ぐ |
 

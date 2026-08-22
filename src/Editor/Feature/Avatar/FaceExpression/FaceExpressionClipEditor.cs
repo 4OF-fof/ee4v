@@ -18,11 +18,13 @@ namespace Ee4v.FaceExpression
             string headerText = null,
             string rendererDisplayName = null,
             string sourceAssetGuid = null,
-            long sourceMeshLocalId = 0L)
+            long sourceMeshLocalId = 0L,
+            float? initialValue = null)
         {
             RendererPath = rendererPath ?? string.Empty;
             Name = name ?? string.Empty;
             Value = value;
+            InitialValue = Mathf.Clamp(initialValue ?? value, 0f, 100f);
             Animated = animated;
             HeaderText = headerText;
             RendererDisplayName = rendererDisplayName;
@@ -38,6 +40,7 @@ namespace Ee4v.FaceExpression
             set => _value = Mathf.Clamp(value, 0f, 100f);
         }
         public bool Animated { get; set; }
+        public float InitialValue { get; }
         public string HeaderText { get; }
         public string RendererDisplayName { get; }
         public string SourceAssetGuid { get; }
@@ -99,16 +102,18 @@ namespace Ee4v.FaceExpression
                         typeof(SkinnedMeshRenderer),
                         "blendShape." + name);
                     var curve = clip == null ? null : AnimationUtility.GetEditorCurve(clip, binding);
+                    var initialValue = renderer.GetBlendShapeWeight(index);
                     TryGetHeader(name, separators, out var headerText);
                     channels.Add(new BlendShapeChannel(
                         path,
                         name,
-                        curve == null ? renderer.GetBlendShapeWeight(index) : curve.Evaluate(0f),
+                        curve == null ? initialValue : curve.Evaluate(0f),
                         curve != null,
                         headerText,
                         renderers.Count > 1 ? renderer.name : null,
                         sourceAssetGuid,
-                        sourceMeshLocalId));
+                        sourceMeshLocalId,
+                        initialValue));
                 }
             }
 
