@@ -107,7 +107,6 @@
   "status": {
     "descriptorMissing": "A VRChat Avatar Descriptor was not found. Expressions can be edited, but assignments cannot be applied.",
     "clipRequired": "Create or select an expression clip first.",
-    "applied": "The gesture assignments were applied to the FX Controller.",
     "controllerCreateFailed": "The FX Controller could not be created.",
     "modularAvatarMissing": "Modular Avatar was not found. Install Modular Avatar through VCC.",
     "applyFailed": "The gesture assignments could not be applied."

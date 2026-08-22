@@ -198,8 +198,6 @@ namespace Ee4v.FaceExpression
                     out var controller,
                     out var error))
             {
-                ShowNotification(UiTextFactory.CreateGuiContent(
-                    I18N.Get("status.applied")));
                 EditorGUIUtility.PingObject(controller);
                 _gateway.TryRead(_avatar, out var saved);
                 GestureAssignmentSession.SetConfiguration(saved);

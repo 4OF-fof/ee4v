@@ -42,6 +42,7 @@ namespace Ee4v.FaceExpression
             new Dictionary<GestureCombination, GestureAssignmentCell>();
         private readonly GestureAssignmentViewText _text;
         private readonly Action<AnimationClip, Rect> _drawPreview;
+        private bool _hasAvatar;
         private bool _rendering;
         private bool _subscribed;
 
@@ -127,9 +128,11 @@ namespace Ee4v.FaceExpression
 
         public void SetAvatar(GameObject avatar)
         {
+            _hasAvatar = avatar != null;
             _rendering = true;
             _avatarField.SetValueWithoutNotify(avatar);
             _rendering = false;
+            RefreshState();
         }
 
         public void SetConfiguration(FaceExpressionConfiguration configuration)
@@ -172,6 +175,7 @@ namespace Ee4v.FaceExpression
             {
                 pair.Value.SetAssignment(
                     GestureAssignmentSession.GetAssignment(pair.Key));
+                pair.Value.SetClipEnabled(_hasAvatar);
                 pair.Value.EnableInClassList(
                     "ee4v-gesture-assignment__cell--selected",
                     !GestureAssignmentSession.IsMenuSelection &&
@@ -247,6 +251,7 @@ namespace Ee4v.FaceExpression
                     ReferenceEquals(
                         entry,
                         GestureAssignmentSession.SelectedMenuEntry));
+                cell.SetClipEnabled(_hasAvatar);
                 items.Add(cell);
             }
 

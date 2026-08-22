@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Ee4v.Core.Settings;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -13,10 +14,8 @@ namespace Ee4v.FaceExpression
     internal sealed class VrchatFaceExpressionGateway
     {
         private const int FxLayerType = 4;
-        private const string OutputRoot = "Assets/ee4v/FaceExpressions";
         private const string DescriptorTypeName =
             "VRC.SDK3.Avatars.Components.VRCAvatarDescriptor";
-        private const string GeneratedRootName = "ee4v Face Expressions";
         private const string MergeAnimatorTypeName =
             "nadena.dev.modular_avatar.core.ModularAvatarMergeAnimator";
         private const string MenuInstallerTypeName =
@@ -70,26 +69,36 @@ namespace Ee4v.FaceExpression
                     return false;
                 }
 
-                EnsureFolder(OutputRoot);
-                var generatedRoot = GetOrCreateGeneratedRoot(avatar);
-                controller = GetGeneratedController(generatedRoot, avatar, modularAvatarTypes.MergeAnimator);
+                var safeName = SanitizeFileName(avatar.name);
+                var relativeFolder =
+                    "Animation/FacialSet/" + safeName;
+                var avatarFolder = ProjectAssetSettings.EnsureAssetFolder(
+                    relativeFolder);
+                var assetsFolder = ProjectAssetSettings.EnsureAssetFolder(
+                    relativeFolder + "/Assets");
+                var prefabPath = avatarFolder + "/" + safeName +
+                                 "_FacialSet.prefab";
+                var generatedRootName = safeName + "_FacialSet";
+                controller = GetGeneratedController(
+                    assetsFolder,
+                    safeName);
                 if (controller == null)
                 {
                     error = "controllerCreateFailed";
                     return false;
                 }
 
-                var outputFolder = Path.GetDirectoryName(AssetDatabase.GetAssetPath(controller))
-                    ?.Replace('\\', '/');
                 GestureMatrixControllerWriter.Apply(
                     controller,
                     avatar,
                     configuration?.Assignments,
                     configuration?.MenuEntries,
                     ReadAvatarBindings(descriptor, avatar),
-                    outputFolder);
-                ConfigureModularAvatar(
-                    generatedRoot,
+                    assetsFolder);
+                ConfigureGeneratedPrefab(
+                    avatar,
+                    prefabPath,
+                    generatedRootName,
                     controller,
                     configuration ?? new FaceExpressionConfiguration(null, null),
                     modularAvatarTypes);
@@ -105,7 +114,10 @@ namespace Ee4v.FaceExpression
 
         private static AnimatorController TryGetGeneratedController(GameObject avatar)
         {
-            var root = avatar == null ? null : avatar.transform.Find(GeneratedRootName);
+            var root = avatar == null
+                ? null
+                : avatar.transform.Find(
+                    SanitizeFileName(avatar.name) + "_FacialSet");
             var mergeType = FindType(MergeAnimatorTypeName);
             if (root == null || mergeType == null)
             {
@@ -118,38 +130,24 @@ namespace Ee4v.FaceExpression
                 : GetField(merge, "animator") as AnimatorController;
         }
 
-        private static GameObject GetOrCreateGeneratedRoot(GameObject avatar)
+        private static AnimatorController GetGeneratedController(
+            string assetsFolder,
+            string safeAvatarName)
         {
-            var existing = avatar.transform.Find(GeneratedRootName);
+            var destination = assetsFolder + "/" + safeAvatarName +
+                              " Face Expressions.controller";
+            var existing = AssetDatabase.LoadAssetAtPath<AnimatorController>(
+                destination);
             if (existing != null)
             {
-                return existing.gameObject;
+                return IsEditableAsset(existing) ? existing : null;
             }
 
-            var root = new GameObject(GeneratedRootName);
-            Undo.RegisterCreatedObjectUndo(root, "Create Face Expression Modular Avatar");
-            Undo.SetTransformParent(root.transform, avatar.transform, "Attach Face Expression Modular Avatar");
-            root.transform.localPosition = Vector3.zero;
-            root.transform.localRotation = Quaternion.identity;
-            root.transform.localScale = Vector3.one;
-            return root;
-        }
-
-        private static AnimatorController GetGeneratedController(
-            GameObject generatedRoot,
-            GameObject avatar,
-            Type mergeAnimatorType)
-        {
-            var merge = generatedRoot.GetComponent(mergeAnimatorType);
-            var existing = merge == null ? null : GetField(merge, "animator") as AnimatorController;
-            if (existing != null && IsEditableAsset(existing))
+            if (AssetDatabase.LoadMainAssetAtPath(destination) != null)
             {
-                return existing;
+                return null;
             }
 
-            var safeName = SanitizeFileName(avatar.name);
-            var destination = AssetDatabase.GenerateUniqueAssetPath(
-                OutputRoot + "/" + safeName + " Face Expressions.controller");
             var controller = new AnimatorController
             {
                 name = Path.GetFileNameWithoutExtension(destination)
@@ -159,23 +157,158 @@ namespace Ee4v.FaceExpression
             return controller;
         }
 
-        private static void ConfigureModularAvatar(
-            GameObject root,
+        private static void ConfigureGeneratedPrefab(
+            GameObject avatar,
+            string prefabPath,
+            string generatedRootName,
             AnimatorController controller,
             FaceExpressionConfiguration configuration,
             ModularAvatarTypes types)
         {
-            var merge = GetOrAddComponent(root, types.MergeAnimator);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            var root = avatar.transform.Find(generatedRootName)?.gameObject;
+            if (prefab != null)
+            {
+                var contents = PrefabUtility.LoadPrefabContents(prefabPath);
+                try
+                {
+                    ConfigureModularAvatar(
+                        contents,
+                        controller,
+                        configuration,
+                        types,
+                        generatedRootName,
+                        false);
+                    if (PrefabUtility.SaveAsPrefabAsset(
+                            contents,
+                            prefabPath) == null)
+                    {
+                        throw new InvalidOperationException(
+                            "The generated face expression Prefab could not be saved.");
+                    }
+                }
+                finally
+                {
+                    PrefabUtility.UnloadPrefabContents(contents);
+                }
+
+                if (IsInstanceOf(root, prefabPath))
+                {
+                    return;
+                }
+
+                if (root != null)
+                {
+                    Undo.DestroyObjectImmediate(root);
+                }
+
+                var instance = PrefabUtility.InstantiatePrefab(
+                    prefab,
+                    avatar.transform) as GameObject;
+                if (instance == null)
+                {
+                    throw new InvalidOperationException(
+                        "The generated face expression Prefab could not be instantiated.");
+                }
+
+                Undo.RegisterCreatedObjectUndo(
+                    instance,
+                    "Attach Face Expression Prefab");
+                return;
+            }
+
+            if (root == null)
+            {
+                root = new GameObject(generatedRootName);
+                Undo.RegisterCreatedObjectUndo(
+                    root,
+                    "Create Face Expression Modular Avatar");
+                Undo.SetTransformParent(
+                    root.transform,
+                    avatar.transform,
+                    "Attach Face Expression Modular Avatar");
+            }
+            else if (PrefabUtility.IsAnyPrefabInstanceRoot(root))
+            {
+                PrefabUtility.UnpackPrefabInstance(
+                    root,
+                    PrefabUnpackMode.Completely,
+                    InteractionMode.UserAction);
+            }
+
+            ConfigureModularAvatar(
+                root,
+                controller,
+                configuration,
+                types,
+                generatedRootName,
+                true);
+            prefab = PrefabUtility.SaveAsPrefabAssetAndConnect(
+                root,
+                prefabPath,
+                InteractionMode.UserAction);
+            if (prefab == null)
+            {
+                throw new InvalidOperationException(
+                    "The generated face expression Prefab could not be saved.");
+            }
+        }
+
+        private static bool IsInstanceOf(
+            GameObject root,
+            string prefabPath)
+        {
+            if (root == null)
+            {
+                return false;
+            }
+
+            var source = PrefabUtility.GetCorrespondingObjectFromSource(root);
+            return source != null && string.Equals(
+                AssetDatabase.GetAssetPath(source),
+                prefabPath,
+                StringComparison.Ordinal);
+        }
+
+        private static void ConfigureModularAvatar(
+            GameObject root,
+            AnimatorController controller,
+            FaceExpressionConfiguration configuration,
+            ModularAvatarTypes types,
+            string generatedRootName,
+            bool recordUndo)
+        {
+            if (recordUndo)
+            {
+                Undo.RecordObject(
+                    root.transform,
+                    "Configure Face Expression Prefab");
+            }
+
+            root.name = generatedRootName;
+            root.transform.localPosition = Vector3.zero;
+            root.transform.localRotation = Quaternion.identity;
+            root.transform.localScale = Vector3.one;
+            var merge = GetOrAddComponent(
+                root,
+                types.MergeAnimator,
+                recordUndo);
             SetField(merge, "animator", controller);
             SetEnumField(merge, "layerType", "FX");
             SetEnumField(merge, "pathMode", "Absolute");
             SetEnumField(merge, "mergeAnimatorMode", "Append");
             SetField(merge, "matchAvatarWriteDefaults", false);
 
-            var parameters = GetOrAddComponent(root, types.Parameters);
+            var parameters = GetOrAddComponent(
+                root,
+                types.Parameters,
+                recordUndo);
             ConfigureParameter(parameters);
-            GetOrAddComponent(root, types.MenuInstaller);
-            var rootMenuItem = GetOrAddComponent(root, types.MenuItem);
+            GetOrAddComponent(root, types.MenuInstaller, recordUndo);
+            var rootMenuItem = GetOrAddComponent(
+                root,
+                types.MenuItem,
+                recordUndo);
             ConfigureMenuItem(
                 rootMenuItem,
                 "ee4v Expressions",
@@ -189,11 +322,24 @@ namespace Ee4v.FaceExpression
                 var child = root.transform.GetChild(index);
                 if (child.name.StartsWith("ee4v Menu ", StringComparison.Ordinal))
                 {
-                    Undo.DestroyObjectImmediate(child.gameObject);
+                    if (recordUndo)
+                    {
+                        Undo.DestroyObjectImmediate(child.gameObject);
+                    }
+                    else
+                    {
+                        UnityEngine.Object.DestroyImmediate(child.gameObject);
+                    }
                 }
             }
 
-            CreateMenuItem(root, types.MenuItem, "ee4v Menu 000", "Gesture Assignments", 0f);
+            CreateMenuItem(
+                root,
+                types.MenuItem,
+                "ee4v Menu 000",
+                "Gesture Assignments",
+                0f,
+                recordUndo);
             var entries = GestureMatrixControllerWriter.GetEffectiveMenuEntries(
                 configuration.Assignments,
                 configuration.MenuEntries);
@@ -205,7 +351,8 @@ namespace Ee4v.FaceExpression
                     types.MenuItem,
                     "ee4v Menu " + (index + 1).ToString("000"),
                     entry.Name,
-                    index + 1);
+                    index + 1,
+                    recordUndo);
             }
 
             EditorUtility.SetDirty(root);
@@ -251,12 +398,28 @@ namespace Ee4v.FaceExpression
             Type menuItemType,
             string objectName,
             string label,
-            float value)
+            float value,
+            bool recordUndo)
         {
             var child = new GameObject(objectName);
-            Undo.RegisterCreatedObjectUndo(child, "Create Face Expression Menu Item");
-            Undo.SetTransformParent(child.transform, root.transform, "Attach Face Expression Menu Item");
-            var item = Undo.AddComponent(child, menuItemType);
+            if (recordUndo)
+            {
+                Undo.RegisterCreatedObjectUndo(
+                    child,
+                    "Create Face Expression Menu Item");
+                Undo.SetTransformParent(
+                    child.transform,
+                    root.transform,
+                    "Attach Face Expression Menu Item");
+            }
+            else
+            {
+                child.transform.SetParent(root.transform, false);
+            }
+
+            var item = recordUndo
+                ? Undo.AddComponent(child, menuItemType)
+                : child.AddComponent(menuItemType);
             ConfigureMenuItem(
                 item,
                 label,
@@ -293,9 +456,14 @@ namespace Ee4v.FaceExpression
             EditorUtility.SetDirty(item);
         }
 
-        private static Component GetOrAddComponent(GameObject target, Type type)
+        private static Component GetOrAddComponent(
+            GameObject target,
+            Type type,
+            bool recordUndo)
         {
-            return target.GetComponent(type) ?? Undo.AddComponent(target, type);
+            return target.GetComponent(type) ?? (recordUndo
+                ? Undo.AddComponent(target, type)
+                : target.AddComponent(type));
         }
 
         private static bool TryGetModularAvatarTypes(out ModularAvatarTypes types)
@@ -554,22 +722,6 @@ namespace Ee4v.FaceExpression
             return avatar.GetComponentsInChildren<Component>(true)
                 .FirstOrDefault(component =>
                     component != null && component.GetType().FullName == DescriptorTypeName);
-        }
-
-        private static void EnsureFolder(string path)
-        {
-            var segments = path.Split('/');
-            var current = segments[0];
-            for (var index = 1; index < segments.Length; index++)
-            {
-                var next = current + "/" + segments[index];
-                if (!AssetDatabase.IsValidFolder(next))
-                {
-                    AssetDatabase.CreateFolder(current, segments[index]);
-                }
-
-                current = next;
-            }
         }
 
         private static string SanitizeFileName(string value)

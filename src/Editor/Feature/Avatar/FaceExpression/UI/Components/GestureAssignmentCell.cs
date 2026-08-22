@@ -66,7 +66,7 @@ namespace Ee4v.FaceExpression
 
             RegisterCallback<DragUpdatedEvent>(evt =>
             {
-                if (GetDraggedClip() == null)
+                if (!_clipField.enabledSelf || GetDraggedClip() == null)
                 {
                     return;
                 }
@@ -77,7 +77,7 @@ namespace Ee4v.FaceExpression
             RegisterCallback<DragPerformEvent>(evt =>
             {
                 var clip = GetDraggedClip();
-                if (clip == null)
+                if (!_clipField.enabledSelf || clip == null)
                 {
                     return;
                 }
@@ -86,6 +86,11 @@ namespace Ee4v.FaceExpression
                 _clipField.value = clip;
                 evt.StopPropagation();
             });
+        }
+
+        internal void SetClipEnabled(bool enabled)
+        {
+            _clipField.SetEnabled(enabled);
         }
 
         internal void SetAssignment(FaceExpressionAssignment assignment)

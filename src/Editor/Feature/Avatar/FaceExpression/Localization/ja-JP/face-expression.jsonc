@@ -107,7 +107,6 @@
   "status": {
     "descriptorMissing": "VRChat Avatar Descriptor が見つかりません。表情の編集はできますが割り当てはできません。",
     "clipRequired": "先に表情クリップを作成または選択してください。",
-    "applied": "ジェスチャー割り当てを FX Controller へ適用しました。",
     "controllerCreateFailed": "FX Controller を作成できませんでした。",
     "modularAvatarMissing": "Modular Avatar が見つかりません。VCCからModular Avatarを導入してください。",
     "applyFailed": "ジェスチャー割り当てを適用できませんでした。"
