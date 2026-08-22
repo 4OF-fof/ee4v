@@ -60,7 +60,12 @@
     "noAssignedFiles": "このItemに所属するFileはありません。",
     "noUnassignedFiles": "未所属のFileはありません。",
     "collectionNameRequired": "コレクション名を入力してください。",
-    "collectionSaveFailed": "コレクションを保存できませんでした。Consoleを確認してください。"
+    "collectionSaveFailed": "コレクションを保存できませんでした。Consoleを確認してください。",
+    "derivedAssetNameInvalid": "名前を入力してください。ファイル名に使えない文字は指定できません。",
+    "derivedAssetPrefabNotFound": "取り込み済みGUIDからPrefabを検出できませんでした。先にPrefabを取り込んでください。",
+    "derivedAssetPrefabInvalid": "この項目へ取り込まれたGUIDと一致するPrefabを選択してください。",
+    "derivedAssetAlreadyExists": "同じ名前の派生アセットがすでに存在します。",
+    "derivedAssetCreateFailed": "派生アセットを作成できませんでした。Consoleを確認してください。"
   },
   "fileTree": {
     "title": "File Tree",
@@ -75,6 +80,16 @@
   "detail": {
     "information": "情報",
     "importSettings": "取り込み設定",
+    "derivedAssets": "派生アセット",
+    "derivedAssetsAdd": "派生アセットを追加",
+    "derivedAssetsCreate": "派生アセットを作成",
+    "derivedAssetPrefabPickerTitle": "Prefabを選択",
+    "derivedAssetPrefabSelect": "Prefabを選択",
+    "derivedAssetPrefabPickerClose": "Prefab選択を閉じる",
+    "derivedAssetPrefabSearch": "Prefab名またはパスを検索",
+    "derivedAssetPrefabNoMatch": "一致するPrefabがありません",
+    "derivedAssetPreviewReset": "プレビュー表示をリセット",
+    "derivedAssetPreviewBackground": "プレビュー背景の明暗を切り替え",
     "settings": "設定",
     "contents": "内容",
     "contentsNote": "解析するか、取り込む項目を1行に1件入力します。",
@@ -110,6 +125,7 @@
   "field": {
     "name": "名前",
     "description": "説明",
+    "prefab": "Prefab",
     "tags": "タグ",
     "target": "Target",
     "targetGroup": "Group",
@@ -180,7 +196,8 @@
     "import": "Import",
     "edit": "編集",
     "createCollection": "コレクションを作成",
-    "saveCollection": "コレクションを保存"
+    "saveCollection": "コレクションを保存",
+    "createDerivedAsset": "派生アセットを作成"
   },
   "confirm": {
     "deleteItem": {

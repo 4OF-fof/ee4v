@@ -71,6 +71,23 @@ namespace Ee4v.AssetManager.UI
                 classNames);
         }
 
+        public static UiButton CreateIconButton(
+            string tooltip,
+            string iconFileName,
+            float iconSize,
+            UiButtonVariant variant,
+            Action onClick = null,
+            params string[] classNames)
+        {
+            return CreateFluentIconButton(
+                tooltip,
+                iconFileName,
+                iconSize,
+                onClick,
+                classNames,
+                variant);
+        }
+
         public static UiButton CreateIconTextButton(
             string text,
             string iconFileName,
@@ -141,7 +158,8 @@ namespace Ee4v.AssetManager.UI
             string iconFileName,
             float iconSize,
             Action onClick,
-            string[] classNames)
+            string[] classNames,
+            UiButtonVariant variant = UiButtonVariant.Solid)
         {
             var icon = LoadFluentIconState(
                 iconFileName,
@@ -152,7 +170,7 @@ namespace Ee4v.AssetManager.UI
                 onClick,
                 tooltip,
                 icon,
-                UiButtonVariant.Solid,
+                variant,
                 compact: true);
             AddClasses(button, classNames);
 
@@ -308,13 +326,7 @@ namespace Ee4v.AssetManager.UI
         public bool multiline
         {
             get { return _multiline; }
-            set
-            {
-                _multiline = value;
-                _field.SetState(new InputFieldState(
-                    _field.Value,
-                    value));
-            }
+            set { SetMultiline(value); }
         }
 
         public bool isReadOnly
@@ -326,6 +338,15 @@ namespace Ee4v.AssetManager.UI
         public void FocusInput()
         {
             _field.FocusInput();
+        }
+
+        public void SetMultiline(bool multiline, float maxHeight = 0f)
+        {
+            _multiline = multiline;
+            _field.SetState(new InputFieldState(
+                _field.Value,
+                multiline,
+                maxHeight));
         }
     }
 

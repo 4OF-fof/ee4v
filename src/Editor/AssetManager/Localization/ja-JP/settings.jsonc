@@ -17,7 +17,7 @@
     },
     "ee4vGlobalPath": {
       "label": "ee4v 共通データの保存先",
-      "tooltip": "AssetManager が管理する ee4v のソースファイルを保存するフォルダーです。既定値は Documents/ee4v です。"
+      "tooltip": "AssetManagerのDBやBlendShapeプリセットなど、ee4vの共通データを保存するフォルダーです。既定値はDocuments/ee4vです。"
     },
     "autoSyncEagleOnStartup": {
       "label": "起動時に Eagle を自動同期",

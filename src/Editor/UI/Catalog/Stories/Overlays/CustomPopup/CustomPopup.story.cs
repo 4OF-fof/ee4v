@@ -22,7 +22,9 @@ namespace Ee4v.UI
                     usageLocations: new[]
                     {
                         "Editor/AssetManager/UI/AssetTagField.cs",
-                        "Editor/AssetManager/UI/AssetCollectionCreationPopup.cs"
+                        "Editor/AssetManager/UI/AssetCollectionCreationPopup.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.cs",
+                        "Editor/AssetManager/UI/DerivedAssetPrefabPickerWindow.cs"
                     },
                     styleSheetPaths: new[]
                     {

@@ -17,7 +17,7 @@
     },
     "ee4vGlobalPath": {
       "label": "ee4v global data path",
-      "tooltip": "Directory where AssetManager stores managed ee4v source files. The default is Documents/ee4v."
+      "tooltip": "Directory for shared ee4v data, including the AssetManager database and BlendShape presets. The default is Documents/ee4v."
     },
     "autoSyncEagleOnStartup": {
       "label": "Sync Eagle on startup",

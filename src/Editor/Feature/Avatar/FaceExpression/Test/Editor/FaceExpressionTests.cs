@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
@@ -385,41 +386,58 @@ namespace Ee4v.FaceExpression.Tests
         [Test]
         public void BlendShapePresets_RoundTripManualFbxMapping()
         {
-            var state = new BlendShapeNamePresetState();
+            var directory = Path.Combine(
+                Path.GetTempPath(),
+                "ee4v-blendshape-preset-" +
+                System.Guid.NewGuid().ToString("N"));
             var mapping = BlendShapeNameClassifier.Classify(
                 123L,
                 "Body",
                 "eye_blink_2_R");
             mapping.role = "manual blink";
-            state.presets.Add(new BlendShapeFbxPreset
+            var preset = new BlendShapeFbxPreset
             {
                 assetGuid = "fbx-guid",
                 assetPath = "Assets/Avatar.fbx",
                 name = "Avatar",
                 mappings = new List<BlendShapeNameMapping> { mapping }
-            });
+            };
 
-            var restored = BlendShapeNamePresetSetting.Parse(
-                BlendShapeNamePresetSetting.Serialize(state));
-            var rule = new BlendShapeNamingRule(restored);
-            var channel = CreateMappedChannel("eye_blink_2_R", 0f);
+            try
+            {
+                var store = new BlendShapePresetFileStore(directory);
+                store.Save(preset);
+                var restored = store.Load();
+                var rule = new BlendShapeNamingRule(restored);
+                var channel = CreateMappedChannel("eye_blink_2_R", 0f);
 
-            Assert.That(restored.presets.Count, Is.EqualTo(1));
-            Assert.That(rule.TryParse(channel, out var parsed), Is.True);
-            Assert.That(parsed.Role, Is.EqualTo("manual blink"));
-            Assert.That(parsed.Variation, Is.EqualTo("2"));
-            Assert.That(parsed.Side, Is.EqualTo("R"));
-            Assert.That(
-                rule.TryParse(
-                    new BlendShapeChannel(
-                        "Body",
-                        "eye_blink_2_R",
-                        0f,
-                        false,
-                        sourceAssetGuid: "different-fbx",
-                        sourceMeshLocalId: 123L),
-                    out _),
-                Is.False);
+                Assert.That(
+                    File.Exists(Path.Combine(directory, "Avatar.json")),
+                    Is.True);
+                Assert.That(restored.presets.Count, Is.EqualTo(1));
+                Assert.That(rule.TryParse(channel, out var parsed), Is.True);
+                Assert.That(parsed.Role, Is.EqualTo("manual blink"));
+                Assert.That(parsed.Variation, Is.EqualTo("2"));
+                Assert.That(parsed.Side, Is.EqualTo("R"));
+                Assert.That(
+                    rule.TryParse(
+                        new BlendShapeChannel(
+                            "Body",
+                            "eye_blink_2_R",
+                            0f,
+                            false,
+                            sourceAssetGuid: "different-fbx",
+                            sourceMeshLocalId: 123L),
+                        out _),
+                    Is.False);
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                {
+                    Directory.Delete(directory, true);
+                }
+            }
         }
 
         private static BlendShapeChannel CreateMappedChannel(

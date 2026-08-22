@@ -379,7 +379,8 @@ namespace Ee4v.FaceExpression
         private static void BuildPresets(VisualElement parent)
         {
             var view = new BlendShapePresetView(
-                new StorySettingsService());
+                new StorySettingsService(),
+                new StoryBlendShapePresetStore());
             view.SetDraft(
                 CreateStoryPreset(),
                 false,
@@ -437,6 +438,30 @@ namespace Ee4v.FaceExpression
                     }
                 }
             };
+        }
+
+        private sealed class StoryBlendShapePresetStore :
+            IBlendShapePresetStore
+        {
+            private readonly BlendShapeNamePresetState _state =
+                new BlendShapeNamePresetState();
+
+            public event Action Changed;
+
+            public BlendShapeNamePresetState Load()
+            {
+                return _state;
+            }
+
+            public void Save(BlendShapeFbxPreset preset)
+            {
+                BlendShapeNamePresetSetting.Upsert(_state, preset);
+                Changed?.Invoke();
+            }
+
+            public void OpenDirectory()
+            {
+            }
         }
 
         private sealed class StorySettingsService : ISettingsService

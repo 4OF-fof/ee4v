@@ -48,6 +48,8 @@
 | `AssetManagerSearchTests.MatchesItem_UsesOnlyEnabledTargets` | Item検索が有効な名前、説明、タグだけを部分一致対象にする | 検索対象の切替が別項目へ漏れる問題を検出する |
 | `AssetManagerSearchTests.MatchesFile_UsesNameTarget` | File名検索を名前対象の有効時だけ行う | ItemとFileで検索対象の意味がずれる問題を検出する |
 | `ImagesWithTheSameSource_ReuseDecodedTexture` | 同じ画像Sourceを表示する要素がデコード済みTextureを共有する | スクロール中の再デコードは最終表示だけでは検出できない |
+| `Create_ProducesVariantAndReplacesEditableDependencies` | 派生PrefabをVariantとして作成し、MaterialをVariant、AnimationClipなどの編集対象をコピーへ差し替える | UnityのPrefab・Material VariantとSerializedObjectをまたぐ参照差し替えは生成Prefabの存在だけでは検出できない |
+| `FindPrefabCandidates_ResolvesOnlyImportedPrefabs` | Itemの取り込み済みGUIDからProject内のPrefabだけを重複なく候補へ変換する | GUID、Project path、Asset型をまたぐ候補抽出は入力画面の見た目だけでは誤りを特定できない |
 
 ## Face Expression
 
@@ -58,7 +60,7 @@
 | `BlendShapeRows_GroupRoleAndSwitchVariationAndSide` | FBX別プリセットで同じ見出し内の役割をまとめて種類と左右を切り替え、見出しをまたぐ同名役割は分ける | 一覧上の1行から別々のBlendShapeカーブを選ぶ対応関係と見出し境界は実名一覧だけでは確認できない |
 | `BlendShapeRows_KeepParsedOptionsSeparate` | FBX別プリセットで対応した各BlendShapeを個別行にし、種類と左右指定を読み取り専用の操作部で示す | クリップ内表示で使用中カーブが再集約される問題と、固定値の表示位置が通常表示からずれる問題を防ぐ |
 | `BlendShapePresetClassifier_SeedsSupportedAvatarConventions` | Chiffon、Kipfel、Shinano、Manukaの命名形式から編集可能な初期分類を作る | 似た末尾表現が役割、種類、左右指定のどれとして初期分類されたかは一覧表示だけでは確認できない |
-| `BlendShapePresets_RoundTripManualFbxMapping` | FBXとメッシュに結び付いた手動分類を保存して復元し、別FBXには適用しない | 再起動後や複数FBX利用時の対応表の取り違えは設定画面だけでは確認できない |
+| `BlendShapePresets_RoundTripManualFbxMapping` | `<FBX名>.json`へFBXとメッシュに結び付いた手動分類を保存して復元し、別FBXには適用しない | 再起動後や複数FBX利用時のファイル形式と対応表の取り違えは設定画面だけでは確認できない |
 | `Groups_FilterHeadersAndTreatAddedMeshesAsGroups` | ヘッダー間の分類に加え、追加メッシュをメッシュ名のグループとして絞り込む | 追加メッシュのShapeが別Groupへ混入する問題と、メッシュ全体を選べない問題を防ぐ |
 
 ## Core

@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using Ee4v.Core.Settings;
 using UnityEditor;
 
@@ -42,27 +41,6 @@ namespace Ee4v.AssetManager.UI
                     "eagle",
                     "target",
                     "root"
-                });
-
-        private static readonly SettingDefinition<string> Ee4vLibrary =
-            new SettingDefinition<string>(
-                "assetManager.ee4vGlobalPath",
-                SettingScope.User,
-                "AssetManager",
-                "settings.section.assetManager.paths",
-                "settings.ee4vGlobalPath.label",
-                "settings.ee4vGlobalPath.tooltip",
-                Path.Combine(
-                    Environment.GetFolderPath(
-                        Environment.SpecialFolder.MyDocuments),
-                    "ee4v"),
-                order: 2,
-                keywords: new[]
-                {
-                    "asset manager",
-                    "ee4v",
-                    "library",
-                    "path"
                 });
 
         private static readonly SettingDefinition<bool> AutoSyncEagle =
@@ -122,7 +100,6 @@ namespace Ee4v.AssetManager.UI
 
         private static ISettingsService _registeredSettings;
 
-        internal static event Action Ee4vLibraryPathChanged;
         internal static event Action ProjectThumbnailImportChanged;
 
         static AssetManagerSettings()
@@ -137,7 +114,7 @@ namespace Ee4v.AssetManager.UI
             Get(EagleTarget);
 
         internal static string Ee4vLibraryPath =>
-            Get(Ee4vLibrary);
+            GlobalDataSettings.RootDirectory;
 
         internal static bool AutoSyncEagleOnStartup =>
             Get(AutoSyncEagle);
@@ -169,7 +146,6 @@ namespace Ee4v.AssetManager.UI
 
             settings.Register(EagleLibrary);
             settings.Register(EagleTarget);
-            settings.Register(Ee4vLibrary);
             settings.Register(AutoSyncEagle);
             settings.Register(AutoSyncEe4v);
             settings.Register(ApplyProjectThumbnailOnImport);
@@ -182,11 +158,6 @@ namespace Ee4v.AssetManager.UI
             object sender,
             SettingChangedEventArgs args)
         {
-            if (ReferenceEquals(args.Definition, Ee4vLibrary))
-            {
-                Ee4vLibraryPathChanged?.Invoke();
-            }
-
             if (ReferenceEquals(
                     args.Definition,
                     ApplyProjectThumbnailOnImport))

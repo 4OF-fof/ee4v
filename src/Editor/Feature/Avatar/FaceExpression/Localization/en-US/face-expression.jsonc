@@ -21,9 +21,8 @@
     },
     "blendShapePresets": {
       "label": "BlendShape presets by FBX",
-      "tooltip": "Add or edit BlendShape classifications for each base FBX.",
-      "count": "Registered: {0}",
-      "open": "Edit presets"
+      "tooltip": "Shows saved BlendShape presets for each base FBX.",
+      "openFolder": "Open storage folder"
     }
   },
   "presetWindow": {

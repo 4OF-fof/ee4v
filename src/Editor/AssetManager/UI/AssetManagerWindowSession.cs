@@ -3,6 +3,7 @@ using System.IO;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.AssetManager.Infrastructure;
 using Ee4v.AssetProtection;
+using Ee4v.Core.Settings;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -23,9 +24,9 @@ namespace Ee4v.AssetManager.UI
 
         static AssetManagerWindowSession()
         {
-            AssetManagerSettings.Ee4vLibraryPathChanged -=
+            GlobalDataSettings.PathChanged -=
                 InvalidateManager;
-            AssetManagerSettings.Ee4vLibraryPathChanged +=
+            GlobalDataSettings.PathChanged +=
                 InvalidateManager;
             EditorApplication.delayCall -= SyncSourcesOnStartup;
             EditorApplication.delayCall += SyncSourcesOnStartup;

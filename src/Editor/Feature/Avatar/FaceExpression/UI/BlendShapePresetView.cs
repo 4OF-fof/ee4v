@@ -17,6 +17,7 @@ namespace Ee4v.FaceExpression
     {
         private const string DragDataKey = "ee4v.face-expression.preset-drag";
         private ISettingsService _settings;
+        private IBlendShapePresetStore _presetStore;
         private BlendShapeNamePresetState _state;
         private BlendShapeFbxPreset _draft;
         private GameObject _selectedAvatar;
@@ -41,12 +42,15 @@ namespace Ee4v.FaceExpression
         private bool _settingAsset;
         private string _selectedGroupKey;
 
-        internal BlendShapePresetView(ISettingsService settings)
+        internal BlendShapePresetView(
+            ISettingsService settings,
+            IBlendShapePresetStore presetStore = null)
         {
             _settings = settings ??
                 throw new ArgumentNullException(nameof(settings));
-            _settings.Register(FaceExpressionSettings.BlendShapePresets);
+            _presetStore = presetStore ?? BlendShapePresetStorage.Shared;
             _settings.Changed += OnSettingChanged;
+            _presetStore.Changed += OnPresetStoreChanged;
             LoadState();
             RegisterCallback<DetachFromPanelEvent>(_ => Dispose());
             BuildContent(this);
@@ -58,6 +62,11 @@ namespace Ee4v.FaceExpression
             if (_settings != null)
             {
                 _settings.Changed -= OnSettingChanged;
+            }
+
+            if (_presetStore != null)
+            {
+                _presetStore.Changed -= OnPresetStoreChanged;
             }
         }
 
@@ -184,8 +193,7 @@ namespace Ee4v.FaceExpression
 
         private void LoadState()
         {
-            _state = BlendShapeNamePresetSetting.Parse(
-                _settings.Get(FaceExpressionSettings.BlendShapePresets));
+            _state = _presetStore.Load();
         }
 
         internal void SelectAvatar(GameObject avatar)
@@ -650,10 +658,8 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            BlendShapeNamePresetSetting.Upsert(_state, _draft);
-            _settings.Set(
-                FaceExpressionSettings.BlendShapePresets,
-                BlendShapeNamePresetSetting.Serialize(_state));
+            _presetStore.Save(_draft);
+            LoadState();
             _dirty = false;
             Refresh();
             SetStatus(I18N.Get("presetWindow.saved"));
@@ -686,12 +692,10 @@ namespace Ee4v.FaceExpression
                 Refresh();
                 return;
             }
+        }
 
-            if (!ReferenceEquals(args.Definition, FaceExpressionSettings.BlendShapePresets))
-            {
-                return;
-            }
-
+        private void OnPresetStoreChanged()
+        {
             LoadState();
             if (_selectedAvatar != null && !_dirty)
             {

@@ -894,6 +894,11 @@
     background-color: var(--ee4v-color-surface-soft);
 }
 
+.ee4v-asset-grid-card__placeholder--icon {
+    align-items: center;
+    justify-content: center;
+}
+
 .ee4v-asset-grid-card__name {
     width: 100%;
     min-width: 0;

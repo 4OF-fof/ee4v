@@ -17,6 +17,7 @@ namespace Ee4v.AssetManager.UI
     {
         private const string TargetDragDataKey =
             "ee4v.asset-manager.target-drag";
+        private const float DerivedAssetCardWidth = 144f;
 
         private sealed class ItemTargetEntry
         {
@@ -262,6 +263,7 @@ namespace Ee4v.AssetManager.UI
         private readonly VisualElement _content;
         private readonly VisualElement _detail;
         private readonly AssetItemGridView _itemGrid;
+        private VisualElement _toolbar;
         private AssetManagerGridSizeSlider _gridSizeSlider;
         private VisualElement _gridControls;
         private SearchField _search;
@@ -314,7 +316,8 @@ namespace Ee4v.AssetManager.UI
                     SetMinimumGridSize;
                 _content = new VisualElement();
                 _content.AddToClassList("ee4v-asset-manager__content");
-                Add(BuildToolbar());
+                _toolbar = BuildToolbar();
+                Add(_toolbar);
                 Add(_content);
             }
             else
@@ -568,14 +571,15 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
+            var itemName =
+                _manager.GetItem(_viewState.DetailItemId)?.Name ??
+                I18N.Get("common.item");
             _breadcrumbs.SetItems(new[]
             {
                 new AssetManagerBreadcrumbItem(
                     pageTitle,
                     _viewState.ShowPageRoot),
-                new AssetManagerBreadcrumbItem(
-                    _manager.GetItem(_viewState.DetailItemId)?.Name ??
-                    I18N.Get("common.item"))
+                new AssetManagerBreadcrumbItem(itemName)
             });
         }
 
@@ -700,6 +704,9 @@ namespace Ee4v.AssetManager.UI
 
         private void RefreshMain()
         {
+            _toolbar.style.display = _viewState.IsDerivedAssetsPage
+                ? DisplayStyle.None
+                : DisplayStyle.Flex;
             RefreshHistoryNavigation();
             RefreshSortButton();
             var showsItemDetail =
@@ -1402,6 +1409,12 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
+            if (_viewState.IsDerivedAssetsPage)
+            {
+                BuildDerivedAssetsPage();
+                return;
+            }
+
             var files = GetFiles(item.Id);
             var layout = new VisualElement();
             layout.AddToClassList("ee4v-asset-manager__item-detail-layout");
@@ -1431,6 +1444,201 @@ namespace Ee4v.AssetManager.UI
             _fileTreeSelection = null;
             _fileTree.SetItem(item.Id, files);
             RefreshItemDetailPane(item, files);
+        }
+
+        private void BuildDerivedAssetsPage()
+        {
+            CancelItemOverviewThumbnail();
+            ClearItemOverviewThumbnail();
+            _itemDetailPane = null;
+            _fileTreeSelection = null;
+            var page = new VisualElement();
+            page.AddToClassList(
+                "ee4v-asset-manager__derived-assets-page");
+            page.Add(AssetManagerControls.CreateIconButton(
+                I18N.Get("toolbar.back"),
+                "arrow_left.png",
+                UiSizeTokens.Size18,
+                UiButtonVariant.Ghost,
+                _viewState.CloseDerivedAssetsPage,
+                "ee4v-asset-manager__derived-assets-back"));
+
+            var form = new VisualElement();
+            form.AddToClassList(
+                "ee4v-asset-manager__derived-assets-form");
+            form.Add(UiTextFactory.Create(
+                I18N.Get("detail.derivedAssetsCreate"),
+                UiClassNames.SectionTitle,
+                "ee4v-asset-manager__derived-assets-form-title"));
+
+            var formLayout = new VisualElement();
+            formLayout.AddToClassList(
+                "ee4v-asset-manager__derived-assets-form-layout");
+            var previewColumn = new VisualElement();
+            previewColumn.AddToClassList(
+                "ee4v-asset-manager__derived-assets-preview-column");
+            var prefabPreview = new DerivedAssetPrefabScenePreview();
+            previewColumn.Add(prefabPreview);
+
+            var prefabContainer = new VisualElement();
+            prefabContainer.AddToClassList(
+                "ee4v-asset-manager-control-field");
+            prefabContainer.Add(UiTextFactory.Create(
+                I18N.Get("field.prefab"),
+                UiClassNames.FormLabel,
+                "ee4v-asset-manager-control-field__label"));
+            var prefabCandidates = DerivedAssetCreator
+                .FindPrefabCandidates(_manager.GetItemImportedAssetGuids(
+                    _viewState.DetailItemId))
+                .ToList();
+            var prefab = new DerivedAssetPrefabSelector(
+                prefabCandidates);
+            prefab.AddToClassList(
+                "ee4v-asset-manager__derived-assets-prefab-field");
+            prefabContainer.Add(prefab);
+            if (prefabCandidates.Count == 0)
+            {
+                prefabContainer.Add(AssetManagerControls.CreateNotice(
+                    I18N.Get("notice.derivedAssetPrefabNotFound"),
+                    "ee4v-asset-manager__derived-assets-prefab-empty"));
+            }
+            previewColumn.Add(prefabContainer);
+            formLayout.Add(previewColumn);
+
+            var fields = new VisualElement();
+            fields.AddToClassList(
+                "ee4v-asset-manager__derived-assets-fields");
+            var name = AssetManagerControls.CreateTextField(
+                I18N.Get("field.name"));
+            fields.Add(name);
+
+            var description = AssetManagerControls.CreateTextField(
+                I18N.Get("field.description"),
+                "ee4v-asset-manager__derived-assets-description-field");
+            description.SetMultiline(true, 144f);
+            fields.Add(description);
+
+            var message = new InlineMessage();
+            fields.Add(message);
+            UiButton create = null;
+            create = AssetManagerControls.CreateButton(
+                I18N.Get("action.createDerivedAsset"),
+                () => CreateDerivedAsset(
+                    name.value,
+                    prefab.Value,
+                    description.value,
+                    message,
+                    create),
+                "ee4v-asset-manager__primary-action",
+                "ee4v-asset-manager__derived-assets-create");
+            create.SetEnabled(false);
+            prefab.ValueChanged += selectedPrefab =>
+            {
+                prefabPreview.SetPrefab(selectedPrefab);
+                message.SetState(new InlineMessageState(string.Empty));
+                create.SetEnabled(selectedPrefab != null);
+            };
+            prefab.SelectionRejected += () =>
+            {
+                create.SetEnabled(prefab.Value != null);
+                message.SetState(new InlineMessageState(
+                    I18N.Get("notice.derivedAssetPrefabInvalid"),
+                    UiStatusTone.Failed));
+            };
+            fields.Add(create);
+            formLayout.Add(fields);
+            form.Add(formLayout);
+            page.Add(form);
+            _content.Add(page);
+        }
+
+        private void CreateDerivedAsset(
+            string name,
+            GameObject prefab,
+            string description,
+            InlineMessage message,
+            UiButton createButton)
+        {
+            if (!DerivedAssetCreator.IsValidName(name))
+            {
+                message.SetState(new InlineMessageState(
+                    I18N.Get("notice.derivedAssetNameInvalid"),
+                    UiStatusTone.Failed));
+                return;
+            }
+
+            var prefabPath = AssetDatabase.GetAssetPath(prefab);
+            if (string.IsNullOrEmpty(prefabPath) ||
+                !prefabPath.EndsWith(
+                    ".prefab",
+                    StringComparison.OrdinalIgnoreCase) ||
+                !IsAllowedPrefab(
+                    prefab,
+                    new HashSet<string>(
+                        _manager.GetItemImportedAssetGuids(
+                            _viewState.DetailItemId) ??
+                        Array.Empty<string>(),
+                        StringComparer.OrdinalIgnoreCase)))
+            {
+                message.SetState(new InlineMessageState(
+                    I18N.Get("notice.derivedAssetPrefabInvalid"),
+                    UiStatusTone.Failed));
+                return;
+            }
+
+            if (AssetDatabase.IsValidFolder(
+                    DerivedAssetCreator.GetVariantFolder(name)))
+            {
+                message.SetState(new InlineMessageState(
+                    I18N.Get("notice.derivedAssetAlreadyExists"),
+                    UiStatusTone.Failed));
+                return;
+            }
+
+            createButton.SetEnabled(false);
+            try
+            {
+                var result = DerivedAssetCreator.Create(
+                    new DerivedAssetCreationRequest
+                    {
+                        ParentItemId = _viewState.DetailItemId,
+                        Name = name,
+                        Prefab = prefab,
+                        Description = description
+                    });
+                Selection.activeObject = result.Prefab;
+                EditorGUIUtility.PingObject(result.Prefab);
+                _viewState.CloseDerivedAssetsPage();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                message.SetState(new InlineMessageState(
+                    I18N.Get("notice.derivedAssetCreateFailed"),
+                    UiStatusTone.Failed));
+            }
+            finally
+            {
+                createButton.SetEnabled(true);
+            }
+        }
+
+        private static bool IsAllowedPrefab(
+            GameObject prefab,
+            ISet<string> allowedGuids)
+        {
+            if (prefab == null || allowedGuids == null)
+            {
+                return false;
+            }
+
+            var path = AssetDatabase.GetAssetPath(prefab);
+            return !string.IsNullOrEmpty(path) &&
+                   path.EndsWith(
+                       ".prefab",
+                       StringComparison.OrdinalIgnoreCase) &&
+                   allowedGuids.Contains(
+                       AssetDatabase.AssetPathToGUID(path));
         }
 
         private void RefreshItemDetailPane()
@@ -1606,7 +1814,67 @@ namespace Ee4v.AssetManager.UI
             importSettings.Add(targetList);
             detail.Add(importSettings);
 
+            AddDerivedAssets(detail, item.Id);
             AddItemInformation(detail, item, files);
+        }
+
+        private void AddDerivedAssets(
+            VisualElement detail,
+            string itemId)
+        {
+            var section = new AssetDetailSection(
+                I18N.Get("detail.derivedAssets"));
+            var grid = new VisualElement();
+            grid.AddToClassList(
+                "ee4v-asset-manager__derived-assets-grid");
+            foreach (var derivedAsset in
+                     DerivedAssetCreator.FindByParentItem(itemId))
+            {
+                var assetCard = new AssetItemGridCard(_imageCache);
+                assetCard.SetWidth(DerivedAssetCardWidth);
+                assetCard.SetPlaceholderIcon(
+                    AssetManagerControls.LoadFluentIconState(
+                        "cube.png",
+                        UiSizeTokens.Size24,
+                        derivedAsset.Name,
+                        UiColorTokens.TextMuted));
+                assetCard.SetState(
+                    new AssetItemGridEntry(
+                        derivedAsset.AssetPath,
+                        derivedAsset.Name),
+                    selected: false);
+                assetCard.tooltip = derivedAsset.Description;
+                assetCard.Clicked += (_, __, ___) =>
+                {
+                    Selection.activeObject = derivedAsset.Prefab;
+                    EditorGUIUtility.PingObject(derivedAsset.Prefab);
+                };
+                assetCard.RegisterCallback<DetachFromPanelEvent>(_ =>
+                    assetCard.Dispose());
+                grid.Add(assetCard);
+            }
+            var addCard = new AssetItemGridCard(_imageCache);
+            addCard.AddToClassList(
+                "ee4v-asset-manager__derived-assets-add-card");
+            addCard.SetWidth(DerivedAssetCardWidth);
+            addCard.SetPlaceholderIcon(
+                AssetManagerControls.LoadFluentIconState(
+                    "add.png",
+                    UiSizeTokens.Size24,
+                    I18N.Get("detail.derivedAssetsAdd"),
+                    UiColorTokens.TextMuted));
+            addCard.SetState(
+                new AssetItemGridEntry(
+                    "derived-assets-add:" + itemId,
+                    I18N.Get("detail.derivedAssetsAdd")),
+                selected: false);
+            addCard.Clicked += (_, __, ___) =>
+                _viewState.OpenDerivedAssetsPage(itemId);
+            addCard.RegisterCallback<DetachFromPanelEvent>(_ =>
+                addCard.Dispose());
+            grid.Add(addCard);
+            section.Add(grid);
+            detail.Add(section);
         }
 
         private static void AddItemInformation(
@@ -3130,6 +3398,12 @@ namespace Ee4v.AssetManager.UI
                     if (ShowsInformation)
                     {
                         RefreshDetail();
+                    }
+                    break;
+                case AssetManagerViewStateChange.ItemDetailPage:
+                    if (ShowsMain)
+                    {
+                        RefreshMain();
                     }
                     break;
                 case AssetManagerViewStateChange.ItemSort:

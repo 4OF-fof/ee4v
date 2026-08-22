@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Ee4v.Core.Settings;
 using UnityEditor;
@@ -28,12 +29,12 @@ namespace Ee4v.FaceExpression
         internal static readonly SettingDefinition<string> BlendShapePresets =
             new SettingDefinition<string>(
                 "faceExpression.blendShapePresets",
-                SettingScope.Project,
+                SettingScope.User,
                 "FaceExpression",
                 "settings.section.editor",
                 "settings.blendShapePresets.label",
                 "settings.blendShapePresets.tooltip",
-                BlendShapeNamePresetSetting.DefaultValue,
+                string.Empty,
                 order: 10,
                 keywords: new[]
                 {
@@ -51,7 +52,8 @@ namespace Ee4v.FaceExpression
             CommaSeparatedListSettingDrawer.Register(
                 BlendShapeSeparators);
             BlendShapeNamePresetSetting.RegisterDrawer(
-                BlendShapePresets);
+                BlendShapePresets,
+                BlendShapePresetStorage.Shared);
             CoreSettings.Current.Register(BlendShapeSeparators);
             CoreSettings.Current.Register(BlendShapePresets);
         }
@@ -66,21 +68,30 @@ namespace Ee4v.FaceExpression
         }
 
         internal static BlendShapeNamingRule GetNameRule(
-            ISettingsService settings = null)
+            IBlendShapePresetStore presetStore)
         {
-            settings = settings ?? CoreSettings.Current;
-            settings.Register(BlendShapePresets);
+            if (presetStore == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(presetStore));
+            }
+
             return new BlendShapeNamingRule(
-                BlendShapeNamePresetSetting.Parse(
-                    settings.Get(BlendShapePresets)));
+                presetStore.Load());
         }
 
         internal static bool EnsureNamePreset(
             GameObject avatar,
-            ISettingsService settings = null)
+            ISettingsService settings,
+            IBlendShapePresetStore presetStore)
         {
             settings = settings ?? CoreSettings.Current;
-            settings.Register(BlendShapePresets);
+            if (presetStore == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(presetStore));
+            }
+
             var sourceFbx = BlendShapeNamePresetSetting.ResolveSourceFbx(
                 avatar);
             if (sourceFbx == null)
@@ -90,8 +101,7 @@ namespace Ee4v.FaceExpression
 
             var assetPath = AssetDatabase.GetAssetPath(sourceFbx);
             var assetGuid = AssetDatabase.AssetPathToGUID(assetPath);
-            var state = BlendShapeNamePresetSetting.Parse(
-                settings.Get(BlendShapePresets));
+            var state = presetStore.Load();
             if (BlendShapeNamePresetSetting.Find(state, assetGuid) != null)
             {
                 return false;
@@ -105,10 +115,7 @@ namespace Ee4v.FaceExpression
                 return false;
             }
 
-            BlendShapeNamePresetSetting.Upsert(state, preset);
-            settings.Set(
-                BlendShapePresets,
-                BlendShapeNamePresetSetting.Serialize(state));
+            presetStore.Save(preset);
             return true;
         }
     }

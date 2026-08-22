@@ -60,7 +60,12 @@
     "noAssignedFiles": "There are no files assigned to this item.",
     "noUnassignedFiles": "There are no unassigned files.",
     "collectionNameRequired": "Enter a collection name.",
-    "collectionSaveFailed": "The collection could not be saved. Check the Console."
+    "collectionSaveFailed": "The collection could not be saved. Check the Console.",
+    "derivedAssetNameInvalid": "Enter a name without characters that are invalid in file names.",
+    "derivedAssetPrefabNotFound": "No Prefab was found from the imported GUIDs. Import a Prefab first.",
+    "derivedAssetPrefabInvalid": "Select a Prefab whose GUID was imported into this item.",
+    "derivedAssetAlreadyExists": "A derived asset with the same name already exists.",
+    "derivedAssetCreateFailed": "The derived asset could not be created. Check the Console."
   },
   "fileTree": {
     "title": "File Tree",
@@ -75,6 +80,16 @@
   "detail": {
     "information": "INFORMATION",
     "importSettings": "IMPORT SETTINGS",
+    "derivedAssets": "DERIVED ASSETS",
+    "derivedAssetsAdd": "Add derived asset",
+    "derivedAssetsCreate": "Create derived asset",
+    "derivedAssetPrefabPickerTitle": "Select Prefab",
+    "derivedAssetPrefabSelect": "Select Prefab",
+    "derivedAssetPrefabPickerClose": "Close Prefab selection",
+    "derivedAssetPrefabSearch": "Search Prefab name or path",
+    "derivedAssetPrefabNoMatch": "No matching Prefabs",
+    "derivedAssetPreviewReset": "Reset preview view",
+    "derivedAssetPreviewBackground": "Toggle preview background",
     "settings": "SETTINGS",
     "contents": "CONTENTS",
     "contentsNote": "Analyze the file or enter one entry path per line to import.",
@@ -110,6 +125,7 @@
   "field": {
     "name": "Name",
     "description": "Description",
+    "prefab": "Prefab",
     "tags": "Tags",
     "target": "Target",
     "targetGroup": "Group",
@@ -180,7 +196,8 @@
     "import": "Import",
     "edit": "Edit",
     "createCollection": "Create collection",
-    "saveCollection": "Save collection"
+    "saveCollection": "Save collection",
+    "createDerivedAsset": "Create derived asset"
   },
   "confirm": {
     "deleteItem": {

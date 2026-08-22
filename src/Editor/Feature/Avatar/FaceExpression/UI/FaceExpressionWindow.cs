@@ -13,6 +13,7 @@ namespace Ee4v.FaceExpression
         private FaceExpressionPreview _preview;
         private FaceExpressionView _view;
         private ISettingsService _settings;
+        private IBlendShapePresetStore _presetStore;
         private GameObject _avatar;
         private AnimationClip _clip;
         private IReadOnlyList<BlendShapeChannel> _channels = Array.Empty<BlendShapeChannel>();
@@ -36,6 +37,8 @@ namespace Ee4v.FaceExpression
         {
             _settings = CoreSettings.Current;
             _settings.Changed += OnSettingChanged;
+            _presetStore = BlendShapePresetStorage.Shared;
+            _presetStore.Changed += RefreshClip;
             FaceExpressionGroupSession.Changed += ApplyGroupFilter;
             FaceExpressionGroupSession.MeshesChanged += RefreshClip;
             _preview = new FaceExpressionPreview(Repaint);
@@ -48,6 +51,12 @@ namespace Ee4v.FaceExpression
             if (_settings != null)
             {
                 _settings.Changed -= OnSettingChanged;
+            }
+
+            if (_presetStore != null)
+            {
+                _presetStore.Changed -= RefreshClip;
+                _presetStore = null;
             }
 
             Undo.undoRedoPerformed -= RefreshClip;
@@ -110,7 +119,10 @@ namespace Ee4v.FaceExpression
             _preview?.SetAvatar(avatar);
             FaceExpressionGroupSession.SetAvatar(avatar);
             _view?.SetAvatar(avatar);
-            FaceExpressionSettings.EnsureNamePreset(avatar, _settings);
+            FaceExpressionSettings.EnsureNamePreset(
+                avatar,
+                _settings,
+                _presetStore);
         }
 
         private void SetClip(AnimationClip clip)
@@ -169,10 +181,7 @@ namespace Ee4v.FaceExpression
         {
             if (ReferenceEquals(
                     args.Definition,
-                    FaceExpressionSettings.BlendShapeSeparators) ||
-                ReferenceEquals(
-                    args.Definition,
-                    FaceExpressionSettings.BlendShapePresets))
+                    FaceExpressionSettings.BlendShapeSeparators))
             {
                 RefreshClip();
             }
@@ -195,7 +204,7 @@ namespace Ee4v.FaceExpression
                 string.IsNullOrEmpty(selectedGroupName)
                     ? I18N.Get("group.all")
                     : selectedGroupName,
-                FaceExpressionSettings.GetNameRule(_settings),
+                FaceExpressionSettings.GetNameRule(_presetStore),
                 !string.IsNullOrEmpty(
                     FaceExpressionGroupSession.SelectedGroupKey));
         }

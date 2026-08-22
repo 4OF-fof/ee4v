@@ -76,6 +76,18 @@ namespace Ee4v.AssetManager.UI
             _imageFrame.style.maxHeight = width;
         }
 
+        public void SetPlaceholderIcon(IconState state)
+        {
+            _placeholder.Clear();
+            _placeholder.EnableInClassList(
+                "ee4v-asset-grid-card__placeholder--icon",
+                state != null);
+            if (state != null)
+            {
+                _placeholder.Add(new Icon(state));
+            }
+        }
+
         public void Dispose()
         {
             _image.ClearSource();

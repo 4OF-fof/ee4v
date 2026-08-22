@@ -40,46 +40,40 @@ namespace Ee4v.FaceExpression
 
     internal static class BlendShapeNamePresetSetting
     {
-        internal static string DefaultValue => Serialize(new BlendShapeNamePresetState());
-
-        internal static void RegisterDrawer(SettingDefinition<string> definition)
+        internal static void RegisterDrawer(
+            SettingDefinition<string> definition,
+            IBlendShapePresetStore storage)
         {
             SettingDrawerApi.Register(definition, context =>
             {
                 var root = new VisualElement();
-                var count = Parse(context.Value).presets.Count;
-                root.Add(UiTextFactory.Create(string.Format(
-                    I18N.Get("settings.blendShapePresets.count"),
-                    count)));
-                var open = UiTextFactory.CreateButton(
-                    I18N.Get("settings.blendShapePresets.open"),
-                    BlendShapePresetWindow.ShowWindow);
-                open.tooltip = context.Tooltip ?? string.Empty;
-                root.Add(open);
+
+                void Rebuild()
+                {
+                    root.Clear();
+                    foreach (var preset in storage.Load().presets)
+                    {
+                        root.Add(UiTextFactory.Create(preset.name));
+                    }
+
+                    var openFolder = UiTextFactory.CreateButton(
+                        I18N.Get("settings.blendShapePresets.openFolder"),
+                        storage.OpenDirectory);
+                    openFolder.tooltip = context.Tooltip ?? string.Empty;
+                    root.Add(openFolder);
+                }
+
+                void OnStorageChanged()
+                {
+                    root.schedule.Execute(Rebuild);
+                }
+
+                storage.Changed += OnStorageChanged;
+                root.RegisterCallback<DetachFromPanelEvent>(
+                    _ => storage.Changed -= OnStorageChanged);
+                Rebuild();
                 return root;
             });
-        }
-
-        internal static BlendShapeNamePresetState Parse(string value)
-        {
-            try
-            {
-                var parsed = JsonUtility.FromJson<BlendShapeNamePresetState>(
-                    value ?? string.Empty) ?? new BlendShapeNamePresetState();
-                Normalize(parsed);
-                return parsed;
-            }
-            catch (ArgumentException)
-            {
-                return new BlendShapeNamePresetState();
-            }
-        }
-
-        internal static string Serialize(BlendShapeNamePresetState state)
-        {
-            state = state ?? new BlendShapeNamePresetState();
-            Normalize(state);
-            return JsonUtility.ToJson(state);
         }
 
         internal static BlendShapeFbxPreset Find(
@@ -199,7 +193,7 @@ namespace Ee4v.FaceExpression
                        StringComparison.OrdinalIgnoreCase);
         }
 
-        private static void Normalize(BlendShapeNamePresetState state)
+        internal static void Normalize(BlendShapeNamePresetState state)
         {
             state.presets = (state.presets ?? new List<BlendShapeFbxPreset>())
                 .Where(preset => preset != null && !string.IsNullOrEmpty(preset.assetGuid))

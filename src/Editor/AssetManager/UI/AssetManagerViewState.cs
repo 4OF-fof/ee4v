@@ -24,6 +24,7 @@ namespace Ee4v.AssetManager.UI
         Navigation,
         ItemSelection,
         FileSelection,
+        ItemDetailPage,
         ItemSort,
         SearchTargets
     }
@@ -43,6 +44,7 @@ namespace Ee4v.AssetManager.UI
         public string CollectionId { get; private set; }
         public string TagPath { get; private set; }
         public string DetailItemId { get; private set; }
+        public bool IsDerivedAssetsPage { get; private set; }
         public IReadOnlyList<string> SelectedItemIds => _selectedItemIds;
         public string SelectedItemId { get; private set; }
         public string SelectedFileId { get; private set; }
@@ -96,6 +98,34 @@ namespace Ee4v.AssetManager.UI
                 CollectionId,
                 itemId,
                 TagPath));
+        }
+
+        public void OpenDerivedAssetsPage(string itemId)
+        {
+            if (string.IsNullOrWhiteSpace(itemId) ||
+                !string.Equals(
+                    DetailItemId,
+                    itemId,
+                    StringComparison.Ordinal) ||
+                IsDerivedAssetsPage)
+            {
+                return;
+            }
+
+            IsDerivedAssetsPage = true;
+            SelectedFileId = null;
+            Changed?.Invoke(AssetManagerViewStateChange.ItemDetailPage);
+        }
+
+        public void CloseDerivedAssetsPage()
+        {
+            if (!IsDerivedAssetsPage)
+            {
+                return;
+            }
+
+            IsDerivedAssetsPage = false;
+            Changed?.Invoke(AssetManagerViewStateChange.ItemDetailPage);
         }
 
         public void ShowPageRoot()
@@ -175,6 +205,7 @@ namespace Ee4v.AssetManager.UI
 
         public void SelectFile(string fileId)
         {
+            IsDerivedAssetsPage = false;
             SelectedFileId = string.IsNullOrEmpty(fileId)
                 ? null
                 : fileId;
@@ -240,6 +271,7 @@ namespace Ee4v.AssetManager.UI
             CollectionId = location.CollectionId;
             TagPath = location.TagPath;
             DetailItemId = location.ItemId;
+            IsDerivedAssetsPage = false;
             ResetSelectionAndInformation();
             Changed?.Invoke(AssetManagerViewStateChange.Navigation);
         }

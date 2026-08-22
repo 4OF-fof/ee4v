@@ -21,9 +21,8 @@
     },
     "blendShapePresets": {
       "label": "FBX別BlendShapeプリセット",
-      "tooltip": "ベースFBXごとのBlendShape分類を追加または編集します。",
-      "count": "登録済み: {0}件",
-      "open": "プリセットを編集"
+      "tooltip": "ベースFBXごとの保存済みBlendShapeプリセットを表示します。",
+      "openFolder": "保存先をエクスプローラーで開く"
     }
   },
   "presetWindow": {
