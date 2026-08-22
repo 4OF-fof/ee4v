@@ -34,10 +34,16 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
-        public void Create_ProducesVariantAndReplacesEditableDependencies()
+        public void Create_CopiesOnlySlotOwnersAndSharesDataAssets()
         {
+            var sourceTexture = new Texture2D(2, 2);
+            var texturePath = SourceFolder + "/Source.asset";
+            AssetDatabase.CreateAsset(sourceTexture, texturePath);
             var sourceMaterial = new Material(
-                Shader.Find("Standard"));
+                Shader.Find("Standard"))
+            {
+                mainTexture = sourceTexture
+            };
             var materialPath = SourceFolder + "/Source.mat";
             AssetDatabase.CreateAsset(sourceMaterial, materialPath);
 
@@ -49,11 +55,21 @@ namespace Ee4v.AssetManager.UI.Tests
                 .CreateAnimatorControllerAtPath(controllerPath);
             sourceController.AddMotion(sourceClip);
 
+            var nestedObject = new GameObject("Nested");
+            var nestedPath = SourceFolder + "/Nested.prefab";
+            var nestedPrefab = PrefabUtility.SaveAsPrefabAsset(
+                nestedObject,
+                nestedPath);
+            Object.DestroyImmediate(nestedObject);
+
             var sourceObject = new GameObject("Source");
             sourceObject.AddComponent<MeshRenderer>().sharedMaterial =
                 sourceMaterial;
             sourceObject.AddComponent<Animator>().runtimeAnimatorController =
                 sourceController;
+            var nestedInstance = PrefabUtility.InstantiatePrefab(
+                nestedPrefab) as GameObject;
+            nestedInstance.transform.SetParent(sourceObject.transform);
             var prefabPath = SourceFolder + "/Source.prefab";
             var sourcePrefab = PrefabUtility.SaveAsPrefabAsset(
                 sourceObject,
@@ -90,6 +106,9 @@ namespace Ee4v.AssetManager.UI.Tests
                 Does.StartWith(
                     DerivedAssetCreator.GetVariantFolder(OutputName) +
                     "/Assets/"));
+            Assert.That(
+                AssetDatabase.GetAssetPath(derivedMaterial.mainTexture),
+                Is.EqualTo(texturePath));
 
             var animator = result.Prefab.GetComponent<Animator>();
             var derivedController =
@@ -105,12 +124,25 @@ namespace Ee4v.AssetManager.UI.Tests
                 .Single();
             Assert.That(
                 AssetDatabase.GetAssetPath(derivedClip),
-                Is.Not.EqualTo(clipPath));
+                Is.EqualTo(clipPath));
+
+            var derivedNested = result.Prefab.transform.Find("Nested");
+            Assert.That(derivedNested, Is.Not.Null);
+            var nestedSource = PrefabUtility
+                .GetCorrespondingObjectFromOriginalSource(
+                    derivedNested.gameObject);
             Assert.That(
-                AssetDatabase.GetAssetPath(derivedClip),
-                Does.StartWith(
-                    DerivedAssetCreator.GetVariantFolder(OutputName) +
-                    "/Assets/"));
+                AssetDatabase.GetAssetPath(nestedSource),
+                Is.EqualTo(nestedPath));
+            Assert.That(
+                AssetDatabase.FindAssets(
+                    "t:Prefab",
+                    new[]
+                    {
+                        DerivedAssetCreator.GetVariantFolder(OutputName) +
+                        "/Assets"
+                    }),
+                Is.Empty);
 
             var listed = DerivedAssetCreator.FindByParentItem(ParentItemId);
             Assert.That(listed.Count, Is.EqualTo(1));

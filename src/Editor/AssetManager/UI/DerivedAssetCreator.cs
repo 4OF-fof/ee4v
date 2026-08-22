@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace Ee4v.AssetManager.UI
@@ -32,20 +32,12 @@ namespace Ee4v.AssetManager.UI
         internal const string VariantRoot =
             "Assets/!ee4vAsset/Variant";
         private const string MetadataPrefix = "ee4v-derived-asset:v1:";
-
-        private static readonly HashSet<string> SharedExtensions =
-            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ".asmdef",
-                ".asmref",
-                ".cginc",
-                ".compute",
-                ".cs",
-                ".dll",
-                ".hlsl",
-                ".shader",
-                ".shadergraph"
-            };
+        private static readonly Regex UnityYamlObjectPattern = new Regex(
+            @"^--- !u!\d+ &(-?\d+)\s*$",
+            RegexOptions.Multiline | RegexOptions.CultureInvariant);
+        private static readonly Regex LocalObjectReferencePattern = new Regex(
+            @"\{fileID:\s*(-?\d+)\s*\}",
+            RegexOptions.CultureInvariant);
 
         private readonly struct AssetObjectKey : IEquatable<AssetObjectKey>
         {
@@ -173,9 +165,7 @@ namespace Ee4v.AssetManager.UI
 
                 var dependencies = AssetDatabase
                     .GetDependencies(sourcePath, true)
-                    .Where(path => IsCopyableDependency(
-                        path,
-                        sourcePath))
+                    .Where(IsSlotOwnerDependency)
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToArray();
                 var destinations = CreateDestinationPaths(
@@ -183,7 +173,7 @@ namespace Ee4v.AssetManager.UI
                     assetsFolder);
                 var objectMap = new Dictionary<
                     AssetObjectKey,
-                    AssetObjectKey>();
+                    Object>();
 
                 CreateCopiedAssets(
                     dependencies,
@@ -194,35 +184,11 @@ namespace Ee4v.AssetManager.UI
                     destinations,
                     objectMap);
 
-                var prefabDestinations = dependencies
-                    .Where(IsPrefabPath)
-                    .ToDictionary(
-                        path => path,
-                        path => destinations[path],
-                        StringComparer.OrdinalIgnoreCase);
-                var createdPrefabs = new HashSet<string>(
-                    StringComparer.OrdinalIgnoreCase);
-                var creatingPrefabs = new HashSet<string>(
-                    StringComparer.OrdinalIgnoreCase);
-                foreach (var dependency in prefabDestinations.Keys)
-                {
-                    CreatePrefabVariant(
-                        dependency,
-                        prefabDestinations[dependency],
-                        prefabDestinations,
-                        objectMap,
-                        createdPrefabs,
-                        creatingPrefabs);
-                }
-
                 var rootPath = outputFolder + "/" + name + ".prefab";
-                CreatePrefabVariant(
+                CreateRootPrefabVariant(
                     sourcePath,
                     rootPath,
-                    prefabDestinations,
-                    objectMap,
-                    createdPrefabs,
-                    creatingPrefabs);
+                    objectMap);
 
                 var metadata = new DerivedAssetMetadata
                 {
@@ -333,16 +299,74 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private static bool IsCopyableDependency(
-            string path,
-            string sourcePrefabPath)
+        private static bool IsSlotOwnerDependency(string path)
         {
-            return !string.Equals(
-                       path,
-                       sourcePrefabPath,
-                       StringComparison.OrdinalIgnoreCase) &&
-                   path.StartsWith("Assets/", StringComparison.Ordinal) &&
-                   !SharedExtensions.Contains(Path.GetExtension(path));
+            if (string.IsNullOrEmpty(path) ||
+                !path.StartsWith("Assets/", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var assetType = AssetDatabase.GetMainAssetTypeAtPath(path);
+            if (typeof(Material).IsAssignableFrom(assetType))
+            {
+                return true;
+            }
+
+            return typeof(RuntimeAnimatorController).IsAssignableFrom(
+                       assetType) &&
+                   !HasDanglingLocalObjectReferences(path);
+        }
+
+        private static bool HasDanglingLocalObjectReferences(string assetPath)
+        {
+            var projectRoot = Path.GetDirectoryName(Application.dataPath);
+            if (string.IsNullOrEmpty(projectRoot))
+            {
+                return false;
+            }
+
+            string serializedAsset;
+            try
+            {
+                serializedAsset = File.ReadAllText(
+                    Path.Combine(projectRoot, assetPath));
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
+
+            if (!serializedAsset.StartsWith(
+                    "%YAML",
+                    StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var definedLocalIds = new HashSet<string>(
+                StringComparer.Ordinal);
+            foreach (Match match in UnityYamlObjectPattern.Matches(
+                         serializedAsset))
+            {
+                definedLocalIds.Add(match.Groups[1].Value);
+            }
+
+            foreach (Match match in LocalObjectReferencePattern.Matches(
+                         serializedAsset))
+            {
+                var localId = match.Groups[1].Value;
+                if (localId != "0" && !definedLocalIds.Contains(localId))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static Dictionary<string, string> CreateDestinationPaths(
@@ -371,16 +395,10 @@ namespace Ee4v.AssetManager.UI
         private static void CreateCopiedAssets(
             IReadOnlyList<string> dependencies,
             IReadOnlyDictionary<string, string> destinations,
-            IDictionary<AssetObjectKey, AssetObjectKey> objectMap)
+            IDictionary<AssetObjectKey, Object> objectMap)
         {
-            var copiedPaths = new List<KeyValuePair<string, string>>();
             foreach (var sourcePath in dependencies)
             {
-                if (IsPrefabPath(sourcePath))
-                {
-                    continue;
-                }
-
                 var destinationPath = destinations[sourcePath];
                 var sourceMaterial = AssetDatabase
                     .LoadAssetAtPath<Material>(sourcePath);
@@ -404,106 +422,40 @@ namespace Ee4v.AssetManager.UI
                     throw new InvalidOperationException(
                         "A dependency could not be copied: " + sourcePath);
                 }
-                copiedPaths.Add(new KeyValuePair<string, string>(
-                    sourcePath,
-                    destinationPath));
+                MapAsset(
+                    AssetDatabase.LoadMainAssetAtPath(sourcePath),
+                    AssetDatabase.LoadMainAssetAtPath(destinationPath),
+                    objectMap);
             }
 
             AssetDatabase.SaveAssets();
-            foreach (var copiedPath in copiedPaths)
-            {
-                AssetDatabase.ImportAsset(
-                    copiedPath.Value,
-                    ImportAssetOptions.ForceSynchronousImport |
-                    ImportAssetOptions.ForceUpdate);
-                MapCopiedObjects(
-                    copiedPath.Key,
-                    copiedPath.Value,
-                    objectMap);
-            }
         }
 
         private static void RemapCopiedAssetReferences(
             IReadOnlyList<string> dependencies,
             IReadOnlyDictionary<string, string> destinations,
-            IDictionary<AssetObjectKey, AssetObjectKey> objectMap)
+            IDictionary<AssetObjectKey, Object> objectMap)
         {
             foreach (var sourcePath in dependencies)
             {
-                if (IsPrefabPath(sourcePath))
-                {
-                    continue;
-                }
-
                 var destinationPath = destinations[sourcePath];
-                foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(
-                             destinationPath))
-                {
-                    RemapObjectReferences(asset, objectMap);
-                }
-
-                var sourceMaterial = AssetDatabase
-                    .LoadAssetAtPath<Material>(sourcePath);
-                var destinationMaterial = AssetDatabase
-                    .LoadAssetAtPath<Material>(destinationPath);
-                if (sourceMaterial != null && destinationMaterial != null)
-                {
-                    destinationMaterial.parent = sourceMaterial;
-                    EditorUtility.SetDirty(destinationMaterial);
-                }
+                RemapObjectReferences(
+                    AssetDatabase.LoadMainAssetAtPath(destinationPath),
+                    objectMap);
             }
             AssetDatabase.SaveAssets();
-        }
-
-        private static void MapCopiedObjects(
-            string sourcePath,
-            string destinationPath,
-            IDictionary<AssetObjectKey, AssetObjectKey> objectMap)
-        {
-            var destinationsById = AssetDatabase
-                .LoadAllAssetsAtPath(destinationPath)
-                .Where(asset => asset != null)
-                .Select(asset => new
-                {
-                    Asset = asset,
-                    Id = GetLocalId(asset)
-                })
-                .Where(entry => entry.Id.HasValue)
-                .ToDictionary(entry => entry.Id.Value, entry => entry.Asset);
-            foreach (var source in AssetDatabase.LoadAllAssetsAtPath(
-                         sourcePath).Where(asset => asset != null))
-            {
-                var id = GetLocalId(source);
-                if (id.HasValue && destinationsById.TryGetValue(
-                        id.Value,
-                        out var destination))
-                {
-                    MapAsset(source, destination, objectMap);
-                }
-            }
         }
 
         private static void MapAsset(
             Object source,
             Object destination,
-            IDictionary<AssetObjectKey, AssetObjectKey> objectMap)
+            IDictionary<AssetObjectKey, Object> objectMap)
         {
-            if (TryGetAssetKey(source, out var sourceKey) &&
-                TryGetAssetKey(destination, out var destinationKey))
+            if (destination != null &&
+                TryGetAssetKey(source, out var sourceKey))
             {
-                objectMap[sourceKey] = destinationKey;
+                objectMap[sourceKey] = destination;
             }
-        }
-
-        private static long? GetLocalId(Object asset)
-        {
-            return asset != null &&
-                   AssetDatabase.TryGetGUIDAndLocalFileIdentifier(
-                asset,
-                out _,
-                out long localId)
-                ? localId
-                : (long?)null;
         }
 
         private static bool TryGetAssetKey(
@@ -524,58 +476,11 @@ namespace Ee4v.AssetManager.UI
             return false;
         }
 
-        private static Object ResolveAsset(AssetObjectKey key)
-        {
-            var path = AssetDatabase.GUIDToAssetPath(key.Guid);
-            if (string.IsNullOrEmpty(path))
-            {
-                return null;
-            }
-
-            return AssetDatabase.LoadAllAssetsAtPath(path)
-                .FirstOrDefault(asset => GetLocalId(asset) == key.LocalId);
-        }
-
-        private static void CreatePrefabVariant(
+        private static void CreateRootPrefabVariant(
             string sourcePath,
             string destinationPath,
-            IReadOnlyDictionary<string, string> prefabDestinations,
-            IDictionary<AssetObjectKey, AssetObjectKey> objectMap,
-            ISet<string> created,
-            ISet<string> creating)
+            IDictionary<AssetObjectKey, Object> objectMap)
         {
-            if (created.Contains(sourcePath))
-            {
-                return;
-            }
-            if (!creating.Add(sourcePath))
-            {
-                throw new InvalidOperationException(
-                    "A cyclic Prefab dependency was found.");
-            }
-
-            foreach (var nestedPath in AssetDatabase
-                         .GetDependencies(sourcePath, false)
-                         .Where(path => IsPrefabPath(path) &&
-                                        !string.Equals(
-                                            path,
-                                            sourcePath,
-                                            StringComparison.OrdinalIgnoreCase)))
-            {
-                if (prefabDestinations.TryGetValue(
-                        nestedPath,
-                        out var nestedDestination))
-                {
-                    CreatePrefabVariant(
-                        nestedPath,
-                        nestedDestination,
-                        prefabDestinations,
-                        objectMap,
-                        created,
-                        creating);
-                }
-            }
-
             var source = AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath);
             var scene = EditorSceneManager.NewPreviewScene();
             try
@@ -589,9 +494,6 @@ namespace Ee4v.AssetManager.UI
                         "The Prefab could not be instantiated: " + sourcePath);
                 }
 
-                ReplaceDirectNestedPrefabs(
-                    instance,
-                    prefabDestinations);
                 foreach (var component in instance
                              .GetComponentsInChildren<Component>(true))
                 {
@@ -615,72 +517,16 @@ namespace Ee4v.AssetManager.UI
                         "The Prefab Variant could not be saved: " +
                         destinationPath);
                 }
-                MapAsset(source, prefab, objectMap);
             }
             finally
             {
                 EditorSceneManager.ClosePreviewScene(scene);
             }
-
-            creating.Remove(sourcePath);
-            created.Add(sourcePath);
-        }
-
-        private static void ReplaceDirectNestedPrefabs(
-            GameObject root,
-            IReadOnlyDictionary<string, string> prefabDestinations)
-        {
-            var nestedRoots = root.GetComponentsInChildren<Transform>(true)
-                .Select(transform => transform.gameObject)
-                .Where(candidate => candidate != root &&
-                                    PrefabUtility
-                                        .IsAnyPrefabInstanceRoot(candidate))
-                .Where(candidate => !HasNestedPrefabParent(
-                    candidate.transform.parent,
-                    root.transform))
-                .ToArray();
-            foreach (var nestedRoot in nestedRoots)
-            {
-                var source = PrefabUtility
-                    .GetCorrespondingObjectFromSource(nestedRoot);
-                var sourcePath = AssetDatabase.GetAssetPath(source);
-                if (!prefabDestinations.TryGetValue(
-                        sourcePath,
-                        out var destinationPath))
-                {
-                    continue;
-                }
-
-                var destination = AssetDatabase
-                    .LoadAssetAtPath<GameObject>(destinationPath);
-                if (destination != null)
-                {
-                    PrefabUtility.ReplacePrefabAssetOfPrefabInstance(
-                        nestedRoot,
-                        destination,
-                        InteractionMode.AutomatedAction);
-                }
-            }
-        }
-
-        private static bool HasNestedPrefabParent(
-            Transform parent,
-            Transform root)
-        {
-            while (parent != null && parent != root)
-            {
-                if (PrefabUtility.IsAnyPrefabInstanceRoot(parent.gameObject))
-                {
-                    return true;
-                }
-                parent = parent.parent;
-            }
-            return false;
         }
 
         private static bool RemapObjectReferences(
             Object target,
-            IDictionary<AssetObjectKey, AssetObjectKey> objectMap)
+            IDictionary<AssetObjectKey, Object> objectMap)
         {
             if (target == null)
             {
@@ -710,9 +556,8 @@ namespace Ee4v.AssetManager.UI
                 if (TryGetAssetKey(source, out var sourceKey) &&
                     objectMap.TryGetValue(
                         sourceKey,
-                        out var destinationKey))
+                        out var destination))
                 {
-                    var destination = ResolveAsset(destinationKey);
                     if (destination != null)
                     {
                         iterator.objectReferenceValue = destination;
