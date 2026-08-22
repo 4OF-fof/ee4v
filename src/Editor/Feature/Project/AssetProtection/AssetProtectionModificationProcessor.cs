@@ -16,6 +16,43 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.AssetProtection
 {
+    internal static class NdmfModificationDetector
+    {
+        private const string AssemblyName = "nadena.dev.ndmf";
+
+        internal static bool IsNdmfInitiated()
+        {
+            var frames = new System.Diagnostics.StackTrace(false)
+                .GetFrames();
+            if (frames == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < frames.Length; i++)
+            {
+                var name = frames[i]
+                    .GetMethod()
+                    ?.DeclaringType
+                    ?.Assembly
+                    .GetName()
+                    .Name;
+                if (string.Equals(
+                        name,
+                        AssemblyName,
+                        StringComparison.Ordinal) ||
+                    name?.StartsWith(
+                        AssemblyName + ".",
+                        StringComparison.Ordinal) == true)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
     internal static class AssetProtectionModule
     {
         private static readonly HashSet<string> ProtectedGuids =
@@ -566,8 +603,9 @@ namespace Ee4v.AssetProtection
             string assetOrMetaFilePath,
             out string message)
         {
-            var blocked = AssetProtectionModule.IsProtected(
-                assetOrMetaFilePath);
+            var blocked =
+                AssetProtectionModule.IsProtected(assetOrMetaFilePath) &&
+                !NdmfModificationDetector.IsNdmfInitiated();
             message = string.Empty;
             return !blocked;
         }
@@ -577,12 +615,24 @@ namespace Ee4v.AssetProtection
             List<string> outNotEditablePaths,
             StatusQueryOptions statusQueryOptions)
         {
+            var modificationSourceChecked = false;
+            var allowProtected = false;
             for (var i = 0; i < assetOrMetaFilePaths.Length; i++)
             {
                 var path = assetOrMetaFilePaths[i];
                 if (AssetProtectionModule.IsProtected(path))
                 {
-                    outNotEditablePaths.Add(path);
+                    if (!modificationSourceChecked)
+                    {
+                        allowProtected = NdmfModificationDetector
+                            .IsNdmfInitiated();
+                        modificationSourceChecked = true;
+                    }
+
+                    if (!allowProtected)
+                    {
+                        outNotEditablePaths.Add(path);
+                    }
                 }
             }
 
@@ -592,9 +642,21 @@ namespace Ee4v.AssetProtection
         private static string[] OnWillSaveAssets(string[] paths)
         {
             var editablePaths = new List<string>(paths.Length);
+            var modificationSourceChecked = false;
+            var allowProtected = false;
             for (var i = 0; i < paths.Length; i++)
             {
-                if (!AssetProtectionModule.IsProtected(paths[i]))
+                var protectedPath = AssetProtectionModule.IsProtected(
+                    paths[i]);
+                if (protectedPath &&
+                    !modificationSourceChecked)
+                {
+                    allowProtected = NdmfModificationDetector
+                        .IsNdmfInitiated();
+                    modificationSourceChecked = true;
+                }
+
+                if (!protectedPath || allowProtected)
                 {
                     editablePaths.Add(paths[i]);
                 }
