@@ -186,6 +186,7 @@ namespace Ee4v.Core.Injector
             host.style.flexDirection = FlexDirection.Row;
             host.style.height = 20f;
             host.style.marginLeft = 36f;
+            host.style.marginRight = 470f;
             host.style.overflow = Overflow.Hidden;
             return host;
         }
