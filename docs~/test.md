@@ -48,7 +48,7 @@
 | `AssetManagerSearchTests.MatchesItem_UsesOnlyEnabledTargets` | Item検索が有効な名前、説明、タグだけを部分一致対象にする | 検索対象の切替が別項目へ漏れる問題を検出する |
 | `AssetManagerSearchTests.MatchesFile_UsesNameTarget` | File名検索を名前対象の有効時だけ行う | ItemとFileで検索対象の意味がずれる問題を検出する |
 | `ImagesWithTheSameSource_ReuseDecodedTexture` | 同じ画像Sourceを表示する要素がデコード済みTextureを共有する | スクロール中の再デコードは最終表示だけでは検出できない |
-| `Create_CopiesOnlySlotOwnersAndSharesDataAssets` | ルートPrefabをVariant、MaterialをVariant、Animator Controllerをコピーし、AnimationClip、Texture、ネストPrefabは元を共有する | UnityのVariant・コピーとSerializedObjectをまたぐ参照差し替えで、実データやネストPrefabまで複製される問題は生成Prefabの存在だけでは検出できない |
+| `Create_CreatesOnlyMaterialVariantsAndSharesOtherAssets` | ルートPrefabをVariant、Materialを`Assets/Materials`のVariantにし、Animator Controllerを含むその他の参照アセットはコピーせず元を共有する | UnityのVariantとSerializedObjectをまたぐ参照差し替えで、未使用コピーの残存や共有対象の誤りは生成Prefabの存在だけでは検出できない |
 | `FindPrefabCandidates_ResolvesOnlyImportedPrefabs` | Itemの取り込み済みGUIDからProject内のPrefabだけを重複なく候補へ変換する | GUID、Project path、Asset型をまたぐ候補抽出は入力画面の見た目だけでは誤りを特定できない |
 
 ## Face Expression

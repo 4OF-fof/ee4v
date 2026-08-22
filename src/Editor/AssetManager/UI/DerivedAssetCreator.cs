@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -31,13 +30,8 @@ namespace Ee4v.AssetManager.UI
     {
         internal const string VariantRoot =
             "Assets/!ee4vAsset/Variant";
+        private const string MaterialsFolderName = "Materials";
         private const string MetadataPrefix = "ee4v-derived-asset:v1:";
-        private static readonly Regex UnityYamlObjectPattern = new Regex(
-            @"^--- !u!\d+ &(-?\d+)\s*$",
-            RegexOptions.Multiline | RegexOptions.CultureInvariant);
-        private static readonly Regex LocalObjectReferencePattern = new Regex(
-            @"\{fileID:\s*(-?\d+)\s*\}",
-            RegexOptions.CultureInvariant);
 
         private readonly struct AssetObjectKey : IEquatable<AssetObjectKey>
         {
@@ -161,25 +155,25 @@ namespace Ee4v.AssetManager.UI
             try
             {
                 var assetsFolder = outputFolder + "/Assets";
-                AssetDatabase.CreateFolder(outputFolder, "Assets");
-
                 var dependencies = AssetDatabase
                     .GetDependencies(sourcePath, true)
-                    .Where(IsSlotOwnerDependency)
+                    .Where(IsMaterialDependency)
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToArray();
+                var materialsFolder = assetsFolder + "/" +
+                                      MaterialsFolderName;
                 var destinations = CreateDestinationPaths(
                     dependencies,
-                    assetsFolder);
+                    materialsFolder);
+                if (dependencies.Length > 0)
+                {
+                    EnsureFolder(materialsFolder);
+                }
                 var objectMap = new Dictionary<
                     AssetObjectKey,
                     Object>();
 
-                CreateCopiedAssets(
-                    dependencies,
-                    destinations,
-                    objectMap);
-                RemapCopiedAssetReferences(
+                CreateMaterialVariants(
                     dependencies,
                     destinations,
                     objectMap);
@@ -299,7 +293,7 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private static bool IsSlotOwnerDependency(string path)
+        private static bool IsMaterialDependency(string path)
         {
             if (string.IsNullOrEmpty(path) ||
                 !path.StartsWith("Assets/", StringComparison.Ordinal))
@@ -308,65 +302,7 @@ namespace Ee4v.AssetManager.UI
             }
 
             var assetType = AssetDatabase.GetMainAssetTypeAtPath(path);
-            if (typeof(Material).IsAssignableFrom(assetType))
-            {
-                return true;
-            }
-
-            return typeof(RuntimeAnimatorController).IsAssignableFrom(
-                       assetType) &&
-                   !HasDanglingLocalObjectReferences(path);
-        }
-
-        private static bool HasDanglingLocalObjectReferences(string assetPath)
-        {
-            var projectRoot = Path.GetDirectoryName(Application.dataPath);
-            if (string.IsNullOrEmpty(projectRoot))
-            {
-                return false;
-            }
-
-            string serializedAsset;
-            try
-            {
-                serializedAsset = File.ReadAllText(
-                    Path.Combine(projectRoot, assetPath));
-            }
-            catch (IOException)
-            {
-                return false;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return false;
-            }
-
-            if (!serializedAsset.StartsWith(
-                    "%YAML",
-                    StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            var definedLocalIds = new HashSet<string>(
-                StringComparer.Ordinal);
-            foreach (Match match in UnityYamlObjectPattern.Matches(
-                         serializedAsset))
-            {
-                definedLocalIds.Add(match.Groups[1].Value);
-            }
-
-            foreach (Match match in LocalObjectReferencePattern.Matches(
-                         serializedAsset))
-            {
-                var localId = match.Groups[1].Value;
-                if (localId != "0" && !definedLocalIds.Contains(localId))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return typeof(Material).IsAssignableFrom(assetType);
         }
 
         private static Dictionary<string, string> CreateDestinationPaths(
@@ -392,7 +328,7 @@ namespace Ee4v.AssetManager.UI
             return result;
         }
 
-        private static void CreateCopiedAssets(
+        private static void CreateMaterialVariants(
             IReadOnlyList<string> dependencies,
             IReadOnlyDictionary<string, string> destinations,
             IDictionary<AssetObjectKey, Object> objectMap)
@@ -402,47 +338,23 @@ namespace Ee4v.AssetManager.UI
                 var destinationPath = destinations[sourcePath];
                 var sourceMaterial = AssetDatabase
                     .LoadAssetAtPath<Material>(sourcePath);
-                if (sourceMaterial != null && sourcePath.EndsWith(
-                        ".mat",
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    var materialVariant = new Material(sourceMaterial)
-                    {
-                        parent = sourceMaterial
-                    };
-                    AssetDatabase.CreateAsset(
-                        materialVariant,
-                        destinationPath);
-                    MapAsset(sourceMaterial, materialVariant, objectMap);
-                    continue;
-                }
-
-                if (!AssetDatabase.CopyAsset(sourcePath, destinationPath))
+                if (sourceMaterial == null)
                 {
                     throw new InvalidOperationException(
-                        "A dependency could not be copied: " + sourcePath);
+                        "A Material dependency could not be loaded: " +
+                        sourcePath);
                 }
-                MapAsset(
-                    AssetDatabase.LoadMainAssetAtPath(sourcePath),
-                    AssetDatabase.LoadMainAssetAtPath(destinationPath),
-                    objectMap);
+
+                var materialVariant = new Material(sourceMaterial)
+                {
+                    parent = sourceMaterial
+                };
+                AssetDatabase.CreateAsset(
+                    materialVariant,
+                    destinationPath);
+                MapAsset(sourceMaterial, materialVariant, objectMap);
             }
 
-            AssetDatabase.SaveAssets();
-        }
-
-        private static void RemapCopiedAssetReferences(
-            IReadOnlyList<string> dependencies,
-            IReadOnlyDictionary<string, string> destinations,
-            IDictionary<AssetObjectKey, Object> objectMap)
-        {
-            foreach (var sourcePath in dependencies)
-            {
-                var destinationPath = destinations[sourcePath];
-                RemapObjectReferences(
-                    AssetDatabase.LoadMainAssetAtPath(destinationPath),
-                    objectMap);
-            }
             AssetDatabase.SaveAssets();
         }
 

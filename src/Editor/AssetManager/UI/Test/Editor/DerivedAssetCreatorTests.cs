@@ -34,7 +34,7 @@ namespace Ee4v.AssetManager.UI.Tests
         }
 
         [Test]
-        public void Create_CopiesOnlySlotOwnersAndSharesDataAssets()
+        public void Create_CreatesOnlyMaterialVariantsAndSharesOtherAssets()
         {
             var sourceTexture = new Texture2D(2, 2);
             var texturePath = SourceFolder + "/Source.asset";
@@ -105,7 +105,7 @@ namespace Ee4v.AssetManager.UI.Tests
                 AssetDatabase.GetAssetPath(derivedMaterial),
                 Does.StartWith(
                     DerivedAssetCreator.GetVariantFolder(OutputName) +
-                    "/Assets/"));
+                    "/Assets/Materials/"));
             Assert.That(
                 AssetDatabase.GetAssetPath(derivedMaterial.mainTexture),
                 Is.EqualTo(texturePath));
@@ -116,7 +116,15 @@ namespace Ee4v.AssetManager.UI.Tests
             Assert.That(derivedController, Is.Not.Null);
             Assert.That(
                 AssetDatabase.GetAssetPath(derivedController),
-                Is.Not.EqualTo(controllerPath));
+                Is.EqualTo(controllerPath));
+            Assert.That(
+                AssetDatabase.FindAssets(
+                    "t:AnimatorController",
+                    new[]
+                    {
+                        DerivedAssetCreator.GetVariantFolder(OutputName)
+                    }),
+                Is.Empty);
             var derivedClip = derivedController.layers[0]
                 .stateMachine.states
                 .Select(state => state.state.motion)
