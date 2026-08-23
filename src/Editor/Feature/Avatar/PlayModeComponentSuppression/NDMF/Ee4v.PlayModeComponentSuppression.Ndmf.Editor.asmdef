@@ -1,0 +1,27 @@
+{
+  "name": "Ee4v.PlayModeComponentSuppression.Ndmf.Editor",
+  "rootNamespace": "Ee4v.PlayModeComponentSuppression.Ndmf",
+  "references": [
+    "Ee4v.PlayModeComponentSuppression.Editor",
+    "nadena.dev.ndmf"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "EE4V_NDMF"
+  ],
+  "versionDefines": [
+    {
+      "name": "nadena.dev.ndmf",
+      "expression": "1.8.0",
+      "define": "EE4V_NDMF"
+    }
+  ],
+  "noEngineReferences": false
+}

@@ -31,7 +31,8 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/UI/Catalog/CatalogWindow.cs",
-                        "Editor/AssetManager/UI/SearchableFileTree.cs"
+                        "Editor/AssetManager/UI/SearchableFileTree.cs",
+                        "Editor/Feature/Avatar/PlayModeComponentSuppression/ComponentTypePickerWindow.cs"
                     }));
             }
         }

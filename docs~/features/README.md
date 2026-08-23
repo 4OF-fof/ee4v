@@ -27,6 +27,7 @@
 | 機能 | 概要 | API リファレンス |
 |---|---|---|
 | Face Expression | BlendShape表情を作成し、標準ハンドジェスチャーへ割り当てます。アバター複製を保持する軽量プレビューを使用します。 | [Face Expression](./face-expression.md) |
+| Play Mode Component Suppression | Play Mode向けのNDMF処理で、Project設定から指定したコンポーネントをアバターから除外します。 | [Play Mode Component Suppression](./play-mode-component-suppression.md) |
 
 ## Editor
 

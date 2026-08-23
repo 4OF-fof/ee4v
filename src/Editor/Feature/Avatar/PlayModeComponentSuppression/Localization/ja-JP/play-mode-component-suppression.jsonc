@@ -1,0 +1,24 @@
+{
+  "settings": {
+    "section": {
+      "playMode": "Play ModeのNDMF処理"
+    },
+    "suppressedTypes": {
+      "label": "抑制するコンポーネント",
+      "tooltip": "Play Mode向けのNDMF処理より前に、ビルド対象アバターから除去するコンポーネント型です。通常のアバタービルドには影響しません。",
+      "add": "コンポーネントを追加",
+      "change": "変更",
+      "remove": "削除",
+      "missing": "未読込: {0}",
+      "picker": {
+        "title": "コンポーネントを選択",
+        "search": "コンポーネントを検索",
+        "searchTooltip": "型名、名前空間、アセンブリ名で検索します。",
+        "clearTooltip": "検索をクリア",
+        "empty": "一致するコンポーネントがありません。",
+        "select": "選択",
+        "cancel": "キャンセル"
+      }
+    }
+  }
+}

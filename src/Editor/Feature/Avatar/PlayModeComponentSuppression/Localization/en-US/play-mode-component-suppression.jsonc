@@ -1,0 +1,24 @@
+{
+  "settings": {
+    "section": {
+      "playMode": "Play Mode NDMF processing"
+    },
+    "suppressedTypes": {
+      "label": "Suppressed components",
+      "tooltip": "Component types removed from the build avatar before Play Mode NDMF processing. Regular avatar builds are unaffected.",
+      "add": "Add component",
+      "change": "Change",
+      "remove": "Remove",
+      "missing": "Not loaded: {0}",
+      "picker": {
+        "title": "Select component",
+        "search": "Search components",
+        "searchTooltip": "Search by type, namespace, or assembly name.",
+        "clearTooltip": "Clear search",
+        "empty": "No matching components.",
+        "select": "Select",
+        "cancel": "Cancel"
+      }
+    }
+  }
+}
