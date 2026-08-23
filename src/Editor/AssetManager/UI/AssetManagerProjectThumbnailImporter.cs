@@ -12,10 +12,14 @@ namespace Ee4v.AssetManager.UI
     internal sealed class AssetManagerProjectThumbnailImporter : IDisposable
     {
         private const string GeneratedAssetRoot =
+            "Assets/ee4v/Generated/AssetManager/Thumbnails";
+        private const string LegacyGeneratedAssetRoot =
             "Assets/ee4v/AssetManager/Thumbnails";
 
         private readonly IAssetManager _manager;
-        private readonly HashSet<string> _pendingItemIds =
+        private readonly HashSet<string> _pendingImportedItemIds =
+            new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> _pendingRefreshItemIds =
             new HashSet<string>(StringComparer.Ordinal);
         private CancellationTokenSource _applyCancellation;
         private bool _applyQueued;
@@ -42,22 +46,39 @@ namespace Ee4v.AssetManager.UI
             _applyCancellation?.Cancel();
             _applyCancellation?.Dispose();
             _applyCancellation = null;
-            _pendingItemIds.Clear();
+            _pendingImportedItemIds.Clear();
+            _pendingRefreshItemIds.Clear();
         }
 
         private void OnAssetManagerChanged(AssetManagerChange change)
         {
-            if (_disposed ||
-                change == null ||
-                change.Kind !=
-                    AssetManagerChangeKind.FileImportedAssetGuidsChanged)
+            if (_disposed || change == null)
             {
                 return;
             }
 
-            for (var i = 0; i < change.RelatedIds.Count; i++)
+            IReadOnlyList<string> itemIds;
+            HashSet<string> pending;
+            if (change.Kind ==
+                AssetManagerChangeKind.FileImportedAssetGuidsChanged)
             {
-                _pendingItemIds.Add(change.RelatedIds[i]);
+                itemIds = change.RelatedIds;
+                pending = _pendingImportedItemIds;
+            }
+            else if (change.Kind ==
+                     AssetManagerChangeKind.SourceSynchronized)
+            {
+                itemIds = change.SubjectIds;
+                pending = _pendingRefreshItemIds;
+            }
+            else
+            {
+                return;
+            }
+
+            for (var i = 0; i < itemIds.Count; i++)
+            {
+                pending.Add(itemIds[i]);
             }
 
             QueueApply();
@@ -68,7 +89,8 @@ namespace Ee4v.AssetManager.UI
             if (_disposed ||
                 _applyQueued ||
                 _applyRunning ||
-                _pendingItemIds.Count == 0)
+                _pendingImportedItemIds.Count == 0 &&
+                _pendingRefreshItemIds.Count == 0)
             {
                 return;
             }
@@ -85,8 +107,12 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            var itemIds = _pendingItemIds.ToArray();
-            _pendingItemIds.Clear();
+            var importedItemIds = _pendingImportedItemIds.ToArray();
+            var refreshItemIds = _pendingRefreshItemIds
+                .Where(HasGeneratedThumbnailAsset)
+                .ToArray();
+            _pendingImportedItemIds.Clear();
+            _pendingRefreshItemIds.Clear();
             _applyRunning = true;
             var cancellation = new CancellationTokenSource();
             _applyCancellation = cancellation;
@@ -94,27 +120,31 @@ namespace Ee4v.AssetManager.UI
             {
                 var folders = SelectTopmostImportedFolders(
                         _manager.GetImportedAssetAssociations())
-                    .Where(pair => itemIds.Contains(
+                    .Where(pair => importedItemIds.Contains(
                         pair.Value,
                         StringComparer.Ordinal))
                     .ToArray();
-                var itemIdsWithEmptyFolders = folders
-                    .Where(pair => !ProjectStyleApi.Get(pair.Key).HasIcon)
+                var itemIdsWithEligibleFolders = folders
+                    .Where(pair => CanApplyGeneratedThumbnail(pair.Key))
                     .Select(pair => pair.Value)
                     .Distinct(StringComparer.Ordinal)
                     .ToArray();
-                if (itemIdsWithEmptyFolders.Length == 0)
+                var requestedItemIds = itemIdsWithEligibleFolders
+                    .Concat(refreshItemIds)
+                    .Distinct(StringComparer.Ordinal)
+                    .ToArray();
+                if (requestedItemIds.Length == 0)
                 {
                     return;
                 }
 
                 var thumbnails = await _manager.GetThumbnails(
-                    itemIdsWithEmptyFolders,
+                    requestedItemIds,
                     cancellation.Token);
                 cancellation.Token.ThrowIfCancellationRequested();
-                for (var i = 0; i < itemIdsWithEmptyFolders.Length; i++)
+                for (var i = 0; i < requestedItemIds.Length; i++)
                 {
-                    var itemId = itemIdsWithEmptyFolders[i];
+                    var itemId = requestedItemIds[i];
                     if (!thumbnails.TryGetValue(
                             itemId,
                             out var thumbnail) ||
@@ -132,18 +162,14 @@ namespace Ee4v.AssetManager.UI
                                 pair.Value,
                                 itemId,
                                 StringComparison.Ordinal) &&
-                            !ProjectStyleApi.Get(pair.Key).HasIcon)
+                            CanApplyGeneratedThumbnail(pair.Key))
                         .Select(pair => pair.Key)
                         .ToArray();
-                    if (folderGuids.Length == 0)
-                    {
-                        continue;
-                    }
-
                     var iconGuid = GetOrCreateThumbnailAsset(
                         itemId,
                         thumbnail.Data);
-                    if (!string.IsNullOrEmpty(iconGuid))
+                    if (folderGuids.Length > 0 &&
+                        !string.IsNullOrEmpty(iconGuid))
                     {
                         ProjectStyleApi.SetIcon(folderGuids, iconGuid);
                     }
@@ -178,27 +204,93 @@ namespace Ee4v.AssetManager.UI
             byte[] data)
         {
             EnsureGeneratedAssetRoot();
-            var assetPath = GeneratedAssetRoot + "/" +
-                Hash128.Compute(itemId).ToString() + ".asset";
+            var assetPath = GetThumbnailAssetPath(
+                GeneratedAssetRoot,
+                itemId);
             var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
                 assetPath);
+            if (texture == null)
+            {
+                var legacyPath = GetThumbnailAssetPath(
+                    LegacyGeneratedAssetRoot,
+                    itemId);
+                if (AssetDatabase.LoadAssetAtPath<Texture2D>(legacyPath) !=
+                    null &&
+                    string.IsNullOrEmpty(
+                        AssetDatabase.MoveAsset(legacyPath, assetPath)))
+                {
+                    texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
+                        assetPath);
+                }
+            }
+
             if (texture == null)
             {
                 texture = new Texture2D(2, 2)
                 {
                     name = "AssetManager Thumbnail"
                 };
-                if (!texture.LoadImage(data))
-                {
-                    UnityEngine.Object.DestroyImmediate(texture);
-                    return string.Empty;
-                }
-
-                AssetDatabase.CreateAsset(texture, assetPath);
-                AssetDatabase.SaveAssets();
             }
 
+            if (!texture.LoadImage(data))
+            {
+                if (!AssetDatabase.Contains(texture))
+                {
+                    UnityEngine.Object.DestroyImmediate(texture);
+                }
+
+                return string.Empty;
+            }
+
+            if (AssetDatabase.Contains(texture))
+            {
+                EditorUtility.SetDirty(texture);
+            }
+            else
+            {
+                AssetDatabase.CreateAsset(texture, assetPath);
+            }
+
+            AssetDatabase.SaveAssets();
             return AssetDatabase.AssetPathToGUID(assetPath);
+        }
+
+        private static bool CanApplyGeneratedThumbnail(string folderGuid)
+        {
+            var style = ProjectStyleApi.Get(folderGuid);
+            if (!style.HasIcon)
+            {
+                return true;
+            }
+
+            var path = AssetDatabase.GUIDToAssetPath(style.IconGuid);
+            return IsUnder(path, GeneratedAssetRoot) ||
+                   IsUnder(path, LegacyGeneratedAssetRoot);
+        }
+
+        private static bool HasGeneratedThumbnailAsset(string itemId)
+        {
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(
+                       GetThumbnailAssetPath(
+                           GeneratedAssetRoot,
+                           itemId)) != null ||
+                   AssetDatabase.LoadAssetAtPath<Texture2D>(
+                       GetThumbnailAssetPath(
+                           LegacyGeneratedAssetRoot,
+                           itemId)) != null;
+        }
+
+        private static string GetThumbnailAssetPath(
+            string root,
+            string itemId)
+        {
+            return root + "/" + Hash128.Compute(itemId) + ".asset";
+        }
+
+        private static bool IsUnder(string path, string root)
+        {
+            return !string.IsNullOrEmpty(path) &&
+                   path.StartsWith(root + "/", StringComparison.Ordinal);
         }
 
         private static void EnsureGeneratedAssetRoot()
