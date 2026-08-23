@@ -17,6 +17,7 @@ namespace Ee4v.ProjectTabs
         private string _selectedTabId;
         private double _ignoreTrackingUntil;
         private bool _initialLocationPending = true;
+        private bool _isAvailable;
 
         public ProjectTabsHost(
             EditorWindow window,
@@ -46,6 +47,7 @@ namespace Ee4v.ProjectTabs
             _view.FolderDropRequested += AddDroppedFolders;
 
             Add(_view);
+            UpdateAvailability();
             Refresh();
 
             schedule.Execute(TrackCurrentLocation)
@@ -168,7 +170,8 @@ namespace Ee4v.ProjectTabs
 
         private void TrackCurrentLocation()
         {
-            if (EditorApplication.timeSinceStartup < _ignoreTrackingUntil ||
+            if (!UpdateAvailability() ||
+                EditorApplication.timeSinceStartup < _ignoreTrackingUntil ||
                 (EditorWindow.focusedWindow != _window &&
                  EditorWindow.mouseOverWindow != _window))
             {
@@ -207,8 +210,13 @@ namespace Ee4v.ProjectTabs
             }
 
             _initialLocationPending = false;
-            var restoredTab =
-                _session.State.FindByCurrentLocation(location);
+            var state = _session.State;
+            var restoredTab = state.FindByCurrentLocation(location) ??
+                state.Tabs.FirstOrDefault(tab =>
+                    string.Equals(
+                        tab.CurrentLocation?.FolderPath,
+                        location.FolderPath,
+                        StringComparison.Ordinal));
             if (restoredTab == null)
             {
                 return false;
@@ -234,6 +242,11 @@ namespace Ee4v.ProjectTabs
 
         private void OnSessionChanged()
         {
+            if (!UpdateAvailability())
+            {
+                return;
+            }
+
             var state = _session.State;
             if (state.Find(_selectedTabId) == null)
             {
@@ -331,12 +344,36 @@ namespace Ee4v.ProjectTabs
         {
             _session.Changed -= OnSessionChanged;
             _session.Changed += OnSessionChanged;
+            UpdateAvailability();
             Refresh();
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             _session.Changed -= OnSessionChanged;
+        }
+
+        private bool UpdateAvailability()
+        {
+            var isAvailable = _navigator.IsAvailable();
+            style.display = isAvailable
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+
+            if (isAvailable && !_isAvailable)
+            {
+                var state = _session.State;
+                if (state.Find(_selectedTabId) == null)
+                {
+                    _selectedTabId = state.Tabs[0].Id;
+                }
+
+                _initialLocationPending = true;
+                Refresh();
+            }
+
+            _isAvailable = isAvailable;
+            return isAvailable;
         }
     }
 }

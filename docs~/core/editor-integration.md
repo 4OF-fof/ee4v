@@ -21,7 +21,7 @@ backend は公開状態型を直接生成します。公開 API と backend の�
 | `TryGetState(out state)` | 対象 window を自動選択して状態を返す | なし |
 | `TryGetState(window, out state)` | 指定 Project Browser の状態を返す | なし |
 | `TryGetState(selectionRect, out state)` | 項目領域を向きの判定材料にして状態を返す | なし |
-| `TryShowFolder(window, folderGuid, reveal)` | 指定 folder を表示する | Project Browser の表示 folder を変更する |
+| `TryShowFolder(window, folderGuid, reveal)` | 2列表示の指定Project Browserでfolderを表示する。1列表示では`false`を返す | Project Browser の表示 folder を変更する |
 | `TrySetSearch(window, searchText)` | 検索文字列を設定する | Project Browser の検索状態を変更する |
 | `TryClearSearch(window)` | 検索を解除する | Project Browser の検索状態を変更する |
 | `TryGetOpenWindows(out windows)` | 開いている Project Browser を返す | なし |

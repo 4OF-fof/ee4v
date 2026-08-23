@@ -4,6 +4,8 @@
 
 ProjectTabs は Project ウィンドウのツールバーへフォルダータブを追加します。タブごとにフォルダー、検索文字列、最大50件の移動履歴を保持します。
 
+ProjectTabsは2列表示のProject ウィンドウだけで有効にします。1列表示ではタブを非表示にし、現在位置の追跡とフォルダー移動を行いません。判定はウィンドウごとに行うため、1列表示と2列表示のProject ウィンドウを同時に使用できます。表示方式を2列へ戻すと、そのウィンドウのProjectTabsを自動的に再有効化します。
+
 タブ領域は Project ウィンドウの幅に追従し、左側に36pxと右側に470pxの固定余白を確保して Unity 標準の操作領域との重なりを防ぎます。同じ DockArea の別タブが選択されると Unity は Project ウィンドウの表示階層をパネルから一時的に外します。ProjectTabs は再表示時に状態監視を再開し、同じウィンドウのタブを更新します。
 
 固定タブは Unity の Project Favorites と同期します。固定タブから別のフォルダーへ移動する UI 操作では通常タブを追加し、固定タブの位置を維持します。
@@ -77,6 +79,8 @@ constructor は `ProjectTabLocation(folderGuid, folderPath, searchText = "")` �
 タブ一覧、履歴、固定状態は `UserSettings/ee4v.project-tabs.asset` へ保存します。固定状態は Core の `ProjectFavoritesApi` を接続部として Unity の Project Favorites と同期します。
 
 選択中のタブは Project ウィンドウごとに保持する UI 状態であり、`ProjectTabsState` には含みません。
+
+Project ウィンドウの復元時は、Unity側で開いているフォルダーと一致する保存済みタブを選択します。検索文字列だけが異なる場合も同じフォルダーのタブを再利用し、復元処理だけを理由に新しいタブを追加しません。
 
 ## 副作用
 

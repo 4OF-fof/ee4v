@@ -103,6 +103,15 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
 
             try
             {
+                using (var serializedObject = new SerializedObject(window))
+                {
+                    if (GetViewMode(serializedObject) !=
+                        ProjectBrowserViewMode.TwoColumns)
+                    {
+                        return false;
+                    }
+                }
+
                 ShowFolderContentsMethod.Invoke(window, new object[] { folderObject.GetInstanceID(), reveal });
                 return true;
             }

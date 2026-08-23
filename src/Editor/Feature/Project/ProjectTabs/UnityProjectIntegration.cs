@@ -15,10 +15,17 @@ namespace Ee4v.ProjectTabs
             _window = window;
         }
 
+        public bool IsAvailable()
+        {
+            return ProjectBrowserApi.TryGetState(_window, out var state) &&
+                state.ViewMode == ProjectBrowserViewMode.TwoColumns;
+        }
+
         public bool TryGetCurrentLocation(out ProjectTabLocation location)
         {
             location = null;
             if (!ProjectBrowserApi.TryGetState(_window, out var state) ||
+                state.ViewMode != ProjectBrowserViewMode.TwoColumns ||
                 string.IsNullOrWhiteSpace(state.FolderGuid) ||
                 string.IsNullOrWhiteSpace(state.FolderPath))
             {
@@ -35,6 +42,7 @@ namespace Ee4v.ProjectTabs
         public bool TryOpen(ProjectTabLocation location)
         {
             if (location == null ||
+                !IsAvailable() ||
                 !ProjectBrowserApi.TryShowFolder(
                     _window,
                     location.FolderGuid))
