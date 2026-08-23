@@ -53,6 +53,7 @@
   },
   "section": {
     "blendShapes": "BlendShape",
+    "library": "表情ライブラリ",
     "groups": "Group"
   },
   "group": {
@@ -93,6 +94,7 @@
   "action": {
     "newClip": "新規表情",
     "resetView": "表示をリセット",
+    "backToLibrary": "戻る",
     "apply": "アバターに適用",
     "addMenuExpression": "メニュー専用表情を追加",
     "remove": "削除",
@@ -116,7 +118,6 @@
   },
   "status": {
     "descriptorMissing": "VRChat Avatar Descriptor が見つかりません。表情の編集はできますが割り当てはできません。",
-    "clipRequired": "先に表情クリップを作成または選択してください。",
     "controllerCreateFailed": "FX Controller を作成できませんでした。",
     "modularAvatarMissing": "Modular Avatar が見つかりません。VCCからModular Avatarを導入してください。",
     "applyFailed": "ジェスチャー割り当てを適用できませんでした。"

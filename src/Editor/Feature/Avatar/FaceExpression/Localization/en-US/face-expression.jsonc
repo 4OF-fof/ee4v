@@ -53,6 +53,7 @@
   },
   "section": {
     "blendShapes": "BlendShapes",
+    "library": "Expression Library",
     "groups": "Group"
   },
   "group": {
@@ -93,6 +94,7 @@
   "action": {
     "newClip": "New expression",
     "resetView": "Reset view",
+    "backToLibrary": "Back",
     "apply": "Apply to Avatar",
     "addMenuExpression": "Add menu-only expression",
     "remove": "Remove",
@@ -116,7 +118,6 @@
   },
   "status": {
     "descriptorMissing": "A VRChat Avatar Descriptor was not found. Expressions can be edited, but assignments cannot be applied.",
-    "clipRequired": "Create or select an expression clip first.",
     "controllerCreateFailed": "The FX Controller could not be created.",
     "modularAvatarMissing": "Modular Avatar was not found. Install Modular Avatar through VCC.",
     "applyFailed": "The gesture assignments could not be applied."

@@ -218,16 +218,31 @@ namespace Ee4v.FaceExpression
                     Clip = "Expression clip",
                     NewClip = "New expression",
                     ResetView = "Reset view",
+                    BackToLibrary = "Back",
                     SearchPlaceholder = "Search BlendShapes",
                     SearchTooltip = "Filter BlendShapes by name",
                     ClearSearchTooltip = "Clear search",
                     BlendShapes = "BlendShapes",
+                    Library = "Expression Library",
                     ClipOnly = "In clip only",
                     ClipOnlyTooltip = "Show only BlendShapes stored in the clip",
-                    NoBlendShapes = "No BlendShapes were found.",
-                    ClipRequired = "Create or select an expression clip first."
+                    NoBlendShapes = "No BlendShapes were found."
                 },
                 rect => EditorGUI.DrawRect(rect, new Color(0.1f, 0.1f, 0.1f, 1f)));
+            var smile = new AnimationClip { name = "Smile" };
+            var blink = new AnimationClip { name = "Blink" };
+            view.SetLibrary(
+                new[] { "Assets/Expressions/Happy" },
+                new[] { smile, blink },
+                false,
+                (_, rect) => EditorGUI.DrawRect(
+                    rect,
+                    new Color(0.18f, 0.28f, 0.42f, 1f)));
+            view.RegisterCallback<DetachFromPanelEvent>(_ =>
+            {
+                UnityEngine.Object.DestroyImmediate(smile);
+                UnityEngine.Object.DestroyImmediate(blink);
+            });
             view.SetChannels(
                 new[]
                 {
