@@ -12,6 +12,8 @@ namespace Ee4v.FaceExpression
     {
         private const string MergeAnimatorTypeName =
             "nadena.dev.modular_avatar.core.ModularAvatarMergeAnimator";
+        private const string BlinkOverrideTypeName =
+            "Ee4v.FaceExpression.FaceExpressionBlinkOverride";
         private const string MenuInstallerTypeName =
             "nadena.dev.modular_avatar.core.ModularAvatarMenuInstaller";
         private const string MenuItemTypeName =
@@ -44,7 +46,8 @@ namespace Ee4v.FaceExpression
             GameObject avatar,
             FaceExpressionGenerationPaths paths,
             AnimatorController controller,
-            ScriptableObject menu)
+            ScriptableObject menu,
+            bool disableDescriptorBlink)
         {
             if (avatar == null)
             {
@@ -58,7 +61,12 @@ namespace Ee4v.FaceExpression
 
             if (EditorUtility.IsPersistent(avatar))
             {
-                InstallIntoPrefabAsset(avatar, paths, controller, menu);
+                InstallIntoPrefabAsset(
+                    avatar,
+                    paths,
+                    controller,
+                    menu,
+                    disableDescriptorBlink);
                 return;
             }
 
@@ -67,6 +75,7 @@ namespace Ee4v.FaceExpression
                 paths,
                 controller,
                 menu,
+                disableDescriptorBlink,
                 true);
         }
 
@@ -75,6 +84,7 @@ namespace Ee4v.FaceExpression
             FaceExpressionGenerationPaths paths,
             AnimatorController controller,
             ScriptableObject menu,
+            bool disableDescriptorBlink,
             bool recordUndo)
         {
             var root = avatar.Find(paths.RootName)?.gameObject;
@@ -98,7 +108,12 @@ namespace Ee4v.FaceExpression
                     InteractionMode.AutomatedAction);
             }
 
-            ConfigureRoot(root, paths.RootName, controller, menu);
+            ConfigureRoot(
+                root,
+                paths.RootName,
+                controller,
+                menu,
+                disableDescriptorBlink);
             var saved = PrefabUtility.SaveAsPrefabAssetAndConnect(
                 root,
                 paths.PrefabPath,
@@ -114,7 +129,8 @@ namespace Ee4v.FaceExpression
             GameObject root,
             string rootName,
             AnimatorController controller,
-            ScriptableObject menu)
+            ScriptableObject menu,
+            bool disableDescriptorBlink)
         {
             root.name = rootName;
             root.transform.localPosition = Vector3.zero;
@@ -148,6 +164,14 @@ namespace Ee4v.FaceExpression
             RemoveComponents(root, parametersType);
             var parameters = AddRequiredComponent(root, parametersType);
             ConfigureParameter(parameters);
+
+            var blinkOverrideType = FindType(BlinkOverrideTypeName);
+            RemoveComponents(root, blinkOverrideType);
+            if (disableDescriptorBlink)
+            {
+                AddRequiredComponent(root, blinkOverrideType);
+            }
+
             EditorUtility.SetDirty(root);
         }
 
@@ -241,7 +265,8 @@ namespace Ee4v.FaceExpression
             GameObject avatar,
             FaceExpressionGenerationPaths paths,
             AnimatorController controller,
-            ScriptableObject menu)
+            ScriptableObject menu,
+            bool disableDescriptorBlink)
         {
             var avatarPath = AssetDatabase.GetAssetPath(avatar);
             if (string.IsNullOrEmpty(avatarPath) ||
@@ -273,6 +298,7 @@ namespace Ee4v.FaceExpression
                     paths,
                     controller,
                     menu,
+                    disableDescriptorBlink,
                     false);
                 if (PrefabUtility.SaveAsPrefabAsset(contents, avatarPath) == null)
                 {

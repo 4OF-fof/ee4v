@@ -38,7 +38,8 @@ namespace Ee4v.FaceExpression
 
         internal static FaceExpressionAvatarBindings ReadBindings(
             Component descriptor,
-            GameObject avatar)
+            GameObject avatar,
+            IReadOnlyList<string> separators)
         {
             var serialized = new SerializedObject(descriptor);
             var eyeSettings = serialized.FindProperty("customEyeLookSettings");
@@ -46,7 +47,28 @@ namespace Ee4v.FaceExpression
                 ?.FindPropertyRelative("eyelidsSkinnedMesh")
                 ?.objectReferenceValue as SkinnedMeshRenderer;
             var blinkIndices = eyeSettings?.FindPropertyRelative("eyelidsBlendshapes");
-            var blink = ReadBlinkBinding(avatar, blinkRenderer, blinkIndices);
+            var blink = ReadEyelidBinding(
+                avatar,
+                blinkRenderer,
+                blinkIndices,
+                0);
+            var eyes = new List<EditorCurveBinding>();
+            AddEyelidBinding(eyes, avatar, blinkRenderer, blinkIndices, 1);
+            AddEyelidBinding(eyes, avatar, blinkRenderer, blinkIndices, 2);
+            AddBlinkGroupBindings(
+                eyes,
+                avatar,
+                blinkRenderer,
+                blinkIndices,
+                separators);
+            var blinkKeys = new HashSet<string>(
+                blink.Select(BindingKey),
+                StringComparer.Ordinal);
+            eyes = eyes
+                .Where(binding => !blinkKeys.Contains(BindingKey(binding)))
+                .GroupBy(BindingKey, StringComparer.Ordinal)
+                .Select(group => group.First())
+                .ToList();
 
             var mouthRenderer = serialized.FindProperty("VisemeSkinnedMesh")
                 ?.objectReferenceValue as SkinnedMeshRenderer;
@@ -61,7 +83,7 @@ namespace Ee4v.FaceExpression
                 avatar,
                 mouthRenderer,
                 serialized.FindProperty("MouthOpenBlendShapeName")?.stringValue);
-            return new FaceExpressionAvatarBindings(blink, mouth);
+            return new FaceExpressionAvatarBindings(blink, eyes, mouth);
         }
 
         private static Component FindDescriptor(GameObject avatar)
@@ -92,26 +114,89 @@ namespace Ee4v.FaceExpression
             return null;
         }
 
-        private static IReadOnlyList<EditorCurveBinding> ReadBlinkBinding(
+        private static IReadOnlyList<EditorCurveBinding> ReadEyelidBinding(
             GameObject avatar,
             SkinnedMeshRenderer renderer,
-            SerializedProperty indices)
+            SerializedProperty indices,
+            int slot)
         {
             var result = new List<EditorCurveBinding>();
+            AddEyelidBinding(result, avatar, renderer, indices, slot);
+            return result;
+        }
+
+        private static void AddEyelidBinding(
+            ICollection<EditorCurveBinding> result,
+            GameObject avatar,
+            SkinnedMeshRenderer renderer,
+            SerializedProperty indices,
+            int slot)
+        {
             var mesh = renderer == null ? null : renderer.sharedMesh;
-            if (mesh == null || indices == null || !indices.isArray || indices.arraySize == 0)
+            if (mesh == null || indices == null || !indices.isArray ||
+                slot < 0 || slot >= indices.arraySize)
             {
-                return result;
+                return;
             }
 
             // VRChat stores Blink, Looking Up, and Looking Down in this order.
-            var shapeIndex = indices.GetArrayElementAtIndex(0).intValue;
+            var shapeIndex = indices.GetArrayElementAtIndex(slot).intValue;
             if (shapeIndex >= 0 && shapeIndex < mesh.blendShapeCount)
             {
                 AddBinding(result, avatar, renderer, mesh.GetBlendShapeName(shapeIndex));
             }
+        }
 
-            return result;
+        private static void AddBlinkGroupBindings(
+            ICollection<EditorCurveBinding> result,
+            GameObject avatar,
+            SkinnedMeshRenderer renderer,
+            SerializedProperty indices,
+            IReadOnlyList<string> separators)
+        {
+            var mesh = renderer == null ? null : renderer.sharedMesh;
+            if (mesh == null || indices == null || !indices.isArray ||
+                indices.arraySize == 0)
+            {
+                return;
+            }
+
+            var blinkIndex = indices.GetArrayElementAtIndex(0).intValue;
+            if (blinkIndex < 0 || blinkIndex >= mesh.blendShapeCount)
+            {
+                return;
+            }
+
+            var headerIndex = -1;
+            for (var index = 0; index < blinkIndex; index++)
+            {
+                if (FaceExpressionClipEditor.TryGetHeader(
+                        mesh.GetBlendShapeName(index),
+                        separators,
+                        out _))
+                {
+                    headerIndex = index;
+                }
+            }
+
+            if (headerIndex < 0)
+            {
+                return;
+            }
+
+            for (var index = headerIndex + 1; index < mesh.blendShapeCount; index++)
+            {
+                var shapeName = mesh.GetBlendShapeName(index);
+                if (FaceExpressionClipEditor.TryGetHeader(
+                        shapeName,
+                        separators,
+                        out _))
+                {
+                    break;
+                }
+
+                AddBinding(result, avatar, renderer, shapeName);
+            }
         }
 
         private static void AddNamedBindings(
@@ -150,6 +235,11 @@ namespace Ee4v.FaceExpression
                 AnimationUtility.CalculateTransformPath(renderer.transform, avatar.transform),
                 typeof(SkinnedMeshRenderer),
                 "blendShape." + shapeName));
+        }
+
+        private static string BindingKey(EditorCurveBinding binding)
+        {
+            return binding.path + "\n" + binding.propertyName;
         }
     }
 }

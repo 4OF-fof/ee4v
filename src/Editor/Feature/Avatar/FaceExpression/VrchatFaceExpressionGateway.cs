@@ -60,12 +60,16 @@ namespace Ee4v.FaceExpression
                     avatar,
                     ensureFolders: true);
                 controller = GetOrCreateController(paths.ControllerPath);
+                var avatarBindings = VrchatAvatarDescriptorAdapter.ReadBindings(
+                    descriptor,
+                    avatar,
+                    FaceExpressionSettings.GetSeparators());
                 GestureMatrixControllerWriter.Apply(
                     controller,
                     avatar,
                     configuration?.Assignments,
                     configuration?.MenuEntries,
-                    VrchatAvatarDescriptorAdapter.ReadBindings(descriptor, avatar),
+                    avatarBindings,
                     paths.AssetsFolder);
 
                 var entries = GestureMatrixControllerWriter.GetEffectiveMenuEntries(
@@ -80,7 +84,8 @@ namespace Ee4v.FaceExpression
                     avatar,
                     paths,
                     controller,
-                    menu);
+                    menu,
+                    avatarBindings.Blink.Count > 0);
                 AssetDatabase.SaveAssets();
                 return true;
             }

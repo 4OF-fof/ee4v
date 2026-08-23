@@ -36,21 +36,25 @@ namespace Ee4v.FaceExpression.Tests
                 "Smile",
                 "Angry",
                 "Blink",
+                "EyeLookUp",
                 "vrc.v_aa",
                 "LegacyGesture");
             try
             {
-                avatar.GetComponentInChildren<SkinnedMeshRenderer>()
-                    .SetBlendShapeWeight(4, 12f);
+                var renderer = avatar.GetComponentInChildren<SkinnedMeshRenderer>();
+                renderer.SetBlendShapeWeight(2, 20f);
+                renderer.SetBlendShapeWeight(5, 12f);
                 var smile = CreateClip(
                     "Smile.anim",
                     ("blendShape.Smile", 80f),
                     ("blendShape.Blink", 70f),
+                    ("blendShape.EyeLookUp", 40f),
                     ("blendShape.vrc.v_aa", 60f));
                 var angry = CreateClip(
                     "Angry.anim",
                     ("blendShape.Angry", 65f),
                     ("blendShape.Blink", 75f),
+                    ("blendShape.EyeLookUp", 35f),
                     ("blendShape.vrc.v_aa", 55f));
                 var neutral = CreateClip(
                     "Neutral.anim",
@@ -69,6 +73,7 @@ namespace Ee4v.FaceExpression.Tests
                     FaceGesture.HandGun);
                 var avatarBindings = new FaceExpressionAvatarBindings(
                     new[] { Binding("blendShape.Blink") },
+                    new[] { Binding("blendShape.EyeLookUp") },
                     new[] { Binding("blendShape.vrc.v_aa") });
 
                 GestureMatrixControllerWriter.Apply(
@@ -147,6 +152,10 @@ namespace Ee4v.FaceExpression.Tests
                 Assert.That(ReadValue(fistClip, "blendShape.Smile"), Is.EqualTo(80f));
                 Assert.That(ReadValue(fistClip, "blendShape.Angry"), Is.EqualTo(5f));
                 Assert.That(ReadValue(fistClip, "blendShape.Blink"), Is.EqualTo(70f));
+                Assert.That(ReadValue(fistClip, "blendShape.EyeLookUp"), Is.EqualTo(40f));
+                Assert.That(
+                    AnimationUtility.GetAnimationClipSettings(fistClip).loopTime,
+                    Is.False);
                 Assert.That(
                     ReadValue(fistClip, "blendShape.LegacyGesture"),
                     Is.EqualTo(12f));
@@ -166,6 +175,60 @@ namespace Ee4v.FaceExpression.Tests
                 Assert.That(
                     ReadValue((AnimationClip)fistFistState.motion, "blendShape.Smile"),
                     Is.EqualTo(25f));
+                Assert.That(ReadValue(
+                    (AnimationClip)neutralState.motion,
+                    "blendShape.Blink"), Is.EqualTo(0f));
+                var neutralBlinkCurve = ReadCurve(
+                    (AnimationClip)neutralState.motion,
+                    "blendShape.Blink");
+                Assert.That(ReadValueAt(
+                    (AnimationClip)neutralState.motion,
+                    "blendShape.Blink",
+                    neutralBlinkCurve.keys[2].time),
+                    Is.EqualTo(100f).Within(0.001f));
+
+                var fistPointState = layer.stateMachine.states
+                    .Select(child => child.state)
+                    .Single(state => state.name == "01-03 Fist + Point");
+                var fistPointClip = (AnimationClip)fistPointState.motion;
+                Assert.That(fistPointClip, Is.Not.SameAs(fistClip));
+                var blinkCurve = ReadCurve(
+                    fistPointClip,
+                    "blendShape.Blink");
+                var closeStart = blinkCurve.keys[1].time;
+                var closedStart = blinkCurve.keys[2].time;
+                var openStart = blinkCurve.keys[3].time;
+                var openEnd = blinkCurve.keys[4].time;
+                Assert.That(ReadValueAt(
+                    fistPointClip,
+                    "blendShape.Blink",
+                    closedStart), Is.EqualTo(100f).Within(0.001f));
+                Assert.That(ReadValueAt(
+                    fistPointClip,
+                    "blendShape.EyeLookUp",
+                    closedStart), Is.EqualTo(0f).Within(0.001f));
+                Assert.That(ReadValueAt(
+                    fistPointClip,
+                    "blendShape.Blink",
+                    (closeStart + closedStart) / 2f),
+                    Is.EqualTo(85f).Within(0.001f));
+                Assert.That(ReadValueAt(
+                    fistPointClip,
+                    "blendShape.Blink",
+                    (openStart + openEnd) / 2f),
+                    Is.EqualTo(85f).Within(0.001f));
+                Assert.That(ReadValueAt(
+                    fistPointClip,
+                    "blendShape.Blink",
+                    openEnd), Is.EqualTo(70f).Within(0.001f));
+                Assert.That(ReadValueAt(
+                    fistPointClip,
+                    "blendShape.EyeLookUp",
+                    openEnd), Is.EqualTo(40f).Within(0.001f));
+                AssertBlinkIntervals(fistPointClip);
+                Assert.That(
+                    AnimationUtility.GetAnimationClipSettings(fistPointClip).loopTime,
+                    Is.True);
 
                 var victory = layer.stateMachine.states
                     .Select(child => child.state)
@@ -191,7 +254,7 @@ namespace Ee4v.FaceExpression.Tests
                             AnimatorConditionMode.Equals,
                             0f)
                     }));
-                Assert.That(GetGeneratedExpressionClipPaths().Count, Is.EqualTo(3));
+                Assert.That(GetGeneratedExpressionClipPaths().Count, Is.EqualTo(4));
                 var transition = layer.stateMachine.anyStateTransitions
                     .Single(candidate => candidate.destinationState == victory);
                 Assert.That(
@@ -645,9 +708,36 @@ namespace Ee4v.FaceExpression.Tests
 
         private static float ReadValue(AnimationClip clip, string property)
         {
+            return ReadValueAt(clip, property, 0f);
+        }
+
+        private static float ReadValueAt(
+            AnimationClip clip,
+            string property,
+            float time)
+        {
+            return ReadCurve(clip, property).Evaluate(time);
+        }
+
+        private static AnimationCurve ReadCurve(AnimationClip clip, string property)
+        {
             var curve = AnimationUtility.GetEditorCurve(clip, Binding(property));
             Assert.That(curve, Is.Not.Null);
-            return curve.Evaluate(0f);
+            return curve;
+        }
+
+        private static void AssertBlinkIntervals(AnimationClip clip)
+        {
+            var curve = ReadCurve(clip, "blendShape.Blink");
+            var peaks = Enumerable.Range(0, 12)
+                .Select(index => curve.keys[2 + index * 4].time)
+                .ToArray();
+            var intervals = peaks.Skip(1)
+                .Select((time, index) => time - peaks[index])
+                .Append(clip.length + peaks[0] - peaks[peaks.Length - 1]);
+            Assert.That(
+                intervals,
+                Is.All.InRange(3f, 8f));
         }
 
         private static EditorCurveBinding Binding(string property)

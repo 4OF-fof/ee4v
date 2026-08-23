@@ -102,17 +102,20 @@ namespace Ee4v.FaceExpression
     {
         public FaceExpressionAvatarBindings(
             IReadOnlyList<EditorCurveBinding> blink,
+            IReadOnlyList<EditorCurveBinding> eyes,
             IReadOnlyList<EditorCurveBinding> mouth)
         {
             Blink = blink ?? Array.Empty<EditorCurveBinding>();
+            Eyes = eyes ?? Array.Empty<EditorCurveBinding>();
             Mouth = mouth ?? Array.Empty<EditorCurveBinding>();
         }
 
         public IReadOnlyList<EditorCurveBinding> Blink { get; }
+        public IReadOnlyList<EditorCurveBinding> Eyes { get; }
         public IReadOnlyList<EditorCurveBinding> Mouth { get; }
 
         public static FaceExpressionAvatarBindings Empty { get; } =
-            new FaceExpressionAvatarBindings(null, null);
+            new FaceExpressionAvatarBindings(null, null, null);
     }
 
     internal static class GestureMatrixControllerWriter
@@ -124,6 +127,11 @@ namespace Ee4v.FaceExpression
         private const string GestureRight = "GestureRight";
         private const string StateTagPrefix = "ee4v-face:3:";
         private const string MenuTagPrefix = "ee4v-menu:1:";
+        private const int BlinkCountPerCycle = 12;
+        private const float BlinkMinimumIntervalSeconds = 3f;
+        private const float BlinkMaximumIntervalSeconds = 8f;
+        private const float BlinkTransitionSeconds = 0.1f;
+        private const float BlinkClosedSeconds = 0.05f;
         private static readonly string[] TrackingControlTypeNames =
         {
             "VRC.SDKBase.VRC_AnimatorTrackingControl",
@@ -274,6 +282,7 @@ namespace Ee4v.FaceExpression
                     avatar,
                     effectiveAssignments[pair.Key],
                     bindings,
+                    avatarBindings,
                     outputFolder,
                     normalizedMotions,
                     usedGeneratedClipPaths);
@@ -319,6 +328,7 @@ namespace Ee4v.FaceExpression
                     avatar,
                     effectiveMenuEntries,
                     bindings,
+                    avatarBindings,
                     outputFolder,
                     normalizedMotions,
                     usedGeneratedClipPaths);
@@ -419,6 +429,7 @@ namespace Ee4v.FaceExpression
             GameObject avatar,
             IReadOnlyList<EffectiveMenuEntry> entries,
             IReadOnlyList<EditorCurveBinding> bindings,
+            FaceExpressionAvatarBindings avatarBindings,
             string outputFolder,
             IDictionary<NormalizedMotionKey, AnimationClip> normalizedMotions,
             ISet<string> usedGeneratedClipPaths)
@@ -432,6 +443,7 @@ namespace Ee4v.FaceExpression
                     avatar,
                     item.Entry.Assignment,
                     bindings,
+                    avatarBindings,
                     outputFolder,
                     normalizedMotions,
                     usedGeneratedClipPaths);
@@ -508,6 +520,7 @@ namespace Ee4v.FaceExpression
         {
             var result = new Dictionary<string, EditorCurveBinding>(StringComparer.Ordinal);
             AddBindings(result, avatarBindings.Blink);
+            AddBindings(result, avatarBindings.Eyes);
             AddBindings(result, avatarBindings.Mouth);
             foreach (var assignment in assignments)
             {
@@ -586,6 +599,7 @@ namespace Ee4v.FaceExpression
             GameObject avatar,
             FaceExpressionAssignment assignment,
             IReadOnlyList<EditorCurveBinding> bindings,
+            FaceExpressionAvatarBindings avatarBindings,
             string identity,
             string outputFolder)
         {
@@ -612,21 +626,132 @@ namespace Ee4v.FaceExpression
                 }
             }
 
+            var blinkKeys = new HashSet<string>(
+                avatarBindings.Blink.Select(BindingKey),
+                StringComparer.Ordinal);
+            var eyeKeys = new HashSet<string>(
+                avatarBindings.Eyes.Select(BindingKey),
+                StringComparer.Ordinal);
+            var animateBlink = assignment.EnableBlink && blinkKeys.Count > 0;
+            var blinkSchedule = animateBlink ? CreateBlinkSchedule() : null;
             foreach (var binding in bindings)
             {
                 var curve = assignment.Clip == null
                     ? null
                     : AnimationUtility.GetEditorCurve(assignment.Clip, binding);
                 var value = curve == null ? GetDefaultValue(avatar, binding) : curve.Evaluate(0f);
+                var key = BindingKey(binding);
+                AnimationCurve generatedCurve;
+                if (animateBlink && blinkKeys.Contains(key))
+                {
+                    generatedCurve = CreateBlinkCurve(
+                        curve == null ? 0f : Mathf.Clamp(value, 0f, 100f),
+                        100f,
+                        blinkSchedule);
+                }
+                else if (animateBlink && curve != null && eyeKeys.Contains(key))
+                {
+                    generatedCurve = CreateBlinkCurve(value, 0f, blinkSchedule);
+                }
+                else
+                {
+                    generatedCurve = new AnimationCurve(new Keyframe(0f, value));
+                }
+
                 AnimationUtility.SetEditorCurve(
                     generated,
                     binding,
-                    new AnimationCurve(new Keyframe(0f, value)));
+                    generatedCurve);
             }
 
+            var settings = AnimationUtility.GetAnimationClipSettings(generated);
+            settings.loopTime = animateBlink;
+            AnimationUtility.SetAnimationClipSettings(generated, settings);
             generated.frameRate = 60f;
             EditorUtility.SetDirty(generated);
             return generated;
+        }
+
+        private static BlinkSchedule CreateBlinkSchedule()
+        {
+            var random = new System.Random(Guid.NewGuid().GetHashCode());
+            var starts = new float[BlinkCountPerCycle];
+            var pulseDuration = BlinkTransitionSeconds * 2f +
+                                BlinkClosedSeconds + 1f / 60f;
+            starts[0] = BlinkMinimumIntervalSeconds +
+                        (BlinkMaximumIntervalSeconds -
+                         BlinkMinimumIntervalSeconds -
+                         pulseDuration) *
+                        (float)random.NextDouble();
+            for (var index = 1; index < starts.Length; index++)
+            {
+                starts[index] = starts[index - 1] + RandomBlinkInterval(random);
+            }
+
+            var minimumWrapInterval = starts[0] + pulseDuration;
+            var wrapInterval = minimumWrapInterval +
+                               (BlinkMaximumIntervalSeconds - minimumWrapInterval) *
+                               (float)random.NextDouble();
+            return new BlinkSchedule(
+                starts,
+                starts[starts.Length - 1] + wrapInterval - starts[0]);
+        }
+
+        private static float RandomBlinkInterval(System.Random random)
+        {
+            return BlinkMinimumIntervalSeconds +
+                   (BlinkMaximumIntervalSeconds - BlinkMinimumIntervalSeconds) *
+                   (float)random.NextDouble();
+        }
+
+        private static AnimationCurve CreateBlinkCurve(
+            float openValue,
+            float closedValue,
+            BlinkSchedule schedule)
+        {
+            var keys = new List<Keyframe>
+            {
+                new Keyframe(0f, openValue)
+            };
+            foreach (var closeStart in schedule.CloseStarts)
+            {
+                var closedStart = closeStart + BlinkTransitionSeconds;
+                var openStart = closedStart + BlinkClosedSeconds;
+                keys.Add(new Keyframe(closeStart, openValue));
+                keys.Add(new Keyframe(closedStart, closedValue));
+                keys.Add(new Keyframe(openStart, closedValue));
+                keys.Add(new Keyframe(
+                    openStart + BlinkTransitionSeconds,
+                    openValue));
+            }
+
+            keys.Add(new Keyframe(schedule.Duration, openValue));
+            var curve = new AnimationCurve(keys.ToArray());
+            for (var index = 0; index < curve.length; index++)
+            {
+                AnimationUtility.SetKeyLeftTangentMode(
+                    curve,
+                    index,
+                    AnimationUtility.TangentMode.Linear);
+                AnimationUtility.SetKeyRightTangentMode(
+                    curve,
+                    index,
+                    AnimationUtility.TangentMode.Linear);
+            }
+
+            return curve;
+        }
+
+        private sealed class BlinkSchedule
+        {
+            internal BlinkSchedule(float[] closeStarts, float duration)
+            {
+                CloseStarts = closeStarts;
+                Duration = duration;
+            }
+
+            internal IReadOnlyList<float> CloseStarts { get; }
+            internal float Duration { get; }
         }
 
         private static void ConfigureTracking(
@@ -673,6 +798,7 @@ namespace Ee4v.FaceExpression
             GameObject avatar,
             FaceExpressionAssignment assignment,
             IReadOnlyList<EditorCurveBinding> bindings,
+            FaceExpressionAvatarBindings avatarBindings,
             string outputFolder,
             IDictionary<NormalizedMotionKey, AnimationClip> motions,
             ISet<string> usedGeneratedClipPaths)
@@ -685,6 +811,7 @@ namespace Ee4v.FaceExpression
                     avatar,
                     assignment,
                     bindings,
+                    avatarBindings,
                     "Motion " + (motions.Count + 1).ToString("000"),
                     outputFolder);
                 motions.Add(key, motion);
@@ -944,13 +1071,15 @@ namespace Ee4v.FaceExpression
             public NormalizedMotionKey(FaceExpressionAssignment assignment)
             {
                 Clip = assignment.Clip;
+                EnableBlink = assignment.EnableBlink;
             }
 
             private AnimationClip Clip { get; }
+            private bool EnableBlink { get; }
 
             public bool Equals(NormalizedMotionKey other)
             {
-                return Clip == other.Clip;
+                return Clip == other.Clip && EnableBlink == other.EnableBlink;
             }
 
             public override bool Equals(object obj)
@@ -962,7 +1091,8 @@ namespace Ee4v.FaceExpression
             {
                 unchecked
                 {
-                    return Clip == null ? 0 : Clip.GetInstanceID();
+                    var hash = Clip == null ? 0 : Clip.GetInstanceID();
+                    return (hash * 397) ^ EnableBlink.GetHashCode();
                 }
             }
         }

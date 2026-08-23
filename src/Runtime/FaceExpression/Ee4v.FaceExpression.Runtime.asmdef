@@ -1,0 +1,24 @@
+{
+  "name": "Ee4v.FaceExpression.Runtime",
+  "rootNamespace": "Ee4v.FaceExpression",
+  "references": [],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "VRCSDKBase.dll"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "EE4V_VRCSDK"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "3.4.0",
+      "define": "EE4V_VRCSDK"
+    }
+  ],
+  "noEngineReferences": false
+}
