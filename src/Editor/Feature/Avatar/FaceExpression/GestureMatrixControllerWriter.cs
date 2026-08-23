@@ -8,6 +8,18 @@ using UnityEngine;
 
 namespace Ee4v.FaceExpression
 {
+    internal enum FaceGesture
+    {
+        Neutral = 0,
+        Fist = 1,
+        Open = 2,
+        Point = 3,
+        Victory = 4,
+        RockNRoll = 5,
+        HandGun = 6,
+        ThumbsUp = 7
+    }
+
     internal readonly struct GestureCombination : IEquatable<GestureCombination>
     {
         public GestureCombination(FaceGesture left, FaceGesture right)
@@ -105,13 +117,12 @@ namespace Ee4v.FaceExpression
 
     internal static class GestureMatrixControllerWriter
     {
-        internal const string LayerName = FaceExpressionControllerWriter.LayerName;
+        internal const string LayerName = "ee4v Face Expressions";
         internal const string MenuLayerName = "ee4v Face Expression Menu";
         internal const string MenuParameter = "ee4v/FaceExpression";
         private const string GestureLeft = "GestureLeft";
         private const string GestureRight = "GestureRight";
         private const string StateTagPrefix = "ee4v-face:3:";
-        private const string LegacyStateTagPrefix = "ee4v-face:2:";
         private const string MenuTagPrefix = "ee4v-menu:1:";
         private static readonly string[] TrackingControlTypeNames =
         {
@@ -126,14 +137,7 @@ namespace Ee4v.FaceExpression
         public static IReadOnlyDictionary<GestureCombination, FaceExpressionAssignment> Read(
             AnimatorController controller)
         {
-            var result = ReadMatrix(controller);
-            if (result.Count > 0 || controller == null)
-            {
-                return result;
-            }
-
-            ExpandLegacyAssignments(FaceExpressionControllerWriter.Read(controller), result);
-            return result;
+            return ReadMatrix(controller);
         }
 
         public static IReadOnlyList<FaceExpressionMenuEntry> ReadMenuEntries(
@@ -777,18 +781,13 @@ namespace Ee4v.FaceExpression
                 return false;
             }
 
-            var prefix = tag.StartsWith(StateTagPrefix, StringComparison.Ordinal)
-                ? StateTagPrefix
-                : tag.StartsWith(LegacyStateTagPrefix, StringComparison.Ordinal)
-                    ? LegacyStateTagPrefix
-                    : null;
-            if (prefix == null)
+            if (!tag.StartsWith(StateTagPrefix, StringComparison.Ordinal))
             {
                 return false;
             }
 
-            var parts = tag.Substring(prefix.Length).Split(':');
-            if ((parts.Length != 5 && parts.Length != 6) ||
+            var parts = tag.Substring(StateTagPrefix.Length).Split(':');
+            if (parts.Length != 6 ||
                 !TryReadGesture(parts[0], out var left) ||
                 !TryReadGesture(parts[1], out var right) ||
                 !TryReadBoolean(parts[3], out var enableBlink) ||
@@ -802,9 +801,7 @@ namespace Ee4v.FaceExpression
                 LoadClip(parts[2]),
                 enableBlink,
                 fixMouth,
-                parts.Length == 6
-                    ? Uri.UnescapeDataString(parts[5])
-                    : string.Empty);
+                Uri.UnescapeDataString(parts[5]));
             return true;
         }
 
@@ -876,39 +873,6 @@ namespace Ee4v.FaceExpression
             return string.IsNullOrEmpty(path)
                 ? null
                 : AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
-        }
-
-        private static void ExpandLegacyAssignments(
-            IReadOnlyDictionary<FaceGesture, AnimationClip> legacy,
-            IDictionary<GestureCombination, FaceExpressionAssignment> result)
-        {
-            foreach (FaceGesture left in Enum.GetValues(typeof(FaceGesture)))
-            {
-                foreach (FaceGesture right in Enum.GetValues(typeof(FaceGesture)))
-                {
-                    AnimationClip clip = null;
-                    if (left != FaceGesture.Neutral)
-                    {
-                        legacy.TryGetValue(left, out clip);
-                    }
-
-                    if (clip == null && right != FaceGesture.Neutral)
-                    {
-                        legacy.TryGetValue(right, out clip);
-                    }
-
-                    if (clip == null)
-                    {
-                        legacy.TryGetValue(FaceGesture.Neutral, out clip);
-                    }
-
-                    if (clip != null)
-                    {
-                        result[new GestureCombination(left, right)] =
-                            new FaceExpressionAssignment(clip);
-                    }
-                }
-            }
         }
 
         private static IReadOnlyList<EffectiveMenuEntry> BuildEffectiveMenuEntries(

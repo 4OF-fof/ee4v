@@ -13,3 +13,4 @@
 - library と gifts では未取り込みのdownloadを右下へ一覧表示し、`すべて取り込む`で取り込み待ちを除く対象を順番に取り込む
 - library の解析は `data-test` と商品・download action の包含関係を優先し、BOOTH の utility class 変更時は既存 class selector を fallback として扱う
 - 商品ページの解析は canonical item URL、`#variations` 配下の `/downloadables/` link、`data-test="other-downloads-button"` を優先し、localized URL と shop subdomain の両方を扱う
+- 商品ページに複数の download がある場合、各 import action は対応する「その他のDL方法」の直下へ表示する

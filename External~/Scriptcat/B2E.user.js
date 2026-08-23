@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Booth to Ealge
 // @namespace    https://4of.dev
-// @version      0.1.4
+// @version      0.1.5
 // @description  Add Eagle import badges and actions to the BOOTH library and item pages.
 // @match        https://accounts.booth.pm/library*
 // @match        https://accounts.booth.pm/library/gifts*
@@ -879,18 +879,26 @@
 
       readDownloads(variations, product) {
         const downloads = [];
-        variations
-          .querySelectorAll(selectors.downloadTrigger)
-          .forEach((trigger) => {
-            const download = this.readDownload(trigger, product);
+        variations.querySelectorAll(selectors.variationRow).forEach((row) => {
+          const otherDownloadButtons = Array.from(
+            row.querySelectorAll(selectors.otherDownloads),
+          ).filter((element) => !element.matches(selectors.downloadTrigger));
+
+          row.querySelectorAll(selectors.downloadTrigger).forEach((trigger, index) => {
+            const download = this.readDownload(
+              trigger,
+              product,
+              otherDownloadButtons[index] || null,
+            );
             if (download) {
               downloads.push(download);
             }
           });
+        });
         return downloads;
       },
 
-      readDownload(trigger, product) {
+      readDownload(trigger, product, otherDownloads) {
         const downloadUrl = normalizeDownloadUrl(
           trigger.getAttribute("href") || trigger.href,
         );
@@ -899,7 +907,6 @@
           return null;
         }
 
-        const otherDownloads = row.querySelector(selectors.otherDownloads);
         const actions = otherDownloads ? otherDownloads.parentElement : trigger.parentElement;
         if (!actions) {
           return null;
