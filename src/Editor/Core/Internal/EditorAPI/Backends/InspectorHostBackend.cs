@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Ee4v.Core.EditorIntegration;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -51,40 +52,38 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
                     "versionControlElement",
                     InstanceFlags);
 
-        internal static bool TryGetSnapshots(
-            out IReadOnlyList<InspectorHostSnapshot> snapshots)
+        internal static bool TryGetStates(
+            out IReadOnlyList<InspectorState> states)
         {
             if (InspectorWindowType == null)
             {
-                snapshots =
-                    Array.Empty<InspectorHostSnapshot>();
+                states = Array.Empty<InspectorState>();
                 return false;
             }
 
-            var result =
-                new List<InspectorHostSnapshot>();
+            var result = new List<InspectorState>();
             var windows = Resources
                 .FindObjectsOfTypeAll(InspectorWindowType)
                 .OfType<EditorWindow>();
             foreach (var window in windows)
             {
-                if (TryGetSnapshot(
+                if (TryGetState(
                         window,
-                        out var snapshot))
+                        out var state))
                 {
-                    result.Add(snapshot);
+                    result.Add(state);
                 }
             }
 
-            snapshots = result;
+            states = result;
             return true;
         }
 
-        internal static bool TryGetSnapshot(
+        internal static bool TryGetState(
             EditorWindow window,
-            out InspectorHostSnapshot snapshot)
+            out InspectorState state)
         {
-            snapshot = null;
+            state = null;
             if (window == null ||
                 InspectorWindowType == null ||
                 !InspectorWindowType.IsInstanceOfType(window) ||
@@ -110,7 +109,7 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
                     return false;
                 }
 
-                snapshot = new InspectorHostSnapshot(
+                state = new InspectorState(
                     window,
                     objects,
                     GetEditorTargets(editors),
@@ -124,7 +123,7 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
             }
             catch (Exception)
             {
-                snapshot = null;
+                state = null;
                 return false;
             }
         }

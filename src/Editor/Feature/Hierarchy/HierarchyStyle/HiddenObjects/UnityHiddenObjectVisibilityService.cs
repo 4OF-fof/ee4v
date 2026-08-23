@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.Core.EditorIntegration;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Ee4v.HiddenObjects
 {
@@ -77,6 +79,7 @@ namespace Ee4v.HiddenObjects
         {
             var states = _restoreStates.GetAll();
             var dirtyScenes = new HashSet<int>();
+            var initiallyCleanScenes = new Dictionary<int, Scene>();
             var restoredCount = 0;
             for (var i = 0; i < states.Count; i++)
             {
@@ -101,12 +104,23 @@ namespace Ee4v.HiddenObjects
                     continue;
                 }
 
+                var scene = gameObject.scene;
+                if (!scene.isDirty)
+                {
+                    initiallyCleanScenes[scene.handle] = scene;
+                }
+
                 gameObject.SetActive(false);
                 gameObject.tag = HiddenTag;
                 gameObject.hideFlags |=
                     HideFlags.HideInHierarchy;
                 MarkDirty(gameObject, dirtyScenes);
                 restoredCount++;
+            }
+
+            foreach (var scene in initiallyCleanScenes.Values)
+            {
+                EditorSceneApi.TryClearDirtiness(scene);
             }
 
             if (restoredCount > 0)

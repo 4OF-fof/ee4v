@@ -4,13 +4,13 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Injector;
-using Ee4v.Core.Internal;
 using UnityEditorInternal;
 
 namespace Ee4v.Core.I18n
 {
     public static class I18N
     {
+        private const string Ee4vNamespacePrefix = "Ee4v.";
         private static readonly Dictionary<string, string> CallerNamespaceScopeCache =
             new Dictionary<string, string>(StringComparer.Ordinal);
         private static readonly HashSet<string> WarnedCallerSites =
@@ -113,7 +113,14 @@ namespace Ee4v.Core.I18n
 
             if (!CallerNamespaceScopeCache.TryGetValue(namespaceName, out var scope))
             {
-                scope = PackagePathUtility.GetScopeNameForNamespace(namespaceName);
+                var segments = namespaceName.Split('.');
+                scope = namespaceName.StartsWith(
+                            Ee4vNamespacePrefix,
+                            StringComparison.Ordinal) &&
+                        segments.Length >= 2 &&
+                        !string.IsNullOrWhiteSpace(segments[1])
+                    ? segments[1]
+                    : null;
                 CallerNamespaceScopeCache[namespaceName] = scope;
             }
 

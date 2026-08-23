@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Ee4v.Core.Internal.EditorAPI;
+using Ee4v.Core.EditorIntegration;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -127,7 +127,7 @@ namespace Ee4v.Core.Injector
 
         private void SyncProjectToolbarHosts()
         {
-            if (!ProjectBrowser.TryGetOpenWindows(out var windows))
+            if (!ProjectBrowserApi.TryGetOpenWindows(out var windows))
             {
                 return;
             }

@@ -14,6 +14,8 @@ Core は feature 横断の契約と接続部を提供します。
 
 `EditorIntegration` の公開型は Unity の内部型や reflection backend を返しません。
 Unity 版による差異は `Core/Internal/EditorAPI/Backends` で吸収します。
+公開 API は backend から公開状態型を直接受け取り、同じ状態を表す内部 snapshot や
+静的な中継層は設けません。
 
 独自 Settings UI が必要な場合は `SettingDrawerApi.Register` を使います。
 機能 assembly を Core の `InternalsVisibleTo` へ追加する必要はありません。

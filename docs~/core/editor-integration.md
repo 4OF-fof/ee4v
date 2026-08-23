@@ -4,6 +4,8 @@
 
 `Ee4v.Core.EditorIntegration` は Unity Editor 操作の公開窓口です。reflection、Unity の非公開型、serialized property 名は `Core/Internal/EditorAPI/Backends` に隔離します。
 
+backend は公開状態型を直接生成します。公開 API と backend の間に同じ操作を転送するだけの層や、同じ値を複製する内部 snapshot は置きません。
+
 `Try` で始まる API は操作できない場合に `false` を返します。公開 signature に内部 backend 型は含まれません。
 
 ## `ProjectBrowserApi`
@@ -113,6 +115,14 @@ Inspector全体の選択と個別Editorのtargetが異なる場合は`EditorTarg
 
 instance ID が `0`、内部 API が非対応、対象項目がない場合は `false` です。一つ以上の Hierarchy で更新できた場合に `true` を返します。tree view領域を取得できない場合は空の`Rect`を返します。永続化は行いません。
 
+## `EditorSceneApi`
+
+| メンバー | 戻り値・動作 | 副作用 |
+|---|---|---|
+| `TryClearDirtiness(scene)` | シーンの dirty 状態を解除できれば `true` | シーンの保存要求を解除する |
+
+無効なシーン、Unity内部APIが非対応、reflectionが失敗した場合は`false`です。シーン内容は変更しません。
+
 ## `EditorTextFieldApi`
 
 | メンバー | 戻り値・動作 | 副作用 |
@@ -142,6 +152,7 @@ package root を解決できなかった場合はキャッシュせず、次回�
 - `InspectorHostBackend`
 - `EditorPopupWindowBackend`
 - `SceneHierarchyBackend`
+- `EditorSceneBackend`
 - `TextFieldMultilineScrollBackend`
 
 Unity version の差異は公開 API の利用側ではなく、これらの backend で吸収します。詳細は [Unity 6 移行メモ](../unity6.md)を参照してください。

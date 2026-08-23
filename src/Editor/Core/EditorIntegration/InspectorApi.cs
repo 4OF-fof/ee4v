@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Ee4v.Core.Internal.EditorAPI;
+using Ee4v.Core.Internal.EditorAPI.Backends;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -8,15 +8,22 @@ namespace Ee4v.Core.EditorIntegration
 {
     public sealed class InspectorState
     {
-        internal InspectorState(InspectorHostSnapshot snapshot)
+        internal InspectorState(
+            EditorWindow window,
+            IReadOnlyList<Object> inspectedObjects,
+            IReadOnlyList<Object> editorTargets,
+            VisualElement editorsElement,
+            Rect editorsViewportRect,
+            VisualElement previewAndLabelElement,
+            VisualElement versionControlElement)
         {
-            Window = snapshot.Window;
-            InspectedObjects = snapshot.InspectedObjects;
-            EditorTargets = snapshot.EditorTargets;
-            EditorsElement = snapshot.EditorsElement;
-            EditorsViewportRect = snapshot.EditorsViewportRect;
-            PreviewAndLabelElement = snapshot.PreviewAndLabelElement;
-            VersionControlElement = snapshot.VersionControlElement;
+            Window = window;
+            InspectedObjects = inspectedObjects;
+            EditorTargets = editorTargets;
+            EditorsElement = editorsElement;
+            EditorsViewportRect = editorsViewportRect;
+            PreviewAndLabelElement = previewAndLabelElement;
+            VersionControlElement = versionControlElement;
         }
 
         public EditorWindow Window { get; }
@@ -33,36 +40,14 @@ namespace Ee4v.Core.EditorIntegration
         public static bool TryGetStates(
             out IReadOnlyList<InspectorState> states)
         {
-            if (!InspectorHost.TryGetSnapshots(out var snapshots))
-            {
-                states = new InspectorState[0];
-                return false;
-            }
-
-            var result = new InspectorState[snapshots.Count];
-            for (var i = 0; i < snapshots.Count; i++)
-            {
-                result[i] = new InspectorState(snapshots[i]);
-            }
-
-            states = result;
-            return true;
+            return InspectorHostBackend.TryGetStates(out states);
         }
 
         public static bool TryGetState(
             EditorWindow window,
             out InspectorState state)
         {
-            if (!InspectorHost.TryGetSnapshot(
-                    window,
-                    out var snapshot))
-            {
-                state = null;
-                return false;
-            }
-
-            state = new InspectorState(snapshot);
-            return true;
+            return InspectorHostBackend.TryGetState(window, out state);
         }
     }
 }

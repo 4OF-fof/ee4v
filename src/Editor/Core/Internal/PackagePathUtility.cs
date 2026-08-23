@@ -8,7 +8,6 @@ namespace Ee4v.Core.Internal
 {
     internal static class PackagePathUtility
     {
-        private const string Ee4vNamespacePrefix = "Ee4v.";
         private static readonly Regex NamespaceRegex =
             new Regex(@"^\s*namespace\s+([A-Za-z_][A-Za-z0-9_\.]*)\s*(?:\{|;)", RegexOptions.Multiline | RegexOptions.Compiled);
         private static readonly Regex LocaleDirectoryNameRegex =
@@ -119,16 +118,5 @@ namespace Ee4v.Core.Internal
             return false;
         }
 
-        public static string GetScopeNameForNamespace(string namespaceName)
-        {
-            if (string.IsNullOrWhiteSpace(namespaceName) ||
-                !namespaceName.StartsWith(Ee4vNamespacePrefix, System.StringComparison.Ordinal))
-            {
-                return null;
-            }
-
-            var segments = namespaceName.Split('.');
-            return segments.Length < 2 || string.IsNullOrWhiteSpace(segments[1]) ? null : segments[1];
-        }
     }
 }

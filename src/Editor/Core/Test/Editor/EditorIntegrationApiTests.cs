@@ -16,6 +16,7 @@ namespace Ee4v.Core.Tests
             typeof(InspectorApi),
             typeof(AssetImportApi),
             typeof(HierarchyItemApi),
+            typeof(EditorSceneApi),
             typeof(EditorTextFieldApi),
             typeof(PackageAssetApi)
         };

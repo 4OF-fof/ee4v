@@ -94,6 +94,7 @@ namespace Ee4v.HierarchyStyle.Tests
                 Assert.That(
                     gameObject.hideFlags & HideFlags.HideInHierarchy,
                     Is.EqualTo(HideFlags.HideInHierarchy));
+                Assert.That(scene.isDirty, Is.False);
             }
             finally
             {

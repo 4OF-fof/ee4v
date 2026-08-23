@@ -1,4 +1,4 @@
-using Ee4v.Core.Internal.EditorAPI;
+using Ee4v.Core.EditorIntegration;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -144,8 +144,8 @@ namespace Ee4v.Core.Injector
                 return ProjectItemViewMode.Unknown;
             }
 
-            return ProjectBrowser.TryGetSnapshot(out var snapshot)
-                ? ToProjectItemViewMode(snapshot.ViewMode)
+            return ProjectBrowserApi.TryGetState(out var state)
+                ? ToProjectItemViewMode(state.ViewMode)
                 : ProjectItemViewMode.Unknown;
         }
 
@@ -159,11 +159,11 @@ namespace Ee4v.Core.Injector
                 return ProjectItemOrientation.Unknown;
             }
 
-            if (ProjectBrowser.TryGetSnapshot(
+            if (ProjectBrowserApi.TryGetState(
                     selectionRect,
-                    out var snapshot))
+                    out var state))
             {
-                return ToProjectItemOrientation(snapshot.Orientation);
+                return ToProjectItemOrientation(state.Orientation);
             }
 
             if (viewMode == ProjectItemViewMode.OneColumn)

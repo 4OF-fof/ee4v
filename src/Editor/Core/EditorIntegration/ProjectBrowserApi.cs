@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Ee4v.Core.Internal.EditorAPI;
+using Ee4v.Core.Internal.EditorAPI.Backends;
 using UnityEditor;
 using UnityEngine;
 
@@ -22,14 +22,19 @@ namespace Ee4v.Core.EditorIntegration
     public sealed class ProjectBrowserState
     {
         internal ProjectBrowserState(
-            Ee4v.Core.Internal.EditorAPI.ProjectBrowserSnapshot snapshot)
+            string folderGuid,
+            string folderPath,
+            string searchText,
+            bool hasSearch,
+            ProjectBrowserViewMode viewMode,
+            ProjectBrowserOrientation orientation)
         {
-            FolderGuid = snapshot.FolderGuid;
-            FolderPath = snapshot.FolderPath;
-            SearchText = snapshot.SearchText;
-            HasSearch = snapshot.HasSearch;
-            ViewMode = (ProjectBrowserViewMode)snapshot.ViewMode;
-            Orientation = (ProjectBrowserOrientation)snapshot.Orientation;
+            FolderGuid = folderGuid;
+            FolderPath = folderPath;
+            SearchText = searchText;
+            HasSearch = hasSearch;
+            ViewMode = viewMode;
+            Orientation = orientation;
         }
 
         public string FolderGuid { get; }
@@ -44,9 +49,9 @@ namespace Ee4v.Core.EditorIntegration
     {
         public static bool TryGetState(out ProjectBrowserState state)
         {
-            return Convert(
-                ProjectBrowser.TryGetSnapshot(out var snapshot),
-                snapshot,
+            return ProjectBrowserBackend.TryGetState(
+                null,
+                null,
                 out state);
         }
 
@@ -54,9 +59,9 @@ namespace Ee4v.Core.EditorIntegration
             EditorWindow window,
             out ProjectBrowserState state)
         {
-            return Convert(
-                ProjectBrowser.TryGetSnapshot(window, out var snapshot),
-                snapshot,
+            return ProjectBrowserBackend.TryGetState(
+                window,
+                null,
                 out state);
         }
 
@@ -64,11 +69,9 @@ namespace Ee4v.Core.EditorIntegration
             Rect selectionRect,
             out ProjectBrowserState state)
         {
-            return Convert(
-                ProjectBrowser.TryGetSnapshot(
-                    selectionRect,
-                    out var snapshot),
-                snapshot,
+            return ProjectBrowserBackend.TryGetState(
+                null,
+                selectionRect,
                 out state);
         }
 
@@ -77,7 +80,7 @@ namespace Ee4v.Core.EditorIntegration
             string folderGuid,
             bool reveal = false)
         {
-            return ProjectBrowser.TryShowFolder(
+            return ProjectBrowserBackend.TryShowFolder(
                 window,
                 folderGuid,
                 reveal);
@@ -87,29 +90,18 @@ namespace Ee4v.Core.EditorIntegration
             EditorWindow window,
             string searchText)
         {
-            return ProjectBrowser.TrySetSearch(window, searchText);
+            return ProjectBrowserBackend.TrySetSearch(window, searchText);
         }
 
         public static bool TryClearSearch(EditorWindow window)
         {
-            return ProjectBrowser.TryClearSearch(window);
+            return ProjectBrowserBackend.TryClearSearch(window);
         }
 
         public static bool TryGetOpenWindows(
             out IReadOnlyList<EditorWindow> windows)
         {
-            return ProjectBrowser.TryGetOpenWindows(out windows);
-        }
-
-        private static bool Convert(
-            bool succeeded,
-            Ee4v.Core.Internal.EditorAPI.ProjectBrowserSnapshot snapshot,
-            out ProjectBrowserState state)
-        {
-            state = succeeded && snapshot != null
-                ? new ProjectBrowserState(snapshot)
-                : null;
-            return state != null;
+            return ProjectBrowserBackend.TryGetOpenWindows(out windows);
         }
     }
 }

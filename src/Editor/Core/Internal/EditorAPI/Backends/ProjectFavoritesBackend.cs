@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Ee4v.Core.EditorIntegration;
 using UnityEditor;
 
 namespace Ee4v.Core.Internal.EditorAPI.Backends

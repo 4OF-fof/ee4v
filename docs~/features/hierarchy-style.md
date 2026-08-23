@@ -47,7 +47,7 @@ Hidden Objects も HierarchyStyle に含まれます。非表示にした GameOb
 
 `Hide` は対象の active state と tag を保存してから、非アクティブ化、`EditorOnly` tag の設定、`HideFlags.HideInHierarchy` の追加を行います。
 
-非表示にした対象の `GlobalObjectId` も保存します。エディターの再起動、スクリプトの再読み込み、シーンの開き直し後に対象のシーンが読み込まれると、保存した非表示状態を再適用します。
+非表示にした対象の `GlobalObjectId` も保存します。エディターの再起動、スクリプトの再読み込み、シーンの開き直し後に対象のシーンが読み込まれると、保存した非表示状態を再適用します。再適用前に未変更だったシーンは dirty にしません。
 
 `Reveal` は `HideFlags.HideInHierarchy` を外します。保存した状態がある場合は tag と active state も復元します。保存した tag が現在の Tag Manager に存在しない場合は `Untagged` を設定します。
 
@@ -72,7 +72,7 @@ Hidden Objectsの実画面は`ee4v/Debug/Catalog`の`Domain/HierarchyStyle/Hidde
 |---|---|
 | `SetColor`、`SetIcon`、`Clear` | 設定を保存し、Hierarchy 項目の再描画を要求する |
 | `Hide`、`Reveal` | Undo を記録し、対象 GameObject、Prefab instance、対象シーンを dirty にして Hierarchy を再描画する |
-| 保存した非表示状態の再適用 | 対象 GameObject、Prefab instance、対象シーンを dirty にして Hierarchy を再描画する |
+| 保存した非表示状態の再適用 | 非表示状態を再適用して Hierarchy を再描画する。再適用前に未変更だったシーンは dirty にしない |
 | `OpenHiddenObjects` | EditorWindow を開く |
 | `RefreshHiddenObjects` | 開いている Hidden Objects ウィンドウの一覧を再構築する |
 

@@ -39,14 +39,9 @@
 | `TargetImporter_ReportsPackageFailureAfterCleanup` | UnityPackage失敗を返して一時Fileを削除する | Unityの非同期完了契約と一時データ保全を確認する |
 | `AnalyzeFile_ReadsZipAndUnityPackageContents` | 同期・非同期APIでZIPとUnityPackageを共通の解析結果へ変換する | 外部形式を公開モデルへ変換し、UIスレッド外からも利用する接続契約である |
 | `Ee4vSync_InvalidMetadataDoesNotChangeCatalog` | 壊れたmetadataで既存Catalogを変更しない | 外部入力不正時のデータ保全を確認する |
-| `ItemsPerRow_UpdatesVisibleGridImmediately` | 列数変更と同じ処理内で表示行を組み替える | 遅延した更新は操作直後の画面状態だけで検出できる |
 | `Selection_CtrlTogglesItems` | Ctrl操作でItemを選択集合へ追加または削除する | 単一選択への巻き戻りと選択解除漏れを検出する |
 | `Selection_ShiftUsesAnchorAndCtrlShiftAddsRange` | Shiftで基準Itemから範囲選択し、Ctrl併用時は既存選択へ追加する | 仮想Gridの表示行をまたぐ範囲と基準点の消失を検出する |
 | `Selection_EscapeReturnsGridToUnselectedState` | Escapeで選択集合と主選択を空へ戻す | 選択解除後に詳細表示だけが残る問題を検出する |
-| `AssetManagerItemSortTests.Apply_OrdersBySelectedField` | Itemを名前、日付、File数と反転指定で安定して並べる | 複数の並び順と反転方向の組み合わせ違いを検出する |
-| `AssetManagerItemSortTests.Apply_OrdersFilesByAvailableField` | Fileを名前、作成日、更新日と反転指定で安定して並べる | File画面だけ並び替えが表示順へ反映されない問題を検出する |
-| `AssetManagerSearchTests.MatchesItem_UsesOnlyEnabledTargets` | Item検索が有効な名前、説明、タグだけを部分一致対象にする | 検索対象の切替が別項目へ漏れる問題を検出する |
-| `AssetManagerSearchTests.MatchesFile_UsesNameTarget` | File名検索を名前対象の有効時だけ行う | ItemとFileで検索対象の意味がずれる問題を検出する |
 | `ImagesWithTheSameSource_ReuseDecodedTexture` | 同じ画像Sourceを表示する要素がデコード済みTextureを共有する | スクロール中の再デコードは最終表示だけでは検出できない |
 | `Create_CreatesOnlyMaterialVariantsAndSharesOtherAssets` | ルートPrefabをVariant、Materialを`Assets/Materials`のVariantにし、Animator Controllerを含むその他の参照アセットはコピーせず元を共有する | UnityのVariantとSerializedObjectをまたぐ参照差し替えで、未使用コピーの残存や共有対象の誤りは生成Prefabの存在だけでは検出できない |
 | `FindPrefabCandidates_ResolvesOnlyImportedPrefabs` | Itemの取り込み済みGUIDからProject内のPrefabだけを重複なく候補へ変換する | GUID、Project path、Asset型をまたぐ候補抽出は入力画面の見た目だけでは誤りを特定できない |
@@ -91,11 +86,11 @@
 
 | テスト | 保証する契約 | 残す理由 |
 | --- | --- | --- |
-| `UiTextFactoryTests.FactoryButton_RoutesTextThroughUiTextElement` | Buttonの文字作成と更新をUiTextFactoryの要素で行う | Unityの文字描画問題を避ける共通境界である |
+| `UiTextFactoryTests.FactoryButton_UpdatesDisplayedText` | Factoryで作ったButtonの表示文字を作成後に更新できる | Unityの文字描画問題を避ける共通境界である |
 | `UiStoryTests.Catalog_DiscoversExternalStoryProviders` | 別assemblyのStory providerを検出する | reflectionによる拡張境界を確認する |
 | `UiStoryTests.CatalogStories_DeclareUsageLocations` | 機能Storyが実使用箇所を宣言する | 未使用componentの残存を通常の表示確認では検出できない |
 | `UiIconTests.UiBuiltinIconResolver_TryResolve_AllRegisteredIcons` | 全登録アイコンをUnity textureへ解決する | Unity versionで変わり得る外部アイコン契約である |
-| `UiIconTests.FluentUiIcons_LoadsSelectedRuntimeIcons` | 選定済みFluent UI System IconsをすべてTextureへ解決する | 同梱するサードパーティーアセットと実行時パスの契約である |
+| `UiIconTests.FluentUiIcons_LoadsBundledRuntimeIcons` | 同梱したFluent UI System IconsをすべてTextureへ解決する | サードパーティーアセットと実行時パスの契約である |
 
 ## SQLite
 
@@ -112,7 +107,7 @@
 | `ItemStyleInteractionTests.Selection_UsesGroupOnlyWhenHoveredFolderIsSelected` | 選択中項目からだけ一括編集する | 意図しない複数対象の変更を防ぐ |
 | `ProjectTabsTests.PinnedTab_RejectsNavigationToAnotherFolder` | 固定tabが別folderへ移動しない | 固定位置を失う状態変更を防ぐ |
 | `HierarchyStyleTests.VisibilityApi_RestoresActiveStateAndTag` | 非表示解除時にactive stateとtagを戻す | GameObjectの状態を失う破壊的副作用を防ぐ |
-| `HierarchyStyleTests.VisibilityService_RestoresPersistedHiddenState` | 保存したGlobalObjectIdからHierarchyの非表示状態を復元する | エディターやシーンを開き直した後に非表示状態が失われる問題を検出する |
+| `HierarchyStyleTests.VisibilityService_RestoresPersistedHiddenState` | 保存したGlobalObjectIdからHierarchyの非表示状態を復元し、未変更のシーンをdirtyにしない | エディターやシーンを開き直した後に非表示状態が失われる問題と、起動直後に不要な保存要求が出る問題を検出する |
 | `WindowGroupTests.EnteringGroup_FocusesPeersAndRestoresOriginalFocus` | グループ外から入ると同じグループのほかのWindowを前面化し、起点へfocusを戻す | 複数dockとfocus変更にまたがる状態遷移は最終focusだけでは検出できない |
 | `WindowGroupTests.FollowerRole_IsEvaluatedPerGroup` | 同じWindowが通常メンバーのGroupだけを起動し、FollowerのGroupには起点にならず追従だけする | 複数Group間の所属役割が混同される問題を防ぐ |
 | `WindowGroupTests.RegisteringWindowAsRegularInMultipleGroups_IsRejected` | 同じWindowを複数Groupの通常メンバーとして登録できない | 複数Groupが意図せず同時に起動する構成を防ぐ |

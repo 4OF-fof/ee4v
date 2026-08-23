@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Ee4v.Core.EditorIntegration;
 using UnityEditor;
 using UnityEngine;
 
@@ -29,12 +30,12 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
             Type.EmptyTypes,
             null);
 
-        public static bool TryGetSnapshot(
+        public static bool TryGetState(
             EditorWindow targetWindow,
             Rect? selectionRect,
-            out ProjectBrowserSnapshot snapshot)
+            out ProjectBrowserState state)
         {
-            snapshot = null;
+            state = null;
 
             var window = ResolveTargetWindow(targetWindow);
             if (window == null)
@@ -55,7 +56,7 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
                     var viewMode = GetViewMode(serializedObject);
                     var orientation = GetOrientation(serializedObject, viewMode, selectionRect);
 
-                    snapshot = new ProjectBrowserSnapshot(
+                    state = new ProjectBrowserState(
                         folderGuid,
                         folderPath,
                         searchText,
@@ -67,7 +68,7 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
             }
             catch (Exception)
             {
-                snapshot = null;
+                state = null;
                 return false;
             }
         }

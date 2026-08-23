@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Ee4v.Core.Internal.EditorAPI;
+using Ee4v.Core.Internal.EditorAPI.Backends;
 
 namespace Ee4v.Core.EditorIntegration
 {
@@ -23,42 +23,27 @@ namespace Ee4v.Core.EditorIntegration
         public static bool TryGetFolders(
             out IReadOnlyList<ProjectFavoriteFolder> folders)
         {
-            if (!ProjectFavorites.TryGetFolders(out var source))
-            {
-                folders = Array.Empty<ProjectFavoriteFolder>();
-                return false;
-            }
-
-            var result = new ProjectFavoriteFolder[source.Count];
-            for (var i = 0; i < source.Count; i++)
-            {
-                result[i] = new ProjectFavoriteFolder(
-                    source[i].FolderGuid,
-                    source[i].FolderPath);
-            }
-
-            folders = result;
-            return true;
+            return ProjectFavoritesBackend.TryGetFolders(out folders);
         }
 
         public static bool TryAddFolder(string folderPath)
         {
-            return ProjectFavorites.TryAddFolder(folderPath);
+            return ProjectFavoritesBackend.TryAddFolder(folderPath);
         }
 
         public static bool TryRemoveFolder(string folderPath)
         {
-            return ProjectFavorites.TryRemoveFolder(folderPath);
+            return ProjectFavoritesBackend.TryRemoveFolder(folderPath);
         }
 
         public static bool TryAddChangedListener(Action callback)
         {
-            return ProjectFavorites.TryAddChangedListener(callback);
+            return ProjectFavoritesBackend.TryAddChangedListener(callback);
         }
 
         public static void RemoveChangedListener(Action callback)
         {
-            ProjectFavorites.RemoveChangedListener(callback);
+            ProjectFavoritesBackend.RemoveChangedListener(callback);
         }
     }
 }
