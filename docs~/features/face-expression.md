@@ -97,4 +97,11 @@ Avatar DescriptorのViseme用BlendShapeも生成クリップへ含め、元FX Co
 
 VRChat SDKへコンパイル時依存は持ちません。Avatar Descriptorとの接続はシリアライズ済みのFXレイヤー境界だけで行い、SDKがない環境でも表情クリップの編集とプレビューは利用できます。
 
-FaceEmoは、独立したFX ControllerとExpression Menuを生成し、専用PrefabのMA Merge Animator、MA Menu Installer、MA Parametersから適用する構成を参考にしています。ee4vのデータ形式、画面構造、64通りのController状態設計は独自で、コードも共有しません。
+## Inspiration
+
+FaceEmoは、独立したFX ControllerとExpression Menuを生成し、専用PrefabのMA Merge Animator、MA Menu Installer、MA Parametersから適用する構成を参考にしています。ee4vのデータ形式、画面構造、64通りのController状態設計は独自で、コードやアセットも共有しません。
+
+- Source: [suzuryg/face-emo](https://github.com/suzuryg/face-emo)
+- License: MIT License
+- Copyright: Copyright (c) 2023 suzuryg
+- Rights notice: [`ThirdParty~/THIRD_PARTY_NOTICES.md`](../../ThirdParty~/THIRD_PARTY_NOTICES.md#faceemo)

@@ -43,4 +43,6 @@ This directory contains vendored SQLite dependencies used by `ee4v` without requ
 4. Keep the Unity plugin metadata aligned:
    - managed DLLs stay `Editor` only with auto reference enabled
    - native DLL stays `Editor + Windows + x86_64` only
-5. Update `Third Party Notices.md` when versions change.
+5. Update
+   [`ThirdParty~/THIRD_PARTY_NOTICES.md`](../../../../ThirdParty~/THIRD_PARTY_NOTICES.md)
+   when versions change.
