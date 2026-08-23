@@ -104,17 +104,26 @@ namespace Ee4v.HiddenObjects
                     continue;
                 }
 
-                var scene = gameObject.scene;
-                if (!scene.isDirty)
+                var activeStateChanged = gameObject.activeSelf;
+                var tagChanged = !string.Equals(
+                    gameObject.tag,
+                    HiddenTag,
+                    StringComparison.Ordinal);
+                if (activeStateChanged || tagChanged)
                 {
-                    initiallyCleanScenes[scene.handle] = scene;
+                    var scene = gameObject.scene;
+                    if (!scene.isDirty)
+                    {
+                        initiallyCleanScenes[scene.handle] = scene;
+                    }
+
+                    gameObject.SetActive(false);
+                    gameObject.tag = HiddenTag;
+                    MarkDirty(gameObject, dirtyScenes);
                 }
 
-                gameObject.SetActive(false);
-                gameObject.tag = HiddenTag;
                 gameObject.hideFlags |=
                     HideFlags.HideInHierarchy;
-                MarkDirty(gameObject, dirtyScenes);
                 restoredCount++;
             }
 
