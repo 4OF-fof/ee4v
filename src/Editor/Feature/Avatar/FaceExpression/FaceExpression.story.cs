@@ -217,6 +217,7 @@ namespace Ee4v.FaceExpression
                     Avatar = "Avatar",
                     Clip = "Expression clip",
                     NewClip = "New expression",
+                    CopyAndEdit = "Copy and edit",
                     ResetView = "Reset view",
                     BackToLibrary = "Back",
                     SearchPlaceholder = "Search BlendShapes",

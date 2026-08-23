@@ -33,6 +33,9 @@ namespace Ee4v.FaceExpression
         private readonly Dictionary<AnimationClip, ThumbnailEntry> _thumbnails =
             new Dictionary<AnimationClip, ThumbnailEntry>();
 
+        private bool HasClipReference => !ReferenceEquals(_clip, null);
+        private bool IsClipMissing => HasClipReference && _clip == null;
+
         [MenuItem("ee4v/Window/Face Expression/Face Expression Editor")]
         private static void Open()
         {
@@ -127,6 +130,7 @@ namespace Ee4v.FaceExpression
             _view.AvatarChanged += SetAvatar;
             _view.ClipChanged += SetClip;
             _view.NewClipRequested += CreateClip;
+            _view.CopyClipRequested += CopyClip;
             _view.BackRequested += GoBack;
             _view.LibraryFolderRequested += OpenLibraryFolder;
             _view.ChannelChanged += ChangeChannel;
@@ -225,8 +229,35 @@ namespace Ee4v.FaceExpression
             SetClip(clip);
         }
 
+        private void CopyClip(AnimationClip source)
+        {
+            if (source == null ||
+                !AssetDatabase.IsValidFolder(_libraryFolder) ||
+                !IsAtOrBelow(_libraryFolder, _libraryRootFolder))
+            {
+                return;
+            }
+
+            var fileName = SanitizeFileName(source.name);
+            var path = AssetDatabase.GenerateUniqueAssetPath(
+                _libraryFolder + "/" + fileName + ".anim");
+            var clip = FaceExpressionClipEditor.Copy(source, path);
+            if (clip == null)
+            {
+                return;
+            }
+
+            Selection.activeObject = clip;
+            SetClip(clip);
+        }
+
         private void RefreshLibrary()
         {
+            if (IsClipMissing)
+            {
+                SetClip(null);
+            }
+
             ClearThumbnails();
             var rootFolder = NormalizeAssetPath(
                 ProjectAssetSettings.GetAssetFolder(
@@ -304,7 +335,7 @@ namespace Ee4v.FaceExpression
 
         private void GoBack()
         {
-            if (_clip != null)
+            if (HasClipReference)
             {
                 SetClip(null);
                 return;
@@ -354,6 +385,26 @@ namespace Ee4v.FaceExpression
             return separatorIndex >= 0
                 ? path.Substring(separatorIndex + 1)
                 : path;
+        }
+
+        private static string SanitizeFileName(string value)
+        {
+            var invalid = Path.GetInvalidFileNameChars();
+            var name = new string((value ?? string.Empty)
+                    .Select(character =>
+                        invalid.Contains(character) ||
+                        character == '/' ||
+                        character == '\\'
+                            ? '_'
+                            : character)
+                    .ToArray())
+                .Trim()
+                .TrimEnd('.');
+            return string.IsNullOrWhiteSpace(name) ||
+                   string.Equals(name, ".", StringComparison.Ordinal) ||
+                   string.Equals(name, "..", StringComparison.Ordinal)
+                ? "Expression"
+                : name;
         }
 
         private void DrawLibraryThumbnail(AnimationClip clip, Rect rect)
@@ -480,6 +531,7 @@ namespace Ee4v.FaceExpression
                 Avatar = I18N.Get("field.avatar"),
                 Clip = I18N.Get("field.clip"),
                 NewClip = I18N.Get("action.newClip"),
+                CopyAndEdit = I18N.Get("action.copyAndEdit"),
                 ResetView = I18N.Get("action.resetView"),
                 BackToLibrary = I18N.Get("action.backToLibrary"),
                 SearchPlaceholder = I18N.Get("search.placeholder"),

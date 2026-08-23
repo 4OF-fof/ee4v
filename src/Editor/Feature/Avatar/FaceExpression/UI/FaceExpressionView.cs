@@ -15,6 +15,7 @@ namespace Ee4v.FaceExpression
         public string Avatar { get; set; }
         public string Clip { get; set; }
         public string NewClip { get; set; }
+        public string CopyAndEdit { get; set; }
         public string ResetView { get; set; }
         public string BackToLibrary { get; set; }
         public string SearchPlaceholder { get; set; }
@@ -45,6 +46,7 @@ namespace Ee4v.FaceExpression
         private readonly string _defaultSectionTitle;
         private readonly string _libraryTitle;
         private readonly string _newClip;
+        private readonly string _copyAndEdit;
         private readonly string _noBlendShapes;
         private string _sectionTitle;
         private List<BlendShapeChannel> _channels = new List<BlendShapeChannel>();
@@ -65,6 +67,7 @@ namespace Ee4v.FaceExpression
             _defaultSectionTitle = text.BlendShapes ?? string.Empty;
             _libraryTitle = text.Library ?? string.Empty;
             _newClip = text.NewClip ?? string.Empty;
+            _copyAndEdit = text.CopyAndEdit ?? string.Empty;
             _noBlendShapes = text.NoBlendShapes ?? string.Empty;
             _sectionTitle = _defaultSectionTitle;
             AddToClassList("ee4v-face-expression");
@@ -204,6 +207,7 @@ namespace Ee4v.FaceExpression
         public event Action<GameObject> AvatarChanged;
         public event Action<AnimationClip> ClipChanged;
         public event Action NewClipRequested;
+        public event Action<AnimationClip> CopyClipRequested;
         public event Action BackRequested;
         public event Action<string> LibraryFolderRequested;
         public event Action<BlendShapeChannel> ChannelChanged;
@@ -334,10 +338,21 @@ namespace Ee4v.FaceExpression
             });
             preview.AddToClassList("ee4v-face-expression__library-preview");
             preview.pickingMode = PickingMode.Ignore;
-            return CreateLibraryItem(
+            var item = CreateLibraryItem(
                 clip.name,
                 () => ClipChanged?.Invoke(clip),
                 preview);
+            item.RegisterCallback<ContextClickEvent>(evt =>
+            {
+                var menu = new GenericMenu();
+                menu.AddItem(
+                    UiTextFactory.CreateGuiContent(_copyAndEdit),
+                    false,
+                    () => CopyClipRequested?.Invoke(clip));
+                menu.ShowAsContext();
+                evt.StopPropagation();
+            });
+            return item;
         }
 
         private VisualElement CreateIconLibraryItem(

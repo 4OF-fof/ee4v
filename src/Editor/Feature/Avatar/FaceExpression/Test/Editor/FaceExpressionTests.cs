@@ -344,6 +344,33 @@ namespace Ee4v.FaceExpression.Tests
         }
 
         [Test]
+        public void Copy_CreatesIndependentClipWithCurves()
+        {
+            var source = CreateClip(
+                "Source.anim",
+                ("blendShape.Smile", 80f));
+            var copy = FaceExpressionClipEditor.Copy(
+                source,
+                TestFolder + "/Source 1.anim");
+
+            Assert.That(copy, Is.Not.Null);
+            Assert.That(copy, Is.Not.SameAs(source));
+            Assert.That(copy.name, Is.EqualTo("Source 1"));
+            Assert.That(ReadValue(copy, "blendShape.Smile"), Is.EqualTo(80f));
+
+            FaceExpressionClipEditor.Write(
+                copy,
+                new BlendShapeChannel(
+                    "Body",
+                    "Smile",
+                    25f,
+                    true));
+
+            Assert.That(ReadValue(copy, "blendShape.Smile"), Is.EqualTo(25f));
+            Assert.That(ReadValue(source, "blendShape.Smile"), Is.EqualTo(80f));
+        }
+
+        [Test]
         public void Groups_FilterHeadersAndTreatAddedMeshesAsGroups()
         {
             var avatar = CreateAvatar(out var bodyMesh, "Smile");

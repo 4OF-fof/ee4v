@@ -197,6 +197,25 @@ namespace Ee4v.FaceExpression
             return clip;
         }
 
+        public static AnimationClip Copy(
+            AnimationClip source,
+            string assetPath)
+        {
+            if (source == null || string.IsNullOrWhiteSpace(assetPath))
+            {
+                return null;
+            }
+
+            var clip = new AnimationClip();
+            EditorUtility.CopySerialized(source, clip);
+            clip.name = System.IO.Path.GetFileNameWithoutExtension(assetPath);
+            clip.hideFlags = HideFlags.None;
+            AssetDatabase.CreateAsset(clip, assetPath);
+            Undo.RegisterCreatedObjectUndo(clip, "Copy Face Expression");
+            AssetDatabase.SaveAssets();
+            return clip;
+        }
+
         internal static bool TryGetHeader(
             string shapeName,
             IReadOnlyList<string> separators,

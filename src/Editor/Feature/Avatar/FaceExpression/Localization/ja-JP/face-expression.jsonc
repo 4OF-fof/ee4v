@@ -93,6 +93,7 @@
   },
   "action": {
     "newClip": "新規表情",
+    "copyAndEdit": "コピーして編集",
     "resetView": "表示をリセット",
     "backToLibrary": "戻る",
     "apply": "アバターに適用",

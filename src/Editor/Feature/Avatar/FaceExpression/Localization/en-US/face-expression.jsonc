@@ -93,6 +93,7 @@
   },
   "action": {
     "newClip": "New expression",
+    "copyAndEdit": "Copy and edit",
     "resetView": "Reset view",
     "backToLibrary": "Back",
     "apply": "Apply to Avatar",
