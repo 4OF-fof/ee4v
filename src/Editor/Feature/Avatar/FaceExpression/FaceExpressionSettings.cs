@@ -136,7 +136,8 @@ namespace Ee4v.FaceExpression
 
             var preset = BlendShapeNamePresetSetting.CreatePreset(
                 sourceFbx,
-                GetSeparators(settings));
+                GetSeparators(settings),
+                avatar);
             if (preset == null)
             {
                 return false;

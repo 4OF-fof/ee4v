@@ -178,6 +178,7 @@ namespace Ee4v.FaceExpression
             header.style.paddingBottom = 4f;
             header.Add(CreateHeaderText("presetWindow.source", 3.2f));
             header.Add(CreateHeaderText("presetWindow.side", 0.55f));
+            header.Add(CreateHeaderText("presetWindow.mouthMorph", 0.55f));
             return header;
         }
 
@@ -223,7 +224,8 @@ namespace Ee4v.FaceExpression
             _draft = saved == null
                 ? BlendShapeNamePresetSetting.CreatePreset(
                     sourceFbx,
-                    FaceExpressionSettings.GetSeparators(_settings))
+                    FaceExpressionSettings.GetSeparators(_settings),
+                    avatar)
                 : Clone(saved);
             if (_draft != null)
             {
@@ -672,7 +674,8 @@ namespace Ee4v.FaceExpression
 
             _draft = BlendShapeNamePresetSetting.CreatePreset(
                 _sourceFbxAsset,
-                FaceExpressionSettings.GetSeparators(_settings));
+                FaceExpressionSettings.GetSeparators(_settings),
+                _selectedAvatar);
             _dirty = true;
             Refresh();
             SetStatus(I18N.Get("presetWindow.autoClassified"));

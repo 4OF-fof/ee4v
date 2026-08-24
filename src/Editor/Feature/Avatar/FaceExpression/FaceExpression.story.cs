@@ -184,8 +184,9 @@ namespace Ee4v.FaceExpression
             row.Bind(new BlendShapeNameMapping
             {
                 meshName = "Body",
-                shapeName = "eye_blink_1_L",
-                side = "L"
+                shapeName = "mouth_smile_L",
+                side = "L",
+                mouthMorph = true
             });
             row.style.width = 620f;
             row.style.height = 34f;

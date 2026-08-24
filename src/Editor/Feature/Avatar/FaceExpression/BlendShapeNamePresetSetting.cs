@@ -35,6 +35,7 @@ namespace Ee4v.FaceExpression
         public string headerText;
         public string role;
         public string side;
+        public bool mouthMorph;
     }
 
     internal static class BlendShapeNamePresetSetting
@@ -88,7 +89,8 @@ namespace Ee4v.FaceExpression
 
         internal static BlendShapeFbxPreset CreatePreset(
             GameObject fbxAsset,
-            IReadOnlyList<string> separators)
+            IReadOnlyList<string> separators,
+            GameObject avatar = null)
         {
             var assetPath = AssetDatabase.GetAssetPath(fbxAsset);
             if (!IsFbxAssetPath(assetPath))
@@ -123,7 +125,40 @@ namespace Ee4v.FaceExpression
             }
 
             ApplyHeaders(preset, separators);
+            ApplyMouthMorphSuggestions(preset, avatar, separators);
             return preset;
+        }
+
+        private static void ApplyMouthMorphSuggestions(
+            BlendShapeFbxPreset preset,
+            GameObject avatar,
+            IReadOnlyList<string> separators)
+        {
+            if (!VrchatAvatarDescriptorAdapter.TryReadMouthMorphSuggestion(
+                    avatar,
+                    separators,
+                    out var mesh,
+                    out var shapeNames) ||
+                !AssetDatabase.TryGetGUIDAndLocalFileIdentifier(
+                    mesh,
+                    out var assetGuid,
+                    out long meshLocalId) ||
+                !string.Equals(
+                    preset.assetGuid,
+                    assetGuid,
+                    StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            var names = new HashSet<string>(
+                shapeNames,
+                StringComparer.Ordinal);
+            foreach (var mapping in preset.mappings)
+            {
+                mapping.mouthMorph = mapping.meshLocalId == meshLocalId &&
+                                     names.Contains(mapping.shapeName);
+            }
         }
 
         internal static void ApplyHeaders(

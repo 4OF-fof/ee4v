@@ -192,9 +192,14 @@ namespace Ee4v.FaceExpression
 
             for (var index = parameters.Count - 1; index >= 0; index--)
             {
+                var name = GetField(parameters[index], "nameOrPrefix") as string;
                 if (string.Equals(
-                        GetField(parameters[index], "nameOrPrefix") as string,
+                        name,
                         GestureMatrixControllerWriter.MenuParameter,
+                        StringComparison.Ordinal) ||
+                    string.Equals(
+                        name,
+                        GestureMatrixControllerWriter.MouthCancelParameter,
                         StringComparison.Ordinal))
                 {
                     parameters.RemoveAt(index);
@@ -215,6 +220,14 @@ namespace Ee4v.FaceExpression
             SetOptionalField(config, "saved", true);
             SetOptionalField(config, "hasExplicitDefaultValue", true);
             parameters.Add(config);
+
+            var mouthCancelConfig = Activator.CreateInstance(configType);
+            SetRequiredField(
+                mouthCancelConfig,
+                "nameOrPrefix",
+                GestureMatrixControllerWriter.MouthCancelParameter);
+            SetRequiredEnumField(mouthCancelConfig, "syncType", "NotSynced");
+            parameters.Add(mouthCancelConfig);
             field.SetValue(component, parameters);
             EditorUtility.SetDirty(component);
         }

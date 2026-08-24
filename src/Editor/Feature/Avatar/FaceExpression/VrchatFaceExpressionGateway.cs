@@ -60,10 +60,17 @@ namespace Ee4v.FaceExpression
                     avatar,
                     ensureFolders: true);
                 controller = GetOrCreateController(paths.ControllerPath);
+                FaceExpressionSettings.EnsureNamePreset(
+                    avatar,
+                    null,
+                    BlendShapePresetStorage.Shared);
+                var namingRule = FaceExpressionSettings.GetNameRule(
+                    BlendShapePresetStorage.Shared);
                 var avatarBindings = VrchatAvatarDescriptorAdapter.ReadBindings(
                     descriptor,
                     avatar,
-                    FaceExpressionSettings.GetSeparators());
+                    FaceExpressionSettings.GetSeparators(),
+                    namingRule);
                 GestureMatrixControllerWriter.Apply(
                     controller,
                     avatar,

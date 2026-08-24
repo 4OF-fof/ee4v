@@ -39,7 +39,8 @@ namespace Ee4v.FaceExpression
         internal static FaceExpressionAvatarBindings ReadBindings(
             Component descriptor,
             GameObject avatar,
-            IReadOnlyList<string> separators)
+            IReadOnlyList<string> separators,
+            BlendShapeNamingRule namingRule)
         {
             var serialized = new SerializedObject(descriptor);
             var eyeSettings = serialized.FindProperty("customEyeLookSettings");
@@ -83,7 +84,183 @@ namespace Ee4v.FaceExpression
                 avatar,
                 mouthRenderer,
                 serialized.FindProperty("MouthOpenBlendShapeName")?.stringValue);
-            return new FaceExpressionAvatarBindings(blink, eyes, mouth);
+            var mouthMorph = ReadPresetMouthMorphBindings(
+                avatar,
+                namingRule);
+            return new FaceExpressionAvatarBindings(
+                blink,
+                eyes,
+                mouth,
+                mouthMorph);
+        }
+
+        private static IReadOnlyList<EditorCurveBinding> ReadPresetMouthMorphBindings(
+            GameObject avatar,
+            BlendShapeNamingRule namingRule)
+        {
+            if (avatar == null || namingRule == null)
+            {
+                return Array.Empty<EditorCurveBinding>();
+            }
+
+            var result = new List<EditorCurveBinding>();
+            foreach (var renderer in avatar.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                var mesh = renderer.sharedMesh;
+                if (mesh == null ||
+                    !AssetDatabase.TryGetGUIDAndLocalFileIdentifier(
+                        mesh,
+                        out var assetGuid,
+                        out long meshLocalId))
+                {
+                    continue;
+                }
+
+                for (var index = 0; index < mesh.blendShapeCount; index++)
+                {
+                    var shapeName = mesh.GetBlendShapeName(index);
+                    if (namingRule.IsMouthMorph(
+                            assetGuid,
+                            meshLocalId,
+                            shapeName))
+                    {
+                        AddBinding(result, avatar, renderer, shapeName);
+                    }
+                }
+            }
+
+            return result
+                .GroupBy(BindingKey, StringComparer.Ordinal)
+                .Select(group => group.First())
+                .ToArray();
+        }
+
+        internal static bool TryReadMouthMorphSuggestion(
+            GameObject avatar,
+            IReadOnlyList<string> separators,
+            out Mesh mesh,
+            out IReadOnlyList<string> shapeNames)
+        {
+            mesh = null;
+            shapeNames = Array.Empty<string>();
+            var descriptor = FindDescriptor(avatar);
+            if (descriptor == null)
+            {
+                return false;
+            }
+
+            var serialized = new SerializedObject(descriptor);
+            var renderer = serialized.FindProperty("VisemeSkinnedMesh")
+                ?.objectReferenceValue as SkinnedMeshRenderer;
+            mesh = renderer == null ? null : renderer.sharedMesh;
+            if (mesh == null)
+            {
+                return false;
+            }
+
+            var mouthNames = new List<string>();
+            AddNames(
+                mouthNames,
+                serialized.FindProperty("VisemeBlendShapes"));
+            var mouthOpen = serialized.FindProperty("MouthOpenBlendShapeName")
+                ?.stringValue;
+            if (!string.IsNullOrWhiteSpace(mouthOpen))
+            {
+                mouthNames.Add(mouthOpen);
+            }
+
+            shapeNames = FindMouthMorphNames(
+                mesh,
+                mouthNames,
+                separators);
+            return true;
+        }
+
+        internal static IReadOnlyList<string> FindMouthMorphNames(
+            Mesh mesh,
+            IEnumerable<string> mouthNames,
+            IReadOnlyList<string> separators)
+        {
+            if (mesh == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            var excludedNames = new HashSet<string>(
+                mouthNames ?? Array.Empty<string>(),
+                StringComparer.Ordinal);
+            var groupRanges = new HashSet<(int Start, int End)>();
+            foreach (var mouthName in excludedNames)
+            {
+                var mouthIndex = mesh.GetBlendShapeIndex(mouthName);
+                var headerIndex = FindPreviousHeader(
+                    mesh,
+                    mouthIndex,
+                    separators);
+                if (headerIndex < 0)
+                {
+                    continue;
+                }
+
+                groupRanges.Add((
+                    headerIndex + 1,
+                    FindNextHeader(mesh, mouthIndex + 1, separators)));
+            }
+
+            var result = new List<string>();
+            foreach (var range in groupRanges.OrderBy(range => range.Start))
+            {
+                for (var index = range.Start; index < range.End; index++)
+                {
+                    var shapeName = mesh.GetBlendShapeName(index);
+                    if (!excludedNames.Contains(shapeName))
+                    {
+                        result.Add(shapeName);
+                    }
+                }
+            }
+
+            return result
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        private static int FindPreviousHeader(
+            Mesh mesh,
+            int startIndex,
+            IReadOnlyList<string> separators)
+        {
+            for (var index = startIndex - 1; index >= 0; index--)
+            {
+                if (FaceExpressionClipEditor.TryGetHeader(
+                        mesh.GetBlendShapeName(index),
+                        separators,
+                        out _))
+                {
+                    return index;
+                }
+            }
+
+            return -1;
+        }
+
+        private static int FindNextHeader(
+            Mesh mesh,
+            int startIndex,
+            IReadOnlyList<string> separators)
+        {
+            for (var index = startIndex; index < mesh.blendShapeCount; index++)
+            {
+                if (FaceExpressionClipEditor.TryGetHeader(
+                        mesh.GetBlendShapeName(index),
+                        separators,
+                        out _))
+                {
+                    return index;
+                }
+            }
+
+            return mesh.blendShapeCount;
         }
 
         private static Component FindDescriptor(GameObject avatar)
@@ -217,6 +394,25 @@ namespace Ee4v.FaceExpression
                     avatar,
                     renderer,
                     names.GetArrayElementAtIndex(index).stringValue);
+            }
+        }
+
+        private static void AddNames(
+            ICollection<string> result,
+            SerializedProperty names)
+        {
+            if (names == null || !names.isArray)
+            {
+                return;
+            }
+
+            for (var index = 0; index < names.arraySize; index++)
+            {
+                var name = names.GetArrayElementAtIndex(index).stringValue;
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    result.Add(name);
+                }
             }
         }
 

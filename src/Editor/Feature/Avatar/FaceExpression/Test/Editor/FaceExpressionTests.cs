@@ -74,7 +74,8 @@ namespace Ee4v.FaceExpression.Tests
                 var avatarBindings = new FaceExpressionAvatarBindings(
                     new[] { Binding("blendShape.Blink") },
                     new[] { Binding("blendShape.EyeLookUp") },
-                    new[] { Binding("blendShape.vrc.v_aa") });
+                    new[] { Binding("blendShape.vrc.v_aa") },
+                    new[] { Binding("blendShape.Smile") });
 
                 GestureMatrixControllerWriter.Apply(
                     controller,
@@ -159,7 +160,11 @@ namespace Ee4v.FaceExpression.Tests
                 Assert.That(
                     ReadValue(fistClip, "blendShape.LegacyGesture"),
                     Is.EqualTo(12f));
-                Assert.That(ReadValue(fistClip, "blendShape.vrc.v_aa"), Is.EqualTo(60f));
+                Assert.That(
+                    AnimationUtility.GetEditorCurve(
+                        fistClip,
+                        Binding("blendShape.vrc.v_aa")),
+                    Is.Null);
                 Assert.That(fist.transitions, Is.Empty);
                 Assert.That(
                     layer.stateMachine.states.Count(child =>
@@ -236,6 +241,35 @@ namespace Ee4v.FaceExpression.Tests
                 var victoryClip = (AnimationClip)victory.motion;
                 Assert.That(ReadValue(victoryClip, "blendShape.Blink"), Is.EqualTo(75f));
                 Assert.That(ReadValue(victoryClip, "blendShape.vrc.v_aa"), Is.EqualTo(55f));
+                var mouthCancelLayer = controller.layers.Single(candidate =>
+                    candidate.name == GestureMatrixControllerWriter.MouthCancelLayerName);
+                Assert.That(mouthCancelLayer.defaultWeight, Is.EqualTo(1f));
+                Assert.That(
+                    mouthCancelLayer.stateMachine.defaultState.name,
+                    Is.EqualTo("Disabled"));
+                var mouthCancelState = mouthCancelLayer.stateMachine.states
+                    .Select(child => child.state)
+                    .Single(state => state.name == "Enabled");
+                Assert.That(
+                    ReadValue(
+                        (AnimationClip)mouthCancelState.motion,
+                        "blendShape.Smile"),
+                    Is.Zero);
+                Assert.That(
+                    mouthCancelLayer.stateMachine.defaultState.transitions
+                        .Single().conditions.Select(condition =>
+                            (condition.parameter, condition.mode, condition.threshold)),
+                    Is.EquivalentTo(new[]
+                    {
+                        (
+                            "Voice",
+                            AnimatorConditionMode.Greater,
+                            0.01f),
+                        (
+                            GestureMatrixControllerWriter.MouthCancelParameter,
+                            AnimatorConditionMode.If,
+                            0f)
+                    }));
                 Assert.That(
                     controller.layers.Any(candidate =>
                         candidate.name == GestureMatrixControllerWriter.MenuLayerName),
@@ -340,6 +374,31 @@ namespace Ee4v.FaceExpression.Tests
                 Object.DestroyImmediate(avatar);
                 Object.DestroyImmediate(mesh);
                 Object.DestroyImmediate(accessoryMesh);
+            }
+        }
+
+        [Test]
+        public void MouthMorphBindings_UseVisemeGroupWithoutVisemes()
+        {
+            var mesh = CreateMesh(
+                "---MOUTH---",
+                "Smile",
+                "vrc.v_aa",
+                "Pout",
+                "---EYE---",
+                "Blink");
+            try
+            {
+                Assert.That(
+                    VrchatAvatarDescriptorAdapter.FindMouthMorphNames(
+                        mesh,
+                        new[] { "vrc.v_aa" },
+                        new[] { "-" }),
+                    Is.EqualTo(new[] { "Smile", "Pout" }));
+            }
+            finally
+            {
+                Object.DestroyImmediate(mesh);
             }
         }
 
@@ -581,6 +640,7 @@ namespace Ee4v.FaceExpression.Tests
                 "Body",
                 "eye_blink_2_R");
             mapping.role = "manual blink";
+            mapping.mouthMorph = true;
             var preset = new BlendShapeFbxPreset
             {
                 assetGuid = "fbx-guid",
@@ -604,6 +664,18 @@ namespace Ee4v.FaceExpression.Tests
                 Assert.That(rule.TryParse(channel, out var parsed), Is.True);
                 Assert.That(parsed.Role, Is.EqualTo("manual blink"));
                 Assert.That(parsed.Side, Is.EqualTo("R"));
+                Assert.That(
+                    rule.IsMouthMorph(
+                        "fbx-guid",
+                        123L,
+                        "eye_blink_2_R"),
+                    Is.True);
+                Assert.That(
+                    rule.IsMouthMorph(
+                        "different-fbx",
+                        123L,
+                        "eye_blink_2_R"),
+                    Is.False);
                 Assert.That(
                     rule.TryParse(
                         new BlendShapeChannel(

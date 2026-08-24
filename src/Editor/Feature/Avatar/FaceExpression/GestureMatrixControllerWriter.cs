@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -103,16 +105,19 @@ namespace Ee4v.FaceExpression
         public FaceExpressionAvatarBindings(
             IReadOnlyList<EditorCurveBinding> blink,
             IReadOnlyList<EditorCurveBinding> eyes,
-            IReadOnlyList<EditorCurveBinding> mouth)
+            IReadOnlyList<EditorCurveBinding> mouth,
+            IReadOnlyList<EditorCurveBinding> mouthMorph = null)
         {
             Blink = blink ?? Array.Empty<EditorCurveBinding>();
             Eyes = eyes ?? Array.Empty<EditorCurveBinding>();
             Mouth = mouth ?? Array.Empty<EditorCurveBinding>();
+            MouthMorph = mouthMorph ?? Array.Empty<EditorCurveBinding>();
         }
 
         public IReadOnlyList<EditorCurveBinding> Blink { get; }
         public IReadOnlyList<EditorCurveBinding> Eyes { get; }
         public IReadOnlyList<EditorCurveBinding> Mouth { get; }
+        public IReadOnlyList<EditorCurveBinding> MouthMorph { get; }
 
         public static FaceExpressionAvatarBindings Empty { get; } =
             new FaceExpressionAvatarBindings(null, null, null);
@@ -122,11 +127,16 @@ namespace Ee4v.FaceExpression
     {
         internal const string LayerName = "ee4v Face Expressions";
         internal const string MenuLayerName = "ee4v Face Expression Menu";
+        internal const string MouthCancelLayerName = "ee4v Mouth Morph Canceller";
         internal const string MenuParameter = "ee4v/FaceExpression";
+        internal const string MouthCancelParameter = "ee4v/MouthMorphCancel";
+        private const string VoiceParameter = "Voice";
         private const string GestureLeft = "GestureLeft";
         private const string GestureRight = "GestureRight";
-        private const string StateTagPrefix = "ee4v-face:3:";
-        private const string MenuTagPrefix = "ee4v-menu:1:";
+        private const string StateTagPrefix = "ee4v-face:5:";
+        private const string MenuTagPrefix = "ee4v-menu:3:";
+        private const float VoiceThreshold = 0.01f;
+        private const float MouthCancelTransitionSeconds = 0.1f;
         private const int BlinkCountPerCycle = 12;
         private const float BlinkMinimumIntervalSeconds = 3f;
         private const float BlinkMaximumIntervalSeconds = 8f;
@@ -136,6 +146,11 @@ namespace Ee4v.FaceExpression
         {
             "VRC.SDKBase.VRC_AnimatorTrackingControl",
             "VRC.SDK3.Avatars.Components.VRCAnimatorTrackingControl"
+        };
+        private static readonly string[] ParameterDriverTypeNames =
+        {
+            "VRC.SDK3.Avatars.Components.VRCAvatarParameterDriver",
+            "VRC.SDKBase.VRC_AvatarParameterDriver"
         };
         public static bool OwnsLayer(AnimatorController controller)
         {
@@ -241,8 +256,21 @@ namespace Ee4v.FaceExpression
             EnsureParameter(controller, GestureLeft);
             EnsureParameter(controller, GestureRight);
             EnsureParameter(controller, MenuParameter);
+            var hasMouthMorphs = avatarBindings.MouthMorph.Count > 0;
+            if (hasMouthMorphs)
+            {
+                EnsureParameter(
+                    controller,
+                    MouthCancelParameter,
+                    AnimatorControllerParameterType.Bool);
+                EnsureParameter(
+                    controller,
+                    VoiceParameter,
+                    AnimatorControllerParameterType.Float);
+            }
             RemoveOwnedLayer(controller);
             RemoveLayer(controller, MenuLayerName);
+            RemoveLayer(controller, MouthCancelLayerName);
 
             var configured = new Dictionary<GestureCombination, FaceExpressionAssignment>();
             foreach (FaceGesture left in Enum.GetValues(typeof(FaceGesture)))
@@ -303,7 +331,8 @@ namespace Ee4v.FaceExpression
                 neutralKey,
                 motions[neutralKey],
                 configured[neutralKey],
-                effectiveAssignments[neutralKey]);
+                effectiveAssignments[neutralKey],
+                hasMouthMorphs);
             stateMachine.defaultState = neutral;
 
             foreach (var pair in Order(configured).Where(pair => !pair.Key.Equals(neutralKey)))
@@ -313,7 +342,8 @@ namespace Ee4v.FaceExpression
                     pair.Key,
                     motions[pair.Key],
                     pair.Value,
-                    effectiveAssignments[pair.Key]);
+                    effectiveAssignments[pair.Key],
+                    hasMouthMorphs);
                 AddAnyStateTransition(stateMachine, state, pair.Key);
             }
 
@@ -331,8 +361,16 @@ namespace Ee4v.FaceExpression
                     avatarBindings,
                     outputFolder,
                     normalizedMotions,
-                    usedGeneratedClipPaths);
+                    usedGeneratedClipPaths,
+                    hasMouthMorphs);
             }
+
+            AddMouthCancelLayer(
+                controller,
+                avatar,
+                avatarBindings.MouthMorph,
+                outputFolder,
+                usedGeneratedClipPaths);
 
             DeleteUnusedGeneratedClips(
                 controller,
@@ -390,7 +428,8 @@ namespace Ee4v.FaceExpression
             GestureCombination combination,
             AnimationClip motion,
             FaceExpressionAssignment storedAssignment,
-            FaceExpressionAssignment effectiveAssignment)
+            FaceExpressionAssignment effectiveAssignment,
+            bool enableMouthCanceller)
         {
             var state = stateMachine.AddState(
                 ((int)combination.Left).ToString("00") + "-" +
@@ -400,6 +439,10 @@ namespace Ee4v.FaceExpression
             state.writeDefaultValues = false;
             state.tag = CreateTag(combination, storedAssignment);
             ConfigureTracking(state, effectiveAssignment);
+            if (enableMouthCanceller)
+            {
+                ConfigureMouthMorphCanceller(state, effectiveAssignment);
+            }
             return state;
         }
 
@@ -432,7 +475,8 @@ namespace Ee4v.FaceExpression
             FaceExpressionAvatarBindings avatarBindings,
             string outputFolder,
             IDictionary<NormalizedMotionKey, AnimationClip> normalizedMotions,
-            ISet<string> usedGeneratedClipPaths)
+            ISet<string> usedGeneratedClipPaths,
+            bool enableMouthCanceller)
         {
             for (var index = 0; index < entries.Count; index++)
             {
@@ -453,6 +497,12 @@ namespace Ee4v.FaceExpression
                 state.writeDefaultValues = false;
                 state.tag = CreateMenuTag(item);
                 ConfigureTracking(state, item.Entry.Assignment);
+                if (enableMouthCanceller)
+                {
+                    ConfigureMouthMorphCanceller(
+                        state,
+                        item.Entry.Assignment);
+                }
 
                 var activate = stateMachine.AddAnyStateTransition(state);
                 ConfigureTransition(activate);
@@ -473,20 +523,24 @@ namespace Ee4v.FaceExpression
             transition.offset = 0f;
         }
 
-        private static void EnsureParameter(AnimatorController controller, string name)
+        private static void EnsureParameter(
+            AnimatorController controller,
+            string name,
+            AnimatorControllerParameterType type = AnimatorControllerParameterType.Int)
         {
             var parameter = controller.parameters.FirstOrDefault(candidate => candidate.name == name);
             if (parameter != null)
             {
-                if (parameter.type != AnimatorControllerParameterType.Int)
+                if (parameter.type != type)
                 {
-                    throw new InvalidOperationException(name + " must be an Int parameter.");
+                    throw new InvalidOperationException(
+                        name + " must be a " + type + " parameter.");
                 }
 
                 return;
             }
 
-            controller.AddParameter(name, AnimatorControllerParameterType.Int);
+            controller.AddParameter(name, type);
         }
 
         private static void RemoveOwnedLayer(AnimatorController controller)
@@ -522,6 +576,7 @@ namespace Ee4v.FaceExpression
             AddBindings(result, avatarBindings.Blink);
             AddBindings(result, avatarBindings.Eyes);
             AddBindings(result, avatarBindings.Mouth);
+            AddBindings(result, avatarBindings.MouthMorph);
             foreach (var assignment in assignments)
             {
                 if (assignment.Clip != null)
@@ -632,15 +687,23 @@ namespace Ee4v.FaceExpression
             var eyeKeys = new HashSet<string>(
                 avatarBindings.Eyes.Select(BindingKey),
                 StringComparer.Ordinal);
+            var mouthKeys = new HashSet<string>(
+                avatarBindings.Mouth.Select(BindingKey),
+                StringComparer.Ordinal);
             var animateBlink = assignment.EnableBlink && blinkKeys.Count > 0;
             var blinkSchedule = animateBlink ? CreateBlinkSchedule() : null;
             foreach (var binding in bindings)
             {
+                var key = BindingKey(binding);
+                if (!assignment.FixMouth && mouthKeys.Contains(key))
+                {
+                    continue;
+                }
+
                 var curve = assignment.Clip == null
                     ? null
                     : AnimationUtility.GetEditorCurve(assignment.Clip, binding);
                 var value = curve == null ? GetDefaultValue(avatar, binding) : curve.Evaluate(0f);
-                var key = BindingKey(binding);
                 AnimationCurve generatedCurve;
                 if (animateBlink && blinkKeys.Contains(key))
                 {
@@ -793,6 +856,210 @@ namespace Ee4v.FaceExpression
             EditorUtility.SetDirty(behaviour);
         }
 
+        private static void ConfigureMouthMorphCanceller(
+            AnimatorState state,
+            FaceExpressionAssignment assignment)
+        {
+            var type = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(assembly => ParameterDriverTypeNames.Select(name =>
+                    assembly.GetType(name, false)))
+                .FirstOrDefault(candidate =>
+                    candidate != null &&
+                    typeof(StateMachineBehaviour).IsAssignableFrom(candidate) &&
+                    !candidate.IsAbstract);
+            if (type == null)
+            {
+                return;
+            }
+
+            var behaviour = state.AddStateMachineBehaviour(type);
+            if (behaviour == null)
+            {
+                throw new InvalidOperationException(
+                    type.FullName + " could not be added to the Animator state.");
+            }
+
+            var parametersField = behaviour.GetType().GetField(
+                "parameters",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var parameterType = parametersField?.FieldType
+                .GetGenericArguments()
+                .FirstOrDefault();
+            if (parametersField == null || parameterType == null)
+            {
+                throw new InvalidOperationException(
+                    type.FullName + ".parameters was not found.");
+            }
+
+            var parameters = parametersField.GetValue(behaviour) as IList ??
+                             (IList)Activator.CreateInstance(parametersField.FieldType);
+            var parameter = Activator.CreateInstance(parameterType);
+            SetDriverField(parameter, "name", MouthCancelParameter);
+            SetDriverEnumField(parameter, "type", "Set");
+            SetDriverField(
+                parameter,
+                "value",
+                assignment.FixMouth ? 0f : 1f);
+            parameters.Add(parameter);
+            parametersField.SetValue(behaviour, parameters);
+            EditorUtility.SetDirty(behaviour);
+        }
+
+        private static void SetDriverField(
+            object target,
+            string name,
+            object value)
+        {
+            var field = target.GetType().GetField(
+                name,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (field == null)
+            {
+                throw new InvalidOperationException(
+                    target.GetType().FullName + "." + name + " was not found.");
+            }
+
+            field.SetValue(target, value);
+        }
+
+        private static void SetDriverEnumField(
+            object target,
+            string name,
+            string value)
+        {
+            var field = target.GetType().GetField(
+                name,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (field == null || !field.FieldType.IsEnum)
+            {
+                throw new InvalidOperationException(
+                    target.GetType().FullName + "." + name + " was not found.");
+            }
+
+            field.SetValue(target, Enum.Parse(field.FieldType, value));
+        }
+
+        private static void AddMouthCancelLayer(
+            AnimatorController controller,
+            GameObject avatar,
+            IReadOnlyList<EditorCurveBinding> bindings,
+            string outputFolder,
+            ISet<string> usedGeneratedClipPaths)
+        {
+            if (bindings.Count == 0)
+            {
+                return;
+            }
+
+            var motion = CreateMouthCancelClip(
+                controller,
+                avatar,
+                bindings,
+                outputFolder);
+            usedGeneratedClipPaths.Add(AssetDatabase.GetAssetPath(motion));
+
+            var stateMachine = new AnimatorStateMachine
+            {
+                name = MouthCancelLayerName
+            };
+            AssetDatabase.AddObjectToAsset(stateMachine, controller);
+            Undo.RegisterCreatedObjectUndo(
+                stateMachine,
+                "Create Mouth Morph Canceller Layer");
+            controller.AddLayer(new AnimatorControllerLayer
+            {
+                name = MouthCancelLayerName,
+                defaultWeight = 1f,
+                stateMachine = stateMachine
+            });
+
+            var disabled = stateMachine.AddState("Disabled");
+            disabled.writeDefaultValues = false;
+            var enabled = stateMachine.AddState("Enabled");
+            enabled.motion = motion;
+            enabled.writeDefaultValues = false;
+            stateMachine.defaultState = disabled;
+
+            var enable = disabled.AddTransition(enabled);
+            ConfigureTransition(enable);
+            enable.duration = MouthCancelTransitionSeconds;
+            enable.AddCondition(
+                AnimatorConditionMode.Greater,
+                VoiceThreshold,
+                VoiceParameter);
+            enable.AddCondition(
+                AnimatorConditionMode.If,
+                0f,
+                MouthCancelParameter);
+
+            var stopSpeaking = enabled.AddTransition(disabled);
+            ConfigureTransition(stopSpeaking);
+            stopSpeaking.duration = MouthCancelTransitionSeconds;
+            stopSpeaking.AddCondition(
+                AnimatorConditionMode.Less,
+                VoiceThreshold,
+                VoiceParameter);
+
+            var disable = enabled.AddTransition(disabled);
+            ConfigureTransition(disable);
+            disable.duration = MouthCancelTransitionSeconds;
+            disable.AddCondition(
+                AnimatorConditionMode.IfNot,
+                0f,
+                MouthCancelParameter);
+            EditorUtility.SetDirty(stateMachine);
+        }
+
+        private static AnimationClip CreateMouthCancelClip(
+            AnimatorController controller,
+            GameObject avatar,
+            IReadOnlyList<EditorCurveBinding> bindings,
+            string outputFolder)
+        {
+            var controllerPath = AssetDatabase.GetAssetPath(controller);
+            var prefix = Path.GetFileNameWithoutExtension(controllerPath);
+            var assetPath = outputFolder.TrimEnd('/') + "/" + prefix +
+                            " Mouth Cancel.anim";
+            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(assetPath);
+            if (clip == null)
+            {
+                clip = new AnimationClip
+                {
+                    name = Path.GetFileNameWithoutExtension(assetPath),
+                    frameRate = 60f
+                };
+                AssetDatabase.CreateAsset(clip, assetPath);
+                Undo.RegisterCreatedObjectUndo(
+                    clip,
+                    "Create Mouth Morph Canceller Clip");
+            }
+            else
+            {
+                Undo.RecordObject(clip, "Update Mouth Morph Canceller Clip");
+                foreach (var oldBinding in AnimationUtility.GetCurveBindings(clip))
+                {
+                    AnimationUtility.SetEditorCurve(clip, oldBinding, null);
+                }
+            }
+
+            foreach (var binding in bindings)
+            {
+                AnimationUtility.SetEditorCurve(
+                    clip,
+                    binding,
+                    AnimationCurve.Constant(
+                        0f,
+                        1f / clip.frameRate,
+                        GetDefaultValue(avatar, binding)));
+            }
+
+            var settings = AnimationUtility.GetAnimationClipSettings(clip);
+            settings.loopTime = false;
+            AnimationUtility.SetAnimationClipSettings(clip, settings);
+            EditorUtility.SetDirty(clip);
+            return clip;
+        }
+
         private static AnimationClip GetOrCreateNormalizedMotion(
             AnimatorController controller,
             GameObject avatar,
@@ -845,6 +1112,7 @@ namespace Ee4v.FaceExpression
 
                 var name = Path.GetFileNameWithoutExtension(path);
                 if (name.StartsWith(prefix + "Motion ", StringComparison.Ordinal) ||
+                    name.Equals(prefix + "Mouth Cancel", StringComparison.Ordinal) ||
                     name.StartsWith(prefix + "L", StringComparison.Ordinal) ||
                     name.StartsWith(prefix + "M", StringComparison.Ordinal))
                 {
@@ -971,7 +1239,8 @@ namespace Ee4v.FaceExpression
         {
             entry = null;
             isExplicit = false;
-            if (string.IsNullOrEmpty(tag) || !tag.StartsWith(MenuTagPrefix, StringComparison.Ordinal))
+            if (string.IsNullOrEmpty(tag) ||
+                !tag.StartsWith(MenuTagPrefix, StringComparison.Ordinal))
             {
                 return false;
             }
@@ -1072,14 +1341,18 @@ namespace Ee4v.FaceExpression
             {
                 Clip = assignment.Clip;
                 EnableBlink = assignment.EnableBlink;
+                FixMouth = assignment.FixMouth;
             }
 
             private AnimationClip Clip { get; }
             private bool EnableBlink { get; }
+            private bool FixMouth { get; }
 
             public bool Equals(NormalizedMotionKey other)
             {
-                return Clip == other.Clip && EnableBlink == other.EnableBlink;
+                return Clip == other.Clip &&
+                       EnableBlink == other.EnableBlink &&
+                       FixMouth == other.FixMouth;
             }
 
             public override bool Equals(object obj)
@@ -1092,7 +1365,8 @@ namespace Ee4v.FaceExpression
                 unchecked
                 {
                     var hash = Clip == null ? 0 : Clip.GetInstanceID();
-                    return (hash * 397) ^ EnableBlink.GetHashCode();
+                    hash = (hash * 397) ^ EnableBlink.GetHashCode();
+                    return (hash * 397) ^ FixMouth.GetHashCode();
                 }
             }
         }

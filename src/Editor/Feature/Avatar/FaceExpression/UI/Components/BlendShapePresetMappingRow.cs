@@ -18,6 +18,7 @@ namespace Ee4v.FaceExpression
             BlendShapeNameMapping> _drop;
         private readonly UiTextElement _source;
         private readonly PopupField<string> _side;
+        private readonly Toggle _mouthMorph;
         private BlendShapeNameMapping _mapping;
         private bool _binding;
 
@@ -64,6 +65,12 @@ namespace Ee4v.FaceExpression
             _side.RegisterValueChangedCallback(evt => Change(
                 mapping => mapping.side = evt.newValue));
             Add(_side);
+
+            _mouthMorph = UiTextFactory.CreateToggle();
+            Configure(_mouthMorph, 0.55f);
+            _mouthMorph.RegisterValueChangedCallback(evt => Change(
+                mapping => mapping.mouthMorph = evt.newValue));
+            Add(_mouthMorph);
         }
 
         internal void Bind(BlendShapeNameMapping mapping)
@@ -75,6 +82,7 @@ namespace Ee4v.FaceExpression
                 ? mapping.side
                 : string.Empty;
             _side.SetValueWithoutNotify(side);
+            _mouthMorph.SetValueWithoutNotify(mapping.mouthMorph);
             _binding = false;
         }
 

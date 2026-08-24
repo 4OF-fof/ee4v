@@ -50,13 +50,14 @@
 
 | テスト | 保証する契約 | 残す理由 |
 | --- | --- | --- |
-| `Apply_GeneratesGestureMatrixAndControlsBlinkAndMouthBindings` | 左右ジェスチャーとExpression Menuを排他的に遷移させ、未割り当てをNeutral＋Neutralへ戻し、顔メッシュの未指定BlendShapeを既定値で上書きする。まばたき有効時は3〜8秒間隔で表情のBlink値から100へ往復し、同時に競合する目の値を0へ戻す | メニューとジェスチャーの競合、未割り当ての既定表情、元FXからの表情値残り、生成物の重複、表情値を基準にした瞬きとリップシンク制御の契約は元クリップの確認だけでは検出できない |
+| `Apply_GeneratesGestureMatrixAndControlsBlinkAndMouthBindings` | 左右ジェスチャーとExpression Menuを排他的に遷移させ、未割り当てをNeutral＋Neutralへ戻し、顔メッシュの未指定BlendShapeを既定値で上書きする。まばたき有効時は3〜8秒間隔で表情のBlink値から100へ往復する。口固定が無効ならVisemeカーブを除外し、`Voice`が発話を示す間はプリセットで口形状に指定したBlendShapeを既定値へ戻す | メニューとジェスチャーの競合、未割り当ての既定表情、元FXからの表情値残り、生成物の重複、表情値を基準にした瞬きとリップシンク制御の契約は元クリップの確認だけでは検出できない |
+| `MouthMorphBindings_UseVisemeGroupWithoutVisemes` | プリセットの初期候補として、Visemeと同じ区切り見出し内のBlendShapeだけを口形状にし、Viseme自体と次の見出し以降を除外する | 自動分類の範囲が広がると目などの表情まで口形状として保存されるため、生成クリップだけでは誤分類を特定できない |
 | `Read_ConvertsHeadersAndIncludesSelectedMeshes` | 複数の区切り文字をヘッダーとして読み、グループウィンドウで選択した各RendererパスのBlendShapeを列挙する | 複数メッシュの同名BlendShapeを正しいAnimationカーブへ結ぶ契約を維持する |
 | `BlendShapeRows_GroupOnlyNormalAndSides` | FBX別プリセットで同じ見出し内の役割について通常、L、Rだけを1行へまとめ、番号などが異なる役割は別行にする | 左右以外の名前まで誤って同じカーブ選択へまとめる問題は実名一覧だけでは検出できない |
 | `BlendShapeRows_KeepClipChannelsSeparate` | FBX別プリセットで対応した各BlendShapeを個別行にし、左右指定を読み取り専用のトグルで示す | クリップ内表示で使用中カーブが再集約される問題と、固定値の表示位置が通常表示からずれる問題を防ぐ |
 | `BlendShapeClipboard_PastesMatchingNamesWithoutUsingIndices` | 表情のBodyからコピーした値を、並び順ではなく名前が一致するPrefabのBlendShapeだけへ貼り付ける | アバター間でBlendShapeの順序や構成が異なるとき、別の表情値を上書きする問題は同一メッシュへの貼り付けだけでは検出できない |
 | `BlendShapePresetClassifier_SeedsSupportedAvatarConventions` | Chiffon、Kipfel、Shinano、Manukaの命名形式から役割と左右指定の初期分類を作る | 左右表記だけを役割名から除き、番号や括弧表記を維持する条件は一覧表示だけでは確認できない |
-| `BlendShapePresets_RoundTripManualFbxMapping` | `<FBX名>.json`へFBXとメッシュに結び付いた手動分類を保存して復元し、別FBXには適用しない | 再起動後や複数FBX利用時のファイル形式と対応表の取り違えは設定画面だけでは確認できない |
+| `BlendShapePresets_RoundTripManualFbxMapping` | `<FBX名>.json`へFBXとメッシュに結び付いた手動分類と口形状指定を保存して復元し、別FBXには適用しない | 再起動後や複数FBX利用時のファイル形式と対応表の取り違えは設定画面だけでは確認できない |
 | `Groups_FilterHeadersAndTreatAddedMeshesAsGroups` | ヘッダー間の分類に加え、追加メッシュをメッシュ名のグループとして絞り込む | 追加メッシュのShapeが別Groupへ混入する問題と、メッシュ全体を選べない問題を防ぐ |
 
 ## Core
