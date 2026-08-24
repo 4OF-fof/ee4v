@@ -50,7 +50,7 @@
 
 | テスト | 保証する契約 | 残す理由 |
 | --- | --- | --- |
-| `Apply_GeneratesGestureMatrixAndControlsBlinkAndMouthBindings` | 左右ジェスチャーとExpression Menuを排他的に遷移させ、未割り当てをNeutral＋Neutralへ戻し、顔メッシュの未指定BlendShapeを既定値で上書きする。まばたき有効時は3〜8秒間隔で表情のBlink値から100へ往復する。口固定が無効ならVisemeカーブを除外し、`Voice`が発話を示す間はプリセットで口形状に指定したBlendShapeを既定値へ戻す | メニューとジェスチャーの競合、未割り当ての既定表情、元FXからの表情値残り、生成物の重複、表情値を基準にした瞬きとリップシンク制御の契約は元クリップの確認だけでは検出できない |
+| `Apply_GeneratesGestureMatrixAndControlsBlinkAndMouthBindings` | 左右ジェスチャーとExpression Menuを排他的に遷移させ、未割り当てをNeutral＋Neutralへ戻し、顔メッシュの未指定BlendShapeを既定値で上書きする。まばたき有効時は3〜8秒間隔で表情のBlink値から100へ往復する。口固定が無効ならVisemeカーブを除外し、`Voice`駆動Blend Treeで発話中だけプリセットの口形状を既定値へ戻し、`Voice`が戻ると元の表情Motionへ戻す | メニューとジェスチャーの競合、未割り当ての既定表情、元FXからの表情値残り、生成物の重複、表情値を基準にした瞬きとリップシンク制御の契約は元クリップの確認だけでは検出できない |
 | `MouthMorphBindings_UseVisemeGroupWithoutVisemes` | プリセットの初期候補として、Visemeと同じ区切り見出し内のBlendShapeだけを口形状にし、Viseme自体と次の見出し以降を除外する | 自動分類の範囲が広がると目などの表情まで口形状として保存されるため、生成クリップだけでは誤分類を特定できない |
 | `Read_ConvertsHeadersAndIncludesSelectedMeshes` | 複数の区切り文字をヘッダーとして読み、グループウィンドウで選択した各RendererパスのBlendShapeを列挙する | 複数メッシュの同名BlendShapeを正しいAnimationカーブへ結ぶ契約を維持する |
 | `BlendShapeRows_GroupOnlyNormalAndSides` | FBX別プリセットで同じ見出し内の役割について通常、L、Rだけを1行へまとめ、番号などが異なる役割は別行にする | 左右以外の名前まで誤って同じカーブ選択へまとめる問題は実名一覧だけでは検出できない |

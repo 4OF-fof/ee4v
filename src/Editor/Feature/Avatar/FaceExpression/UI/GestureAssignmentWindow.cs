@@ -40,7 +40,9 @@ namespace Ee4v.FaceExpression
             I18N.Reloaded += Rebuild;
             Undo.undoRedoPerformed += ClearThumbnails;
             EditorApplication.projectChanged += ClearThumbnails;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             _preview = new FaceExpressionPreview(Repaint);
+            RestorePreview();
         }
 
         private void OnDisable()
@@ -48,6 +50,7 @@ namespace Ee4v.FaceExpression
             I18N.Reloaded -= Rebuild;
             Undo.undoRedoPerformed -= ClearThumbnails;
             EditorApplication.projectChanged -= ClearThumbnails;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             ClearThumbnails();
             _preview?.Dispose();
             _preview = null;
@@ -108,6 +111,22 @@ namespace Ee4v.FaceExpression
             _preview?.SetAvatar(avatar);
             _previewRendererPaths = FaceExpressionClipEditor.GetRendererPaths(avatar);
             RefreshAssignments();
+        }
+
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.EnteredEditMode ||
+                state == PlayModeStateChange.EnteredPlayMode)
+            {
+                RestorePreview();
+            }
+        }
+
+        private void RestorePreview()
+        {
+            ClearThumbnails();
+            _preview?.SetAvatar(_avatar);
+            _previewRendererPaths = FaceExpressionClipEditor.GetRendererPaths(_avatar);
         }
 
         private void DrawThumbnail(AnimationClip clip, Rect rect)

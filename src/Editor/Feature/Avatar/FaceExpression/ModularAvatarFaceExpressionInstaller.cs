@@ -100,7 +100,7 @@ namespace Ee4v.FaceExpression
                 }
             }
 
-            if (PrefabUtility.IsOutermostPrefabInstanceRoot(root))
+            if (PrefabUtility.IsAnyPrefabInstanceRoot(root))
             {
                 PrefabUtility.UnpackPrefabInstance(
                     root,
@@ -221,13 +221,6 @@ namespace Ee4v.FaceExpression
             SetOptionalField(config, "hasExplicitDefaultValue", true);
             parameters.Add(config);
 
-            var mouthCancelConfig = Activator.CreateInstance(configType);
-            SetRequiredField(
-                mouthCancelConfig,
-                "nameOrPrefix",
-                GestureMatrixControllerWriter.MouthCancelParameter);
-            SetRequiredEnumField(mouthCancelConfig, "syncType", "NotSynced");
-            parameters.Add(mouthCancelConfig);
             field.SetValue(component, parameters);
             EditorUtility.SetDirty(component);
         }

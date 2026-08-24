@@ -27,9 +27,31 @@ namespace Ee4v.FaceExpression
                 throw new InvalidOperationException("VRCExpressionsMenu was not found.");
             }
 
-            AssetDatabase.DeleteAsset(assetPath);
-            var container = ScriptableObject.CreateInstance(menuType);
-            AssetDatabase.CreateAsset(container, assetPath);
+            var existing = AssetDatabase.LoadMainAssetAtPath(assetPath);
+            if (existing != null && existing.GetType() != menuType)
+            {
+                AssetDatabase.DeleteAsset(assetPath);
+                existing = null;
+            }
+
+            var container = existing as ScriptableObject;
+            if (container == null)
+            {
+                container = ScriptableObject.CreateInstance(menuType);
+                AssetDatabase.CreateAsset(container, assetPath);
+            }
+            else
+            {
+                Undo.RecordObject(container, "Update Face Expression Menu");
+                GetControls(container).Clear();
+                foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(assetPath))
+                {
+                    if (asset != container)
+                    {
+                        UnityEngine.Object.DestroyImmediate(asset, true);
+                    }
+                }
+            }
 
             var subMenus = new List<ScriptableObject>();
             var facialItems = BuildFacialItems(

@@ -149,8 +149,21 @@ namespace Ee4v.FaceExpression.Tests
                 var fist = layer.stateMachine.states
                     .Select(child => child.state)
                     .Single(state => state.name == "01-02 Fist + Open");
-                var fistClip = (AnimationClip)fist.motion;
+                var fistTree = (BlendTree)fist.motion;
+                Assert.That(fistTree.blendParameter, Is.EqualTo("Voice"));
+                Assert.That(
+                    fistTree.children.Select(child => child.threshold),
+                    Is.EqualTo(new[] { 0f, 0.01f, 0.0101f, 1f })
+                        .Within(0.00001f));
+                var fistClip = (AnimationClip)fistTree.children[0].motion;
+                var fistMouthNeutral = (AnimationClip)fistTree.children[2].motion;
                 Assert.That(ReadValue(fistClip, "blendShape.Smile"), Is.EqualTo(80f));
+                Assert.That(
+                    ReadValue(fistMouthNeutral, "blendShape.Smile"),
+                    Is.Zero);
+                Assert.That(
+                    ReadValue(fistMouthNeutral, "blendShape.Angry"),
+                    Is.EqualTo(5f));
                 Assert.That(ReadValue(fistClip, "blendShape.Angry"), Is.EqualTo(5f));
                 Assert.That(ReadValue(fistClip, "blendShape.Blink"), Is.EqualTo(70f));
                 Assert.That(ReadValue(fistClip, "blendShape.EyeLookUp"), Is.EqualTo(40f));
@@ -178,16 +191,21 @@ namespace Ee4v.FaceExpression.Tests
                     .Single(state => state.name == "01-01 Fist + Fist");
                 Assert.That(fistFistState.motion, Is.SameAs(neutralState.motion));
                 Assert.That(
-                    ReadValue((AnimationClip)fistFistState.motion, "blendShape.Smile"),
+                    ReadValue(
+                        (AnimationClip)((BlendTree)fistFistState.motion)
+                            .children[0].motion,
+                        "blendShape.Smile"),
                     Is.EqualTo(25f));
+                var neutralClip = (AnimationClip)((BlendTree)neutralState.motion)
+                    .children[0].motion;
                 Assert.That(ReadValue(
-                    (AnimationClip)neutralState.motion,
+                    neutralClip,
                     "blendShape.Blink"), Is.EqualTo(0f));
                 var neutralBlinkCurve = ReadCurve(
-                    (AnimationClip)neutralState.motion,
+                    neutralClip,
                     "blendShape.Blink");
                 Assert.That(ReadValueAt(
-                    (AnimationClip)neutralState.motion,
+                    neutralClip,
                     "blendShape.Blink",
                     neutralBlinkCurve.keys[2].time),
                     Is.EqualTo(100f).Within(0.001f));
@@ -241,35 +259,14 @@ namespace Ee4v.FaceExpression.Tests
                 var victoryClip = (AnimationClip)victory.motion;
                 Assert.That(ReadValue(victoryClip, "blendShape.Blink"), Is.EqualTo(75f));
                 Assert.That(ReadValue(victoryClip, "blendShape.vrc.v_aa"), Is.EqualTo(55f));
-                var mouthCancelLayer = controller.layers.Single(candidate =>
-                    candidate.name == GestureMatrixControllerWriter.MouthCancelLayerName);
-                Assert.That(mouthCancelLayer.defaultWeight, Is.EqualTo(1f));
                 Assert.That(
-                    mouthCancelLayer.stateMachine.defaultState.name,
-                    Is.EqualTo("Disabled"));
-                var mouthCancelState = mouthCancelLayer.stateMachine.states
-                    .Select(child => child.state)
-                    .Single(state => state.name == "Enabled");
+                    controller.layers.Any(candidate =>
+                        candidate.name == GestureMatrixControllerWriter.MouthCancelLayerName),
+                    Is.False);
                 Assert.That(
-                    ReadValue(
-                        (AnimationClip)mouthCancelState.motion,
-                        "blendShape.Smile"),
-                    Is.Zero);
-                Assert.That(
-                    mouthCancelLayer.stateMachine.defaultState.transitions
-                        .Single().conditions.Select(condition =>
-                            (condition.parameter, condition.mode, condition.threshold)),
-                    Is.EquivalentTo(new[]
-                    {
-                        (
-                            "Voice",
-                            AnimatorConditionMode.Greater,
-                            0.01f),
-                        (
-                            GestureMatrixControllerWriter.MouthCancelParameter,
-                            AnimatorConditionMode.If,
-                            0f)
-                    }));
+                    controller.parameters.Any(parameter =>
+                        parameter.name == GestureMatrixControllerWriter.MouthCancelParameter),
+                    Is.False);
                 Assert.That(
                     controller.layers.Any(candidate =>
                         candidate.name == GestureMatrixControllerWriter.MenuLayerName),
@@ -288,7 +285,7 @@ namespace Ee4v.FaceExpression.Tests
                             AnimatorConditionMode.Equals,
                             0f)
                     }));
-                Assert.That(GetGeneratedExpressionClipPaths().Count, Is.EqualTo(4));
+                Assert.That(GetGeneratedExpressionClipPaths().Count, Is.EqualTo(6));
                 var transition = layer.stateMachine.anyStateTransitions
                     .Single(candidate => candidate.destinationState == victory);
                 Assert.That(
@@ -320,7 +317,7 @@ namespace Ee4v.FaceExpression.Tests
                     controller.layers.Count(candidate =>
                         candidate.name == GestureMatrixControllerWriter.LayerName),
                     Is.EqualTo(1));
-                Assert.That(GetGeneratedExpressionClipPaths().Count, Is.EqualTo(2));
+                Assert.That(GetGeneratedExpressionClipPaths().Count, Is.EqualTo(4));
                 Assert.That(
                     AssetDatabase.LoadMainAssetAtPath(legacyGeneratedPath),
                     Is.Null);
