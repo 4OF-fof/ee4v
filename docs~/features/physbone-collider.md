@@ -1,0 +1,21 @@
+# PhysBone Collider
+
+## 機能
+
+`ee4v/Window/Avatar/PhysBone Collider Setup`から、シーンまたはPrefab Mode上のアバターへカプセル形のVRC PhysBone Colliderを配置します。探索対象はPrefabルート直下にある、名前が`Armature`の子オブジェクトだけです。大文字と小文字は区別しません。衣装など別階層のArmatureは初期探索へ含めません。
+
+Armature内ではSkinnedMeshRendererが参照する変形ボーンのうち、胴体、頭、肩、腕、脚に属する主要ボーンだけを調査します。HumanoidアバターではUnityのHumanoid割り当てを使用し、目、顎、指、つま先を対象外にします。Humanoid情報がない場合はボーン名から同じ部位を判定します。`EditorOnly`タグを持つ階層も対象外です。VRC SDKの`IEditorOnly`またはNDMFの`INDMFEditorOnly`を実装するコンポーネントを持つ階層も除外します。
+
+腕と脚は、次の主要ボーンまでの距離が最小ボーン長以上の区間だけを候補にします。しきい値未満の区間は一覧とプレビューに表示しません。カプセルの中心は区間中央、全高は区間長、半径は区間長の18%を初期値にします。半径の上限は0.25mです。
+
+胴体では短いSpine区間を個別に判定せず、HipsからChestまでとChestからNeckまでへまとめます。下側の半径は左右の脚付け根幅、上側の半径は左右の上腕付け根幅から求めます。これにより短いSpineがしきい値未満でも、Chestだけではなく腹部と胸部を覆う2つのColliderを提案します。ローカルY軸を区間の終点へ向ける回転も自動設定します。再検出すると現在のしきい値から提案を作り直しますが、ee4vが以前に生成した同じボーンのColliderがある場合は、その半径、全高、位置、回転を読み戻します。
+
+## プレビューと適用
+
+専用画面はアバター全身に候補を重ねて表示します。ワイヤーを常にアバターより手前へ描く透視表示にするため、体の裏側にあるカプセルも確認できます。水色は有効な候補、中心マーカー付きの黄色は一覧で選択中の候補です。対象一覧はArmatureから候補までの親子関係を保った階層表示です。一覧から作成対象を切り替え、選択したカプセルの半径、全高、ボーンローカル座標を編集できます。右ドラッグで回転し、中ドラッグで移動します。ホイールで拡大または縮小します。
+
+適用時はアバター直下へ`<Avatar名>_PhysBoneColliders`という1つのPrefabを作り、すべての`[ee4v] PhysBone Collider`をその中へまとめます。各ColliderにはModular AvatarのBone Proxyを設定し、ビルド時に対象ボーン直下へ移動させます。VRC PhysBone ColliderのRoot TransformはCollider自身、Shape TypeはCapsuleです。生成Prefabは共通生成アセットルートの`Avatar/PhysBoneCollider/<Avatar名>`へ保存します。
+
+再適用では同じ生成Prefabの中身を置き換えます。旧方式でボーン直下へ作成した、名前とVRC PhysBone Collider型の両方が一致する生成物も移行時に除去し、利用者が作成したColliderには触れません。「既存のPhysBoneへ割り当てる」が有効なら、Prefabインスタンス内の全Colliderをアバター階層内の既存VRC PhysBoneへ追加します。置き換える生成物への古い参照は先に除去します。
+
+VRChat SDKとModular Avatarへコンパイル時依存は持ちません。どちらかがない環境でも提案とプレビューを利用でき、適用だけを無効にします。操作はUnityのUndoで取り消せます。

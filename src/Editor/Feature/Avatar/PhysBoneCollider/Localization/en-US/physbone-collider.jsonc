@@ -1,0 +1,37 @@
+{
+  "window": {
+    "title": "PhysBone Collider Setup"
+  },
+  "field": {
+    "avatar": "Avatar",
+    "minimumLength": "Minimum bone length (m)",
+    "enabled": "Create this collider",
+    "radius": "Radius (m)",
+    "height": "Total height (m)",
+    "position": "Position",
+    "assignToPhysBones": "Assign to existing PhysBones"
+  },
+  "section": {
+    "candidates": "Placement candidates"
+  },
+  "preview": {
+    "controls": "Right drag: orbit  Middle drag: pan  Wheel: zoom"
+  },
+  "action": {
+    "scan": "Rescan",
+    "resetView": "Reset view",
+    "resetCollider": "Reset placement",
+    "apply": "Apply to avatar"
+  },
+  "status": {
+    "selectAvatar": "Select an avatar in the scene.",
+    "sceneAvatarRequired": "Prefab assets cannot be edited directly. Select an avatar in a scene or Prefab Mode.",
+    "sdkMissing": "VRChat SDK was not found. You can inspect the layout, but cannot apply it.",
+    "maMissing": "Modular Avatar was not found. You can inspect the layout, but cannot apply it.",
+    "armatureMissing": "No direct Armature child was found under the prefab root.",
+    "noCandidates": "No major body bones match. Check the Armature and minimum bone length.",
+    "candidateCount": "Proposing {0} capsule colliders. X-ray cyan is enabled; yellow with a center marker is selected.",
+    "applied": "Created {0} PhysBone Colliders in one Prefab.",
+    "applyFailed": "Could not apply PhysBone Colliders. Check the Console."
+  }
+}

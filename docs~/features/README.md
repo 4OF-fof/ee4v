@@ -27,6 +27,7 @@
 | 機能 | 概要 | API リファレンス |
 |---|---|---|
 | Face Expression | BlendShape表情を作成し、標準ハンドジェスチャーへ割り当てます。アバター複製を保持する軽量プレビューを使用します。 | [Face Expression](./face-expression.md) |
+| PhysBone Collider | Prefab直下のArmatureにある主要な体ボーンからカプセル形PhysBone Colliderを提案し、専用プレビューで調整してMA Bone Proxy付きの1 Prefabへまとめます。 | [PhysBone Collider](./physbone-collider.md) |
 | Play Mode Component Suppression | Play Mode向けのNDMF処理で、Project設定から指定したコンポーネントをアバターから除外します。 | [Play Mode Component Suppression](./play-mode-component-suppression.md) |
 
 ## Editor

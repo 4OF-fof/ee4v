@@ -60,6 +60,13 @@
 | `BlendShapePresets_RoundTripManualFbxMapping` | `<FBX名>.json`へFBXとメッシュに結び付いた手動分類と口形状指定を保存して復元し、別FBXには適用しない | 再起動後や複数FBX利用時のファイル形式と対応表の取り違えは設定画面だけでは確認できない |
 | `Groups_FilterHeadersAndTreatAddedMeshesAsGroups` | ヘッダー間の分類に加え、追加メッシュをメッシュ名のグループとして絞り込む | 追加メッシュのShapeが別Groupへ混入する問題と、メッシュ全体を選べない問題を防ぐ |
 
+## PhysBone Collider
+
+| テスト | 保証する契約 | 残す理由 |
+| --- | --- | --- |
+| `Create_UsesOnlyVisibleMajorBonesInDirectArmature` | Prefab直下のArmatureにある主要な体ボーンだけを使い、短いSpine区間をまとめた上下2つの胴体Colliderを体幅から提案する | 衣装、目、EditorOnly階層の混入と、しきい値により胴体がChestだけになる問題は、単純な一列のボーン表示だけでは判別しにくい |
+| `Apply_ReplacesOwnedCollidersAndAssignsCurrentReferences` | 生成Colliderをアバター直下の1 Prefabへまとめ、MA Bone Proxyの対象パス、Root Transform、カプセル形状と寸法を設定し、再適用では旧参照と生成物を現在値で一つに置き換える | VRChat SDK型、Modular Avatar型、Prefabをまたぐシリアライズ境界は、画面上の配置案だけでは欠落参照や旧Colliderの残存を検出できない |
+
 ## Core
 
 | テスト | 保証する契約 | 残す理由 |

@@ -1,0 +1,37 @@
+{
+  "window": {
+    "title": "PhysBone Collider 自動配置"
+  },
+  "field": {
+    "avatar": "アバター",
+    "minimumLength": "最小ボーン長 (m)",
+    "enabled": "このColliderを作成",
+    "radius": "半径 (m)",
+    "height": "全高 (m)",
+    "position": "位置",
+    "assignToPhysBones": "既存のPhysBoneへ割り当てる"
+  },
+  "section": {
+    "candidates": "配置候補"
+  },
+  "preview": {
+    "controls": "右ドラッグ: 回転  中ドラッグ: 移動  ホイール: 拡大・縮小"
+  },
+  "action": {
+    "scan": "再検出",
+    "resetView": "表示をリセット",
+    "resetCollider": "自動配置へ戻す",
+    "apply": "アバターへ適用"
+  },
+  "status": {
+    "selectAvatar": "シーン上のアバターを選択してください。",
+    "sceneAvatarRequired": "Prefab Assetへ直接適用できません。シーンまたはPrefab Mode上のアバターを選択してください。",
+    "sdkMissing": "VRChat SDKが見つかりません。配置案の確認はできますが適用はできません。",
+    "maMissing": "Modular Avatarが見つかりません。配置案の確認はできますが適用はできません。",
+    "armatureMissing": "Prefab直下にArmatureが見つかりません。名前がArmatureの子オブジェクトを用意してください。",
+    "noCandidates": "条件に一致する主要な体ボーンがありません。Armatureと最小ボーン長を確認してください。",
+    "candidateCount": "{0}個のカプセルColliderを提案しています。透視ワイヤーの水色が候補、中心マーカー付きの黄色が選択中です。",
+    "applied": "{0}個のPhysBone Colliderを1つのPrefabへ作成しました。",
+    "applyFailed": "PhysBone Colliderを適用できませんでした。Consoleを確認してください。"
+  }
+}
