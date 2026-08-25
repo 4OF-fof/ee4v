@@ -1,26 +1,45 @@
 {
   "window": {
-    "title": "PhysBone Collider Setup"
+    "title": "PhysBone Collider Assistant"
   },
   "field": {
     "avatar": "Avatar",
-    "minimumLength": "Minimum bone length (m)",
-    "enabled": "Create this collider",
+    "preset": "Density",
+    "minimumLength": "Minimum length (m)",
+    "enabled": "Create",
+    "followBone": "Follow bone",
     "radius": "Radius (m)",
     "height": "Total height (m)",
     "position": "Position",
-    "assignToPhysBones": "Assign to existing PhysBones"
+    "rotation": "Rotation (degrees)",
+    "physBoneSearchRoot": "Detection target {0}",
+    "physBoneTargetCount": "{0} ({1} PhysBones)"
   },
   "section": {
-    "candidates": "Placement candidates"
+    "layout": "Generation",
+    "candidates": "Colliders",
+    "collider": "Collider settings",
+    "physBones": "Target PhysBones"
+  },
+  "preset": {
+    "lightweight": "Lightweight",
+    "standard": "Standard",
+    "full": "Full"
   },
   "preview": {
+    "showColliders": "Show Colliders",
+    "showPhysBones": "Show PhysBones",
     "controls": "Right drag: orbit  Middle drag: pan  Wheel: zoom"
   },
   "action": {
-    "scan": "Rescan",
+    "scan": "Update candidates",
     "resetView": "Reset view",
-    "resetCollider": "Reset placement",
+    "resetCollider": "Reset collider",
+    "addPhysBoneRoot": "Add detection target",
+    "removePhysBoneRoot": "Remove",
+    "detectPhysBones": "Detect PhysBones",
+    "selectAllPhysBones": "Select all",
+    "clearPhysBones": "Clear all",
     "apply": "Apply to avatar"
   },
   "status": {
@@ -30,7 +49,9 @@
     "maMissing": "Modular Avatar was not found. You can inspect the layout, but cannot apply it.",
     "armatureMissing": "No direct Armature child was found under the prefab root.",
     "noCandidates": "No major body bones match. Check the Armature and minimum bone length.",
-    "candidateCount": "Proposing {0} capsule colliders. X-ray cyan is enabled; yellow with a center marker is selected.",
+    "candidateCount": "Creating {1} of {0} candidates with {2} total PhysBone assignments. Cyan is enabled; yellow is selected.",
+    "selectPhysBoneRoot": "Set one or more GameObjects to search for PhysBones.",
+    "noPhysBones": "No PhysBones were found in a direct Armature child of the selected GameObjects.",
     "applied": "Created {0} PhysBone Colliders in one Prefab.",
     "applyFailed": "Could not apply PhysBone Colliders. Check the Console."
   }

@@ -16,24 +16,37 @@ namespace Ee4v.PhysBoneCollider
 
         private readonly VrchatPhysBoneColliderGateway _gateway =
             new VrchatPhysBoneColliderGateway();
+        private readonly List<GameObject> _physBoneSearchRoots =
+            new List<GameObject>();
         private IReadOnlyList<PhysBoneColliderDraft> _drafts =
             Array.Empty<PhysBoneColliderDraft>();
+        private IReadOnlyList<PhysBoneTarget> _physBoneTargets =
+            Array.Empty<PhysBoneTarget>();
         private PhysBoneColliderPreview _preview;
         private GameObject _avatar;
+        private string _selectedPhysBonePath;
         private Transform _armature;
         private int _selectedIndex = -1;
         private ObjectField _avatarField;
+        private PopupField<ColliderLayoutPreset> _presetField;
         private FloatField _minimumLengthField;
         private ScrollView _candidateList;
         private VisualElement _detail;
         private UiTextElement _selectedBone;
         private Toggle _enabledField;
+        private ObjectField _boneField;
         private FloatField _radiusField;
         private FloatField _heightField;
         private FloatField _positionXField;
         private FloatField _positionYField;
         private FloatField _positionZField;
-        private Toggle _assignField;
+        private FloatField _rotationXField;
+        private FloatField _rotationYField;
+        private FloatField _rotationZField;
+        private ScrollView _physBoneList;
+        private VisualElement _physBoneRootList;
+        private Toggle _showCollidersField;
+        private Toggle _showPhysBonesField;
         private HelpBox _status;
         private UiTextButton _applyButton;
         private IMGUIContainer _previewElement;
@@ -44,7 +57,7 @@ namespace Ee4v.PhysBoneCollider
         {
             var window = GetWindow<PhysBoneColliderWindow>();
             window.titleContent = UiTextFactory.CreateGuiContent(I18N.Get("window.title"));
-            window.minSize = new Vector2(820f, 560f);
+            window.minSize = new Vector2(900f, 680f);
             window.Show();
         }
 
@@ -104,17 +117,6 @@ namespace Ee4v.PhysBoneCollider
             _avatarField.RegisterValueChangedCallback(evt =>
                 SetAvatar(evt.newValue as GameObject));
             toolbar.Add(_avatarField);
-
-            _minimumLengthField = UiTextFactory.CreateFloatField(
-                I18N.Get("field.minimumLength"),
-                "ee4v-physbone-collider__minimum-length");
-            _minimumLengthField.value = DefaultMinimumBoneLength;
-            toolbar.Add(_minimumLengthField);
-
-            toolbar.Add(UiTextFactory.CreateButton(
-                I18N.Get("action.scan"),
-                RebuildLayout,
-                "ee4v-physbone-collider__scan"));
             root.Add(toolbar);
         }
 
@@ -126,6 +128,22 @@ namespace Ee4v.PhysBoneCollider
                 _preview?.Draw(_previewElement.contentRect));
             _previewElement.AddToClassList("ee4v-physbone-collider__preview");
             pane.Add(_previewElement);
+
+            var layers = new VisualElement();
+            layers.AddToClassList("ee4v-physbone-collider__preview-layers");
+            _showCollidersField = UiTextFactory.CreateToggle(
+                I18N.Get("preview.showColliders"));
+            _showCollidersField.value = true;
+            _showCollidersField.RegisterValueChangedCallback(_ =>
+                UpdatePreviewVisibility());
+            layers.Add(_showCollidersField);
+            _showPhysBonesField = UiTextFactory.CreateToggle(
+                I18N.Get("preview.showPhysBones"));
+            _showPhysBonesField.value = true;
+            _showPhysBonesField.RegisterValueChangedCallback(_ =>
+                UpdatePreviewVisibility());
+            layers.Add(_showPhysBonesField);
+            pane.Add(layers);
 
             var resetView = UiTextFactory.CreateButton(
                 I18N.Get("action.resetView"),
@@ -143,22 +161,20 @@ namespace Ee4v.PhysBoneCollider
         {
             var pane = new VisualElement();
             pane.AddToClassList("ee4v-physbone-collider__editor-pane");
-            pane.Add(UiTextFactory.Create(
+            var content = new ScrollView(ScrollViewMode.Vertical);
+            content.AddToClassList("ee4v-physbone-collider__editor-content");
+            content.Add(BuildLayoutControls());
+            content.Add(UiTextFactory.Create(
                 I18N.Get("section.candidates"),
                 UiClassNames.SectionTitle));
 
             _candidateList = new ScrollView(ScrollViewMode.Vertical);
             _candidateList.AddToClassList("ee4v-physbone-collider__candidates");
-            pane.Add(_candidateList);
+            content.Add(_candidateList);
 
             _detail = BuildDetail();
-            pane.Add(_detail);
-
-            _assignField = UiTextFactory.CreateToggle(
-                I18N.Get("field.assignToPhysBones"),
-                "ee4v-physbone-collider__assign");
-            _assignField.value = true;
-            pane.Add(_assignField);
+            content.Add(_detail);
+            pane.Add(content);
 
             _applyButton = UiTextFactory.CreateButton(
                 I18N.Get("action.apply"),
@@ -168,14 +184,58 @@ namespace Ee4v.PhysBoneCollider
             return pane;
         }
 
+        private VisualElement BuildLayoutControls()
+        {
+            var controls = new VisualElement();
+            controls.AddToClassList("ee4v-physbone-collider__layout-controls");
+            controls.Add(UiTextFactory.Create(
+                I18N.Get("section.layout"),
+                UiClassNames.SectionTitle));
+
+            var presets = new List<ColliderLayoutPreset>
+            {
+                ColliderLayoutPreset.Lightweight,
+                ColliderLayoutPreset.Standard,
+                ColliderLayoutPreset.Full
+            };
+            _presetField = UiTextFactory.CreatePopupField(
+                I18N.Get("field.preset"),
+                presets,
+                presets.IndexOf(ColliderLayoutPreset.Standard),
+                FormatPreset,
+                FormatPreset,
+                "ee4v-physbone-collider__preset");
+            _presetField.RegisterValueChangedCallback(_ => RebuildLayout());
+            controls.Add(_presetField);
+
+            var scanRow = new VisualElement();
+            scanRow.AddToClassList("ee4v-physbone-collider__scan-row");
+            _minimumLengthField = UiTextFactory.CreateFloatField(
+                I18N.Get("field.minimumLength"),
+                "ee4v-physbone-collider__minimum-length");
+            _minimumLengthField.value = DefaultMinimumBoneLength;
+            scanRow.Add(_minimumLengthField);
+            scanRow.Add(UiTextFactory.CreateButton(
+                I18N.Get("action.scan"),
+                RebuildLayout,
+                "ee4v-physbone-collider__scan"));
+            controls.Add(scanRow);
+            return controls;
+        }
+
         private VisualElement BuildDetail()
         {
             var detail = new VisualElement();
             detail.AddToClassList("ee4v-physbone-collider__detail");
+            var placement = new VisualElement();
+            placement.AddToClassList("ee4v-physbone-collider__detail-group");
+            placement.Add(UiTextFactory.Create(
+                I18N.Get("section.collider"),
+                UiClassNames.SectionTitle));
             _selectedBone = UiTextFactory.Create(
                 string.Empty,
                 "ee4v-physbone-collider__selected-bone");
-            detail.Add(_selectedBone);
+            placement.Add(_selectedBone);
 
             _enabledField = UiTextFactory.CreateToggle(I18N.Get("field.enabled"));
             _enabledField.RegisterValueChangedCallback(evt =>
@@ -184,10 +244,36 @@ namespace Ee4v.PhysBoneCollider
                 {
                     draft.Enabled = evt.newValue;
                     RefreshPreview();
-                    RefreshCandidateList();
+                    Render();
                 }
             });
-            detail.Add(_enabledField);
+            placement.Add(_enabledField);
+
+            _boneField = UiTextFactory.CreateObjectField(
+                I18N.Get("field.followBone"));
+            _boneField.objectType = typeof(Transform);
+            _boneField.allowSceneObjects = true;
+            _boneField.RegisterValueChangedCallback(evt =>
+            {
+                if (_renderingDetail || !TryGetSelected(out var draft))
+                {
+                    return;
+                }
+
+                var bone = evt.newValue as Transform;
+                if (bone == null ||
+                    _avatar == null ||
+                    (bone != _avatar.transform && !bone.IsChildOf(_avatar.transform)))
+                {
+                    _boneField.SetValueWithoutNotify(draft.Bone);
+                    return;
+                }
+
+                draft.Rebind(bone, _avatar.transform);
+                RenderDetail();
+                RefreshPreview();
+            });
+            placement.Add(_boneField);
 
             _radiusField = CreateDetailField(I18N.Get("field.radius"), value =>
             {
@@ -199,8 +285,6 @@ namespace Ee4v.PhysBoneCollider
                     RefreshPreview();
                 }
             });
-            detail.Add(_radiusField);
-
             _heightField = CreateDetailField(I18N.Get("field.height"), value =>
             {
                 if (TryGetSelected(out var draft))
@@ -210,12 +294,16 @@ namespace Ee4v.PhysBoneCollider
                     RefreshPreview();
                 }
             });
-            detail.Add(_heightField);
+            var size = new VisualElement();
+            size.AddToClassList("ee4v-physbone-collider__size");
+            size.Add(_radiusField);
+            size.Add(_heightField);
+            placement.Add(size);
 
             var positionLabel = UiTextFactory.Create(
                 I18N.Get("field.position"),
                 UiClassNames.FormLabel);
-            detail.Add(positionLabel);
+            placement.Add(positionLabel);
             var position = new VisualElement();
             position.AddToClassList("ee4v-physbone-collider__position");
             _positionXField = CreatePositionField("X", 0);
@@ -224,20 +312,67 @@ namespace Ee4v.PhysBoneCollider
             position.Add(_positionXField);
             position.Add(_positionYField);
             position.Add(_positionZField);
-            detail.Add(position);
+            placement.Add(position);
 
-            detail.Add(UiTextFactory.CreateButton(
+            placement.Add(UiTextFactory.Create(
+                I18N.Get("field.rotation"),
+                UiClassNames.FormLabel));
+            var rotation = new VisualElement();
+            rotation.AddToClassList("ee4v-physbone-collider__rotation");
+            _rotationXField = CreateRotationField("X", 0);
+            _rotationYField = CreateRotationField("Y", 1);
+            _rotationZField = CreateRotationField("Z", 2);
+            rotation.Add(_rotationXField);
+            rotation.Add(_rotationYField);
+            rotation.Add(_rotationZField);
+            placement.Add(rotation);
+
+            placement.Add(UiTextFactory.CreateButton(
                 I18N.Get("action.resetCollider"),
                 () =>
                 {
                     if (TryGetSelected(out var draft))
                     {
                         draft.Reset();
-                        RenderDetail();
                         RefreshPreview();
-                        RefreshCandidateList();
+                        Render();
                     }
                 }));
+            detail.Add(placement);
+
+            var assignments = new VisualElement();
+            assignments.AddToClassList("ee4v-physbone-collider__detail-group");
+            assignments.Add(UiTextFactory.Create(
+                I18N.Get("section.physBones"),
+                UiClassNames.SectionTitle,
+                "ee4v-physbone-collider__physbone-title"));
+            _physBoneRootList = new VisualElement();
+            _physBoneRootList.AddToClassList(
+                "ee4v-physbone-collider__physbone-roots");
+            assignments.Add(_physBoneRootList);
+            assignments.Add(UiTextFactory.CreateButton(
+                I18N.Get("action.addPhysBoneRoot"),
+                AddPhysBoneSearchRoot,
+                "ee4v-physbone-collider__add-physbone-root"));
+            assignments.Add(UiTextFactory.CreateButton(
+                I18N.Get("action.detectPhysBones"),
+                DetectPhysBones,
+                "ee4v-physbone-collider__detect-physbones"));
+            var targetActions = new VisualElement();
+            targetActions.AddToClassList("ee4v-physbone-collider__target-actions");
+            targetActions.Add(UiTextFactory.CreateButton(
+                I18N.Get("action.selectAllPhysBones"),
+                () => SetAllPhysBoneTargets(true)));
+            targetActions.Add(UiTextFactory.CreateButton(
+                I18N.Get("action.clearPhysBones"),
+                () => SetAllPhysBoneTargets(false)));
+            assignments.Add(targetActions);
+            _physBoneList = new ScrollView(ScrollViewMode.Vertical);
+            _physBoneList.AddToClassList("ee4v-physbone-collider__physbones");
+            assignments.Add(_physBoneList);
+            detail.Add(assignments);
+            EnsurePhysBoneSearchRootRow();
+            RenderPhysBoneSearchRoots();
             return detail;
         }
 
@@ -270,8 +405,33 @@ namespace Ee4v.PhysBoneCollider
             });
         }
 
+        private FloatField CreateRotationField(string label, int axis)
+        {
+            return CreateDetailField(label, value =>
+            {
+                if (!TryGetSelected(out var draft))
+                {
+                    return;
+                }
+
+                var rotation = draft.Rotation.eulerAngles;
+                rotation[axis] = value;
+                draft.Rotation = Quaternion.Euler(rotation);
+                RefreshPreview();
+            });
+        }
+
         private void SetAvatar(GameObject avatar)
         {
+            if (_avatar != avatar)
+            {
+                _physBoneSearchRoots.Clear();
+                _physBoneSearchRoots.Add(null);
+                _physBoneTargets = Array.Empty<PhysBoneTarget>();
+                _selectedPhysBonePath = null;
+                RenderPhysBoneSearchRoots();
+            }
+
             _avatar = avatar;
             RebuildLayout();
         }
@@ -280,17 +440,198 @@ namespace Ee4v.PhysBoneCollider
         {
             _selectedIndex = -1;
             _armature = BoneColliderLayout.FindArmature(_avatar);
+            RefreshPhysBoneTargets();
             _drafts = BoneColliderLayout.Create(
                 _avatar,
-                Mathf.Max(0.001f, _minimumLengthField?.value ?? DefaultMinimumBoneLength));
+                Mathf.Max(0.001f, _minimumLengthField?.value ?? DefaultMinimumBoneLength),
+                _presetField?.value ?? ColliderLayoutPreset.Standard);
             _gateway.LoadOwned(_avatar, _drafts);
+            AssignDetectedPhysBonesToNewDrafts();
             if (_drafts.Count > 0)
             {
                 _selectedIndex = 0;
             }
 
-            _preview?.SetAvatar(_avatar, _drafts, _selectedIndex);
+            RebuildPreview();
             Render();
+        }
+
+        private void DetectPhysBones()
+        {
+            var rootsChanged = false;
+            for (var index = 0; index < _physBoneSearchRoots.Count; index++)
+            {
+                var root = _physBoneSearchRoots[index];
+                if (root != null && !IsPhysBoneSearchRootValid(root))
+                {
+                    _physBoneSearchRoots[index] = null;
+                    rootsChanged = true;
+                }
+            }
+
+            if (rootsChanged)
+            {
+                RenderPhysBoneSearchRoots();
+            }
+
+            RefreshPhysBoneTargets();
+            if (!ContainsPhysBoneTarget(_selectedPhysBonePath))
+            {
+                _selectedPhysBonePath = null;
+            }
+
+            AssignDetectedPhysBonesToNewDrafts();
+            RebuildPreview();
+            Render();
+        }
+
+        private void RefreshPhysBoneTargets()
+        {
+            _physBoneTargets = _gateway.FindPhysBoneTargets(
+                _avatar,
+                _physBoneSearchRoots);
+        }
+
+        private void EnsurePhysBoneSearchRootRow()
+        {
+            if (_physBoneSearchRoots.Count == 0)
+            {
+                _physBoneSearchRoots.Add(null);
+            }
+        }
+
+        private void AddPhysBoneSearchRoot()
+        {
+            _physBoneSearchRoots.Add(null);
+            RenderPhysBoneSearchRoots();
+        }
+
+        private void RemovePhysBoneSearchRoot(int index)
+        {
+            if (index < 0 || index >= _physBoneSearchRoots.Count)
+            {
+                return;
+            }
+
+            _physBoneSearchRoots.RemoveAt(index);
+            EnsurePhysBoneSearchRootRow();
+            RenderPhysBoneSearchRoots();
+            DetectPhysBones();
+        }
+
+        private void RenderPhysBoneSearchRoots()
+        {
+            if (_physBoneRootList == null)
+            {
+                return;
+            }
+
+            EnsurePhysBoneSearchRootRow();
+            _physBoneRootList.Clear();
+            for (var index = 0; index < _physBoneSearchRoots.Count; index++)
+            {
+                var rootIndex = index;
+                var row = new VisualElement();
+                row.AddToClassList("ee4v-physbone-collider__physbone-root-row");
+                var field = UiTextFactory.CreateObjectField(
+                    I18N.Get("field.physBoneSearchRoot", index + 1),
+                    "ee4v-physbone-collider__physbone-root");
+                field.objectType = typeof(GameObject);
+                field.allowSceneObjects = true;
+                field.SetValueWithoutNotify(_physBoneSearchRoots[index]);
+                field.RegisterValueChangedCallback(evt =>
+                {
+                    var root = evt.newValue as GameObject;
+                    if (root != null && !IsPhysBoneSearchRootValid(root))
+                    {
+                        root = null;
+                        field.SetValueWithoutNotify(null);
+                    }
+
+                    _physBoneSearchRoots[rootIndex] = root;
+                    DetectPhysBones();
+                });
+                row.Add(field);
+                row.Add(UiTextFactory.CreateButton(
+                    I18N.Get("action.removePhysBoneRoot"),
+                    () => RemovePhysBoneSearchRoot(rootIndex),
+                    "ee4v-physbone-collider__remove-physbone-root"));
+                _physBoneRootList.Add(row);
+            }
+        }
+
+        private bool HasPhysBoneSearchRoot()
+        {
+            foreach (var root in _physBoneSearchRoots)
+            {
+                if (IsPhysBoneSearchRootValid(root))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsPhysBoneSearchRootValid(GameObject root)
+        {
+            return root != null &&
+                   _avatar != null &&
+                   (root.transform == _avatar.transform ||
+                    root.transform.IsChildOf(_avatar.transform));
+        }
+
+        private bool ContainsPhysBoneTarget(string path)
+        {
+            if (path == null)
+            {
+                return false;
+            }
+
+            foreach (var target in _physBoneTargets)
+            {
+                if (string.Equals(target.Path, path, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void AssignDetectedPhysBonesToNewDrafts()
+        {
+            foreach (var draft in _drafts)
+            {
+                if (draft.AssignmentsLoaded)
+                {
+                    continue;
+                }
+
+                draft.AssignedPhysBonePaths.Clear();
+                foreach (var target in _physBoneTargets)
+                {
+                    draft.AssignedPhysBonePaths.Add(target.Path);
+                }
+            }
+        }
+
+        private void RebuildPreview()
+        {
+            _preview?.SetAvatar(
+                _avatar,
+                _drafts,
+                _physBoneTargets,
+                _selectedIndex,
+                _selectedPhysBonePath);
+            UpdatePreviewVisibility();
+        }
+
+        private void UpdatePreviewVisibility()
+        {
+            _preview?.SetVisibility(
+                _showCollidersField?.value ?? true,
+                _showPhysBonesField?.value ?? true);
         }
 
         private void Render()
@@ -329,9 +670,32 @@ namespace Ee4v.PhysBoneCollider
             }
             else
             {
+                var enabled = 0;
+                var assignments = 0;
+                foreach (var draft in _drafts)
+                {
+                    if (!draft.Enabled)
+                    {
+                        continue;
+                    }
+
+                    enabled++;
+                    foreach (var target in _physBoneTargets)
+                    {
+                        if (draft.AssignedPhysBonePaths.Contains(target.Path))
+                        {
+                            assignments += target.ComponentCount;
+                        }
+                    }
+                }
+
                 UiTextFactory.SetText(
                     _status,
-                    I18N.Get("status.candidateCount", _drafts.Count));
+                    I18N.Get(
+                        "status.candidateCount",
+                        _drafts.Count,
+                        enabled,
+                        assignments));
                 _status.messageType = HelpBoxMessageType.Info;
             }
         }
@@ -349,99 +713,42 @@ namespace Ee4v.PhysBoneCollider
                 return;
             }
 
-            var byBone = new Dictionary<Transform, int>();
             for (var index = 0; index < _drafts.Count; index++)
             {
-                byBone[_drafts[index].Bone] = index;
-            }
-
-            var tree = CreateHierarchyBranch(_armature, byBone, true);
-            if (tree != null)
-            {
-                _candidateList.Add(tree);
+                _candidateList.Add(CreateCandidateRow(index));
             }
         }
 
-        private VisualElement CreateHierarchyBranch(
-            Transform bone,
-            IReadOnlyDictionary<Transform, int> byBone,
-            bool isRoot)
+        private VisualElement CreateCandidateRow(int candidateIndex)
         {
-            var children = new List<VisualElement>();
-            for (var index = 0; index < bone.childCount; index++)
-            {
-                var child = CreateHierarchyBranch(
-                    bone.GetChild(index),
-                    byBone,
-                    false);
-                if (child != null)
-                {
-                    children.Add(child);
-                }
-            }
-
-            var isCandidate = byBone.TryGetValue(bone, out var candidateIndex);
-            if (!isRoot && !isCandidate && children.Count == 0)
-            {
-                return null;
-            }
-
-            var branch = new VisualElement();
-            branch.AddToClassList("ee4v-physbone-collider__branch");
             var row = new VisualElement();
             row.AddToClassList("ee4v-physbone-collider__candidate");
-            if (isCandidate)
+            var draft = _drafts[candidateIndex];
+            row.EnableInClassList(
+                "ee4v-physbone-collider__candidate--selected",
+                candidateIndex == _selectedIndex);
+            var toggle = UiTextFactory.CreateToggle();
+            toggle.SetValueWithoutNotify(draft.Enabled);
+            toggle.RegisterValueChangedCallback(evt =>
             {
-                var draft = _drafts[candidateIndex];
-                row.EnableInClassList(
-                    "ee4v-physbone-collider__candidate--selected",
-                    candidateIndex == _selectedIndex);
-                var toggle = UiTextFactory.CreateToggle();
-                toggle.SetValueWithoutNotify(draft.Enabled);
-                toggle.RegisterValueChangedCallback(evt =>
+                draft.Enabled = evt.newValue;
+                _selectedIndex = candidateIndex;
+                RefreshPreview();
+                Render();
+            });
+            row.Add(toggle);
+            var select = UiTextFactory.CreateButton(
+                FormatCandidate(draft),
+                () =>
                 {
-                    draft.Enabled = evt.newValue;
                     _selectedIndex = candidateIndex;
                     RenderDetail();
                     RefreshPreview();
                     RefreshCandidateList();
                 });
-                row.Add(toggle);
-                var select = UiTextFactory.CreateButton(
-                    bone.name,
-                    () =>
-                    {
-                        _selectedIndex = candidateIndex;
-                        RenderDetail();
-                        RefreshPreview();
-                        RefreshCandidateList();
-                    });
-                select.tooltip = draft.Path;
-                row.Add(select);
-            }
-            else
-            {
-                row.AddToClassList("ee4v-physbone-collider__candidate--group");
-                row.Add(UiTextFactory.Create(
-                    bone.name,
-                    "ee4v-physbone-collider__group-name"));
-            }
-
-            branch.Add(row);
-            if (children.Count > 0)
-            {
-                var childContainer = new VisualElement();
-                childContainer.AddToClassList(
-                    "ee4v-physbone-collider__branch-children");
-                foreach (var child in children)
-                {
-                    childContainer.Add(child);
-                }
-
-                branch.Add(childContainer);
-            }
-
-            return branch;
+            select.tooltip = draft.SuggestedPath + " → " + draft.TargetPath;
+            row.Add(select);
+            return row;
         }
 
         private void RenderDetail()
@@ -459,19 +766,29 @@ namespace Ee4v.PhysBoneCollider
             }
 
             _renderingDetail = true;
-            _selectedBone.SetText(draft.Path);
+            _selectedBone.SetText(FormatCandidate(draft));
+            _selectedBone.tooltip = draft.Path + " → " + draft.TargetPath;
             _enabledField.SetValueWithoutNotify(draft.Enabled);
+            _boneField.SetValueWithoutNotify(draft.Bone);
             _radiusField.SetValueWithoutNotify(draft.Radius);
             _heightField.SetValueWithoutNotify(draft.Height);
             _positionXField.SetValueWithoutNotify(draft.Position.x);
             _positionYField.SetValueWithoutNotify(draft.Position.y);
             _positionZField.SetValueWithoutNotify(draft.Position.z);
+            var rotation = draft.Rotation.eulerAngles;
+            _rotationXField.SetValueWithoutNotify(rotation.x);
+            _rotationYField.SetValueWithoutNotify(rotation.y);
+            _rotationZField.SetValueWithoutNotify(rotation.z);
             _renderingDetail = false;
+            RenderPhysBoneTargets(draft);
         }
 
         private void RefreshPreview()
         {
-            _preview?.Update(_drafts, _selectedIndex);
+            _preview?.Update(
+                _drafts,
+                _selectedIndex,
+                _selectedPhysBonePath);
             _applyButton?.SetEnabled(
                 _avatar != null &&
                 !EditorUtility.IsPersistent(_avatar) &&
@@ -481,10 +798,10 @@ namespace Ee4v.PhysBoneCollider
 
         private void Apply()
         {
+            RestrictAssignmentsToDetectedPhysBones();
             if (!_gateway.TryApply(
                     _avatar,
                     _drafts,
-                    _assignField.value,
                     out var created,
                     out var error))
             {
@@ -499,6 +816,32 @@ namespace Ee4v.PhysBoneCollider
 
             UiTextFactory.SetText(_status, I18N.Get("status.applied", created));
             _status.messageType = HelpBoxMessageType.Info;
+        }
+
+        private void RestrictAssignmentsToDetectedPhysBones()
+        {
+            var detectedPaths = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var target in _physBoneTargets)
+            {
+                detectedPaths.Add(target.Path);
+            }
+
+            foreach (var draft in _drafts)
+            {
+                var removedPaths = new List<string>();
+                foreach (var path in draft.AssignedPhysBonePaths)
+                {
+                    if (!detectedPaths.Contains(path))
+                    {
+                        removedPaths.Add(path);
+                    }
+                }
+
+                foreach (var path in removedPaths)
+                {
+                    draft.AssignedPhysBonePaths.Remove(path);
+                }
+            }
         }
 
         private void SetStatus(string key, HelpBoxMessageType type)
@@ -535,6 +878,160 @@ namespace Ee4v.PhysBoneCollider
             }
 
             return false;
+        }
+
+        private void RenderPhysBoneTargets(PhysBoneColliderDraft draft)
+        {
+            if (_physBoneList == null)
+            {
+                return;
+            }
+
+            _physBoneList.Clear();
+            if (!HasPhysBoneSearchRoot())
+            {
+                _physBoneList.Add(UiTextFactory.Create(
+                    I18N.Get("status.selectPhysBoneRoot"),
+                    "ee4v-physbone-collider__empty-physbones"));
+                return;
+            }
+
+            if (_physBoneTargets.Count == 0)
+            {
+                _physBoneList.Add(UiTextFactory.Create(
+                    I18N.Get("status.noPhysBones"),
+                    "ee4v-physbone-collider__empty-physbones"));
+                return;
+            }
+
+            foreach (var target in _physBoneTargets)
+            {
+                var row = new VisualElement();
+                row.AddToClassList("ee4v-physbone-collider__physbone-target");
+                row.EnableInClassList(
+                    "ee4v-physbone-collider__physbone-target--selected",
+                    draft.AssignedPhysBonePaths.Contains(target.Path) &&
+                    string.Equals(
+                        target.Path,
+                        _selectedPhysBonePath,
+                        StringComparison.Ordinal));
+                var toggle = UiTextFactory.CreateToggle();
+                toggle.tooltip = target.Path;
+                toggle.SetValueWithoutNotify(
+                    draft.AssignedPhysBonePaths.Contains(target.Path));
+                toggle.RegisterValueChangedCallback(evt =>
+                {
+                    draft.AssignmentsLoaded = true;
+                    if (evt.newValue)
+                    {
+                        draft.AssignedPhysBonePaths.Add(target.Path);
+                        _selectedPhysBonePath = target.Path;
+                    }
+                    else
+                    {
+                        draft.AssignedPhysBonePaths.Remove(target.Path);
+                        if (string.Equals(
+                                _selectedPhysBonePath,
+                                target.Path,
+                                StringComparison.Ordinal))
+                        {
+                            _selectedPhysBonePath = null;
+                        }
+                    }
+
+                    RefreshPreview();
+                    Render();
+                });
+                row.Add(toggle);
+                var select = UiTextFactory.CreateButton(
+                    FormatPhysBoneTarget(target),
+                    () =>
+                    {
+                        if (!draft.AssignedPhysBonePaths.Contains(target.Path))
+                        {
+                            return;
+                        }
+
+                        _selectedPhysBonePath = target.Path;
+                        RefreshPreview();
+                        RenderPhysBoneTargets(draft);
+                    });
+                select.tooltip = target.Path;
+                row.Add(select);
+                _physBoneList.Add(row);
+            }
+        }
+
+        private void SetAllPhysBoneTargets(bool selected)
+        {
+            if (!TryGetSelected(out var draft))
+            {
+                return;
+            }
+
+            draft.AssignmentsLoaded = true;
+            draft.AssignedPhysBonePaths.Clear();
+            if (selected)
+            {
+                foreach (var target in _physBoneTargets)
+                {
+                    draft.AssignedPhysBonePaths.Add(target.Path);
+                }
+
+                _selectedPhysBonePath = _physBoneTargets.Count > 0
+                    ? _physBoneTargets[0].Path
+                    : null;
+            }
+            else
+            {
+                _selectedPhysBonePath = null;
+            }
+
+            RefreshPreview();
+            Render();
+        }
+
+        private string FormatPhysBoneTarget(PhysBoneTarget target)
+        {
+            var path = string.IsNullOrEmpty(target.Path)
+                ? _avatar?.name ?? target.Transform.name
+                : CompactPath(target.Path);
+            return target.ComponentCount > 1
+                ? I18N.Get("field.physBoneTargetCount", path, target.ComponentCount)
+                : path;
+        }
+
+        private static string FormatCandidate(PhysBoneColliderDraft draft)
+        {
+            var targetName = draft.TargetPath;
+            var separator = targetName.LastIndexOf('/');
+            if (separator >= 0)
+            {
+                targetName = targetName.Substring(separator + 1);
+            }
+
+            return draft.SuggestedBone.name + " → " + targetName;
+        }
+
+        private static string CompactPath(string path)
+        {
+            var parts = path.Split('/');
+            return parts.Length <= 2
+                ? path
+                : parts[parts.Length - 2] + "/" + parts[parts.Length - 1];
+        }
+
+        private static string FormatPreset(ColliderLayoutPreset preset)
+        {
+            switch (preset)
+            {
+                case ColliderLayoutPreset.Lightweight:
+                    return I18N.Get("preset.lightweight");
+                case ColliderLayoutPreset.Full:
+                    return I18N.Get("preset.full");
+                default:
+                    return I18N.Get("preset.standard");
+            }
         }
 
         private static GameObject FindAvatarRoot(GameObject selected)

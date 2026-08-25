@@ -6,6 +6,29 @@ using UnityEngine;
 
 namespace Ee4v.PhysBoneCollider
 {
+    internal sealed class PhysBoneTarget
+    {
+        internal PhysBoneTarget(
+            Transform transform,
+            string path,
+            int componentCount,
+            IReadOnlyList<string> transformPaths)
+        {
+            Transform = transform;
+            Path = path;
+            ComponentCount = componentCount;
+            TransformPaths = transformPaths;
+        }
+
+        internal Transform Transform { get; }
+
+        internal string Path { get; }
+
+        internal int ComponentCount { get; }
+
+        internal IReadOnlyList<string> TransformPaths { get; }
+    }
+
     internal sealed class VrchatPhysBoneColliderGateway
     {
         private const string ColliderTypeName =
@@ -38,6 +61,74 @@ namespace Ee4v.PhysBoneCollider
         internal bool IsModularAvatarAvailable => ResolveBoneProxyType() != null;
         internal bool IsAvailable => IsSdkAvailable && IsModularAvatarAvailable;
 
+        internal IReadOnlyList<PhysBoneTarget> FindPhysBoneTargets(
+            GameObject avatar,
+            IReadOnlyList<GameObject> searchRoots)
+        {
+            var physBoneType = ResolvePhysBoneType();
+            if (avatar == null ||
+                searchRoots == null ||
+                physBoneType == null ||
+                searchRoots.Count == 0)
+            {
+                return Array.Empty<PhysBoneTarget>();
+            }
+
+            return searchRoots
+                .Where(root =>
+                    root != null &&
+                    (root.transform == avatar.transform ||
+                     root.transform.IsChildOf(avatar.transform)))
+                .SelectMany(root => FindDirectArmatures(root.transform))
+                .SelectMany(armature =>
+                    armature.GetComponentsInChildren(physBoneType, true))
+                .Distinct()
+                .Cast<Component>()
+                .Select(component => new
+                {
+                    Root = ResolvePhysBoneTarget(component),
+                    Paths = CollectPhysBoneTransformPaths(component, avatar.transform)
+                })
+                .Where(item =>
+                    item.Root != null &&
+                    (item.Root == avatar.transform ||
+                     item.Root.IsChildOf(avatar.transform)))
+                .GroupBy(item => item.Root)
+                .Select(group => new PhysBoneTarget(
+                    group.Key,
+                    AnimationUtility.CalculateTransformPath(
+                        group.Key,
+                        avatar.transform),
+                    group.Count(),
+                    group
+                        .SelectMany(item => item.Paths)
+                        .Distinct(StringComparer.Ordinal)
+                        .OrderBy(path => path, StringComparer.Ordinal)
+                        .ToArray()))
+                .OrderBy(target => target.Path, StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        private static IEnumerable<Transform> FindDirectArmatures(Transform root)
+        {
+            if (root == null)
+            {
+                yield break;
+            }
+
+            for (var index = 0; index < root.childCount; index++)
+            {
+                var child = root.GetChild(index);
+                if (string.Equals(
+                        child.name,
+                        "Armature",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    yield return child;
+                }
+            }
+        }
+
         internal void LoadOwned(
             GameObject avatar,
             IReadOnlyList<PhysBoneColliderDraft> drafts)
@@ -61,14 +152,36 @@ namespace Ee4v.PhysBoneCollider
                 return;
             }
 
-            var byBone = drafts.ToDictionary(draft => draft.Bone);
+            var byName = drafts.ToDictionary(GetOwnedObjectName);
+            var byBone = drafts
+                .GroupBy(draft => draft.SuggestedBone)
+                .ToDictionary(group => group.Key, group => group.ToArray());
+            var loaded = new HashSet<PhysBoneColliderDraft>();
+            var owned = new Dictionary<UnityEngine.Object, PhysBoneColliderDraft>();
             foreach (var component in root.GetComponentsInChildren(colliderType, true))
             {
                 var proxy = component.GetComponent(boneProxyType);
                 var target = ResolveProxyTarget(avatar.transform, proxy);
-                if (target == null || !byBone.TryGetValue(target, out var draft))
+                if (!TryResolveDraft(
+                        component.gameObject.name,
+                        target,
+                        byName,
+                        byBone,
+                        out var draft))
                 {
                     continue;
+                }
+
+                if (target != null)
+                {
+                    draft.Rebind(target, avatar.transform);
+                }
+
+                owned[component] = draft;
+                if (loaded.Add(draft))
+                {
+                    draft.AssignedPhysBonePaths.Clear();
+                    draft.AssignmentsLoaded = true;
                 }
 
                 var serialized = new SerializedObject(component);
@@ -114,12 +227,37 @@ namespace Ee4v.PhysBoneCollider
                     }
                 }
             }
+
+            LoadAssignments(avatar, owned);
+        }
+
+        private static bool TryResolveDraft(
+            string objectName,
+            Transform target,
+            IReadOnlyDictionary<string, PhysBoneColliderDraft> byName,
+            IReadOnlyDictionary<Transform, PhysBoneColliderDraft[]> byBone,
+            out PhysBoneColliderDraft draft)
+        {
+            if (byName.TryGetValue(objectName, out draft))
+            {
+                return true;
+            }
+
+            if (target != null &&
+                byBone.TryGetValue(target, out var matches) &&
+                matches.Length == 1)
+            {
+                draft = matches[0];
+                return true;
+            }
+
+            draft = null;
+            return false;
         }
 
         internal bool TryApply(
             GameObject avatar,
             IReadOnlyList<PhysBoneColliderDraft> drafts,
-            bool assignToPhysBones,
             out int createdCount,
             out string error)
         {
@@ -195,10 +333,10 @@ namespace Ee4v.PhysBoneCollider
 
                 ConfigureRoot(root, paths.RootName);
 
-                var created = new List<Component>();
+                var created = new Dictionary<Component, PhysBoneColliderDraft>();
                 foreach (var draft in drafts.Where(item => item.Enabled))
                 {
-                    var holder = new GameObject(OwnedObjectName);
+                    var holder = new GameObject(GetOwnedObjectName(draft));
                     Undo.RegisterCreatedObjectUndo(
                         holder,
                         "Create PhysBone Collider");
@@ -214,7 +352,7 @@ namespace Ee4v.PhysBoneCollider
                     Configure(component, draft);
                     var proxy = Undo.AddComponent(holder, boneProxyType);
                     ConfigureProxy(proxy, avatar.transform, draft.Bone);
-                    created.Add(component);
+                    created.Add(component, draft);
                 }
 
                 var saved = PrefabUtility.SaveAsPrefabAssetAndConnect(
@@ -227,10 +365,7 @@ namespace Ee4v.PhysBoneCollider
                         "The generated PhysBone Collider Prefab could not be saved and connected.");
                 }
 
-                if (assignToPhysBones)
-                {
-                    AddReferences(avatar, created);
-                }
+                AddReferences(avatar, created);
 
                 createdCount = created.Count;
                 Undo.CollapseUndoOperations(undoGroup);
@@ -322,7 +457,9 @@ namespace Ee4v.PhysBoneCollider
                 return null;
             }
 
-            return avatar.Find(subPath.stringValue);
+            return string.IsNullOrEmpty(subPath.stringValue)
+                ? avatar
+                : avatar.Find(subPath.stringValue);
         }
 
         private void RemoveReferences(GameObject avatar, IReadOnlyCollection<Component> removed)
@@ -365,7 +502,44 @@ namespace Ee4v.PhysBoneCollider
             }
         }
 
-        private void AddReferences(GameObject avatar, IReadOnlyList<Component> created)
+        private void LoadAssignments(
+            GameObject avatar,
+            IReadOnlyDictionary<UnityEngine.Object, PhysBoneColliderDraft> owned)
+        {
+            var physBoneType = ResolvePhysBoneType();
+            if (physBoneType == null || owned.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var physBone in avatar.GetComponentsInChildren(physBoneType, true))
+            {
+                var serialized = new SerializedObject(physBone);
+                var colliders = Find(serialized, "colliders", "_colliders");
+                if (colliders == null || !colliders.isArray)
+                {
+                    continue;
+                }
+
+                var path = AnimationUtility.CalculateTransformPath(
+                    ResolvePhysBoneTarget(physBone),
+                    avatar.transform);
+                for (var index = 0; index < colliders.arraySize; index++)
+                {
+                    var reference = colliders
+                        .GetArrayElementAtIndex(index)
+                        .objectReferenceValue;
+                    if (reference != null && owned.TryGetValue(reference, out var draft))
+                    {
+                        draft.AssignedPhysBonePaths.Add(path);
+                    }
+                }
+            }
+        }
+
+        private void AddReferences(
+            GameObject avatar,
+            IReadOnlyDictionary<Component, PhysBoneColliderDraft> created)
         {
             var physBoneType = ResolvePhysBoneType();
             if (physBoneType == null || created.Count == 0)
@@ -382,12 +556,20 @@ namespace Ee4v.PhysBoneCollider
                     continue;
                 }
 
+                var path = AnimationUtility.CalculateTransformPath(
+                    ResolvePhysBoneTarget(physBone),
+                    avatar.transform);
                 Undo.RecordObject(physBone, "Assign PhysBone Colliders");
-                foreach (var collider in created)
+                foreach (var pair in created)
                 {
+                    if (!pair.Value.AssignedPhysBonePaths.Contains(path))
+                    {
+                        continue;
+                    }
+
                     var index = colliders.arraySize;
                     colliders.InsertArrayElementAtIndex(index);
-                    colliders.GetArrayElementAtIndex(index).objectReferenceValue = collider;
+                    colliders.GetArrayElementAtIndex(index).objectReferenceValue = pair.Key;
                 }
 
                 serialized.ApplyModifiedProperties();
@@ -398,6 +580,75 @@ namespace Ee4v.PhysBoneCollider
         private Type ResolveColliderType()
         {
             return _colliderType ?? (_colliderType = ResolveComponentType(ColliderTypeName));
+        }
+
+        private static Transform ResolvePhysBoneTarget(Component physBone)
+        {
+            var serialized = new SerializedObject(physBone);
+            var root = Find(serialized, "rootTransform", "_rootTransform");
+            return root != null &&
+                   root.propertyType == SerializedPropertyType.ObjectReference
+                ? root.objectReferenceValue as Transform ?? physBone.transform
+                : physBone.transform;
+        }
+
+        private static IReadOnlyList<string> CollectPhysBoneTransformPaths(
+            Component physBone,
+            Transform avatar)
+        {
+            var root = ResolvePhysBoneTarget(physBone);
+            if (root == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            var ignored = new HashSet<Transform>();
+            var serialized = new SerializedObject(physBone);
+            var ignoreTransforms = Find(
+                serialized,
+                "ignoreTransforms",
+                "_ignoreTransforms");
+            if (ignoreTransforms != null && ignoreTransforms.isArray)
+            {
+                for (var index = 0; index < ignoreTransforms.arraySize; index++)
+                {
+                    var ignoredTransform = ignoreTransforms
+                        .GetArrayElementAtIndex(index)
+                        .objectReferenceValue as Transform;
+                    if (ignoredTransform != null)
+                    {
+                        ignored.Add(ignoredTransform);
+                    }
+                }
+            }
+
+            var paths = new List<string>();
+            CollectPhysBoneTransformPaths(root, avatar, ignored, paths);
+            return paths;
+        }
+
+        private static void CollectPhysBoneTransformPaths(
+            Transform current,
+            Transform avatar,
+            ISet<Transform> ignored,
+            ICollection<string> paths)
+        {
+            if (current == null ||
+                ignored.Contains(current) ||
+                (current != avatar && !current.IsChildOf(avatar)))
+            {
+                return;
+            }
+
+            paths.Add(AnimationUtility.CalculateTransformPath(current, avatar));
+            for (var index = 0; index < current.childCount; index++)
+            {
+                CollectPhysBoneTransformPaths(
+                    current.GetChild(index),
+                    avatar,
+                    ignored,
+                    paths);
+            }
         }
 
         private Type ResolvePhysBoneType()
@@ -426,6 +677,11 @@ namespace Ee4v.PhysBoneCollider
                 component.gameObject.name,
                 OwnedObjectName,
                 StringComparison.Ordinal);
+        }
+
+        private static string GetOwnedObjectName(PhysBoneColliderDraft draft)
+        {
+            return OwnedObjectName + " " + Hash128.Compute(draft.LayoutId);
         }
 
         private static void SetString(

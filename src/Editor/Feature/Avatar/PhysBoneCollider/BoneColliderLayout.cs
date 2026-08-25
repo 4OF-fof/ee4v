@@ -6,6 +6,13 @@ using UnityEngine;
 
 namespace Ee4v.PhysBoneCollider
 {
+    internal enum ColliderLayoutPreset
+    {
+        Lightweight,
+        Standard,
+        Full
+    }
+
     internal sealed class PhysBoneColliderDraft
     {
         internal PhysBoneColliderDraft(
@@ -15,10 +22,14 @@ namespace Ee4v.PhysBoneCollider
             Vector3 position,
             Quaternion rotation,
             float radius,
-            float height)
+            float height,
+            string targetPath = null)
         {
             Bone = bone;
             Path = path;
+            SuggestedBone = bone;
+            SuggestedPath = path;
+            TargetPath = targetPath ?? path;
             BoneLength = boneLength;
             SuggestedPosition = position;
             SuggestedRotation = rotation;
@@ -29,11 +40,20 @@ namespace Ee4v.PhysBoneCollider
             Rotation = rotation;
             Radius = radius;
             Height = height;
+            AssignedPhysBonePaths = new HashSet<string>(StringComparer.Ordinal);
         }
 
-        internal Transform Bone { get; }
+        internal Transform Bone { get; private set; }
 
-        internal string Path { get; }
+        internal string Path { get; private set; }
+
+        internal Transform SuggestedBone { get; }
+
+        internal string SuggestedPath { get; }
+
+        internal string TargetPath { get; }
+
+        internal string LayoutId => SuggestedPath + "\n" + TargetPath;
 
         internal float BoneLength { get; }
 
@@ -55,8 +75,29 @@ namespace Ee4v.PhysBoneCollider
 
         internal float Height { get; set; }
 
+        internal ISet<string> AssignedPhysBonePaths { get; }
+
+        internal bool AssignmentsLoaded { get; set; }
+
+        internal void Rebind(Transform bone, Transform avatarRoot)
+        {
+            if (bone == null || avatarRoot == null || bone == Bone)
+            {
+                return;
+            }
+
+            var worldPosition = Bone.TransformPoint(Position);
+            var worldRotation = Bone.rotation * Rotation;
+            Bone = bone;
+            Path = AnimationUtility.CalculateTransformPath(bone, avatarRoot);
+            Position = bone.InverseTransformPoint(worldPosition);
+            Rotation = Quaternion.Inverse(bone.rotation) * worldRotation;
+        }
+
         internal void Reset()
         {
+            Bone = SuggestedBone;
+            Path = SuggestedPath;
             Enabled = true;
             Position = SuggestedPosition;
             Rotation = SuggestedRotation;
@@ -115,7 +156,8 @@ namespace Ee4v.PhysBoneCollider
 
         internal static IReadOnlyList<PhysBoneColliderDraft> Create(
             GameObject avatar,
-            float minimumBoneLength)
+            float minimumBoneLength,
+            ColliderLayoutPreset preset = ColliderLayoutPreset.Standard)
         {
             if (avatar == null)
             {
@@ -144,7 +186,7 @@ namespace Ee4v.PhysBoneCollider
                 }
             }
 
-            var bones = FindBodyBones(avatar, deformBones, armature);
+            var bones = FindBodyBones(avatar, deformBones, armature, preset);
             var threshold = Mathf.Max(0.001f, minimumBoneLength);
             var drafts = new List<PhysBoneColliderDraft>();
             var torsoBones = AddTorsoDrafts(
@@ -153,6 +195,14 @@ namespace Ee4v.PhysBoneCollider
                 root,
                 threshold,
                 drafts);
+            if (preset == ColliderLayoutPreset.Lightweight)
+            {
+                AddLightweightDrafts(avatar, bones, root, threshold, drafts);
+                return drafts
+                    .OrderBy(draft => draft.Path, StringComparer.Ordinal)
+                    .ToArray();
+            }
+
             foreach (var bone in bones)
             {
                 if (torsoBones.Contains(bone))
@@ -180,6 +230,141 @@ namespace Ee4v.PhysBoneCollider
             return drafts
                 .OrderBy(draft => draft.Path, StringComparer.Ordinal)
                 .ToArray();
+        }
+
+        private static void AddLightweightDrafts(
+            GameObject avatar,
+            ISet<Transform> bones,
+            Transform root,
+            float threshold,
+            ICollection<PhysBoneColliderDraft> drafts)
+        {
+            var animator = avatar.GetComponent<Animator>();
+            var isHumanoid = animator != null && animator.isHuman;
+            AddMergedDraft(
+                FindBodyBone(animator, isHumanoid, bones, HumanBodyBones.Neck, "neck"),
+                null,
+                FindBodyBone(animator, isHumanoid, bones, HumanBodyBones.Head, "head"),
+                root,
+                threshold,
+                drafts);
+            AddMergedLimbDraft(
+                animator,
+                isHumanoid,
+                bones,
+                HumanBodyBones.LeftUpperArm,
+                HumanBodyBones.LeftLowerArm,
+                HumanBodyBones.LeftHand,
+                new[] { "leftupperarm", "leftarm" },
+                new[] { "leftlowerarm", "leftforearm" },
+                new[] { "lefthand", "leftwrist" },
+                root,
+                threshold,
+                drafts);
+            AddMergedLimbDraft(
+                animator,
+                isHumanoid,
+                bones,
+                HumanBodyBones.RightUpperArm,
+                HumanBodyBones.RightLowerArm,
+                HumanBodyBones.RightHand,
+                new[] { "rightupperarm", "rightarm" },
+                new[] { "rightlowerarm", "rightforearm" },
+                new[] { "righthand", "rightwrist" },
+                root,
+                threshold,
+                drafts);
+            AddMergedLimbDraft(
+                animator,
+                isHumanoid,
+                bones,
+                HumanBodyBones.LeftUpperLeg,
+                HumanBodyBones.LeftLowerLeg,
+                HumanBodyBones.LeftFoot,
+                new[] { "leftupperleg", "leftthigh" },
+                new[] { "leftlowerleg", "leftcalf" },
+                new[] { "leftfoot", "leftankle" },
+                root,
+                threshold,
+                drafts);
+            AddMergedLimbDraft(
+                animator,
+                isHumanoid,
+                bones,
+                HumanBodyBones.RightUpperLeg,
+                HumanBodyBones.RightLowerLeg,
+                HumanBodyBones.RightFoot,
+                new[] { "rightupperleg", "rightthigh" },
+                new[] { "rightlowerleg", "rightcalf" },
+                new[] { "rightfoot", "rightankle" },
+                root,
+                threshold,
+                drafts);
+        }
+
+        private static void AddMergedLimbDraft(
+            Animator animator,
+            bool isHumanoid,
+            ISet<Transform> bones,
+            HumanBodyBones startBone,
+            HumanBodyBones middleBone,
+            HumanBodyBones endBone,
+            string[] startNames,
+            string[] middleNames,
+            string[] endNames,
+            Transform root,
+            float threshold,
+            ICollection<PhysBoneColliderDraft> drafts)
+        {
+            AddMergedDraft(
+                FindBodyBone(animator, isHumanoid, bones, startBone, startNames),
+                FindBodyBone(animator, isHumanoid, bones, middleBone, middleNames),
+                FindBodyBone(animator, isHumanoid, bones, endBone, endNames),
+                root,
+                threshold,
+                drafts);
+        }
+
+        private static void AddMergedDraft(
+            Transform start,
+            Transform middle,
+            Transform end,
+            Transform root,
+            float threshold,
+            ICollection<PhysBoneColliderDraft> drafts)
+        {
+            if (start == null || end == null || !end.IsChildOf(start))
+            {
+                return;
+            }
+
+            var length = Vector3.Distance(start.position, end.position);
+            if (length < threshold)
+            {
+                return;
+            }
+
+            var segmentLength = middle != null &&
+                                middle.IsChildOf(start) &&
+                                end.IsChildOf(middle)
+                ? Mathf.Max(
+                    Vector3.Distance(start.position, middle.position),
+                    Vector3.Distance(middle.position, end.position))
+                : length;
+            var radius = Mathf.Min(MaximumRadius, segmentLength * RadiusRatio);
+            drafts.Add(CreateDraft(start, end, root, radius, length));
+        }
+
+        private static Transform FindBodyBone(
+            Animator animator,
+            bool isHumanoid,
+            ISet<Transform> bones,
+            HumanBodyBones humanoidBone,
+            params string[] names)
+        {
+            return isHumanoid
+                ? FindHumanoidBone(animator, bones, humanoidBone)
+                : FindNamedBone(bones, names);
         }
 
         private static HashSet<Transform> AddTorsoDrafts(
@@ -338,7 +523,8 @@ namespace Ee4v.PhysBoneCollider
                 localPosition,
                 localRotation,
                 radius,
-                height);
+                height,
+                AnimationUtility.CalculateTransformPath(target, root));
         }
 
         private static Transform FindHumanoidBone(
@@ -390,8 +576,14 @@ namespace Ee4v.PhysBoneCollider
         private static HashSet<Transform> FindBodyBones(
             GameObject avatar,
             ISet<Transform> deformBones,
-            Transform armature)
+            Transform armature,
+            ColliderLayoutPreset preset)
         {
+            if (preset == ColliderLayoutPreset.Full)
+            {
+                return new HashSet<Transform>(deformBones);
+            }
+
             var result = new HashSet<Transform>();
             var animator = avatar.GetComponent<Animator>();
             if (animator != null && animator.isHuman)

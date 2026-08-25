@@ -13,10 +13,20 @@ namespace Ee4v.PhysBoneCollider
 
         private readonly Action _repaint;
         private readonly List<PreviewCapsule> _capsules = new List<PreviewCapsule>();
+        private IReadOnlyList<PhysBoneTarget> _physBones =
+            Array.Empty<PhysBoneTarget>();
         private PreviewRenderUtility _utility;
         private GameObject _clone;
         private Material _normalMaterial;
         private Material _selectedMaterial;
+        private Material _physBoneMaterial;
+        private Material _selectedPhysBoneMaterial;
+        private Mesh _physBoneMesh;
+        private Mesh _selectedPhysBoneMesh;
+        private MeshRenderer _physBoneRenderer;
+        private MeshRenderer _selectedPhysBoneRenderer;
+        private bool _showColliders = true;
+        private bool _showPhysBones = true;
         private Vector3 _target;
         private float _distance = 1f;
         private float _yaw;
@@ -31,7 +41,9 @@ namespace Ee4v.PhysBoneCollider
         internal void SetAvatar(
             GameObject avatar,
             IReadOnlyList<PhysBoneColliderDraft> drafts,
-            int selectedIndex)
+            IReadOnlyList<PhysBoneTarget> physBones,
+            int selectedIndex,
+            string selectedPhysBonePath)
         {
             Cleanup();
             if (avatar == null)
@@ -48,6 +60,7 @@ namespace Ee4v.PhysBoneCollider
             _clone.name = avatar.name + " (PhysBone Collider Preview)";
             SetHideFlags(_clone.transform);
             CreatePreviewAssets();
+            _physBones = physBones ?? Array.Empty<PhysBoneTarget>();
 
             for (var index = 0; index < drafts.Count; index++)
             {
@@ -78,14 +91,17 @@ namespace Ee4v.PhysBoneCollider
                     mesh));
             }
 
+            CreatePhysBonePreview();
+
             _utility.AddSingleGO(_clone);
-            Update(drafts, selectedIndex);
+            Update(drafts, selectedIndex, selectedPhysBonePath);
             ResetView();
         }
 
         internal void Update(
             IReadOnlyList<PhysBoneColliderDraft> drafts,
-            int selectedIndex)
+            int selectedIndex,
+            string selectedPhysBonePath)
         {
             foreach (var capsule in _capsules)
             {
@@ -95,7 +111,8 @@ namespace Ee4v.PhysBoneCollider
                 }
 
                 var draft = drafts[capsule.Index];
-                capsule.Renderer.enabled = draft.Enabled;
+                capsule.SourceEnabled = draft.Enabled;
+                capsule.Renderer.enabled = _showColliders && draft.Enabled;
                 capsule.Renderer.sharedMaterial = capsule.Index == selectedIndex
                     ? _selectedMaterial
                     : _normalMaterial;
@@ -111,6 +128,32 @@ namespace Ee4v.PhysBoneCollider
                     Mathf.Max(0.001f, draft.Radius),
                     Mathf.Max(draft.Radius * 2f, draft.Height),
                     capsule.Index == selectedIndex);
+            }
+
+            UpdatePhysBonePreview(
+                drafts,
+                selectedIndex,
+                selectedPhysBonePath);
+            _repaint?.Invoke();
+        }
+
+        internal void SetVisibility(bool showColliders, bool showPhysBones)
+        {
+            _showColliders = showColliders;
+            _showPhysBones = showPhysBones;
+            foreach (var capsule in _capsules)
+            {
+                capsule.Renderer.enabled = showColliders && capsule.SourceEnabled;
+            }
+
+            if (_physBoneRenderer != null)
+            {
+                _physBoneRenderer.enabled = showPhysBones;
+            }
+
+            if (_selectedPhysBoneRenderer != null)
+            {
+                _selectedPhysBoneRenderer.enabled = showPhysBones;
             }
 
             _repaint?.Invoke();
@@ -255,6 +298,125 @@ namespace Ee4v.PhysBoneCollider
         {
             _normalMaterial = CreateMaterial(new Color(0.1f, 0.85f, 1f, 0.82f));
             _selectedMaterial = CreateMaterial(new Color(1f, 0.72f, 0.1f, 1f));
+            _physBoneMaterial = CreateMaterial(new Color(1f, 0.25f, 0.72f, 0.92f));
+            _selectedPhysBoneMaterial = CreateMaterial(
+                new Color(0.45f, 1f, 0.35f, 1f));
+        }
+
+        private void CreatePhysBonePreview()
+        {
+            CreatePhysBonePreviewRenderer(
+                "PhysBone Preview",
+                _physBoneMaterial,
+                out _physBoneMesh,
+                out _physBoneRenderer);
+            CreatePhysBonePreviewRenderer(
+                "Selected PhysBone Preview",
+                _selectedPhysBoneMaterial,
+                out _selectedPhysBoneMesh,
+                out _selectedPhysBoneRenderer);
+        }
+
+        private void CreatePhysBonePreviewRenderer(
+            string name,
+            Material material,
+            out Mesh mesh,
+            out MeshRenderer meshRenderer)
+        {
+            var holder = new GameObject(name);
+            holder.hideFlags = HideFlags.HideAndDontSave;
+            holder.transform.SetParent(_clone.transform, false);
+            var filter = holder.AddComponent<MeshFilter>();
+            mesh = new Mesh
+            {
+                name = name + " Lines",
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            filter.sharedMesh = mesh;
+            meshRenderer = holder.AddComponent<MeshRenderer>();
+            meshRenderer.sharedMaterial = material;
+            meshRenderer.enabled = _showPhysBones;
+        }
+
+        private void UpdatePhysBonePreview(
+            IReadOnlyList<PhysBoneColliderDraft> drafts,
+            int selectedIndex,
+            string selectedPhysBonePath)
+        {
+            if (_physBoneMesh == null || _selectedPhysBoneMesh == null)
+            {
+                return;
+            }
+
+            var paths = new HashSet<string>(StringComparer.Ordinal);
+            var selectedPaths = new HashSet<string>(StringComparer.Ordinal);
+            if (selectedIndex >= 0 && selectedIndex < drafts.Count)
+            {
+                var assignments = drafts[selectedIndex].AssignedPhysBonePaths;
+                foreach (var target in _physBones)
+                {
+                    if (!assignments.Contains(target.Path))
+                    {
+                        continue;
+                    }
+
+                    if (string.Equals(
+                            target.Path,
+                            selectedPhysBonePath,
+                            StringComparison.Ordinal))
+                    {
+                        selectedPaths.UnionWith(target.TransformPaths);
+                    }
+                    else
+                    {
+                        paths.UnionWith(target.TransformPaths);
+                    }
+                }
+            }
+
+            UpdatePhysBoneMesh(_physBoneMesh, paths);
+            UpdatePhysBoneMesh(_selectedPhysBoneMesh, selectedPaths);
+        }
+
+        private void UpdatePhysBoneMesh(Mesh mesh, ISet<string> paths)
+        {
+            const float markerSize = 0.008f;
+            var vertices = new List<Vector3>();
+            var indices = new List<int>();
+            foreach (var path in paths)
+            {
+                var transform = string.IsNullOrEmpty(path)
+                    ? _clone.transform
+                    : _clone.transform.Find(path);
+                if (transform == null)
+                {
+                    continue;
+                }
+
+                var position = _clone.transform.InverseTransformPoint(transform.position);
+                AddCross(vertices, indices, position, markerSize);
+                if (transform == _clone.transform)
+                {
+                    continue;
+                }
+
+                var parentPath = AnimationUtility.CalculateTransformPath(
+                    transform.parent,
+                    _clone.transform);
+                if (paths.Contains(parentPath))
+                {
+                    AddLine(
+                        vertices,
+                        indices,
+                        _clone.transform.InverseTransformPoint(transform.parent.position),
+                        position);
+                }
+            }
+
+            mesh.Clear();
+            mesh.SetVertices(vertices);
+            mesh.SetIndices(indices, MeshTopology.Lines, 0);
+            mesh.RecalculateBounds();
         }
 
         private static Material CreateMaterial(Color color)
@@ -387,6 +549,17 @@ namespace Ee4v.PhysBoneCollider
             indices.Add(offset + 1);
         }
 
+        private static void AddCross(
+            ICollection<Vector3> vertices,
+            ICollection<int> indices,
+            Vector3 center,
+            float size)
+        {
+            AddLine(vertices, indices, center + Vector3.left * size, center + Vector3.right * size);
+            AddLine(vertices, indices, center + Vector3.down * size, center + Vector3.up * size);
+            AddLine(vertices, indices, center + Vector3.back * size, center + Vector3.forward * size);
+        }
+
         private static void SetHideFlags(Transform transform)
         {
             transform.gameObject.hideFlags = HideFlags.HideAndDontSave;
@@ -418,8 +591,19 @@ namespace Ee4v.PhysBoneCollider
 
             UnityEngine.Object.DestroyImmediate(_normalMaterial);
             UnityEngine.Object.DestroyImmediate(_selectedMaterial);
+            UnityEngine.Object.DestroyImmediate(_physBoneMaterial);
+            UnityEngine.Object.DestroyImmediate(_selectedPhysBoneMaterial);
+            UnityEngine.Object.DestroyImmediate(_physBoneMesh);
+            UnityEngine.Object.DestroyImmediate(_selectedPhysBoneMesh);
             _normalMaterial = null;
             _selectedMaterial = null;
+            _physBoneMaterial = null;
+            _selectedPhysBoneMaterial = null;
+            _physBoneMesh = null;
+            _selectedPhysBoneMesh = null;
+            _physBoneRenderer = null;
+            _selectedPhysBoneRenderer = null;
+            _physBones = Array.Empty<PhysBoneTarget>();
         }
 
         private sealed class PreviewCapsule
@@ -447,6 +631,8 @@ namespace Ee4v.PhysBoneCollider
             internal MeshRenderer Renderer { get; }
 
             internal Mesh Mesh { get; }
+
+            internal bool SourceEnabled { get; set; }
         }
     }
 }

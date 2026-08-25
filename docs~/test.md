@@ -65,7 +65,8 @@
 | テスト | 保証する契約 | 残す理由 |
 | --- | --- | --- |
 | `Create_UsesOnlyVisibleMajorBonesInDirectArmature` | Prefab直下のArmatureにある主要な体ボーンだけを使い、短いSpine区間をまとめた上下2つの胴体Colliderを体幅から提案する | 衣装、目、EditorOnly階層の混入と、しきい値により胴体がChestだけになる問題は、単純な一列のボーン表示だけでは判別しにくい |
-| `Apply_ReplacesOwnedCollidersAndAssignsCurrentReferences` | 生成Colliderをアバター直下の1 Prefabへまとめ、MA Bone Proxyの対象パス、Root Transform、カプセル形状と寸法を設定し、再適用では旧参照と生成物を現在値で一つに置き換える | VRChat SDK型、Modular Avatar型、Prefabをまたぐシリアライズ境界は、画面上の配置案だけでは欠落参照や旧Colliderの残存を検出できない |
+| `Create_PresetsBalanceColliderCountAndBoneCoverage` | 軽量では四肢を統合し、通常では主要ボーン、フルでは主要部位外の変形ボーンまで候補へ含める | プリセットごとの削減と追従範囲の違いは、単一の骨格や最終Prefabだけでは判別しにくい |
+| `Apply_ReplacesOwnedCollidersAndAssignsSelectedPhysBoneTransforms` | 複数指定したGameObject直下のArmature内だけから、重複なしでPhysBoneと表示対象Transformを検出する。さらに深いArmatureとArmature外は除外する。生成Colliderをアバター直下の1 Prefabへまとめ、MA Bone Proxyとカプセル形状を設定する。選択したPhysBone Transformだけへ参照を追加し、設定を読み戻して再適用時に旧参照を置き換える | 直下に限定した複数階層の検出範囲と、VRChat SDK型・Modular Avatar型・Prefabをまたぐ個別参照のシリアライズ境界は、画面上の配置案だけでは範囲外や重複の混入、欠落参照、旧Colliderの残存を検出できない |
 
 ## Core
 
