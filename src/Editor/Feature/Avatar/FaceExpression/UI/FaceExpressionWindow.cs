@@ -436,15 +436,8 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            if (ReferenceEquals(
-                    args.Definition,
-                    ProjectAssetSettings.RootFolderName) ||
-                ReferenceEquals(
-                    args.Definition,
-                    ProjectAssetSettings.UseProjectRootFolderName) ||
-                ReferenceEquals(
-                    args.Definition,
-                    ProjectAssetSettings.ProjectRootFolderName))
+            if (ProjectAssetSettings.IsAssetRootDefinition(
+                    args.Definition))
             {
                 RefreshLibrary();
             }

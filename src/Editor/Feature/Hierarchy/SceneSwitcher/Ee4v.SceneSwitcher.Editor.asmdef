@@ -3,7 +3,6 @@
   "rootNamespace": "Ee4v.SceneSwitcher",
   "references": [
     "Ee4v.Core.Contracts.Editor",
-    "Ee4v.Core.Editor",
     "Ee4v.Core.Presentation.Editor",
     "Ee4v.Core.Unity.Editor",
     "Ee4v.UI.Editor"

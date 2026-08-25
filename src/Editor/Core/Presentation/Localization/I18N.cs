@@ -21,7 +21,7 @@ namespace Ee4v.Core.I18n
             CoreLocalization.Reloaded += OnReloaded;
         }
 
-        internal static event Action Reloaded;
+        public static event Action Reloaded;
 
         public static string CurrentLanguage
         {

@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.Core.Settings
 {
-    internal static class CommaSeparatedListSettingDrawer
+    public static class CommaSeparatedListSettingDrawer
     {
         public static void Register(SettingDefinition<string> definition)
         {
@@ -29,7 +29,7 @@ namespace Ee4v.Core.Settings
             return field;
         }
 
-        internal static IReadOnlyList<string> ParseItems(string value)
+        public static IReadOnlyList<string> ParseItems(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
             {

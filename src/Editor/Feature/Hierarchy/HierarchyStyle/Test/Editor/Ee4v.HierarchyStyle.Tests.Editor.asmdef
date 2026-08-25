@@ -2,8 +2,7 @@
   "name": "Ee4v.HierarchyStyle.Tests.Editor",
   "rootNamespace": "Ee4v.HierarchyStyle.Tests",
   "references": [
-    "Ee4v.HierarchyStyle.Editor",
-    "Ee4v.ItemStyle.Editor"
+    "Ee4v.HierarchyStyle.Editor"
   ],
   "includePlatforms": [
     "Editor"

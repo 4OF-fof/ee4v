@@ -6,6 +6,16 @@
 - Unity 2022.3
 - 将来的なUnity 6への移行
 
+## モジュールと依存
+
+- `src/Editor/Core`と`src/Editor/UI`を機能横断の基盤とする
+- 各機能モジュールはCoreとUIに依存してよいが、原則として別の機能モジュールへ依存しない
+- 複数機能で共有する実装は`src/Editor/Feature/Shared`に置き、使用する機能と依存理由を`docs~`に記載する
+- AssetManagerは例外として他の機能モジュールへ依存してよい
+  - AssetProtectionは`src/Editor/AssetManager/AssetProtection`に置くAssetManager内部モジュールとして扱う
+- 機能モジュールはCoreの公開APIを使用し、Coreから機能assemblyへの`InternalsVisibleTo`を追加しない
+- asmdefには実際に使用するassemblyだけを参照として記載する
+
 ## 作業方針
 
 - コード変更には `tiny-code` skill を使用

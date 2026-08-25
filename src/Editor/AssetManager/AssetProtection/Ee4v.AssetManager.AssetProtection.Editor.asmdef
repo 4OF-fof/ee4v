@@ -1,5 +1,5 @@
 {
-  "name": "Ee4v.AssetProtection.Editor",
+  "name": "Ee4v.AssetManager.AssetProtection.Editor",
   "rootNamespace": "Ee4v.AssetProtection",
   "references": [
     "Ee4v.AssetManager.Contracts.Editor",

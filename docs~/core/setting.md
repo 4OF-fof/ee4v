@@ -20,6 +20,9 @@ Setting は設定定義の登録、値の検証、読込、保存、変更通知
 | `CoreSettings` | 既定の `ISettingsService` を公開する |
 | `SettingDrawerApi` | 設定定義ごとの入力 UI を登録する |
 | `SettingDrawerContext<T>` | 入力 UI へ現在値と変更通知を渡す |
+| `GlobalDataSettings` | ee4v共有データのルートと変更通知を公開する |
+| `ProjectAssetSettings` | Project内で生成するAssetの共通ルートを解決する |
+| `CommaSeparatedListSettingDrawer` | 区切り文字付き文字列の設定UIと値解析を提供する |
 
 ## `SettingDefinitionBase`
 
@@ -79,6 +82,12 @@ Preferencesの「生成アセットのルートフォルダー名」は、すべ
 `!`による通常の名前順でProject Windowの先頭付近へ表示します。新規シーンは`Assets/<有効なルート名>/Scene`、新規表情クリップは`Assets/<有効なルート名>/Animation/Facial`を使用します。以前の新規シーン専用の保存先設定は使用しません。
 
 ルート名を変更しても既存フォルダーは移動または改名しません。変更後に新しく作成するアセットから新しいルート名を使用します。空値、`.`、`..`、前後の空白、パス区切り文字、OSで無効なファイル名文字は指定できません。
+
+`ProjectAssetSettings.GetAssetFolder`は生成先を変更せずにパスを返します。`EnsureAssetFolder`は不足するフォルダーを作成します。`IsAssetRootDefinition`は変更された設定定義が生成Assetのルートへ影響するかを返します。
+
+`GlobalDataSettings.RootDirectory`は環境変数を展開した絶対パスを返します。ルート設定が変更されると`PathChanged`が発生します。
+
+`CommaSeparatedListSettingDrawer.Register`は文字列設定へ区切り文字付き一覧の入力UIを登録します。`ParseItems`はカンマ、セミコロン、改行で値を分割し、空項目を除外します。
 
 ## 副作用
 

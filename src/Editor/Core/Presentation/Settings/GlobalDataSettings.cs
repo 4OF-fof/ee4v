@@ -5,7 +5,7 @@ using UnityEditor;
 namespace Ee4v.Core.Settings
 {
     [InitializeOnLoad]
-    internal static class GlobalDataSettings
+    public static class GlobalDataSettings
     {
         internal static readonly SettingDefinition<string> RootPath =
             new SettingDefinition<string>(
@@ -35,9 +35,9 @@ namespace Ee4v.Core.Settings
             EnsureRegistered();
         }
 
-        internal static event Action PathChanged;
+        public static event Action PathChanged;
 
-        internal static string RootDirectory
+        public static string RootDirectory
         {
             get
             {

@@ -47,6 +47,7 @@ Item GridはEscapeまたはカード外の空白を左クリックすると全�
 | `Ee4v.AssetManager.Application.Editor` | 公開APIのユースケース、検索、同期の調整 | なし |
 | `Ee4v.AssetManager.Infrastructure.Editor` | SQLite保存、Sourceの読み書き、Unityへの取り込み | あり |
 | `Ee4v.AssetManager.UI.Editor` | 管理画面、backend操作との接続、UI Story | あり |
+| `Ee4v.AssetManager.AssetProtection.Editor` | 取り込み済みAssetの直接編集と保存の防止 | あり |
 
 公開入口は`AssetManagerFactory.Open(databasePath)`です。返された`IAssetManager`をUIなどの利用側が保持します。取り込み済みAssetとの関連だけを参照する機能は`IImportedAssetAssociationProvider`へ依存します。外部SourceとDBはApplicationの小さなportの外側に置き、APIの処理から実装詳細を分離しています。
 
@@ -171,7 +172,7 @@ Target未設定での取り込みは何も行いません。未所属または�
 
 Fileに依存先が設定されている場合は推移的な依存先を解決し、依存先から依存元の順に各Fileを1回だけ取り込みます。依存関係自体に順序は持たせず、順序が必要な場合は追加の依存関係で表現します。`.unitypackage`は完了を待ってから次のFileへ進み、失敗またはキャンセル時は後続の取り込みを停止します。
 
-取り込みに成功すると、通常FileはUnity refresh後に解決した取り込み先ルートfolderと各実体のGUID、UnityPackageはpackage内の全GUIDをFile単位で完全置換します。`.meta`を直接取り込んだ場合は対応するAssetのGUIDとして解決します。失敗またはキャンセル時は既存GUIDを変更しません。`GetFileImportedAssetGuids`はFile単位、`GetItemImportedAssetGuids`は所属Fileを集約したItem単位のGUIDを返します。`GetImportedAssetAssociations`は全関連または指定GUIDに一致するItem ID・File ID・取り込み時刻を返します。[Asset Protection](./features/asset-protection.md)はこの関連GUIDを保護対象として使用します。
+取り込みに成功すると、通常FileはUnity refresh後に解決した取り込み先ルートfolderと各実体のGUID、UnityPackageはpackage内の全GUIDをFile単位で完全置換します。`.meta`を直接取り込んだ場合は対応するAssetのGUIDとして解決します。失敗またはキャンセル時は既存GUIDを変更しません。`GetFileImportedAssetGuids`はFile単位、`GetItemImportedAssetGuids`は所属Fileを集約したItem単位のGUIDを返します。`GetImportedAssetAssociations`は全関連または指定GUIDに一致するItem ID・File ID・取り込み時刻を返します。[Asset Protection](./asset-protection.md)はこの関連GUIDを保護対象として使用します。
 
 ## 永続化
 

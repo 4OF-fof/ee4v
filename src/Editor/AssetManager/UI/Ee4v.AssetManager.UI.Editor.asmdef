@@ -4,9 +4,8 @@
   "references": [
     "Ee4v.AssetManager.Contracts.Editor",
     "Ee4v.AssetManager.Infrastructure.Editor",
-    "Ee4v.AssetProtection.Editor",
+    "Ee4v.AssetManager.AssetProtection.Editor",
     "Ee4v.Core.Contracts.Editor",
-    "Ee4v.Core.Editor",
     "Ee4v.Core.Presentation.Editor",
     "Ee4v.Core.Unity.Editor",
     "Ee4v.UI.Editor",

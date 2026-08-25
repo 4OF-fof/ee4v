@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 namespace Ee4v.Core.Settings
 {
     [InitializeOnLoad]
-    internal static class ProjectAssetSettings
+    public static class ProjectAssetSettings
     {
         internal const string DefaultRootFolderName = "!ee4vAsset";
 
@@ -88,7 +88,7 @@ namespace Ee4v.Core.Settings
             settings.Register(ProjectRootFolderName);
         }
 
-        internal static string GetAssetFolder(
+        public static string GetAssetFolder(
             string childFolderPath,
             ISettingsService settings = null)
         {
@@ -114,7 +114,7 @@ namespace Ee4v.Core.Settings
             return "Assets/" + settings.Get(definition);
         }
 
-        internal static string EnsureAssetFolder(
+        public static string EnsureAssetFolder(
             string childFolderPath,
             ISettingsService settings = null)
         {
@@ -141,6 +141,18 @@ namespace Ee4v.Core.Settings
             }
 
             return path;
+        }
+
+        public static bool IsAssetRootDefinition(
+            SettingDefinitionBase definition)
+        {
+            return ReferenceEquals(definition, RootFolderName) ||
+                   ReferenceEquals(
+                       definition,
+                       UseProjectRootFolderName) ||
+                   ReferenceEquals(
+                       definition,
+                       ProjectRootFolderName);
         }
 
         private static VisualElement CreateProjectRootFolderNameField(
