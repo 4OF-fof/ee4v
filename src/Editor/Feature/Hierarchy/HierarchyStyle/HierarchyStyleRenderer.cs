@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.Injector;
 using Ee4v.ItemStyle;
 using UnityEditor;
@@ -170,21 +171,9 @@ namespace Ee4v.HierarchyStyle
                     context.SelectionRect.xMax,
                     context.SelectionRect.y));
 
-            FocusMouseOverWindow();
+            EditorPopupApi.FocusMouseOverWindow();
             EditorApplication.delayCall += () =>
                 _openEditor(targets, anchor);
-        }
-
-        private static void FocusMouseOverWindow()
-        {
-            var window = EditorWindow.mouseOverWindow;
-            if (window != null &&
-                !ReferenceEquals(
-                    window,
-                    EditorWindow.focusedWindow))
-            {
-                window.Focus();
-            }
         }
     }
 }

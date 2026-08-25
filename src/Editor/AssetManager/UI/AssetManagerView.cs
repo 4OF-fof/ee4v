@@ -71,7 +71,7 @@ namespace Ee4v.AssetManager.UI
                 root.Clear();
                 AssetManagerWindowSession.PrepareRoot(root);
                 root.AddToClassList("ee4v-asset-manager");
-                root.RegisterCallback<KeyDownEvent>(OnKeyDown);
+                ConfigureCloseAndSubmitKeys(root, Submit);
 
                 var popup = new CustomPopup(
                     I18N.Get("action.import"),
@@ -114,21 +114,6 @@ namespace Ee4v.AssetManager.UI
             private static string FormatChoice(TargetImportChoice choice)
             {
                 return choice?.Label ?? string.Empty;
-            }
-
-            private void OnKeyDown(KeyDownEvent evt)
-            {
-                if (evt.keyCode == KeyCode.Escape)
-                {
-                    Close();
-                    evt.StopPropagation();
-                }
-                else if (evt.keyCode == KeyCode.Return ||
-                         evt.keyCode == KeyCode.KeypadEnter)
-                {
-                    Submit();
-                    evt.StopPropagation();
-                }
             }
 
             private void Submit()
@@ -197,7 +182,7 @@ namespace Ee4v.AssetManager.UI
                 root.Clear();
                 AssetManagerWindowSession.PrepareRoot(root);
                 root.AddToClassList("ee4v-asset-manager");
-                root.RegisterCallback<KeyDownEvent>(OnKeyDown);
+                ConfigureCloseAndSubmitKeys(root);
 
                 var popup = new CustomPopup(
                     _title,
@@ -228,15 +213,6 @@ namespace Ee4v.AssetManager.UI
             {
                 _tree?.Dispose();
                 _tree = null;
-            }
-
-            private void OnKeyDown(KeyDownEvent evt)
-            {
-                if (evt.keyCode == KeyCode.Escape)
-                {
-                    Close();
-                    evt.StopPropagation();
-                }
             }
 
             private void Submit()
@@ -2159,7 +2135,8 @@ namespace Ee4v.AssetManager.UI
             IReadOnlyList<ItemTargetEntry> entries)
         {
             if (payload?.Targets == null ||
-                payload.Targets.Any(source => SameTarget(source, target)))
+                payload.Targets.Any(source =>
+                    AssetFileTarget.HasSameIdentity(source, target)))
             {
                 return;
             }
@@ -2232,86 +2209,25 @@ namespace Ee4v.AssetManager.UI
             TargetDragPayload payload,
             string label)
         {
-            var start = Vector2.zero;
-            var ready = false;
-            element.RegisterCallback<MouseDownEvent>(evt =>
-            {
-                if (evt.button != (int)MouseButton.LeftMouse)
-                {
-                    return;
-                }
-                start = evt.mousePosition;
-                ready = true;
-            });
-            element.RegisterCallback<MouseMoveEvent>(evt =>
-            {
-                if (!ready ||
-                    (evt.pressedButtons & 1) == 0 ||
-                    Vector2.Distance(start, evt.mousePosition) < 4f)
-                {
-                    return;
-                }
-
-                ready = false;
-                DragAndDrop.PrepareStartDrag();
-                DragAndDrop.SetGenericData(TargetDragDataKey, payload);
-                DragAndDrop.StartDrag(label ?? string.Empty);
-                evt.StopPropagation();
-            });
-            element.RegisterCallback<MouseUpEvent>(_ => ready = false);
+            UiDragAndDrop.RegisterStart(
+                element,
+                TargetDragDataKey,
+                () => payload,
+                _ => label);
         }
 
         private static void RegisterTargetDrop(
             VisualElement element,
             Action<TargetDragPayload> onDrop)
         {
-            element.RegisterCallback<DragUpdatedEvent>(evt =>
-            {
-                if (!(DragAndDrop.GetGenericData(TargetDragDataKey) is
-                      TargetDragPayload))
-                {
-                    return;
-                }
-                DragAndDrop.visualMode = DragAndDropVisualMode.Move;
-                element.AddToClassList(
-                    "ee4v-asset-manager__target-drop");
-                evt.StopPropagation();
-            });
-            element.RegisterCallback<DragLeaveEvent>(_ =>
-                element.RemoveFromClassList(
-                    "ee4v-asset-manager__target-drop"));
-            element.RegisterCallback<DragExitedEvent>(_ =>
-                element.RemoveFromClassList(
-                    "ee4v-asset-manager__target-drop"));
-            element.RegisterCallback<DragPerformEvent>(evt =>
-            {
-                var payload = DragAndDrop.GetGenericData(
-                    TargetDragDataKey) as TargetDragPayload;
-                if (payload == null)
-                {
-                    return;
-                }
-
-                element.RemoveFromClassList(
-                    "ee4v-asset-manager__target-drop");
-                DragAndDrop.AcceptDrag();
-                onDrop?.Invoke(payload);
-                evt.StopPropagation();
-            });
-        }
-
-        private static bool SameTarget(
-            AssetFileTarget first,
-            AssetFileTarget second)
-        {
-            return string.Equals(
-                       first?.FileId,
-                       second?.FileId,
-                       StringComparison.Ordinal) &&
-                   string.Equals(
-                       first?.TargetPath,
-                       second?.TargetPath,
-                       StringComparison.OrdinalIgnoreCase);
+            UiDragAndDrop.RegisterMoveTarget(
+                element,
+                TargetDragDataKey,
+                null,
+                onDrop,
+                active => element.EnableInClassList(
+                    "ee4v-asset-manager__target-drop",
+                    active));
         }
 
         private static string FormatTargetName(

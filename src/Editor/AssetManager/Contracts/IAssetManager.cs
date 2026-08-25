@@ -5,10 +5,17 @@ using System.Threading.Tasks;
 
 namespace Ee4v.AssetManager.Contracts
 {
-    public interface IAssetManager
+    public interface IImportedAssetAssociationProvider
     {
         event Action<AssetManagerChange> Changed;
 
+        IReadOnlyList<AssetImportedAssetAssociation>
+            GetImportedAssetAssociations(
+                IReadOnlyList<string> assetGuids = null);
+    }
+
+    public interface IAssetManager : IImportedAssetAssociationProvider
+    {
         AssetSearchResult SearchItems(AssetItemQuery query = null);
         AssetSearchResult SearchCollection(
             string collectionId,
@@ -73,10 +80,6 @@ namespace Ee4v.AssetManager.Contracts
             CancellationToken cancellationToken = default);
         IReadOnlyList<string> GetFileImportedAssetGuids(string fileId);
         IReadOnlyList<string> GetItemImportedAssetGuids(string itemId);
-        IReadOnlyList<AssetImportedAssetAssociation>
-            GetImportedAssetAssociations(
-                IReadOnlyList<string> assetGuids = null);
-
         IReadOnlyList<AssetTag> GetTags();
         IReadOnlyList<AssetItem> SetItemTags(
             IReadOnlyList<string> itemIds,

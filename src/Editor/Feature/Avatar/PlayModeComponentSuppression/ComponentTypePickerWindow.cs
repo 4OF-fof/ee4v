@@ -67,7 +67,7 @@ namespace Ee4v.PlayModeComponentSuppression
                 "Editor/UI/Components/Inputs/SearchField/search-field.uss",
                 "Editor/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss",
                 "Editor/UI/Components/Overlays/CustomPopup/custom-popup.uss");
-            root.RegisterCallback<KeyDownEvent>(OnKeyDown);
+            ConfigureCloseAndSubmitKeys(root, SelectCurrent);
 
             var popup = new CustomPopup(
                 I18N.Get("settings.suppressedTypes.picker.title"),
@@ -244,21 +244,6 @@ namespace Ee4v.PlayModeComponentSuppression
         private void SelectCurrent()
         {
             Select(_selected);
-        }
-
-        private void OnKeyDown(KeyDownEvent evt)
-        {
-            if (evt.keyCode == KeyCode.Escape)
-            {
-                Close();
-                evt.StopPropagation();
-            }
-            else if (evt.keyCode == KeyCode.Return ||
-                     evt.keyCode == KeyCode.KeypadEnter)
-            {
-                SelectCurrent();
-                evt.StopPropagation();
-            }
         }
 
         private sealed class PickerItem

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.Injector;
 using Ee4v.ItemStyle;
 using Ee4v.UI;
@@ -159,21 +160,9 @@ namespace Ee4v.ProjectStyle
                     context.SelectionRect.xMax,
                     context.SelectionRect.y));
 
-            FocusMouseOverWindow();
+            EditorPopupApi.FocusMouseOverWindow();
             EditorApplication.delayCall += () =>
                 _openEditor(targetGuids, anchor);
-        }
-
-        private static void FocusMouseOverWindow()
-        {
-            var window = EditorWindow.mouseOverWindow;
-            if (window != null &&
-                !ReferenceEquals(
-                    window,
-                    EditorWindow.focusedWindow))
-            {
-                window.Focus();
-            }
         }
 
         private static IReadOnlyList<string>

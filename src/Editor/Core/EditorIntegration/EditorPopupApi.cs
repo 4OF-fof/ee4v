@@ -6,6 +6,18 @@ namespace Ee4v.Core.EditorIntegration
 {
     public static class EditorPopupApi
     {
+        public static void FocusMouseOverWindow()
+        {
+            var window = EditorWindow.mouseOverWindow;
+            if (window != null &&
+                !ReferenceEquals(
+                    window,
+                    EditorWindow.focusedWindow))
+            {
+                window.Focus();
+            }
+        }
+
         public static bool TryGetDesktopBounds(
             Vector2 screenPosition,
             out Rect bounds)

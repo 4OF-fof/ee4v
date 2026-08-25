@@ -755,40 +755,11 @@ namespace Ee4v.FaceExpression
             VisualElement element,
             Func<MappingDragPayload> createPayload)
         {
-            var start = Vector2.zero;
-            var ready = false;
-            element.RegisterCallback<MouseDownEvent>(evt =>
-            {
-                if (evt.button != (int)MouseButton.LeftMouse)
-                {
-                    return;
-                }
-
-                start = evt.mousePosition;
-                ready = true;
-            });
-            element.RegisterCallback<MouseMoveEvent>(evt =>
-            {
-                if (!ready ||
-                    (evt.pressedButtons & 1) == 0 ||
-                    Vector2.Distance(start, evt.mousePosition) < 4f)
-                {
-                    return;
-                }
-
-                ready = false;
-                var payload = createPayload?.Invoke();
-                if (payload == null)
-                {
-                    return;
-                }
-
-                DragAndDrop.PrepareStartDrag();
-                DragAndDrop.SetGenericData(DragDataKey, payload);
-                DragAndDrop.StartDrag(payload.Label ?? string.Empty);
-                evt.StopPropagation();
-            });
-            element.RegisterCallback<MouseUpEvent>(_ => ready = false);
+            UiDragAndDrop.RegisterStart(
+                element,
+                DragDataKey,
+                createPayload,
+                payload => payload.Label);
         }
 
         internal static void RegisterPresetDrop(
@@ -796,37 +767,12 @@ namespace Ee4v.FaceExpression
             Func<MappingDragPayload, bool> canDrop,
             Action<MappingDragPayload> onDrop)
         {
-            element.RegisterCallback<DragUpdatedEvent>(evt =>
-            {
-                var payload = DragAndDrop.GetGenericData(DragDataKey) as
-                    MappingDragPayload;
-                if (payload == null || !(canDrop?.Invoke(payload) ?? true))
-                {
-                    return;
-                }
-
-                DragAndDrop.visualMode = DragAndDropVisualMode.Move;
-                element.style.opacity = 0.7f;
-                evt.StopPropagation();
-            });
-            element.RegisterCallback<DragLeaveEvent>(_ =>
-                element.style.opacity = 1f);
-            element.RegisterCallback<DragExitedEvent>(_ =>
-                element.style.opacity = 1f);
-            element.RegisterCallback<DragPerformEvent>(evt =>
-            {
-                var payload = DragAndDrop.GetGenericData(DragDataKey) as
-                    MappingDragPayload;
-                if (payload == null || !(canDrop?.Invoke(payload) ?? true))
-                {
-                    return;
-                }
-
-                element.style.opacity = 1f;
-                DragAndDrop.AcceptDrag();
-                onDrop?.Invoke(payload);
-                evt.StopPropagation();
-            });
+            UiDragAndDrop.RegisterMoveTarget(
+                element,
+                DragDataKey,
+                canDrop,
+                onDrop,
+                active => element.style.opacity = active ? 0.7f : 1f);
         }
 
         private sealed class RoleGroup

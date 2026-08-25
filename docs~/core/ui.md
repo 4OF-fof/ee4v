@@ -21,6 +21,9 @@
 - `LabeledContentRow`は、ラベル、入力内容、補助操作からなるフォームの1行を構成します。
 - `InlineMessage`は、処理結果や入力エラーを`UiStatusTone`と任意アイコンで表示します。
 - `PreviewSurface`は、Preview本体、未表示時のPlaceholder、重ねる操作を構成します。Previewを並べるGridは含みません。
+- `PreviewOrbitController`は3D Previewの右ドラッグ回転、中ドラッグ移動、ホイール拡縮とCamera配置を共通化します。Boundsの計算と描画内容は利用側が扱います。
+- `CustomPopupWindow`はHeaderのドラッグ移動に加え、`ConfigureCloseAndSubmitKeys`でEscapeによるCloseと任意のEnter確定を設定します。
+- `UiDragAndDrop`は、一定距離の左ドラッグ開始と型付きpayloadのMove操作受け入れを共通化します。payloadの生成、drop可否、表示フィードバック、適用処理は利用側が渡します。
 - `ActionBar`は、伸縮する左側領域、任意の中央領域、右側の操作領域を構成します。画面固有のToolbarやFooterはこれを継承または内包します。
 - `NavigationItem`は、`ContentRow`を内包した選択可能な1件分のNavigationです。Navigation一覧や階層は含みません。
 - `DisclosureSection`は、見出し操作と開閉可能な本文を構成します。
@@ -42,6 +45,7 @@
 | `SetFooterVisible(bool)` | フッターの表示を切り替える |
 | `ShowAsDropDown(EditorWindow, VisualElement, Vector2)` | anchor直下へ固定サイズで表示する |
 | `CustomPopupWindow.SetPopup(CustomPopup)` | 外枠を設定し、ヘッダーのドラッグ移動を有効にする |
+| `CustomPopupWindow.ConfigureCloseAndSubmitKeys(VisualElement, Action)` | Escapeで閉じ、任意のEnter確定処理を呼び出す |
 
 AssetManagerのタグ選択画面、Target選択画面、コレクション作成画面が使用します。表示は`ee4v/Debug/Catalog`の`Overlays/CustomPopup` Storyで確認できます。
 

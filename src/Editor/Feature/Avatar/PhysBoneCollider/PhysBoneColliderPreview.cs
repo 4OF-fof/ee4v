@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -12,6 +13,7 @@ namespace Ee4v.PhysBoneCollider
             nameof(PhysBoneColliderPreview).GetHashCode();
 
         private readonly Action _repaint;
+        private readonly PreviewOrbitController _orbit;
         private readonly List<PreviewCapsule> _capsules = new List<PreviewCapsule>();
         private IReadOnlyList<PhysBoneTarget> _physBones =
             Array.Empty<PhysBoneTarget>();
@@ -27,15 +29,10 @@ namespace Ee4v.PhysBoneCollider
         private MeshRenderer _selectedPhysBoneRenderer;
         private bool _showColliders = true;
         private bool _showPhysBones = true;
-        private Vector3 _target;
-        private float _distance = 1f;
-        private float _yaw;
-        private float _pitch;
-        private int _dragButton = -1;
-
         internal PhysBoneColliderPreview(Action repaint)
         {
             _repaint = repaint;
+            _orbit = new PreviewOrbitController(ControlHash, repaint);
         }
 
         internal void SetAvatar(
@@ -167,12 +164,10 @@ namespace Ee4v.PhysBoneCollider
             }
 
             var bounds = CalculateBounds();
-            _target = bounds.center;
             var radius = Mathf.Max(0.05f, bounds.extents.magnitude);
-            _distance = radius / Mathf.Tan(15f * Mathf.Deg2Rad) * 1.1f;
-            _yaw = 0f;
-            _pitch = 0f;
-            _repaint?.Invoke();
+            _orbit.Reset(
+                bounds.center,
+                radius / Mathf.Tan(15f * Mathf.Deg2Rad) * 1.1f);
         }
 
         internal void Draw(Rect rect)
@@ -183,7 +178,10 @@ namespace Ee4v.PhysBoneCollider
                 return;
             }
 
-            HandleInput(rect);
+            _orbit.HandleInput(
+                rect,
+                _utility.camera,
+                _utility.cameraFieldOfView);
             ConfigureCamera();
             _utility.BeginPreview(rect, GUIStyle.none);
             _utility.camera.Render();
@@ -196,77 +194,11 @@ namespace Ee4v.PhysBoneCollider
             Cleanup();
         }
 
-        private void HandleInput(Rect rect)
-        {
-            var current = Event.current;
-            if (current == null)
-            {
-                return;
-            }
-
-            var controlId = GUIUtility.GetControlID(ControlHash, FocusType.Passive, rect);
-            if (current.type == EventType.MouseDown &&
-                rect.Contains(current.mousePosition) &&
-                (current.button == 1 || current.button == 2))
-            {
-                GUIUtility.hotControl = controlId;
-                _dragButton = current.button;
-                current.Use();
-                return;
-            }
-
-            if (current.type == EventType.MouseDrag && GUIUtility.hotControl == controlId)
-            {
-                if (_dragButton == 1)
-                {
-                    _yaw += current.delta.x * 0.5f;
-                    _pitch = Mathf.Clamp(_pitch - current.delta.y * 0.5f, -80f, 80f);
-                }
-                else if (_dragButton == 2)
-                {
-                    var unitsPerPixel = 2f * _distance *
-                        Mathf.Tan(_utility.cameraFieldOfView * 0.5f * Mathf.Deg2Rad) /
-                        Mathf.Max(1f, rect.height);
-                    _target +=
-                        -_utility.camera.transform.right * current.delta.x * unitsPerPixel +
-                        _utility.camera.transform.up * current.delta.y * unitsPerPixel;
-                }
-
-                current.Use();
-                _repaint?.Invoke();
-                return;
-            }
-
-            if (current.type == EventType.MouseUp &&
-                GUIUtility.hotControl == controlId &&
-                current.button == _dragButton)
-            {
-                GUIUtility.hotControl = 0;
-                _dragButton = -1;
-                current.Use();
-                return;
-            }
-
-            if (current.type == EventType.ScrollWheel && rect.Contains(current.mousePosition))
-            {
-                _distance = Mathf.Clamp(
-                    _distance * (1f + current.delta.y * 0.05f),
-                    0.03f,
-                    100f);
-                current.Use();
-                _repaint?.Invoke();
-            }
-        }
-
         private void ConfigureCamera()
         {
-            var rotation = Quaternion.Euler(_pitch, _yaw, 0f);
-            var direction = _clone.transform.rotation * rotation * Vector3.forward;
-            var up = _clone.transform.rotation * rotation * Vector3.up;
-            _utility.camera.transform.position = _target + direction * _distance;
-            _utility.camera.transform.rotation = Quaternion.LookRotation(-direction, up);
-            _utility.camera.nearClipPlane = Mathf.Max(0.001f, _distance * 0.01f);
-            _utility.camera.farClipPlane = Mathf.Max(100f, _distance * 20f);
+            _orbit.ConfigureCamera(
+                _utility.camera,
+                _clone.transform.rotation);
         }
 
         private Bounds CalculateBounds()
@@ -571,6 +503,7 @@ namespace Ee4v.PhysBoneCollider
 
         private void Cleanup()
         {
+            _orbit.CancelInteraction();
             foreach (var capsule in _capsules)
             {
                 UnityEngine.Object.DestroyImmediate(capsule.Mesh);

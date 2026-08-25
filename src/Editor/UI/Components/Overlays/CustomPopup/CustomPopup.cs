@@ -9,8 +9,26 @@ namespace Ee4v.UI
     {
         private VisualElement _dragHandle;
         private VisualElement _headerActions;
+        private VisualElement _keyboardTarget;
+        private Action _submit;
         private int _dragPointerId = -1;
         private Vector2 _dragPointerOffset;
+
+        protected void ConfigureCloseAndSubmitKeys(
+            VisualElement target,
+            Action submit = null)
+        {
+            if (_keyboardTarget != null)
+            {
+                _keyboardTarget.UnregisterCallback<KeyDownEvent>(
+                    OnKeyDown);
+            }
+
+            _keyboardTarget = target ??
+                throw new ArgumentNullException(nameof(target));
+            _submit = submit;
+            _keyboardTarget.RegisterCallback<KeyDownEvent>(OnKeyDown);
+        }
 
         protected void SetPopup(CustomPopup popup)
         {
@@ -48,6 +66,22 @@ namespace Ee4v.UI
                 evt.position.y);
             _dragHandle.CapturePointer(evt.pointerId);
             evt.StopPropagation();
+        }
+
+        private void OnKeyDown(KeyDownEvent evt)
+        {
+            if (evt.keyCode == KeyCode.Escape)
+            {
+                Close();
+                evt.StopPropagation();
+            }
+            else if ((evt.keyCode == KeyCode.Return ||
+                      evt.keyCode == KeyCode.KeypadEnter) &&
+                     _submit != null)
+            {
+                _submit();
+                evt.StopPropagation();
+            }
         }
 
         private void OnHeaderPointerMove(PointerMoveEvent evt)

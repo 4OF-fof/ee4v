@@ -54,6 +54,20 @@ namespace Ee4v.AssetManager.Contracts
         public string FileId { get; set; }
         public string TargetPath { get; set; }
         public string GroupName { get; set; }
+
+        public static bool HasSameIdentity(
+            AssetFileTarget first,
+            AssetFileTarget second)
+        {
+            return string.Equals(
+                       first?.FileId,
+                       second?.FileId,
+                       StringComparison.Ordinal) &&
+                   string.Equals(
+                       first?.TargetPath,
+                       second?.TargetPath,
+                       StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     public sealed class AssetFileDependency

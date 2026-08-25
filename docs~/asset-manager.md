@@ -48,7 +48,7 @@ Item GridはEscapeまたはカード外の空白を左クリックすると全�
 | `Ee4v.AssetManager.Infrastructure.Editor` | SQLite保存、Sourceの読み書き、Unityへの取り込み | あり |
 | `Ee4v.AssetManager.UI.Editor` | 管理画面、backend操作との接続、UI Story | あり |
 
-公開入口は`AssetManagerFactory.Open(databasePath)`です。返された`IAssetManager`をUIなどの利用側が保持します。外部SourceとDBはApplicationの小さなportの外側に置き、APIの処理から実装詳細を分離しています。
+公開入口は`AssetManagerFactory.Open(databasePath)`です。返された`IAssetManager`をUIなどの利用側が保持します。取り込み済みAssetとの関連だけを参照する機能は`IImportedAssetAssociationProvider`へ依存します。外部SourceとDBはApplicationの小さなportの外側に置き、APIの処理から実装詳細を分離しています。
 
 SQLite接続はmasterと同じ`Ee4v.SQLite.Editor`境界とvendor済みの`sqlite-net`、`SQLitePCLRaw`、`e_sqlite3`を再利用します。現行のnative plugin対象はWindows x86_64 Editorです。
 

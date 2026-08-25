@@ -495,7 +495,9 @@ namespace Ee4v.AssetManager.Application
                 for (var i = 0; i < groups.Length; i++)
                 {
                     if (choices.Count(choice => groups[i].Any(target =>
-                            SameTarget(target, choice))) != 1)
+                            AssetFileTarget.HasSameIdentity(
+                                target,
+                                choice))) != 1)
                     {
                         throw new AssetManagerException(
                             AssetManagerErrorCode.InvalidRequest,
@@ -783,7 +785,10 @@ namespace Ee4v.AssetManager.Application
                         "Selected target must belong to a target group.");
                 }
 
-                if (result.Any(choice => SameTarget(choice, stored)))
+                if (result.Any(choice =>
+                        AssetFileTarget.HasSameIdentity(
+                            choice,
+                            stored)))
                 {
                     throw new AssetManagerException(
                         AssetManagerErrorCode.InvalidRequest,
@@ -846,20 +851,6 @@ namespace Ee4v.AssetManager.Application
                 });
             }
             return result;
-        }
-
-        private static bool SameTarget(
-            AssetFileTarget first,
-            AssetFileTarget second)
-        {
-            return string.Equals(
-                       first?.FileId,
-                       second?.FileId,
-                       StringComparison.Ordinal) &&
-                   string.Equals(
-                       first?.TargetPath,
-                       second?.TargetPath,
-                       StringComparison.OrdinalIgnoreCase);
         }
 
         private static void AddTargetPath(

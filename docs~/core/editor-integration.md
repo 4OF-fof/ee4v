@@ -79,6 +79,7 @@ Inspector全体の選択と個別Editorのtargetが異なる場合は`EditorTarg
 
 | メンバー | 戻り値・動作 | 副作用 |
 |---|---|---|
+| `FocusMouseOverWindow()` | マウスオーバー中のEditorWindowが未フォーカスならフォーカスする | 対象windowのフォーカスを変更する |
 | `TryGetDesktopBounds(screenPosition, out bounds)` | 指定位置を含む desktop bounds を返す | なし |
 | `TrySetBackgroundColor(window, color)` | container window の背景色を設定する | 対象 window の表示色を変更する |
 | `TryReadScreenPixels(screenRect, out pixels, out width, out height)` | 画面領域の pixel を読み取る | 画面を読み取り、`Color[]` を割り当てる |

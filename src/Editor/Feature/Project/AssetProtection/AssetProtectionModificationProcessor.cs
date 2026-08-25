@@ -67,7 +67,7 @@ namespace Ee4v.AssetProtection
             AnimatorWindowType?.GetField(
                 "m_AnimatorController",
                 BindingFlags.Instance | BindingFlags.NonPublic);
-        private static IAssetManager _manager;
+        private static IImportedAssetAssociationProvider _manager;
 
         static AssetProtectionModule()
         {
@@ -81,7 +81,8 @@ namespace Ee4v.AssetProtection
                 PrefabStageProtectionOverlay.Update;
         }
 
-        internal static void Configure(IAssetManager manager)
+        internal static void Configure(
+            IImportedAssetAssociationProvider manager)
         {
             if (ReferenceEquals(_manager, manager))
             {

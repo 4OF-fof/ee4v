@@ -4,13 +4,13 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
-    internal enum UiButtonVariant
+    public enum UiButtonVariant
     {
         Solid,
         Ghost
     }
 
-    internal sealed class UiButton : Button
+    public sealed class UiButton : Button
     {
         private const string RootClassName = "ee4v-ui-button";
         private const string SolidClassName = "ee4v-ui-button--solid";

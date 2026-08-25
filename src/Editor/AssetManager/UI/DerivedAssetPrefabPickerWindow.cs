@@ -255,16 +255,12 @@ namespace Ee4v.AssetManager.UI
         private readonly Icon _placeholder;
         private readonly UiButton _backgroundToggle;
         private readonly UiButton _resetView;
+        private readonly PreviewOrbitController _orbit;
         private PreviewRenderUtility _utility;
         private Texture2D _gridTexture;
         private GameObject _prefab;
         private GameObject _instance;
         private Bounds _bounds;
-        private Vector3 _target;
-        private float _distance = 1f;
-        private float _yaw;
-        private float _pitch;
-        private int _dragButton = -1;
         private bool _lightBackground;
 
         internal DerivedAssetPrefabScenePreview()
@@ -311,6 +307,9 @@ namespace Ee4v.AssetManager.UI
             RefreshBackgroundToggle();
 
             _preview = new IMGUIContainer(DrawPreview);
+            _orbit = new PreviewOrbitController(
+                PreviewControlHash,
+                _preview.MarkDirtyRepaint);
             _preview.AddToClassList(
                 "ee4v-asset-manager__prefab-scene-preview-render");
             _surface.Content.Add(_preview);
@@ -412,7 +411,10 @@ namespace Ee4v.AssetManager.UI
 
             if (_utility != null && _instance != null)
             {
-                HandleInput(rect);
+                _orbit.HandleInput(
+                    rect,
+                    _utility.camera,
+                    _utility.cameraFieldOfView);
             }
             if (current.type != EventType.Repaint)
             {
@@ -443,7 +445,6 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            _target = _bounds.center;
             var previewRect = _preview.contentRect;
             var aspect = previewRect.height > 1f
                 ? previewRect.width / previewRect.height
@@ -451,98 +452,18 @@ namespace Ee4v.AssetManager.UI
             var halfViewSize = Mathf.Max(
                 _bounds.extents.y,
                 _bounds.extents.x / Mathf.Max(0.01f, aspect));
-            _distance = _bounds.extents.z +
+            var distance = _bounds.extents.z +
                 Mathf.Max(0.05f, halfViewSize) /
                 Mathf.Tan(_utility.cameraFieldOfView * 0.5f *
                           Mathf.Deg2Rad) * PreviewFitPadding;
-            _yaw = 0f;
-            _pitch = 0f;
-            _preview.MarkDirtyRepaint();
-        }
-
-        private void HandleInput(Rect rect)
-        {
-            var current = Event.current;
-            var controlId = GUIUtility.GetControlID(
-                PreviewControlHash,
-                FocusType.Passive,
-                rect);
-            if (current.type == EventType.MouseDown &&
-                rect.Contains(current.mousePosition) &&
-                (current.button == 1 || current.button == 2))
-            {
-                GUIUtility.hotControl = controlId;
-                _dragButton = current.button;
-                current.Use();
-                return;
-            }
-
-            if (current.type == EventType.MouseDrag &&
-                GUIUtility.hotControl == controlId)
-            {
-                if (_dragButton == 1)
-                {
-                    _yaw += current.delta.x * 0.5f;
-                    _pitch = Mathf.Clamp(
-                        _pitch - current.delta.y * 0.5f,
-                        -80f,
-                        80f);
-                }
-                else if (_dragButton == 2)
-                {
-                    var unitsPerPixel = 2f * _distance *
-                        Mathf.Tan(_utility.cameraFieldOfView * 0.5f *
-                                  Mathf.Deg2Rad) /
-                        Mathf.Max(1f, rect.height);
-                    _target +=
-                        -_utility.camera.transform.right *
-                        current.delta.x * unitsPerPixel +
-                        _utility.camera.transform.up *
-                        current.delta.y * unitsPerPixel;
-                }
-
-                current.Use();
-                _preview.MarkDirtyRepaint();
-                return;
-            }
-
-            if (current.type == EventType.MouseUp &&
-                GUIUtility.hotControl == controlId &&
-                current.button == _dragButton)
-            {
-                GUIUtility.hotControl = 0;
-                _dragButton = -1;
-                current.Use();
-                return;
-            }
-
-            if (current.type == EventType.ScrollWheel &&
-                rect.Contains(current.mousePosition))
-            {
-                _distance = Mathf.Clamp(
-                    _distance * (1f + current.delta.y * 0.05f),
-                    0.03f,
-                    100f);
-                current.Use();
-                _preview.MarkDirtyRepaint();
-            }
+            _orbit.Reset(_bounds.center, distance);
         }
 
         private void ConfigureCamera()
         {
-            var rotation = Quaternion.Euler(_pitch, _yaw, 0f);
-            var direction = _instance.transform.rotation *
-                            rotation * Vector3.forward;
-            var up = _instance.transform.rotation *
-                     rotation * Vector3.up;
-            _utility.camera.transform.position =
-                _target + direction * _distance;
-            _utility.camera.transform.rotation =
-                Quaternion.LookRotation(-direction, up);
-            _utility.camera.nearClipPlane =
-                Mathf.Max(0.001f, _distance * 0.01f);
-            _utility.camera.farClipPlane =
-                Mathf.Max(100f, _distance * 20f);
+            _orbit.ConfigureCamera(
+                _utility.camera,
+                _instance.transform.rotation);
         }
 
         private void DrawGrid(Rect rect)
@@ -718,7 +639,7 @@ namespace Ee4v.AssetManager.UI
                 _instance = null;
             }
 
-            _dragButton = -1;
+            _orbit.CancelInteraction();
             SetPreviewAvailable(false);
             _preview.MarkDirtyRepaint();
         }
@@ -773,7 +694,7 @@ namespace Ee4v.AssetManager.UI
             root.Clear();
             AssetManagerWindowSession.PrepareRoot(root);
             root.AddToClassList("ee4v-asset-manager");
-            root.RegisterCallback<KeyDownEvent>(OnKeyDown);
+            ConfigureCloseAndSubmitKeys(root, SelectFirst);
 
             var popup = new CustomPopup(
                 I18N.Get("detail.derivedAssetPrefabPickerTitle"));
@@ -893,21 +814,11 @@ namespace Ee4v.AssetManager.UI
             Close();
         }
 
-        private void OnKeyDown(KeyDownEvent evt)
+        private void SelectFirst()
         {
-            if (evt.keyCode == KeyCode.Escape)
-            {
-                Close();
-                evt.StopPropagation();
-                return;
-            }
-
-            if ((evt.keyCode == KeyCode.Return ||
-                 evt.keyCode == KeyCode.KeypadEnter) &&
-                _filtered.Count > 0)
+            if (_filtered.Count > 0)
             {
                 Select(_filtered[0]);
-                evt.StopPropagation();
             }
         }
 

@@ -30,8 +30,8 @@ namespace Ee4v.FaceExpression
         private IReadOnlyList<string> _previewRendererPaths =
             Array.Empty<string>();
         private bool _changingClip;
-        private readonly Dictionary<AnimationClip, ThumbnailEntry> _thumbnails =
-            new Dictionary<AnimationClip, ThumbnailEntry>();
+        private readonly AnimationClipThumbnailCache _thumbnails =
+            new AnimationClipThumbnailCache();
 
         private bool HasClipReference => !ReferenceEquals(_clip, null);
         private bool IsClipMissing => HasClipReference && _clip == null;
@@ -409,71 +409,19 @@ namespace Ee4v.FaceExpression
 
         private void DrawLibraryThumbnail(AnimationClip clip, Rect rect)
         {
-            if (clip == null || _preview == null || _avatar == null)
-            {
-                EditorGUI.DrawRect(rect, new Color(0.1f, 0.1f, 0.1f, 1f));
-                return;
-            }
-
-            var dirtyCount = EditorUtility.GetDirtyCount(clip);
-            if (!_thumbnails.TryGetValue(clip, out var entry) ||
-                entry.Texture == null ||
-                entry.DirtyCount != dirtyCount)
-            {
-                if (entry.Texture != null)
-                {
-                    DestroyImmediate(entry.Texture);
-                }
-
-                var channels = FaceExpressionClipEditor.Read(
-                    _avatar,
-                    clip,
-                    Array.Empty<string>(),
-                    _previewRendererPaths);
-                var texture = _preview.RenderThumbnail(channels, 160, 160);
-                _preview.SetChannels(_channels, false);
-                if (texture != null)
-                {
-                    texture.hideFlags = HideFlags.HideAndDontSave;
-                }
-
-                entry = new ThumbnailEntry(texture, dirtyCount);
-                _thumbnails[clip] = entry;
-            }
-
-            if (entry.Texture == null)
-            {
-                EditorGUI.DrawRect(rect, new Color(0.1f, 0.1f, 0.1f, 1f));
-                return;
-            }
-
-            GUI.DrawTexture(rect, entry.Texture, ScaleMode.ScaleAndCrop, false);
+            _thumbnails.Draw(
+                clip,
+                rect,
+                _preview,
+                _avatar,
+                _previewRendererPaths,
+                () => _preview.SetChannels(_channels, false));
         }
 
         private void ClearThumbnails()
         {
-            foreach (var entry in _thumbnails.Values)
-            {
-                if (entry.Texture != null)
-                {
-                    DestroyImmediate(entry.Texture);
-                }
-            }
-
             _thumbnails.Clear();
             _view?.MarkDirtyRepaint();
-        }
-
-        private readonly struct ThumbnailEntry
-        {
-            internal ThumbnailEntry(Texture2D texture, int dirtyCount)
-            {
-                Texture = texture;
-                DirtyCount = dirtyCount;
-            }
-
-            internal Texture2D Texture { get; }
-            internal int DirtyCount { get; }
         }
 
         private void OnSettingChanged(

@@ -41,7 +41,7 @@ namespace Ee4v.AssetManager.UI
             root.Clear();
             AssetManagerWindowSession.PrepareRoot(root);
             root.AddToClassList("ee4v-asset-manager");
-            root.RegisterCallback<KeyDownEvent>(OnKeyDown);
+            ConfigureCloseAndSubmitKeys(root, Submit);
 
             var popup = new CustomPopup(
                 _initialCollection == null
@@ -85,21 +85,6 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-asset-manager__primary-action"));
             SetPopup(popup);
             root.schedule.Execute(_name.FocusInput);
-        }
-
-        private void OnKeyDown(KeyDownEvent evt)
-        {
-            if (evt.keyCode == KeyCode.Escape)
-            {
-                Close();
-                evt.StopPropagation();
-            }
-            else if (evt.keyCode == KeyCode.Return ||
-                     evt.keyCode == KeyCode.KeypadEnter)
-            {
-                Submit();
-                evt.StopPropagation();
-            }
         }
 
         private void Submit()
