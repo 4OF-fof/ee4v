@@ -9,9 +9,6 @@ namespace Ee4v.ItemStyle
 {
     internal sealed class ItemStyleEditorText
     {
-        public string Title;
-        public string TargetTooltip;
-        public string CloseTooltip;
         public string ColorTitle;
         public string ColorTooltip;
         public string CustomColorLabel;
@@ -61,15 +58,12 @@ namespace Ee4v.ItemStyle
 
         public ItemStyleEditor(
             ItemStyleEditorText text,
-            Action closeRequested,
             Action actionRequested)
         {
             _text = text ??
                 throw new ArgumentNullException(nameof(text));
             AddToClassList(RootClassName);
 
-            var header = new VisualElement();
-            header.AddToClassList("ee4v-item-style__header");
             _preview = new VisualElement();
             _preview.AddToClassList("ee4v-item-style__preview");
             _previewImage = new Image
@@ -80,29 +74,6 @@ namespace Ee4v.ItemStyle
             _previewImage.AddToClassList(
                 "ee4v-item-style__preview-image");
             _preview.Add(_previewImage);
-            header.Add(_preview);
-
-            var heading = new VisualElement();
-            heading.AddToClassList("ee4v-item-style__heading");
-            var title = UiTextFactory.Create(
-                text.Title,
-                UiClassNames.WindowTitle,
-                "ee4v-item-style__title");
-            title.tooltip = text.TargetTooltip;
-            heading.Add(title);
-            header.Add(heading);
-            var close = new UiButton(
-                string.Empty,
-                closeRequested,
-                text.CloseTooltip,
-                FluentUiIcons.CreateState(
-                    "dismiss.png",
-                    UiSizeTokens.Size14),
-                UiButtonVariant.Ghost,
-                compact: true);
-            close.AddToClassList("ee4v-item-style__close");
-            header.Add(close);
-            Add(header);
 
             var colorSection = CreateSection(
                 text.ColorTitle,
@@ -168,6 +139,8 @@ namespace Ee4v.ItemStyle
         public event Action<Texture> RemoveRecentIconRequested;
         public event Action ClearColorRequested;
         public event Action ClearIconRequested;
+
+        internal VisualElement HeaderPreview => _preview;
 
         public void SetState(ItemStyleEditorState state)
         {

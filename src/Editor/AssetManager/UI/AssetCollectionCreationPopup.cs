@@ -47,7 +47,8 @@ namespace Ee4v.AssetManager.UI
                 _initialCollection == null
                     ? I18N.Get("common.newCollection")
                     : _initialCollection.Name,
-                showFooter: true);
+                showFooter: true,
+                closeTooltip: I18N.Get("action.cancel"));
             var form = new ScrollView(ScrollViewMode.Vertical);
             form.AddToClassList(
                 "ee4v-asset-manager__collection-popup-form");

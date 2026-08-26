@@ -15,8 +15,8 @@ namespace Ee4v.UI
                     "custom-popup",
                     "Overlays",
                     "CustomPopup",
-                    "ドロップダウン型EditorWindowの共通外枠です。",
-                    "同じ線幅、背景、ヘッダー、本文、任意フッターを持ち、表示位置と固定サイズの設定も共通化します。",
+                    "旧BaseWindowを移植したpopup用EditorWindowの共通外枠です。",
+                    "1pxの外枠、24pxのヘッダー、本文、任意フッターを持ち、ドラッグ移動と端のリサイズに対応します。",
                     Build,
                     dependencies: new[] { "UiTextFactory" },
                     usageLocations: new[]
@@ -38,11 +38,11 @@ namespace Ee4v.UI
         {
             var popup = new CustomPopup(
                 "Custom Popup",
-                showFooter: true);
+                showFooter: true,
+                closeTooltip: "Close");
             popup.style.width = 360f;
             popup.style.height = 220f;
             popup.style.flexGrow = 0f;
-
             var body = new VisualElement();
             body.style.paddingLeft = UiSpacingTokens.Xl;
             body.style.paddingRight = UiSpacingTokens.Xl;
@@ -52,7 +52,6 @@ namespace Ee4v.UI
                 "Feature固有のフォームや一覧を本文へ配置します。"));
             popup.Content.Add(body);
 
-            popup.HeaderActions.Add(UiTextFactory.CreateButton("Close"));
             popup.Footer.Add(UiTextFactory.CreateButton("Cancel"));
             popup.Footer.Add(UiTextFactory.CreateButton("Apply"));
             parent.Add(popup);

@@ -691,13 +691,9 @@ namespace Ee4v.AssetManager.UI
             ConfigureCloseAndSubmitKeys(root, SelectFirst);
 
             var popup = new CustomPopup(
-                I18N.Get("detail.derivedAssetPrefabPickerTitle"));
-            popup.HeaderActions.Add(
-                AssetManagerControls.CreateIconButton(
-                    I18N.Get("detail.derivedAssetPrefabPickerClose"),
-                    "dismiss.png",
-                    Close,
-                    "ee4v-asset-manager__prefab-picker-close"));
+                I18N.Get("detail.derivedAssetPrefabPickerTitle"),
+                closeTooltip: I18N.Get(
+                    "detail.derivedAssetPrefabPickerClose"));
 
             var body = new VisualElement();
             body.AddToClassList(

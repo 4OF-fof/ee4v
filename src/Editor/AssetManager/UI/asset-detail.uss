@@ -318,17 +318,6 @@
     margin-bottom: var(--ee4v-space-none);
 }
 
-.ee4v-asset-manager__prefab-picker-close.ee4v-ui-button {
-    width: var(--ee4v-size-24);
-    min-width: var(--ee4v-size-24);
-    height: var(--ee4v-size-24);
-    min-height: var(--ee4v-size-24);
-    margin: var(--ee4v-space-none);
-    padding: var(--ee4v-space-none);
-    border-width: 0;
-    background-color: var(--ee4v-color-transparent);
-}
-
 .ee4v-asset-manager__prefab-picker-body {
     flex-grow: 1;
     min-width: 0;

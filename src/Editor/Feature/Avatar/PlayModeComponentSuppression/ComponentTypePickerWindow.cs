@@ -67,7 +67,9 @@ namespace Ee4v.PlayModeComponentSuppression
 
             var popup = new CustomPopup(
                 I18N.Get("settings.suppressedTypes.picker.title"),
-                true);
+                showFooter: true,
+                closeTooltip: I18N.Get(
+                    "settings.suppressedTypes.picker.cancel"));
             var tree = new SearchableTreeView<PickerItem>(
                 () => UiTextFactory.Create(),
                 BindItem,

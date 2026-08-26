@@ -74,7 +74,8 @@ namespace Ee4v.AssetManager.UI
 
                 var popup = new CustomPopup(
                     I18N.Get("action.import"),
-                    showFooter: true);
+                    showFooter: true,
+                    closeTooltip: I18N.Get("action.cancel"));
                 var content = new ScrollView(ScrollViewMode.Vertical);
                 content.AddToClassList(
                     "ee4v-asset-manager__target-import-popup-content");
@@ -184,7 +185,8 @@ namespace Ee4v.AssetManager.UI
 
                 var popup = new CustomPopup(
                     _title,
-                    showFooter: true);
+                    showFooter: true,
+                    closeTooltip: I18N.Get("action.cancel"));
                 _tree = new SearchableFileTree(
                     _manager,
                     showTargetToggles: true);

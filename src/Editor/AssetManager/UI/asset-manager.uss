@@ -133,22 +133,6 @@
     background-color: var(--ee4v-color-surface-hover);
 }
 
-.ee4v-asset-manager-tag-picker__close.ee4v-ui-button {
-    width: var(--ee4v-size-24);
-    min-width: var(--ee4v-size-24);
-    height: var(--ee4v-size-24);
-    min-height: var(--ee4v-size-24);
-    margin: var(--ee4v-space-none);
-    padding: var(--ee4v-space-none);
-    border-width: 0;
-    border-radius: 0;
-    background-color: var(--ee4v-color-transparent);
-}
-
-.ee4v-asset-manager-tag-picker__close.ee4v-ui-button:hover {
-    background-color: var(--ee4v-color-surface-hover-strong);
-}
-
 .ee4v-asset-manager-tag-picker__body {
     flex-grow: 1;
     min-width: 0;

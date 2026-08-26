@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace Ee4v.ItemStyle
 {
@@ -95,11 +94,6 @@ namespace Ee4v.ItemStyle
             _request = request;
             _recentIconGuids = new List<string>(
                 request.Service.GetRecentIconGuids());
-            var height = request.Action == null
-                ? WindowHeight
-                : ActionWindowHeight;
-            minSize = new Vector2(WindowWidth, height);
-            maxSize = minSize;
             titleContent = UiTextFactory.CreateGuiContent(request.Title);
         }
 
@@ -117,14 +111,13 @@ namespace Ee4v.ItemStyle
 
             var root = rootVisualElement;
             root.Clear();
-            root.AddToClassList(UiClassNames.PopupSurface);
             UiComposition.Prepare(
                 root,
                 "Editor/Feature/Shared/ItemStyle/item-style-window.uss");
+            ConfigureCloseAndSubmitKeys(root);
 
             _editor = new ItemStyleEditor(
                 CreateText(),
-                Close,
                 _request.Action == null
                     ? null
                     : new Action(() =>
@@ -138,8 +131,13 @@ namespace Ee4v.ItemStyle
                 () => SetColor(Color.clear);
             _editor.ClearIconRequested += () => SetIcon(null);
             _editor.RemoveRecentIconRequested += RemoveRecentIcon;
-            root.Add(_editor);
-            root.RegisterCallback<KeyDownEvent>(OnKeyDown);
+            var popup = new CustomPopup(
+                _request.Title,
+                titleTooltip: _request.TargetTooltip,
+                closeTooltip: _request.CloseTooltip);
+            popup.HeaderLeading.Add(_editor.HeaderPreview);
+            popup.Content.Add(_editor);
+            SetPopup(popup);
             root.focusable = true;
             root.Focus();
             Render();
@@ -149,9 +147,6 @@ namespace Ee4v.ItemStyle
         {
             return new ItemStyleEditorText
             {
-                Title = _request.Title,
-                TargetTooltip = _request.TargetTooltip,
-                CloseTooltip = _request.CloseTooltip,
                 ColorTitle = _request.ColorLabel,
                 ColorTooltip = _request.ColorTooltip,
                 CustomColorLabel = _request.CustomColorLabel,
@@ -294,17 +289,6 @@ namespace Ee4v.ItemStyle
             }
 
             return false;
-        }
-
-        private void OnKeyDown(KeyDownEvent evt)
-        {
-            if (evt.keyCode != KeyCode.Escape)
-            {
-                return;
-            }
-
-            evt.StopPropagation();
-            Close();
         }
 
         private static void CloseExistingWindows()

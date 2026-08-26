@@ -115,6 +115,22 @@ namespace Ee4v.UI
             new Color32(142, 142, 142, 255);
         private static readonly Color32 LightHierarchyText =
             new Color32(56, 56, 56, 255);
+        private static readonly Color DarkPopupWindowBackground =
+            new Color32(56, 56, 56, 255);
+        private static readonly Color LightPopupWindowBackground =
+            new Color32(200, 200, 200, 255);
+        private static readonly Color DarkPopupWindowHeader =
+            new Color32(40, 40, 40, 255);
+        private static readonly Color LightPopupWindowHeader =
+            new Color32(165, 165, 165, 255);
+        private static readonly Color DarkPopupWindowBorder =
+            new Color32(25, 25, 25, 255);
+        private static readonly Color LightPopupWindowBorder =
+            new Color32(138, 138, 138, 255);
+        private static readonly Color DarkPopupWindowHover =
+            new Color32(68, 68, 68, 255);
+        private static readonly Color LightPopupWindowHover =
+            new Color32(178, 178, 178, 255);
 
         public static UiColorPalette Current => UiColorPalettes.UnityDark;
         public static Color32 ChromeDeep => Current.ChromeDeep;
@@ -150,5 +166,21 @@ namespace Ee4v.UI
             EditorGUIUtility.isProSkin
                 ? Current.TextPrimary
                 : LightHierarchyText;
+        public static Color PopupWindowBackground =>
+            EditorGUIUtility.isProSkin
+                ? DarkPopupWindowBackground
+                : LightPopupWindowBackground;
+        public static Color PopupWindowHeader =>
+            EditorGUIUtility.isProSkin
+                ? DarkPopupWindowHeader
+                : LightPopupWindowHeader;
+        public static Color PopupWindowBorder =>
+            EditorGUIUtility.isProSkin
+                ? DarkPopupWindowBorder
+                : LightPopupWindowBorder;
+        public static Color PopupWindowHover =>
+            EditorGUIUtility.isProSkin
+                ? DarkPopupWindowHover
+                : LightPopupWindowHover;
     }
 }

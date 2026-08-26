@@ -258,7 +258,7 @@ namespace Ee4v.AssetManager.UI
 
     internal sealed class AssetTagPickerWindow : CustomPopupWindow
     {
-        private const float PopupWidth = 300f;
+        private const float PopupWidth = 340f;
         private const float PopupHeight = 400f;
         private AssetTagSelection _selection;
         private Action<IReadOnlyList<string>> _selectionChanged;
@@ -304,13 +304,8 @@ namespace Ee4v.AssetManager.UI
             root.RegisterCallback<KeyDownEvent>(OnKeyDown);
 
             var popup = new CustomPopup(
-                I18N.Get("detail.item.tagsPickerTitle"));
-            var close = AssetManagerControls.CreateIconButton(
-                I18N.Get("detail.item.tagsClose"),
-                "dismiss.png",
-                Close,
-                "ee4v-asset-manager-tag-picker__close");
-            popup.HeaderActions.Add(close);
+                I18N.Get("detail.item.tagsPickerTitle"),
+                closeTooltip: I18N.Get("detail.item.tagsClose"));
 
             var body = new VisualElement();
             body.AddToClassList(

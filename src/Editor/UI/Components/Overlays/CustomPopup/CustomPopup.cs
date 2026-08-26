@@ -8,13 +8,56 @@ namespace Ee4v.UI
 {
     public abstract class CustomPopupWindow : EditorWindow
     {
-        private VisualElement _dragHandle;
-        private VisualElement _headerActions;
+        private const float MinimumWidth = 340f;
+        private const float MinimumHeight = 100f;
+        private const float HeaderHeight = 24f;
+        private bool _isDragging;
+        private Vector2 _dragStartMouseScreen;
+        private Rect _dragStartWindowPosition;
         private VisualElement _keyboardTarget;
+        private CustomPopup _popup;
         private Action _submit;
-        private int _dragPointerId = -1;
-        private Vector2 _dragPointerOffset;
+        private bool _isLocked;
+        private bool _isResizing;
+        private int _resizeControlId;
+        private ResizeEdge _resizeEdge = ResizeEdge.None;
+        private Vector2 _resizeStartMouseScreen;
+        private Rect _resizeStartWindowPosition;
         private bool _watchingTransientPicker;
+
+        protected Color? HeaderBackgroundColor { get; set; }
+
+        protected bool IsLocked
+        {
+            get { return _isLocked; }
+            set { _isLocked = value; }
+        }
+
+        protected virtual void OnEnable()
+        {
+            AssemblyReloadEvents.beforeAssemblyReload +=
+                OnBeforeAssemblyReload;
+        }
+
+        protected virtual void OnDestroy()
+        {
+            AssemblyReloadEvents.beforeAssemblyReload -=
+                OnBeforeAssemblyReload;
+            EditorApplication.delayCall -= EvaluateFocusLoss;
+            StopWatchingTransientPicker();
+            _isDragging = false;
+            if (GUIUtility.hotControl == _resizeControlId)
+            {
+                GUIUtility.hotControl = 0;
+            }
+
+            _resizeControlId = 0;
+        }
+
+        private void OnGUI()
+        {
+            HandleResize(Event.current);
+        }
 
         protected void ShowAsPopup(
             VisualElement anchor,
@@ -45,8 +88,6 @@ namespace Ee4v.UI
             var safeSize = new Vector2(
                 Mathf.Max(1f, size.x),
                 Mathf.Max(1f, size.y));
-            minSize = safeSize;
-            maxSize = safeSize;
             position = EditorPopupApi.TryGetDesktopBounds(
                     screenPosition,
                     out var desktopBounds)
@@ -59,7 +100,7 @@ namespace Ee4v.UI
             Focus();
             EditorPopupApi.TrySetBackgroundColor(
                 this,
-                UiColorTokens.SurfaceRaised);
+                UiColorTokens.PopupWindowBackground);
         }
 
         protected void ConfigureCloseAndSubmitKeys(
@@ -85,35 +126,43 @@ namespace Ee4v.UI
                 throw new ArgumentNullException(nameof(popup));
             }
 
-            UnregisterDragHandle();
-            _dragHandle = popup.Header;
-            _headerActions = popup.HeaderActions;
-            _dragHandle.RegisterCallback<PointerDownEvent>(
-                OnHeaderPointerDown);
-            _dragHandle.RegisterCallback<PointerMoveEvent>(
-                OnHeaderPointerMove);
-            _dragHandle.RegisterCallback<PointerUpEvent>(
-                OnHeaderPointerUp);
-            _dragHandle.RegisterCallback<PointerCaptureOutEvent>(
-                OnHeaderPointerCaptureOut);
+            popup.SetCloseAction(Close);
+            popup.SetHeaderBackground(HeaderBackgroundColor);
+            _popup = popup;
+            WindowMover(popup);
             rootVisualElement.Add(popup);
         }
 
-        private void OnHeaderPointerDown(PointerDownEvent evt)
+        protected void UpdateHeaderBackground(Color? color)
         {
-            if (evt.button != (int)MouseButton.LeftMouse ||
-                IsHeaderAction(evt.target))
+            HeaderBackgroundColor = color;
+            _popup?.SetHeaderBackground(color);
+        }
+
+        protected virtual void OnLostFocus()
+        {
+            if (IsLocked)
             {
                 return;
             }
 
-            EndDrag();
-            _dragPointerId = evt.pointerId;
-            _dragPointerOffset = new Vector2(
-                evt.position.x,
-                evt.position.y);
-            _dragHandle.CapturePointer(evt.pointerId);
-            evt.StopPropagation();
+            EditorApplication.delayCall -= EvaluateFocusLoss;
+            EditorApplication.delayCall += EvaluateFocusLoss;
+        }
+
+        protected virtual void OnDisable()
+        {
+            EditorApplication.delayCall -= EvaluateFocusLoss;
+            StopWatchingTransientPicker();
+            _isDragging = false;
+            if (_keyboardTarget == null)
+            {
+                return;
+            }
+
+            _keyboardTarget.UnregisterCallback<KeyDownEvent>(OnKeyDown);
+            _keyboardTarget = null;
+            _submit = null;
         }
 
         private void OnKeyDown(KeyDownEvent evt)
@@ -132,107 +181,63 @@ namespace Ee4v.UI
             }
         }
 
-        private void OnHeaderPointerMove(PointerMoveEvent evt)
+        private void OnBeforeAssemblyReload()
         {
-            if (evt.pointerId != _dragPointerId ||
-                !_dragHandle.HasPointerCapture(evt.pointerId))
+            Close();
+        }
+
+        private void WindowMover(CustomPopup popup)
+        {
+            var header = popup.Header;
+            header.RegisterCallback<MouseDownEvent>(evt =>
             {
-                return;
-            }
+                if (evt.button != 0 ||
+                    popup.IsInteractiveHeaderTarget(evt.target))
+                {
+                    return;
+                }
 
-            var pointerScreenPosition = position.position +
-                                        new Vector2(
-                                            evt.position.x,
-                                            evt.position.y);
-            var windowPosition = position;
-            windowPosition.position = pointerScreenPosition -
-                                      _dragPointerOffset;
-            position = windowPosition;
-            evt.StopPropagation();
-        }
+                _isDragging = true;
+                header.CaptureMouse();
+                _dragStartMouseScreen =
+                    GUIUtility.GUIToScreenPoint(evt.mousePosition);
+                _dragStartWindowPosition = position;
+                evt.StopPropagation();
+            });
 
-        private void OnHeaderPointerUp(PointerUpEvent evt)
-        {
-            if (evt.pointerId != _dragPointerId)
+            header.RegisterCallback<MouseMoveEvent>(evt =>
             {
-                return;
-            }
+                if (!_isDragging)
+                {
+                    return;
+                }
 
-            EndDrag();
-            evt.StopPropagation();
-        }
+                var mouseScreen =
+                    GUIUtility.GUIToScreenPoint(evt.mousePosition);
+                var delta = mouseScreen - _dragStartMouseScreen;
+                position = new Rect(
+                    _dragStartWindowPosition.x + delta.x,
+                    _dragStartWindowPosition.y + delta.y,
+                    position.width,
+                    position.height);
+            });
 
-        private void OnHeaderPointerCaptureOut(
-            PointerCaptureOutEvent evt)
-        {
-            if (evt.pointerId == _dragPointerId)
+            header.RegisterCallback<MouseUpEvent>(evt =>
             {
-                _dragPointerId = -1;
-            }
-        }
+                if (!_isDragging)
+                {
+                    return;
+                }
 
-        private bool IsHeaderAction(IEventHandler target)
-        {
-            return target is VisualElement element &&
-                   _headerActions != null &&
-                   _headerActions.Contains(element);
-        }
-
-        private void EndDrag()
-        {
-            var pointerId = _dragPointerId;
-            _dragPointerId = -1;
-            if (pointerId >= 0 &&
-                _dragHandle != null &&
-                _dragHandle.HasPointerCapture(pointerId))
-            {
-                _dragHandle.ReleasePointer(pointerId);
-            }
-        }
-
-        private void UnregisterDragHandle()
-        {
-            EndDrag();
-            if (_dragHandle == null)
-            {
-                return;
-            }
-
-            _dragHandle.UnregisterCallback<PointerDownEvent>(
-                OnHeaderPointerDown);
-            _dragHandle.UnregisterCallback<PointerMoveEvent>(
-                OnHeaderPointerMove);
-            _dragHandle.UnregisterCallback<PointerUpEvent>(
-                OnHeaderPointerUp);
-            _dragHandle.UnregisterCallback<PointerCaptureOutEvent>(
-                OnHeaderPointerCaptureOut);
-            _dragHandle = null;
-            _headerActions = null;
-        }
-
-        protected virtual void OnLostFocus()
-        {
-            EditorApplication.delayCall -= EvaluateFocusLoss;
-            EditorApplication.delayCall += EvaluateFocusLoss;
-        }
-
-        protected virtual void OnDisable()
-        {
-            EditorApplication.delayCall -= EvaluateFocusLoss;
-            StopWatchingTransientPicker();
-            UnregisterDragHandle();
-            if (_keyboardTarget != null)
-            {
-                _keyboardTarget.UnregisterCallback<KeyDownEvent>(
-                    OnKeyDown);
-                _keyboardTarget = null;
-                _submit = null;
-            }
+                _isDragging = false;
+                header.ReleaseMouse();
+                evt.StopPropagation();
+            });
         }
 
         private void EvaluateFocusLoss()
         {
-            if (this == null)
+            if (this == null || IsLocked)
             {
                 return;
             }
@@ -285,7 +290,10 @@ namespace Ee4v.UI
             }
 
             StopWatchingTransientPicker();
-            Focus();
+            if (!IsLocked)
+            {
+                Focus();
+            }
         }
 
         private void StopWatchingTransientPicker()
@@ -326,6 +334,168 @@ namespace Ee4v.UI
                         desktopBounds.yMax - size.y)),
                 size.x,
                 size.y);
+        }
+
+        private void HandleResize(Event evt)
+        {
+            const float margin = 6f;
+            const float cornerSize = 6f;
+            var leftRect = new Rect(
+                0f,
+                HeaderHeight,
+                margin,
+                Mathf.Max(
+                    0f,
+                    position.height - HeaderHeight - cornerSize));
+            var rightRect = new Rect(
+                position.width - margin,
+                HeaderHeight,
+                margin,
+                Mathf.Max(
+                    0f,
+                    position.height - HeaderHeight - cornerSize));
+            var innerBottomWidth = Mathf.Max(
+                0f,
+                position.width - cornerSize * 2f);
+            var bottomRect = new Rect(
+                cornerSize,
+                Mathf.Max(0f, position.height - margin),
+                innerBottomWidth,
+                margin);
+            var bottomLeftRect = new Rect(
+                0f,
+                Mathf.Max(0f, position.height - cornerSize),
+                cornerSize,
+                cornerSize);
+            var bottomRightRect = new Rect(
+                Mathf.Max(0f, position.width - cornerSize),
+                Mathf.Max(0f, position.height - cornerSize),
+                cornerSize,
+                cornerSize);
+
+            EditorGUIUtility.AddCursorRect(
+                leftRect,
+                MouseCursor.ResizeHorizontal);
+            EditorGUIUtility.AddCursorRect(
+                rightRect,
+                MouseCursor.ResizeHorizontal);
+            EditorGUIUtility.AddCursorRect(
+                bottomRect,
+                MouseCursor.ResizeVertical);
+            EditorGUIUtility.AddCursorRect(
+                bottomLeftRect,
+                MouseCursor.ResizeUpRight);
+            EditorGUIUtility.AddCursorRect(
+                bottomRightRect,
+                MouseCursor.ResizeUpLeft);
+
+            if (evt.type == EventType.MouseDown &&
+                evt.button == 0 &&
+                !_isDragging)
+            {
+                var detected = ResizeEdge.None;
+                if (bottomLeftRect.Contains(evt.mousePosition))
+                {
+                    detected = ResizeEdge.Left | ResizeEdge.Bottom;
+                }
+                else if (bottomRightRect.Contains(evt.mousePosition))
+                {
+                    detected = ResizeEdge.Right | ResizeEdge.Bottom;
+                }
+                else if (leftRect.Contains(evt.mousePosition))
+                {
+                    detected = ResizeEdge.Left;
+                }
+                else if (rightRect.Contains(evt.mousePosition))
+                {
+                    detected = ResizeEdge.Right;
+                }
+                else if (bottomRect.Contains(evt.mousePosition))
+                {
+                    detected = ResizeEdge.Bottom;
+                }
+
+                if (detected != ResizeEdge.None)
+                {
+                    _isResizing = true;
+                    _resizeEdge = detected;
+                    _resizeStartMouseScreen =
+                        GUIUtility.GUIToScreenPoint(evt.mousePosition);
+                    _resizeStartWindowPosition = position;
+                    _resizeControlId =
+                        GUIUtility.GetControlID(FocusType.Passive);
+                    GUIUtility.hotControl = _resizeControlId;
+                    evt.Use();
+                }
+            }
+
+            if (_isResizing && evt.type == EventType.MouseDrag)
+            {
+                var mouseScreen =
+                    GUIUtility.GUIToScreenPoint(evt.mousePosition);
+                var delta = mouseScreen - _resizeStartMouseScreen;
+                var newPosition = _resizeStartWindowPosition;
+
+                if ((_resizeEdge & ResizeEdge.Left) != 0)
+                {
+                    var newWidth =
+                        _resizeStartWindowPosition.width - delta.x;
+                    var newX =
+                        _resizeStartWindowPosition.x + delta.x;
+                    if (newWidth < MinimumWidth)
+                    {
+                        newWidth = MinimumWidth;
+                        newX = _resizeStartWindowPosition.x +
+                               (_resizeStartWindowPosition.width -
+                                newWidth);
+                    }
+
+                    newPosition.x = newX;
+                    newPosition.width = newWidth;
+                }
+
+                if ((_resizeEdge & ResizeEdge.Right) != 0)
+                {
+                    var newWidth =
+                        _resizeStartWindowPosition.width + delta.x;
+                    if (newWidth < MinimumWidth)
+                    {
+                        newWidth = MinimumWidth;
+                    }
+
+                    newPosition.width = newWidth;
+                }
+
+                if ((_resizeEdge & ResizeEdge.Bottom) != 0)
+                {
+                    var newHeight =
+                        _resizeStartWindowPosition.height + delta.y;
+                    if (newHeight < MinimumHeight)
+                    {
+                        newHeight = MinimumHeight;
+                    }
+
+                    newPosition.height = newHeight;
+                }
+
+                position = newPosition;
+                evt.Use();
+            }
+
+            if (!_isResizing || evt.type != EventType.MouseUp)
+            {
+                return;
+            }
+
+            _isResizing = false;
+            _resizeEdge = ResizeEdge.None;
+            if (GUIUtility.hotControl == _resizeControlId)
+            {
+                GUIUtility.hotControl = 0;
+            }
+
+            _resizeControlId = 0;
+            evt.Use();
         }
 
         private static Rect ResolveElementAnchor(VisualElement anchor)
@@ -387,6 +557,15 @@ namespace Ee4v.UI
             return EditorWindow.mouseOverWindow ??
                    EditorWindow.focusedWindow;
         }
+
+        [Flags]
+        private enum ResizeEdge
+        {
+            None = 0,
+            Left = 1,
+            Right = 2,
+            Bottom = 4
+        }
     }
 
     public sealed class CustomPopup : VisualElement
@@ -407,28 +586,81 @@ namespace Ee4v.UI
             "ee4v-ui-custom-popup__footer--hidden";
 
         private readonly UiTextElement _title;
+        private readonly UiButton _closeButton;
+        private readonly string _closeTooltip;
+        private Action _closeAction;
 
         public CustomPopup(
             string title = null,
-            bool showFooter = false)
+            bool showFooter = false,
+            string titleTooltip = null,
+            string closeTooltip = null)
         {
+            _closeTooltip = closeTooltip ?? string.Empty;
             AddToClassList(RootClassName);
-            AddToClassList(UiClassNames.PopupSurface);
+            style.borderRightWidth = 1f;
+            style.borderLeftWidth = 1f;
+            style.borderTopWidth = 1f;
+            style.borderBottomWidth = 1f;
+            style.borderRightColor = UiColorTokens.PopupWindowBorder;
+            style.borderLeftColor = UiColorTokens.PopupWindowBorder;
+            style.borderTopColor = UiColorTokens.PopupWindowBorder;
+            style.borderBottomColor = UiColorTokens.PopupWindowBorder;
+            style.backgroundColor =
+                UiColorTokens.PopupWindowBackground;
 
             Header = new VisualElement();
             Header.AddToClassList(HeaderClassName);
+            Header.style.flexDirection = FlexDirection.Row;
+            Header.style.height = 24f;
+            Header.style.flexShrink = 0f;
+            Header.style.backgroundColor =
+                UiColorTokens.PopupWindowHeader;
+            Header.style.justifyContent = Justify.Center;
+
+            var headerContent = new VisualElement();
+            headerContent.style.flexDirection = FlexDirection.Row;
+            headerContent.style.alignItems = Align.Center;
+            headerContent.style.height = 24f;
+            headerContent.style.flexGrow = 1f;
+            HeaderLeading = new VisualElement();
+            HeaderLeading.style.flexDirection = FlexDirection.Row;
+            HeaderLeading.style.height = 24f;
+            HeaderLeading.style.flexShrink = 0f;
+            HeaderLeading.style.alignItems = Align.Center;
             _title = UiTextFactory.Create(
                 title ?? string.Empty,
-                UiClassNames.SectionTitle,
                 TitleClassName);
+            _title.tooltip = titleTooltip ?? string.Empty;
+            _title.style.flexGrow = 1f;
+            _title.style.flexShrink = 1f;
+            _title.style.marginLeft = 8f;
+            _title.style.marginRight = 4f;
+            _title.style.fontSize = 14f;
+            _title.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _title.style.overflow = Overflow.Hidden;
+            _title.style.textOverflow = TextOverflow.Ellipsis;
+            _title.SetWhiteSpace(WhiteSpace.NoWrap);
             HeaderActions = new VisualElement();
             HeaderActions.AddToClassList(HeaderActionsClassName);
-            Header.Add(_title);
-            Header.Add(HeaderActions);
+            HeaderActions.style.flexDirection = FlexDirection.Row;
+            HeaderActions.style.height = 24f;
+            HeaderActions.style.flexShrink = 0f;
+            HeaderActions.style.alignItems = Align.Center;
+            headerContent.Add(HeaderLeading);
+            headerContent.Add(_title);
+            headerContent.Add(HeaderActions);
+            Header.Add(headerContent);
+            _closeButton = CreateCloseButton();
+            Header.Add(_closeButton);
             hierarchy.Add(Header);
 
             Content = new VisualElement();
             Content.AddToClassList(ContentClassName);
+            Content.style.marginRight = 4f;
+            Content.style.marginLeft = 4f;
+            Content.style.marginTop = 4f;
+            Content.style.marginBottom = 4f;
             hierarchy.Add(Content);
 
             Footer = new VisualElement();
@@ -436,6 +668,8 @@ namespace Ee4v.UI
             hierarchy.Add(Footer);
             SetFooterVisible(showFooter);
         }
+
+        public VisualElement HeaderLeading { get; }
 
         public VisualElement HeaderActions { get; }
 
@@ -453,6 +687,72 @@ namespace Ee4v.UI
         public void SetFooterVisible(bool visible)
         {
             Footer.EnableInClassList(FooterHiddenClassName, !visible);
+        }
+
+        internal void SetCloseAction(Action close)
+        {
+            _closeAction = close;
+        }
+
+        private UiButton CreateCloseButton()
+        {
+            var button = new UiButton(
+                string.Empty,
+                () => _closeAction?.Invoke(),
+                _closeTooltip,
+                icon: FluentUiIcons.CreateState(
+                    "dismiss.png",
+                    UiSizeTokens.Size16),
+                variant: UiButtonVariant.Ghost,
+                compact: true);
+            button.style.width = 24f;
+            button.style.height = 24f;
+            button.style.minWidth = 24f;
+            button.style.minHeight = 24f;
+            button.style.paddingRight = 0f;
+            button.style.paddingLeft = 0f;
+            button.style.paddingTop = 0f;
+            button.style.paddingBottom = 0f;
+            button.style.backgroundColor = Color.clear;
+            button.style.borderRightWidth = 0f;
+            button.style.borderLeftWidth = 0f;
+            button.style.borderTopWidth = 0f;
+            button.style.borderBottomWidth = 0f;
+            button.style.marginRight = 0f;
+            button.style.marginLeft = 0f;
+            button.style.marginTop = 0f;
+            button.style.marginBottom = 0f;
+            button.style.alignItems = Align.Center;
+            button.style.justifyContent = Justify.Center;
+
+            Color hoverColor = UiColorTokens.PopupWindowHover;
+            hoverColor.a = 0.3f;
+            button.RegisterCallback<MouseEnterEvent>(
+                _ => button.style.backgroundColor = hoverColor);
+            button.RegisterCallback<MouseLeaveEvent>(
+                _ => button.style.backgroundColor = Color.clear);
+            return button;
+        }
+
+        internal bool IsInteractiveHeaderTarget(IEventHandler target)
+        {
+            if (!(target is VisualElement element))
+            {
+                return false;
+            }
+
+            return HeaderActions.Contains(element) ||
+                   (_closeButton != null &&
+                    _closeButton.Contains(element));
+        }
+
+        internal void SetHeaderBackground(Color? color)
+        {
+            Header.style.backgroundColor = color == null ||
+                                           color == Color.clear
+                ? UiColorTokens.PopupWindowHeader
+                : color.Value;
+            Header.MarkDirtyRepaint();
         }
     }
 }

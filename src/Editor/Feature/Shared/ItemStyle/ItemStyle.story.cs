@@ -27,7 +27,12 @@ namespace Ee4v.ItemStyle
                     "Project のフォルダーへ色とアイコンを設定する画面です。",
                     "ProjectStyle と HierarchyStyle が共有する ItemStyleEditor を使用します。",
                     parent => Build(parent, false),
-                    dependencies: new[] { "ItemStyleEditor", "UiButton" },
+                    dependencies: new[]
+                    {
+                        "CustomPopup",
+                        "ItemStyleEditor",
+                        "UiButton"
+                    },
                     usageLocations: new[]
                     {
                         "Editor/Feature/Project/ProjectStyle/UI/ProjectStyleWindow.cs",
@@ -41,7 +46,12 @@ namespace Ee4v.ItemStyle
                     "Hierarchy の項目へ背景色とアイコンを設定する画面です。",
                     "共有の ItemStyleEditor に非表示操作を追加した状態を表示します。",
                     parent => Build(parent, true),
-                    dependencies: new[] { "ItemStyleEditor", "UiButton" },
+                    dependencies: new[]
+                    {
+                        "CustomPopup",
+                        "ItemStyleEditor",
+                        "UiButton"
+                    },
                     usageLocations: new[]
                     {
                         "Editor/Feature/Hierarchy/HierarchyStyle/UI/HierarchyStyleWindow.cs",
@@ -55,13 +65,12 @@ namespace Ee4v.ItemStyle
             VisualElement parent,
             bool hierarchy)
         {
+            var title = hierarchy ? "Environment" : "Scenes";
+            var targetTooltip = hierarchy
+                ? "Environment"
+                : "Assets/Scenes";
             var text = new ItemStyleEditorText
             {
-                Title = hierarchy ? "Environment" : "Scenes",
-                TargetTooltip = hierarchy
-                    ? "Environment"
-                    : "Assets/Scenes",
-                CloseTooltip = "Close",
                 ColorTitle = hierarchy ? "Background" : "Color",
                 ColorTooltip = "Choose a color",
                 CustomColorLabel = "Custom color",
@@ -78,7 +87,6 @@ namespace Ee4v.ItemStyle
             };
             var view = new ItemStyleEditor(
                 text,
-                () => { },
                 hierarchy ? new Action(() => { }) : null);
             var defaultIcon = UiBuiltinIconResolver.LoadTexture(
                 hierarchy ? UiBuiltinIcon.GameObject : UiBuiltinIcon.Folder);
@@ -115,11 +123,16 @@ namespace Ee4v.ItemStyle
                 PreviewColorAsBackground = hierarchy,
                 IconType = hierarchy ? typeof(Texture2D) : typeof(Texture)
             });
-            var surface = new VisualElement();
-            surface.style.width = 360f;
-            surface.style.height = hierarchy ? 318f : 268f;
-            surface.Add(view);
-            parent.Add(surface);
+            var popup = new CustomPopup(
+                title,
+                titleTooltip: targetTooltip,
+                closeTooltip: "Close");
+            popup.style.width = 360f;
+            popup.style.height = hierarchy ? 318f : 268f;
+            popup.style.flexGrow = 0f;
+            popup.HeaderLeading.Add(view.HeaderPreview);
+            popup.Content.Add(view);
+            parent.Add(popup);
         }
     }
 }
