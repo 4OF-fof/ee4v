@@ -11,8 +11,8 @@ rootVisualElement.Add(
     UiTextFactory.CreateButton("Run", Run));
 ```
 
-`UiComposition.Prepare` は共通 class、共通 stylesheet、Unity Dark palette を適用します。
-各EditorWindowは利用する部品のstylesheetを登録します。部品自体はUXMLの有無に依存しません。
+`UiComposition.Prepare` は共通 class、共有コンポーネントの stylesheet、Unity Dark palette を適用します。
+各EditorWindowが追加で登録するのは機能固有のstylesheetだけです。部品自体はUXMLの有無に依存しません。
 
 ## color palette
 

@@ -42,7 +42,7 @@ namespace Ee4v.PlayModeComponentSuppression
             window._existing = existing ?? Array.Empty<string>();
             window._replacingIndex = replacingIndex;
             window._select = select;
-            CustomPopup.ShowAsDropDown(window, anchor, PopupSize);
+            window.ShowAsPopup(anchor, PopupSize);
         }
 
         internal static string GetDisplayName(Type type)
@@ -62,11 +62,7 @@ namespace Ee4v.PlayModeComponentSuppression
         {
             var root = rootVisualElement;
             root.Clear();
-            UiComposition.Prepare(
-                root,
-                "Editor/UI/Components/Inputs/SearchField/search-field.uss",
-                "Editor/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss",
-                "Editor/UI/Components/Overlays/CustomPopup/custom-popup.uss");
+            UiComposition.Prepare(root);
             ConfigureCloseAndSubmitKeys(root, SelectCurrent);
 
             var popup = new CustomPopup(

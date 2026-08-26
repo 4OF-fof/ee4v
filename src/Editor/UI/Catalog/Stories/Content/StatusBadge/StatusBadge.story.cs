@@ -69,18 +69,18 @@ namespace Ee4v.UI
                 }
             };
 
-            var controls = CreateTabbedControlsSection(parent, "状態テキストと tone を切り替えて badge の見た目を確認します。");
+            var controls = CreatePlainControlsSection(parent, "状態テキストと tone を切り替えて badge の見た目を確認します。");
 
             var textField = AddTextField(controls.Content, "テキスト", text, value =>
             {
                 text = value;
                 refresh();
             });
-            var toneField = AddEnumField(controls.Content, "種類", tone, value =>
-            {
-                tone = value;
-                refresh();
-            });
+            var toneField = AddEnumField(
+                controls.Content,
+                "種類",
+                tone,
+                applyPreset);
 
             var preview = CreatePreviewSection(parent);
             var badge = new StatusBadge();
@@ -90,20 +90,6 @@ namespace Ee4v.UI
 
             refresh = () =>
             {
-                controls.TabCard.SetState(
-                    new TabCardState(
-                        new[]
-                        {
-                            new TabCardTabState(UiStatusTone.Idle.ToString(), "Idle"),
-                            new TabCardTabState(UiStatusTone.Running.ToString(), "Running"),
-                            new TabCardTabState(UiStatusTone.Passed.ToString(), "Passed"),
-                            new TabCardTabState(UiStatusTone.Failed.ToString(), "Failed"),
-                            new TabCardTabState(UiStatusTone.Skipped.ToString(), "Skipped"),
-                            new TabCardTabState(UiStatusTone.Inconclusive.ToString(), "Inconclusive")
-                        },
-                        tone.ToString()),
-                    id => applyPreset((UiStatusTone)Enum.Parse(typeof(UiStatusTone), id)));
-
                 textField.SetValueWithoutNotify(text);
                 toneField.SetValueWithoutNotify((Enum)(object)tone);
                 badge.SetState(new StatusBadgeState(text, tone));

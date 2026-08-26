@@ -6,18 +6,17 @@ namespace Ee4v.UI
     {
         internal sealed class ControlsSectionContext
         {
-            public ControlsSectionContext(InfoCard card, VisualElement content, TabCard tabCard)
+            public ControlsSectionContext(
+                InfoCard card,
+                VisualElement content)
             {
                 Card = card;
                 Content = content;
-                TabCard = tabCard;
             }
 
             public InfoCard Card { get; }
 
             public VisualElement Content { get; }
-
-            public TabCard TabCard { get; }
         }
     }
 }

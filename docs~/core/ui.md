@@ -6,7 +6,7 @@
 
 - `UiButton`は文字、`IconState`、標準状態表現をまとめます。機能固有の色や選択状態は利用側のクラスで追加します。
 - `UiComposition.Prepare`を適用したroot配下では、Buttonがフォーカスを得た際の青い枠を表示しません。入力欄の編集フォーカスと、カードなどの選択状態は各コンポーネントの状態表現を維持します。
-- `UiComposition.Prepare(root, styleSheetPaths)`は共通USSと機能固有USSを一つの入口で登録します。EditorWindowや埋め込みViewはroot classとStyleSheetを個別に組み立てません。
+- `UiComposition.Prepare(root, styleSheetPaths)`は共通USS、共有コンポーネントのUSS、機能固有USSを一つの入口で登録します。`styleSheetPaths`には機能固有USSだけを指定し、EditorWindowや埋め込みViewはroot classとStyleSheetを個別に組み立てません。
 - `InputField`は1行入力と複数行入力に対応し、読み取り専用、プレースホルダー、欄内スクロールを共通化します。
 - `UiComposition.Prepare`を適用したroot配下では、縦横のスクロールバーを共通の8px幅、4px thumbで表示します。縦のthumbはtrackの右端へ揃えます。個別画面は細幅classや固有USSを追加しません。`UiClassNames.ThinVerticalScrollbar`は共通root外へ縦スクロールバーだけを適用する場合に使用します。
 - `SearchField`は検索、消去、プレースホルダーを提供します。`SearchFieldState.SearchActionEnabled`を有効にすると、先頭アイコンから`SearchActionRequested`を通知します。ポップアップなどの配置には`SearchActionAnchor`を使用できます。
@@ -22,7 +22,7 @@
 - `InlineMessage`は、処理結果や入力エラーを`UiStatusTone`と任意アイコンで表示します。
 - `PreviewSurface`は、Preview本体、未表示時のPlaceholder、重ねる操作を構成します。Previewを並べるGridは含みません。
 - `PreviewOrbitController`は3D Previewの右ドラッグ回転、中ドラッグ移動、ホイール拡縮とCamera配置を共通化します。Boundsの計算と描画内容は利用側が扱います。
-- `CustomPopupWindow`はHeaderのドラッグ移動に加え、`ConfigureCloseAndSubmitKeys`でEscapeによるCloseと任意のEnter確定を設定します。
+- `CustomPopupWindow`は固定サイズのpopup表示、desktop内への位置補正、focus離脱時のCloseを共通化します。ColorPicker、ObjectSelector、EyeDropperの使用中はWindowを維持し、終了後にfocusを戻します。Headerのドラッグ移動に加え、`ConfigureCloseAndSubmitKeys`でEscapeによるCloseと任意のEnter確定を設定します。
 - `UiDragAndDrop`は、一定距離の左ドラッグ開始と型付きpayloadのMove操作受け入れを共通化します。payloadの生成、drop可否、表示フィードバック、適用処理は利用側が渡します。
 - `ActionBar`は、伸縮する左側領域、任意の中央領域、右側の操作領域を構成します。画面固有のToolbarやFooterはこれを継承または内包します。
 - `NavigationItem`は、`ContentRow`を内包した選択可能な1件分のNavigationです。Navigation一覧や階層は含みません。
@@ -34,7 +34,7 @@
 
 ## `CustomPopup`
 
-`CustomPopup`はドロップダウン型`EditorWindow`の外枠を構成します。外枠は`ee4v-popup-surface`の1px borderを使用し、ヘッダー、本文、任意フッターの背景と区切り線を共通化します。ポップアップ用Windowは`CustomPopupWindow`を継承して`SetPopup(CustomPopup)`で外枠を設定します。色付きヘッダーは左ドラッグでWindowを移動でき、ヘッダー内の操作ボタンは通常どおり操作できます。
+`CustomPopup`はpopup用`EditorWindow`の外枠を構成します。外枠は`ee4v-popup-surface`の1px borderを使用し、ヘッダー、本文、任意フッターの背景と区切り線を共通化します。popup用Windowは`CustomPopupWindow`を継承し、`ShowAsPopup`で表示して`SetPopup(CustomPopup)`で外枠を設定します。色付きヘッダーは左ドラッグでWindowを移動でき、ヘッダー内の操作ボタンは通常どおり操作できます。
 
 | API | 動作 |
 |---|---|
@@ -43,7 +43,9 @@
 | `Footer` | キャンセル、確定などの操作を追加する |
 | `SetTitle(string)` | ヘッダーのタイトルを更新する |
 | `SetFooterVisible(bool)` | フッターの表示を切り替える |
-| `ShowAsDropDown(EditorWindow, VisualElement, Vector2)` | anchor直下へ固定サイズで表示する |
+| `CustomPopupWindow.ShowAsPopup(VisualElement, Vector2)` | anchor直下へ固定サイズで表示する |
+| `CustomPopupWindow.ShowAsPopup(VisualElement, Vector2, Vector2)` | panel上の指定位置を起点に固定サイズで表示する |
+| `CustomPopupWindow.ShowAsPopup(Vector2, Vector2)` | screen上の指定位置を起点に固定サイズで表示する |
 | `CustomPopupWindow.SetPopup(CustomPopup)` | 外枠を設定し、ヘッダーのドラッグ移動を有効にする |
 | `CustomPopupWindow.ConfigureCloseAndSubmitKeys(VisualElement, Action)` | Escapeで閉じ、任意のEnter確定処理を呼び出す |
 

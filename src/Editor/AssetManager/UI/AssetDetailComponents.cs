@@ -4,53 +4,38 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI
 {
-    internal sealed class AssetDetailHeader : VisualElement
+    internal sealed class AssetDetailHeader : InfoCard
     {
-        private VisualElement _actions;
-
         internal AssetDetailHeader(
             string title,
             string eyebrow,
             string subtitle = null,
             StatusBadgeState status = null)
+            : base(new InfoCardState(
+                title,
+                subtitle,
+                eyebrow,
+                status))
         {
             AddToClassList("ee4v-asset-manager__detail-header");
-            var eyebrowText = UiTextFactory.Create(
-                eyebrow,
-                UiClassNames.InfoCardEyebrow,
-                "ee4v-asset-manager__eyebrow");
-            eyebrowText.tooltip = eyebrow ?? string.Empty;
-            Add(eyebrowText);
-
-            var titleRow = new VisualElement();
-            titleRow.AddToClassList("ee4v-asset-manager__title-row");
-            var titleText = UiTextFactory.Create(
-                title,
-                UiClassNames.WindowTitle,
-                "ee4v-asset-manager__detail-title");
-            titleText.tooltip = title ?? string.Empty;
-            titleRow.Add(titleText);
+            EyebrowText.AddToClassList("ee4v-asset-manager__eyebrow");
+            EyebrowText.tooltip = eyebrow ?? string.Empty;
+            TitleText.AddToClassList("ee4v-asset-manager__detail-title");
+            TitleText.SetFontSize(UiTypographyTokens.TitleFontSize);
+            TitleText.tooltip = title ?? string.Empty;
+            DescriptionText.AddToClassList(
+                "ee4v-asset-manager__detail-subtitle");
+            DescriptionText.SetWhiteSpace(WhiteSpace.NoWrap);
+            DescriptionText.SetColor(UiColorTokens.TextMuted);
+            DescriptionText.SetTextAlign(TextAnchor.MiddleLeft);
+            DescriptionText.tooltip = subtitle ?? string.Empty;
             if (status != null)
             {
-                var badge = new StatusBadge(status);
-                badge.AddToClassList(
+                Badge.AddToClassList(
                     "ee4v-asset-manager__detail-status");
-                titleRow.Add(badge);
             }
-            Add(titleRow);
 
-            if (!string.IsNullOrWhiteSpace(subtitle))
-            {
-                var subtitleText = UiTextFactory.Create(
-                    subtitle,
-                    UiClassNames.FormLabel,
-                    "ee4v-asset-manager__detail-subtitle");
-                subtitleText.SetWhiteSpace(WhiteSpace.NoWrap);
-                subtitleText.SetColor(UiColorTokens.TextMuted);
-                subtitleText.SetTextAlign(TextAnchor.MiddleLeft);
-                subtitleText.tooltip = subtitle;
-                Add(subtitleText);
-            }
+            Body.AddToClassList("ee4v-asset-manager__actions");
         }
 
         internal void AddAction(VisualElement action)
@@ -60,14 +45,7 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            if (_actions == null)
-            {
-                _actions = new VisualElement();
-                _actions.AddToClassList(
-                    "ee4v-asset-manager__actions");
-                Add(_actions);
-            }
-            _actions.Add(action);
+            Body.Add(action);
         }
     }
 

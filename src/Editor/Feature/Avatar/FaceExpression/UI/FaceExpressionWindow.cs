@@ -121,9 +121,6 @@ namespace Ee4v.FaceExpression
             root.Clear();
             UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/Content/Icon/icon.uss",
-                "Editor/UI/Components/Inputs/ui-button.uss",
-                "Editor/UI/Components/Inputs/SearchField/search-field.uss",
                 "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss");
 
             _view = new FaceExpressionView(CreateText(), rect => _preview?.Draw(rect));

@@ -32,7 +32,7 @@ namespace Ee4v.AssetManager.UI
             var window = CreateInstance<AssetCollectionCreationPopup>();
             window._initialCollection = initialCollection;
             window._save = save;
-            CustomPopup.ShowAsDropDown(window, anchor, PopupSize);
+            window.ShowAsPopup(anchor, PopupSize);
         }
 
         private void CreateGUI()

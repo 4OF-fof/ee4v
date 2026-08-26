@@ -71,7 +71,12 @@ namespace Ee4v.UI
                 }
             };
 
-            var controls = CreateTabbedControlsSection(parent, "InfoCard の各プロパティを編集し、値の有無ごとの見た目を確認します。");
+            var controls = CreatePlainControlsSection(parent, "InfoCard の各プロパティを編集し、値の有無ごとの見た目を確認します。");
+            var presetField = AddEnumField(
+                controls.Content,
+                "Preset",
+                preset,
+                applyPreset);
 
             var eyebrowField = AddTextField(controls.Content, "Eyebrow", eyebrow, value =>
             {
@@ -105,16 +110,7 @@ namespace Ee4v.UI
 
             refresh = () =>
             {
-                controls.TabCard.SetState(
-                    new TabCardState(
-                        new[]
-                        {
-                            new TabCardTabState(InfoCardStoryPreset.Simple.ToString(), "Simple"),
-                            new TabCardTabState(InfoCardStoryPreset.Result.ToString(), "Result")
-                        },
-                        preset.ToString()),
-                    id => applyPreset((InfoCardStoryPreset)Enum.Parse(typeof(InfoCardStoryPreset), id)));
-
+                presetField.SetValueWithoutNotify((Enum)(object)preset);
                 eyebrowField.SetValueWithoutNotify(eyebrow);
                 titleField.SetValueWithoutNotify(title);
                 descriptionField.SetValueWithoutNotify(description);

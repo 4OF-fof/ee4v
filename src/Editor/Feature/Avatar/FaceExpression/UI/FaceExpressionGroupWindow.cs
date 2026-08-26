@@ -57,7 +57,6 @@ namespace Ee4v.FaceExpression
             root.Clear();
             UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/Inputs/ui-button.uss",
                 "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss");
             _view = new FaceExpressionGroupView(
                 new FaceExpressionGroupViewText

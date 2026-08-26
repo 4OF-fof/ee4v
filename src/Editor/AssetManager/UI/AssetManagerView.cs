@@ -57,8 +57,7 @@ namespace Ee4v.AssetManager.UI
                 var window = CreateInstance<TargetImportPopup>();
                 window._groups = groups;
                 window._import = import;
-                CustomPopup.ShowAsDropDown(
-                    window,
+                window.ShowAsPopup(
                     anchor,
                     new Vector2(
                         480f,
@@ -170,8 +169,7 @@ namespace Ee4v.AssetManager.UI
                 window._initialAnalyses = initialAnalyses;
                 window._groups = groups ?? Array.Empty<FileTreeGroup>();
                 window._save = save;
-                CustomPopup.ShowAsDropDown(
-                    window,
+                window.ShowAsPopup(
                     anchor,
                     new Vector2(520f, 560f));
             }
@@ -209,8 +207,9 @@ namespace Ee4v.AssetManager.UI
                 SetPopup(popup);
             }
 
-            private void OnDisable()
+            protected override void OnDisable()
             {
+                base.OnDisable();
                 _tree?.Dispose();
                 _tree = null;
             }

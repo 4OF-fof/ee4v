@@ -9,15 +9,15 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI
 {
-    internal sealed class DerivedAssetPrefabSelector : VisualElement
+    internal sealed class DerivedAssetPrefabSelector : NavigationItem
     {
         private readonly IReadOnlyList<GameObject> _candidates;
         private readonly HashSet<string> _candidatePaths;
-        private readonly NavigationItem _trigger;
         private GameObject _value;
 
         internal DerivedAssetPrefabSelector(
             IReadOnlyList<GameObject> candidates)
+            : base(onClick: null)
         {
             _candidates = candidates ?? Array.Empty<GameObject>();
             _candidatePaths = new HashSet<string>(
@@ -27,16 +27,13 @@ namespace Ee4v.AssetManager.UI
                 StringComparer.OrdinalIgnoreCase);
             AddToClassList(
                 "ee4v-asset-manager__prefab-selector");
-
-            _trigger = new NavigationItem(
-                onClick: OpenPopup);
-            _trigger.AddToClassList(
+            AddToClassList(
                 "ee4v-asset-manager__prefab-selector-trigger");
-            _trigger.Trailing.Add(new Icon(
+            clicked += OpenPopup;
+            Trailing.Add(new Icon(
                 AssetManagerControls.LoadFluentIconState(
                     "chevron_down.png",
                     UiSizeTokens.Size12)));
-            Add(_trigger);
 
             RegisterCallback<DragUpdatedEvent>(OnDragUpdated);
             RegisterCallback<DragPerformEvent>(OnDragPerform);
@@ -53,7 +50,7 @@ namespace Ee4v.AssetManager.UI
         private void OpenPopup()
         {
             DerivedAssetPrefabPickerWindow.Show(
-                _trigger,
+                this,
                 _candidates,
                 _value,
                 SetValue);
@@ -80,12 +77,12 @@ namespace Ee4v.AssetManager.UI
         private void Refresh()
         {
             var path = AssetDatabase.GetAssetPath(_value);
-            _trigger.SetState(new NavigationItemState(
+            SetState(new NavigationItemState(
                 _value != null
                     ? _value.name
                     : I18N.Get("detail.derivedAssetPrefabSelect"),
                 path));
-            _trigger.tooltip = path;
+            tooltip = path;
         }
 
         private bool Accepts(GameObject prefab)
@@ -127,12 +124,11 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class DerivedAssetPrefabPreview : VisualElement
+    internal sealed class DerivedAssetPrefabPreview : PreviewSurface
     {
         private const int MaximumRefreshAttempts = 50;
         private const long RefreshIntervalMilliseconds = 100;
 
-        private readonly PreviewSurface _surface;
         private readonly Image _image;
         private IVisualElementScheduledItem _refreshItem;
         private GameObject _prefab;
@@ -142,11 +138,10 @@ namespace Ee4v.AssetManager.UI
         {
             AddToClassList(
                 "ee4v-asset-manager__prefab-preview");
+            AddToClassList(
+                "ee4v-asset-manager__prefab-preview-surface");
             pickingMode = PickingMode.Ignore;
 
-            _surface = new PreviewSurface();
-            _surface.AddToClassList(
-                "ee4v-asset-manager__prefab-preview-surface");
             _image = new Image
             {
                 scaleMode = ScaleMode.ScaleToFit,
@@ -154,13 +149,12 @@ namespace Ee4v.AssetManager.UI
             };
             _image.AddToClassList(
                 "ee4v-asset-manager__prefab-preview-image");
-            _surface.Placeholder.Add(new Icon(
+            Placeholder.Add(new Icon(
                 AssetManagerControls.LoadFluentIconState(
                     "cube.png",
                     UiSizeTokens.Size31,
                     tintColor: UiColorTokens.TextMuted)));
-            _surface.Content.Add(_image);
-            Add(_surface);
+            Content.Add(_image);
 
             RegisterCallback<AttachToPanelEvent>(_ => Refresh());
             RegisterCallback<DetachFromPanelEvent>(_ => StopRefreshing());
@@ -229,7 +223,7 @@ namespace Ee4v.AssetManager.UI
         private void SetTexture(Texture texture)
         {
             _image.image = texture;
-            _surface.SetHasContent(texture != null);
+            SetHasContent(texture != null);
         }
 
         private void StopRefreshing()
@@ -685,7 +679,7 @@ namespace Ee4v.AssetManager.UI
             window._candidates = candidates;
             window._selected = selected;
             window._select = select;
-            CustomPopup.ShowAsDropDown(window, anchor, PopupSize);
+            window.ShowAsPopup(anchor, PopupSize);
         }
 
         private void CreateGUI()
@@ -822,8 +816,9 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
             _select = null;
             _candidates = null;
             _selected = null;

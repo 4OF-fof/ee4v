@@ -13,8 +13,7 @@
 - 複数機能で共有する実装は`src/Editor/Feature/Shared`に置き、使用する機能と依存理由を`docs~`に記載する
 - AssetManagerは例外として他の機能モジュールへ依存してよい
   - AssetProtectionは`src/Editor/AssetManager/AssetProtection`に置くAssetManager内部モジュールとして扱う
-- 機能モジュールはCoreの公開APIを使用し、Coreから機能assemblyへの`InternalsVisibleTo`を追加しない
-- asmdefには実際に使用するassemblyだけを参照として記載する
+- 機能モジュールはCoreの公開APIを使用し、asmdefには実際に使用するassemblyだけを参照として記載する
 
 ## 作業方針
 

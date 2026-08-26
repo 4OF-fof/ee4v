@@ -21,9 +21,7 @@ namespace Ee4v.Core.Background
             }
 
             var root = window.rootVisualElement;
-            UiComposition.Prepare(
-                root,
-                "Editor/UI/Components/Overlays/StatusOverlay/status-overlay.uss");
+            UiComposition.Prepare(root);
 
             var host = root.Q<BackgroundStatusOverlayHost>(HostElementName);
             if (host == null)

@@ -2,7 +2,7 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
-    public sealed class PreviewSurface : VisualElement
+    public class PreviewSurface : VisualElement
     {
         public PreviewSurface()
         {

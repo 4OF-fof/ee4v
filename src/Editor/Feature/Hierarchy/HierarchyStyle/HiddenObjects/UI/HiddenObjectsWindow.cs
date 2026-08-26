@@ -100,8 +100,6 @@ namespace Ee4v.HiddenObjects
             root.AddToClassList(WindowClassName);
             UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/Content/Icon/icon.uss",
-                "Editor/UI/Components/Inputs/SearchField/search-field.uss",
                 "Editor/Feature/Hierarchy/HierarchyStyle/HiddenObjects/UI/hidden-objects-window.uss");
 
             _view = new HiddenObjectsView(CreateViewText());

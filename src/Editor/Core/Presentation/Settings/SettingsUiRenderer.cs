@@ -45,10 +45,6 @@ namespace Ee4v.Core.Settings
             root.style.minHeight = 0f;
             UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/Inputs/ui-button.uss",
-                "Editor/UI/Components/Inputs/InputField/input-field.uss",
-                "Editor/UI/Components/Inputs/CommaSeparatedListField/" +
-                "comma-separated-list-field.uss",
                 "Editor/Core/Presentation/Settings/settings-ui.uss");
 
             var scrollView = new ScrollView(ScrollViewMode.Vertical);

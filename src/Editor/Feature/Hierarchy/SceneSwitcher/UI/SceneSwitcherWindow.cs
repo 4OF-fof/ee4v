@@ -97,8 +97,6 @@ namespace Ee4v.SceneSwitcher
             root.AddToClassList(UiClassNames.PopupSurface);
             UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/Inputs/ui-button.uss",
-                "Editor/UI/Components/Inputs/SearchField/search-field.uss",
                 "Editor/Feature/Hierarchy/SceneSwitcher/UI/scene-switcher-window.uss");
 
             _view = new SceneSwitcherView(

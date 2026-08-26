@@ -26,17 +26,6 @@ namespace Ee4v.UI
                 : "[TEST] " + normalized;
         }
 
-        internal ControlsSectionContext CreateTabbedControlsSection(VisualElement parent, string description)
-        {
-            var card = new InfoCard(new InfoCardState(I18N.Get("catalog.common.controls"), description));
-            card.userData = "catalog-controls-section";
-            var tabCard = new TabCard();
-            tabCard.Content.AddToClassList("ee4v-ui-catalog-controls");
-            card.Body.Add(tabCard);
-            parent.Add(card);
-            return new ControlsSectionContext(card, tabCard.Content, tabCard);
-        }
-
         internal ControlsSectionContext CreatePlainControlsSection(VisualElement parent, string description)
         {
             var card = new InfoCard(new InfoCardState(I18N.Get("catalog.common.controls"), description));
@@ -46,7 +35,7 @@ namespace Ee4v.UI
             content.style.flexDirection = FlexDirection.Column;
             card.Body.Add(content);
             parent.Add(card);
-            return new ControlsSectionContext(card, content, null);
+            return new ControlsSectionContext(card, content);
         }
 
         internal static InputField AddTextField(VisualElement parent, string label, string value, Action<string> onChanged, bool multiline = false, float maxHeight = 0f, string placeholder = null)

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Ee4v.Core.EditorIntegration;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -62,7 +61,7 @@ namespace Ee4v.ItemStyle
         public Action<Texture> IconApplied { get; set; }
     }
 
-    public sealed class ItemStyleWindow : EditorWindow
+    public sealed class ItemStyleWindow : CustomPopupWindow
     {
         private const float WindowWidth = 360f;
         private const float WindowHeight = 268f;
@@ -88,19 +87,7 @@ namespace Ee4v.ItemStyle
                 request.Action == null
                     ? WindowHeight
                     : ActionWindowHeight);
-            window.position = EditorPopupApi.TryGetDesktopBounds(
-                    request.ScreenPosition,
-                    out var desktopBounds)
-                ? ClampToDesktop(
-                    request.ScreenPosition,
-                    size,
-                    desktopBounds)
-                : new Rect(request.ScreenPosition, size);
-            window.ShowPopup();
-            window.Focus();
-            EditorPopupApi.TrySetBackgroundColor(
-                window,
-                UiColorTokens.SurfaceRaised);
+            window.ShowAsPopup(request.ScreenPosition, size);
         }
 
         private void Initialize(ItemStyleWindowRequest request)
@@ -133,8 +120,6 @@ namespace Ee4v.ItemStyle
             root.AddToClassList(UiClassNames.PopupSurface);
             UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/Content/Icon/icon.uss",
-                "Editor/UI/Components/Inputs/ui-button.uss",
                 "Editor/Feature/Shared/ItemStyle/item-style-window.uss");
 
             _editor = new ItemStyleEditor(
@@ -320,47 +305,6 @@ namespace Ee4v.ItemStyle
 
             evt.StopPropagation();
             Close();
-        }
-
-        private void OnLostFocus()
-        {
-            EditorApplication.delayCall += CloseIfFocusLeft;
-        }
-
-        private void CloseIfFocusLeft()
-        {
-            if (this == null || EditorWindow.focusedWindow == this)
-            {
-                return;
-            }
-
-            if (EditorPopupApi.IsTransientPicker(
-                    EditorWindow.focusedWindow) ||
-                EditorPopupApi.HasOpenTransientPicker() ||
-                EditorPopupApi.IsEyeDropperOpen())
-            {
-                return;
-            }
-
-            Close();
-        }
-
-        private static Rect ClampToDesktop(
-            Vector2 position,
-            Vector2 size,
-            Rect desktop)
-        {
-            return new Rect(
-                Mathf.Clamp(
-                    position.x,
-                    desktop.xMin,
-                    Mathf.Max(desktop.xMin, desktop.xMax - size.x)),
-                Mathf.Clamp(
-                    position.y,
-                    desktop.yMin,
-                    Mathf.Max(desktop.yMin, desktop.yMax - size.y)),
-                size.x,
-                size.y);
         }
 
         private static void CloseExistingWindows()

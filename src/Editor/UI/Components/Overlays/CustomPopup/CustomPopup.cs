@@ -1,4 +1,5 @@
 using System;
+using Ee4v.Core.EditorIntegration;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -13,6 +14,53 @@ namespace Ee4v.UI
         private Action _submit;
         private int _dragPointerId = -1;
         private Vector2 _dragPointerOffset;
+        private bool _watchingTransientPicker;
+
+        protected void ShowAsPopup(
+            VisualElement anchor,
+            Vector2 size)
+        {
+            anchor?.Blur();
+            var anchorBounds = ResolveElementAnchor(anchor);
+            ShowAsPopup(
+                new Vector2(anchorBounds.xMin, anchorBounds.yMax),
+                size);
+        }
+
+        protected void ShowAsPopup(
+            VisualElement origin,
+            Vector2 panelPosition,
+            Vector2 size)
+        {
+            origin?.Blur();
+            ShowAsPopup(
+                ResolveScreenPosition(origin, panelPosition),
+                size);
+        }
+
+        protected void ShowAsPopup(
+            Vector2 screenPosition,
+            Vector2 size)
+        {
+            var safeSize = new Vector2(
+                Mathf.Max(1f, size.x),
+                Mathf.Max(1f, size.y));
+            minSize = safeSize;
+            maxSize = safeSize;
+            position = EditorPopupApi.TryGetDesktopBounds(
+                    screenPosition,
+                    out var desktopBounds)
+                ? ClampToDesktop(
+                    screenPosition,
+                    safeSize,
+                    desktopBounds)
+                : new Rect(screenPosition, safeSize);
+            ShowPopup();
+            Focus();
+            EditorPopupApi.TrySetBackgroundColor(
+                this,
+                UiColorTokens.SurfaceRaised);
+        }
 
         protected void ConfigureCloseAndSubmitKeys(
             VisualElement target,
@@ -161,6 +209,184 @@ namespace Ee4v.UI
             _dragHandle = null;
             _headerActions = null;
         }
+
+        protected virtual void OnLostFocus()
+        {
+            EditorApplication.delayCall -= EvaluateFocusLoss;
+            EditorApplication.delayCall += EvaluateFocusLoss;
+        }
+
+        protected virtual void OnDisable()
+        {
+            EditorApplication.delayCall -= EvaluateFocusLoss;
+            StopWatchingTransientPicker();
+            UnregisterDragHandle();
+            if (_keyboardTarget != null)
+            {
+                _keyboardTarget.UnregisterCallback<KeyDownEvent>(
+                    OnKeyDown);
+                _keyboardTarget = null;
+                _submit = null;
+            }
+        }
+
+        private void EvaluateFocusLoss()
+        {
+            if (this == null)
+            {
+                return;
+            }
+
+            var focused = EditorWindow.focusedWindow;
+            if (focused == this)
+            {
+                StopWatchingTransientPicker();
+                return;
+            }
+
+            if (IsTransientPicker(focused))
+            {
+                StartWatchingTransientPicker();
+                return;
+            }
+
+            Close();
+        }
+
+        private void StartWatchingTransientPicker()
+        {
+            if (_watchingTransientPicker)
+            {
+                return;
+            }
+
+            _watchingTransientPicker = true;
+            EditorApplication.update += WatchTransientPicker;
+        }
+
+        private void WatchTransientPicker()
+        {
+            if (this == null)
+            {
+                StopWatchingTransientPicker();
+                return;
+            }
+
+            var focused = EditorWindow.focusedWindow;
+            if (focused == this)
+            {
+                StopWatchingTransientPicker();
+                return;
+            }
+
+            if (IsTransientPicker(focused))
+            {
+                return;
+            }
+
+            StopWatchingTransientPicker();
+            Focus();
+        }
+
+        private void StopWatchingTransientPicker()
+        {
+            if (!_watchingTransientPicker)
+            {
+                return;
+            }
+
+            _watchingTransientPicker = false;
+            EditorApplication.update -= WatchTransientPicker;
+        }
+
+        private static bool IsTransientPicker(EditorWindow window)
+        {
+            return EditorPopupApi.IsTransientPicker(window) ||
+                   EditorPopupApi.HasOpenTransientPicker() ||
+                   EditorPopupApi.IsEyeDropperOpen();
+        }
+
+        private static Rect ClampToDesktop(
+            Vector2 screenPosition,
+            Vector2 size,
+            Rect desktopBounds)
+        {
+            return new Rect(
+                Mathf.Clamp(
+                    screenPosition.x,
+                    desktopBounds.xMin,
+                    Mathf.Max(
+                        desktopBounds.xMin,
+                        desktopBounds.xMax - size.x)),
+                Mathf.Clamp(
+                    screenPosition.y,
+                    desktopBounds.yMin,
+                    Mathf.Max(
+                        desktopBounds.yMin,
+                        desktopBounds.yMax - size.y)),
+                size.x,
+                size.y);
+        }
+
+        private static Rect ResolveElementAnchor(VisualElement anchor)
+        {
+            if (anchor == null || anchor.panel == null)
+            {
+                return new Rect(
+                    GUIUtility.GUIToScreenPoint(Vector2.zero),
+                    Vector2.zero);
+            }
+
+            var root = anchor.panel.visualTree;
+            var rootOffset = root != null
+                ? root.worldBound.position
+                : Vector2.zero;
+            var localPosition = anchor.worldBound.position - rootOffset;
+            var owner = FindOwnerWindow(anchor);
+            var screenPosition = owner != null
+                ? owner.position.position + localPosition
+                : GUIUtility.GUIToScreenPoint(localPosition);
+            return new Rect(screenPosition, anchor.worldBound.size);
+        }
+
+        private static Vector2 ResolveScreenPosition(
+            VisualElement origin,
+            Vector2 panelPosition)
+        {
+            if (origin == null || origin.panel == null)
+            {
+                return GUIUtility.GUIToScreenPoint(panelPosition);
+            }
+
+            var root = origin.panel.visualTree;
+            var rootOffset = root != null
+                ? root.worldBound.position
+                : Vector2.zero;
+            var localPosition = panelPosition - rootOffset;
+            var owner = FindOwnerWindow(origin);
+            return owner != null
+                ? owner.position.position + localPosition
+                : GUIUtility.GUIToScreenPoint(localPosition);
+        }
+
+        private static EditorWindow FindOwnerWindow(
+            VisualElement target)
+        {
+            var windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
+            for (var index = 0; index < windows.Length; index++)
+            {
+                var window = windows[index];
+                if (window != null &&
+                    window.rootVisualElement != null &&
+                    window.rootVisualElement.panel == target.panel)
+                {
+                    return window;
+                }
+            }
+
+            return EditorWindow.mouseOverWindow ??
+                   EditorWindow.focusedWindow;
+        }
     }
 
     public sealed class CustomPopup : VisualElement
@@ -227,109 +453,6 @@ namespace Ee4v.UI
         public void SetFooterVisible(bool visible)
         {
             Footer.EnableInClassList(FooterHiddenClassName, !visible);
-        }
-
-        public static void ShowAsDropDown(
-            EditorWindow window,
-            VisualElement anchor,
-            Vector2 size)
-        {
-            anchor?.Blur();
-            Show(window, ResolveElementAnchor(anchor), size);
-        }
-
-        public static void ShowAtPanelPosition(
-            EditorWindow window,
-            VisualElement origin,
-            Vector2 panelPosition,
-            Vector2 size)
-        {
-            origin?.Blur();
-            Show(
-                window,
-                new Rect(
-                    ResolveScreenPosition(origin, panelPosition),
-                    Vector2.zero),
-                size);
-        }
-
-        private static void Show(
-            EditorWindow window,
-            Rect anchor,
-            Vector2 size)
-        {
-            if (window == null)
-            {
-                throw new ArgumentNullException(nameof(window));
-            }
-
-            var safeSize = new Vector2(
-                Mathf.Max(1f, size.x),
-                Mathf.Max(1f, size.y));
-            window.minSize = safeSize;
-            window.maxSize = safeSize;
-            window.ShowAsDropDown(anchor, safeSize);
-            window.Focus();
-        }
-
-        private static Rect ResolveElementAnchor(VisualElement anchor)
-        {
-            if (anchor == null || anchor.panel == null)
-            {
-                return new Rect(
-                    GUIUtility.GUIToScreenPoint(Vector2.zero),
-                    Vector2.zero);
-            }
-
-            var root = anchor.panel.visualTree;
-            var rootOffset = root != null
-                ? root.worldBound.position
-                : Vector2.zero;
-            var localPosition = anchor.worldBound.position - rootOffset;
-            var owner = FindOwnerWindow(anchor);
-            var screenPosition = owner != null
-                ? owner.position.position + localPosition
-                : GUIUtility.GUIToScreenPoint(localPosition);
-            return new Rect(screenPosition, anchor.worldBound.size);
-        }
-
-        private static Vector2 ResolveScreenPosition(
-            VisualElement origin,
-            Vector2 panelPosition)
-        {
-            if (origin == null || origin.panel == null)
-            {
-                return GUIUtility.GUIToScreenPoint(panelPosition);
-            }
-
-            var root = origin.panel.visualTree;
-            var rootOffset = root != null
-                ? root.worldBound.position
-                : Vector2.zero;
-            var localPosition = panelPosition - rootOffset;
-            var owner = FindOwnerWindow(origin);
-            return owner != null
-                ? owner.position.position + localPosition
-                : GUIUtility.GUIToScreenPoint(localPosition);
-        }
-
-        private static EditorWindow FindOwnerWindow(
-            VisualElement target)
-        {
-            var windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
-            for (var index = 0; index < windows.Length; index++)
-            {
-                var window = windows[index];
-                if (window != null &&
-                    window.rootVisualElement != null &&
-                    window.rootVisualElement.panel == target.panel)
-                {
-                    return window;
-                }
-            }
-
-            return EditorWindow.mouseOverWindow ??
-                   EditorWindow.focusedWindow;
         }
     }
 }

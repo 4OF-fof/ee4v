@@ -46,10 +46,6 @@ namespace Ee4v.AssetManager.UI
         {
             UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/Inputs/ui-button.uss",
-                "Editor/UI/Components/Content/TagPill/tag-pill.uss",
-                "Editor/UI/Components/Overlays/CustomPopup/" +
-                "custom-popup.uss",
                 "Editor/AssetManager/UI/asset-manager.uss",
                 "Editor/AssetManager/UI/searchable-file-tree.uss",
                 "Editor/AssetManager/UI/asset-detail.uss");

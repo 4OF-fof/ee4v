@@ -96,6 +96,16 @@ namespace Ee4v.UI
             get { return _titleLabel; }
         }
 
+        public UiTextElement EyebrowText
+        {
+            get { return _eyebrowLabel; }
+        }
+
+        public UiTextElement DescriptionText
+        {
+            get { return _descriptionLabel; }
+        }
+
         public StatusBadge Badge
         {
             get { return _badge; }

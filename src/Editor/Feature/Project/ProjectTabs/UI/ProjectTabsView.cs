@@ -142,7 +142,6 @@ namespace Ee4v.ProjectTabs
             AddToClassList(RootClassName);
             UiComposition.Prepare(
                 this,
-                "Editor/UI/Components/Inputs/ui-button.uss",
                 "Editor/Feature/Project/ProjectTabs/UI/project-tabs.uss");
 
             var navigation = new VisualElement();

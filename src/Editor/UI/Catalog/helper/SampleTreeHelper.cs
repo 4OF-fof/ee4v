@@ -55,50 +55,46 @@ namespace Ee4v.UI
                         new SearchableTreeItemData<SampleTreeNode>(
                             4,
                             new SampleTreeNode("StatusBadge", "Pill"),
-                            "StatusBadge pill status"),
-                        new SearchableTreeItemData<SampleTreeNode>(
-                            5,
-                            new SampleTreeNode("TabCard", "Interactive"),
-                            "TabCard interactive content switcher")
+                            "StatusBadge pill status")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
-                    6,
+                    5,
                     new SampleTreeNode("Collections", string.Empty),
                     "Collections",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
-                            7,
+                            6,
                             new SampleTreeNode("SearchableTreeView", searchableTreeViewMeta),
                             "SearchableTreeView searchable tree")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
-                    8,
+                    7,
                     new SampleTreeNode("Inputs", string.Empty),
                     "Inputs",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
-                            9,
+                            8,
                             new SampleTreeNode("SearchField", searchFieldMeta),
                             "SearchField input search"),
                         new SearchableTreeItemData<SampleTreeNode>(
-                            10,
+                            9,
                             new SampleTreeNode("InputField", "Text"),
                             "InputField input text"),
                         new SearchableTreeItemData<SampleTreeNode>(
-                            11,
+                            10,
                             new SampleTreeNode("CommaSeparatedListField", "List"),
                             "CommaSeparatedListField input list")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
-                    12,
+                    11,
                     new SampleTreeNode("Overlays", string.Empty),
                     "Overlays",
                     new[]
                     {
                         new SearchableTreeItemData<SampleTreeNode>(
-                            13,
+                            12,
                             new SampleTreeNode("StatusOverlay", "Status"),
                             "StatusOverlay background task status")
                     })

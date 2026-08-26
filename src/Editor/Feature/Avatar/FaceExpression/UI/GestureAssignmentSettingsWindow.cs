@@ -48,7 +48,6 @@ namespace Ee4v.FaceExpression
             root.Clear();
             UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/Inputs/ui-button.uss",
                 "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss");
             root.Add(new GestureAssignmentSettingsView(
                 GestureAssignmentWindow.CreateText()));

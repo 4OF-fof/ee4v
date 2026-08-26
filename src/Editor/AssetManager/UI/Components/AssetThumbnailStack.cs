@@ -42,7 +42,7 @@ namespace Ee4v.AssetManager.UI
                     imageCache,
                     safeIds[index]);
                 _slots.Add(slot);
-                Add(slot.Root);
+                Add(slot);
             }
 
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
@@ -117,7 +117,7 @@ namespace Ee4v.AssetManager.UI
             float top,
             float rotation)
         {
-            var slot = _slots[index].Root;
+            var slot = _slots[index];
             slot.style.width = size;
             slot.style.height = size;
             slot.style.left = left;
@@ -127,9 +127,8 @@ namespace Ee4v.AssetManager.UI
                 AngleUnit.Degree));
         }
 
-        private sealed class ThumbnailSlot : IDisposable
+        private sealed class ThumbnailSlot : PreviewSurface, IDisposable
         {
-            private readonly PreviewSurface _surface;
             private readonly CachedImage _image;
 
             public ThumbnailSlot(
@@ -137,8 +136,7 @@ namespace Ee4v.AssetManager.UI
                 string itemId)
             {
                 ItemId = itemId ?? string.Empty;
-                _surface = new PreviewSurface();
-                _surface.AddToClassList(
+                AddToClassList(
                     "ee4v-asset-manager__thumbnail-stack-image");
                 var placeholder = new VisualElement();
                 placeholder.AddToClassList(
@@ -149,18 +147,17 @@ namespace Ee4v.AssetManager.UI
                 };
                 _image.AddToClassList(
                     "ee4v-asset-manager__thumbnail-image");
-                _surface.Placeholder.Add(placeholder);
-                _surface.Content.Add(_image);
+                Placeholder.Add(placeholder);
+                Content.Add(_image);
                 Refresh();
             }
 
             public string ItemId { get; }
-            public VisualElement Root => _surface;
 
             public void Refresh()
             {
                 _image.SetSource(ItemId);
-                _surface.SetHasContent(
+                SetHasContent(
                     _image.DisplayedTexture != null);
             }
 

@@ -283,15 +283,14 @@ namespace Ee4v.AssetManager.UI
             var size = new Vector2(PopupWidth, PopupHeight);
             if (panelPosition.HasValue)
             {
-                CustomPopup.ShowAtPanelPosition(
-                    window,
+                window.ShowAsPopup(
                     anchor,
                     panelPosition.Value,
                     size);
             }
             else
             {
-                CustomPopup.ShowAsDropDown(window, anchor, size);
+                window.ShowAsPopup(anchor, size);
             }
             return window;
         }
@@ -462,13 +461,9 @@ namespace Ee4v.AssetManager.UI
             Add(query);
         }
 
-        private void OnLostFocus()
+        protected override void OnDisable()
         {
-            Close();
-        }
-
-        private void OnDisable()
-        {
+            base.OnDisable();
             if (_didClose)
             {
                 return;

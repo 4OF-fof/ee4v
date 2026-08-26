@@ -74,7 +74,6 @@ namespace Ee4v.PhysBoneCollider
             root.Clear();
             UiComposition.Prepare(
                 root,
-                "Editor/UI/Components/Inputs/ui-button.uss",
                 "Editor/Feature/Avatar/PhysBoneCollider/UI/physbone-collider.uss");
             root.AddToClassList("ee4v-physbone-collider");
 
@@ -122,12 +121,13 @@ namespace Ee4v.PhysBoneCollider
 
         private VisualElement BuildPreviewPane()
         {
-            var pane = new VisualElement();
+            var pane = new PreviewSurface();
             pane.AddToClassList("ee4v-physbone-collider__preview-pane");
+            pane.SetHasContent(true);
             _previewElement = new IMGUIContainer(() =>
                 _preview?.Draw(_previewElement.contentRect));
             _previewElement.AddToClassList("ee4v-physbone-collider__preview");
-            pane.Add(_previewElement);
+            pane.Content.Add(_previewElement);
 
             var layers = new VisualElement();
             layers.AddToClassList("ee4v-physbone-collider__preview-layers");
@@ -143,15 +143,16 @@ namespace Ee4v.PhysBoneCollider
             _showPhysBonesField.RegisterValueChangedCallback(_ =>
                 UpdatePreviewVisibility());
             layers.Add(_showPhysBonesField);
-            pane.Add(layers);
+            pane.Overlay.pickingMode = PickingMode.Position;
+            pane.Overlay.Add(layers);
 
             var resetView = UiTextFactory.CreateButton(
                 I18N.Get("action.resetView"),
                 () => _preview?.ResetView(),
                 "ee4v-physbone-collider__reset-view");
-            pane.Add(resetView);
+            pane.Overlay.Add(resetView);
 
-            pane.Add(UiTextFactory.Create(
+            pane.Overlay.Add(UiTextFactory.Create(
                 I18N.Get("preview.controls"),
                 "ee4v-physbone-collider__preview-help"));
             return pane;
@@ -164,9 +165,8 @@ namespace Ee4v.PhysBoneCollider
             var content = new ScrollView(ScrollViewMode.Vertical);
             content.AddToClassList("ee4v-physbone-collider__editor-content");
             content.Add(BuildLayoutControls());
-            content.Add(UiTextFactory.Create(
-                I18N.Get("section.candidates"),
-                UiClassNames.SectionTitle));
+            content.Add(new SectionHeader(
+                I18N.Get("section.candidates")));
 
             _candidateList = new ScrollView(ScrollViewMode.Vertical);
             _candidateList.AddToClassList("ee4v-physbone-collider__candidates");
@@ -188,9 +188,8 @@ namespace Ee4v.PhysBoneCollider
         {
             var controls = new VisualElement();
             controls.AddToClassList("ee4v-physbone-collider__layout-controls");
-            controls.Add(UiTextFactory.Create(
-                I18N.Get("section.layout"),
-                UiClassNames.SectionTitle));
+            controls.Add(new SectionHeader(
+                I18N.Get("section.layout")));
 
             var presets = new List<ColliderLayoutPreset>
             {
@@ -229,9 +228,8 @@ namespace Ee4v.PhysBoneCollider
             detail.AddToClassList("ee4v-physbone-collider__detail");
             var placement = new VisualElement();
             placement.AddToClassList("ee4v-physbone-collider__detail-group");
-            placement.Add(UiTextFactory.Create(
-                I18N.Get("section.collider"),
-                UiClassNames.SectionTitle));
+            placement.Add(new SectionHeader(
+                I18N.Get("section.collider")));
             _selectedBone = UiTextFactory.Create(
                 string.Empty,
                 "ee4v-physbone-collider__selected-bone");
@@ -342,10 +340,11 @@ namespace Ee4v.PhysBoneCollider
 
             var assignments = new VisualElement();
             assignments.AddToClassList("ee4v-physbone-collider__detail-group");
-            assignments.Add(UiTextFactory.Create(
-                I18N.Get("section.physBones"),
-                UiClassNames.SectionTitle,
-                "ee4v-physbone-collider__physbone-title"));
+            var assignmentsHeader = new SectionHeader(
+                I18N.Get("section.physBones"));
+            assignmentsHeader.AddToClassList(
+                "ee4v-physbone-collider__physbone-title");
+            assignments.Add(assignmentsHeader);
             _physBoneRootList = new VisualElement();
             _physBoneRootList.AddToClassList(
                 "ee4v-physbone-collider__physbone-roots");
@@ -721,24 +720,15 @@ namespace Ee4v.PhysBoneCollider
 
         private VisualElement CreateCandidateRow(int candidateIndex)
         {
-            var row = new VisualElement();
-            row.AddToClassList("ee4v-physbone-collider__candidate");
             var draft = _drafts[candidateIndex];
-            row.EnableInClassList(
-                "ee4v-physbone-collider__candidate--selected",
-                candidateIndex == _selectedIndex);
-            var toggle = UiTextFactory.CreateToggle();
-            toggle.SetValueWithoutNotify(draft.Enabled);
-            toggle.RegisterValueChangedCallback(evt =>
-            {
-                draft.Enabled = evt.newValue;
-                _selectedIndex = candidateIndex;
-                RefreshPreview();
-                Render();
-            });
-            row.Add(toggle);
-            var select = UiTextFactory.CreateButton(
-                FormatCandidate(draft),
+            var row = new PhysBoneSelectionRow(
+                enabled =>
+                {
+                    draft.Enabled = enabled;
+                    _selectedIndex = candidateIndex;
+                    RefreshPreview();
+                    Render();
+                },
                 () =>
                 {
                     _selectedIndex = candidateIndex;
@@ -746,8 +736,12 @@ namespace Ee4v.PhysBoneCollider
                     RefreshPreview();
                     RefreshCandidateList();
                 });
-            select.tooltip = draft.SuggestedPath + " → " + draft.TargetPath;
-            row.Add(select);
+            row.AddToClassList("ee4v-physbone-collider__candidate");
+            row.SetState(
+                FormatCandidate(draft),
+                draft.SuggestedPath + " → " + draft.TargetPath,
+                draft.Enabled,
+                candidateIndex == _selectedIndex);
             return row;
         }
 
@@ -906,45 +900,30 @@ namespace Ee4v.PhysBoneCollider
 
             foreach (var target in _physBoneTargets)
             {
-                var row = new VisualElement();
-                row.AddToClassList("ee4v-physbone-collider__physbone-target");
-                row.EnableInClassList(
-                    "ee4v-physbone-collider__physbone-target--selected",
-                    draft.AssignedPhysBonePaths.Contains(target.Path) &&
-                    string.Equals(
-                        target.Path,
-                        _selectedPhysBonePath,
-                        StringComparison.Ordinal));
-                var toggle = UiTextFactory.CreateToggle();
-                toggle.tooltip = target.Path;
-                toggle.SetValueWithoutNotify(
-                    draft.AssignedPhysBonePaths.Contains(target.Path));
-                toggle.RegisterValueChangedCallback(evt =>
-                {
-                    draft.AssignmentsLoaded = true;
-                    if (evt.newValue)
+                var row = new PhysBoneSelectionRow(
+                    selected =>
                     {
-                        draft.AssignedPhysBonePaths.Add(target.Path);
-                        _selectedPhysBonePath = target.Path;
-                    }
-                    else
-                    {
-                        draft.AssignedPhysBonePaths.Remove(target.Path);
-                        if (string.Equals(
-                                _selectedPhysBonePath,
-                                target.Path,
-                                StringComparison.Ordinal))
+                        draft.AssignmentsLoaded = true;
+                        if (selected)
                         {
-                            _selectedPhysBonePath = null;
+                            draft.AssignedPhysBonePaths.Add(target.Path);
+                            _selectedPhysBonePath = target.Path;
                         }
-                    }
+                        else
+                        {
+                            draft.AssignedPhysBonePaths.Remove(target.Path);
+                            if (string.Equals(
+                                    _selectedPhysBonePath,
+                                    target.Path,
+                                    StringComparison.Ordinal))
+                            {
+                                _selectedPhysBonePath = null;
+                            }
+                        }
 
-                    RefreshPreview();
-                    Render();
-                });
-                row.Add(toggle);
-                var select = UiTextFactory.CreateButton(
-                    FormatPhysBoneTarget(target),
+                        RefreshPreview();
+                        Render();
+                    },
                     () =>
                     {
                         if (!draft.AssignedPhysBonePaths.Contains(target.Path))
@@ -956,9 +935,82 @@ namespace Ee4v.PhysBoneCollider
                         RefreshPreview();
                         RenderPhysBoneTargets(draft);
                     });
-                select.tooltip = target.Path;
-                row.Add(select);
+                row.AddToClassList("ee4v-physbone-collider__physbone-target");
+                row.SetState(
+                    FormatPhysBoneTarget(target),
+                    target.Path,
+                    draft.AssignedPhysBonePaths.Contains(target.Path),
+                    draft.AssignedPhysBonePaths.Contains(target.Path) &&
+                    string.Equals(
+                        target.Path,
+                        _selectedPhysBonePath,
+                        StringComparison.Ordinal));
                 _physBoneList.Add(row);
+            }
+        }
+
+        private sealed class PhysBoneSelectionRow : ContentRow
+        {
+            private readonly Toggle _toggle;
+            private readonly Action<bool> _onToggle;
+            private readonly Action _onSelect;
+
+            internal PhysBoneSelectionRow(
+                Action<bool> onToggle,
+                Action onSelect)
+            {
+                _onToggle = onToggle;
+                _onSelect = onSelect;
+                AddToClassList(
+                    "ee4v-physbone-collider__selection-row");
+                focusable = true;
+                _toggle = UiTextFactory.CreateToggle();
+                _toggle.AddToClassList(
+                    "ee4v-physbone-collider__selection-toggle");
+                _toggle.RegisterValueChangedCallback(evt =>
+                    _onToggle?.Invoke(evt.newValue));
+                Leading.Add(_toggle);
+                RegisterCallback<ClickEvent>(OnClick);
+                RegisterCallback<KeyDownEvent>(OnKeyDown);
+            }
+
+            internal void SetState(
+                string title,
+                string rowTooltip,
+                bool toggled,
+                bool selected)
+            {
+                base.SetState(new ContentRowState(title));
+                tooltip = rowTooltip ?? string.Empty;
+                _toggle.tooltip = tooltip;
+                _toggle.SetValueWithoutNotify(toggled);
+                EnableInClassList(
+                    "ee4v-physbone-collider__selection-row--selected",
+                    selected);
+            }
+
+            private void OnClick(ClickEvent evt)
+            {
+                if (evt.target is VisualElement target &&
+                    _toggle.Contains(target))
+                {
+                    return;
+                }
+
+                _onSelect?.Invoke();
+                evt.StopPropagation();
+            }
+
+            private void OnKeyDown(KeyDownEvent evt)
+            {
+                if (evt.keyCode != KeyCode.Return &&
+                    evt.keyCode != KeyCode.Space)
+                {
+                    return;
+                }
+
+                _onSelect?.Invoke();
+                evt.StopPropagation();
             }
         }
 

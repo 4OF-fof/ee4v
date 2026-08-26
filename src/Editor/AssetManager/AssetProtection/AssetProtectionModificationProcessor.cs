@@ -488,9 +488,7 @@ namespace Ee4v.AssetProtection
             overlay.style.position = Position.Absolute;
             overlay.style.backgroundColor =
                 new Color(0.08f, 0.08f, 0.08f, 0.82f);
-            UiComposition.Prepare(
-                overlay,
-                "Editor/UI/Components/Inputs/ui-button.uss");
+            UiComposition.Prepare(overlay);
 
             var warning = new EmptyState(new EmptyStateState(
                 I18N.Get("prefabStage.warning.title")));

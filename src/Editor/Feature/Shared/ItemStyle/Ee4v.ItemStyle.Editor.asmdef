@@ -2,7 +2,6 @@
   "name": "Ee4v.ItemStyle.Editor",
   "rootNamespace": "Ee4v.ItemStyle",
   "references": [
-    "Ee4v.Core.Editor",
     "Ee4v.UI.Editor"
   ],
   "includePlatforms": [
