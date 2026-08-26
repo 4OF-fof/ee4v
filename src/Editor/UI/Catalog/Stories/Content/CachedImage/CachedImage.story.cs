@@ -1,3 +1,4 @@
+using System;
 using Ee4v.Core.Images;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -25,13 +26,29 @@ namespace Ee4v.UI
                         window.BuildCachedImageStory(parent),
                     new[]
                     {
-                        "Editor/AssetManager/UI/AssetItemGridView.cs"
+                        "Editor/AssetManager/UI/Components/AssetItemGridCard.cs",
+                        "Editor/AssetManager/UI/Components/AssetThumbnailStack.cs"
                     }));
             }
         }
 
         private void BuildCachedImageStory(VisualElement parent)
         {
+            var scaleMode = ScaleMode.ScaleAndCrop;
+            Action refresh = null;
+            var controls = CreatePlainControlsSection(
+                parent,
+                "表示方法を切り替え、同じcacheとkeyを使う2要素の描画を確認します。");
+            var scaleModeField = AddEnumField(
+                controls.Content,
+                "表示方法",
+                scaleMode,
+                value =>
+                {
+                    scaleMode = value;
+                    refresh();
+                });
+
             var cache = new CachedImageCache();
             cache.SetSource("sample", CreateCachedImageSample());
 
@@ -49,6 +66,17 @@ namespace Ee4v.UI
                 cache.Dispose();
             });
             preview.Body.Add(surface);
+
+            refresh = () =>
+            {
+                scaleModeField.SetValueWithoutNotify(
+                    (Enum)(object)scaleMode);
+                first.scaleMode = scaleMode;
+                second.scaleMode = scaleMode;
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
         }
 
         private static CachedImage CreateCachedImagePreview(
@@ -77,7 +105,7 @@ namespace Ee4v.UI
             });
             texture.Apply();
             var data = texture.EncodeToPNG();
-            Object.DestroyImmediate(texture);
+            UnityEngine.Object.DestroyImmediate(texture);
             return data;
         }
     }

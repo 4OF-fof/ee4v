@@ -1,3 +1,4 @@
+using System;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -25,10 +26,52 @@ namespace Ee4v.UI
 
         private void BuildDisclosureSectionStory(VisualElement parent)
         {
+            var title = "表示設定";
+            var expanded = true;
+            Action refresh = null;
+            var controls = CreatePlainControlsSection(
+                parent,
+                "見出しと展開状態を変更します。Previewの見出しからも開閉できます。");
+            var titleField = AddTextField(
+                controls.Content,
+                "見出し",
+                title,
+                value =>
+                {
+                    title = value;
+                    refresh();
+                });
+            Toggle expandedToggle = null;
+            expandedToggle = AddToggle(
+                controls.Content,
+                "展開",
+                expanded,
+                value =>
+                {
+                    expanded = value;
+                    refresh();
+                });
+
             var preview = CreatePreviewSection(parent);
-            var section = new DisclosureSection("表示設定");
+            var section = new DisclosureSection();
             section.Add(UiTextFactory.Create("展開された本文です。"));
+            section.ExpandedChanged += value =>
+            {
+                expanded = value;
+                expandedToggle.SetValueWithoutNotify(value);
+            };
             preview.Body.Add(section);
+
+            refresh = () =>
+            {
+                titleField.SetValueWithoutNotify(title);
+                expandedToggle.SetValueWithoutNotify(expanded);
+                section.SetTitle(title);
+                section.SetExpanded(expanded);
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
         }
     }
 }

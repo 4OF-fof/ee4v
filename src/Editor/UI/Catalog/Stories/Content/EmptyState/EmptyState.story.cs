@@ -1,3 +1,4 @@
+using System;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -33,17 +34,70 @@ namespace Ee4v.UI
 
         private void BuildEmptyStateStory(VisualElement parent)
         {
+            var title = "項目がありません";
+            var description =
+                "条件を変更するか、新しい項目を追加してください。";
+            var showIcon = true;
+            Action refresh = null;
+            var controls = CreatePlainControlsSection(
+                parent,
+                "見出し、説明、アイコンの有無を変更して空状態を確認します。");
+            var titleField = AddTextField(
+                controls.Content,
+                "見出し",
+                title,
+                value =>
+                {
+                    title = value;
+                    refresh();
+                });
+            var descriptionField = AddTextField(
+                controls.Content,
+                "説明",
+                description,
+                value =>
+                {
+                    description = value;
+                    refresh();
+                });
+            var iconToggle = AddToggle(
+                controls.Content,
+                "アイコンを表示",
+                showIcon,
+                value =>
+                {
+                    showIcon = value;
+                    refresh();
+                });
+
             var preview = CreatePreviewSection(parent);
-            var state = new EmptyState(new EmptyStateState(
-                "項目がありません",
-                "条件を変更するか、新しい項目を追加してください。",
-                IconState.FromBuiltinIcon(
-                    UiBuiltinIcon.Info,
-                    UiSizeTokens.Size24)));
+            var state = new EmptyState();
+            var result = UiTextFactory.Create(
+                "次の操作を選択してください。",
+                UiClassNames.SecondaryText);
             state.Actions.Add(UiTextFactory.CreateButton(
                 "項目を追加",
-                () => { }));
+                () => result.SetText("項目の追加を要求しました。")));
             preview.Body.Add(state);
+            preview.Body.Add(result);
+
+            refresh = () =>
+            {
+                titleField.SetValueWithoutNotify(title);
+                descriptionField.SetValueWithoutNotify(description);
+                iconToggle.SetValueWithoutNotify(showIcon);
+                state.SetState(new EmptyStateState(
+                    title,
+                    description,
+                    showIcon
+                        ? IconState.FromBuiltinIcon(
+                            UiBuiltinIcon.Info,
+                            UiSizeTokens.Size24)
+                        : null));
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
         }
     }
 }

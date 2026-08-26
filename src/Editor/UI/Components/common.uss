@@ -280,18 +280,6 @@
     background-color: var(--ee4v-color-surface-soft);
 }
 
-.ee4v-ui-badge--running {
-    background-color: var(--ee4v-color-status-running);
-}
-
-.ee4v-ui-badge--passed {
-    background-color: var(--ee4v-color-status-passed);
-}
-
-.ee4v-ui-badge--failed {
-    background-color: var(--ee4v-color-status-failed);
-}
-
 .ee4v-ui .unity-scroll-view__vertical-scroller,
 .ee4v-ui-thin-vertical-scrollbar .unity-scroll-view__vertical-scroller {
     width: var(--ee4v-size-8);

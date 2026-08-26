@@ -623,9 +623,9 @@ namespace Ee4v.AssetManager.UI
                     ShowCollectionContextMenu(button, collection);
                     evt.StopPropagation();
                 });
-                var count = new Badge(new BadgeState(
+                var count = new Badge(
                     _manager.SearchCollection(collection.Id, limit: 1)
-                        .TotalCount.ToString()));
+                        .TotalCount.ToString());
                 count.AddToClassList("ee4v-asset-manager__nav-count");
                 button.Trailing.Add(count);
                 _navigation.Add(button);
@@ -827,9 +827,9 @@ namespace Ee4v.AssetManager.UI
                             UiSizeTokens.Size12)),
                     () => _viewState.SelectTag(tag.Path));
                 button.AddToClassList("ee4v-asset-manager__tag-row");
-                var count = new Badge(new BadgeState(
+                var count = new Badge(
                     items.Count(item => MatchesTag(item, tag.Path))
-                        .ToString()));
+                        .ToString());
                 count.AddToClassList("ee4v-asset-manager__nav-count");
                 button.Trailing.Add(count);
                 list.Add(button);

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -31,16 +32,62 @@ namespace Ee4v.UI
 
         private void BuildInlineMessageStory(VisualElement parent)
         {
+            var text = "設定を保存しました。";
+            var tone = UiStatusTone.Passed;
+            var showIcon = true;
+            Action refresh = null;
+            var controls = CreatePlainControlsSection(
+                parent,
+                "メッセージ、状態、アイコンの有無を変更します。");
+            var textField = AddTextField(
+                controls.Content,
+                "メッセージ",
+                text,
+                value =>
+                {
+                    text = value;
+                    refresh();
+                });
+            var toneField = AddEnumField(
+                controls.Content,
+                "状態",
+                tone,
+                value =>
+                {
+                    tone = value;
+                    refresh();
+                });
+            var iconToggle = AddToggle(
+                controls.Content,
+                "アイコンを表示",
+                showIcon,
+                value =>
+                {
+                    showIcon = value;
+                    refresh();
+                });
+
             var preview = CreatePreviewSection(parent);
-            preview.Body.Add(new InlineMessage(new InlineMessageState(
-                "設定を保存しました。",
-                UiStatusTone.Passed,
-                IconState.FromBuiltinIcon(
-                    UiBuiltinIcon.Info,
-                    UiSizeTokens.Size16))));
-            preview.Body.Add(new InlineMessage(new InlineMessageState(
-                "名前を入力してください。",
-                UiStatusTone.Failed)));
+            var message = new InlineMessage();
+            preview.Body.Add(message);
+
+            refresh = () =>
+            {
+                textField.SetValueWithoutNotify(text);
+                toneField.SetValueWithoutNotify((Enum)(object)tone);
+                iconToggle.SetValueWithoutNotify(showIcon);
+                message.SetState(new InlineMessageState(
+                    text,
+                    tone,
+                    showIcon
+                        ? IconState.FromBuiltinIcon(
+                            UiBuiltinIcon.Info,
+                            UiSizeTokens.Size16)
+                        : null));
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
         }
     }
 }

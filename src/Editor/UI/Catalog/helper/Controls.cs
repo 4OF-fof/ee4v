@@ -64,6 +64,20 @@ namespace Ee4v.UI
             return field;
         }
 
+        internal static Toggle AddToggle(
+            VisualElement parent,
+            string label,
+            bool value,
+            Action<bool> onChanged)
+        {
+            var field = UiTextFactory.CreateToggle(label);
+            field.SetValueWithoutNotify(value);
+            field.RegisterValueChangedCallback(
+                evt => onChanged(evt.newValue));
+            parent.Add(field);
+            return field;
+        }
+
         internal static ObjectField AddObjectField<TObject>(VisualElement parent, string label, TObject value, Action<TObject> onChanged)
             where TObject : UnityEngine.Object
         {

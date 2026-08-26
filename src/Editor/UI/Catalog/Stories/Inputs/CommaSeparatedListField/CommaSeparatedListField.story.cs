@@ -1,3 +1,4 @@
+using System;
 using Ee4v.Core.I18n;
 using UnityEngine.UIElements;
 
@@ -39,6 +40,33 @@ namespace Ee4v.UI
         private void BuildCommaSeparatedListFieldStory(
             VisualElement parent)
         {
+            var tooltip = I18N.Get(
+                "catalog.listInput.sampleTooltip");
+            var placeholder = I18N.Get(
+                "catalog.listInput.itemPlaceholder");
+            Action refresh = null;
+            var controls = CreatePlainControlsSection(
+                parent,
+                "補足表示と項目のプレースホルダーを変更します。値はPreviewで直接編集できます。");
+            var tooltipField = AddTextField(
+                controls.Content,
+                "ツールチップ",
+                tooltip,
+                value =>
+                {
+                    tooltip = value;
+                    refresh();
+                });
+            var placeholderField = AddTextField(
+                controls.Content,
+                "プレースホルダー",
+                placeholder,
+                value =>
+                {
+                    placeholder = value;
+                    refresh();
+                });
+
             var preview = CreatePreviewSection(parent);
             var surface = CreatePreviewSurface();
             surface.style.width = 520f;
@@ -46,8 +74,8 @@ namespace Ee4v.UI
             var field = new CommaSeparatedListField(
                 new CommaSeparatedListFieldState(
                     new[] { "Airi", "Manuka", "Moe" },
-                    I18N.Get("catalog.listInput.sampleTooltip"),
-                    I18N.Get("catalog.listInput.itemPlaceholder")));
+                    tooltip,
+                    placeholder));
             var serializedValue = UiTextFactory.Create(
                 I18N.Get(
                     "catalog.listInput.savedValue",
@@ -63,6 +91,19 @@ namespace Ee4v.UI
             surface.Add(field);
             surface.Add(serializedValue);
             preview.Body.Add(surface);
+
+            refresh = () =>
+            {
+                tooltipField.SetValueWithoutNotify(tooltip);
+                placeholderField.SetValueWithoutNotify(placeholder);
+                field.SetState(new CommaSeparatedListFieldState(
+                    field.Values,
+                    tooltip,
+                    placeholder));
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
         }
     }
 }

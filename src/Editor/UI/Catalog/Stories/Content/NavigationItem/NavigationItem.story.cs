@@ -1,3 +1,4 @@
+using System;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -28,12 +29,67 @@ namespace Ee4v.UI
 
         private void BuildNavigationItemStory(VisualElement parent)
         {
+            var title = "Animations";
+            var description = "12 items";
+            var selected = true;
+            Action refresh = null;
+            var controls = CreatePlainControlsSection(
+                parent,
+                "名称、補足、選択状態を変更します。Previewの項目を押しても選択状態を切り替えられます。");
+            var titleField = AddTextField(
+                controls.Content,
+                "名称",
+                title,
+                value =>
+                {
+                    title = value;
+                    refresh();
+                });
+            var descriptionField = AddTextField(
+                controls.Content,
+                "補足",
+                description,
+                value =>
+                {
+                    description = value;
+                    refresh();
+                });
+            Toggle selectedToggle = null;
+            selectedToggle = AddToggle(
+                controls.Content,
+                "選択",
+                selected,
+                value =>
+                {
+                    selected = value;
+                    refresh();
+                });
+
             var preview = CreatePreviewSection(parent);
-            var item = new NavigationItem(new NavigationItemState(
-                "Animations", "12 items",
-                IconState.FromBuiltinIcon(UiBuiltinIcon.Folder), true));
-            item.Trailing.Add(new Badge(new BadgeState("12")));
+            NavigationItem item = null;
+            item = new NavigationItem(onClick: () =>
+            {
+                selected = !selected;
+                selectedToggle.SetValueWithoutNotify(selected);
+                item.SetSelected(selected);
+            });
+            item.Trailing.Add(new Badge("12"));
             preview.Body.Add(item);
+
+            refresh = () =>
+            {
+                titleField.SetValueWithoutNotify(title);
+                descriptionField.SetValueWithoutNotify(description);
+                selectedToggle.SetValueWithoutNotify(selected);
+                item.SetState(new NavigationItemState(
+                    title,
+                    description,
+                    IconState.FromBuiltinIcon(UiBuiltinIcon.Folder),
+                    selected));
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
         }
     }
 }

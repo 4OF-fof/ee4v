@@ -27,6 +27,12 @@ namespace Ee4v.UI
 
         private void BuildPreviewSurfaceStory(VisualElement parent)
         {
+            var hasContent = true;
+            var controls = CreatePlainControlsSection(
+                parent,
+                "内容の有無を切り替え、ContentとPlaceholderの表示を確認します。");
+            Toggle contentToggle = null;
+
             var preview = CreatePreviewSection(parent);
             var surface = new PreviewSurface();
             surface.style.width = 240f;
@@ -34,9 +40,27 @@ namespace Ee4v.UI
             surface.Placeholder.Add(new EmptyState(new EmptyStateState(
                 string.Empty, "プレビューがありません")));
             surface.Content.Add(UiTextFactory.Create("Preview content"));
-            surface.Overlay.Add(UiTextFactory.CreateButton("更新", () => { }));
-            surface.SetHasContent(true);
+            surface.Overlay.Add(UiTextFactory.CreateButton(
+                "切り替え",
+                () =>
+                {
+                    hasContent = !hasContent;
+                    contentToggle.SetValueWithoutNotify(hasContent);
+                    surface.SetHasContent(hasContent);
+                }));
             preview.Body.Add(surface);
+
+            contentToggle = AddToggle(
+                controls.Content,
+                "内容を表示",
+                hasContent,
+                value =>
+                {
+                    hasContent = value;
+                    surface.SetHasContent(hasContent);
+                });
+            surface.SetHasContent(hasContent);
+            FinalizeControlsSection(parent, controls);
         }
     }
 }

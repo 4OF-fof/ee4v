@@ -1,3 +1,4 @@
+using System;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -12,7 +13,7 @@ namespace Ee4v.UI
             {
                 registry.RegisterStory(new StoryRegistration(
                     "labeled-content-row",
-                    "Inputs",
+                    "Layout",
                     "LabeledContentRow",
                     "ラベル、入力内容、補助操作を横に並べるフォーム行です。",
                     "ラベル、入力内容、補助操作を一行へ整理して配置します。",
@@ -30,15 +31,58 @@ namespace Ee4v.UI
 
         private void BuildLabeledContentRowStory(VisualElement parent)
         {
+            var label = "名前";
+            var showAction = true;
+            Action refresh = null;
+            var controls = CreatePlainControlsSection(
+                parent,
+                "ラベルと補助操作の有無を変更し、フォーム行の配置を確認します。");
+            var labelField = AddTextField(
+                controls.Content,
+                "ラベル",
+                label,
+                value =>
+                {
+                    label = value;
+                    refresh();
+                });
+            var actionToggle = AddToggle(
+                controls.Content,
+                "補助操作を表示",
+                showAction,
+                value =>
+                {
+                    showAction = value;
+                    refresh();
+                });
+
             var preview = CreatePreviewSection(parent);
-            var row = new LabeledContentRow("名前");
+            var row = new LabeledContentRow();
             var input = UiTextFactory.CreateTextField();
             input.SetValueWithoutNotify("Main Window");
             row.Content.Add(input);
-            row.Actions.Add(UiTextFactory.CreateButton(
+            var result = UiTextFactory.Create(
+                "入力内容はまだ保存されていません。",
+                UiClassNames.SecondaryText);
+            var save = UiTextFactory.CreateButton(
                 "保存",
-                () => { }));
+                () => result.SetText("「" + input.value + "」を保存しました。"));
+            row.Actions.Add(save);
             preview.Body.Add(row);
+            preview.Body.Add(result);
+
+            refresh = () =>
+            {
+                labelField.SetValueWithoutNotify(label);
+                actionToggle.SetValueWithoutNotify(showAction);
+                row.SetLabel(label);
+                save.style.display = showAction
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
         }
     }
 }

@@ -14,10 +14,11 @@ namespace Ee4v.UI
         private static readonly Dictionary<string, int> RootGroupOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
             { "Foundation", 0 },
-            { "Content", 1 },
-            { "Inputs", 2 },
-            { "Collections", 3 },
-            { "Overlays", 4 }
+            { "Layout", 1 },
+            { "Content", 2 },
+            { "Inputs", 3 },
+            { "Collections", 4 },
+            { "Overlays", 5 }
         };
         internal enum ComponentImplementationKind
         {

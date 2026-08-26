@@ -397,8 +397,8 @@ namespace Ee4v.FaceExpression
                         GetRoleLabel(group),
                         selected: ReferenceEquals(group, selected)),
                     () => SelectRoleGroup(group.Key));
-                card.Trailing.Add(new Badge(new BadgeState(
-                    group.Mappings.Count.ToString())));
+                card.Trailing.Add(new Badge(
+                    group.Mappings.Count.ToString()));
                 card.style.marginBottom = 3f;
                 RegisterPresetDrag(
                     card,

@@ -246,10 +246,9 @@ namespace Ee4v.FaceExpression
                 EnableInClassList(
                     "ee4v-face-expression-group-row--section",
                     option?.IsSectionHeader == true);
-                _count.SetState(new BadgeState(
-                    option?.IsSectionHeader == true
-                        ? string.Empty
-                        : (option?.Count ?? 0).ToString()));
+                _count.SetText(option?.IsSectionHeader == true
+                    ? string.Empty
+                    : (option?.Count ?? 0).ToString());
             }
 
             private void OnContextClick(ContextClickEvent evt)

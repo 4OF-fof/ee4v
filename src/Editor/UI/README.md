@@ -24,6 +24,7 @@ Catalog の `Foundation/Color Palette` で役割名と実際の色を確認で�
 ## Story
 
 Catalog 内の共通部品には対話可能な Story があります。
+Foundation の参照一覧を除く共通部品の Story は、表示状態を変える Controls と結果を確認する Preview を持ちます。
 機能側は `IUiStoryProvider` を実装すると Catalog から自動発見されます。
 Catalog assembly への参照や Catalog 本体の編集は不要です。
 

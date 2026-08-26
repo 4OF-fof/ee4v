@@ -1,3 +1,4 @@
+using System;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -27,12 +28,33 @@ namespace Ee4v.UI
 
         private void BuildBadgeStory(VisualElement parent)
         {
+            var text = "12";
+            Action refresh = null;
+            var controls = CreatePlainControlsSection(
+                parent,
+                "件数や短い分類値を変更し、中立表示を確認します。状態色はStatusBadgeで扱います。");
+            var textField = AddTextField(
+                controls.Content,
+                "テキスト",
+                text,
+                value =>
+                {
+                    text = value;
+                    refresh();
+                });
+
             var preview = CreatePreviewSection(parent);
-            var row = new ActionBar();
-            row.Leading.Add(new Badge(new BadgeState("12")));
-            row.Leading.Add(new Badge(new BadgeState(
-                "保存済み", UiStatusTone.Passed)));
-            preview.Body.Add(row);
+            var badge = new Badge();
+            preview.Body.Add(CreatePreviewSurface(badge, true));
+
+            refresh = () =>
+            {
+                textField.SetValueWithoutNotify(text);
+                badge.SetText(text);
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
         }
     }
 }

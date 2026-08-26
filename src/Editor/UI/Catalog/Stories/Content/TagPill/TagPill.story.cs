@@ -1,3 +1,4 @@
+using System;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -30,14 +31,35 @@ namespace Ee4v.UI
 
         private void BuildTagPillStory(VisualElement parent)
         {
+            var text = "avatar";
+            Action refresh = null;
+            var controls = CreatePlainControlsSection(
+                parent,
+                "タグ名を変更し、選択操作と削除操作を確認します。");
+            var textField = AddTextField(
+                controls.Content,
+                "タグ名",
+                text,
+                value =>
+                {
+                    text = value;
+                    refresh();
+                });
+
             var preview = CreatePreviewSection(parent);
             var row = new VisualElement();
             row.style.flexDirection = FlexDirection.Row;
+            var result = UiTextFactory.Create(
+                "タグを選択または削除してください。",
+                UiClassNames.SecondaryText);
 
             TagPill removable = null;
             removable = new TagPill(
-                new TagPillState("avatar", "avatarを削除"),
-                () => removable.RemoveFromHierarchy());
+                onRemove: () =>
+                {
+                    removable.style.display = DisplayStyle.None;
+                    result.SetText("タグを削除しました。");
+                });
             removable.style.marginRight = UiSpacingTokens.Medium;
             row.Add(removable);
             var clickable = new TagPill(
@@ -46,9 +68,22 @@ namespace Ee4v.UI
                     icon: FluentUiIcons.CreateState(
                         "add.png",
                         UiSizeTokens.Size12)),
-                onClick: () => { });
+                onClick: () => result.SetText("costumeを選択しました。"));
             row.Add(clickable);
             preview.Body.Add(row);
+            preview.Body.Add(result);
+
+            refresh = () =>
+            {
+                textField.SetValueWithoutNotify(text);
+                removable.SetState(new TagPillState(
+                    text,
+                    text + "を削除"));
+                removable.style.display = DisplayStyle.Flex;
+            };
+
+            refresh();
+            FinalizeControlsSection(parent, controls);
         }
     }
 }
