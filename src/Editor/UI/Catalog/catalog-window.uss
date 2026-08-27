@@ -86,6 +86,10 @@
     margin-bottom: var(--ee4v-space-md);
 }
 
+.ee4v-ui-catalog-category-item {
+    width: 100%;
+}
+
 .ee4v-ui-catalog-preview-area {
     min-height: 220px;
     padding-left: var(--ee4v-space-xl);

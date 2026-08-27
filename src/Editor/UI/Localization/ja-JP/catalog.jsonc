@@ -28,6 +28,19 @@
       "uiToolkitVisual": "UI Toolkit",
       "imguiVisual": "IMGUI"
     },
+    "category": {
+      "elements": "属している要素",
+      "elementsDescription": "このカテゴリには{0}件の要素があります。",
+      "referenceDescription": "UIの設計と既定の表示を確認するための参照情報です。",
+      "inputsDescription": "操作、選択、値の入力を受け取るUI要素です。",
+      "displaysDescription": "文字、状態、画像などの情報を表示するUI要素です。",
+      "containersDescription": "子要素の配置や表示の切り替えを担うUI要素です。",
+      "collectionsDescription": "複数の項目を一覧や階層として管理するUI要素です。",
+      "domainDescription": "各機能の実画面と機能固有のUI要素です。",
+      "featureDescription": "{0}機能の画面と機能固有のUI要素です。",
+      "componentsDescription": "{0}機能の画面内で再利用するUI要素です。",
+      "defaultDescription": "{0}に分類されたUI要素です。"
+    },
     "status": {
       "idle": "待機中",
       "running": "実行中",

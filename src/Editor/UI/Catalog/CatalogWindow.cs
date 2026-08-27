@@ -40,8 +40,10 @@ namespace Ee4v.UI
         private VisualElement _navigatorHost;
         private VisualElement _contentHost;
         private StoryDefinition _selectedStory;
+        private string _selectedCategoryPath;
         private SearchableTreeView<NavigatorTreeNode> _navigatorTreeView;
         private readonly Dictionary<string, int> _navigatorStoryIds = new Dictionary<string, int>(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> _navigatorCategoryIds = new Dictionary<string, int>(StringComparer.Ordinal);
         private bool _isSyncingNavigatorSelection;
 
         [MenuItem("ee4v/Debug/Catalog")]
@@ -90,7 +92,7 @@ namespace Ee4v.UI
             shell.Add(_contentHost);
             root.Add(shell);
             BuildNavigator();
-            ShowStory(_selectedStory);
+            ShowSelectedPage();
         }
 
         private void BuildNavigator()
@@ -123,8 +125,22 @@ namespace Ee4v.UI
             }
 
             _selectedStory = story;
+            _selectedCategoryPath = null;
             RefreshNavigatorSelection();
             ShowStory(story);
+        }
+
+        private void SelectCategory(string categoryPath)
+        {
+            if (string.IsNullOrWhiteSpace(categoryPath))
+            {
+                return;
+            }
+
+            _selectedStory = null;
+            _selectedCategoryPath = categoryPath;
+            RefreshNavigatorSelection();
+            ShowCategory(categoryPath);
         }
 
         private void RefreshNavigatorSelection()
@@ -134,7 +150,12 @@ namespace Ee4v.UI
                 return;
             }
 
-            if (_selectedStory == null)
+            var itemId = 0;
+            var hasSelection = _selectedStory != null
+                ? _navigatorStoryIds.TryGetValue(_selectedStory.Id, out itemId)
+                : !string.IsNullOrWhiteSpace(_selectedCategoryPath) &&
+                  _navigatorCategoryIds.TryGetValue(_selectedCategoryPath, out itemId);
+            if (!hasSelection)
             {
                 _isSyncingNavigatorSelection = true;
                 try
@@ -149,19 +170,26 @@ namespace Ee4v.UI
                 return;
             }
 
-            int itemId;
-            if (_navigatorStoryIds.TryGetValue(_selectedStory.Id, out itemId))
+            _isSyncingNavigatorSelection = true;
+            try
             {
-                _isSyncingNavigatorSelection = true;
-                try
-                {
-                    _navigatorTreeView.SetSelectionById(new[] { itemId });
-                }
-                finally
-                {
-                    _isSyncingNavigatorSelection = false;
-                }
+                _navigatorTreeView.SetSelectionById(new[] { itemId });
             }
+            finally
+            {
+                _isSyncingNavigatorSelection = false;
+            }
+        }
+
+        private void ShowSelectedPage()
+        {
+            if (!string.IsNullOrWhiteSpace(_selectedCategoryPath))
+            {
+                ShowCategory(_selectedCategoryPath);
+                return;
+            }
+
+            ShowStory(_selectedStory);
         }
 
         private void ShowStory(StoryDefinition story)
@@ -172,25 +200,74 @@ namespace Ee4v.UI
             }
 
             _contentHost.Clear();
-
-            var page = new VisualElement();
-            page.AddToClassList("ee4v-ui-catalog-page");
-
-            var header = new VisualElement();
-            header.AddToClassList("ee4v-ui-catalog-page__header");
-            header.Add(UiTextFactory.Create(story.Title, UiClassNames.CatalogPageTitle));
-            header.Add(UiTextFactory.Create(story.Description, UiClassNames.CatalogPageDescription));
-
-            var body = new ScrollView();
-            body.AddToClassList("ee4v-ui-catalog-page__body");
-
-            page.Add(header);
-            page.Add(body);
+            ScrollView body;
+            var page = CreatePage(story.Title, story.Description, out body);
 
             body.contentContainer.Add(CreateDetailsSection(story));
             story.Build(body.contentContainer);
 
             _contentHost.Add(page);
+        }
+
+        private void ShowCategory(string categoryPath)
+        {
+            if (_contentHost == null || string.IsNullOrWhiteSpace(categoryPath))
+            {
+                return;
+            }
+
+            var stories = _stories
+                .Where(story => IsStoryInCategory(story, categoryPath))
+                .OrderBy(story => story, StoryDefinitionGroupComparer.Instance)
+                .ToArray();
+            var segments = categoryPath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            var title = segments.Length > 0 ? segments[segments.Length - 1] : categoryPath;
+
+            _contentHost.Clear();
+            ScrollView body;
+            var page = CreatePage(
+                title,
+                GetCategoryDescription(categoryPath),
+                out body);
+
+            var itemsCard = new InfoCard(new InfoCardState(
+                I18N.Get("catalog.category.elements"),
+                I18N.Get("catalog.category.elementsDescription", stories.Length)));
+            for (var i = 0; i < stories.Length; i++)
+            {
+                var story = stories[i];
+                var item = new NavigationItem(
+                    new NavigationItemState(story.Title, story.Description),
+                    () => SelectStory(story));
+                item.AddToClassList("ee4v-ui-catalog-category-item");
+                item.Row.DescriptionText.SetWhiteSpace(WhiteSpace.Normal);
+                itemsCard.Body.Add(item);
+            }
+
+            body.contentContainer.Add(itemsCard);
+            _contentHost.Add(page);
+        }
+
+        private static VisualElement CreatePage(
+            string title,
+            string description,
+            out ScrollView body)
+        {
+            var page = new VisualElement();
+            page.AddToClassList("ee4v-ui-catalog-page");
+
+            var header = new VisualElement();
+            header.AddToClassList("ee4v-ui-catalog-page__header");
+            header.Add(UiTextFactory.Create(title, UiClassNames.CatalogPageTitle));
+            header.Add(UiTextFactory.Create(
+                description,
+                UiClassNames.CatalogPageDescription));
+
+            body = new ScrollView();
+            body.AddToClassList("ee4v-ui-catalog-page__body");
+            page.Add(header);
+            page.Add(body);
+            return page;
         }
 
         private VisualElement CreateNavigatorTreeItem()
@@ -234,12 +311,19 @@ namespace Ee4v.UI
                     SelectStory(node.Story);
                     return;
                 }
+
+                if (node != null && !string.IsNullOrWhiteSpace(node.CategoryPath))
+                {
+                    SelectCategory(node.CategoryPath);
+                    return;
+                }
             }
         }
 
         private List<SearchableTreeItemData<NavigatorTreeNode>> BuildNavigatorTreeItems()
         {
             _navigatorStoryIds.Clear();
+            _navigatorCategoryIds.Clear();
 
             var roots = new List<NavigatorTreeNodeBuilder>();
             var folders = new Dictionary<string, NavigatorTreeNodeBuilder>(StringComparer.Ordinal);
@@ -266,9 +350,10 @@ namespace Ee4v.UI
                     {
                         folder = new NavigatorTreeNodeBuilder(
                             nextId++,
-                            new NavigatorTreeNode(segments[segmentIndex], string.Empty, null));
+                            new NavigatorTreeNode(segments[segmentIndex], string.Empty, null, path));
                         folders.Add(path, folder);
                         currentChildren.Add(folder);
+                        _navigatorCategoryIds[path] = folder.Id;
                     }
 
                     currentChildren = folder.Children;
@@ -276,7 +361,7 @@ namespace Ee4v.UI
 
                 var storyNode = new NavigatorTreeNodeBuilder(
                     nextId++,
-                    new NavigatorTreeNode(story.Title, GetImplementationShortLabel(story.Implementation), story));
+                    new NavigatorTreeNode(story.Title, GetImplementationShortLabel(story.Implementation), story, null));
                 currentChildren.Add(storyNode);
                 _navigatorStoryIds[story.Id] = storyNode.Id;
             }
@@ -297,6 +382,58 @@ namespace Ee4v.UI
             }
 
             return items;
+        }
+
+        private static bool IsStoryInCategory(StoryDefinition story, string categoryPath)
+        {
+            if (story == null || string.IsNullOrWhiteSpace(categoryPath))
+            {
+                return false;
+            }
+
+            var group = story.Group ?? string.Empty;
+            return string.Equals(group, categoryPath, StringComparison.Ordinal) ||
+                   group.StartsWith(categoryPath + "/", StringComparison.Ordinal);
+        }
+
+        private static string GetCategoryDescription(string categoryPath)
+        {
+            switch (categoryPath)
+            {
+                case "Reference":
+                    return I18N.Get("catalog.category.referenceDescription");
+                case "Inputs":
+                    return I18N.Get("catalog.category.inputsDescription");
+                case "Displays":
+                    return I18N.Get("catalog.category.displaysDescription");
+                case "Containers":
+                    return I18N.Get("catalog.category.containersDescription");
+                case "Collections":
+                    return I18N.Get("catalog.category.collectionsDescription");
+                case "Domain":
+                    return I18N.Get("catalog.category.domainDescription");
+            }
+
+            var segments = (categoryPath ?? string.Empty)
+                .Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            var title = segments.Length > 0
+                ? segments[segments.Length - 1]
+                : categoryPath;
+            if (segments.Length > 1 &&
+                string.Equals(title, "Components", StringComparison.Ordinal))
+            {
+                return I18N.Get(
+                    "catalog.category.componentsDescription",
+                    segments[segments.Length - 2]);
+            }
+
+            if (segments.Length > 1 &&
+                string.Equals(segments[0], "Domain", StringComparison.Ordinal))
+            {
+                return I18N.Get("catalog.category.featureDescription", title);
+            }
+
+            return I18N.Get("catalog.category.defaultDescription", title);
         }
 
         private InfoCard CreateDetailsSection(StoryDefinition story)
@@ -596,12 +733,17 @@ namespace Ee4v.UI
 
         private sealed class NavigatorTreeNode
         {
-            public NavigatorTreeNode(string title, string implementationShortLabel, StoryDefinition story)
+            public NavigatorTreeNode(
+                string title,
+                string implementationShortLabel,
+                StoryDefinition story,
+                string categoryPath)
             {
                 Title = title ?? string.Empty;
                 ImplementationShortLabel = implementationShortLabel ?? string.Empty;
                 Story = story;
-                SearchText = BuildSearchText(story, Title);
+                CategoryPath = categoryPath ?? string.Empty;
+                SearchText = BuildSearchText(story, CategoryPath, Title);
             }
 
             public string Title { get; }
@@ -610,13 +752,23 @@ namespace Ee4v.UI
 
             public StoryDefinition Story { get; }
 
+            public string CategoryPath { get; }
+
             public string SearchText { get; }
 
-            private static string BuildSearchText(StoryDefinition story, string title)
+            private static string BuildSearchText(
+                StoryDefinition story,
+                string categoryPath,
+                string title)
             {
                 if (story == null)
                 {
-                    return title ?? string.Empty;
+                    return string.Join("\n", new[]
+                    {
+                        title ?? string.Empty,
+                        categoryPath ?? string.Empty,
+                        GetCategoryDescription(categoryPath)
+                    });
                 }
 
                 return string.Join("\n", new[]
