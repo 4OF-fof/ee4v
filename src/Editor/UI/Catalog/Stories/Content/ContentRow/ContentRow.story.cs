@@ -13,7 +13,7 @@ namespace Ee4v.UI
             {
                 registry.RegisterStory(new StoryRegistration(
                     "content-row",
-                    "Layout",
+                    "Containers",
                     "ContentRow",
                     "先頭要素、アイコン、名称、補足、末尾操作からなる1件分の行です。",
                     "名称と補足を横または縦に配置し、行の先頭と末尾へ操作や状態を追加できます。",

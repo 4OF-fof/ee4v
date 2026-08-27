@@ -12,7 +12,7 @@ namespace Ee4v.UI
             public void Register(CatalogRegistry registry)
             {
                 registry.RegisterStory(new StoryRegistration(
-                    "navigation-item", "Navigation", "NavigationItem",
+                    "navigation-item", "Inputs", "NavigationItem",
                     "アイコン、名称、補足、選択状態を持つ移動項目です。",
                     "選択状態を切り替え、先頭と末尾へ補助表示や操作を追加できます。",
                     new string[0], ComponentImplementationKind.UiToolkit,

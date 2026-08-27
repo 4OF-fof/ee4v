@@ -15,13 +15,9 @@ namespace Ee4v.UI
         {
             { "Reference", 0 },
             { "Inputs", 1 },
-            { "Layout", 2 },
-            { "Navigation", 3 },
-            { "Collections", 4 },
-            { "Labels", 5 },
-            { "Feedback", 6 },
-            { "Media", 7 },
-            { "Overlays", 8 }
+            { "Displays", 2 },
+            { "Containers", 3 },
+            { "Collections", 4 }
         };
         internal enum ComponentImplementationKind
         {

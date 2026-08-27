@@ -12,7 +12,7 @@ namespace Ee4v.UI
             public void Register(CatalogRegistry registry)
             {
                 registry.RegisterStory(new StoryRegistration(
-                    "preview-container", "Media", "PreviewContainer",
+                    "preview-container", "Containers", "PreviewContainer",
                     "内容、空表示、重ねる操作を配置するプレビュー用コンテナです。",
                     "描画は行わず、Content、Placeholder、Overlayの3層と表示切り替えだけを担当します。",
                     new string[0], ComponentImplementationKind.UiToolkit,

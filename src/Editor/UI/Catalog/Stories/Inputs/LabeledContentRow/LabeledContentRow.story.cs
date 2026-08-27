@@ -13,7 +13,7 @@ namespace Ee4v.UI
             {
                 registry.RegisterStory(new StoryRegistration(
                     "labeled-content-row",
-                    "Layout",
+                    "Containers",
                     "LabeledContentRow",
                     "ラベル、入力内容、補助操作を横に並べるフォーム行です。",
                     "ラベル、入力内容、補助操作を一行へ整理して配置します。",

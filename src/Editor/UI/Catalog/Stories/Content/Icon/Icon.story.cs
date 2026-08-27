@@ -18,7 +18,7 @@ namespace Ee4v.UI
                 registry.RegisterStyleSheet("Editor/UI/Components/Content/Icon/icon.uss");
                 registry.RegisterStory(new StoryRegistration(
                     "icon",
-                    "Media",
+                    "Displays",
                     "Icon",
                     "任意の texture または enum 管理された Unity 内蔵アイコンを表示するアイコンコンポーネントです。",
                     "Unity 内蔵アイコンは Unity 固有の用途で実際に使用するものだけを enum で許可します。通常の操作アイコンは Fluent UI System Icons、任意画像は custom texture を使用します。",

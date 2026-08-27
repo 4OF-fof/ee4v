@@ -15,7 +15,7 @@ namespace Ee4v.UI
                     "Editor/UI/Components/Overlays/CustomPopup/custom-popup.uss");
                 registry.RegisterStory(new StoryRegistration(
                     "custom-popup",
-                    "Overlays",
+                    "Containers",
                     "CustomPopup",
                     "旧BaseWindowを移植したpopup用EditorWindowの共通外枠です。",
                     "1pxの外枠、24pxのヘッダー、本文、任意フッターを持ち、ドラッグ移動と端のリサイズに対応します。",

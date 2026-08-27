@@ -4,6 +4,8 @@
 
 ## 共通部品の役割
 
+Catalogは利用場面ではなく、部品が公開する責務で分類します。ユーザーの操作や値を受け取る部品は`Inputs`、情報を描画する部品は`Displays`、呼び出し側の子要素を配置する部品は`Containers`、複数項目を管理する部品は`Collections`に置きます。
+
 ### Reference
 
 - `Color Palette`はUIとIMGUIで共有する役割別カラートークンの参照です。独自の表示部品ではありません。
@@ -15,46 +17,34 @@
 - `InputField`は1行、複数行、読み取り専用に対応する文字入力です。
 - `SearchField`は検索入力、消去、任意の先頭操作をまとめます。先頭操作が有効な場合だけhover反応を表示します。
 - `CommaSeparatedListField`はカンマ、セミコロン、改行で入力された文字列を一覧値として扱います。
+- `NavigationItem`は`ContentRow`へクリックと選択状態を加えた操作項目です。
+- `TagPill`は任意の選択操作と削除操作を持つタグ入力です。
 
-### Layout
+### Displays
+
+- `Badge`は件数や短い分類値を中立表示し、任意の`UiStatusTone`で処理状態も表示します。
+- `InlineMessage`は処理結果や入力エラーを行内へ表示します。
+- `EmptyState`は対象がない理由と次の操作を表示します。操作要素自体は利用側が`Actions`へ追加します。
+- `StatusOverlay`はバックグラウンド処理の進捗をウィンドウ右下へ重ねて表示します。
+- `Icon`はFluent UI System Icons、実使用するUnity固有の組み込みアイコン、任意Textureの表示を共通化します。通常の操作アイコンにはFluent UI System Iconsを使用します。
+- `CachedImage`はデコード済みTextureを複数の画像表示で共有します。
+
+### Containers
 
 - `ActionBar`はToolbarやFooterの左、中央、右を配置する枠です。
 - `LabeledContentRow`はラベル、入力内容、補助操作を並べるフォームの1行です。
 - `SectionHeader`はセクション名、説明、右側操作を置く見出しです。
 - `ContentRow`はアイコン、名称、補足、末尾操作を持つ汎用的な一覧行です。一覧自体は含みません。
 - `InfoCard`は見出しと本文を外枠付きでまとめる情報パネルです。
-
-### Navigation
-
-- `NavigationItem`は`ContentRow`へクリックと選択状態を加えた移動項目です。
 - `DisclosureSection`は見出しを押して本文を開閉するセクションです。
+- `PreviewContainer`はPreview本体、未表示時のPlaceholder、重ねる操作を置く3層コンテナです。描画処理と一覧は含みません。
+- `CustomPopup`はHeader、本文、任意Footerを持つポップアップの外枠です。`CustomPopupWindow`が移動、リサイズ、focus離脱時のCloseを担当します。
+
+`PreviewContainer` Storyはコンテナの範囲を枠で示し、中央のContent、空表示のPlaceholder、右上のOverlay操作を重ねて確認できる構成にします。
 
 ### Collections
 
 - `SearchableTreeView`は検索欄と階層一覧をまとめ、絞り込みと展開状態の維持を行います。各行の表示は利用側が構成します。
-
-### Labels
-
-- `Badge`は件数や短い分類値を中立表示し、任意の`UiStatusTone`で処理状態も表示します。
-- `TagPill`は任意の選択操作と削除操作を持つタグ表示です。
-
-### Feedback
-
-- `InlineMessage`は処理結果や入力エラーを行内で示すメッセージです。
-- `EmptyState`は対象がない領域全体へ理由と次の操作を示します。
-- `StatusOverlay`はバックグラウンド処理の進捗をウィンドウ右下へ重ねて表示します。
-
-### Media
-
-- `Icon`はFluent UI System Icons、実使用するUnity固有の組み込みアイコン、任意Textureの表示を共通化します。通常の操作アイコンにはFluent UI System Iconsを使用します。
-- `CachedImage`はデコード済みTextureを複数の画像表示で共有します。
-- `PreviewContainer`はPreview本体、未表示時のPlaceholder、重ねる操作を置く3層コンテナです。描画処理と一覧は含みません。
-
-`PreviewContainer` Storyはコンテナの範囲を枠で示し、中央のContent、空表示のPlaceholder、右上のOverlay操作を重ねて確認できる構成にします。
-
-### Overlays
-
-- `CustomPopup`はHeader、本文、任意Footerを持つポップアップの外枠です。`CustomPopupWindow`が移動、リサイズ、focus離脱時のCloseを担当します。
 
 ### Catalog外の基盤
 
@@ -83,7 +73,7 @@
 | `CustomPopupWindow.SetPopup(CustomPopup)` | 旧`BaseWindow`形式の外枠、Header、Close操作を設定する |
 | `CustomPopupWindow.ConfigureCloseAndSubmitKeys(VisualElement, Action)` | Escapeで閉じ、任意のEnter確定処理を呼び出す |
 
-AssetManagerのタグ選択画面、Target選択画面、コレクション作成画面に加え、Project StyleとHierarchy Styleが共有するItem Style画面で使用します。表示は`ee4v/Debug/Catalog`の`Overlays/CustomPopup`、`Domain/ProjectStyle/Project Style Window`、`Domain/HierarchyStyle/Hierarchy Style Window` Storyで確認できます。
+AssetManagerのタグ選択画面、Target選択画面、コレクション作成画面に加え、Project StyleとHierarchy Styleが共有するItem Style画面で使用します。表示は`ee4v/Debug/Catalog`の`Containers/CustomPopup`、`Domain/ProjectStyle/Project Style Window`、`Domain/HierarchyStyle/Hierarchy Style Window` Storyで確認できます。
 
 ## 機能UIのStory
 
@@ -96,14 +86,10 @@ Catalog上の分類とコード上の分割は別に扱います。コードで�
 | UI | Story |
 |---|---|
 | 色と既定の縦横スクロールバー | `Reference/*` |
-| ボタンと入力欄 | `Inputs/*` |
-| Action Bar、フォーム行、見出し、一覧行、情報パネル | `Layout/*` |
-| 移動項目と開閉セクション | `Navigation/*` |
+| 操作、選択、値入力 | `Inputs/*` |
+| 文字、状態、画像の表示 | `Displays/*` |
+| 子要素の配置と表示切り替え | `Containers/*` |
 | 検索可能な階層一覧 | `Collections/*` |
-| BadgeとTag Pill | `Labels/*` |
-| 行内メッセージ、空表示、進捗表示 | `Feedback/*` |
-| Icon、CachedImage、PreviewContainer | `Media/*` |
-| ポップアップ外枠 | `Overlays/*` |
 | Core Settings | `Domain/Core/Settings UI` |
 | AssetManagerの画面、Grid、Tree、Popup | `Domain/AssetManager/*` |
 | AssetManagerのBreadcrumb、Tag Field、Controls、Grid Card、Filter Editor、Detail parts | `Domain/AssetManager/Components/*` |

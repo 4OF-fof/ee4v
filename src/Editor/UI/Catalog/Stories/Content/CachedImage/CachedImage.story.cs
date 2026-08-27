@@ -16,7 +16,7 @@ namespace Ee4v.UI
             {
                 registry.RegisterStory(new StoryRegistration(
                     "cached-image",
-                    "Media",
+                    "Displays",
                     "CachedImage",
                     "デコード済みTextureを共有する画像表示コンポーネントです。",
                     "同じcacheとkeyを使う複数要素が、1つのTextureを再利用する状態を確認します。",

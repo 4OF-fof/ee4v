@@ -13,7 +13,7 @@ namespace Ee4v.UI
             {
                 registry.RegisterStory(new StoryRegistration(
                     "empty-state",
-                    "Feedback",
+                    "Displays",
                     "EmptyState",
                     "結果や対象がない状態を、アイコン・見出し・説明・操作で表すコンポーネントです。",
                     "空状態のアイコン、見出し、説明、次の操作を中央へまとめて表示します。",

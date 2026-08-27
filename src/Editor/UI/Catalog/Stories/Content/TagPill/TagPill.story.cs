@@ -15,7 +15,7 @@ namespace Ee4v.UI
                     "Editor/UI/Components/Content/TagPill/tag-pill.uss");
                 registry.RegisterStory(new StoryRegistration(
                     "tag-pill",
-                    "Labels",
+                    "Inputs",
                     "TagPill",
                     "短いタグ名をpill形で表示するコンポーネントです。",
                     "先頭アイコン、pill全体の選択操作、右端の削除操作を用途に応じて組み合わせます。",

@@ -24,7 +24,7 @@ namespace Ee4v.UI
             public void Register(CatalogRegistry registry)
             {
                 registry.RegisterStory(new StoryRegistration(
-                    "badge", "Labels", "Badge",
+                    "badge", "Displays", "Badge",
                     "件数、短い分類値、処理状態を表示するバッジです。",
                     "中立表示とUiStatusToneによる状態色を一つの部品で切り替えます。",
                     new string[0], ComponentImplementationKind.UiToolkit,

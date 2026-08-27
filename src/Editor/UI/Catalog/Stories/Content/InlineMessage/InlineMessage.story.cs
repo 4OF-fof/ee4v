@@ -13,7 +13,7 @@ namespace Ee4v.UI
             {
                 registry.RegisterStory(new StoryRegistration(
                     "inline-message",
-                    "Feedback",
+                    "Displays",
                     "InlineMessage",
                     "処理結果や入力エラーを行内に表示するメッセージです。",
                     "メッセージ、状態色、任意のアイコンを一貫した行内表現で表示します。",
