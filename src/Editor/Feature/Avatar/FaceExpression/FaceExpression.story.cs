@@ -139,7 +139,7 @@ namespace Ee4v.FaceExpression
                     BuildBlendShapeRow,
                     dependencies: new[]
                     {
-                        "ContentRow",
+                        "ItemRow",
                         "UiTextFactory"
                     },
                     usageLocations: new[]

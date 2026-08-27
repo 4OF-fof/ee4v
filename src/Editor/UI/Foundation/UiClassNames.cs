@@ -13,6 +13,7 @@ namespace Ee4v.UI
         public const string InfoCardDescription = "ee4v-ui-info-card__description";
 
         public const string Badge = "ee4v-ui-badge__typography";
+        public const string StandardInput = "ee4v-ui-standard-input";
         public const string InputPlaceholder = "ee4v-ui-input__placeholder";
         public const string FormLabel = "ee4v-ui-form__label";
         public const string FormError = "ee4v-ui-form__error";

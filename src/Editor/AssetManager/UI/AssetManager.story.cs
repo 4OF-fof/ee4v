@@ -208,7 +208,7 @@ namespace Ee4v.AssetManager.UI
                     dependencies: new[]
                     {
                         "ActionBar",
-                        "LabeledContentRow",
+                        "FormField",
                         "UiTextFactory"
                     },
                     usageLocations: new[]
@@ -249,7 +249,6 @@ namespace Ee4v.AssetManager.UI
                     dependencies: new[]
                     {
                         "SectionHeader",
-                        "LabeledContentRow",
                         "Badge",
                         "UiTextFactory"
                     },

@@ -35,6 +35,9 @@
       "inputsDescription": "操作、選択、値の入力を受け取るUI要素です。",
       "displaysDescription": "文字、状態、画像などの情報を表示するUI要素です。",
       "containersDescription": "子要素の配置や表示の切り替えを担うUI要素です。",
+      "barsDescription": "主要内容と操作を左右や中央へ配置するバーです。",
+      "itemsDescription": "一覧や階層内の1項目を構成するUI要素です。",
+      "sectionsDescription": "画面内の領域に見出しや開閉操作を与えるUI要素です。",
       "collectionsDescription": "複数の項目を一覧や階層として管理するUI要素です。",
       "domainDescription": "各機能の実画面と機能固有のUI要素です。",
       "featureDescription": "{0}機能の画面と機能固有のUI要素です。",
@@ -50,11 +53,12 @@
       "inconclusive": "未確定"
     },
     "listInput": {
-      "description": "カンマ・セミコロン・改行で区切った入力をリスト値として通知する入力コンポーネントです。",
-      "details": "入力を分割して前後の空白と空要素を除き、画面上では1行1要素へ正規化します。保存形式への変換は利用側が担当します。",
+      "description": "項目ごとの入力行を追加・削除してリスト値を編集する入力コンポーネントです。",
+      "details": "通常項目と同じ寸法の追加行をリスト末尾に置き、選択すると末尾へ空行を追加します。各行の削除ボタンはその項目を除去します。入力値は項目単位で公開し、区切り文字の解釈や保存形式への変換は行いません。",
       "sampleTooltip": "グループ判定に使うアバター名です。",
-      "itemPlaceholder": "1行に1つアバター名を入力",
-      "savedValue": "保存形式の例: {0}"
+      "itemPlaceholder": "アバター名を入力",
+      "addItem": "項目を追加",
+      "removeItem": "項目を削除"
     }
   }
 }

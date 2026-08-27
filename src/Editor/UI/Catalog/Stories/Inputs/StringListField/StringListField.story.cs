@@ -6,7 +6,7 @@ namespace Ee4v.UI
 {
     internal sealed partial class CatalogWindow
     {
-        private sealed class CommaSeparatedListFieldCatalogRegistrar
+        private sealed class StringListFieldCatalogRegistrar
             : ICatalogRegistrar
         {
             public int Order
@@ -19,17 +19,17 @@ namespace Ee4v.UI
                 registry.RegisterStyleSheet(
                     "Editor/UI/Components/Inputs/InputField/input-field.uss");
                 registry.RegisterStyleSheet(
-                    "Editor/UI/Components/Inputs/CommaSeparatedListField/comma-separated-list-field.uss");
+                    "Editor/UI/Components/Inputs/StringListField/string-list-field.uss");
                 registry.RegisterStory(new StoryRegistration(
-                    "comma-separated-list-field",
+                    "string-list-field",
                     "Inputs",
-                    "CommaSeparatedListField",
+                    "StringListField",
                     I18N.Get("catalog.listInput.description"),
                     I18N.Get("catalog.listInput.details"),
                     new[] { "InputField" },
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) =>
-                        window.BuildCommaSeparatedListFieldStory(parent),
+                        window.BuildStringListFieldStory(parent),
                     new[]
                     {
                         "Editor/Core/Presentation/Settings/CommaSeparatedListSettingDrawer.cs"
@@ -37,7 +37,7 @@ namespace Ee4v.UI
             }
         }
 
-        private void BuildCommaSeparatedListFieldStory(
+        private void BuildStringListFieldStory(
             VisualElement parent)
         {
             var tooltip = I18N.Get(
@@ -71,35 +71,26 @@ namespace Ee4v.UI
             var surface = CreatePreviewArea();
             surface.style.width = 520f;
 
-            var field = new CommaSeparatedListField(
-                new CommaSeparatedListFieldState(
+            var field = new StringListField(
+                new StringListFieldState(
                     new[] { "Airi", "Manuka", "Moe" },
                     tooltip,
-                    placeholder));
-            var serializedValue = UiTextFactory.Create(
-                I18N.Get(
-                    "catalog.listInput.savedValue",
-                    new object[] { string.Join(",", field.Values) }),
-                UiClassNames.SecondaryText);
-            serializedValue.style.marginTop = UiSpacingTokens.Medium;
-            field.ValuesChanged += values =>
-                serializedValue.SetText(
-                    I18N.Get(
-                        "catalog.listInput.savedValue",
-                        new object[] { string.Join(",", values) }));
-
+                    placeholder,
+                    I18N.Get("catalog.listInput.addItem"),
+                    I18N.Get("catalog.listInput.removeItem")));
             surface.Add(field);
-            surface.Add(serializedValue);
             preview.Body.Add(surface);
 
             refresh = () =>
             {
                 tooltipField.SetValueWithoutNotify(tooltip);
                 placeholderField.SetValueWithoutNotify(placeholder);
-                field.SetState(new CommaSeparatedListFieldState(
+                field.SetState(new StringListFieldState(
                     field.Values,
                     tooltip,
-                    placeholder));
+                    placeholder,
+                    I18N.Get("catalog.listInput.addItem"),
+                    I18N.Get("catalog.listInput.removeItem")));
             };
 
             refresh();

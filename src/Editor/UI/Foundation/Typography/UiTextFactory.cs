@@ -8,6 +8,9 @@ namespace Ee4v.UI
 {
     public static class UiTextFactory
     {
+        private const string StandardInputFocusedClassName =
+            "ee4v-ui-standard-input--focused";
+
         public static UiTextElement Create(string text = "", params string[] classNames)
         {
             var resolution = TypographyStyleResolver.Resolve(classNames);
@@ -31,7 +34,15 @@ namespace Ee4v.UI
             string text = "",
             params string[] classNames)
         {
-            return ConfigureNativeTextElement(new Toggle(text), classNames);
+            var toggle = ConfigureNativeInput(new Toggle(text), classNames);
+            var checkmark = toggle.Q<VisualElement>(
+                className: Toggle.checkmarkUssClassName);
+            if (checkmark != null)
+            {
+                checkmark.style.backgroundImage = StyleKeyword.None;
+            }
+
+            return toggle;
         }
 
         public static Foldout CreateFoldout(
@@ -49,35 +60,35 @@ namespace Ee4v.UI
             string label = "",
             params string[] classNames)
         {
-            return ConfigureNativeTextElement(new TextField(label), classNames);
+            return ConfigureNativeInput(new TextField(label), classNames);
         }
 
         public static IntegerField CreateIntegerField(
             string label = "",
             params string[] classNames)
         {
-            return ConfigureNativeTextElement(new IntegerField(label), classNames);
+            return ConfigureNativeInput(new IntegerField(label), classNames);
         }
 
         public static FloatField CreateFloatField(
             string label = "",
             params string[] classNames)
         {
-            return ConfigureNativeTextElement(new FloatField(label), classNames);
+            return ConfigureNativeInput(new FloatField(label), classNames);
         }
 
         public static DoubleField CreateDoubleField(
             string label = "",
             params string[] classNames)
         {
-            return ConfigureNativeTextElement(new DoubleField(label), classNames);
+            return ConfigureNativeInput(new DoubleField(label), classNames);
         }
 
         public static ColorField CreateColorField(
             string label = "",
             params string[] classNames)
         {
-            return ConfigureNativeTextElement(new ColorField(label), classNames);
+            return ConfigureNativeInput(new ColorField(label), classNames);
         }
 
         public static EnumField CreateEnumField(
@@ -85,14 +96,14 @@ namespace Ee4v.UI
             Enum value,
             params string[] classNames)
         {
-            return ConfigureNativeTextElement(new EnumField(label, value), classNames);
+            return ConfigureNativeInput(new EnumField(label, value), classNames);
         }
 
         public static ObjectField CreateObjectField(
             string label = "",
             params string[] classNames)
         {
-            return ConfigureNativeTextElement(new ObjectField(label), classNames);
+            return ConfigureNativeInput(new ObjectField(label), classNames);
         }
 
         public static PopupField<T> CreatePopupField<T>(
@@ -101,7 +112,7 @@ namespace Ee4v.UI
             int defaultIndex,
             params string[] classNames)
         {
-            return ConfigureNativeTextElement(
+            return ConfigureNativeInput(
                 new PopupField<T>(label, choices, defaultIndex),
                 classNames);
         }
@@ -114,7 +125,7 @@ namespace Ee4v.UI
             Func<T, string> formatListItem,
             params string[] classNames)
         {
-            return ConfigureNativeTextElement(
+            return ConfigureNativeInput(
                 new PopupField<T>(
                     label,
                     choices,
@@ -175,6 +186,20 @@ namespace Ee4v.UI
                 className: "unity-foldout__input");
             (input ?? toggle).Add(textElement);
             return textElement;
+        }
+
+        private static T ConfigureNativeInput<T>(
+            T element,
+            params string[] classNames)
+            where T : VisualElement
+        {
+            var configured = ConfigureNativeTextElement(element, classNames);
+            configured.AddToClassList(UiClassNames.StandardInput);
+            configured.RegisterCallback<FocusInEvent>(_ =>
+                configured.AddToClassList(StandardInputFocusedClassName));
+            configured.RegisterCallback<FocusOutEvent>(_ =>
+                configured.RemoveFromClassList(StandardInputFocusedClassName));
+            return configured;
         }
 
         private static T ConfigureNativeTextElement<T>(

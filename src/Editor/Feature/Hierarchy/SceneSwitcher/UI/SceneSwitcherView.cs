@@ -205,7 +205,7 @@ namespace Ee4v.SceneSwitcher
         }
     }
 
-    internal sealed class SceneSwitcherRow : ContentRow
+    internal sealed class SceneSwitcherRow : ItemRow
     {
         private const string RootClassName =
             "ee4v-scene-switcher-row";
@@ -284,7 +284,7 @@ namespace Ee4v.SceneSwitcher
             _item = item;
             var isOpen = item?.IsOpen == true;
             var isFavorite = item?.IsFavorite == true;
-            base.SetState(new ContentRowState(
+            base.SetState(new ItemRowState(
                 item?.Name ?? string.Empty,
                 isOpen ? _text.Open : string.Empty,
                 _sceneIcon));

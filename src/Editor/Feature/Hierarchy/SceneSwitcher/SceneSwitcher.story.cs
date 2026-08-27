@@ -39,7 +39,7 @@ namespace Ee4v.SceneSwitcher
                     BuildRow,
                     dependencies: new[]
                     {
-                        "ContentRow",
+                        "ItemRow",
                         "UiTextFactory"
                     },
                     usageLocations: new[]

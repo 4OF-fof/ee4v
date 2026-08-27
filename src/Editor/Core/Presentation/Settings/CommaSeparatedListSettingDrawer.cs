@@ -19,11 +19,13 @@ namespace Ee4v.Core.Settings
         private static VisualElement CreateField(
             SettingDrawerContext<string> context)
         {
-            var field = new CommaSeparatedListField(
-                new CommaSeparatedListFieldState(
+            var field = new StringListField(
+                new StringListFieldState(
                     ParseItems(context.Value),
                     context.Tooltip,
-                    I18N.Get("settings.listInput.itemPlaceholder")));
+                    I18N.Get("settings.listInput.itemPlaceholder"),
+                    I18N.Get("settings.listInput.addItem"),
+                    I18N.Get("settings.listInput.removeItem")));
             field.ValuesChanged += values =>
                 context.NotifyValueChanged(SerializeItems(values));
             return field;

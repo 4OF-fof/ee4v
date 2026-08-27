@@ -408,6 +408,12 @@ namespace Ee4v.UI
                     return I18N.Get("catalog.category.displaysDescription");
                 case "Containers":
                     return I18N.Get("catalog.category.containersDescription");
+                case "Containers/Bars":
+                    return I18N.Get("catalog.category.barsDescription");
+                case "Containers/Items":
+                    return I18N.Get("catalog.category.itemsDescription");
+                case "Containers/Sections":
+                    return I18N.Get("catalog.category.sectionsDescription");
                 case "Collections":
                     return I18N.Get("catalog.category.collectionsDescription");
                 case "Domain":

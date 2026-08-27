@@ -22,7 +22,7 @@ Setting は設定定義の登録、値の検証、読込、保存、変更通知
 | `SettingDrawerContext<T>` | 入力 UI へ現在値と変更通知を渡す |
 | `GlobalDataSettings` | ee4v共有データのルートと変更通知を公開する |
 | `ProjectAssetSettings` | Project内で生成するAssetの共通ルートを解決する |
-| `CommaSeparatedListSettingDrawer` | 区切り文字付き文字列の設定UIと値解析を提供する |
+| `CommaSeparatedListSettingDrawer` | 行編集式の一覧設定UIと区切り文字付き保存値の解析を提供する |
 
 ## `SettingDefinitionBase`
 
@@ -87,7 +87,7 @@ Preferencesの「生成アセットのルートフォルダー名」は、すべ
 
 `GlobalDataSettings.RootDirectory`は環境変数を展開した絶対パスを返します。ルート設定が変更されると`PathChanged`が発生します。
 
-`CommaSeparatedListSettingDrawer.Register`は文字列設定へ区切り文字付き一覧の入力UIを登録します。`ParseItems`はカンマ、セミコロン、改行で値を分割し、空項目を除外します。
+`CommaSeparatedListSettingDrawer.Register`は文字列設定へ`StringListField`を登録します。項目の追加はリスト末尾の追加行から行い、削除は各行のボタンから行います。空一覧では表示用の空行を1行維持します。設定値の保存形式は変更せず、Drawerの`ParseItems`と`SerializeItems`がカンマ、セミコロン、改行による変換と空項目の除外を担当します。
 
 ## 副作用
 

@@ -86,7 +86,7 @@ namespace Ee4v.HiddenObjects
                     BuildTreeRow,
                     dependencies: new[]
                     {
-                        "ContentRow",
+                        "ItemRow",
                         "UiTextFactory"
                     },
                     usageLocations: new[]

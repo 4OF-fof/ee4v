@@ -4,7 +4,7 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.HiddenObjects
 {
-    internal sealed class HiddenObjectTreeRow : ContentRow
+    internal sealed class HiddenObjectTreeRow : ItemRow
     {
         private const string RootClassName =
             "ee4v-hidden-object-tree-row";
@@ -71,7 +71,7 @@ namespace Ee4v.HiddenObjects
                     ? DisplayStyle.Flex
                     : DisplayStyle.None;
             _selection.SetValueWithoutNotify(_state.IsSelected);
-            base.SetState(new ContentRowState(
+            base.SetState(new ItemRowState(
                 _state.Name,
                 _state.Meta,
                 _state.Icon ?? IconState.FromBuiltinIcon(

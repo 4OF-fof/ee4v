@@ -87,6 +87,12 @@ namespace Ee4v.UI
             _label.SetTextAlign(alignment);
         }
 
+        public void SetContentAlignment(Justify alignment)
+        {
+            _content.style.alignSelf = Align.Stretch;
+            _content.style.justifyContent = alignment;
+        }
+
         public void SetIcon(IconState icon)
         {
             _hasIcon = icon != null;

@@ -5,26 +5,16 @@
 @import url("../../UI/Components/Inputs/InputField/input-field.uss");
 @import url("../../UI/Components/Inputs/SearchField/search-field.uss");
 
-.ee4v-asset-manager-control-field.ee4v-ui-labeled-content-row {
+.ee4v-asset-manager-control-field.ee4v-ui-form-field {
     align-self: stretch;
-    min-width: 0;
-    flex-direction: column;
-    align-items: stretch;
     margin-bottom: var(--ee4v-space-lg);
 }
 
-.ee4v-asset-manager-control-field > .ee4v-ui-labeled-content-row__content {
+.ee4v-asset-manager-control-field > .ee4v-ui-form-field__input {
     width: 100%;
     min-width: 0;
     flex-direction: column;
     align-items: stretch;
-}
-
-.ee4v-asset-manager-control-field__label {
-    min-width: 0;
-    min-height: var(--ee4v-size-18);
-    margin-bottom: var(--ee4v-space-xxs);
-    color: var(--ee4v-color-text-secondary);
 }
 
 .ee4v-asset-manager-control-field__input.ee4v-ui-input-field {
@@ -394,8 +384,8 @@
     -unity-text-align: middle-left;
 }
 
-.ee4v-asset-manager__nav-button .ee4v-ui-content-row__title,
-.ee4v-asset-manager__tag-row .ee4v-ui-content-row__title {
+.ee4v-asset-manager__nav-button .ee4v-ui-item-row__title,
+.ee4v-asset-manager__tag-row .ee4v-ui-item-row__title {
     -unity-text-align: middle-left;
 }
 
@@ -1021,7 +1011,9 @@
 }
 
 .ee4v-asset-manager__key-value {
+    min-width: 0;
     flex-direction: row;
+    align-items: center;
 }
 
 .ee4v-asset-manager__key {

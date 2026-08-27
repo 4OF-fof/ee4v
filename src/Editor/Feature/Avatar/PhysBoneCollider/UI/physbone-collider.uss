@@ -174,7 +174,7 @@
     margin-right: var(--ee4v-space-xs);
 }
 
-.ee4v-physbone-collider__selection-row .ee4v-ui-content-row__title {
+.ee4v-physbone-collider__selection-row .ee4v-ui-item-row__title {
     height: 24px;
     -unity-text-align: middle-left;
 }

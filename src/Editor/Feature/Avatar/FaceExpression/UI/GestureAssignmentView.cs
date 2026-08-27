@@ -348,9 +348,6 @@ namespace Ee4v.FaceExpression
                 "ee4v-gesture-assignment__selection");
             Add(selectionHeader);
 
-            var menuControls = new LabeledContentRow(_text.MenuName);
-            menuControls.AddToClassList(
-                "ee4v-gesture-assignment__extra-controls");
             _menuNameField = UiTextFactory.CreateTextField();
             _menuNameField.isDelayed = true;
             _menuNameField.AddToClassList(
@@ -363,14 +360,18 @@ namespace Ee4v.FaceExpression
                     GestureAssignmentSession.SetSelectedMenuName(evt.newValue);
                 }
             });
-            menuControls.Content.Add(_menuNameField);
             _removeMenuButton = UiTextFactory.CreateButton(
                 _text.Remove,
                 GestureAssignmentSession.RemoveSelectedMenuExpression);
             _removeMenuButton.AddToClassList("ee4v-ui-button");
             _removeMenuButton.AddToClassList(
                 "ee4v-gesture-assignment__extra-remove");
-            menuControls.Actions.Add(_removeMenuButton);
+            var menuControls = new FormField(
+                _text.MenuName,
+                _menuNameField,
+                _removeMenuButton);
+            menuControls.AddToClassList(
+                "ee4v-gesture-assignment__extra-controls");
             Add(menuControls);
 
             var expressionHeader = new SectionHeader(

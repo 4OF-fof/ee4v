@@ -301,7 +301,7 @@ namespace Ee4v.AssetManager.UI
 
     }
 
-    internal sealed class AssetManagerTextField : LabeledContentRow
+    internal sealed class AssetManagerTextField : FormField
     {
         private readonly InputField _field;
         private bool _multiline;
@@ -309,17 +309,16 @@ namespace Ee4v.AssetManager.UI
         public AssetManagerTextField(
             string label,
             params string[] classNames)
-            : base(label)
+            : base(label, new InputField())
         {
             AddToClassList("ee4v-asset-manager-control-field");
             AssetManagerControls.AddClasses(this, classNames);
             LabelText.AddToClassList(
                 "ee4v-asset-manager-control-field__label");
 
-            _field = new InputField();
+            _field = (InputField)Input;
             _field.AddToClassList(
                 "ee4v-asset-manager-control-field__input");
-            Content.Add(_field);
         }
 
         public string value
@@ -433,7 +432,7 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class AssetManagerEnumField : LabeledContentRow
+    internal sealed class AssetManagerEnumField : FormField
     {
         private readonly BaseField<Enum> _field;
 
@@ -442,7 +441,7 @@ namespace Ee4v.AssetManager.UI
             Enum value,
             Func<Enum, string> formatter,
             params string[] classNames)
-            : base(label)
+            : base(label, new EnumInput(value, formatter))
         {
             AddToClassList("ee4v-asset-manager-control-field");
             AddToClassList("ee4v-asset-manager-control-field--enum");
@@ -450,18 +449,51 @@ namespace Ee4v.AssetManager.UI
             LabelText.AddToClassList(
                 "ee4v-asset-manager-control-field__label");
 
-            var fieldContainer = new VisualElement();
-            fieldContainer.AddToClassList(
-                "ee4v-asset-manager-control-field__container");
-            if (formatter == null)
+            _field = ((EnumInput)Input).Field;
+            _field.RegisterCallback<FocusInEvent>(_ => EnableInClassList(
+                "ee4v-asset-manager-control-field--focused",
+                true));
+            _field.RegisterCallback<FocusOutEvent>(_ => EnableInClassList(
+                "ee4v-asset-manager-control-field--focused",
+                false));
+        }
+
+        public Enum value
+        {
+            get { return _field.value; }
+        }
+
+        public void SetValueWithoutNotify(Enum value)
+        {
+            _field.SetValueWithoutNotify(value);
+        }
+
+        private sealed class EnumInput : VisualElement
+        {
+            internal EnumInput(
+                Enum value,
+                Func<Enum, string> formatter)
             {
-                _field = UiTextFactory.CreateEnumField(
-                    string.Empty,
-                    value,
-                    "ee4v-asset-manager-control-field__input");
+                AddToClassList(
+                    "ee4v-asset-manager-control-field__container");
+                Field = CreateField(value, formatter);
+                Add(Field);
             }
-            else
+
+            internal BaseField<Enum> Field { get; }
+
+            private static BaseField<Enum> CreateField(
+                Enum value,
+                Func<Enum, string> formatter)
             {
+                if (formatter == null)
+                {
+                    return UiTextFactory.CreateEnumField(
+                        string.Empty,
+                        value,
+                        "ee4v-asset-manager-control-field__input");
+                }
+
                 var values = Enum.GetValues(value.GetType());
                 var choices = new List<Enum>(values.Length);
                 var selectedIndex = 0;
@@ -475,7 +507,7 @@ namespace Ee4v.AssetManager.UI
                     }
                 }
 
-                _field = UiTextFactory.CreatePopupField(
+                return UiTextFactory.CreatePopupField(
                     string.Empty,
                     choices,
                     selectedIndex,
@@ -483,24 +515,6 @@ namespace Ee4v.AssetManager.UI
                     formatter,
                     "ee4v-asset-manager-control-field__input");
             }
-            _field.RegisterCallback<FocusInEvent>(_ => EnableInClassList(
-                "ee4v-asset-manager-control-field--focused",
-                true));
-            _field.RegisterCallback<FocusOutEvent>(_ => EnableInClassList(
-                "ee4v-asset-manager-control-field--focused",
-                false));
-            fieldContainer.Add(_field);
-            Content.Add(fieldContainer);
-        }
-
-        public Enum value
-        {
-            get { return _field.value; }
-        }
-
-        public void SetValueWithoutNotify(Enum value)
-        {
-            _field.SetValueWithoutNotify(value);
         }
     }
 

@@ -46,7 +46,6 @@
 }
 
 .ee4v-settings__field-layout {
-    flex-direction: row;
     align-items: flex-start;
     align-self: stretch;
     width: 100%;
@@ -55,12 +54,6 @@
 }
 
 .ee4v-settings__label {
-    flex-grow: 0;
-    flex-shrink: 0;
-    width: 24%;
-    min-width: 0;
-    padding-right: var(--ee4v-space-md);
-    padding-top: var(--ee4v-space-xxs);
     color: var(--ee4v-color-text-primary);
 }
 

@@ -172,13 +172,6 @@ namespace Ee4v.WindowGroup
             editor.AddToClassList(
                 "ee4v-window-group-settings__group-editor");
 
-            var nameRow = new LabeledContentRow(
-                I18N.Get("window.group.name"));
-            nameRow.AddToClassList(
-                "ee4v-window-group-settings__name-row");
-            nameRow.LabelText.AddToClassList(
-                "ee4v-window-group-settings__name-label");
-
             var field = UiTextFactory.CreateTextField();
             field.value = group.Name;
             field.AddToClassList(
@@ -186,11 +179,18 @@ namespace Ee4v.WindowGroup
             field.RegisterCallback<FocusOutEvent>(_ =>
                 RenameGroup(group.Id, field.value));
 
+            var nameRow = new FormField(
+                I18N.Get("window.group.name"),
+                field);
+            nameRow.AddToClassList(
+                "ee4v-window-group-settings__name-row");
+            nameRow.LabelText.AddToClassList(
+                "ee4v-window-group-settings__name-label");
+
             _feedback = new InlineMessage();
             _feedback.AddToClassList(
                 "ee4v-window-group-settings__feedback");
 
-            nameRow.Content.Add(field);
             editor.Add(nameRow);
             editor.Add(_feedback);
             return editor;
@@ -240,10 +240,10 @@ namespace Ee4v.WindowGroup
                 CreateOtherRegularMembershipText(
                     option.TypeId,
                     selectedGroup.Id);
-            var row = new ContentRow(new ContentRowState(
+            var row = new ItemRow(new ItemRowState(
                 option.DisplayName,
                 otherRegularMembership,
-                layout: ContentRowLayout.Stacked));
+                layout: ItemRowLayout.Stacked));
             row.AddToClassList(
                 "ee4v-window-group-settings__window-row");
             row.TitleText.AddToClassList(

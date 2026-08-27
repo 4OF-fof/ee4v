@@ -16,20 +16,14 @@
     padding-right: var(--ee4v-space-sm);
     padding-top: var(--ee4v-space-none);
     padding-bottom: var(--ee4v-space-none);
-    border-top-width: var(--ee4v-border-hairline);
-    border-right-width: var(--ee4v-border-hairline);
-    border-bottom-width: var(--ee4v-border-hairline);
-    border-left-width: var(--ee4v-border-hairline);
-    border-top-color: var(--ee4v-color-border-default);
-    border-right-color: var(--ee4v-color-border-default);
-    border-bottom-color: var(--ee4v-color-border-default);
-    border-left-color: var(--ee4v-color-border-default);
-    border-top-left-radius: var(--ee4v-radius-lg);
-    border-top-right-radius: var(--ee4v-radius-lg);
-    border-bottom-left-radius: var(--ee4v-radius-lg);
-    border-bottom-right-radius: var(--ee4v-radius-lg);
-    background-color: var(--ee4v-color-field);
-    transition-property: border-top-color, border-right-color, border-bottom-color, border-left-color, background-color;
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: var(--ee4v-border-emphasis);
+    border-left-width: 0;
+    border-bottom-color: var(--ee4v-color-border-active);
+    border-radius: 0;
+    background-color: var(--ee4v-color-transparent);
+    transition-property: border-bottom-color;
     transition-duration: 0.12s;
     transition-timing-function: ease-out;
 }
@@ -44,19 +38,13 @@
 }
 
 .ee4v-ui-input-field__field-container:hover {
-    border-top-color: var(--ee4v-color-border-active);
-    border-right-color: var(--ee4v-color-border-active);
-    border-bottom-color: var(--ee4v-color-border-active);
-    border-left-color: var(--ee4v-color-border-active);
+    border-bottom-color: var(--ee4v-color-focus);
 }
 
 .ee4v-ui-input-field__field-container--focused,
 .ee4v-ui-input-field__field-container--focused:hover {
-    border-top-color: var(--ee4v-color-focus);
-    border-right-color: var(--ee4v-color-focus);
     border-bottom-color: var(--ee4v-color-focus);
-    border-left-color: var(--ee4v-color-focus);
-    background-color: var(--ee4v-color-field);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-ui-input-field__field {

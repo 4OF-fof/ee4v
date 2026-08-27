@@ -99,7 +99,7 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class AssetDetailSettingRow : LabeledContentRow
+    internal sealed class AssetDetailSettingRow : VisualElement
     {
         internal AssetDetailSettingRow(
             string label,
@@ -111,24 +111,26 @@ namespace Ee4v.AssetManager.UI
             {
                 value.AddToClassList(
                     "ee4v-asset-manager__setting-value-content");
-                Content.Add(value);
+                _value.Add(value);
             }
             if (action != null)
             {
                 action.AddToClassList(
                     "ee4v-asset-manager__setting-action");
-                Content.Add(action);
+                _value.Add(action);
             }
         }
 
         private AssetDetailSettingRow(string label)
-            : base(label)
         {
             AddToClassList("ee4v-asset-manager__setting-row");
-            LabelText.AddToClassList(
-                "ee4v-asset-manager__setting-label");
-            Content.AddToClassList(
-                "ee4v-asset-manager__setting-value");
+            Add(UiTextFactory.Create(
+                label,
+                UiClassNames.FormLabel,
+                "ee4v-asset-manager__setting-label"));
+            _value = new VisualElement();
+            _value.AddToClassList("ee4v-asset-manager__setting-value");
+            Add(_value);
         }
 
         internal static AssetDetailSettingRow Editable(
@@ -166,13 +168,15 @@ namespace Ee4v.AssetManager.UI
                     editor.FocusInput();
                 },
                 "ee4v-asset-manager__inline-action"));
-            row.Content.Add(display);
-            row.Content.Add(editorRow);
+            row._value.Add(display);
+            row._value.Add(editorRow);
             return row;
         }
+
+        private readonly VisualElement _value;
     }
 
-    internal sealed class AssetDetailKeyValueRow : LabeledContentRow
+    internal sealed class AssetDetailKeyValueRow : VisualElement
     {
         internal AssetDetailKeyValueRow(string key, string value)
             : this(key, CreateValue(value))
@@ -182,14 +186,16 @@ namespace Ee4v.AssetManager.UI
         internal AssetDetailKeyValueRow(
             string key,
             VisualElement value)
-            : base(key)
         {
             AddToClassList("ee4v-asset-manager__key-value");
-            LabelText.AddToClassList("ee4v-asset-manager__key");
+            Add(UiTextFactory.Create(
+                key,
+                UiClassNames.FormLabel,
+                "ee4v-asset-manager__key"));
             if (value != null)
             {
                 value.AddToClassList("ee4v-asset-manager__value");
-                Content.Add(value);
+                Add(value);
             }
         }
 

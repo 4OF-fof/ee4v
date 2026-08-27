@@ -25,7 +25,9 @@
       "tooltip": "上書きが有効な場合に使う、Assets直下の生成アセット用フォルダー名です。"
     },
     "listInput": {
-      "itemPlaceholder": "1行に1項目を入力"
+      "itemPlaceholder": "項目を入力",
+      "addItem": "項目を追加",
+      "removeItem": "項目を削除"
     },
     "unsupportedType": "未対応の設定型です: {0}",
     "validation": {

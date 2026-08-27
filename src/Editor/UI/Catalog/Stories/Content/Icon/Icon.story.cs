@@ -40,7 +40,7 @@ namespace Ee4v.UI
                         "Editor/Feature/Project/ProjectTabs/UI/ProjectTabsView.cs",
                         "Editor/Feature/Shared/ItemStyle/ItemStyleEditor.cs",
                         "Editor/UI/Components/Collections/SearchableTreeView/SearchableTreeView.cs",
-                        "Editor/UI/Components/Content/ContentRow/ContentRow.cs",
+                        "Editor/UI/Components/Content/ItemRow/ItemRow.cs",
                         "Editor/UI/Components/Content/DisclosureSection/DisclosureSection.cs",
                         "Editor/UI/Components/Content/EmptyState/EmptyState.cs",
                         "Editor/UI/Components/Content/NavigationItem/NavigationItem.cs",

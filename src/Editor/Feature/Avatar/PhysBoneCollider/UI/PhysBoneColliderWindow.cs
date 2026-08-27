@@ -949,7 +949,7 @@ namespace Ee4v.PhysBoneCollider
             }
         }
 
-        private sealed class PhysBoneSelectionRow : ContentRow
+        private sealed class PhysBoneSelectionRow : ItemRow
         {
             private readonly Toggle _toggle;
             private readonly Action<bool> _onToggle;
@@ -980,7 +980,7 @@ namespace Ee4v.PhysBoneCollider
                 bool toggled,
                 bool selected)
             {
-                base.SetState(new ContentRowState(title));
+                base.SetState(new ItemRowState(title));
                 tooltip = rowTooltip ?? string.Empty;
                 _toggle.tooltip = tooltip;
                 _toggle.SetValueWithoutNotify(toggled);

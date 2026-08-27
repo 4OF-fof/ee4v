@@ -25,7 +25,9 @@
       "tooltip": "Folder directly under Assets used when the project override is enabled."
     },
     "listInput": {
-      "itemPlaceholder": "Enter one item per line"
+      "itemPlaceholder": "Enter an item",
+      "addItem": "Add item",
+      "removeItem": "Remove item"
     },
     "unsupportedType": "Unsupported setting type: {0}",
     "validation": {

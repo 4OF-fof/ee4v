@@ -31,7 +31,7 @@ namespace Ee4v.UI
             : base(onClick)
         {
             AddToClassList("ee4v-ui-navigation-item");
-            Row = new ContentRow(
+            Row = new ItemRow(
                 titleTypographyClassName:
                     UiClassNames.NavigationItemLabel);
             Row.AddToClassList("ee4v-ui-navigation-item__row");
@@ -40,7 +40,7 @@ namespace Ee4v.UI
             SetState(state ?? new NavigationItemState(string.Empty));
         }
 
-        public ContentRow Row { get; }
+        public ItemRow Row { get; }
         public VisualElement Leading => Row.Leading;
         public VisualElement Trailing => Row.Trailing;
         public bool Selected { get; private set; }
@@ -48,11 +48,11 @@ namespace Ee4v.UI
         public void SetState(NavigationItemState state)
         {
             state = state ?? new NavigationItemState(string.Empty);
-            Row.SetState(new ContentRowState(
+            Row.SetState(new ItemRowState(
                 state.Title,
                 state.Description,
                 state.Icon,
-                ContentRowLayout.Stacked));
+                ItemRowLayout.Stacked));
             SetSelected(state.Selected);
         }
 

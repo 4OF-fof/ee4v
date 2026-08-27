@@ -32,7 +32,7 @@ namespace Ee4v.FaceExpression
         private TextField _searchField;
         private ListView _list;
         private ScrollView _groupList;
-        private UiTextElement _detailTitle;
+        private FormField _roleField;
         private TextField _roleEditor;
         private InlineMessage _status;
         private UiTextElement _sourceFbx;
@@ -139,15 +139,13 @@ namespace Ee4v.FaceExpression
 
             var detail = new VisualElement();
             detail.AddToClassList("ee4v-blend-shape-preset__detail");
-            var roleRow = new LabeledContentRow();
-            roleRow.AddToClassList("ee4v-blend-shape-preset__role-row");
-            _detailTitle = roleRow.LabelText;
             _roleEditor = UiTextFactory.CreateTextField();
             _roleEditor.AddToClassList(
                 "ee4v-blend-shape-preset__role-editor");
             _roleEditor.RegisterCallback<FocusOutEvent>(_ => RenameSelectedRole());
-            roleRow.Content.Add(_roleEditor);
-            detail.Add(roleRow);
+            _roleField = new FormField(string.Empty, _roleEditor);
+            _roleField.AddToClassList("ee4v-blend-shape-preset__role-row");
+            detail.Add(_roleField);
             detail.Add(CreateDetailHeader());
             _list = new ListView
             {
@@ -299,7 +297,7 @@ namespace Ee4v.FaceExpression
                     MappingMatchesSearch(mapping, search)));
             }
 
-            _detailTitle?.SetText(selected == null
+            _roleField?.SetLabel(selected == null
                 ? I18N.Get("presetWindow.noRoles")
                 : selected.SectionName + " / ");
             _roleEditor?.SetEnabled(selected != null);

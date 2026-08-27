@@ -35,6 +35,9 @@
       "inputsDescription": "UI elements that receive actions, selections, and values.",
       "displaysDescription": "UI elements that present text, status, images, and other information.",
       "containersDescription": "UI elements that arrange child elements or switch their presentation.",
+      "barsDescription": "Bars that arrange primary content and actions at the sides or center.",
+      "itemsDescription": "UI elements that compose one item in a list or hierarchy.",
+      "sectionsDescription": "UI elements that add headings or disclosure behavior to screen regions.",
       "collectionsDescription": "UI elements that manage multiple items as lists or hierarchies.",
       "domainDescription": "Feature screens and feature-specific UI elements.",
       "featureDescription": "Screens and feature-specific UI elements for {0}.",
@@ -50,11 +53,12 @@
       "inconclusive": "Inconclusive"
     },
     "listInput": {
-      "description": "An input that converts comma-, semicolon-, or newline-delimited text into a list.",
-      "details": "It trims entries, removes empty values, and normalizes the display to one item per line. The consumer owns conversion to its persistence format.",
+      "description": "A list input with independently editable, addable, and removable item rows.",
+      "details": "An add row matching the item dimensions appears as the last list entry and appends an empty item when selected. Each row's remove button deletes that item. Values are exposed per item without interpreting separators or converting a storage format.",
       "sampleTooltip": "Avatar names used for grouping.",
-      "itemPlaceholder": "Enter one avatar name per line",
-      "savedValue": "Example storage value: {0}"
+      "itemPlaceholder": "Enter an avatar name",
+      "addItem": "Add item",
+      "removeItem": "Remove item"
     }
   }
 }

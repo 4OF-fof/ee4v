@@ -2,19 +2,19 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
-    public enum ContentRowLayout
+    public enum ItemRowLayout
     {
         Inline,
         Stacked
     }
 
-    public sealed class ContentRowState
+    public sealed class ItemRowState
     {
-        public ContentRowState(
+        public ItemRowState(
             string title,
             string description = null,
             IconState icon = null,
-            ContentRowLayout layout = ContentRowLayout.Inline)
+            ItemRowLayout layout = ItemRowLayout.Inline)
         {
             Title = title ?? string.Empty;
             Description = description ?? string.Empty;
@@ -25,47 +25,47 @@ namespace Ee4v.UI
         public string Title { get; }
         public string Description { get; }
         public IconState Icon { get; }
-        public ContentRowLayout Layout { get; }
+        public ItemRowLayout Layout { get; }
     }
 
-    public class ContentRow : VisualElement
+    public class ItemRow : VisualElement
     {
-        public ContentRow(
-            ContentRowState state = null,
+        public ItemRow(
+            ItemRowState state = null,
             string titleTypographyClassName = null)
         {
-            AddToClassList("ee4v-ui-content-row");
+            AddToClassList("ee4v-ui-item-row");
             Leading = new VisualElement();
-            Leading.AddToClassList("ee4v-ui-content-row__leading");
+            Leading.AddToClassList("ee4v-ui-item-row__leading");
             IconElement = new Icon();
-            IconElement.AddToClassList("ee4v-ui-content-row__icon");
+            IconElement.AddToClassList("ee4v-ui-item-row__icon");
             var text = new VisualElement();
-            text.AddToClassList("ee4v-ui-content-row__text");
+            text.AddToClassList("ee4v-ui-item-row__text");
             TitleText = string.IsNullOrWhiteSpace(
                     titleTypographyClassName)
                 ? UiTextFactory.Create(
                     string.Empty,
-                    "ee4v-ui-content-row__title")
+                    "ee4v-ui-item-row__title")
                 : UiTextFactory.Create(
                     string.Empty,
                     titleTypographyClassName,
-                    "ee4v-ui-content-row__title");
+                    "ee4v-ui-item-row__title");
             TitleText.SetWhiteSpace(WhiteSpace.NoWrap);
             DescriptionText = UiTextFactory.Create(
                 string.Empty,
                 UiClassNames.SecondaryText,
-                "ee4v-ui-content-row__description");
+                "ee4v-ui-item-row__description");
             DescriptionText.SetWhiteSpace(WhiteSpace.NoWrap);
             text.Add(TitleText);
             text.Add(DescriptionText);
             Trailing = new VisualElement();
-            Trailing.AddToClassList("ee4v-ui-content-row__trailing");
+            Trailing.AddToClassList("ee4v-ui-item-row__trailing");
 
             Add(Leading);
             Add(IconElement);
             Add(text);
             Add(Trailing);
-            SetState(state ?? new ContentRowState(string.Empty));
+            SetState(state ?? new ItemRowState(string.Empty));
         }
 
         public VisualElement Leading { get; }
@@ -74,9 +74,9 @@ namespace Ee4v.UI
         public UiTextElement DescriptionText { get; }
         public VisualElement Trailing { get; }
 
-        public void SetState(ContentRowState state)
+        public void SetState(ItemRowState state)
         {
-            state = state ?? new ContentRowState(string.Empty);
+            state = state ?? new ItemRowState(string.Empty);
             var hasIcon = state.Icon != null;
             var hasDescription =
                 !string.IsNullOrWhiteSpace(state.Description);
@@ -94,8 +94,8 @@ namespace Ee4v.UI
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             EnableInClassList(
-                "ee4v-ui-content-row--stacked",
-                state.Layout == ContentRowLayout.Stacked);
+                "ee4v-ui-item-row--stacked",
+                state.Layout == ItemRowLayout.Stacked);
         }
     }
 }

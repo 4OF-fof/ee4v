@@ -80,16 +80,6 @@
 
 .ee4v-item-style__field-row {
     min-width: 0;
-    height: var(--ee4v-size-22);
-    flex-direction: row;
-    align-items: center;
-}
-
-.ee4v-item-style__field-label {
-    min-width: 0;
-    margin-right: var(--ee4v-space-md);
-    flex-grow: 1;
-    overflow: hidden;
 }
 
 .ee4v-item-style__color-field {

@@ -5,21 +5,21 @@ namespace Ee4v.UI
 {
     internal sealed partial class CatalogWindow
     {
-        private sealed class ContentRowCatalogRegistrar : ICatalogRegistrar
+        private sealed class ItemRowCatalogRegistrar : ICatalogRegistrar
         {
             public int Order => 16;
 
             public void Register(CatalogRegistry registry)
             {
                 registry.RegisterStory(new StoryRegistration(
-                    "content-row",
-                    "Containers",
-                    "ContentRow",
+                    "item-row",
+                    "Containers/Items",
+                    "ItemRow",
                     "先頭要素、アイコン、名称、補足、末尾操作からなる1件分の行です。",
                     "名称と補足を横または縦に配置し、行の先頭と末尾へ操作や状態を追加できます。",
                     new string[0],
                     ComponentImplementationKind.UiToolkit,
-                    (window, parent) => window.BuildContentRowStory(parent),
+                    (window, parent) => window.BuildItemRowStory(parent),
                     new[]
                     {
                         "Editor/AssetManager/UI/SearchableFileTree.cs",
@@ -34,11 +34,11 @@ namespace Ee4v.UI
             }
         }
 
-        private void BuildContentRowStory(VisualElement parent)
+        private void BuildItemRowStory(VisualElement parent)
         {
             var title = "Hierarchy";
             var description = "UnityEditor.SceneHierarchyWindow";
-            var layout = ContentRowLayout.Stacked;
+            var layout = ItemRowLayout.Stacked;
             Action refresh = null;
             var controls = CreatePlainControlsSection(
                 parent,
@@ -72,7 +72,7 @@ namespace Ee4v.UI
                 });
 
             var preview = CreatePreviewSection(parent);
-            var row = new ContentRow();
+            var row = new ItemRow();
             row.Leading.Add(UiTextFactory.CreateToggle());
             var result = UiTextFactory.Create(
                 "末尾操作を選択してください。",
@@ -88,7 +88,7 @@ namespace Ee4v.UI
                 titleField.SetValueWithoutNotify(title);
                 descriptionField.SetValueWithoutNotify(description);
                 layoutField.SetValueWithoutNotify((Enum)(object)layout);
-                row.SetState(new ContentRowState(
+                row.SetState(new ItemRowState(
                     title,
                     description,
                     IconState.FromBuiltinIcon(

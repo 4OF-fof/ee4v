@@ -423,7 +423,7 @@ namespace Ee4v.AssetManager.UI
 
         private static VisualElement CreateTreeItem()
         {
-            var row = new ContentRow();
+            var row = new ItemRow();
             row.AddToClassList(RowClassName);
             var targetToggle = UiTextFactory.CreateToggle(
                 string.Empty,
@@ -467,9 +467,9 @@ namespace Ee4v.AssetManager.UI
                     : DisplayStyle.None;
                 targetToggle.SetValueWithoutNotify(node?.IsTarget == true);
             }
-            if (element is ContentRow row)
+            if (element is ItemRow row)
             {
-                row.SetState(new ContentRowState(
+                row.SetState(new ItemRowState(
                     node?.Title ?? string.Empty,
                     node?.Meta ?? string.Empty,
                     IconState.FromTexture(

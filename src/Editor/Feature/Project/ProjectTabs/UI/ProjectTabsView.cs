@@ -360,7 +360,7 @@ namespace Ee4v.ProjectTabs
                 PinnedTabClassName,
                 state.IsPinned);
 
-            var content = new ContentRow(new ContentRowState(
+            var content = new ItemRow(new ItemRowState(
                 state.Title,
                 icon: state.IsPinned
                     ? FluentUiIcons.CreateState(

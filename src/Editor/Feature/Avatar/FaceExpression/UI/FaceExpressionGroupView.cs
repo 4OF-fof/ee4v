@@ -219,7 +219,7 @@ namespace Ee4v.FaceExpression
             internal bool IsBodySection { get; }
         }
 
-        private sealed class GroupRow : ContentRow
+        private sealed class GroupRow : ItemRow
         {
             private readonly Badge _count;
             private readonly Action<GroupOption> _showContextMenu;
@@ -241,7 +241,7 @@ namespace Ee4v.FaceExpression
             internal void SetOption(GroupOption option)
             {
                 _option = option;
-                base.SetState(new ContentRowState(
+                base.SetState(new ItemRowState(
                     option?.DisplayName ?? string.Empty));
                 EnableInClassList(
                     "ee4v-face-expression-group-row--section",

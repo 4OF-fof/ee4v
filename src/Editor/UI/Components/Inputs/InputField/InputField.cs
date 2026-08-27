@@ -53,6 +53,7 @@ namespace Ee4v.UI
             _placeholderLabel.pickingMode = PickingMode.Ignore;
 
             _textField = UiTextFactory.CreateTextField();
+            _textField.RemoveFromClassList(UiClassNames.StandardInput);
             _textField.AddToClassList(FieldClassName);
             _textField.RegisterValueChangedCallback(evt =>
             {

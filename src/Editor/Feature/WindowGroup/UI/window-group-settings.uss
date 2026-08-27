@@ -97,14 +97,6 @@
 .ee4v-window-group-settings__name-row {
     min-width: 0;
     min-height: 34px;
-    flex-direction: row;
-    align-items: center;
-}
-
-.ee4v-window-group-settings__name-label {
-    width: 112px;
-    min-width: 80px;
-    flex-shrink: 1;
 }
 
 .ee4v-window-group-settings__name-field {

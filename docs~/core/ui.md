@@ -16,10 +16,11 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 ### Inputs
 
 - `UiButton`は文字、アイコン、強調度を統一した通常の操作ボタンです。Toolbarなど用途固有の小型寸法は利用側USSで指定します。
-- `InputField`は1行、複数行、読み取り専用に対応する文字入力です。
+- `InputField`は1行、複数行、読み取り専用に対応する文字入力です。通常背景へ下線を置く共通の入力スタイルを使用します。
 - `SearchField`は検索入力、消去、任意の先頭操作をまとめます。先頭操作が有効な場合だけhover反応を表示します。
-- `CommaSeparatedListField`はカンマ、セミコロン、改行で入力された文字列を一覧値として扱います。
-- `NavigationItem`は`ContentRow`へクリックと選択状態を加えた操作項目です。
+- `StringListField`は文字列を1項目1行で編集する一覧入力です。通常項目と同じ寸法の追加行をリスト末尾に置き、各行の削除ボタンで項目を除去します。区切り文字の解釈や保存形式への変換は行いません。
+- `FormField`はfieldset風の外枠へラベルを重ね、必須の単一入力コンポーネントと任意のボタンを枠内にまとめるフォーム項目です。入力自体はFormField外と同じ共通スタイルを使います。`StringListField`は各入力行と追加・削除操作を外枠内へ配置します。StoryではControlsの入力種別から4種類を切り替えて確認できます。複数の入力要素が必要な場合は一つの入力コンポーネントとして渡し、値の保持と検証は入力コンポーネントが担当します。
+- `NavigationItem`は`ItemRow`へクリックと選択状態を加えた操作項目です。
 - `TagPill`は任意の選択操作と削除操作を持つタグ入力です。
 
 ### Displays
@@ -33,12 +34,11 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 
 ### Containers
 
-- `ActionBar`はToolbarやFooterの左、中央、右を配置する枠です。
-- `LabeledContentRow`はラベル、入力内容、補助操作を並べるフォームの1行です。
-- `SectionHeader`はセクション名、説明、右側操作を置く見出しです。
-- `ContentRow`はアイコン、名称、補足、末尾操作を持つ汎用的な一覧行です。一覧自体は含みません。
+- `Bars/ActionBar`はToolbarやFooterの左、中央、右を配置する枠です。
+- `Items/ItemRow`はアイコン、名称、補足、末尾操作を持つ一覧の1項目です。一覧自体は含みません。
+- `Sections/SectionHeader`はセクション名、説明、右側操作を置く見出しです。
+- `Sections/DisclosureSection`は見出しを押して本文を開閉するセクションです。
 - `InfoCard`は見出しと本文を外枠付きでまとめる情報パネルです。
-- `DisclosureSection`は見出しを押して本文を開閉するセクションです。
 - `PreviewContainer`はPreview本体、未表示時のPlaceholder、重ねる操作を置く3層コンテナです。描画処理と一覧は含みません。
 - `CustomPopup`はHeader、本文、任意Footerを持つポップアップの外枠です。`CustomPopupWindow`が移動、リサイズ、focus離脱時のCloseを担当します。
 
@@ -51,7 +51,7 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 ### Catalog外の基盤
 
 - `UiComposition.Prepare`は共通USSと機能固有USSを一つの入口で登録します。
-- `UiTextFactory`は文字を描画するUI要素の生成と文字更新を統一します。
+- `UiTextFactory`は文字を描画するUI要素の生成と文字更新を統一します。Factoryが生成する通常入力には共通クラスを付与し、文字・数値入力は通常背景上の下線、`Toggle`は輪郭の明確なチェック操作、`ObjectField`は境界線付きの選択欄と分離した参照ボタンをFormField内外で共有します。複合入力内の埋め込みフィールドは共通クラスを外し、親コンポーネントが外観を担当します。
 - `UiDragAndDrop`は型付きpayloadによるドラッグ開始とMove操作の受け入れを共通化します。
 - `PreviewOrbitController`は3D Previewの回転、移動、拡縮とCamera配置を共通化します。Bounds計算と描画内容は利用側が扱います。
 

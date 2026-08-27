@@ -88,6 +88,7 @@ namespace Ee4v.UI
             _inputHost.AddToClassList(InputHostClassName);
 
             _input = UiTextFactory.CreateTextField();
+            _input.RemoveFromClassList(UiClassNames.StandardInput);
             _input.AddToClassList(InputClassName);
             _input.RegisterValueChangedCallback(evt =>
             {

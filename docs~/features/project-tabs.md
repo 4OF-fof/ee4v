@@ -12,7 +12,7 @@ ProjectTabsは2列表示のProject ウィンドウだけで有効にします。
 
 タブ追加はFluent UI System Iconsの12pxアイコンを使用します。ツールバーから追加した新規タブは、現在の階層を引き継がず `Assets` を初期位置として開きます。
 
-実際のtoolbarは`ee4v/Debug/Catalog`の`Domain/ProjectTabs/Components/Project Tabs` Storyで、通常タブ、固定タブ、選択状態、移動履歴を含むサンプル状態として確認できます。各タブ内のアイコンと名前はCoreの`ContentRow`を組み合わせます。閉じる操作はタブ右上へ重ね、タブ一覧とDrag操作はDomain側に残します。
+実際のtoolbarは`ee4v/Debug/Catalog`の`Domain/ProjectTabs/Components/Project Tabs` Storyで、通常タブ、固定タブ、選択状態、移動履歴を含むサンプル状態として確認できます。各タブ内のアイコンと名前はCoreの`ItemRow`を組み合わせます。閉じる操作はタブ右上へ重ね、タブ一覧とDrag操作はDomain側に残します。
 
 ## 公開型
 
