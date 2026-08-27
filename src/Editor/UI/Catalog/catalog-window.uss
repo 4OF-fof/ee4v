@@ -86,7 +86,7 @@
     margin-bottom: var(--ee4v-space-md);
 }
 
-.ee4v-ui-catalog-preview-surface {
+.ee4v-ui-catalog-preview-area {
     min-height: 220px;
     padding-left: var(--ee4v-space-xl);
     padding-right: var(--ee4v-space-xl);
@@ -107,7 +107,7 @@
     border-bottom-right-radius: var(--ee4v-radius-2xl);
 }
 
-.ee4v-ui-catalog-preview-surface--compact {
+.ee4v-ui-catalog-preview-area--compact {
     min-height: 0;
 }
 

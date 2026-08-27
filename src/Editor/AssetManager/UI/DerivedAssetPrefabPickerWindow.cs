@@ -124,7 +124,7 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class DerivedAssetPrefabPreview : PreviewSurface
+    internal sealed class DerivedAssetPrefabPreview : PreviewContainer
     {
         private const int MaximumRefreshAttempts = 50;
         private const long RefreshIntervalMilliseconds = 100;
@@ -139,7 +139,7 @@ namespace Ee4v.AssetManager.UI
             AddToClassList(
                 "ee4v-asset-manager__prefab-preview");
             AddToClassList(
-                "ee4v-asset-manager__prefab-preview-surface");
+                "ee4v-asset-manager__prefab-preview-container");
             pickingMode = PickingMode.Ignore;
 
             _image = new Image
@@ -244,7 +244,7 @@ namespace Ee4v.AssetManager.UI
         private const float MinimumPreviewSize = 320f;
         private const float MaximumPreviewSize = 560f;
 
-        private readonly PreviewSurface _surface;
+        private readonly PreviewContainer _surface;
         private readonly IMGUIContainer _preview;
         private readonly Icon _placeholder;
         private readonly UiButton _backgroundToggle;
@@ -262,9 +262,9 @@ namespace Ee4v.AssetManager.UI
             AddToClassList(
                 "ee4v-asset-manager__prefab-scene-preview");
 
-            _surface = new PreviewSurface();
+            _surface = new PreviewContainer();
             _surface.AddToClassList(
-                "ee4v-asset-manager__prefab-scene-preview-surface");
+                "ee4v-asset-manager__prefab-scene-preview-container");
             _surface.Overlay.AddToClassList(
                 "ee4v-asset-manager__prefab-scene-preview-overlay");
             _placeholder = new Icon(

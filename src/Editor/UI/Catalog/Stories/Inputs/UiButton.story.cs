@@ -26,9 +26,17 @@ namespace Ee4v.UI
                     (window, parent) => window.BuildUiButtonStory(parent),
                     new[]
                     {
-                        "Editor/Feature/Hierarchy/SceneSwitcher/UI/SceneSwitcherView.cs",
                         "Editor/AssetManager/UI/AssetManagerControls.cs",
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.cs",
+                        "Editor/AssetManager/UI/AssetTagField.cs",
+                        "Editor/AssetManager/UI/DerivedAssetPrefabPickerWindow.cs",
+                        "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
+                        "Editor/Feature/Hierarchy/SceneSwitcher/UI/SceneSwitcherView.cs",
+                        "Editor/Feature/Project/ProjectTabs/UI/ProjectTabsView.cs",
+                        "Editor/Feature/Shared/ItemStyle/ItemStyleEditor.cs",
+                        "Editor/UI/Components/Content/DisclosureSection/DisclosureSection.cs",
+                        "Editor/UI/Components/Content/TagPill/TagPill.cs",
+                        "Editor/UI/Components/Overlays/CustomPopup/CustomPopup.cs"
                     }));
             }
         }
@@ -93,7 +101,7 @@ namespace Ee4v.UI
                 });
 
             var preview = CreatePreviewSection(parent);
-            var buttonHost = CreatePreviewSurface(true);
+            var buttonHost = CreatePreviewArea(true);
             var result = UiTextFactory.Create(
                 "ボタンはまだ押されていません。",
                 UiClassNames.SecondaryText);

@@ -59,7 +59,7 @@ namespace Ee4v.UI
             controls.Content.Add(maxHeightField);
 
             var preview = CreatePreviewSection(parent);
-            var surface = CreatePreviewSurface();
+            var surface = CreatePreviewArea();
             surface.style.width = 360f;
 
             var singleLineInput = new InputField(new InputFieldState(string.Empty, false, maxHeight, placeholder));

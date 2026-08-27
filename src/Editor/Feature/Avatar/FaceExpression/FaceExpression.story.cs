@@ -102,7 +102,7 @@ namespace Ee4v.FaceExpression
                     BuildAssignmentCell,
                     dependencies: new[]
                     {
-                        "PreviewSurface",
+                        "PreviewContainer",
                         "EmptyState",
                         "UiTextFactory"
                     },

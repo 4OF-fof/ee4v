@@ -12,7 +12,7 @@ namespace Ee4v.FaceExpression
     {
         private readonly ObjectField _clipField;
         private readonly EmptyState _empty;
-        private readonly PreviewSurface _previewArea;
+        private readonly PreviewContainer _previewArea;
         private readonly IMGUIContainer _preview;
         private readonly string _unassignedText;
 
@@ -27,7 +27,7 @@ namespace Ee4v.FaceExpression
             AddToClassList("ee4v-gesture-assignment__cell");
             RegisterCallback<MouseDownEvent>(_ => selected?.Invoke());
 
-            _previewArea = new PreviewSurface();
+            _previewArea = new PreviewContainer();
             _previewArea.AddToClassList(
                 "ee4v-gesture-assignment__cell-preview-area");
             _preview = new IMGUIContainer(() =>

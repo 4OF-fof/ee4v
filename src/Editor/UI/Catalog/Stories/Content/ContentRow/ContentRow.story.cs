@@ -13,7 +13,7 @@ namespace Ee4v.UI
             {
                 registry.RegisterStory(new StoryRegistration(
                     "content-row",
-                    "Content",
+                    "Layout",
                     "ContentRow",
                     "先頭要素、アイコン、名称、補足、末尾操作からなる1件分の行です。",
                     "名称と補足を横または縦に配置し、行の先頭と末尾へ操作や状態を追加できます。",
@@ -23,9 +23,13 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/AssetManager/UI/SearchableFileTree.cs",
-                        "Editor/Feature/Hierarchy/HierarchyStyle/HiddenObjects/UI/HiddenObjectTreeView.cs",
+                        "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionGroupView.cs",
+                        "Editor/Feature/Avatar/PhysBoneCollider/UI/PhysBoneColliderWindow.cs",
+                        "Editor/Feature/Hierarchy/HierarchyStyle/HiddenObjects/UI/Components/HiddenObjectTreeRow.cs",
                         "Editor/Feature/Hierarchy/SceneSwitcher/UI/SceneSwitcherView.cs",
-                        "Editor/Feature/WindowGroup/UI/WindowGroupSettingsView.cs"
+                        "Editor/Feature/Project/ProjectTabs/UI/ProjectTabsView.cs",
+                        "Editor/Feature/WindowGroup/UI/WindowGroupSettingsView.cs",
+                        "Editor/UI/Components/Content/NavigationItem/NavigationItem.cs"
                     }));
             }
         }

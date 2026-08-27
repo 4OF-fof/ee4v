@@ -2,40 +2,66 @@
 
 `Ee4v.UI.Editor`は機能横断のUI Toolkitコンポーネントと共通トークンを提供します。
 
-## 入力コンポーネント
+## 共通部品の役割
 
-- `UiButton`は文字、`IconState`、標準状態表現をまとめます。機能固有の色や選択状態は利用側のクラスで追加します。
-- `UiComposition.Prepare`を適用したroot配下では、Buttonがフォーカスを得た際の青い枠を表示しません。入力欄の編集フォーカスと、カードなどの選択状態は各コンポーネントの状態表現を維持します。
-- `UiComposition.Prepare(root, styleSheetPaths)`は共通USS、共有コンポーネントのUSS、機能固有USSを一つの入口で登録します。`styleSheetPaths`には機能固有USSだけを指定し、EditorWindowや埋め込みViewはroot classとStyleSheetを個別に組み立てません。
-- `InputField`は1行入力と複数行入力に対応し、読み取り専用、プレースホルダー、欄内スクロールを共通化します。
-- `UiComposition.Prepare`を適用したroot配下では、縦横のスクロールバーを共通の8px幅、4px thumbで表示します。縦のthumbはtrackの右端へ揃えます。個別画面は細幅classや固有USSを追加しません。`UiClassNames.ThinVerticalScrollbar`は共通root外へ縦スクロールバーだけを適用する場合に使用します。
-- `SearchField`は検索、消去、プレースホルダーを提供します。`SearchFieldState.SearchActionEnabled`を有効にすると、先頭アイコンから`SearchActionRequested`を通知します。ポップアップなどの配置には`SearchActionAnchor`を使用できます。
-- `SearchableTreeView`は検索とTreeViewを共通化します。データ更新時は展開中の項目IDを復元します。行の再構築後もホイール入力時にTreeViewへフォーカスを戻し、Unity標準のScrollView設定でスクロールバーだけを非表示にします。
-- `Icon`はFluent UI System Icons、Unity組み込みアイコン、任意Textureの表示を共通化します。汎用操作・状態は`FluentUiIcons`、Unityの実体やEditor概念は`UiBuiltinIconResolver`から取得します。`IconState.FromTexture`では必要に応じてtint色を指定できます。
+### Reference
 
-## 配置コンポーネント
+- `Color Palette`はUIとIMGUIで共有する役割別カラートークンの参照です。独自の表示部品ではありません。
+- `Default Scrollbars`は`UiComposition.Prepare`配下へ適用される既定のスクロールバー表示です。独自の`ScrollView`型は提供しません。
 
-- `ActionBar`は、伸縮する左側領域、任意の中央領域、右側の操作領域を構成します。画面固有のToolbarやFooterはこれを継承または内包します。
-- `LabeledContentRow`は、ラベル、入力内容、補助操作からなるフォームの1行を構成します。
+### Inputs
 
-Catalogの`Layout`には、子要素を所定の領域へ配置することを主な責務とするコンポーネントを登録します。内容の状態表現も担うコンポーネントは`Content`に残します。
+- `UiButton`は文字、アイコン、強調度を統一した通常の操作ボタンです。
+- `InputField`は1行、複数行、読み取り専用に対応する文字入力です。
+- `SearchField`は検索入力、消去、任意の先頭操作をまとめます。
+- `CommaSeparatedListField`はカンマ、セミコロン、改行で入力された文字列を一覧値として扱います。
 
-## 表示コンポーネント
+### Layout
 
-- `EmptyState`は、対象がない領域に表示するアイコン、見出し、説明、任意操作を構成します。
-- `SectionHeader`は、セクションの見出し、説明、右側の操作領域を構成します。
-- `ContentRow`は、先頭要素、アイコン、名称、補足、末尾操作からなる1件分の行を構成します。一覧やGrid自体は含みません。
-- `InlineMessage`は、処理結果や入力エラーを`UiStatusTone`と任意アイコンで表示します。
-- `PreviewSurface`は、Preview本体、未表示時のPlaceholder、重ねる操作を構成します。Previewを並べるGridは含みません。
-- `PreviewOrbitController`は3D Previewの右ドラッグ回転、中ドラッグ移動、ホイール拡縮とCamera配置を共通化します。Boundsの計算と描画内容は利用側が扱います。
-- `CustomPopupWindow`は旧`BaseWindow`のpopup実装を引き継ぎます。1pxの外枠、24pxのHeader、Headerのドラッグ移動、左右と下端のリサイズ、focus離脱時のCloseを共通化します。ColorPicker、ObjectSelector、EyeDropperの使用中はWindowを維持します。`ConfigureCloseAndSubmitKeys`でEscapeによるCloseと任意のEnter確定を設定します。
-- `UiDragAndDrop`は、一定距離の左ドラッグ開始と型付きpayloadのMove操作受け入れを共通化します。payloadの生成、drop可否、表示フィードバック、適用処理は利用側が渡します。
-- `NavigationItem`は、`ContentRow`を内包した選択可能な1件分のNavigationです。Navigation一覧や階層は含みません。
-- `DisclosureSection`は、見出し操作と開閉可能な本文を構成します。
-- `Badge`は、件数や短い分類値を中立色で表示します。状態と色の組み合わせは持たず、処理状態には`StatusBadge`を使用します。
-- `TagPill`は短いタグ名をpill形で表示し、任意の先頭アイコン、pill全体の選択操作、右端の削除操作を構成します。選択操作はクリックとキーボードに対応し、削除ボタンはホバーと押下を背景色で示します。
+- `ActionBar`はToolbarやFooterの左、中央、右を配置する枠です。
+- `LabeledContentRow`はラベル、入力内容、補助操作を並べるフォームの1行です。
+- `SectionHeader`はセクション名、説明、右側操作を置く見出しです。
+- `ContentRow`はアイコン、名称、補足、末尾操作を持つ汎用的な一覧行です。一覧自体は含みません。
+- `InfoCard`は見出しと本文を外枠付きでまとめる情報パネルです。
 
-これらはAssetManager、Face Expression、Hierarchy Style、Scene Switcher、Item Style、Window Groupで重複していた小さな表示パターンをCoreへ昇格したものです。Domain固有の文言、操作、一覧構造、配置は利用側に残します。各状態は`ee4v/Debug/Catalog`の`Layout/*`または`Content/*` Storyで確認できます。
+### Navigation
+
+- `NavigationItem`は`ContentRow`へクリックと選択状態を加えた移動項目です。
+- `DisclosureSection`は見出しを押して本文を開閉するセクションです。
+
+### Collections
+
+- `SearchableTreeView`は検索欄と階層一覧をまとめ、絞り込みと展開状態の維持を行います。各行の表示は利用側が構成します。
+
+### Labels
+
+- `Badge`は件数や短い分類値を中立表示し、任意の`UiStatusTone`で処理状態も表示します。
+- `TagPill`は任意の選択操作と削除操作を持つタグ表示です。
+
+### Feedback
+
+- `InlineMessage`は処理結果や入力エラーを行内で示すメッセージです。
+- `EmptyState`は対象がない領域全体へ理由と次の操作を示します。
+- `StatusOverlay`はバックグラウンド処理の進捗をウィンドウ右下へ重ねて表示します。
+
+### Media
+
+- `Icon`はFluent UI System Icons、Unity組み込みアイコン、任意Textureの表示を共通化します。
+- `CachedImage`はデコード済みTextureを複数の画像表示で共有します。
+- `PreviewContainer`はPreview本体、未表示時のPlaceholder、重ねる操作を置く3層コンテナです。描画処理と一覧は含みません。
+
+### Overlays
+
+- `CustomPopup`はHeader、本文、任意Footerを持つポップアップの外枠です。`CustomPopupWindow`が移動、リサイズ、focus離脱時のCloseを担当します。
+
+### Catalog外の基盤
+
+- `UiComposition.Prepare`は共通USSと機能固有USSを一つの入口で登録します。
+- `UiTextFactory`は文字を描画するUI要素の生成と文字更新を統一します。
+- `UiDragAndDrop`は型付きpayloadによるドラッグ開始とMove操作の受け入れを共通化します。
+- `PreviewOrbitController`は3D Previewの回転、移動、拡縮とCamera配置を共通化します。Bounds計算と描画内容は利用側が扱います。
+
+これらは機能間で重複していた小さな表示パターンをCoreへ昇格したものです。Domain固有の文言、操作、一覧構造は利用側に残します。
 
 ## `CustomPopup`
 
@@ -61,15 +87,21 @@ AssetManagerのタグ選択画面、Target選択画面、コレクション作�
 
 独立したEditorWindowまたは機能固有のVisualElementは、実使用するViewを`IUiStoryProvider`から組み立てます。Story専用の複製UIは作らず、保存や外部Sourceの変更は行いません。画面全体、一覧、Gridは`Domain/<feature>`に配置し、画面へ組み込む再利用可能な部品だけを`Domain/<feature>/Components`に配置します。
 
-CoreコンポーネントのStoryは、Foundationの参照一覧を除いて`Controls`と`Preview`を持ちます。`Controls`では公開状態を変更でき、Preview内の操作は結果表示または状態変更へ接続します。表示だけの無反応な操作は置きません。
+CoreコンポーネントのStoryは、`Reference`を除いて`Controls`と`Preview`を持ちます。`Controls`では公開状態を変更でき、Preview内の操作は結果表示または状態変更へ接続します。表示だけの無反応な操作は置きません。
 
 Catalog上の分類とコード上の分割は別に扱います。コードではWindowホストと表示クラスを分離し、`BlendShapePresetView`、`WindowGroupSettingsView`、`ItemStyleEditor`を各Windowと別ファイルで管理します。
 
 | UI | Story |
 |---|---|
-| 既定の縦横スクロールバー | `Collections/Default Scrollbars` |
-| Action Bar、Labeled Content Row | `Layout/*` |
-| Empty State、Section Header、Content Row、Inline Message、Preview Surface、Navigation Item、Disclosure Section、Badge、Tag Pill | `Content/*` |
+| 色と既定の縦横スクロールバー | `Reference/*` |
+| ボタンと入力欄 | `Inputs/*` |
+| Action Bar、フォーム行、見出し、一覧行、情報パネル | `Layout/*` |
+| 移動項目と開閉セクション | `Navigation/*` |
+| 検索可能な階層一覧 | `Collections/*` |
+| BadgeとTag Pill | `Labels/*` |
+| 行内メッセージ、空表示、進捗表示 | `Feedback/*` |
+| Icon、CachedImage、PreviewContainer | `Media/*` |
+| ポップアップ外枠 | `Overlays/*` |
 | Core Settings | `Domain/Core/Settings UI` |
 | AssetManagerの画面、Grid、Tree、Popup | `Domain/AssetManager/*` |
 | AssetManagerのBreadcrumb、Tag Field、Controls、Grid Card、Filter Editor、Detail parts | `Domain/AssetManager/Components/*` |

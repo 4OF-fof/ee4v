@@ -13,12 +13,15 @@ namespace Ee4v.UI
         private const string RootClassName = "ee4v-ui";
         private static readonly Dictionary<string, int> RootGroupOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
-            { "Foundation", 0 },
-            { "Layout", 1 },
-            { "Content", 2 },
-            { "Inputs", 3 },
+            { "Reference", 0 },
+            { "Inputs", 1 },
+            { "Layout", 2 },
+            { "Navigation", 3 },
             { "Collections", 4 },
-            { "Overlays", 5 }
+            { "Labels", 5 },
+            { "Feedback", 6 },
+            { "Media", 7 },
+            { "Overlays", 8 }
         };
         internal enum ComponentImplementationKind
         {

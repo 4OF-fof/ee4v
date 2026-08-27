@@ -33,21 +33,24 @@ namespace Ee4v.UI
             return card;
         }
 
-        internal VisualElement CreatePreviewSurface(bool compact = false)
+        internal VisualElement CreatePreviewArea(bool compact = false)
         {
             var surface = new VisualElement();
-            surface.AddToClassList("ee4v-ui-catalog-preview-surface");
+            surface.AddToClassList("ee4v-ui-catalog-preview-area");
             if (compact)
             {
-                surface.AddToClassList("ee4v-ui-catalog-preview-surface--compact");
+                surface.AddToClassList(
+                    "ee4v-ui-catalog-preview-area--compact");
             }
 
             return surface;
         }
 
-        internal VisualElement CreatePreviewSurface(VisualElement content, bool compact = false)
+        internal VisualElement CreatePreviewArea(
+            VisualElement content,
+            bool compact = false)
         {
-            var surface = CreatePreviewSurface(compact);
+            var surface = CreatePreviewArea(compact);
             surface.Add(content);
             return surface;
         }

@@ -83,7 +83,7 @@ namespace Ee4v.UI
                 { UiClassNames.InfoCardEyebrow, Create(true, UiTypographyTokens.SmallFontSize, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
                 { UiClassNames.InfoCardTitle, Create(true, UiTypographyTokens.SubtitleFontSize, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal, fontStyle: FontStyle.Bold) },
                 { UiClassNames.InfoCardDescription, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextSecondary, TextAnchor.UpperLeft, WhiteSpace.Normal) },
-                { UiClassNames.StatusBadge, Create(true, UiTypographyTokens.SmallFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
+                { UiClassNames.Badge, Create(true, UiTypographyTokens.SmallFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
                 { UiClassNames.InputPlaceholder, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextMuted, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.FormLabel, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextSecondary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.FormError, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.Error, TextAnchor.MiddleLeft, WhiteSpace.Normal) },

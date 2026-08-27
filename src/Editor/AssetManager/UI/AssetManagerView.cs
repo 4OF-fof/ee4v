@@ -3216,7 +3216,7 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private static StatusBadgeState CreateAssetStatusState(
+        private static BadgeState CreateAssetStatusState(
             bool isArchived)
         {
             if (!isArchived)
@@ -3224,7 +3224,7 @@ namespace Ee4v.AssetManager.UI
                 return null;
             }
 
-            return new StatusBadgeState(
+            return new BadgeState(
                 I18N.Get("detail.item.archived"),
                 UiStatusTone.Idle);
         }

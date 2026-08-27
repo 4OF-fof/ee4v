@@ -13,7 +13,7 @@ namespace Ee4v.UI
             {
                 registry.RegisterStory(new StoryRegistration(
                     "default-scrollbars",
-                    "Collections",
+                    "Reference",
                     "Default Scrollbars",
                     "Core UI の既定の細い縦横スクロールバーです。",
                     "UiComposition.Prepareを適用したrootでは、個別classなしで同じscrollbarを使用します。",
@@ -23,8 +23,19 @@ namespace Ee4v.UI
                         window.BuildScrollViewStory(parent),
                     new[]
                     {
+                        "Editor/AssetManager/UI/AssetCollectionCreationPopup.cs",
+                        "Editor/AssetManager/UI/AssetItemGridView.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.cs",
+                        "Editor/AssetManager/UI/AssetTagField.cs",
+                        "Editor/AssetManager/UI/DerivedAssetPrefabPickerWindow.cs",
                         "Editor/Core/Presentation/Settings/SettingsUiRenderer.cs",
-                        "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentView.cs"
+                        "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetView.cs",
+                        "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
+                        "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentView.cs",
+                        "Editor/Feature/Avatar/PhysBoneCollider/UI/PhysBoneColliderWindow.cs",
+                        "Editor/Feature/Project/ProjectTabs/UI/ProjectTabsView.cs",
+                        "Editor/Feature/WindowGroup/UI/WindowGroupSettingsView.cs",
+                        "Editor/UI/Catalog/CatalogWindow.cs"
                     }));
             }
         }

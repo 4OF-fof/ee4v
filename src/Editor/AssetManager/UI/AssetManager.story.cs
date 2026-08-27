@@ -26,7 +26,7 @@ namespace Ee4v.AssetManager.UI
                     {
                         "UiTextFactory",
                         "InfoCard",
-                        "StatusBadge",
+                        "Badge",
                         "AssetDetailComponents",
                         "Fluent UI System Icons"
                     },
@@ -186,7 +186,7 @@ namespace Ee4v.AssetManager.UI
                     BuildGridCard,
                     dependencies: new[]
                     {
-                        "PreviewSurface",
+                        "PreviewContainer",
                         "CachedImage",
                         "UiTextFactory"
                     },
@@ -228,7 +228,7 @@ namespace Ee4v.AssetManager.UI
                     BuildThumbnailStack,
                     dependencies: new[]
                     {
-                        "PreviewSurface",
+                        "PreviewContainer",
                         "CachedImage"
                     },
                     usageLocations: new[]
@@ -250,7 +250,7 @@ namespace Ee4v.AssetManager.UI
                     {
                         "SectionHeader",
                         "LabeledContentRow",
-                        "StatusBadge",
+                        "Badge",
                         "UiTextFactory"
                     },
                     usageLocations: new[]
@@ -328,7 +328,7 @@ namespace Ee4v.AssetManager.UI
                 "Summer Costume",
                 "Asset",
                 "Assets/Avatar/Summer Costume",
-                new StatusBadgeState("Imported", UiStatusTone.Passed));
+                new BadgeState("Imported", UiStatusTone.Passed));
             header.AddAction(AssetManagerControls.CreateButton(
                 "Open",
                 () => { }));

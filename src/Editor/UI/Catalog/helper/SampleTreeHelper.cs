@@ -54,8 +54,8 @@ namespace Ee4v.UI
                             "Icon image texture builtin"),
                         new SearchableTreeItemData<SampleTreeNode>(
                             4,
-                            new SampleTreeNode("StatusBadge", "Pill"),
-                            "StatusBadge pill status")
+                            new SampleTreeNode("Badge", "Label"),
+                            "Badge label status")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
                     5,

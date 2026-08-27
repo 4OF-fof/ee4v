@@ -32,7 +32,12 @@ namespace Ee4v.UI
                     {
                         "Editor/UI/Components/Collections/SearchableTreeView/SearchableTreeView.cs",
                         "Editor/AssetManager/UI/AssetManagerControls.cs",
-                        "Editor/AssetManager/UI/AssetTagField.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.cs",
+                        "Editor/AssetManager/UI/AssetTagField.cs",
+                        "Editor/AssetManager/UI/DerivedAssetPrefabPickerWindow.cs",
+                        "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
+                        "Editor/Feature/Hierarchy/HierarchyStyle/HiddenObjects/UI/HiddenObjectsToolbar.cs",
+                        "Editor/Feature/Hierarchy/SceneSwitcher/UI/SceneSwitcherView.cs"
                     }));
             }
         }
@@ -65,7 +70,7 @@ namespace Ee4v.UI
             controls.Content.Add(actionToggle);
 
             var preview = CreatePreviewSection(parent);
-            var surface = CreatePreviewSurface(true);
+            var surface = CreatePreviewArea(true);
             var searchField = new SearchField();
             var actionStatus = UiTextFactory.Create(
                 "先頭アイコンを押すとここへ表示します。",

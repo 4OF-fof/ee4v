@@ -17,7 +17,7 @@ namespace Ee4v.UI
                 registry.RegisterStyleSheet("Editor/UI/Components/Content/InfoCard/info-card.uss");
                 registry.RegisterStory(new StoryRegistration(
                     "info-card",
-                    "Content",
+                    "Layout",
                     "InfoCard",
                     "タイトル、説明、eyebrow、badge、body を組み合わせて情報面を構成する基本コンポーネントです。",
                     "シンプルな情報表示から、結果一覧の見出し付きカードまで幅広く使う土台です。header の各値が欠けても自然に見えるように余白を調整し、内蔵の badge と本文を組み合わせて情報密度を調整できます。",
@@ -29,6 +29,7 @@ namespace Ee4v.UI
                         "Editor/UI/Catalog/CatalogWindow.cs",
                         "Editor/UI/Catalog/helper/PreviewHelper.cs",
                         "Editor/UI/Catalog/helper/Controls.cs",
+                        "Editor/AssetManager/UI/AssetDetailComponents.cs",
                         "Editor/AssetManager/UI/AssetManagerView.cs"
                     }));
             }

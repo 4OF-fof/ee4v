@@ -12,7 +12,7 @@ namespace Ee4v.UI
             public void Register(CatalogRegistry registry)
             {
                 registry.RegisterStory(new StoryRegistration(
-                    "navigation-item", "Content", "NavigationItem",
+                    "navigation-item", "Navigation", "NavigationItem",
                     "アイコン、名称、補足、選択状態を持つ移動項目です。",
                     "選択状態を切り替え、先頭と末尾へ補助表示や操作を追加できます。",
                     new string[0], ComponentImplementationKind.UiToolkit,
@@ -21,6 +21,7 @@ namespace Ee4v.UI
                     {
                         "Editor/AssetManager/UI/AssetManagerControls.cs",
                         "Editor/AssetManager/UI/AssetManagerView.cs",
+                        "Editor/AssetManager/UI/DerivedAssetPrefabPickerWindow.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetView.cs",
                         "Editor/Feature/WindowGroup/UI/WindowGroupSettingsView.cs"
                     }));

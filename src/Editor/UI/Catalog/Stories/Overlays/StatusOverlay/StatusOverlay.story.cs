@@ -18,7 +18,7 @@ namespace Ee4v.UI
                 registry.RegisterStyleSheet("Editor/UI/Components/Overlays/StatusOverlay/status-overlay.uss");
                 registry.RegisterStory(new StoryRegistration(
                     "status-overlay",
-                    "Overlays",
+                    "Feedback",
                     "Status Overlay",
                     "background task の実行中、window右下にspinnerと状態を表示します。",
                     "IBackgroundTaskManagerが管理するライフサイクルと進捗メッセージを描画します。",

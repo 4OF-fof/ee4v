@@ -127,7 +127,7 @@ namespace Ee4v.AssetManager.UI
                 AngleUnit.Degree));
         }
 
-        private sealed class ThumbnailSlot : PreviewSurface, IDisposable
+        private sealed class ThumbnailSlot : PreviewContainer, IDisposable
         {
             private readonly CachedImage _image;
 

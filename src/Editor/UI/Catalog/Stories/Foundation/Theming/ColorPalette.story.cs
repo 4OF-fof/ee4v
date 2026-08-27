@@ -14,7 +14,7 @@ namespace Ee4v.UI
             {
                 new UiStory(
                     "color-palette",
-                    "Foundation",
+                    "Reference",
                     "Color Palette",
                     "UIとIMGUIが共有する役割別の色を一覧表示します。",
                     "色は用途名で参照し、部品側へ直接カラー値を書きません。",

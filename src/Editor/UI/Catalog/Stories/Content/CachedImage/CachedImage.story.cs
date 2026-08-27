@@ -16,7 +16,7 @@ namespace Ee4v.UI
             {
                 registry.RegisterStory(new StoryRegistration(
                     "cached-image",
-                    "Content",
+                    "Media",
                     "CachedImage",
                     "デコード済みTextureを共有する画像表示コンポーネントです。",
                     "同じcacheとkeyを使う複数要素が、1つのTextureを再利用する状態を確認します。",
@@ -53,7 +53,7 @@ namespace Ee4v.UI
             cache.SetSource("sample", CreateCachedImageSample());
 
             var preview = CreatePreviewSection(parent);
-            var surface = CreatePreviewSurface(true);
+            var surface = CreatePreviewArea(true);
             surface.style.flexDirection = FlexDirection.Row;
             var first = CreateCachedImagePreview(cache);
             var second = CreateCachedImagePreview(cache);

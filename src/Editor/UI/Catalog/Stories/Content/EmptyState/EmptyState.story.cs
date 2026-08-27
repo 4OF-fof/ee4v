@@ -13,7 +13,7 @@ namespace Ee4v.UI
             {
                 registry.RegisterStory(new StoryRegistration(
                     "empty-state",
-                    "Content",
+                    "Feedback",
                     "EmptyState",
                     "結果や対象がない状態を、アイコン・見出し・説明・操作で表すコンポーネントです。",
                     "空状態のアイコン、見出し、説明、次の操作を中央へまとめて表示します。",
@@ -23,6 +23,8 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/AssetManager/UI/AssetTagField.cs",
+                        "Editor/AssetManager/UI/DerivedAssetPrefabPickerWindow.cs",
+                        "Editor/Feature/Avatar/FaceExpression/UI/Components/GestureAssignmentCell.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
                         "Editor/Feature/Hierarchy/HierarchyStyle/HiddenObjects/UI/HiddenObjectTreeView.cs",
                         "Editor/Feature/Hierarchy/SceneSwitcher/UI/SceneSwitcherView.cs",

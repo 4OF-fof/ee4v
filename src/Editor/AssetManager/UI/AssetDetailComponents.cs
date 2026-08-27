@@ -10,7 +10,7 @@ namespace Ee4v.AssetManager.UI
             string title,
             string eyebrow,
             string subtitle = null,
-            StatusBadgeState status = null)
+            BadgeState status = null)
             : base(new InfoCardState(
                 title,
                 subtitle,

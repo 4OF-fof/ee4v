@@ -68,7 +68,7 @@ namespace Ee4v.UI
                 });
 
             var preview = CreatePreviewSection(parent);
-            var surface = CreatePreviewSurface();
+            var surface = CreatePreviewArea();
             surface.style.width = 520f;
 
             var field = new CommaSeparatedListField(

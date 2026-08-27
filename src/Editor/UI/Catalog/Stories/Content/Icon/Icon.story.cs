@@ -18,7 +18,7 @@ namespace Ee4v.UI
                 registry.RegisterStyleSheet("Editor/UI/Components/Content/Icon/icon.uss");
                 registry.RegisterStory(new StoryRegistration(
                     "icon",
-                    "Content",
+                    "Media",
                     "Icon",
                     "任意の texture または enum 管理された Unity 内蔵アイコンを表示するアイコンコンポーネントです。",
                     "Unity 内蔵アイコンは version 差分の影響を抑えるため enum で許可したものだけを解決します。初期状態では検索アイコンをサポートし、custom texture に切り替えれば任意 texture を表示できます。",
@@ -27,8 +27,27 @@ namespace Ee4v.UI
                     (window, parent) => window.BuildIconStory(parent),
                     new[]
                     {
+                        "Editor/AssetManager/UI/AssetManagerControls.cs",
+                        "Editor/AssetManager/UI/Components/AssetItemGridCard.cs",
+                        "Editor/AssetManager/UI/DerivedAssetPrefabPickerWindow.cs",
+                        "Editor/AssetManager/UI/SearchableFileTree.cs",
+                        "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
+                        "Editor/Feature/Hierarchy/HierarchyStyle/HiddenObjects/UI/Components/HiddenObjectTreeRow.cs",
+                        "Editor/Feature/Hierarchy/HierarchyStyle/HiddenObjects/UI/HiddenObjectsViewState.cs",
+                        "Editor/Feature/Hierarchy/HierarchyStyle/HiddenObjects/UI/HiddenObjectsWindow.cs",
+                        "Editor/Feature/Hierarchy/HierarchyStyle/HiddenObjects/UI/HiddenObjectTreeView.cs",
+                        "Editor/Feature/Hierarchy/SceneSwitcher/UI/SceneSwitcherView.cs",
+                        "Editor/Feature/Project/ProjectTabs/UI/ProjectTabsView.cs",
+                        "Editor/Feature/Shared/ItemStyle/ItemStyleEditor.cs",
+                        "Editor/UI/Components/Collections/SearchableTreeView/SearchableTreeView.cs",
+                        "Editor/UI/Components/Content/ContentRow/ContentRow.cs",
+                        "Editor/UI/Components/Content/DisclosureSection/DisclosureSection.cs",
+                        "Editor/UI/Components/Content/EmptyState/EmptyState.cs",
+                        "Editor/UI/Components/Content/NavigationItem/NavigationItem.cs",
+                        "Editor/UI/Components/Content/TagPill/TagPill.cs",
+                        "Editor/UI/Components/Feedback/InlineMessage/InlineMessage.cs",
                         "Editor/UI/Components/Inputs/SearchField/SearchField.cs",
-                        "Editor/AssetManager/UI/AssetManagerControls.cs"
+                        "Editor/UI/Components/Inputs/UiButton.cs"
                     }));
             }
         }
@@ -59,7 +78,7 @@ namespace Ee4v.UI
             });
 
             var preview = CreatePreviewSection(parent);
-            var surface = CreatePreviewSurface(true);
+            var surface = CreatePreviewArea(true);
             var icon = new Icon();
             surface.Add(icon);
             preview.Body.Add(surface);

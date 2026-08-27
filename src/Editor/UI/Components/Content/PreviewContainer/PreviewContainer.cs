@@ -2,18 +2,18 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
-    public class PreviewSurface : VisualElement
+    public class PreviewContainer : VisualElement
     {
-        public PreviewSurface()
+        public PreviewContainer()
         {
-            AddToClassList("ee4v-ui-preview-surface");
+            AddToClassList("ee4v-ui-preview-container");
             Content = new VisualElement();
-            Content.AddToClassList("ee4v-ui-preview-surface__content");
+            Content.AddToClassList("ee4v-ui-preview-container__content");
             Placeholder = new VisualElement();
             Placeholder.AddToClassList(
-                "ee4v-ui-preview-surface__placeholder");
+                "ee4v-ui-preview-container__placeholder");
             Overlay = new VisualElement();
-            Overlay.AddToClassList("ee4v-ui-preview-surface__overlay");
+            Overlay.AddToClassList("ee4v-ui-preview-container__overlay");
             Overlay.pickingMode = PickingMode.Ignore;
             hierarchy.Add(Content);
             hierarchy.Add(Placeholder);

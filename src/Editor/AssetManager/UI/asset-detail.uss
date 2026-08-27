@@ -263,7 +263,7 @@
     overflow: hidden;
 }
 
-.ee4v-asset-manager__prefab-scene-preview-surface,
+.ee4v-asset-manager__prefab-scene-preview-container,
 .ee4v-asset-manager__prefab-scene-preview-render {
     flex-grow: 1;
     width: 100%;
@@ -307,7 +307,7 @@
     background-color: var(--ee4v-color-transparent);
 }
 
-.ee4v-asset-manager__prefab-preview-surface,
+.ee4v-asset-manager__prefab-preview-container,
 .ee4v-asset-manager__prefab-preview-image {
     flex-grow: 1;
     width: 100%;

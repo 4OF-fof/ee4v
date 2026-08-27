@@ -13,7 +13,7 @@ namespace Ee4v.UI
             {
                 registry.RegisterStory(new StoryRegistration(
                     "inline-message",
-                    "Content",
+                    "Feedback",
                     "InlineMessage",
                     "処理結果や入力エラーを行内に表示するメッセージです。",
                     "メッセージ、状態色、任意のアイコンを一貫した行内表現で表示します。",
@@ -23,6 +23,7 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/AssetManager/UI/AssetManagerControls.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.cs",
                         "Editor/AssetManager/UI/SearchableFileTree.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetView.cs",
                         "Editor/Feature/WindowGroup/UI/WindowGroupSettingsView.cs"

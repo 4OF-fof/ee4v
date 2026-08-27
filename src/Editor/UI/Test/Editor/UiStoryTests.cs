@@ -22,7 +22,7 @@ namespace Ee4v.UI.Tests
 
             Assert.That(
                 stories
-                    .Where(story => story.Group != "Foundation")
+                    .Where(story => story.Group != "Reference")
                     .All(story => story.UsageLocations.Count > 0),
                 Is.True);
         }

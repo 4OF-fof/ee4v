@@ -16,7 +16,6 @@ namespace Ee4v.UI
             "Editor/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss",
             "Editor/UI/Components/Content/Icon/icon.uss",
             "Editor/UI/Components/Content/InfoCard/info-card.uss",
-            "Editor/UI/Components/Content/StatusBadge/status-badge.uss",
             "Editor/UI/Components/Content/TagPill/tag-pill.uss"
         };
 

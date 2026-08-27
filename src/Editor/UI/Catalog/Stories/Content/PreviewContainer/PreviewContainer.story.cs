@@ -4,28 +4,33 @@ namespace Ee4v.UI
 {
     internal sealed partial class CatalogWindow
     {
-        private sealed class PreviewSurfaceCatalogRegistrar : ICatalogRegistrar
+        private sealed class PreviewContainerCatalogRegistrar :
+            ICatalogRegistrar
         {
             public int Order => 18;
 
             public void Register(CatalogRegistry registry)
             {
                 registry.RegisterStory(new StoryRegistration(
-                    "preview-surface", "Content", "PreviewSurface",
-                    "内容、空表示、重ねる操作を持つプレビュー面です。",
-                    "Content、Placeholder、Overlayを重ね、内容の有無に応じて表示を切り替えます。",
+                    "preview-container", "Media", "PreviewContainer",
+                    "内容、空表示、重ねる操作を配置するプレビュー用コンテナです。",
+                    "描画は行わず、Content、Placeholder、Overlayの3層と表示切り替えだけを担当します。",
                     new string[0], ComponentImplementationKind.UiToolkit,
-                    (window, parent) => window.BuildPreviewSurfaceStory(parent),
+                    (window, parent) =>
+                        window.BuildPreviewContainerStory(parent),
                     new[]
                     {
                         "Editor/AssetManager/UI/Components/AssetItemGridCard.cs",
+                        "Editor/AssetManager/UI/Components/AssetThumbnailStack.cs",
+                        "Editor/AssetManager/UI/DerivedAssetPrefabPickerWindow.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/Components/GestureAssignmentCell.cs",
-                        "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs"
+                        "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
+                        "Editor/Feature/Avatar/PhysBoneCollider/UI/PhysBoneColliderWindow.cs"
                     }));
             }
         }
 
-        private void BuildPreviewSurfaceStory(VisualElement parent)
+        private void BuildPreviewContainerStory(VisualElement parent)
         {
             var hasContent = true;
             var controls = CreatePlainControlsSection(
@@ -34,7 +39,7 @@ namespace Ee4v.UI
             Toggle contentToggle = null;
 
             var preview = CreatePreviewSection(parent);
-            var surface = new PreviewSurface();
+            var surface = new PreviewContainer();
             surface.style.width = 240f;
             surface.style.height = 140f;
             surface.Placeholder.Add(new EmptyState(new EmptyStateState(

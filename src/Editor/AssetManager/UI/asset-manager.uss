@@ -1,6 +1,5 @@
 @import url("../../UI/Foundation/ui-design-tokens.uss");
 @import url("../../UI/Components/Content/Icon/icon.uss");
-@import url("../../UI/Components/Content/StatusBadge/status-badge.uss");
 @import url("../../UI/Components/Content/InfoCard/info-card.uss");
 @import url("../../UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss");
 @import url("../../UI/Components/Inputs/InputField/input-field.uss");

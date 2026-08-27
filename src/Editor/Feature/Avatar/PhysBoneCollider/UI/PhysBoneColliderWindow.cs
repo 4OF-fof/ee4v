@@ -121,7 +121,7 @@ namespace Ee4v.PhysBoneCollider
 
         private VisualElement BuildPreviewPane()
         {
-            var pane = new PreviewSurface();
+            var pane = new PreviewContainer();
             pane.AddToClassList("ee4v-physbone-collider__preview-pane");
             pane.SetHasContent(true);
             _previewElement = new IMGUIContainer(() =>

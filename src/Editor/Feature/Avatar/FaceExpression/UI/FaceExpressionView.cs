@@ -107,7 +107,7 @@ namespace Ee4v.FaceExpression
 
             var content = new VisualElement();
             content.AddToClassList("ee4v-face-expression__content");
-            var previewPane = new PreviewSurface();
+            var previewPane = new PreviewContainer();
             previewPane.AddToClassList("ee4v-face-expression__preview-pane");
             var preview = new IMGUIContainer(() =>
             {

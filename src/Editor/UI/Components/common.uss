@@ -24,23 +24,6 @@
     border-color: var(--ee4v-color-overlay-border);
 }
 
-.ee4v-ui-status {
-    padding-left: var(--ee4v-space-lg);
-    padding-right: var(--ee4v-space-lg);
-    padding-top: var(--ee4v-space-xs);
-    padding-bottom: var(--ee4v-space-xs);
-    min-height: var(--ee4v-size-20);
-    border-top-left-radius: var(--ee4v-radius-3xl);
-    border-top-right-radius: var(--ee4v-radius-3xl);
-    border-bottom-left-radius: var(--ee4v-radius-3xl);
-    border-bottom-right-radius: var(--ee4v-radius-3xl);
-    font-size: var(--ee4v-font-size-small);
-    background-color: var(--ee4v-color-status-idle);
-    white-space: nowrap;
-    -unity-text-align: middle-center;
-    align-self: flex-start;
-}
-
 .ee4v-ui-empty-state {
     flex-grow: 1;
     min-width: 0;
@@ -187,26 +170,26 @@
     color: var(--ee4v-color-status-running-text);
 }
 
-.ee4v-ui-preview-surface {
+.ee4v-ui-preview-container {
     position: relative;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
 }
 
-.ee4v-ui-preview-surface__content,
-.ee4v-ui-preview-surface__placeholder {
+.ee4v-ui-preview-container__content,
+.ee4v-ui-preview-container__placeholder {
     flex-grow: 1;
     min-width: 0;
     min-height: 0;
 }
 
-.ee4v-ui-preview-surface__placeholder {
+.ee4v-ui-preview-container__placeholder {
     align-items: center;
     justify-content: center;
 }
 
-.ee4v-ui-preview-surface__overlay {
+.ee4v-ui-preview-container__overlay {
     position: absolute;
     left: 0;
     right: 0;
@@ -278,6 +261,41 @@
     padding: 1px var(--ee4v-space-sm);
     border-radius: var(--ee4v-radius-pill);
     background-color: var(--ee4v-color-surface-soft);
+    white-space: nowrap;
+    -unity-text-align: middle-center;
+    align-self: flex-start;
+}
+
+.ee4v-ui-badge--status {
+    min-height: var(--ee4v-size-20);
+    padding-left: var(--ee4v-space-lg);
+    padding-right: var(--ee4v-space-lg);
+    padding-top: var(--ee4v-space-xs);
+    padding-bottom: var(--ee4v-space-xs);
+}
+
+.ee4v-ui-badge--idle {
+    background-color: var(--ee4v-color-status-idle);
+}
+
+.ee4v-ui-badge--running {
+    background-color: var(--ee4v-color-status-running);
+}
+
+.ee4v-ui-badge--passed {
+    background-color: var(--ee4v-color-status-passed);
+}
+
+.ee4v-ui-badge--failed {
+    background-color: var(--ee4v-color-status-failed);
+}
+
+.ee4v-ui-badge--skipped {
+    background-color: var(--ee4v-color-status-skipped);
+}
+
+.ee4v-ui-badge--inconclusive {
+    background-color: var(--ee4v-color-status-inconclusive);
 }
 
 .ee4v-ui .unity-scroll-view__vertical-scroller,

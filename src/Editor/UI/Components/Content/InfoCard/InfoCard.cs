@@ -11,11 +11,15 @@ namespace Ee4v.UI
                 eyebrow,
                 string.IsNullOrWhiteSpace(badgeText)
                     ? null
-                    : new StatusBadgeState(badgeText, UiStatusTone.Idle))
+                    : new BadgeState(badgeText))
         {
         }
 
-        public InfoCardState(string title, string description, string eyebrow, StatusBadgeState badgeState)
+        public InfoCardState(
+            string title,
+            string description,
+            string eyebrow,
+            BadgeState badgeState)
         {
             Title = title ?? string.Empty;
             Description = description ?? string.Empty;
@@ -29,7 +33,7 @@ namespace Ee4v.UI
 
         public string Eyebrow { get; }
 
-        public StatusBadgeState BadgeState { get; }
+        public BadgeState BadgeState { get; }
     }
 
     public class InfoCard : VisualElement
@@ -47,7 +51,7 @@ namespace Ee4v.UI
         private readonly UiTextElement _eyebrowLabel;
         private readonly UiTextElement _titleLabel;
         private readonly UiTextElement _descriptionLabel;
-        private readonly StatusBadge _badge;
+        private readonly Badge _badge;
         private InfoCardState _state;
 
         public InfoCard(InfoCardState state = null)
@@ -72,7 +76,7 @@ namespace Ee4v.UI
 
             HeaderRight = new VisualElement();
             HeaderRight.AddToClassList(HeaderRightClassName);
-            _badge = new StatusBadge();
+            _badge = new Badge();
             HeaderRight.Add(_badge);
 
             _header.Add(_headerText);
@@ -106,7 +110,7 @@ namespace Ee4v.UI
             get { return _descriptionLabel; }
         }
 
-        public StatusBadge Badge
+        public Badge Badge
         {
             get { return _badge; }
         }
@@ -131,7 +135,8 @@ namespace Ee4v.UI
             _descriptionLabel.SetText(_state.Description);
             _descriptionLabel.style.display = hasDescription ? DisplayStyle.Flex : DisplayStyle.None;
 
-            _badge.SetState(_state.BadgeState ?? new StatusBadgeState(string.Empty, UiStatusTone.Idle));
+            _badge.SetState(
+                _state.BadgeState ?? new BadgeState(string.Empty));
 
             var hasHeaderText = hasEyebrow || hasTitle || hasDescription;
             var hasHeaderRight = hasBadge || HasVisibleHeaderRightChild();

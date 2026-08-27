@@ -13,7 +13,7 @@ namespace Ee4v.UI
             {
                 registry.RegisterStory(new StoryRegistration(
                     "section-header",
-                    "Content",
+                    "Layout",
                     "SectionHeader",
                     "見出し、補足説明、右側の操作をまとめるコンポーネントです。",
                     "見出しと説明を左側に、セクションの操作を右側に配置します。",
@@ -23,9 +23,13 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/AssetManager/UI/AssetDetailComponents.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.cs",
                         "Editor/AssetManager/UI/SearchableFileTree.cs",
+                        "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionGroupView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
+                        "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentView.cs",
+                        "Editor/Feature/Avatar/PhysBoneCollider/UI/PhysBoneColliderWindow.cs",
                         "Editor/Feature/Shared/ItemStyle/ItemStyleEditor.cs",
                         "Editor/Feature/WindowGroup/UI/WindowGroupSettingsView.cs"
                     }));

@@ -8,7 +8,7 @@ namespace Ee4v.AssetManager.UI
 {
     internal sealed class AssetItemGridCard : VisualElement, IDisposable
     {
-        private readonly PreviewSurface _imageFrame;
+        private readonly PreviewContainer _imageFrame;
         private readonly CachedImage _image;
         private readonly VisualElement _placeholder;
         private readonly UiTextElement _name;
@@ -19,7 +19,7 @@ namespace Ee4v.AssetManager.UI
             AddToClassList("ee4v-asset-grid-card");
             focusable = true;
 
-            _imageFrame = new PreviewSurface();
+            _imageFrame = new PreviewContainer();
             _imageFrame.AddToClassList("ee4v-asset-grid-card__image-frame");
             _image = new CachedImage(imageCache)
             {
