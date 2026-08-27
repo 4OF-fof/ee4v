@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ee4v同梱BOOTH userscriptからEagleへdownloadを取り込む利用ガイド">
+  <title>BOOTH / Eagle | ee4v 利用ガイド</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へ移動</a>
+  <header class="site-header detail-header">
+    <div>
+      <ol class="breadcrumbs"><li><a href="index.html">ee4v</a></li><li><a href="asset-manager.html">Asset Manager</a></li><li>BOOTH / Eagle</li></ol>
+      <p class="eyebrow">External integration</p>
+      <h1>BOOTH / Eagle</h1>
+      <p class="lead">BOOTHの商品情報とdownloadをEagle連携bridgeへ渡し、取り込み状態をBOOTHの各画面で確認します。</p>
+    </div>
+    <dl class="header-facts" aria-label="機能概要"><div><dt>対象画面</dt><dd>library / gifts / 商品</dd></div><div><dt>操作</dt><dd>単品 / 一括</dd></div><div><dt>Script</dt><dd>B2E.user.js</dd></div></dl>
+  </header>
+  <nav class="page-nav" aria-label="利用ガイド"><ul><li><a href="index.html">概要</a></li><li><a href="asset-manager.html">Asset Manager</a></li><li><a href="asset-protection.html">Asset Protection</a></li><li><a href="booth-eagle.html" aria-current="page">BOOTH / Eagle</a></li><li><a href="face-expression.html">Face Expression</a></li><li><a href="physbone-collider.html">PhysBone Collider</a></li><li><a href="play-mode-component-suppression.html">Play Mode</a></li><li><a href="project-tools.html">Project</a></li><li><a href="hierarchy-tools.html">Hierarchy</a></li><li><a href="window-groups.html">Window Groups</a></li><li><a href="settings.html">設定</a></li></ul></nav>
+
+  <main id="main" class="content-shell">
+    <aside class="toc" aria-label="このページの目次"><p>On this page</p><ol><li><a href="#pages">対応画面</a></li><li><a href="#single">単品取り込み</a></li><li><a href="#batch">一括取り込み</a></li><li><a href="#flow">処理の流れ</a></li><li><a href="#related">関連機能</a></li></ol></aside>
+    <article class="prose">
+      <section id="pages">
+        <p class="section-label">Pages</p><h2>library、gifts、商品ページに対応</h2>
+        <p>同梱の<code>External~/Scriptcat/B2E.user.js</code>は、BOOTHのlibrary、gifts、商品ページでEagle連携bridgeを呼び出します。downloadごとに現在の取り込み状態を表示します。</p>
+      </section>
+      <section id="single">
+        <p class="section-label">Single import</p><h2>未取り込みのdownloadを1件ずつ送る</h2>
+        <p>未取り込みのdownloadには単品取り込み操作を表示します。商品ページで1商品に複数のdownloadがある場合、各<code>Import Eagle</code>は対応する「その他のDL方法」の直下へ表示されます。</p>
+      </section>
+      <section id="batch">
+        <p class="section-label">Batch import</p><h2>表示中の商品を上から順番に取り込む</h2>
+        <p>libraryとgiftsでは、表示中の商品から未取り込みのdownloadを集め、画面右下へ商品名とFile名を一覧表示します。</p>
+        <ol class="steps"><li>一覧で取り込み対象を確認します。</li><li><strong>すべて取り込む</strong>を選びます。</li><li>取り込み待ちではない対象を上から順番に処理します。</li></ol>
+        <p>表示中の対象がすべて取り込み済みになると、一覧は非表示になります。</p>
+      </section>
+      <section id="flow">
+        <p class="section-label">Download flow</p><h2>BOOTH標準downloadを使う</h2>
+        <p>単品と一括は同じ取り込み経路を使用します。Eagle bridgeへ商品情報とdownload要求を登録した後、BOOTHの通常downloadを別tabで開始します。</p>
+        <p class="callout"><strong>設定先:</strong> Eagle libraryとEagleへの取り込み先はUnityの<code>Preferences / 4OF / ee4v</code>で管理します。</p>
+      </section>
+      <section id="related"><p class="section-label">Related</p><h2>関連するガイド</h2><div class="related-grid"><a href="asset-manager.html"><strong>Asset Manager</strong><span>Eagleとee4vの同期、ItemとFileの整理</span></a><a href="settings.html"><strong>設定</strong><span>Eagle libraryと取り込み先path</span></a></div></section>
+    </article>
+  </main>
+  <footer class="site-footer"><p><a href="index.html">ee4v user guide</a> / BOOTH / Eagle</p><p><a href="asset-manager.html">Asset Managerへ</a></p></footer>
+</body>
+</html>

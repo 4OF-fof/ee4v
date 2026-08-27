@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Unity 2022.3向けVRChat Editor拡張 ee4v の利用ガイド">
+  <title>ee4v 利用ガイド</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へ移動</a>
+
+  <header class="site-header">
+    <div>
+      <p class="eyebrow">VRChat editor extensions</p>
+      <h1>制作の流れを、Unityの中で整える。</h1>
+      <p class="lead">ee4vは、アセット整理、表情作成、PhysBone Collider設定、ProjectとHierarchyの操作をまとめたUnity Editor拡張です。</p>
+    </div>
+    <dl class="header-facts" aria-label="対象環境">
+      <div>
+        <dt>対象</dt>
+        <dd>VRChat</dd>
+      </div>
+      <div>
+        <dt>Unity</dt>
+        <dd>2022.3</dd>
+      </div>
+      <div>
+        <dt>Package</dt>
+        <dd>ee4v 0.1.0</dd>
+      </div>
+    </dl>
+  </header>
+
+  <nav class="page-nav" aria-label="利用ガイド">
+    <ul>
+      <li><a href="index.html" aria-current="page">概要</a></li>
+      <li><a href="asset-manager.html">Asset Manager</a></li>
+      <li><a href="asset-protection.html">Asset Protection</a></li>
+      <li><a href="booth-eagle.html">BOOTH / Eagle</a></li>
+      <li><a href="face-expression.html">Face Expression</a></li>
+      <li><a href="physbone-collider.html">PhysBone Collider</a></li>
+      <li><a href="play-mode-component-suppression.html">Play Mode</a></li>
+      <li><a href="project-tools.html">Project</a></li>
+      <li><a href="hierarchy-tools.html">Hierarchy</a></li>
+      <li><a href="window-groups.html">Window Groups</a></li>
+      <li><a href="settings.html">設定</a></li>
+    </ul>
+  </nav>
+
+  <main id="main">
+    <section id="start" aria-labelledby="start-title">
+      <p class="section-label">Start</p>
+      <h2 id="start-title">まず確認する3か所</h2>
+      <p class="section-intro">機能のWindowはUnity上部の<code>ee4v</code>メニュー、利用者ごとの設定はPreferences、Project共通の設定はProject Settingsにまとまっています。</p>
+      <ol class="quick-start">
+        <li>
+          <strong>Windowを開く</strong>
+          <span>Unity上部の<code>ee4v / Window</code>から、使いたい機能を選びます。</span>
+        </li>
+        <li>
+          <strong>利用者設定を確認</strong>
+          <span><code>Preferences / 4OF / ee4v</code>で、言語やAssetManagerの保存元を設定します。</span>
+        </li>
+        <li>
+          <strong>Project設定を確認</strong>
+          <span><code>Project Settings / 4OF / ee4v</code>で、生成先やPlay Mode向け処理を設定します。</span>
+        </li>
+      </ol>
+    </section>
+
+    <section id="assets" aria-labelledby="assets-title">
+      <p class="section-label">Assets</p>
+      <h2 id="assets-title">購入・保管・取り込みを一続きに</h2>
+      <p class="section-intro">AssetManagerはItem、File、Tag、CollectionとUnity Projectへの取り込み状態を管理します。Eagleとee4vの保存先を同期できます。</p>
+      <div class="tool-grid">
+        <article class="tool-card">
+          <h3>Asset Manager</h3>
+          <p class="path">ee4v / Window / Asset Manager / Open All</p>
+          <p>Navigation、Main、Informationの3つのWindowをまとめて開きます。Unityのレイアウトに合わせて個別にdockできます。</p>
+          <ul>
+            <li>Itemを名前、説明、Tagから探す</li>
+            <li>未所属File、Archive、Collectionを切り替える</li>
+            <li>ZIPやUnityPackageの内容を確認して取り込む</li>
+            <li>Item TargetとFileごとの依存先を設定する</li>
+          </ul>
+          <p><a href="asset-manager.html">Asset Managerの詳しい使い方</a></p>
+        </article>
+
+        <article class="tool-card">
+          <h3>Asset Protection</h3>
+          <p>AssetManagerから取り込んだAssetはGUIDで追跡され、直接編集しにくい状態になります。Project内で移動しても保護は続きます。</p>
+          <ul>
+            <li>BlendTree、Animation Clip、Animator Controllerの編集を抑止</li>
+            <li>保護対象PrefabのPrefab Modeに警告を表示</li>
+            <li>PrefabやMaterialはVariant、その他は複製してから編集</li>
+          </ul>
+          <p><a href="asset-protection.html">保護対象と編集方法を確認</a></p>
+        </article>
+
+        <article class="tool-card">
+          <h3>BOOTHとEagle</h3>
+          <p>同梱のBOOTH userscriptはlibrary、gifts、商品ページからEagle連携を呼び出します。未取り込みのdownloadは単品または表示中の一覧から順に取り込めます。</p>
+          <p><a href="booth-eagle.html">BOOTHとEagleの連携を確認</a></p>
+        </article>
+
+        <article class="tool-card">
+          <h3>同期設定</h3>
+          <p class="path">Preferences / 4OF / ee4v</p>
+          <p>Eagle library、Eagleへの取り込み先、ee4vの管理フォルダーを設定します。AssetManagerの再読み込み操作ではEagleとee4vを順に同期します。</p>
+          <p><a href="settings.html">設定項目と保存先を確認</a></p>
+        </article>
+      </div>
+      <aside class="notice">
+        <strong>編集するとき:</strong> 保護されたAssetそのものを変更せず、Unity標準機能でVariantまたは複製を作成してください。Asset Protectionは編集用Assetを自動作成しません。
+      </aside>
+    </section>
+
+    <section id="avatar" aria-labelledby="avatar-title">
+      <p class="section-label">Avatar</p>
+      <h2 id="avatar-title">表情とColliderを見ながら調整</h2>
+      <div class="tool-grid">
+        <article class="tool-card">
+          <h3>Face Expression</h3>
+          <p class="path">ee4v / Window / Face Expression / Face Expression Editor</p>
+          <p>VRChatアバター向けの単一フレーム表情Clipを作成します。Preview上でBlendShapeを調整し、表情GroupとPresetを使って整理できます。</p>
+          <ul>
+            <li>Expression GroupsとBlendShape Presetsは同じmenu内</li>
+            <li>標準hand gestureへの割り当てはGesture Assignmentから設定</li>
+            <li>表情libraryのrootは共通Asset root配下の<code>Animation/Facial</code></li>
+          </ul>
+          <p><a href="face-expression.html">表情作成とGesture割り当てを確認</a></p>
+        </article>
+
+        <article class="tool-card">
+          <h3>Gesture Assignment</h3>
+          <p class="path">ee4v / Window / Gesture Assignment / Gesture Assignments</p>
+          <p>左右の標準hand gestureへ表情Clipを割り当てます。追加設定は同menuのGesture Assignment Settingsから開きます。</p>
+          <p><a href="face-expression.html#gesture">Gesture Assignmentの詳細</a></p>
+        </article>
+
+        <article class="tool-card">
+          <h3>PhysBone Collider Setup</h3>
+          <p class="path">ee4v / Window / Avatar / PhysBone Collider Setup</p>
+          <p>AvatarのArmatureからcapsule形Collider候補を作り、Previewしながら位置、半径、長さ、追従bone、PhysBoneへの割り当てを調整します。</p>
+          <ul>
+            <li>配置密度は軽量、通常、フルの3種類</li>
+            <li>生成物はAvatar直下の1 Prefabにまとめる</li>
+            <li>適用にはVRChat SDKとModular Avatarが必要</li>
+          </ul>
+          <p><a href="physbone-collider.html">検出・調整・適用の流れ</a></p>
+        </article>
+
+        <article class="tool-card">
+          <h3>Play Mode Component Suppression</h3>
+          <p class="path">Project Settings / 4OF / ee4v</p>
+          <p>NDMFのApply on Play時だけ、指定したcomponent型をbuild対象Avatarから除きます。Scene上の元Avatarと通常のbuild・uploadには影響しません。</p>
+          <p><a href="play-mode-component-suppression.html">対象と制約を確認</a></p>
+        </article>
+      </div>
+    </section>
+
+    <section id="editor" aria-labelledby="editor-title">
+      <p class="section-label">Editor</p>
+      <h2 id="editor-title">ProjectとHierarchyを読みやすく</h2>
+      <div class="tool-grid">
+        <article class="tool-card">
+          <h3>Project Style</h3>
+          <p>Project WindowのFolderに背景色とアイコンを設定します。<strong>Altを押しながらFolderを指す</strong>と編集Popupが開きます。複数選択中なら同じ変更をまとめて適用できます。</p>
+          <p><a href="project-tools.html#project-style">Project Styleの詳細</a></p>
+        </article>
+
+        <article class="tool-card">
+          <h3>Project Tabs</h3>
+          <p>2列表示のProject WindowへFolder tab、検索文字列、移動履歴を追加します。固定tabはUnityのProject Favoritesと同期します。1列表示ではtabを表示しません。</p>
+          <p><a href="project-tools.html#project-tabs">Project Tabsの詳細</a></p>
+        </article>
+
+        <article class="tool-card">
+          <h3>Hierarchy Style</h3>
+          <p>GameObjectに背景色とアイコンを設定します。<strong>Altを押しながらGameObjectを指す</strong>と編集Popupが開きます。背景色は親から子へ継承され、アイコンは設定した対象だけに表示されます。</p>
+          <p><a href="hierarchy-tools.html#hierarchy-style">Hierarchy Styleの詳細</a></p>
+        </article>
+
+        <article class="tool-card">
+          <h3>Hidden Objects</h3>
+          <p>GameObjectをHierarchyから隠し、Scene単位の一覧から戻せます。再表示時は非表示前のactive stateとtagを復元します。</p>
+          <p><a href="hierarchy-tools.html#hidden-objects">Hidden Objectsの詳細</a></p>
+        </article>
+
+        <article class="tool-card">
+          <h3>Scene SwitcherとHierarchy補助</h3>
+          <p>Scene見出しからSceneの検索、置換、追加、作成を行えます。親子関係のguide線と、<code>---</code>で始まる空GameObjectの区切り表示も追加されます。</p>
+          <p><a href="hierarchy-tools.html#scene-switcher">Hierarchy補助の詳細</a></p>
+        </article>
+
+        <article class="tool-card">
+          <h3>Window Groups</h3>
+          <p class="path">ee4v / Window / Window Groups</p>
+          <p>一緒に使うEditorWindowをGroupへ登録し、1つへfocusしたときにまとめて前面へ移します。Followerは他Windowからの同期にだけ追従します。</p>
+          <p><a href="window-groups.html">Group作成とFollowerの使い方</a></p>
+        </article>
+      </div>
+    </section>
+
+    <section id="settings" aria-labelledby="settings-title">
+      <p class="section-label">Settings & notes</p>
+      <h2 id="settings-title">使う前に知っておくこと</h2>
+      <div class="note-grid">
+        <article>
+          <h3>対応Unity</h3>
+          <p>現在の対象はUnity 2022.3です。Unity 6対応済みであることは示していません。</p>
+        </article>
+        <article>
+          <h3>Modular Avatar / NDMF</h3>
+          <p>PackageはModular Avatar 1.18.2以上2.0未満、NDMF 1.8.0以上2.0未満を依存範囲としています。</p>
+        </article>
+        <article>
+          <h3>保存先</h3>
+          <p>生成Assetの共通rootはProject Settings、AssetManagerの外部pathと言語はPreferencesから変更します。</p>
+        </article>
+      </div>
+      <aside class="notice">
+        <strong>補足:</strong> このページは利用者向けの案内です。公開API、DB schema、module境界、test契約はagent向けMarkdownで管理しています。
+      </aside>
+      <p><a href="settings.html">設定画面と保存先の詳細を見る</a></p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>ee4v user guide</p>
+    <p>このHTMLは外部CDNやbuild処理なしで表示できます。</p>
+  </footer>
+</body>
+</html>

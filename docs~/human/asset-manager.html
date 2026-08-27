@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ee4v Asset Managerの画面構成、検索、整理、取り込み、同期の利用ガイド">
+  <title>Asset Manager | ee4v 利用ガイド</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へ移動</a>
+  <header class="site-header detail-header">
+    <div>
+      <ol class="breadcrumbs"><li><a href="index.html">ee4v</a></li><li>Asset Manager</li></ol>
+      <p class="eyebrow">Assets</p>
+      <h1>Asset Manager</h1>
+      <p class="lead">Item、配布File、Tag、Collectionと、Unity Projectへ取り込んだAssetの対応を一つの画面群で管理します。</p>
+    </div>
+    <dl class="header-facts" aria-label="機能概要">
+      <div><dt>入口</dt><dd>Open All</dd></div>
+      <div><dt>Window</dt><dd>3つ</dd></div>
+      <div><dt>Source</dt><dd>Eagle / ee4v</dd></div>
+    </dl>
+  </header>
+
+  <nav class="page-nav" aria-label="利用ガイド">
+    <ul>
+      <li><a href="index.html">概要</a></li><li><a href="asset-manager.html" aria-current="page">Asset Manager</a></li><li><a href="asset-protection.html">Asset Protection</a></li><li><a href="booth-eagle.html">BOOTH / Eagle</a></li><li><a href="face-expression.html">Face Expression</a></li><li><a href="physbone-collider.html">PhysBone Collider</a></li><li><a href="play-mode-component-suppression.html">Play Mode</a></li><li><a href="project-tools.html">Project</a></li><li><a href="hierarchy-tools.html">Hierarchy</a></li><li><a href="window-groups.html">Window Groups</a></li><li><a href="settings.html">設定</a></li>
+    </ul>
+  </nav>
+
+  <main id="main" class="content-shell">
+    <aside class="toc" aria-label="このページの目次">
+      <p>On this page</p>
+      <ol>
+        <li><a href="#open">開く</a></li>
+        <li><a href="#windows">3つのWindow</a></li>
+        <li><a href="#browse">探す・選ぶ</a></li>
+        <li><a href="#details">詳細を見る</a></li>
+        <li><a href="#organize">整理する</a></li>
+        <li><a href="#sync">同期と設定</a></li>
+        <li><a href="#related">関連機能</a></li>
+      </ol>
+    </aside>
+
+    <article class="prose">
+      <section id="open">
+        <p class="section-label">Open</p>
+        <h2>最初は3つまとめて開く</h2>
+        <p><code>ee4v / Window / Asset Manager / Open All</code>を選ぶと、Navigation、Main、Informationをまとめて開きます。統合Windowではなく、それぞれ独立したWindowです。Unityのlayoutに合わせて横並びやdock配置にできます。</p>
+        <ul class="menu-paths">
+          <li>ee4v / Window / Asset Manager / Navigation</li>
+          <li>ee4v / Window / Asset Manager / Main</li>
+          <li>ee4v / Window / Asset Manager / Information</li>
+        </ul>
+        <p>個別menuから開いた場合も、3つのWindowは同じ選択状態と表示位置を共有します。</p>
+      </section>
+
+      <section id="windows">
+        <p class="section-label">Layout</p>
+        <h2>Windowごとの役割</h2>
+        <div class="key-points">
+          <article><h3>Navigation</h3><p>全件、未所属、Archive、Tag、Collectionの表示先を切り替えます。</p></article>
+          <article><h3>Main</h3><p>Item一覧、File一覧、検索、並び替え、Item詳細を表示する作業領域です。</p></article>
+          <article><h3>Information</h3><p>最後に選択したItemのサムネイル、名前、説明、Tag、BOOTH情報などを表示します。</p></article>
+          <article><h3>状態の共有</h3><p>Navigationで表示先を変えたりMainでItemを選んだりすると、ほかのWindowにも反映されます。</p></article>
+        </div>
+        <p class="callout"><strong>複数選択時:</strong> Informationには末尾3件までのサムネイルを重ねて表示し、編集formは表示しません。最後に操作したItemが最前面になります。</p>
+      </section>
+
+      <section id="browse">
+        <p class="section-label">Browse</p>
+        <h2>Itemを探して選ぶ</h2>
+        <ol class="steps">
+          <li><strong>表示先を選ぶ。</strong> Navigationから全件、未所属、Archive、TagまたはCollectionを選びます。</li>
+          <li><strong>必要なら検索対象を変える。</strong> Mainの検索欄にある検索iconから、名前、説明、Tagを個別に対象へ含めます。未所属Fileでは名前検索がFile名へ適用されます。</li>
+          <li><strong>並び順を選ぶ。</strong> Itemは名前、作成日、更新日、File数で並び替えられ、逆順にもできます。</li>
+          <li><strong>選択する。</strong> 通常clickで単一選択、Ctrlで追加・解除、Shiftで直前の基準Itemから範囲選択します。</li>
+        </ol>
+        <p>Escapeまたはカード外の空白を左clickすると選択を解除します。Itemをdouble clickするとMainがItem詳細へ切り替わります。</p>
+      </section>
+
+      <section id="details">
+        <p class="section-label">Details & import</p>
+        <h2>Fileの中身と取り込み先を確認する</h2>
+        <p>Item詳細は、左の検索付きFile Treeと右の詳細表示に分かれます。File Treeの先頭にItem概要、その下に所属Fileを表示し、ZIPとUnityPackageの解析内容は子階層として展開します。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>選択対象</th><th>右側に表示する内容</th></tr></thead>
+            <tbody>
+              <tr><td>概要</td><td>名前、Tag、Item Target、File数、形式、Source、BOOTH情報、合計size、作成・更新日時</td></tr>
+              <tr><td>File</td><td>形式、操作、実体単位のDependency Targetなどの取り込み設定</td></tr>
+              <tr><td>File内の内容</td><td>path、種別、size、取り込み済みかどうか</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>取り込みの流れ</h3>
+        <ol class="steps">
+          <li>FileまたはFile内の実体へItem Targetを設定します。TargetをGroupにすると、Import時にGroupごとに1件を選べます。</li>
+          <li>必要な場合はFile詳細からDependency Targetを設定します。</li>
+          <li>ItemのImport、またはFile Treeのcontext menuから1実体のImportを実行します。</li>
+        </ol>
+        <p class="callout"><strong>取り込めない対象:</strong> ZIP自身、ZIP内のZIP、Directoryは1実体Importの対象になりません。ItemのImportは単一Itemが選択され、Item Targetが設定済みの場合に有効になります。</p>
+      </section>
+
+      <section id="organize">
+        <p class="section-label">Organize</p>
+        <h2>Tag、Collection、Archiveで整理する</h2>
+        <h3>名前・説明・Tag</h3>
+        <p>名前と説明は入力欄からfocusが外れた時点、Tagは選択Popupを閉じた時点で保存されます。保存buttonはありません。Eagle由来Itemの名前と説明は読み取り専用ですが、Tagは編集できます。</p>
+        <h3>Collection</h3>
+        <p>NavigationのCollection見出しから作成します。条件はGroupごとにANDまたはORを選び、条件またはGroupをNOTで反転できます。編集と削除はCollectionの右click menuから行います。</p>
+        <h3>Archive</h3>
+        <p>Itemカードの右click menuからArchive、復元、削除を実行します。Archive済みItemでは復元と削除だけを表示し、削除は選択対象がすべてArchive済みの場合に確認dialogを経て実行します。</p>
+      </section>
+
+      <section id="sync">
+        <p class="section-label">Sources</p>
+        <h2>Eagleとee4vを同期する</h2>
+        <p>外部pathはAsset Manager内ではなく、<code>Preferences / 4OF / ee4v</code>で設定します。Mainの再読み込みbuttonはEagleとee4vを順番に同期してから一覧を更新します。片方が失敗しても残りの同期は続行し、errorはUnity Consoleへ表示します。</p>
+        <p>Editor session開始時の自動同期も設定できます。現在対応するSourceはEagleとee4vです。</p>
+      </section>
+
+      <section id="related">
+        <p class="section-label">Related</p>
+        <h2>関連するガイド</h2>
+        <div class="related-grid">
+          <a href="asset-protection.html"><strong>Asset Protection</strong><span>取り込んだAssetの保護範囲と編集方法</span></a>
+          <a href="booth-eagle.html"><strong>BOOTH / Eagle</strong><span>BOOTHからEagleへ取り込むuserscript</span></a>
+          <a href="settings.html"><strong>設定</strong><span>外部path、生成Asset root、言語</span></a>
+          <a href="project-tools.html"><strong>Project tools</strong><span>取り込み先Folderの見た目とtab整理</span></a>
+        </div>
+      </section>
+    </article>
+  </main>
+
+  <footer class="site-footer"><p><a href="index.html">ee4v user guide</a> / Asset Manager</p><p>Unity 2022.3</p></footer>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ee4v Hierarchy Style、Hidden Objects、Scene Switcher、Hierarchy補助機能の利用ガイド">
+  <title>Hierarchy tools | ee4v 利用ガイド</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へ移動</a>
+  <header class="site-header detail-header">
+    <div><ol class="breadcrumbs"><li><a href="index.html">ee4v</a></li><li>Hierarchy tools</li></ol><p class="eyebrow">Unity Editor</p><h1>Hierarchy tools</h1><p class="lead">GameObjectの見た目、非表示Object、Scene切り替え、親子guideをHierarchy内で扱います。</p></div>
+    <dl class="header-facts" aria-label="機能概要"><div><dt>Style</dt><dd>色 / icon</dd></div><div><dt>Visibility</dt><dd>非表示 / 復元</dd></div><div><dt>Scene</dt><dd>検索 / 置換 / 追加</dd></div></dl>
+  </header>
+  <nav class="page-nav" aria-label="利用ガイド"><ul><li><a href="index.html">概要</a></li><li><a href="asset-manager.html">Asset Manager</a></li><li><a href="asset-protection.html">Asset Protection</a></li><li><a href="booth-eagle.html">BOOTH / Eagle</a></li><li><a href="face-expression.html">Face Expression</a></li><li><a href="physbone-collider.html">PhysBone Collider</a></li><li><a href="play-mode-component-suppression.html">Play Mode</a></li><li><a href="project-tools.html">Project</a></li><li><a href="hierarchy-tools.html" aria-current="page">Hierarchy</a></li><li><a href="window-groups.html">Window Groups</a></li><li><a href="settings.html">設定</a></li></ul></nav>
+  <main id="main" class="content-shell">
+    <aside class="toc" aria-label="このページの目次"><p>On this page</p><ol><li><a href="#hierarchy-style">Hierarchy Style</a></li><li><a href="#hidden-objects">Hidden Objects</a></li><li><a href="#restore">復元の動作</a></li><li><a href="#scene-switcher">Scene Switcher</a></li><li><a href="#guides">表示補助</a></li><li><a href="#related">関連機能</a></li></ol></aside>
+    <article class="prose">
+      <section id="hierarchy-style">
+        <p class="section-label">Hierarchy Style</p><h2>GameObjectに背景色とiconを付ける</h2>
+        <ol class="steps"><li>Hierarchyで対象GameObjectへpointerを合わせます。</li><li>Altを押して編集Popupを開きます。</li><li>背景色またはProject内Textureのiconを設定します。</li></ol>
+        <p>背景色は対象から親へ向かって設定を探し、最初に見つかった色を使用します。子へ階層のまとまりを伝えられます。iconは設定したGameObjectだけに表示し、子へ継承しません。</p>
+      </section>
+
+      <section id="hidden-objects">
+        <p class="section-label">Hidden Objects</p><h2>作業中に不要なObjectをHierarchyから隠す</h2>
+        <p>Hidden ObjectsはGameObjectをHierarchyから非表示にし、Scene単位のtreeから確認・再表示する機能です。HierarchyのScene見出しにある非表示iconから対象Sceneの一覧を開けます。</p>
+        <p>非表示にすると、元のactive stateとtagを記録したうえでObjectを非active化し、<code>EditorOnly</code>tagと<code>HideInHierarchy</code>を設定します。非表示操作と再表示操作はUnityのUndoに対応します。</p>
+        <p>一覧ではSceneとGameObjectをtree表示し、検索や対象の再表示を行えます。設定で除外したSceneとGameObject、その子孫は一覧へ含めません。</p>
+      </section>
+
+      <section id="restore">
+        <p class="section-label">Restore</p><h2>非表示前の状態へ戻す</h2>
+        <p>再表示時は<code>HideInHierarchy</code>を外し、保存していたtagとactive stateを復元します。保存したtagが現在のTag Managerに存在しない場合は<code>Untagged</code>を設定します。</p>
+        <p>非表示状態はEditor再起動、script再読み込み、Sceneの開き直し後にも再適用します。復元が完了したObjectの記録は保存先から削除します。</p>
+        <p class="callout"><strong>Sceneの変更状態:</strong> 非永続の<code>HideInHierarchy</code>だけを再適用できる場合は、GameObject、Prefab instance、Sceneをdirtyにしません。</p>
+      </section>
+
+      <section id="scene-switcher">
+        <p class="section-label">Scene Switcher</p><h2>Scene見出しからSceneを切り替える</h2>
+        <p>HierarchyのScene見出しからSceneを検索し、現在のSceneとの置換、追加、または新規作成を行います。新しいSceneは共通Asset root配下の<code>Scene</code>へ保存します。</p>
+      </section>
+
+      <section id="guides">
+        <p class="section-label">Hierarchy guides</p><h2>親子関係と区切りを見やすくする</h2>
+        <div class="key-points">
+          <article><h3>Depth Indicator</h3><p>GameObjectの親子関係をguide線で描画します。HideInHierarchyの対象は階層計算から除きます。</p></article>
+          <article><h3>Hierarchy Decoration</h3><p><code>---</code>で始まる空GameObjectを区切り線として描画します。</p></article>
+        </div>
+        <p>区切りObjectは<code>GameObject / HierarchyDecoration / div</code>から作成できます。</p>
+      </section>
+
+      <section id="related"><p class="section-label">Related</p><h2>関連するガイド</h2><div class="related-grid"><a href="project-tools.html"><strong>Project tools</strong><span>Folderにも背景色とiconを設定</span></a><a href="settings.html"><strong>設定</strong><span>新規Sceneの共通Asset root</span></a><a href="window-groups.html"><strong>Window Groups</strong><span>HierarchyとInspectorなどをまとめて前面化</span></a><a href="asset-protection.html"><strong>Asset Protection</strong><span>保護PrefabのPrefab Mode警告</span></a></div></section>
+    </article>
+  </main>
+  <footer class="site-footer"><p><a href="index.html">ee4v user guide</a> / Hierarchy tools</p><p>Hierarchy Style / Hidden Objects</p></footer>
+</body>
+</html>

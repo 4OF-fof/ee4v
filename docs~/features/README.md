@@ -1,40 +1,55 @@
-# Editor 機能
+# Editor feature map
 
-`Editor/Feature` にある機能の概要です。公開 API を持つ機能は個別のリファレンスへリンクします。
+`src/Editor/Feature`配下の所有範囲と、変更時に読む契約の索引です。機能モジュールは原則として互いに依存せず、CoreとUIの公開APIを利用します。
 
-検索、追加、閉じる、固定などの汎用操作・状態アイコンにはMicrosoft Fluent UI System Iconsを使用します。Scene、GameObject、FolderなどUnityの実体やEditor概念を指すアイコンにはUnity組み込みアイコンを使用します。Project内アセットのサムネイルと利用者が指定したTextureは実体表現として維持します。
+## 共通のUI契約
+
+- 検索、追加、閉じる、固定などの汎用操作・状態アイコンにはMicrosoft Fluent UI System Iconsを使用する。
+- Scene、GameObject、FolderなどUnityの実体やEditor概念を指すアイコンにはUnity組み込みアイコンを使用する。
+- Project内アセットのサムネイルと利用者が指定したTextureは実体表現として維持する。
+- 文字を描画する要素は`UiTextFactory`経由で作成する。詳細な規則はルートの`AGENTS.md`を参照する。
 
 ## Project
 
-| 機能 | 概要 | API リファレンス |
-|---|---|---|
-| FolderContentOverlay | Project のフォルダーへ配下の代表的なアセットアイコンを重ねて表示します。アセット変更時は対象フォルダーと祖先のキャッシュを更新します。 | なし |
-| ProjectStyle | Project のフォルダーへ背景色とアイコンを設定します。 | [ProjectStyle](./project-style.md) |
-| ProjectTabs | Project ウィンドウへフォルダータブ、移動履歴、固定タブを追加します。 | [ProjectTabs](./project-tabs.md) |
+| module | 所有する振る舞い | 実装 | 契約 |
+|---|---|---|---|
+| FolderContentOverlay | Projectのフォルダーへ配下の代表的なAssetアイコンを重ねる。Asset変更時は対象フォルダーと祖先のcacheを更新する。 | `Feature/Project/FolderContentOverlay` | この表 |
+| ProjectStyle | Projectのフォルダーへ背景色とアイコンを設定する。 | `Feature/Project/ProjectStyle` | [ProjectStyle](./project-style.md) |
+| ProjectTabs | Project Windowへフォルダータブ、移動履歴、固定タブを追加する。 | `Feature/Project/ProjectTabs` | [ProjectTabs](./project-tabs.md) |
 
 ## Hierarchy
 
-| 機能 | 概要 | API リファレンス |
-|---|---|---|
-| DepthIndicator | GameObject の親子関係を示すガイド線を Hierarchy に描画します。`HideInHierarchy` の対象は階層計算から除きます。 | なし |
-| HierarchyDecoration | `---` で始まる空の GameObject を区切り線として描画します。`GameObject/HierarchyDecoration/div` から区切りを作成できます。 | なし |
-| HierarchyStyle | GameObject の背景色とアイコンを設定します。Hidden Objects の一覧表示、非表示、再表示もこの機能に含みます。 | [HierarchyStyle](./hierarchy-style.md) |
-| SceneSwitcher | Hierarchy のシーン見出しからシーンを検索し、置換、追加、作成を行います。新規シーンは共通アセットルート配下の`Scene`へ保存します。 | なし |
+| module | 所有する振る舞い | 実装 | 契約 |
+|---|---|---|---|
+| DepthIndicator | GameObjectの親子関係を示すガイド線を描画する。`HideInHierarchy`の対象は階層計算から除く。 | `Feature/Hierarchy/DepthIndicator` | この表 |
+| HierarchyDecoration | `---`で始まる空のGameObjectを区切り線として描画する。 | `Feature/Hierarchy/HierarchyDecoration` | この表 |
+| HierarchyStyle | GameObjectの背景色とアイコン、Hidden Objectsの非表示と復元を扱う。 | `Feature/Hierarchy/HierarchyStyle` | [HierarchyStyle](./hierarchy-style.md) |
+| SceneSwitcher | HierarchyのScene見出しからSceneを検索し、置換、追加、作成する。 | `Feature/Hierarchy/SceneSwitcher` | この表 |
 
 ## Avatar
 
-| 機能 | 概要 | API リファレンス |
-|---|---|---|
-| Face Expression | BlendShape表情を作成し、標準ハンドジェスチャーへ割り当てます。アバター複製を保持する軽量プレビューを使用します。 | [Face Expression](./face-expression.md) |
-| PhysBone Collider | 軽量・通常・フルの密度からカプセル形Colliderを提案し、複数指定したGameObject直下のArmature内にあるPhysBoneをプレビューしながら追従ボーンと割り当てを個別に調整して、MA Bone Proxy付きの1 Prefabへまとめます。 | [PhysBone Collider](./physbone-collider.md) |
-| Play Mode Component Suppression | Play Mode向けのNDMF処理で、Project設定から指定したコンポーネントをアバターから除外します。 | [Play Mode Component Suppression](./play-mode-component-suppression.md) |
+| module | 所有する振る舞い | 実装 | 契約 |
+|---|---|---|---|
+| Face Expression | BlendShape表情の作成、表情Group、preset、Gesture割り当てを扱う。 | `Feature/Avatar/FaceExpression` | [Face Expression](./face-expression.md) |
+| PhysBone Collider | Collider候補の生成、preview、PhysBoneへの割り当て、Prefab生成を扱う。 | `Feature/Avatar/PhysBoneCollider` | [PhysBone Collider](./physbone-collider.md) |
+| Play Mode Component Suppression | Play Mode向けNDMF処理で指定componentをbuild対象Avatarから除く。 | `Feature/Avatar/PlayModeComponentSuppression` | [Play Mode Component Suppression](./play-mode-component-suppression.md) |
 
 ## Editor
 
-| 機能 | 概要 | API リファレンス |
-|---|---|---|
-| WindowGroup | 同じグループのウィンドウをまとめて前面へ移します。 | [WindowGroup](./window-group.md) |
+| module | 所有する振る舞い | 実装 | 契約 |
+|---|---|---|---|
+| WindowGroup | 同じGroupのEditorWindowをまとめて前面へ移す。 | `Feature/WindowGroup` | [WindowGroup](./window-group.md) |
 
 ## 共有実装
 
-ProjectStyle と HierarchyStyle は `Ee4v.ItemStyle.Editor` の値、保存処理、編集ウィンドウを共有します。外部コードから各機能を操作する場合は `ProjectStyleApi` または `HierarchyStyleApi` を使用します。
+| assembly | 使用する機能 | 共有理由 | 実装 |
+|---|---|---|---|
+| `Ee4v.ItemStyle.Editor` | ProjectStyle、HierarchyStyle | 背景色とアイコンの値、保存処理、編集Windowが同じ契約を持つため | `Feature/Shared/ItemStyle` |
+
+外部コードから各機能を操作する場合は、共有実装を直接参照せず`ProjectStyleApi`または`HierarchyStyleApi`を使用します。
+
+## 更新条件
+
+- moduleの所有範囲、実装場所、機能間共有が変わった場合はこの索引を更新する。
+- 公開API、永続化、副作用、失敗時の動作が変わった場合は対応する個別資料を更新する。
+- UIから観測できる操作や注意事項が変わった場合は`../human`配下の対応する機能ページも更新する。ページ構成が変わる場合は[`../human/index.html`](../human/index.html)と全ページの共通ナビゲーションも更新する。

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ee4v Project Style、Project Tabs、Folder Content Overlayの利用ガイド">
+  <title>Project tools | ee4v 利用ガイド</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へ移動</a>
+  <header class="site-header detail-header">
+    <div><ol class="breadcrumbs"><li><a href="index.html">ee4v</a></li><li>Project tools</li></ol><p class="eyebrow">Unity Editor</p><h1>Project tools</h1><p class="lead">Folderの見た目、tab、移動履歴をProject Windowへ加え、Assetを探すための往復を減らします。</p></div>
+    <dl class="header-facts" aria-label="機能概要"><div><dt>Style</dt><dd>色 / icon</dd></div><div><dt>Tabs</dt><dd>Folder / 検索 / 履歴</dd></div><div><dt>対象</dt><dd>Project Window</dd></div></dl>
+  </header>
+  <nav class="page-nav" aria-label="利用ガイド"><ul><li><a href="index.html">概要</a></li><li><a href="asset-manager.html">Asset Manager</a></li><li><a href="asset-protection.html">Asset Protection</a></li><li><a href="booth-eagle.html">BOOTH / Eagle</a></li><li><a href="face-expression.html">Face Expression</a></li><li><a href="physbone-collider.html">PhysBone Collider</a></li><li><a href="play-mode-component-suppression.html">Play Mode</a></li><li><a href="project-tools.html" aria-current="page">Project</a></li><li><a href="hierarchy-tools.html">Hierarchy</a></li><li><a href="window-groups.html">Window Groups</a></li><li><a href="settings.html">設定</a></li></ul></nav>
+  <main id="main" class="content-shell">
+    <aside class="toc" aria-label="このページの目次"><p>On this page</p><ol><li><a href="#project-style">Project Style</a></li><li><a href="#project-tabs">Project Tabs</a></li><li><a href="#favorites">固定tab</a></li><li><a href="#overlay">Folder表示</a></li><li><a href="#persistence">保存と復元</a></li><li><a href="#related">関連機能</a></li></ol></aside>
+    <article class="prose">
+      <section id="project-style">
+        <p class="section-label">Project Style</p><h2>Folderに背景色とiconを付ける</h2>
+        <ol class="steps"><li>Project Windowで対象Folderへpointerを合わせます。</li><li>Altを押して編集Popupを開きます。</li><li>背景色またはProject内Textureのiconを設定します。</li></ol>
+        <p>対象Folderが複数選択に含まれている場合は、選択中のFolderへ同じ変更をまとめて適用します。背景色だけを設定したFolderにはUnity組み込みFolder iconを表示します。</p>
+        <p>Asset ManagerはImport時に、iconが未設定の取り込み先FolderへItem thumbnailを初期iconとして設定できます。その後は通常のProject Styleとして変更または解除できます。</p>
+      </section>
+
+      <section id="project-tabs">
+        <p class="section-label">Project Tabs</p><h2>Folderと検索状態をtabで切り替える</h2>
+        <p>Project Windowのtoolbarへtabを追加し、tabごとにFolder、検索文字列、最大50件の移動履歴を保持します。toolbarの追加buttonで作るtabは<code>Assets</code>を初期位置として開きます。</p>
+        <ul><li>tabごとに戻る・進む履歴を持ちます。</li><li>tabをdragして並べ替えられます。</li><li>最後のtabを閉じた場合は、既定のAssets tabを1つ作ります。</li><li>複数のProject Windowを開いている場合、選択中tabはWindowごとに保持します。</li></ul>
+        <p class="callout"><strong>2列表示のみ:</strong> Project Tabsは2列表示のProject Windowで有効です。1列表示では非表示になり、現在位置の追跡とFolder移動も行いません。2列へ戻すと自動的に再開します。</p>
+      </section>
+
+      <section id="favorites">
+        <p class="section-label">Pinned tabs</p><h2>固定tabはProject Favoritesと同期する</h2>
+        <p>tabを固定するとUnityのProject Favoritesと同期します。固定時は履歴を現在位置の1件へ縮め、戻る・進む操作は無効になります。</p>
+        <p>固定tabから別Folderへ移動しようとした場合は通常tabを追加し、固定tabの位置を維持します。</p>
+      </section>
+
+      <section id="overlay">
+        <p class="section-label">Folder Content Overlay</p><h2>Folderの中身をiconで把握する</h2>
+        <p>Folder Content Overlayは、ProjectのFolderへ配下の代表的なAsset iconを重ねて表示します。Project Styleでcustom iconを設定した項目では、重ね表示を抑制して指定iconを優先します。</p>
+      </section>
+
+      <section id="persistence">
+        <p class="section-label">Persistence</p><h2>設定は利用者ごとに保持する</h2>
+        <div class="table-wrap"><table><thead><tr><th>内容</th><th>保存先</th></tr></thead><tbody><tr><td>Folderの色、icon、最近使ったicon</td><td><code>UserSettings/ee4v.item-styles.asset</code></td></tr><tr><td>tab、履歴、固定状態</td><td><code>UserSettings/ee4v.project-tabs.asset</code></td></tr></tbody></table></div>
+        <p>Project Windowの復元時は、Unity側で開いているFolderと一致する保存済みtabを選びます。検索文字列だけが違う場合も同じFolderのtabを再利用します。</p>
+      </section>
+
+      <section id="related"><p class="section-label">Related</p><h2>関連するガイド</h2><div class="related-grid"><a href="asset-manager.html"><strong>Asset Manager</strong><span>Import先FolderへItem thumbnailを設定</span></a><a href="hierarchy-tools.html"><strong>Hierarchy tools</strong><span>GameObjectにも同じ操作感で色とiconを設定</span></a><a href="settings.html"><strong>設定</strong><span>生成Assetの共通root</span></a><a href="window-groups.html"><strong>Window Groups</strong><span>Project WindowをほかのWindowと一緒に前面化</span></a></div></section>
+    </article>
+  </main>
+  <footer class="site-footer"><p><a href="index.html">ee4v user guide</a> / Project tools</p><p>Project Style / Project Tabs</p></footer>
+</body>
+</html>

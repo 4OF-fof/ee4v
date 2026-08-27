@@ -1,7 +1,6 @@
 # UI
 
-`Ee4v.UI.Editor` は機能非依存の UI Toolkit 部品です。
-部品、状態型、トークンは公開 API のため、新しい feature assembly から直接利用できます。
+`Ee4v.UI.Editor`は機能非依存のUI Toolkit部品を所有します。開発時の正本は[`../../../docs~/core/ui.md`](../../../docs~/core/ui.md)です。componentの分類、`CustomPopup`、Storyの契約は同資料を参照してください。
 
 ## 初期化
 

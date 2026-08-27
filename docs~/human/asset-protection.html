@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ee4v Asset Protectionの保護対象、警告表示、編集方法の利用ガイド">
+  <title>Asset Protection | ee4v 利用ガイド</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へ移動</a>
+  <header class="site-header detail-header">
+    <div>
+      <ol class="breadcrumbs"><li><a href="index.html">ee4v</a></li><li><a href="asset-manager.html">Asset Manager</a></li><li>Asset Protection</li></ol>
+      <p class="eyebrow">Assets</p>
+      <h1>Asset Protection</h1>
+      <p class="lead">Asset Managerから取り込んだAssetを誤って直接編集しないよう、GUIDを基準にUnity Editor上の編集を抑止します。</p>
+    </div>
+    <dl class="header-facts" aria-label="機能概要">
+      <div><dt>対象</dt><dd>取り込み済みGUID</dd></div>
+      <div><dt>追跡</dt><dd>Project内の移動後も継続</dd></div>
+      <div><dt>設定</dt><dd>追加設定なし</dd></div>
+    </dl>
+  </header>
+  <nav class="page-nav" aria-label="利用ガイド"><ul><li><a href="index.html">概要</a></li><li><a href="asset-manager.html">Asset Manager</a></li><li><a href="asset-protection.html" aria-current="page">Asset Protection</a></li><li><a href="booth-eagle.html">BOOTH / Eagle</a></li><li><a href="face-expression.html">Face Expression</a></li><li><a href="physbone-collider.html">PhysBone Collider</a></li><li><a href="play-mode-component-suppression.html">Play Mode</a></li><li><a href="project-tools.html">Project</a></li><li><a href="hierarchy-tools.html">Hierarchy</a></li><li><a href="window-groups.html">Window Groups</a></li><li><a href="settings.html">設定</a></li></ul></nav>
+
+  <main id="main" class="content-shell">
+    <aside class="toc" aria-label="このページの目次"><p>On this page</p><ol><li><a href="#scope">保護対象</a></li><li><a href="#surfaces">保護される画面</a></li><li><a href="#prefab">Prefab Mode</a></li><li><a href="#edit">編集方法</a></li><li><a href="#limits">制限</a></li><li><a href="#related">関連機能</a></li></ol></aside>
+    <article class="prose">
+      <section id="scope">
+        <p class="section-label">Scope</p>
+        <h2>Asset Managerの取り込み記録をそのまま使う</h2>
+        <p>保護対象はAsset ManagerのSQLiteへ記録された取り込み済みAsset GUIDです。Asset Protection専用の対象一覧やon/off設定はありません。Editor起動時と取り込みGUIDの変更時に対象を更新します。</p>
+        <p>pathではなくGUIDで判定するため、保護対象をProject内の別Folderへ移動しても保護は続きます。</p>
+      </section>
+
+      <section id="surfaces">
+        <p class="section-label">Editor surfaces</p>
+        <h2>編集を抑止する場所</h2>
+        <div class="table-wrap"><table><thead><tr><th>対象</th><th>動作</th></tr></thead><tbody>
+          <tr><td>通常のAsset</td><td>Unityの編集可否判定で編集不可として扱い、保存対象からも除外します。</td></tr>
+          <tr><td>BlendTree</td><td>Inspectorの編集領域へ半透明の警告を重ね、操作を遮断します。</td></tr>
+          <tr><td>Animation Clip</td><td>Animation Windowで開いている保護対象Clipを編集不可にします。</td></tr>
+          <tr><td>Animator Controller</td><td>Animator Windowで保護対象Controllerを表示している間、内容を無効化します。</td></tr>
+          <tr><td>Prefab</td><td>Prefab ModeのHierarchyとInspectorへ警告を表示します。</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section id="prefab">
+        <p class="section-label">Prefab Mode</p>
+        <h2>必要なときだけ現在のPrefabで編集を続ける</h2>
+        <p>保護対象PrefabをPrefab Modeで開くと、すべてのHierarchy WindowのGameObject一覧と、Prefab Mode内のObjectを表示するInspectorへ警告を重ねます。Prefab Modeを閉じる操作は覆いません。</p>
+        <p><strong>編集を続ける</strong>を選ぶと、現在開いているPrefab Modeに限って警告を外します。Prefab Modeを閉じるか別のPrefabへ移動すると解除状態は失われ、次回は再び警告します。</p>
+      </section>
+
+      <section id="edit">
+        <p class="section-label">Editing workflow</p>
+        <h2>元AssetではなくVariantまたは複製を編集する</h2>
+        <ol class="steps">
+          <li>PrefabまたはMaterialはUnity標準機能からVariantを作成します。</li>
+          <li>Variantを作れないAssetは複製します。</li>
+          <li>作成したVariantまたは複製側を編集します。</li>
+        </ol>
+        <p class="callout"><strong>自動作成はしません:</strong> Asset Protectionは保護と警告だけを担当し、編集用Assetを作成しません。</p>
+      </section>
+
+      <section id="limits">
+        <p class="section-label">Limits</p>
+        <h2>保護しない操作</h2>
+        <ul>
+          <li>Assetの削除は制限しません。</li>
+          <li>NDMF Consoleの自動修正など、NDMF assemblyから呼び出された修正操作は保護対象にも適用します。</li>
+          <li>Prefab Modeの「編集を続ける」は現在のPrefab Modeだけに有効です。</li>
+        </ul>
+      </section>
+
+      <section id="related">
+        <p class="section-label">Related</p><h2>関連するガイド</h2>
+        <div class="related-grid"><a href="asset-manager.html"><strong>Asset Manager</strong><span>取り込み済みGUIDの元になる管理機能</span></a><a href="project-tools.html"><strong>Project tools</strong><span>Variantや複製をFolderで整理する</span></a></div>
+      </section>
+    </article>
+  </main>
+  <footer class="site-footer"><p><a href="index.html">ee4v user guide</a> / Asset Protection</p><p><a href="asset-manager.html">Asset Managerへ戻る</a></p></footer>
+</body>
+</html>
