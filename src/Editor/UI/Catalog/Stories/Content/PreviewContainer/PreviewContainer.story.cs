@@ -40,20 +40,26 @@ namespace Ee4v.UI
 
             var preview = CreatePreviewSection(parent);
             var surface = new PreviewContainer();
-            surface.style.width = 240f;
-            surface.style.height = 140f;
+            surface.AddToClassList(
+                "ee4v-ui-catalog-preview-container");
             surface.Placeholder.Add(new EmptyState(new EmptyStateState(
                 string.Empty, "プレビューがありません")));
-            surface.Content.Add(UiTextFactory.Create("Preview content"));
-            surface.Overlay.Add(UiTextFactory.CreateButton(
+            surface.Content.Add(UiTextFactory.Create(
+                "Preview content",
+                UiClassNames.SecondaryText,
+                "ee4v-ui-catalog-preview-container__content"));
+            var toggleButton = UiTextFactory.CreateButton(
                 "切り替え",
                 () =>
                 {
                     hasContent = !hasContent;
                     contentToggle.SetValueWithoutNotify(hasContent);
                     surface.SetHasContent(hasContent);
-                }));
-            preview.Body.Add(surface);
+                });
+            toggleButton.AddToClassList(
+                "ee4v-ui-catalog-preview-container__action");
+            surface.Overlay.Add(toggleButton);
+            preview.Body.Add(CreatePreviewArea(surface, true));
 
             contentToggle = AddToggle(
                 controls.Content,

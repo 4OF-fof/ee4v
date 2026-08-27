@@ -578,6 +578,8 @@ namespace Ee4v.UI
             "ee4v-ui-custom-popup__title";
         private const string HeaderActionsClassName =
             "ee4v-ui-custom-popup__header-actions";
+        private const string CloseButtonClassName =
+            "ee4v-ui-custom-popup__close";
         private const string ContentClassName =
             "ee4v-ui-custom-popup__content";
         private const string FooterClassName =
@@ -703,34 +705,8 @@ namespace Ee4v.UI
                 icon: FluentUiIcons.CreateState(
                     "dismiss.png",
                     UiSizeTokens.Size16),
-                variant: UiButtonVariant.Ghost,
-                compact: true);
-            button.style.width = 24f;
-            button.style.height = 24f;
-            button.style.minWidth = 24f;
-            button.style.minHeight = 24f;
-            button.style.paddingRight = 0f;
-            button.style.paddingLeft = 0f;
-            button.style.paddingTop = 0f;
-            button.style.paddingBottom = 0f;
-            button.style.backgroundColor = Color.clear;
-            button.style.borderRightWidth = 0f;
-            button.style.borderLeftWidth = 0f;
-            button.style.borderTopWidth = 0f;
-            button.style.borderBottomWidth = 0f;
-            button.style.marginRight = 0f;
-            button.style.marginLeft = 0f;
-            button.style.marginTop = 0f;
-            button.style.marginBottom = 0f;
-            button.style.alignItems = Align.Center;
-            button.style.justifyContent = Justify.Center;
-
-            Color hoverColor = UiColorTokens.PopupWindowHover;
-            hoverColor.a = 0.3f;
-            button.RegisterCallback<MouseEnterEvent>(
-                _ => button.style.backgroundColor = hoverColor);
-            button.RegisterCallback<MouseLeaveEvent>(
-                _ => button.style.backgroundColor = Color.clear);
+                variant: UiButtonVariant.Ghost);
+            button.AddToClassList(CloseButtonClassName);
             return button;
         }
 

@@ -71,6 +71,7 @@
     min-width: var(--ee4v-size-28);
     height: var(--ee4v-size-28);
     min-height: var(--ee4v-size-28);
+    padding: var(--ee4v-space-none);
     position: absolute;
     top: var(--ee4v-space-xl);
     right: var(--ee4v-space-xl);
@@ -155,8 +156,13 @@
 }
 
 .ee4v-face-expression__back-to-library {
+    width: var(--ee4v-size-20);
+    min-width: var(--ee4v-size-20);
+    height: var(--ee4v-size-20);
+    min-height: var(--ee4v-size-20);
     flex-shrink: 0;
     margin-right: var(--ee4v-space-sm);
+    padding: var(--ee4v-space-none);
 }
 
 .ee4v-face-expression__library {

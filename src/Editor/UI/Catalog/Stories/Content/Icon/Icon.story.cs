@@ -21,7 +21,7 @@ namespace Ee4v.UI
                     "Media",
                     "Icon",
                     "任意の texture または enum 管理された Unity 内蔵アイコンを表示するアイコンコンポーネントです。",
-                    "Unity 内蔵アイコンは version 差分の影響を抑えるため enum で許可したものだけを解決します。初期状態では検索アイコンをサポートし、custom texture に切り替えれば任意 texture を表示できます。",
+                    "Unity 内蔵アイコンは Unity 固有の用途で実際に使用するものだけを enum で許可します。通常の操作アイコンは Fluent UI System Icons、任意画像は custom texture を使用します。",
                     new string[0],
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildIconStory(parent),
@@ -55,7 +55,7 @@ namespace Ee4v.UI
         private void BuildIconStory(VisualElement parent)
         {
             var sourceKind = UiIconSourceKind.Builtin;
-            var builtinIcon = UiBuiltinIcon.Search;
+            var builtinIcon = UiBuiltinIcon.Folder;
             Texture texture = null;
             Action refresh = null;
 

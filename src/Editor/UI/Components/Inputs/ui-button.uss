@@ -34,11 +34,6 @@
     background-color: var(--ee4v-color-surface-pressed);
 }
 
-.ee4v-ui-button--compact {
-    min-height: var(--ee4v-control-height-compact);
-    padding: var(--ee4v-space-none) var(--ee4v-space-xs);
-}
-
 .ee4v-ui-button--icon-only {
     width: var(--ee4v-size-20);
     min-width: var(--ee4v-size-20);

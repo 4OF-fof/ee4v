@@ -45,41 +45,13 @@ namespace Ee4v.UI
 
     public enum UiBuiltinIcon
     {
-        Search,
-        Filter,
-        Sort,
-        Close,
-        Add,
-        Refresh,
-        Back,
-        Forward,
-        Pin,
-        Star,
-        Home,
-        Assets,
-        Package,
-        Grid,
-        Store,
         Folder,
-        FolderEmpty,
         Scene,
         GameObject,
-        Uncategorized,
-        Tag,
-        SmartCollection,
         DisclosureClosed,
         DisclosureOpen,
-        GenericFile,
-        ArchiveFile,
-        ImageFile,
-        TextFile,
-        UnityFile,
         ModelFile,
-        AudioFile,
-        ScriptFile,
-        VisibilityHidden,
-        Info,
-        Error
+        VisibilityHidden
     }
 
     public static class UiBuiltinIconResolver
@@ -122,132 +94,9 @@ namespace Ee4v.UI
         {
             switch (icon)
             {
-                case UiBuiltinIcon.Search:
-                    return new[] { "Search Icon" };
-                case UiBuiltinIcon.Filter:
-                    return new[]
-                    {
-                        "FilterByType",
-                        "d_FilterByType",
-                        "Search Icon"
-                    };
-                case UiBuiltinIcon.Sort:
-                    return new[]
-                    {
-                        "AlphabeticalSorting",
-                        "d_AlphabeticalSorting",
-                        "Search Icon"
-                    };
-                case UiBuiltinIcon.Close:
-                    return new[]
-                    {
-                        "CrossIcon",
-                        "d_CrossIcon",
-                        "winbtn_win_close",
-                        "d_winbtn_win_close"
-                    };
-                case UiBuiltinIcon.Add:
-                    return new[]
-                    {
-                        "Toolbar Plus",
-                        "d_Toolbar Plus",
-                        "CreateAddNew",
-                        "d_CreateAddNew"
-                    };
-                case UiBuiltinIcon.Refresh:
-                    return new[]
-                    {
-                        "Refresh",
-                        "d_Refresh",
-                        "TreeEditor.Refresh"
-                    };
-                case UiBuiltinIcon.Back:
-                    return new[]
-                    {
-                        "tab_prev",
-                        "d_tab_prev",
-                        "Animation.PrevKey",
-                        "d_Animation.PrevKey"
-                    };
-                case UiBuiltinIcon.Forward:
-                    return new[]
-                    {
-                        "tab_next",
-                        "d_tab_next",
-                        "Animation.NextKey",
-                        "d_Animation.NextKey"
-                    };
-                case UiBuiltinIcon.Pin:
-                    return new[]
-                    {
-                        "Pinned",
-                        "d_Pinned",
-                        "Favorite",
-                        "d_Favorite",
-                        "Favorite Icon",
-                        "d_Favorite Icon"
-                    };
-                case UiBuiltinIcon.Star:
-                    return new[]
-                    {
-                        "Favorite",
-                        "d_Favorite",
-                        "Favorite Icon",
-                        "d_Favorite Icon"
-                    };
-                case UiBuiltinIcon.Home:
-                    return new[]
-                    {
-                        "Folder Icon",
-                        "d_Folder Icon"
-                    };
-                case UiBuiltinIcon.Assets:
-                    return new[]
-                    {
-                        "Project",
-                        "d_Project",
-                        "DefaultAsset Icon",
-                        "d_DefaultAsset Icon"
-                    };
-                case UiBuiltinIcon.Package:
-                    return new[]
-                    {
-                        "Package Manager",
-                        "d_Package Manager",
-                        "PackageManager",
-                        "d_PackageManager",
-                        "DefaultAsset Icon",
-                        "d_DefaultAsset Icon"
-                    };
-                case UiBuiltinIcon.Grid:
-                    return new[]
-                    {
-                        "Grid.BoxTool",
-                        "d_Grid.BoxTool",
-                        "GridLayoutGroup Icon",
-                        "d_GridLayoutGroup Icon",
-                        "Project",
-                        "d_Project"
-                    };
-                case UiBuiltinIcon.Store:
-                    return new[]
-                    {
-                        "Asset Store",
-                        "d_Asset Store",
-                        "Package Manager",
-                        "d_Package Manager"
-                    };
                 case UiBuiltinIcon.Folder:
                     return new[]
                     {
-                        "Folder Icon",
-                        "d_Folder Icon"
-                    };
-                case UiBuiltinIcon.FolderEmpty:
-                    return new[]
-                    {
-                        "FolderEmpty Icon",
-                        "d_FolderEmpty Icon",
                         "Folder Icon",
                         "d_Folder Icon"
                     };
@@ -262,30 +111,6 @@ namespace Ee4v.UI
                     {
                         "GameObject Icon",
                         "d_GameObject Icon"
-                    };
-                case UiBuiltinIcon.Uncategorized:
-                    return new[]
-                    {
-                        "UnLinked",
-                        "d_UnLinked",
-                        "DefaultAsset Icon",
-                        "d_DefaultAsset Icon"
-                    };
-                case UiBuiltinIcon.Tag:
-                    return new[]
-                    {
-                        "FilterByLabel",
-                        "d_FilterByLabel",
-                        "FilterByType",
-                        "d_FilterByType"
-                    };
-                case UiBuiltinIcon.SmartCollection:
-                    return new[]
-                    {
-                        "Search Icon",
-                        "d_Search Icon",
-                        "FilterByType",
-                        "d_FilterByType"
                     };
                 case UiBuiltinIcon.DisclosureClosed:
                     return new[]
@@ -303,22 +128,8 @@ namespace Ee4v.UI
                         "Foldout On",
                         "d_Foldout On"
                     };
-                case UiBuiltinIcon.GenericFile:
-                    return new[] { "DefaultAsset Icon", "d_DefaultAsset Icon" };
-                case UiBuiltinIcon.ArchiveFile:
-                    return new[] { "Package Manager", "d_Package Manager", "DefaultAsset Icon", "d_DefaultAsset Icon" };
-                case UiBuiltinIcon.ImageFile:
-                    return new[] { "Texture Icon", "d_Texture Icon", "RawImage Icon", "d_RawImage Icon", "DefaultAsset Icon" };
-                case UiBuiltinIcon.TextFile:
-                    return new[] { "TextAsset Icon", "d_TextAsset Icon", "TextScriptImporter Icon", "d_TextScriptImporter Icon", "DefaultAsset Icon" };
-                case UiBuiltinIcon.UnityFile:
-                    return new[] { "UnityLogo", "d_UnityLogo", "SceneAsset Icon", "d_SceneAsset Icon", "DefaultAsset Icon" };
                 case UiBuiltinIcon.ModelFile:
                     return new[] { "Prefab Icon", "d_Prefab Icon", "Mesh Icon", "d_Mesh Icon", "DefaultAsset Icon" };
-                case UiBuiltinIcon.AudioFile:
-                    return new[] { "AudioClip Icon", "d_AudioClip Icon", "DefaultAsset Icon" };
-                case UiBuiltinIcon.ScriptFile:
-                    return new[] { "cs Script Icon", "d_cs Script Icon", "TextAsset Icon", "d_TextAsset Icon", "DefaultAsset Icon" };
                 case UiBuiltinIcon.VisibilityHidden:
                     return new[]
                     {
@@ -327,18 +138,6 @@ namespace Ee4v.UI
                         "d_scenevis_hidden_hover",
                         "d_scenevis_hidden",
                         "animationvisibilitytoggleoff"
-                    };
-                case UiBuiltinIcon.Info:
-                    return new[]
-                    {
-                        "console.infoicon",
-                        "d_console.infoicon"
-                    };
-                case UiBuiltinIcon.Error:
-                    return new[]
-                    {
-                        "console.erroricon",
-                        "d_console.erroricon"
                     };
                 default:
                     throw new System.ArgumentOutOfRangeException(nameof(icon), icon, null);
@@ -351,7 +150,7 @@ namespace Ee4v.UI
         public IconState(
             UiIconSourceKind sourceKind,
             Texture texture = null,
-            UiBuiltinIcon builtinIcon = UiBuiltinIcon.Search,
+            UiBuiltinIcon builtinIcon = UiBuiltinIcon.Folder,
             float size = 16f,
             string tooltip = null,
             Color? tintColor = null)
@@ -478,7 +277,7 @@ namespace Ee4v.UI
         private static IconState CreateDefaultState()
         {
             return FluentUiIcons.CreateState("search.png") ??
-                   IconState.FromBuiltinIcon(UiBuiltinIcon.Search);
+                   IconState.FromBuiltinIcon(UiBuiltinIcon.Folder);
         }
     }
 }

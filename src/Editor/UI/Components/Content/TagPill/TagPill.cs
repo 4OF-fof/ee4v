@@ -60,8 +60,7 @@ namespace Ee4v.UI
                 icon: FluentUiIcons.CreateState(
                     "dismiss.png",
                     UiSizeTokens.Size12),
-                variant: UiButtonVariant.Ghost,
-                compact: true);
+                variant: UiButtonVariant.Ghost);
             _removeButton.AddToClassList(
                 "ee4v-ui-tag-pill__remove");
             _removeButton.RegisterCallback<ClickEvent>(

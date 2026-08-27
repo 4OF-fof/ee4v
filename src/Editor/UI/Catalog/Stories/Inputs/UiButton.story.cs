@@ -45,7 +45,6 @@ namespace Ee4v.UI
         {
             var label = "Primary action";
             var variant = UiButtonVariant.Solid;
-            var compact = false;
             var showIcon = true;
             var enabled = true;
             var clickCount = 0;
@@ -53,7 +52,7 @@ namespace Ee4v.UI
 
             var controls = CreatePlainControlsSection(
                 parent,
-                "文字、種類、密度、アイコン、有効状態を変更します。");
+                "文字、種類、アイコン、有効状態を変更します。");
             var labelField = AddTextField(
                 controls.Content,
                 "文字",
@@ -70,15 +69,6 @@ namespace Ee4v.UI
                 value =>
                 {
                     variant = value;
-                    refresh();
-                });
-            var compactToggle = AddToggle(
-                controls.Content,
-                "小型",
-                compact,
-                value =>
-                {
-                    compact = value;
                     refresh();
                 });
             var iconToggle = AddToggle(
@@ -112,7 +102,6 @@ namespace Ee4v.UI
             {
                 labelField.SetValueWithoutNotify(label);
                 variantField.SetValueWithoutNotify((Enum)(object)variant);
-                compactToggle.SetValueWithoutNotify(compact);
                 iconToggle.SetValueWithoutNotify(showIcon);
                 enabledToggle.SetValueWithoutNotify(enabled);
 
@@ -130,8 +119,7 @@ namespace Ee4v.UI
                             "archive.png",
                             UiSizeTokens.Size12)
                         : null,
-                    variant: variant,
-                    compact: compact);
+                    variant: variant);
                 button.SetEnabled(enabled);
                 buttonHost.Add(button);
             };

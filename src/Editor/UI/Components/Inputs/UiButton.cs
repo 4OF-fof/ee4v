@@ -15,7 +15,6 @@ namespace Ee4v.UI
         private const string RootClassName = "ee4v-ui-button";
         private const string SolidClassName = "ee4v-ui-button--solid";
         private const string GhostClassName = "ee4v-ui-button--ghost";
-        private const string CompactClassName = "ee4v-ui-button--compact";
         private const string IconOnlyClassName = "ee4v-ui-button--icon-only";
         private const string ContentClassName = "ee4v-ui-button__content";
         private const string ContentWithIconClassName =
@@ -34,7 +33,6 @@ namespace Ee4v.UI
             string tooltip = null,
             IconState icon = null,
             UiButtonVariant variant = UiButtonVariant.Solid,
-            bool compact = false,
             string labelTypographyClassName = null)
             : base(onClick)
         {
@@ -45,7 +43,6 @@ namespace Ee4v.UI
             EnableInClassList(
                 GhostClassName,
                 variant == UiButtonVariant.Ghost);
-            EnableInClassList(CompactClassName, compact);
             this.tooltip = tooltip ?? string.Empty;
 
             _content = new VisualElement

@@ -92,8 +92,8 @@ namespace Ee4v.UI
                     title,
                     description,
                     showIcon
-                        ? IconState.FromBuiltinIcon(
-                            UiBuiltinIcon.Info,
+                        ? FluentUiIcons.CreateState(
+                            "info.png",
                             UiSizeTokens.Size24)
                         : null));
             };

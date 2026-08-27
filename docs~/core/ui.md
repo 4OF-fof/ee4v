@@ -11,9 +11,9 @@
 
 ### Inputs
 
-- `UiButton`は文字、アイコン、強調度を統一した通常の操作ボタンです。
+- `UiButton`は文字、アイコン、強調度を統一した通常の操作ボタンです。Toolbarなど用途固有の小型寸法は利用側USSで指定します。
 - `InputField`は1行、複数行、読み取り専用に対応する文字入力です。
-- `SearchField`は検索入力、消去、任意の先頭操作をまとめます。
+- `SearchField`は検索入力、消去、任意の先頭操作をまとめます。先頭操作が有効な場合だけhover反応を表示します。
 - `CommaSeparatedListField`はカンマ、セミコロン、改行で入力された文字列を一覧値として扱います。
 
 ### Layout
@@ -46,9 +46,11 @@
 
 ### Media
 
-- `Icon`はFluent UI System Icons、Unity組み込みアイコン、任意Textureの表示を共通化します。
+- `Icon`はFluent UI System Icons、実使用するUnity固有の組み込みアイコン、任意Textureの表示を共通化します。通常の操作アイコンにはFluent UI System Iconsを使用します。
 - `CachedImage`はデコード済みTextureを複数の画像表示で共有します。
 - `PreviewContainer`はPreview本体、未表示時のPlaceholder、重ねる操作を置く3層コンテナです。描画処理と一覧は含みません。
+
+`PreviewContainer` Storyはコンテナの範囲を枠で示し、中央のContent、空表示のPlaceholder、右上のOverlay操作を重ねて確認できる構成にします。
 
 ### Overlays
 

@@ -129,8 +129,7 @@ namespace Ee4v.FaceExpression
                 FluentUiIcons.CreateState(
                     "arrow_clockwise.png",
                     UiSizeTokens.Size28),
-                UiButtonVariant.Ghost,
-                compact: true);
+                UiButtonVariant.Ghost);
             resetView.AddToClassList("ee4v-face-expression__reset-view");
             previewPane.Overlay.Add(resetView);
             previewPane.SetHasContent(true);
@@ -148,8 +147,7 @@ namespace Ee4v.FaceExpression
                 FluentUiIcons.CreateState(
                     "arrow_left.png",
                     UiSizeTokens.Size16),
-                UiButtonVariant.Ghost,
-                compact: true);
+                UiButtonVariant.Ghost);
             _backToLibrary.AddToClassList(
                 "ee4v-face-expression__back-to-library");
             _backToLibrary.style.display = DisplayStyle.None;

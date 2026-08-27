@@ -70,7 +70,6 @@ namespace Ee4v.UI
 
             var preview = CreatePreviewSection(parent);
             var message = new InlineMessage();
-            preview.Body.Add(message);
 
             refresh = () =>
             {
@@ -81,13 +80,14 @@ namespace Ee4v.UI
                     text,
                     tone,
                     showIcon
-                        ? IconState.FromBuiltinIcon(
-                            UiBuiltinIcon.Info,
+                        ? FluentUiIcons.CreateState(
+                            "info.png",
                             UiSizeTokens.Size16)
                         : null));
             };
 
             refresh();
+            preview.Body.Add(message);
             FinalizeControlsSection(parent, controls);
         }
     }

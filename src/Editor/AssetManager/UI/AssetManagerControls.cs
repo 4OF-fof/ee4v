@@ -12,6 +12,8 @@ namespace Ee4v.AssetManager.UI
     {
         private const string DangerActionClassName =
             "ee4v-asset-manager__danger-action";
+        private const string IconButtonClassName =
+            "ee4v-asset-manager__icon-button";
         public static UiButton CreateButton(
             string text = "",
             Action onClick = null,
@@ -170,8 +172,11 @@ namespace Ee4v.AssetManager.UI
                 onClick,
                 tooltip,
                 icon,
-                variant,
-                compact: true);
+                variant);
+            if (icon != null)
+            {
+                button.AddToClassList(IconButtonClassName);
+            }
             AddClasses(button, classNames);
 
             return button;

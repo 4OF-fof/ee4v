@@ -212,7 +212,11 @@
 
 .ee4v-project-tabs__add {
     width: var(--ee4v-size-18);
+    min-width: var(--ee4v-size-18);
+    max-width: var(--ee4v-size-18);
     height: var(--ee4v-size-18);
+    min-height: var(--ee4v-size-18);
+    max-height: var(--ee4v-size-18);
     margin-left: var(--ee4v-space-xxs);
     margin-right: var(--ee4v-space-xs);
     border-top-left-radius: var(--ee4v-radius-xs);

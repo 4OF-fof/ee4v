@@ -70,7 +70,15 @@ namespace Ee4v.UI
             surface.Add(multilineInput);
 
             var readonlyInput = new InputField(new InputFieldState(
-                "読み取り専用でも長い説明をスクロールして確認できます。",
+                "読み取り専用の複数行入力です。\n" +
+                "この文章は表示領域より長くしてあります。\n" +
+                "右側のスクロールバーをドラッグできます。\n" +
+                "マウスホイールでも上下へ移動できます。\n" +
+                "内容は編集できません。\n" +
+                "長い説明文の途中も確認できます。\n" +
+                "さらに下の行まで続きます。\n" +
+                "スクロール位置が変わることを確認してください。\n" +
+                "これが最後の行です。",
                 true,
                 maxHeight,
                 placeholder))

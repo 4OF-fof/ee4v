@@ -181,8 +181,7 @@ namespace Ee4v.ProjectTabs
                 FluentUiIcons.CreateState(
                     "add.png",
                     UiSizeTokens.Size12),
-                variant: UiButtonVariant.Ghost,
-                compact: true);
+                variant: UiButtonVariant.Ghost);
             _addButton.AddToClassList(AddButtonClassName);
 
             _state = new ProjectTabsViewState(
