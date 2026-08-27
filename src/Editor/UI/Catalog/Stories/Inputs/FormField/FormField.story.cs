@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -27,8 +26,8 @@ namespace Ee4v.UI
                     "Inputs",
                     "FormField",
                     "外枠へ重ねたラベルと、枠内の各種入力コンポーネント・任意ボタンを一つにまとめるフォーム項目です。",
-                    "fieldset風の外枠へラベルを重ね、TextField、Toggle、ObjectField、StringListFieldと任意のボタンを同じ枠内に配置します。複数の入力要素が必要な場合は、一つの入力コンポーネントとして渡します。値の保持と検証は入力コンポーネントが担当します。",
-                    new[] { "StringListField" },
+                    "fieldset風の外枠へラベルを重ね、InputField、Toggle、ObjectField、StringListFieldと任意のボタンを同じ枠内に配置します。文字入力にはInputFieldを使用し、ToggleとObjectFieldにはUiTextFactoryの標準入力スタイルを使用します。各入力の外観はFormFieldの内外で共通です。複数の入力要素が必要な場合は、一つの入力コンポーネントとして渡します。値の保持と検証は入力コンポーネントが担当します。",
+                    new[] { "InputField", "StringListField" },
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildFormFieldStory(parent),
                     new[]
@@ -149,10 +148,10 @@ namespace Ee4v.UI
                     }
                     default:
                     {
-                        var textField = UiTextFactory.CreateTextField();
+                        var textField = new InputField();
                         textField.SetValueWithoutNotify(textValue);
-                        textField.RegisterValueChangedCallback(
-                            evt => textValue = evt.newValue ?? string.Empty);
+                        textField.ValueChanged +=
+                            value => textValue = value ?? string.Empty;
                         input = textField;
                         formatResult = () =>
                             "「" + textValue + "」を保存しました。";

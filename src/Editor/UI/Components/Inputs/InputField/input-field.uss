@@ -31,10 +31,21 @@
 .ee4v-ui-input-field--multiline .ee4v-ui-input-field__field-container {
     min-height: 72px;
     height: auto;
+    padding-left: var(--ee4v-space-sm);
     padding-right: var(--ee4v-space-none);
     padding-top: 5px;
     padding-bottom: 5px;
+    border-top-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-left-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-active);
+    border-right-color: var(--ee4v-color-border-active);
+    border-bottom-color: var(--ee4v-color-border-active);
+    border-left-color: var(--ee4v-color-border-active);
+    border-radius: var(--ee4v-radius-lg);
     overflow: hidden;
+    transition-property: border-top-color, border-right-color, border-bottom-color, border-left-color;
 }
 
 .ee4v-ui-input-field__field-container:hover {
@@ -45,6 +56,15 @@
 .ee4v-ui-input-field__field-container--focused:hover {
     border-bottom-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-ui-input-field--multiline .ee4v-ui-input-field__field-container:hover,
+.ee4v-ui-input-field--multiline .ee4v-ui-input-field__field-container--focused,
+.ee4v-ui-input-field--multiline .ee4v-ui-input-field__field-container--focused:hover {
+    border-top-color: var(--ee4v-color-focus);
+    border-right-color: var(--ee4v-color-focus);
+    border-bottom-color: var(--ee4v-color-focus);
+    border-left-color: var(--ee4v-color-focus);
 }
 
 .ee4v-ui-input-field__field {
