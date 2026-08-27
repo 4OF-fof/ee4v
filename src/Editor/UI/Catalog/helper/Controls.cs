@@ -11,7 +11,8 @@ namespace Ee4v.UI
 {
     internal sealed partial class CatalogWindow
     {
-        private const string CatalogControlLabelClassName = "ee4v-ui-catalog-control-label";
+        private const string CatalogControlClassName =
+            "ee4v-ui-catalog-control";
 
         private static string FormatCatalogToastTitle(string title)
         {
@@ -40,28 +41,19 @@ namespace Ee4v.UI
 
         internal static InputField AddTextField(VisualElement parent, string label, string value, Action<string> onChanged, bool multiline = false, float maxHeight = 0f, string placeholder = null)
         {
-            if (!string.IsNullOrWhiteSpace(label))
-            {
-                var labelElement = UiTextFactory.Create(label, CatalogControlLabelClassName);
-                labelElement.SetWhiteSpace(WhiteSpace.NoWrap);
-                parent.Add(labelElement);
-            }
-
             var field = new InputField(new InputFieldState(value, multiline, maxHeight, placeholder));
             field.ValueChanged += onChanged;
-            parent.Add(field);
-            return field;
+            return AddControl(parent, label, field);
         }
 
         internal static EnumField AddEnumField<TEnum>(VisualElement parent, string label, TEnum value, Action<TEnum> onChanged)
             where TEnum : struct, Enum
         {
             var field = UiTextFactory.CreateEnumField(
-                label,
+                string.Empty,
                 (Enum)(object)value);
             field.RegisterValueChangedCallback(evt => onChanged((TEnum)(object)evt.newValue));
-            parent.Add(field);
-            return field;
+            return AddControl(parent, label, field);
         }
 
         internal static Toggle AddToggle(
@@ -70,23 +62,75 @@ namespace Ee4v.UI
             bool value,
             Action<bool> onChanged)
         {
-            var field = UiTextFactory.CreateToggle(label);
+            var field = UiTextFactory.CreateToggle();
             field.SetValueWithoutNotify(value);
             field.RegisterValueChangedCallback(
                 evt => onChanged(evt.newValue));
-            parent.Add(field);
-            return field;
+            return AddControl(parent, label, field);
         }
 
         internal static ObjectField AddObjectField<TObject>(VisualElement parent, string label, TObject value, Action<TObject> onChanged)
             where TObject : UnityEngine.Object
         {
-            var field = UiTextFactory.CreateObjectField(label);
+            var field = UiTextFactory.CreateObjectField();
             field.objectType = typeof(TObject);
             field.allowSceneObjects = false;
             field.value = value;
             field.RegisterValueChangedCallback(evt => onChanged((TObject)evt.newValue));
-            parent.Add(field);
+            return AddControl(parent, label, field);
+        }
+
+        internal static FloatField AddFloatField(
+            VisualElement parent,
+            string label,
+            float value,
+            Action<float> onChanged)
+        {
+            var field = UiTextFactory.CreateFloatField();
+            field.SetValueWithoutNotify(value);
+            field.RegisterValueChangedCallback(
+                evt => onChanged(evt.newValue));
+            return AddControl(parent, label, field);
+        }
+
+        internal static IntegerField AddIntegerField(
+            VisualElement parent,
+            string label,
+            int value,
+            Action<int> onChanged)
+        {
+            var field = UiTextFactory.CreateIntegerField();
+            field.SetValueWithoutNotify(value);
+            field.RegisterValueChangedCallback(
+                evt => onChanged(evt.newValue));
+            return AddControl(parent, label, field);
+        }
+
+        internal static void SetControlVisible(
+            VisualElement field,
+            bool visible)
+        {
+            var control = field?.parent as FormInput;
+            var target = (VisualElement)control ?? field;
+            if (target == null)
+            {
+                return;
+            }
+
+            target.style.display = visible
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+        }
+
+        private static TField AddControl<TField>(
+            VisualElement parent,
+            string label,
+            TField field)
+            where TField : VisualElement
+        {
+            var control = new FormInput(label, field);
+            control.AddToClassList(CatalogControlClassName);
+            parent.Add(control);
             return field;
         }
 

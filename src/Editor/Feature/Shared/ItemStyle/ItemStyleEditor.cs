@@ -280,7 +280,7 @@ namespace Ee4v.ItemStyle
             string tooltip,
             VisualElement field)
         {
-            var row = new FormField(label, field);
+            var row = new FormInput(label, field);
             row.AddToClassList("ee4v-item-style__field-row");
             row.LabelText.AddToClassList(
                 "ee4v-item-style__field-label");

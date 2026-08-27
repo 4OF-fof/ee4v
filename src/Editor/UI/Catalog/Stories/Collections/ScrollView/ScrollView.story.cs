@@ -47,14 +47,15 @@ namespace Ee4v.UI
             var controls = CreatePlainControlsSection(
                 parent,
                 "項目数を変更し、縦横のスクロールバーが必要になる境界を確認します。");
-            var countField = UiTextFactory.CreateIntegerField("項目数");
-            countField.SetValueWithoutNotify(itemCount);
-            countField.RegisterValueChangedCallback(evt =>
-            {
-                itemCount = Math.Max(0, evt.newValue);
-                refresh();
-            });
-            controls.Content.Add(countField);
+            var countField = AddIntegerField(
+                controls.Content,
+                "項目数",
+                itemCount,
+                value =>
+                {
+                    itemCount = Math.Max(0, value);
+                    refresh();
+                });
 
             var preview = CreatePreviewSection(parent);
             var row = new VisualElement();

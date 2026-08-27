@@ -354,6 +354,10 @@
     min-height: 96px;
 }
 
+.ee4v-asset-manager__derived-assets-input-group .ee4v-asset-manager-control-field {
+    margin-bottom: var(--ee4v-space-sm);
+}
+
 .ee4v-asset-manager__derived-assets-create.ee4v-ui-button {
     align-self: flex-start;
     margin-top: var(--ee4v-space-lg);

@@ -80,14 +80,15 @@ namespace Ee4v.UI
                 refresh();
             }, placeholder: "Placeholder text");
 
-            var maxHeightField = UiTextFactory.CreateFloatField("Max Height");
-            maxHeightField.value = maxHeight;
-            maxHeightField.RegisterValueChangedCallback(evt =>
-            {
-                maxHeight = Mathf.Max(0f, evt.newValue);
-                refresh();
-            });
-            controls.Content.Add(maxHeightField);
+            var maxHeightField = AddFloatField(
+                controls.Content,
+                "Max Height",
+                maxHeight,
+                value =>
+                {
+                    maxHeight = Mathf.Max(0f, value);
+                    refresh();
+                });
             var readOnlyField = AddToggle(
                 controls.Content,
                 "読み取り専用",
@@ -116,16 +117,11 @@ namespace Ee4v.UI
                 var isText =
                     inputKind == InputFieldStoryInputKind.SingleLineText ||
                     inputKind == InputFieldStoryInputKind.MultilineText;
-                placeholderField.style.display = isText
-                    ? DisplayStyle.Flex
-                    : DisplayStyle.None;
-                maxHeightField.style.display =
-                    inputKind == InputFieldStoryInputKind.MultilineText
-                        ? DisplayStyle.Flex
-                        : DisplayStyle.None;
-                readOnlyField.style.display = isText
-                    ? DisplayStyle.Flex
-                    : DisplayStyle.None;
+                SetControlVisible(placeholderField, isText);
+                SetControlVisible(
+                    maxHeightField,
+                    inputKind == InputFieldStoryInputKind.MultilineText);
+                SetControlVisible(readOnlyField, isText);
 
                 fieldHost.Clear();
                 switch (inputKind)

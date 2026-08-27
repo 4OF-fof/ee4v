@@ -60,14 +60,15 @@ namespace Ee4v.UI
                 placeholder = nextValue;
                 refresh();
             });
-            var actionToggle = UiTextFactory.CreateToggle("先頭操作");
-            actionToggle.value = searchActionEnabled;
-            actionToggle.RegisterValueChangedCallback(evt =>
-            {
-                searchActionEnabled = evt.newValue;
-                refresh();
-            });
-            controls.Content.Add(actionToggle);
+            var actionToggle = AddToggle(
+                controls.Content,
+                "先頭操作",
+                searchActionEnabled,
+                nextValue =>
+                {
+                    searchActionEnabled = nextValue;
+                    refresh();
+                });
 
             var preview = CreatePreviewSection(parent);
             var surface = CreatePreviewArea(true);

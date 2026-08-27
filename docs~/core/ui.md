@@ -19,7 +19,8 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 - `InputField` Storyはテキスト、トグル、Object選択、ドロップダウンを含む単一値入力の標準入口です。文字列には`InputField`コンポーネントを使用し、その他の値には`UiTextFactory`が生成する型付き入力を使用します。単行テキストとドロップダウンは透明背景の下線型、複数行テキストは全周の境界と内側余白を持つテキストエリアとして表示します。トグルは選択時の青い塗りに加えてノブを左右へ移動します。
 - `SearchField`は検索入力、消去、任意の先頭操作をまとめます。先頭操作が有効な場合だけhover反応を表示します。
 - `StringListField`は文字列を1項目1行で編集する一覧入力です。通常項目と同じ寸法の追加行をリスト末尾に置き、各行の削除ボタンで項目を除去します。区切り文字の解釈や保存形式への変換は行いません。
-- `FormField`はfieldset風の外枠へラベルを重ね、必須の単一入力コンポーネントと任意のボタンを枠内にまとめるフォーム項目です。文字入力には`InputField`を使用し、`Toggle`と`ObjectField`には`UiTextFactory`の標準入力スタイルを使用します。入力自体の外観はFormFieldの内外で共通です。`StringListField`は各入力行と追加・削除操作を外枠内へ配置します。StoryではControlsの入力種別から4種類を切り替えて確認できます。複数の入力要素が必要な場合は一つの入力コンポーネントとして渡し、値の保持と検証は入力コンポーネントが担当します。
+- `FormInput`は任意ラベル、必須の単一入力コンポーネント、任意ボタンを横一列に配置するフォーム入力です。囲み枠は持ちません。文字入力には`InputField`を使用し、`Toggle`と`ObjectField`には`UiTextFactory`の標準入力スタイルを使用します。`StringListField`のように複数の入力要素を持つ場合も一つの入力コンポーネントとして渡します。値の保持と検証は入力コンポーネントが担当します。
+- `InputGroup`はfieldset風の外枠へ必須見出しを重ね、1個以上の`FormInput`をまとめる入力グループです。子孫の入力へフォーカスが移ると外枠を強調します。各`FormInput`のラベルは省略できます。
 - `NavigationItem`は`ItemRow`へクリックと選択状態を加えた操作項目です。
 - `TagPill`は任意の選択操作と削除操作を持つタグ入力です。
 
@@ -51,7 +52,7 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 ### Catalog外の基盤
 
 - `UiComposition.Prepare`は共通USSと機能固有USSを一つの入口で登録します。
-- `UiTextFactory`は文字を描画するUI要素の生成と文字更新を統一します。通常の文字入力には`InputField`を使用し、Unity固有の`TextField` APIが必要な場合だけ`CreateTextField`を直接使用します。Factoryが生成する入力には基盤となる共通クラスを付与します。文字・数値入力とドロップダウンは透明背景の下線型、`Toggle`はスイッチ型、`ObjectField`は右端の操作領域を分けた選択欄としてFormField内外で共有します。複合入力内の埋め込みフィールドは共通クラスを外し、親コンポーネントが外観を担当します。
+- `UiTextFactory`は文字を描画するUI要素の生成と文字更新を統一します。通常の文字入力には`InputField`を使用し、Unity固有の`TextField` APIが必要な場合だけ`CreateTextField`を直接使用します。Factoryが生成する入力には基盤となる共通クラスを付与します。文字・数値入力とドロップダウンは透明背景の下線型、`Toggle`はスイッチ型、`ObjectField`は右端の操作領域を分けた選択欄として`FormInput`の内外で共有します。複合入力内の埋め込みフィールドは共通クラスを外し、親コンポーネントが外観を担当します。
 - `UiDragAndDrop`は型付きpayloadによるドラッグ開始とMove操作の受け入れを共通化します。
 - `PreviewOrbitController`は3D Previewの回転、移動、拡縮とCamera配置を共通化します。Bounds計算と描画内容は利用側が扱います。
 
@@ -81,7 +82,7 @@ AssetManagerのタグ選択画面、Target選択画面、コレクション作�
 
 独立したEditorWindowまたは機能固有のVisualElementは、実使用するViewを`IUiStoryProvider`から組み立てます。Story専用の複製UIは作らず、保存や外部Sourceの変更は行いません。画面全体、一覧、Gridは`Domain/<feature>`に配置し、画面へ組み込む再利用可能な部品だけを`Domain/<feature>/Components`に配置します。
 
-CoreコンポーネントのStoryは、`Reference`を除いて`Controls`と`Preview`を持ちます。`Controls`では公開状態を変更でき、Preview内の操作は結果表示または状態変更へ接続します。表示だけの無反応な操作は置きません。
+CoreコンポーネントのStoryは、`Reference`を除いて`Controls`と`Preview`を持ちます。`Controls`の入力は`FormInput`へ統一し、公開状態を変更できます。Preview内の操作は結果表示または状態変更へ接続します。表示だけの無反応な操作は置きません。
 
 Catalog上の分類とコード上の分割は別に扱います。コードではWindowホストと表示クラスを分離し、`BlendShapePresetView`、`WindowGroupSettingsView`、`ItemStyleEditor`を各Windowと別ファイルで管理します。
 

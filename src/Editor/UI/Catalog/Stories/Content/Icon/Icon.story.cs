@@ -89,8 +89,12 @@ namespace Ee4v.UI
                 builtinField.SetValueWithoutNotify((Enum)(object)builtinIcon);
                 textureField.SetValueWithoutNotify(texture);
 
-                builtinField.style.display = sourceKind == UiIconSourceKind.Builtin ? DisplayStyle.Flex : DisplayStyle.None;
-                textureField.style.display = sourceKind == UiIconSourceKind.Texture ? DisplayStyle.Flex : DisplayStyle.None;
+                SetControlVisible(
+                    builtinField,
+                    sourceKind == UiIconSourceKind.Builtin);
+                SetControlVisible(
+                    textureField,
+                    sourceKind == UiIconSourceKind.Texture);
 
                 switch (sourceKind)
                 {

@@ -125,7 +125,7 @@ namespace Ee4v.Core.Settings
                 value => ApplyValue(settings, definition, value, errorBox));
             field.AddToClassList(FieldClassName);
 
-            var fieldLayout = new FormField(labelText, field);
+            var fieldLayout = new FormInput(labelText, field);
             fieldLayout.AddToClassList(FieldLayoutClassName);
             fieldLayout.LabelText.AddToClassList(LabelClassName);
             fieldLayout.LabelText.tooltip = tooltip;

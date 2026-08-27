@@ -301,7 +301,7 @@ namespace Ee4v.AssetManager.UI
 
     }
 
-    internal sealed class AssetManagerTextField : FormField
+    internal sealed class AssetManagerTextField : FormInput
     {
         private readonly InputField _field;
         private bool _multiline;
@@ -432,7 +432,7 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class AssetManagerEnumField : FormField
+    internal sealed class AssetManagerEnumField : FormInput
     {
         private readonly BaseField<Enum> _field;
 

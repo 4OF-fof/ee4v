@@ -1487,13 +1487,18 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-asset-manager__derived-assets-fields");
             var name = AssetManagerControls.CreateTextField(
                 I18N.Get("field.name"));
-            fields.Add(name);
 
             var description = AssetManagerControls.CreateTextField(
                 I18N.Get("field.description"),
                 "ee4v-asset-manager__derived-assets-description-field");
             description.SetMultiline(true, 144f);
-            fields.Add(description);
+            var inputGroup = new InputGroup(
+                I18N.Get("detail.information"),
+                name,
+                description);
+            inputGroup.AddToClassList(
+                "ee4v-asset-manager__derived-assets-input-group");
+            fields.Add(inputGroup);
 
             var message = new InlineMessage();
             fields.Add(message);

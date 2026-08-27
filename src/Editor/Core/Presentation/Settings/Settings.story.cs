@@ -23,6 +23,7 @@ namespace Ee4v.Core.Settings
                     Build,
                     dependencies: new[]
                     {
+                        "FormInput",
                         "InputField",
                         "UiTextFactory",
                         "SettingDrawerApi"

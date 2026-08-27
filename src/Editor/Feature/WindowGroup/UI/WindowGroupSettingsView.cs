@@ -179,7 +179,7 @@ namespace Ee4v.WindowGroup
             field.RegisterCallback<FocusOutEvent>(_ =>
                 RenameGroup(group.Id, field.value));
 
-            var nameRow = new FormField(
+            var nameRow = new FormInput(
                 I18N.Get("window.group.name"),
                 field);
             nameRow.AddToClassList(

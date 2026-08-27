@@ -32,7 +32,7 @@ namespace Ee4v.FaceExpression
         private TextField _searchField;
         private ListView _list;
         private ScrollView _groupList;
-        private FormField _roleField;
+        private FormInput _roleField;
         private TextField _roleEditor;
         private InlineMessage _status;
         private UiTextElement _sourceFbx;
@@ -143,7 +143,7 @@ namespace Ee4v.FaceExpression
             _roleEditor.AddToClassList(
                 "ee4v-blend-shape-preset__role-editor");
             _roleEditor.RegisterCallback<FocusOutEvent>(_ => RenameSelectedRole());
-            _roleField = new FormField(string.Empty, _roleEditor);
+            _roleField = new FormInput(string.Empty, _roleEditor);
             _roleField.AddToClassList("ee4v-blend-shape-preset__role-row");
             detail.Add(_roleField);
             detail.Add(CreateDetailHeader());

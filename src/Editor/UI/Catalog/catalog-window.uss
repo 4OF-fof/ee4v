@@ -68,18 +68,13 @@
     padding-right: var(--ee4v-space-sm);
 }
 
-.ee4v-ui-catalog-controls .unity-base-field {
+.ee4v-ui-catalog-control {
     margin-bottom: var(--ee4v-space-md);
 }
 
-.ee4v-ui-catalog-controls .ee4v-ui-input-field__field {
+.ee4v-ui-catalog-control .unity-base-field,
+.ee4v-ui-catalog-control .ee4v-ui-input-field__field {
     margin-bottom: var(--ee4v-space-none);
-}
-
-.ee4v-ui-catalog-control-label {
-    margin-bottom: var(--ee4v-space-xs);
-    color: var(--ee4v-color-text-soft);
-    font-size: var(--ee4v-font-size-body);
 }
 
 .ee4v-ui-catalog-detail-item {

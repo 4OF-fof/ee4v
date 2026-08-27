@@ -366,7 +366,7 @@ namespace Ee4v.FaceExpression
             _removeMenuButton.AddToClassList("ee4v-ui-button");
             _removeMenuButton.AddToClassList(
                 "ee4v-gesture-assignment__extra-remove");
-            var menuControls = new FormField(
+            var menuControls = new FormInput(
                 _text.MenuName,
                 _menuNameField,
                 _removeMenuButton);

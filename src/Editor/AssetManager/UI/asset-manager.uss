@@ -5,12 +5,12 @@
 @import url("../../UI/Components/Inputs/InputField/input-field.uss");
 @import url("../../UI/Components/Inputs/SearchField/search-field.uss");
 
-.ee4v-asset-manager-control-field.ee4v-ui-form-field {
+.ee4v-asset-manager-control-field.ee4v-ui-form-input {
     align-self: stretch;
     margin-bottom: var(--ee4v-space-lg);
 }
 
-.ee4v-asset-manager-control-field > .ee4v-ui-form-field__input {
+.ee4v-asset-manager-control-field > .ee4v-ui-form-input__input {
     width: 100%;
     min-width: 0;
     flex-direction: column;

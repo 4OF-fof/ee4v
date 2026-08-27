@@ -3,16 +3,16 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
-    public class FormField : VisualElement
+    public class FormInput : VisualElement
     {
-        private const string FocusedClassName =
-            "ee4v-ui-form-field--focused";
-        private const string HasLabelClassName =
-            "ee4v-ui-form-field--has-label";
-        private const string ToggleClassName =
-            "ee4v-ui-form-field--toggle";
+        public FormInput(
+            VisualElement input,
+            Button button = null)
+            : this(string.Empty, input, button)
+        {
+        }
 
-        public FormField(
+        public FormInput(
             string label,
             VisualElement input,
             Button button = null)
@@ -22,26 +22,21 @@ namespace Ee4v.UI
                 throw new ArgumentNullException(nameof(input));
             }
 
-            AddToClassList("ee4v-ui-form-field");
+            AddToClassList("ee4v-ui-form-input");
             LabelText = UiTextFactory.Create(
                 string.Empty,
                 UiClassNames.FormLabel,
-                "ee4v-ui-form-field__label");
+                "ee4v-ui-form-input__label");
             Input = input;
-            Input.AddToClassList("ee4v-ui-form-field__input");
-            EnableInClassList(ToggleClassName, Input is Toggle);
+            Input.AddToClassList("ee4v-ui-form-input__input");
             Button = button;
             Add(LabelText);
             Add(Input);
             if (Button != null)
             {
-                Button.AddToClassList("ee4v-ui-form-field__button");
+                Button.AddToClassList("ee4v-ui-form-input__button");
                 Add(Button);
             }
-            RegisterCallback<FocusInEvent>(_ =>
-                AddToClassList(FocusedClassName));
-            RegisterCallback<FocusOutEvent>(_ =>
-                RemoveFromClassList(FocusedClassName));
             SetLabel(label);
         }
 
@@ -57,7 +52,6 @@ namespace Ee4v.UI
             LabelText.style.display = hasLabel
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
-            EnableInClassList(HasLabelClassName, hasLabel);
         }
     }
 }

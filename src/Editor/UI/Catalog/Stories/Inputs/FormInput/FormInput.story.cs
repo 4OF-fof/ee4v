@@ -7,7 +7,7 @@ namespace Ee4v.UI
 {
     internal sealed partial class CatalogWindow
     {
-        private enum FormFieldStoryInputKind
+        private enum FormInputStoryInputKind
         {
             Text,
             Toggle,
@@ -15,23 +15,24 @@ namespace Ee4v.UI
             StringList
         }
 
-        private sealed class FormFieldCatalogRegistrar : ICatalogRegistrar
+        private sealed class FormInputCatalogRegistrar : ICatalogRegistrar
         {
             public int Order => 35;
 
             public void Register(CatalogRegistry registry)
             {
                 registry.RegisterStory(new StoryRegistration(
-                    "form-field",
+                    "form-input",
                     "Inputs",
-                    "FormField",
-                    "外枠へ重ねたラベルと、枠内の各種入力コンポーネント・任意ボタンを一つにまとめるフォーム項目です。",
-                    "fieldset風の外枠へラベルを重ね、InputField、Toggle、ObjectField、StringListFieldと任意のボタンを同じ枠内に配置します。文字入力にはInputFieldを使用し、ToggleとObjectFieldにはUiTextFactoryの標準入力スタイルを使用します。各入力の外観はFormFieldの内外で共通です。複数の入力要素が必要な場合は、一つの入力コンポーネントとして渡します。値の保持と検証は入力コンポーネントが担当します。",
+                    "FormInput",
+                    "ラベル、入力コンポーネント、任意ボタンを横一列に配置するフォーム入力です。",
+                    "囲み枠を持たず、InputField、Toggle、ObjectField、StringListFieldのいずれか一つと任意ボタンをラベルの右側へ配置します。値の保持と検証は入力コンポーネントが担当します。複数の入力を一つの枠へまとめる場合はInputGroupを使用します。",
                     new[] { "InputField", "StringListField" },
                     ComponentImplementationKind.UiToolkit,
-                    (window, parent) => window.BuildFormFieldStory(parent),
+                    (window, parent) => window.BuildFormInputStory(parent),
                     new[]
                     {
+                        "Editor/UI/Catalog/helper/Controls.cs",
                         "Editor/AssetManager/UI/AssetManagerControls.cs",
                         "Editor/Core/Presentation/Settings/SettingsUiRenderer.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetView.cs",
@@ -42,11 +43,11 @@ namespace Ee4v.UI
             }
         }
 
-        private void BuildFormFieldStory(VisualElement parent)
+        private void BuildFormInputStory(VisualElement parent)
         {
             var label = "名前";
             var showAction = true;
-            var inputKind = FormFieldStoryInputKind.Text;
+            var inputKind = FormInputStoryInputKind.Text;
             var textValue = "Main Window";
             var toggleValue = true;
             UnityEngine.Object objectValue = null;
@@ -103,7 +104,7 @@ namespace Ee4v.UI
                 Func<string> formatResult;
                 switch (inputKind)
                 {
-                    case FormFieldStoryInputKind.Toggle:
+                    case FormInputStoryInputKind.Toggle:
                     {
                         var toggle = UiTextFactory.CreateToggle();
                         toggle.SetValueWithoutNotify(toggleValue);
@@ -115,7 +116,7 @@ namespace Ee4v.UI
                             : "無効を保存しました。";
                         break;
                     }
-                    case FormFieldStoryInputKind.Object:
+                    case FormInputStoryInputKind.Object:
                     {
                         var objectField = UiTextFactory.CreateObjectField();
                         objectField.objectType = typeof(GameObject);
@@ -129,7 +130,7 @@ namespace Ee4v.UI
                             : "「" + objectValue.name + "」を保存しました。";
                         break;
                     }
-                    case FormFieldStoryInputKind.StringList:
+                    case FormInputStoryInputKind.StringList:
                     {
                         var listField = new StringListField(
                             new StringListFieldState(
@@ -164,7 +165,7 @@ namespace Ee4v.UI
                         "保存",
                         () => result.SetText(formatResult()))
                     : null;
-                fieldHost.Add(new FormField(label, input, save));
+                fieldHost.Add(new FormInput(label, input, save));
             };
 
             refresh();

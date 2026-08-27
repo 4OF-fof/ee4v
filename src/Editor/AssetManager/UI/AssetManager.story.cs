@@ -208,7 +208,7 @@ namespace Ee4v.AssetManager.UI
                     dependencies: new[]
                     {
                         "ActionBar",
-                        "FormField",
+                        "FormInput",
                         "UiTextFactory"
                     },
                     usageLocations: new[]
