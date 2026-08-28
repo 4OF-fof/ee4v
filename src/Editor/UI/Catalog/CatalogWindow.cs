@@ -77,6 +77,7 @@ namespace Ee4v.UI
             var root = rootVisualElement;
             root.Clear();
             root.AddToClassList(RootClassName);
+            UiComposition.ApplyTheme(root);
             AddCatalogStyleSheets(root);
 
             var shell = new VisualElement();

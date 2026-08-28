@@ -10,7 +10,7 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 
 ### Reference
 
-- `Color Palette`はUIとIMGUIで共有する役割別カラートークンの参照です。独自の表示部品ではありません。
+- `Color Palette`はUIとIMGUIで共有するUnity Dark・Lightの役割別カラートークンの参照です。独自の表示部品ではありません。
 - `Default Scrollbars`は`UiComposition.Prepare`配下へ適用される既定のスクロールバー表示です。独自の`ScrollView`型は提供しません。
 
 ### Inputs
@@ -51,6 +51,7 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 ### Catalog外の基盤
 
 - `UiComposition.Prepare`は共通USSと機能固有USSを一つの入口で登録します。
+- `UiColorPalette`はUI ToolkitとIMGUIが共有するテーマ別標準色の契約です。`UiColorPalettes`がUnity Dark・Lightのバリエーションを所有し、`UiColorTokens.Current`と`UiComposition.Prepare`が現在のUnity Editorテーマへ接続します。
 - `UiTextFactory`は文字を描画するUI要素の生成と文字更新を統一します。通常の文字入力には`InputField`を使用し、Unity固有の`TextField` APIが必要な場合だけ`CreateTextField`を直接使用します。Factoryが生成する入力には基盤となる共通クラスを付与します。文字・数値入力とドロップダウンは透明背景の下線型、`Toggle`は選択時に面を塗るチェックボックス型、`ObjectField`は右端の操作領域を分けた選択欄として`FormInput`の内外で共有します。複合入力内の埋め込みフィールドは共通クラスを外し、親コンポーネントが外観を担当します。
 - `UiDragAndDrop`は型付きpayloadによるドラッグ開始とMove操作の受け入れを共通化します。
 - `PreviewOrbitController`は3D Previewの回転、移動、拡縮とCamera配置を共通化します。Bounds計算と描画内容は利用側が扱います。

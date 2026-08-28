@@ -16,16 +16,32 @@ namespace Ee4v.UI
                     "color-palette",
                     "Reference",
                     "Color Palette",
-                    "UIとIMGUIが共有する役割別の色を一覧表示します。",
-                    "色は用途名で参照し、部品側へ直接カラー値を書きません。",
+                    "UIとIMGUIが共有するUnity Dark・Lightの役割別色を一覧表示します。",
+                    "色は用途名で参照し、現在のUnity Editorテーマに対応するpaletteを使用します。",
                     Build,
-                    dependencies: new[] { "UiColorTokens" })
+                    dependencies: new[]
+                    {
+                        "UiColorPalette",
+                        "UiColorTokens"
+                    })
             };
         }
 
         private static void Build(VisualElement parent)
         {
-            var palette = UiColorPalettes.UnityDark;
+            parent.Add(new SectionHeader(
+                "Unity Dark",
+                "Unity EditorのDarkテーマで使用する役割色です。"));
+            parent.Add(CreatePaletteGrid(UiColorPalettes.UnityDark));
+            parent.Add(new SectionHeader(
+                "Unity Light",
+                "Unity EditorのLightテーマを想定した役割色です。"));
+            parent.Add(CreatePaletteGrid(UiColorPalettes.UnityLight));
+        }
+
+        private static VisualElement CreatePaletteGrid(
+            UiColorPalette palette)
+        {
             var entries = new[]
             {
                 Entry("ChromeDeep", palette.ChromeDeep),
@@ -73,7 +89,7 @@ namespace Ee4v.UI
                 grid.Add(item);
             }
 
-            parent.Add(grid);
+            return grid;
         }
 
         private static KeyValuePair<string, Color32> Entry(

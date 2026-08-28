@@ -1134,7 +1134,7 @@ namespace Ee4v.AssetManager.UI
                 string.Format(
                     I18N.Get("detail.item.selectedCount"),
                     items.Count),
-                UiClassNames.InfomationPanelSelectionCount,
+                UiClassNames.SelectionCount,
                 "ee4v-asset-manager__selection-count"));
             LoadDetailThumbnails(orderedItems, thumbnailStack);
         }

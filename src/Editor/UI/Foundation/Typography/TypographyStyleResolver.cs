@@ -77,7 +77,6 @@ namespace Ee4v.UI
         private static readonly Dictionary<string, TypographyStyleDefinition> Styles =
             new Dictionary<string, TypographyStyleDefinition>(StringComparer.Ordinal)
             {
-                { UiClassNames.WindowTitle, Create(true, UiTypographyTokens.TitleFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
                 { UiClassNames.SectionTitle, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
                 { UiClassNames.SecondaryText, Create(false, UiTypographyTokens.SmallFontSize, UiColorTokens.TextMuted, TextAnchor.MiddleLeft, WhiteSpace.Normal) },
                 { UiClassNames.InfoCardEyebrow, Create(true, UiTypographyTokens.SmallFontSize, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
@@ -87,14 +86,9 @@ namespace Ee4v.UI
                 { UiClassNames.InputPlaceholder, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextMuted, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.FormLabel, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextSecondary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.FormError, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.Error, TextAnchor.MiddleLeft, WhiteSpace.Normal) },
-                { UiClassNames.TestResultGroupCasesTitle, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
-                { UiClassNames.TestResultGroupCasesMeta, Create(false, UiTypographyTokens.SmallFontSize, UiColorTokens.TextMuted, TextAnchor.MiddleRight, WhiteSpace.NoWrap) },
                 { UiClassNames.NavigationItemLabel, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
-                { UiClassNames.CollectionNavigationLabel, Create(true, UiTypographyTokens.LargeBodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
                 { UiClassNames.ButtonLabel, Create(true, UiTypographyTokens.BodyFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleLeft, WhiteSpace.NoWrap) },
-                { UiClassNames.InfomationPanelSelectionCount, Create(true, UiTypographyTokens.TitleFontSize, UiColorTokens.Focus, TextAnchor.MiddleCenter, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
-                { UiClassNames.InfomationPanelSelectionCountSuffix, Create(false, UiTypographyTokens.LargeBodyFontSize, UiColorTokens.TextSoft, TextAnchor.MiddleCenter, WhiteSpace.NoWrap) },
-                { UiClassNames.FileTreeDetailName, Create(true, UiTypographyTokens.DisplayFontSize, UiColorTokens.TextPrimary, TextAnchor.MiddleCenter, WhiteSpace.Normal, fontStyle: FontStyle.Bold) },
+                { UiClassNames.SelectionCount, Create(true, UiTypographyTokens.TitleFontSize, UiColorTokens.Focus, TextAnchor.MiddleCenter, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold) },
                 { UiClassNames.CatalogPageTitle, Create(true, UiTypographyTokens.HeadingFontSize, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.Normal, fontStyle: FontStyle.Bold, marginBottom: UiSpacingTokens.Xs) },
                 { UiClassNames.CatalogPageDescription, Create(false, UiTypographyTokens.BodyFontSize, UiColorTokens.TextSecondary, TextAnchor.UpperLeft, WhiteSpace.Normal) },
                 { UiClassNames.CatalogDetailLabel, Create(true, UiTypographyTokens.SmallFontSize, UiColorTokens.TextPrimary, TextAnchor.UpperLeft, WhiteSpace.NoWrap, fontStyle: FontStyle.Bold, marginBottom: UiSpacingTokens.Xxs) },

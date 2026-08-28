@@ -100,39 +100,46 @@ namespace Ee4v.UI
                 statusSkippedText: new Color32(166, 185, 238, 255),
                 statusInconclusiveText: new Color32(198, 162, 236, 255));
 
+        public static readonly UiColorPalette UnityLight =
+            new UiColorPalette(
+                chromeDeep: new Color32(165, 165, 165, 255),
+                tabIdle: new Color32(183, 183, 183, 255),
+                field: new Color32(240, 240, 240, 255),
+                panel: new Color32(200, 200, 200, 255),
+                surfaceRaised: new Color32(210, 210, 210, 255),
+                control: new Color32(179, 179, 179, 255),
+                toolActive: new Color32(150, 185, 215, 255),
+                selection: new Color32(58, 121, 187, 255),
+                focus: new Color32(58, 121, 187, 255),
+                error: new Color32(183, 55, 55, 255),
+                textPrimary: new Color32(56, 56, 56, 255),
+                textSecondary: new Color32(56, 56, 56, 209),
+                textMuted: new Color32(56, 56, 56, 184),
+                textSoft: new Color32(56, 56, 56, 199),
+                textDisabled: new Color32(56, 56, 56, 92),
+                statusIdleText: new Color32(70, 70, 70, 255),
+                statusRunningText: new Color32(140, 105, 0, 255),
+                statusPassedText: new Color32(45, 120, 65, 255),
+                statusFailedText: new Color32(170, 55, 55, 255),
+                statusSkippedText: new Color32(65, 85, 150, 255),
+                statusInconclusiveText: new Color32(110, 65, 160, 255));
+
+        public static UiColorPalette Current =>
+            EditorGUIUtility.isProSkin ? UnityDark : UnityLight;
     }
 
     public static class UiColorTokens
     {
-        public static readonly Color32 Transparent = new Color32(0, 0, 0, 0);
+        public static readonly Color32 Transparent =
+            new Color32(0, 0, 0, 0);
         public static readonly Color32 TextOnState =
             new Color32(249, 249, 249, 255);
         private static readonly Color32 DarkHierarchyGuide =
             new Color32(104, 104, 104, 255);
-        private static readonly Color32 LightHierarchyBackground =
-            new Color32(200, 200, 200, 255);
         private static readonly Color32 LightHierarchyGuide =
             new Color32(142, 142, 142, 255);
-        private static readonly Color32 LightHierarchyText =
-            new Color32(56, 56, 56, 255);
-        private static readonly Color DarkPopupWindowBackground =
-            new Color32(56, 56, 56, 255);
-        private static readonly Color LightPopupWindowBackground =
-            new Color32(200, 200, 200, 255);
-        private static readonly Color DarkPopupWindowHeader =
-            new Color32(40, 40, 40, 255);
-        private static readonly Color LightPopupWindowHeader =
-            new Color32(165, 165, 165, 255);
-        private static readonly Color DarkPopupWindowBorder =
-            new Color32(25, 25, 25, 255);
-        private static readonly Color LightPopupWindowBorder =
-            new Color32(138, 138, 138, 255);
-        private static readonly Color DarkPopupWindowHover =
-            new Color32(68, 68, 68, 255);
-        private static readonly Color LightPopupWindowHover =
-            new Color32(178, 178, 178, 255);
 
-        public static UiColorPalette Current => UiColorPalettes.UnityDark;
+        public static UiColorPalette Current => UiColorPalettes.Current;
         public static Color32 ChromeDeep => Current.ChromeDeep;
         public static Color32 TabIdle => Current.TabIdle;
         public static Color32 Field => Current.Field;
@@ -153,34 +160,14 @@ namespace Ee4v.UI
         public static Color32 StatusPassedText => Current.StatusPassedText;
         public static Color32 StatusFailedText => Current.StatusFailedText;
         public static Color32 StatusSkippedText => Current.StatusSkippedText;
-        public static Color32 StatusInconclusiveText => Current.StatusInconclusiveText;
-        public static Color32 HierarchyDecorationBackground =>
-            EditorGUIUtility.isProSkin
-                ? Current.Panel
-                : LightHierarchyBackground;
+        public static Color32 StatusInconclusiveText =>
+            Current.StatusInconclusiveText;
+        public static Color32 HierarchyDecorationBackground => Current.Panel;
         public static Color32 HierarchyDecorationGuide =>
             EditorGUIUtility.isProSkin
                 ? DarkHierarchyGuide
                 : LightHierarchyGuide;
-        public static Color32 HierarchyDecorationText =>
-            EditorGUIUtility.isProSkin
-                ? Current.TextPrimary
-                : LightHierarchyText;
-        public static Color PopupWindowBackground =>
-            EditorGUIUtility.isProSkin
-                ? DarkPopupWindowBackground
-                : LightPopupWindowBackground;
-        public static Color PopupWindowHeader =>
-            EditorGUIUtility.isProSkin
-                ? DarkPopupWindowHeader
-                : LightPopupWindowHeader;
-        public static Color PopupWindowBorder =>
-            EditorGUIUtility.isProSkin
-                ? DarkPopupWindowBorder
-                : LightPopupWindowBorder;
-        public static Color PopupWindowHover =>
-            EditorGUIUtility.isProSkin
-                ? DarkPopupWindowHover
-                : LightPopupWindowHover;
+        public static Color32 HierarchyDecorationText => Current.TextPrimary;
+        public static Color PopupWindowBackground => Current.Panel;
     }
 }

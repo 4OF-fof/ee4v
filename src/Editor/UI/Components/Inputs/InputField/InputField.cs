@@ -24,7 +24,7 @@ namespace Ee4v.UI
         public string Placeholder { get; }
     }
 
-    public class InputField : VisualElement
+    public sealed class InputField : VisualElement
     {
         private const string RootClassName = "ee4v-ui-input-field";
         private const string MultilineClassName = "ee4v-ui-input-field--multiline";
@@ -58,20 +58,17 @@ namespace Ee4v.UI
             _textField.RegisterValueChangedCallback(evt =>
             {
                 RefreshVisualState();
-                OnValueChanged(evt.newValue ?? string.Empty);
                 ValueChanged?.Invoke(evt.newValue ?? string.Empty);
             });
             _textField.RegisterCallback<FocusInEvent>(_ =>
             {
                 _isFocused = true;
                 RefreshVisualState();
-                OnFocusChanged(true);
             });
             _textField.RegisterCallback<FocusOutEvent>(_ =>
             {
                 _isFocused = false;
                 RefreshVisualState();
-                OnFocusChanged(false);
             });
             _textField.RegisterCallback<GeometryChangedEvent>(_ => RefreshScrollView());
 
@@ -85,7 +82,7 @@ namespace Ee4v.UI
 
         public event Action<string> ValueChanged;
 
-        public virtual string Value
+        public string Value
         {
             get { return _textField.value ?? string.Empty; }
             set
@@ -101,12 +98,7 @@ namespace Ee4v.UI
             set { _textField.isReadOnly = value; }
         }
 
-        protected VisualElement FieldContainer
-        {
-            get { return _fieldContainer; }
-        }
-
-        public virtual void SetState(InputFieldState state)
+        public void SetState(InputFieldState state)
         {
             state = state ?? new InputFieldState();
             SetMultiline(state.Multiline);
@@ -115,7 +107,7 @@ namespace Ee4v.UI
             SetValueWithoutNotify(state.Value);
         }
 
-        public virtual void SetValueWithoutNotify(string value)
+        public void SetValueWithoutNotify(string value)
         {
             _textField.SetValueWithoutNotify(value ?? string.Empty);
             RefreshVisualState();
@@ -194,20 +186,7 @@ namespace Ee4v.UI
                 contentMaxHeight);
         }
 
-        protected virtual void OnValueChanged(string value)
-        {
-        }
-
-        protected virtual void OnFocusChanged(bool isFocused)
-        {
-        }
-
-        protected void NotifyValueChanged(string value)
-        {
-            ValueChanged?.Invoke(value ?? string.Empty);
-        }
-
-        protected void RefreshVisualState()
+        private void RefreshVisualState()
         {
             var hasValue = !string.IsNullOrEmpty(Value);
             _placeholderLabel.style.display = !hasValue && !_isFocused && !string.IsNullOrWhiteSpace(_placeholderLabel.Text)

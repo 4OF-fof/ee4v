@@ -78,3 +78,78 @@
     --ee4v-color-success-text: rgba(226, 245, 222, 0.96);
 
 }
+
+.ee4v-ui--light {
+    /* Unity Editor Light palette. Keep names aligned with UiColorPalettes.UnityLight. */
+    --ee4v-color-chrome-deep: #A5A5A5;
+    --ee4v-color-tab-idle: #B7B7B7;
+    --ee4v-color-field: #F0F0F0;
+    --ee4v-color-panel: #C8C8C8;
+    --ee4v-color-surface-raised: #D2D2D2;
+    --ee4v-color-control: #B3B3B3;
+    --ee4v-color-tool-active: #96B9D7;
+    --ee4v-color-selection: #3A79BB;
+    --ee4v-color-focus: #3A79BB;
+    --ee4v-color-text-primary: #383838;
+    --ee4v-color-menu-native: #383838;
+
+    --ee4v-color-surface-subtle: rgba(0, 0, 0, 0.025);
+    --ee4v-color-surface-soft: rgba(0, 0, 0, 0.035);
+    --ee4v-color-surface-hover: rgba(0, 0, 0, 0.05);
+    --ee4v-color-surface-hover-opaque: #C2C2C2;
+    --ee4v-color-surface-hover-strong: rgba(0, 0, 0, 0.08);
+    --ee4v-color-surface-pressed: rgba(0, 0, 0, 0.13);
+    --ee4v-color-border-subtle: rgba(0, 0, 0, 0.06);
+    --ee4v-color-border-default: rgba(0, 0, 0, 0.08);
+    --ee4v-color-border-strong: rgba(0, 0, 0, 0.10);
+    --ee4v-color-border-active: rgba(0, 0, 0, 0.14);
+    --ee4v-color-text-secondary: rgba(56, 56, 56, 0.82);
+    --ee4v-color-text-muted: rgba(56, 56, 56, 0.72);
+    --ee4v-color-text-soft: rgba(56, 56, 56, 0.78);
+    --ee4v-color-text-disabled: rgba(56, 56, 56, 0.36);
+    --ee4v-color-control-highlight: #383838;
+    --ee4v-color-selection-soft: rgba(58, 121, 187, 0.42);
+    --ee4v-color-selection-soft-opaque: #8FAECE;
+    --ee4v-color-selection-pressed: #31679F;
+    --ee4v-color-overlay-border: rgba(0, 0, 0, 0.25);
+    --ee4v-color-scroll-thumb: rgba(56, 56, 56, 0.44);
+    --ee4v-color-slider-track: rgba(56, 56, 56, 0.26);
+    --ee4v-color-slider-track-hover: rgba(56, 56, 56, 0.40);
+    --ee4v-color-slider-fill: rgba(56, 56, 56, 0.62);
+    --ee4v-color-slider-fill-hover: rgba(56, 56, 56, 0.85);
+    --ee4v-color-slider-knob-hover: #383838;
+
+    --ee4v-color-control-hover: #A8A8A8;
+    --ee4v-color-control-pressed: #9D9D9D;
+    --ee4v-color-tool-active-hover: #85ADCF;
+
+    --ee4v-color-tag-pill: #B8B8B8;
+    --ee4v-color-tag-pill-hover: #A8A8A8;
+    --ee4v-color-tag-create: #3F8F38;
+    --ee4v-color-tag-create-hover: #347B2F;
+
+    --ee4v-color-info: #2F6FAE;
+    --ee4v-color-success: #3F8F38;
+    --ee4v-color-warning: #A77C18;
+    --ee4v-color-error: #B73737;
+    --ee4v-color-info-surface-soft: rgba(47, 111, 174, 0.10);
+    --ee4v-color-info-surface-strong: rgba(47, 111, 174, 0.22);
+    --ee4v-color-warning-surface-soft: rgba(167, 124, 24, 0.10);
+    --ee4v-color-error-surface-soft: rgba(183, 55, 55, 0.10);
+    --ee4v-color-status-idle: rgba(128, 128, 128, 0.25);
+    --ee4v-color-status-running: rgba(167, 124, 24, 0.25);
+    --ee4v-color-status-passed: rgba(63, 143, 56, 0.25);
+    --ee4v-color-status-failed: rgba(183, 55, 55, 0.25);
+    --ee4v-color-status-skipped: rgba(65, 85, 150, 0.25);
+    --ee4v-color-status-inconclusive: rgba(110, 65, 160, 0.25);
+    --ee4v-color-status-idle-text: #464646;
+    --ee4v-color-status-running-text: #8C6900;
+    --ee4v-color-status-passed-text: #2D7841;
+    --ee4v-color-status-failed-text: #AA3737;
+    --ee4v-color-status-skipped-text: #415596;
+    --ee4v-color-status-inconclusive-text: #6E41A0;
+    --ee4v-color-success-border-soft: rgba(63, 143, 56, 0.34);
+    --ee4v-color-success-surface-soft: rgba(63, 143, 56, 0.16);
+    --ee4v-color-success-surface-hover: rgba(63, 143, 56, 0.20);
+    --ee4v-color-success-text: #245E22;
+}

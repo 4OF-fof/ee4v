@@ -15,23 +15,13 @@ namespace Ee4v.UI
         private Vector2 _dragStartMouseScreen;
         private Rect _dragStartWindowPosition;
         private VisualElement _keyboardTarget;
-        private CustomPopup _popup;
         private Action _submit;
-        private bool _isLocked;
         private bool _isResizing;
         private int _resizeControlId;
         private ResizeEdge _resizeEdge = ResizeEdge.None;
         private Vector2 _resizeStartMouseScreen;
         private Rect _resizeStartWindowPosition;
         private bool _watchingTransientPicker;
-
-        protected Color? HeaderBackgroundColor { get; set; }
-
-        protected bool IsLocked
-        {
-            get { return _isLocked; }
-            set { _isLocked = value; }
-        }
 
         protected virtual void OnEnable()
         {
@@ -127,25 +117,12 @@ namespace Ee4v.UI
             }
 
             popup.SetCloseAction(Close);
-            popup.SetHeaderBackground(HeaderBackgroundColor);
-            _popup = popup;
             WindowMover(popup);
             rootVisualElement.Add(popup);
         }
 
-        protected void UpdateHeaderBackground(Color? color)
-        {
-            HeaderBackgroundColor = color;
-            _popup?.SetHeaderBackground(color);
-        }
-
         protected virtual void OnLostFocus()
         {
-            if (IsLocked)
-            {
-                return;
-            }
-
             EditorApplication.delayCall -= EvaluateFocusLoss;
             EditorApplication.delayCall += EvaluateFocusLoss;
         }
@@ -237,7 +214,7 @@ namespace Ee4v.UI
 
         private void EvaluateFocusLoss()
         {
-            if (this == null || IsLocked)
+            if (this == null)
             {
                 return;
             }
@@ -290,10 +267,7 @@ namespace Ee4v.UI
             }
 
             StopWatchingTransientPicker();
-            if (!IsLocked)
-            {
-                Focus();
-            }
+            Focus();
         }
 
         private void StopWatchingTransientPicker()
@@ -710,19 +684,5 @@ namespace Ee4v.UI
                     _closeButton.Contains(element));
         }
 
-        internal void SetHeaderBackground(Color? color)
-        {
-            if (color == null || color == Color.clear)
-            {
-                Header.style.backgroundColor =
-                    new StyleColor(StyleKeyword.Null);
-            }
-            else
-            {
-                Header.style.backgroundColor = color.Value;
-            }
-
-            Header.MarkDirtyRepaint();
-        }
     }
 }

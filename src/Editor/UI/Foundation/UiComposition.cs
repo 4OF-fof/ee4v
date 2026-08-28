@@ -5,6 +5,8 @@ namespace Ee4v.UI
 {
     public static class UiComposition
     {
+        private const string DarkThemeClassName = "ee4v-ui--dark";
+        private const string LightThemeClassName = "ee4v-ui--light";
         private static readonly string[] ComponentStyleSheetPaths =
         {
             "Editor/UI/Components/Overlays/StatusOverlay/status-overlay.uss",
@@ -34,6 +36,7 @@ namespace Ee4v.UI
             }
 
             root.AddToClassList("ee4v-ui");
+            ApplyTheme(root);
             UiStyleUtility.AddPackageStyleSheet(
                 root,
                 "Editor/UI/Components/common.uss");
@@ -54,6 +57,20 @@ namespace Ee4v.UI
                     root,
                     styleSheetPaths[index]);
             }
+        }
+
+        internal static void ApplyTheme(VisualElement root)
+        {
+            if (root == null)
+            {
+                throw new ArgumentNullException(nameof(root));
+            }
+
+            var useLightTheme = object.ReferenceEquals(
+                UiColorPalettes.Current,
+                UiColorPalettes.UnityLight);
+            root.EnableInClassList(DarkThemeClassName, !useLightTheme);
+            root.EnableInClassList(LightThemeClassName, useLightTheme);
         }
     }
 }

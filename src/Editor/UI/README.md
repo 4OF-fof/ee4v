@@ -10,15 +10,15 @@ rootVisualElement.Add(
     UiTextFactory.CreateButton("Run", Run));
 ```
 
-`UiComposition.Prepare` は共通 class、共有コンポーネントの stylesheet、Unity Dark palette を適用します。
+`UiComposition.Prepare` は共通 class、共有コンポーネントの stylesheet、現在のUnity Editorテーマに対応するpaletteを適用します。
 各EditorWindowが追加で登録するのは機能固有のstylesheetだけです。部品自体はUXMLの有無に依存しません。
 
 ## color palette
 
-標準paletteは `UiColorPalettes.UnityDark` です。USS は `--ee4v-color-*` の役割トークンを参照します。
-IMGUI fallback は `UiColorTokens` を参照し、同じ `UiColorPalette` から色を取得します。
-再デザインでは `ui-color-tokens.uss` と `UiColorPalettes.UnityDark` を同時に更新します。
-Catalog の `Foundation/Color Palette` で役割名と実際の色を確認できます。
+`UiColorPalettes.UnityDark`と`UiColorPalettes.UnityLight`がテーマ別の標準色です。`UiColorTokens.Current`はUnity Editorのテーマに対応する`UiColorPalette`を返します。
+USS は `--ee4v-color-*` の役割トークンを参照し、`UiComposition.Prepare`がrootへ付けるテーマclassでDark・Lightを切り替えます。IMGUI fallbackも`UiColorTokens`を参照します。
+再デザインでは `ui-color-tokens.uss` と対応する`UiColorPalette`を同時に更新します。
+Catalog の `Reference/Color Palette` で役割名と実際の色を確認できます。
 
 ## Story
 

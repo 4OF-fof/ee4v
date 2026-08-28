@@ -19,7 +19,7 @@ namespace Ee4v.UI
             Data = data;
             SearchText = searchText ?? string.Empty;
             TooltipText = tooltipText ?? SearchText;
-            Children = children ?? new SearchableTreeItemData<TData>[0];
+            Children = children ?? Array.Empty<SearchableTreeItemData<TData>>();
         }
 
         public int Id { get; }
@@ -143,7 +143,7 @@ namespace Ee4v.UI
 
         public void SetItems(IReadOnlyList<SearchableTreeItemData<TData>> items, bool preserveExpansion)
         {
-            _sourceItems = items ?? new SearchableTreeItemData<TData>[0];
+            _sourceItems = items ?? Array.Empty<SearchableTreeItemData<TData>>();
             _selectedTreeItems = Array.Empty<SearchableTreeItemData<TData>>();
             RefreshTree(preserveExpansion);
         }

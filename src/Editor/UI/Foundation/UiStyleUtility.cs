@@ -42,7 +42,7 @@ namespace Ee4v.UI
             }
         }
 
-        public static StyleSheet LoadPackageStyleSheet(
+        private static StyleSheet LoadPackageStyleSheet(
             string packageRelativePath)
         {
             if (string.IsNullOrWhiteSpace(packageRelativePath))

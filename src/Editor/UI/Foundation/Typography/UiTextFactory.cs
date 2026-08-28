@@ -45,17 +45,6 @@ namespace Ee4v.UI
             return toggle;
         }
 
-        public static Foldout CreateFoldout(
-            string text = "",
-            bool value = false,
-            params string[] classNames)
-        {
-            var foldout = ConfigureNativeTextElement(
-                new Foldout { value = value });
-            AttachToFoldout(foldout, text, classNames);
-            return foldout;
-        }
-
         public static TextField CreateTextField(
             string label = "",
             params string[] classNames)
@@ -158,34 +147,6 @@ namespace Ee4v.UI
             }
 
             helpBox.text = text ?? string.Empty;
-        }
-
-        public static UiTextElement AttachToFoldout(
-            Foldout foldout,
-            string text,
-            params string[] classNames)
-        {
-            if (foldout == null)
-            {
-                throw new ArgumentNullException(nameof(foldout));
-            }
-
-            foldout.text = string.Empty;
-            var toggle = foldout.Q<Toggle>();
-            if (toggle == null)
-            {
-                throw new InvalidOperationException(
-                    "Foldout toggle was not found.");
-            }
-
-            var textElement = Create(text, classNames);
-            textElement.pickingMode = PickingMode.Ignore;
-            textElement.style.flexGrow = 1f;
-            textElement.style.minWidth = 0f;
-            var input = toggle.Q<VisualElement>(
-                className: "unity-foldout__input");
-            (input ?? toggle).Add(textElement);
-            return textElement;
         }
 
         private static T ConfigureNativeInput<T>(
