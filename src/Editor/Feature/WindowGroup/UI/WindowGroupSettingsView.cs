@@ -121,12 +121,12 @@ namespace Ee4v.WindowGroup
             }
 
             sidebar.Add(list);
-            var createGroup = UiTextFactory.CreateButton(
+            var createGroup = new UiButton(
                 I18N.Get("window.action.createGroup"),
                 CreateGroup);
             createGroup.AddToClassList(
                 "ee4v-window-group-settings__create-group");
-            createGroup.TextElement.SetTextAlign(
+            createGroup.SetLabelTextAlign(
                 TextAnchor.MiddleCenter);
             sidebar.Add(createGroup);
             return sidebar;
@@ -172,12 +172,11 @@ namespace Ee4v.WindowGroup
             editor.AddToClassList(
                 "ee4v-window-group-settings__group-editor");
 
-            var field = UiTextFactory.CreateTextField();
-            field.value = group.Name;
+            var field = new InputField(new InputFieldState(group.Name));
             field.AddToClassList(
                 "ee4v-window-group-settings__name-field");
             field.RegisterCallback<FocusOutEvent>(_ =>
-                RenameGroup(group.Id, field.value));
+                RenameGroup(group.Id, field.Value));
 
             var nameRow = new FormInput(
                 I18N.Get("window.group.name"),
@@ -285,12 +284,12 @@ namespace Ee4v.WindowGroup
                     selectedGroup.Id,
                     evt.newValue));
 
-            var focus = UiTextFactory.CreateButton(
+            var focus = new UiButton(
                 I18N.Get("window.action.focus"),
                 option.Focus);
             focus.AddToClassList(
                 "ee4v-window-group-settings__window-focus");
-            focus.TextElement.SetTextAlign(
+            focus.SetLabelTextAlign(
                 TextAnchor.MiddleCenter);
             focus.SetEnabled(option.Window != null);
 

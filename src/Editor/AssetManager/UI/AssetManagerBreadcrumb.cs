@@ -192,7 +192,7 @@ namespace Ee4v.AssetManager.UI
             }
 
             var action = item.Action;
-            var button = UiTextFactory.CreateButton(
+            var button = new UiButton(
                 item.Label,
                 () =>
                 {

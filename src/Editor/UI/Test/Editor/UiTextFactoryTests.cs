@@ -1,18 +1,20 @@
 using NUnit.Framework;
+using UnityEngine.UIElements;
 
 namespace Ee4v.UI.Tests
 {
     public sealed class UiTextFactoryTests
     {
         [Test]
-        public void FactoryButton_UpdatesDisplayedText()
+        public void UiButton_UpdatesDisplayedText()
         {
-            var button = UiTextFactory.CreateButton("Run");
+            var button = new UiButton("Run");
+            var label = button.Content.Q<UiTextElement>();
 
-            Assert.That(button.TextElement.Text, Is.EqualTo("Run"));
-            button.SetText("Stop");
+            Assert.That(label.Text, Is.EqualTo("Run"));
+            button.SetLabel("Stop");
 
-            Assert.That(button.TextElement.Text, Is.EqualTo("Stop"));
+            Assert.That(label.Text, Is.EqualTo("Stop"));
         }
 
     }

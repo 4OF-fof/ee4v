@@ -19,7 +19,7 @@ namespace Ee4v.PlayModeComponentSuppression
         private int _replacingIndex;
         private Action<Type> _select;
         private PickerItem _selected;
-        private UiTextButton _selectButton;
+        private UiButton _selectButton;
 
         internal static void Show(
             VisualElement anchor,
@@ -85,10 +85,10 @@ namespace Ee4v.PlayModeComponentSuppression
             tree.SetItems(BuildItems());
             popup.Content.Add(tree);
 
-            popup.Footer.Add(UiTextFactory.CreateButton(
+            popup.Footer.Add(new UiButton(
                 I18N.Get("settings.suppressedTypes.picker.cancel"),
                 Close));
-            _selectButton = UiTextFactory.CreateButton(
+            _selectButton = new UiButton(
                 I18N.Get("settings.suppressedTypes.picker.select"),
                 SelectCurrent);
             _selectButton.SetEnabled(false);

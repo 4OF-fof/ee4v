@@ -43,7 +43,7 @@ namespace Ee4v.FaceExpression
         private const float CellHeight = 128f;
 
         private readonly ObjectField _avatarField;
-        private readonly UiTextButton _applyButton;
+        private readonly UiButton _applyButton;
         private readonly VisualElement _extraRow;
         private readonly Dictionary<GestureCombination, GestureAssignmentCell> _cells =
             new Dictionary<GestureCombination, GestureAssignmentCell>();
@@ -76,10 +76,9 @@ namespace Ee4v.FaceExpression
                 }
             });
             toolbar.Leading.Add(_avatarField);
-            _applyButton = UiTextFactory.CreateButton(
+            _applyButton = new UiButton(
                 _text.Apply,
                 () => ApplyRequested?.Invoke());
-            _applyButton.AddToClassList("ee4v-ui-button");
             _applyButton.AddToClassList("ee4v-gesture-assignment__apply");
             toolbar.Actions.Add(_applyButton);
             Add(toolbar);
@@ -262,15 +261,15 @@ namespace Ee4v.FaceExpression
                 items.Add(cell);
             }
 
-            var add = UiTextFactory.CreateButton(
+            var add = new UiButton(
                 "+",
                 GestureAssignmentSession.AddMenuExpression,
-                UiClassNames.NavigationItemLabel);
+                labelTypographyClassName: UiClassNames.NavigationItemLabel);
             add.AddToClassList("ee4v-gesture-assignment__cell");
             add.AddToClassList("ee4v-gesture-assignment__extra-add");
             add.tooltip = _text.AddMenuExpression;
-            add.TextElement.SetTextAlign(TextAnchor.MiddleCenter);
-            add.TextElement.SetFontSize(28);
+            add.SetLabelTextAlign(TextAnchor.MiddleCenter);
+            add.SetLabelFontSize(28);
             items.Add(add);
 
             for (var offset = 0; offset < items.Count; offset += ColumnCount)
@@ -321,8 +320,8 @@ namespace Ee4v.FaceExpression
     {
         private readonly GestureAssignmentViewText _text;
         private readonly UiTextElement _selectionLabel;
-        private readonly TextField _menuNameField;
-        private readonly UiTextButton _removeMenuButton;
+        private readonly InputField _menuNameField;
+        private readonly UiButton _removeMenuButton;
         private readonly Toggle _blinkToggle;
         private readonly Toggle _mouthToggle;
         private readonly Toggle _synchronizeLeftToggle;
@@ -348,22 +347,23 @@ namespace Ee4v.FaceExpression
                 "ee4v-gesture-assignment__selection");
             Add(selectionHeader);
 
-            _menuNameField = UiTextFactory.CreateTextField();
-            _menuNameField.isDelayed = true;
+            _menuNameField = new InputField
+            {
+                IsDelayed = true
+            };
             _menuNameField.AddToClassList(
                 "ee4v-gesture-assignment__extra-name");
-            _menuNameField.RegisterValueChangedCallback(evt =>
+            _menuNameField.ValueChanged += value =>
             {
                 if (!_rendering &&
-                    evt.newValue != GestureAssignmentSession.SelectedMenuName)
+                    value != GestureAssignmentSession.SelectedMenuName)
                 {
-                    GestureAssignmentSession.SetSelectedMenuName(evt.newValue);
+                    GestureAssignmentSession.SetSelectedMenuName(value);
                 }
-            });
-            _removeMenuButton = UiTextFactory.CreateButton(
+            };
+            _removeMenuButton = new UiButton(
                 _text.Remove,
                 GestureAssignmentSession.RemoveSelectedMenuExpression);
-            _removeMenuButton.AddToClassList("ee4v-ui-button");
             _removeMenuButton.AddToClassList(
                 "ee4v-gesture-assignment__extra-remove");
             var menuControls = new FormInput(

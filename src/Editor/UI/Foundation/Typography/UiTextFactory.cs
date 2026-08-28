@@ -22,14 +22,6 @@ namespace Ee4v.UI
             return new LabelUiTextElement(text, resolution.Style, classNames);
         }
 
-        public static UiTextButton CreateButton(
-            string text = "",
-            Action onClick = null,
-            params string[] classNames)
-        {
-            return new UiTextButton(text, onClick, ResolveButtonClassNames(classNames));
-        }
-
         public static Toggle CreateToggle(
             string text = "",
             params string[] classNames)
@@ -45,7 +37,7 @@ namespace Ee4v.UI
             return toggle;
         }
 
-        public static TextField CreateTextField(
+        internal static TextField CreateTextField(
             string label = "",
             params string[] classNames)
         {
@@ -175,24 +167,6 @@ namespace Ee4v.UI
             element.style.unityTextAlign = resolution.Style.Alignment;
             element.style.whiteSpace = resolution.Style.WhiteSpace;
             return element;
-        }
-
-        private static string[] ResolveButtonClassNames(string[] classNames)
-        {
-            var resolution = TypographyStyleResolver.Resolve(classNames);
-            if (!string.IsNullOrWhiteSpace(resolution.TypographyClassName))
-            {
-                return classNames;
-            }
-
-            var resolvedClassNames = new string[(classNames?.Length ?? 0) + 1];
-            resolvedClassNames[0] = UiClassNames.ButtonLabel;
-            if (classNames != null)
-            {
-                Array.Copy(classNames, 0, resolvedClassNames, 1, classNames.Length);
-            }
-
-            return resolvedClassNames;
         }
 
         private static void AddClassNames(
@@ -365,31 +339,4 @@ namespace Ee4v.UI
         }
     }
 
-    public sealed class UiTextButton : Button
-    {
-        internal UiTextButton(
-            string text,
-            Action onClick,
-            params string[] classNames)
-            : base(onClick)
-        {
-            base.text = string.Empty;
-            TextElement = UiTextFactory.Create(text, classNames);
-            TextElement.pickingMode = PickingMode.Ignore;
-            Add(TextElement);
-        }
-
-        public UiTextElement TextElement { get; }
-
-        public new string text
-        {
-            get { return TextElement.Text; }
-            set { TextElement.SetText(value); }
-        }
-
-        public void SetText(string text)
-        {
-            TextElement.SetText(text);
-        }
-    }
 }

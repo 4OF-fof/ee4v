@@ -48,7 +48,7 @@ namespace Ee4v.UI
                 "Preview content",
                 UiClassNames.SecondaryText,
                 "ee4v-ui-catalog-preview-container__content"));
-            var toggleButton = UiTextFactory.CreateButton(
+            var toggleButton = new UiButton(
                 "切り替え",
                 () =>
                 {

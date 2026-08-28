@@ -66,7 +66,7 @@ namespace Ee4v.PlayModeComponentSuppression
                     label.style.minWidth = 0f;
                     row.Add(label);
 
-                    var change = UiTextFactory.CreateButton(
+                    var change = new UiButton(
                         I18N.Get("settings.suppressedTypes.change"));
                     change.clicked += () =>
                         ComponentTypePickerWindow.Show(
@@ -75,7 +75,7 @@ namespace Ee4v.PlayModeComponentSuppression
                             capturedIndex,
                             selected => Replace(capturedIndex, selected));
                     row.Add(change);
-                    row.Add(UiTextFactory.CreateButton(
+                    row.Add(new UiButton(
                         I18N.Get("settings.suppressedTypes.remove"),
                         () =>
                         {
@@ -86,7 +86,7 @@ namespace Ee4v.PlayModeComponentSuppression
                     root.Add(row);
                 }
 
-                var add = UiTextFactory.CreateButton(
+                var add = new UiButton(
                     I18N.Get("settings.suppressedTypes.add"));
                 add.tooltip = context.Tooltip;
                 add.clicked += () => ComponentTypePickerWindow.Show(

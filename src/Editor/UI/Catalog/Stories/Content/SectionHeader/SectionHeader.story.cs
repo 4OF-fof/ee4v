@@ -78,7 +78,7 @@ namespace Ee4v.UI
 
             var preview = CreatePreviewSection(parent);
             var header = new SectionHeader();
-            var reset = UiTextFactory.CreateButton(
+            var reset = new UiButton(
                 "リセット",
                 () =>
                 {

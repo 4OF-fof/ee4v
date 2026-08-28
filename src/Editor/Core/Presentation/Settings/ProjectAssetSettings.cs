@@ -159,12 +159,11 @@ namespace Ee4v.Core.Settings
             SettingDrawerContext<string> context)
         {
             var settings = CoreSettings.Current;
-            var field = UiTextFactory.CreateTextField();
+            var field = new InputField();
             field.tooltip = context.Tooltip;
-            field.value = context.Value ?? string.Empty;
+            field.Value = context.Value ?? string.Empty;
             field.SetEnabled(settings.Get(UseProjectRootFolderName));
-            field.RegisterValueChangedCallback(
-                evt => context.NotifyValueChanged(evt.newValue));
+            field.ValueChanged += context.NotifyValueChanged;
 
             void OnSettingChanged(
                 object sender,

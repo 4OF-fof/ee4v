@@ -53,10 +53,10 @@ namespace Ee4v.Core.Settings
 
             if (valueType == typeof(string))
             {
-                var field = UiTextFactory.CreateTextField();
+                var field = new InputField();
                 field.tooltip = tooltip;
-                field.value = value as string ?? string.Empty;
-                field.RegisterValueChangedCallback(evt => onValueChanged?.Invoke(evt.newValue));
+                field.Value = value as string ?? string.Empty;
+                field.ValueChanged += text => onValueChanged?.Invoke(text);
                 return field;
             }
 

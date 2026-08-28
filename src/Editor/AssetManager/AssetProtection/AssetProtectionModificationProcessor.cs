@@ -492,10 +492,9 @@ namespace Ee4v.AssetProtection
 
             var warning = new EmptyState(new EmptyStateState(
                 I18N.Get("prefabStage.warning.title")));
-            var continueButton = UiTextFactory.CreateButton(
+            var continueButton = new UiButton(
                 I18N.Get("prefabStage.warning.continue"),
                 () => ContinueEditing(stage));
-            continueButton.AddToClassList("ee4v-ui-button");
             continueButton.style.minWidth =
                 UiSizeTokens.ActionButtonWidth;
             warning.Actions.Add(continueButton);

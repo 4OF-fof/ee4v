@@ -377,10 +377,13 @@ namespace Ee4v.FaceExpression
             Action selected,
             VisualElement preview)
         {
-            var item = UiTextFactory.CreateButton(onClick: selected);
+            var item = new UiButton(
+                string.Empty,
+                selected,
+                nameText,
+                variant: UiButtonVariant.Ghost);
             item.AddToClassList("ee4v-face-expression__library-item");
-            item.tooltip = nameText;
-            item.Add(preview);
+            item.Content.Add(preview);
 
             var name = UiTextFactory.Create(
                 nameText,
@@ -389,7 +392,7 @@ namespace Ee4v.FaceExpression
             name.style.alignItems = Align.Center;
             name.style.justifyContent = Justify.Center;
             name.pickingMode = PickingMode.Ignore;
-            item.Add(name);
+            item.Content.Add(name);
             item.RegisterCallback<GeometryChangedEvent>(evt =>
             {
                 var previewHeight = Mathf.Max(1f, evt.newRect.width - 2f);

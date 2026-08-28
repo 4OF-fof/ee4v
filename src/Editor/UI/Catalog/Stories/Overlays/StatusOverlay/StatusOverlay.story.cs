@@ -36,7 +36,7 @@ namespace Ee4v.UI
         {
             IBackgroundTaskHandle task = null;
             var controls = CreatePlainControlsSection(parent, "taskを開始するとCatalog window右下にStatus Overlayを表示します。");
-            var start = UiTextFactory.CreateButton("Start", () =>
+            var start = new UiButton("Start", () =>
             {
                 task?.Cancel();
                 task = CoreBackgroundActivities.Current.Run(
@@ -56,7 +56,7 @@ namespace Ee4v.UI
                     });
                 BackgroundStatusOverlay.Attach(this);
             });
-            var stop = UiTextFactory.CreateButton("Stop", () =>
+            var stop = new UiButton("Stop", () =>
             {
                 task?.Cancel();
                 task = null;

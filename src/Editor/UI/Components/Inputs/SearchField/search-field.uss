@@ -65,7 +65,7 @@
     background-color: var(--ee4v-color-surface-hover-strong);
 }
 
-.ee4v-ui-search-field__icon {
+.ee4v-ui-search-field__search-action .ee4v-ui-button__icon {
     width: var(--ee4v-size-14);
     min-width: var(--ee4v-size-14);
     max-width: var(--ee4v-size-14);

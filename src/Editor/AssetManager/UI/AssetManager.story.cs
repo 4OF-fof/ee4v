@@ -123,7 +123,7 @@ namespace Ee4v.AssetManager.UI
                     BuildTagField,
                     dependencies: new[]
                     {
-                        "UiTextFactory",
+                        "UiButton",
                         "SearchField",
                         "TagPill"
                     },

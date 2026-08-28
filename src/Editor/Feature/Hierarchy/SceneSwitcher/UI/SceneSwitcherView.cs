@@ -224,8 +224,8 @@ namespace Ee4v.SceneSwitcher
 
         private readonly SceneSwitcherViewText _text;
         private readonly IconState _sceneIcon;
-        private readonly Button _favorite;
-        private readonly Image _favoriteImage;
+        private readonly UiButton _favorite;
+        private readonly Texture _favoriteIcon;
         private Vector2 _pointerStart;
         private int _pointerButton = -1;
         private bool _pointerDown;
@@ -247,21 +247,16 @@ namespace Ee4v.SceneSwitcher
             DescriptionText.AddToClassList(BadgeClassName);
             DescriptionText.tooltip = _text.OpenTooltip;
 
-            _favoriteImage = new Image
-            {
-                image = favoriteIcon,
-                scaleMode = ScaleMode.ScaleToFit,
-                pickingMode = PickingMode.Ignore
-            };
-            _favorite = UiTextFactory.CreateButton(string.Empty, () =>
+            _favoriteIcon = favoriteIcon;
+            _favorite = new UiButton(string.Empty, () =>
             {
                 if (_item != null)
                 {
                     FavoriteRequested?.Invoke(_item.Path);
                 }
-            });
+            }, icon: CreateFavoriteIconState(UiColorTokens.TextDisabled),
+                variant: UiButtonVariant.Ghost);
             _favorite.AddToClassList(FavoriteClassName);
-            _favorite.Add(_favoriteImage);
             _favorite.RegisterCallback<PointerDownEvent>(
                 evt => evt.StopPropagation());
             _favorite.RegisterCallback<PointerUpEvent>(
@@ -292,13 +287,23 @@ namespace Ee4v.SceneSwitcher
             _favorite.EnableInClassList(
                 FavoriteActiveClassName,
                 isFavorite);
-            _favoriteImage.tintColor = isFavorite
+            _favorite.SetIcon(CreateFavoriteIconState(isFavorite
                 ? UiColorTokens.StatusRunningText
-                : UiColorTokens.TextDisabled;
+                : UiColorTokens.TextDisabled));
             _favorite.tooltip = isFavorite
                 ? _text.UnfavoriteTooltip
                 : _text.FavoriteTooltip;
             tooltip = item?.Path ?? string.Empty;
+        }
+
+        private IconState CreateFavoriteIconState(Color color)
+        {
+            return _favoriteIcon == null
+                ? null
+                : IconState.FromTexture(
+                    _favoriteIcon,
+                    UiSizeTokens.Size14,
+                    tintColor: color);
         }
 
         private void OnPointerDown(PointerDownEvent evt)

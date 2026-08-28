@@ -111,8 +111,8 @@ namespace Ee4v.ProjectTabs
             "ee4v-project-tabs__add";
         private const float DragThreshold = 6f;
 
-        private readonly Button _backButton;
-        private readonly Button _forwardButton;
+        private readonly UiButton _backButton;
+        private readonly UiButton _forwardButton;
         private readonly ScrollView _scroll;
         private readonly VisualElement _strip;
         private readonly UiButton _addButton;
@@ -374,16 +374,15 @@ namespace Ee4v.ProjectTabs
             content.IconElement.AddToClassList(PinIconClassName);
             tab.Add(content);
 
-            var closeButton = UiTextFactory.CreateButton(
+            var closeButton = new UiButton(
                 string.Empty,
-                () => TabCloseRequested?.Invoke(state.Id));
-            closeButton.tooltip = I18N.Get(
-                "toolbar.close.tooltip");
-            closeButton.AddToClassList(CloseButtonClassName);
-            closeButton.Add(new Icon(
+                () => TabCloseRequested?.Invoke(state.Id),
+                I18N.Get("toolbar.close.tooltip"),
                 FluentUiIcons.CreateState(
                     "dismiss.png",
-                    UiSizeTokens.Size12)));
+                    UiSizeTokens.Size12),
+                UiButtonVariant.Ghost);
+            closeButton.AddToClassList(CloseButtonClassName);
             tab.Add(closeButton);
 
             tab.RegisterCallback<ClickEvent>(evt =>
@@ -792,17 +791,18 @@ namespace Ee4v.ProjectTabs
                 : (IReadOnlyList<string>)paths;
         }
 
-        private static Button CreateNavigationButton(
+        private static UiButton CreateNavigationButton(
             string iconFileName,
             Action clicked)
         {
-            var button = UiTextFactory.CreateButton(
+            var button = new UiButton(
                 string.Empty,
-                clicked);
+                clicked,
+                icon: FluentUiIcons.CreateState(
+                    iconFileName,
+                    UiSizeTokens.Size12),
+                variant: UiButtonVariant.Ghost);
             button.AddToClassList(NavigationButtonClassName);
-            button.Add(new Icon(FluentUiIcons.CreateState(
-                iconFileName,
-                UiSizeTokens.Size12)));
             return button;
         }
 

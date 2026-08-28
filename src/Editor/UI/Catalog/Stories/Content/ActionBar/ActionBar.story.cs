@@ -76,10 +76,10 @@ namespace Ee4v.UI
                 UiClassNames.SecondaryText);
             bar.Leading.Add(leading);
             bar.Center.Add(center);
-            bar.Actions.Add(UiTextFactory.CreateButton(
+            bar.Actions.Add(new UiButton(
                 "解除",
                 () => result.SetText("選択を解除しました。")));
-            bar.Actions.Add(UiTextFactory.CreateButton(
+            bar.Actions.Add(new UiButton(
                 "適用",
                 () => result.SetText("変更を適用しました。")));
             preview.Body.Add(bar);

@@ -77,7 +77,7 @@ namespace Ee4v.UI
             var result = UiTextFactory.Create(
                 "末尾操作を選択してください。",
                 UiClassNames.SecondaryText);
-            row.Trailing.Add(UiTextFactory.CreateButton(
+            row.Trailing.Add(new UiButton(
                 "開く",
                 () => result.SetText("開く操作を実行しました。")));
             preview.Body.Add(row);

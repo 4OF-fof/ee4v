@@ -16,9 +16,9 @@ namespace Ee4v.HiddenObjects
             "ee4v-hidden-objects-footer__reveal";
 
         private readonly UiTextElement _summary;
-        private readonly Button _selectAllButton;
-        private readonly Button _clearSelectionButton;
-        private readonly Button _revealButton;
+        private readonly UiButton _selectAllButton;
+        private readonly UiButton _clearSelectionButton;
+        private readonly UiButton _revealButton;
 
         public HiddenObjectsFooter(HiddenObjectsViewText text)
         {
@@ -34,13 +34,13 @@ namespace Ee4v.HiddenObjects
                 UiClassNames.SecondaryText);
 
             Actions.AddToClassList(ActionsClassName);
-            _selectAllButton = UiTextFactory.CreateButton(
+            _selectAllButton = new UiButton(
                 text.SelectAllText,
                 () => SelectAllRequested?.Invoke());
-            _clearSelectionButton = UiTextFactory.CreateButton(
+            _clearSelectionButton = new UiButton(
                 text.ClearSelectionText,
                 () => ClearSelectionRequested?.Invoke());
-            _revealButton = UiTextFactory.CreateButton(
+            _revealButton = new UiButton(
                 text.RevealText,
                 () => RevealRequested?.Invoke());
             _revealButton.AddToClassList(RevealClassName);

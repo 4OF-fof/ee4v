@@ -80,10 +80,10 @@ namespace Ee4v.UI
             body.Add(result);
             popup.Content.Add(body);
 
-            popup.Footer.Add(UiTextFactory.CreateButton(
+            popup.Footer.Add(new UiButton(
                 "Cancel",
                 () => result.SetText("キャンセルしました。")));
-            popup.Footer.Add(UiTextFactory.CreateButton(
+            popup.Footer.Add(new UiButton(
                 "Apply",
                 () => result.SetText("適用しました。")));
             preview.Body.Add(popup);

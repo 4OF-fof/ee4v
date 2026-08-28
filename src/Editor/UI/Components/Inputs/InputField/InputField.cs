@@ -98,6 +98,12 @@ namespace Ee4v.UI
             set { _textField.isReadOnly = value; }
         }
 
+        public bool IsDelayed
+        {
+            get { return _textField.isDelayed; }
+            set { _textField.isDelayed = value; }
+        }
+
         public void SetState(InputFieldState state)
         {
             state = state ?? new InputFieldState();

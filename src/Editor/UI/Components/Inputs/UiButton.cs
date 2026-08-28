@@ -82,6 +82,16 @@ namespace Ee4v.UI
             _label.SetColor(color);
         }
 
+        public VisualElement Content
+        {
+            get { return _content; }
+        }
+
+        public void SetLabelFontSize(int size)
+        {
+            _label.SetFontSize(size);
+        }
+
         public void SetLabelTextAlign(TextAnchor alignment)
         {
             _label.SetTextAlign(alignment);

@@ -25,10 +25,10 @@ namespace Ee4v.Core.Settings
             var languages = I18N.GetAvailableLanguages();
             if (languages.Count == 0)
             {
-                var textField = UiTextFactory.CreateTextField();
+                var textField = new InputField();
                 textField.tooltip = context.Tooltip;
-                textField.value = context.Value ?? string.Empty;
-                textField.RegisterValueChangedCallback(evt => context.NotifyValueChanged(evt.newValue));
+                textField.Value = context.Value ?? string.Empty;
+                textField.ValueChanged += context.NotifyValueChanged;
                 return textField;
             }
 

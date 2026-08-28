@@ -56,7 +56,7 @@ namespace Ee4v.FaceExpression
                         root.Add(UiTextFactory.Create(preset.name));
                     }
 
-                    var openFolder = UiTextFactory.CreateButton(
+                    var openFolder = new UiButton(
                         I18N.Get("settings.blendShapePresets.openFolder"),
                         storage.OpenDirectory);
                     openFolder.tooltip = context.Tooltip ?? string.Empty;

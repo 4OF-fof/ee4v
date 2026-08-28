@@ -7,11 +7,13 @@
 ```csharp
 UiComposition.Prepare(rootVisualElement);
 rootVisualElement.Add(
-    UiTextFactory.CreateButton("Run", Run));
+    new UiButton("Run", Run));
 ```
 
 `UiComposition.Prepare` は共通 class、共有コンポーネントの stylesheet、現在のUnity Editorテーマに対応するpaletteを適用します。
 各EditorWindowが追加で登録するのは機能固有のstylesheetだけです。部品自体はUXMLの有無に依存しません。
+
+通常の操作、文字入力、検索入力にはそれぞれ`UiButton`、`InputField`、`SearchField`を使用します。`UiTextFactory`の低レベル文字入力は共有入力コンポーネント内部だけで使用します。
 
 ## color palette
 

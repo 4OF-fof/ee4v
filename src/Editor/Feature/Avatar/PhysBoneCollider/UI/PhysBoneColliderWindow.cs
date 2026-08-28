@@ -48,7 +48,7 @@ namespace Ee4v.PhysBoneCollider
         private Toggle _showCollidersField;
         private Toggle _showPhysBonesField;
         private HelpBox _status;
-        private UiTextButton _applyButton;
+        private UiButton _applyButton;
         private IMGUIContainer _previewElement;
         private bool _renderingDetail;
 
@@ -146,7 +146,7 @@ namespace Ee4v.PhysBoneCollider
             pane.Overlay.pickingMode = PickingMode.Position;
             pane.Overlay.Add(layers);
 
-            var resetView = UiTextFactory.CreateButton(
+            var resetView = CreateButton(
                 I18N.Get("action.resetView"),
                 () => _preview?.ResetView(),
                 "ee4v-physbone-collider__reset-view");
@@ -176,7 +176,7 @@ namespace Ee4v.PhysBoneCollider
             content.Add(_detail);
             pane.Add(content);
 
-            _applyButton = UiTextFactory.CreateButton(
+            _applyButton = CreateButton(
                 I18N.Get("action.apply"),
                 Apply,
                 "ee4v-physbone-collider__apply");
@@ -214,7 +214,7 @@ namespace Ee4v.PhysBoneCollider
                 "ee4v-physbone-collider__minimum-length");
             _minimumLengthField.value = DefaultMinimumBoneLength;
             scanRow.Add(_minimumLengthField);
-            scanRow.Add(UiTextFactory.CreateButton(
+            scanRow.Add(CreateButton(
                 I18N.Get("action.scan"),
                 RebuildLayout,
                 "ee4v-physbone-collider__scan"));
@@ -325,7 +325,7 @@ namespace Ee4v.PhysBoneCollider
             rotation.Add(_rotationZField);
             placement.Add(rotation);
 
-            placement.Add(UiTextFactory.CreateButton(
+            placement.Add(CreateButton(
                 I18N.Get("action.resetCollider"),
                 () =>
                 {
@@ -349,20 +349,20 @@ namespace Ee4v.PhysBoneCollider
             _physBoneRootList.AddToClassList(
                 "ee4v-physbone-collider__physbone-roots");
             assignments.Add(_physBoneRootList);
-            assignments.Add(UiTextFactory.CreateButton(
+            assignments.Add(CreateButton(
                 I18N.Get("action.addPhysBoneRoot"),
                 AddPhysBoneSearchRoot,
                 "ee4v-physbone-collider__add-physbone-root"));
-            assignments.Add(UiTextFactory.CreateButton(
+            assignments.Add(CreateButton(
                 I18N.Get("action.detectPhysBones"),
                 DetectPhysBones,
                 "ee4v-physbone-collider__detect-physbones"));
             var targetActions = new VisualElement();
             targetActions.AddToClassList("ee4v-physbone-collider__target-actions");
-            targetActions.Add(UiTextFactory.CreateButton(
+            targetActions.Add(CreateButton(
                 I18N.Get("action.selectAllPhysBones"),
                 () => SetAllPhysBoneTargets(true)));
-            targetActions.Add(UiTextFactory.CreateButton(
+            targetActions.Add(CreateButton(
                 I18N.Get("action.clearPhysBones"),
                 () => SetAllPhysBoneTargets(false)));
             assignments.Add(targetActions);
@@ -551,12 +551,26 @@ namespace Ee4v.PhysBoneCollider
                     DetectPhysBones();
                 });
                 row.Add(field);
-                row.Add(UiTextFactory.CreateButton(
+                row.Add(CreateButton(
                     I18N.Get("action.removePhysBoneRoot"),
                     () => RemovePhysBoneSearchRoot(rootIndex),
                     "ee4v-physbone-collider__remove-physbone-root"));
                 _physBoneRootList.Add(row);
             }
+        }
+
+        private static UiButton CreateButton(
+            string label,
+            Action onClick,
+            string className = null)
+        {
+            var button = new UiButton(label, onClick);
+            if (!string.IsNullOrWhiteSpace(className))
+            {
+                button.AddToClassList(className);
+            }
+
+            return button;
         }
 
         private bool HasPhysBoneSearchRoot()

@@ -55,7 +55,7 @@ namespace Ee4v.HiddenObjects
                 }
             });
 
-            var refreshButton = UiTextFactory.CreateButton(
+            var refreshButton = new UiButton(
                 _text.RefreshText,
                 () => RefreshRequested?.Invoke());
             refreshButton.tooltip = _text.RefreshTooltip;

@@ -46,10 +46,12 @@ namespace Ee4v.FaceExpression
             header.AddToClassList("ee4v-face-expression-groups__header");
             header.TitleText.AddToClassList(
                 "ee4v-face-expression-groups__title");
-            header.Actions.Add(UiTextFactory.CreateButton(
+            var addMesh = new UiButton(
                 text.AddMesh,
-                () => AddMeshRequested?.Invoke(),
-                "ee4v-face-expression-groups__add-mesh"));
+                () => AddMeshRequested?.Invoke());
+            addMesh.AddToClassList(
+                "ee4v-face-expression-groups__add-mesh");
+            header.Actions.Add(addMesh);
             Add(header);
 
             _list = new ListView

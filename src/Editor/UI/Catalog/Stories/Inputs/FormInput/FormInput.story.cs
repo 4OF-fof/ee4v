@@ -161,7 +161,7 @@ namespace Ee4v.UI
                 }
 
                 var save = showAction
-                    ? UiTextFactory.CreateButton(
+                    ? new UiButton(
                         "保存",
                         () => result.SetText(formatResult()))
                     : null;

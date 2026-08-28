@@ -29,15 +29,15 @@ namespace Ee4v.FaceExpression
         private readonly Dictionary<BlendShapeNameMapping, string> _sectionKeys =
             new Dictionary<BlendShapeNameMapping, string>();
         private ObjectField _avatarField;
-        private TextField _searchField;
+        private SearchField _searchField;
         private ListView _list;
         private ScrollView _groupList;
         private FormInput _roleField;
-        private TextField _roleEditor;
+        private InputField _roleEditor;
         private UiTextElement _status;
         private UiTextElement _sourceFbx;
-        private UiTextButton _save;
-        private UiTextButton _reclassify;
+        private UiButton _save;
+        private UiButton _reclassify;
         private bool _dirty;
         private bool _settingAsset;
         private string _selectedGroupKey;
@@ -102,12 +102,12 @@ namespace Ee4v.FaceExpression
                 "ee4v-blend-shape-preset__source");
             toolbar.Leading.Add(_sourceFbx);
 
-            _save = UiTextFactory.CreateButton(
+            _save = new UiButton(
                 I18N.Get("presetWindow.save"),
                 Save);
             _save.AddToClassList("ee4v-blend-shape-preset__action");
             toolbar.Actions.Add(_save);
-            _reclassify = UiTextFactory.CreateButton(
+            _reclassify = new UiButton(
                 I18N.Get("presetWindow.reclassify"),
                 Reclassify);
             _reclassify.AddToClassList("ee4v-blend-shape-preset__action");
@@ -128,11 +128,11 @@ namespace Ee4v.FaceExpression
             var navigation = new VisualElement();
             navigation.AddToClassList("ee4v-blend-shape-preset__navigation");
             navigation.Add(new SectionHeader(I18N.Get("presetWindow.roles")));
-            _searchField = UiTextFactory.CreateTextField(
-                I18N.Get("presetWindow.search"));
+            _searchField = new SearchField(new SearchFieldState(
+                placeholder: I18N.Get("presetWindow.search")));
             _searchField.AddToClassList(
                 "ee4v-blend-shape-preset__search");
-            _searchField.RegisterValueChangedCallback(_ => RefreshFilter());
+            _searchField.ValueChanged += _ => RefreshFilter();
             navigation.Add(_searchField);
             _groupList = new ScrollView(ScrollViewMode.Vertical);
             _groupList.AddToClassList(
@@ -142,7 +142,7 @@ namespace Ee4v.FaceExpression
 
             var detail = new VisualElement();
             detail.AddToClassList("ee4v-blend-shape-preset__detail");
-            _roleEditor = UiTextFactory.CreateTextField();
+            _roleEditor = new InputField();
             _roleEditor.AddToClassList(
                 "ee4v-blend-shape-preset__role-editor");
             _roleEditor.RegisterCallback<FocusOutEvent>(_ => RenameSelectedRole());
@@ -283,7 +283,7 @@ namespace Ee4v.FaceExpression
             _roleGroups.Clear();
             _sectionKeys.Clear();
             CreateRoleGroups();
-            var search = (_searchField?.value ?? string.Empty).Trim();
+            var search = (_searchField?.Value ?? string.Empty).Trim();
             var selected = _roleGroups.FirstOrDefault(group =>
                                string.Equals(
                                    group.Key,
@@ -486,7 +486,7 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            var role = (_roleEditor.value ?? string.Empty).Trim();
+            var role = (_roleEditor.Value ?? string.Empty).Trim();
             if (role.Length == 0)
             {
                 _roleEditor.SetValueWithoutNotify(GetRoleLabel(selected));

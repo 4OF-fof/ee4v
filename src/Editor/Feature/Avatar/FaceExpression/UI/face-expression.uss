@@ -212,6 +212,10 @@
     background-color: var(--ee4v-color-surface-hover-strong);
 }
 
+.ee4v-face-expression__library-item > .ee4v-ui-button__content {
+    flex-direction: column;
+}
+
 .ee4v-face-expression__library-preview {
     width: 100%;
     flex-shrink: 0;

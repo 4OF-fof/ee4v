@@ -185,7 +185,7 @@ namespace Ee4v.ItemStyle
             clear.EnableInClassList(
                 SelectedClassName,
                 !state.ColorIsMixed && state.Color == Color.clear);
-            clear.Add(new Icon(FluentUiIcons.CreateState(
+            clear.Content.Add(new Icon(FluentUiIcons.CreateState(
                 "dismiss.png",
                 UiSizeTokens.Size12)));
             _palette.Add(clear);
@@ -206,7 +206,7 @@ namespace Ee4v.ItemStyle
                 };
                 swatch.AddToClassList("ee4v-item-style__swatch-color");
                 swatch.style.backgroundColor = color;
-                button.Add(swatch);
+                button.Content.Add(swatch);
                 _palette.Add(button);
             }
         }
@@ -220,7 +220,7 @@ namespace Ee4v.ItemStyle
             clear.EnableInClassList(
                 SelectedClassName,
                 !state.IconIsMixed && state.Icon == null);
-            clear.Add(new Icon(FluentUiIcons.CreateState(
+            clear.Content.Add(new Icon(FluentUiIcons.CreateState(
                 "dismiss.png",
                 UiSizeTokens.Size12)));
             _recentIcons.Add(clear);
@@ -233,15 +233,16 @@ namespace Ee4v.ItemStyle
                 }
 
                 var captured = candidate;
-                var button = UiTextFactory.CreateButton(
+                var button = new UiButton(
                     string.Empty,
-                    () => IconChanged?.Invoke(captured.Texture));
-                button.tooltip = candidate.Tooltip;
+                    () => IconChanged?.Invoke(captured.Texture),
+                    candidate.Tooltip,
+                    variant: UiButtonVariant.Ghost);
                 button.AddToClassList("ee4v-item-style__icon-choice");
                 button.EnableInClassList(
                     SelectedClassName,
                     candidate.IsApplied);
-                button.Add(new Image
+                button.Content.Add(new Image
                 {
                     image = candidate.Texture,
                     scaleMode = ScaleMode.ScaleToFit,
@@ -288,14 +289,15 @@ namespace Ee4v.ItemStyle
             return row;
         }
 
-        private static UiTextButton CreateChoice(
+        private static UiButton CreateChoice(
             string tooltip,
             Action onClick)
         {
-            var button = UiTextFactory.CreateButton(
+            var button = new UiButton(
                 string.Empty,
-                onClick);
-            button.tooltip = tooltip;
+                onClick,
+                tooltip,
+                variant: UiButtonVariant.Ghost);
             button.AddToClassList("ee4v-item-style__choice");
             return button;
         }
