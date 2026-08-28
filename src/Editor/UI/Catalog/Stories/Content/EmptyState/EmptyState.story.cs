@@ -15,8 +15,8 @@ namespace Ee4v.UI
                     "empty-state",
                     "Displays",
                     "EmptyState",
-                    "結果や対象がない状態を、アイコン・見出し・説明・操作で表すコンポーネントです。",
-                    "空状態のアイコン、見出し、説明、次の操作を中央へまとめて表示します。",
+                    "結果や対象がない状態を、薄い枠面とアイコン・見出し・説明・操作で表すコンポーネントです。",
+                    "空領域を示す控えめな面の中央へ、理由と次の操作をまとめて表示します。",
                     new string[0],
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildEmptyStateStory(parent),
@@ -77,7 +77,7 @@ namespace Ee4v.UI
             var result = UiTextFactory.Create(
                 "次の操作を選択してください。",
                 UiClassNames.SecondaryText);
-            state.Actions.Add(UiTextFactory.CreateButton(
+            state.Actions.Add(new UiButton(
                 "項目を追加",
                 () => result.SetText("項目の追加を要求しました。")));
             preview.Body.Add(state);

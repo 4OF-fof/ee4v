@@ -600,24 +600,12 @@ namespace Ee4v.UI
         {
             _closeTooltip = closeTooltip ?? string.Empty;
             AddToClassList(RootClassName);
-            style.borderRightWidth = 1f;
-            style.borderLeftWidth = 1f;
-            style.borderTopWidth = 1f;
-            style.borderBottomWidth = 1f;
-            style.borderRightColor = UiColorTokens.PopupWindowBorder;
-            style.borderLeftColor = UiColorTokens.PopupWindowBorder;
-            style.borderTopColor = UiColorTokens.PopupWindowBorder;
-            style.borderBottomColor = UiColorTokens.PopupWindowBorder;
-            style.backgroundColor =
-                UiColorTokens.PopupWindowBackground;
 
             Header = new VisualElement();
             Header.AddToClassList(HeaderClassName);
             Header.style.flexDirection = FlexDirection.Row;
             Header.style.height = 24f;
             Header.style.flexShrink = 0f;
-            Header.style.backgroundColor =
-                UiColorTokens.PopupWindowHeader;
             Header.style.justifyContent = Justify.Center;
 
             var headerContent = new VisualElement();
@@ -724,10 +712,16 @@ namespace Ee4v.UI
 
         internal void SetHeaderBackground(Color? color)
         {
-            Header.style.backgroundColor = color == null ||
-                                           color == Color.clear
-                ? UiColorTokens.PopupWindowHeader
-                : color.Value;
+            if (color == null || color == Color.clear)
+            {
+                Header.style.backgroundColor =
+                    new StyleColor(StyleKeyword.Null);
+            }
+            else
+            {
+                Header.style.backgroundColor = color.Value;
+            }
+
             Header.MarkDirtyRepaint();
         }
     }

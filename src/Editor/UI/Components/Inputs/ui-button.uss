@@ -4,20 +4,26 @@
     margin: var(--ee4v-space-none);
     padding: var(--ee4v-space-xs) var(--ee4v-space-md);
     border-width: var(--ee4v-border-hairline);
-    border-color: var(--ee4v-color-border-default);
-    border-radius: var(--ee4v-radius-sm);
-    background-color: var(--ee4v-color-control);
+    border-color: var(--ee4v-color-border-active);
+    border-radius: var(--ee4v-radius-lg);
+    background-color: var(--ee4v-color-surface-soft);
     align-items: center;
     justify-content: center;
 }
 
 .ee4v-ui-button:hover {
-    background-color: var(--ee4v-color-control-hover);
-    border-color: var(--ee4v-color-border-active);
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-surface-hover-strong);
+}
+
+.ee4v-ui Button.ee4v-ui-button:focus {
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-surface-soft);
 }
 
 .ee4v-ui-button:active {
-    background-color: var(--ee4v-color-control-pressed);
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-surface-pressed);
 }
 
 .ee4v-ui-button--ghost {
@@ -28,6 +34,11 @@
 .ee4v-ui-button--ghost:hover {
     border-color: var(--ee4v-color-transparent);
     background-color: var(--ee4v-color-surface-hover);
+}
+
+.ee4v-ui Button.ee4v-ui-button--ghost:focus {
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-ui-button--ghost:active {

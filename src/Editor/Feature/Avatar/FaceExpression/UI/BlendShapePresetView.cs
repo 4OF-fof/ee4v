@@ -34,7 +34,7 @@ namespace Ee4v.FaceExpression
         private ScrollView _groupList;
         private FormInput _roleField;
         private TextField _roleEditor;
-        private InlineMessage _status;
+        private UiTextElement _status;
         private UiTextElement _sourceFbx;
         private UiTextButton _save;
         private UiTextButton _reclassify;
@@ -114,8 +114,11 @@ namespace Ee4v.FaceExpression
             toolbar.Actions.Add(_reclassify);
             root.Add(toolbar);
 
-            _status = new InlineMessage();
-            _status.AddToClassList("ee4v-blend-shape-preset__status");
+            _status = UiTextFactory.Create(
+                string.Empty,
+                UiClassNames.SecondaryText,
+                "ee4v-blend-shape-preset__status");
+            _status.SetWhiteSpace(WhiteSpace.Normal);
             _status.style.display = DisplayStyle.None;
             root.Add(_status);
 
@@ -734,13 +737,10 @@ namespace Ee4v.FaceExpression
             }
 
             var hasValue = !string.IsNullOrWhiteSpace(value);
+            _status.SetText(value);
             _status.style.display = hasValue
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
-            if (hasValue)
-            {
-                _status.SetState(new InlineMessageState(value));
-            }
         }
 
         private static BlendShapeFbxPreset Clone(BlendShapeFbxPreset preset)

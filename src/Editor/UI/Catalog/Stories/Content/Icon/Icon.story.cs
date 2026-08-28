@@ -45,7 +45,6 @@ namespace Ee4v.UI
                         "Editor/UI/Components/Content/EmptyState/EmptyState.cs",
                         "Editor/UI/Components/Content/NavigationItem/NavigationItem.cs",
                         "Editor/UI/Components/Content/TagPill/TagPill.cs",
-                        "Editor/UI/Components/Feedback/InlineMessage/InlineMessage.cs",
                         "Editor/UI/Components/Inputs/SearchField/SearchField.cs",
                         "Editor/UI/Components/Inputs/UiButton.cs"
                     }));

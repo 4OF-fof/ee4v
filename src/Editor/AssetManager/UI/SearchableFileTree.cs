@@ -33,7 +33,7 @@ namespace Ee4v.AssetManager.UI
         private const string TargetToggleElementName = "file-tree-target";
 
         private readonly IAssetManager _manager;
-        private readonly InlineMessage _feedback;
+        private readonly UiTextElement _feedback;
         private readonly bool _showsTargetToggles;
         private readonly Action<FileTreeSelection> _importRequested;
         private readonly Dictionary<string, AssetFileTarget>
@@ -104,8 +104,13 @@ namespace Ee4v.AssetManager.UI
             SetViewDataKey(
                 "ee4v-asset-manager-item-detail-file-tree");
 
-            _feedback = new InlineMessage();
-            _feedback.AddToClassList(RootClassName + "__feedback");
+            _feedback = UiTextFactory.Create(
+                string.Empty,
+                UiClassNames.SecondaryText,
+                RootClassName + "__feedback");
+            _feedback.SetColor(UiColorTokens.StatusFailedText);
+            _feedback.SetWhiteSpace(WhiteSpace.Normal);
+            _feedback.style.display = DisplayStyle.None;
             Add(_feedback);
 
             RegisterCallback<PointerEnterEvent>(_ =>
@@ -170,7 +175,7 @@ namespace Ee4v.AssetManager.UI
             }
             SeedAnalysisCache(initialAnalyses);
             var analyses = CreateCachedAnalyses();
-            _feedback.SetState(new InlineMessageState(string.Empty));
+            SetFeedback(string.Empty);
             ApplyTreeItems(AssetFileTreeBuilder.Build(
                 _files,
                 analyses,
@@ -303,11 +308,9 @@ namespace Ee4v.AssetManager.UI
                 }
                 if (failures.Count > 0)
                 {
-                    _feedback.SetState(new InlineMessageState(
-                        string.Format(
-                            I18N.Get("fileTree.analysisFailed"),
-                            string.Join(", ", failures)),
-                        UiStatusTone.Failed));
+                    SetFeedback(string.Format(
+                        I18N.Get("fileTree.analysisFailed"),
+                        string.Join(", ", failures)));
                 }
             }
             catch (OperationCanceledException)
@@ -318,9 +321,7 @@ namespace Ee4v.AssetManager.UI
                 if (IsCurrentReload(version, cancellation))
                 {
                     Debug.LogException(exception);
-                    _feedback.SetState(new InlineMessageState(
-                        I18N.Get("fileTree.analysisUnavailable"),
-                        UiStatusTone.Failed));
+                    SetFeedback(I18N.Get("fileTree.analysisUnavailable"));
                 }
             }
             finally
@@ -331,6 +332,14 @@ namespace Ee4v.AssetManager.UI
                     _reloadCancellation = null;
                 }
             }
+        }
+
+        private void SetFeedback(string text)
+        {
+            _feedback.SetText(text);
+            _feedback.style.display = string.IsNullOrWhiteSpace(text)
+                ? DisplayStyle.None
+                : DisplayStyle.Flex;
         }
 
         private async Task ApplyAnalysesAsync(

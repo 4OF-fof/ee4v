@@ -17,8 +17,8 @@ namespace Ee4v.UI
                     "custom-popup",
                     "Containers",
                     "CustomPopup",
-                    "旧BaseWindowを移植したpopup用EditorWindowの共通外枠です。",
-                    "1pxの外枠、24pxのヘッダー、本文、任意フッターを持ち、ドラッグ移動と端のリサイズに対応します。",
+                    "popup用EditorWindowの単純なパネル外枠です。",
+                    "1pxの外枠と薄い面でヘッダー、本文、任意フッターを分け、ドラッグ移動と端のリサイズに対応します。",
                     new[] { "UiTextFactory" },
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) =>

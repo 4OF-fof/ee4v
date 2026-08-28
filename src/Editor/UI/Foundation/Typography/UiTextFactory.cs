@@ -10,8 +10,6 @@ namespace Ee4v.UI
     {
         private const string StandardInputFocusedClassName =
             "ee4v-ui-standard-input--focused";
-        private const string StandardToggleThumbClassName =
-            "ee4v-ui-standard-toggle__thumb";
 
         public static UiTextElement Create(string text = "", params string[] classNames)
         {
@@ -42,12 +40,6 @@ namespace Ee4v.UI
             if (checkmark != null)
             {
                 checkmark.style.backgroundImage = StyleKeyword.None;
-                var thumb = new VisualElement
-                {
-                    pickingMode = PickingMode.Ignore
-                };
-                thumb.AddToClassList(StandardToggleThumbClassName);
-                checkmark.Add(thumb);
             }
 
             return toggle;

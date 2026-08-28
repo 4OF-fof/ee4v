@@ -15,7 +15,7 @@ namespace Ee4v.WindowGroup
         private readonly Func<IReadOnlyList<WindowTypeOption>>
             _getWindowTypes;
         private string _selectedGroupId;
-        private InlineMessage _feedback;
+        private UiTextElement _feedback;
         private bool _rebuildScheduled;
         private bool _disposed;
 
@@ -187,9 +187,13 @@ namespace Ee4v.WindowGroup
             nameRow.LabelText.AddToClassList(
                 "ee4v-window-group-settings__name-label");
 
-            _feedback = new InlineMessage();
-            _feedback.AddToClassList(
+            _feedback = UiTextFactory.Create(
+                string.Empty,
+                UiClassNames.SecondaryText,
                 "ee4v-window-group-settings__feedback");
+            _feedback.SetColor(UiColorTokens.StatusFailedText);
+            _feedback.SetWhiteSpace(WhiteSpace.Normal);
+            _feedback.style.display = DisplayStyle.None;
 
             editor.Add(nameRow);
             editor.Add(_feedback);
@@ -393,14 +397,19 @@ namespace Ee4v.WindowGroup
         {
             if (_configuration.RenameGroup(groupId, name))
             {
-                _feedback.SetState(new InlineMessageState(
-                    string.Empty));
+                SetFeedback(string.Empty);
                 return;
             }
 
-            _feedback.SetState(new InlineMessageState(
-                I18N.Get("window.feedback.invalidName"),
-                UiStatusTone.Failed));
+            SetFeedback(I18N.Get("window.feedback.invalidName"));
+        }
+
+        private void SetFeedback(string text)
+        {
+            _feedback.SetText(text);
+            _feedback.style.display = string.IsNullOrWhiteSpace(text)
+                ? DisplayStyle.None
+                : DisplayStyle.Flex;
         }
 
         private void EnsureSelectedGroup()

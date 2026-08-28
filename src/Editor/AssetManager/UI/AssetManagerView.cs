@@ -1500,7 +1500,12 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-asset-manager__derived-assets-input-group");
             fields.Add(inputGroup);
 
-            var message = new InlineMessage();
+            var message = UiTextFactory.Create(
+                string.Empty,
+                UiClassNames.SecondaryText);
+            message.SetColor(UiColorTokens.StatusFailedText);
+            message.SetWhiteSpace(WhiteSpace.Normal);
+            message.style.display = DisplayStyle.None;
             fields.Add(message);
             UiButton create = null;
             create = AssetManagerControls.CreateButton(
@@ -1517,15 +1522,15 @@ namespace Ee4v.AssetManager.UI
             prefab.ValueChanged += selectedPrefab =>
             {
                 prefabPreview.SetPrefab(selectedPrefab);
-                message.SetState(new InlineMessageState(string.Empty));
+                SetDerivedAssetFeedback(message, string.Empty);
                 create.SetEnabled(selectedPrefab != null);
             };
             prefab.SelectionRejected += () =>
             {
                 create.SetEnabled(prefab.Value != null);
-                message.SetState(new InlineMessageState(
-                    I18N.Get("notice.derivedAssetPrefabInvalid"),
-                    UiStatusTone.Failed));
+                SetDerivedAssetFeedback(
+                    message,
+                    I18N.Get("notice.derivedAssetPrefabInvalid"));
             };
             fields.Add(create);
             formLayout.Add(fields);
@@ -1538,14 +1543,14 @@ namespace Ee4v.AssetManager.UI
             string name,
             GameObject prefab,
             string description,
-            InlineMessage message,
+            UiTextElement message,
             UiButton createButton)
         {
             if (!DerivedAssetCreator.IsValidName(name))
             {
-                message.SetState(new InlineMessageState(
-                    I18N.Get("notice.derivedAssetNameInvalid"),
-                    UiStatusTone.Failed));
+                SetDerivedAssetFeedback(
+                    message,
+                    I18N.Get("notice.derivedAssetNameInvalid"));
                 return;
             }
 
@@ -1562,18 +1567,18 @@ namespace Ee4v.AssetManager.UI
                         Array.Empty<string>(),
                         StringComparer.OrdinalIgnoreCase)))
             {
-                message.SetState(new InlineMessageState(
-                    I18N.Get("notice.derivedAssetPrefabInvalid"),
-                    UiStatusTone.Failed));
+                SetDerivedAssetFeedback(
+                    message,
+                    I18N.Get("notice.derivedAssetPrefabInvalid"));
                 return;
             }
 
             if (AssetDatabase.IsValidFolder(
                     DerivedAssetCreator.GetVariantFolder(name)))
             {
-                message.SetState(new InlineMessageState(
-                    I18N.Get("notice.derivedAssetAlreadyExists"),
-                    UiStatusTone.Failed));
+                SetDerivedAssetFeedback(
+                    message,
+                    I18N.Get("notice.derivedAssetAlreadyExists"));
                 return;
             }
 
@@ -1595,14 +1600,24 @@ namespace Ee4v.AssetManager.UI
             catch (Exception exception)
             {
                 Debug.LogException(exception);
-                message.SetState(new InlineMessageState(
-                    I18N.Get("notice.derivedAssetCreateFailed"),
-                    UiStatusTone.Failed));
+                SetDerivedAssetFeedback(
+                    message,
+                    I18N.Get("notice.derivedAssetCreateFailed"));
             }
             finally
             {
                 createButton.SetEnabled(true);
             }
+        }
+
+        private static void SetDerivedAssetFeedback(
+            UiTextElement message,
+            string text)
+        {
+            message.SetText(text);
+            message.style.display = string.IsNullOrWhiteSpace(text)
+                ? DisplayStyle.None
+                : DisplayStyle.Flex;
         }
 
         private static bool IsAllowedPrefab(

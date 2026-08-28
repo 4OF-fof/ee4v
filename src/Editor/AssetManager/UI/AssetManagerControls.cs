@@ -518,24 +518,38 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class AssetManagerNotice : InlineMessage
+    internal sealed class AssetManagerNotice : VisualElement
     {
         public AssetManagerNotice(
             string text,
             params string[] classNames)
-            : base(new InlineMessageState(
-                text,
-                UiStatusTone.Idle,
-                AssetManagerControls.LoadFluentIconState(
-                    "info.png",
-                    UiSizeTokens.Size18)))
         {
             AddToClassList("ee4v-asset-manager-control-notice");
-            IconElement.AddToClassList(
-                "ee4v-asset-manager-control-notice__icon");
-            TextElement.AddToClassList(
-                "ee4v-asset-manager-control-notice__text");
             AssetManagerControls.AddClasses(this, classNames);
+
+            var iconState = AssetManagerControls.LoadFluentIconState(
+                "info.png",
+                UiSizeTokens.Size18);
+            if (iconState != null)
+            {
+                var icon = new Icon(iconState);
+                icon.AddToClassList(
+                    "ee4v-asset-manager-control-notice__icon");
+                Add(icon);
+            }
+
+            var message = UiTextFactory.Create(
+                text,
+                UiClassNames.SecondaryText,
+                "ee4v-asset-manager-control-notice__text");
+            message.SetColor(UiColorTokens.StatusIdleText);
+            message.SetWhiteSpace(WhiteSpace.Normal);
+            message.pickingMode = PickingMode.Ignore;
+            Add(message);
+
+            style.display = string.IsNullOrWhiteSpace(text)
+                ? DisplayStyle.None
+                : DisplayStyle.Flex;
         }
     }
 

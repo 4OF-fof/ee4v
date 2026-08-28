@@ -15,21 +15,20 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 
 ### Inputs
 
-- `UiButton`は文字、アイコン、強調度を統一した通常の操作ボタンです。Toolbarなど用途固有の小型寸法は利用側USSで指定します。
-- `InputField` Storyはテキスト、トグル、Object選択、ドロップダウンを含む単一値入力の標準入口です。文字列には`InputField`コンポーネントを使用し、その他の値には`UiTextFactory`が生成する型付き入力を使用します。単行テキストとドロップダウンは透明背景の下線型、複数行テキストは全周の境界と内側余白を持つテキストエリアとして表示します。トグルは選択時の青い塗りに加えてノブを左右へ移動します。
-- `SearchField`は検索入力、消去、任意の先頭操作をまとめます。先頭操作が有効な場合だけhover反応を表示します。
+- `UiButton`は文字、アイコン、強調度を統一した通常の操作ボタンです。通常ボタンは操作面を薄く塗り、InputFieldと同じ境界線とフォーカス色を使用します。Ghostは通常時の面と境界線を表示しません。Toolbarなど用途固有の小型寸法は利用側USSで指定します。
+- `InputField` Storyはテキスト、トグル、Object選択、ドロップダウンを含む単一値入力の標準入口です。文字列には`InputField`コンポーネントを使用し、その他の値には`UiTextFactory`が生成する型付き入力を使用します。単行テキストとドロップダウンは透明背景の下線型、複数行テキストは全周の境界と内側余白を持つテキストエリアとして表示します。トグルは四角いチェックボックスを保ち、チェック記号を使わず選択時の青い塗りで状態を示します。
+- `SearchField`は薄い入力面と全周枠へ検索入力、消去、任意の先頭操作をまとめます。検索アイコンと角丸の全周枠で用途を示し、境界線とフォーカス色はInputFieldと共有します。先頭操作が有効な場合だけhover反応を表示します。
 - `StringListField`は文字列を1項目1行で編集する一覧入力です。通常項目と同じ寸法の追加行をリスト末尾に置き、各行の削除ボタンで項目を除去します。区切り文字の解釈や保存形式への変換は行いません。
 - `FormInput`は任意ラベル、必須の単一入力コンポーネント、任意ボタンを横一列に配置するフォーム入力です。囲み枠は持ちません。文字入力には`InputField`を使用し、`Toggle`と`ObjectField`には`UiTextFactory`の標準入力スタイルを使用します。`StringListField`のように複数の入力要素を持つ場合も一つの入力コンポーネントとして渡します。値の保持と検証は入力コンポーネントが担当します。
 - `InputGroup`はfieldset風の外枠へ必須見出しを重ね、1個以上の`FormInput`をまとめる入力グループです。子孫の入力へフォーカスが移ると外枠を強調します。各`FormInput`のラベルは省略できます。
 - `NavigationItem`は`ItemRow`へクリックと選択状態を加えた操作項目です。
-- `TagPill`は任意の選択操作と削除操作を持つタグ入力です。
+- `TagPill`は任意の選択操作と削除操作を持つタグ入力です。pill形と薄い面を保ち、境界線と選択操作にはInputFieldと同じフォーカス色を使用します。
 
 ### Displays
 
 - `Badge`は件数や短い分類値を中立表示し、任意の`UiStatusTone`で処理状態も表示します。
-- `InlineMessage`は処理結果や入力エラーを行内へ表示します。
-- `EmptyState`は対象がない理由と次の操作を表示します。操作要素自体は利用側が`Actions`へ追加します。
-- `StatusOverlay`はバックグラウンド処理の進捗をウィンドウ右下へ重ねて表示します。
+- `EmptyState`は薄い枠面で空領域を示し、対象がない理由と次の操作を中央へ表示します。操作要素自体は利用側が`Actions`へ追加します。
+- `StatusOverlay`は浮いた小型パネルとして、バックグラウンド処理の進捗をウィンドウ右下へ重ねて表示します。
 - `Icon`はFluent UI System Icons、実使用するUnity固有の組み込みアイコン、任意Textureの表示を共通化します。通常の操作アイコンにはFluent UI System Iconsを使用します。
 - `CachedImage`はデコード済みTextureを複数の画像表示で共有します。
 
@@ -41,7 +40,7 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 - `Sections/DisclosureSection`は見出しを押して本文を開閉するセクションです。
 - `InfoCard`は見出しと本文を外枠付きでまとめる情報パネルです。
 - `PreviewContainer`はPreview本体、未表示時のPlaceholder、重ねる操作を置く3層コンテナです。描画処理と一覧は含みません。
-- `CustomPopup`はHeader、本文、任意Footerを持つポップアップの外枠です。`CustomPopupWindow`が移動、リサイズ、focus離脱時のCloseを担当します。
+- `CustomPopup`は細い外枠と面の濃度差でHeader、本文、任意Footerを分けるポップアップです。`CustomPopupWindow`が移動、リサイズ、focus離脱時のCloseを担当します。
 
 `PreviewContainer` Storyはコンテナの範囲を枠で示し、中央のContent、空表示のPlaceholder、右上のOverlay操作を重ねて確認できる構成にします。
 
@@ -52,7 +51,7 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 ### Catalog外の基盤
 
 - `UiComposition.Prepare`は共通USSと機能固有USSを一つの入口で登録します。
-- `UiTextFactory`は文字を描画するUI要素の生成と文字更新を統一します。通常の文字入力には`InputField`を使用し、Unity固有の`TextField` APIが必要な場合だけ`CreateTextField`を直接使用します。Factoryが生成する入力には基盤となる共通クラスを付与します。文字・数値入力とドロップダウンは透明背景の下線型、`Toggle`はスイッチ型、`ObjectField`は右端の操作領域を分けた選択欄として`FormInput`の内外で共有します。複合入力内の埋め込みフィールドは共通クラスを外し、親コンポーネントが外観を担当します。
+- `UiTextFactory`は文字を描画するUI要素の生成と文字更新を統一します。通常の文字入力には`InputField`を使用し、Unity固有の`TextField` APIが必要な場合だけ`CreateTextField`を直接使用します。Factoryが生成する入力には基盤となる共通クラスを付与します。文字・数値入力とドロップダウンは透明背景の下線型、`Toggle`は選択時に面を塗るチェックボックス型、`ObjectField`は右端の操作領域を分けた選択欄として`FormInput`の内外で共有します。複合入力内の埋め込みフィールドは共通クラスを外し、親コンポーネントが外観を担当します。
 - `UiDragAndDrop`は型付きpayloadによるドラッグ開始とMove操作の受け入れを共通化します。
 - `PreviewOrbitController`は3D Previewの回転、移動、拡縮とCamera配置を共通化します。Bounds計算と描画内容は利用側が扱います。
 
@@ -60,7 +59,7 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 
 ## `CustomPopup`
 
-`CustomPopup`は`c31a22adf8a49e6fc91addde1febed94a98ea85b`の`old/Editor/Core/UI/Window/BaseWindow.cs`を基準にしたpopup外枠です。同じ`old`配下の`FolderStyleSelectorWindow`などが使用していたインラインスタイルと操作を移植し、外枠は現行仕様の1pxに変更しています。現行の`UiTextFactory`、`FluentUiIcons`、`EditorPopupApi`へ接続し、画面内への位置補正とUnity標準Pickerのfocus処理を加えています。popup用Windowは`CustomPopupWindow`を継承し、`ShowAsPopup`で表示して`SetPopup(CustomPopup)`で外枠を設定します。
+`CustomPopup`は`c31a22adf8a49e6fc91addde1febed94a98ea85b`の`old/Editor/Core/UI/Window/BaseWindow.cs`を基準にしたpopup外枠です。同じ`old`配下の`FolderStyleSelectorWindow`などが使用していた操作を移植し、外観は共通トークンを使う単純なパネルへ変更しています。外枠は1pxとし、HeaderとFooterは本文との面の濃度差と境界線で区切ります。現行の`UiTextFactory`、`FluentUiIcons`、`EditorPopupApi`へ接続し、画面内への位置補正とUnity標準Pickerのfocus処理を加えています。popup用Windowは`CustomPopupWindow`を継承し、`ShowAsPopup`で表示して`SetPopup(CustomPopup)`で外枠を設定します。
 
 | API | 動作 |
 |---|---|

@@ -152,7 +152,6 @@
     margin-bottom: var(--ee4v-space-xs);
     padding-left: var(--ee4v-space-lg);
     padding-right: var(--ee4v-space-lg);
-    border-width: 0;
 }
 
 .ee4v-asset-manager-tag-picker__tag--create.ee4v-ui-tag-pill {
