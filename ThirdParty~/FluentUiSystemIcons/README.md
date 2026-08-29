@@ -10,8 +10,8 @@ ee4vのEditor UIで使うMicrosoft Fluent UI System Iconsを、
 - Commit: `f2f75a6e4814153d5c049c0f06e197731718326b`
 - Style: Filled
 - Imported icons: `add`, `archive`, `arrow_clockwise`, `arrow_left`,
-  `arrow_right`, `arrow_sort`, `chevron_down`, `chevron_right`, `code`,
-  `cube`, `dismiss`, `document`, `eye_off`, `folder`, `folder_zip`, `image`,
+  `arrow_right`, `arrow_sort`, `checkmark`, `chevron_down`, `chevron_right`,
+  `code`, `cube`, `dismiss`, `document`, `eye_off`, `folder`, `folder_zip`, `image`,
   `info`, `library`, `music_note_2`, `pin`, `search`, `star`, `subtract`,
   `tag`, `video`
 

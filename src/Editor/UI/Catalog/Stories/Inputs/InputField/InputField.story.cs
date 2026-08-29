@@ -31,7 +31,7 @@ namespace Ee4v.UI
                     "Inputs",
                     "InputField",
                     "テキスト、トグル、Object選択、ドロップダウンの標準スタイルをまとめて確認する単一値入力のStoryです。",
-                    "Catalog上の単一値入力はInputField Storyへ統一します。文字列にはInputFieldを使用し、その他の値にはUiTextFactoryが生成する型付き入力を使用します。単行テキストとドロップダウンは透明背景の下線型、複数行テキストは全周枠のテキストエリア型です。トグルは四角いチェックボックスを保ち、選択時の青い塗りだけで状態を示します。",
+                    "Catalog上の単一値入力はInputField Storyへ統一します。文字列にはInputFieldを使用し、その他の値にはUiTextFactoryが生成する型付き入力を使用します。単行テキストとドロップダウンは透明背景の下線型、複数行テキストは全周枠のテキストエリア型です。トグルは四角いチェックボックスを保ち、選択時の青い塗りと白いチェックマークで状態を示します。フォーカスの有無では外観を変えません。",
                     new string[0],
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildInputFieldStory(parent),

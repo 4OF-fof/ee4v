@@ -32,6 +32,13 @@ namespace Ee4v.UI
             if (checkmark != null)
             {
                 checkmark.style.backgroundImage = StyleKeyword.None;
+                var checkmarkTexture =
+                    FluentUiIcons.LoadTexture("checkmark.png");
+                if (checkmarkTexture != null)
+                {
+                    checkmark.style.backgroundImage =
+                        new StyleBackground(checkmarkTexture);
+                }
             }
 
             return toggle;

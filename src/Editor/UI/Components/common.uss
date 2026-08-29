@@ -291,7 +291,8 @@
     margin: var(--ee4v-space-none);
 }
 
-.ee4v-ui-standard-input.unity-toggle .unity-toggle__checkmark {
+.ee4v-ui-standard-input.unity-toggle .unity-toggle__checkmark,
+.ee4v-ui-standard-input.unity-toggle:focus .unity-toggle__checkmark {
     width: var(--ee4v-size-16);
     min-width: var(--ee4v-size-16);
     height: var(--ee4v-size-16);
@@ -304,6 +305,7 @@
     border-color: var(--ee4v-color-border-active);
     border-radius: var(--ee4v-radius-sm);
     background-color: var(--ee4v-color-surface-soft);
+    -unity-background-image-tint-color: var(--ee4v-color-transparent);
     transition-property: background-color, border-top-color, border-right-color, border-bottom-color, border-left-color;
     transition-duration: 0.12s;
     transition-timing-function: ease-out;
@@ -314,7 +316,6 @@
     background-color: var(--ee4v-color-surface-hover-strong);
 }
 
-.ee4v-ui-standard-input.unity-toggle:focus .unity-toggle__checkmark,
 .ee4v-ui-standard-input.unity-toggle:active .unity-toggle__checkmark {
     border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-surface-hover-strong);
@@ -325,6 +326,7 @@
 .ee4v-ui-standard-input.unity-toggle:checked:active .unity-toggle__checkmark {
     border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-focus);
+    -unity-background-image-tint-color: #FFFFFF;
 }
 
 .ee4v-ui-standard-input.unity-toggle:checked:hover .unity-toggle__checkmark {
