@@ -213,6 +213,8 @@
 }
 
 .ee4v-face-expression__library-item > .ee4v-ui-button__content {
+    width: 100%;
+    align-self: stretch;
     flex-direction: column;
 }
 

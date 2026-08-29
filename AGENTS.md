@@ -23,6 +23,7 @@
   - Codex から Unity のテストを実行するときは、`exec_command` に `sandbox_permissions: "require_escalated"` を指定する。通常のサンドボックス内では Licensing Client の IPC 接続がタイムアウトするため、Unity を起動しない
   - Unity 2022.3 の EditMode テストには `& 'C:\Program Files\Unity\Hub\Editor\2022.3.22f1\Editor\Unity.exe' -batchmode -nographics -projectPath '<workspace>\Temp~\VerifyProject~' -runTests -testPlatform EditMode -testResults '<result.xml>' -logFile '<test.log>'` を使用する。`-quit` を付けるとテスト開始前に終了するため指定しない
   - テストの成否はシェルの終了コードだけで判断せず、生成された結果 XML の `test-run` にある `result`、`passed`、`failed` を確認する。結果 XML が生成されなかった場合はテスト未実行として扱う
+  - 明示的に許可されている場合を除いてUIを変更してもUnityを新規起動して確認しない。
 - Unity の `.meta` ファイルは手動で作成しない
 - DB の互換性とマイグレーションは原則不要。DB の削除と再生成を前提にschemaや取り込み処理を変更してよい
   - 開発段階なのでバージョンもv1で固定

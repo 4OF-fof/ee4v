@@ -12,7 +12,7 @@ namespace Ee4v.UI
             public void Register(CatalogRegistry registry)
             {
                 registry.RegisterStory(new StoryRegistration(
-                    "action-bar", "Containers/Bars", "ActionBar",
+                    "action-bar", "Containers", "ActionBar",
                     "主要内容と操作を左右へ配置する共通バーです。",
                     "左側の主要内容、中央内容、右側の操作を並べ、ToolbarやFooterの配置を整えます。",
                     new string[0], ComponentImplementationKind.UiToolkit,

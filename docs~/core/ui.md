@@ -34,10 +34,10 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 
 ### Containers
 
-- `Bars/ActionBar`はToolbarやFooterの左、中央、右を配置する枠です。
-- `Items/ItemRow`はアイコン、名称、補足、末尾操作を持つ一覧の1項目です。一覧自体は含みません。
-- `Sections/SectionHeader`はセクション名、説明、右側操作を置く見出しです。
-- `Sections/DisclosureSection`は見出しを押して本文を開閉するセクションです。
+- `ActionBar`はToolbarやFooterの左、中央、右を配置する枠です。
+- `ItemRow`はアイコン、名称、補足、末尾操作を持つ一覧の1項目です。一覧自体は含みません。
+- `SectionHeader`はセクション名、説明、右側操作を置く見出しです。
+- `DisclosureSection`は見出しを押して本文を開閉するセクションです。
 - `InfoCard`は見出しと本文を外枠付きでまとめる情報パネルです。
 - `PreviewContainer`はPreview本体、未表示時のPlaceholder、重ねる操作を置く3層コンテナです。描画処理と一覧は含みません。
 - `CustomPopup`は細い外枠と面の濃度差でHeader、本文、任意Footerを分けるポップアップです。`CustomPopupWindow`が移動、リサイズ、focus離脱時のCloseを担当します。

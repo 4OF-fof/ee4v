@@ -13,7 +13,7 @@ namespace Ee4v.UI
             {
                 registry.RegisterStory(new StoryRegistration(
                     "section-header",
-                    "Containers/Sections",
+                    "Containers",
                     "SectionHeader",
                     "見出し、補足説明、右側の操作をまとめるコンポーネントです。",
                     "見出しと説明を左側に、セクションの操作を右側に配置します。",

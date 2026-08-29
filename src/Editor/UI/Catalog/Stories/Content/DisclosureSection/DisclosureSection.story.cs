@@ -12,7 +12,7 @@ namespace Ee4v.UI
             public void Register(CatalogRegistry registry)
             {
                 registry.RegisterStory(new StoryRegistration(
-                    "disclosure-section", "Containers/Sections", "DisclosureSection",
+                    "disclosure-section", "Containers", "DisclosureSection",
                     "見出しから本文の表示を切り替えるセクションです。",
                     "見出しの操作で本文を開閉し、展開状態の変更を通知します。",
                     new string[0], ComponentImplementationKind.UiToolkit,
