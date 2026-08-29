@@ -22,13 +22,14 @@ namespace Ee4v.UI
                     "Inputs",
                     "InputGroup",
                     "必須見出し付きの囲み枠へ1個以上のFormInputをまとめる入力グループです。",
-                    "囲み枠とフォーカス表示を担当します。グループ内の各行はFormInputで構成し、各FormInputのラベルは省略できます。",
-                    new[] { "FormInput" },
+                    "見出しから内容を開閉でき、閉状態は高さを詰めた薄い面で示します。枠線または見出し上だけでホバーを示し、グループ内の各行はFormInputで構成します。",
+                    new[] { "FormInput", "UiButton" },
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildInputGroupStory(parent),
                     new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.cs",
+                        "Editor/Core/Presentation/Settings/SettingsUiRenderer.cs"
                     }));
             }
         }
@@ -36,10 +37,11 @@ namespace Ee4v.UI
         private void BuildInputGroupStory(VisualElement parent)
         {
             var size = InputGroupStorySize.Multiple;
+            var expanded = true;
             Action refresh = null;
             var controls = CreatePlainControlsSection(
                 parent,
-                "FormInputの数を変更します。複数表示ではラベルなしの入力も確認できます。");
+                "FormInputの数と展開状態を変更します。Previewの見出しからも開閉できます。");
             var sizeField = AddEnumField(
                 controls.Content,
                 "入力数",
@@ -47,6 +49,16 @@ namespace Ee4v.UI
                 value =>
                 {
                     size = value;
+                    refresh();
+                });
+            Toggle expandedToggle = null;
+            expandedToggle = AddToggle(
+                controls.Content,
+                "展開",
+                expanded,
+                value =>
+                {
+                    expanded = value;
                     refresh();
                 });
 
@@ -57,6 +69,7 @@ namespace Ee4v.UI
             refresh = () =>
             {
                 sizeField.SetValueWithoutNotify(size);
+                expandedToggle.SetValueWithoutNotify(expanded);
                 groupHost.Clear();
 
                 var group = new InputGroup(
@@ -76,6 +89,13 @@ namespace Ee4v.UI
                             "グループ内の複数行をまとめて表示します。",
                             multiline: true))));
                 }
+
+                group.SetExpanded(expanded);
+                group.ExpandedChanged += value =>
+                {
+                    expanded = value;
+                    expandedToggle.SetValueWithoutNotify(value);
+                };
 
                 groupHost.Add(group);
             };

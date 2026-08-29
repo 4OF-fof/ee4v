@@ -87,6 +87,11 @@ namespace Ee4v.UI
             get { return _content; }
         }
 
+        public UiTextElement LabelText
+        {
+            get { return _label; }
+        }
+
         public void SetLabelFontSize(int size)
         {
             _label.SetFontSize(size);

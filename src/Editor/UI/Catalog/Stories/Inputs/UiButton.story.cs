@@ -34,7 +34,7 @@ namespace Ee4v.UI
                         "Editor/Feature/Hierarchy/SceneSwitcher/UI/SceneSwitcherView.cs",
                         "Editor/Feature/Project/ProjectTabs/UI/ProjectTabsView.cs",
                         "Editor/Feature/Shared/ItemStyle/ItemStyleEditor.cs",
-                        "Editor/UI/Components/Content/DisclosureSection/DisclosureSection.cs",
+                        "Editor/UI/Components/Inputs/InputGroup/InputGroup.cs",
                         "Editor/UI/Components/Content/TagPill/TagPill.cs",
                         "Editor/UI/Components/Overlays/CustomPopup/CustomPopup.cs"
                     }));

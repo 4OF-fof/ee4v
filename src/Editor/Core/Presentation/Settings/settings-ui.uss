@@ -14,26 +14,10 @@
     min-width: 0;
 }
 
-.ee4v-settings__section > .ee4v-ui-disclosure-section__header {
-    align-self: stretch;
-    width: auto;
-    min-height: var(--ee4v-control-height-default);
-    margin-bottom: var(--ee4v-space-xs);
-}
-
-.ee4v-settings__section-label {
-    align-self: stretch;
-    flex-shrink: 1;
-    min-width: 0;
-}
-
-.ee4v-settings__row {
-    flex-shrink: 0;
-    min-height: var(--ee4v-control-height-compact);
-    padding-left: var(--ee4v-space-sm);
-    padding-right: var(--ee4v-space-sm);
-    padding-top: var(--ee4v-space-none);
-    padding-bottom: var(--ee4v-space-none);
+.ee4v-settings__error {
+    margin-left: var(--ee4v-space-none);
+    margin-right: var(--ee4v-space-none);
+    margin-top: var(--ee4v-space-xs);
 }
 
 .ee4v-settings__field {
@@ -66,10 +50,4 @@
     flex-shrink: 1;
     width: auto;
     min-width: 0;
-}
-
-.ee4v-settings__row > .unity-help-box {
-    margin-left: var(--ee4v-space-none);
-    margin-right: var(--ee4v-space-none);
-    margin-top: var(--ee4v-space-xs);
 }

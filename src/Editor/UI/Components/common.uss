@@ -168,6 +168,7 @@
 }
 
 .ee4v-ui-input-group {
+    --ee4v-ui-input-group-background: var(--ee4v-color-panel);
     position: relative;
     min-width: 0;
     min-height: 42px;
@@ -178,34 +179,64 @@
     border-width: 2px;
     border-color: var(--ee4v-color-border-active);
     border-radius: var(--ee4v-radius-xl);
-    background-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-ui-input-group-background);
     overflow: visible;
     transition-property: background-color, border-top-color, border-right-color, border-bottom-color, border-left-color;
     transition-duration: 0.12s;
     transition-timing-function: ease-out;
 }
 
-.ee4v-ui-input-group:hover {
+.ee4v-ui-input-group--hovered {
     border-color: var(--ee4v-color-focus);
-    background-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-ui-input-group-background);
 }
 
-.ee4v-ui-input-group--focused,
-.ee4v-ui-input-group--focused:hover {
-    border-color: var(--ee4v-color-focus);
-    background-color: var(--ee4v-color-transparent);
+.ee4v-ui-input-group--collapsed {
+    --ee4v-ui-input-group-background:
+        var(--ee4v-color-surface-raised);
+    min-height: var(--ee4v-control-height-default);
+    padding-top: var(--ee4v-space-sm);
+    padding-bottom: var(--ee4v-space-sm);
+    background-color: var(--ee4v-ui-input-group-background);
 }
 
-.ee4v-ui-input-group__label {
+.ee4v-ui-input-group--collapsed.ee4v-ui-input-group--hovered {
+    background-color: var(--ee4v-ui-input-group-background);
+}
+
+.ee4v-ui-input-group__header.ee4v-ui-button {
     position: absolute;
-    left: var(--ee4v-space-lg);
-    top: -9px;
+    left: var(--ee4v-space-md);
+    top: -11px;
+    width: auto;
+    min-width: 0;
+    min-height: var(--ee4v-size-22);
     flex-shrink: 0;
     margin: var(--ee4v-space-none);
     padding-left: var(--ee4v-space-sm);
     padding-right: var(--ee4v-space-sm);
-    background-color: var(--ee4v-color-surface-raised);
+    padding-top: var(--ee4v-space-none);
+    padding-bottom: var(--ee4v-space-none);
+    border-width: 0;
+    border-radius: var(--ee4v-radius-sm);
+    background-color: var(--ee4v-ui-input-group-background);
     color: var(--ee4v-color-text-primary);
+}
+
+.ee4v-ui-input-group__header.ee4v-ui-button:hover,
+.ee4v-ui-input-group__header.ee4v-ui-button:focus,
+.ee4v-ui-input-group__header.ee4v-ui-button:active {
+    border-width: 0;
+    background-color: var(--ee4v-ui-input-group-background);
+}
+
+.ee4v-ui-input-group--hovered
+    .ee4v-ui-input-group__header .ee4v-ui-button__label {
+    color: var(--ee4v-color-focus);
+}
+
+.ee4v-ui-input-group__header .ee4v-ui-button__content {
+    justify-content: flex-start;
 }
 
 .ee4v-ui-input-group__content {
@@ -546,19 +577,6 @@
 
 .ee4v-ui-navigation-item__row {
     flex-grow: 1;
-}
-
-.ee4v-ui-disclosure-section__header.ee4v-ui-button {
-    width: 100%;
-    justify-content: flex-start;
-}
-
-.ee4v-ui-disclosure-section__header .ee4v-ui-button__content {
-    justify-content: flex-start;
-}
-
-.ee4v-ui-disclosure-section__body {
-    min-width: 0;
 }
 
 .ee4v-ui-badge {

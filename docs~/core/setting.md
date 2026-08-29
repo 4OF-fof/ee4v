@@ -1,6 +1,6 @@
 # Setting
 
-PreferencesとProject Settingsで使用する実画面は`ee4v/Debug/Catalog`の`Domain/Core/Settings UI` Storyで確認できます。Storyはメモリ上のサンプル設定だけを変更し、設定ファイルを保存しません。セクション見出しには背景を持たない`DisclosureSection`のGhost Headerを使用します。
+PreferencesとProject Settingsで使用する実画面は`ee4v/Debug/Catalog`の`Domain/Core/Settings UI` Storyで確認できます。Storyはメモリ上のサンプル設定だけを変更し、設定ファイルを保存しません。設定入力のセクションは`InputGroup`で囲み、見出しから開閉できます。
 
 ## 機能
 

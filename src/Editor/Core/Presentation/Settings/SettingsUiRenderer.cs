@@ -12,9 +12,7 @@ namespace Ee4v.Core.Settings
         private const string RootClassName = "ee4v-settings";
         private const string ContentClassName = "ee4v-settings__content";
         private const string SectionClassName = "ee4v-settings__section";
-        private const string SectionLabelClassName =
-            "ee4v-settings__section-label";
-        private const string RowClassName = "ee4v-settings__row";
+        private const string ErrorClassName = "ee4v-settings__error";
         private const string FieldLayoutClassName =
             "ee4v-settings__field-layout";
         private const string LabelClassName =
@@ -75,27 +73,41 @@ namespace Ee4v.Core.Settings
                 }
 
                 var firstDefinition = visibleDefinitions[0];
-                var section = new DisclosureSection(
+                var firstInput = CreateDefinition(
+                    settings,
+                    firstDefinition,
+                    searchContext,
+                    out var firstErrorBox);
+                var section = new InputGroup(
                     Translate(
                         firstDefinition.SectionKey,
                         firstDefinition.LocalizationScope),
-                    true);
+                    firstInput);
                 section.AddToClassList(SectionClassName);
-                section.Header.AddToClassList(SectionLabelClassName);
+                section.Add(firstErrorBox);
 
-                foreach (var definition in visibleDefinitions)
+                for (var index = 1;
+                     index < visibleDefinitions.Length;
+                     index++)
                 {
-                    section.Add(CreateDefinition(settings, definition, searchContext));
+                    var input = CreateDefinition(
+                        settings,
+                        visibleDefinitions[index],
+                        searchContext,
+                        out var errorBox);
+                    section.AddInput(input);
+                    section.Add(errorBox);
                 }
 
                 content.Add(section);
             }
         }
 
-        private static VisualElement CreateDefinition(
+        private static FormInput CreateDefinition(
             ISettingsService settings,
             SettingDefinitionBase definition,
-            string searchContext)
+            string searchContext,
+            out HelpBox errorBox)
         {
             var tooltip = string.Empty;
             if (I18N.TryGetForScope(
@@ -106,13 +118,11 @@ namespace Ee4v.Core.Settings
                 tooltip = translatedTooltip;
             }
 
-            var row = new VisualElement();
-            row.AddToClassList(RowClassName);
-
-            var errorBox = UiTextFactory.CreateHelpBox(
+            var validationBox = UiTextFactory.CreateHelpBox(
                 string.Empty,
                 HelpBoxMessageType.Error);
-            errorBox.style.marginTop = UiSpacingTokens.Xxs;
+            validationBox.AddToClassList(ErrorClassName);
+            errorBox = validationBox;
 
             var labelText = Translate(
                 definition.DisplayNameKey,
@@ -122,26 +132,27 @@ namespace Ee4v.Core.Settings
                 tooltip,
                 settings.Get(definition),
                 searchContext,
-                value => ApplyValue(settings, definition, value, errorBox));
+                value => ApplyValue(
+                    settings,
+                    definition,
+                    value,
+                    validationBox));
             field.AddToClassList(FieldClassName);
 
             var fieldLayout = new FormInput(labelText, field);
             fieldLayout.AddToClassList(FieldLayoutClassName);
             fieldLayout.LabelText.AddToClassList(LabelClassName);
             fieldLayout.LabelText.tooltip = tooltip;
-            row.Add(fieldLayout);
-            row.Add(errorBox);
-
             if (ValidationMessages.TryGetValue(definition.Key, out var error))
             {
-                ShowError(errorBox, error);
+                ShowError(validationBox, error);
             }
             else
             {
-                HideError(errorBox);
+                HideError(validationBox);
             }
 
-            return row;
+            return fieldLayout;
         }
 
         private static void ApplyValue(
