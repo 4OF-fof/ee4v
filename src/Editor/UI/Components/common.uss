@@ -305,6 +305,10 @@
     border-color: var(--ee4v-color-border-active);
     border-radius: var(--ee4v-radius-sm);
     background-color: var(--ee4v-color-surface-soft);
+    background-position-x: center;
+    background-position-y: center;
+    background-repeat: no-repeat;
+    background-size: var(--ee4v-size-12) var(--ee4v-size-12);
     -unity-background-image-tint-color: var(--ee4v-color-transparent);
     transition-property: background-color, border-top-color, border-right-color, border-bottom-color, border-left-color;
     transition-duration: 0.12s;
@@ -324,9 +328,10 @@
 .ee4v-ui-standard-input.unity-toggle:checked .unity-toggle__checkmark,
 .ee4v-ui-standard-input.unity-toggle:checked:focus .unity-toggle__checkmark,
 .ee4v-ui-standard-input.unity-toggle:checked:active .unity-toggle__checkmark {
+    border-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-focus);
-    -unity-background-image-tint-color: #FFFFFF;
+    -unity-background-image-tint-color: var(--ee4v-color-text-on-state);
 }
 
 .ee4v-ui-standard-input.unity-toggle:checked:hover .unity-toggle__checkmark {

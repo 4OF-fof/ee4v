@@ -10,6 +10,7 @@
     --ee4v-color-selection: #2C5D87;
     --ee4v-color-focus: #3A79BB;
     --ee4v-color-text-primary: #C2C2C2;
+    --ee4v-color-text-on-state: #F9F9F9;
     --ee4v-color-menu-native: #F9F9F9;
 
     /* Shared derived roles. Keep component USS free of raw color values. */
