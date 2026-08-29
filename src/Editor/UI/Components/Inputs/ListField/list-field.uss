@@ -1,19 +1,19 @@
-.ee4v-ui-string-list-field {
+.ee4v-ui-list-field {
     align-self: stretch;
     min-width: 0;
 }
 
-.ee4v-ui-string-list-field__list {
+.ee4v-ui-list-field__list {
     min-width: 0;
     max-height: 156px;
 }
 
-.ee4v-ui-string-list-field__list > .unity-scroll-view__content-viewport,
-.ee4v-ui-string-list-field__list .unity-scroll-view__content-container {
+.ee4v-ui-list-field__list > .unity-scroll-view__content-viewport,
+.ee4v-ui-list-field__list .unity-scroll-view__content-container {
     min-width: 0;
 }
 
-.ee4v-ui-string-list-field__row {
+.ee4v-ui-list-field__row {
     min-width: 0;
     min-height: var(--ee4v-control-height-default);
     flex-direction: row;
@@ -21,7 +21,7 @@
     margin-bottom: var(--ee4v-space-xs);
 }
 
-.ee4v-ui-string-list-field__editor {
+.ee4v-ui-list-field__item {
     align-self: stretch;
     min-width: 0;
     flex-grow: 1;
@@ -29,7 +29,7 @@
     margin-bottom: var(--ee4v-space-none);
 }
 
-.ee4v-ui-string-list-field__add-button.ee4v-ui-button {
+.ee4v-ui-list-field__add-button.ee4v-ui-button {
     align-self: stretch;
     width: auto;
     min-width: 0;
@@ -48,19 +48,19 @@
     background-color: var(--ee4v-color-transparent);
 }
 
-.ee4v-ui-string-list-field__add-button.ee4v-ui-button:hover {
+.ee4v-ui-list-field__add-button.ee4v-ui-button:hover {
     border-bottom-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-surface-hover);
 }
 
-.ee4v-ui-string-list-field__action-spacer {
+.ee4v-ui-list-field__action-spacer {
     width: var(--ee4v-size-22);
     min-width: var(--ee4v-size-22);
     flex-shrink: 0;
     margin-left: var(--ee4v-space-sm);
 }
 
-.ee4v-ui-string-list-field__remove-button.ee4v-ui-button {
+.ee4v-ui-list-field__remove-button.ee4v-ui-button {
     width: var(--ee4v-size-22);
     min-width: var(--ee4v-size-22);
     height: var(--ee4v-size-22);

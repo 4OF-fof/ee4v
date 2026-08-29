@@ -36,7 +36,7 @@ namespace Ee4v.Core.Settings
                     {
                         "Editor/UI/Components/Inputs/ui-button.uss",
                         "Editor/UI/Components/Inputs/InputField/input-field.uss",
-                        "Editor/UI/Components/Inputs/StringListField/string-list-field.uss",
+                        "Editor/UI/Components/Inputs/ListField/list-field.uss",
                         "Editor/Core/Presentation/Settings/settings-ui.uss"
                     })
             };

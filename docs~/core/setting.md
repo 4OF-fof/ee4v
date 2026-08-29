@@ -87,7 +87,7 @@ Preferencesの「生成アセットのルートフォルダー名」は、すべ
 
 `GlobalDataSettings.RootDirectory`は環境変数を展開した絶対パスを返します。ルート設定が変更されると`PathChanged`が発生します。
 
-`CommaSeparatedListSettingDrawer.Register`は文字列設定へ`StringListField`を登録します。項目の追加はリスト末尾の追加行から行い、削除は各行のボタンから行います。空一覧では表示用の空行を1行維持します。設定値の保存形式は変更せず、Drawerの`ParseItems`と`SerializeItems`がカンマ、セミコロン、改行による変換と空項目の除外を担当します。
+`CommaSeparatedListSettingDrawer.Register`は文字列設定へ`ListField<string>`を登録します。項目の追加はリスト末尾の追加行から行い、削除は各行のボタンから行います。空一覧では表示用の空行を1行維持します。設定値の保存形式は変更せず、Drawerの`ParseItems`と`SerializeItems`がカンマ、セミコロン、改行による変換と空項目の除外を担当します。
 
 ## 副作用
 

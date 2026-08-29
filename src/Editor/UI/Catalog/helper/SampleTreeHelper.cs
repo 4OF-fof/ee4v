@@ -84,8 +84,8 @@ namespace Ee4v.UI
                             "InputField input text"),
                         new SearchableTreeItemData<SampleTreeNode>(
                             10,
-                            new SampleTreeNode("StringListField", "List"),
-                            "StringListField input list")
+                            new SampleTreeNode("ListField", "List"),
+                            "ListField input list")
                     }),
                 new SearchableTreeItemData<SampleTreeNode>(
                     11,

@@ -19,11 +19,23 @@ namespace Ee4v.Core.Settings
         private static VisualElement CreateField(
             SettingDrawerContext<string> context)
         {
-            var field = new StringListField(
-                new StringListFieldState(
+            var field = new ListField<string>(
+                new ListFieldState<string>(
                     ParseItems(context.Value),
+                    (value, notifyValueChanged) =>
+                    {
+                        var item = new InputField(
+                            new InputFieldState(
+                                value,
+                                placeholder: I18N.Get(
+                                    "settings.listInput.itemPlaceholder")));
+                        item.ValueChanged += notifyValueChanged;
+                        return item;
+                    },
+                    () => string.Empty,
+                    string.IsNullOrEmpty,
+                    item => ((InputField)item).FocusInput(),
                     context.Tooltip,
-                    I18N.Get("settings.listInput.itemPlaceholder"),
                     I18N.Get("settings.listInput.addItem"),
                     I18N.Get("settings.listInput.removeItem")));
             field.ValuesChanged += values =>

@@ -51,10 +51,17 @@ namespace Ee4v.FaceExpression
                 void Rebuild()
                 {
                     root.Clear();
-                    foreach (var preset in storage.Load().presets)
-                    {
-                        root.Add(UiTextFactory.Create(preset.name));
-                    }
+                    var presets = storage.Load().presets;
+                    root.Add(new ListField<BlendShapeFbxPreset>(
+                        new ListFieldState<BlendShapeFbxPreset>(
+                            presets,
+                            (preset, _) =>
+                                new InputField(
+                                    new InputFieldState(preset.name))
+                                {
+                                    IsReadOnly = true
+                                },
+                            tooltip: context.Tooltip)));
 
                     var openFolder = new UiButton(
                         I18N.Get("settings.blendShapePresets.openFolder"),

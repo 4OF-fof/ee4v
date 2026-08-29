@@ -37,7 +37,7 @@ namespace Ee4v.UI
                     (window, parent) => window.BuildInputFieldStory(parent),
                     new[]
                     {
-                        "Editor/UI/Components/Inputs/StringListField/StringListField.cs",
+                        "Editor/UI/Components/Inputs/ListField/ListField.cs",
                         "Editor/UI/Catalog/helper/Controls.cs",
                         "Editor/AssetManager/UI/AssetManagerView.cs",
                         "Editor/AssetManager/UI/AssetManagerControls.cs"

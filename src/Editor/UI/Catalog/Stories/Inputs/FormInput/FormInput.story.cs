@@ -12,7 +12,7 @@ namespace Ee4v.UI
             Text,
             Toggle,
             Object,
-            StringList
+            List
         }
 
         private sealed class FormInputCatalogRegistrar : ICatalogRegistrar
@@ -26,8 +26,8 @@ namespace Ee4v.UI
                     "Inputs",
                     "FormInput",
                     "ラベル、入力コンポーネント、任意ボタンを横一列に配置するフォーム入力です。",
-                    "囲み枠を持たず、InputField、Toggle、ObjectField、StringListFieldのいずれか一つと任意ボタンをラベルの右側へ配置します。値の保持と検証は入力コンポーネントが担当します。複数の入力を一つの枠へまとめる場合はInputGroupを使用します。",
-                    new[] { "InputField", "StringListField" },
+                    "囲み枠を持たず、InputField、Toggle、ObjectField、ListFieldのいずれか一つと任意ボタンをラベルの右側へ配置します。値の保持と検証は入力コンポーネントが担当します。複数の入力を一つの枠へまとめる場合はInputGroupを使用します。",
+                    new[] { "InputField", "ListField" },
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildFormInputStory(parent),
                     new[]
@@ -130,12 +130,23 @@ namespace Ee4v.UI
                             : "「" + objectValue.name + "」を保存しました。";
                         break;
                     }
-                    case FormInputStoryInputKind.StringList:
+                    case FormInputStoryInputKind.List:
                     {
-                        var listField = new StringListField(
-                            new StringListFieldState(
+                        var listField = new ListField<string>(
+                            new ListFieldState<string>(
                                 listValues,
-                                itemPlaceholder: "項目を入力",
+                                (value, notifyValueChanged) =>
+                                {
+                                    var item = new InputField(
+                                        new InputFieldState(
+                                            value,
+                                            placeholder: "項目を入力"));
+                                    item.ValueChanged += notifyValueChanged;
+                                    return item;
+                                },
+                                () => string.Empty,
+                                string.IsNullOrEmpty,
+                                item => ((InputField)item).FocusInput(),
                                 addItemLabel: "項目を追加",
                                 removeItemTooltip: "項目を削除"));
                         listField.ValuesChanged += values =>

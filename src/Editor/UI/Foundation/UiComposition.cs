@@ -14,7 +14,7 @@ namespace Ee4v.UI
             "Editor/UI/Components/Inputs/ui-button.uss",
             "Editor/UI/Components/Inputs/SearchField/search-field.uss",
             "Editor/UI/Components/Inputs/InputField/input-field.uss",
-            "Editor/UI/Components/Inputs/StringListField/string-list-field.uss",
+            "Editor/UI/Components/Inputs/ListField/list-field.uss",
             "Editor/UI/Components/Collections/SearchableTreeView/searchable-tree-view.uss",
             "Editor/UI/Components/Content/Icon/icon.uss",
             "Editor/UI/Components/Content/InfoCard/info-card.uss",

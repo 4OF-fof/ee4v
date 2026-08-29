@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Ee4v.Core.I18n;
 using UnityEngine.UIElements;
 
@@ -6,7 +7,7 @@ namespace Ee4v.UI
 {
     internal sealed partial class CatalogWindow
     {
-        private sealed class StringListFieldCatalogRegistrar
+        private sealed class ListFieldCatalogRegistrar
             : ICatalogRegistrar
         {
             public int Order
@@ -19,25 +20,26 @@ namespace Ee4v.UI
                 registry.RegisterStyleSheet(
                     "Editor/UI/Components/Inputs/InputField/input-field.uss");
                 registry.RegisterStyleSheet(
-                    "Editor/UI/Components/Inputs/StringListField/string-list-field.uss");
+                    "Editor/UI/Components/Inputs/ListField/list-field.uss");
                 registry.RegisterStory(new StoryRegistration(
-                    "string-list-field",
+                    "list-field",
                     "Inputs",
-                    "StringListField",
+                    "ListField",
                     I18N.Get("catalog.listInput.description"),
                     I18N.Get("catalog.listInput.details"),
                     new[] { "InputField" },
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) =>
-                        window.BuildStringListFieldStory(parent),
+                        window.BuildListFieldStory(parent),
                     new[]
                     {
-                        "Editor/Core/Presentation/Settings/CommaSeparatedListSettingDrawer.cs"
+                        "Editor/Core/Presentation/Settings/CommaSeparatedListSettingDrawer.cs",
+                        "Editor/Feature/Avatar/FaceExpression/BlendShapeNamePresetSetting.cs"
                     }));
             }
         }
 
-        private void BuildStringListFieldStory(
+        private void BuildListFieldStory(
             VisualElement parent)
         {
             var tooltip = I18N.Get(
@@ -71,13 +73,31 @@ namespace Ee4v.UI
             var surface = CreatePreviewArea();
             surface.style.width = 520f;
 
-            var field = new StringListField(
-                new StringListFieldState(
-                    new[] { "Airi", "Manuka", "Moe" },
+            ListFieldState<string> CreateState(
+                IReadOnlyList<string> values)
+            {
+                return new ListFieldState<string>(
+                    values,
+                    (value, notifyValueChanged) =>
+                    {
+                        var item = new InputField(
+                            new InputFieldState(
+                                value,
+                                placeholder: placeholder));
+                        item.ValueChanged += notifyValueChanged;
+                        return item;
+                    },
+                    () => string.Empty,
+                    string.IsNullOrEmpty,
+                    item => ((InputField)item).FocusInput(),
                     tooltip,
-                    placeholder,
                     I18N.Get("catalog.listInput.addItem"),
-                    I18N.Get("catalog.listInput.removeItem")));
+                    I18N.Get("catalog.listInput.removeItem"));
+            }
+
+            var field = new ListField<string>(
+                CreateState(
+                    new[] { "Airi", "Manuka", "Moe" }));
             surface.Add(field);
             preview.Body.Add(surface);
 
@@ -85,12 +105,7 @@ namespace Ee4v.UI
             {
                 tooltipField.SetValueWithoutNotify(tooltip);
                 placeholderField.SetValueWithoutNotify(placeholder);
-                field.SetState(new StringListFieldState(
-                    field.Values,
-                    tooltip,
-                    placeholder,
-                    I18N.Get("catalog.listInput.addItem"),
-                    I18N.Get("catalog.listInput.removeItem")));
+                field.SetState(CreateState(field.Values));
             };
 
             refresh();
