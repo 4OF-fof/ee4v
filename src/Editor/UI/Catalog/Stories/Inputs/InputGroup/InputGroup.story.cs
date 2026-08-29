@@ -22,7 +22,7 @@ namespace Ee4v.UI
                     "Inputs",
                     "InputGroup",
                     "必須見出し付きの囲み枠へ1個以上のFormInputをまとめる入力グループです。",
-                    "見出しから内容を開閉でき、閉状態は高さを詰めた薄い面で示します。枠線または見出し上だけでホバーを示し、グループ内の各行はFormInputで構成します。",
+                    "見出しから内容を開閉でき、閉状態は高さとシェブロンで示します。見出し上だけをホバー対象とし、反応は外枠の色で示します。",
                     new[] { "FormInput", "UiButton" },
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildInputGroupStory(parent),

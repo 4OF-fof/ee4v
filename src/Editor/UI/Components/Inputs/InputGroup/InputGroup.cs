@@ -1,5 +1,4 @@
 using System;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -32,8 +31,9 @@ namespace Ee4v.UI
             Content.AddToClassList("ee4v-ui-input-group__content");
             hierarchy.Add(_header);
             hierarchy.Add(Content);
-            RegisterCallback<PointerMoveEvent>(OnPointerMove);
-            RegisterCallback<PointerLeaveEvent>(_ =>
+            _header.RegisterCallback<PointerEnterEvent>(_ =>
+                AddToClassList(HoveredClassName));
+            _header.RegisterCallback<PointerLeaveEvent>(_ =>
                 RemoveFromClassList(HoveredClassName));
             SetLabel(label);
             AddInput(input);
@@ -87,24 +87,6 @@ namespace Ee4v.UI
         private void Toggle()
         {
             SetExpanded(!_expanded, true);
-        }
-
-        private void OnPointerMove(PointerMoveEvent evt)
-        {
-            var pointerPosition = (Vector2)evt.position;
-            var bounds = worldBound;
-            var overBorder = bounds.Contains(pointerPosition) &&
-                             (pointerPosition.x <=
-                                  bounds.xMin + resolvedStyle.borderLeftWidth ||
-                              pointerPosition.x >=
-                                  bounds.xMax - resolvedStyle.borderRightWidth ||
-                              pointerPosition.y <=
-                                  bounds.yMin + resolvedStyle.borderTopWidth ||
-                              pointerPosition.y >=
-                                  bounds.yMax - resolvedStyle.borderBottomWidth);
-            EnableInClassList(
-                HoveredClassName,
-                overBorder || _header.worldBound.Contains(pointerPosition));
         }
 
         private void SetExpanded(bool expanded, bool notify)

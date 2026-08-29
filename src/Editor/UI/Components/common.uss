@@ -181,26 +181,16 @@
     border-radius: var(--ee4v-radius-xl);
     background-color: var(--ee4v-ui-input-group-background);
     overflow: visible;
-    transition-property: background-color, border-top-color, border-right-color, border-bottom-color, border-left-color;
-    transition-duration: 0.12s;
-    transition-timing-function: ease-out;
 }
 
 .ee4v-ui-input-group--hovered {
     border-color: var(--ee4v-color-focus);
-    background-color: var(--ee4v-ui-input-group-background);
 }
 
 .ee4v-ui-input-group--collapsed {
-    --ee4v-ui-input-group-background:
-        var(--ee4v-color-surface-raised);
     min-height: var(--ee4v-control-height-default);
     padding-top: var(--ee4v-space-sm);
     padding-bottom: var(--ee4v-space-sm);
-    background-color: var(--ee4v-ui-input-group-background);
-}
-
-.ee4v-ui-input-group--collapsed.ee4v-ui-input-group--hovered {
     background-color: var(--ee4v-ui-input-group-background);
 }
 
@@ -228,11 +218,6 @@
 .ee4v-ui-input-group__header.ee4v-ui-button:active {
     border-width: 0;
     background-color: var(--ee4v-ui-input-group-background);
-}
-
-.ee4v-ui-input-group--hovered
-    .ee4v-ui-input-group__header .ee4v-ui-button__label {
-    color: var(--ee4v-color-focus);
 }
 
 .ee4v-ui-input-group__header .ee4v-ui-button__content {
