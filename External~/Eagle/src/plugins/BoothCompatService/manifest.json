@@ -1,6 +1,6 @@
 {
   "id": "dev.4of.ee4v.eagle.boothcompat.service",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "platform": "all",
   "arch": "all",
   "name": "{{manifest.app.name}}",

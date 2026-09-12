@@ -430,7 +430,12 @@
     const result = await withBoothMetaLock(product, async () => {
       const boothMeta = await ensureBoothMetaForImport(product);
       const nextMeta = appendDownloadRequest(boothMeta.meta, download);
-      const existing = findImportedDownload(nextMeta, download, await getAllItemsForBridge());
+      // Keep the request path short so a large Eagle library cannot hold the
+      // per-product lock before the download watcher receives its job.
+      // The watcher performs the folder-scoped item fallback before importing.
+      const existing = isDownloadImported(nextMeta, download)
+        ? { matchedBy: "boothmeta" }
+        : null;
       const jobId = core().buildDownloadKey(download);
       const existingJob = importJobs.get(jobId);
 
@@ -649,7 +654,11 @@
     const meta = job.boothMetaItemFilePath
       ? await loadMetaForBridge(boothMetaItem)
       : core().normalizeMeta(job.boothMetaInitialMeta || core().DEFAULT_META);
-    const existing = findImportedDownload(meta, job.download, await getAllItemsForBridge());
+    const productItems = await listItemsViaWebApi({
+      limit: 1000,
+      folders: job.boothMetaFolderId
+    });
+    const existing = findImportedDownload(meta, job.download, productItems);
     if (existing) {
       job.status = "imported";
       return;
