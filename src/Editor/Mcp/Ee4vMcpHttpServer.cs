@@ -14,6 +14,7 @@ namespace Ee4v.Mcp
     {
         private const string ServerName = "ee4v";
         private const string ServerVersion = "0.1.0";
+        private const long MaximumRequestBytes = 8L * 1024L * 1024L;
         private readonly int _port;
         private HttpListener _listener;
         private CancellationTokenSource _cancellation;
@@ -92,7 +93,8 @@ namespace Ee4v.Mcp
             try
             {
                 if (!IPAddress.IsLoopback(context.Request.RemoteEndPoint.Address) ||
-                    !IsLoopbackHost(context.Request.Headers["Host"]))
+                    !IsLoopbackHost(context.Request.Headers["Host"]) ||
+                    !IsAllowedOrigin(context.Request.Headers["Origin"]))
                 {
                     await WriteStatus(context.Response, 403, "Loopback access only.");
                     return;
@@ -117,6 +119,12 @@ namespace Ee4v.Mcp
                     !string.Equals(context.Request.Url.AbsolutePath, "/mcp", StringComparison.Ordinal))
                 {
                     await WriteStatus(context.Response, 405, "POST /mcp is required.");
+                    return;
+                }
+
+                if (context.Request.ContentLength64 > MaximumRequestBytes)
+                {
+                    await WriteStatus(context.Response, 413, "MCP request is too large.");
                     return;
                 }
 
@@ -258,6 +266,27 @@ namespace Ee4v.Mcp
             return string.Equals(name, "127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
                    string.Equals(name, "localhost", StringComparison.OrdinalIgnoreCase) ||
                    string.Equals(name, "[::1]", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsAllowedOrigin(string origin)
+        {
+            if (string.IsNullOrWhiteSpace(origin))
+            {
+                return true;
+            }
+
+            if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+            {
+                return false;
+            }
+
+            if (string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return IPAddress.TryParse(uri.Host, out var address) &&
+                   IPAddress.IsLoopback(address);
         }
 
         private static async Task WriteStatus(
