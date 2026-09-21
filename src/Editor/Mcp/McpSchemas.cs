@@ -48,7 +48,7 @@ namespace Ee4v.Mcp
             return new JObject
             {
                 ["type"] = "string",
-                ["enum"] = new JArray(values ?? Array.Empty<string>())
+                ["enum"] = new JArray(values ?? System.Array.Empty<string>())
             };
         }
 
