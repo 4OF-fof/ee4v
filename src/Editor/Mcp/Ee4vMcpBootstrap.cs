@@ -109,6 +109,7 @@ namespace Ee4v.Mcp
             AvatarMcpTools.Register();
             FaceExpressionMcpTools.Register();
             PhysBoneColliderMcpTools.Register();
+            AssetManagerMcpTools.Register();
         }
     }
 }
