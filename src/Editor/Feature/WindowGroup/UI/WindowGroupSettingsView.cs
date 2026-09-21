@@ -245,8 +245,7 @@ namespace Ee4v.WindowGroup
                     selectedGroup.Id);
             var row = new ItemRow(new ItemRowState(
                 option.DisplayName,
-                otherRegularMembership,
-                layout: ItemRowLayout.Stacked));
+                otherRegularMembership));
             row.AddToClassList(
                 "ee4v-window-group-settings__window-row");
             row.TitleText.AddToClassList(

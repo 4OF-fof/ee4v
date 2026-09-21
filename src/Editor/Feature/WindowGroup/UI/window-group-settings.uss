@@ -113,7 +113,8 @@
 
 .ee4v-window-group-settings__window-row {
     min-width: 0;
-    min-height: 34px;
+    height: 34px;
+    flex-shrink: 0;
     margin-bottom: var(--ee4v-space-xs);
     padding-left: var(--ee4v-space-lg);
     padding-right: var(--ee4v-space-lg);
@@ -125,6 +126,13 @@
     border-color: var(--ee4v-color-border-default);
     border-radius: var(--ee4v-radius-2xl);
     background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-window-group-settings__window-row > .ee4v-ui-item-row__leading,
+.ee4v-window-group-settings__window-row > .ee4v-ui-item-row__text,
+.ee4v-window-group-settings__window-row > .ee4v-ui-item-row__trailing {
+    min-height: var(--ee4v-control-height-default);
+    align-items: center;
 }
 
 .ee4v-window-group-settings__window-row:hover {
@@ -141,6 +149,8 @@
     width: var(--ee4v-size-20);
     min-width: var(--ee4v-size-20);
     margin-right: var(--ee4v-space-sm);
+    margin-top: var(--ee4v-space-none);
+    margin-bottom: var(--ee4v-space-none);
     flex-shrink: 0;
 }
 
@@ -158,7 +168,8 @@
 
 .ee4v-window-group-settings__window-memberships {
     min-width: 0;
-    margin-top: var(--ee4v-space-xs);
+    flex-shrink: 1;
+    margin-top: var(--ee4v-space-none);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -167,7 +178,16 @@
 .ee4v-window-group-settings__follower-toggle {
     min-width: 90px;
     margin-left: var(--ee4v-space-md);
+    margin-top: var(--ee4v-space-none);
+    margin-bottom: var(--ee4v-space-none);
     flex-shrink: 0;
+}
+
+.ee4v-window-group-settings__window-toggle,
+.ee4v-window-group-settings__follower-toggle,
+.ee4v-window-group-settings__window-focus {
+    height: var(--ee4v-control-height-default);
+    align-self: center;
 }
 
 .ee4v-window-group-settings__follower-toggle > .unity-base-field__label {
@@ -176,6 +196,8 @@
     flex-basis: auto;
     flex-shrink: 0;
     margin-right: var(--ee4v-space-xs);
+    margin-top: var(--ee4v-space-none);
+    margin-bottom: var(--ee4v-space-none);
 }
 
 .ee4v-window-group-settings__follower-toggle > .unity-base-field__input {
@@ -187,7 +209,6 @@
 
 .ee4v-window-group-settings__window-focus {
     min-width: 0;
-    min-height: var(--ee4v-control-height-default);
     margin-left: var(--ee4v-space-md);
     padding-left: var(--ee4v-space-lg);
     padding-right: var(--ee4v-space-lg);

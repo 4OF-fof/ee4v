@@ -1001,11 +1001,14 @@ namespace Ee4v.AssetManager.UI
             _detail.Add(thumbnailStack);
 
             var name = AssetManagerControls.CreateTextField(
-                I18N.Get("field.name"));
+                I18N.Get("field.name"),
+                "ee4v-asset-manager__item-metadata-field");
             name.value = item.Name;
             var descriptionContainer = new VisualElement();
             descriptionContainer.AddToClassList(
                 "ee4v-asset-manager-control-field");
+            descriptionContainer.AddToClassList(
+                "ee4v-asset-manager__item-metadata-field");
             descriptionContainer.Add(UiTextFactory.Create(
                 I18N.Get("field.description"),
                 UiClassNames.FormLabel,
@@ -1020,6 +1023,8 @@ namespace Ee4v.AssetManager.UI
             var tagsContainer = new VisualElement();
             tagsContainer.AddToClassList(
                 "ee4v-asset-manager-control-field");
+            tagsContainer.AddToClassList(
+                "ee4v-asset-manager__item-metadata-field");
             tagsContainer.Add(UiTextFactory.Create(
                 I18N.Get("field.tags"),
                 UiClassNames.FormLabel,
