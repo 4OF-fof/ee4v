@@ -107,6 +107,7 @@ namespace Ee4v.Mcp
             _toolsRegistered = true;
             McpStatusTools.Register();
             AvatarMcpTools.Register();
+            FaceExpressionMcpTools.Register();
         }
     }
 }
