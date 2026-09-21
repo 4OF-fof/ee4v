@@ -219,7 +219,7 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_delete_items",
-                "Permanently removes archived ee4v-source items from the database and ee4v library. Eagle or non-ee4v sources are rejected. Requires confirm=true.",
+                "Permanently removes archived items from the database and deletes their ee4v-source files. Items containing Eagle or other non-ee4v files are rejected. Requires confirm=true.",
                 McpSchemas.Object(new JObject
                 {
                     ["itemIds"] = McpSchemas.Array(McpSchemas.String()),
