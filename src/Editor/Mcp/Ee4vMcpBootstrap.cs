@@ -107,6 +107,7 @@ namespace Ee4v.Mcp
             _toolsRegistered = true;
             McpStatusTools.Register();
             AvatarMcpTools.Register();
+            AvatarContactMcpTools.Register();
             ModularAvatarMcpTools.Register();
             FaceExpressionMcpTools.Register();
             PhysBoneColliderMcpTools.Register();
