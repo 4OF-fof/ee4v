@@ -243,15 +243,9 @@ namespace Ee4v.WindowGroup
                 CreateOtherRegularMembershipText(
                     option.TypeId,
                     selectedGroup.Id);
-            var row = new ItemRow(new ItemRowState(
-                option.DisplayName,
-                otherRegularMembership));
+            var row = new VisualElement();
             row.AddToClassList(
                 "ee4v-window-group-settings__window-row");
-            row.TitleText.AddToClassList(
-                "ee4v-window-group-settings__window-name");
-            row.DescriptionText.AddToClassList(
-                "ee4v-window-group-settings__window-memberships");
             row.EnableInClassList(
                 "ee4v-window-group-settings__window-row--assigned",
                 isSelected);
@@ -268,20 +262,56 @@ namespace Ee4v.WindowGroup
                     evt.newValue);
             });
 
-            var follower = UiTextFactory.CreateToggle(
+            var windowName = UiTextFactory.Create(
+                option.DisplayName,
+                "ee4v-window-group-settings__window-name");
+            windowName.SetWhiteSpace(WhiteSpace.NoWrap);
+            windowName.SetTextAlign(TextAnchor.MiddleLeft);
+
+            var membership = UiTextFactory.Create(
+                otherRegularMembership,
+                UiClassNames.SecondaryText,
+                "ee4v-window-group-settings__window-memberships");
+            membership.SetWhiteSpace(WhiteSpace.NoWrap);
+            membership.SetTextAlign(TextAnchor.MiddleLeft);
+
+            var followerControl = new VisualElement();
+            followerControl.AddToClassList(
+                "ee4v-window-group-settings__follower-control");
+            var followerLabel = UiTextFactory.Create(
                 I18N.Get("window.windows.follower"),
+                UiClassNames.SecondaryText,
+                "ee4v-window-group-settings__follower-label");
+            followerLabel.SetWhiteSpace(WhiteSpace.NoWrap);
+            followerLabel.SetTextAlign(TextAnchor.MiddleLeft);
+            var follower = UiTextFactory.CreateToggle(
+                string.Empty,
                 "ee4v-window-group-settings__follower-toggle");
             follower.SetValueWithoutNotify(
                 followerRequired ||
                 (isSelected && _configuration.IsFollower(
                      option.TypeId,
                      selectedGroup.Id)));
-            follower.SetEnabled(isSelected && !followerRequired);
+            var followerEnabled = isSelected && !followerRequired;
+            followerLabel.SetEnabled(followerEnabled);
+            follower.SetEnabled(followerEnabled);
             follower.RegisterValueChangedCallback(evt =>
                 _configuration.SetFollower(
                     option.TypeId,
                     selectedGroup.Id,
                     evt.newValue));
+            followerLabel.RegisterCallback<ClickEvent>(evt =>
+            {
+                if (!follower.enabledSelf)
+                {
+                    return;
+                }
+
+                follower.value = !follower.value;
+                evt.StopPropagation();
+            });
+            followerControl.Add(followerLabel);
+            followerControl.Add(follower);
 
             var focus = new UiButton(
                 I18N.Get("window.action.focus"),
@@ -292,9 +322,11 @@ namespace Ee4v.WindowGroup
                 TextAnchor.MiddleCenter);
             focus.SetEnabled(option.Window != null);
 
-            row.Leading.Add(toggle);
-            row.Trailing.Add(follower);
-            row.Trailing.Add(focus);
+            row.Add(toggle);
+            row.Add(windowName);
+            row.Add(membership);
+            row.Add(followerControl);
+            row.Add(focus);
             return row;
         }
 
