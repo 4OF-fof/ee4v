@@ -38,7 +38,7 @@ namespace Ee4v.HiddenObjects
                     }),
                 new UiStory(
                     "hidden-objects-toolbar",
-                    "Domain/HierarchyStyle/Components",
+                    "Domain/HierarchyStyle/Inputs",
                     "HiddenObjectsToolbar",
                     "検索、Scene絞り込み、更新操作をまとめるToolbarです。",
                     "検索文字列とSceneを指定して表示対象を絞り込み、一覧を更新できます。",
@@ -59,7 +59,7 @@ namespace Ee4v.HiddenObjects
                     }),
                 new UiStory(
                     "hidden-objects-footer",
-                    "Domain/HierarchyStyle/Components",
+                    "Domain/HierarchyStyle/Containers",
                     "HiddenObjectsFooter",
                     "選択状態のSummaryと一括操作をまとめるFooterです。",
                     "件数と選択状態を表示し、全選択、選択解除、再表示を実行できます。",
@@ -79,7 +79,7 @@ namespace Ee4v.HiddenObjects
                     }),
                 new UiStory(
                     "hidden-object-tree-row",
-                    "Domain/HierarchyStyle/Components",
+                    "Domain/HierarchyStyle/Inputs",
                     "HiddenObjectTreeRow",
                     "非表示Object一件の選択、Icon、名前を表示する行です。",
                     "非表示Objectのアイコン、名前、補足を表示し、選択とフォーカス操作を通知します。",

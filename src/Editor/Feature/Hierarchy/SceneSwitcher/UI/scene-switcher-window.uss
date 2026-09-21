@@ -4,7 +4,7 @@
     padding-right: var(--ee4v-space-xs);
     padding-top: var(--ee4v-space-xs);
     padding-bottom: var(--ee4v-space-xs);
-    background-color: var(--ee4v-color-surface-raised);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-scene-switcher {
@@ -29,11 +29,12 @@
     border-right-color: var(--ee4v-color-border-default);
     border-bottom-color: var(--ee4v-color-border-default);
     border-left-color: var(--ee4v-color-border-default);
-    border-top-left-radius: var(--ee4v-radius-sm);
-    border-top-right-radius: var(--ee4v-radius-sm);
-    border-bottom-left-radius: var(--ee4v-radius-sm);
-    border-bottom-right-radius: var(--ee4v-radius-sm);
-    background-color: var(--ee4v-color-field);
+    border-top-left-radius: var(--ee4v-radius-2xl);
+    border-top-right-radius: var(--ee4v-radius-2xl);
+    border-bottom-left-radius: var(--ee4v-radius-2xl);
+    border-bottom-right-radius: var(--ee4v-radius-2xl);
+    background-color: var(--ee4v-color-surface-subtle);
+    overflow: hidden;
 }
 
 .ee4v-scene-switcher__empty {
@@ -69,15 +70,18 @@
     padding-right: var(--ee4v-space-xxs);
     flex-direction: row;
     align-items: center;
-    border-bottom-width: var(--ee4v-border-hairline);
-    border-bottom-color: var(--ee4v-color-border-subtle);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-transparent);
+    border-radius: var(--ee4v-radius-lg);
 }
 
 .ee4v-scene-switcher-row:hover {
+    border-color: var(--ee4v-color-transparent);
     background-color: var(--ee4v-color-surface-hover);
 }
 
 .ee4v-scene-switcher-row--open {
+    border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-selection-soft);
 }
 
@@ -105,8 +109,8 @@
     border-top-right-radius: var(--ee4v-radius-lg);
     border-bottom-left-radius: var(--ee4v-radius-lg);
     border-bottom-right-radius: var(--ee4v-radius-lg);
-    background-color: var(--ee4v-color-tool-active);
-    color: var(--ee4v-color-text-on-state);
+    background-color: var(--ee4v-color-selection-soft);
+    color: var(--ee4v-color-text-primary);
     flex-shrink: 0;
 }
 

@@ -33,21 +33,24 @@
     padding-right: var(--ee4v-space-sm);
     padding-top: var(--ee4v-space-none);
     padding-bottom: var(--ee4v-space-none);
-    border-width: var(--ee4v-border-hairline);
-    border-color: var(--ee4v-color-border-default);
-    border-radius: var(--ee4v-radius-lg);
-    background-color: var(--ee4v-color-field);
-    transition-property: border-color, background-color;
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: var(--ee4v-border-emphasis);
+    border-left-width: 0;
+    border-bottom-color: var(--ee4v-color-border-active);
+    border-radius: 0;
+    background-color: var(--ee4v-color-transparent);
+    transition-property: border-bottom-color;
     transition-duration: 0.12s;
     transition-timing-function: ease-out;
 }
 
 .ee4v-asset-manager-control-field--enum .ee4v-asset-manager-control-field__container:hover {
-    border-color: var(--ee4v-color-border-active);
+    border-bottom-color: var(--ee4v-color-focus);
 }
 
 .ee4v-asset-manager-control-field--enum.ee4v-asset-manager-control-field--focused .ee4v-asset-manager-control-field__container {
-    border-color: var(--ee4v-color-focus);
+    border-bottom-color: var(--ee4v-color-focus);
 }
 
 .ee4v-asset-manager-control-field--enum .ee4v-asset-manager-control-field__input {
@@ -113,13 +116,14 @@
 
 .ee4v-asset-manager-tag-field__add.ee4v-ui-button {
     width: 100%;
-    min-height: var(--ee4v-size-26);
-    border-color: var(--ee4v-color-transparent);
-    background-color: var(--ee4v-color-surface-subtle);
+    min-height: var(--ee4v-control-height-default);
+    border-color: var(--ee4v-color-border-active);
+    background-color: var(--ee4v-color-surface-soft);
 }
 
 .ee4v-asset-manager-tag-field__add.ee4v-ui-button:hover {
-    background-color: var(--ee4v-color-surface-hover);
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-surface-hover-strong);
 }
 
 .ee4v-asset-manager-tag-picker__body {
@@ -174,24 +178,24 @@
     align-items: center;
     width: 162px;
     min-width: 72px;
-    height: var(--ee4v-size-31);
-    min-height: var(--ee4v-size-31);
-    max-height: var(--ee4v-size-31);
-    padding-left: var(--ee4v-space-xl);
-    padding-right: var(--ee4v-space-xl);
+    height: var(--ee4v-control-height-default);
+    min-height: var(--ee4v-control-height-default);
+    max-height: var(--ee4v-control-height-default);
+    padding-left: var(--ee4v-space-md);
+    padding-right: var(--ee4v-space-md);
 }
 
 .ee4v-asset-manager-grid-slider__endpoint {
-    width: var(--ee4v-size-16);
-    min-width: var(--ee4v-size-16);
-    max-width: var(--ee4v-size-16);
-    height: var(--ee4v-size-16);
-    min-height: var(--ee4v-size-16);
-    max-height: var(--ee4v-size-16);
+    width: var(--ee4v-size-20);
+    min-width: var(--ee4v-size-20);
+    max-width: var(--ee4v-size-20);
+    height: var(--ee4v-size-20);
+    min-height: var(--ee4v-size-20);
+    max-height: var(--ee4v-size-20);
     margin: var(--ee4v-space-none);
     padding: var(--ee4v-space-none);
     border-color: var(--ee4v-color-transparent);
-    border-radius: var(--ee4v-radius-sm);
+    border-radius: var(--ee4v-radius-lg);
     background-color: var(--ee4v-color-transparent);
     justify-content: center;
     align-items: center;
@@ -263,9 +267,15 @@
     align-items: flex-start;
     margin-bottom: var(--ee4v-space-md);
     padding: var(--ee4v-space-md);
+    border-top-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
     border-left-width: var(--ee4v-border-emphasis);
+    border-top-color: var(--ee4v-color-border-default);
+    border-right-color: var(--ee4v-color-border-default);
+    border-bottom-color: var(--ee4v-color-border-default);
     border-left-color: var(--ee4v-color-info);
-    border-radius: var(--ee4v-radius-sm);
+    border-radius: var(--ee4v-radius-2xl);
     background-color: var(--ee4v-color-info-surface-soft);
 }
 
@@ -360,22 +370,26 @@
     padding-right: var(--ee4v-space-md);
     padding-top: var(--ee4v-space-none);
     padding-bottom: var(--ee4v-space-none);
-    border-width: 0;
-    border-radius: var(--ee4v-radius-sm);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-transparent);
+    border-radius: var(--ee4v-radius-lg);
     background-color: var(--ee4v-color-transparent);
     -unity-text-align: middle-left;
 }
 
 .ee4v-asset-manager__nav-button:hover {
+    border-color: var(--ee4v-color-transparent);
     background-color: var(--ee4v-color-surface-hover);
 }
 
 .ee4v-asset-manager__nav-button--selected {
-    background-color: var(--ee4v-color-tool-active);
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-selection-soft);
 }
 
 .ee4v-asset-manager__nav-button--selected:hover {
-    background-color: var(--ee4v-color-tool-active-hover);
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-selection-soft);
 }
 
 .ee4v-asset-manager__nav-button .ee4v-ui-button__label,
@@ -460,7 +474,7 @@
     margin-left: var(--ee4v-space-xs);
     padding-left: var(--ee4v-space-xs);
     padding-right: var(--ee4v-space-xs);
-    border-radius: var(--ee4v-radius-sm);
+    border-radius: var(--ee4v-radius-lg);
     overflow: hidden;
 }
 
@@ -484,7 +498,7 @@
     padding: var(--ee4v-space-xs);
     border-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-overlay-border);
-    border-radius: var(--ee4v-radius-md);
+    border-radius: var(--ee4v-radius-lg);
     background-color: var(--ee4v-color-surface-raised);
 }
 
@@ -497,7 +511,7 @@
     padding-top: var(--ee4v-space-none);
     padding-bottom: var(--ee4v-space-none);
     border-width: 0;
-    border-radius: var(--ee4v-radius-sm);
+    border-radius: var(--ee4v-radius-lg);
     background-color: var(--ee4v-color-transparent);
 }
 
@@ -599,11 +613,11 @@
 
 .ee4v-asset-manager__primary-action:hover {
     border-color: var(--ee4v-color-focus);
-    background-color: var(--ee4v-color-tool-active-hover);
+    background-color: var(--ee4v-color-surface-hover-strong);
 }
 
 .ee4v-asset-manager__primary-action:active {
-    background-color: var(--ee4v-color-tool-active);
+    background-color: var(--ee4v-color-surface-pressed);
 }
 
 .ee4v-asset-manager__danger-action {
@@ -644,8 +658,9 @@
     margin-bottom: var(--ee4v-space-xxs);
     padding-left: var(--ee4v-space-md);
     padding-right: var(--ee4v-space-md);
-    border-width: 0;
-    border-radius: var(--ee4v-radius-sm);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-transparent);
+    border-radius: var(--ee4v-radius-lg);
     background-color: var(--ee4v-color-transparent);
 }
 
@@ -667,9 +682,9 @@
     margin-bottom: var(--ee4v-space-sm);
     padding: var(--ee4v-space-md);
     border-width: var(--ee4v-border-hairline);
-    border-color: var(--ee4v-color-border-subtle);
-    border-radius: var(--ee4v-radius-md);
-    background-color: var(--ee4v-color-surface-soft);
+    border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-2xl);
+    background-color: var(--ee4v-color-surface-subtle);
 }
 
 .ee4v-asset-manager__collection-popup-group--root {
@@ -722,9 +737,9 @@
     margin-bottom: var(--ee4v-space-sm);
     padding: var(--ee4v-space-md);
     border-width: var(--ee4v-border-hairline);
-    border-color: var(--ee4v-color-border-subtle);
-    border-radius: var(--ee4v-radius-md);
-    background-color: var(--ee4v-color-surface-soft);
+    border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-2xl);
+    background-color: var(--ee4v-color-surface-subtle);
 }
 
 .ee4v-asset-manager__collection-popup-condition-controls {
@@ -838,8 +853,9 @@
 .ee4v-asset-grid-card {
     flex-direction: column;
     border-width: var(--ee4v-border-hairline);
-    border-color: var(--ee4v-color-transparent);
+    border-color: var(--ee4v-color-border-default);
     border-radius: var(--ee4v-radius-2xl);
+    background-color: var(--ee4v-color-surface-subtle);
     overflow: hidden;
     transition-property: background-color, border-color;
     transition-duration: 0.12s;
@@ -847,18 +863,18 @@
 }
 
 .ee4v-asset-grid-card:hover {
-    border-color: var(--ee4v-color-border-default);
-    background-color: var(--ee4v-color-surface-subtle);
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-surface-hover-strong);
 }
 
 .ee4v-asset-grid-card--selected {
     border-color: var(--ee4v-color-focus);
-    background-color: var(--ee4v-color-selection);
+    background-color: var(--ee4v-color-selection-soft);
 }
 
 .ee4v-asset-grid-card--selected:hover {
     border-color: var(--ee4v-color-focus);
-    background-color: var(--ee4v-color-tool-active-hover);
+    background-color: var(--ee4v-color-selection-soft);
 }
 
 .ee4v-asset-grid-card__image-frame {
@@ -914,7 +930,7 @@
 }
 
 .ee4v-asset-grid-card--selected .ee4v-asset-grid-card__name {
-    color: var(--ee4v-color-control-highlight);
+    color: var(--ee4v-color-text-primary);
 }
 
 .ee4v-asset-manager__thumbnail-stack {
@@ -930,9 +946,10 @@
 .ee4v-asset-manager__thumbnail-stack-image {
     position: absolute;
     overflow: hidden;
-    border-width: 0;
-    border-radius: var(--ee4v-radius-sm);
-    background-color: var(--ee4v-color-tab-idle);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-2xl);
+    background-color: var(--ee4v-color-surface-subtle);
 }
 
 .ee4v-asset-manager__thumbnail-image,
@@ -967,7 +984,7 @@
     padding-left: var(--ee4v-space-xs);
     padding-right: var(--ee4v-space-xs);
     border-color: var(--ee4v-color-transparent);
-    border-radius: var(--ee4v-radius-sm);
+    border-radius: var(--ee4v-radius-lg);
     background-color: var(--ee4v-color-transparent);
     -unity-text-align: middle-left;
 }
@@ -998,7 +1015,8 @@
 
 .ee4v-asset-manager__file-button--selected,
 .ee4v-asset-manager__file-button--selected:hover {
-    background-color: var(--ee4v-color-tool-active);
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-selection-soft);
 }
 
 .ee4v-asset-manager__file-button--selected .ee4v-asset-manager__file-meta {

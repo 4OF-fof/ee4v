@@ -41,7 +41,6 @@
       "collectionsDescription": "UI elements that manage multiple items as lists or hierarchies.",
       "domainDescription": "Feature screens and feature-specific UI elements.",
       "featureDescription": "Screens and feature-specific UI elements for {0}.",
-      "componentsDescription": "Reusable UI elements used within {0} screens.",
       "defaultDescription": "UI elements categorized under {0}."
     },
     "status": {

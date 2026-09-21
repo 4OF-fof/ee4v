@@ -7,6 +7,10 @@ namespace Ee4v.FaceExpression
 {
     internal sealed class BlendShapePresetMappingRow : VisualElement
     {
+        private const string RootClassName =
+            "ee4v-blend-shape-preset-mapping-row";
+        private const string FieldClassName =
+            "ee4v-blend-shape-preset-mapping-row__field";
         private static readonly List<string> SideChoices =
             new List<string> { string.Empty, "L", "R" };
         private readonly Action _changed;
@@ -32,10 +36,7 @@ namespace Ee4v.FaceExpression
             _changed = changed;
             _createPayload = createPayload;
             _drop = drop;
-            style.flexDirection = FlexDirection.Row;
-            style.alignItems = Align.Center;
-            style.paddingLeft = 8f;
-            style.paddingRight = 8f;
+            AddToClassList(RootClassName);
 
             _source = UiTextFactory.Create();
             Configure(_source, 3.2f);
@@ -99,10 +100,9 @@ namespace Ee4v.FaceExpression
 
         private static void Configure(VisualElement element, float grow)
         {
+            element.AddToClassList(FieldClassName);
             element.style.flexBasis = 0f;
             element.style.flexGrow = grow;
-            element.style.marginRight = 4f;
-            element.style.minWidth = 0f;
         }
     }
 }

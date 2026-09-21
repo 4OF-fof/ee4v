@@ -57,7 +57,7 @@ Hidden Objects ウィンドウでは `HideInHierarchy` が設定された GameOb
 
 GameObjectとSceneを表す既定アイコンにはUnity組み込みアイコンを使用します。検索、消去、空状態などの汎用操作・状態にはFluent UI System Iconsを使用します。Hierarchyのシーン見出しからHidden Objectsを開くアイコンも、Unityの非表示状態と揃えるためUnity組み込みアイコンを使用します。
 
-Hidden Objectsの実画面は`ee4v/Debug/Catalog`の`Domain/HierarchyStyle/Hidden Objects` Storyでサンプルのscene treeを使って確認できます。画面から分離した`HiddenObjectsToolbar`と`HiddenObjectsFooter`はCoreの`ActionBar`を基礎にし、Object一件分の`HiddenObjectTreeRow`はCoreの`ItemRow`を基礎にします。いずれも`Domain/HierarchyStyle/Components` Storyで個別に確認できます。
+Hidden Objectsの実画面は`ee4v/Debug/Catalog`の`Domain/HierarchyStyle/Hidden Objects` Storyでサンプルのscene treeを使って確認できます。画面から分離した`HiddenObjectsToolbar`と`HiddenObjectTreeRow`は操作を受け取るため`Domain/HierarchyStyle/Inputs`に配置します。配置を担う`HiddenObjectsFooter`は`Domain/HierarchyStyle/Containers`に配置します。ToolbarとFooterはCoreの`ActionBar`を基礎にし、Object一件分のRowはCoreの`ItemRow`を基礎にします。Treeの外枠と行のhover状態、共有Item Style画面の選択肢と操作状態もCore UIへ揃えます。
 
 ## 永続化
 

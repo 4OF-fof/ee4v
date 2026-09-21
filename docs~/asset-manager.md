@@ -60,11 +60,11 @@ Item GridはEscapeまたはカード外の空白を左クリックすると全�
 
 ### Storyとcomponent境界
 
-実画面と同じ`AssetManagerView`は`ee4v/Debug/Catalog`の`Domain/AssetManager/AssetManagerView` Storyでサンプルデータを使って確認できます。同じGroupには画面または一覧に相当する`AssetItemGridView`、`SearchableFileTree`、分離表示、コレクション編集PopupのStoryを配置します。
+実画面と同じ`AssetManagerView`は`ee4v/Debug/Catalog`の`Domain/AssetManager/AssetManagerView` Storyでサンプルデータを使って確認できます。同じGroupには分離表示とコレクション編集Popupを配置します。`AssetItemGridView`と`SearchableFileTree`は複数項目を管理するため`Domain/AssetManager/Collections`に配置します。
 
-画面へ組み込む小さな部品は`Domain/AssetManager/Components`に分けます。`AssetManagerBreadcrumb`、`AssetTagField`、`AssetManagerControls`に加えて、Item一件分の`AssetItemGridCard`、最大3枚を重ねる`AssetThumbnailStack`、条件領域だけを扱う`AssetFilterEditor`、詳細を構成するHeader、Section、Fact、設定行を配置します。`AssetTagField`はCoreの`TagPill`を組み合わせ、選択済みTagを内容幅のpillとして表示します。Grid、Popup、詳細画面全体はcomponentに含めません。共有外枠は`Containers/CustomPopup` Storyで確認できます。Storyの操作はSQLiteや外部Sourceを変更しません。
+画面へ組み込む小さな部品もCoreと同じ責務で分類します。`Inputs`にはBreadcrumb、Tag Field、文字入力、列数入力、列挙値入力、Grid Card、Filter Editor、編集可能なSetting Rowを配置します。`Displays`にはNotice、Thumbnail Stack、詳細のFactとKey Value Rowを配置します。`Containers`には詳細のHeader、Section、Setting Listを配置します。複数の実部品をまとめた`AssetManagerControls`や`AssetDetail components`というStoryは作りません。`AssetTagField`はCoreの`TagPill`を組み合わせ、選択済みTagを内容幅のpillとして表示します。共有外枠は`Containers/CustomPopup` Storyで確認できます。Storyの操作はSQLiteや外部Sourceを変更しません。
 
-内部操作部品は`Editor/AssetManager/UI/AssetManagerControls.cs`と`UI/Components`に置き、`AssetManagerView`はCore componentを組み合わせます。文字はすべて`UiTextFactory`を通します。Toolbarは`ActionBar`、Navigation一件は`NavigationItem`、件数は`Badge`、サムネイル枠は`PreviewContainer`、ラベル付き入力は`FormInput`を使用します。関連する複数の入力を囲う場合は`InputGroup`へまとめます。検索欄は先頭操作に対応した共有`SearchField`を使用します。`SearchableFileTree`は共有`SearchableTreeView<FileTreeNode>`から派生し、File解析と行表示だけを追加します。詳細の見出し、セクション、概要値、設定行は`AssetDetailComponents.cs`へ集約します。File Treeと詳細領域の追加スタイルは`searchable-file-tree.uss`と`asset-detail.uss`へ分け、`asset-manager.uss`は画面全体の構成を担当します。Fluentアイコンの読込とAssetManager固有の選択状態だけを機能側へ残します。UIからの更新操作中はmanagerの変更通知を蓄積し、操作完了時に一覧と詳細を1回だけ再描画します。
+内部操作部品は`Editor/AssetManager/UI/AssetManagerControls.cs`と`UI/Components`に置き、`AssetManagerView`はCore componentを組み合わせます。文字はすべて`UiTextFactory`を通します。Toolbarは`ActionBar`、Navigation一件は`NavigationItem`、件数は`Badge`、サムネイル枠は`PreviewContainer`、ラベル付き入力は`FormInput`を使用します。関連する複数の入力を囲う場合は`InputGroup`へまとめます。検索欄は先頭操作に対応した共有`SearchField`を使用します。`SearchableFileTree`は共有`SearchableTreeView<FileTreeNode>`から派生し、File解析と行表示だけを追加します。詳細の見出し、セクション、概要値、設定行は`AssetDetailComponents.cs`へ集約します。File Treeと詳細領域の追加スタイルは`searchable-file-tree.uss`と`asset-detail.uss`へ分け、`asset-manager.uss`は画面全体の構成を担当します。Domain固有の入力、一覧行、Card、詳細PanelもCoreと同じ境界線、面、角丸、hover、選択状態を使用します。Fluentアイコンの読込とAssetManager固有の選択状態だけを機能側へ残します。UIからの更新操作中はmanagerの変更通知を蓄積し、操作完了時に一覧と詳細を1回だけ再描画します。
 
 ## 構成
 

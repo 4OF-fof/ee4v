@@ -8,6 +8,7 @@
 - Scene、GameObject、FolderなどUnityの実体やEditor概念を指すアイコンにはUnity組み込みアイコンを使用する。
 - Project内アセットのサムネイルと利用者が指定したTextureは実体表現として維持する。
 - 文字を描画する要素は`UiTextFactory`経由で作成する。詳細な規則はルートの`AGENTS.md`を参照する。
+- Domain固有の入力、一覧、Card、PanelもCore UIと同じ境界線、面、角丸、hover、選択状態を使用する。機能固有の配置と意味を持つ状態色は維持する。
 
 ## Project
 

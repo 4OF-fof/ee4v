@@ -41,7 +41,7 @@
     min-height: 0;
     border-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-border-default);
-    border-radius: var(--ee4v-radius-sm);
+    border-radius: var(--ee4v-radius-2xl);
     background-color: var(--ee4v-color-surface-subtle);
 }
 
@@ -74,7 +74,7 @@
     padding: var(--ee4v-space-xs) var(--ee4v-space-sm);
     border-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-border-default);
-    border-radius: var(--ee4v-radius-sm);
+    border-radius: var(--ee4v-radius-2xl);
     background-color: var(--ee4v-color-chrome-deep);
 }
 
@@ -110,8 +110,8 @@
     padding: var(--ee4v-space-sm);
     border-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-border-default);
-    border-radius: var(--ee4v-radius-sm);
-    background-color: var(--ee4v-color-surface-soft);
+    border-radius: var(--ee4v-radius-2xl);
+    background-color: var(--ee4v-color-surface-subtle);
     margin-bottom: var(--ee4v-space-md);
 }
 
@@ -149,7 +149,9 @@
     margin-bottom: var(--ee4v-space-md);
     border-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-border-default);
-    border-radius: var(--ee4v-radius-sm);
+    border-radius: var(--ee4v-radius-2xl);
+    background-color: var(--ee4v-color-surface-subtle);
+    overflow: hidden;
 }
 
 .ee4v-physbone-collider__selection-row {
@@ -158,6 +160,13 @@
     flex-shrink: 0;
     padding-left: var(--ee4v-space-xs);
     padding-right: var(--ee4v-space-xs);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-transparent);
+    border-radius: var(--ee4v-radius-lg);
+}
+
+.ee4v-physbone-collider__selection-row:hover {
+    background-color: var(--ee4v-color-surface-hover);
 }
 
 .ee4v-physbone-collider__candidate {
@@ -166,6 +175,7 @@
 }
 
 .ee4v-physbone-collider__selection-row--selected {
+    border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-selection-soft);
 }
 
@@ -288,6 +298,8 @@
     margin-bottom: var(--ee4v-space-sm);
     border-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-2xl);
+    background-color: var(--ee4v-color-surface-subtle);
     padding: var(--ee4v-space-xs);
 }
 

@@ -52,7 +52,7 @@
     min-height: 0;
     border-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-border-default);
-    border-radius: var(--ee4v-radius-sm);
+    border-radius: var(--ee4v-radius-2xl);
     background-color: var(--ee4v-color-surface-subtle);
     padding: var(--ee4v-space-md);
 }
@@ -140,6 +140,11 @@
     overflow: hidden;
     padding-left: var(--ee4v-space-sm);
     padding-right: var(--ee4v-space-sm);
+    border-radius: var(--ee4v-radius-lg);
+}
+
+.ee4v-face-expression-row:hover {
+    background-color: var(--ee4v-color-surface-hover);
 }
 
 .ee4v-face-expression-row__animation-toggle {
@@ -202,13 +207,13 @@
     margin: 0;
     overflow: hidden;
     border-width: var(--ee4v-border-hairline);
-    border-color: var(--ee4v-color-border-default);
-    border-radius: var(--ee4v-radius-sm);
+    border-color: var(--ee4v-color-border-active);
+    border-radius: var(--ee4v-radius-2xl);
     background-color: var(--ee4v-color-surface-soft);
 }
 
 .ee4v-face-expression__library-item:hover {
-    border-color: var(--ee4v-color-border-active);
+    border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-surface-hover-strong);
 }
 
@@ -311,8 +316,18 @@
     min-width: 0;
     padding-left: var(--ee4v-space-xs);
     padding-right: var(--ee4v-space-xs);
-    border-radius: var(--ee4v-radius-sm);
-    background-color: var(--ee4v-color-field);
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: var(--ee4v-border-emphasis);
+    border-left-width: 0;
+    border-bottom-color: var(--ee4v-color-border-active);
+    border-radius: 0;
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-face-expression-row__value:hover > .unity-base-field__input,
+.ee4v-face-expression-row__value:focus > .unity-base-field__input {
+    border-bottom-color: var(--ee4v-color-focus);
 }
 
 .ee4v-face-expression-row--header {
@@ -412,7 +427,9 @@
     margin-top: var(--ee4v-space-md);
     border-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-border-default);
-    border-radius: var(--ee4v-radius-sm);
+    border-radius: var(--ee4v-radius-2xl);
+    background-color: var(--ee4v-color-surface-subtle);
+    overflow: hidden;
 }
 
 .ee4v-gesture-assignment__matrix .unity-scroll-view__content-container {
@@ -523,6 +540,7 @@
 .ee4v-gesture-assignment__cell--selected {
     border-color: var(--ee4v-color-focus);
     border-width: 2px;
+    background-color: var(--ee4v-color-selection-soft);
 }
 
 .ee4v-gesture-assignment__cell.ee4v-gesture-assignment__extra-add {
@@ -622,6 +640,13 @@
     align-items: center;
     padding-left: var(--ee4v-space-md);
     padding-right: var(--ee4v-space-md);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-transparent);
+    border-radius: var(--ee4v-radius-lg);
+}
+
+.ee4v-face-expression-group-row:hover {
+    background-color: var(--ee4v-color-surface-hover);
 }
 
 .ee4v-face-expression-group-row__name {
@@ -636,6 +661,7 @@
     border-bottom-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-border-default);
     background-color: var(--ee4v-color-surface-soft);
+    border-radius: 0;
 }
 
 .ee4v-face-expression-group-row--section > .ee4v-face-expression-group-row__name {
@@ -718,7 +744,7 @@
     min-height: 0;
     border-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-border-default);
-    border-radius: var(--ee4v-radius-sm);
+    border-radius: var(--ee4v-radius-2xl);
     background-color: var(--ee4v-color-surface-subtle);
     padding: var(--ee4v-space-md);
 }
@@ -755,4 +781,26 @@
 .ee4v-blend-shape-preset__role-editor {
     width: 180px;
     min-width: 120px;
+}
+
+.ee4v-blend-shape-preset-mapping-row {
+    min-width: 0;
+    min-height: var(--ee4v-control-height-default);
+    flex-direction: row;
+    align-items: center;
+    padding-left: var(--ee4v-space-md);
+    padding-right: var(--ee4v-space-md);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-transparent);
+    border-radius: var(--ee4v-radius-lg);
+}
+
+.ee4v-blend-shape-preset-mapping-row:hover {
+    background-color: var(--ee4v-color-surface-hover);
+}
+
+.ee4v-blend-shape-preset-mapping-row__field {
+    min-width: 0;
+    flex-basis: 0;
+    margin-right: var(--ee4v-space-xs);
 }

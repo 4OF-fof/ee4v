@@ -79,25 +79,28 @@ AssetManagerのタグ選択画面、Target選択画面、コレクション作�
 
 ## 機能UIのStory
 
-独立したEditorWindowまたは機能固有のVisualElementは、実使用するViewを`IUiStoryProvider`から組み立てます。Story専用の複製UIは作らず、保存や外部Sourceの変更は行いません。画面全体、一覧、Gridは`Domain/<feature>`に配置し、画面へ組み込む再利用可能な部品だけを`Domain/<feature>/Components`に配置します。
+独立したEditorWindowまたは機能固有のVisualElementは、実使用するViewを`IUiStoryProvider`から組み立てます。Story専用の複製UIは作らず、保存や外部Sourceの変更は行いません。独立画面は`Domain/<feature>`に配置します。画面内で再利用する機能固有UIはCoreと同じ責務で分類し、`Domain/<feature>/Inputs`、`Displays`、`Containers`、`Collections`に配置します。
+
+Storyは独立画面または単独で再利用するVisualElementを一単位とします。同じ部品の状態違いは一つのStoryで扱い、異なる部品や別Windowを確認するためのStoryへまとめません。配置部品の責務を示すために実際の子部品を組み込むことは許容します。Factory、状態型、部品内部だけで使う実装には単独のStoryを作りません。
+
+Domain固有UIもCoreと同じ視覚上の役割へ揃えます。入力と操作は`Button`、`InputField`と同じ境界線、面、focus、hoverの状態を使用します。一覧の行は通常時を透過、hover時を`surface-hover`、選択時を`focus`の境界線と`selection-soft`の面にします。Card、Panel、Collectionは`border-default`、`surface-subtle`、`radius-2xl`を基本とします。機能固有の配置、意味を持つ状態色、3D PreviewやThumbnailの描画面はこの規則の対象外です。
 
 CoreコンポーネントのStoryは、`Reference`を除いて`Controls`と`Preview`を持ちます。`Controls`の入力は`FormInput`へ統一し、公開状態を変更できます。Preview内の操作は結果表示または状態変更へ接続します。表示だけの無反応な操作は置きません。
 
 Catalog上の分類とコード上の分割は別に扱います。コードではWindowホストと表示クラスを分離し、`BlendShapePresetView`、`WindowGroupSettingsView`、`ItemStyleEditor`を各Windowと別ファイルで管理します。
 
-| UI | Story |
+| 機能 | Story |
 |---|---|
-| 色と既定の縦横スクロールバー | `Reference/*` |
-| 操作、選択、値入力 | `Inputs/*` |
-| 文字、状態、画像の表示 | `Displays/*` |
-| 子要素の配置と表示切り替え | `Containers/*` |
-| 検索可能な階層一覧 | `Collections/*` |
 | Core Settings | `Domain/Core/Settings UI` |
-| AssetManagerの画面、Grid、Tree、Popup | `Domain/AssetManager/*` |
-| AssetManagerのBreadcrumb、Tag Field、Controls、Grid Card、Filter Editor、Detail parts | `Domain/AssetManager/Components/*` |
+| AssetManagerの画面とPopup | `Domain/AssetManager/*` |
+| AssetManagerの操作、選択、値入力、編集行 | `Domain/AssetManager/Inputs/*` |
+| AssetManagerの通知、画像、詳細値 | `Domain/AssetManager/Displays/*` |
+| AssetManagerの詳細領域と設定一覧 | `Domain/AssetManager/Containers/*` |
+| AssetManagerのGridとFile Tree | `Domain/AssetManager/Collections/*` |
 | ItemStyleのProject・Hierarchy編集 | `Domain/ProjectStyle/Project Style Window`、`Domain/HierarchyStyle/Hierarchy Style Window` |
-| Hidden Objects | `Domain/HierarchyStyle/Hidden Objects`、`Domain/HierarchyStyle/Components/*` |
-| Scene Switcher | `Domain/SceneSwitcher/SceneSwitcherView`、`Domain/SceneSwitcher/Components/SceneSwitcherRow` |
-| Project Tabs | `Domain/ProjectTabs/Components/Project Tabs` |
-| Face Expression、Gesture Assignment、Expression Groups、BlendShape Presets | `Domain/FaceExpression/*`、`Domain/FaceExpression/Components/*` |
+| Hidden Objects | `Domain/HierarchyStyle/Hidden Objects`、`Domain/HierarchyStyle/Inputs/*`、`Domain/HierarchyStyle/Containers/*` |
+| Scene Switcher | `Domain/SceneSwitcher/SceneSwitcherView`、`Domain/SceneSwitcher/Inputs/SceneSwitcherRow` |
+| Project Tabs | `Domain/ProjectTabs/Inputs/Project Tabs` |
+| Face Expressionの各画面と設定画面 | `Domain/FaceExpression/*` |
+| Face Expressionの編集CellとRow | `Domain/FaceExpression/Inputs/*` |
 | Window Groups | `Domain/WindowGroup/Window Groups` |

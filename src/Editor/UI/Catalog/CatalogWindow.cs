@@ -17,7 +17,15 @@ namespace Ee4v.UI
             { "Inputs", 1 },
             { "Displays", 2 },
             { "Containers", 3 },
-            { "Collections", 4 }
+            { "Collections", 4 },
+            { "Domain", 5 }
+        };
+        private static readonly Dictionary<string, int> DomainRoleOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Inputs", 0 },
+            { "Displays", 1 },
+            { "Containers", 2 },
+            { "Collections", 3 }
         };
         internal enum ComponentImplementationKind
         {
@@ -421,17 +429,26 @@ namespace Ee4v.UI
                 ? segments[segments.Length - 1]
                 : categoryPath;
             if (segments.Length > 1 &&
-                string.Equals(title, "Components", StringComparison.Ordinal))
-            {
-                return I18N.Get(
-                    "catalog.category.componentsDescription",
-                    segments[segments.Length - 2]);
-            }
-
-            if (segments.Length > 1 &&
                 string.Equals(segments[0], "Domain", StringComparison.Ordinal))
             {
-                return I18N.Get("catalog.category.featureDescription", title);
+                if (segments.Length > 2)
+                {
+                    switch (segments[2])
+                    {
+                        case "Inputs":
+                            return I18N.Get("catalog.category.inputsDescription");
+                        case "Displays":
+                            return I18N.Get("catalog.category.displaysDescription");
+                        case "Containers":
+                            return I18N.Get("catalog.category.containersDescription");
+                        case "Collections":
+                            return I18N.Get("catalog.category.collectionsDescription");
+                    }
+                }
+
+                return I18N.Get(
+                    "catalog.category.featureDescription",
+                    segments[1]);
             }
 
             return I18N.Get("catalog.category.defaultDescription", title);
@@ -860,6 +877,27 @@ namespace Ee4v.UI
                     }
 
                     var compare = string.Compare(leftSegments[i], rightSegments[i], StringComparison.OrdinalIgnoreCase);
+                    if (i == 2 &&
+                        string.Equals(leftRoot, "Domain", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var leftRoleOrder = DomainRoleOrder.TryGetValue(
+                            leftSegments[i],
+                            out var leftRoleValue)
+                                ? leftRoleValue
+                                : int.MaxValue;
+                        var rightRoleOrder = DomainRoleOrder.TryGetValue(
+                            rightSegments[i],
+                            out var rightRoleValue)
+                                ? rightRoleValue
+                                : int.MaxValue;
+                        var roleCompare = leftRoleOrder.CompareTo(
+                            rightRoleOrder);
+                        if (roleCompare != 0)
+                        {
+                            return roleCompare;
+                        }
+                    }
+
                     if (compare != 0)
                     {
                         return compare;

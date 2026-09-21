@@ -56,8 +56,8 @@
 }
 
 .ee4v-window-group-settings__group {
-    height: 32px;
-    min-height: 32px;
+    height: var(--ee4v-size-28);
+    min-height: var(--ee4v-size-28);
     margin-bottom: var(--ee4v-space-xs);
     padding-left: var(--ee4v-space-lg);
     padding-right: var(--ee4v-space-lg);
@@ -66,6 +66,7 @@
     align-items: center;
     justify-content: center;
     border-color: var(--ee4v-color-transparent);
+    border-radius: var(--ee4v-radius-lg);
     background-color: var(--ee4v-color-transparent);
 }
 
@@ -74,7 +75,7 @@
 }
 
 .ee4v-window-group-settings__group.ee4v-window-group-settings__group--selected {
-    border-color: var(--ee4v-color-border-active);
+    border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-selection-soft);
 }
 
@@ -121,18 +122,18 @@
     flex-direction: row;
     align-items: center;
     border-width: var(--ee4v-border-hairline);
-    border-color: var(--ee4v-color-border-subtle);
-    border-radius: var(--ee4v-radius-md);
-    background-color: var(--ee4v-color-surface-raised);
+    border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-2xl);
+    background-color: var(--ee4v-color-surface-subtle);
 }
 
 .ee4v-window-group-settings__window-row:hover {
-    border-color: var(--ee4v-color-border-default);
-    background-color: var(--ee4v-color-surface-hover);
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-surface-hover-strong);
 }
 
 .ee4v-window-group-settings__window-row.ee4v-window-group-settings__window-row--assigned {
-    border-color: var(--ee4v-color-border-active);
+    border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-selection-soft);
 }
 

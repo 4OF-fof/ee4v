@@ -28,6 +28,7 @@ Catalog 内の共通部品には対話可能な Story があります。
 Foundation の参照一覧を除く共通部品の Story は、表示状態を変える Controls と結果を確認する Preview を持ちます。
 機能側は `IUiStoryProvider` を実装すると Catalog から自動発見されます。
 Catalog assembly への参照や Catalog 本体の編集は不要です。
+機能側の独立画面は `Domain/<feature>`、再利用する機能固有 UI は責務に応じて `Domain/<feature>/Inputs`、`Displays`、`Containers`、`Collections` に分類します。Story は独立画面または単独で再利用する VisualElement ごとに作成します。
 
 ```csharp
 public sealed class SampleStories : IUiStoryProvider

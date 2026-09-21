@@ -41,7 +41,6 @@
       "collectionsDescription": "複数の項目を一覧や階層として管理するUI要素です。",
       "domainDescription": "各機能の実画面と機能固有のUI要素です。",
       "featureDescription": "{0}機能の画面と機能固有のUI要素です。",
-      "componentsDescription": "{0}機能の画面内で再利用するUI要素です。",
       "defaultDescription": "{0}に分類されたUI要素です。"
     },
     "status": {

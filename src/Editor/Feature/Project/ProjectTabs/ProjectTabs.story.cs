@@ -14,7 +14,7 @@ namespace Ee4v.ProjectTabs
             {
                 new UiStory(
                     "project-tabs",
-                    "Domain/ProjectTabs/Components",
+                    "Domain/ProjectTabs/Inputs",
                     "Project Tabs",
                     "Project Browser のフォルダー、履歴、固定状態をタブで操作する toolbar です。",
                     "実際の toolbar に、通常タブ、固定タブ、選択状態を表示します。",

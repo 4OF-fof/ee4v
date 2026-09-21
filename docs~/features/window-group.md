@@ -19,7 +19,7 @@
 
 実画面は`ee4v/Debug/Catalog`の`Domain/WindowGroup/Window Groups` Storyで確認できます。Storyの操作は`EditorPrefs`を変更しません。
 
-UIは`WindowGroupSettingsView`へ分離し、`WindowGroupSettingsWindow`はWindowの生成、共通styleの適用、実設定との接続だけを行います。Group一件分にはCoreの`NavigationItem`、空表示には`EmptyState`、見出しには`SectionHeader`を使用します。Storyは同じViewへメモリ上の設定とWindow候補を渡します。
+UIは`WindowGroupSettingsView`へ分離し、`WindowGroupSettingsWindow`はWindowの生成、共通styleの適用、実設定との接続だけを行います。Group一件分にはCoreの`NavigationItem`、空表示には`EmptyState`、見出しには`SectionHeader`を使用します。Groupの選択状態とWindow候補Cardの境界線、面、角丸、hover、割り当て状態もCore UIへ揃えます。Storyは同じViewへメモリ上の設定とWindow候補を渡します。
 
 ## API
 

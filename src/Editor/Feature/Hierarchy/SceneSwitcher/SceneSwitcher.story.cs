@@ -32,7 +32,7 @@ namespace Ee4v.SceneSwitcher
                     }),
                 new UiStory(
                     "scene-switcher-row",
-                    "Domain/SceneSwitcher/Components",
+                    "Domain/SceneSwitcher/Inputs",
                     "SceneSwitcherRow",
                     "Scene一件の状態とお気に入り操作を表示する行です。",
                     "Scene名と開いている状態を表示し、起動、追加、お気に入り切り替えを通知します。",

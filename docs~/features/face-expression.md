@@ -59,7 +59,7 @@ Preferencesの「FBX別BlendShapeプリセット」には、保存済みプリ�
 
 `ee4v/Window/Face Expression/Face Expression Editor`を開くと、表情エディターと`Expression Groups`ウィンドウを同時に開きます。グループウィンドウだけを`ee4v/Window/Face Expression/Face Expression Groups`から開くこともできます。
 
-各画面は`ee4v/Debug/Catalog`の`Domain/FaceExpression` Storyで確認できます。`BlendShape Presets` Storyは実際の編集画面をサンプルmappingで表示し、設定を保存しません。`Gesture Assignments` Storyには独立したAssignment Settings画面も含みます。一件分の`GestureAssignmentCell`、`BlendShapePresetMappingRow`、`BlendShapeRow`は画面やGridから分離し、`Domain/FaceExpression/Components` Storyでも確認できます。Toolbar、Preview、見出し、件数表示はCoreの`ActionBar`、`PreviewContainer`、`SectionHeader`、`Badge`を組み合わせます。
+各画面は`ee4v/Debug/Catalog`の`Domain/FaceExpression` Storyで確認できます。`BlendShape Presets` Storyは実際の編集画面をサンプルmappingで表示し、設定を保存しません。`Gesture Assignments`と独立した`Gesture Assignment Settings`は別Storyに分けます。一件分の`GestureAssignmentCell`、`BlendShapePresetMappingRow`、`BlendShapeRow`は操作と値入力を受け取るため`Domain/FaceExpression/Inputs`で個別に確認できます。Toolbar、Preview、見出し、件数表示はCoreの`ActionBar`、`PreviewContainer`、`SectionHeader`、`Badge`を組み合わせます。編集行、選択Cell、一覧、Panelの境界線、面、角丸、hover、選択状態もCore UIへ揃えます。表情Previewの描画面とジェスチャー固有の状態色は維持します。
 
 BlendShape PresetsのUIは`BlendShapePresetView`へ分離し、`BlendShapePresetWindow`はWindowの生成と実設定への接続を担当します。Storyは同じViewへメモリ上の設定を渡します。
 

@@ -52,12 +52,31 @@ namespace Ee4v.FaceExpression
                     dependencies: new[] { "UiButton", "UiTextFactory" },
                     usageLocations: new[]
                     {
-                        "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentWindow.cs",
-                        "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentSettingsWindow.cs"
+                        "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentWindow.cs"
                     },
                     styleSheetPaths: new[]
                     {
                         "Editor/UI/Components/Inputs/ui-button.uss",
+                        "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss"
+                    }),
+                new UiStory(
+                    "gesture-assignment-settings",
+                    "Domain/FaceExpression",
+                    "Gesture Assignment Settings",
+                    "選択したGestureと全体設定を編集する独立画面です。",
+                    "GestureAssignmentSettingsWindowが使用する実際の設定Viewを、保存しないメモリ上の設定で表示します。",
+                    BuildAssignmentSettings,
+                    dependencies: new[]
+                    {
+                        "FormInput",
+                        "UiTextFactory"
+                    },
+                    usageLocations: new[]
+                    {
+                        "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentSettingsWindow.cs"
+                    },
+                    styleSheetPaths: new[]
+                    {
                         "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss"
                     }),
                 new UiStory(
@@ -95,7 +114,7 @@ namespace Ee4v.FaceExpression
                     }),
                 new UiStory(
                     "gesture-assignment-cell",
-                    "Domain/FaceExpression/Components",
+                    "Domain/FaceExpression/Inputs",
                     "GestureAssignmentCell",
                     "一つのGestureにAnimationClipとPreviewを割り当てるCardです。",
                     "AnimationClipの選択とDrag & Dropに対応し、Previewと未割り当て状態を切り替えます。",
@@ -116,7 +135,7 @@ namespace Ee4v.FaceExpression
                     }),
                 new UiStory(
                     "blend-shape-preset-mapping-row",
-                    "Domain/FaceExpression/Components",
+                    "Domain/FaceExpression/Inputs",
                     "BlendShapePresetMappingRow",
                     "BlendShape名にSideを割り当てる編集行です。",
                     "Source名を確認しながらSideを編集し、Drag & Dropによる移動を処理します。",
@@ -132,7 +151,7 @@ namespace Ee4v.FaceExpression
                     }),
                 new UiStory(
                     "blend-shape-row",
-                    "Domain/FaceExpression/Components",
+                    "Domain/FaceExpression/Inputs",
                     "BlendShapeRow",
                     "BlendShape一件のAnimation、値、Sideを編集する行です。",
                     "通常と左右のBlendShapeを切り替え、値と使用状態を編集します。",
@@ -350,7 +369,10 @@ namespace Ee4v.FaceExpression
             surface.style.height = 640f;
             surface.Add(view);
             parent.Add(surface);
+        }
 
+        private static void BuildAssignmentSettings(VisualElement parent)
+        {
             var settingsSurface = new VisualElement();
             settingsSurface.style.width = 420f;
             settingsSurface.style.height = 400f;
