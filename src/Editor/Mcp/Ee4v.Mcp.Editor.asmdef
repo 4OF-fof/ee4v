@@ -1,0 +1,22 @@
+{
+  "name": "Ee4v.Mcp.Editor",
+  "rootNamespace": "Ee4v.Mcp",
+  "references": [
+    "Ee4v.AssetManager.Contracts.Editor",
+    "Ee4v.AssetManager.Infrastructure.Editor",
+    "Ee4v.Core.Presentation.Editor",
+    "Ee4v.FaceExpression.Editor",
+    "Ee4v.PhysBoneCollider.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
