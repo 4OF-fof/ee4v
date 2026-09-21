@@ -49,6 +49,8 @@
 
 外部コードから各機能を操作する場合は、共有実装を直接参照せず`ProjectStyleApi`または`HierarchyStyleApi`を使用します。
 
+`src/Editor/Mcp`は機能moduleではなく外部integration層です。Face ExpressionとPhysBone Colliderの公開API、AssetManager Contractsを組み合わせますが、機能module間の参照は作りません。MCP固有の契約は[`../mcp.md`](../mcp.md)で管理します。
+
 ## 更新条件
 
 - moduleの所有範囲、実装場所、機能間共有が変わった場合はこの索引を更新する。

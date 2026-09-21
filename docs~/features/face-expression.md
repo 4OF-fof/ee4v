@@ -21,6 +21,14 @@
 
 Expression Menu、表情ロック、トリガー量による変化は対象外です。視線の制御は自動生成しません。
 
+## 公開APIとMCP
+
+`FaceExpressionApi`はUIと同じdomain処理を外部integrationから利用する公開境界です。AvatarとRenderer pathを基準にBlendShape channelを列挙し、表情Clipの作成・部分更新・完全置換、revision取得、validation、preview PNG、preset roleによるremap、FacialSet設定の読込・plan・適用を提供します。
+
+`Ee4v.Mcp.Editor`はこのAPIを`ee4v_inspect_face`、`ee4v_upsert_expression_clip`、`ee4v_validate_expression_clip`、`ee4v_render_expression_preview`、`ee4v_remap_expression_clip`、`ee4v_get_facial_configuration`、`ee4v_plan_facial_set_apply`、`ee4v_apply_facial_set`として公開します。MCP固有のJSON変換とObject参照はMCP assemblyに閉じ、Face Expression moduleはMCPへ依存しません。詳細は[`../mcp.md`](../mcp.md)を参照します。
+
+Clip更新は`expectedRevision`が現在値と一致しない場合に拒否します。`dryRun`は作成先、変更channel、validation結果を返してAssetを書きません。FacialSet適用は既存UIと同じ生成先、Modular Avatar installer、Blinkと口固定の契約を使用します。
+
 ## プレビュー
 
 プレビュー開始時にアバターの非表示複製を一度だけ作成します。表情の変更時はAnimatorや`AnimationMode`を動かさず、複製上のBlendShape値だけを更新します。ジェスチャー割り当てで複数のサムネイルを同じ更新内に描画する場合も、スキンメッシュを描画ごとに再計算します。

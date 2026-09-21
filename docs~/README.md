@@ -17,6 +17,7 @@
 | Editorの各機能 | [`features/README.md`](./features/README.md) | 機能の所有範囲、実装場所、機能別契約 |
 | AssetManager | [`asset-manager.md`](./asset-manager.md) | UI契約、domain規則、Source同期、DB schema、未実装範囲 |
 | Asset Protection | [`asset-protection.md`](./asset-protection.md) | 保護対象、編集抑止、AssetManagerとの境界 |
+| ee4v MCP | [`mcp.md`](./mcp.md) | 接続、tool catalog、Avatar改変・AssetManager操作、安全境界 |
 | BOOTHとEagleの連携 | [`scriptcat.md`](./scriptcat.md) | userscriptの画面別動作とbridge呼び出し |
 | Unity 6への移行 | [`unity6.md`](./unity6.md) | 影響を受ける接続部と移行時の確認事項 |
 | EditModeテスト | [`test.md`](./test.md) | テストが保証する契約と残す理由 |
@@ -43,4 +44,4 @@
 
 ## 人間向け資料
 
-人間向けの入口は [`human/index.html`](./human/index.html) です。詳細はAsset Manager、Asset Protection、BOOTH / Eagle、Face Expression、PhysBone Collider、Play Mode、Project、Hierarchy、Window Groups、設定のHTMLへ分割し、全ページを共通ナビゲーションで相互にリンクします。ビルド処理や外部CDNを必要としない静的HTMLとして保持します。
+人間向けの入口は [`human/index.html`](./human/index.html) です。詳細はMCP、Asset Manager、Asset Protection、BOOTH / Eagle、Face Expression、PhysBone Collider、Play Mode、Project、Hierarchy、Window Groups、設定のHTMLへ分割し、全ページを共通ナビゲーションで相互にリンクします。ビルド処理や外部CDNを必要としない静的HTMLとして保持します。
