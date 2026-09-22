@@ -17,7 +17,8 @@ namespace Ee4v.Mcp
 {
     internal static class AssetManagerPrefabPreviewMcpTool
     {
-        private const string RenderProfileVersion = "asset-preview-v1";
+        private const string CacheDirectoryName = "asset-preview";
+        private const string RenderProfileVersion = "v1";
         private const int DefaultSize = 1024;
         private const int MinimumSize = 128;
         private const int MaximumSize = 2048;
@@ -278,7 +279,7 @@ namespace Ee4v.Mcp
             var root = CacheRoot();
             var directory = Path.Combine(
                 root,
-                RenderProfileVersion,
+                CacheDirectoryName,
                 SafeSegment(resolved.Guid),
                 SafeSegment(resolved.DependencyHash));
             var stem = RenderProfileVersion + "-" +
