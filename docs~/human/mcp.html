@@ -21,7 +21,7 @@
         <ol class="steps"><li>ee4vを導入したVRChat ProjectをUnity 2022.3で開きます。</li><li><code>ee4v / MCP / Log Connection Information</code>を選びます。</li><li>Consoleに表示された設定をCodexの<code>config.toml</code>へ追加します。</li><li>Codex側でMCPを再読み込みし、<code>ee4v_server_status</code>を呼びます。</li></ol>
         <pre><code>[mcp_servers.ee4v]
 url = "http://127.0.0.1:48884/mcp"</code></pre>
-        <p>通常のUnity起動ではserverが自動開始します。停止する場合は<code>ee4v / MCP / Stop Server</code>、再開する場合は<code>ee4v / MCP / Start Server</code>を選びます。バッチモードでは自動開始しません。</p>
+        <p>通常のUnity起動ではserverが常に自動開始します。現在のEditor sessionだけ停止する場合は<code>ee4v / MCP / Stop Server</code>、再開する場合は<code>ee4v / MCP / Start Server</code>を選びます。停止後も次回の通常起動では自動開始します。バッチモードでは開始しません。</p>
       </section>
       <section id="scope">
         <p class="section-label">Scope</p><h2>Avatar改変をまとまりとして操作する</h2>

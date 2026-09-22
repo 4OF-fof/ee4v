@@ -7,7 +7,6 @@ namespace Ee4v.Mcp
     [InitializeOnLoad]
     internal static class Ee4vMcpBootstrap
     {
-        private const string EnabledKey = "ee4v.mcp.enabled";
         private const string PortKey = "ee4v.mcp.port";
         private const int DefaultPort = 48884;
         private static Ee4vMcpHttpServer _server;
@@ -19,14 +18,13 @@ namespace Ee4v.Mcp
             AssemblyReloadEvents.beforeAssemblyReload += Stop;
             EditorApplication.quitting -= Stop;
             EditorApplication.quitting += Stop;
-            EditorApplication.delayCall -= StartIfEnabled;
-            EditorApplication.delayCall += StartIfEnabled;
+            EditorApplication.delayCall -= StartAutomatically;
+            EditorApplication.delayCall += StartAutomatically;
         }
 
         [MenuItem("ee4v/MCP/Start Server")]
         private static void StartFromMenu()
         {
-            EditorPrefs.SetBool(EnabledKey, true);
             Start();
         }
 
@@ -39,7 +37,6 @@ namespace Ee4v.Mcp
         [MenuItem("ee4v/MCP/Stop Server")]
         private static void StopFromMenu()
         {
-            EditorPrefs.SetBool(EnabledKey, false);
             Stop();
         }
 
@@ -59,10 +56,10 @@ namespace Ee4v.Mcp
                 port + "/mcp\"");
         }
 
-        private static void StartIfEnabled()
+        private static void StartAutomatically()
         {
-            EditorApplication.delayCall -= StartIfEnabled;
-            if (!Application.isBatchMode && EditorPrefs.GetBool(EnabledKey, true))
+            EditorApplication.delayCall -= StartAutomatically;
+            if (!Application.isBatchMode)
             {
                 Start();
             }

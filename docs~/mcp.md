@@ -8,8 +8,8 @@ Unity Editorを通常起動すると、既定で`http://127.0.0.1:48884/mcp`にS
 
 Unity menuから次の操作を行えます。
 
-- `ee4v/MCP/Start Server`: serverを開始し、次回以降の通常起動でも自動開始する
-- `ee4v/MCP/Stop Server`: serverを停止し、次回以降の自動開始を無効にする
+- `ee4v/MCP/Start Server`: 停止中のserverを現在のEditor sessionで開始する
+- `ee4v/MCP/Stop Server`: serverを現在のEditor sessionで停止する。次回の通常起動では再び自動開始する
 - `ee4v/MCP/Log Connection Information`: endpointとCodex用設定例をConsoleへ出力する
 
 Codexの`config.toml`には次を追加します。
@@ -19,7 +19,7 @@ Codexの`config.toml`には次を追加します。
 url = "http://127.0.0.1:48884/mcp"
 ```
 
-portはEditorPrefsの`ee4v.mcp.port`、自動開始は`ee4v.mcp.enabled`へ保存します。portの既定値は`48884`です。
+portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。通常のUnity Editor起動時は常に自動開始し、バッチモードでは開始しません。
 
 ## Transportと安全境界
 
