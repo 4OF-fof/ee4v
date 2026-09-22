@@ -35,12 +35,12 @@ url = "http://127.0.0.1:48884/mcp"</code></pre>
         <p class="section-label">Asset preview</p><h2>候補だけを実Prefabで撮影して比べる</h2>
         <ol class="steps"><li><code>ee4v_asset_search</code>で名前、説明、TagからItemを5〜10件へ絞ります。</li><li><code>ee4v_asset_get_item</code>の<code>prefabCandidates</code>から、Project内に存在するPrefabを確認します。</li><li><code>ee4v_asset_render_prefab_preview</code>を同じviewとsizeで呼び、実PrefabのPNGを比較します。全周比較には<code>turntable</code>を使います。</li><li><code>ee4v_asset_inspect_prefab</code>でRenderer、Material slot、Shader、Texture、Mesh、BlendShapeと参照切れを確認します。</li><li>返されたRenderer pathとMaterial pathを既存Unity MCPへ渡してMaterialを編集します。</li></ol>
         <p class="callout"><strong>未ImportのAsset:</strong> ZIPやunitypackageにPrefabが入っていても、Unity ProjectへまだImportされていなければpreviewできません。MCPは自動Importせず、候補なしと理由を返します。</p>
-        <p>撮影ではサムネイルを拡大せず、Unityの隔離Preview環境へPrefabを読み込みます。Play Modeへ入らず、SceneやPrefab assetを変更しません。PNG cacheはdependency hashごとに<code>Assets</code>外へ保存され、Prefab、Mesh、Material、Texture、Shader、Variant親が変わると再利用されません。</p>
+        <p>撮影ではサムネイルを拡大せず、Unityの隔離Preview環境へPrefabを読み込みます。カメラは各方向から見た境界の横幅と縦幅に合わせてフレーミングします。Play Modeへ入らず、SceneやPrefab assetを変更しません。PNG cacheはdependency hashごとに<code>Assets</code>外へ保存され、Prefab、Mesh、Material、Texture、Shader、Variant親が変わると再利用されません。</p>
       </section>
       <section id="workflow">
         <p class="section-label">Workflow</p><h2>発見、plan、適用、監査の順で進める</h2>
         <ol class="steps"><li><code>ee4v_find_avatars</code>で現在の対象と<code>avatarRef</code>を取得します。</li><li>構成や数量が必要なら<code>ee4v_inspect_avatar</code>、問題点が必要なら<code>ee4v_audit_avatar</code>を使います。</li><li>表情は対応するplanまたは<code>dryRun</code>で変更内容を確認します。</li><li>書き込みtoolを承認して適用します。</li><li>最後にもう一度Avatar監査と必要なpreviewを実行します。</li></ol>
-        <p>AvatarのGameObjectを選び直した場合やUnityを再起動した場合は、以前の参照を使い回さず<code>ee4v_find_avatars</code>から始めます。</p>
+        <p>AvatarのGameObjectを選び直した場合やUnityを再起動した場合は、以前の参照を使い回さず<code>ee4v_find_avatars</code>から始めます。表情previewは描画可能なSkinnedMeshを必要とし、見つからない場合は空の画像を成功扱いにせず明示的なエラーを返します。</p>
       </section>
       <section id="writes">
         <p class="section-label">Writes</p><h2>再適用できる単位で変更する</h2>

@@ -164,7 +164,11 @@ namespace Ee4v.FaceExpression
             int width,
             int height)
         {
-            if (_utility == null || _clone == null || width < 2 || height < 2)
+            if (_utility == null ||
+                _clone == null ||
+                _renderers.Count == 0 ||
+                width < 2 ||
+                height < 2)
             {
                 return null;
             }

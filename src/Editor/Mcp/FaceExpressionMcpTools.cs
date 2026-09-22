@@ -139,17 +139,28 @@ namespace Ee4v.Mcp
                 }, "avatarRef"),
                 arguments =>
                 {
+                    var avatar = Avatar(arguments);
+                    var clip = OptionalClip(arguments);
                     var bytes = FaceExpressionApi.RenderPreview(
-                        Avatar(arguments),
-                        OptionalClip(arguments),
+                        avatar,
+                        clip,
                         (int?)arguments["width"] ?? 512,
                         (int?)arguments["height"] ?? 512);
+                    if (bytes.Length == 0)
+                    {
+                        return Task.FromResult(McpToolResult.Error(
+                            "expression_preview_unavailable",
+                            "The avatar has no active SkinnedMeshRenderer with an assigned mesh for a face preview."));
+                    }
+
                     return Task.FromResult(McpToolResult.Image(
                         new JObject
                         {
-                            ["ok"] = bytes.Length > 0,
+                            ["ok"] = true,
                             ["byteLength"] = bytes.Length,
-                            ["clipPath"] = (string)arguments["clipPath"] ?? string.Empty
+                            ["clipPath"] = clip == null
+                                ? string.Empty
+                                : AssetDatabase.GetAssetPath(clip)
                         },
                         bytes));
                 },

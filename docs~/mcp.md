@@ -60,14 +60,14 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 | `ee4v_inspect_face` | Avatarの編集可能なBlendShape channelとpreset分類を列挙する。`clipPath`指定時はClip値、revision、validation結果も返す |
 | `ee4v_upsert_expression_clip` | 単一frame表情Clipを`create`、`patch`、`replace`のいずれかで作成・更新する |
 | `ee4v_validate_expression_clip` | binding、keyframe、値、object curve、Animation Eventを検査する |
-| `ee4v_render_expression_preview` | AvatarへClipを適用したpreviewをPNGとして返す |
+| `ee4v_render_expression_preview` | AvatarへClipを適用したpreviewをPNGとして返す。描画可能なSkinnedMeshがなければ`expression_preview_unavailable`を返す |
 | `ee4v_remap_expression_clip` | FBX別presetのroleとsideを使って別Avatarへchannelを対応付ける |
 | `ee4v_get_facial_configuration` | Gesture matrix、menu専用表情、Blink、口固定の現在値を返す |
 | `ee4v_set_gesture_expression` | 他の割り当てを維持し、左右Gestureの1組へ表情Clip、Blink、口固定、menu名を設定する |
 | `ee4v_plan_facial_set_apply` | FacialSet適用の入力、生成物、前提条件を検証する |
 | `ee4v_apply_facial_set` | FX Controller、Expression Parameters、Expression Menu、Modular Avatar installerを生成・更新する |
 
-AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_expression_clip`の`patch`は未指定channelを維持し、`replace`は未指定BlendShape curveを削除します。更新用revisionは`clipPath`付きの`ee4v_inspect_face`から取得します。`ee4v_remap_expression_clip`は対応不能channelを結果へ残し、無言で別名へ割り当てません。
+AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_expression_clip`の`patch`は未指定channelを維持し、`replace`は未指定BlendShape curveを削除します。更新用revisionは`clipPath`付きの`ee4v_inspect_face`から取得します。`ee4v_remap_expression_clip`は対応不能channelを結果へ残し、無言で別名へ割り当てません。表情previewにはMeshが割り当てられた描画可能な`SkinnedMeshRenderer`が1つ以上必要で、存在しない場合は空画像を成功扱いにしません。
 
 ### AssetManager
 
@@ -117,11 +117,11 @@ MCPは`AssetManager`の公開APIを通してDB内のmetadataを読み取り・�
 
 ### Preview cache
 
-PNGはSQLiteへ格納せず、共通data rootの`asset-preview/<prefab-guid>/<dependency-hash>/`以下へ保存します。共通data rootがProjectの`Assets`内に設定されている場合だけ、`Library/ee4v-cache`へ退避します。file名にはrender profile version、view、size、backgroundを含め、同じ条件の再呼び出しでは再利用します。隣接JSONにはPrefab GUID、dependency hash、render profile version、view、image path、size、Unity version、Render Pipeline、作成日時、errorを記録します。cache directory名と描画条件の世代は分離し、現在のrender profile versionは`v1`です。
+PNGはSQLiteへ格納せず、共通data rootの`asset-preview/<prefab-guid>/<dependency-hash>/`以下へ保存します。共通data rootがProjectの`Assets`内に設定されている場合だけ、`Library/ee4v-cache`へ退避します。file名にはrender profile version、view、size、backgroundを含め、同じ条件の再呼び出しでは再利用します。隣接JSONにはPrefab GUID、dependency hash、render profile version、view、image path、size、Unity version、Render Pipeline、作成日時、errorを記録します。cache directory名と描画条件の世代は分離し、現在のrender profile versionは`v2`です。
 
 dependency hashには`AssetDatabase.GetAssetDependencyHash`を使用します。Prefab、Variant親、Mesh、Material、Texture、ShaderなどUnityが依存関係として追跡するAssetが変化すると保存先hashが変わるため、古い画像を使用しません。`forceRefresh: true`は同じ条件を再撮影します。cacheは再生成可能であり、Unity Project Assetの状態には含めません。
 
-撮影は`PreviewRenderUtility`の内部Preview sceneへPrefabを直接instance化し、Renderer boundsを基準にscaleとcamera framingを正規化します。照明、背景、camera FOVは固定し、instance上の`Behaviour`を無効化してParticle Systemを停止します。描画後はinstanceを破棄します。Missing Mesh、Material、Shader、描画可能Rendererなし、無効なboundsは構造化errorとして返します。
+撮影は`PreviewRenderUtility`の内部Preview sceneへPrefabを直接instance化し、Renderer boundsを基準にscaleを正規化し、各viewへ投影した横幅と縦幅を使ってcamera framingを決めます。照明、背景、camera FOVは固定し、instance上の`Behaviour`を無効化してParticle Systemを停止します。描画後はinstanceを破棄します。Missing Mesh、Material、Shader、描画可能Rendererなし、無効なboundsは構造化errorとして返します。
 
 RAG、Embedding、Vector DB、Semantic Search、自動caption、全Prefabの事前indexは持ちません。検索metadataで候補を絞り、要求されたPrefabだけをオンデマンド撮影します。
 

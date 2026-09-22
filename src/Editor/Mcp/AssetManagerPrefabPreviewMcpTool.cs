@@ -18,7 +18,7 @@ namespace Ee4v.Mcp
     internal static class AssetManagerPrefabPreviewMcpTool
     {
         private const string CacheDirectoryName = "asset-preview";
-        private const string RenderProfileVersion = "v1";
+        private const string RenderProfileVersion = "v2";
         private const int DefaultSize = 1024;
         private const int MinimumSize = 128;
         private const int MaximumSize = 2048;
@@ -556,23 +556,44 @@ namespace Ee4v.Mcp
                 var aspect = Math.Max(0.01f, width / (float)height);
                 var verticalHalf = CameraFieldOfView * 0.5f * Mathf.Deg2Rad;
                 var horizontalHalf = Mathf.Atan(Mathf.Tan(verticalHalf) * aspect);
-                var fitHalfAngle = Mathf.Min(verticalHalf, horizontalHalf);
-                var radius = Mathf.Max(0.05f, _bounds.extents.magnitude);
-                var distance = radius / Mathf.Sin(fitHalfAngle) * 1.08f;
                 var normalizedDirection = direction.sqrMagnitude < 0.001f
                     ? Vector3.forward
                     : direction.normalized;
+                var rotation = Quaternion.LookRotation(
+                    -normalizedDirection,
+                    Vector3.up);
+                var horizontalExtent = ProjectedExtent(
+                    _bounds.extents,
+                    rotation * Vector3.right);
+                var verticalExtent = ProjectedExtent(
+                    _bounds.extents,
+                    rotation * Vector3.up);
+                var depthExtent = ProjectedExtent(
+                    _bounds.extents,
+                    normalizedDirection);
+                var horizontalDistance =
+                    horizontalExtent / Mathf.Tan(horizontalHalf) + depthExtent;
+                var verticalDistance =
+                    verticalExtent / Mathf.Tan(verticalHalf) + depthExtent;
+                var distance = Mathf.Max(
+                    0.1f,
+                    Mathf.Max(horizontalDistance, verticalDistance) * 1.08f);
                 var camera = _utility.camera;
                 camera.aspect = aspect;
                 camera.transform.position =
                     _bounds.center + normalizedDirection * distance;
-                camera.transform.rotation = Quaternion.LookRotation(
-                    _bounds.center - camera.transform.position,
-                    Vector3.up);
+                camera.transform.rotation = rotation;
                 camera.nearClipPlane = Mathf.Max(
                     0.001f,
-                    distance - radius * 1.5f);
-                camera.farClipPlane = distance + radius * 3f;
+                    distance - depthExtent * 1.5f);
+                camera.farClipPlane = distance + depthExtent * 3f;
+            }
+
+            private static float ProjectedExtent(Vector3 extents, Vector3 axis)
+            {
+                return Mathf.Abs(axis.x) * extents.x +
+                       Mathf.Abs(axis.y) * extents.y +
+                       Mathf.Abs(axis.z) * extents.z;
             }
 
             private void NormalizeScale()
