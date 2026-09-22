@@ -13,6 +13,7 @@ namespace Ee4v.AssetManager.UI
     internal enum AssetManagerPage
     {
         Library,
+        Imported,
         Archived,
         Tags,
         Collection,

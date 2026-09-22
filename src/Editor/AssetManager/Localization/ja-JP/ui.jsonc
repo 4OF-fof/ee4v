@@ -43,6 +43,7 @@
   },
   "navigation": {
     "library": "全件",
+    "imported": "Import済み",
     "archived": "アーカイブ",
     "unassignedFiles": "未所属",
     "tags": "タグ",

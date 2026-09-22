@@ -258,6 +258,7 @@ namespace Ee4v.AssetManager.UI
         private CancellationTokenSource _itemOverviewThumbnailCancellation;
         private CancellationTokenSource _gridThumbnailCancellation;
         private CancellationTokenSource _fileAnalysisCancellation;
+        private ISet<string> _importedItemIdsInProject;
         private bool _defersManagerRefresh;
         private bool _managerRefreshPending;
 
@@ -312,6 +313,7 @@ namespace Ee4v.AssetManager.UI
 
             _manager.Changed += OnManagerChanged;
             _viewState.Changed += OnViewStateChanged;
+            EditorApplication.projectChanged += OnProjectChanged;
 
             if (ShowsNavigation)
             {
@@ -324,6 +326,7 @@ namespace Ee4v.AssetManager.UI
         {
             _manager.Changed -= OnManagerChanged;
             _viewState.Changed -= OnViewStateChanged;
+            EditorApplication.projectChanged -= OnProjectChanged;
             if (_itemGrid != null)
             {
                 _itemGrid.SelectionChanged -= SelectItems;
@@ -565,6 +568,10 @@ namespace Ee4v.AssetManager.UI
             _navigation.Clear();
             var primary = new VisualElement();
             primary.AddToClassList("ee4v-asset-manager__nav-primary");
+            primary.Add(CreateNavigationButton(
+                I18N.Get("navigation.imported"),
+                AssetManagerPage.Imported,
+                "checkmark.png"));
             primary.Add(CreateNavigationButton(
                 I18N.Get("navigation.library"),
                 AssetManagerPage.Library,
@@ -3173,10 +3180,17 @@ namespace Ee4v.AssetManager.UI
                 items = _manager.SearchItems(query).Items;
             }
 
+            var importedItemIds =
+                _viewState.Page == AssetManagerPage.Imported
+                    ? GetImportedItemIdsInProject()
+                    : null;
             var visibleItems = items
                 .Where(item =>
                     _viewState.Page != AssetManagerPage.Archived ||
                     item.IsArchived)
+                .Where(item =>
+                    _viewState.Page != AssetManagerPage.Imported ||
+                    importedItemIds.Contains(item.Id))
                 .Where(item =>
                     _viewState.Page != AssetManagerPage.Tags ||
                     MatchesTag(item, _viewState.TagPath))
@@ -3188,6 +3202,46 @@ namespace Ee4v.AssetManager.UI
                 visibleItems,
                 _viewState.ItemSortField,
                 _viewState.IsItemSortReversed);
+        }
+
+        private ISet<string> GetImportedItemIdsInProject()
+        {
+            if (_importedItemIdsInProject != null)
+            {
+                return _importedItemIdsInProject;
+            }
+
+            var existingGuids = new HashSet<string>(StringComparer.Ordinal);
+            var itemIds = new HashSet<string>(StringComparer.Ordinal);
+            var associations = _manager.GetImportedAssetAssociations();
+            for (var i = 0; i < associations.Count; i++)
+            {
+                var association = associations[i];
+                if (association == null ||
+                    string.IsNullOrEmpty(association.ItemId) ||
+                    string.IsNullOrEmpty(association.AssetGuid))
+                {
+                    continue;
+                }
+
+                if (existingGuids.Contains(association.AssetGuid) ||
+                    IsImportedAssetInProject(association.AssetGuid))
+                {
+                    existingGuids.Add(association.AssetGuid);
+                    itemIds.Add(association.ItemId);
+                }
+            }
+
+            _importedItemIdsInProject = itemIds;
+            return _importedItemIdsInProject;
+        }
+
+        private static bool IsImportedAssetInProject(string assetGuid)
+        {
+            var assetPath = AssetDatabase.GUIDToAssetPath(assetGuid);
+            return !string.IsNullOrEmpty(assetPath) &&
+                   !AssetDatabase.IsValidFolder(assetPath) &&
+                   AssetDatabase.GetMainAssetTypeAtPath(assetPath) != null;
         }
 
         private static bool MatchesTag(AssetItem item, string tagPath)
@@ -3223,6 +3277,8 @@ namespace Ee4v.AssetManager.UI
         {
             switch (_viewState.Page)
             {
+                case AssetManagerPage.Imported:
+                    return I18N.Get("navigation.imported");
                 case AssetManagerPage.Archived:
                     return I18N.Get("navigation.archived");
                 case AssetManagerPage.Tags:
@@ -3262,6 +3318,7 @@ namespace Ee4v.AssetManager.UI
 
         private void OnManagerChanged(AssetManagerChange change)
         {
+            _importedItemIdsInProject = null;
             if (change.Kind == AssetManagerChangeKind.SourceSynchronized)
             {
                 _itemGrid?.ClearThumbnails();
@@ -3276,10 +3333,16 @@ namespace Ee4v.AssetManager.UI
             if (change.Kind ==
                 AssetManagerChangeKind.FileImportedAssetGuidsChanged)
             {
-                if (ShowsMain &&
-                    !string.IsNullOrEmpty(_viewState.DetailItemId))
+                if (ShowsMain)
                 {
-                    RefreshItemDetailPane();
+                    if (!string.IsNullOrEmpty(_viewState.DetailItemId))
+                    {
+                        RefreshItemDetailPane();
+                    }
+                    else if (_viewState.Page == AssetManagerPage.Imported)
+                    {
+                        RefreshMain();
+                    }
                 }
                 if (ShowsInformation)
                 {
@@ -3289,6 +3352,16 @@ namespace Ee4v.AssetManager.UI
             }
 
             RefreshAfterManagerChange();
+        }
+
+        private void OnProjectChanged()
+        {
+            _importedItemIdsInProject = null;
+            if (ShowsMain &&
+                _viewState.Page == AssetManagerPage.Imported)
+            {
+                Refresh();
+            }
         }
 
         private void RefreshAfterManagerChange()

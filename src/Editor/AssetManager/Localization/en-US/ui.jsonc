@@ -43,6 +43,7 @@
   },
   "navigation": {
     "library": "All",
+    "imported": "Imported",
     "archived": "Archived",
     "unassignedFiles": "Unassigned",
     "tags": "Tags",
