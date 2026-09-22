@@ -211,9 +211,7 @@ namespace Ee4v.FaceExpression
             var findings = FaceExpressionApi.ValidateClip(_avatar, _clip);
             if (findings.Count == 0)
             {
-                _view.SetValidation(
-                    I18N.Get("validation.valid"),
-                    HelpBoxMessageType.Info);
+                _view.SetValidation(string.Empty, HelpBoxMessageType.Info);
                 return;
             }
 

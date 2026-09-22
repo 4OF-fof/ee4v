@@ -125,7 +125,6 @@
     "applyFailed": "ジェスチャー割り当てを適用できませんでした。"
   },
   "validation": {
-    "valid": "表情クリップに問題はありません。",
     "non_blendshape_curve": "表情編集の対象外のカーブが含まれています。",
     "binding_not_found": "対象のRendererまたはBlendShapeがアバターにありません。",
     "not_single_frame": "カーブが0秒の単一キーフレームではありません。",
