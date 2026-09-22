@@ -1,10 +1,10 @@
 # PhysBone Collider
 
-## 公開APIとMCP
+## 公開API
 
 `PhysBoneColliderApi`は、UIと同じ検出・配置・適用処理を外部integrationから呼ぶ公開境界です。Avatar、対象root、配置preset、最小bone長から候補とPhysBone一覧を返し、調整後の位置、回転、半径、長さ、追従boneと割り当て選択を既存gatewayへ渡します。
 
-`Ee4v.Mcp.Editor`はこのAPIを`ee4v_plan_physbone_colliders`と`ee4v_apply_physbone_colliders`として公開します。適用時の生成Prefab、MA Bone Proxy、ee4v所有Colliderの置換、PhysBone参照更新はUIと同じ契約です。MCP固有のJSON DTOは機能moduleへ持ち込みません。詳細は[`../mcp.md`](../mcp.md)を参照します。
+このAPIはEditor UIなどのプロジェクト内integration向けです。PhysBone Colliderの操作はMCPへ公開しません。
 
 ## 機能
 

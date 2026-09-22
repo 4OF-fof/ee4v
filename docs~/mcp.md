@@ -1,6 +1,6 @@
 # ee4v MCP
 
-`src/Editor/Mcp`は、VRChatアバター改変とee4vのAssetManagerをAIクライアントから操作するための統合層です。Hierarchy、Component、Scene、Prefab、Animator Controller、Materialなどの汎用操作は既存のUnity MCPへ任せ、ee4v MCPは複数のUnity APIとVRChat／Modular Avatarの規則をまとめて扱う高水準操作を所有します。
+`src/Editor/Mcp`は、VRChatアバターの調査、表情改変、ee4vのAssetManagerをAIクライアントから操作するための統合層です。Hierarchy、Component、Scene、Prefab、Animator Controller、Materialなどの汎用操作は既存のUnity MCPへ任せ、ee4v MCPは複数のUnity APIとVRChatの規則をまとめて扱う高水準操作を所有します。
 
 ## 接続
 
@@ -30,14 +30,13 @@ portはEditorPrefsの`ee4v.mcp.port`、自動開始は`ee4v.mcp.enabled`へ保�
 - tool結果は機械処理用の`structuredContent`と、同じ内容のtext contentを返す。preview PNGはimage contentも返す。
 - tool annotationでread-only、破壊性、冪等性、open-world accessを宣言する。
 - AssetManagerでは同期、削除、File登録、Unity ProjectへのImport、新規Item／Collection作成をMCPへ公開しない。書き込みは、事前に読み取った値を再設定すれば元へ戻せるmetadata編集だけに限定する。
-- Scene／Prefab Mode上のModular Avatar書き込みはUnity Undoへまとめる。Project内のPrefab assetへ直接書き込まず、Prefab ModeまたはSceneへの配置を要求する。
 - 表情Clipの更新は`expectedRevision`で競合を検出できる。作成、部分更新、完全置換を分け、`dryRun`で書き込み前の結果を確認できる。
 
 ## Object参照
 
 `ee4v_find_avatars`は後続toolへ渡す`avatarRef`を返します。SceneとPrefab ModeのobjectにはUnityの`GlobalObjectId`を優先し、Project内assetにはasset pathを使用します。曖昧なHierarchy pathは拒否します。
 
-書き込みtoolは取得済みの参照を再解決し、対象がAvatar配下にあること、永続Prefab assetを直接編集しようとしていないこと、必要なVRChat SDK／Modular Avatar型が存在することを再検証します。
+書き込みtoolは取得済みの参照を再解決し、対象がAvatar配下にあること、永続Prefab assetを直接編集しようとしていないこと、必要なVRChat SDK型が存在することを再検証します。
 
 ## Tool catalog
 
@@ -47,26 +46,10 @@ portはEditorPrefsの`ee4v.mcp.port`、自動開始は`ee4v.mcp.enabled`へ保�
 |---|---|
 | `ee4v_server_status` | Unity version、Project、Play／compile状態を返す |
 | `ee4v_find_avatars` | loaded scene、Prefab Mode、またはProject内PrefabからAvatarを探す |
-| `ee4v_inspect_avatar` | rig、mesh、triangle、material、texture、animation、PhysBone、Contact、Constraint、Modular Avatar、Expression Parametersを集計する |
+| `ee4v_inspect_avatar` | rig、mesh、triangle、material、texture、animation、PhysBone、Constraint、Expression Parametersを集計する |
 | `ee4v_audit_avatar` | Descriptor、Humanoid、Body、triangle目安、Expression Parametersの256-bit上限、Menuの8-control上限、Unity Constraint、Humanoid boneをrootにしたPhysBoneを監査する |
-| `ee4v_plan_outfit_setup` | 衣装のbone対応、同名BlendShape、material構成を読み取り専用で分析する |
-| `ee4v_list_contacts` | Contact Sender／Receiverのshape、tag、parameterを列挙する |
-| `ee4v_upsert_contact` | Avatar内の指定bone下へee4v所有のSender／Receiverを作成または更新する |
 
 監査で使うtriangle数の目安はPC `70,000`、Android `20,000`です。これはupload可否を断定する値ではなく、一般的な制作時の注意としてwarningを返します。
-
-### Modular Avatarによる一般改変
-
-| tool | 動作 |
-|---|---|
-| `ee4v_list_avatar_controls` | Menu Itemと同じGameObject上のreaction componentを列挙する |
-| `ee4v_apply_outfit_setup` | 衣装ArmatureへMerge Armatureを設定し、Bodyと同名のBlendShapeを各衣装RendererへBlendshape Syncとして追加する |
-| `ee4v_upsert_object_toggle` | ee4v所有のToggle controlを作成または更新し、複数Objectのactive stateを切り替える |
-| `ee4v_upsert_material_toggle` | ee4v所有のToggle controlを作成または更新し、Rendererの1 material slotを置換する |
-
-生成controlはAvatar直下の`ee4v MCP Controls`へまとめ、`controlName`を安定IDとして再利用します。同名controlへ別reaction typeを上書きしません。同期ToggleはExpression Parametersを1 bit消費することをplan結果へ含めます。衣装適用は既存の無関係なBlendshape Sync bindingを維持し、同じsource／local名のbindingを重複追加しません。
-
-Contactは`parentRef`直下の`ee4v Contact - <contactName>`を安定した生成Objectとして再利用します。SphereとCapsule、collision tag、Sender／Receiver、Receiver parameter、Constant／OnEnter／Proximity、local-only、self／othersを設定できます。書き込み前に`dryRun`を使用でき、kindが異なる同名Contactは上書きしません。
 
 ### Face Expression
 
@@ -85,15 +68,6 @@ Contactは`parentRef`直下の`ee4v Contact - <contactName>`を安定した生�
 
 `ee4v_upsert_expression_clip`の`patch`は未指定channelを維持し、`replace`は未指定BlendShape curveを削除します。`ee4v_remap_expression_clip`は対応不能channelを結果へ残し、無言で別名へ割り当てません。
 
-### PhysBone Collider
-
-| tool | 動作 |
-|---|---|
-| `ee4v_plan_physbone_colliders` | 軽量、通常、フルのpresetから配置候補とPhysBone割り当て候補を返す |
-| `ee4v_apply_physbone_colliders` | 編集済み候補を生成Prefabへ反映し、選択したPhysBoneへ割り当てる |
-
-適用は既存のPhysBone Collider機能と同じgatewayを使うため、Avatar直下のee4v所有Prefab、MA Bone Proxy、既存生成物の置換というUI操作と同じ契約を持ちます。
-
 ### AssetManager
 
 | 分類 | tools |
@@ -108,7 +82,7 @@ MCPは`AssetManager`の公開APIを通してDB内のmetadataを読み取り・�
 
 ## 汎用Unity MCPとの使い分け
 
-ee4v MCPは、Avatarの発見と監査、表情ClipとFacialSet、PhysBone Collider、Modular Avatar衣装・Toggle、AssetManagerのようにドメイン規則をまとめて検証できる操作へ使用します。次は既存Unity MCPを使用します。
+ee4v MCPは、Avatarの発見と監査、表情ClipとFacialSet、AssetManagerのようにドメイン規則をまとめて検証できる操作へ使用します。次は既存Unity MCPを使用します。
 
 - 任意GameObjectの作成、削除、Transform変更
 - 任意ComponentとSerializedPropertyの読み書き
@@ -120,9 +94,9 @@ ee4v MCPは任意C#実行toolを公開しません。高水準toolで扱って�
 ## 実装境界
 
 - `Ee4v.Mcp.Editor`はMCP protocol、loopback HTTP server、tool registry、Unity main-thread dispatch、各moduleへのadapterを所有する。
-- Face ExpressionとPhysBone Colliderは各機能moduleに公開APIを置き、MCP adapterから呼ぶ。MCPのJSON DTOを機能moduleへ持ち込まない。
+- Face Expressionは機能moduleの公開APIをMCP adapterから呼ぶ。MCPのJSON DTOを機能moduleへ持ち込まない。
 - AssetManagerは既存のContractsとInfrastructureを利用する。
-- VRChat SDKとModular Avatarの型は任意依存としてreflectionで解決し、未導入時は構造化errorを返す。
+- VRChat SDKの型は任意依存としてreflectionで解決し、未導入時は構造化errorを返す。
 - MCPは複数機能を束ねる外部integration／composition rootであり、機能module同士の依存を追加しない。
 
 ## 未実装範囲

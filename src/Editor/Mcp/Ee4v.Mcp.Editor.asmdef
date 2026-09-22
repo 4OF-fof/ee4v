@@ -5,8 +5,7 @@
     "Ee4v.AssetManager.Contracts.Editor",
     "Ee4v.AssetManager.Infrastructure.Editor",
     "Ee4v.Core.Presentation.Editor",
-    "Ee4v.FaceExpression.Editor",
-    "Ee4v.PhysBoneCollider.Editor"
+    "Ee4v.FaceExpression.Editor"
   ],
   "includePlatforms": [
     "Editor"

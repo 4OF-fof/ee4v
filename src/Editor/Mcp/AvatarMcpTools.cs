@@ -19,12 +19,6 @@ namespace Ee4v.Mcp
             "VRC.SDK3.Avatars.Components.VRCAvatarDescriptor";
         private const string PhysBoneTypeName =
             "VRC.SDK3.Dynamics.PhysBone.Components.VRCPhysBone";
-        private const string PhysBoneColliderTypeName =
-            "VRC.SDK3.Dynamics.PhysBone.Components.VRCPhysBoneCollider";
-        private const string ContactSenderTypeName =
-            "VRC.SDK3.Dynamics.Contact.Components.VRCContactSender";
-        private const string ContactReceiverTypeName =
-            "VRC.SDK3.Dynamics.Contact.Components.VRCContactReceiver";
         private const string HeadChopTypeName =
             "VRC.SDK3.Avatars.Components.VRCHeadChop";
 
@@ -47,7 +41,7 @@ namespace Ee4v.Mcp
 
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_inspect_avatar",
-                "Returns a VRChat-oriented inventory of one avatar: rig, meshes, materials, textures, animation, PhysBones, contacts, constraints, Modular Avatar components, and expression parameter usage.",
+                "Returns a VRChat-oriented inventory of one avatar: rig, meshes, materials, textures, animation, PhysBones, constraints, and expression parameter usage.",
                 McpSchemas.Object(new JObject
                 {
                     ["avatarRef"] = McpSchemas.String(
@@ -74,22 +68,6 @@ namespace Ee4v.Mcp
                         (string)arguments["platform"] ?? "pc"))),
                 readOnly: true));
 
-            McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_plan_outfit_setup",
-                "Analyzes an outfit against a target avatar and proposes armature, blendshape-sync, material, and clipping setup. This tool does not modify prefabs.",
-                McpSchemas.Object(new JObject
-                {
-                    ["avatarRef"] = McpSchemas.String(),
-                    ["outfitRef"] = McpSchemas.String(
-                        "GlobalObjectId, hierarchy path, or prefab asset path for the outfit root.")
-                }, "avatarRef", "outfitRef"),
-                arguments => Task.FromResult(McpToolResult.Success(
-                    PlanOutfit(
-                        UnityObjectReference.ResolveGameObject(
-                            (string)arguments["avatarRef"]),
-                        UnityObjectReference.ResolveGameObject(
-                            (string)arguments["outfitRef"])))),
-                readOnly: true));
         }
 
         private static JObject FindAvatars(string scope, string searchFolder)
@@ -223,9 +201,6 @@ namespace Ee4v.Mcp
                 ["avatarDynamics"] = new JObject
                 {
                     ["physBoneCount"] = CountComponents(avatar, PhysBoneTypeName),
-                    ["physBoneColliderCount"] = CountComponents(avatar, PhysBoneColliderTypeName),
-                    ["contactSenderCount"] = CountComponents(avatar, ContactSenderTypeName),
-                    ["contactReceiverCount"] = CountComponents(avatar, ContactReceiverTypeName),
                     ["headChopCount"] = CountComponents(avatar, HeadChopTypeName),
                     ["unityConstraintCount"] = avatar
                         .GetComponentsInChildren<Component>(true)
@@ -238,12 +213,6 @@ namespace Ee4v.Mcp
                 {
                     ["animationClipCount"] = CountReferencedAnimationClips(avatar),
                     ["animatorCount"] = avatar.GetComponentsInChildren<Animator>(true).Length
-                },
-                ["modularAvatar"] = new JObject
-                {
-                    ["componentCount"] = CountComponentsByNamespace(
-                        avatar,
-                        "nadena.dev.modular_avatar")
                 },
                 ["expressions"] = expression,
                 ["topLevelObjects"] = new JArray(TopLevelObjects(avatar))
@@ -343,105 +312,6 @@ namespace Ee4v.Mcp
                 },
                 ["findings"] = findings,
                 ["inventory"] = inventory
-            };
-        }
-
-        private static JObject PlanOutfit(GameObject avatar, GameObject outfit)
-        {
-            if (avatar == outfit)
-            {
-                throw new McpToolException(
-                    "invalid_outfit",
-                    "outfitRef must identify an outfit root, not the avatar root.");
-            }
-
-            var avatarBones = avatar.GetComponentsInChildren<Transform>(true)
-                .GroupBy(transform => transform.name, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(group => group.Key, group => group.ToArray(),
-                    StringComparer.OrdinalIgnoreCase);
-            var outfitRenderers = outfit.GetComponentsInChildren<SkinnedMeshRenderer>(true);
-            var avatarRenderers = avatar.GetComponentsInChildren<SkinnedMeshRenderer>(true)
-                .Where(renderer => !renderer.transform.IsChildOf(outfit.transform))
-                .ToArray();
-            var body = avatarRenderers.FirstOrDefault(renderer =>
-                           string.Equals(renderer.name, "Body", StringComparison.OrdinalIgnoreCase)) ??
-                       avatarRenderers.FirstOrDefault(renderer =>
-                           renderer.sharedMesh != null && renderer.sharedMesh.blendShapeCount > 0);
-            var bodyShapes = body?.sharedMesh == null
-                ? new HashSet<string>(StringComparer.Ordinal)
-                : new HashSet<string>(Enumerable.Range(0, body.sharedMesh.blendShapeCount)
-                    .Select(body.sharedMesh.GetBlendShapeName), StringComparer.Ordinal);
-            var usedBones = outfitRenderers
-                .SelectMany(renderer => renderer.bones ?? Array.Empty<Transform>())
-                .Where(bone => bone != null)
-                .Distinct()
-                .ToArray();
-            var missingBones = usedBones
-                .Where(bone => !avatarBones.ContainsKey(bone.name))
-                .Select(bone => bone.name)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-            var ambiguousBones = usedBones
-                .Select(bone => bone.name)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Where(name => avatarBones.TryGetValue(name, out var matches) && matches.Length > 1)
-                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-            var sync = new JArray(outfitRenderers.SelectMany(renderer =>
-            {
-                var mesh = renderer.sharedMesh;
-                return mesh == null
-                    ? Enumerable.Empty<JObject>()
-                    : Enumerable.Range(0, mesh.blendShapeCount)
-                        .Select(mesh.GetBlendShapeName)
-                        .Where(bodyShapes.Contains)
-                        .Select(shape => new JObject
-                        {
-                            ["targetRendererPath"] = AnimationUtility.CalculateTransformPath(
-                                renderer.transform,
-                                outfit.transform),
-                            ["targetShape"] = shape,
-                            ["sourceRendererPath"] = body == null
-                                ? string.Empty
-                                : AnimationUtility.CalculateTransformPath(
-                                    body.transform,
-                                    avatar.transform),
-                            ["sourceShape"] = shape
-                        });
-            }));
-
-            return new JObject
-            {
-                ["ok"] = true,
-                ["avatar"] = AvatarSummary(avatar),
-                ["outfit"] = new JObject
-                {
-                    ["objectRef"] = UnityObjectReference.Create(outfit),
-                    ["name"] = outfit.name,
-                    ["rendererCount"] = outfitRenderers.Length,
-                    ["materialCount"] = outfitRenderers
-                        .SelectMany(renderer => renderer.sharedMaterials)
-                        .Where(material => material != null)
-                        .Distinct()
-                        .Count()
-                },
-                ["armature"] = new JObject
-                {
-                    ["suggestedRoot"] = FindDirectChild(outfit.transform, "Armature") == null
-                        ? string.Empty
-                        : "Armature",
-                    ["usedBoneCount"] = usedBones.Length,
-                    ["missingBoneNames"] = new JArray(missingBones),
-                    ["ambiguousBoneNames"] = new JArray(ambiguousBones),
-                    ["canMergeByName"] = missingBones.Length == 0 && ambiguousBones.Length == 0
-                },
-                ["blendshapeSyncSuggestions"] = sync,
-                ["recommendations"] = new JArray(
-                    "Use Modular Avatar Merge Armature for the outfit armature.",
-                    "Use Blendshape Sync for body-shape keys listed in blendshapeSyncSuggestions.",
-                    "Use Shape Changer or Mesh Cutter only for body areas fully covered by the outfit.",
-                    "Add an Object Toggle or menu item when the outfit must be removable in VRChat.")
             };
         }
 
@@ -715,20 +585,6 @@ namespace Ee4v.Mcp
             var type = target.GetType();
             return type.GetField(name, flags)?.GetValue(target) ??
                    type.GetProperty(name, flags)?.GetValue(target, null);
-        }
-
-        private static Transform FindDirectChild(Transform root, string name)
-        {
-            for (var index = 0; index < root.childCount; index++)
-            {
-                var child = root.GetChild(index);
-                if (string.Equals(child.name, name, StringComparison.OrdinalIgnoreCase))
-                {
-                    return child;
-                }
-            }
-
-            return null;
         }
 
         private static void AddFinding(

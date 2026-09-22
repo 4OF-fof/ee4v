@@ -10,7 +10,7 @@
 <body>
   <a class="skip-link" href="#main">本文へ移動</a>
   <header class="site-header compact">
-    <div><p class="eyebrow">Domain automation</p><h1>ee4v MCP</h1><p class="lead">VRChat Avatarの調査、表情、PhysBone、衣装Toggle、Asset Managerを、Unity Editor内の検証付き操作としてCodexへ公開します。</p></div>
+    <div><p class="eyebrow">Domain automation</p><h1>ee4v MCP</h1><p class="lead">VRChat Avatarの調査、表情、Asset Managerを、Unity Editor内の検証付き操作としてCodexへ公開します。</p></div>
   </header>
   <nav class="page-nav" aria-label="利用ガイド"><ul><li><a href="index.html">概要</a></li><li><a href="mcp.html" aria-current="page">MCP</a></li><li><a href="asset-manager.html">Asset Manager</a></li><li><a href="asset-protection.html">Asset Protection</a></li><li><a href="booth-eagle.html">BOOTH / Eagle</a></li><li><a href="face-expression.html">Face Expression</a></li><li><a href="physbone-collider.html">PhysBone Collider</a></li><li><a href="play-mode-component-suppression.html">Play Mode</a></li><li><a href="project-tools.html">Project</a></li><li><a href="hierarchy-tools.html">Hierarchy</a></li><li><a href="window-groups.html">Window Groups</a></li><li><a href="settings.html">設定</a></li></ul></nav>
   <main id="main" class="content-shell">
@@ -26,21 +26,19 @@ url = "http://127.0.0.1:48884/mcp"</code></pre>
       <section id="scope">
         <p class="section-label">Scope</p><h2>Avatar改変をまとまりとして操作する</h2>
         <div class="table-wrap"><table><thead><tr><th>領域</th><th>主な操作</th></tr></thead><tbody>
-          <tr><td>Avatar</td><td>Scene、Prefab Mode、ProjectからAvatarを探し、rig、mesh、material、PhysBone、Contact、Constraint、Expressionを調査・監査します。Contact Sender／Receiverは指定bone下へ作成・更新できます。</td></tr>
+          <tr><td>Avatar</td><td>Scene、Prefab Mode、ProjectからAvatarを探し、rig、mesh、material、PhysBone、Constraint、Expressionを調査・監査します。</td></tr>
           <tr><td>表情</td><td>BlendShape channelの列挙、表情Clipの作成・更新・検証・preview・remap、FacialSetのplanと適用を行います。</td></tr>
-          <tr><td>PhysBone</td><td>Collider候補を作り、調整値と割り当てをAvatarへ適用します。</td></tr>
-          <tr><td>衣装とToggle</td><td>Modular AvatarのMerge Armature、Blendshape Sync、Object Toggle、Material Setterを構成します。</td></tr>
           <tr><td>Asset Manager</td><td>Item検索、File解析、名前・説明・Tag・Archive、Target、Dependency、既存Collectionなど、元の値へ戻せるmetadataを操作します。</td></tr>
         </tbody></table></div>
       </section>
       <section id="workflow">
         <p class="section-label">Workflow</p><h2>発見、plan、適用、監査の順で進める</h2>
-        <ol class="steps"><li><code>ee4v_find_avatars</code>で現在の対象と<code>avatarRef</code>を取得します。</li><li><code>ee4v_inspect_avatar</code>と<code>ee4v_audit_avatar</code>で現状を確認します。</li><li>表情、Collider、衣装は対応するplanまたは<code>dryRun</code>で変更内容を確認します。</li><li>書き込みtoolを承認して適用します。</li><li>最後にもう一度Avatar監査と必要なpreviewを実行します。</li></ol>
+        <ol class="steps"><li><code>ee4v_find_avatars</code>で現在の対象と<code>avatarRef</code>を取得します。</li><li><code>ee4v_inspect_avatar</code>と<code>ee4v_audit_avatar</code>で現状を確認します。</li><li>表情は対応するplanまたは<code>dryRun</code>で変更内容を確認します。</li><li>書き込みtoolを承認して適用します。</li><li>最後にもう一度Avatar監査と必要なpreviewを実行します。</li></ol>
         <p>AvatarのGameObjectを選び直した場合やUnityを再起動した場合は、以前の参照を使い回さず<code>ee4v_find_avatars</code>から始めます。</p>
       </section>
       <section id="writes">
         <p class="section-label">Writes</p><h2>再適用できる単位で変更する</h2>
-        <ul><li>表情Clipは<code>create</code>、<code>patch</code>、<code>replace</code>を明示します。共同編集時はrevisionも渡します。</li><li>Modular Avatar controlはAvatar直下の<code>ee4v MCP Controls</code>へまとめ、同じ<code>controlName</code>で更新します。</li><li>Object ToggleとMaterial ToggleはSceneまたはPrefab Mode上のAvatarだけを変更します。Project内Prefab assetを直接変更しません。</li><li>AssetManagerでは変更前の値を先に取得します。同期、削除、File登録、Import、新規Item／Collection作成はMCPに公開されないため、必要な場合はAssetManager画面から実行します。</li></ul>
+        <ul><li>表情Clipは<code>create</code>、<code>patch</code>、<code>replace</code>を明示します。共同編集時はrevisionも渡します。</li><li>AssetManagerでは変更前の値を先に取得します。同期、削除、File登録、Import、新規Item／Collection作成はMCPに公開されないため、必要な場合はAssetManager画面から実行します。</li></ul>
       </section>
       <section id="security">
         <p class="section-label">Security</p><h2>localhost専用として扱う</h2>
@@ -50,7 +48,7 @@ url = "http://127.0.0.1:48884/mcp"</code></pre>
       <section id="generic">
         <p class="section-label">Unity MCP</p><h2>汎用操作は既存Unity MCPを使う</h2>
         <p>ee4v MCPはAvatar固有の規則をまとめた操作に使います。Hierarchyの一般編集、任意ComponentのSerializedProperty、SceneとPrefab、Animator Controller、MaterialとShader、Console、Play Mode、screenshot、build、任意C#実行は既存Unity MCPの担当です。</p>
-        <div class="related-grid"><a href="face-expression.html"><strong>Face Expression</strong><span>表情ClipとGesture割り当て</span></a><a href="physbone-collider.html"><strong>PhysBone Collider</strong><span>配置候補と適用契約</span></a><a href="asset-manager.html"><strong>Asset Manager</strong><span>Source、Tag、Target、Import</span></a></div>
+        <div class="related-grid"><a href="face-expression.html"><strong>Face Expression</strong><span>表情ClipとGesture割り当て</span></a><a href="asset-manager.html"><strong>Asset Manager</strong><span>Source、Tag、Target、Import</span></a></div>
       </section>
     </article>
   </main>
