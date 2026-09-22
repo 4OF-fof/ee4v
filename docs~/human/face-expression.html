@@ -52,6 +52,7 @@
         <ul>
           <li>値をAvatarの初期値へ戻すと、使用checkを自動で外して対応curveを削除します。</li>
           <li>使用checkを縦方向へdragすると、通過した行を最初に切り替えた状態へまとめて変更します。</li>
+          <li>左右版は通常版の下へ<code>L</code>、<code>R</code>の子行として表示し、それぞれ個別に編集します。</li>
           <li><strong>クリップ内のみ</strong>では、選択中Clipに保存されているBlendShapeとheaderだけを表示します。</li>
           <li>複数meshでは<code>メッシュ名 / BlendShape名</code>で同名Shapeを区別します。</li>
         </ul>
@@ -70,7 +71,7 @@
         <p>区切り文字で囲まれたBlendShape名をheaderとして、そのheaderから次のheaderまでをGroupにします。Groupを選ぶとEditorの一覧が連動して絞り込まれます。同名Groupが複数meshにある場合は一つにまとめます。</p>
         <p>「メッシュ追加」からAvatar内の別SkinnedMeshRendererを追加できます。追加meshはmesh名のGroupとしても表示され、選ぶとそのmeshの全BlendShapeを表示します。</p>
         <h3>BlendShape Presets</h3>
-        <p>BlendShape Presetsでは、FBXごとに役割名、左右、口形状を対応付けます。同じ役割の通常・左・右ShapeをEditor上の1行へまとめられます。役割カードやBlendShapeをdragして統合・移動でき、自動分類で現在の命名とAvatar Descriptorから分類案を作り直せます。</p>
+        <p>BlendShape Presetsでは、FBXごとに役割名、左右、口形状を対応付けます。同じ役割の通常Shapeを親行、左・右Shapeを子行としてEditorへ表示します。役割カードやBlendShapeをdragして統合・移動でき、自動分類で現在の命名とAvatar Descriptorから分類案を作り直せます。</p>
         <p>header判定に使う文字は<code>Preferences / 4OF / ee4v</code>の「BlendShapeの区切り文字」で変更できます。既定値は<code>-</code>、<code>─</code>、<code>=</code>、<code>*</code>です。</p>
       </section>
 

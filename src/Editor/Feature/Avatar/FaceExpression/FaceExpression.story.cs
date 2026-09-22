@@ -153,8 +153,8 @@ namespace Ee4v.FaceExpression
                     "blend-shape-row",
                     "Domain/FaceExpression/Inputs",
                     "BlendShapeRow",
-                    "BlendShape一件のAnimation、値、Sideを編集する行です。",
-                    "通常と左右のBlendShapeを切り替え、値と使用状態を編集します。",
+                    "BlendShape一件のAnimationと値を編集する行です。",
+                    "通常版を親行、左右版を子行として個別に編集します。",
                     BuildBlendShapeRow,
                     dependencies: new[]
                     {
@@ -223,10 +223,13 @@ namespace Ee4v.FaceExpression
                 },
                 CreateStoryRule(),
                 true);
-            var row = new BlendShapeRow();
-            row.SetItem(items[0], false);
-            row.style.width = 720f;
-            parent.Add(row);
+            foreach (var item in items)
+            {
+                var row = new BlendShapeRow();
+                row.SetItem(item);
+                row.style.width = 720f;
+                parent.Add(row);
+            }
         }
 
         private static void Build(VisualElement parent)

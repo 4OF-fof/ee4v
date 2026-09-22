@@ -517,7 +517,7 @@ namespace Ee4v.FaceExpression.Tests
         }
 
         [Test]
-        public void BlendShapeRows_GroupOnlyNormalAndSides()
+        public void BlendShapeRows_NestSidesUnderNormal()
         {
             var channels = new[]
             {
@@ -549,19 +549,29 @@ namespace Ee4v.FaceExpression.Tests
                 CreateMappedRule(channels),
                 hideHeaders: true);
 
-            Assert.That(rows.Count, Is.EqualTo(3));
+            Assert.That(rows.Count, Is.EqualTo(9));
             Assert.That(rows.Select(row => row.DisplayName),
-                Is.EqualTo(new[] { "blink_1", "blink_2", "blink_1" }));
-            Assert.That(rows[0].ActiveChannel.Name, Is.EqualTo("eye_blink_1"));
-            rows[0].ToggleSide("L");
-            Assert.That(rows[0].ActiveChannel.Name,
-                Is.EqualTo("eye_blink_1_L"));
-            Assert.That(rows[1].ActiveChannel.Name, Is.EqualTo("eye_blink_2"));
-            Assert.That(rows[2].ActiveChannel.Name, Is.EqualTo("mouth_blink_1"));
+                Is.EqualTo(new[]
+                {
+                    "blink_1", "L", "R",
+                    "blink_2", "L", "R",
+                    "blink_1", "L", "R"
+                }));
+            Assert.That(rows.Select(row => row.IsChild),
+                Is.EqualTo(new[]
+                {
+                    false, true, true,
+                    false, true, true,
+                    false, true, true
+                }));
+            Assert.That(rows.Select(row => row.ActiveChannel.Name),
+                Is.EqualTo(channels
+                    .Where(channel => !channel.IsHeader)
+                    .Select(channel => channel.Name)));
         }
 
         [Test]
-        public void BlendShapeRows_KeepClipChannelsSeparate()
+        public void BlendShapeRows_KeepClipChannelsSeparateWithoutSideControls()
         {
             var channels = new[]
             {
@@ -575,28 +585,22 @@ namespace Ee4v.FaceExpression.Tests
                 channels,
                 CreateMappedRule(channels),
                 hideHeaders: true,
-                groupSides: false);
+                nestSides: false);
 
             Assert.That(rows.Select(row => row.DisplayName),
                 Is.EqualTo(channels.Select(channel => channel.Name)));
             Assert.That(rows.Select(row => row.ActiveChannel.Name),
                 Is.EqualTo(channels.Select(channel => channel.Name)));
-            Assert.That(rows.Select(row => row.SelectedSide),
-                Is.EqualTo(new[] { string.Empty, string.Empty, "L", "R" }));
+            Assert.That(rows.Select(row => row.IsChild),
+                Is.All.EqualTo(false));
 
             var row = new BlendShapeRow();
-            row.SetItem(rows[2], optionsReadOnly: true);
+            row.SetItem(rows[2]);
             var sides = row.Query<Toggle>(
                     className: "ee4v-face-expression-row__side")
                 .ToList();
             Assert.That(row.Query<PopupField<string>>().ToList(), Is.Empty);
-            Assert.That(sides.Count, Is.EqualTo(2));
-            Assert.That(sides[0].style.visibility.value,
-                Is.EqualTo(Visibility.Hidden));
-            Assert.That(sides[1].style.visibility.value,
-                Is.EqualTo(Visibility.Visible));
-            Assert.That(sides[1].value, Is.True);
-            Assert.That(sides[1].enabledSelf, Is.False);
+            Assert.That(sides, Is.Empty);
         }
 
         [TestCase("mouth_smile_1_R", "smile_1", "R")]
