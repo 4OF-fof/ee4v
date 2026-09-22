@@ -2,9 +2,9 @@
 
 ## MCPからの利用
 
-`Ee4v.Mcp.Editor`はAssetManagerの公開APIを通して、検索と詳細取得、Item作成・更新・Tag・Archive、File登録と解析、Item Target、File Dependency、Import、Collection、Eagle／ee4v同期を公開します。MCP独自のDB接続やschemaは持たず、UIと同じ`AssetManager`実装、Source境界、validation、change notificationを使用します。tool一覧と入力境界は[`mcp.md`](./mcp.md)を参照します。
+`Ee4v.Mcp.Editor`はAssetManagerの公開APIを通して、検索と詳細取得、Item名・説明・Tag・Archive、File解析、Item Target、File Dependency、既存Collectionの編集を公開します。MCP独自のDB接続やschemaは持たず、UIと同じ`AssetManager`実装、validation、change notificationを使用します。tool一覧と入力境界は[`mcp.md`](./mcp.md)を参照します。
 
-永続削除は`ee4v_asset_delete_items`だけが公開します。呼び出しには`confirm=true`が必要で、Application層の規則によりarchive済みItemだけを対象にできます。ee4v Fileを含む場合はSource実体も削除し、Eagleまたはee4v以外のFileを含むItemと未archive Itemは拒否します。Fileを持たない手動Itemは削除できます。ImportとSource同期は外部FileおよびUnity Projectを変更するため、MCP client側でも書き込みtoolとして承認対象にします。
+同期、Item／File／Collectionの削除、File登録、Unity ProjectへのImport、新規Item／Collection作成は、外部実体または作成前の状態へMCPだけでは戻せないため公開しません。これらはAssetManager UIで利用者が明示的に実行します。MCPの書き込みtoolは、先に`ee4v_asset_get_item`または`ee4v_asset_list_collections`で元の値を取得し、その値を再設定することで復元できる操作に限定します。
 
 AssetManagerはItem、File、Target、Dependency、Tag、Collection、取り込み済みAsset GUIDをSQLiteへ保存し、Editor APIとUIを提供します。
 

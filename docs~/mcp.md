@@ -29,7 +29,7 @@ portはEditorPrefsの`ee4v.mcp.port`、自動開始は`ee4v.mcp.enabled`へ保�
 - Unity objectへ触れるtool実行は`EditorApplication.update`からmain threadへdispatchする。
 - tool結果は機械処理用の`structuredContent`と、同じ内容のtext contentを返す。preview PNGはimage contentも返す。
 - tool annotationでread-only、破壊性、冪等性、open-world accessを宣言する。
-- `ee4v_asset_delete_items`だけを破壊的toolとして公開する。`confirm=true`とarchive済みであることを要求し、Eagleまたはee4v以外のFileを含むItemを拒否する。ee4v FileはSource実体も削除する。
+- AssetManagerでは同期、削除、File登録、Unity ProjectへのImport、新規Item／Collection作成をMCPへ公開しない。書き込みは、事前に読み取った値を再設定すれば元へ戻せるmetadata編集だけに限定する。
 - Scene／Prefab Mode上のModular Avatar書き込みはUnity Undoへまとめる。Project内のPrefab assetへ直接書き込まず、Prefab ModeまたはSceneへの配置を要求する。
 - 表情Clipの更新は`expectedRevision`で競合を検出できる。作成、部分更新、完全置換を分け、`dryRun`で書き込み前の結果を確認できる。
 
@@ -99,13 +99,12 @@ Contactは`parentRef`直下の`ee4v Contact - <contactName>`を安定した生�
 | 分類 | tools |
 |---|---|
 | 検索・詳細 | `ee4v_asset_search`、`ee4v_asset_get_item` |
-| Item編集 | `ee4v_asset_create_item`、`ee4v_asset_update_item`、`ee4v_asset_set_tags`、`ee4v_asset_set_archived`、`ee4v_asset_delete_items` |
-| File | `ee4v_asset_register_file`、`ee4v_asset_analyze_file` |
-| Import構成 | `ee4v_asset_set_targets`、`ee4v_asset_set_dependencies`、`ee4v_asset_import` |
-| Collection | `ee4v_asset_list_collections`、`ee4v_asset_upsert_collection`、`ee4v_asset_delete_collection` |
-| Source同期 | `ee4v_asset_sync_library` |
+| Item metadata | `ee4v_asset_update_item`、`ee4v_asset_set_tags`、`ee4v_asset_set_archived` |
+| File解析 | `ee4v_asset_analyze_file` |
+| Import設定 | `ee4v_asset_set_targets`、`ee4v_asset_set_dependencies` |
+| Collection | `ee4v_asset_list_collections`、`ee4v_asset_update_collection` |
 
-MCPは`AssetManager`の公開APIを通してDB、ee4v Source、Eagle Source、Import処理を操作します。DB fileはUser Settingsの共通data rootにある`asset-manager-v1.db`です。MCP独自のDB書き込みやschemaは持ちません。
+MCPは`AssetManager`の公開APIを通してDB内のmetadataを読み取り・編集します。DB fileはUser Settingsの共通data rootにある`asset-manager-v1.db`です。MCP独自のDB書き込みやschemaは持ちません。同期、Import、新規登録、作成、削除はAssetManager UIで利用者が明示的に実行します。
 
 ## 汎用Unity MCPとの使い分け
 

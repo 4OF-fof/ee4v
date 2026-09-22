@@ -19,18 +19,13 @@ namespace Ee4v.Mcp
         {
             RegisterSearch();
             RegisterGetItem();
-            RegisterCreateItem();
             RegisterUpdateItem();
             RegisterSetTags();
             RegisterSetArchived();
-            RegisterDeleteItems();
-            RegisterFile();
             RegisterAnalyzeFile();
             RegisterSetTargets();
             RegisterSetDependencies();
-            RegisterImport();
             RegisterCollections();
-            RegisterSync();
         }
 
         private static void RegisterSearch()
@@ -132,36 +127,6 @@ namespace Ee4v.Mcp
                 readOnly: true));
         }
 
-        private static void RegisterCreateItem()
-        {
-            McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_asset_create_item",
-                "Creates an editable AssetManager item. This does not copy files into the library.",
-                McpSchemas.Object(new JObject
-                {
-                    ["name"] = McpSchemas.String(),
-                    ["description"] = McpSchemas.String(),
-                    ["tags"] = McpSchemas.Array(McpSchemas.String())
-                }, "name"),
-                arguments => AssetResult(() =>
-                {
-                    var manager = Manager();
-                    var item = manager.CreateItem(new CreateAssetItemRequest
-                    {
-                        Name = Required(arguments, "name"),
-                        Description = (string)arguments["description"] ?? string.Empty
-                    });
-                    var tags = McpJson.To<List<string>>(arguments["tags"]);
-                    if (tags != null)
-                    {
-                        item = manager.SetItemTags(new[] { item.Id }, tags).Single();
-                    }
-
-                    return Success(item);
-                }),
-                readOnly: false));
-        }
-
         private static void RegisterUpdateItem()
         {
             McpToolRegistry.Register(new McpToolDefinition(
@@ -213,57 +178,6 @@ namespace Ee4v.Mcp
                     RequiredStrings(arguments, "itemIds"),
                     (bool)arguments["archived"]))),
                 readOnly: false));
-        }
-
-        private static void RegisterDeleteItems()
-        {
-            McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_asset_delete_items",
-                "Permanently removes archived items from the database and deletes their ee4v-source files. Items containing Eagle or other non-ee4v files are rejected. Requires confirm=true.",
-                McpSchemas.Object(new JObject
-                {
-                    ["itemIds"] = McpSchemas.Array(McpSchemas.String()),
-                    ["confirm"] = McpSchemas.Boolean()
-                }, "itemIds", "confirm"),
-                arguments => AssetResult(() =>
-                {
-                    if ((bool?)arguments["confirm"] != true)
-                    {
-                        throw new McpToolException(
-                            "confirmation_required",
-                            "Set confirm=true only after verifying every item is archived and may be permanently removed.");
-                    }
-
-                    var ids = RequiredStrings(arguments, "itemIds");
-                    Manager().DeleteItem(ids);
-                    return Success(new { DeletedItemIds = ids });
-                }),
-                readOnly: false,
-                destructive: true,
-                idempotent: false));
-        }
-
-        private static void RegisterFile()
-        {
-            McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_asset_register_file",
-                "Copies a local file into the configured ee4v library and registers it with an item or as an unassigned file.",
-                McpSchemas.Object(new JObject
-                {
-                    ["itemId"] = McpSchemas.String(),
-                    ["filePath"] = McpSchemas.String(),
-                    ["fileName"] = McpSchemas.String()
-                }, "filePath"),
-                arguments => AssetResult(() => Success(Manager().RegisterFile(
-                    (string)arguments["itemId"],
-                    new RegisterFileRequest
-                    {
-                        LibraryPath = GlobalDataSettings.RootDirectory,
-                        FilePath = Required(arguments, "filePath"),
-                        FileName = (string)arguments["fileName"]
-                    }))),
-                readOnly: false,
-                openWorld: true));
         }
 
         private static void RegisterAnalyzeFile()
@@ -327,63 +241,6 @@ namespace Ee4v.Mcp
                 readOnly: false));
         }
 
-        private static void RegisterImport()
-        {
-            var target = McpSchemas.Object(new JObject
-            {
-                ["fileId"] = McpSchemas.String(),
-                ["targetPath"] = McpSchemas.String(),
-                ["groupName"] = McpSchemas.String()
-            }, "fileId", "targetPath");
-            McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_asset_import",
-                "Imports either explicit archive entries from one file or configured item targets with dependencies into the Unity project.",
-                McpSchemas.Object(new JObject
-                {
-                    ["mode"] = McpSchemas.Enum("fileEntries", "itemTargets"),
-                    ["fileId"] = McpSchemas.String(),
-                    ["paths"] = McpSchemas.Array(McpSchemas.String()),
-                    ["itemId"] = McpSchemas.String(),
-                    ["selectedTargets"] = McpSchemas.Array(target)
-                }, "mode"),
-                async arguments => await AssetResultAsync(async () =>
-                {
-                    AssetImportResult result;
-                    if (string.Equals(
-                            (string)arguments["mode"],
-                            "fileEntries",
-                            StringComparison.OrdinalIgnoreCase))
-                    {
-                        result = await Manager().ImportFileEntries(
-                            Required(arguments, "fileId"),
-                            RequiredStrings(arguments, "paths"));
-                    }
-                    else if (string.Equals(
-                                 (string)arguments["mode"],
-                                 "itemTargets",
-                                 StringComparison.OrdinalIgnoreCase))
-                    {
-                        result = await Manager().ImportItemTargets(
-                            Required(arguments, "itemId"),
-                            McpJson.To<List<AssetFileTarget>>(
-                                arguments["selectedTargets"]) ??
-                            new List<AssetFileTarget>());
-                    }
-                    else
-                    {
-                        throw new McpToolException(
-                            "invalid_import_mode",
-                            "mode must be fileEntries or itemTargets.");
-                    }
-
-                    return Success(result);
-                }),
-                readOnly: false,
-                destructive: false,
-                idempotent: true,
-                openWorld: true));
-        }
-
         private static void RegisterCollections()
         {
             McpToolRegistry.Register(new McpToolDefinition(
@@ -394,63 +251,29 @@ namespace Ee4v.Mcp
                 readOnly: true));
 
             McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_asset_upsert_collection",
-                "Creates or updates an AssetManager smart collection. Filter nodes use type And, Or, Not, or Condition and conditionType NameContains, DescriptionContains, HasTag, or HasFileExtension.",
+                "ee4v_asset_update_collection",
+                "Updates an existing AssetManager smart collection. Filter nodes use type And, Or, Not, or Condition and conditionType NameContains, DescriptionContains, HasTag, or HasFileExtension.",
                 McpSchemas.Object(new JObject
                 {
-                    ["collectionId"] = McpSchemas.String(
-                        "Omit to create a collection."),
+                    ["collectionId"] = McpSchemas.String(),
                     ["name"] = McpSchemas.String(),
                     ["filter"] = new JObject { ["type"] = "object" }
-                }, "name", "filter"),
+                }, "collectionId", "name", "filter"),
                 arguments => AssetResult(() =>
                 {
                     var manager = Manager();
-                    var id = (string)arguments["collectionId"];
+                    var id = Required(arguments, "collectionId");
                     var name = Required(arguments, "name");
                     var filter = McpJson.To<AssetFilterNode>(arguments["filter"]);
-                    return Success(string.IsNullOrWhiteSpace(id)
-                        ? manager.CreateCollection(new CreateAssetCollectionRequest
-                        {
-                            Name = name,
-                            Root = filter
-                        })
-                        : manager.UpdateCollection(id, new UpdateAssetCollectionRequest
+                    return Success(manager.UpdateCollection(
+                        id,
+                        new UpdateAssetCollectionRequest
                         {
                             Name = name,
                             Root = filter
                         }));
                 }),
                 readOnly: false));
-
-            McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_asset_delete_collection",
-                "Deletes a saved AssetManager smart collection. Items are not deleted.",
-                McpSchemas.Object(new JObject
-                {
-                    ["collectionId"] = McpSchemas.String()
-                }, "collectionId"),
-                arguments => AssetResult(() =>
-                {
-                    var id = Required(arguments, "collectionId");
-                    Manager().DeleteCollection(id);
-                    return Success(new { DeletedCollectionId = id });
-                }),
-                readOnly: false,
-                destructive: false));
-        }
-
-        private static void RegisterSync()
-        {
-            McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_asset_sync_library",
-                "Synchronizes the configured ee4v library metadata into AssetManager. This does not import assets into Unity.",
-                McpSchemas.Object(),
-                _ => AssetResult(() => Success(Manager().SyncEe4v(
-                    new Ee4vSyncRequest(GlobalDataSettings.RootDirectory)))),
-                readOnly: false,
-                idempotent: true,
-                openWorld: true));
         }
 
         private static IAssetManager Manager()
@@ -482,21 +305,6 @@ namespace Ee4v.Mcp
                 return Task.FromResult(McpToolResult.Error(
                     "asset_manager_" + ToSnakeCase(exception.Code.ToString()),
                     exception.Message));
-            }
-        }
-
-        private static async Task<McpToolResult> AssetResultAsync(
-            Func<Task<McpToolResult>> action)
-        {
-            try
-            {
-                return await action();
-            }
-            catch (AssetManagerException exception)
-            {
-                return McpToolResult.Error(
-                    "asset_manager_" + ToSnakeCase(exception.Code.ToString()),
-                    exception.Message);
             }
         }
 

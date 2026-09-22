@@ -30,7 +30,7 @@ url = "http://127.0.0.1:48884/mcp"</code></pre>
           <tr><td>表情</td><td>BlendShape channelの列挙、表情Clipの作成・更新・検証・preview・remap、FacialSetのplanと適用を行います。</td></tr>
           <tr><td>PhysBone</td><td>Collider候補を作り、調整値と割り当てをAvatarへ適用します。</td></tr>
           <tr><td>衣装とToggle</td><td>Modular AvatarのMerge Armature、Blendshape Sync、Object Toggle、Material Setterを構成します。</td></tr>
-          <tr><td>Asset Manager</td><td>Item、Tag、File、Target、Dependency、Collection、Import、Source同期を操作します。</td></tr>
+          <tr><td>Asset Manager</td><td>Item検索、File解析、名前・説明・Tag・Archive、Target、Dependency、既存Collectionなど、元の値へ戻せるmetadataを操作します。</td></tr>
         </tbody></table></div>
       </section>
       <section id="workflow">
@@ -40,7 +40,7 @@ url = "http://127.0.0.1:48884/mcp"</code></pre>
       </section>
       <section id="writes">
         <p class="section-label">Writes</p><h2>再適用できる単位で変更する</h2>
-        <ul><li>表情Clipは<code>create</code>、<code>patch</code>、<code>replace</code>を明示します。共同編集時はrevisionも渡します。</li><li>Modular Avatar controlはAvatar直下の<code>ee4v MCP Controls</code>へまとめ、同じ<code>controlName</code>で更新します。</li><li>Object ToggleとMaterial ToggleはSceneまたはPrefab Mode上のAvatarだけを変更します。Project内Prefab assetを直接変更しません。</li><li>AssetManagerの永続削除は、先にarchiveし、対象を再確認してから<code>confirm=true</code>で実行します。</li></ul>
+        <ul><li>表情Clipは<code>create</code>、<code>patch</code>、<code>replace</code>を明示します。共同編集時はrevisionも渡します。</li><li>Modular Avatar controlはAvatar直下の<code>ee4v MCP Controls</code>へまとめ、同じ<code>controlName</code>で更新します。</li><li>Object ToggleとMaterial ToggleはSceneまたはPrefab Mode上のAvatarだけを変更します。Project内Prefab assetを直接変更しません。</li><li>AssetManagerでは変更前の値を先に取得します。同期、削除、File登録、Import、新規Item／Collection作成はMCPに公開されないため、必要な場合はAssetManager画面から実行します。</li></ul>
       </section>
       <section id="security">
         <p class="section-label">Security</p><h2>localhost専用として扱う</h2>
