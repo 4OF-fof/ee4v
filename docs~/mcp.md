@@ -34,7 +34,7 @@ portはEditorPrefsの`ee4v.mcp.port`、自動開始は`ee4v.mcp.enabled`へ保�
 
 ## Object参照
 
-`ee4v_find_avatars`は後続toolへ渡す`avatarRef`を返します。SceneとPrefab ModeのobjectにはUnityの`GlobalObjectId`を優先し、Project内assetにはasset pathを使用します。曖昧なHierarchy pathは拒否します。
+`ee4v_find_avatars`は、loaded SceneとPrefab Modeから後続toolへ渡す`avatarRef`を返します。参照にはUnityの`GlobalObjectId`を優先します。Project内Prefabの検索は汎用Unity MCPへ任せます。
 
 書き込みtoolは取得済みの参照を再解決し、対象がAvatar配下にあること、永続Prefab assetを直接編集しようとしていないこと、必要なVRChat SDK型が存在することを再検証します。
 
@@ -45,9 +45,9 @@ portはEditorPrefsの`ee4v.mcp.port`、自動開始は`ee4v.mcp.enabled`へ保�
 | tool | 動作 |
 |---|---|
 | `ee4v_server_status` | Unity version、Project、Play／compile状態を返す |
-| `ee4v_find_avatars` | loaded scene、Prefab Mode、またはProject内PrefabからAvatarを探す |
-| `ee4v_inspect_avatar` | rig、mesh、triangle、material、texture、animation、PhysBone、Constraint、Expression Parametersを集計する |
-| `ee4v_audit_avatar` | Descriptor、Humanoid、Body、triangle目安、Expression Parametersの256-bit上限、Menuの8-control上限、Unity Constraint、Humanoid boneをrootにしたPhysBoneを監査する |
+| `ee4v_find_avatars` | loaded SceneとPrefab ModeからAvatarを探す |
+| `ee4v_inspect_avatar` | 判定を加えず、rig、mesh、triangle、material、texture、animation、PhysBone、Constraint、Expression Parametersの事実と数量を返す |
+| `ee4v_audit_avatar` | inventoryを重複して返さず、Descriptor、Humanoid、Body、各上限、Constraint、PhysBoneについて対処可能なfindingだけを返す |
 
 監査で使うtriangle数の目安はPC `70,000`、Android `20,000`です。これはupload可否を断定する値ではなく、一般的な制作時の注意としてwarningを返します。
 
@@ -55,18 +55,17 @@ portはEditorPrefsの`ee4v.mcp.port`、自動開始は`ee4v.mcp.enabled`へ保�
 
 | tool | 動作 |
 |---|---|
-| `ee4v_inspect_face` | Avatarの編集可能なBlendShape channelとpreset分類を列挙する |
-| `ee4v_list_expression_clips` | 表情libraryまたは指定folderのAnimationClipを列挙する |
-| `ee4v_inspect_expression_clip` | Clip内channel、revision、validation結果を返す |
+| `ee4v_inspect_face` | Avatarの編集可能なBlendShape channelとpreset分類を列挙する。`clipPath`指定時はClip値、revision、validation結果も返す |
 | `ee4v_upsert_expression_clip` | 単一frame表情Clipを`create`、`patch`、`replace`のいずれかで作成・更新する |
 | `ee4v_validate_expression_clip` | binding、keyframe、値、object curve、Animation Eventを検査する |
 | `ee4v_render_expression_preview` | AvatarへClipを適用したpreviewをPNGとして返す |
 | `ee4v_remap_expression_clip` | FBX別presetのroleとsideを使って別Avatarへchannelを対応付ける |
 | `ee4v_get_facial_configuration` | Gesture matrix、menu専用表情、Blink、口固定の現在値を返す |
+| `ee4v_set_gesture_expression` | 他の割り当てを維持し、左右Gestureの1組へ表情Clip、Blink、口固定、menu名を設定する |
 | `ee4v_plan_facial_set_apply` | FacialSet適用の入力、生成物、前提条件を検証する |
 | `ee4v_apply_facial_set` | FX Controller、Expression Parameters、Expression Menu、Modular Avatar installerを生成・更新する |
 
-`ee4v_upsert_expression_clip`の`patch`は未指定channelを維持し、`replace`は未指定BlendShape curveを削除します。`ee4v_remap_expression_clip`は対応不能channelを結果へ残し、無言で別名へ割り当てません。
+AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_expression_clip`の`patch`は未指定channelを維持し、`replace`は未指定BlendShape curveを削除します。更新用revisionは`clipPath`付きの`ee4v_inspect_face`から取得します。`ee4v_remap_expression_clip`は対応不能channelを結果へ残し、無言で別名へ割り当てません。
 
 ### AssetManager
 

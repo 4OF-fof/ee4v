@@ -26,14 +26,14 @@ url = "http://127.0.0.1:48884/mcp"</code></pre>
       <section id="scope">
         <p class="section-label">Scope</p><h2>Avatar改変をまとまりとして操作する</h2>
         <div class="table-wrap"><table><thead><tr><th>領域</th><th>主な操作</th></tr></thead><tbody>
-          <tr><td>Avatar</td><td>Scene、Prefab Mode、ProjectからAvatarを探し、rig、mesh、material、PhysBone、Constraint、Expressionを調査・監査します。</td></tr>
-          <tr><td>表情</td><td>BlendShape channelの列挙、表情Clipの作成・更新・検証・preview・remap、FacialSetのplanと適用を行います。</td></tr>
+          <tr><td>Avatar</td><td>SceneとPrefab ModeからAvatarを探します。調査は構成と数量、監査は対処が必要なfindingだけを返します。</td></tr>
+          <tr><td>表情</td><td>BlendShapeとClipの統合調査、表情Clipの作成・更新・検証・preview・remap、Gesture 1組への割り当て、FacialSetのplanと適用を行います。</td></tr>
           <tr><td>Asset Manager</td><td>Item検索、File解析、名前・説明・Tag・Archive、Target、Dependency、既存Collectionなど、元の値へ戻せるmetadataを操作します。</td></tr>
         </tbody></table></div>
       </section>
       <section id="workflow">
         <p class="section-label">Workflow</p><h2>発見、plan、適用、監査の順で進める</h2>
-        <ol class="steps"><li><code>ee4v_find_avatars</code>で現在の対象と<code>avatarRef</code>を取得します。</li><li><code>ee4v_inspect_avatar</code>と<code>ee4v_audit_avatar</code>で現状を確認します。</li><li>表情は対応するplanまたは<code>dryRun</code>で変更内容を確認します。</li><li>書き込みtoolを承認して適用します。</li><li>最後にもう一度Avatar監査と必要なpreviewを実行します。</li></ol>
+        <ol class="steps"><li><code>ee4v_find_avatars</code>で現在の対象と<code>avatarRef</code>を取得します。</li><li>構成や数量が必要なら<code>ee4v_inspect_avatar</code>、問題点が必要なら<code>ee4v_audit_avatar</code>を使います。</li><li>表情は対応するplanまたは<code>dryRun</code>で変更内容を確認します。</li><li>書き込みtoolを承認して適用します。</li><li>最後にもう一度Avatar監査と必要なpreviewを実行します。</li></ol>
         <p>AvatarのGameObjectを選び直した場合やUnityを再起動した場合は、以前の参照を使い回さず<code>ee4v_find_avatars</code>から始めます。</p>
       </section>
       <section id="writes">

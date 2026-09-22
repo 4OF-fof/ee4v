@@ -14,13 +14,12 @@ namespace Ee4v.Mcp
         internal static void Register()
         {
             RegisterInspectFace();
-            RegisterListClips();
-            RegisterInspectClip();
             RegisterWriteClip();
             RegisterValidateClip();
             RegisterRenderPreview();
             RegisterRemapClip();
             RegisterGetConfiguration();
+            RegisterSetGestureExpression();
             RegisterPlanApply();
             RegisterApply();
         }
@@ -29,7 +28,7 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_inspect_face",
-                "Lists every editable BlendShape channel on an avatar, including renderer path, initial/current value, preset role, side, header, and mouth-morph classification.",
+                "Lists editable BlendShape channels and their preset classification. When clipPath is provided, also overlays the clip and returns its revision and validation findings.",
                 McpSchemas.Object(new JObject
                 {
                     ["avatarRef"] = McpSchemas.String(),
@@ -37,60 +36,27 @@ namespace Ee4v.Mcp
                         "Optional AnimationClip whose stored values should be overlaid."),
                     ["rendererPaths"] = McpSchemas.Array(McpSchemas.String())
                 }, "avatarRef"),
-                arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
-                    new
-                    {
-                        ok = true,
-                        avatarRef = (string)arguments["avatarRef"],
-                        clipPath = (string)arguments["clipPath"] ?? string.Empty,
-                        channels = FaceExpressionApi.Inspect(
-                            Avatar(arguments),
-                            OptionalClip(arguments),
-                            McpJson.To<List<string>>(arguments["rendererPaths"]))
-                    }))),
-                readOnly: true));
-        }
-
-        private static void RegisterListClips()
-        {
-            McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_list_expression_clips",
-                "Lists AnimationClip assets in the ee4v facial library or an explicit Assets folder.",
-                McpSchemas.Object(new JObject
-                {
-                    ["folder"] = McpSchemas.String()
-                }),
-                arguments => Task.FromResult(McpToolResult.Success(new JObject
-                {
-                    ["ok"] = true,
-                    ["clips"] = new JArray(FaceExpressionApi.ListClips(
-                        (string)arguments["folder"]))
-                })),
-                readOnly: true));
-        }
-
-        private static void RegisterInspectClip()
-        {
-            McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_inspect_expression_clip",
-                "Reads a face AnimationClip against a specific avatar and returns its active channels, revision, and validation findings.",
-                McpSchemas.Object(new JObject
-                {
-                    ["avatarRef"] = McpSchemas.String(),
-                    ["clipPath"] = McpSchemas.String()
-                }, "avatarRef", "clipPath"),
                 arguments =>
                 {
-                    var clip = RequiredClip(arguments);
+                    var avatar = Avatar(arguments);
+                    var clip = OptionalClip(arguments);
                     return Task.FromResult(McpToolResult.Success(McpJson.From(new
                     {
                         ok = true,
-                        clipPath = AssetDatabase.GetAssetPath(clip),
-                        revision = FaceExpressionApi.Revision(clip),
-                        channels = FaceExpressionApi.Inspect(Avatar(arguments), clip)
-                            .Where(channel => channel.Animated)
-                            .ToArray(),
-                        findings = FaceExpressionApi.ValidateClip(Avatar(arguments), clip)
+                        avatarRef = (string)arguments["avatarRef"],
+                        clipPath = clip == null
+                            ? string.Empty
+                            : AssetDatabase.GetAssetPath(clip),
+                        revision = clip == null
+                            ? string.Empty
+                            : FaceExpressionApi.Revision(clip),
+                        channels = FaceExpressionApi.Inspect(
+                            avatar,
+                            clip,
+                            McpJson.To<List<string>>(arguments["rendererPaths"])),
+                        findings = clip == null
+                            ? Array.Empty<FaceExpressionValidationFinding>()
+                            : FaceExpressionApi.ValidateClip(avatar, clip)
                     })));
                 },
                 readOnly: true));
@@ -118,7 +84,7 @@ namespace Ee4v.Mcp
                     ["channels"] = McpSchemas.Array(channelSchema),
                     ["dryRun"] = McpSchemas.Boolean(),
                     ["expectedRevision"] = McpSchemas.String(
-                        "Optional revision returned by inspect_expression_clip.")
+                        "Optional revision returned by inspect_face when clipPath is provided.")
                 }, "avatarRef", "assetPath", "mode", "channels"),
                 arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
                     FaceExpressionApi.WriteClip(
@@ -234,6 +200,28 @@ namespace Ee4v.Mcp
                 readOnly: true));
         }
 
+        private static void RegisterSetGestureExpression()
+        {
+            McpToolRegistry.Register(new McpToolDefinition(
+                "ee4v_set_gesture_expression",
+                "Assigns one expression clip to one left/right hand gesture combination while preserving every other gesture and menu-only assignment.",
+                McpSchemas.Object(new JObject
+                {
+                    ["avatarRef"] = McpSchemas.String(),
+                    ["left"] = GestureSchema(),
+                    ["right"] = GestureSchema(),
+                    ["clipPath"] = McpSchemas.String(),
+                    ["enableBlink"] = McpSchemas.Boolean(),
+                    ["fixMouth"] = McpSchemas.Boolean(),
+                    ["menuName"] = McpSchemas.String(),
+                    ["dryRun"] = McpSchemas.Boolean()
+                }, "avatarRef", "left", "right", "clipPath"),
+                arguments => Task.FromResult(SetGestureExpression(arguments)),
+                readOnly: false,
+                destructive: false,
+                idempotent: true));
+        }
+
         private static void RegisterPlanApply()
         {
             McpToolRegistry.Register(new McpToolDefinition(
@@ -292,6 +280,65 @@ namespace Ee4v.Mcp
         {
             return UnityObjectReference.ResolveGameObject(
                 (string)arguments["avatarRef"]);
+        }
+
+        private static McpToolResult SetGestureExpression(JObject arguments)
+        {
+            var avatar = Avatar(arguments);
+            var left = (string)arguments["left"];
+            var right = (string)arguments["right"];
+            var clip = LoadClip((string)arguments["clipPath"], true);
+            var assignment = new FaceExpressionGestureAssignmentData
+            {
+                Left = left,
+                Right = right,
+                ClipPath = AssetDatabase.GetAssetPath(clip),
+                EnableBlink = (bool?)arguments["enableBlink"] ?? true,
+                FixMouth = (bool?)arguments["fixMouth"] ?? false,
+                MenuName = (string)arguments["menuName"] ?? string.Empty
+            };
+            var current = FaceExpressionApi.ReadConfiguration(avatar);
+            var assignments = (current.Assignments ??
+                               Array.Empty<FaceExpressionGestureAssignmentData>())
+                .ToList();
+            var index = assignments.FindIndex(value =>
+                string.Equals(value.Left, left, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(value.Right, right, StringComparison.OrdinalIgnoreCase));
+            if (index >= 0)
+            {
+                assignments[index] = assignment;
+            }
+            else
+            {
+                assignments.Add(assignment);
+            }
+
+            var configuration = new FaceExpressionConfigurationData
+            {
+                Assignments = assignments,
+                MenuEntries = current.MenuEntries ??
+                              Array.Empty<FaceExpressionMenuEntryData>()
+            };
+            var dryRun = (bool?)arguments["dryRun"] ?? false;
+            if (dryRun)
+            {
+                return McpToolResult.Success(McpJson.From(new
+                {
+                    ok = true,
+                    dryRun = true,
+                    assignment,
+                    plan = FaceExpressionApi.PlanApply(avatar)
+                }));
+            }
+
+            var apply = FaceExpressionApi.ApplyConfiguration(avatar, configuration);
+            return McpToolResult.Success(McpJson.From(new
+            {
+                ok = apply.Succeeded,
+                dryRun = false,
+                assignment,
+                apply
+            }));
         }
 
         private static AnimationClip OptionalClip(JObject arguments)

@@ -26,22 +26,15 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_find_avatars",
-                "Finds VRChat avatar roots in loaded scenes, Prefab Mode, or prefab assets. Returned avatarRef values are stable inputs for other ee4v tools.",
-                McpSchemas.Object(new JObject
-                {
-                    ["scope"] = McpSchemas.Enum("loaded", "project"),
-                    ["searchFolder"] = McpSchemas.String(
-                        "Optional Assets folder used when scope is project.")
-                }),
+                "Finds VRChat avatar roots in loaded scenes and Prefab Mode. Use the general Unity MCP for project asset searches.",
+                McpSchemas.Object(),
                 arguments => Task.FromResult(McpToolResult.Success(
-                    FindAvatars(
-                        (string)arguments["scope"] ?? "loaded",
-                        (string)arguments["searchFolder"]))),
+                    FindAvatars())),
                 readOnly: true));
 
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_inspect_avatar",
-                "Returns a VRChat-oriented inventory of one avatar: rig, meshes, materials, textures, animation, PhysBones, constraints, and expression parameter usage.",
+                "Returns factual VRChat avatar inventory and metrics without judging them: rig, meshes, materials, textures, animation, PhysBones, constraints, and expression parameter usage.",
                 McpSchemas.Object(new JObject
                 {
                     ["avatarRef"] = McpSchemas.String(
@@ -54,7 +47,7 @@ namespace Ee4v.Mcp
 
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_audit_avatar",
-                "Audits an avatar for common VRChat modification problems and returns machine-readable findings without changing it.",
+                "Evaluates an avatar against VRChat-oriented rules and returns only actionable findings and their severity. Use inspect_avatar when raw inventory or metrics are needed.",
                 McpSchemas.Object(new JObject
                 {
                     ["avatarRef"] = McpSchemas.String(
@@ -70,7 +63,7 @@ namespace Ee4v.Mcp
 
         }
 
-        private static JObject FindAvatars(string scope, string searchFolder)
+        private static JObject FindAvatars()
         {
             var descriptorType = FindComponentType(DescriptorTypeName);
             if (descriptorType == null)
@@ -84,35 +77,12 @@ namespace Ee4v.Mcp
                 };
             }
 
-            IEnumerable<GameObject> avatars;
-            if (string.Equals(scope, "project", StringComparison.OrdinalIgnoreCase))
-            {
-                var folder = string.IsNullOrWhiteSpace(searchFolder)
-                    ? "Assets"
-                    : searchFolder.Trim().Replace('\\', '/');
-                if (!folder.StartsWith("Assets", StringComparison.Ordinal) ||
-                    !AssetDatabase.IsValidFolder(folder))
-                {
-                    throw new McpToolException(
-                        "invalid_search_folder",
-                        "searchFolder must be an existing folder under Assets.");
-                }
-
-                avatars = AssetDatabase.FindAssets("t:Prefab", new[] { folder })
-                    .Select(AssetDatabase.GUIDToAssetPath)
-                    .Select(AssetDatabase.LoadAssetAtPath<GameObject>)
-                    .Where(prefab => prefab != null &&
-                                     prefab.GetComponent(descriptorType) != null);
-            }
-            else
-            {
-                avatars = Resources.FindObjectsOfTypeAll(descriptorType)
-                    .Cast<Component>()
-                    .Select(component => component.gameObject)
-                    .Where(gameObject =>
-                        !EditorUtility.IsPersistent(gameObject) &&
-                        gameObject.scene.IsValid());
-            }
+            var avatars = Resources.FindObjectsOfTypeAll(descriptorType)
+                .Cast<Component>()
+                .Select(component => component.gameObject)
+                .Where(gameObject =>
+                    !EditorUtility.IsPersistent(gameObject) &&
+                    gameObject.scene.IsValid());
 
             var values = avatars
                 .Distinct()
@@ -123,7 +93,7 @@ namespace Ee4v.Mcp
             {
                 ["ok"] = true,
                 ["sdkAvailable"] = true,
-                ["scope"] = scope,
+                ["scope"] = "loaded",
                 ["avatars"] = new JArray(values)
             };
         }
@@ -310,8 +280,7 @@ namespace Ee4v.Mcp
                     ["infoCount"] = findings.Count(value =>
                         string.Equals((string)value["severity"], "info", StringComparison.Ordinal))
                 },
-                ["findings"] = findings,
-                ["inventory"] = inventory
+                ["findings"] = findings
             };
         }
 
