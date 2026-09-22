@@ -101,6 +101,9 @@
           <li>ItemのImport、またはFile Treeのcontext menuから1実体のImportを実行します。</li>
         </ol>
         <p class="callout"><strong>取り込めない対象:</strong> ZIP自身、ZIP内のZIP、Directoryは1実体Importの対象になりません。ItemのImportは単一Itemが選択され、Item Targetが設定済みの場合に有効になります。</p>
+        <h3>Codexで取り込み済みPrefabを確認する</h3>
+        <p>ee4v MCPでは名前、説明、TagでItemを絞った後、Itemに記録された取り込み済みGUIDと派生Prefabから、Project内に実在するPrefab候補を取得できます。候補はサムネイルではなくUnityの隔離Preview環境で撮影し、Renderer、Material slot、Shader、Texture、Mesh、BlendShapeを読み取り専用で調査できます。Material編集は調査結果を既存Unity MCPへ渡して行います。</p>
+        <p class="callout"><strong>先にImportが必要:</strong> 未ImportのZIPやunitypackageをMCPが自動Importすることはありません。PrefabがProjectに存在しないItemはpreviewできず、候補なしの理由が返ります。</p>
       </section>
 
       <section id="organize">

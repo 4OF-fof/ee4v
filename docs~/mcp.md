@@ -30,6 +30,8 @@ portはEditorPrefsの`ee4v.mcp.port`、自動開始は`ee4v.mcp.enabled`へ保�
 - tool結果は機械処理用の`structuredContent`と、同じ内容のtext contentを返す。preview PNGはimage contentも返す。
 - tool annotationでread-only、破壊性、冪等性、open-world accessを宣言する。
 - AssetManagerでは同期、削除、File登録、Unity ProjectへのImport、新規Item／Collection作成をMCPへ公開しない。書き込みは、事前に読み取った値を再設定すれば元へ戻せるmetadata編集だけに限定する。
+- AssetManagerのPrefab調査は、既にUnity Projectへ取り込まれたPrefab assetとAssetManagerで作成済みの派生Prefabだけを対象にする。ZIP、unitypackage、未Import assetをtool呼び出しからImportしない。
+- Prefab previewはUnityの内部Preview sceneへだけinstanceを作成し、Play Mode、利用者のScene、Prefab assetを変更しない。外部APIへ画像を送信しない。
 - 表情Clipの更新は`expectedRevision`で競合を検出できる。作成、部分更新、完全置換を分け、`dryRun`で書き込み前の結果を確認できる。
 
 ## Object参照
@@ -71,7 +73,8 @@ AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_exp
 
 | 分類 | tools |
 |---|---|
-| 検索・詳細 | `ee4v_asset_search`、`ee4v_asset_get_item` |
+| 検索・詳細 | `ee4v_asset_search`、`ee4v_asset_get_item`。詳細には取り込み済みGUIDと派生Prefabから解決した`prefabCandidates`を含む |
+| Prefab調査 | `ee4v_asset_inspect_prefab`、`ee4v_asset_render_prefab_preview` |
 | Item metadata | `ee4v_asset_update_item`、`ee4v_asset_set_tags`、`ee4v_asset_set_archived` |
 | File解析 | `ee4v_asset_analyze_file` |
 | Import設定 | `ee4v_asset_set_targets`、`ee4v_asset_set_dependencies` |
@@ -79,13 +82,56 @@ AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_exp
 
 MCPは`AssetManager`の公開APIを通してDB内のmetadataを読み取り・編集します。DB fileはUser Settingsの共通data rootにある`asset-manager-v1.db`です。MCP独自のDB書き込みやschemaは持ちません。同期、Import、新規登録、作成、削除はAssetManager UIで利用者が明示的に実行します。
 
+### 実Prefabを比較する流れ
+
+1. `ee4v_asset_search`の`query`と`tags`でItemを5〜10件へ絞る。
+2. 各Itemを`ee4v_asset_get_item`で取得し、`prefabCandidates`からProject内に実在するPrefab GUIDを選ぶ。候補はItemの取り込み済みAsset GUIDと、親Item IDを持つAssetManager派生Prefabから解決する。
+3. `ee4v_asset_render_prefab_preview`の同じview、size、backgroundで候補を描画し、image contentを比較する。`turntable`は8方向を4×2へ並べる。
+4. 選んだPrefabを`ee4v_asset_inspect_prefab`で調査し、Renderer path、Material slot、Material path、Shader、Texture、Mesh、BlendShape、参照切れを得る。
+5. `unityMcpHandoff`のRenderer pathとMaterial pathを既存Unity MCPへ渡し、Material編集は既存Unity MCPで行う。
+
+未ImportのZIPまたはunitypackageしか存在しない場合、`prefabCandidates`は空になり、`prefabCandidateResolution.emptyReason`または`unresolvedImportedAssets`に理由を返します。MCPはImportを開始しません。
+
+### Prefab toolの契約
+
+| tool | 主な入力 | 主な出力 | Projectへの書き込み |
+|---|---|---|---|
+| `ee4v_asset_get_item` | `itemId` | Item、File、取り込み済みGUID、`prefabCandidates`。各候補はPrefab GUID／path／name／type、Variant親、dependency hash、preview可否と理由を持つ | なし |
+| `ee4v_asset_inspect_prefab` | `prefabGuid`、または`Assets/`／`Packages/`から始まる`prefabPath` | hierarchy、Renderer、Meshとtriangle、bounds、Material slot、Shader、Texture、BlendShape、Missing Script、参照切れ、Unity MCP handoff | なし |
+| `ee4v_asset_render_prefab_preview` | `prefabGuid`または`prefabPath`、`viewPreset`、`width`、`height`、`background`、`forceRefresh` | 固定撮影条件のPNG image content、dependency hash、cache path、cache hit、Unity／Render Pipeline情報 | 再生成可能なcacheだけ |
+
+`prefabGuid`と`prefabPath`を両方渡す場合は同じAssetを指す必要があります。絶対path、`Assets/`と`Packages/`以外のpath、PrefabでないAssetは拒否します。`ee4v_asset_inspect_prefab`とpreviewはいずれもPrefab、Scene、AssetManager DBを変更しません。
+
+利用例:
+
+```json
+{
+  "prefabGuid": "0123456789abcdef0123456789abcdef",
+  "viewPreset": "turntable",
+  "width": 1024,
+  "height": 1024,
+  "background": "neutral",
+  "forceRefresh": false
+}
+```
+
+### Preview cache
+
+PNGはSQLiteへ格納せず、共通data rootの`asset-preview-v1/<prefab-guid>/<dependency-hash>/`以下へ保存します。共通data rootがProjectの`Assets`内に設定されている場合だけ、`Library/ee4v-cache`へ退避します。file名にはrender profile version、view、size、backgroundを含め、同じ条件の再呼び出しでは再利用します。隣接JSONにはPrefab GUID、dependency hash、render profile version、view、image path、size、Unity version、Render Pipeline、作成日時、errorを記録します。
+
+dependency hashには`AssetDatabase.GetAssetDependencyHash`を使用します。Prefab、Variant親、Mesh、Material、Texture、ShaderなどUnityが依存関係として追跡するAssetが変化すると保存先hashが変わるため、古い画像を使用しません。`forceRefresh: true`は同じ条件を再撮影します。cacheは再生成可能であり、Unity Project Assetの状態には含めません。
+
+撮影は`PreviewRenderUtility`の内部Preview sceneへPrefabを直接instance化し、Renderer boundsを基準にscaleとcamera framingを正規化します。照明、背景、camera FOVは固定し、instance上の`Behaviour`を無効化してParticle Systemを停止します。描画後はinstanceを破棄します。Missing Mesh、Material、Shader、描画可能Rendererなし、無効なboundsは構造化errorとして返します。
+
+RAG、Embedding、Vector DB、Semantic Search、自動caption、全Prefabの事前indexは持ちません。検索metadataで候補を絞り、要求されたPrefabだけをオンデマンド撮影します。
+
 ## 汎用Unity MCPとの使い分け
 
 ee4v MCPは、Avatarの発見と監査、表情ClipとFacialSet、AssetManagerのようにドメイン規則をまとめて検証できる操作へ使用します。次は既存Unity MCPを使用します。
 
 - 任意GameObjectの作成、削除、Transform変更
 - 任意ComponentとSerializedPropertyの読み書き
-- Scene、Prefab、Animator Controller、Material、Shaderの汎用編集
+- Scene、Prefab、Animator Controller、Material、Shaderの汎用編集。`ee4v_asset_inspect_prefab`で得たMaterialの実編集もこちらで行う
 - Console、Play Mode、screenshot、build、test、任意Editor C#実行
 
 ee4v MCPは任意C#実行toolを公開しません。高水準toolで扱っていない変更は汎用Unity MCPで実行し、最後に`ee4v_audit_avatar`でAvatar固有の前提を確認します。
