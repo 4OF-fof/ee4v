@@ -27,13 +27,13 @@
       <section id="project-tabs">
         <p class="section-label">Project Tabs</p><h2>Folderと検索状態をtabで切り替える</h2>
         <p>Project Windowのtoolbarへtabを追加し、tabごとにFolder、検索文字列、最大50件の移動履歴を保持します。toolbarの追加buttonで作るtabは<code>Assets</code>を初期位置として開きます。</p>
-        <ul><li>tabごとに戻る・進む履歴を持ちます。</li><li>tabをdragして並べ替えられます。</li><li>最後のtabを閉じた場合は、既定のAssets tabを1つ作ります。</li><li>複数のProject Windowを開いている場合、選択中tabはWindowごとに保持します。</li></ul>
+        <ul><li>tabごとに戻る・進む履歴を持ちます。</li><li>tabをdragして並べ替えられます。</li><li>通常tabの閉じるbuttonは、選択していないtabにも常に表示します。</li><li>最後のtabを閉じた場合は、既定のAssets tabを1つ作ります。</li><li>複数のProject Windowを開いている場合、選択中tabはWindowごとに保持します。</li></ul>
         <p class="callout"><strong>2列表示のみ:</strong> Project Tabsは2列表示のProject Windowで有効です。1列表示では非表示になり、現在位置の追跡とFolder移動も行いません。2列へ戻すと自動的に再開します。</p>
       </section>
 
       <section id="favorites">
         <p class="section-label">Pinned tabs</p><h2>固定tabはProject Favoritesと同期する</h2>
-        <p>tabを固定するとUnityのProject Favoritesと同期します。固定時は履歴を現在位置の1件へ縮め、戻る・進む操作は無効になります。</p>
+        <p>tabを固定するとUnityのProject Favoritesと同期します。固定時は履歴を現在位置の1件へ縮め、戻る・進む操作は無効になります。固定tabでは、選択中かどうかにかかわらず閉じるbuttonを表示しません。</p>
         <p>固定tabから別Folderへ移動しようとした場合は通常tabを追加し、固定tabの位置を維持します。</p>
       </section>
 

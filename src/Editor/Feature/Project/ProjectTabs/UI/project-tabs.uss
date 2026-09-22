@@ -165,13 +165,14 @@
     height: var(--ee4v-size-18);
     min-width: 0;
     flex-grow: 1;
+    padding-right: var(--ee4v-size-16);
     overflow: hidden;
     color: var(--ee4v-color-text-primary);
     -unity-text-align: middle-left;
 }
 
-.ee4v-project-tabs__tab--selected .ee4v-project-tabs__tab-title {
-    padding-right: var(--ee4v-size-16);
+.ee4v-project-tabs__tab--pinned .ee4v-project-tabs__tab-title {
+    padding-right: var(--ee4v-space-none);
 }
 
 .ee4v-project-tabs__pin-icon {
@@ -193,19 +194,21 @@
     border-top-right-radius: var(--ee4v-radius-lg);
     border-bottom-left-radius: var(--ee4v-radius-lg);
     border-bottom-right-radius: var(--ee4v-radius-lg);
-    opacity: 0;
+    opacity: 1;
     flex-shrink: 0;
 }
 
 .ee4v-project-tabs__tab:hover .ee4v-project-tabs__close {
     background-color: var(--ee4v-color-surface-hover);
-    opacity: 1;
 }
 
 .ee4v-project-tabs__tab--selected .ee4v-project-tabs__close,
 .ee4v-project-tabs__tab--selected:hover .ee4v-project-tabs__close {
     background-color: var(--ee4v-color-transparent);
-    opacity: 1;
+}
+
+.ee4v-project-tabs__tab--pinned .ee4v-project-tabs__close {
+    display: none;
 }
 
 .ee4v-project-tabs__tab:hover .ee4v-project-tabs__close:hover,
