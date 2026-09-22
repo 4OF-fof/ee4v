@@ -52,6 +52,7 @@ namespace Ee4v.Mcp
         internal static void Register()
         {
             RegisterInspectPrefab();
+            AssetManagerPrefabPreviewMcpTool.Register();
         }
 
         internal static PrefabCandidateResolution FindCandidates(
