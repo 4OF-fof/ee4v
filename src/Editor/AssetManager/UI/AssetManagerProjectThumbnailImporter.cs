@@ -118,8 +118,9 @@ namespace Ee4v.AssetManager.UI
             _applyCancellation = cancellation;
             try
             {
-                var folders = SelectTopmostImportedFolders(
-                        _manager.GetImportedAssetAssociations())
+                var associations =
+                    _manager.GetImportedAssetAssociations();
+                var folders = SelectTopmostImportedFolders(associations)
                     .Where(pair => importedItemIds.Contains(
                         pair.Value,
                         StringComparer.Ordinal))
@@ -313,6 +314,16 @@ namespace Ee4v.AssetManager.UI
             SelectTopmostImportedFolders(
                 IReadOnlyList<AssetImportedAssetAssociation> associations)
         {
+            return SelectTopmostImportedFolders(
+                associations,
+                association => association.ItemId);
+        }
+
+        private static IReadOnlyDictionary<string, string>
+            SelectTopmostImportedFolders(
+                IReadOnlyList<AssetImportedAssetAssociation> associations,
+                Func<AssetImportedAssetAssociation, string> groupKey)
+        {
             var latestByGuid = new Dictionary<
                 string,
                 AssetImportedAssetAssociation>(StringComparer.Ordinal);
@@ -338,7 +349,7 @@ namespace Ee4v.AssetManager.UI
 
             var candidates = latestByGuid.Values
                 .GroupBy(
-                    association => association.FileId,
+                    groupKey,
                     StringComparer.Ordinal)
                 .SelectMany(group => SelectImportedRootCandidates(
                     group,
@@ -374,13 +385,12 @@ namespace Ee4v.AssetManager.UI
 
         private static IEnumerable<FolderCandidate>
             SelectImportedRootCandidates(
-                IGrouping<string, AssetImportedAssetAssociation>
-                    fileAssociations,
+                IGrouping<string, AssetImportedAssetAssociation> associations,
                 IReadOnlyDictionary<
                     string,
                     AssetImportedAssetAssociation> latestByGuid)
         {
-            var importedAssets = fileAssociations
+            var importedAssets = associations
                 .Select(association => new
                 {
                     Association = association,
@@ -408,7 +418,7 @@ namespace Ee4v.AssetManager.UI
                     rootGuid,
                     out var rootAssociation)
                         ? rootAssociation.ItemId
-                        : fileAssociations
+                        : associations
                             .OrderByDescending(
                                 association => association.ImportedAt)
                             .First()
