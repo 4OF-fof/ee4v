@@ -301,9 +301,9 @@ namespace Ee4v.Mcp
 
                 var triangleCount = TriangleCount(mesh);
                 totalTriangles += triangleCount;
-                var meshBounds = MeshBoundsInRootSpace(
+                var meshBounds = RendererBoundsInRootSpace(
+                    renderer,
                     mesh,
-                    renderer.transform,
                     root.transform);
                 if (meshBounds.HasValue)
                 {
@@ -721,19 +721,33 @@ namespace Ee4v.Mcp
             return triangles;
         }
 
-        private static Bounds? MeshBoundsInRootSpace(
+        private static Bounds? RendererBoundsInRootSpace(
+            Renderer renderer,
             Mesh mesh,
-            Transform rendererTransform,
             Transform root)
         {
-            if (mesh == null || rendererTransform == null || root == null)
+            if (renderer == null || root == null)
             {
                 return null;
             }
 
-            var matrix = root.worldToLocalMatrix *
-                         rendererTransform.localToWorldMatrix;
-            return TransformBounds(mesh.bounds, matrix);
+            if (renderer is SkinnedMeshRenderer skinned && mesh != null)
+            {
+                var matrix = root.worldToLocalMatrix *
+                             renderer.transform.localToWorldMatrix;
+                return TransformBounds(skinned.localBounds, matrix);
+            }
+
+            if (mesh != null)
+            {
+                var matrix = root.worldToLocalMatrix *
+                             renderer.transform.localToWorldMatrix;
+                return TransformBounds(mesh.bounds, matrix);
+            }
+
+            return TransformBounds(
+                renderer.bounds,
+                root.worldToLocalMatrix);
         }
 
         private static Bounds TransformBounds(Bounds bounds, Matrix4x4 matrix)
