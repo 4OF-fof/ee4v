@@ -146,7 +146,7 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_update_item",
-                "Updates an editable AssetManager item's name and description.",
+                "Updates a local AssetManager item's name and description. Eagle-sourced names and descriptions are owned by Eagle and cannot be changed with this tool; their tags, archive state, and import settings remain editable through the corresponding tools.",
                 McpSchemas.Object(new JObject
                 {
                     ["itemId"] = McpSchemas.String(),

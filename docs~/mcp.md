@@ -61,13 +61,13 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 | `ee4v_upsert_expression_clip` | 単一frame表情Clipを`create`、`patch`、`replace`のいずれかで作成・更新する |
 | `ee4v_validate_expression_clip` | binding、keyframe、値、object curve、Animation Eventを検査する |
 | `ee4v_render_expression_preview` | AvatarへClipを適用したpreviewをPNGとして返す。描画可能なSkinnedMeshがなければ`expression_preview_unavailable`を返す |
-| `ee4v_remap_expression_clip` | FBX別presetのroleとsideを使って別Avatarへchannelを対応付ける |
+| `ee4v_remap_expression_clip` | Renderer pathとBlendShape名の完全一致を優先し、一致しないchannelはFBX別presetのroleとsideで別Avatarへ対応付ける |
 | `ee4v_get_facial_configuration` | Gesture matrix、menu専用表情、Blink、口固定の現在値を返す |
 | `ee4v_set_gesture_expression` | 他の割り当てを維持し、左右Gestureの1組へ表情Clip、Blink、口固定、menu名を設定する |
 | `ee4v_plan_facial_set_apply` | FacialSet適用の入力、生成物、前提条件を検証する |
-| `ee4v_apply_facial_set` | FX Controller、Expression Parameters、Expression Menu、Modular Avatar installerを生成・更新する |
+| `ee4v_apply_facial_set` | FX Controller、Expression Parameters、Expression Menu、Modular Avatar installerを生成・更新する。`dryRun`では設定と前提条件だけを検証する |
 
-AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_expression_clip`の`patch`は未指定channelを維持し、`replace`は未指定BlendShape curveを削除します。更新用revisionは`clipPath`付きの`ee4v_inspect_face`から取得します。`ee4v_remap_expression_clip`は対応不能channelを結果へ残し、無言で別名へ割り当てません。表情previewにはMeshが割り当てられた描画可能な`SkinnedMeshRenderer`が1つ以上必要で、存在しない場合は空画像を成功扱いにしません。
+AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_expression_clip`の`patch`は未指定channelを維持し、`replace`は未指定BlendShape curveを削除します。同じ内容を再指定した場合は`changed: false`としてAssetを書き直しません。更新用revisionは`clipPath`付きの`ee4v_inspect_face`から取得します。`ee4v_remap_expression_clip`はRenderer pathとBlendShape名が完全一致するchannelを直接対応付け、それ以外だけpreset roleとsideを使用します。対応不能channelは結果へ残し、無言で別名へ割り当てません。表情previewにはMeshが割り当てられた描画可能な`SkinnedMeshRenderer`が1つ以上必要で、存在しない場合は空画像を成功扱いにしません。
 
 ### AssetManager
 
@@ -80,7 +80,7 @@ AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_exp
 | Import設定 | `ee4v_asset_set_targets`、`ee4v_asset_set_dependencies` |
 | Collection | `ee4v_asset_list_collections`、`ee4v_asset_update_collection` |
 
-MCPは`AssetManager`の公開APIを通してDB内のmetadataを読み取り・編集します。DB fileはUser Settingsの共通data rootにある`asset-manager-v1.db`です。MCP独自のDB書き込みやschemaは持ちません。同期、Import、新規登録、作成、削除はAssetManager UIで利用者が明示的に実行します。
+MCPは`AssetManager`の公開APIを通してDB内のmetadataを読み取り・編集します。DB fileはUser Settingsの共通data rootにある`asset-manager-v1.db`です。MCP独自のDB書き込みやschemaは持ちません。Eagle由来Itemの名前と説明はEagleが所有するため`ee4v_asset_update_item`では変更できませんが、Tag、Archive、Import Target、Dependencyは対応するtoolで編集できます。同期、Import、新規登録、作成、削除はAssetManager UIで利用者が明示的に実行します。
 
 ### 実Prefabを比較する流れ
 

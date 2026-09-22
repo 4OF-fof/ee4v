@@ -27,8 +27,8 @@ url = "http://127.0.0.1:48884/mcp"</code></pre>
         <p class="section-label">Scope</p><h2>Avatar改変をまとまりとして操作する</h2>
         <div class="table-wrap"><table><thead><tr><th>領域</th><th>主な操作</th></tr></thead><tbody>
           <tr><td>Avatar</td><td>SceneとPrefab ModeからAvatarを探します。調査は構成と数量、監査は対処が必要なfindingだけを返します。</td></tr>
-          <tr><td>表情</td><td>BlendShapeとClipの統合調査、表情Clipの作成・更新・検証・preview・remap、Gesture 1組への割り当て、FacialSetのplanと適用を行います。</td></tr>
-          <tr><td>Asset Manager</td><td>Item検索、File解析、名前・説明・Tag・Archive、Target、Dependency、既存Collectionに加え、取り込み済み実Prefabの比較と構造調査を行います。</td></tr>
+          <tr><td>表情</td><td>BlendShapeとClipの統合調査、表情Clipの作成・更新・検証・preview・remap、Gesture 1組への割り当て、FacialSetのplan、dry-run、適用を行います。</td></tr>
+          <tr><td>Asset Manager</td><td>Item検索、File解析、名前・説明・Tag・Archive、Target、Dependency、既存Collectionに加え、取り込み済み実Prefabの比較と構造調査を行います。Eagle由来Itemの名前と説明はEagle側で管理します。</td></tr>
         </tbody></table></div>
       </section>
       <section id="prefab-preview">
@@ -44,7 +44,7 @@ url = "http://127.0.0.1:48884/mcp"</code></pre>
       </section>
       <section id="writes">
         <p class="section-label">Writes</p><h2>再適用できる単位で変更する</h2>
-        <ul><li>表情Clipは<code>create</code>、<code>patch</code>、<code>replace</code>を明示します。共同編集時はrevisionも渡します。</li><li>AssetManagerでは変更前の値を先に取得します。同期、削除、File登録、Import、新規Item／Collection作成はMCPに公開されないため、必要な場合はAssetManager画面から実行します。</li></ul>
+        <ul><li>表情Clipは<code>create</code>、<code>patch</code>、<code>replace</code>を明示します。共同編集時はrevisionも渡します。同じ内容の再指定は変更なしとなり、Assetを書き直しません。</li><li>表情remapはRenderer pathとBlendShape名の完全一致を優先し、一致しないchannelだけpresetの役割と左右で対応付けます。FacialSet適用は<code>dryRun</code>で設定と前提条件を検証できます。</li><li>AssetManagerでは変更前の値を先に取得します。Eagle由来Itemの名前と説明はEagleで変更します。同期、削除、File登録、Import、新規Item／Collection作成はMCPに公開されないため、必要な場合はAssetManager画面から実行します。</li></ul>
       </section>
       <section id="security">
         <p class="section-label">Security</p><h2>localhost専用として扱う</h2>

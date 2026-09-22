@@ -23,11 +23,11 @@ Expression Menu、表情ロック、トリガー量による変化は対象外�
 
 ## 公開APIとMCP
 
-`FaceExpressionApi`はUIと同じdomain処理を外部integrationから利用する公開境界です。AvatarとRenderer pathを基準にBlendShape channelを列挙し、表情Clipの作成・部分更新・完全置換、revision取得、validation、preview PNG、preset roleによるremap、FacialSet設定の読込・plan・適用を提供します。MCPではClip指定時の調査をBlendShape調査へ統合し、他の割り当てを維持したまま左右Gestureの1組だけを更新する操作も提供します。AnimationClipの一般検索とProject内Prefab検索は汎用Unity MCPへ任せます。
+`FaceExpressionApi`はUIと同じdomain処理を外部integrationから利用する公開境界です。AvatarとRenderer pathを基準にBlendShape channelを列挙し、表情Clipの作成・部分更新・完全置換、revision取得、validation、preview PNG、完全一致とpreset roleによるremap、FacialSet設定の読込・plan・適用を提供します。MCPではClip指定時の調査をBlendShape調査へ統合し、他の割り当てを維持したまま左右Gestureの1組だけを更新する操作も提供します。AnimationClipの一般検索とProject内Prefab検索は汎用Unity MCPへ任せます。
 
 `Ee4v.Mcp.Editor`はこのAPIを`ee4v_inspect_face`、`ee4v_upsert_expression_clip`、`ee4v_validate_expression_clip`、`ee4v_render_expression_preview`、`ee4v_remap_expression_clip`、`ee4v_get_facial_configuration`、`ee4v_plan_facial_set_apply`、`ee4v_apply_facial_set`として公開します。MCP固有のJSON変換とObject参照はMCP assemblyに閉じ、Face Expression moduleはMCPへ依存しません。詳細は[`../mcp.md`](../mcp.md)を参照します。
 
-Clip更新は`expectedRevision`が現在値と一致しない場合に拒否します。`dryRun`は作成先、変更channel、validation結果を返してAssetを書きません。FacialSet適用は既存UIと同じ生成先、Modular Avatar installer、Blinkと口固定の契約を使用します。
+Clip更新は`expectedRevision`が現在値と一致しない場合に拒否します。同じ値、使用状態、単一frame curveを再指定した場合は変更なしとしてAssetを書き直しません。Clip更新の`dryRun`は作成先、実際に変更するchannel、validation結果を返してAssetを書きません。FacialSet適用も`dryRun`で設定内のGesture名とClip参照、Avatar Descriptor、Modular Avatarの前提条件を検証できます。実適用は既存UIと同じ生成先、Modular Avatar installer、Blinkと口固定の契約を使用します。
 
 ## プレビュー
 

@@ -100,6 +100,7 @@ namespace Ee4v.FaceExpression
     public sealed class FaceExpressionApplyResult
     {
         public bool Succeeded { get; set; }
+        public bool DryRun { get; set; }
         public string ErrorCode { get; set; }
         public string ControllerPath { get; set; }
         public FaceExpressionApplyPlan Plan { get; set; }
@@ -108,6 +109,7 @@ namespace Ee4v.FaceExpression
     public sealed class FaceExpressionRemapResult
     {
         public FaceExpressionClipWriteResult Write { get; set; }
+        public IReadOnlyList<string> ResolvedChannels { get; set; }
         public IReadOnlyList<string> ResolvedRoles { get; set; }
         public IReadOnlyList<string> UnresolvedRoles { get; set; }
         public IReadOnlyList<string> AmbiguousRoles { get; set; }
@@ -233,21 +235,43 @@ namespace Ee4v.FaceExpression
                 requested[key] = change;
             }
 
-            var removed = new List<string>();
+            var existingBindings = existing == null
+                ? Array.Empty<EditorCurveBinding>()
+                : AnimationUtility.GetCurveBindings(existing)
+                    .Where(IsBlendShapeBinding)
+                    .ToArray();
+            var removedBindings = Array.Empty<EditorCurveBinding>();
             if (mode == FaceExpressionClipWriteMode.Replace && existing != null)
             {
-                removed.AddRange(AnimationUtility.GetCurveBindings(existing)
-                    .Where(IsBlendShapeBinding)
-                    .Select(binding => ChannelKey(
+                removedBindings = existingBindings
+                    .Where(binding => !requested.ContainsKey(ChannelKey(
                         binding.path,
-                        binding.propertyName.Substring("blendShape.".Length))));
+                        binding.propertyName.Substring("blendShape.".Length))))
+                    .ToArray();
             }
 
+            var updated = requested
+                .Where(pair => ChannelNeedsWrite(
+                    existing,
+                    available[pair.Key],
+                    pair.Value))
+                .ToArray();
+            var removed = removedBindings
+                .Select(binding => ChannelKey(
+                    binding.path,
+                    binding.propertyName.Substring("blendShape.".Length)))
+                .ToArray();
+            var frameRateChanged = existing != null &&
+                                   !Mathf.Approximately(existing.frameRate, 60f);
+            var changed = existing == null ||
+                          updated.Length > 0 ||
+                          removedBindings.Length > 0 ||
+                          frameRateChanged;
             if (dryRun)
             {
                 return new FaceExpressionClipWriteResult
                 {
-                    Changed = requested.Count > 0 || removed.Count > 0,
+                    Changed = changed,
                     Created = existing == null,
                     DryRun = true,
                     AssetPath = assetPath,
@@ -255,25 +279,40 @@ namespace Ee4v.FaceExpression
                         ? string.Empty
                         : AssetDatabase.AssetPathToGUID(assetPath),
                     Revision = revision,
-                    UpdatedChannels = requested.Keys.ToArray(),
-                    RemovedChannels = removed.Except(requested.Keys).ToArray(),
+                    UpdatedChannels = updated.Select(pair => pair.Key).ToArray(),
+                    RemovedChannels = removed,
+                    Warnings = warnings
+                };
+            }
+
+            if (!changed)
+            {
+                return new FaceExpressionClipWriteResult
+                {
+                    Changed = false,
+                    Created = false,
+                    DryRun = false,
+                    AssetPath = assetPath,
+                    AssetGuid = AssetDatabase.AssetPathToGUID(assetPath),
+                    Revision = revision,
+                    UpdatedChannels = Array.Empty<string>(),
+                    RemovedChannels = Array.Empty<string>(),
                     Warnings = warnings
                 };
             }
 
             EnsureParentFolder(assetPath);
             var clip = existing ?? FaceExpressionClipEditor.Create(assetPath);
-            if (mode == FaceExpressionClipWriteMode.Replace)
+            if (removedBindings.Length > 0 || frameRateChanged)
             {
                 Undo.RecordObject(clip, "Replace Face Expression");
-                foreach (var binding in AnimationUtility.GetCurveBindings(clip)
-                             .Where(IsBlendShapeBinding))
+                foreach (var binding in removedBindings)
                 {
                     AnimationUtility.SetEditorCurve(clip, binding, null);
                 }
             }
 
-            foreach (var pair in requested)
+            foreach (var pair in updated)
             {
                 var channel = available[pair.Key];
                 channel.Value = pair.Value.Value;
@@ -286,14 +325,14 @@ namespace Ee4v.FaceExpression
             AssetDatabase.SaveAssets();
             return new FaceExpressionClipWriteResult
             {
-                Changed = requested.Count > 0 || removed.Count > 0 || existing == null,
+                Changed = true,
                 Created = existing == null,
                 DryRun = false,
                 AssetPath = assetPath,
                 AssetGuid = AssetDatabase.AssetPathToGUID(assetPath),
                 Revision = Revision(assetPath),
-                UpdatedChannels = requested.Keys.ToArray(),
-                RemovedChannels = removed.Except(requested.Keys).ToArray(),
+                UpdatedChannels = updated.Select(pair => pair.Key).ToArray(),
+                RemovedChannels = removed,
                 Warnings = warnings
             };
         }
@@ -460,12 +499,18 @@ namespace Ee4v.FaceExpression
                     Name = rule.TryParse(channel, out var parsed) ? parsed : null
                 })
                 .ToArray();
-            var target = FaceExpressionClipEditor.Read(
+            var targetChannels = FaceExpressionClipEditor.Read(
                     targetAvatar,
                     null,
                     FaceExpressionSettings.GetSeparators(),
                     FaceExpressionClipEditor.GetRendererPaths(targetAvatar))
                 .Where(channel => !channel.IsHeader)
+                .ToArray();
+            var exactTargets = targetChannels.ToDictionary(
+                channel => ChannelKey(channel.RendererPath, channel.Name),
+                channel => channel,
+                StringComparer.Ordinal);
+            var target = targetChannels
                 .Select(channel => new
                 {
                     Channel = channel,
@@ -475,11 +520,28 @@ namespace Ee4v.FaceExpression
                 .GroupBy(item => RoleKey(item.Name.Role, item.Name.Side))
                 .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.Ordinal);
             var changes = new List<FaceExpressionClipChange>();
+            var resolvedChannels = new List<string>();
             var resolved = new List<string>();
             var unresolved = new List<string>();
             var ambiguous = new List<string>();
             foreach (var item in source)
             {
+                var channelKey = ChannelKey(
+                    item.Channel.RendererPath,
+                    item.Channel.Name);
+                if (exactTargets.TryGetValue(channelKey, out var exactTarget))
+                {
+                    changes.Add(new FaceExpressionClipChange
+                    {
+                        RendererPath = exactTarget.RendererPath,
+                        ShapeName = exactTarget.Name,
+                        Value = item.Channel.Value,
+                        Animated = true
+                    });
+                    resolvedChannels.Add(channelKey);
+                    continue;
+                }
+
                 if (item.Name == null)
                 {
                     unresolved.Add(item.Channel.DisplayName);
@@ -519,6 +581,9 @@ namespace Ee4v.FaceExpression
                         : FaceExpressionClipWriteMode.Replace,
                     changes,
                     dryRun),
+                ResolvedChannels = resolvedChannels.Distinct()
+                    .OrderBy(value => value)
+                    .ToArray(),
                 ResolvedRoles = resolved.Distinct().OrderBy(value => value).ToArray(),
                 UnresolvedRoles = unresolved.Distinct().OrderBy(value => value).ToArray(),
                 AmbiguousRoles = ambiguous.Distinct().OrderBy(value => value).ToArray()
@@ -595,7 +660,8 @@ namespace Ee4v.FaceExpression
 
         public static FaceExpressionApplyResult ApplyConfiguration(
             GameObject avatar,
-            FaceExpressionConfigurationData data)
+            FaceExpressionConfigurationData data,
+            bool dryRun = false)
         {
             if (avatar == null)
             {
@@ -633,6 +699,22 @@ namespace Ee4v.FaceExpression
                 .ToArray();
             var configuration = new FaceExpressionConfiguration(assignments, entries);
             var plan = PlanApply(avatar);
+            if (dryRun)
+            {
+                return new FaceExpressionApplyResult
+                {
+                    Succeeded = plan.CanApply,
+                    DryRun = true,
+                    ErrorCode = !plan.HasAvatarDescriptor
+                        ? "descriptorMissing"
+                        : !plan.HasModularAvatar
+                            ? "modularAvatarMissing"
+                            : string.Empty,
+                    ControllerPath = plan.ControllerPath,
+                    Plan = plan
+                };
+            }
+
             var gateway = new VrchatFaceExpressionGateway();
             var succeeded = gateway.TryApply(
                 avatar,
@@ -642,6 +724,7 @@ namespace Ee4v.FaceExpression
             return new FaceExpressionApplyResult
             {
                 Succeeded = succeeded,
+                DryRun = false,
                 ErrorCode = error ?? string.Empty,
                 ControllerPath = AssetDatabase.GetAssetPath(controller),
                 Plan = plan
@@ -764,6 +847,34 @@ namespace Ee4v.FaceExpression
         {
             return binding.type == typeof(SkinnedMeshRenderer) &&
                    binding.propertyName.StartsWith("blendShape.", StringComparison.Ordinal);
+        }
+
+        private static bool ChannelNeedsWrite(
+            AnimationClip clip,
+            BlendShapeChannel channel,
+            FaceExpressionClipChange change)
+        {
+            if (clip == null)
+            {
+                return true;
+            }
+
+            var curve = AnimationUtility.GetEditorCurve(clip, channel.Binding);
+            if (!change.Animated)
+            {
+                return curve != null;
+            }
+
+            if (curve == null || curve.length != 1)
+            {
+                return true;
+            }
+
+            var key = curve.keys[0];
+            return !Mathf.Approximately(key.time, 0f) ||
+                   !Mathf.Approximately(
+                       key.value,
+                       Mathf.Clamp(change.Value, 0f, 100f));
         }
 
         private static string ChannelKey(string rendererPath, string shapeName)

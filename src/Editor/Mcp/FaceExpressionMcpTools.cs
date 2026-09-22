@@ -171,7 +171,7 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_remap_expression_clip",
-                "Copies a face clip between avatars by ee4v BlendShape preset role and side. Ambiguous or unresolved roles are reported instead of guessed.",
+                "Copies a face clip between avatars. Exact renderer-path and BlendShape-name matches are preferred, then ee4v preset role and side are used. Ambiguous or unresolved channels are reported instead of guessed.",
                 McpSchemas.Object(new JObject
                 {
                     ["sourceAvatarRef"] = McpSchemas.String(),
@@ -267,7 +267,7 @@ namespace Ee4v.Mcp
             }, "name", "clipPath");
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_apply_facial_set",
-                "Generates or updates the ee4v-owned FX controller, Expressions Menu, icons, and Modular Avatar FacialSet prefab from a complete configuration. Run ee4v_plan_facial_set_apply first.",
+                "Generates or updates the ee4v-owned FX controller, Expressions Menu, icons, and Modular Avatar FacialSet prefab from a complete configuration. Set dryRun to validate the configuration and prerequisites without writing assets. Run ee4v_plan_facial_set_apply first.",
                 McpSchemas.Object(new JObject
                 {
                     ["avatarRef"] = McpSchemas.String(),
@@ -275,13 +275,15 @@ namespace Ee4v.Mcp
                     {
                         ["assignments"] = McpSchemas.Array(assignment),
                         ["menuEntries"] = McpSchemas.Array(menuEntry)
-                    })
+                    }),
+                    ["dryRun"] = McpSchemas.Boolean()
                 }, "avatarRef", "configuration"),
                 arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
                     FaceExpressionApi.ApplyConfiguration(
                         Avatar(arguments),
                         McpJson.To<FaceExpressionConfigurationData>(
-                            arguments["configuration"]))))),
+                            arguments["configuration"]),
+                        (bool?)arguments["dryRun"] ?? false)))),
                 readOnly: false,
                 destructive: false,
                 idempotent: true));
