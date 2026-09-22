@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Ee4v.AssetManager.Infrastructure;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -28,10 +29,8 @@ namespace Ee4v.AssetManager.UI
 
     internal static class DerivedAssetCreator
     {
-        internal const string VariantRoot =
-            "Assets/!ee4vAsset/Variant";
+        internal const string VariantRoot = DerivedAssetCatalog.VariantRoot;
         private const string MaterialsFolderName = "Materials";
-        private const string MetadataPrefix = "ee4v-derived-asset:v1:";
 
         private readonly struct AssetObjectKey : IEquatable<AssetObjectKey>
         {
@@ -66,15 +65,6 @@ namespace Ee4v.AssetManager.UI
                                 : 0) * 397) ^ LocalId.GetHashCode();
                 }
             }
-        }
-
-        [Serializable]
-        private sealed class DerivedAssetMetadata
-        {
-            public string parentItemId;
-            public string name;
-            public string description;
-            public string sourceGuid;
         }
 
         public static bool IsValidName(string value)
@@ -184,13 +174,6 @@ namespace Ee4v.AssetManager.UI
                     rootPath,
                     objectMap);
 
-                var metadata = new DerivedAssetMetadata
-                {
-                    parentItemId = request.ParentItemId ?? string.Empty,
-                    name = name,
-                    description = request.Description ?? string.Empty,
-                    sourceGuid = AssetDatabase.AssetPathToGUID(sourcePath)
-                };
                 var importer = AssetImporter.GetAtPath(rootPath);
                 if (importer == null)
                 {
@@ -198,16 +181,19 @@ namespace Ee4v.AssetManager.UI
                         "The created Prefab importer is unavailable.");
                 }
 
-                importer.userData = MetadataPrefix +
-                                    JsonUtility.ToJson(metadata);
+                importer.userData = DerivedAssetCatalog.Serialize(
+                    request.ParentItemId,
+                    name,
+                    request.Description,
+                    AssetDatabase.AssetPathToGUID(sourcePath));
                 importer.SaveAndReimport();
                 AssetDatabase.SaveAssets();
 
                 return new DerivedAssetInfo
                 {
-                    ParentItemId = metadata.parentItemId,
-                    Name = metadata.name,
-                    Description = metadata.description,
+                    ParentItemId = request.ParentItemId ?? string.Empty,
+                    Name = name,
+                    Description = request.Description ?? string.Empty,
                     AssetPath = rootPath,
                     Prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                         rootPath)
@@ -223,59 +209,27 @@ namespace Ee4v.AssetManager.UI
         public static IReadOnlyList<DerivedAssetInfo> FindByParentItem(
             string parentItemId)
         {
-            if (string.IsNullOrEmpty(parentItemId) ||
-                !AssetDatabase.IsValidFolder(VariantRoot))
-            {
-                return Array.Empty<DerivedAssetInfo>();
-            }
-
-            return AssetDatabase.FindAssets(
-                    "t:Prefab",
-                    new[] { VariantRoot })
-                .Select(AssetDatabase.GUIDToAssetPath)
-                .Select(ReadInfo)
-                .Where(info => info != null && string.Equals(
-                    info.ParentItemId,
-                    parentItemId,
-                    StringComparison.Ordinal))
-                .OrderBy(info => info.Name, StringComparer.OrdinalIgnoreCase)
+            return DerivedAssetCatalog.FindByParentItem(parentItemId)
+                .Select(ToInfo)
                 .ToArray();
         }
 
-        private static DerivedAssetInfo ReadInfo(string path)
+        private static DerivedAssetInfo ToInfo(DerivedAssetRecord record)
         {
-            var importer = AssetImporter.GetAtPath(path);
-            var data = importer?.userData ?? string.Empty;
-            if (!data.StartsWith(
-                    MetadataPrefix,
-                    StringComparison.Ordinal))
+            if (record == null)
             {
                 return null;
             }
 
-            try
+            return new DerivedAssetInfo
             {
-                var metadata = JsonUtility.FromJson<DerivedAssetMetadata>(
-                    data.Substring(MetadataPrefix.Length));
-                if (metadata == null)
-                {
-                    return null;
-                }
-
-                return new DerivedAssetInfo
-                {
-                    ParentItemId = metadata.parentItemId ?? string.Empty,
-                    Name = metadata.name ?? Path.GetFileNameWithoutExtension(
-                        path),
-                    Description = metadata.description ?? string.Empty,
-                    AssetPath = path,
-                    Prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path)
-                };
-            }
-            catch (ArgumentException)
-            {
-                return null;
-            }
+                ParentItemId = record.ParentItemId,
+                Name = record.Name,
+                Description = record.Description,
+                AssetPath = record.AssetPath,
+                Prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                    record.AssetPath)
+            };
         }
 
         private static void EnsureFolder(string path)

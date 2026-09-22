@@ -26,6 +26,7 @@ namespace Ee4v.Mcp
             RegisterSetTargets();
             RegisterSetDependencies();
             RegisterCollections();
+            AssetManagerPrefabMcpTools.Register();
         }
 
         private static void RegisterSearch()
@@ -111,6 +112,12 @@ namespace Ee4v.Mcp
                     var itemId = Required(arguments, "itemId");
                     var item = manager.GetItem(itemId);
                     var files = manager.GetFiles(itemId, true);
+                    var importedAssetGuids =
+                        manager.GetItemImportedAssetGuids(itemId);
+                    var prefabCandidates =
+                        AssetManagerPrefabMcpTools.FindCandidates(
+                            itemId,
+                            importedAssetGuids);
                     return Success(new
                     {
                         Item = item,
@@ -121,7 +128,15 @@ namespace Ee4v.Mcp
                             ImportedAssetGuids = manager.GetFileImportedAssetGuids(file.Id)
                         }).ToArray(),
                         Targets = manager.GetItemTargets(itemId),
-                        ImportedAssetGuids = manager.GetItemImportedAssetGuids(itemId)
+                        ImportedAssetGuids = importedAssetGuids,
+                        PrefabCandidates = prefabCandidates.Candidates,
+                        PrefabCandidateResolution = new
+                        {
+                            prefabCandidates.ImportedAssetGuidCount,
+                            prefabCandidates.NonPrefabAssetCount,
+                            prefabCandidates.UnresolvedImportedAssets,
+                            prefabCandidates.EmptyReason
+                        }
                     });
                 }),
                 readOnly: true));
