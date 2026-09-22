@@ -143,6 +143,11 @@
     border-radius: var(--ee4v-radius-lg);
 }
 
+.ee4v-face-expression__validation {
+    flex-shrink: 0;
+    margin-bottom: var(--ee4v-space-lg);
+}
+
 .ee4v-face-expression-row:hover {
     background-color: var(--ee4v-color-surface-hover);
 }

@@ -123,5 +123,14 @@
     "controllerCreateFailed": "FX Controller を作成できませんでした。",
     "modularAvatarMissing": "Modular Avatar が見つかりません。VCCからModular Avatarを導入してください。",
     "applyFailed": "ジェスチャー割り当てを適用できませんでした。"
+  },
+  "validation": {
+    "valid": "表情クリップに問題はありません。",
+    "non_blendshape_curve": "表情編集の対象外のカーブが含まれています。",
+    "binding_not_found": "対象のRendererまたはBlendShapeがアバターにありません。",
+    "not_single_frame": "カーブが0秒の単一キーフレームではありません。",
+    "value_out_of_range": "0～100の範囲外のBlendShape値が含まれています。",
+    "object_reference_curves": "Object Reference Curveが含まれています。",
+    "animation_events": "Animation Eventが含まれています。"
   }
 }

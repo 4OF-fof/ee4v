@@ -7,6 +7,7 @@ using Ee4v.Core.Settings;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Ee4v.FaceExpression
 {
@@ -150,6 +151,7 @@ namespace Ee4v.FaceExpression
                 avatar,
                 _settings,
                 _presetStore);
+            RefreshValidation();
         }
 
         private void SetClip(AnimationClip clip)
@@ -174,6 +176,7 @@ namespace Ee4v.FaceExpression
                 FaceExpressionSettings.GetSeparators(_settings),
                 FaceExpressionGroupSession.RendererPaths);
             _view?.SetClip(_clip);
+            RefreshValidation();
             FaceExpressionGroupSession.UpdateChannels(_channels);
             _preview?.SetChannels(_channels);
         }
@@ -189,6 +192,53 @@ namespace Ee4v.FaceExpression
 
             FaceExpressionClipEditor.Write(_clip, channel);
             _preview?.SetChannels(_channels);
+            RefreshValidation();
+        }
+
+        private void RefreshValidation()
+        {
+            if (_view == null)
+            {
+                return;
+            }
+
+            if (_avatar == null || _clip == null)
+            {
+                _view.SetValidation(string.Empty, HelpBoxMessageType.Info);
+                return;
+            }
+
+            var findings = FaceExpressionApi.ValidateClip(_avatar, _clip);
+            if (findings.Count == 0)
+            {
+                _view.SetValidation(
+                    I18N.Get("validation.valid"),
+                    HelpBoxMessageType.Info);
+                return;
+            }
+
+            var type = findings.Any(finding => string.Equals(
+                finding.Severity,
+                "error",
+                StringComparison.OrdinalIgnoreCase))
+                ? HelpBoxMessageType.Error
+                : HelpBoxMessageType.Warning;
+            _view.SetValidation(
+                string.Join("\n", findings.Select(FormatValidationFinding)),
+                type);
+        }
+
+        private static string FormatValidationFinding(
+            FaceExpressionValidationFinding finding)
+        {
+            var message = I18N.Get("validation." + finding.Code);
+            var location = string.Join(
+                " / ",
+                new[] { finding.RendererPath, finding.ShapeName }
+                    .Where(value => !string.IsNullOrWhiteSpace(value)));
+            return string.IsNullOrEmpty(location)
+                ? "• " + message
+                : "• " + message + " (" + location + ")";
         }
 
         private void CreateClip()

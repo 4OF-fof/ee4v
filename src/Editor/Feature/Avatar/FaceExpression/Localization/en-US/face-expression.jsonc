@@ -123,5 +123,14 @@
     "controllerCreateFailed": "The FX Controller could not be created.",
     "modularAvatarMissing": "Modular Avatar was not found. Install Modular Avatar through VCC.",
     "applyFailed": "The gesture assignments could not be applied."
+  },
+  "validation": {
+    "valid": "The expression clip has no validation findings.",
+    "non_blendshape_curve": "The clip contains a curve outside the face-expression editor scope.",
+    "binding_not_found": "The target Renderer or BlendShape does not exist on the avatar.",
+    "not_single_frame": "A curve is not a single keyframe at time 0.",
+    "value_out_of_range": "The clip contains a BlendShape value outside 0-100.",
+    "object_reference_curves": "The clip contains an Object Reference Curve.",
+    "animation_events": "The clip contains an Animation Event."
   }
 }
