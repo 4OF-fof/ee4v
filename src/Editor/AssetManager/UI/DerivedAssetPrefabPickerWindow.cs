@@ -263,38 +263,10 @@ namespace Ee4v.AssetManager.UI
             {
                 Renderer = renderer;
                 ShapeIndex = shapeIndex;
-                UpdateAction = ApplyPendingWeight;
             }
 
             internal SkinnedMeshRenderer Renderer { get; }
             internal int ShapeIndex { get; }
-            internal float PendingWeight { get; set; }
-            internal Action UpdateAction { get; }
-
-            private void ApplyPendingWeight()
-            {
-                Renderer.SetBlendShapeWeight(
-                    ShapeIndex,
-                    PendingWeight);
-            }
-        }
-
-        private sealed class TransformPreviewTarget
-        {
-            internal TransformPreviewTarget(Transform transform)
-            {
-                Transform = transform;
-                UpdateAction = ApplyPendingScale;
-            }
-
-            internal Transform Transform { get; }
-            internal Vector3 PendingScale { get; set; }
-            internal Action UpdateAction { get; }
-
-            private void ApplyPendingScale()
-            {
-                Transform.localScale = PendingScale;
-            }
         }
 
         private static readonly int PreviewControlHash =
@@ -305,13 +277,10 @@ namespace Ee4v.AssetManager.UI
 
         private readonly ScenePreviewViewport _viewport;
         private readonly PreviewOrbitController _orbit;
-        private readonly PreviewUpdateScheduler _previewUpdates;
         private readonly List<MaterialPreviewTarget> _materialTargets =
             new List<MaterialPreviewTarget>();
-        private readonly Dictionary<string, TransformPreviewTarget>
-            _transformTargets =
-                new Dictionary<string, TransformPreviewTarget>(
-                    StringComparer.Ordinal);
+        private readonly Dictionary<string, Transform> _transformTargets =
+            new Dictionary<string, Transform>(StringComparer.Ordinal);
         private readonly Dictionary<string,
             Dictionary<string, BlendShapePreviewTarget>>
             _blendShapeTargets =
@@ -349,9 +318,6 @@ namespace Ee4v.AssetManager.UI
             _orbit = new PreviewOrbitController(
                 PreviewControlHash,
                 _viewport.RequestRepaint);
-            _previewUpdates = new PreviewUpdateScheduler(
-                RefreshBounds,
-                _viewport.RequestRepaint);
             Add(_viewport);
             SetPreviewAvailable(false);
 
@@ -379,7 +345,7 @@ namespace Ee4v.AssetManager.UI
 
         internal void RefreshPreview()
         {
-            _previewUpdates.RequestRepaint();
+            _viewport.RequestRepaint();
         }
 
         internal void ReloadPrefab()
@@ -401,17 +367,19 @@ namespace Ee4v.AssetManager.UI
                 if (!_transformTargets.TryGetValue(
                         pair.Key ?? string.Empty,
                         out var target) ||
-                    target.Transform == null)
+                    target == null)
                 {
                     continue;
                 }
 
-                target.PendingScale = pair.Value;
-                _previewUpdates.Enqueue(
-                    target,
-                    target.UpdateAction,
-                    recalculateBounds);
+                target.localScale = pair.Value;
             }
+
+            if (recalculateBounds)
+            {
+                RefreshBounds();
+            }
+            _viewport.RequestRepaint();
         }
 
         internal void SetBlendShapeWeight(
@@ -434,21 +402,23 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            target.PendingWeight = weight;
-            _previewUpdates.Enqueue(
-                target,
-                target.UpdateAction,
-                recalculateBounds);
+            target.Renderer.SetBlendShapeWeight(
+                target.ShapeIndex,
+                weight);
+            if (recalculateBounds)
+            {
+                RefreshBounds();
+            }
+            _viewport.RequestRepaint();
         }
 
         internal void FlushUpdates(bool recalculateBounds)
         {
-            _previewUpdates.FlushNow();
             if (recalculateBounds)
             {
                 RefreshBounds();
-                _viewport.RequestRepaint();
             }
+            _viewport.RequestRepaint();
         }
 
         internal void SetHiddenMaterials(
@@ -466,7 +436,7 @@ namespace Ee4v.AssetManager.UI
             _hiddenMaterials.Clear();
             _hiddenMaterials.UnionWith(next);
             RebuildMaterialTargets();
-            _previewUpdates.RequestRepaint();
+            _viewport.RequestRepaint();
         }
 
         internal void SetFlexibleLayout(bool flexible)
@@ -477,7 +447,6 @@ namespace Ee4v.AssetManager.UI
         public void Dispose()
         {
             CleanupPreview();
-            _previewUpdates.Dispose();
             _viewport.Dispose();
         }
 
@@ -819,8 +788,7 @@ namespace Ee4v.AssetManager.UI
                 var path = AnimationUtility.CalculateTransformPath(
                     transform,
                     _instance.transform);
-                _transformTargets[path] =
-                    new TransformPreviewTarget(transform);
+                _transformTargets[path] = transform;
             }
 
             foreach (var renderer in _renderers
@@ -863,7 +831,6 @@ namespace Ee4v.AssetManager.UI
 
         private void CleanupPreview()
         {
-            _previewUpdates.CancelPending();
             DestroyBakedMeshes();
             _materialTargets.Clear();
             _transformTargets.Clear();

@@ -10,24 +10,20 @@ namespace Ee4v.FaceExpression
     {
         private static readonly int PreviewControlHash =
             nameof(FaceExpressionPreview).GetHashCode();
-        private static readonly object ChannelUpdateKey = new object();
 
+        private readonly Action _repaint;
         private readonly PreviewOrbitController _orbit;
-        private readonly PreviewUpdateScheduler _previewUpdates;
-        private readonly Action _applyPendingChannels;
         private PreviewRenderUtility _utility;
         private GameObject _clone;
         private SkinnedMeshRenderer _bodyRenderer;
-        private IReadOnlyList<BlendShapeChannel> _pendingChannels;
         private readonly Dictionary<string, RendererPreviewState> _renderers =
             new Dictionary<string, RendererPreviewState>(StringComparer.Ordinal);
         public FaceExpressionPreview(Action repaint)
         {
+            _repaint = repaint;
             _orbit = new PreviewOrbitController(
                 PreviewControlHash,
                 repaint);
-            _previewUpdates = new PreviewUpdateScheduler(null, repaint);
-            _applyPendingChannels = ApplyPendingChannels;
         }
 
         public void SetAvatar(GameObject avatar)
@@ -75,31 +71,9 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            if (!repaint)
-            {
-                ApplyChannels(channels);
-                return;
-            }
-
-            _pendingChannels = channels;
-            _previewUpdates.Enqueue(
-                ChannelUpdateKey,
-                _applyPendingChannels);
-        }
-
-        private void ApplyPendingChannels()
-        {
-            var channels = _pendingChannels;
-            _pendingChannels = null;
-            ApplyChannels(channels);
-        }
-
-        private void ApplyChannels(
-            IReadOnlyList<BlendShapeChannel> channels)
-        {
             foreach (var renderer in _renderers.Values)
             {
-                renderer.BeginApply();
+                renderer.Reset();
             }
 
             if (channels != null)
@@ -118,13 +92,20 @@ namespace Ee4v.FaceExpression
                         continue;
                     }
 
-                    renderer.Apply(channel.Name, channel.Value);
+                    var shapeIndex = renderer.Renderer.sharedMesh
+                        .GetBlendShapeIndex(channel.Name);
+                    if (shapeIndex >= 0)
+                    {
+                        renderer.Renderer.SetBlendShapeWeight(
+                            shapeIndex,
+                            channel.Value);
+                    }
                 }
             }
 
-            foreach (var renderer in _renderers.Values)
+            if (repaint)
             {
-                renderer.CompleteApply();
+                _repaint?.Invoke();
             }
         }
 
@@ -203,7 +184,6 @@ namespace Ee4v.FaceExpression
         public void Dispose()
         {
             Cleanup();
-            _previewUpdates.Dispose();
         }
 
         private void SetView(Bounds bounds)
@@ -262,8 +242,6 @@ namespace Ee4v.FaceExpression
 
         private void Cleanup()
         {
-            _previewUpdates.CancelPending();
-            _pendingChannels = null;
             _orbit.CancelInteraction();
             _bodyRenderer = null;
             _renderers.Clear();
@@ -283,71 +261,27 @@ namespace Ee4v.FaceExpression
         private sealed class RendererPreviewState
         {
             private readonly float[] _defaultWeights;
-            private readonly float[] _currentWeights;
-            private readonly Dictionary<string, int> _shapeIndices =
-                new Dictionary<string, int>(StringComparer.Ordinal);
-            private readonly HashSet<int> _activeIndices =
-                new HashSet<int>();
-            private readonly HashSet<int> _nextIndices =
-                new HashSet<int>();
 
             internal RendererPreviewState(SkinnedMeshRenderer renderer)
             {
                 Renderer = renderer;
                 _defaultWeights = new float[renderer.sharedMesh.blendShapeCount];
-                _currentWeights = new float[_defaultWeights.Length];
                 for (var index = 0; index < _defaultWeights.Length; index++)
                 {
                     _defaultWeights[index] = renderer.GetBlendShapeWeight(index);
-                    _currentWeights[index] = _defaultWeights[index];
-                    _shapeIndices[
-                        renderer.sharedMesh.GetBlendShapeName(index)] = index;
                 }
             }
 
             internal SkinnedMeshRenderer Renderer { get; }
 
-            internal void BeginApply()
+            internal void Reset()
             {
-                _nextIndices.Clear();
-            }
-
-            internal void Apply(string shapeName, float weight)
-            {
-                if (!_shapeIndices.TryGetValue(
-                        shapeName ?? string.Empty,
-                        out var index))
+                for (var index = 0; index < _defaultWeights.Length; index++)
                 {
-                    return;
+                    Renderer.SetBlendShapeWeight(
+                        index,
+                        _defaultWeights[index]);
                 }
-
-                _nextIndices.Add(index);
-                SetWeight(index, weight);
-            }
-
-            internal void CompleteApply()
-            {
-                foreach (var index in _activeIndices)
-                {
-                    if (!_nextIndices.Contains(index))
-                    {
-                        SetWeight(index, _defaultWeights[index]);
-                    }
-                }
-
-                _activeIndices.Clear();
-                _activeIndices.UnionWith(_nextIndices);
-            }
-
-            private void SetWeight(int index, float weight)
-            {
-                if (Mathf.Approximately(_currentWeights[index], weight))
-                {
-                    return;
-                }
-
-                Renderer.SetBlendShapeWeight(index, weight);
-                _currentWeights[index] = weight;
             }
         }
     }
