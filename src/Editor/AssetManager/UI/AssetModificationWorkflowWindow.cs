@@ -1233,6 +1233,10 @@ namespace Ee4v.AssetManager.UI
             controls.Add(reset);
 
             var rendering = false;
+            var appliedHeight = Mathf.Clamp(
+                Mathf.Round(currentViewPosition.y * 100f) / 100f,
+                minimumHeight,
+                maximumHeight);
             void SetHeight(float height, bool apply)
             {
                 var normalized = Mathf.Clamp(
@@ -1246,8 +1250,10 @@ namespace Ee4v.AssetManager.UI
                 reset.SetEnabled(!Mathf.Approximately(
                     normalized,
                     baseHeightMeters));
-                if (apply)
+                if (apply &&
+                    !Mathf.Approximately(normalized, appliedHeight))
                 {
+                    appliedHeight = normalized;
                     var multiplier = normalized / baseHeightMeters;
                     ApplyBodyScale(
                         targetPaths,
@@ -1432,6 +1438,7 @@ namespace Ee4v.AssetManager.UI
             controls.Add(reset);
 
             var rendering = false;
+            var renderedPercent = Mathf.Round(initialPercent);
             void RenderScalePercent(float percent)
             {
                 var normalized = Mathf.Round(percent);
@@ -1443,14 +1450,21 @@ namespace Ee4v.AssetManager.UI
                 slider.SetValueWithoutNotify(sliderValue);
                 value.SetValueWithoutNotify(normalized);
                 rendering = false;
+                renderedPercent = normalized;
                 reset.SetEnabled(!Mathf.Approximately(normalized, 100f));
             }
 
             void SetScalePercent(float percent)
             {
                 var normalized = Mathf.Round(percent);
+                var changedValue = !Mathf.Approximately(
+                    normalized,
+                    renderedPercent);
                 RenderScalePercent(normalized);
-                changed?.Invoke(normalized);
+                if (changedValue)
+                {
+                    changed?.Invoke(normalized);
+                }
             }
 
             slider.RegisterCallback<PointerDownEvent>(_ =>
@@ -1504,6 +1518,10 @@ namespace Ee4v.AssetManager.UI
             controls.Add(reset);
 
             var rendering = false;
+            var appliedWeight = Mathf.Clamp(
+                Mathf.Round(definition.Value),
+                MinimumBodyBlendShapeWeight,
+                MaximumBodyBlendShapeWeight);
             void SetWeight(float weight, bool apply)
             {
                 var normalized = Mathf.Clamp(
@@ -1517,8 +1535,10 @@ namespace Ee4v.AssetManager.UI
                 reset.SetEnabled(!Mathf.Approximately(
                     normalized,
                     definition.BaseValue));
-                if (apply)
+                if (apply &&
+                    !Mathf.Approximately(normalized, appliedWeight))
                 {
+                    appliedWeight = normalized;
                     ApplyBodyBlendShape(
                         definition.RendererPath,
                         definition.ShapeName,
@@ -2266,6 +2286,7 @@ namespace Ee4v.AssetManager.UI
         {
             _bodyScaleDragging = false;
             _bodyScaleDragUndoRecorded = false;
+            _scenePreview?.FlushUpdates(recalculateBounds: true);
             SaveBodyScalePrefab(rebuildOnFailure);
         }
 

@@ -255,6 +255,12 @@ namespace Ee4v.AssetManager.UI
             internal Material Material { get; set; }
         }
 
+        private sealed class BlendShapePreviewTarget
+        {
+            internal SkinnedMeshRenderer Renderer { get; set; }
+            internal int ShapeIndex { get; set; }
+        }
+
         private static readonly int PreviewControlHash =
             nameof(DerivedAssetPrefabScenePreview).GetHashCode();
         private const float PreviewFitPadding = 1.05f;
@@ -263,8 +269,17 @@ namespace Ee4v.AssetManager.UI
 
         private readonly ScenePreviewViewport _viewport;
         private readonly PreviewOrbitController _orbit;
+        private readonly PreviewUpdateScheduler _previewUpdates;
         private readonly List<MaterialPreviewTarget> _materialTargets =
             new List<MaterialPreviewTarget>();
+        private readonly Dictionary<string, Transform> _transformTargets =
+            new Dictionary<string, Transform>(StringComparer.Ordinal);
+        private readonly Dictionary<string,
+            Dictionary<string, BlendShapePreviewTarget>>
+            _blendShapeTargets =
+                new Dictionary<string,
+                    Dictionary<string, BlendShapePreviewTarget>>(
+                        StringComparer.Ordinal);
         private readonly List<Renderer> _filteredRenderers =
             new List<Renderer>();
         private readonly Dictionary<SkinnedMeshRenderer, Mesh>
@@ -296,6 +311,9 @@ namespace Ee4v.AssetManager.UI
             _orbit = new PreviewOrbitController(
                 PreviewControlHash,
                 _viewport.RequestRepaint);
+            _previewUpdates = new PreviewUpdateScheduler(
+                RefreshBounds,
+                _viewport.RequestRepaint);
             Add(_viewport);
             SetPreviewAvailable(false);
 
@@ -323,7 +341,7 @@ namespace Ee4v.AssetManager.UI
 
         internal void RefreshPreview()
         {
-            _viewport.RequestRepaint();
+            _previewUpdates.RequestRepaint();
         }
 
         internal void ReloadPrefab()
@@ -342,20 +360,20 @@ namespace Ee4v.AssetManager.UI
 
             foreach (var pair in scales)
             {
-                var target = string.IsNullOrEmpty(pair.Key)
-                    ? _instance.transform
-                    : _instance.transform.Find(pair.Key);
-                if (target != null)
+                if (!_transformTargets.TryGetValue(
+                        pair.Key ?? string.Empty,
+                        out var target) ||
+                    target == null)
                 {
-                    target.localScale = pair.Value;
+                    continue;
                 }
-            }
 
-            if (recalculateBounds)
-            {
-                _bounds = CalculateBounds(_instance);
+                var scale = pair.Value;
+                _previewUpdates.Enqueue(
+                    target,
+                    () => target.localScale = scale,
+                    recalculateBounds);
             }
-            _viewport.RequestRepaint();
         }
 
         internal void SetBlendShapeWeight(
@@ -369,26 +387,31 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            var target = string.IsNullOrEmpty(rendererPath)
-                ? _instance.transform
-                : _instance.transform.Find(rendererPath);
-            var renderer = target == null
-                ? null
-                : target.GetComponent<SkinnedMeshRenderer>();
-            var shapeIndex = renderer?.sharedMesh == null
-                ? -1
-                : renderer.sharedMesh.GetBlendShapeIndex(shapeName);
-            if (renderer == null || shapeIndex < 0)
+            if (!_blendShapeTargets.TryGetValue(
+                    rendererPath ?? string.Empty,
+                    out var shapes) ||
+                !shapes.TryGetValue(shapeName, out var target) ||
+                target.Renderer == null)
             {
                 return;
             }
 
-            renderer.SetBlendShapeWeight(shapeIndex, weight);
+            _previewUpdates.Enqueue(
+                target,
+                () => target.Renderer.SetBlendShapeWeight(
+                    target.ShapeIndex,
+                    weight),
+                recalculateBounds);
+        }
+
+        internal void FlushUpdates(bool recalculateBounds)
+        {
+            _previewUpdates.FlushNow();
             if (recalculateBounds)
             {
-                _bounds = CalculateBounds(_instance);
+                RefreshBounds();
+                _viewport.RequestRepaint();
             }
-            _viewport.RequestRepaint();
         }
 
         internal void SetHiddenMaterials(
@@ -406,7 +429,7 @@ namespace Ee4v.AssetManager.UI
             _hiddenMaterials.Clear();
             _hiddenMaterials.UnionWith(next);
             RebuildMaterialTargets();
-            _viewport.RequestRepaint();
+            _previewUpdates.RequestRepaint();
         }
 
         internal void SetFlexibleLayout(bool flexible)
@@ -417,6 +440,7 @@ namespace Ee4v.AssetManager.UI
         public void Dispose()
         {
             CleanupPreview();
+            _previewUpdates.Dispose();
             _viewport.Dispose();
         }
 
@@ -441,6 +465,7 @@ namespace Ee4v.AssetManager.UI
                 {
                     renderer.forceMatrixRecalculationPerRender = true;
                 }
+                RebuildPreviewTargets();
 
                 _utility = new PreviewRenderUtility();
                 _utility.cameraFieldOfView = 30f;
@@ -734,6 +759,60 @@ namespace Ee4v.AssetManager.UI
             return bounds;
         }
 
+        private void RefreshBounds()
+        {
+            if (_instance != null)
+            {
+                _bounds = CalculateBounds(_instance);
+            }
+        }
+
+        private void RebuildPreviewTargets()
+        {
+            _transformTargets.Clear();
+            _blendShapeTargets.Clear();
+            if (_instance == null)
+            {
+                return;
+            }
+
+            foreach (var transform in _instance
+                         .GetComponentsInChildren<Transform>(true))
+            {
+                var path = AnimationUtility.CalculateTransformPath(
+                    transform,
+                    _instance.transform);
+                _transformTargets[path] = transform;
+            }
+
+            foreach (var renderer in _renderers
+                         .OfType<SkinnedMeshRenderer>())
+            {
+                if (renderer.sharedMesh == null)
+                {
+                    continue;
+                }
+
+                var path = AnimationUtility.CalculateTransformPath(
+                    renderer.transform,
+                    _instance.transform);
+                var shapes = new Dictionary<string,
+                    BlendShapePreviewTarget>(StringComparer.Ordinal);
+                for (var index = 0;
+                     index < renderer.sharedMesh.blendShapeCount;
+                     index++)
+                {
+                    shapes[renderer.sharedMesh.GetBlendShapeName(index)] =
+                        new BlendShapePreviewTarget
+                        {
+                            Renderer = renderer,
+                            ShapeIndex = index
+                        };
+                }
+                _blendShapeTargets[path] = shapes;
+            }
+        }
+
         private static void SetHideFlags(Transform transform)
         {
             transform.gameObject.hideFlags = HideFlags.HideAndDontSave;
@@ -750,8 +829,11 @@ namespace Ee4v.AssetManager.UI
 
         private void CleanupPreview()
         {
+            _previewUpdates.CancelPending();
             DestroyBakedMeshes();
             _materialTargets.Clear();
+            _transformTargets.Clear();
+            _blendShapeTargets.Clear();
             _filteredRenderers.Clear();
             _temporarilyHiddenRenderers.Clear();
             _renderers = Array.Empty<Renderer>();

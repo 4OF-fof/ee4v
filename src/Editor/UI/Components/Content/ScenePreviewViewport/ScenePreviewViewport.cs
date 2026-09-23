@@ -1,10 +1,155 @@
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
+    public sealed class PreviewUpdateScheduler : IDisposable
+    {
+        private readonly Dictionary<object, Action> _pendingUpdates =
+            new Dictionary<object, Action>();
+        private readonly Action _refreshBounds;
+        private readonly Action _repaint;
+        private bool _boundsDirty;
+        private bool _repaintPending;
+        private bool _scheduled;
+        private bool _disposed;
+
+        public PreviewUpdateScheduler(
+            Action refreshBounds,
+            Action repaint)
+        {
+            _refreshBounds = refreshBounds;
+            _repaint = repaint;
+        }
+
+        public void Enqueue(
+            object key,
+            Action update,
+            bool refreshBounds = false)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+            if (update == null)
+            {
+                throw new ArgumentNullException(nameof(update));
+            }
+
+            _pendingUpdates[key] = update;
+            _boundsDirty |= refreshBounds;
+            _repaintPending = true;
+            Schedule();
+        }
+
+        public void RequestRepaint()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _repaintPending = true;
+            Schedule();
+        }
+
+        public void FlushNow()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            Unschedule();
+            var updates = new Action[_pendingUpdates.Count];
+            _pendingUpdates.Values.CopyTo(updates, 0);
+            _pendingUpdates.Clear();
+            var refreshBounds = _boundsDirty;
+            var repaint = _repaintPending;
+            _boundsDirty = false;
+            _repaintPending = false;
+
+            try
+            {
+                foreach (var update in updates)
+                {
+                    update();
+                }
+            }
+            finally
+            {
+                if (refreshBounds)
+                {
+                    _refreshBounds?.Invoke();
+                }
+                if (repaint)
+                {
+                    _repaint?.Invoke();
+                }
+                if (_pendingUpdates.Count > 0 ||
+                    _boundsDirty ||
+                    _repaintPending)
+                {
+                    Schedule();
+                }
+            }
+        }
+
+        public void CancelPending()
+        {
+            Unschedule();
+            _pendingUpdates.Clear();
+            _boundsDirty = false;
+            _repaintPending = false;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            CancelPending();
+            _disposed = true;
+        }
+
+        private void Schedule()
+        {
+            if (_scheduled)
+            {
+                return;
+            }
+
+            _scheduled = true;
+            EditorApplication.delayCall += FlushScheduled;
+        }
+
+        private void Unschedule()
+        {
+            if (!_scheduled)
+            {
+                return;
+            }
+
+            EditorApplication.delayCall -= FlushScheduled;
+            _scheduled = false;
+        }
+
+        private void FlushScheduled()
+        {
+            _scheduled = false;
+            FlushNow();
+        }
+    }
+
     public sealed class ScenePreviewViewport : VisualElement, IDisposable
     {
         private const int GridTextureSize = 64;
