@@ -14,9 +14,11 @@ namespace Ee4v.FaceExpression
 
         private readonly PreviewOrbitController _orbit;
         private readonly PreviewUpdateScheduler _previewUpdates;
+        private readonly Action _applyPendingChannels;
         private PreviewRenderUtility _utility;
         private GameObject _clone;
         private SkinnedMeshRenderer _bodyRenderer;
+        private IReadOnlyList<BlendShapeChannel> _pendingChannels;
         private readonly Dictionary<string, RendererPreviewState> _renderers =
             new Dictionary<string, RendererPreviewState>(StringComparer.Ordinal);
         public FaceExpressionPreview(Action repaint)
@@ -25,6 +27,7 @@ namespace Ee4v.FaceExpression
                 PreviewControlHash,
                 repaint);
             _previewUpdates = new PreviewUpdateScheduler(null, repaint);
+            _applyPendingChannels = ApplyPendingChannels;
         }
 
         public void SetAvatar(GameObject avatar)
@@ -78,9 +81,17 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
+            _pendingChannels = channels;
             _previewUpdates.Enqueue(
                 ChannelUpdateKey,
-                () => ApplyChannels(channels));
+                _applyPendingChannels);
+        }
+
+        private void ApplyPendingChannels()
+        {
+            var channels = _pendingChannels;
+            _pendingChannels = null;
+            ApplyChannels(channels);
         }
 
         private void ApplyChannels(
@@ -252,6 +263,7 @@ namespace Ee4v.FaceExpression
         private void Cleanup()
         {
             _previewUpdates.CancelPending();
+            _pendingChannels = null;
             _orbit.CancelInteraction();
             _bodyRenderer = null;
             _renderers.Clear();

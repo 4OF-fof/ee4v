@@ -77,6 +77,13 @@ namespace Ee4v.AssetManager.UI
             Other
         }
 
+        private enum PendingBodySizeChange
+        {
+            None,
+            Scale,
+            BlendShape
+        }
+
         private sealed class AvatarMaterialEntry
         {
             internal Material Material { get; set; }
@@ -362,11 +369,25 @@ namespace Ee4v.AssetManager.UI
         private HelpBoxMessageType _feedbackType =
             HelpBoxMessageType.Info;
         private bool _bodyScaleDragging;
-        private bool _bodyScaleDragUndoRecorded;
+        private PendingBodySizeChange _pendingBodySizeChange;
+        private IReadOnlyList<string> _pendingBodyScaleTargetPaths;
+        private Vector3 _pendingBodyScaleMultipliers;
+        private bool _pendingBodyScaleUpdatesViewPosition;
+        private string _pendingBodyBlendShapeRendererPath;
+        private string _pendingBodyBlendShapeName;
+        private float _pendingBodyBlendShapeWeight;
         private bool _bodyScaleDirty;
         private bool _advancedBodyScaleExpanded;
         private readonly HashSet<string> _expandedBodyScaleAxes =
             new HashSet<string>(StringComparer.Ordinal);
+        private readonly Dictionary<string, Vector3> _bodyScaleBaseScales =
+            new Dictionary<string, Vector3>(StringComparer.Ordinal);
+        private readonly List<KeyValuePair<string, Transform>>
+            _resolvedBodyScaleTargets =
+                new List<KeyValuePair<string, Transform>>();
+        private readonly Dictionary<string, Vector3>
+            _bodyScalePreviewScales =
+                new Dictionary<string, Vector3>(StringComparer.Ordinal);
         private Vector3? _baseAvatarViewPosition;
         private Component _avatarDescriptor;
 
@@ -2062,19 +2083,36 @@ namespace Ee4v.AssetManager.UI
             return source != null ? source.localScale : Vector3.one;
         }
 
+        private Vector3 GetCachedBaseLocalScale(
+            string path,
+            Transform target)
+        {
+            var key = path ?? string.Empty;
+            if (_bodyScaleBaseScales.TryGetValue(key, out var scale))
+            {
+                return scale;
+            }
+
+            scale = GetBaseLocalScale(target);
+            _bodyScaleBaseScales[key] = scale;
+            return scale;
+        }
+
         private void ApplyBodyScale(
             IReadOnlyList<string> targetPaths,
             Vector3 multipliers,
-            bool updateAvatarViewPosition = false)
+            bool updateAvatarViewPosition = false,
+            bool rebuildOnFailure = true)
         {
-            if (!IsEditableWorkflowPrefab() ||
+            if (_workingObject == null ||
                 targetPaths == null ||
                 targetPaths.Count == 0)
             {
                 return;
             }
 
-            var targets = new List<KeyValuePair<string, Transform>>();
+            var targets = _resolvedBodyScaleTargets;
+            targets.Clear();
             foreach (var path in targetPaths)
             {
                 var target = string.IsNullOrEmpty(path)
@@ -2092,12 +2130,34 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            var previewScales = new Dictionary<string, Vector3>(
-                StringComparer.Ordinal);
+            var previewScales = _bodyScalePreviewScales;
+            previewScales.Clear();
+            foreach (var pair in targets)
+            {
+                previewScales[pair.Key] = Vector3.Scale(
+                    GetCachedBaseLocalScale(pair.Key, pair.Value),
+                    multipliers);
+            }
+
+            if (_bodyScaleDragging)
+            {
+                _scenePreview?.SetTransformScales(
+                    previewScales,
+                    recalculateBounds: false);
+                _pendingBodySizeChange = PendingBodySizeChange.Scale;
+                _pendingBodyScaleTargetPaths = targetPaths;
+                _pendingBodyScaleMultipliers = multipliers;
+                _pendingBodyScaleUpdatesViewPosition =
+                    updateAvatarViewPosition;
+                return;
+            }
+            if (!IsEditableWorkflowPrefab())
+            {
+                return;
+            }
+
             try
             {
-                var preparePersistentMutation =
-                    !_bodyScaleDragging || !_bodyScaleDragUndoRecorded;
                 Component avatarDescriptor = null;
                 var baseViewPosition = Vector3.zero;
                 if (updateAvatarViewPosition &&
@@ -2109,50 +2169,27 @@ namespace Ee4v.AssetManager.UI
                         avatarDescriptor,
                         currentViewPosition);
                 }
-                if (preparePersistentMutation)
+                var undoObjects = targets
+                    .Select(pair => (UnityEngine.Object)pair.Value)
+                    .ToList();
+                if (avatarDescriptor != null)
                 {
-                    var undoObjects = targets
-                        .Select(pair => (UnityEngine.Object)pair.Value)
-                        .ToList();
-                    if (avatarDescriptor != null)
-                    {
-                        undoObjects.Add(avatarDescriptor);
-                    }
-                    var distinctUndoObjects = undoObjects
-                        .Distinct()
-                        .ToArray();
-                    if (_bodyScaleDragging)
-                    {
-                        Undo.RegisterCompleteObjectUndo(
-                            distinctUndoObjects,
-                            I18N.Get("workflow.appearance.sizeUndo"));
-                        _bodyScaleDragUndoRecorded = true;
-                    }
-                    else
-                    {
-                        Undo.RecordObjects(
-                            distinctUndoObjects,
-                            I18N.Get("workflow.appearance.sizeUndo"));
-                    }
+                    undoObjects.Add(avatarDescriptor);
                 }
+                Undo.RecordObjects(
+                    undoObjects.Distinct().ToArray(),
+                    I18N.Get("workflow.appearance.sizeUndo"));
                 foreach (var pair in targets)
                 {
-                    var scale = Vector3.Scale(
-                        GetBaseLocalScale(pair.Value),
-                        multipliers);
+                    var scale = previewScales[pair.Key];
                     pair.Value.localScale = scale;
-                    if (preparePersistentMutation &&
-                        PrefabUtility.IsPartOfPrefabInstance(pair.Value))
+                    if (PrefabUtility.IsPartOfPrefabInstance(pair.Value))
                     {
                         PrefabUtility
                             .RecordPrefabInstancePropertyModifications(
                                 pair.Value);
                     }
-                    if (preparePersistentMutation)
-                    {
-                        EditorUtility.SetDirty(pair.Value);
-                    }
-                    previewScales[pair.Key] = scale;
+                    EditorUtility.SetDirty(pair.Value);
                 }
                 if (avatarDescriptor != null)
                 {
@@ -2165,45 +2202,55 @@ namespace Ee4v.AssetManager.UI
                             multipliers);
                         serialized.ApplyModifiedPropertiesWithoutUndo();
                     }
-                    if (preparePersistentMutation &&
-                        PrefabUtility.IsPartOfPrefabInstance(
+                    if (PrefabUtility.IsPartOfPrefabInstance(
                             avatarDescriptor))
                     {
                         PrefabUtility
                             .RecordPrefabInstancePropertyModifications(
                                 avatarDescriptor);
                     }
-                    if (preparePersistentMutation)
-                    {
-                        EditorUtility.SetDirty(avatarDescriptor);
-                    }
+                    EditorUtility.SetDirty(avatarDescriptor);
                 }
-                if (preparePersistentMutation)
-                {
-                    EditorUtility.SetDirty(_workingObject);
-                }
+                EditorUtility.SetDirty(_workingObject);
                 _bodyScaleDirty = true;
                 _scenePreview?.SetTransformScales(
                     previewScales,
-                    recalculateBounds: !_bodyScaleDragging);
-                if (!_bodyScaleDragging)
-                {
-                    SaveBodyScalePrefab();
-                }
+                    recalculateBounds: true);
+                SaveBodyScalePrefab(rebuildOnFailure);
             }
             catch (Exception exception)
             {
-                ReportBodyScaleFailure(exception, true);
+                ReportBodyScaleFailure(exception, rebuildOnFailure);
             }
         }
 
         private void ApplyBodyBlendShape(
             string rendererPath,
             string shapeName,
-            float weight)
+            float weight,
+            bool rebuildOnFailure = true)
         {
-            if (!IsEditableWorkflowPrefab() ||
+            if (_workingObject == null ||
                 string.IsNullOrEmpty(shapeName))
+            {
+                return;
+            }
+
+            if (_bodyScaleDragging)
+            {
+                _scenePreview?.SetBlendShapeWeight(
+                    rendererPath,
+                    shapeName,
+                    weight,
+                    recalculateBounds: false);
+                _pendingBodySizeChange =
+                    PendingBodySizeChange.BlendShape;
+                _pendingBodyBlendShapeRendererPath = rendererPath;
+                _pendingBodyBlendShapeName = shapeName;
+                _pendingBodyBlendShapeWeight = weight;
+                return;
+            }
+            if (!IsEditableWorkflowPrefab())
             {
                 return;
             }
@@ -2224,50 +2271,28 @@ namespace Ee4v.AssetManager.UI
 
             try
             {
-                var preparePersistentMutation =
-                    !_bodyScaleDragging || !_bodyScaleDragUndoRecorded;
-                if (preparePersistentMutation)
-                {
-                    if (_bodyScaleDragging)
-                    {
-                        Undo.RegisterCompleteObjectUndo(
-                            renderer,
-                            I18N.Get("workflow.appearance.sizeUndo"));
-                        _bodyScaleDragUndoRecorded = true;
-                    }
-                    else
-                    {
-                        Undo.RecordObject(
-                            renderer,
-                            I18N.Get("workflow.appearance.sizeUndo"));
-                    }
-                }
+                Undo.RecordObject(
+                    renderer,
+                    I18N.Get("workflow.appearance.sizeUndo"));
                 renderer.SetBlendShapeWeight(shapeIndex, weight);
-                if (preparePersistentMutation &&
-                    PrefabUtility.IsPartOfPrefabInstance(renderer))
+                if (PrefabUtility.IsPartOfPrefabInstance(renderer))
                 {
                     PrefabUtility.RecordPrefabInstancePropertyModifications(
                         renderer);
                 }
-                if (preparePersistentMutation)
-                {
-                    EditorUtility.SetDirty(renderer);
-                    EditorUtility.SetDirty(_workingObject);
-                }
+                EditorUtility.SetDirty(renderer);
+                EditorUtility.SetDirty(_workingObject);
                 _bodyScaleDirty = true;
                 _scenePreview?.SetBlendShapeWeight(
                     rendererPath,
                     shapeName,
                     weight,
-                    recalculateBounds: !_bodyScaleDragging);
-                if (!_bodyScaleDragging)
-                {
-                    SaveBodyScalePrefab();
-                }
+                    recalculateBounds: true);
+                SaveBodyScalePrefab(rebuildOnFailure);
             }
             catch (Exception exception)
             {
-                ReportBodyScaleFailure(exception, true);
+                ReportBodyScaleFailure(exception, rebuildOnFailure);
             }
         }
 
@@ -2279,15 +2304,57 @@ namespace Ee4v.AssetManager.UI
             }
 
             _bodyScaleDragging = true;
-            _bodyScaleDragUndoRecorded = false;
+            ClearPendingBodySizeChange();
         }
 
         private void EndBodyScaleDrag(bool rebuildOnFailure = true)
         {
+            if (!_bodyScaleDragging &&
+                _pendingBodySizeChange == PendingBodySizeChange.None)
+            {
+                return;
+            }
+
+            var pendingChange = _pendingBodySizeChange;
+            var targetPaths = _pendingBodyScaleTargetPaths;
+            var multipliers = _pendingBodyScaleMultipliers;
+            var updateAvatarViewPosition =
+                _pendingBodyScaleUpdatesViewPosition;
+            var rendererPath = _pendingBodyBlendShapeRendererPath;
+            var shapeName = _pendingBodyBlendShapeName;
+            var weight = _pendingBodyBlendShapeWeight;
+            ClearPendingBodySizeChange();
             _bodyScaleDragging = false;
-            _bodyScaleDragUndoRecorded = false;
+            if (pendingChange == PendingBodySizeChange.Scale)
+            {
+                ApplyBodyScale(
+                    targetPaths,
+                    multipliers,
+                    updateAvatarViewPosition,
+                    rebuildOnFailure);
+            }
+            else if (pendingChange == PendingBodySizeChange.BlendShape)
+            {
+                ApplyBodyBlendShape(
+                    rendererPath,
+                    shapeName,
+                    weight,
+                    rebuildOnFailure);
+            }
             _scenePreview?.FlushUpdates(recalculateBounds: true);
-            SaveBodyScalePrefab(rebuildOnFailure);
+            if (pendingChange == PendingBodySizeChange.None)
+            {
+                SaveBodyScalePrefab(rebuildOnFailure);
+            }
+        }
+
+        private void ClearPendingBodySizeChange()
+        {
+            _pendingBodySizeChange = PendingBodySizeChange.None;
+            _pendingBodyScaleTargetPaths = null;
+            _pendingBodyScaleUpdatesViewPosition = false;
+            _pendingBodyBlendShapeRendererPath = null;
+            _pendingBodyBlendShapeName = null;
         }
 
         private void SaveBodyScalePrefab(bool rebuildOnFailure = true)
@@ -2731,7 +2798,8 @@ namespace Ee4v.AssetManager.UI
             EndBodyScaleDrag();
             _bodyScaleDirty = false;
             _bodyScaleDragging = false;
-            _bodyScaleDragUndoRecorded = false;
+            ClearPendingBodySizeChange();
+            _bodyScaleBaseScales.Clear();
             _advancedBodyScaleExpanded = false;
             _expandedBodyScaleAxes.Clear();
             _baseAvatarViewPosition = null;
@@ -2752,7 +2820,8 @@ namespace Ee4v.AssetManager.UI
             EndBodyScaleDrag();
             _bodyScaleDirty = false;
             _bodyScaleDragging = false;
-            _bodyScaleDragUndoRecorded = false;
+            ClearPendingBodySizeChange();
+            _bodyScaleBaseScales.Clear();
             _advancedBodyScaleExpanded = false;
             _expandedBodyScaleAxes.Clear();
             _baseAvatarViewPosition = null;

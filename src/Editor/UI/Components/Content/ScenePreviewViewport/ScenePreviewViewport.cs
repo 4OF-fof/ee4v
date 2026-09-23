@@ -10,6 +10,7 @@ namespace Ee4v.UI
     {
         private readonly Dictionary<object, Action> _pendingUpdates =
             new Dictionary<object, Action>();
+        private readonly List<Action> _flushBuffer = new List<Action>();
         private readonly Action _refreshBounds;
         private readonly Action _repaint;
         private bool _boundsDirty;
@@ -68,8 +69,11 @@ namespace Ee4v.UI
             }
 
             Unschedule();
-            var updates = new Action[_pendingUpdates.Count];
-            _pendingUpdates.Values.CopyTo(updates, 0);
+            _flushBuffer.Clear();
+            foreach (var update in _pendingUpdates.Values)
+            {
+                _flushBuffer.Add(update);
+            }
             _pendingUpdates.Clear();
             var refreshBounds = _boundsDirty;
             var repaint = _repaintPending;
@@ -78,13 +82,14 @@ namespace Ee4v.UI
 
             try
             {
-                foreach (var update in updates)
+                foreach (var update in _flushBuffer)
                 {
                     update();
                 }
             }
             finally
             {
+                _flushBuffer.Clear();
                 if (refreshBounds)
                 {
                     _refreshBounds?.Invoke();

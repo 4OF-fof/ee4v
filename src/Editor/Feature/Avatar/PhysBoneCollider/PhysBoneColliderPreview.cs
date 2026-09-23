@@ -15,6 +15,7 @@ namespace Ee4v.PhysBoneCollider
 
         private readonly PreviewOrbitController _orbit;
         private readonly PreviewUpdateScheduler _previewUpdates;
+        private readonly Action _applyPendingUpdate;
         private readonly List<PreviewCapsule> _capsules = new List<PreviewCapsule>();
         private IReadOnlyList<PhysBoneTarget> _physBones =
             Array.Empty<PhysBoneTarget>();
@@ -30,10 +31,14 @@ namespace Ee4v.PhysBoneCollider
         private MeshRenderer _selectedPhysBoneRenderer;
         private bool _showColliders = true;
         private bool _showPhysBones = true;
+        private IReadOnlyList<PhysBoneColliderDraft> _pendingDrafts;
+        private int _pendingSelectedIndex;
+        private string _pendingSelectedPhysBonePath;
         internal PhysBoneColliderPreview(Action repaint)
         {
             _orbit = new PreviewOrbitController(ControlHash, repaint);
             _previewUpdates = new PreviewUpdateScheduler(null, repaint);
+            _applyPendingUpdate = ApplyPendingUpdate;
         }
 
         internal void SetAvatar(
@@ -108,12 +113,26 @@ namespace Ee4v.PhysBoneCollider
                 return;
             }
 
-            _previewUpdates.Enqueue(
-                UpdateKey,
-                () => ApplyUpdate(
+            _pendingDrafts = drafts;
+            _pendingSelectedIndex = selectedIndex;
+            _pendingSelectedPhysBonePath = selectedPhysBonePath;
+            _previewUpdates.Enqueue(UpdateKey, _applyPendingUpdate);
+        }
+
+        private void ApplyPendingUpdate()
+        {
+            var drafts = _pendingDrafts;
+            var selectedIndex = _pendingSelectedIndex;
+            var selectedPhysBonePath = _pendingSelectedPhysBonePath;
+            _pendingDrafts = null;
+            _pendingSelectedPhysBonePath = null;
+            if (drafts != null)
+            {
+                ApplyUpdate(
                     drafts,
                     selectedIndex,
-                    selectedPhysBonePath));
+                    selectedPhysBonePath);
+            }
         }
 
         private void ApplyUpdate(
@@ -530,6 +549,8 @@ namespace Ee4v.PhysBoneCollider
         private void Cleanup()
         {
             _previewUpdates.CancelPending();
+            _pendingDrafts = null;
+            _pendingSelectedPhysBonePath = null;
             _orbit.CancelInteraction();
             foreach (var capsule in _capsules)
             {
