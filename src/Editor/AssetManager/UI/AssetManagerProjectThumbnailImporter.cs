@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.ProjectStyle;
 using UnityEditor;
@@ -44,7 +45,6 @@ namespace Ee4v.AssetManager.UI
             _disposed = true;
             _manager.Changed -= OnAssetManagerChanged;
             _applyCancellation?.Cancel();
-            _applyCancellation?.Dispose();
             _applyCancellation = null;
             _pendingImportedItemIds.Clear();
             _pendingRefreshItemIds.Clear();
@@ -96,10 +96,15 @@ namespace Ee4v.AssetManager.UI
             }
 
             _applyQueued = true;
-            EditorApplication.delayCall += ApplyPendingAsync;
+            EditorApplication.delayCall += ApplyPending;
         }
 
-        private async void ApplyPendingAsync()
+        private void ApplyPending()
+        {
+            _ = ApplyPendingAsync();
+        }
+
+        private async Task ApplyPendingAsync()
         {
             _applyQueued = false;
             if (_disposed || _applyRunning)

@@ -21,6 +21,7 @@
 | BOOTHとEagleの連携 | [`scriptcat.md`](./scriptcat.md) | userscriptの画面別動作とbridge呼び出し |
 | Unity 6への移行 | [`unity6.md`](./unity6.md) | 影響を受ける接続部と移行時の確認事項 |
 | EditModeテスト | [`test.md`](./test.md) | テストが保証する契約と残す理由 |
+| コードベース監査 | [`codebase-audit.md`](./codebase-audit.md) | 横断監査の結果、適用済み改善、残る構造課題 |
 
 ## Markdownに記録する情報
 

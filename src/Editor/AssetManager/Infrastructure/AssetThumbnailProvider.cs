@@ -15,6 +15,7 @@ namespace Ee4v.AssetManager.Infrastructure
     internal sealed class AssetThumbnailProvider
         : IAssetThumbnailProvider
     {
+        private const int MaximumThumbnailBytes = 16 * 1024 * 1024;
         private static readonly HttpClient HttpClient = new HttpClient
         {
             Timeout = TimeSpan.FromSeconds(10)
@@ -110,20 +111,38 @@ namespace Ee4v.AssetManager.Infrastructure
 
             var cachePath = Path.Combine(
                 _cacheRoot,
-                itemId + "-" + Hash(sourceUrl) + Extension(uri));
+                Hash(itemId) + "-" + Hash(sourceUrl) + Extension(uri));
             if (File.Exists(cachePath))
             {
                 try
                 {
-                    var data = await Task.Run(
-                        () => File.ReadAllBytes(cachePath),
-                        cancellationToken);
-                    if (data.Length > 0)
+                    byte[] data;
+                    using (var stream = new FileStream(
+                               cachePath,
+                               FileMode.Open,
+                               FileAccess.Read,
+                               FileShare.Read,
+                               81920,
+                               true))
+                    {
+                        data = await ReadLimitedBytes(
+                            stream,
+                            cancellationToken);
+                    }
+
+                    if (data != null && data.Length > 0)
                     {
                         return Found(data, cachePath, sourceUrl);
                     }
                 }
-                catch
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
                 {
                 }
             }
@@ -144,10 +163,33 @@ namespace Ee4v.AssetManager.Infrastructure
                             sourceUrl);
                     }
 
-                    var data = await response.Content
-                        .ReadAsByteArrayAsync();
+                    if (response.Content.Headers.ContentLength >
+                        MaximumThumbnailBytes)
+                    {
+                        return Missing(
+                            "Thumbnail download exceeded the 16 MiB limit.",
+                            cachePath,
+                            sourceUrl);
+                    }
+
+                    byte[] data;
+                    using (var stream = await response.Content
+                               .ReadAsStreamAsync())
+                    {
+                        data = await ReadLimitedBytes(
+                            stream,
+                            cancellationToken);
+                    }
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (data == null || data.Length == 0)
+                    if (data == null)
+                    {
+                        return Missing(
+                            "Thumbnail download exceeded the 16 MiB limit.",
+                            cachePath,
+                            sourceUrl);
+                    }
+
+                    if (data.Length == 0)
                     {
                         return Missing(
                             "Thumbnail download returned empty data.",
@@ -173,6 +215,35 @@ namespace Ee4v.AssetManager.Infrastructure
                     "Thumbnail download failed: " + exception.Message,
                     cachePath,
                     sourceUrl);
+            }
+        }
+
+        private static async Task<byte[]> ReadLimitedBytes(
+            Stream stream,
+            CancellationToken cancellationToken)
+        {
+            var buffer = new byte[81920];
+            using (var content = new MemoryStream())
+            {
+                while (true)
+                {
+                    var read = await stream.ReadAsync(
+                        buffer,
+                        0,
+                        buffer.Length,
+                        cancellationToken);
+                    if (read == 0)
+                    {
+                        return content.ToArray();
+                    }
+
+                    if (content.Length + read > MaximumThumbnailBytes)
+                    {
+                        return null;
+                    }
+
+                    content.Write(buffer, 0, read);
+                }
             }
         }
 

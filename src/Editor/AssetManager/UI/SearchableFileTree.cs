@@ -193,7 +193,7 @@ namespace Ee4v.AssetManager.UI
             var version = ++_reloadVersion;
             var cancellation = new CancellationTokenSource();
             _reloadCancellation = cancellation;
-            LoadAnalysesAsync(
+            _ = LoadAnalysesAsync(
                 version,
                 cancellation,
                 _files,
@@ -242,7 +242,7 @@ namespace Ee4v.AssetManager.UI
             return analyses;
         }
 
-        private async void LoadAnalysesAsync(
+        private async Task LoadAnalysesAsync(
             int version,
             CancellationTokenSource cancellation,
             IReadOnlyList<AssetFile> files,
@@ -328,9 +328,10 @@ namespace Ee4v.AssetManager.UI
             {
                 if (ReferenceEquals(_reloadCancellation, cancellation))
                 {
-                    cancellation.Dispose();
                     _reloadCancellation = null;
                 }
+
+                cancellation.Dispose();
             }
         }
 
@@ -714,7 +715,6 @@ namespace Ee4v.AssetManager.UI
             }
 
             _reloadCancellation.Cancel();
-            _reloadCancellation.Dispose();
             _reloadCancellation = null;
         }
 

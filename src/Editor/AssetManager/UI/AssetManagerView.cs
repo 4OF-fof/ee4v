@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Images;
@@ -796,7 +797,7 @@ namespace Ee4v.AssetManager.UI
                 _viewState.SelectedItemIds,
                 _viewState.SelectedItemId);
             _content.Add(_itemGrid);
-            LoadGridThumbnails(items);
+            _ = LoadGridThumbnailsAsync(items);
         }
 
         private void BuildTags()
@@ -942,7 +943,8 @@ namespace Ee4v.AssetManager.UI
                 _itemGrid.ItemsPerRow);
         }
 
-        private async void LoadGridThumbnails(IReadOnlyList<AssetItem> items)
+        private async Task LoadGridThumbnailsAsync(
+            IReadOnlyList<AssetItem> items)
         {
             if (items.Count == 0)
             {
@@ -988,9 +990,10 @@ namespace Ee4v.AssetManager.UI
             {
                 if (ReferenceEquals(_gridThumbnailCancellation, cancellation))
                 {
-                    cancellation.Dispose();
                     _gridThumbnailCancellation = null;
                 }
+
+                cancellation.Dispose();
             }
         }
 
@@ -1076,7 +1079,7 @@ namespace Ee4v.AssetManager.UI
                 _detail,
                 item,
                 GetFiles(item.Id));
-            LoadDetailThumbnails(new[] { item }, thumbnailStack);
+            _ = LoadDetailThumbnailsAsync(new[] { item }, thumbnailStack);
         }
 
         private void RefreshDetail()
@@ -1148,7 +1151,7 @@ namespace Ee4v.AssetManager.UI
                     items.Count),
                 UiClassNames.SelectionCount,
                 "ee4v-asset-manager__selection-count"));
-            LoadDetailThumbnails(orderedItems, thumbnailStack);
+            _ = LoadDetailThumbnailsAsync(orderedItems, thumbnailStack);
         }
 
         private AssetThumbnailStack CreateDetailThumbnailStack(
@@ -1159,7 +1162,7 @@ namespace Ee4v.AssetManager.UI
             return stack;
         }
 
-        private async void LoadDetailThumbnails(
+        private async Task LoadDetailThumbnailsAsync(
             IReadOnlyList<AssetItem> items,
             AssetThumbnailStack thumbnailStack)
         {
@@ -1204,13 +1207,14 @@ namespace Ee4v.AssetManager.UI
             {
                 if (ReferenceEquals(_thumbnailCancellation, cancellation))
                 {
-                    cancellation.Dispose();
                     _thumbnailCancellation = null;
                 }
+
+                cancellation.Dispose();
             }
         }
 
-        private async void LoadItemOverviewThumbnail(
+        private async Task LoadItemOverviewThumbnailAsync(
             AssetItem item,
             AssetThumbnailStack thumbnailStack)
         {
@@ -1252,9 +1256,10 @@ namespace Ee4v.AssetManager.UI
                         _itemOverviewThumbnailCancellation,
                         cancellation))
                 {
-                    cancellation.Dispose();
                     _itemOverviewThumbnailCancellation = null;
                 }
+
+                cancellation.Dispose();
             }
         }
 
@@ -1296,7 +1301,7 @@ namespace Ee4v.AssetManager.UI
                 CreateAssetStatusState(file.IsArchived));
             header.AddAction(AssetManagerControls.CreateButton(
                 I18N.Get("action.analyze"),
-                () => AnalyzeFile(file.Id, entries)));
+                () => _ = AnalyzeFileAsync(file.Id, entries)));
             header.AddAction(AssetManagerControls.CreateButton(
                 I18N.Get(file.IsArchived
                     ? "action.restore"
@@ -1777,7 +1782,7 @@ namespace Ee4v.AssetManager.UI
             hero.Add(summary);
             hero.Add(importButton);
             detail.Add(hero);
-            LoadItemOverviewThumbnail(item, thumbnail);
+            _ = LoadItemOverviewThumbnailAsync(item, thumbnail);
 
             var facts = new VisualElement();
             facts.AddToClassList("ee4v-asset-manager__overview-facts");
@@ -2822,7 +2827,7 @@ namespace Ee4v.AssetManager.UI
                     dependencyTargets));
         }
 
-        private async void AnalyzeFile(
+        private async Task AnalyzeFileAsync(
             string fileId,
             AssetManagerTextField output)
         {
@@ -2862,26 +2867,27 @@ namespace Ee4v.AssetManager.UI
                         _fileAnalysisCancellation,
                         cancellation))
                 {
-                    cancellation.Dispose();
                     _fileAnalysisCancellation = null;
                 }
+
+                cancellation.Dispose();
             }
         }
 
-        private async void ImportEntries(string fileId, string paths)
+        private void ImportEntries(string fileId, string paths)
         {
-            await RunImport(
+            _ = RunImport(
                 () => _manager.ImportFileEntries(fileId, SplitLines(paths)));
         }
 
-        private async void ImportFileTreeEntry(FileTreeSelection selection)
+        private void ImportFileTreeEntry(FileTreeSelection selection)
         {
             if (selection?.File == null)
             {
                 return;
             }
 
-            await RunImport(() => _manager.ImportFileEntries(
+            _ = RunImport(() => _manager.ImportFileEntries(
                 selection.File.Id,
                 new[] { selection.Entry?.Path ?? string.Empty }));
         }
@@ -3030,11 +3036,11 @@ namespace Ee4v.AssetManager.UI
             return _manager.GetItemTargets(itemId).Count > 0;
         }
 
-        private async void ImportItemTargets(
+        private void ImportItemTargets(
             string itemId,
             IReadOnlyList<AssetFileTarget> selections)
         {
-            await RunImport(() => _manager.ImportItemTargets(
+            _ = RunImport(() => _manager.ImportItemTargets(
                 itemId,
                 selections));
         }
@@ -3086,8 +3092,8 @@ namespace Ee4v.AssetManager.UI
             });
         }
 
-        private async System.Threading.Tasks.Task RunImport(
-            Func<System.Threading.Tasks.Task<AssetImportResult>> operation)
+        private async Task RunImport(
+            Func<Task<AssetImportResult>> operation)
         {
             try
             {
@@ -3438,30 +3444,29 @@ namespace Ee4v.AssetManager.UI
 
         private void CancelThumbnail()
         {
-            _thumbnailCancellation?.Cancel();
-            _thumbnailCancellation?.Dispose();
-            _thumbnailCancellation = null;
+            Cancel(ref _thumbnailCancellation);
         }
 
         private void CancelItemOverviewThumbnail()
         {
-            _itemOverviewThumbnailCancellation?.Cancel();
-            _itemOverviewThumbnailCancellation?.Dispose();
-            _itemOverviewThumbnailCancellation = null;
+            Cancel(ref _itemOverviewThumbnailCancellation);
         }
 
         private void CancelGridThumbnails()
         {
-            _gridThumbnailCancellation?.Cancel();
-            _gridThumbnailCancellation?.Dispose();
-            _gridThumbnailCancellation = null;
+            Cancel(ref _gridThumbnailCancellation);
         }
 
         private void CancelFileAnalysis()
         {
-            _fileAnalysisCancellation?.Cancel();
-            _fileAnalysisCancellation?.Dispose();
-            _fileAnalysisCancellation = null;
+            Cancel(ref _fileAnalysisCancellation);
+        }
+
+        private static void Cancel(ref CancellationTokenSource cancellation)
+        {
+            var current = cancellation;
+            cancellation = null;
+            current?.Cancel();
         }
 
         private void ClearDetailThumbnail()

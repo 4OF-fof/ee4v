@@ -40,39 +40,56 @@ namespace Ee4v.Mcp
                 return;
             }
 
-            _listener = new HttpListener();
-            _listener.Prefixes.Add("http://127.0.0.1:" + _port + "/");
-            _listener.Start();
-            _cancellation = new CancellationTokenSource();
-            _listenTask = Listen(_cancellation.Token);
+            var listener = new HttpListener();
+            listener.Prefixes.Add("http://127.0.0.1:" + _port + "/");
+            try
+            {
+                listener.Start();
+            }
+            catch
+            {
+                listener.Close();
+                throw;
+            }
+
+            var cancellation = new CancellationTokenSource();
+            _listener = listener;
+            _cancellation = cancellation;
+            _listenTask = Listen(listener, cancellation.Token);
         }
 
         public void Dispose()
         {
-            _cancellation?.Cancel();
+            var listener = _listener;
+            var cancellation = _cancellation;
+            _listener = null;
+            _cancellation = null;
+            _listenTask = null;
+
+            cancellation?.Cancel();
             try
             {
-                _listener?.Stop();
-                _listener?.Close();
+                listener?.Stop();
+                listener?.Close();
             }
             catch
             {
             }
 
-            _listener = null;
-            _cancellation?.Dispose();
-            _cancellation = null;
-            _listenTask = null;
+            cancellation?.Dispose();
         }
 
-        private async Task Listen(CancellationToken cancellationToken)
+        private async Task Listen(
+            HttpListener listener,
+            CancellationToken cancellationToken)
         {
-            while (!cancellationToken.IsCancellationRequested && IsRunning)
+            while (!cancellationToken.IsCancellationRequested &&
+                   listener.IsListening)
             {
                 HttpListenerContext context;
                 try
                 {
-                    context = await _listener.GetContextAsync();
+                    context = await listener.GetContextAsync();
                 }
                 catch (Exception exception) when (
                     cancellationToken.IsCancellationRequested ||
@@ -92,7 +109,9 @@ namespace Ee4v.Mcp
         {
             try
             {
-                if (!IPAddress.IsLoopback(context.Request.RemoteEndPoint.Address) ||
+                var remoteEndpoint = context.Request.RemoteEndPoint;
+                if (remoteEndpoint == null ||
+                    !IPAddress.IsLoopback(remoteEndpoint.Address) ||
                     !IsLoopbackHost(context.Request.Headers["Host"]) ||
                     !IsAllowedOrigin(context.Request.Headers["Origin"]))
                 {
@@ -129,12 +148,7 @@ namespace Ee4v.Mcp
                 }
 
                 JObject request;
-                using (var reader = new StreamReader(
-                           context.Request.InputStream,
-                           context.Request.ContentEncoding ?? Encoding.UTF8))
-                {
-                    request = JObject.Parse(await reader.ReadToEndAsync());
-                }
+                request = JObject.Parse(await ReadRequestBody(context.Request));
 
                 var method = (string)request["method"];
                 if (method != null && method.StartsWith("notifications/", StringComparison.Ordinal))
@@ -147,24 +161,63 @@ namespace Ee4v.Mcp
                 var response = await HandleRequest(request, cancellationToken);
                 await WriteJson(context.Response, 200, response);
             }
+            catch (RequestTooLargeException exception)
+            {
+                await TryWriteJson(
+                    context.Response,
+                    413,
+                    Error(null, -32600, "Request too large", exception.Message));
+            }
             catch (JsonException exception)
             {
-                await WriteJson(
+                await TryWriteJson(
                     context.Response,
                     400,
                     Error(null, -32700, "Parse error", exception.Message));
             }
             catch (Exception exception)
             {
-                try
+                await TryWriteJson(
+                    context.Response,
+                    500,
+                    Error(null, -32603, "Internal error", exception.Message));
+            }
+        }
+
+        private static async Task<string> ReadRequestBody(
+            HttpListenerRequest request)
+        {
+            var buffer = new byte[81920];
+            using (var content = new MemoryStream())
+            {
+                while (true)
                 {
-                    await WriteJson(
-                        context.Response,
-                        500,
-                        Error(null, -32603, "Internal error", exception.Message));
+                    var read = await request.InputStream.ReadAsync(
+                        buffer,
+                        0,
+                        buffer.Length);
+                    if (read == 0)
+                    {
+                        break;
+                    }
+
+                    if (content.Length + read > MaximumRequestBytes)
+                    {
+                        throw new RequestTooLargeException(
+                            "MCP requests are limited to " +
+                            MaximumRequestBytes + " bytes.");
+                    }
+
+                    content.Write(buffer, 0, read);
                 }
-                catch
+
+                content.Position = 0;
+                using (var reader = new StreamReader(
+                           content,
+                           request.ContentEncoding ?? Encoding.UTF8,
+                           true))
                 {
+                    return reader.ReadToEnd();
                 }
             }
         }
@@ -262,10 +315,22 @@ namespace Ee4v.Mcp
                 return false;
             }
 
-            var name = host.Split(':')[0];
-            return string.Equals(name, "127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(name, "localhost", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(name, "[::1]", StringComparison.OrdinalIgnoreCase);
+            if (!Uri.TryCreate(
+                    "http://" + host.Trim(),
+                    UriKind.Absolute,
+                    out var uri) ||
+                !string.IsNullOrEmpty(uri.UserInfo) ||
+                uri.AbsolutePath != "/")
+            {
+                return false;
+            }
+
+            return string.Equals(
+                       uri.Host,
+                       "localhost",
+                       StringComparison.OrdinalIgnoreCase) ||
+                   IPAddress.TryParse(uri.Host, out var address) &&
+                   IPAddress.IsLoopback(address);
         }
 
         private static bool IsAllowedOrigin(string origin)
@@ -311,8 +376,37 @@ namespace Ee4v.Mcp
             response.ContentType = "application/json; charset=utf-8";
             response.ContentEncoding = Encoding.UTF8;
             response.ContentLength64 = bytes.Length;
-            await response.OutputStream.WriteAsync(bytes, 0, bytes.Length);
-            response.OutputStream.Close();
+            try
+            {
+                await response.OutputStream.WriteAsync(bytes, 0, bytes.Length);
+            }
+            finally
+            {
+                response.OutputStream.Close();
+            }
+        }
+
+        private static async Task TryWriteJson(
+            HttpListenerResponse response,
+            int statusCode,
+            JToken value)
+        {
+            try
+            {
+                await WriteJson(response, statusCode, value);
+            }
+            catch
+            {
+                // The peer can disconnect while an error response is written.
+            }
+        }
+
+        private sealed class RequestTooLargeException : Exception
+        {
+            internal RequestTooLargeException(string message)
+                : base(message)
+            {
+            }
         }
     }
 }

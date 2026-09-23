@@ -23,7 +23,7 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 
 ## Transportと安全境界
 
-- Listenerは`127.0.0.1`だけへbindし、remote endpoint、`Host` header、指定されている場合の`Origin`もloopbackか検証する。1 requestは8 MiBまでとする。
+- Listenerは`127.0.0.1`だけへbindし、remote endpoint、`Host` header、指定されている場合の`Origin`もloopbackか検証する。IPv4、IPv6をURIとして解析してloopbackを判定する。1 requestは8 MiBまでとし、`Content-Length`がないchunked requestもstream読取時に上限を適用する。
 - 認証は持たない。同じ端末のprocessはendpointへ接続できるため、外部interfaceへproxyまたは公開しない。
 - `/mcp`はJSON-RPCの`initialize`、`ping`、`tools/list`、`tools/call`とnotificationを処理する。`/health`はserverの生存確認だけに使用する。
 - Unity objectへ触れるtool実行は`EditorApplication.update`からmain threadへdispatchする。
