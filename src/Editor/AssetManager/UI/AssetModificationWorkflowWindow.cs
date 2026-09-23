@@ -14,6 +14,42 @@ namespace Ee4v.AssetManager.UI
 {
     internal sealed class AssetModificationWorkflowWindow : EditorWindow
     {
+        private const float MinimumBodyScale = 0.5f;
+        private const float MaximumBodyScale = 2f;
+        private const float MinimumBodyBlendShapeWeight = 0f;
+        private const float MaximumBodyBlendShapeWeight = 100f;
+        private const string AvatarDescriptorTypeName =
+            "VRC.SDK3.Avatars.Components.VRCAvatarDescriptor";
+
+        private static readonly string[] HeadBlendShapeTerms =
+        {
+            "head", "neck", "face", "facial", "hair", "ear",
+            "頭", "首", "顔", "髪", "耳"
+        };
+        private static readonly string[] ChestBlendShapeTerms =
+        {
+            "chest", "breast", "bust", "torso", "rib",
+            "胸", "バスト", "乳", "胴"
+        };
+        private static readonly string[] WaistBlendShapeTerms =
+        {
+            "waist", "hip", "pelvis", "belly", "stomach", "abdomen",
+            "腰", "尻", "お尻", "腹", "お腹"
+        };
+        private static readonly string[] ShoulderBlendShapeTerms =
+            { "shoulder", "肩" };
+        private static readonly string[] ArmBlendShapeTerms =
+            { "arm", "elbow", "腕", "肘" };
+        private static readonly string[] HandBlendShapeTerms =
+            { "hand", "finger", "wrist", "nail", "手", "指", "手首" };
+        private static readonly string[] LegBlendShapeTerms =
+        {
+            "leg", "thigh", "calf", "knee", "shin",
+            "脚", "太もも", "腿", "膝", "ふくらはぎ", "すね"
+        };
+        private static readonly string[] FootBlendShapeTerms =
+            { "foot", "feet", "toe", "ankle", "足", "つま先", "足首" };
+
         private enum WorkflowCategory
         {
             Appearance,
@@ -28,6 +64,19 @@ namespace Ee4v.AssetManager.UI
             Size
         }
 
+        private enum BodyPartCategory
+        {
+            Head,
+            Chest,
+            Waist,
+            Shoulders,
+            Arms,
+            Hands,
+            Legs,
+            Feet,
+            Other
+        }
+
         private sealed class AvatarMaterialEntry
         {
             internal Material Material { get; set; }
@@ -40,6 +89,92 @@ namespace Ee4v.AssetManager.UI
             internal string RendererPath { get; set; }
             internal int SlotIndex { get; set; }
         }
+
+        private sealed class BodyScaleDefinition
+        {
+            internal BodyScaleDefinition(
+                string localizationKey,
+                bool usesAvatarRoot,
+                bool usesFirstAvailableBone,
+                params HumanBodyBones[] bones)
+            {
+                LocalizationKey = localizationKey;
+                UsesAvatarRoot = usesAvatarRoot;
+                UsesFirstAvailableBone = usesFirstAvailableBone;
+                Bones = bones ?? Array.Empty<HumanBodyBones>();
+            }
+
+            internal string LocalizationKey { get; }
+            internal bool UsesAvatarRoot { get; }
+            internal bool UsesFirstAvailableBone { get; }
+            internal IReadOnlyList<HumanBodyBones> Bones { get; }
+        }
+
+        private sealed class BodyBlendShapeDefinition
+        {
+            internal string RendererPath { get; set; }
+            internal string ShapeName { get; set; }
+            internal string DisplayName { get; set; }
+            internal BodyPartCategory Category { get; set; }
+            internal float Value { get; set; }
+            internal float BaseValue { get; set; }
+        }
+
+        private static readonly IReadOnlyList<BodyScaleDefinition>
+            BodyScaleDefinitions = new[]
+            {
+                new BodyScaleDefinition(
+                    "workflow.appearance.sizePart.wholeBody",
+                    true,
+                    false),
+                new BodyScaleDefinition(
+                    "workflow.appearance.sizePart.head",
+                    false,
+                    false,
+                    HumanBodyBones.Head),
+                new BodyScaleDefinition(
+                    "workflow.appearance.sizePart.chest",
+                    false,
+                    true,
+                    HumanBodyBones.UpperChest,
+                    HumanBodyBones.Chest,
+                    HumanBodyBones.Spine),
+                new BodyScaleDefinition(
+                    "workflow.appearance.sizePart.waist",
+                    false,
+                    false,
+                    HumanBodyBones.Hips),
+                new BodyScaleDefinition(
+                    "workflow.appearance.sizePart.shoulders",
+                    false,
+                    false,
+                    HumanBodyBones.LeftShoulder,
+                    HumanBodyBones.RightShoulder),
+                new BodyScaleDefinition(
+                    "workflow.appearance.sizePart.arms",
+                    false,
+                    false,
+                    HumanBodyBones.LeftUpperArm,
+                    HumanBodyBones.RightUpperArm),
+                new BodyScaleDefinition(
+                    "workflow.appearance.sizePart.hands",
+                    false,
+                    false,
+                    HumanBodyBones.LeftHand,
+                    HumanBodyBones.RightHand),
+                new BodyScaleDefinition(
+                    "workflow.appearance.sizePart.legs",
+                    false,
+                    false,
+                    HumanBodyBones.LeftUpperLeg,
+                    HumanBodyBones.RightUpperLeg),
+                new BodyScaleDefinition(
+                    "workflow.appearance.sizePart.feet",
+                    false,
+                    false,
+                    HumanBodyBones.LeftFoot,
+                    HumanBodyBones.RightFoot)
+            };
 
         private sealed class EmbeddedMaterialInspector
             : VisualElement, IDisposable
@@ -217,7 +352,7 @@ namespace Ee4v.AssetManager.UI
         private WorkflowCategory _currentCategory =
             WorkflowCategory.Appearance;
         private AppearanceSection _appearanceSection =
-            AppearanceSection.Material;
+            AppearanceSection.Size;
         private bool _creatingDerivedAsset;
         private string _creationItemId = string.Empty;
         private GameObject _creationPrefab;
@@ -226,6 +361,14 @@ namespace Ee4v.AssetManager.UI
         private string _feedback = string.Empty;
         private HelpBoxMessageType _feedbackType =
             HelpBoxMessageType.Info;
+        private bool _bodyScaleDragging;
+        private bool _bodyScaleDragUndoRecorded;
+        private bool _bodyScaleDirty;
+        private bool _advancedBodyScaleExpanded;
+        private readonly HashSet<string> _expandedBodyScaleAxes =
+            new HashSet<string>(StringComparer.Ordinal);
+        private Vector3? _baseAvatarViewPosition;
+        private Component _avatarDescriptor;
 
         [MenuItem("ee4v/Window/Asset Manager/Modification Workflow")]
         private static void ShowWindow()
@@ -254,8 +397,8 @@ namespace Ee4v.AssetManager.UI
                 OnManagerInvalidated;
             AssetManagerWindowSession.ManagerInvalidated +=
                 OnManagerInvalidated;
-            Undo.undoRedoPerformed -= RefreshMaterialPreview;
-            Undo.undoRedoPerformed += RefreshMaterialPreview;
+            Undo.undoRedoPerformed -= RefreshAfterUndoRedo;
+            Undo.undoRedoPerformed += RefreshAfterUndoRedo;
             ConfigureWindow();
         }
 
@@ -266,10 +409,11 @@ namespace Ee4v.AssetManager.UI
 
         private void OnDisable()
         {
+            EndBodyScaleDrag(false);
             I18N.Reloaded -= Rebuild;
             AssetManagerWindowSession.ManagerInvalidated -=
                 OnManagerInvalidated;
-            Undo.undoRedoPerformed -= RefreshMaterialPreview;
+            Undo.undoRedoPerformed -= RefreshAfterUndoRedo;
             DisposeEditors();
         }
 
@@ -701,6 +845,12 @@ namespace Ee4v.AssetManager.UI
             WorkflowCategory category,
             bool clearFeedback = true)
         {
+            if (_currentCategory == WorkflowCategory.Appearance &&
+                _appearanceSection == AppearanceSection.Size &&
+                category != WorkflowCategory.Appearance)
+            {
+                EndBodyScaleDrag();
+            }
             if (_customizerHost == null ||
                 _faceExpressionHost == null ||
                 _physBoneHost == null)
@@ -789,9 +939,7 @@ namespace Ee4v.AssetManager.UI
             panel.Add(BuildAppearanceSectionTabs());
             if (_appearanceSection == AppearanceSection.Size)
             {
-                panel.Add(CreateTodoCard(
-                    "workflow.appearance.sizeTodoTitle",
-                    "workflow.appearance.sizeTodoDescription"));
+                panel.Add(BuildBodyScaleControls());
                 return panel;
             }
 
@@ -874,6 +1022,1321 @@ namespace Ee4v.AssetManager.UI
             return panel;
         }
 
+        private VisualElement BuildBodyScaleControls()
+        {
+            var content = new VisualElement();
+            content.AddToClassList(
+                "ee4v-modification-workflow__size-content");
+
+            if (!IsEditableWorkflowPrefab())
+            {
+                content.Add(UiTextFactory.CreateHelpBox(
+                    I18N.Get("workflow.appearance.sizeProtected"),
+                    HelpBoxMessageType.Warning));
+                return content;
+            }
+
+            var animator = FindHumanoidAnimator();
+            var primaryScaleList = new VisualElement();
+            primaryScaleList.AddToClassList(
+                "ee4v-modification-workflow__size-list");
+            var wholeBody = BodyScaleDefinitions.First(definition =>
+                definition.UsesAvatarRoot);
+            var wholeBodyTargets = ResolveBodyScaleTargets(
+                wholeBody,
+                animator);
+            if (TryGetWorkingAvatarViewPosition(
+                    out var avatarDescriptor,
+                    out var currentViewPosition))
+            {
+                var baseViewPosition = GetBaseAvatarViewPosition(
+                    avatarDescriptor,
+                    currentViewPosition);
+                primaryScaleList.Add(BuildBodyHeightControl(
+                    wholeBody,
+                    GetTransformPaths(wholeBodyTargets),
+                    currentViewPosition,
+                    baseViewPosition));
+            }
+            else
+            {
+                primaryScaleList.Add(UiTextFactory.CreateHelpBox(
+                    I18N.Get("workflow.appearance.heightDescriptorRequired"),
+                    HelpBoxMessageType.Warning));
+            }
+            content.Add(primaryScaleList);
+
+            var bodyShapes = GetBodyBlendShapes();
+            var bodyShapeHeader = new SectionHeader(
+                I18N.Get("workflow.appearance.bodyShapeTitle"));
+            bodyShapeHeader.AddToClassList(
+                "ee4v-modification-workflow__size-section-header");
+            content.Add(bodyShapeHeader);
+            if (bodyShapes.Count == 0)
+            {
+                content.Add(UiTextFactory.CreateHelpBox(
+                    I18N.Get("workflow.appearance.bodyShapeEmpty"),
+                    HelpBoxMessageType.Info));
+            }
+            else
+            {
+                var bodyShapeList = new VisualElement();
+                bodyShapeList.AddToClassList(
+                    "ee4v-modification-workflow__size-list");
+                foreach (BodyPartCategory category in Enum.GetValues(
+                             typeof(BodyPartCategory)))
+                {
+                    var categoryShapes = bodyShapes
+                        .Where(definition =>
+                            definition.Category == category)
+                        .ToArray();
+                    if (categoryShapes.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    var categoryLabel = UiTextFactory.Create(
+                        I18N.Get(GetBodyPartCategoryLocalizationKey(category)),
+                        UiClassNames.SecondaryText,
+                        "ee4v-modification-workflow__size-group-title");
+                    bodyShapeList.Add(categoryLabel);
+                    foreach (var bodyShape in categoryShapes)
+                    {
+                        bodyShapeList.Add(
+                            BuildBodyBlendShapeControl(bodyShape));
+                    }
+                }
+                content.Add(bodyShapeList);
+            }
+
+            var advancedList = new VisualElement();
+            advancedList.AddToClassList(
+                "ee4v-modification-workflow__size-list");
+            var hasBodyPartControls = false;
+            foreach (var definition in BodyScaleDefinitions.Where(
+                         definition => !definition.UsesAvatarRoot))
+            {
+                var targets = ResolveBodyScaleTargets(definition, animator);
+                if (targets.Count == 0)
+                {
+                    continue;
+                }
+
+                hasBodyPartControls = true;
+                advancedList.Add(BuildBodyScaleControl(
+                    definition,
+                    GetTransformPaths(targets),
+                    GetBodyScaleMultipliers(targets)));
+            }
+
+            if (hasBodyPartControls)
+            {
+                content.Add(BuildAdvancedBodyScaleFoldout(advancedList));
+            }
+            else
+            {
+                content.Add(UiTextFactory.CreateHelpBox(
+                    I18N.Get("workflow.appearance.sizeHumanoidRequired"),
+                    HelpBoxMessageType.Warning));
+            }
+            return content;
+        }
+
+        private IReadOnlyList<string> GetTransformPaths(
+            IReadOnlyList<Transform> targets)
+        {
+            return targets
+                .Where(target => target != null)
+                .Select(target =>
+                    AnimationUtility.CalculateTransformPath(
+                        target,
+                        _workingObject.transform))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        private VisualElement BuildAdvancedBodyScaleFoldout(
+            VisualElement advancedList)
+        {
+            var foldout = new VisualElement();
+            foldout.AddToClassList(
+                "ee4v-modification-workflow__advanced-size");
+
+            UiButton toggle = null;
+            toggle = new UiButton(
+                I18N.Get("workflow.appearance.advancedSizeTitle"),
+                () =>
+                {
+                    _advancedBodyScaleExpanded =
+                        !_advancedBodyScaleExpanded;
+                    UpdateAdvancedBodyScaleFoldout(toggle, advancedList);
+                },
+                icon: AssetManagerControls.LoadFluentIconState(
+                    _advancedBodyScaleExpanded
+                        ? "chevron_down.png"
+                        : "chevron_right.png",
+                    UiSizeTokens.Size12),
+                variant: UiButtonVariant.Ghost);
+            toggle.AddToClassList(
+                "ee4v-modification-workflow__advanced-size-toggle");
+            foldout.Add(toggle);
+
+            foldout.Add(advancedList);
+            UpdateAdvancedBodyScaleFoldout(toggle, advancedList);
+            return foldout;
+        }
+
+        private void UpdateAdvancedBodyScaleFoldout(
+            UiButton toggle,
+            VisualElement content)
+        {
+            toggle?.SetIcon(AssetManagerControls.LoadFluentIconState(
+                _advancedBodyScaleExpanded
+                    ? "chevron_down.png"
+                    : "chevron_right.png",
+                UiSizeTokens.Size12));
+            content?.EnableInClassList(
+                "ee4v-modification-workflow__hidden",
+                !_advancedBodyScaleExpanded);
+        }
+
+        private VisualElement BuildBodyHeightControl(
+            BodyScaleDefinition definition,
+            IReadOnlyList<string> targetPaths,
+            Vector3 currentViewPosition,
+            Vector3 baseViewPosition)
+        {
+            var group = new VisualElement();
+            group.AddToClassList(
+                "ee4v-modification-workflow__size-scale-group");
+            var baseHeightMeters = baseViewPosition.y;
+            var minimumHeight = Mathf.Max(0.01f, baseHeightMeters - 1f);
+            var maximumHeight = baseHeightMeters + 1f;
+            var row = CreateSizeControlRow(
+                I18N.Get(definition.LocalizationKey),
+                out var controls);
+            var slider = new Slider(minimumHeight, maximumHeight);
+            slider.AddToClassList(
+                "ee4v-modification-workflow__size-slider");
+            slider.tooltip = I18N.Get(
+                "workflow.appearance.heightSliderTooltip",
+                FormatBodyHeight(minimumHeight),
+                FormatBodyHeight(maximumHeight));
+            controls.Add(slider);
+            var value = UiTextFactory.CreateFloatField();
+            value.AddToClassList(
+                "ee4v-modification-workflow__size-value");
+            controls.Add(value);
+            controls.Add(CreateSizeUnit("m"));
+            var reset = CreateSizeResetButton(() =>
+                slider.value = baseHeightMeters);
+            controls.Add(reset);
+
+            var rendering = false;
+            void SetHeight(float height, bool apply)
+            {
+                var normalized = Mathf.Clamp(
+                    Mathf.Round(height * 100f) / 100f,
+                    minimumHeight,
+                    maximumHeight);
+                rendering = true;
+                slider.SetValueWithoutNotify(normalized);
+                value.SetValueWithoutNotify(normalized);
+                rendering = false;
+                reset.SetEnabled(!Mathf.Approximately(
+                    normalized,
+                    baseHeightMeters));
+                if (apply)
+                {
+                    var multiplier = normalized / baseHeightMeters;
+                    ApplyBodyScale(
+                        targetPaths,
+                        Vector3.one * multiplier,
+                        updateAvatarViewPosition: true);
+                }
+            }
+
+            slider.RegisterCallback<PointerDownEvent>(_ =>
+                BeginBodyScaleDrag());
+            slider.RegisterCallback<PointerUpEvent>(_ =>
+                EndBodyScaleDrag());
+            slider.RegisterCallback<PointerCaptureOutEvent>(_ =>
+                EndBodyScaleDrag());
+            slider.RegisterValueChangedCallback(evt =>
+            {
+                if (!rendering)
+                {
+                    SetHeight(evt.newValue, true);
+                }
+            });
+            value.RegisterValueChangedCallback(evt =>
+            {
+                if (!rendering &&
+                    !float.IsNaN(evt.newValue) &&
+                    !float.IsInfinity(evt.newValue))
+                {
+                    SetHeight(evt.newValue, true);
+                }
+            });
+            SetHeight(currentViewPosition.y, false);
+            group.Add(row);
+            return group;
+        }
+
+        private VisualElement BuildBodyScaleControl(
+            BodyScaleDefinition definition,
+            IReadOnlyList<string> targetPaths,
+            Vector3 initialMultipliers)
+        {
+            var group = new VisualElement();
+            group.AddToClassList(
+                "ee4v-modification-workflow__size-scale-group");
+            var partName = I18N.Get(definition.LocalizationKey);
+            var multipliers = RoundBodyScaleMultipliers(initialMultipliers);
+            var axisRenderers = new Action<float>[3];
+            var axisRows = new VisualElement();
+            axisRows.AddToClassList(
+                "ee4v-modification-workflow__size-axis-rows");
+            UiButton axisToggle = null;
+            void ToggleAxes()
+            {
+                if (!_expandedBodyScaleAxes.Add(
+                        definition.LocalizationKey))
+                {
+                    _expandedBodyScaleAxes.Remove(
+                        definition.LocalizationKey);
+                }
+                UpdateBodyScaleAxisFoldout(
+                    axisToggle,
+                    axisRows,
+                    definition.LocalizationKey,
+                    partName);
+            }
+            axisToggle = AssetManagerControls.CreateIconButton(
+                string.Empty,
+                "chevron_right.png",
+                UiSizeTokens.Size12,
+                UiButtonVariant.Ghost,
+                ToggleAxes,
+                "ee4v-modification-workflow__size-axis-toggle");
+            var row = BuildScalePercentControl(
+                partName,
+                I18N.Get(
+                    "workflow.appearance.sizeSliderTooltip",
+                    partName),
+                AverageVectorComponent(multipliers) * 100f,
+                isChild: false,
+                percent =>
+                {
+                    var multiplier = percent / 100f;
+                    multipliers = Vector3.one * multiplier;
+                    foreach (var renderAxis in axisRenderers)
+                    {
+                        renderAxis?.Invoke(percent);
+                    }
+                    ApplyBodyScale(targetPaths, multipliers);
+                },
+                out var renderUniform,
+                axisToggle,
+                ToggleAxes);
+            group.Add(row);
+
+            for (var axis = 0; axis < 3; axis++)
+            {
+                var capturedAxis = axis;
+                var axisName = GetScaleAxisName(axis);
+                var axisRow = BuildScalePercentControl(
+                    axisName,
+                    I18N.Get(
+                        "workflow.appearance.axisScaleSliderTooltip",
+                        partName,
+                        axisName),
+                    GetVectorComponent(multipliers, axis) * 100f,
+                    isChild: true,
+                    percent =>
+                    {
+                        multipliers = SetVectorComponent(
+                            multipliers,
+                            capturedAxis,
+                            percent / 100f);
+                        renderUniform(
+                            AverageVectorComponent(multipliers) * 100f);
+                        ApplyBodyScale(targetPaths, multipliers);
+                    },
+                    out axisRenderers[axis]);
+                axisRows.Add(axisRow);
+            }
+            group.Add(axisRows);
+            UpdateBodyScaleAxisFoldout(
+                axisToggle,
+                axisRows,
+                definition.LocalizationKey,
+                partName);
+            return group;
+        }
+
+        private void UpdateBodyScaleAxisFoldout(
+            UiButton toggle,
+            VisualElement axisRows,
+            string key,
+            string partName)
+        {
+            var expanded = _expandedBodyScaleAxes.Contains(key);
+            toggle?.SetIcon(AssetManagerControls.LoadFluentIconState(
+                expanded
+                    ? "chevron_down.png"
+                    : "chevron_right.png",
+                UiSizeTokens.Size12));
+            if (toggle != null)
+            {
+                toggle.tooltip = I18N.Get(
+                    expanded
+                        ? "workflow.appearance.sizeAxisCollapse"
+                        : "workflow.appearance.sizeAxisExpand",
+                    partName);
+            }
+            axisRows?.EnableInClassList(
+                "ee4v-modification-workflow__hidden",
+                !expanded);
+        }
+
+        private VisualElement BuildScalePercentControl(
+            string label,
+            string tooltip,
+            float initialPercent,
+            bool isChild,
+            Action<float> changed,
+            out Action<float> render,
+            VisualElement leading = null,
+            Action labelClicked = null)
+        {
+            var row = CreateSizeControlRow(
+                label,
+                out var controls,
+                isChild,
+                leading,
+                labelClicked);
+            var slider = new Slider(
+                MinimumBodyScale * 100f,
+                MaximumBodyScale * 100f);
+            slider.AddToClassList(
+                "ee4v-modification-workflow__size-slider");
+            slider.tooltip = tooltip;
+            controls.Add(slider);
+            var value = UiTextFactory.CreateFloatField();
+            value.AddToClassList(
+                "ee4v-modification-workflow__size-value");
+            controls.Add(value);
+            controls.Add(CreateSizeUnit("%"));
+            var reset = CreateSizeResetButton(() => slider.value = 100f);
+            controls.Add(reset);
+
+            var rendering = false;
+            void RenderScalePercent(float percent)
+            {
+                var normalized = Mathf.Round(percent);
+                var sliderValue = Mathf.Clamp(
+                    normalized,
+                    MinimumBodyScale * 100f,
+                    MaximumBodyScale * 100f);
+                rendering = true;
+                slider.SetValueWithoutNotify(sliderValue);
+                value.SetValueWithoutNotify(normalized);
+                rendering = false;
+                reset.SetEnabled(!Mathf.Approximately(normalized, 100f));
+            }
+
+            void SetScalePercent(float percent)
+            {
+                var normalized = Mathf.Round(percent);
+                RenderScalePercent(normalized);
+                changed?.Invoke(normalized);
+            }
+
+            slider.RegisterCallback<PointerDownEvent>(_ =>
+                BeginBodyScaleDrag());
+            slider.RegisterCallback<PointerUpEvent>(_ =>
+                EndBodyScaleDrag());
+            slider.RegisterCallback<PointerCaptureOutEvent>(_ =>
+                EndBodyScaleDrag());
+            slider.RegisterValueChangedCallback(evt =>
+            {
+                if (!rendering)
+                {
+                    SetScalePercent(evt.newValue);
+                }
+            });
+            value.RegisterValueChangedCallback(evt =>
+            {
+                if (!rendering &&
+                    !float.IsNaN(evt.newValue) &&
+                    !float.IsInfinity(evt.newValue))
+                {
+                    SetScalePercent(evt.newValue);
+                }
+            });
+            render = RenderScalePercent;
+            RenderScalePercent(initialPercent);
+            return row;
+        }
+
+        private VisualElement BuildBodyBlendShapeControl(
+            BodyBlendShapeDefinition definition)
+        {
+            var row = CreateSizeControlRow(
+                definition.DisplayName,
+                out var controls);
+            var slider = new Slider(
+                MinimumBodyBlendShapeWeight,
+                MaximumBodyBlendShapeWeight);
+            slider.AddToClassList(
+                "ee4v-modification-workflow__size-slider");
+            slider.tooltip = I18N.Get(
+                "workflow.appearance.bodyShapeSliderTooltip",
+                definition.DisplayName);
+            controls.Add(slider);
+            var value = UiTextFactory.CreateFloatField();
+            value.AddToClassList(
+                "ee4v-modification-workflow__size-value");
+            controls.Add(value);
+            var reset = CreateSizeResetButton(() =>
+                slider.value = definition.BaseValue);
+            controls.Add(reset);
+
+            var rendering = false;
+            void SetWeight(float weight, bool apply)
+            {
+                var normalized = Mathf.Clamp(
+                    Mathf.Round(weight),
+                    MinimumBodyBlendShapeWeight,
+                    MaximumBodyBlendShapeWeight);
+                rendering = true;
+                slider.SetValueWithoutNotify(normalized);
+                value.SetValueWithoutNotify(normalized);
+                rendering = false;
+                reset.SetEnabled(!Mathf.Approximately(
+                    normalized,
+                    definition.BaseValue));
+                if (apply)
+                {
+                    ApplyBodyBlendShape(
+                        definition.RendererPath,
+                        definition.ShapeName,
+                        normalized);
+                }
+            }
+
+            slider.RegisterCallback<PointerDownEvent>(_ =>
+                BeginBodyScaleDrag());
+            slider.RegisterCallback<PointerUpEvent>(_ =>
+                EndBodyScaleDrag());
+            slider.RegisterCallback<PointerCaptureOutEvent>(_ =>
+                EndBodyScaleDrag());
+            slider.RegisterValueChangedCallback(evt =>
+            {
+                if (!rendering)
+                {
+                    SetWeight(evt.newValue, true);
+                }
+            });
+            value.RegisterValueChangedCallback(evt =>
+            {
+                if (!rendering &&
+                    !float.IsNaN(evt.newValue) &&
+                    !float.IsInfinity(evt.newValue))
+                {
+                    SetWeight(evt.newValue, true);
+                }
+            });
+            SetWeight(definition.Value, false);
+            return row;
+        }
+
+        private VisualElement CreateSizeControlRow(
+            string label,
+            out VisualElement controls,
+            bool isChild = false,
+            VisualElement leading = null,
+            Action labelClicked = null)
+        {
+            var row = new VisualElement();
+            row.AddToClassList(
+                "ee4v-modification-workflow__size-control");
+            row.EnableInClassList(
+                "ee4v-modification-workflow__size-control--child",
+                isChild);
+            if (leading != null)
+            {
+                row.Add(leading);
+            }
+            else if (isChild)
+            {
+                var indent = new VisualElement();
+                indent.AddToClassList(
+                    "ee4v-modification-workflow__size-axis-indent");
+                row.Add(indent);
+            }
+            var name = UiTextFactory.Create(
+                label,
+                "ee4v-modification-workflow__size-control-name");
+            name.tooltip = label ?? string.Empty;
+            if (labelClicked != null)
+            {
+                name.RegisterCallback<ClickEvent>(evt =>
+                {
+                    labelClicked();
+                    evt.StopPropagation();
+                });
+            }
+            row.Add(name);
+            controls = new VisualElement();
+            controls.AddToClassList(
+                "ee4v-modification-workflow__size-control-row");
+            row.Add(controls);
+            return row;
+        }
+
+        private UiTextElement CreateSizeUnit(string unit)
+        {
+            var label = UiTextFactory.Create(
+                unit,
+                UiClassNames.SecondaryText,
+                "ee4v-modification-workflow__size-unit");
+            label.SetTextAlign(TextAnchor.MiddleLeft);
+            return label;
+        }
+
+        private UiButton CreateSizeResetButton(Action reset)
+        {
+            var button = new UiButton(
+                I18N.Get("workflow.appearance.sizeReset"),
+                reset,
+                variant: UiButtonVariant.Ghost);
+            button.AddToClassList(
+                "ee4v-modification-workflow__size-reset");
+            return button;
+        }
+
+        private IReadOnlyList<BodyBlendShapeDefinition>
+            GetBodyBlendShapes()
+        {
+            if (_workingObject == null)
+            {
+                return Array.Empty<BodyBlendShapeDefinition>();
+            }
+
+            var renderers = _workingObject
+                .GetComponentsInChildren<SkinnedMeshRenderer>(true)
+                .Where(renderer =>
+                    renderer != null &&
+                    renderer.sharedMesh != null &&
+                    renderer.sharedMesh.blendShapeCount > 0 &&
+                    !IsBodyMesh(renderer))
+                .ToArray();
+            if (renderers.Length == 0)
+            {
+                return Array.Empty<BodyBlendShapeDefinition>();
+            }
+
+            var result = new List<BodyBlendShapeDefinition>();
+            var separators = FaceExpressionSettings.GetSeparators();
+            foreach (var renderer in renderers)
+            {
+                var rendererPath = AnimationUtility.CalculateTransformPath(
+                    renderer.transform,
+                    _workingObject.transform);
+                for (var shapeIndex = 0;
+                     shapeIndex < renderer.sharedMesh.blendShapeCount;
+                     shapeIndex++)
+                {
+                    var shapeName = renderer.sharedMesh
+                        .GetBlendShapeName(shapeIndex);
+                    if (FaceExpressionClipEditor.TryGetHeader(
+                            shapeName,
+                            separators,
+                            out _))
+                    {
+                        continue;
+                    }
+                    result.Add(new BodyBlendShapeDefinition
+                    {
+                        RendererPath = rendererPath,
+                        ShapeName = shapeName,
+                        DisplayName = GetBodyBlendShapeDisplayName(shapeName),
+                        Category = ClassifyBodyPart(
+                            shapeName,
+                            renderer.name),
+                        Value = Mathf.Clamp(
+                            renderer.GetBlendShapeWeight(shapeIndex),
+                            MinimumBodyBlendShapeWeight,
+                            MaximumBodyBlendShapeWeight),
+                        BaseValue = GetBaseBlendShapeWeight(
+                            renderer,
+                            shapeName)
+                    });
+                }
+            }
+            return result;
+        }
+
+        private static string GetBodyBlendShapeDisplayName(string shapeName)
+        {
+            var name = (shapeName ?? string.Empty).Trim();
+            var separator = name.IndexOf('/');
+            if (separator < 0 || separator >= name.Length - 1)
+            {
+                return name;
+            }
+
+            var role = name.Substring(separator + 1).Trim();
+            return role.Length > 0 ? role : name;
+        }
+
+        private static bool IsBodyMesh(SkinnedMeshRenderer renderer)
+        {
+            return renderer != null &&
+                   (string.Equals(
+                        NormalizeBlendShapeName(renderer.name),
+                        "body",
+                        StringComparison.Ordinal) ||
+                    string.Equals(
+                        NormalizeBlendShapeName(renderer.sharedMesh?.name),
+                        "body",
+                        StringComparison.Ordinal));
+        }
+
+        private static BodyPartCategory ClassifyBodyPart(
+            string shapeName,
+            string rendererName)
+        {
+            var normalized = NormalizeBlendShapeName(shapeName) +
+                             NormalizeBlendShapeName(rendererName);
+            if (ContainsBlendShapeTerm(normalized, HeadBlendShapeTerms))
+            {
+                return BodyPartCategory.Head;
+            }
+            if (ContainsBlendShapeTerm(normalized, ChestBlendShapeTerms))
+            {
+                return BodyPartCategory.Chest;
+            }
+            if (ContainsBlendShapeTerm(normalized, WaistBlendShapeTerms))
+            {
+                return BodyPartCategory.Waist;
+            }
+            if (ContainsBlendShapeTerm(
+                    normalized,
+                    ShoulderBlendShapeTerms))
+            {
+                return BodyPartCategory.Shoulders;
+            }
+            if (ContainsBlendShapeTerm(normalized, HandBlendShapeTerms))
+            {
+                return BodyPartCategory.Hands;
+            }
+            if (ContainsBlendShapeTerm(normalized, ArmBlendShapeTerms))
+            {
+                return BodyPartCategory.Arms;
+            }
+            if (ContainsBlendShapeTerm(normalized, FootBlendShapeTerms))
+            {
+                return BodyPartCategory.Feet;
+            }
+            if (ContainsBlendShapeTerm(normalized, LegBlendShapeTerms))
+            {
+                return BodyPartCategory.Legs;
+            }
+            return BodyPartCategory.Other;
+        }
+
+        private static bool ContainsBlendShapeTerm(
+            string normalized,
+            IEnumerable<string> terms)
+        {
+            if (string.IsNullOrEmpty(normalized))
+            {
+                return false;
+            }
+
+            return terms.Any(term => normalized.IndexOf(
+                NormalizeBlendShapeName(term),
+                StringComparison.Ordinal) >= 0);
+        }
+
+        private static string GetBodyPartCategoryLocalizationKey(
+            BodyPartCategory category)
+        {
+            switch (category)
+            {
+                case BodyPartCategory.Head:
+                    return "workflow.appearance.bodyShapePart.head";
+                case BodyPartCategory.Chest:
+                    return "workflow.appearance.bodyShapePart.chest";
+                case BodyPartCategory.Waist:
+                    return "workflow.appearance.bodyShapePart.waist";
+                case BodyPartCategory.Shoulders:
+                    return "workflow.appearance.bodyShapePart.shoulders";
+                case BodyPartCategory.Arms:
+                    return "workflow.appearance.bodyShapePart.arms";
+                case BodyPartCategory.Hands:
+                    return "workflow.appearance.bodyShapePart.hands";
+                case BodyPartCategory.Legs:
+                    return "workflow.appearance.bodyShapePart.legs";
+                case BodyPartCategory.Feet:
+                    return "workflow.appearance.bodyShapePart.feet";
+                default:
+                    return "workflow.appearance.bodyShapePart.other";
+            }
+        }
+
+        private static string NormalizeBlendShapeName(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return new string(value
+                .Trim()
+                .ToLowerInvariant()
+                .Where(character =>
+                    !char.IsWhiteSpace(character) &&
+                    character != '_' &&
+                    character != '-' &&
+                    character != '.')
+                .ToArray());
+        }
+
+        private static float GetBaseBlendShapeWeight(
+            SkinnedMeshRenderer renderer,
+            string shapeName)
+        {
+            var source = PrefabUtility
+                .GetCorrespondingObjectFromSource(renderer) as
+                SkinnedMeshRenderer;
+            var index = source?.sharedMesh == null
+                ? -1
+                : source.sharedMesh.GetBlendShapeIndex(shapeName);
+            return index < 0
+                ? MinimumBodyBlendShapeWeight
+                : Mathf.Clamp(
+                    source.GetBlendShapeWeight(index),
+                    MinimumBodyBlendShapeWeight,
+                    MaximumBodyBlendShapeWeight);
+        }
+
+        private static bool TryGetAvatarViewPosition(
+            GameObject avatar,
+            out Component descriptor,
+            out Vector3 viewPosition)
+        {
+            descriptor = avatar == null
+                ? null
+                : avatar.GetComponentsInChildren<Component>(true)
+                    .FirstOrDefault(component =>
+                        component != null &&
+                        string.Equals(
+                            component.GetType().FullName,
+                            AvatarDescriptorTypeName,
+                            StringComparison.Ordinal));
+            return TryReadAvatarViewPosition(descriptor, out viewPosition) &&
+                   viewPosition.y > 0.01f;
+        }
+
+        private bool TryGetWorkingAvatarViewPosition(
+            out Component descriptor,
+            out Vector3 viewPosition)
+        {
+            if (_avatarDescriptor != null &&
+                TryReadAvatarViewPosition(
+                    _avatarDescriptor,
+                    out viewPosition) &&
+                viewPosition.y > 0.01f)
+            {
+                descriptor = _avatarDescriptor;
+                return true;
+            }
+
+            var found = TryGetAvatarViewPosition(
+                _workingObject,
+                out descriptor,
+                out viewPosition);
+            _avatarDescriptor = found ? descriptor : null;
+            return found;
+        }
+
+        private static bool TryReadAvatarViewPosition(
+            Component descriptor,
+            out Vector3 viewPosition)
+        {
+            viewPosition = Vector3.zero;
+            if (descriptor == null)
+            {
+                return false;
+            }
+
+            var serialized = new SerializedObject(descriptor);
+            var property = serialized.FindProperty("ViewPosition");
+            if (property == null ||
+                property.propertyType != SerializedPropertyType.Vector3)
+            {
+                return false;
+            }
+
+            viewPosition = property.vector3Value;
+            return true;
+        }
+
+        private Vector3 GetBaseAvatarViewPosition(
+            Component descriptor,
+            Vector3 currentViewPosition)
+        {
+            if (_baseAvatarViewPosition.HasValue)
+            {
+                return _baseAvatarViewPosition.Value;
+            }
+
+            var source = PrefabUtility
+                .GetCorrespondingObjectFromSource(descriptor) as Component;
+            if (!TryReadAvatarViewPosition(source, out var baseViewPosition) ||
+                baseViewPosition.y <= 0.01f)
+            {
+                baseViewPosition = currentViewPosition;
+            }
+            _baseAvatarViewPosition = baseViewPosition;
+            return baseViewPosition;
+        }
+
+        private Animator FindHumanoidAnimator()
+        {
+            if (_workingObject == null)
+            {
+                return null;
+            }
+
+            return _workingObject
+                .GetComponentsInChildren<Animator>(true)
+                .FirstOrDefault(animator =>
+                    animator != null &&
+                    animator.avatar != null &&
+                    animator.avatar.isHuman &&
+                    animator.isHuman);
+        }
+
+        private IReadOnlyList<Transform> ResolveBodyScaleTargets(
+            BodyScaleDefinition definition,
+            Animator animator)
+        {
+            if (definition.UsesAvatarRoot)
+            {
+                return _workingObject != null
+                    ? new[] { _workingObject.transform }
+                    : Array.Empty<Transform>();
+            }
+            if (animator == null)
+            {
+                return Array.Empty<Transform>();
+            }
+
+            var targets = new List<Transform>();
+            foreach (var bone in definition.Bones)
+            {
+                var target = animator.GetBoneTransform(bone);
+                if (target == null)
+                {
+                    continue;
+                }
+
+                targets.Add(target);
+                if (definition.UsesFirstAvailableBone)
+                {
+                    break;
+                }
+            }
+            return targets;
+        }
+
+        private static Vector3 GetBodyScaleMultipliers(
+            IReadOnlyList<Transform> targets)
+        {
+            var sum = Vector3.zero;
+            var count = 0;
+            foreach (var target in targets)
+            {
+                if (target == null)
+                {
+                    continue;
+                }
+
+                var baseScale = GetBaseLocalScale(target);
+                sum += new Vector3(
+                    GetScaleRatio(target.localScale.x, baseScale.x),
+                    GetScaleRatio(target.localScale.y, baseScale.y),
+                    GetScaleRatio(target.localScale.z, baseScale.z));
+                count++;
+            }
+
+            return count == 0
+                ? Vector3.one
+                : RoundBodyScaleMultipliers(sum / count);
+        }
+
+        private static float GetScaleRatio(float value, float baseValue)
+        {
+            return Mathf.Abs(baseValue) < 0.0001f
+                ? 1f
+                : value / baseValue;
+        }
+
+        private static Vector3 RoundBodyScaleMultipliers(Vector3 value)
+        {
+            return new Vector3(
+                Mathf.Round(value.x * 100f) / 100f,
+                Mathf.Round(value.y * 100f) / 100f,
+                Mathf.Round(value.z * 100f) / 100f);
+        }
+
+        private static float AverageVectorComponent(Vector3 value)
+        {
+            return (value.x + value.y + value.z) / 3f;
+        }
+
+        private static float GetVectorComponent(Vector3 value, int axis)
+        {
+            return axis == 0 ? value.x : axis == 1 ? value.y : value.z;
+        }
+
+        private static Vector3 SetVectorComponent(
+            Vector3 value,
+            int axis,
+            float component)
+        {
+            if (axis == 0)
+            {
+                value.x = component;
+            }
+            else if (axis == 1)
+            {
+                value.y = component;
+            }
+            else
+            {
+                value.z = component;
+            }
+            return value;
+        }
+
+        private static string GetScaleAxisName(int axis)
+        {
+            return I18N.Get(
+                axis == 0
+                    ? "workflow.appearance.sizeAxis.x"
+                    : axis == 1
+                        ? "workflow.appearance.sizeAxis.y"
+                        : "workflow.appearance.sizeAxis.z");
+        }
+
+        private static Vector3 GetBaseLocalScale(Transform target)
+        {
+            var source = PrefabUtility
+                .GetCorrespondingObjectFromSource(target) as Transform;
+            return source != null ? source.localScale : Vector3.one;
+        }
+
+        private void ApplyBodyScale(
+            IReadOnlyList<string> targetPaths,
+            Vector3 multipliers,
+            bool updateAvatarViewPosition = false)
+        {
+            if (!IsEditableWorkflowPrefab() ||
+                targetPaths == null ||
+                targetPaths.Count == 0)
+            {
+                return;
+            }
+
+            var targets = new List<KeyValuePair<string, Transform>>();
+            foreach (var path in targetPaths)
+            {
+                var target = string.IsNullOrEmpty(path)
+                    ? _workingObject.transform
+                    : _workingObject.transform.Find(path);
+                if (target != null)
+                {
+                    targets.Add(new KeyValuePair<string, Transform>(
+                        path,
+                        target));
+                }
+            }
+            if (targets.Count == 0)
+            {
+                return;
+            }
+
+            var previewScales = new Dictionary<string, Vector3>(
+                StringComparer.Ordinal);
+            try
+            {
+                var preparePersistentMutation =
+                    !_bodyScaleDragging || !_bodyScaleDragUndoRecorded;
+                Component avatarDescriptor = null;
+                var baseViewPosition = Vector3.zero;
+                if (updateAvatarViewPosition &&
+                    TryGetWorkingAvatarViewPosition(
+                        out avatarDescriptor,
+                        out var currentViewPosition))
+                {
+                    baseViewPosition = GetBaseAvatarViewPosition(
+                        avatarDescriptor,
+                        currentViewPosition);
+                }
+                if (preparePersistentMutation)
+                {
+                    var undoObjects = targets
+                        .Select(pair => (UnityEngine.Object)pair.Value)
+                        .ToList();
+                    if (avatarDescriptor != null)
+                    {
+                        undoObjects.Add(avatarDescriptor);
+                    }
+                    var distinctUndoObjects = undoObjects
+                        .Distinct()
+                        .ToArray();
+                    if (_bodyScaleDragging)
+                    {
+                        Undo.RegisterCompleteObjectUndo(
+                            distinctUndoObjects,
+                            I18N.Get("workflow.appearance.sizeUndo"));
+                        _bodyScaleDragUndoRecorded = true;
+                    }
+                    else
+                    {
+                        Undo.RecordObjects(
+                            distinctUndoObjects,
+                            I18N.Get("workflow.appearance.sizeUndo"));
+                    }
+                }
+                foreach (var pair in targets)
+                {
+                    var scale = Vector3.Scale(
+                        GetBaseLocalScale(pair.Value),
+                        multipliers);
+                    pair.Value.localScale = scale;
+                    if (preparePersistentMutation &&
+                        PrefabUtility.IsPartOfPrefabInstance(pair.Value))
+                    {
+                        PrefabUtility
+                            .RecordPrefabInstancePropertyModifications(
+                                pair.Value);
+                    }
+                    if (preparePersistentMutation)
+                    {
+                        EditorUtility.SetDirty(pair.Value);
+                    }
+                    previewScales[pair.Key] = scale;
+                }
+                if (avatarDescriptor != null)
+                {
+                    var serialized = new SerializedObject(avatarDescriptor);
+                    var viewPosition = serialized.FindProperty("ViewPosition");
+                    if (viewPosition != null)
+                    {
+                        viewPosition.vector3Value = Vector3.Scale(
+                            baseViewPosition,
+                            multipliers);
+                        serialized.ApplyModifiedPropertiesWithoutUndo();
+                    }
+                    if (preparePersistentMutation &&
+                        PrefabUtility.IsPartOfPrefabInstance(
+                            avatarDescriptor))
+                    {
+                        PrefabUtility
+                            .RecordPrefabInstancePropertyModifications(
+                                avatarDescriptor);
+                    }
+                    if (preparePersistentMutation)
+                    {
+                        EditorUtility.SetDirty(avatarDescriptor);
+                    }
+                }
+                if (preparePersistentMutation)
+                {
+                    EditorUtility.SetDirty(_workingObject);
+                }
+                _bodyScaleDirty = true;
+                _scenePreview?.SetTransformScales(
+                    previewScales,
+                    recalculateBounds: !_bodyScaleDragging);
+                if (!_bodyScaleDragging)
+                {
+                    SaveBodyScalePrefab();
+                }
+            }
+            catch (Exception exception)
+            {
+                ReportBodyScaleFailure(exception, true);
+            }
+        }
+
+        private void ApplyBodyBlendShape(
+            string rendererPath,
+            string shapeName,
+            float weight)
+        {
+            if (!IsEditableWorkflowPrefab() ||
+                string.IsNullOrEmpty(shapeName))
+            {
+                return;
+            }
+
+            var target = string.IsNullOrEmpty(rendererPath)
+                ? _workingObject.transform
+                : _workingObject.transform.Find(rendererPath);
+            var renderer = target == null
+                ? null
+                : target.GetComponent<SkinnedMeshRenderer>();
+            var shapeIndex = renderer?.sharedMesh == null
+                ? -1
+                : renderer.sharedMesh.GetBlendShapeIndex(shapeName);
+            if (renderer == null || shapeIndex < 0)
+            {
+                return;
+            }
+
+            try
+            {
+                var preparePersistentMutation =
+                    !_bodyScaleDragging || !_bodyScaleDragUndoRecorded;
+                if (preparePersistentMutation)
+                {
+                    if (_bodyScaleDragging)
+                    {
+                        Undo.RegisterCompleteObjectUndo(
+                            renderer,
+                            I18N.Get("workflow.appearance.sizeUndo"));
+                        _bodyScaleDragUndoRecorded = true;
+                    }
+                    else
+                    {
+                        Undo.RecordObject(
+                            renderer,
+                            I18N.Get("workflow.appearance.sizeUndo"));
+                    }
+                }
+                renderer.SetBlendShapeWeight(shapeIndex, weight);
+                if (preparePersistentMutation &&
+                    PrefabUtility.IsPartOfPrefabInstance(renderer))
+                {
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(
+                        renderer);
+                }
+                if (preparePersistentMutation)
+                {
+                    EditorUtility.SetDirty(renderer);
+                    EditorUtility.SetDirty(_workingObject);
+                }
+                _bodyScaleDirty = true;
+                _scenePreview?.SetBlendShapeWeight(
+                    rendererPath,
+                    shapeName,
+                    weight,
+                    recalculateBounds: !_bodyScaleDragging);
+                if (!_bodyScaleDragging)
+                {
+                    SaveBodyScalePrefab();
+                }
+            }
+            catch (Exception exception)
+            {
+                ReportBodyScaleFailure(exception, true);
+            }
+        }
+
+        private void BeginBodyScaleDrag()
+        {
+            if (_bodyScaleDragging)
+            {
+                return;
+            }
+
+            _bodyScaleDragging = true;
+            _bodyScaleDragUndoRecorded = false;
+        }
+
+        private void EndBodyScaleDrag(bool rebuildOnFailure = true)
+        {
+            _bodyScaleDragging = false;
+            _bodyScaleDragUndoRecorded = false;
+            SaveBodyScalePrefab(rebuildOnFailure);
+        }
+
+        private void SaveBodyScalePrefab(bool rebuildOnFailure = true)
+        {
+            if (!_bodyScaleDirty || !IsEditableWorkflowPrefab())
+            {
+                return;
+            }
+
+            try
+            {
+                var savedPrefab = PrefabUtility.SavePrefabAsset(
+                    _workingObject,
+                    out var savedSuccessfully);
+                if (!savedSuccessfully || savedPrefab == null)
+                {
+                    throw new InvalidOperationException(
+                        "The derived Prefab size could not be saved.");
+                }
+
+                _workingObject = savedPrefab;
+                if (_workingAsset != null)
+                {
+                    _workingAsset.Prefab = savedPrefab;
+                }
+                _scenePreview?.SetPrefab(savedPrefab);
+                _bodyScaleDirty = false;
+                _feedback = string.Empty;
+            }
+            catch (Exception exception)
+            {
+                ReportBodyScaleFailure(exception, rebuildOnFailure);
+            }
+        }
+
+        private void ReportBodyScaleFailure(
+            Exception exception,
+            bool rebuildControls)
+        {
+            Debug.LogException(exception);
+            _feedback = I18N.Get(
+                "workflow.appearance.sizeSaveFailed");
+            _feedbackType = HelpBoxMessageType.Error;
+            if (rebuildControls && rootVisualElement.panel != null)
+            {
+                rootVisualElement.schedule.Execute(() =>
+                    ShowCategory(WorkflowCategory.Appearance, false));
+            }
+        }
+
+        private bool IsEditableWorkflowPrefab()
+        {
+            if (_workingObject == null)
+            {
+                return false;
+            }
+
+            var path = AssetDatabase.GetAssetPath(_workingObject);
+            return !string.IsNullOrEmpty(path) &&
+                   path.StartsWith(
+                       DerivedAssetCreator.VariantRoot + "/",
+                       StringComparison.OrdinalIgnoreCase) &&
+                   PrefabUtility.IsPartOfPrefabAsset(_workingObject);
+        }
+
+        private static string FormatBodyHeight(float value)
+        {
+            return value.ToString("0.00") + " m";
+        }
+
         private VisualElement BuildAppearanceSectionTabs()
         {
             var tabs = new VisualElement();
@@ -881,12 +2344,12 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-modification-workflow__appearance-tabs");
             AddAppearanceSectionButton(
                 tabs,
-                AppearanceSection.Material,
-                "workflow.appearance.section.material");
-            AddAppearanceSectionButton(
-                tabs,
                 AppearanceSection.Size,
                 "workflow.appearance.section.size");
+            AddAppearanceSectionButton(
+                tabs,
+                AppearanceSection.Material,
+                "workflow.appearance.section.material");
             return tabs;
         }
 
@@ -899,6 +2362,11 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get(labelKey),
                 () =>
                 {
+                    if (_appearanceSection == AppearanceSection.Size &&
+                        section != AppearanceSection.Size)
+                    {
+                        EndBodyScaleDrag();
+                    }
                     _appearanceSection = section;
                     ShowCategory(WorkflowCategory.Appearance, false);
                 },
@@ -1239,11 +2707,19 @@ namespace Ee4v.AssetManager.UI
             {
                 return;
             }
+            EndBodyScaleDrag();
+            _bodyScaleDirty = false;
+            _bodyScaleDragging = false;
+            _bodyScaleDragUndoRecorded = false;
+            _advancedBodyScaleExpanded = false;
+            _expandedBodyScaleAxes.Clear();
+            _baseAvatarViewPosition = null;
+            _avatarDescriptor = null;
             _workingAsset = asset;
             _workingObject = asset.Prefab;
             _creatingDerivedAsset = false;
             _currentCategory = WorkflowCategory.Appearance;
-            _appearanceSection = AppearanceSection.Material;
+            _appearanceSection = AppearanceSection.Size;
             _selectedMaterial = null;
             _hiddenMaterials.Clear();
             _feedback = string.Empty;
@@ -1252,6 +2728,14 @@ namespace Ee4v.AssetManager.UI
 
         private void ClearDerivedAsset()
         {
+            EndBodyScaleDrag();
+            _bodyScaleDirty = false;
+            _bodyScaleDragging = false;
+            _bodyScaleDragUndoRecorded = false;
+            _advancedBodyScaleExpanded = false;
+            _expandedBodyScaleAxes.Clear();
+            _baseAvatarViewPosition = null;
+            _avatarDescriptor = null;
             _workingAsset = null;
             _workingObject = null;
             _selectedMaterial = null;
@@ -1371,6 +2855,47 @@ namespace Ee4v.AssetManager.UI
         private void RefreshMaterialPreview()
         {
             _scenePreview?.RefreshPreview();
+        }
+
+        private void RefreshAfterUndoRedo()
+        {
+            if (_currentCategory != WorkflowCategory.Appearance ||
+                _appearanceSection != AppearanceSection.Size)
+            {
+                RefreshMaterialPreview();
+                return;
+            }
+
+            if (IsEditableWorkflowPrefab())
+            {
+                try
+                {
+                    var savedPrefab = PrefabUtility.SavePrefabAsset(
+                        _workingObject,
+                        out var savedSuccessfully);
+                    if (savedSuccessfully && savedPrefab != null)
+                    {
+                        _workingObject = savedPrefab;
+                        if (_workingAsset != null)
+                        {
+                            _workingAsset.Prefab = savedPrefab;
+                        }
+                        _bodyScaleDirty = false;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception);
+                }
+            }
+
+            _scenePreview?.ReloadPrefab();
+            if (_controlsHost == null)
+            {
+                return;
+            }
+            _controlsHost.Clear();
+            _controlsHost.Add(BuildAppearanceControls());
         }
 
         private void DisposeMaterialEditor()

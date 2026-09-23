@@ -326,6 +326,71 @@ namespace Ee4v.AssetManager.UI
             _viewport.RequestRepaint();
         }
 
+        internal void ReloadPrefab()
+        {
+            RebuildPreview();
+        }
+
+        internal void SetTransformScales(
+            IReadOnlyDictionary<string, Vector3> scales,
+            bool recalculateBounds = true)
+        {
+            if (_instance == null || scales == null)
+            {
+                return;
+            }
+
+            foreach (var pair in scales)
+            {
+                var target = string.IsNullOrEmpty(pair.Key)
+                    ? _instance.transform
+                    : _instance.transform.Find(pair.Key);
+                if (target != null)
+                {
+                    target.localScale = pair.Value;
+                }
+            }
+
+            if (recalculateBounds)
+            {
+                _bounds = CalculateBounds(_instance);
+            }
+            _viewport.RequestRepaint();
+        }
+
+        internal void SetBlendShapeWeight(
+            string rendererPath,
+            string shapeName,
+            float weight,
+            bool recalculateBounds = true)
+        {
+            if (_instance == null || string.IsNullOrEmpty(shapeName))
+            {
+                return;
+            }
+
+            var target = string.IsNullOrEmpty(rendererPath)
+                ? _instance.transform
+                : _instance.transform.Find(rendererPath);
+            var renderer = target == null
+                ? null
+                : target.GetComponent<SkinnedMeshRenderer>();
+            var shapeIndex = renderer?.sharedMesh == null
+                ? -1
+                : renderer.sharedMesh.GetBlendShapeIndex(shapeName);
+            if (renderer == null || shapeIndex < 0)
+            {
+                return;
+            }
+
+            renderer.SetBlendShapeWeight(shapeIndex, weight);
+            if (recalculateBounds)
+            {
+                _bounds = CalculateBounds(_instance);
+            }
+            _viewport.RequestRepaint();
+        }
+
         internal void SetHiddenMaterials(
             IEnumerable<Material> materials)
         {

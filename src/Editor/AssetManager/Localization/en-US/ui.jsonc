@@ -41,7 +41,7 @@
     },
     "preview": {
       "appearanceTitle": "Preview",
-      "sizeTitle": "Size preview",
+      "sizeTitle": "Preview",
       "todoTitle": "Preview"
     },
     "appearance": {
@@ -49,8 +49,48 @@
         "material": "Material",
         "size": "Size"
       },
-      "sizeTodoTitle": "Size targets and apply rules",
-      "sizeTodoDescription": "Define whether size means the whole Avatar, bones, clothing, or body-shape BlendShapes, then add safe editing that persists to the derived Prefab.",
+      "sizeHumanoidRequired": "A Humanoid Animator is required for advanced skeleton scaling. Height and BlendShapes outside the Body mesh remain available.",
+      "heightDescriptorRequired": "A VRC Avatar Descriptor with a valid View Position is required to read the upload-time avatar height.",
+      "sizeProtected": "This Prefab is outside the derived asset. Its size cannot be changed so the source remains protected.",
+      "sizeSaveFailed": "The size could not be saved to the derived Prefab. Check the Console.",
+      "sizeUndo": "Change body size",
+      "sizeSliderTooltip": "Adjust {0} from 50% to 200%. Numeric input accepts values outside this range",
+      "axisScaleSliderTooltip": "Adjust the {1}-axis scale of {0} from 50% to 200%. Numeric input accepts values outside this range",
+      "heightSliderTooltip": "Adjust height from {0} to {1}",
+      "bodyShapeTitle": "BlendShapes outside the Body mesh",
+      "bodyShapeEmpty": "No adjustable BlendShapes were found outside the Body mesh.",
+      "bodyShapeSliderTooltip": "Adjust the {0} BlendShape from 0% to 100%",
+      "bodyShapePart": {
+        "head": "Head & neck",
+        "chest": "Chest",
+        "waist": "Waist & hips",
+        "shoulders": "Shoulders",
+        "arms": "Arms",
+        "hands": "Hands",
+        "legs": "Legs",
+        "feet": "Feet",
+        "other": "Other"
+      },
+      "advancedSizeTitle": "Advanced skeleton scaling",
+      "sizeAxisExpand": "Show X, Y, and Z for {0}",
+      "sizeAxisCollapse": "Hide X, Y, and Z for {0}",
+      "sizeReset": "Reset",
+      "sizeAxis": {
+        "x": "X",
+        "y": "Y",
+        "z": "Z"
+      },
+      "sizePart": {
+        "wholeBody": "Height",
+        "head": "Head",
+        "chest": "Chest",
+        "waist": "Waist",
+        "shoulders": "Shoulders",
+        "arms": "Arms",
+        "hands": "Hands",
+        "legs": "Legs",
+        "feet": "Feet"
+      },
       "materialUsage": "{0} / slot {1}",
       "moreUsages": "+{0} more",
       "allMaterials": "All",

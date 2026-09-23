@@ -41,7 +41,7 @@
     },
     "preview": {
       "appearanceTitle": "プレビュー",
-      "sizeTitle": "サイズプレビュー",
+      "sizeTitle": "プレビュー",
       "todoTitle": "プレビュー"
     },
     "appearance": {
@@ -49,8 +49,48 @@
         "material": "マテリアル",
         "size": "サイズ"
       },
-      "sizeTodoTitle": "サイズ調整の対象と反映方法",
-      "sizeTodoDescription": "Avatar全体、bone、衣装、体型BlendShapeのどれをサイズとして扱うかを定義し、安全に派生Prefabへ保存する編集機能を追加する。",
+      "sizeHumanoidRequired": "高度な骨格スケールには、Humanoid Avatarが設定されたAnimatorが必要です。身長とBodyメッシュ以外のBlendShapeは引き続き使用できます。",
+      "heightDescriptorRequired": "VRChatアップロード時の身長を取得するには、VRC Avatar Descriptorと有効なView Positionが必要です。",
+      "sizeProtected": "このPrefabは派生アセット外にあります。元素材を守るため、サイズを変更できません。",
+      "sizeSaveFailed": "サイズを派生Prefabへ保存できませんでした。Consoleを確認してください。",
+      "sizeUndo": "体のサイズを変更",
+      "sizeSliderTooltip": "{0}のサイズを50%から200%の範囲で調整。数値入力では範囲外も指定できます",
+      "axisScaleSliderTooltip": "{0}の{1}軸Scaleを50%から200%の範囲で調整。数値入力では範囲外も指定できます",
+      "heightSliderTooltip": "身長を{0}から{1}の範囲で調整",
+      "bodyShapeTitle": "Bodyメッシュ以外のBlendShape",
+      "bodyShapeEmpty": "Bodyメッシュ以外に調整できるBlendShapeはありません。",
+      "bodyShapeSliderTooltip": "{0}のBlendShape値を0%から100%の範囲で調整",
+      "bodyShapePart": {
+        "head": "頭・首",
+        "chest": "胸",
+        "waist": "腰・胴",
+        "shoulders": "肩",
+        "arms": "腕",
+        "hands": "手",
+        "legs": "脚",
+        "feet": "足",
+        "other": "その他"
+      },
+      "advancedSizeTitle": "高度な骨格スケール",
+      "sizeAxisExpand": "{0}のX・Y・Zを表示",
+      "sizeAxisCollapse": "{0}のX・Y・Zを非表示",
+      "sizeReset": "リセット",
+      "sizeAxis": {
+        "x": "X",
+        "y": "Y",
+        "z": "Z"
+      },
+      "sizePart": {
+        "wholeBody": "身長",
+        "head": "頭",
+        "chest": "胸",
+        "waist": "腰",
+        "shoulders": "肩",
+        "arms": "腕",
+        "hands": "手",
+        "legs": "脚",
+        "feet": "足"
+      },
       "materialUsage": "{0} / slot {1}",
       "moreUsages": "ほか{0}箇所",
       "allMaterials": "すべて",
