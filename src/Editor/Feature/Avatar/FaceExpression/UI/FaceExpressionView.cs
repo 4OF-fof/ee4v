@@ -363,6 +363,11 @@ namespace Ee4v.FaceExpression
             _rendering = false;
         }
 
+        public void SetAvatarEditable(bool editable)
+        {
+            _avatarField.SetEnabled(editable);
+        }
+
         public void SetClip(AnimationClip clip)
         {
             _hasClip = clip != null;

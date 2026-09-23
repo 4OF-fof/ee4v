@@ -13,6 +13,37 @@ namespace Ee4v.FaceExpression
 {
     internal sealed class FaceExpressionWindow : EditorWindow
     {
+        internal sealed class EmbeddedEditor : IDisposable
+        {
+            private FaceExpressionWindow _controller;
+
+            internal EmbeddedEditor(FaceExpressionWindow controller)
+            {
+                _controller = controller;
+            }
+
+            internal void SetActive(bool active)
+            {
+                if (!active)
+                {
+                    _controller?.StopPlayback();
+                }
+            }
+
+            public void Dispose()
+            {
+                if (_controller == null)
+                {
+                    return;
+                }
+
+                _controller._disposed = true;
+                _controller._embeddedRoot = null;
+                UnityEngine.Object.DestroyImmediate(_controller);
+                _controller = null;
+            }
+        }
+
         private const StringComparison AssetPathComparison =
             StringComparison.OrdinalIgnoreCase;
         private const float DefaultTransitionDuration = 0.2f;
@@ -47,6 +78,10 @@ namespace Ee4v.FaceExpression
             new AnimationClipThumbnailCache();
         private double _poseThumbnailRefreshAt = -1d;
         private double _validationRefreshAt = -1d;
+        private VisualElement _embeddedRoot;
+        private Action _embeddedRepaint;
+        private bool _avatarLocked;
+        private bool _disposed;
 
         private bool HasClipReference => !ReferenceEquals(_clip, null);
         private bool IsClipMissing => HasClipReference && _clip == null;
@@ -66,6 +101,27 @@ namespace Ee4v.FaceExpression
             window.Show();
         }
 
+        internal static EmbeddedEditor Embed(
+            VisualElement root,
+            GameObject avatar,
+            Action repaint)
+        {
+            if (root == null)
+            {
+                throw new ArgumentNullException(nameof(root));
+            }
+
+            var controller = CreateInstance<FaceExpressionWindow>();
+            controller.hideFlags = HideFlags.HideAndDontSave;
+            controller._embeddedRoot = root;
+            controller._embeddedRepaint = repaint;
+            controller._avatarLocked = true;
+            controller.BuildContent();
+            controller.RefreshLibrary();
+            controller.SetAvatar(avatar);
+            return new EmbeddedEditor(controller);
+        }
+
         private void OnEnable()
         {
             _settings = CoreSettings.Current;
@@ -74,7 +130,7 @@ namespace Ee4v.FaceExpression
             _presetStore.Changed += RefreshClip;
             FaceExpressionGroupSession.Changed += ApplyGroupFilter;
             FaceExpressionGroupSession.MeshesChanged += RefreshClip;
-            _preview = new FaceExpressionPreview(Repaint);
+            _preview = new FaceExpressionPreview(RequestRepaint);
             Undo.undoRedoPerformed += OnUndoRedo;
             EditorApplication.projectChanged += RefreshLibrary;
             EditorApplication.update += UpdatePlayback;
@@ -107,6 +163,10 @@ namespace Ee4v.FaceExpression
 
         private void CreateGUI()
         {
+            if (_embeddedRoot != null)
+            {
+                return;
+            }
             BuildContent();
             RefreshLibrary();
             if (_avatar == null && Selection.activeGameObject != null)
@@ -121,7 +181,13 @@ namespace Ee4v.FaceExpression
 
         private void Rebuild()
         {
-            if (rootVisualElement.panel == null)
+            if (_disposed)
+            {
+                return;
+            }
+
+            var root = _embeddedRoot ?? rootVisualElement;
+            if (root.panel == null)
             {
                 return;
             }
@@ -133,8 +199,12 @@ namespace Ee4v.FaceExpression
 
         private void BuildContent()
         {
-            titleContent = UiTextFactory.CreateGuiContent(I18N.Get("window.title"));
-            var root = rootVisualElement;
+            if (_embeddedRoot == null)
+            {
+                titleContent = UiTextFactory.CreateGuiContent(
+                    I18N.Get("window.title"));
+            }
+            var root = _embeddedRoot ?? rootVisualElement;
             root.Clear();
             UiComposition.Prepare(
                 root,
@@ -144,6 +214,7 @@ namespace Ee4v.FaceExpression
                 CreateText(),
                 rect => _preview?.Draw(rect),
                 DrawPoseThumbnail);
+            _view.SetAvatarEditable(!_avatarLocked);
             _view.AvatarChanged += SetAvatar;
             _view.ClipChanged += SetClip;
             _view.NewClipRequested += CreateClip;
@@ -540,7 +611,7 @@ namespace Ee4v.FaceExpression
             {
                 _poseThumbnailRefreshAt = -1d;
                 _poseThumbnails.Invalidate(_clip);
-                Repaint();
+                RequestRepaint();
             }
 
             if (_validationRefreshAt >= 0d && now >= _validationRefreshAt)
@@ -593,7 +664,7 @@ namespace Ee4v.FaceExpression
         {
             _poseThumbnailRefreshAt = -1d;
             _poseThumbnails.Invalidate(_clip);
-            Repaint();
+            RequestRepaint();
         }
 
         private void OnUndoRedo()
@@ -911,6 +982,17 @@ namespace Ee4v.FaceExpression
             _poseThumbnailRefreshAt = -1d;
             _validationRefreshAt = -1d;
             _view?.MarkDirtyRepaint();
+        }
+
+        private void RequestRepaint()
+        {
+            if (_embeddedRepaint != null)
+            {
+                _embeddedRepaint();
+                return;
+            }
+
+            Repaint();
         }
 
         private void OnSettingChanged(

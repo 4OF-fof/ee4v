@@ -51,6 +51,16 @@ namespace Ee4v.AssetManager.UI
                 "Editor/AssetManager/UI/asset-detail.uss");
         }
 
+        internal static void PrepareWorkflowRoot(VisualElement root)
+        {
+            UiComposition.Prepare(
+                root,
+                "Editor/AssetManager/UI/asset-manager.uss",
+                "Editor/AssetManager/UI/searchable-file-tree.uss",
+                "Editor/AssetManager/UI/asset-detail.uss",
+                "Editor/AssetManager/UI/asset-modification-workflow.uss");
+        }
+
         internal static IAssetManager GetManager()
         {
             if (_manager != null)

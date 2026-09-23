@@ -47,6 +47,17 @@ namespace Ee4v.AssetManager.UI
 
         internal GameObject Value => _value;
 
+        internal void SetValueWithoutNotify(GameObject prefab)
+        {
+            if (!Accepts(prefab))
+            {
+                return;
+            }
+
+            _value = prefab;
+            Refresh();
+        }
+
         private void OpenPopup()
         {
             DerivedAssetPrefabPickerWindow.Show(
@@ -333,6 +344,11 @@ namespace Ee4v.AssetManager.UI
 
             _prefab = prefab;
             RebuildPreview();
+        }
+
+        internal void RefreshPreview()
+        {
+            _preview.MarkDirtyRepaint();
         }
 
         public void Dispose()

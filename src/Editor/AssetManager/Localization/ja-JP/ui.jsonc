@@ -5,6 +5,77 @@
     "mainTitle": "Asset Manager · メイン",
     "informationTitle": "Asset Manager · 情報"
   },
+  "workflow": {
+    "windowTitle": "改変ワークフロー",
+    "title": "改変ワークフロー",
+    "subtitle": "プレビューを見ながら見た目を調整し、既存の表情エディターで表情とアニメーション付き表情を作成できます。",
+    "categories": "カスタマイズ",
+    "category": {
+      "appearance": "見た目",
+      "expressionAnimation": "表情・アニメーション",
+      "todo": "準備中"
+    },
+    "selection": {
+      "title": "派生アセットを選ぶ",
+      "description": "AssetManagerのVariant作成機能で用意した派生アセットから、今回編集するキャラクターを選びます。",
+      "createNew": "新しい派生アセット",
+      "createTitle": "派生アセットを作成",
+      "createDescription": "AssetManagerへ取り込み済みのPrefabから、編集用VariantとMaterial Variantを作成します。",
+      "back": "派生アセット一覧へ戻る",
+      "emptyTitle": "派生アセットがありません",
+      "emptyDescription": "この画面で新しく作成するか、AssetManagerのItem詳細からVariantを作成してください。",
+      "noSourceTitle": "作成元にできるPrefabがありません",
+      "noSourceDescription": "AssetManagerでItemのPrefabをImportしてから戻ってください。",
+      "sourceItem": "作成元の素材",
+      "sourcePrefab": "作成元のPrefab",
+      "name": "派生アセット名",
+      "assetDescription": "説明",
+      "create": "派生アセットを作成",
+      "openManager": "AssetManagerを開く",
+      "choose": "このキャラクターを編集",
+      "noDescription": "説明はありません"
+    },
+    "asset": {
+      "change": "変更"
+    },
+    "preview": {
+      "appearanceTitle": "見た目プレビュー",
+      "appearanceHint": "ドラッグで回転、スクロールで拡大できます。変更は派生Materialへ直接反映されます。",
+      "todoTitle": "プレビュー",
+      "todoHint": "準備中の補助機能も、同じ派生アセットを対象に追加していきます。"
+    },
+    "appearance": {
+      "title": "見た目",
+      "description": "編集する部位と調整内容を順に選びます。必要な設定だけを表示します。",
+      "partTitle": "1. 部位を選ぶ",
+      "partDescription": "髪、肌、服など、変更したいMaterialを選択します。",
+      "groupTitle": "2. 調整内容を選ぶ",
+      "groupDescription": "色・テクスチャ・細かな調整を切り替えます。",
+      "group": {
+        "color": "色",
+        "texture": "テクスチャ",
+        "adjustment": "調整"
+      },
+      "groupEmptyTitle": "この項目はありません",
+      "groupEmptyDescription": "選択したMaterialには、この種類の設定がありません。",
+      "protected": "このMaterialは派生アセット外にあります。元素材を守るため、この画面では編集できません。",
+      "emptyTitle": "Materialが見つかりません",
+      "emptyDescription": "選択した派生アセットにMaterialが設定されているか確認してください。"
+    },
+    "todo": {
+      "title": "不足しているワークフロー補助",
+      "description": "キャラクリとして不足する補助はTODOとして残しています。",
+      "badge": "TODO",
+      "materialPresetTitle": "見た目プリセットとサムネイル",
+      "materialPresetDescription": "Shaderごとの重要項目を整理し、色・Textureを視覚的なプリセットから選べるようにする。",
+      "expressionPresetTitle": "表情プリセットと左右連動",
+      "expressionPresetDescription": "笑顔・困り顔などのプリセット、左右同時調整、複数BlendShapeの連動を追加する。",
+      "applyTitle": "Avatarへの適用と検証",
+      "applyDescription": "生成物の依存関係、Missing参照、VRChat/Modular Avatar設定を確認して一括適用する。",
+      "sessionTitle": "作業状態の保存と再開",
+      "sessionDescription": "選択した派生アセット、表情の下書き、表示中のカテゴリを作業状態として保存する。"
+    }
+  },
   "toolbar": {
     "back": "戻る",
     "forward": "進む",

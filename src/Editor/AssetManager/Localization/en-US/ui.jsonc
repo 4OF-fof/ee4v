@@ -5,6 +5,77 @@
     "mainTitle": "Asset Manager · Main",
     "informationTitle": "Asset Manager · Information"
   },
+  "workflow": {
+    "windowTitle": "Modification Workflow",
+    "title": "Modification Workflow",
+    "subtitle": "Adjust appearance in the preview, then use the existing expression editor for expressions and animated expressions.",
+    "categories": "CUSTOMIZE",
+    "category": {
+      "appearance": "Appearance",
+      "expressionAnimation": "Expressions & animation",
+      "todo": "Coming next"
+    },
+    "selection": {
+      "title": "Choose a derived asset",
+      "description": "Choose the character to edit from the derived assets prepared with AssetManager's Variant creation feature.",
+      "createNew": "New derived asset",
+      "createTitle": "Create a derived asset",
+      "createDescription": "Create an editable Prefab Variant and Material Variants from a Prefab already imported with AssetManager.",
+      "back": "Back to derived assets",
+      "emptyTitle": "No derived assets",
+      "emptyDescription": "Create one here, or create a Variant from an item's details in AssetManager.",
+      "noSourceTitle": "No source Prefabs available",
+      "noSourceDescription": "Import an item's Prefab with AssetManager, then return here.",
+      "sourceItem": "Source asset",
+      "sourcePrefab": "Source Prefab",
+      "name": "Derived asset name",
+      "assetDescription": "Description",
+      "create": "Create derived asset",
+      "openManager": "Open AssetManager",
+      "choose": "Customize this character",
+      "noDescription": "No description"
+    },
+    "asset": {
+      "change": "Change"
+    },
+    "preview": {
+      "appearanceTitle": "Appearance preview",
+      "appearanceHint": "Drag to orbit and scroll to zoom. Changes are applied directly to the derived Materials.",
+      "todoTitle": "Preview",
+      "todoHint": "Upcoming helpers will continue to use the same derived asset."
+    },
+    "appearance": {
+      "title": "Appearance",
+      "description": "Choose a part and then the kind of adjustment. Only the relevant controls are shown.",
+      "partTitle": "1. Choose a part",
+      "partDescription": "Select the Material for hair, skin, clothing, or another part.",
+      "groupTitle": "2. Choose an adjustment",
+      "groupDescription": "Switch between color, texture, and fine adjustments.",
+      "group": {
+        "color": "Color",
+        "texture": "Texture",
+        "adjustment": "Adjust"
+      },
+      "groupEmptyTitle": "No controls in this category",
+      "groupEmptyDescription": "The selected Material has no properties of this kind.",
+      "protected": "This Material is outside the derived asset. It cannot be edited here so the source remains protected.",
+      "emptyTitle": "No Materials found",
+      "emptyDescription": "Check that the selected derived asset has Materials assigned."
+    },
+    "todo": {
+      "title": "Missing workflow helpers",
+      "description": "Helpers still missing from the character-creator workflow are kept here as TODOs.",
+      "badge": "TODO",
+      "materialPresetTitle": "Appearance presets and thumbnails",
+      "materialPresetDescription": "Curate important Shader properties and choose colors and Textures from visual presets.",
+      "expressionPresetTitle": "Expression presets and linked sides",
+      "expressionPresetDescription": "Add smile and troubled presets, linked left/right editing, and coordinated BlendShapes.",
+      "applyTitle": "Avatar apply and validation",
+      "applyDescription": "Validate generated dependencies, missing references, and VRChat/Modular Avatar configuration before applying them together.",
+      "sessionTitle": "Save and resume workspaces",
+      "sessionDescription": "Persist the selected derived asset, expression draft, and current category as a workspace."
+    }
+  },
   "toolbar": {
     "back": "Back",
     "forward": "Forward",

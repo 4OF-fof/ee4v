@@ -214,6 +214,14 @@ namespace Ee4v.AssetManager.UI
                 .ToArray();
         }
 
+        public static IReadOnlyList<DerivedAssetInfo> FindAll()
+        {
+            return DerivedAssetCatalog.FindAll()
+                .Select(ToInfo)
+                .Where(info => info?.Prefab != null)
+                .ToArray();
+        }
+
         private static DerivedAssetInfo ToInfo(DerivedAssetRecord record)
         {
             if (record == null)

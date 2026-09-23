@@ -72,6 +72,28 @@ namespace Ee4v.AssetManager.Infrastructure
                 .ToArray();
         }
 
+        public static IReadOnlyList<DerivedAssetRecord> FindAll()
+        {
+            if (!AssetDatabase.IsValidFolder(VariantRoot))
+            {
+                return Array.Empty<DerivedAssetRecord>();
+            }
+
+            return AssetDatabase.FindAssets(
+                    "t:Prefab",
+                    new[] { VariantRoot })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Select(Read)
+                .Where(record => record != null)
+                .OrderBy(
+                    record => record.Name,
+                    StringComparer.OrdinalIgnoreCase)
+                .ThenBy(
+                    record => record.AssetPath,
+                    StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+
         public static DerivedAssetRecord Read(string assetPath)
         {
             if (string.IsNullOrEmpty(assetPath))

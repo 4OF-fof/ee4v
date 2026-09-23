@@ -1863,6 +1863,8 @@ namespace Ee4v.AssetManager.UI
                     Selection.activeObject = derivedAsset.Prefab;
                     EditorGUIUtility.PingObject(derivedAsset.Prefab);
                 };
+                assetCard.DoubleClicked += _ =>
+                    AssetModificationWorkflowWindow.ShowFor(derivedAsset);
                 assetCard.RegisterCallback<DetachFromPanelEvent>(_ =>
                     assetCard.Dispose());
                 grid.Add(assetCard);
