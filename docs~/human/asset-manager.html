@@ -64,7 +64,7 @@
         <ol class="steps">
           <li><strong>派生アセットを選ぶか作る。</strong> 最初の画面でPreviewカードを選ぶか、「新しい派生アセット」から取り込み済みItemとPrefab、名前、説明を指定します。作成時はAssetManagerのItem詳細と同じVariant作成機能が使われます。</li>
           <li><strong>AssetManagerから直接開くこともできます。</strong> Item詳細の派生アセットカードをダブルクリックすると、そのキャラクターをModification Workflowで直接開けます。</li>
-          <li><strong>見た目を選ぶ。</strong> 髪、肌、服などのMaterialを選び、色、Texture、調整のカテゴリを1つずつ開きます。変更は中央Previewへ反映されます。</li>
+          <li><strong>見た目を選ぶ。</strong> 「マテリアル」と「サイズ」を切り替えます。見た目、選択、編集の説明見出しは置かず、タブ、Material一覧、編集枠が続きます。マテリアルでは、アバター内のRendererで実際に使われているMaterialがHierarchy pathとslot番号付きの連続した一覧に表示されます。各行右端の表示アイコンを押すと、そのMaterialの表示／非表示を個別に切り替えられ、先頭の「すべて」から一括操作できます。右側の単一スクロール領域には、選択したMaterial名とMaterial Inspectorが1つの枠で開き、Shader固有の色、Texture、描画設定をまとめて編集できます。Inspectorは埋め込み領域の実幅へ合わせて配置されるため、設定欄が領域外から押し込まれない構成です。サイズ調整は対象と保存方法を設計中のため、現在は専用タブにTODOを表示します。変更は「プレビュー」と大きな表示領域だけで構成したGame View風Previewへ反映されます。</li>
           <li><strong>表情とアニメーション付き表情を作る。</strong> 「表情・アニメーション」では既存のFace Expression画面をそのまま使用します。Avatar Preview、表情Clip library、BlendShape、複数pose、遷移時間、Loop、再生、timelineを1画面で操作できます。</li>
         </ol>
         <p class="callout"><strong>現在のTODO:</strong> 見た目と表情の視覚的なpreset、左右連動、Avatarへの一括適用、作業状態の保存は未実装です。Window内の「準備中」に一覧を表示します。</p>

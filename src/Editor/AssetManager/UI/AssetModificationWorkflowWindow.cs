@@ -7,7 +7,6 @@ using Ee4v.FaceExpression;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI
@@ -21,19 +20,168 @@ namespace Ee4v.AssetManager.UI
             Todo
         }
 
-        private enum AppearanceGroup
+        private enum AppearanceSection
         {
-            Color,
-            Texture,
-            Adjustment
+            Material,
+            Size
         }
 
-        private sealed class ShaderPropertyEntry
+        private sealed class AvatarMaterialEntry
         {
-            internal int Index { get; set; }
-            internal string Name { get; set; }
-            internal string DisplayName { get; set; }
-            internal ShaderPropertyType Type { get; set; }
+            internal Material Material { get; set; }
+            internal List<MaterialUsage> Usages { get; } =
+                new List<MaterialUsage>();
+        }
+
+        private sealed class MaterialUsage
+        {
+            internal string RendererPath { get; set; }
+            internal int SlotIndex { get; set; }
+        }
+
+        private sealed class EmbeddedMaterialInspector
+            : VisualElement, IDisposable
+        {
+            private const float HorizontalPadding = 12f;
+
+            private readonly Material _material;
+            private readonly Action _onChanged;
+            private readonly IMGUIContainer _container;
+            private MaterialEditor _editor;
+
+            internal bool IsAvailable => _editor != null;
+
+            internal EmbeddedMaterialInspector(
+                Material material,
+                Action onChanged)
+            {
+                _material = material;
+                _onChanged = onChanged;
+                AddToClassList(
+                    "ee4v-modification-workflow__material-editor");
+
+                _editor = Editor.CreateEditor(material) as MaterialEditor;
+                if (_editor == null)
+                {
+                    return;
+                }
+
+                _container = new IMGUIContainer(DrawInspector);
+                _container.AddToClassList(
+                    "ee4v-modification-workflow__material-editor-imgui");
+                _container.RegisterCallback<GeometryChangedEvent>(
+                    OnGeometryChanged);
+                Add(_container);
+            }
+
+            public void Dispose()
+            {
+                if (_container != null)
+                {
+                    _container.UnregisterCallback<GeometryChangedEvent>(
+                        OnGeometryChanged);
+                }
+
+                if (_editor == null)
+                {
+                    return;
+                }
+
+                UnityEngine.Object.DestroyImmediate(_editor);
+                _editor = null;
+            }
+
+            private void OnGeometryChanged(GeometryChangedEvent evt)
+            {
+                if (Mathf.Abs(
+                        evt.newRect.width - evt.oldRect.width) < 0.5f)
+                {
+                    return;
+                }
+
+                _container?.MarkDirtyRepaint();
+            }
+
+            private void DrawInspector()
+            {
+                if (_editor == null || _material == null)
+                {
+                    return;
+                }
+
+                var containerWidth = Mathf.Floor(
+                    _container.contentRect.width);
+                if (containerWidth < 2f)
+                {
+                    return;
+                }
+
+                var contentWidth = Mathf.Max(
+                    1f,
+                    containerWidth - HorizontalPadding * 2f);
+                var previousWideMode = EditorGUIUtility.wideMode;
+                var previousLabelWidth = EditorGUIUtility.labelWidth;
+                var previousHierarchyMode =
+                    EditorGUIUtility.hierarchyMode;
+                var previousIndentLevel = EditorGUI.indentLevel;
+                var materialChanged = false;
+                EditorGUI.BeginChangeCheck();
+                try
+                {
+                    EditorGUIUtility.wideMode = contentWidth > 330f;
+                    EditorGUIUtility.labelWidth = Mathf.Clamp(
+                        contentWidth * 0.45f,
+                        120f,
+                        220f);
+                    EditorGUIUtility.hierarchyMode = true;
+                    EditorGUI.indentLevel = 0;
+
+                    using (new GUILayout.HorizontalScope(
+                               GUILayout.Width(containerWidth)))
+                    {
+                        GUILayout.Space(HorizontalPadding);
+                        using (new GUILayout.VerticalScope(
+                                   GUILayout.Width(contentWidth)))
+                        {
+                            DrawMaterialInspector(_editor, _material);
+                        }
+                        GUILayout.Space(HorizontalPadding);
+                    }
+                }
+                finally
+                {
+                    materialChanged = EditorGUI.EndChangeCheck();
+                    EditorGUIUtility.wideMode = previousWideMode;
+                    EditorGUIUtility.labelWidth = previousLabelWidth;
+                    EditorGUIUtility.hierarchyMode =
+                        previousHierarchyMode;
+                    EditorGUI.indentLevel = previousIndentLevel;
+                }
+
+                if (!materialChanged)
+                {
+                    return;
+                }
+
+                EditorUtility.SetDirty(_material);
+                _onChanged?.Invoke();
+            }
+
+            private static void DrawMaterialInspector(
+                MaterialEditor materialEditor,
+                Material material)
+            {
+                var shaderGui = materialEditor.customShaderGUI;
+                if (shaderGui == null)
+                {
+                    materialEditor.PropertiesGUI();
+                    return;
+                }
+
+                var properties = MaterialEditor.GetMaterialProperties(
+                    new UnityEngine.Object[] { material });
+                shaderGui.OnGUI(materialEditor, properties);
+            }
         }
 
         private sealed class VariantSourceOption
@@ -45,21 +193,27 @@ namespace Ee4v.AssetManager.UI
         private readonly Dictionary<WorkflowCategory, UiButton>
             _categoryButtons =
                 new Dictionary<WorkflowCategory, UiButton>();
+        private readonly Dictionary<Material, UiButton>
+            _materialVisibilityButtons =
+                new Dictionary<Material, UiButton>();
+        private readonly HashSet<Material> _hiddenMaterials =
+            new HashSet<Material>();
         private IAssetManager _manager;
         private DerivedAssetInfo _workingAsset;
         private GameObject _workingObject;
         private Material _selectedMaterial;
+        private UiButton _allMaterialsVisibilityButton;
+        private EmbeddedMaterialInspector _materialInspector;
         private DerivedAssetPrefabScenePreview _scenePreview;
         private FaceExpressionWindow.EmbeddedEditor _faceExpressionEditor;
         private VisualElement _customizerHost;
         private VisualElement _faceExpressionHost;
         private ScrollView _controlsHost;
         private UiTextElement _previewTitle;
-        private UiTextElement _previewHint;
         private WorkflowCategory _currentCategory =
             WorkflowCategory.Appearance;
-        private AppearanceGroup _appearanceGroup =
-            AppearanceGroup.Color;
+        private AppearanceSection _appearanceSection =
+            AppearanceSection.Material;
         private bool _creatingDerivedAsset;
         private string _creationItemId = string.Empty;
         private GameObject _creationPrefab;
@@ -96,6 +250,8 @@ namespace Ee4v.AssetManager.UI
                 OnManagerInvalidated;
             AssetManagerWindowSession.ManagerInvalidated +=
                 OnManagerInvalidated;
+            Undo.undoRedoPerformed -= RefreshMaterialPreview;
+            Undo.undoRedoPerformed += RefreshMaterialPreview;
             ConfigureWindow();
         }
 
@@ -109,6 +265,7 @@ namespace Ee4v.AssetManager.UI
             I18N.Reloaded -= Rebuild;
             AssetManagerWindowSession.ManagerInvalidated -=
                 OnManagerInvalidated;
+            Undo.undoRedoPerformed -= RefreshMaterialPreview;
             DisposeEditors();
         }
 
@@ -116,7 +273,7 @@ namespace Ee4v.AssetManager.UI
         {
             titleContent = UiTextFactory.CreateGuiContent(
                 I18N.Get("workflow.windowTitle"));
-            minSize = new Vector2(1040f, 680f);
+            minSize = new Vector2(1180f, 720f);
         }
 
         private void Rebuild()
@@ -501,23 +658,26 @@ namespace Ee4v.AssetManager.UI
             var pane = new VisualElement();
             pane.AddToClassList(
                 "ee4v-modification-workflow__preview-pane");
+            var toolbar = new VisualElement();
+            toolbar.AddToClassList(
+                "ee4v-modification-workflow__preview-toolbar");
             _previewTitle = UiTextFactory.Create(
                 string.Empty,
                 UiClassNames.SectionTitle,
                 "ee4v-modification-workflow__preview-title");
-            pane.Add(_previewTitle);
+            toolbar.Add(_previewTitle);
+            pane.Add(toolbar);
+
+            var viewport = new VisualElement();
+            viewport.AddToClassList(
+                "ee4v-modification-workflow__preview-viewport");
             _scenePreview = new DerivedAssetPrefabScenePreview();
+            _scenePreview.SetFlexibleLayout(true);
             _scenePreview.AddToClassList(
                 "ee4v-modification-workflow__preview");
             _scenePreview.SetPrefab(_workingObject);
-            pane.Add(_scenePreview);
-            _previewHint = UiTextFactory.Create(
-                string.Empty,
-                UiClassNames.SecondaryText,
-                "ee4v-modification-workflow__preview-hint");
-            _previewHint.SetWhiteSpace(WhiteSpace.Normal);
-            _previewHint.SetTextAlign(TextAnchor.MiddleCenter);
-            pane.Add(_previewHint);
+            viewport.Add(_scenePreview);
+            pane.Add(viewport);
             return pane;
         }
 
@@ -535,6 +695,11 @@ namespace Ee4v.AssetManager.UI
                 _feedback = string.Empty;
             }
             _currentCategory = category;
+            _scenePreview?.SetHiddenMaterials(
+                category == WorkflowCategory.Appearance &&
+                _appearanceSection == AppearanceSection.Material
+                    ? _hiddenMaterials
+                    : null);
             foreach (var pair in _categoryButtons)
             {
                 pair.Value.EnableInClassList(
@@ -544,6 +709,7 @@ namespace Ee4v.AssetManager.UI
 
             var faceExpression =
                 category == WorkflowCategory.ExpressionAnimation;
+            DisposeMaterialEditor();
             _customizerHost.EnableInClassList(
                 "ee4v-modification-workflow__hidden",
                 faceExpression);
@@ -568,28 +734,40 @@ namespace Ee4v.AssetManager.UI
             if (category == WorkflowCategory.Appearance)
             {
                 _controlsHost.Add(BuildAppearanceControls());
-                SetPreviewText(
-                    "workflow.preview.appearanceTitle",
-                    "workflow.preview.appearanceHint");
+                SetPreviewTitle(
+                    _appearanceSection == AppearanceSection.Material
+                        ? "workflow.preview.appearanceTitle"
+                        : "workflow.preview.sizeTitle");
             }
             else
             {
                 _controlsHost.Add(BuildTodoControls());
-                SetPreviewText(
-                    "workflow.preview.todoTitle",
-                    "workflow.preview.todoHint");
+                SetPreviewTitle("workflow.preview.todoTitle");
             }
         }
 
         private VisualElement BuildAppearanceControls()
         {
-            var panel = CreateControlsPanel(
-                "workflow.appearance.title",
-                "workflow.appearance.description");
+            var panel = new VisualElement();
+            panel.AddToClassList(
+                "ee4v-modification-workflow__controls-content");
             AddFeedback(panel);
-            var materials = GetWorkingMaterials();
+            panel.Add(BuildAppearanceSectionTabs());
+            if (_appearanceSection == AppearanceSection.Size)
+            {
+                panel.Add(CreateTodoCard(
+                    "workflow.appearance.sizeTodoTitle",
+                    "workflow.appearance.sizeTodoDescription"));
+                return panel;
+            }
+
+            var materials = GetAvatarMaterials();
+            _materialVisibilityButtons.Clear();
+            _allMaterialsVisibilityButton = null;
             if (materials.Count == 0)
             {
+                _hiddenMaterials.Clear();
+                _scenePreview?.SetHiddenMaterials(null);
                 panel.Add(CreateEmptyState(
                     "workflow.appearance.emptyTitle",
                     "workflow.appearance.emptyDescription"));
@@ -597,34 +775,57 @@ namespace Ee4v.AssetManager.UI
             }
 
             if (_selectedMaterial == null ||
-                !materials.Contains(_selectedMaterial))
+                !materials.Any(entry =>
+                    entry.Material == _selectedMaterial))
             {
-                _selectedMaterial = materials[0];
+                _selectedMaterial = materials[0].Material;
             }
+            var availableMaterials = new HashSet<Material>(
+                materials.Select(entry => entry.Material));
+            _hiddenMaterials.RemoveWhere(material =>
+                material == null || !availableMaterials.Contains(material));
+            _scenePreview?.SetHiddenMaterials(_hiddenMaterials);
 
-            panel.Add(CreateSubheading(
-                "workflow.appearance.partTitle",
-                "workflow.appearance.partDescription"));
             var materialChoices = new VisualElement();
             materialChoices.AddToClassList(
-                "ee4v-modification-workflow__choice-grid");
-            foreach (var material in materials)
+                "ee4v-modification-workflow__material-list");
+            materialChoices.Add(BuildAllMaterialsVisibilityRow(
+                availableMaterials));
+            foreach (var entry in materials)
             {
-                var choice = new UiButton(
-                    material.name,
+                var material = entry.Material;
+                var choice = new NavigationItem(
+                    new NavigationItemState(
+                        material.name,
+                        FormatMaterialUsageSummary(entry),
+                        CreateMaterialIcon(material),
+                        material == _selectedMaterial),
                     () =>
                     {
                         _selectedMaterial = material;
                         ShowCategory(WorkflowCategory.Appearance, false);
-                    },
-                    variant: UiButtonVariant.Ghost);
+                    });
                 choice.AddToClassList(
-                    "ee4v-modification-workflow__choice-button");
-                choice.EnableInClassList(
-                    "ee4v-modification-workflow__choice-button--active",
-                    material == _selectedMaterial);
+                    "ee4v-modification-workflow__material-item");
+                choice.tooltip = FormatMaterialUsageTooltip(entry);
+                if (!IsEditableWorkflowMaterial(material))
+                {
+                    choice.Trailing.Add(new Badge(
+                        I18N.Get("workflow.appearance.readOnly")));
+                }
+                var visibility = new UiButton(
+                    string.Empty,
+                    () => ToggleMaterialVisibility(material),
+                    variant: UiButtonVariant.Ghost);
+                visibility.AddToClassList(
+                    "ee4v-modification-workflow__material-visibility");
+                visibility.RegisterCallback<ClickEvent>(
+                    evt => evt.StopPropagation());
+                choice.Trailing.Add(visibility);
+                _materialVisibilityButtons[material] = visibility;
                 materialChoices.Add(choice);
             }
+            RefreshMaterialVisibilityButtons(availableMaterials);
             panel.Add(materialChoices);
 
             if (!IsEditableWorkflowMaterial(_selectedMaterial))
@@ -635,164 +836,169 @@ namespace Ee4v.AssetManager.UI
                 return panel;
             }
 
-            panel.Add(CreateSubheading(
-                "workflow.appearance.groupTitle",
-                "workflow.appearance.groupDescription"));
-            var groups = new VisualElement();
-            groups.AddToClassList(
-                "ee4v-modification-workflow__segment-row");
-            AddAppearanceGroupButton(
-                groups,
-                AppearanceGroup.Color,
-                "workflow.appearance.group.color");
-            AddAppearanceGroupButton(
-                groups,
-                AppearanceGroup.Texture,
-                "workflow.appearance.group.texture");
-            AddAppearanceGroupButton(
-                groups,
-                AppearanceGroup.Adjustment,
-                "workflow.appearance.group.adjustment");
-            panel.Add(groups);
-            panel.Add(BuildMaterialPropertyGroup(_selectedMaterial));
+            panel.Add(BuildMaterialEditor(_selectedMaterial));
             return panel;
         }
 
-        private void AddAppearanceGroupButton(
-            VisualElement row,
-            AppearanceGroup group,
+        private VisualElement BuildAppearanceSectionTabs()
+        {
+            var tabs = new VisualElement();
+            tabs.AddToClassList(
+                "ee4v-modification-workflow__appearance-tabs");
+            AddAppearanceSectionButton(
+                tabs,
+                AppearanceSection.Material,
+                "workflow.appearance.section.material");
+            AddAppearanceSectionButton(
+                tabs,
+                AppearanceSection.Size,
+                "workflow.appearance.section.size");
+            return tabs;
+        }
+
+        private void AddAppearanceSectionButton(
+            VisualElement tabs,
+            AppearanceSection section,
             string labelKey)
         {
             var button = new UiButton(
                 I18N.Get(labelKey),
                 () =>
                 {
-                    _appearanceGroup = group;
+                    _appearanceSection = section;
                     ShowCategory(WorkflowCategory.Appearance, false);
                 },
                 variant: UiButtonVariant.Ghost);
             button.AddToClassList(
-                "ee4v-modification-workflow__segment-button");
+                "ee4v-modification-workflow__appearance-tab");
             button.EnableInClassList(
-                "ee4v-modification-workflow__segment-button--active",
-                group == _appearanceGroup);
-            row.Add(button);
+                "ee4v-modification-workflow__appearance-tab--active",
+                section == _appearanceSection);
+            tabs.Add(button);
         }
 
-        private VisualElement BuildMaterialPropertyGroup(Material material)
+        private VisualElement BuildMaterialEditor(Material material)
         {
-            var group = new VisualElement();
-            group.AddToClassList(
-                "ee4v-modification-workflow__setting-list");
-            var properties = GetMaterialProperties(
+            var section = new VisualElement();
+            section.AddToClassList(
+                "ee4v-modification-workflow__material-editor-section");
+
+            var header = new ItemRow(new ItemRowState(
+                material.name,
+                icon: CreateMaterialIcon(material)));
+            header.AddToClassList(
+                "ee4v-modification-workflow__material-editor-header");
+
+            var surface = new VisualElement();
+            surface.AddToClassList(
+                "ee4v-modification-workflow__material-editor-surface");
+            surface.Add(header);
+
+            _materialInspector = new EmbeddedMaterialInspector(
                 material,
-                _appearanceGroup);
-            if (properties.Count == 0)
+                RefreshMaterialPreview);
+            if (!_materialInspector.IsAvailable)
             {
-                group.Add(CreateEmptyState(
-                    "workflow.appearance.groupEmptyTitle",
-                    "workflow.appearance.groupEmptyDescription"));
-                return group;
+                _materialInspector.Dispose();
+                _materialInspector = null;
+                surface.Add(UiTextFactory.CreateHelpBox(
+                    I18N.Get("workflow.appearance.editorUnavailable"),
+                    HelpBoxMessageType.Error));
+                section.Add(surface);
+                return section;
             }
 
-            foreach (var property in properties)
-            {
-                group.Add(BuildMaterialProperty(material, property));
-            }
-            return group;
+            surface.Add(_materialInspector);
+            section.Add(surface);
+            return section;
         }
 
-        private VisualElement BuildMaterialProperty(
-            Material material,
-            ShaderPropertyEntry property)
+        private VisualElement BuildAllMaterialsVisibilityRow(
+            IReadOnlyCollection<Material> materials)
         {
-            var setting = new VisualElement();
-            setting.AddToClassList(
-                "ee4v-modification-workflow__setting");
-            setting.Add(UiTextFactory.Create(
-                property.DisplayName,
-                UiClassNames.FormLabel,
-                "ee4v-modification-workflow__setting-label"));
-            switch (property.Type)
-            {
-                case ShaderPropertyType.Color:
-                {
-                    var field = UiTextFactory.CreateColorField();
-                    field.SetValueWithoutNotify(
-                        material.GetColor(property.Name));
-                    field.RegisterValueChangedCallback(evt =>
-                        EditMaterial(material, () => material.SetColor(
-                            property.Name,
-                            evt.newValue)));
-                    setting.Add(field);
-                    break;
-                }
-                case ShaderPropertyType.Texture:
-                {
-                    var field = UiTextFactory.CreateObjectField();
-                    field.objectType = typeof(Texture);
-                    field.allowSceneObjects = false;
-                    field.SetValueWithoutNotify(
-                        material.GetTexture(property.Name));
-                    field.RegisterValueChangedCallback(evt =>
-                        EditMaterial(material, () => material.SetTexture(
-                            property.Name,
-                            evt.newValue as Texture)));
-                    setting.Add(field);
-                    break;
-                }
-                case ShaderPropertyType.Range:
-                    setting.Add(BuildMaterialRange(material, property));
-                    break;
-                default:
-                {
-                    var field = UiTextFactory.CreateFloatField();
-                    field.SetValueWithoutNotify(
-                        material.GetFloat(property.Name));
-                    field.RegisterValueChangedCallback(evt =>
-                        EditMaterial(material, () => material.SetFloat(
-                            property.Name,
-                            evt.newValue)));
-                    setting.Add(field);
-                    break;
-                }
-            }
-            return setting;
-        }
-
-        private VisualElement BuildMaterialRange(
-            Material material,
-            ShaderPropertyEntry property)
-        {
-            var limits = material.shader.GetPropertyRangeLimits(
-                property.Index);
-            var row = new VisualElement();
+            var row = new ItemRow(new ItemRowState(
+                I18N.Get("workflow.appearance.allMaterials")));
             row.AddToClassList(
-                "ee4v-modification-workflow__slider-row");
-            var slider = new Slider(limits.x, limits.y);
-            var number = UiTextFactory.CreateFloatField();
-            var value = material.GetFloat(property.Name);
-            slider.SetValueWithoutNotify(value);
-            number.SetValueWithoutNotify(value);
-            slider.RegisterValueChangedCallback(evt =>
-            {
-                number.SetValueWithoutNotify(evt.newValue);
-                EditMaterial(material, () => material.SetFloat(
-                    property.Name,
-                    evt.newValue));
-            });
-            number.RegisterValueChangedCallback(evt =>
-            {
-                var next = Mathf.Clamp(evt.newValue, limits.x, limits.y);
-                number.SetValueWithoutNotify(next);
-                slider.SetValueWithoutNotify(next);
-                EditMaterial(material, () => material.SetFloat(
-                    property.Name,
-                    next));
-            });
-            row.Add(slider);
-            row.Add(number);
+                "ee4v-modification-workflow__material-visibility-all");
+            _allMaterialsVisibilityButton = new UiButton(
+                string.Empty,
+                () => ToggleAllMaterialsVisibility(materials),
+                variant: UiButtonVariant.Ghost);
+            _allMaterialsVisibilityButton.AddToClassList(
+                "ee4v-modification-workflow__material-visibility");
+            row.Trailing.Add(_allMaterialsVisibilityButton);
             return row;
+        }
+
+        private void ToggleMaterialVisibility(Material material)
+        {
+            if (material == null)
+            {
+                return;
+            }
+
+            if (!_hiddenMaterials.Add(material))
+            {
+                _hiddenMaterials.Remove(material);
+            }
+            _scenePreview?.SetHiddenMaterials(_hiddenMaterials);
+            RefreshMaterialVisibilityButtons(
+                _materialVisibilityButtons.Keys.ToArray());
+        }
+
+        private void ToggleAllMaterialsVisibility(
+            IReadOnlyCollection<Material> materials)
+        {
+            if (_hiddenMaterials.Count == 0)
+            {
+                _hiddenMaterials.UnionWith(materials);
+            }
+            else
+            {
+                _hiddenMaterials.Clear();
+            }
+
+            _scenePreview?.SetHiddenMaterials(_hiddenMaterials);
+            RefreshMaterialVisibilityButtons(materials);
+        }
+
+        private void RefreshMaterialVisibilityButtons(
+            IReadOnlyCollection<Material> materials)
+        {
+            foreach (var pair in _materialVisibilityButtons)
+            {
+                var material = pair.Key;
+                var button = pair.Value;
+                var isVisible = !_hiddenMaterials.Contains(material);
+                var tooltipKey = isVisible
+                    ? "workflow.appearance.hideMaterial"
+                    : "workflow.appearance.showMaterial";
+                var tooltip = I18N.Get(tooltipKey);
+                button.tooltip = tooltip;
+                button.SetIcon(IconState.FromBuiltinIcon(
+                    isVisible
+                        ? UiBuiltinIcon.VisibilityVisible
+                        : UiBuiltinIcon.VisibilityHidden,
+                    UiSizeTokens.Size18,
+                    tooltip));
+            }
+
+            var allVisible = materials.Count > 0 &&
+                             !_hiddenMaterials.Overlaps(materials);
+            var allTooltip = I18N.Get(allVisible
+                ? "workflow.appearance.hideAll"
+                : "workflow.appearance.showAll");
+            _allMaterialsVisibilityButton?.SetIcon(
+                IconState.FromBuiltinIcon(
+                    allVisible
+                        ? UiBuiltinIcon.VisibilityVisible
+                        : UiBuiltinIcon.VisibilityHidden,
+                    UiSizeTokens.Size18,
+                    allTooltip));
+            if (_allMaterialsVisibilityButton != null)
+            {
+                _allMaterialsVisibilityButton.tooltip = allTooltip;
+            }
         }
 
         private VisualElement BuildTodoControls()
@@ -833,24 +1039,6 @@ namespace Ee4v.AssetManager.UI
             description.SetWhiteSpace(WhiteSpace.Normal);
             panel.Add(description);
             return panel;
-        }
-
-        private VisualElement CreateSubheading(
-            string titleKey,
-            string descriptionKey)
-        {
-            var heading = new VisualElement();
-            heading.AddToClassList(
-                "ee4v-modification-workflow__subheading");
-            heading.Add(UiTextFactory.Create(
-                I18N.Get(titleKey),
-                UiClassNames.FormLabel));
-            var description = UiTextFactory.Create(
-                I18N.Get(descriptionKey),
-                UiClassNames.SecondaryText);
-            description.SetWhiteSpace(WhiteSpace.Normal);
-            heading.Add(description);
-            return heading;
         }
 
         private void AddFeedback(VisualElement panel)
@@ -1021,7 +1209,9 @@ namespace Ee4v.AssetManager.UI
             _workingObject = asset.Prefab;
             _creatingDerivedAsset = false;
             _currentCategory = WorkflowCategory.Appearance;
+            _appearanceSection = AppearanceSection.Material;
             _selectedMaterial = null;
+            _hiddenMaterials.Clear();
             _feedback = string.Empty;
             BuildWindow();
         }
@@ -1031,30 +1221,107 @@ namespace Ee4v.AssetManager.UI
             _workingAsset = null;
             _workingObject = null;
             _selectedMaterial = null;
+            _hiddenMaterials.Clear();
             _feedback = string.Empty;
             BuildWindow();
         }
 
-        private IReadOnlyList<Material> GetWorkingMaterials()
+        private IReadOnlyList<AvatarMaterialEntry> GetAvatarMaterials()
         {
             if (_workingObject == null)
             {
-                return Array.Empty<Material>();
+                return Array.Empty<AvatarMaterialEntry>();
             }
-            var path = AssetDatabase.GetAssetPath(_workingObject);
-            if (string.IsNullOrWhiteSpace(path))
+
+            var entries = new List<AvatarMaterialEntry>();
+            var byMaterial = new Dictionary<Material, AvatarMaterialEntry>();
+            foreach (var renderer in _workingObject
+                         .GetComponentsInChildren<Renderer>(true))
             {
-                return Array.Empty<Material>();
+                var rendererPath = AnimationUtility.CalculateTransformPath(
+                    renderer.transform,
+                    _workingObject.transform);
+                if (string.IsNullOrWhiteSpace(rendererPath))
+                {
+                    rendererPath = _workingObject.name;
+                }
+
+                var assigned = renderer.sharedMaterials;
+                for (var index = 0; index < assigned.Length; index++)
+                {
+                    var material = assigned[index];
+                    if (material == null)
+                    {
+                        continue;
+                    }
+
+                    if (!byMaterial.TryGetValue(material, out var entry))
+                    {
+                        entry = new AvatarMaterialEntry
+                        {
+                            Material = material
+                        };
+                        byMaterial.Add(material, entry);
+                        entries.Add(entry);
+                    }
+
+                    entry.Usages.Add(new MaterialUsage
+                    {
+                        RendererPath = rendererPath,
+                        SlotIndex = index
+                    });
+                }
             }
-            return AssetDatabase.GetDependencies(path, true)
-                .SelectMany(AssetDatabase.LoadAllAssetsAtPath)
-                .OfType<Material>()
-                .Distinct()
-                .OrderByDescending(IsEditableWorkflowMaterial)
-                .ThenBy(
-                    material => material.name,
-                    StringComparer.OrdinalIgnoreCase)
-                .ToArray();
+
+            return entries;
+        }
+
+        private static IconState CreateMaterialIcon(Material material)
+        {
+            var texture = AssetPreview.GetMiniThumbnail(material) ??
+                          EditorGUIUtility.ObjectContent(
+                              material,
+                              typeof(Material)).image;
+            return texture != null
+                ? IconState.FromTexture(texture, UiSizeTokens.Size31)
+                : AssetManagerControls.LoadFluentIconState(
+                    "image.png",
+                    UiSizeTokens.Size31,
+                    tintColor: UiColorTokens.TextMuted);
+        }
+
+        private static string FormatMaterialUsageSummary(
+            AvatarMaterialEntry entry)
+        {
+            if (entry == null || entry.Usages.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var first = FormatMaterialUsage(entry.Usages[0]);
+            return entry.Usages.Count > 1
+                ? first + " " + I18N.Get(
+                    "workflow.appearance.moreUsages",
+                    entry.Usages.Count - 1)
+                : first;
+        }
+
+        private static string FormatMaterialUsageTooltip(
+            AvatarMaterialEntry entry)
+        {
+            return entry == null
+                ? string.Empty
+                : string.Join(
+                    "\n",
+                    entry.Usages.Select(FormatMaterialUsage));
+        }
+
+        private static string FormatMaterialUsage(MaterialUsage usage)
+        {
+            return I18N.Get(
+                "workflow.appearance.materialUsage",
+                usage?.RendererPath ?? string.Empty,
+                (usage?.SlotIndex ?? 0) + 1);
         }
 
         private static bool IsEditableWorkflowMaterial(Material material)
@@ -1067,65 +1334,25 @@ namespace Ee4v.AssetManager.UI
                        StringComparison.OrdinalIgnoreCase);
         }
 
-        private IReadOnlyList<ShaderPropertyEntry> GetMaterialProperties(
-            Material material,
-            AppearanceGroup group)
+        private void RefreshMaterialPreview()
         {
-            var shader = material?.shader;
-            if (shader == null)
-            {
-                return Array.Empty<ShaderPropertyEntry>();
-            }
-            var properties = new List<ShaderPropertyEntry>();
-            for (var index = 0;
-                 index < shader.GetPropertyCount();
-                 index++)
-            {
-                if ((shader.GetPropertyFlags(index) &
-                     ShaderPropertyFlags.HideInInspector) != 0)
-                {
-                    continue;
-                }
-                var type = shader.GetPropertyType(index);
-                var matches = group == AppearanceGroup.Color
-                    ? type == ShaderPropertyType.Color
-                    : group == AppearanceGroup.Texture
-                        ? type == ShaderPropertyType.Texture
-                        : type == ShaderPropertyType.Float ||
-                          type == ShaderPropertyType.Range;
-                if (!matches)
-                {
-                    continue;
-                }
-                properties.Add(new ShaderPropertyEntry
-                {
-                    Index = index,
-                    Name = shader.GetPropertyName(index),
-                    DisplayName = shader.GetPropertyDescription(index),
-                    Type = type
-                });
-            }
-            return properties;
-        }
-
-        private void EditMaterial(Material material, Action change)
-        {
-            Undo.RecordObject(material, "Edit Derived Asset Appearance");
-            change();
-            EditorUtility.SetDirty(material);
             _scenePreview?.RefreshPreview();
         }
 
-        private void SetPreviewText(
-            string titleKey,
-            string hintKey)
+        private void DisposeMaterialEditor()
+        {
+            _materialInspector?.Dispose();
+            _materialInspector = null;
+        }
+
+        private void SetPreviewTitle(string titleKey)
         {
             _previewTitle?.SetText(I18N.Get(titleKey));
-            _previewHint?.SetText(I18N.Get(hintKey));
         }
 
         private void DisposeEditors()
         {
+            DisposeMaterialEditor();
             _faceExpressionEditor?.Dispose();
             _faceExpressionEditor = null;
             _scenePreview?.Dispose();

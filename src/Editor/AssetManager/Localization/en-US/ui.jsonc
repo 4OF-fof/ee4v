@@ -39,25 +39,26 @@
       "change": "Change"
     },
     "preview": {
-      "appearanceTitle": "Appearance preview",
-      "appearanceHint": "Drag to orbit and scroll to zoom. Changes are applied directly to the derived Materials.",
-      "todoTitle": "Preview",
-      "todoHint": "Upcoming helpers will continue to use the same derived asset."
+      "appearanceTitle": "Preview",
+      "sizeTitle": "Size preview",
+      "todoTitle": "Preview"
     },
     "appearance": {
-      "title": "Appearance",
-      "description": "Choose a part and then the kind of adjustment. Only the relevant controls are shown.",
-      "partTitle": "1. Choose a part",
-      "partDescription": "Select the Material for hair, skin, clothing, or another part.",
-      "groupTitle": "2. Choose an adjustment",
-      "groupDescription": "Switch between color, texture, and fine adjustments.",
-      "group": {
-        "color": "Color",
-        "texture": "Texture",
-        "adjustment": "Adjust"
+      "section": {
+        "material": "Material",
+        "size": "Size"
       },
-      "groupEmptyTitle": "No controls in this category",
-      "groupEmptyDescription": "The selected Material has no properties of this kind.",
+      "sizeTodoTitle": "Size targets and apply rules",
+      "sizeTodoDescription": "Define whether size means the whole Avatar, bones, clothing, or body-shape BlendShapes, then add safe editing that persists to the derived Prefab.",
+      "materialUsage": "{0} / slot {1}",
+      "moreUsages": "+{0} more",
+      "allMaterials": "All",
+      "hideMaterial": "Hide this Material",
+      "showMaterial": "Show this Material",
+      "hideAll": "Hide all Materials",
+      "showAll": "Show all Materials",
+      "readOnly": "Read only",
+      "editorUnavailable": "The Material Inspector could not be created.",
       "protected": "This Material is outside the derived asset. It cannot be edited here so the source remains protected.",
       "emptyTitle": "No Materials found",
       "emptyDescription": "Check that the selected derived asset has Materials assigned."

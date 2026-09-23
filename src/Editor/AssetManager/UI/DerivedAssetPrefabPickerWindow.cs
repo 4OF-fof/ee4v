@@ -247,6 +247,14 @@ namespace Ee4v.AssetManager.UI
     internal sealed class DerivedAssetPrefabScenePreview
         : VisualElement, IDisposable
     {
+        private sealed class MaterialPreviewTarget
+        {
+            internal Renderer Renderer { get; set; }
+            internal Mesh Mesh { get; set; }
+            internal int SubMeshIndex { get; set; }
+            internal Material Material { get; set; }
+        }
+
         private static readonly int PreviewControlHash =
             nameof(DerivedAssetPrefabScenePreview).GetHashCode();
         private const int GridTextureSize = 64;
@@ -261,12 +269,25 @@ namespace Ee4v.AssetManager.UI
         private readonly UiButton _backgroundToggle;
         private readonly UiButton _resetView;
         private readonly PreviewOrbitController _orbit;
+        private readonly List<MaterialPreviewTarget> _materialTargets =
+            new List<MaterialPreviewTarget>();
+        private readonly List<Renderer> _filteredRenderers =
+            new List<Renderer>();
+        private readonly Dictionary<SkinnedMeshRenderer, Mesh>
+            _bakedMeshes =
+                new Dictionary<SkinnedMeshRenderer, Mesh>();
+        private readonly List<Renderer> _temporarilyHiddenRenderers =
+            new List<Renderer>();
         private PreviewRenderUtility _utility;
         private Texture2D _gridTexture;
         private GameObject _prefab;
         private GameObject _instance;
+        private Renderer[] _renderers = Array.Empty<Renderer>();
+        private readonly HashSet<Material> _hiddenMaterials =
+            new HashSet<Material>();
         private Bounds _bounds;
         private bool _lightBackground;
+        private bool _flexibleLayout;
 
         internal DerivedAssetPrefabScenePreview()
         {
@@ -351,6 +372,29 @@ namespace Ee4v.AssetManager.UI
             _preview.MarkDirtyRepaint();
         }
 
+        internal void SetHiddenMaterials(
+            IEnumerable<Material> materials)
+        {
+            var next = materials == null
+                ? new HashSet<Material>()
+                : new HashSet<Material>(
+                    materials.Where(material => material != null));
+            if (_hiddenMaterials.SetEquals(next))
+            {
+                return;
+            }
+
+            _hiddenMaterials.Clear();
+            _hiddenMaterials.UnionWith(next);
+            RebuildMaterialTargets();
+            _preview.MarkDirtyRepaint();
+        }
+
+        internal void SetFlexibleLayout(bool flexible)
+        {
+            _flexibleLayout = flexible;
+        }
+
         public void Dispose()
         {
             CleanupPreview();
@@ -372,9 +416,10 @@ namespace Ee4v.AssetManager.UI
                 _instance.name =
                     _prefab.name + " (Derived Asset Preview)";
                 SetHideFlags(_instance.transform);
-                foreach (var renderer in _instance
-                             .GetComponentsInChildren<
-                                 SkinnedMeshRenderer>(true))
+                _renderers = _instance
+                    .GetComponentsInChildren<Renderer>(true);
+                foreach (var renderer in _renderers
+                             .OfType<SkinnedMeshRenderer>())
                 {
                     renderer.forceMatrixRecalculationPerRender = true;
                 }
@@ -389,6 +434,7 @@ namespace Ee4v.AssetManager.UI
                 _utility.lights[1].intensity = 0.7f;
                 _utility.AddSingleGO(_instance);
                 _bounds = CalculateBounds(_instance);
+                RebuildMaterialTargets();
                 SetPreviewAvailable(true);
                 ResetView();
             }
@@ -439,7 +485,14 @@ namespace Ee4v.AssetManager.UI
 
             ConfigureCamera();
             _utility.BeginPreview(rect, GUIStyle.none);
-            _utility.camera.Render();
+            if (_hiddenMaterials.Count == 0)
+            {
+                _utility.camera.Render();
+            }
+            else
+            {
+                RenderFilteredMaterials();
+            }
             var texture = _utility.EndPreview();
             GUI.DrawTexture(
                 rect,
@@ -474,6 +527,151 @@ namespace Ee4v.AssetManager.UI
             _orbit.ConfigureCamera(
                 _utility.camera,
                 _instance.transform.rotation);
+        }
+
+        private void RebuildMaterialTargets()
+        {
+            DestroyBakedMeshes();
+            _materialTargets.Clear();
+            _filteredRenderers.Clear();
+            if (_hiddenMaterials.Count == 0 || _instance == null)
+            {
+                return;
+            }
+
+            foreach (var renderer in _renderers)
+            {
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                var materials = renderer.sharedMaterials;
+                if (!materials.Any(material =>
+                        material != null &&
+                        _hiddenMaterials.Contains(material)))
+                {
+                    continue;
+                }
+
+                var mesh = GetPreviewMesh(renderer);
+                if (mesh == null)
+                {
+                    continue;
+                }
+
+                _filteredRenderers.Add(renderer);
+                var count = Mathf.Min(materials.Length, mesh.subMeshCount);
+                for (var index = 0; index < count; index++)
+                {
+                    if (materials[index] == null ||
+                        _hiddenMaterials.Contains(materials[index]))
+                    {
+                        continue;
+                    }
+
+                    _materialTargets.Add(new MaterialPreviewTarget
+                    {
+                        Renderer = renderer,
+                        Mesh = mesh,
+                        SubMeshIndex = index,
+                        Material = materials[index]
+                    });
+                }
+            }
+        }
+
+        private Mesh GetPreviewMesh(Renderer renderer)
+        {
+            if (renderer is MeshRenderer meshRenderer)
+            {
+                var filter = meshRenderer.GetComponent<MeshFilter>();
+                return filter != null ? filter.sharedMesh : null;
+            }
+
+            if (!(renderer is SkinnedMeshRenderer skinned) ||
+                skinned.sharedMesh == null)
+            {
+                return null;
+            }
+
+            var baked = new Mesh
+            {
+                hideFlags = HideFlags.HideAndDontSave,
+                name = skinned.sharedMesh.name + " (Material Preview)"
+            };
+            skinned.BakeMesh(baked);
+            _bakedMeshes.Add(skinned, baked);
+            return baked;
+        }
+
+        private void RenderFilteredMaterials()
+        {
+            foreach (var pair in _bakedMeshes)
+            {
+                if (pair.Key != null && pair.Value != null)
+                {
+                    pair.Key.BakeMesh(pair.Value);
+                }
+            }
+
+            foreach (var target in _materialTargets)
+            {
+                if (target.Renderer == null ||
+                    target.Mesh == null ||
+                    target.Material == null ||
+                    !target.Renderer.enabled ||
+                    !target.Renderer.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                _utility.DrawMesh(
+                    target.Mesh,
+                    target.Renderer.localToWorldMatrix,
+                    target.Material,
+                    target.SubMeshIndex);
+            }
+
+            _temporarilyHiddenRenderers.Clear();
+            foreach (var renderer in _filteredRenderers)
+            {
+                if (renderer == null || !renderer.enabled)
+                {
+                    continue;
+                }
+
+                renderer.enabled = false;
+                _temporarilyHiddenRenderers.Add(renderer);
+            }
+
+            try
+            {
+                _utility.camera.Render();
+            }
+            finally
+            {
+                foreach (var renderer in _temporarilyHiddenRenderers)
+                {
+                    if (renderer != null)
+                    {
+                        renderer.enabled = true;
+                    }
+                }
+                _temporarilyHiddenRenderers.Clear();
+            }
+        }
+
+        private void DestroyBakedMeshes()
+        {
+            foreach (var mesh in _bakedMeshes.Values)
+            {
+                if (mesh != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(mesh);
+                }
+            }
+            _bakedMeshes.Clear();
         }
 
         private void DrawGrid(Rect rect)
@@ -519,6 +717,13 @@ namespace Ee4v.AssetManager.UI
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
         {
+            if (_flexibleLayout)
+            {
+                ResetView();
+                _preview.MarkDirtyRepaint();
+                return;
+            }
+
             var size = Mathf.Clamp(
                 evt.newRect.width,
                 MinimumPreviewSize,
@@ -637,6 +842,11 @@ namespace Ee4v.AssetManager.UI
 
         private void CleanupPreview()
         {
+            DestroyBakedMeshes();
+            _materialTargets.Clear();
+            _filteredRenderers.Clear();
+            _temporarilyHiddenRenderers.Clear();
+            _renderers = Array.Empty<Renderer>();
             if (_utility != null)
             {
                 _utility.Cleanup();

@@ -39,25 +39,26 @@
       "change": "変更"
     },
     "preview": {
-      "appearanceTitle": "見た目プレビュー",
-      "appearanceHint": "ドラッグで回転、スクロールで拡大できます。変更は派生Materialへ直接反映されます。",
-      "todoTitle": "プレビュー",
-      "todoHint": "準備中の補助機能も、同じ派生アセットを対象に追加していきます。"
+      "appearanceTitle": "プレビュー",
+      "sizeTitle": "サイズプレビュー",
+      "todoTitle": "プレビュー"
     },
     "appearance": {
-      "title": "見た目",
-      "description": "編集する部位と調整内容を順に選びます。必要な設定だけを表示します。",
-      "partTitle": "1. 部位を選ぶ",
-      "partDescription": "髪、肌、服など、変更したいMaterialを選択します。",
-      "groupTitle": "2. 調整内容を選ぶ",
-      "groupDescription": "色・テクスチャ・細かな調整を切り替えます。",
-      "group": {
-        "color": "色",
-        "texture": "テクスチャ",
-        "adjustment": "調整"
+      "section": {
+        "material": "マテリアル",
+        "size": "サイズ"
       },
-      "groupEmptyTitle": "この項目はありません",
-      "groupEmptyDescription": "選択したMaterialには、この種類の設定がありません。",
+      "sizeTodoTitle": "サイズ調整の対象と反映方法",
+      "sizeTodoDescription": "Avatar全体、bone、衣装、体型BlendShapeのどれをサイズとして扱うかを定義し、安全に派生Prefabへ保存する編集機能を追加する。",
+      "materialUsage": "{0} / slot {1}",
+      "moreUsages": "ほか{0}箇所",
+      "allMaterials": "すべて",
+      "hideMaterial": "このMaterialを非表示",
+      "showMaterial": "このMaterialを表示",
+      "hideAll": "すべてのMaterialを非表示",
+      "showAll": "すべてのMaterialを表示",
+      "readOnly": "読取専用",
+      "editorUnavailable": "Material Inspectorを作成できませんでした。",
       "protected": "このMaterialは派生アセット外にあります。元素材を守るため、この画面では編集できません。",
       "emptyTitle": "Materialが見つかりません",
       "emptyDescription": "選択した派生アセットにMaterialが設定されているか確認してください。"

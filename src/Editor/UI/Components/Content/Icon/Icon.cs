@@ -51,6 +51,7 @@ namespace Ee4v.UI
         DisclosureClosed,
         DisclosureOpen,
         ModelFile,
+        VisibilityVisible,
         VisibilityHidden
     }
 
@@ -130,6 +131,15 @@ namespace Ee4v.UI
                     };
                 case UiBuiltinIcon.ModelFile:
                     return new[] { "Prefab Icon", "d_Prefab Icon", "Mesh Icon", "d_Mesh Icon", "DefaultAsset Icon" };
+                case UiBuiltinIcon.VisibilityVisible:
+                    return new[]
+                    {
+                        "scenevis_visible_hover",
+                        "scenevis_visible",
+                        "d_scenevis_visible_hover",
+                        "d_scenevis_visible",
+                        "animationvisibilitytoggleon"
+                    };
                 case UiBuiltinIcon.VisibilityHidden:
                     return new[]
                     {
