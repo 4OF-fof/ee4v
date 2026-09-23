@@ -52,6 +52,49 @@ namespace Ee4v.FaceExpression
         public IReadOnlyList<string> Warnings { get; set; }
     }
 
+    public sealed class FaceExpressionAnimationPoseChannelData
+    {
+        public string RendererPath { get; set; }
+        public string ShapeName { get; set; }
+        public float Value { get; set; }
+    }
+
+    public sealed class FaceExpressionAnimationPoseData
+    {
+        public int Index { get; set; }
+        public float Time { get; set; }
+        public float TransitionDuration { get; set; }
+        public string Name { get; set; }
+        public string SourceClipPath { get; set; }
+        public IReadOnlyList<FaceExpressionAnimationPoseChannelData> Channels
+        {
+            get;
+            set;
+        }
+    }
+
+    public sealed class FaceExpressionAnimationData
+    {
+        public string AssetPath { get; set; }
+        public string Revision { get; set; }
+        public float FrameRate { get; set; }
+        public float Duration { get; set; }
+        public bool Looping { get; set; }
+        public int PoseCount { get; set; }
+        public IReadOnlyList<FaceExpressionAnimationPoseData> Poses { get; set; }
+    }
+
+    public sealed class FaceExpressionAnimationEditResult
+    {
+        public bool Changed { get; set; }
+        public bool DryRun { get; set; }
+        public string AssetPath { get; set; }
+        public string Revision { get; set; }
+        public int PoseCount { get; set; }
+        public int PoseIndex { get; set; }
+        public float PoseTime { get; set; }
+    }
+
     public sealed class FaceExpressionValidationFinding
     {
         public string Severity { get; set; }
@@ -155,6 +198,405 @@ namespace Ee4v.FaceExpression
                 .ToArray();
         }
 
+        public static FaceExpressionAnimationData InspectAnimation(
+            AnimationClip clip,
+            bool includeChannels = false)
+        {
+            if (clip == null)
+            {
+                throw new ArgumentNullException(nameof(clip));
+            }
+
+            var poseTimes = FaceExpressionClipEditor.GetPoseTimes(clip);
+            var poseSources = FaceExpressionClipEditor.GetPoseSources(
+                clip,
+                poseTimes);
+            var poseNames = FaceExpressionClipEditor.GetPoseNames(
+                clip,
+                poseTimes);
+            var bindings = includeChannels
+                ? AnimationUtility.GetCurveBindings(clip)
+                    .Where(IsBlendShapeBinding)
+                    .OrderBy(binding => binding.path, StringComparer.Ordinal)
+                    .ThenBy(binding => binding.propertyName, StringComparer.Ordinal)
+                    .Select(binding => new
+                    {
+                        Binding = binding,
+                        Curve = AnimationUtility.GetEditorCurve(clip, binding)
+                    })
+                    .Where(item => item.Curve != null)
+                    .ToArray()
+                : null;
+            var poses = new FaceExpressionAnimationPoseData[poseTimes.Count];
+            for (var poseIndex = 0; poseIndex < poseTimes.Count; poseIndex++)
+            {
+                var poseTime = poseTimes[poseIndex];
+                poses[poseIndex] = new FaceExpressionAnimationPoseData
+                {
+                    Index = poseIndex,
+                    Time = poseTime,
+                    TransitionDuration = poseIndex < poseTimes.Count - 1
+                        ? poseTimes[poseIndex + 1] - poseTime
+                        : 0f,
+                    Name = poseIndex < poseNames.Count
+                        ? poseNames[poseIndex] ?? string.Empty
+                        : string.Empty,
+                    SourceClipPath = poseIndex < poseSources.Count
+                        ? AssetDatabase.GetAssetPath(poseSources[poseIndex])
+                        : string.Empty,
+                    Channels = bindings == null
+                        ? Array.Empty<FaceExpressionAnimationPoseChannelData>()
+                        : bindings.Select(item =>
+                                new FaceExpressionAnimationPoseChannelData
+                                {
+                                    RendererPath = item.Binding.path,
+                                    ShapeName = item.Binding.propertyName.Substring(
+                                        "blendShape.".Length),
+                                    Value = item.Curve.Evaluate(poseTime)
+                                })
+                            .ToArray()
+                };
+            }
+
+            return new FaceExpressionAnimationData
+            {
+                AssetPath = AssetDatabase.GetAssetPath(clip),
+                Revision = Revision(clip),
+                FrameRate = clip.frameRate,
+                Duration = poseTimes.Count == 0
+                    ? 0f
+                    : poseTimes[poseTimes.Count - 1],
+                Looping = FaceExpressionClipEditor.IsLooping(clip),
+                PoseCount = poseTimes.Count,
+                Poses = poses
+            };
+        }
+
+        public static FaceExpressionAnimationEditResult AddAnimationPose(
+            GameObject avatar,
+            AnimationClip clip,
+            int afterPoseIndex,
+            float transitionDuration,
+            string name = null,
+            string sourceClipPath = null,
+            IReadOnlyList<FaceExpressionClipChange> channels = null,
+            bool dryRun = false,
+            string expectedRevision = null)
+        {
+            ValidateAnimationEditTarget(avatar, clip, expectedRevision);
+            ValidateTransitionDuration(transitionDuration);
+            var poseTimes = FaceExpressionClipEditor.GetPoseTimes(clip);
+            if (afterPoseIndex < 0 || afterPoseIndex >= poseTimes.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(afterPoseIndex));
+            }
+
+            if (!FaceExpressionClipEditor.CanAddPose(clip))
+            {
+                throw new InvalidOperationException(
+                    "The clip needs at least one BlendShape curve before a pose can be added.");
+            }
+
+            var source = LoadClip(sourceClipPath);
+            ValidatePoseInputs(
+                avatar,
+                clip,
+                poseTimes[afterPoseIndex],
+                source,
+                channels);
+            var duration = NormalizeTransitionDuration(clip, transitionDuration);
+            var newTime = FaceExpressionClipEditor.SnapTime(
+                clip,
+                poseTimes[afterPoseIndex] + duration);
+            if (dryRun)
+            {
+                return AnimationEditResult(
+                    clip,
+                    true,
+                    true,
+                    poseTimes.Count + 1,
+                    afterPoseIndex + 1,
+                    newTime);
+            }
+
+            newTime = FaceExpressionClipEditor.AddPose(
+                clip,
+                poseTimes[afterPoseIndex],
+                duration);
+            if (newTime < 0f)
+            {
+                throw new InvalidOperationException("The pose could not be added.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                FaceExpressionClipEditor.SetPoseName(clip, newTime, name);
+            }
+
+            if (source != null && !FaceExpressionClipEditor.SetPoseSource(
+                    clip,
+                    newTime,
+                    source,
+                    ReadEditableChannels(avatar, clip, newTime)))
+            {
+                throw new InvalidOperationException(
+                    "The source clip has no matching BlendShape curves.");
+            }
+
+            ApplyPoseChannels(avatar, clip, newTime, channels);
+            AssetDatabase.SaveAssets();
+            var updatedTimes = FaceExpressionClipEditor.GetPoseTimes(clip);
+            return AnimationEditResult(
+                clip,
+                true,
+                false,
+                updatedTimes.Count,
+                FindPoseIndex(updatedTimes, newTime),
+                newTime);
+        }
+
+        public static FaceExpressionAnimationEditResult UpdateAnimationPose(
+            GameObject avatar,
+            AnimationClip clip,
+            int poseIndex,
+            bool updateName,
+            string name,
+            bool updateSource,
+            string sourceClipPath,
+            IReadOnlyList<FaceExpressionClipChange> channels = null,
+            float? transitionDuration = null,
+            bool dryRun = false,
+            string expectedRevision = null)
+        {
+            ValidateAnimationEditTarget(avatar, clip, expectedRevision);
+            var poseTimes = FaceExpressionClipEditor.GetPoseTimes(clip);
+            if (poseIndex < 0 || poseIndex >= poseTimes.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(poseIndex));
+            }
+
+            if (transitionDuration.HasValue)
+            {
+                ValidateTransitionDuration(transitionDuration.Value);
+                if (poseIndex >= poseTimes.Count - 1)
+                {
+                    throw new InvalidOperationException(
+                        "The last pose has no following transition.");
+                }
+            }
+
+            var poseTime = poseTimes[poseIndex];
+            var poseSources = FaceExpressionClipEditor.GetPoseSources(
+                clip,
+                poseTimes);
+            var currentSource = poseSources[poseIndex];
+            var source = updateSource ? LoadClip(sourceClipPath) : currentSource;
+            ValidatePoseInputs(
+                avatar,
+                clip,
+                poseTime,
+                updateSource || (channels != null && channels.Count > 0)
+                    ? source
+                    : null,
+                channels);
+
+            var changed = false;
+            if (updateName)
+            {
+                var names = FaceExpressionClipEditor.GetPoseNames(clip, poseTimes);
+                changed |= !string.Equals(
+                    names[poseIndex] ?? string.Empty,
+                    (name ?? string.Empty).Trim(),
+                    StringComparison.Ordinal);
+            }
+
+            if (updateSource)
+            {
+                changed |= currentSource != source;
+            }
+
+            changed |= PoseChannelsNeedWrite(avatar, clip, poseTime, channels);
+            if (transitionDuration.HasValue)
+            {
+                changed |= !Mathf.Approximately(
+                    poseTimes[poseIndex + 1] - poseTime,
+                    NormalizeTransitionDuration(
+                        clip,
+                        transitionDuration.Value));
+            }
+
+            if (dryRun || !changed)
+            {
+                return AnimationEditResult(
+                    clip,
+                    changed,
+                    dryRun,
+                    poseTimes.Count,
+                    poseIndex,
+                    poseTime);
+            }
+
+            if (updateSource && !FaceExpressionClipEditor.SetPoseSource(
+                    clip,
+                    poseTime,
+                    source,
+                    ReadEditableChannels(avatar, clip, poseTime)))
+            {
+                throw new InvalidOperationException(
+                    source == null
+                        ? "The pose source could not be cleared."
+                        : "The source clip has no matching BlendShape curves.");
+            }
+
+            ApplyPoseChannels(avatar, clip, poseTime, channels);
+            if (updateName)
+            {
+                FaceExpressionClipEditor.SetPoseName(clip, poseTime, name);
+            }
+
+            if (transitionDuration.HasValue)
+            {
+                FaceExpressionClipEditor.SetTransitionDuration(
+                    clip,
+                    poseTime,
+                    transitionDuration.Value);
+            }
+
+            AssetDatabase.SaveAssets();
+            var updatedTimes = FaceExpressionClipEditor.GetPoseTimes(clip);
+            return AnimationEditResult(
+                clip,
+                true,
+                false,
+                updatedTimes.Count,
+                poseIndex,
+                updatedTimes[poseIndex]);
+        }
+
+        public static FaceExpressionAnimationEditResult MoveAnimationPose(
+            AnimationClip clip,
+            int poseIndex,
+            int targetIndex,
+            bool dryRun = false,
+            string expectedRevision = null)
+        {
+            ValidateAnimationClip(clip, expectedRevision);
+            var poseTimes = FaceExpressionClipEditor.GetPoseTimes(clip);
+            if (poseIndex < 0 ||
+                targetIndex < 0 ||
+                poseIndex >= poseTimes.Count ||
+                targetIndex >= poseTimes.Count ||
+                Mathf.Abs(targetIndex - poseIndex) != 1)
+            {
+                throw new ArgumentException(
+                    "poseIndex and targetIndex must identify adjacent poses.");
+            }
+
+            if (!dryRun && !FaceExpressionClipEditor.MovePose(
+                    clip,
+                    poseIndex,
+                    targetIndex))
+            {
+                throw new InvalidOperationException("The pose could not be moved.");
+            }
+
+            if (!dryRun)
+            {
+                AssetDatabase.SaveAssets();
+            }
+
+            return AnimationEditResult(
+                clip,
+                true,
+                dryRun,
+                poseTimes.Count,
+                targetIndex,
+                poseTimes[targetIndex]);
+        }
+
+        public static FaceExpressionAnimationEditResult RemoveAnimationPose(
+            AnimationClip clip,
+            int poseIndex,
+            bool dryRun = false,
+            string expectedRevision = null)
+        {
+            ValidateAnimationClip(clip, expectedRevision);
+            var poseTimes = FaceExpressionClipEditor.GetPoseTimes(clip);
+            if (poseIndex < 0 || poseIndex >= poseTimes.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(poseIndex));
+            }
+
+            if (poseTimes.Count <= 1)
+            {
+                throw new InvalidOperationException(
+                    "An expression clip must keep at least one pose.");
+            }
+
+            var selectedIndex = Mathf.Max(0, poseIndex - 1);
+            if (!dryRun && !FaceExpressionClipEditor.RemovePose(
+                    clip,
+                    poseTimes[poseIndex]))
+            {
+                throw new InvalidOperationException("The pose could not be removed.");
+            }
+
+            if (!dryRun)
+            {
+                AssetDatabase.SaveAssets();
+            }
+
+            IReadOnlyList<float> updatedTimes;
+            if (dryRun)
+            {
+                var removedTime = poseTimes[poseIndex];
+                var shift = poseIndex == 0
+                    ? -poseTimes[1]
+                    : -(removedTime - poseTimes[poseIndex - 1]);
+                updatedTimes = poseTimes
+                    .Where((_, index) => index != poseIndex)
+                    .Select(time => time > removedTime
+                        ? FaceExpressionClipEditor.SnapTime(clip, time + shift)
+                        : time)
+                    .ToArray();
+            }
+            else
+            {
+                updatedTimes = FaceExpressionClipEditor.GetPoseTimes(clip);
+            }
+            return AnimationEditResult(
+                clip,
+                true,
+                dryRun,
+                updatedTimes.Count,
+                selectedIndex,
+                updatedTimes[selectedIndex]);
+        }
+
+        public static FaceExpressionAnimationEditResult SetAnimationLooping(
+            AnimationClip clip,
+            bool looping,
+            bool dryRun = false,
+            string expectedRevision = null)
+        {
+            ValidateAnimationClip(clip, expectedRevision);
+            var poseTimes = FaceExpressionClipEditor.GetPoseTimes(clip);
+            var changed = FaceExpressionClipEditor.IsLooping(clip) != looping;
+            if (!dryRun && changed)
+            {
+                FaceExpressionClipEditor.SetLooping(clip, looping);
+                AssetDatabase.SaveAssets();
+            }
+
+            return AnimationEditResult(
+                clip,
+                changed,
+                dryRun,
+                poseTimes.Count,
+                0,
+                poseTimes.Count == 0 ? 0f : poseTimes[0]);
+        }
+
         public static FaceExpressionClipWriteResult WriteClip(
             GameObject avatar,
             string assetPath,
@@ -188,6 +630,13 @@ namespace Ee4v.FaceExpression
             {
                 throw new InvalidOperationException(
                     "The AnimationClip to update was not found.");
+            }
+
+            if (existing != null &&
+                FaceExpressionClipEditor.GetPoseTimes(existing).Count > 1)
+            {
+                throw new InvalidOperationException(
+                    "Animated expression clips must be edited with the animation pose API.");
             }
 
             var revision = existing == null ? string.Empty : Revision(assetPath);
@@ -423,7 +872,8 @@ namespace Ee4v.FaceExpression
             GameObject avatar,
             AnimationClip clip,
             int width = 512,
-            int height = 512)
+            int height = 512,
+            float sampleTime = 0f)
         {
             if (avatar == null)
             {
@@ -439,7 +889,8 @@ namespace Ee4v.FaceExpression
                     avatar,
                     clip,
                     FaceExpressionSettings.GetSeparators(),
-                    FaceExpressionClipEditor.GetRendererPaths(avatar));
+                    FaceExpressionClipEditor.GetRendererPaths(avatar),
+                    sampleTime);
                 var texture = preview.RenderThumbnail(channels, width, height);
                 if (texture == null)
                 {
@@ -723,6 +1174,271 @@ namespace Ee4v.FaceExpression
         public static string Revision(AnimationClip clip)
         {
             return clip == null ? string.Empty : Revision(AssetDatabase.GetAssetPath(clip));
+        }
+
+        private static void ValidateAnimationEditTarget(
+            GameObject avatar,
+            AnimationClip clip,
+            string expectedRevision)
+        {
+            if (avatar == null)
+            {
+                throw new ArgumentNullException(nameof(avatar));
+            }
+
+            ValidateAnimationClip(clip, expectedRevision);
+        }
+
+        private static void ValidateAnimationClip(
+            AnimationClip clip,
+            string expectedRevision)
+        {
+            if (clip == null)
+            {
+                throw new ArgumentNullException(nameof(clip));
+            }
+
+            var assetPath = AssetDatabase.GetAssetPath(clip);
+            if (string.IsNullOrEmpty(assetPath))
+            {
+                throw new InvalidOperationException(
+                    "The AnimationClip must be a project asset.");
+            }
+
+            var revision = Revision(clip);
+            if (!string.IsNullOrWhiteSpace(expectedRevision) &&
+                !string.Equals(expectedRevision, revision, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "The AnimationClip changed after it was inspected.");
+            }
+        }
+
+        private static void ValidateTransitionDuration(float duration)
+        {
+            if (float.IsNaN(duration) ||
+                float.IsInfinity(duration) ||
+                duration <= 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(duration),
+                    "Transition duration must be greater than zero.");
+            }
+        }
+
+        private static float NormalizeTransitionDuration(
+            AnimationClip clip,
+            float duration)
+        {
+            var frameRate = clip == null || clip.frameRate <= 0f
+                ? 60f
+                : clip.frameRate;
+            return Mathf.Max(
+                1f / frameRate,
+                FaceExpressionClipEditor.SnapTime(clip, duration));
+        }
+
+        private static void ValidatePoseInputs(
+            GameObject avatar,
+            AnimationClip clip,
+            float poseTime,
+            AnimationClip source,
+            IReadOnlyList<FaceExpressionClipChange> changes)
+        {
+            changes = changes ?? Array.Empty<FaceExpressionClipChange>();
+            if (source != null && changes.Count > 0)
+            {
+                throw new ArgumentException(
+                    "A source clip and explicit channel values cannot be assigned to the same pose.");
+            }
+
+            if (ReferenceEquals(clip, source))
+            {
+                throw new ArgumentException(
+                    "An animation cannot use itself as a pose source.");
+            }
+
+            var channels = ReadEditableChannels(avatar, clip, poseTime);
+            var available = channels.ToDictionary(
+                channel => ChannelKey(channel.RendererPath, channel.Name),
+                channel => channel,
+                StringComparer.Ordinal);
+            var requested = new HashSet<string>(StringComparer.Ordinal);
+            for (var index = 0; index < changes.Count; index++)
+            {
+                var change = changes[index];
+                if (change == null || string.IsNullOrWhiteSpace(change.ShapeName))
+                {
+                    throw new ArgumentException(
+                        "Each pose channel requires shapeName.",
+                        nameof(changes));
+                }
+
+                if (!change.Animated)
+                {
+                    throw new ArgumentException(
+                        "Pose channel values cannot remove an entire curve.",
+                        nameof(changes));
+                }
+
+                if (float.IsNaN(change.Value) ||
+                    float.IsInfinity(change.Value))
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(changes),
+                        "Pose channel values must be finite numbers.");
+                }
+
+                var key = ChannelKey(change.RendererPath, change.ShapeName);
+                if (!available.ContainsKey(key))
+                {
+                    throw new InvalidOperationException(
+                        "BlendShape channel was not found on the avatar: " + key);
+                }
+
+                if (!requested.Add(key))
+                {
+                    throw new ArgumentException(
+                        "A pose channel was specified more than once: " + key,
+                        nameof(changes));
+                }
+            }
+
+            if (source == null)
+            {
+                return;
+            }
+
+            var sourceKeys = new HashSet<string>(
+                AnimationUtility.GetCurveBindings(source)
+                    .Where(IsBlendShapeBinding)
+                    .Select(binding => ChannelKey(
+                        binding.path,
+                        binding.propertyName.Substring("blendShape.".Length))),
+                StringComparer.Ordinal);
+            if (!available.Keys.Any(sourceKeys.Contains))
+            {
+                throw new InvalidOperationException(
+                    "The source clip has no matching BlendShape curves.");
+            }
+        }
+
+        private static IReadOnlyList<BlendShapeChannel> ReadEditableChannels(
+            GameObject avatar,
+            AnimationClip clip,
+            float poseTime)
+        {
+            return FaceExpressionClipEditor.Read(
+                    avatar,
+                    clip,
+                    FaceExpressionSettings.GetSeparators(),
+                    FaceExpressionClipEditor.GetRendererPaths(avatar),
+                    poseTime)
+                .Where(channel => !channel.IsHeader)
+                .ToArray();
+        }
+
+        private static bool PoseChannelsNeedWrite(
+            GameObject avatar,
+            AnimationClip clip,
+            float poseTime,
+            IReadOnlyList<FaceExpressionClipChange> changes)
+        {
+            if (changes == null || changes.Count == 0)
+            {
+                return false;
+            }
+
+            var channels = ReadEditableChannels(avatar, clip, poseTime)
+                .ToDictionary(
+                    channel => ChannelKey(channel.RendererPath, channel.Name),
+                    channel => channel,
+                    StringComparer.Ordinal);
+            return changes.Any(change =>
+            {
+                var channel = channels[ChannelKey(
+                    change.RendererPath,
+                    change.ShapeName)];
+                return !channel.Animated ||
+                       !Mathf.Approximately(
+                           channel.Value,
+                           Mathf.Clamp(change.Value, 0f, 100f));
+            });
+        }
+
+        private static void ApplyPoseChannels(
+            GameObject avatar,
+            AnimationClip clip,
+            float poseTime,
+            IReadOnlyList<FaceExpressionClipChange> changes)
+        {
+            if (changes == null || changes.Count == 0)
+            {
+                return;
+            }
+
+            var channels = ReadEditableChannels(avatar, clip, poseTime)
+                .ToDictionary(
+                    channel => ChannelKey(channel.RendererPath, channel.Name),
+                    channel => channel,
+                    StringComparer.Ordinal);
+            var poseTimes = FaceExpressionClipEditor.GetPoseTimes(clip);
+            for (var index = 0; index < changes.Count; index++)
+            {
+                var change = changes[index];
+                var channel = channels[ChannelKey(
+                    change.RendererPath,
+                    change.ShapeName)];
+                var value = Mathf.Clamp(change.Value, 0f, 100f);
+                if (channel.Animated &&
+                    Mathf.Approximately(channel.Value, value))
+                {
+                    continue;
+                }
+
+                channel.Value = value;
+                channel.Animated = true;
+                FaceExpressionClipEditor.WritePose(
+                    clip,
+                    channel,
+                    poseTime,
+                    poseTimes);
+            }
+        }
+
+        private static FaceExpressionAnimationEditResult AnimationEditResult(
+            AnimationClip clip,
+            bool changed,
+            bool dryRun,
+            int poseCount,
+            int poseIndex,
+            float poseTime)
+        {
+            return new FaceExpressionAnimationEditResult
+            {
+                Changed = changed,
+                DryRun = dryRun,
+                AssetPath = AssetDatabase.GetAssetPath(clip),
+                Revision = Revision(clip),
+                PoseCount = poseCount,
+                PoseIndex = poseIndex,
+                PoseTime = poseTime
+            };
+        }
+
+        private static int FindPoseIndex(
+            IReadOnlyList<float> poseTimes,
+            float poseTime)
+        {
+            for (var index = 0; index < poseTimes.Count; index++)
+            {
+                if (Mathf.Approximately(poseTimes[index], poseTime))
+                {
+                    return index;
+                }
+            }
+
+            return -1;
         }
 
         private static FaceExpressionChannelData ToData(

@@ -32,7 +32,7 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 - AssetManagerでは同期、削除、File登録、Unity ProjectへのImport、新規Item／Collection作成をMCPへ公開しない。書き込みは、事前に読み取った値を再設定すれば元へ戻せるmetadata編集だけに限定する。
 - AssetManagerのPrefab調査は、既にUnity Projectへ取り込まれたPrefab assetとAssetManagerで作成済みの派生Prefabだけを対象にする。ZIP、unitypackage、未Import assetをtool呼び出しからImportしない。
 - Prefab previewはUnityの内部Preview sceneへだけinstanceを作成し、Play Mode、利用者のScene、Prefab assetを変更しない。外部APIへ画像を送信しない。
-- 表情Clipの更新は`expectedRevision`で競合を検出できる。作成、部分更新、完全置換を分け、`dryRun`で書き込み前の結果を確認できる。
+- 表情Clipと表情アニメーションの更新は`expectedRevision`で競合を検出できる。静止Clipの作成、部分更新、完全置換と、ポーズ単位の追加・更新・並び替え・削除を分け、`dryRun`で書き込み前の結果を確認できる。
 
 ## Object参照
 
@@ -58,16 +58,26 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 | tool | 動作 |
 |---|---|
 | `ee4v_inspect_face` | Avatarの編集可能なBlendShape channelとpreset分類を列挙する。`clipPath`指定時はClip値、revision、validation結果も返す |
-| `ee4v_upsert_expression_clip` | 単一frame表情Clipを`create`、`patch`、`replace`のいずれかで作成・更新する |
+| `ee4v_upsert_expression_clip` | 静止表情Clipを`create`、`patch`、`replace`のいずれかで作成・更新する。複数ポーズClipの更新は拒否する |
+| `ee4v_inspect_expression_animation` | ポーズ順、時刻、遷移時間、任意名、参照Clip、Loop、revisionを返す。必要な場合だけ各ポーズのchannel値も返す |
+| `ee4v_add_expression_pose` | 指定ポーズを複製して直後へ追加し、任意名、参照Clip、またはchannel値を設定する |
+| `ee4v_update_expression_pose` | 既存ポーズの名前、参照Clip、channel値、次ポーズまでの遷移時間を更新する |
+| `ee4v_move_expression_pose` | 隣接ポーズを、表情値、任意名、参照Clipをまとめて入れ替える |
+| `ee4v_remove_expression_pose` | ポーズを削除して時間の空きを詰める。最後の1ポーズは削除しない |
+| `ee4v_set_expression_animation_loop` | ポーズを変えずにLoopを切り替える |
 | `ee4v_validate_expression_clip` | binding、keyframe、値、object curve、Animation Eventを検査する |
-| `ee4v_render_expression_preview` | AvatarへClipを適用したpreviewをPNGとして返す。描画可能なSkinnedMeshがなければ`expression_preview_unavailable`を返す |
+| `ee4v_render_expression_preview` | AvatarへClipを指定時刻で適用したpreviewをPNGとして返す。描画可能なSkinnedMeshがなければ`expression_preview_unavailable`を返す |
 | `ee4v_remap_expression_clip` | Renderer pathとBlendShape名の完全一致を優先し、一致しないchannelはFBX別presetのroleとsideで別Avatarへ対応付ける |
 | `ee4v_get_facial_configuration` | Gesture matrix、menu専用表情、Blink、口固定の現在値を返す |
 | `ee4v_set_gesture_expression` | 他の割り当てを維持し、左右Gestureの1組へ表情Clip、Blink、口固定、menu名を設定する |
 | `ee4v_plan_facial_set_apply` | FacialSet適用の入力、生成物、前提条件を検証する |
 | `ee4v_apply_facial_set` | FX Controller、Expression Parameters、Expression Menu、Modular Avatar installerを生成・更新する。`dryRun`では設定と前提条件だけを検証する |
 
-AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_expression_clip`の`patch`は未指定channelを維持し、`replace`は未指定BlendShape curveを削除します。同じ内容を再指定した場合は`changed: false`としてAssetを書き直しません。更新用revisionは`clipPath`付きの`ee4v_inspect_face`から取得します。`ee4v_remap_expression_clip`はRenderer pathとBlendShape名が完全一致するchannelを直接対応付け、それ以外だけpreset roleとsideを使用します。対応不能channelは結果へ残し、無言で別名へ割り当てません。表情previewにはMeshが割り当てられた描画可能な`SkinnedMeshRenderer`が1つ以上必要で、存在しない場合は空画像を成功扱いにしません。
+AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_expression_clip`の`patch`は未指定channelを維持し、`replace`は未指定BlendShape curveを削除します。同じ内容を再指定した場合は`changed: false`としてAssetを書き直しません。複数ポーズClipはこの静止表情toolで誤って単一frameへ戻さず、アニメーション専用toolだけで更新します。
+
+アニメーション編集は`ee4v_inspect_expression_animation`でポーズindexとrevisionを取得し、書き込みtoolをまず`dryRun: true`で呼んでから同じ入力で適用します。ポーズ追加は指定ポーズの表情を複製し、`transitionDuration`後へ挿入します。ポーズ更新では参照Clipと明示的なchannel値を同時に指定できません。参照Clipをローカル編集へ戻して値も変更する場合は、空の`sourceClipPath`と`channels`を同じ呼び出しへ指定します。参照Clipとポーズ名はUIと同じ`.anim`内のsub-assetへ保存され、移動と削除にも追従します。更新用revisionはアニメーション調査の結果を使用します。
+
+`ee4v_remap_expression_clip`はRenderer pathとBlendShape名が完全一致するchannelを直接対応付け、それ以外だけpreset roleとsideを使用します。対応不能channelは結果へ残し、無言で別名へ割り当てません。表情previewにはMeshが割り当てられた描画可能な`SkinnedMeshRenderer`が1つ以上必要で、存在しない場合は空画像を成功扱いにしません。アニメーションClipでは`time`を指定して各ポーズや遷移途中を描画できます。
 
 ### AssetManager
 
