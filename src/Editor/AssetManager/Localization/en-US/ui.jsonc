@@ -8,11 +8,12 @@
   "workflow": {
     "windowTitle": "Modification Workflow",
     "title": "Modification Workflow",
-    "subtitle": "Adjust appearance in the preview, then use the existing expression editor for expressions and animated expressions.",
+    "subtitle": "Adjust appearance, expressions and animation, and PhysBone Colliders in one workflow.",
     "categories": "CUSTOMIZE",
     "category": {
       "appearance": "Appearance",
       "expressionAnimation": "Expressions & animation",
+      "physBone": "PhysBone",
       "todo": "Coming next"
     },
     "selection": {

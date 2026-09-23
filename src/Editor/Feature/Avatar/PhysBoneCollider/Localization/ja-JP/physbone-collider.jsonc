@@ -27,12 +27,13 @@
     "full": "フル"
   },
   "preview": {
+    "title": "プレビュー",
     "showColliders": "Colliderを表示",
-    "showPhysBones": "PhysBoneを表示",
-    "controls": "右ドラッグ: 回転  中ドラッグ: 移動  ホイール: 拡大・縮小"
+    "showPhysBones": "PhysBoneを表示"
   },
   "action": {
     "scan": "候補を更新",
+    "toggleBackground": "プレビュー背景の明暗を切り替え",
     "resetView": "表示をリセット",
     "resetCollider": "配置をリセット",
     "addPhysBoneRoot": "検出対象を追加",
@@ -45,11 +46,12 @@
   "status": {
     "selectAvatar": "シーン上のアバターを選択してください。",
     "sceneAvatarRequired": "Prefab Assetへ直接適用できません。シーンまたはPrefab Mode上のアバターを選択してください。",
+    "prefabLoadFailed": "派生Prefabを編集用に開けませんでした。Consoleを確認してください。",
+    "prefabSaveFailed": "PhysBone Colliderを派生Prefabへ保存できませんでした。Consoleを確認してください。",
     "sdkMissing": "VRChat SDKが見つかりません。配置案の確認はできますが適用はできません。",
     "maMissing": "Modular Avatarが見つかりません。配置案の確認はできますが適用はできません。",
     "armatureMissing": "Prefab直下にArmatureが見つかりません。名前がArmatureの子オブジェクトを用意してください。",
     "noCandidates": "条件に一致する主要な体ボーンがありません。Armatureと最小ボーン長を確認してください。",
-    "candidateCount": "候補{0}個のうち{1}個を作成し、PhysBoneへ合計{2}件割り当てます。水色が有効な候補、黄色が選択中です。",
     "selectPhysBoneRoot": "検出対象のGameObjectを1つ以上設定してください。",
     "noPhysBones": "指定したGameObject直下のArmature内にPhysBoneがありません。",
     "applied": "{0}個のPhysBone Colliderを1つのPrefabへ作成しました。",

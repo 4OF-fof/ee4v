@@ -12,6 +12,29 @@ namespace Ee4v.PhysBoneCollider
 {
     internal sealed class PhysBoneColliderWindow : EditorWindow
     {
+        internal sealed class EmbeddedEditor : IDisposable
+        {
+            private PhysBoneColliderWindow _controller;
+
+            internal EmbeddedEditor(PhysBoneColliderWindow controller)
+            {
+                _controller = controller;
+            }
+
+            public void Dispose()
+            {
+                if (_controller == null)
+                {
+                    return;
+                }
+
+                _controller.DisposeResources();
+                _controller._embeddedRoot = null;
+                UnityEngine.Object.DestroyImmediate(_controller);
+                _controller = null;
+            }
+        }
+
         private const float DefaultMinimumBoneLength = 0.08f;
 
         private readonly VrchatPhysBoneColliderGateway _gateway =
@@ -49,7 +72,14 @@ namespace Ee4v.PhysBoneCollider
         private Toggle _showPhysBonesField;
         private HelpBox _status;
         private UiButton _applyButton;
-        private IMGUIContainer _previewElement;
+        private ScenePreviewViewport _previewViewport;
+        private VisualElement _embeddedRoot;
+        private GameObject _embeddedSourceAvatar;
+        private GameObject _loadedPrefabContents;
+        private string _embeddedPrefabPath = string.Empty;
+        private Action _embeddedSaved;
+        private bool _avatarLocked;
+        private bool _embeddedLoadFailed;
         private bool _renderingDetail;
 
         [MenuItem("ee4v/Window/Avatar/PhysBone Collider Setup")]
@@ -61,16 +91,60 @@ namespace Ee4v.PhysBoneCollider
             window.Show();
         }
 
+        internal static EmbeddedEditor Embed(
+            VisualElement root,
+            GameObject avatar,
+            Action saved)
+        {
+            if (root == null)
+            {
+                throw new ArgumentNullException(nameof(root));
+            }
+
+            var controller = CreateInstance<PhysBoneColliderWindow>();
+            controller.hideFlags = HideFlags.HideAndDontSave;
+            controller._embeddedRoot = root;
+            controller._avatarLocked = true;
+            controller._embeddedSaved = saved;
+            controller.BuildContent();
+            controller.SetEmbeddedAvatar(avatar);
+            return new EmbeddedEditor(controller);
+        }
+
         private void OnDisable()
         {
-            _preview?.Dispose();
-            _preview = null;
+            DisposeResources();
         }
 
         private void CreateGUI()
         {
-            titleContent = UiTextFactory.CreateGuiContent(I18N.Get("window.title"));
-            var root = rootVisualElement;
+            if (_embeddedRoot != null)
+            {
+                return;
+            }
+
+            BuildContent();
+            var selected = FindAvatarRoot(Selection.activeGameObject);
+            if (selected != null)
+            {
+                _avatarField.SetValueWithoutNotify(selected);
+                SetAvatar(selected);
+            }
+            else
+            {
+                Render();
+            }
+        }
+
+        private void BuildContent()
+        {
+            if (_embeddedRoot == null)
+            {
+                titleContent = UiTextFactory.CreateGuiContent(
+                    I18N.Get("window.title"));
+            }
+
+            var root = _embeddedRoot ?? rootVisualElement;
             root.Clear();
             UiComposition.Prepare(
                 root,
@@ -90,17 +164,9 @@ namespace Ee4v.PhysBoneCollider
             workspace.Add(BuildEditorPane());
             root.Add(workspace);
 
-            _preview = new PhysBoneColliderPreview(() => _previewElement?.MarkDirtyRepaint());
-            var selected = FindAvatarRoot(Selection.activeGameObject);
-            if (selected != null)
-            {
-                _avatarField.SetValueWithoutNotify(selected);
-                SetAvatar(selected);
-            }
-            else
-            {
-                Render();
-            }
+            _preview?.Dispose();
+            _preview = new PhysBoneColliderPreview(
+                () => _previewViewport?.RequestRepaint());
         }
 
         private void BuildToolbar(VisualElement root)
@@ -115,19 +181,31 @@ namespace Ee4v.PhysBoneCollider
             _avatarField.allowSceneObjects = true;
             _avatarField.RegisterValueChangedCallback(evt =>
                 SetAvatar(evt.newValue as GameObject));
+            _avatarField.SetEnabled(!_avatarLocked);
             toolbar.Add(_avatarField);
             root.Add(toolbar);
         }
 
         private VisualElement BuildPreviewPane()
         {
-            var pane = new PreviewContainer();
+            var pane = new VisualElement();
             pane.AddToClassList("ee4v-physbone-collider__preview-pane");
-            pane.SetHasContent(true);
-            _previewElement = new IMGUIContainer(() =>
-                _preview?.Draw(_previewElement.contentRect));
-            _previewElement.AddToClassList("ee4v-physbone-collider__preview");
-            pane.Content.Add(_previewElement);
+            var toolbar = new VisualElement();
+            toolbar.AddToClassList(
+                "ee4v-physbone-collider__preview-toolbar");
+            toolbar.Add(UiTextFactory.Create(
+                I18N.Get("preview.title"),
+                UiClassNames.SectionTitle,
+                "ee4v-physbone-collider__preview-title"));
+            pane.Add(toolbar);
+
+            _previewViewport = new ScenePreviewViewport(
+                rect => _preview?.Draw(rect),
+                () => _preview?.ResetView(),
+                I18N.Get("action.toggleBackground"),
+                I18N.Get("action.resetView"));
+            _previewViewport.AddToClassList(
+                "ee4v-physbone-collider__preview-viewport");
 
             var layers = new VisualElement();
             layers.AddToClassList("ee4v-physbone-collider__preview-layers");
@@ -143,18 +221,9 @@ namespace Ee4v.PhysBoneCollider
             _showPhysBonesField.RegisterValueChangedCallback(_ =>
                 UpdatePreviewVisibility());
             layers.Add(_showPhysBonesField);
-            pane.Overlay.pickingMode = PickingMode.Position;
-            pane.Overlay.Add(layers);
+            _previewViewport.FeatureOverlay.Add(layers);
 
-            var resetView = CreateButton(
-                I18N.Get("action.resetView"),
-                () => _preview?.ResetView(),
-                "ee4v-physbone-collider__reset-view");
-            pane.Overlay.Add(resetView);
-
-            pane.Overlay.Add(UiTextFactory.Create(
-                I18N.Get("preview.controls"),
-                "ee4v-physbone-collider__preview-help"));
+            pane.Add(_previewViewport);
             return pane;
         }
 
@@ -425,7 +494,7 @@ namespace Ee4v.PhysBoneCollider
             if (_avatar != avatar)
             {
                 _physBoneSearchRoots.Clear();
-                _physBoneSearchRoots.Add(null);
+                _physBoneSearchRoots.Add(_avatarLocked ? avatar : null);
                 _physBoneTargets = Array.Empty<PhysBoneTarget>();
                 _selectedPhysBonePath = null;
                 RenderPhysBoneSearchRoots();
@@ -637,6 +706,7 @@ namespace Ee4v.PhysBoneCollider
                 _physBoneTargets,
                 _selectedIndex,
                 _selectedPhysBonePath);
+            _previewViewport?.SetPreviewAvailable(_avatar != null);
             UpdatePreviewVisibility();
         }
 
@@ -653,11 +723,18 @@ namespace Ee4v.PhysBoneCollider
             RenderDetail();
             _applyButton?.SetEnabled(
                 _avatar != null &&
+                !_embeddedLoadFailed &&
                 !EditorUtility.IsPersistent(_avatar) &&
                 _gateway.IsAvailable &&
                 HasEnabledDrafts());
 
-            if (_avatar == null)
+            if (_embeddedLoadFailed)
+            {
+                SetStatus(
+                    "status.prefabLoadFailed",
+                    HelpBoxMessageType.Error);
+            }
+            else if (_avatar == null)
             {
                 SetStatus("status.selectAvatar", HelpBoxMessageType.Info);
             }
@@ -683,33 +760,9 @@ namespace Ee4v.PhysBoneCollider
             }
             else
             {
-                var enabled = 0;
-                var assignments = 0;
-                foreach (var draft in _drafts)
-                {
-                    if (!draft.Enabled)
-                    {
-                        continue;
-                    }
-
-                    enabled++;
-                    foreach (var target in _physBoneTargets)
-                    {
-                        if (draft.AssignedPhysBonePaths.Contains(target.Path))
-                        {
-                            assignments += target.ComponentCount;
-                        }
-                    }
-                }
-
-                UiTextFactory.SetText(
-                    _status,
-                    I18N.Get(
-                        "status.candidateCount",
-                        _drafts.Count,
-                        enabled,
-                        assignments));
-                _status.messageType = HelpBoxMessageType.Info;
+                _status.EnableInClassList(
+                    "ee4v-physbone-collider__status--hidden",
+                    true);
             }
         }
 
@@ -819,11 +872,88 @@ namespace Ee4v.PhysBoneCollider
 
             if (_avatar.scene.IsValid())
             {
-                EditorSceneManager.MarkSceneDirty(_avatar.scene);
+                if (string.IsNullOrEmpty(_embeddedPrefabPath))
+                {
+                    EditorSceneManager.MarkSceneDirty(_avatar.scene);
+                }
+                else
+                {
+                    var saved = PrefabUtility.SaveAsPrefabAsset(
+                        _avatar,
+                        _embeddedPrefabPath);
+                    if (saved == null)
+                    {
+                        SetStatus(
+                            "status.prefabSaveFailed",
+                            HelpBoxMessageType.Error);
+                        return;
+                    }
+
+                    _embeddedSourceAvatar = saved;
+                    _avatarField?.SetValueWithoutNotify(saved);
+                    _embeddedSaved?.Invoke();
+                }
             }
 
             UiTextFactory.SetText(_status, I18N.Get("status.applied", created));
             _status.messageType = HelpBoxMessageType.Info;
+            _status.EnableInClassList(
+                "ee4v-physbone-collider__status--hidden",
+                false);
+        }
+
+        private void SetEmbeddedAvatar(GameObject avatar)
+        {
+            _embeddedSourceAvatar = avatar;
+            _avatarField?.SetValueWithoutNotify(avatar);
+            _embeddedLoadFailed = false;
+            _embeddedPrefabPath = string.Empty;
+
+            if (avatar == null || !EditorUtility.IsPersistent(avatar))
+            {
+                SetAvatar(avatar);
+                return;
+            }
+
+            var path = AssetDatabase.GetAssetPath(avatar);
+            if (string.IsNullOrEmpty(path))
+            {
+                _embeddedLoadFailed = true;
+                SetAvatar(null);
+                return;
+            }
+
+            try
+            {
+                _embeddedPrefabPath = path;
+                _loadedPrefabContents =
+                    PrefabUtility.LoadPrefabContents(path);
+                SetAvatar(_loadedPrefabContents);
+                _avatarField?.SetValueWithoutNotify(
+                    _embeddedSourceAvatar);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                _embeddedLoadFailed = true;
+                _embeddedPrefabPath = string.Empty;
+                SetAvatar(null);
+            }
+        }
+
+        private void DisposeResources()
+        {
+            _preview?.Dispose();
+            _preview = null;
+            _previewViewport?.Dispose();
+            if (_loadedPrefabContents != null)
+            {
+                PrefabUtility.UnloadPrefabContents(
+                    _loadedPrefabContents);
+                _loadedPrefabContents = null;
+            }
+
+            _avatar = null;
         }
 
         private void RestrictAssignmentsToDetectedPhysBones()
@@ -861,6 +991,9 @@ namespace Ee4v.PhysBoneCollider
 
             UiTextFactory.SetText(_status, I18N.Get(key));
             _status.messageType = type;
+            _status.EnableInClassList(
+                "ee4v-physbone-collider__status--hidden",
+                false);
         }
 
         private bool TryGetSelected(out PhysBoneColliderDraft draft)

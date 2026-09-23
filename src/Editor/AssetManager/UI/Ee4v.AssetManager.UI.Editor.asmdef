@@ -11,7 +11,8 @@
     "Ee4v.UI.Editor",
     "Ee4v.ProjectStyle.Editor",
     "Ee4v.ItemStyle.Editor",
-    "Ee4v.FaceExpression.Editor"
+    "Ee4v.FaceExpression.Editor",
+    "Ee4v.PhysBoneCollider.Editor"
   ],
   "includePlatforms": [
     "Editor"

@@ -265,50 +265,6 @@
     overflow: hidden;
 }
 
-.ee4v-asset-manager__prefab-scene-preview-container,
-.ee4v-asset-manager__prefab-scene-preview-render {
-    flex-grow: 1;
-    width: 100%;
-    height: 100%;
-}
-
-.ee4v-asset-manager__prefab-scene-preview-overlay {
-    align-items: center;
-    justify-content: center;
-}
-
-.ee4v-asset-manager__prefab-scene-preview-actions {
-    position: absolute;
-    top: var(--ee4v-space-lg);
-    right: var(--ee4v-space-lg);
-    flex-direction: row;
-    align-items: center;
-}
-
-.ee4v-asset-manager__prefab-scene-preview-action.ee4v-ui-button {
-    width: 32px;
-    min-width: 32px;
-    height: 32px;
-    min-height: 32px;
-    padding: var(--ee4v-space-none);
-    border-color: var(--ee4v-color-transparent);
-    background-color: var(--ee4v-color-transparent);
-}
-
-.ee4v-asset-manager__prefab-scene-preview-reset.ee4v-ui-button {
-    margin-left: var(--ee4v-space-sm);
-}
-
-.ee4v-asset-manager__prefab-scene-preview-action.ee4v-ui-button:hover {
-    border-color: var(--ee4v-color-transparent);
-    background-color: var(--ee4v-color-transparent);
-}
-
-.ee4v-asset-manager__prefab-scene-preview-action.ee4v-ui-button:active,
-.ee4v-asset-manager__prefab-scene-preview-background--light.ee4v-ui-button {
-    background-color: var(--ee4v-color-transparent);
-}
-
 .ee4v-asset-manager__prefab-preview-container,
 .ee4v-asset-manager__prefab-preview-image {
     flex-grow: 1;

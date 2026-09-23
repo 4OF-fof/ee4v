@@ -257,17 +257,11 @@ namespace Ee4v.AssetManager.UI
 
         private static readonly int PreviewControlHash =
             nameof(DerivedAssetPrefabScenePreview).GetHashCode();
-        private const int GridTextureSize = 64;
-        private const int GridCellSize = 16;
         private const float PreviewFitPadding = 1.05f;
         private const float MinimumPreviewSize = 320f;
         private const float MaximumPreviewSize = 560f;
 
-        private readonly PreviewContainer _surface;
-        private readonly IMGUIContainer _preview;
-        private readonly Icon _placeholder;
-        private readonly UiButton _backgroundToggle;
-        private readonly UiButton _resetView;
+        private readonly ScenePreviewViewport _viewport;
         private readonly PreviewOrbitController _orbit;
         private readonly List<MaterialPreviewTarget> _materialTargets =
             new List<MaterialPreviewTarget>();
@@ -279,14 +273,12 @@ namespace Ee4v.AssetManager.UI
         private readonly List<Renderer> _temporarilyHiddenRenderers =
             new List<Renderer>();
         private PreviewRenderUtility _utility;
-        private Texture2D _gridTexture;
         private GameObject _prefab;
         private GameObject _instance;
         private Renderer[] _renderers = Array.Empty<Renderer>();
         private readonly HashSet<Material> _hiddenMaterials =
             new HashSet<Material>();
         private Bounds _bounds;
-        private bool _lightBackground;
         private bool _flexibleLayout;
 
         internal DerivedAssetPrefabScenePreview()
@@ -294,64 +286,26 @@ namespace Ee4v.AssetManager.UI
             AddToClassList(
                 "ee4v-asset-manager__prefab-scene-preview");
 
-            _surface = new PreviewContainer();
-            _surface.AddToClassList(
-                "ee4v-asset-manager__prefab-scene-preview-container");
-            _surface.Overlay.AddToClassList(
-                "ee4v-asset-manager__prefab-scene-preview-overlay");
-            _placeholder = new Icon(
-                AssetManagerControls.LoadFluentIconState(
-                    "cube.png",
-                    UiSizeTokens.Size31,
-                    tintColor: UiColorTokens.TextMuted));
-            _placeholder.AddToClassList(
-                "ee4v-asset-manager__prefab-scene-preview-placeholder");
-            _surface.Overlay.Add(_placeholder);
-            var actions = new VisualElement();
-            actions.AddToClassList(
-                "ee4v-asset-manager__prefab-scene-preview-actions");
-            _lightBackground = !EditorGUIUtility.isProSkin;
-            _backgroundToggle = AssetManagerControls.CreateIconButton(
-                I18N.Get("detail.derivedAssetPreviewBackground"),
-                "weather_sunny.png",
-                UiSizeTokens.Size18,
-                UiButtonVariant.Ghost,
-                ToggleBackground,
-                "ee4v-asset-manager__prefab-scene-preview-action",
-                "ee4v-asset-manager__prefab-scene-preview-background");
-            actions.Add(_backgroundToggle);
-            _resetView = AssetManagerControls.CreateIconButton(
-                I18N.Get("detail.derivedAssetPreviewReset"),
-                "arrow_clockwise.png",
-                UiSizeTokens.Size18,
-                UiButtonVariant.Ghost,
+            _viewport = new ScenePreviewViewport(
+                DrawPreview,
                 ResetView,
-                "ee4v-asset-manager__prefab-scene-preview-action",
-                "ee4v-asset-manager__prefab-scene-preview-reset");
-            actions.Add(_resetView);
-            _surface.Overlay.Add(actions);
-            RefreshBackgroundToggle();
-
-            _preview = new IMGUIContainer(DrawPreview);
+                I18N.Get("detail.derivedAssetPreviewBackground"),
+                I18N.Get("detail.derivedAssetPreviewReset"));
+            _viewport.AddToClassList(
+                "ee4v-asset-manager__prefab-scene-preview-viewport");
             _orbit = new PreviewOrbitController(
                 PreviewControlHash,
-                _preview.MarkDirtyRepaint);
-            _preview.AddToClassList(
-                "ee4v-asset-manager__prefab-scene-preview-render");
-            _surface.Content.Add(_preview);
-            Add(_surface);
-            _surface.SetHasContent(true);
+                _viewport.RequestRepaint);
+            Add(_viewport);
             SetPreviewAvailable(false);
 
             RegisterCallback<AttachToPanelEvent>(_ =>
             {
-                EnsureGridTexture();
                 RebuildPreview();
             });
             RegisterCallback<DetachFromPanelEvent>(_ =>
             {
                 CleanupPreview();
-                DestroyGridTexture();
             });
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
@@ -369,7 +323,7 @@ namespace Ee4v.AssetManager.UI
 
         internal void RefreshPreview()
         {
-            _preview.MarkDirtyRepaint();
+            _viewport.RequestRepaint();
         }
 
         internal void SetHiddenMaterials(
@@ -387,7 +341,7 @@ namespace Ee4v.AssetManager.UI
             _hiddenMaterials.Clear();
             _hiddenMaterials.UnionWith(next);
             RebuildMaterialTargets();
-            _preview.MarkDirtyRepaint();
+            _viewport.RequestRepaint();
         }
 
         internal void SetFlexibleLayout(bool flexible)
@@ -398,7 +352,7 @@ namespace Ee4v.AssetManager.UI
         public void Dispose()
         {
             CleanupPreview();
-            DestroyGridTexture();
+            _viewport.Dispose();
         }
 
         private void RebuildPreview()
@@ -411,7 +365,6 @@ namespace Ee4v.AssetManager.UI
 
             try
             {
-                EnsureGridTexture();
                 _instance = UnityEngine.Object.Instantiate(_prefab);
                 _instance.name =
                     _prefab.name + " (Derived Asset Preview)";
@@ -445,15 +398,8 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private void DrawPreview()
+        private void DrawPreview(Rect rect)
         {
-            var rect = GUILayoutUtility.GetRect(
-                1f,
-                10000f,
-                1f,
-                10000f,
-                GUILayout.ExpandWidth(true),
-                GUILayout.ExpandHeight(true));
             var current = Event.current;
             if (current == null)
             {
@@ -477,7 +423,6 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            DrawGrid(rect);
             if (_utility == null || _instance == null)
             {
                 return;
@@ -508,7 +453,7 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            var previewRect = _preview.contentRect;
+            var previewRect = _viewport.PreviewRect;
             var aspect = previewRect.height > 1f
                 ? previewRect.width / previewRect.height
                 : 1f;
@@ -674,53 +619,12 @@ namespace Ee4v.AssetManager.UI
             _bakedMeshes.Clear();
         }
 
-        private void DrawGrid(Rect rect)
-        {
-            if (_gridTexture == null)
-            {
-                return;
-            }
-
-            GUI.DrawTextureWithTexCoords(
-                rect,
-                _gridTexture,
-                new Rect(
-                    0f,
-                    0f,
-                    rect.width / GridTextureSize,
-                    rect.height / GridTextureSize),
-                false);
-        }
-
-        private void ToggleBackground()
-        {
-            _lightBackground = !_lightBackground;
-            DestroyGridTexture();
-            EnsureGridTexture();
-            RefreshBackgroundToggle();
-            _preview.MarkDirtyRepaint();
-        }
-
-        private void RefreshBackgroundToggle()
-        {
-            _backgroundToggle.SetIcon(
-                AssetManagerControls.LoadFluentIconState(
-                    _lightBackground
-                        ? "weather_moon.png"
-                        : "weather_sunny.png",
-                    UiSizeTokens.Size18,
-                    tintColor: UiColorTokens.TextOnState));
-            _backgroundToggle.EnableInClassList(
-                "ee4v-asset-manager__prefab-scene-preview-background--light",
-                _lightBackground);
-        }
-
         private void OnGeometryChanged(GeometryChangedEvent evt)
         {
             if (_flexibleLayout)
             {
                 ResetView();
-                _preview.MarkDirtyRepaint();
+                _viewport.RequestRepaint();
                 return;
             }
 
@@ -734,7 +638,7 @@ namespace Ee4v.AssetManager.UI
             }
 
             style.height = size;
-            _preview.MarkDirtyRepaint();
+            _viewport.RequestRepaint();
         }
 
         private static Bounds CalculateBounds(GameObject instance)
@@ -774,70 +678,9 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private void EnsureGridTexture()
-        {
-            if (_gridTexture != null)
-            {
-                return;
-            }
-
-            var baseColor = _lightBackground
-                ? new Color32(96, 100, 111, 255)
-                : new Color32(31, 33, 36, 255);
-            var minorColor = _lightBackground
-                ? new Color32(109, 113, 123, 255)
-                : new Color32(43, 46, 51, 255);
-            var majorColor = _lightBackground
-                ? new Color32(136, 139, 150, 255)
-                : new Color32(61, 65, 72, 255);
-            var pixels = new Color32[
-                GridTextureSize * GridTextureSize];
-            for (var y = 0; y < GridTextureSize; y++)
-            {
-                for (var x = 0; x < GridTextureSize; x++)
-                {
-                    var major = x == 0 || y == 0;
-                    var minor = x % GridCellSize == 0 ||
-                                y % GridCellSize == 0;
-                    pixels[(y * GridTextureSize) + x] = major
-                        ? majorColor
-                        : minor
-                            ? minorColor
-                            : baseColor;
-                }
-            }
-
-            _gridTexture = new Texture2D(
-                GridTextureSize,
-                GridTextureSize,
-                TextureFormat.RGBA32,
-                false)
-            {
-                hideFlags = HideFlags.HideAndDontSave,
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Repeat
-            };
-            _gridTexture.SetPixels32(pixels);
-            _gridTexture.Apply(false, true);
-        }
-
-        private void DestroyGridTexture()
-        {
-            if (_gridTexture == null)
-            {
-                return;
-            }
-
-            UnityEngine.Object.DestroyImmediate(_gridTexture);
-            _gridTexture = null;
-        }
-
         private void SetPreviewAvailable(bool available)
         {
-            _placeholder.style.display = available
-                ? DisplayStyle.None
-                : DisplayStyle.Flex;
-            _resetView.SetEnabled(available);
+            _viewport.SetPreviewAvailable(available);
         }
 
         private void CleanupPreview()
@@ -861,7 +704,7 @@ namespace Ee4v.AssetManager.UI
 
             _orbit.CancelInteraction();
             SetPreviewAvailable(false);
-            _preview.MarkDirtyRepaint();
+            _viewport.RequestRepaint();
         }
     }
 

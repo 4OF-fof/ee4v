@@ -4,6 +4,7 @@ using System.Linq;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
 using Ee4v.FaceExpression;
+using Ee4v.PhysBoneCollider;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -17,6 +18,7 @@ namespace Ee4v.AssetManager.UI
         {
             Appearance,
             ExpressionAnimation,
+            PhysBone,
             Todo
         }
 
@@ -206,8 +208,10 @@ namespace Ee4v.AssetManager.UI
         private EmbeddedMaterialInspector _materialInspector;
         private DerivedAssetPrefabScenePreview _scenePreview;
         private FaceExpressionWindow.EmbeddedEditor _faceExpressionEditor;
+        private PhysBoneColliderWindow.EmbeddedEditor _physBoneEditor;
         private VisualElement _customizerHost;
         private VisualElement _faceExpressionHost;
+        private VisualElement _physBoneHost;
         private ScrollView _controlsHost;
         private UiTextElement _previewTitle;
         private WorkflowCategory _currentCategory =
@@ -334,6 +338,13 @@ namespace Ee4v.AssetManager.UI
             _faceExpressionHost.AddToClassList(
                 "ee4v-modification-workflow__hidden");
             body.Add(_faceExpressionHost);
+
+            _physBoneHost = new VisualElement();
+            _physBoneHost.AddToClassList(
+                "ee4v-modification-workflow__physbone-host");
+            _physBoneHost.AddToClassList(
+                "ee4v-modification-workflow__hidden");
+            body.Add(_physBoneHost);
             root.Add(body);
             ShowCategory(_currentCategory, false);
         }
@@ -626,6 +637,11 @@ namespace Ee4v.AssetManager.UI
                 "star.png");
             AddCategoryButton(
                 rail,
+                WorkflowCategory.PhysBone,
+                "workflow.category.physBone",
+                "cube.png");
+            AddCategoryButton(
+                rail,
                 WorkflowCategory.Todo,
                 "workflow.category.todo",
                 "document.png");
@@ -685,7 +701,9 @@ namespace Ee4v.AssetManager.UI
             WorkflowCategory category,
             bool clearFeedback = true)
         {
-            if (_customizerHost == null || _faceExpressionHost == null)
+            if (_customizerHost == null ||
+                _faceExpressionHost == null ||
+                _physBoneHost == null)
             {
                 _currentCategory = category;
                 return;
@@ -709,13 +727,17 @@ namespace Ee4v.AssetManager.UI
 
             var faceExpression =
                 category == WorkflowCategory.ExpressionAnimation;
+            var physBone = category == WorkflowCategory.PhysBone;
             DisposeMaterialEditor();
             _customizerHost.EnableInClassList(
                 "ee4v-modification-workflow__hidden",
-                faceExpression);
+                faceExpression || physBone);
             _faceExpressionHost.EnableInClassList(
                 "ee4v-modification-workflow__hidden",
                 !faceExpression);
+            _physBoneHost.EnableInClassList(
+                "ee4v-modification-workflow__hidden",
+                !physBone);
             if (faceExpression)
             {
                 if (_faceExpressionEditor == null)
@@ -730,6 +752,18 @@ namespace Ee4v.AssetManager.UI
             }
 
             _faceExpressionEditor?.SetActive(false);
+            if (physBone)
+            {
+                if (_physBoneEditor == null)
+                {
+                    _physBoneEditor = PhysBoneColliderWindow.Embed(
+                        _physBoneHost,
+                        _workingObject,
+                        RefreshMaterialPreview);
+                }
+                return;
+            }
+
             _controlsHost.Clear();
             if (category == WorkflowCategory.Appearance)
             {
@@ -1355,6 +1389,8 @@ namespace Ee4v.AssetManager.UI
             DisposeMaterialEditor();
             _faceExpressionEditor?.Dispose();
             _faceExpressionEditor = null;
+            _physBoneEditor?.Dispose();
+            _physBoneEditor = null;
             _scenePreview?.Dispose();
             _scenePreview = null;
         }

@@ -15,6 +15,8 @@ rootVisualElement.Add(
 
 通常の操作、文字入力、検索入力にはそれぞれ`UiButton`、`InputField`、`SearchField`を使用します。`UiTextFactory`の低レベル文字入力は共有入力コンポーネント内部だけで使用します。
 
+3D Previewには`ScenePreviewViewport`を使用します。共通グリッドと右上の背景切り替え・表示リセットは部品側に置き、機能固有の表示切り替えは`FeatureOverlay`へ追加します。
+
 ## color palette
 
 `UiColorPalettes.UnityDark`と`UiColorPalettes.UnityLight`がテーマ別の標準色です。`UiColorTokens.Current`はUnity Editorのテーマに対応する`UiColorPalette`を返します。

@@ -8,11 +8,12 @@
   "workflow": {
     "windowTitle": "改変ワークフロー",
     "title": "改変ワークフロー",
-    "subtitle": "プレビューを見ながら見た目を調整し、既存の表情エディターで表情とアニメーション付き表情を作成できます。",
+    "subtitle": "見た目、表情・アニメーション、PhysBone Colliderを1つのワークフローで調整できます。",
     "categories": "カスタマイズ",
     "category": {
       "appearance": "見た目",
       "expressionAnimation": "表情・アニメーション",
+      "physBone": "PhysBone",
       "todo": "準備中"
     },
     "selection": {

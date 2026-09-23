@@ -50,6 +50,8 @@ namespace Ee4v.PhysBoneCollider
 
             _utility = new PreviewRenderUtility();
             _utility.cameraFieldOfView = 30f;
+            _utility.camera.clearFlags = CameraClearFlags.Color;
+            _utility.camera.backgroundColor = Color.clear;
             _utility.lights[0].intensity = 1.1f;
             _utility.lights[0].transform.rotation = Quaternion.Euler(35f, 35f, 0f);
             _utility.lights[1].intensity = 0.7f;
@@ -174,7 +176,6 @@ namespace Ee4v.PhysBoneCollider
         {
             if (_utility == null || _clone == null || rect.width < 2f || rect.height < 2f)
             {
-                EditorGUI.DrawRect(rect, new Color(0.08f, 0.09f, 0.1f, 1f));
                 return;
             }
 
@@ -182,11 +183,17 @@ namespace Ee4v.PhysBoneCollider
                 rect,
                 _utility.camera,
                 _utility.cameraFieldOfView);
+            if (Event.current == null ||
+                Event.current.type != EventType.Repaint)
+            {
+                return;
+            }
+
             ConfigureCamera();
             _utility.BeginPreview(rect, GUIStyle.none);
             _utility.camera.Render();
             var texture = _utility.EndPreview();
-            GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, false);
+            GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, true);
         }
 
         public void Dispose()
