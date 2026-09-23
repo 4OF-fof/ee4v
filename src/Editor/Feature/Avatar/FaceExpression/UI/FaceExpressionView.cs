@@ -26,6 +26,25 @@ namespace Ee4v.FaceExpression
         public string ClipOnly { get; set; }
         public string ClipOnlyTooltip { get; set; }
         public string NoBlendShapes { get; set; }
+        public string Play { get; set; }
+        public string Pause { get; set; }
+        public string Loop { get; set; }
+        public string Sequence { get; set; }
+        public string Pose { get; set; }
+        public string AddPose { get; set; }
+        public string AddPoseTooltip { get; set; }
+        public string AddPoseUnavailable { get; set; }
+        public string InsertPose { get; set; }
+        public string InsertPoseTooltip { get; set; }
+        public string MovePoseEarlier { get; set; }
+        public string MovePoseLater { get; set; }
+        public string RenamePose { get; set; }
+        public string ResetPoseName { get; set; }
+        public string AddClip { get; set; }
+        public string AddClipTooltip { get; set; }
+        public string RemovePose { get; set; }
+        public string Transition { get; set; }
+        public string TimelineTooltip { get; set; }
     }
 
     internal sealed class FaceExpressionView : VisualElement
@@ -40,6 +59,13 @@ namespace Ee4v.FaceExpression
         private readonly SectionHeader _sectionHeader;
         private readonly UiButton _backToLibrary;
         private readonly Toggle _clipOnly;
+        private readonly VisualElement _animationControls;
+        private readonly UiButton _playback;
+        private readonly Slider _timeline;
+        private readonly Toggle _loop;
+        private readonly ScrollView _poseSequence;
+        private readonly UiButton _addPose;
+        private readonly Action<AnimationClip, float, Rect> _drawPosePreview;
         private readonly ListView _blendShapeList;
         private readonly ScrollView _blendShapeScrollView;
         private readonly ScrollView _library;
@@ -49,6 +75,18 @@ namespace Ee4v.FaceExpression
         private readonly string _newClip;
         private readonly string _copyAndEdit;
         private readonly string _noBlendShapes;
+        private readonly string _poseText;
+        private readonly string _removePoseTooltip;
+        private readonly string _transitionText;
+        private readonly string _addPoseTooltip;
+        private readonly string _addPoseUnavailableTooltip;
+        private readonly string _insertPoseText;
+        private readonly string _insertPoseTooltip;
+        private readonly string _movePoseEarlierTooltip;
+        private readonly string _movePoseLaterTooltip;
+        private readonly string _renamePoseText;
+        private readonly string _resetPoseNameText;
+        private readonly string _poseSourceTooltip;
         private string _sectionTitle;
         private List<BlendShapeChannel> _channels = new List<BlendShapeChannel>();
         private List<BlendShapeRowItem> _visibleItems = new List<BlendShapeRowItem>();
@@ -57,12 +95,21 @@ namespace Ee4v.FaceExpression
         private bool _rendering;
         private bool _hasClip;
         private bool _canNavigateLibraryBack;
+        private float[] _poseTimes = Array.Empty<float>();
+        private AnimationClip[] _poseSources = Array.Empty<AnimationClip>();
+        private string[] _poseNames = Array.Empty<string>();
+        private int _selectedPoseIndex;
+        private bool _canAddPose;
+        private bool _selectedPoseReadOnly;
         private int _animationDragPointerId = -1;
         private bool _animationDragValue;
         private float _animationDragPointerY;
         private int _animationDragLastIndex = -1;
 
-        public FaceExpressionView(FaceExpressionViewText text, Action<Rect> drawPreview)
+        public FaceExpressionView(
+            FaceExpressionViewText text,
+            Action<Rect> drawPreview,
+            Action<AnimationClip, float, Rect> drawPosePreview = null)
         {
             text = text ?? new FaceExpressionViewText();
             _defaultSectionTitle = text.BlendShapes ?? string.Empty;
@@ -70,6 +117,19 @@ namespace Ee4v.FaceExpression
             _newClip = text.NewClip ?? string.Empty;
             _copyAndEdit = text.CopyAndEdit ?? string.Empty;
             _noBlendShapes = text.NoBlendShapes ?? string.Empty;
+            _poseText = text.Pose ?? string.Empty;
+            _removePoseTooltip = text.RemovePose ?? string.Empty;
+            _transitionText = text.Transition ?? string.Empty;
+            _addPoseTooltip = text.AddPoseTooltip ?? string.Empty;
+            _addPoseUnavailableTooltip = text.AddPoseUnavailable ?? string.Empty;
+            _insertPoseText = text.InsertPose ?? "+";
+            _insertPoseTooltip = text.InsertPoseTooltip ?? string.Empty;
+            _movePoseEarlierTooltip = text.MovePoseEarlier ?? string.Empty;
+            _movePoseLaterTooltip = text.MovePoseLater ?? string.Empty;
+            _renamePoseText = text.RenamePose ?? string.Empty;
+            _resetPoseNameText = text.ResetPoseName ?? string.Empty;
+            _poseSourceTooltip = text.AddClipTooltip ?? string.Empty;
+            _drawPosePreview = drawPosePreview;
             _sectionTitle = _defaultSectionTitle;
             AddToClassList("ee4v-face-expression");
 
@@ -167,6 +227,72 @@ namespace Ee4v.FaceExpression
             _clipOnly.RegisterValueChangedCallback(_ => RefreshFilter());
             _sectionHeader.Actions.Add(_clipOnly);
             editorPane.Add(_sectionHeader);
+
+            _animationControls = new VisualElement();
+            _animationControls.AddToClassList(
+                "ee4v-face-expression__animation-controls");
+            var sequenceHeader = new VisualElement();
+            sequenceHeader.AddToClassList(
+                "ee4v-face-expression__sequence-header");
+            sequenceHeader.Add(UiTextFactory.Create(
+                text.Sequence,
+                UiClassNames.SectionTitle,
+                "ee4v-face-expression__sequence-title"));
+            _addPose = new UiButton(
+                text.AddPose,
+                () => PoseAddRequested?.Invoke(),
+                text.AddPoseTooltip,
+                variant: UiButtonVariant.Ghost);
+            _addPose.AddToClassList("ee4v-face-expression__add-pose");
+            sequenceHeader.Add(_addPose);
+            _animationControls.Add(sequenceHeader);
+            _poseSequence = new ScrollView(ScrollViewMode.Horizontal);
+            _poseSequence.AddToClassList(
+                "ee4v-face-expression__pose-sequence");
+            _poseSequence.contentContainer.AddToClassList(
+                "ee4v-face-expression__pose-sequence-content");
+            _animationControls.Add(_poseSequence);
+            var playbackRow = new VisualElement();
+            playbackRow.AddToClassList(
+                "ee4v-face-expression__playback-row");
+            _playback = new UiButton(
+                "▶",
+                () => PlaybackChanged?.Invoke(),
+                text.Play,
+                variant: UiButtonVariant.Ghost);
+            _playback.AddToClassList(
+                "ee4v-face-expression__playback");
+            playbackRow.Add(_playback);
+            var timelineStack = new VisualElement();
+            timelineStack.AddToClassList(
+                "ee4v-face-expression__timeline-stack");
+            _timeline = new Slider(0f, 1f);
+            _timeline.AddToClassList(
+                "ee4v-face-expression__timeline");
+            _timeline.RegisterValueChangedCallback(evt =>
+            {
+                if (!_rendering)
+                {
+                    TimeChanged?.Invoke(evt.newValue);
+                }
+            });
+            _timeline.tooltip = text.TimelineTooltip ?? string.Empty;
+            timelineStack.Add(_timeline);
+            playbackRow.Add(timelineStack);
+            _loop = UiTextFactory.CreateToggle(
+                text.Loop,
+                "ee4v-face-expression__loop");
+            _loop.RegisterValueChangedCallback(evt =>
+            {
+                if (!_rendering)
+                {
+                    LoopChanged?.Invoke(evt.newValue);
+                }
+            });
+            playbackRow.Add(_loop);
+            _animationControls.Add(playbackRow);
+            editorPane.Add(_animationControls);
+
             _search = new SearchField(new SearchFieldState(
                 placeholder: text.SearchPlaceholder,
                 searchTooltip: text.SearchTooltip,
@@ -217,7 +343,18 @@ namespace Ee4v.FaceExpression
         public event Action BackRequested;
         public event Action<string> LibraryFolderRequested;
         public event Action<BlendShapeChannel> ChannelChanged;
+        public event Action<int> PoseSelected;
+        public event Action PoseAddRequested;
+        public event Action<int> PoseInsertRequested;
+        public event Action<int, int> PoseMoveRequested;
+        public event Action<int, string> PoseNameChanged;
+        public event Action<int, AnimationClip> PoseSourceChanged;
+        public event Action<int> PoseRemoveRequested;
+        public event Action<int, float> TransitionDurationChanged;
         public event Action ResetViewRequested;
+        public event Action PlaybackChanged;
+        public event Action<float> TimeChanged;
+        public event Action<bool> LoopChanged;
 
         public void SetAvatar(GameObject avatar)
         {
@@ -233,6 +370,390 @@ namespace Ee4v.FaceExpression
             _clipField.SetValueWithoutNotify(clip);
             _rendering = false;
             RefreshFilter();
+        }
+
+        public void SetAnimationState(
+            float time,
+            float duration,
+            bool looping,
+            bool playing,
+            IReadOnlyList<float> poseTimes,
+            IReadOnlyList<AnimationClip> poseSources,
+            IReadOnlyList<string> poseNames,
+            int selectedPoseIndex,
+            bool canAddPose,
+            string playTooltip,
+            string pauseTooltip)
+        {
+            duration = Mathf.Max(1f / 60f, duration);
+            time = Mathf.Clamp(time, 0f, duration);
+            _rendering = true;
+            _timeline.highValue = duration;
+            _timeline.SetValueWithoutNotify(time);
+            _loop.SetValueWithoutNotify(looping);
+            _playback.SetLabel(playing ? "Ⅱ" : "▶");
+            _playback.tooltip = playing
+                ? pauseTooltip ?? string.Empty
+                : playTooltip ?? string.Empty;
+            _playback.SetEnabled((poseTimes?.Count ?? 0) > 1);
+            _rendering = false;
+
+            var nextPoseTimes = poseTimes?.ToArray() ?? Array.Empty<float>();
+            var nextPoseSources = poseSources?.ToArray() ??
+                                  new AnimationClip[nextPoseTimes.Length];
+            var nextPoseNames = poseNames?.ToArray() ??
+                                new string[nextPoseTimes.Length];
+            var nextSelectedPoseReadOnly =
+                selectedPoseIndex >= 0 &&
+                selectedPoseIndex < nextPoseSources.Length &&
+                nextPoseSources[selectedPoseIndex] != null;
+            var sequenceChanged = !_poseTimes.SequenceEqual(nextPoseTimes) ||
+                                  !_poseSources.SequenceEqual(nextPoseSources) ||
+                                  !_poseNames.SequenceEqual(nextPoseNames) ||
+                                  _selectedPoseIndex != selectedPoseIndex ||
+                                  _canAddPose != canAddPose;
+            _poseTimes = nextPoseTimes;
+            _poseSources = nextPoseSources;
+            _poseNames = nextPoseNames;
+            _selectedPoseIndex = selectedPoseIndex;
+            _canAddPose = canAddPose;
+            _selectedPoseReadOnly = nextSelectedPoseReadOnly;
+            _blendShapeList.SetEnabled(!_selectedPoseReadOnly);
+            if (sequenceChanged)
+            {
+                RebuildPoseSequence();
+            }
+        }
+
+        private void RebuildPoseSequence()
+        {
+            _poseSequence.Clear();
+            for (var index = 0; index < _poseTimes.Length; index++)
+            {
+                var poseIndex = index;
+                var poseTime = _poseTimes[index];
+                var poseSource = index < _poseSources.Length
+                    ? _poseSources[index]
+                    : null;
+                var poseName = index < _poseNames.Length
+                    ? _poseNames[index] ?? string.Empty
+                    : string.Empty;
+                var poseDisplayName = string.IsNullOrWhiteSpace(poseName)
+                    ? FormatPoseLabel(index)
+                    : poseName;
+                var card = new VisualElement();
+                card.AddToClassList("ee4v-face-expression__pose-card");
+                card.EnableInClassList(
+                    "ee4v-face-expression__pose-card--selected",
+                    index == _selectedPoseIndex);
+                card.EnableInClassList(
+                    "ee4v-face-expression__pose-card--referenced",
+                    poseSource != null);
+
+                var select = new UiButton(
+                    string.Empty,
+                    () => PoseSelected?.Invoke(poseIndex),
+                    variant: UiButtonVariant.Ghost);
+                select.AddToClassList("ee4v-face-expression__pose-select");
+                select.tooltip = poseSource == null
+                    ? poseDisplayName
+                    : poseDisplayName + "\n" + poseSource.name;
+                var previewArea = new PreviewContainer();
+                previewArea.AddToClassList(
+                    "ee4v-face-expression__pose-preview-area");
+                IMGUIContainer posePreview = null;
+                posePreview = new IMGUIContainer(() =>
+                {
+                    if (Event.current?.type != EventType.Repaint)
+                    {
+                        return;
+                    }
+
+                    if (_drawPosePreview == null)
+                    {
+                        EditorGUI.DrawRect(
+                            posePreview.contentRect,
+                            new Color(0.1f, 0.1f, 0.1f, 1f));
+                        return;
+                    }
+
+                    _drawPosePreview(
+                        poseSource,
+                        poseTime,
+                        posePreview.contentRect);
+                });
+                posePreview.AddToClassList(
+                    "ee4v-face-expression__pose-preview");
+                posePreview.pickingMode = PickingMode.Ignore;
+                previewArea.Content.Add(posePreview);
+                previewArea.Overlay.Add(UiTextFactory.Create(
+                    poseDisplayName + " · " +
+                    poseTime.ToString("0.00") + "s",
+                    UiClassNames.SecondaryText,
+                    "ee4v-face-expression__pose-caption"));
+                previewArea.SetHasContent(true);
+                select.Content.Add(previewArea);
+                card.Add(select);
+                ObjectField sourceField = null;
+                select.RegisterCallback<ContextClickEvent>(evt =>
+                {
+                    var menu = new GenericMenu();
+                    menu.AddItem(
+                        UiTextFactory.CreateGuiContent(_renamePoseText),
+                        false,
+                        () => BeginPoseRename(
+                            sourceField,
+                            poseIndex,
+                            poseName));
+                    if (!string.IsNullOrWhiteSpace(poseName))
+                    {
+                        menu.AddItem(
+                            UiTextFactory.CreateGuiContent(
+                                _resetPoseNameText),
+                            false,
+                            () => PoseNameChanged?.Invoke(
+                                poseIndex,
+                                string.Empty));
+                    }
+
+                    menu.ShowAsContext();
+                    evt.StopPropagation();
+                });
+
+                sourceField = UiTextFactory.CreateObjectField(
+                    string.Empty,
+                    "ee4v-face-expression__pose-source");
+                sourceField.objectType = typeof(AnimationClip);
+                sourceField.allowSceneObjects = false;
+                sourceField.tooltip = _poseSourceTooltip;
+                sourceField.SetValueWithoutNotify(poseSource);
+                sourceField.RegisterValueChangedCallback(evt =>
+                {
+                    if (!_rendering)
+                    {
+                        PoseSourceChanged?.Invoke(
+                            poseIndex,
+                            evt.newValue as AnimationClip);
+                        sourceField.SetValueWithoutNotify(poseSource);
+                    }
+                });
+                card.Add(sourceField);
+                card.RegisterCallback<DragUpdatedEvent>(evt =>
+                {
+                    if (GetDraggedClip() == null)
+                    {
+                        return;
+                    }
+
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Link;
+                    evt.StopPropagation();
+                });
+                card.RegisterCallback<DragPerformEvent>(evt =>
+                {
+                    var draggedClip = GetDraggedClip();
+                    if (draggedClip == null)
+                    {
+                        return;
+                    }
+
+                    DragAndDrop.AcceptDrag();
+                    sourceField.value = draggedClip;
+                    evt.StopPropagation();
+                });
+
+                if (index == _selectedPoseIndex && index > 0)
+                {
+                    var moveEarlier = new UiButton(
+                        string.Empty,
+                        () => PoseMoveRequested?.Invoke(
+                            poseIndex,
+                            poseIndex - 1),
+                        _movePoseEarlierTooltip,
+                        FluentUiIcons.CreateState(
+                            "arrow_left.png",
+                            UiSizeTokens.Size16),
+                        UiButtonVariant.Ghost);
+                    moveEarlier.AddToClassList(
+                        "ee4v-face-expression__move-pose");
+                    moveEarlier.AddToClassList(
+                        "ee4v-face-expression__move-pose--earlier");
+                    card.Add(moveEarlier);
+                }
+
+                if (index == _selectedPoseIndex &&
+                    index < _poseTimes.Length - 1)
+                {
+                    var moveLater = new UiButton(
+                        string.Empty,
+                        () => PoseMoveRequested?.Invoke(
+                            poseIndex,
+                            poseIndex + 1),
+                        _movePoseLaterTooltip,
+                        FluentUiIcons.CreateState(
+                            "arrow_right.png",
+                            UiSizeTokens.Size16),
+                        UiButtonVariant.Ghost);
+                    moveLater.AddToClassList(
+                        "ee4v-face-expression__move-pose");
+                    moveLater.AddToClassList(
+                        "ee4v-face-expression__move-pose--later");
+                    moveLater.EnableInClassList(
+                        "ee4v-face-expression__move-pose--later-only",
+                        index == 0);
+                    card.Add(moveLater);
+                }
+
+                var remove = new UiButton(
+                    string.Empty,
+                    () => PoseRemoveRequested?.Invoke(poseIndex),
+                    _removePoseTooltip,
+                    FluentUiIcons.CreateState(
+                        "dismiss.png",
+                        UiSizeTokens.Size16),
+                    UiButtonVariant.Ghost);
+                remove.AddToClassList("ee4v-face-expression__remove-pose");
+                remove.style.display = _poseTimes.Length > 1
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+                card.Add(remove);
+                _poseSequence.Add(card);
+
+                if (index >= _poseTimes.Length - 1)
+                {
+                    continue;
+                }
+
+                var transition = new VisualElement();
+                transition.AddToClassList(
+                    "ee4v-face-expression__pose-transition");
+                var insert = new UiButton(
+                    _insertPoseText,
+                    () => PoseInsertRequested?.Invoke(poseIndex),
+                    _insertPoseTooltip,
+                    variant: UiButtonVariant.Ghost);
+                insert.AddToClassList(
+                    "ee4v-face-expression__insert-pose");
+                transition.Add(insert);
+                transition.Add(UiTextFactory.Create(
+                    _transitionText,
+                    UiClassNames.SecondaryText,
+                    "ee4v-face-expression__transition-label"));
+                var duration = UiTextFactory.CreateFloatField(
+                    string.Empty,
+                    "ee4v-face-expression__transition-duration");
+                duration.isDelayed = true;
+                duration.SetValueWithoutNotify(
+                    _poseTimes[index + 1] - _poseTimes[index]);
+                duration.RegisterValueChangedCallback(evt =>
+                {
+                    if (!float.IsNaN(evt.newValue) &&
+                        !float.IsInfinity(evt.newValue))
+                    {
+                        TransitionDurationChanged?.Invoke(
+                            poseIndex,
+                            evt.newValue);
+                    }
+                });
+                transition.Add(duration);
+                _poseSequence.Add(transition);
+            }
+
+            _addPose.SetEnabled(_canAddPose);
+            _addPose.tooltip = _canAddPose
+                ? _addPoseTooltip
+                : _addPoseUnavailableTooltip;
+        }
+
+        private string FormatPoseLabel(int index)
+        {
+            try
+            {
+                return string.Format(_poseText, index + 1);
+            }
+            catch (FormatException)
+            {
+                return _poseText + " " + (index + 1);
+            }
+        }
+
+        private void BeginPoseRename(
+            VisualElement sourceField,
+            int poseIndex,
+            string poseName)
+        {
+            if (sourceField == null ||
+                sourceField.panel == null ||
+                sourceField.parent == null)
+            {
+                return;
+            }
+
+            var parent = sourceField.parent;
+            var sourceIndex = parent.IndexOf(sourceField);
+            var existing = parent.Q<InputField>(
+                className: "ee4v-face-expression__pose-rename");
+            existing?.RemoveFromHierarchy();
+
+            var input = new InputField(new InputFieldState(
+                poseName,
+                placeholder: FormatPoseLabel(poseIndex)));
+            input.AddToClassList("ee4v-face-expression__pose-rename");
+            var completed = false;
+            Action<bool> complete = commit =>
+            {
+                if (completed)
+                {
+                    return;
+                }
+
+                completed = true;
+                var value = input.Value;
+                var inputParent = input.parent;
+                input.RemoveFromHierarchy();
+                if (sourceField.parent == null &&
+                    inputParent != null &&
+                    inputParent.panel != null)
+                {
+                    inputParent.Insert(
+                        Mathf.Min(sourceIndex, inputParent.childCount),
+                        sourceField);
+                }
+
+                if (commit)
+                {
+                    PoseNameChanged?.Invoke(poseIndex, value);
+                }
+            };
+            input.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode == KeyCode.Escape)
+                {
+                    complete(false);
+                    evt.StopPropagation();
+                }
+                else if (evt.keyCode == KeyCode.Return ||
+                         evt.keyCode == KeyCode.KeypadEnter)
+                {
+                    complete(true);
+                    evt.StopPropagation();
+                }
+            });
+            input.RegisterCallback<FocusOutEvent>(_ => complete(true));
+            sourceField.RemoveFromHierarchy();
+            parent.Insert(sourceIndex, input);
+            input.schedule.Execute(input.FocusInput);
+        }
+
+        private static AnimationClip GetDraggedClip()
+        {
+            return DragAndDrop.objectReferences
+                .OfType<AnimationClip>()
+                .FirstOrDefault();
+        }
+
+        public void RefreshChannelValues()
+        {
+            _blendShapeList.RefreshItems();
         }
 
         public void SetChannels(
@@ -621,6 +1142,9 @@ namespace Ee4v.FaceExpression
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             _search.style.display = _hasClip
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+            _animationControls.style.display = _hasClip
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             if (!_hasClip)
@@ -1073,9 +1597,7 @@ namespace Ee4v.FaceExpression
 
             _rendering = true;
             channel.Value = value;
-            channel.Animated = !Mathf.Approximately(
-                channel.Value,
-                channel.InitialValue);
+            channel.Animated = true;
             _toggle.SetValueWithoutNotify(channel.Animated);
             _slider.SetValueWithoutNotify(channel.Value);
             _value.SetValueWithoutNotify(channel.Value);

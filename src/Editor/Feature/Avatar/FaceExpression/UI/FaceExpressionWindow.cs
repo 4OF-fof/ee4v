@@ -15,6 +15,7 @@ namespace Ee4v.FaceExpression
     {
         private const StringComparison AssetPathComparison =
             StringComparison.OrdinalIgnoreCase;
+        private const float DefaultTransitionDuration = 0.2f;
 
         private FaceExpressionPreview _preview;
         private FaceExpressionView _view;
@@ -31,8 +32,21 @@ namespace Ee4v.FaceExpression
         private IReadOnlyList<string> _previewRendererPaths =
             Array.Empty<string>();
         private bool _changingClip;
+        private float _currentTime;
+        private float _timelineDuration = 1f;
+        private bool _playing;
+        private double _lastPlaybackTime;
+        private IReadOnlyList<float> _poseTimes = Array.Empty<float>();
+        private IReadOnlyList<AnimationClip> _poseSources =
+            Array.Empty<AnimationClip>();
+        private IReadOnlyList<string> _poseNames = Array.Empty<string>();
+        private int _selectedPoseIndex;
         private readonly AnimationClipThumbnailCache _thumbnails =
             new AnimationClipThumbnailCache();
+        private readonly AnimationClipThumbnailCache _poseThumbnails =
+            new AnimationClipThumbnailCache();
+        private double _poseThumbnailRefreshAt = -1d;
+        private double _validationRefreshAt = -1d;
 
         private bool HasClipReference => !ReferenceEquals(_clip, null);
         private bool IsClipMissing => HasClipReference && _clip == null;
@@ -61,8 +75,9 @@ namespace Ee4v.FaceExpression
             FaceExpressionGroupSession.Changed += ApplyGroupFilter;
             FaceExpressionGroupSession.MeshesChanged += RefreshClip;
             _preview = new FaceExpressionPreview(Repaint);
-            Undo.undoRedoPerformed += RefreshClip;
+            Undo.undoRedoPerformed += OnUndoRedo;
             EditorApplication.projectChanged += RefreshLibrary;
+            EditorApplication.update += UpdatePlayback;
             I18N.Reloaded += Rebuild;
         }
 
@@ -79,8 +94,9 @@ namespace Ee4v.FaceExpression
                 _presetStore = null;
             }
 
-            Undo.undoRedoPerformed -= RefreshClip;
+            Undo.undoRedoPerformed -= OnUndoRedo;
             EditorApplication.projectChanged -= RefreshLibrary;
+            EditorApplication.update -= UpdatePlayback;
             I18N.Reloaded -= Rebuild;
             FaceExpressionGroupSession.Changed -= ApplyGroupFilter;
             FaceExpressionGroupSession.MeshesChanged -= RefreshClip;
@@ -124,7 +140,10 @@ namespace Ee4v.FaceExpression
                 root,
                 "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss");
 
-            _view = new FaceExpressionView(CreateText(), rect => _preview?.Draw(rect));
+            _view = new FaceExpressionView(
+                CreateText(),
+                rect => _preview?.Draw(rect),
+                DrawPoseThumbnail);
             _view.AvatarChanged += SetAvatar;
             _view.ClipChanged += SetClip;
             _view.NewClipRequested += CreateClip;
@@ -132,7 +151,18 @@ namespace Ee4v.FaceExpression
             _view.BackRequested += GoBack;
             _view.LibraryFolderRequested += OpenLibraryFolder;
             _view.ChannelChanged += ChangeChannel;
+            _view.PoseSelected += SelectPose;
+            _view.PoseAddRequested += AddPose;
+            _view.PoseInsertRequested += InsertPose;
+            _view.PoseMoveRequested += MovePose;
+            _view.PoseNameChanged += SetPoseName;
+            _view.PoseSourceChanged += SetPoseSource;
+            _view.PoseRemoveRequested += RemovePose;
+            _view.TransitionDurationChanged += SetTransitionDuration;
             _view.ResetViewRequested += () => _preview?.ResetView();
+            _view.PlaybackChanged += TogglePlayback;
+            _view.TimeChanged += SetCurrentTime;
+            _view.LoopChanged += SetLooping;
             RenderLibrary();
             root.Add(_view);
         }
@@ -141,6 +171,13 @@ namespace Ee4v.FaceExpression
         {
             _avatar = avatar;
             _clip = null;
+            _poseTimes = Array.Empty<float>();
+            _poseSources = Array.Empty<AnimationClip>();
+            _poseNames = Array.Empty<string>();
+            _selectedPoseIndex = 0;
+            StopPlayback();
+            _currentTime = 0f;
+            _timelineDuration = 1f;
             _preview?.SetAvatar(avatar);
             _previewRendererPaths = FaceExpressionClipEditor.GetRendererPaths(avatar);
             ClearThumbnails();
@@ -159,7 +196,14 @@ namespace Ee4v.FaceExpression
             _changingClip = true;
             try
             {
+                StopPlayback();
+                _poseThumbnails.Clear();
                 _clip = clip;
+                _selectedPoseIndex = 0;
+                _currentTime = 0f;
+                _timelineDuration = clip == null || clip.length <= 0f
+                    ? 1f
+                    : clip.length;
                 RefreshClip();
             }
             finally
@@ -170,12 +214,38 @@ namespace Ee4v.FaceExpression
 
         private void RefreshClip()
         {
+            _poseTimes = FaceExpressionClipEditor.GetPoseTimes(_clip);
+            _poseSources = FaceExpressionClipEditor.GetPoseSources(
+                _clip,
+                _poseTimes);
+            _poseNames = FaceExpressionClipEditor.GetPoseNames(
+                _clip,
+                _poseTimes);
+            _selectedPoseIndex = Mathf.Clamp(
+                _selectedPoseIndex,
+                0,
+                Mathf.Max(0, _poseTimes.Count - 1));
+            var selectedPoseTime = SelectedPoseTime;
             _channels = FaceExpressionClipEditor.Read(
                 _avatar,
                 _clip,
                 FaceExpressionSettings.GetSeparators(_settings),
-                FaceExpressionGroupSession.RendererPaths);
+                FaceExpressionGroupSession.RendererPaths,
+                selectedPoseTime);
+            if (_clip != null)
+            {
+                _timelineDuration = Mathf.Max(
+                    1f / 60f,
+                    _poseTimes.Count == 0
+                        ? 0f
+                        : _poseTimes[_poseTimes.Count - 1]);
+                _currentTime = Mathf.Clamp(
+                    FaceExpressionClipEditor.SnapTime(_clip, _currentTime),
+                    0f,
+                    _timelineDuration);
+            }
             _view?.SetClip(_clip);
+            UpdateAnimationView();
             RefreshValidation();
             FaceExpressionGroupSession.UpdateChannels(_channels);
             _preview?.SetChannels(_channels);
@@ -185,14 +255,367 @@ namespace Ee4v.FaceExpression
         {
             if (_changingClip ||
                 _clip == null ||
+                SelectedPoseSource != null ||
                 !_channels.Any(current => ReferenceEquals(current, channel)))
             {
                 return;
             }
 
-            FaceExpressionClipEditor.Write(_clip, channel);
+            _playing = false;
+            _currentTime = SelectedPoseTime;
+            var previousPoseTimes = _poseTimes;
+            FaceExpressionClipEditor.WritePose(
+                _clip,
+                channel,
+                SelectedPoseTime,
+                _poseTimes);
+            _poseTimes = FaceExpressionClipEditor.GetPoseTimes(_clip);
+            var sequenceChanged = !previousPoseTimes.SequenceEqual(_poseTimes);
+            _selectedPoseIndex = Mathf.Clamp(
+                _selectedPoseIndex,
+                0,
+                Mathf.Max(0, _poseTimes.Count - 1));
+            _timelineDuration = Mathf.Max(
+                1f / 60f,
+                _poseTimes[_poseTimes.Count - 1]);
+            if (sequenceChanged)
+            {
+                _currentTime = SelectedPoseTime;
+                FaceExpressionClipEditor.Sample(
+                    _clip,
+                    _channels,
+                    _currentTime);
+                _view?.RefreshChannelValues();
+            }
+
             _preview?.SetChannels(_channels);
-            RefreshValidation();
+            UpdateAnimationView();
+            if (sequenceChanged)
+            {
+                InvalidatePoseThumbnails();
+                _validationRefreshAt =
+                    EditorApplication.timeSinceStartup + 0.15d;
+            }
+            else
+            {
+                ScheduleDeferredRefresh();
+            }
+        }
+
+        private float SelectedPoseTime =>
+            _poseTimes.Count == 0
+                ? 0f
+                : _poseTimes[Mathf.Clamp(
+                    _selectedPoseIndex,
+                    0,
+                    _poseTimes.Count - 1)];
+
+        private AnimationClip SelectedPoseSource =>
+            _poseSources.Count == 0
+                ? null
+                : _poseSources[Mathf.Clamp(
+                    _selectedPoseIndex,
+                    0,
+                    _poseSources.Count - 1)];
+
+        private void SelectPose(int poseIndex)
+        {
+            if (_clip == null || poseIndex < 0 || poseIndex >= _poseTimes.Count)
+            {
+                return;
+            }
+
+            StopPlayback();
+            _selectedPoseIndex = poseIndex;
+            _currentTime = SelectedPoseTime;
+            RefreshClip();
+        }
+
+        private void AddPose()
+        {
+            InsertPose(_selectedPoseIndex);
+        }
+
+        private void InsertPose(int afterPoseIndex)
+        {
+            if (_clip == null ||
+                afterPoseIndex < 0 ||
+                afterPoseIndex >= _poseTimes.Count)
+            {
+                return;
+            }
+
+            StopPlayback();
+            var newTime = FaceExpressionClipEditor.AddPose(
+                _clip,
+                _poseTimes[afterPoseIndex],
+                DefaultTransitionDuration);
+            if (newTime < 0f)
+            {
+                return;
+            }
+
+            _selectedPoseIndex = afterPoseIndex + 1;
+            _currentTime = newTime;
+            RefreshClip();
+            InvalidatePoseThumbnails();
+        }
+
+        private void MovePose(int poseIndex, int targetIndex)
+        {
+            if (_clip == null ||
+                poseIndex < 0 ||
+                targetIndex < 0 ||
+                poseIndex >= _poseTimes.Count ||
+                targetIndex >= _poseTimes.Count)
+            {
+                return;
+            }
+
+            StopPlayback();
+            if (!FaceExpressionClipEditor.MovePose(
+                    _clip,
+                    poseIndex,
+                    targetIndex))
+            {
+                return;
+            }
+
+            _selectedPoseIndex = targetIndex;
+            _currentTime = _poseTimes[targetIndex];
+            RefreshClip();
+            InvalidatePoseThumbnails();
+        }
+
+        private void SetPoseSource(int poseIndex, AnimationClip source)
+        {
+            if (_clip == null ||
+                poseIndex < 0 ||
+                poseIndex >= _poseTimes.Count)
+            {
+                return;
+            }
+
+            StopPlayback();
+            if (!FaceExpressionClipEditor.SetPoseSource(
+                _clip,
+                _poseTimes[poseIndex],
+                source,
+                _channels))
+            {
+                return;
+            }
+
+            _selectedPoseIndex = poseIndex;
+            _currentTime = _poseTimes[poseIndex];
+            RefreshClip();
+            InvalidatePoseThumbnails();
+        }
+
+        private void SetPoseName(int poseIndex, string name)
+        {
+            if (_clip == null ||
+                poseIndex < 0 ||
+                poseIndex >= _poseTimes.Count)
+            {
+                return;
+            }
+
+            StopPlayback();
+            if (!FaceExpressionClipEditor.SetPoseName(
+                    _clip,
+                    _poseTimes[poseIndex],
+                    name))
+            {
+                return;
+            }
+
+            RefreshClip();
+        }
+
+        private void RemovePose(int poseIndex)
+        {
+            if (_clip == null || poseIndex < 0 || poseIndex >= _poseTimes.Count)
+            {
+                return;
+            }
+
+            StopPlayback();
+            if (!FaceExpressionClipEditor.RemovePose(
+                    _clip,
+                    _poseTimes[poseIndex]))
+            {
+                return;
+            }
+
+            _selectedPoseIndex = Mathf.Max(0, poseIndex - 1);
+            _currentTime = 0f;
+            RefreshClip();
+            _currentTime = SelectedPoseTime;
+            SampleCurrentTime();
+            InvalidatePoseThumbnails();
+        }
+
+        private void SetTransitionDuration(int poseIndex, float duration)
+        {
+            if (_clip == null || poseIndex < 0 || poseIndex >= _poseTimes.Count - 1)
+            {
+                return;
+            }
+
+            StopPlayback();
+            if (!FaceExpressionClipEditor.SetTransitionDuration(
+                    _clip,
+                    _poseTimes[poseIndex],
+                    duration))
+            {
+                UpdateAnimationView();
+                return;
+            }
+
+            _currentTime = 0f;
+            RefreshClip();
+            _currentTime = SelectedPoseTime;
+            SampleCurrentTime();
+            InvalidatePoseThumbnails();
+        }
+
+        private void TogglePlayback()
+        {
+            if (_clip == null || _poseTimes.Count < 2)
+            {
+                return;
+            }
+
+            _playing = !_playing;
+            if (_playing)
+            {
+                if (_currentTime >= _timelineDuration)
+                {
+                    _currentTime = 0f;
+                }
+
+                _lastPlaybackTime = EditorApplication.timeSinceStartup;
+            }
+            else
+            {
+                SampleCurrentTime();
+                return;
+            }
+
+            UpdateAnimationView();
+        }
+
+        private void StopPlayback()
+        {
+            _playing = false;
+            UpdateAnimationView();
+        }
+
+        private void SetCurrentTime(float time)
+        {
+            if (_clip == null)
+            {
+                return;
+            }
+
+            _playing = false;
+            _currentTime = Mathf.Clamp(
+                FaceExpressionClipEditor.SnapTime(_clip, time),
+                0f,
+                _timelineDuration);
+            SampleCurrentTime();
+        }
+
+        private void SetLooping(bool looping)
+        {
+            FaceExpressionClipEditor.SetLooping(_clip, looping);
+            UpdateAnimationView();
+        }
+
+        private void UpdatePlayback()
+        {
+            var now = EditorApplication.timeSinceStartup;
+            if (_poseThumbnailRefreshAt >= 0d && now >= _poseThumbnailRefreshAt)
+            {
+                _poseThumbnailRefreshAt = -1d;
+                _poseThumbnails.Invalidate(_clip);
+                Repaint();
+            }
+
+            if (_validationRefreshAt >= 0d && now >= _validationRefreshAt)
+            {
+                _validationRefreshAt = -1d;
+                RefreshValidation();
+            }
+
+            if (!_playing || _clip == null)
+            {
+                return;
+            }
+
+            var delta = Mathf.Max(0f, (float)(now - _lastPlaybackTime));
+            _lastPlaybackTime = now;
+            var nextTime = _currentTime + delta;
+            if (nextTime > _timelineDuration)
+            {
+                if (FaceExpressionClipEditor.IsLooping(_clip))
+                {
+                    nextTime %= _timelineDuration;
+                }
+                else
+                {
+                    nextTime = _timelineDuration;
+                    _playing = false;
+                }
+            }
+
+            _currentTime = nextTime;
+            SampleCurrentTime();
+        }
+
+        private void SampleCurrentTime()
+        {
+            FaceExpressionClipEditor.Sample(_clip, _channels, _currentTime);
+            _view?.RefreshChannelValues();
+            _preview?.SetChannels(_channels);
+            UpdateAnimationView();
+        }
+
+        private void ScheduleDeferredRefresh()
+        {
+            var refreshAt = EditorApplication.timeSinceStartup + 0.15d;
+            _poseThumbnailRefreshAt = refreshAt;
+            _validationRefreshAt = refreshAt;
+        }
+
+        private void InvalidatePoseThumbnails()
+        {
+            _poseThumbnailRefreshAt = -1d;
+            _poseThumbnails.Invalidate(_clip);
+            Repaint();
+        }
+
+        private void OnUndoRedo()
+        {
+            RefreshClip();
+            InvalidatePoseThumbnails();
+        }
+
+        private void UpdateAnimationView()
+        {
+            _view?.SetAnimationState(
+                _currentTime,
+                _timelineDuration,
+                FaceExpressionClipEditor.IsLooping(_clip),
+                _playing,
+                _poseTimes,
+                _poseSources,
+                _poseNames,
+                _selectedPoseIndex,
+                FaceExpressionClipEditor.CanAddPose(_clip),
+                I18N.Get("animation.play"),
+                I18N.Get("animation.pause"));
         }
 
         private void RefreshValidation()
@@ -463,9 +886,30 @@ namespace Ee4v.FaceExpression
                 () => _preview.SetChannels(_channels, false));
         }
 
+        private void DrawPoseThumbnail(
+            AnimationClip source,
+            float time,
+            Rect rect)
+        {
+            var previewClip = source == null ? _clip : source;
+            var previewTime = source == null ? time : 0f;
+            _poseThumbnails.DrawAtTime(
+                previewClip,
+                previewTime,
+                rect,
+                _preview,
+                _avatar,
+                _previewRendererPaths,
+                () => _preview.SetChannels(_channels, false),
+                refreshWhenDirty: source != null);
+        }
+
         private void ClearThumbnails()
         {
             _thumbnails.Clear();
+            _poseThumbnails.Clear();
+            _poseThumbnailRefreshAt = -1d;
+            _validationRefreshAt = -1d;
             _view?.MarkDirtyRepaint();
         }
 
@@ -492,6 +936,7 @@ namespace Ee4v.FaceExpression
         {
             _view?.SetAvatar(_avatar);
             _view?.SetClip(_clip);
+            UpdateAnimationView();
             ApplyGroupFilter();
             _preview?.SetChannels(_channels);
         }
@@ -508,6 +953,7 @@ namespace Ee4v.FaceExpression
                 FaceExpressionSettings.GetNameRule(_presetStore),
                 !string.IsNullOrEmpty(
                     FaceExpressionGroupSession.SelectedGroupKey));
+            UpdateAnimationView();
         }
 
         private static FaceExpressionViewText CreateText()
@@ -527,7 +973,26 @@ namespace Ee4v.FaceExpression
                 Library = I18N.Get("section.library"),
                 ClipOnly = I18N.Get("filter.clipOnly"),
                 ClipOnlyTooltip = I18N.Get("filter.clipOnlyTooltip"),
-                NoBlendShapes = I18N.Get("empty.blendShapes")
+                NoBlendShapes = I18N.Get("empty.blendShapes"),
+                Play = I18N.Get("animation.play"),
+                Pause = I18N.Get("animation.pause"),
+                Loop = I18N.Get("animation.loop"),
+                Sequence = I18N.Get("animation.sequence"),
+                Pose = I18N.Get("animation.pose"),
+                AddPose = I18N.Get("animation.addPose"),
+                AddPoseTooltip = I18N.Get("animation.addPoseTooltip"),
+                AddPoseUnavailable = I18N.Get("animation.addPoseUnavailable"),
+                InsertPose = I18N.Get("animation.insertPose"),
+                InsertPoseTooltip = I18N.Get("animation.insertPoseTooltip"),
+                MovePoseEarlier = I18N.Get("animation.movePoseEarlier"),
+                MovePoseLater = I18N.Get("animation.movePoseLater"),
+                RenamePose = I18N.Get("animation.renamePose"),
+                ResetPoseName = I18N.Get("animation.resetPoseName"),
+                AddClip = I18N.Get("animation.addClip"),
+                AddClipTooltip = I18N.Get("animation.addClipTooltip"),
+                RemovePose = I18N.Get("animation.removePose"),
+                Transition = I18N.Get("animation.transition"),
+                TimelineTooltip = I18N.Get("animation.timelineTooltip")
             };
         }
     }

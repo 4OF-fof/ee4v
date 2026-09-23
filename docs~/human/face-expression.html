@@ -16,7 +16,7 @@
       <h1>Face Expression</h1>
       <p class="lead">Avatarの顔をpreviewしながらBlendShape表情を作り、左右のhand gestureとExpression Menuへ割り当てます。</p>
     </div>
-    <dl class="header-facts" aria-label="機能概要"><div><dt>Clip</dt><dd>0秒の単一frame</dd></div><div><dt>Gesture</dt><dd>左右8×8</dd></div><div><dt>適用</dt><dd>Modular Avatar</dd></div></dl>
+    <dl class="header-facts" aria-label="機能概要"><div><dt>Clip</dt><dd>静止 / animation</dd></div><div><dt>Gesture</dt><dd>左右8×8</dd></div><div><dt>適用</dt><dd>Modular Avatar</dd></div></dl>
   </header>
   <nav class="page-nav" aria-label="利用ガイド"><ul><li><a href="index.html">概要</a></li><li><a href="mcp.html">MCP</a></li><li><a href="asset-manager.html">Asset Manager</a></li><li><a href="asset-protection.html">Asset Protection</a></li><li><a href="booth-eagle.html">BOOTH / Eagle</a></li><li><a href="face-expression.html" aria-current="page">Face Expression</a></li><li><a href="physbone-collider.html">PhysBone Collider</a></li><li><a href="play-mode-component-suppression.html">Play Mode</a></li><li><a href="project-tools.html">Project</a></li><li><a href="hierarchy-tools.html">Hierarchy</a></li><li><a href="window-groups.html">Window Groups</a></li><li><a href="settings.html">設定</a></li></ul></nav>
 
@@ -48,9 +48,17 @@
 
       <section id="edit">
         <p class="section-label">BlendShape</p><h2>使用する値だけをClipへ保存する</h2>
-        <p>既定では名前が<code>Body</code>のSkinnedMeshRendererを表示します。各行のsliderと数値欄は0～100で連動し、使用checkを有効にしたBlendShapeだけを0秒の単一keyframeとしてAnimationClipへ保存します。</p>
+        <p>既定では名前が<code>Body</code>のSkinnedMeshRendererを表示します。各行のsliderと数値欄は0～100で連動し、使用checkを有効にしたBlendShapeだけを選択中の表情ポーズとしてAnimationClipへ保存します。ポーズが1件なら従来どおりの静止表情です。</p>
         <ul>
-          <li>値をAvatarの初期値へ戻すと、使用checkを自動で外して対応curveを削除します。</li>
+          <li>表情シーケンスのポーズカードには、割り当て画面と同じ正方形に近い顔Previewが表示されます。カードを選ぶと、そのローカルポーズだけをBlendShape一覧で編集できます。</li>
+          <li>「＋ ポーズ」は選択中の表情を複製して直後へ追加します。最初のポーズでは、先にBlendShapeを1つ以上編集します。</li>
+          <li>ポーズ間の「＋」は、その位置へ新しいポーズを挿入します。選択中カードの左右矢印では、表情と参照Clipを一緒に1つ前または後ろへ移動できます。</li>
+          <li>顔Previewを右clickして「ポーズ名を変更…」を選ぶと、カード下端のClip欄が名前欄へ切り替わり、任意の名前を付けられます。空欄で確定するか「ポーズ名を既定に戻す」を選ぶと「ポーズ N」へ戻ります。</li>
+          <li>各ポーズ下端のClip欄へ既存の表情Clipを選択またはdropすると、その先頭frameをポーズへ割り当てます。割り当て中はBlendShapeを編集できません。Clipを外すと現在の表情を保ったまま編集可能になります。</li>
+          <li>ポーズ間の秒数を変更すると後続ポーズがまとめて移動します。ポーズを削除すると空いた時間を詰めて前後を連結します。</li>
+          <li>再生buttonと再生バーは動きの確認専用です。再生位置を移動してもポーズやkeyは増えません。</li>
+          <li>既存の複数key Clipは、全BlendShapeのkey時刻をポーズ列として読み込みます。</li>
+          <li>使用checkを外すと、そのBlendShapeのcurve全体を削除します。LoopはAnimationClipへ保存されます。</li>
           <li>使用checkを縦方向へdragすると、通過した行を最初に切り替えた状態へまとめて変更します。</li>
           <li>左右版は通常版の下へ<code>L</code>、<code>R</code>の子行として表示し、それぞれ個別に編集します。</li>
           <li><strong>クリップ内のみ</strong>では、選択中Clipに保存されているBlendShapeとheaderだけを表示します。</li>
@@ -61,7 +69,7 @@
 
       <section id="preview">
         <p class="section-label">Preview</p><h2>顔と肩を基準に確認する</h2>
-        <p>Avatarの非表示複製へBlendShape値だけを適用し、slider、数値、使用checkの変更を直ちにpreviewします。初期表示とresetはHumanoidの頭部を中心に顔と肩が収まる距離へ合わせます。</p>
+        <p>Avatarの非表示複製へ現在時刻のBlendShape値だけを適用し、slider、数値、使用check、timeline再生の変更を直ちにpreviewします。初期表示とresetはHumanoidの頭部を中心に顔と肩が収まる距離へ合わせます。</p>
         <div class="table-wrap"><table><thead><tr><th>操作</th><th>動作</th></tr></thead><tbody><tr><td>右drag</td><td>回転</td></tr><tr><td>middle button drag</td><td>移動</td></tr><tr><td>wheel</td><td>拡大・縮小</td></tr><tr><td>reset button</td><td>初期表示へ戻す</td></tr></tbody></table></div>
       </section>
 
@@ -93,7 +101,7 @@
         <ul>
           <li>Avatar DescriptorのFX Controller、Expression Parameters、Expressions Menuは直接変更しません。</li>
           <li>Scene上のAvatarと編集可能なPrefab Assetへ適用できます。Model Prefabは直接変更しません。</li>
-          <li>元の表情Clipは変更しません。</li>
+          <li>元の表情Clipは変更せず、複数keyのcurveとLoop設定を生成Clipへ引き継ぎます。</li>
           <li>Expression Menuは<code>FacialSet</code>をrootとして生成し、8項目を超える場合はNext submenuへ分割します。</li>
         </ul>
         <p class="callout"><strong>必要なPackage:</strong> Clipの編集とpreviewはVRChat SDKがない環境でも利用できます。Avatarへの適用にはModular Avatarが必要です。</p>

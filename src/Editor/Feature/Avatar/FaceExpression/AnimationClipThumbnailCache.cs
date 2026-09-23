@@ -9,8 +9,9 @@ namespace Ee4v.FaceExpression
     {
         private static readonly Color EmptyColor =
             new Color(0.1f, 0.1f, 0.1f, 1f);
-        private readonly Dictionary<AnimationClip, Entry> _entries =
-            new Dictionary<AnimationClip, Entry>();
+        private readonly Dictionary<AnimationClip, Dictionary<int, Entry>>
+            _entries =
+                new Dictionary<AnimationClip, Dictionary<int, Entry>>();
 
         internal void Draw(
             AnimationClip clip,
@@ -20,16 +21,44 @@ namespace Ee4v.FaceExpression
             IReadOnlyList<string> rendererPaths,
             Action restorePreview = null)
         {
+            DrawAtTime(
+                clip,
+                0f,
+                rect,
+                preview,
+                avatar,
+                rendererPaths,
+                restorePreview);
+        }
+
+        internal void DrawAtTime(
+            AnimationClip clip,
+            float time,
+            Rect rect,
+            FaceExpressionPreview preview,
+            GameObject avatar,
+            IReadOnlyList<string> rendererPaths,
+            Action restorePreview = null,
+            bool refreshWhenDirty = true)
+        {
             if (clip == null || preview == null || avatar == null)
             {
                 EditorGUI.DrawRect(rect, EmptyColor);
                 return;
             }
 
+            var frameRate = clip.frameRate <= 0f ? 60f : clip.frameRate;
+            var frame = Mathf.RoundToInt(Mathf.Max(0f, time) * frameRate);
             var dirtyCount = EditorUtility.GetDirtyCount(clip);
-            if (!_entries.TryGetValue(clip, out var entry) ||
+            if (!_entries.TryGetValue(clip, out var clipEntries))
+            {
+                clipEntries = new Dictionary<int, Entry>();
+                _entries.Add(clip, clipEntries);
+            }
+
+            if (!clipEntries.TryGetValue(frame, out var entry) ||
                 entry.Texture == null ||
-                entry.DirtyCount != dirtyCount)
+                (refreshWhenDirty && entry.DirtyCount != dirtyCount))
             {
                 Destroy(entry.Texture);
                 Texture2D texture;
@@ -39,7 +68,8 @@ namespace Ee4v.FaceExpression
                         avatar,
                         clip,
                         Array.Empty<string>(),
-                        rendererPaths);
+                        rendererPaths,
+                        frame / frameRate);
                     texture = preview.RenderThumbnail(
                         channels,
                         160,
@@ -56,7 +86,7 @@ namespace Ee4v.FaceExpression
                 }
 
                 entry = new Entry(texture, dirtyCount);
-                _entries[clip] = entry;
+                clipEntries[frame] = entry;
             }
 
             if (entry.Texture == null)
@@ -74,12 +104,30 @@ namespace Ee4v.FaceExpression
 
         internal void Clear()
         {
-            foreach (var entry in _entries.Values)
+            foreach (var clipEntries in _entries.Values)
+            {
+                foreach (var entry in clipEntries.Values)
+                {
+                    Destroy(entry.Texture);
+                }
+            }
+
+            _entries.Clear();
+        }
+
+        internal void Invalidate(AnimationClip clip)
+        {
+            if (clip == null || !_entries.TryGetValue(clip, out var clipEntries))
+            {
+                return;
+            }
+
+            foreach (var entry in clipEntries.Values)
             {
                 Destroy(entry.Texture);
             }
 
-            _entries.Clear();
+            _entries.Remove(clip);
         }
 
         private static void Destroy(Texture2D texture)

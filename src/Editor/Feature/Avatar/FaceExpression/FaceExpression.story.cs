@@ -250,9 +250,36 @@ namespace Ee4v.FaceExpression
                     Library = "Expression Library",
                     ClipOnly = "In clip only",
                     ClipOnlyTooltip = "Show only BlendShapes stored in the clip",
-                    NoBlendShapes = "No BlendShapes were found."
+                    NoBlendShapes = "No BlendShapes were found.",
+                    Play = "Play the expression animation",
+                    Pause = "Pause playback",
+                    Loop = "Loop",
+                    Sequence = "Expression sequence",
+                    Pose = "Pose {0}",
+                    AddPose = "+ Pose",
+                    AddPoseTooltip = "Duplicate the selected pose after it",
+                    AddPoseUnavailable = "Edit a BlendShape before adding another pose",
+                    InsertPose = "+",
+                    InsertPoseTooltip = "Insert a pose here",
+                    MovePoseEarlier = "Move this pose earlier",
+                    MovePoseLater = "Move this pose later",
+                    RenamePose = "Rename pose...",
+                    ResetPoseName = "Reset pose name",
+                    AddClip = "Source clip",
+                    AddClipTooltip = "Assign an existing clip to this read-only pose",
+                    RemovePose = "Remove this pose",
+                    Transition = "Transition",
+                    TimelineTooltip = "Scrub the expression preview"
                 },
-                rect => EditorGUI.DrawRect(rect, new Color(0.1f, 0.1f, 0.1f, 1f)));
+                rect => EditorGUI.DrawRect(
+                    rect,
+                    new Color(0.1f, 0.1f, 0.1f, 1f)),
+                (_, time, rect) => EditorGUI.DrawRect(
+                    rect,
+                    Color.Lerp(
+                        new Color(0.18f, 0.28f, 0.42f, 1f),
+                        new Color(0.42f, 0.22f, 0.3f, 1f),
+                        Mathf.Clamp01(time))));
             var smile = new AnimationClip { name = "Smile" };
             var blink = new AnimationClip { name = "Blink" };
             view.SetLibrary(
@@ -281,6 +308,19 @@ namespace Ee4v.FaceExpression
                 "Eye",
                 CreateStoryRule(),
                 true);
+            view.SetClip(smile);
+            view.SetAnimationState(
+                0.5f,
+                1f,
+                true,
+                false,
+                new[] { 0f, 0.5f, 1f },
+                new AnimationClip[] { null, blink, null },
+                new[] { "Start", "Blink", "Smile" },
+                1,
+                true,
+                "Play the expression animation",
+                "Pause playback");
             var surface = new VisualElement();
             surface.style.width = 920f;
             surface.style.height = 640f;

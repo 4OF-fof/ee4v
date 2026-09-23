@@ -709,6 +709,9 @@ namespace Ee4v.FaceExpression
                 StringComparer.Ordinal);
             var animateBlink = assignment.EnableBlink && blinkKeys.Count > 0;
             var blinkSchedule = animateBlink ? CreateBlinkSchedule() : null;
+            var sourceLooping = assignment.Clip != null &&
+                                AnimationUtility.GetAnimationClipSettings(
+                                    assignment.Clip).loopTime;
             foreach (var binding in bindings)
             {
                 var key = BindingKey(binding);
@@ -725,17 +728,24 @@ namespace Ee4v.FaceExpression
                 if (animateBlink && blinkKeys.Contains(key))
                 {
                     generatedCurve = CreateBlinkCurve(
+                        curve,
                         curve == null ? 0f : Mathf.Clamp(value, 0f, 100f),
                         100f,
                         blinkSchedule);
                 }
                 else if (animateBlink && curve != null && eyeKeys.Contains(key))
                 {
-                    generatedCurve = CreateBlinkCurve(value, 0f, blinkSchedule);
+                    generatedCurve = CreateBlinkCurve(
+                        curve,
+                        value,
+                        0f,
+                        blinkSchedule);
                 }
                 else
                 {
-                    generatedCurve = new AnimationCurve(new Keyframe(0f, value));
+                    generatedCurve = curve == null
+                        ? new AnimationCurve(new Keyframe(0f, value))
+                        : CopyCurve(curve);
                 }
 
                 AnimationUtility.SetEditorCurve(
@@ -745,7 +755,7 @@ namespace Ee4v.FaceExpression
             }
 
             var settings = AnimationUtility.GetAnimationClipSettings(generated);
-            settings.loopTime = animateBlink;
+            settings.loopTime = animateBlink || sourceLooping;
             AnimationUtility.SetAnimationClipSettings(generated, settings);
             generated.frameRate = 60f;
             EditorUtility.SetDirty(generated);
@@ -785,28 +795,38 @@ namespace Ee4v.FaceExpression
         }
 
         private static AnimationCurve CreateBlinkCurve(
+            AnimationCurve source,
             float openValue,
             float closedValue,
             BlinkSchedule schedule)
         {
-            var keys = new List<Keyframe>
-            {
-                new Keyframe(0f, openValue)
-            };
+            var baseCurve = source == null
+                ? new AnimationCurve(new Keyframe(0f, openValue))
+                : CopyCurve(source);
+            var keys = source == null || IsConstantCurve(source)
+                ? new List<Keyframe>()
+                : source.keys.ToList();
+            SetKey(keys, 0f, baseCurve.Evaluate(0f));
             foreach (var closeStart in schedule.CloseStarts)
             {
                 var closedStart = closeStart + BlinkTransitionSeconds;
                 var openStart = closedStart + BlinkClosedSeconds;
-                keys.Add(new Keyframe(closeStart, openValue));
-                keys.Add(new Keyframe(closedStart, closedValue));
-                keys.Add(new Keyframe(openStart, closedValue));
-                keys.Add(new Keyframe(
+                SetKey(keys, closeStart, baseCurve.Evaluate(closeStart));
+                SetKey(keys, closedStart, closedValue);
+                SetKey(keys, openStart, closedValue);
+                SetKey(
+                    keys,
                     openStart + BlinkTransitionSeconds,
-                    openValue));
+                    baseCurve.Evaluate(openStart + BlinkTransitionSeconds));
             }
 
-            keys.Add(new Keyframe(schedule.Duration, openValue));
-            var curve = new AnimationCurve(keys.ToArray());
+            SetKey(keys, schedule.Duration, baseCurve.Evaluate(schedule.Duration));
+            var curve = new AnimationCurve(
+                keys.OrderBy(key => key.time).ToArray())
+            {
+                preWrapMode = baseCurve.preWrapMode,
+                postWrapMode = baseCurve.postWrapMode
+            };
             for (var index = 0; index < curve.length; index++)
             {
                 AnimationUtility.SetKeyLeftTangentMode(
@@ -820,6 +840,47 @@ namespace Ee4v.FaceExpression
             }
 
             return curve;
+        }
+
+        private static bool IsConstantCurve(AnimationCurve curve)
+        {
+            if (curve == null || curve.length < 2)
+            {
+                return true;
+            }
+
+            var value = curve.keys[0].value;
+            return curve.keys.All(key => Mathf.Approximately(key.value, value));
+        }
+
+        private static AnimationCurve CopyCurve(AnimationCurve source)
+        {
+            return new AnimationCurve(source.keys)
+            {
+                preWrapMode = source.preWrapMode,
+                postWrapMode = source.postWrapMode
+            };
+        }
+
+        private static void SetKey(
+            IList<Keyframe> keys,
+            float time,
+            float value)
+        {
+            for (var index = 0; index < keys.Count; index++)
+            {
+                if (!Mathf.Approximately(keys[index].time, time))
+                {
+                    continue;
+                }
+
+                var key = keys[index];
+                key.value = value;
+                keys[index] = key;
+                return;
+            }
+
+            keys.Add(new Keyframe(time, value));
         }
 
         private sealed class BlinkSchedule
@@ -977,7 +1038,7 @@ namespace Ee4v.FaceExpression
                     binding,
                     AnimationCurve.Constant(
                         0f,
-                        1f / generated.frameRate,
+                        Mathf.Max(1f / generated.frameRate, source.length),
                         GetDefaultValue(avatar, binding)));
             }
 

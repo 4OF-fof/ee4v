@@ -385,17 +385,6 @@ namespace Ee4v.FaceExpression
                 }
 
                 var curve = AnimationUtility.GetEditorCurve(clip, binding);
-                if (curve == null || curve.length != 1 ||
-                    !Mathf.Approximately(curve.keys[0].time, 0f))
-                {
-                    findings.Add(Finding(
-                        "warning",
-                        "not_single_frame",
-                        "Face expression curves should contain one key at time 0.",
-                        binding.path,
-                        shapeName));
-                }
-
                 if (curve != null && curve.keys.Any(key => key.value < 0f || key.value > 100f))
                 {
                     findings.Add(Finding(

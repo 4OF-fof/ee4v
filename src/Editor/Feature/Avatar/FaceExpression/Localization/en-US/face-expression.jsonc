@@ -72,6 +72,27 @@
     "clipOnly": "In clip only",
     "clipOnlyTooltip": "Show only BlendShapes stored in the expression clip"
   },
+  "animation": {
+    "play": "Play the expression animation",
+    "pause": "Pause playback",
+    "loop": "Loop",
+    "sequence": "Expression sequence",
+    "pose": "Pose {0}",
+    "addPose": "+ Pose",
+    "addPoseTooltip": "Duplicate the selected expression and add it immediately after.",
+    "addPoseUnavailable": "Edit a BlendShape to create the first pose before adding another.",
+    "insertPose": "+",
+    "insertPoseTooltip": "Duplicate the expression on the left and insert a pose here.",
+    "movePoseEarlier": "Move this pose one position earlier",
+    "movePoseLater": "Move this pose one position later",
+    "renamePose": "Rename pose...",
+    "resetPoseName": "Reset pose name",
+    "addClip": "Source clip",
+    "addClipTooltip": "Assign an existing expression clip to this pose. BlendShapes cannot be edited while a source is assigned.",
+    "removePose": "Remove this pose",
+    "transition": "Transition",
+    "timelineTooltip": "Preview or scrub the expression sequence. Scrubbing never creates a pose."
+  },
   "assignments": {
     "leftHand": "Left hand",
     "rightHand": "Right hand",
@@ -127,7 +148,6 @@
   "validation": {
     "non_blendshape_curve": "The clip contains a curve outside the face-expression editor scope.",
     "binding_not_found": "The target Renderer or BlendShape does not exist on the avatar.",
-    "not_single_frame": "A curve is not a single keyframe at time 0.",
     "value_out_of_range": "The clip contains a BlendShape value outside 0-100.",
     "object_reference_curves": "The clip contains an Object Reference Curve.",
     "animation_events": "The clip contains an Animation Event."

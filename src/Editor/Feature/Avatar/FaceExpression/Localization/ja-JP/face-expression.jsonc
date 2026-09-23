@@ -72,6 +72,27 @@
     "clipOnly": "クリップ内のみ",
     "clipOnlyTooltip": "表情クリップに含まれるBlendShapeだけを表示します"
   },
+  "animation": {
+    "play": "表情アニメーションを再生",
+    "pause": "再生を一時停止",
+    "loop": "ループ",
+    "sequence": "表情シーケンス",
+    "pose": "ポーズ {0}",
+    "addPose": "+ ポーズ",
+    "addPoseTooltip": "選択中の表情を複製して、その直後へポーズを追加します。",
+    "addPoseUnavailable": "先にBlendShapeを編集してポーズを作成してください。",
+    "insertPose": "+",
+    "insertPoseTooltip": "左側の表情を複製して、この位置へポーズを挿入します。",
+    "movePoseEarlier": "このポーズを1つ前へ移動",
+    "movePoseLater": "このポーズを1つ後ろへ移動",
+    "renamePose": "ポーズ名を変更…",
+    "resetPoseName": "ポーズ名を既定に戻す",
+    "addClip": "参照Clip",
+    "addClipTooltip": "既存の表情Clipをこのポーズへ割り当てます。割り当て中のポーズはBlendShapeを編集できません。",
+    "removePose": "このポーズを削除",
+    "transition": "遷移",
+    "timelineTooltip": "表情シーケンスの再生位置を確認または移動します。ここを動かしてもポーズは追加されません。"
+  },
   "assignments": {
     "leftHand": "左手",
     "rightHand": "右手",
@@ -127,7 +148,6 @@
   "validation": {
     "non_blendshape_curve": "表情編集の対象外のカーブが含まれています。",
     "binding_not_found": "対象のRendererまたはBlendShapeがアバターにありません。",
-    "not_single_frame": "カーブが0秒の単一キーフレームではありません。",
     "value_out_of_range": "0～100の範囲外のBlendShape値が含まれています。",
     "object_reference_curves": "Object Reference Curveが含まれています。",
     "animation_events": "Animation Eventが含まれています。"
