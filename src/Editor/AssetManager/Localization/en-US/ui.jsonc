@@ -13,8 +13,7 @@
     "category": {
       "appearance": "Appearance",
       "expressionAnimation": "Expressions & animation",
-      "physBone": "PhysBone",
-      "todo": "Coming next"
+      "physBone": "PhysBone"
     },
     "selection": {
       "title": "Choose a derived asset",
@@ -42,7 +41,6 @@
     "preview": {
       "appearanceTitle": "Preview",
       "sizeTitle": "Preview",
-      "todoTitle": "Preview",
       "sideLeft": "Left",
       "sideRight": "Right",
       "front": "Front",
@@ -111,19 +109,6 @@
       "emptyTitle": "No Materials found",
       "emptyPartDescription": "No Materials were classified under this part. Check Whole body.",
       "emptyDescription": "Check that the selected derived asset has Materials assigned."
-    },
-    "todo": {
-      "title": "Missing workflow helpers",
-      "description": "Helpers still missing from the character-creator workflow are kept here as TODOs.",
-      "badge": "TODO",
-      "materialPresetTitle": "Appearance presets and thumbnails",
-      "materialPresetDescription": "Curate important Shader properties and choose colors and Textures from visual presets.",
-      "expressionPresetTitle": "Expression presets and linked sides",
-      "expressionPresetDescription": "Add smile and troubled presets, linked left/right editing, and coordinated BlendShapes.",
-      "applyTitle": "Avatar apply and validation",
-      "applyDescription": "Validate generated dependencies, missing references, and VRChat/Modular Avatar configuration before applying them together.",
-      "sessionTitle": "Save and resume workspaces",
-      "sessionDescription": "Persist the selected derived asset, expression draft, and current category as a workspace."
     }
   },
   "toolbar": {

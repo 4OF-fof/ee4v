@@ -376,14 +376,6 @@
     padding: var(--ee4v-space-2xl);
 }
 
-.ee4v-modification-workflow__controls-title {
-    margin-bottom: var(--ee4v-space-xs);
-}
-
-.ee4v-modification-workflow__controls-description {
-    margin-bottom: var(--ee4v-space-2xl);
-}
-
 .ee4v-modification-workflow__feedback {
     margin-bottom: var(--ee4v-space-xl);
 }
@@ -684,10 +676,4 @@
 .ee4v-modification-workflow__empty-state {
     margin-top: var(--ee4v-space-lg);
     margin-bottom: var(--ee4v-space-xl);
-}
-
-.ee4v-modification-workflow__todo-card {
-    margin-bottom: var(--ee4v-space-lg);
-    border-color: var(--ee4v-color-warning);
-    background-color: var(--ee4v-color-warning-surface-soft);
 }

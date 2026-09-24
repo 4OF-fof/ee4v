@@ -13,8 +13,7 @@
     "category": {
       "appearance": "見た目",
       "expressionAnimation": "表情・アニメーション",
-      "physBone": "PhysBone",
-      "todo": "準備中"
+      "physBone": "PhysBone"
     },
     "selection": {
       "title": "派生アセットを選ぶ",
@@ -42,7 +41,6 @@
     "preview": {
       "appearanceTitle": "プレビュー",
       "sizeTitle": "プレビュー",
-      "todoTitle": "プレビュー",
       "sideLeft": "左",
       "sideRight": "右",
       "front": "正面",
@@ -111,19 +109,6 @@
       "emptyTitle": "Materialが見つかりません",
       "emptyPartDescription": "この部位に分類されたMaterialはありません。「全身」も確認してください。",
       "emptyDescription": "選択した派生アセットにMaterialが設定されているか確認してください。"
-    },
-    "todo": {
-      "title": "不足しているワークフロー補助",
-      "description": "キャラクリとして不足する補助はTODOとして残しています。",
-      "badge": "TODO",
-      "materialPresetTitle": "見た目プリセットとサムネイル",
-      "materialPresetDescription": "Shaderごとの重要項目を整理し、色・Textureを視覚的なプリセットから選べるようにする。",
-      "expressionPresetTitle": "表情プリセットと左右連動",
-      "expressionPresetDescription": "笑顔・困り顔などのプリセット、左右同時調整、複数BlendShapeの連動を追加する。",
-      "applyTitle": "Avatarへの適用と検証",
-      "applyDescription": "生成物の依存関係、Missing参照、VRChat/Modular Avatar設定を確認して一括適用する。",
-      "sessionTitle": "作業状態の保存と再開",
-      "sessionDescription": "選択した派生アセット、表情の下書き、表示中のカテゴリを作業状態として保存する。"
     }
   },
   "toolbar": {

@@ -67,8 +67,7 @@ namespace Ee4v.AssetManager.UI
         {
             Appearance,
             ExpressionAnimation,
-            PhysBone,
-            Todo
+            PhysBone
         }
 
         private enum AppearanceSection
@@ -841,11 +840,6 @@ namespace Ee4v.AssetManager.UI
                 WorkflowCategory.PhysBone,
                 "workflow.category.physBone",
                 "cube.png");
-            AddCategoryButton(
-                rail,
-                WorkflowCategory.Todo,
-                "workflow.category.todo",
-                "document.png");
             return rail;
         }
 
@@ -972,19 +966,11 @@ namespace Ee4v.AssetManager.UI
             }
 
             _controlsHost.Clear();
-            if (category == WorkflowCategory.Appearance)
-            {
-                _controlsHost.Add(BuildAppearanceControls());
-                SetPreviewTitle(
-                    _appearanceSection == AppearanceSection.Material
-                        ? "workflow.preview.appearanceTitle"
-                        : "workflow.preview.sizeTitle");
-            }
-            else
-            {
-                _controlsHost.Add(BuildTodoControls());
-                SetPreviewTitle("workflow.preview.todoTitle");
-            }
+            _controlsHost.Add(BuildAppearanceControls());
+            SetPreviewTitle(
+                _appearanceSection == AppearanceSection.Material
+                    ? "workflow.preview.appearanceTitle"
+                    : "workflow.preview.sizeTitle");
         }
 
         private VisualElement BuildAppearanceControls()
@@ -2874,46 +2860,6 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private VisualElement BuildTodoControls()
-        {
-            var panel = CreateControlsPanel(
-                "workflow.todo.title",
-                "workflow.todo.description");
-            panel.Add(CreateTodoCard(
-                "workflow.todo.materialPresetTitle",
-                "workflow.todo.materialPresetDescription"));
-            panel.Add(CreateTodoCard(
-                "workflow.todo.expressionPresetTitle",
-                "workflow.todo.expressionPresetDescription"));
-            panel.Add(CreateTodoCard(
-                "workflow.todo.applyTitle",
-                "workflow.todo.applyDescription"));
-            panel.Add(CreateTodoCard(
-                "workflow.todo.sessionTitle",
-                "workflow.todo.sessionDescription"));
-            return panel;
-        }
-
-        private VisualElement CreateControlsPanel(
-            string titleKey,
-            string descriptionKey)
-        {
-            var panel = new VisualElement();
-            panel.AddToClassList(
-                "ee4v-modification-workflow__controls-content");
-            panel.Add(UiTextFactory.Create(
-                I18N.Get(titleKey),
-                UiClassNames.SectionTitle,
-                "ee4v-modification-workflow__controls-title"));
-            var description = UiTextFactory.Create(
-                I18N.Get(descriptionKey),
-                UiClassNames.SecondaryText,
-                "ee4v-modification-workflow__controls-description");
-            description.SetWhiteSpace(WhiteSpace.Normal);
-            panel.Add(description);
-            return panel;
-        }
-
         private void AddFeedback(VisualElement panel)
         {
             if (string.IsNullOrWhiteSpace(_feedback))
@@ -2945,19 +2891,6 @@ namespace Ee4v.AssetManager.UI
             description.SetWhiteSpace(WhiteSpace.Normal);
             empty.Add(description);
             return empty;
-        }
-
-        private VisualElement CreateTodoCard(
-            string titleKey,
-            string descriptionKey)
-        {
-            var card = new InfoCard(new InfoCardState(
-                I18N.Get(titleKey),
-                I18N.Get(descriptionKey),
-                I18N.Get("workflow.todo.badge")));
-            card.AddToClassList(
-                "ee4v-modification-workflow__todo-card");
-            return card;
         }
 
         private void StartDerivedAssetCreation()
