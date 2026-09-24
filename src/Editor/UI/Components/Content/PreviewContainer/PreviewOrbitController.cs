@@ -13,8 +13,21 @@ namespace Ee4v.UI
         private float _yaw;
         private float _pitch;
         private Vector3 _target;
+        private Vector3 _transitionStartTarget;
+        private Vector3 _transitionEndTarget;
+        private float _transitionStartDistance;
+        private float _transitionEndDistance;
+        private float _transitionStartYaw;
+        private float _transitionEndYaw;
+        private float _transitionStartPitch;
+        private float _transitionEndPitch;
+        private double _transitionStartTime;
+        private float _transitionDuration;
+        private bool _isTransitioning;
         private int _dragButton = -1;
         private int _hotControlId;
+
+        public bool IsTransitioning => _isTransitioning;
 
         public PreviewOrbitController(
             int controlHint,
@@ -26,15 +39,80 @@ namespace Ee4v.UI
 
         public void Reset(Vector3 target, float distance)
         {
+            SetView(target, distance, 0f, 0f);
+        }
+
+        public void SetView(
+            Vector3 target,
+            float distance,
+            float yaw,
+            float pitch)
+        {
             CancelInteraction();
+            CancelTransition();
             _target = target;
             _distance = Mathf.Clamp(
                 distance,
                 MinimumDistance,
                 MaximumDistance);
-            _yaw = 0f;
-            _pitch = 0f;
+            _yaw = yaw;
+            _pitch = Mathf.Clamp(pitch, -80f, 80f);
             _repaint?.Invoke();
+        }
+
+        public void AnimateTo(
+            Vector3 target,
+            float distance,
+            float yaw,
+            float pitch,
+            double startTime,
+            float duration)
+        {
+            UpdateTransition(startTime);
+            CancelInteraction();
+            _transitionStartTarget = _target;
+            _transitionEndTarget = target;
+            _transitionStartDistance = _distance;
+            _transitionEndDistance = Mathf.Clamp(
+                distance, MinimumDistance, MaximumDistance);
+            _transitionStartYaw = _yaw;
+            _transitionEndYaw = _yaw + Mathf.DeltaAngle(_yaw, yaw);
+            _transitionStartPitch = _pitch;
+            _transitionEndPitch = Mathf.Clamp(pitch, -80f, 80f);
+            _transitionStartTime = startTime;
+            _transitionDuration = Mathf.Max(0.01f, duration);
+            _isTransitioning = true;
+            _repaint?.Invoke();
+        }
+
+        public bool UpdateTransition(double time)
+        {
+            if (!_isTransitioning)
+            {
+                return false;
+            }
+
+            var progress = Mathf.Clamp01((float)
+                ((time - _transitionStartTime) / _transitionDuration));
+            var eased = progress * progress * (3f - 2f * progress);
+            _target = Vector3.Lerp(
+                _transitionStartTarget, _transitionEndTarget, eased);
+            _distance = Mathf.Lerp(
+                _transitionStartDistance, _transitionEndDistance, eased);
+            _yaw = Mathf.Lerp(
+                _transitionStartYaw, _transitionEndYaw, eased);
+            _pitch = Mathf.Lerp(
+                _transitionStartPitch, _transitionEndPitch, eased);
+            if (progress >= 1f)
+            {
+                _isTransitioning = false;
+            }
+            return true;
+        }
+
+        public void CancelTransition()
+        {
+            _isTransitioning = false;
         }
 
         public void CancelInteraction()
@@ -72,6 +150,7 @@ namespace Ee4v.UI
                 rect.Contains(current.mousePosition) &&
                 (current.button == 1 || current.button == 2))
             {
+                CancelTransition();
                 GUIUtility.hotControl = controlId;
                 _dragButton = current.button;
                 _hotControlId = controlId;
@@ -121,6 +200,7 @@ namespace Ee4v.UI
             if (current.type == EventType.ScrollWheel &&
                 rect.Contains(current.mousePosition))
             {
+                CancelTransition();
                 _distance = Mathf.Clamp(
                     _distance * (1f + current.delta.y * 0.05f),
                     MinimumDistance,

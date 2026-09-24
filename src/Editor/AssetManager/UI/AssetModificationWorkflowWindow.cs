@@ -12,6 +12,19 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI
 {
+    internal enum BodyPartCategory
+    {
+        Head,
+        Chest,
+        Waist,
+        Shoulders,
+        Arms,
+        Hands,
+        Legs,
+        Feet,
+        Other
+    }
+
     internal sealed class AssetModificationWorkflowWindow : EditorWindow
     {
         private const float MinimumBodyScale = 0.5f;
@@ -64,19 +77,6 @@ namespace Ee4v.AssetManager.UI
             Size
         }
 
-        private enum BodyPartCategory
-        {
-            Head,
-            Chest,
-            Waist,
-            Shoulders,
-            Arms,
-            Hands,
-            Legs,
-            Feet,
-            Other
-        }
-
         private enum PendingBodySizeChange
         {
             None,
@@ -95,7 +95,13 @@ namespace Ee4v.AssetManager.UI
         {
             internal string RendererPath { get; set; }
             internal int SlotIndex { get; set; }
-            internal BodyPartCategory Category { get; set; }
+            internal IReadOnlyCollection<BodyPartCategory> Categories { get; set; }
+        }
+
+        private sealed class MaterialGeometryCacheEntry
+        {
+            internal Mesh Mesh { get; set; }
+            internal IReadOnlyCollection<BodyPartCategory>[] Slots { get; set; }
         }
 
         private sealed class BodyScaleDefinition
@@ -343,6 +349,10 @@ namespace Ee4v.AssetManager.UI
                 new Dictionary<Material, UiButton>();
         private readonly HashSet<Material> _hiddenMaterials =
             new HashSet<Material>();
+        private readonly Dictionary<SkinnedMeshRenderer,
+            MaterialGeometryCacheEntry> _materialGeometryCache =
+                new Dictionary<SkinnedMeshRenderer,
+                    MaterialGeometryCacheEntry>();
         private IAssetManager _manager;
         private DerivedAssetInfo _workingAsset;
         private GameObject _workingObject;
@@ -465,6 +475,7 @@ namespace Ee4v.AssetManager.UI
         {
             ConfigureWindow();
             DisposeEditors();
+            _materialGeometryCache.Clear();
             var root = rootVisualElement;
             root.Clear();
             AssetManagerWindowSession.PrepareWorkflowRoot(root);
@@ -972,8 +983,7 @@ namespace Ee4v.AssetManager.UI
             foreach (var entry in allMaterials)
             {
                 var usages = entry.Usages.Where(usage =>
-                    !_selectedBodyPart.HasValue ||
-                    usage.Category == _selectedBodyPart.Value).ToArray();
+                    usage.Categories.Any(MatchesSelectedBodyPart)).ToArray();
                 if (usages.Length == 0)
                 {
                     continue;
@@ -1077,6 +1087,11 @@ namespace Ee4v.AssetManager.UI
             foreach (BodyPartCategory part in Enum.GetValues(
                          typeof(BodyPartCategory)))
             {
+                if (part == BodyPartCategory.Arms ||
+                    part == BodyPartCategory.Other)
+                {
+                    continue;
+                }
                 AddBodyPartButton(
                     selector,
                     part,
@@ -1096,12 +1111,14 @@ namespace Ee4v.AssetManager.UI
                 {
                     if (_selectedBodyPart == part)
                     {
+                        _scenePreview?.FocusBodyPart(part);
                         return;
                     }
                     EndBodyScaleDrag();
                     _selectedBodyPart = part;
                     _selectedMaterial = null;
                     ShowCategory(WorkflowCategory.Appearance, false);
+                    _scenePreview?.FocusBodyPart(part);
                 },
                 variant: UiButtonVariant.Ghost);
             button.AddToClassList(
@@ -1160,8 +1177,8 @@ namespace Ee4v.AssetManager.UI
             }
 
             var bodyShapes = GetBodyBlendShapes()
-                .Where(definition => !_selectedBodyPart.HasValue ||
-                    definition.Category == _selectedBodyPart.Value)
+                .Where(definition =>
+                    MatchesSelectedBodyPart(definition.Category))
                 .ToArray();
             if (bodyShapes.Length == 0)
             {
@@ -1179,16 +1196,22 @@ namespace Ee4v.AssetManager.UI
                 foreach (BodyPartCategory category in Enum.GetValues(
                              typeof(BodyPartCategory)))
                 {
+                    if (category == BodyPartCategory.Arms)
+                    {
+                        continue;
+                    }
                     var categoryShapes = bodyShapes
                         .Where(definition =>
-                            definition.Category == category)
+                            MatchesBodyPartGroup(
+                                category, definition.Category))
                         .ToArray();
                     if (categoryShapes.Length == 0)
                     {
                         continue;
                     }
 
-                    if (!_selectedBodyPart.HasValue)
+                    if (!_selectedBodyPart.HasValue &&
+                        category != BodyPartCategory.Other)
                     {
                         var categoryLabel = UiTextFactory.Create(
                             I18N.Get(GetBodyPartCategoryLocalizationKey(
@@ -1214,7 +1237,8 @@ namespace Ee4v.AssetManager.UI
             {
                 var definition = BodyScaleDefinitions[index];
                 if (_selectedBodyPart.HasValue &&
-                    (int)_selectedBodyPart.Value != index - 1)
+                    !MatchesSelectedBodyPart(
+                        (BodyPartCategory)(index - 1)))
                 {
                     continue;
                 }
@@ -1258,6 +1282,21 @@ namespace Ee4v.AssetManager.UI
                 }
             }
             return content;
+        }
+
+        private bool MatchesSelectedBodyPart(BodyPartCategory category)
+        {
+            return !_selectedBodyPart.HasValue ||
+                MatchesBodyPartGroup(_selectedBodyPart.Value, category);
+        }
+
+        private static bool MatchesBodyPartGroup(
+            BodyPartCategory selected,
+            BodyPartCategory category)
+        {
+            return selected == category ||
+                selected == BodyPartCategory.Shoulders &&
+                category == BodyPartCategory.Arms;
         }
 
         private IReadOnlyList<string> GetTransformPaths(
@@ -2949,6 +2988,8 @@ namespace Ee4v.AssetManager.UI
 
             var entries = new List<AvatarMaterialEntry>();
             var byMaterial = new Dictionary<Material, AvatarMaterialEntry>();
+            var boneCategories = GetHumanoidMaterialBoneCategories(
+                FindHumanoidAnimator());
             foreach (var renderer in _workingObject
                          .GetComponentsInChildren<Renderer>(true))
             {
@@ -2983,10 +3024,12 @@ namespace Ee4v.AssetManager.UI
                     {
                         RendererPath = rendererPath,
                         SlotIndex = index,
-                        Category = ClassifyMaterialUsage(
+                        Categories = ClassifyMaterialUsage(
                             renderer,
                             material,
-                            rendererPath)
+                            rendererPath,
+                            index,
+                            boneCategories)
                     });
                 }
             }
@@ -2994,27 +3037,259 @@ namespace Ee4v.AssetManager.UI
             return entries;
         }
 
-        private static BodyPartCategory ClassifyMaterialUsage(
+        private IReadOnlyCollection<BodyPartCategory>
+            ClassifyMaterialUsage(
             Renderer renderer,
             Material material,
-            string rendererPath)
+            string rendererPath,
+            int slotIndex,
+            IReadOnlyDictionary<Transform, BodyPartCategory> boneCategories)
         {
+            if (renderer is SkinnedMeshRenderer skinned &&
+                TryGetCachedSkinnedMaterialCategories(
+                    skinned,
+                    slotIndex,
+                    boneCategories,
+                    out var skinnedCategories))
+            {
+                return skinnedCategories;
+            }
+
             var materialPart = ClassifyBodyPart(
                 material?.name,
                 string.Empty);
             if (materialPart != BodyPartCategory.Other)
             {
-                return materialPart;
+                return new[] { materialPart };
             }
 
             var rendererPart = ClassifyBodyPart(
                 renderer?.name,
-                renderer is SkinnedMeshRenderer skinned
-                    ? skinned.sharedMesh?.name
+                renderer is SkinnedMeshRenderer meshRenderer
+                    ? meshRenderer.sharedMesh?.name
                     : string.Empty);
-            return rendererPart != BodyPartCategory.Other
+            var category = rendererPart != BodyPartCategory.Other
                 ? rendererPart
                 : ClassifyBodyPart(rendererPath, string.Empty);
+            return new[] { category };
+        }
+
+        private bool TryGetCachedSkinnedMaterialCategories(
+            SkinnedMeshRenderer renderer,
+            int slotIndex,
+            IReadOnlyDictionary<Transform, BodyPartCategory> boneCategories,
+            out IReadOnlyCollection<BodyPartCategory> categories)
+        {
+            categories = null;
+            var mesh = renderer.sharedMesh;
+            if (mesh == null || slotIndex < 0 ||
+                slotIndex >= mesh.subMeshCount)
+            {
+                return false;
+            }
+
+            if (!_materialGeometryCache.TryGetValue(
+                    renderer, out var cached) ||
+                cached.Mesh != mesh ||
+                cached.Slots.Length != mesh.subMeshCount)
+            {
+                cached = new MaterialGeometryCacheEntry
+                {
+                    Mesh = mesh,
+                    Slots = new IReadOnlyCollection<BodyPartCategory>[
+                        mesh.subMeshCount]
+                };
+                _materialGeometryCache[renderer] = cached;
+            }
+
+            categories = cached.Slots[slotIndex];
+            if (categories != null)
+            {
+                return categories.Count > 0;
+            }
+
+            if (TryGetSkinnedMaterialCategories(
+                    renderer,
+                    slotIndex,
+                    boneCategories,
+                    out categories))
+            {
+                cached.Slots[slotIndex] = categories;
+                return true;
+            }
+
+            cached.Slots[slotIndex] = Array.Empty<BodyPartCategory>();
+            return false;
+        }
+
+        private static bool TryGetSkinnedMaterialCategories(
+            SkinnedMeshRenderer renderer,
+            int slotIndex,
+            IReadOnlyDictionary<Transform, BodyPartCategory> humanoidCategories,
+            out IReadOnlyCollection<BodyPartCategory> categories)
+        {
+            categories = null;
+            var mesh = renderer.sharedMesh;
+            var bones = renderer.bones;
+            if (mesh == null || bones == null || bones.Length == 0 ||
+                slotIndex < 0 || slotIndex >= mesh.subMeshCount)
+            {
+                return false;
+            }
+
+            BoneWeight[] weights;
+            int[] indices;
+            try
+            {
+                weights = mesh.boneWeights;
+                indices = mesh.GetIndices(slotIndex);
+            }
+            catch (UnityException)
+            {
+                return false;
+            }
+            if (weights == null || weights.Length != mesh.vertexCount ||
+                indices == null || indices.Length == 0)
+            {
+                return false;
+            }
+
+            var boneParts = bones.Select(bone =>
+                    GetMaterialBoneCategory(bone, humanoidCategories))
+                .ToArray();
+            var usedVertices = new bool[weights.Length];
+            var counts = new int[Enum.GetValues(typeof(BodyPartCategory)).Length];
+            var classifiedCount = 0;
+            foreach (var vertexIndex in indices)
+            {
+                if (vertexIndex < 0 || vertexIndex >= weights.Length ||
+                    usedVertices[vertexIndex])
+                {
+                    continue;
+                }
+
+                usedVertices[vertexIndex] = true;
+                var weight = weights[vertexIndex];
+                var part = BodyPartCategory.Other;
+                var strongestWeight = 0f;
+                ConsiderBoneWeight(weight.boneIndex0, weight.weight0);
+                ConsiderBoneWeight(weight.boneIndex1, weight.weight1);
+                ConsiderBoneWeight(weight.boneIndex2, weight.weight2);
+                ConsiderBoneWeight(weight.boneIndex3, weight.weight3);
+                if (part == BodyPartCategory.Other)
+                {
+                    continue;
+                }
+
+                counts[(int)part]++;
+                classifiedCount++;
+
+                void ConsiderBoneWeight(int boneIndex, float value)
+                {
+                    if (value <= strongestWeight ||
+                        boneIndex < 0 || boneIndex >= boneParts.Length ||
+                        boneParts[boneIndex] == BodyPartCategory.Other)
+                    {
+                        return;
+                    }
+
+                    strongestWeight = value;
+                    part = boneParts[boneIndex];
+                }
+            }
+
+            if (classifiedCount == 0)
+            {
+                return false;
+            }
+
+            var minimumVertices = Mathf.Max(
+                3,
+                Mathf.CeilToInt(classifiedCount * 0.001f));
+            var result = new List<BodyPartCategory>();
+            foreach (BodyPartCategory part in Enum.GetValues(
+                         typeof(BodyPartCategory)))
+            {
+                if (part != BodyPartCategory.Other &&
+                    counts[(int)part] >= minimumVertices)
+                {
+                    result.Add(part);
+                }
+            }
+
+            if (result.Count == 0)
+            {
+                return false;
+            }
+
+            categories = result;
+            return true;
+        }
+
+        private static BodyPartCategory GetMaterialBoneCategory(
+            Transform bone,
+            IReadOnlyDictionary<Transform, BodyPartCategory> humanoidCategories)
+        {
+            for (var current = bone; current != null;
+                 current = current.parent)
+            {
+                if (humanoidCategories.TryGetValue(
+                        current, out var category))
+                {
+                    return category;
+                }
+
+                category = ClassifyBodyPart(current.name, string.Empty);
+                if (category != BodyPartCategory.Other)
+                {
+                    return category;
+                }
+            }
+
+            return BodyPartCategory.Other;
+        }
+
+        private static IReadOnlyDictionary<Transform, BodyPartCategory>
+            GetHumanoidMaterialBoneCategories(Animator animator)
+        {
+            var categories = new Dictionary<Transform, BodyPartCategory>();
+            if (animator == null)
+            {
+                return categories;
+            }
+
+            Add(HumanBodyBones.Head, BodyPartCategory.Head);
+            Add(HumanBodyBones.Neck, BodyPartCategory.Head);
+            Add(HumanBodyBones.UpperChest, BodyPartCategory.Chest);
+            Add(HumanBodyBones.Chest, BodyPartCategory.Chest);
+            Add(HumanBodyBones.Spine, BodyPartCategory.Waist);
+            Add(HumanBodyBones.Hips, BodyPartCategory.Waist);
+            Add(HumanBodyBones.LeftShoulder, BodyPartCategory.Shoulders);
+            Add(HumanBodyBones.RightShoulder, BodyPartCategory.Shoulders);
+            Add(HumanBodyBones.LeftUpperArm, BodyPartCategory.Arms);
+            Add(HumanBodyBones.RightUpperArm, BodyPartCategory.Arms);
+            Add(HumanBodyBones.LeftLowerArm, BodyPartCategory.Arms);
+            Add(HumanBodyBones.RightLowerArm, BodyPartCategory.Arms);
+            Add(HumanBodyBones.LeftHand, BodyPartCategory.Hands);
+            Add(HumanBodyBones.RightHand, BodyPartCategory.Hands);
+            Add(HumanBodyBones.LeftUpperLeg, BodyPartCategory.Legs);
+            Add(HumanBodyBones.RightUpperLeg, BodyPartCategory.Legs);
+            Add(HumanBodyBones.LeftLowerLeg, BodyPartCategory.Legs);
+            Add(HumanBodyBones.RightLowerLeg, BodyPartCategory.Legs);
+            Add(HumanBodyBones.LeftFoot, BodyPartCategory.Feet);
+            Add(HumanBodyBones.RightFoot, BodyPartCategory.Feet);
+            Add(HumanBodyBones.LeftToes, BodyPartCategory.Feet);
+            Add(HumanBodyBones.RightToes, BodyPartCategory.Feet);
+            return categories;
+
+            void Add(HumanBodyBones bone, BodyPartCategory category)
+            {
+                var transform = animator.GetBoneTransform(bone);
+                if (transform != null)
+                {
+                    categories[transform] = category;
+                }
+            }
         }
 
         private static IconState CreateMaterialIcon(Material material)

@@ -42,7 +42,9 @@
     "preview": {
       "appearanceTitle": "Preview",
       "sizeTitle": "Preview",
-      "todoTitle": "Preview"
+      "todoTitle": "Preview",
+      "sideLeft": "Left",
+      "sideRight": "Right"
     },
     "appearance": {
       "bodyPart": {
@@ -67,7 +69,7 @@
         "head": "Head & neck",
         "chest": "Chest",
         "waist": "Waist & hips",
-        "shoulders": "Shoulders",
+        "shoulders": "Shoulders & arms",
         "arms": "Arms",
         "hands": "Hands",
         "legs": "Legs",
@@ -105,7 +107,7 @@
       "editorUnavailable": "The Material Inspector could not be created.",
       "protected": "This Material is outside the derived asset. It cannot be edited here so the source remains protected.",
       "emptyTitle": "No Materials found",
-      "emptyPartDescription": "No Materials were classified under this part. Check Whole body or Other.",
+      "emptyPartDescription": "No Materials were classified under this part. Check Whole body.",
       "emptyDescription": "Check that the selected derived asset has Materials assigned."
     },
     "todo": {

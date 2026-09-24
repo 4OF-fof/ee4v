@@ -272,11 +272,17 @@ namespace Ee4v.AssetManager.UI
         private static readonly int PreviewControlHash =
             nameof(DerivedAssetPrefabScenePreview).GetHashCode();
         private const float PreviewFitPadding = 1.05f;
+        private const float AppearanceFullBodyDistanceScale = 0.82f;
+        private const float CameraTransitionDuration = 0.45f;
         private const float MinimumPreviewSize = 320f;
         private const float MaximumPreviewSize = 560f;
 
         private readonly ScenePreviewViewport _viewport;
         private readonly PreviewOrbitController _orbit;
+        private readonly IVisualElementScheduledItem _cameraAnimationTask;
+        private readonly VisualElement _sideToggle;
+        private readonly UiButton _leftSideButton;
+        private readonly UiButton _rightSideButton;
         private readonly Dictionary<Transform, Vector3>
             _pendingTransformScales =
                 new Dictionary<Transform, Vector3>();
@@ -316,6 +322,9 @@ namespace Ee4v.AssetManager.UI
         private bool _forceSkinningRecalculation;
         private bool _previewDirty = true;
         private bool _flexibleLayout;
+        private BodyPartCategory? _focusedBodyPart;
+        private bool _shoulderLeftSide = true;
+        private bool _handLeftSide;
 
         internal DerivedAssetPrefabScenePreview()
         {
@@ -332,6 +341,27 @@ namespace Ee4v.AssetManager.UI
             _orbit = new PreviewOrbitController(
                 PreviewControlHash,
                 RequestPreviewRepaint);
+            _cameraAnimationTask = schedule.Execute(
+                AdvanceCameraAnimation).Every(16);
+            _cameraAnimationTask.Pause();
+            _sideToggle = new VisualElement();
+            _sideToggle.AddToClassList(
+                "ee4v-asset-manager__preview-side-toggle");
+            _leftSideButton = new UiButton(
+                I18N.Get("workflow.preview.sideLeft"),
+                () => SelectPreviewSide(true),
+                variant: UiButtonVariant.Ghost);
+            _rightSideButton = new UiButton(
+                I18N.Get("workflow.preview.sideRight"),
+                () => SelectPreviewSide(false),
+                variant: UiButtonVariant.Ghost);
+            _leftSideButton.AddToClassList(
+                "ee4v-asset-manager__preview-side-button");
+            _rightSideButton.AddToClassList(
+                "ee4v-asset-manager__preview-side-button");
+            _sideToggle.Add(_leftSideButton);
+            _sideToggle.Add(_rightSideButton);
+            _viewport.FeatureOverlay.Add(_sideToggle);
             Add(_viewport);
             SetPreviewAvailable(false);
 
@@ -365,6 +395,78 @@ namespace Ee4v.AssetManager.UI
         internal void ReloadPrefab()
         {
             RebuildPreview();
+        }
+
+        internal void FocusBodyPart(BodyPartCategory? part)
+        {
+            _focusedBodyPart = part;
+            RefreshSideToggle();
+            FrameCurrentSelection(true);
+        }
+
+        private bool IsLeftSide(BodyPartCategory part)
+        {
+            switch (part)
+            {
+                case BodyPartCategory.Shoulders:
+                case BodyPartCategory.Arms:
+                    return _shoulderLeftSide;
+                case BodyPartCategory.Hands:
+                    return _handLeftSide;
+                case BodyPartCategory.Feet:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private void SelectPreviewSide(bool leftSide)
+        {
+            if (!_focusedBodyPart.HasValue)
+            {
+                return;
+            }
+
+            var part = _focusedBodyPart.Value;
+            if (part == BodyPartCategory.Shoulders ||
+                part == BodyPartCategory.Arms)
+            {
+                _shoulderLeftSide = leftSide;
+            }
+            else if (part == BodyPartCategory.Hands)
+            {
+                _handLeftSide = leftSide;
+            }
+            else
+            {
+                return;
+            }
+
+            RefreshSideToggle();
+            FrameCurrentSelection(true);
+        }
+
+        private void RefreshSideToggle()
+        {
+            var visible = _instance != null &&
+                (_focusedBodyPart == BodyPartCategory.Shoulders ||
+                 _focusedBodyPart == BodyPartCategory.Arms ||
+                 _focusedBodyPart == BodyPartCategory.Hands);
+            _sideToggle.style.display = visible
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+            if (!visible)
+            {
+                return;
+            }
+
+            var leftSide = IsLeftSide(_focusedBodyPart.Value);
+            _leftSideButton.EnableInClassList(
+                "ee4v-asset-manager__preview-side-button--active",
+                leftSide);
+            _rightSideButton.EnableInClassList(
+                "ee4v-asset-manager__preview-side-button--active",
+                !leftSide);
         }
 
         internal void SetTransformScales(
@@ -489,7 +591,7 @@ namespace Ee4v.AssetManager.UI
                 _bounds = CalculateBounds(_instance);
                 RebuildMaterialTargets();
                 SetPreviewAvailable(true);
-                ResetView();
+                FrameCurrentSelection();
             }
             catch (Exception exception)
             {
@@ -570,7 +672,102 @@ namespace Ee4v.AssetManager.UI
 
         internal void ResetView()
         {
+            _focusedBodyPart = null;
+            RefreshSideToggle();
             if (_instance == null)
+            {
+                return;
+            }
+
+            FrameWholeAvatar(true);
+        }
+
+        private void FrameCurrentSelection(bool animate = false)
+        {
+            if (_instance == null)
+            {
+                return;
+            }
+
+            ApplyPendingUpdates();
+            if (!_focusedBodyPart.HasValue ||
+                _focusedBodyPart.Value == BodyPartCategory.Other)
+            {
+                FrameWholeAvatar(animate);
+                return;
+            }
+
+            var part = _focusedBodyPart.Value;
+            var avatarHeight = part == BodyPartCategory.Head ||
+                part == BodyPartCategory.Legs
+                    ? Mathf.Max(0.2f, _bounds.size.y)
+                    : GetAvatarReferenceHeight();
+            var leftSide = IsLeftSide(part);
+            if (!TryGetBoneFocusBounds(part, avatarHeight, leftSide,
+                    out var focusBounds))
+            {
+                focusBounds = GetEstimatedFocusBounds(
+                    part, avatarHeight, leftSide);
+            }
+
+            if (part == BodyPartCategory.Chest)
+            {
+                focusBounds.center += _instance.transform.up *
+                    avatarHeight * 0.14f;
+            }
+
+            FrameBounds(
+                focusBounds,
+                avatarHeight * GetMinimumHalfView(part),
+                GetViewAngles(part, leftSide),
+                animate,
+                GetDistanceScale(part));
+        }
+
+        private void FrameWholeAvatar(bool animate)
+        {
+            FrameBounds(
+                _bounds,
+                0f,
+                Vector2.zero,
+                animate,
+                _flexibleLayout ? AppearanceFullBodyDistanceScale : 1f);
+        }
+
+        private float GetAvatarReferenceHeight()
+        {
+            var animator = _instance
+                .GetComponentsInChildren<Animator>(true)
+                .FirstOrDefault(candidate => candidate != null &&
+                    candidate.avatar != null &&
+                    candidate.avatar.isHuman && candidate.isHuman);
+            if (animator != null)
+            {
+                var head = animator.GetBoneTransform(HumanBodyBones.Head);
+                var foot = animator.GetBoneTransform(HumanBodyBones.LeftFoot);
+                if (head != null && foot != null)
+                {
+                    var height = Vector3.Dot(
+                        head.position - foot.position,
+                        _instance.transform.up) + 0.18f;
+                    if (height > 0.3f)
+                    {
+                        return height;
+                    }
+                }
+            }
+
+            return Mathf.Max(0.2f, _bounds.size.y);
+        }
+
+        private void FrameBounds(
+            Bounds bounds,
+            float minimumHalfView,
+            Vector2 viewAngles,
+            bool animate,
+            float distanceScale = 1f)
+        {
+            if (_utility == null)
             {
                 return;
             }
@@ -580,14 +777,264 @@ namespace Ee4v.AssetManager.UI
                 ? previewRect.width / previewRect.height
                 : 1f;
             var halfViewSize = Mathf.Max(
-                _bounds.extents.y,
-                _bounds.extents.x / Mathf.Max(0.01f, aspect));
-            var distance = _bounds.extents.z +
+                minimumHalfView,
+                bounds.extents.y,
+                bounds.extents.x / Mathf.Max(0.01f, aspect));
+            var distance = bounds.extents.z +
                 Mathf.Max(0.05f, halfViewSize) /
                 Mathf.Tan(_utility.cameraFieldOfView * 0.5f *
-                          Mathf.Deg2Rad) * PreviewFitPadding;
-            _orbit.Reset(_bounds.center, distance);
+                          Mathf.Deg2Rad) * PreviewFitPadding *
+                distanceScale;
+            if (animate)
+            {
+                _orbit.AnimateTo(
+                    bounds.center,
+                    distance,
+                    viewAngles.x,
+                    viewAngles.y,
+                    EditorApplication.timeSinceStartup,
+                    CameraTransitionDuration);
+                _cameraAnimationTask.Resume();
+            }
+            else
+            {
+                _cameraAnimationTask.Pause();
+                _orbit.SetView(
+                    bounds.center,
+                    distance,
+                    viewAngles.x,
+                    viewAngles.y);
+            }
             RequestPreviewRepaint();
+        }
+
+        private void AdvanceCameraAnimation()
+        {
+            if (_orbit.UpdateTransition(EditorApplication.timeSinceStartup))
+            {
+                RequestPreviewRepaint();
+            }
+            if (!_orbit.IsTransitioning)
+            {
+                _cameraAnimationTask.Pause();
+            }
+        }
+
+        private bool TryGetBoneFocusBounds(
+            BodyPartCategory part,
+            float avatarHeight,
+            bool leftSide,
+            out Bounds bounds)
+        {
+            bounds = default;
+            var animator = _instance
+                .GetComponentsInChildren<Animator>(true)
+                .FirstOrDefault(candidate => candidate != null &&
+                    candidate.avatar != null &&
+                    candidate.avatar.isHuman && candidate.isHuman);
+            if (animator == null)
+            {
+                return false;
+            }
+
+            var bones = GetFocusBones(part, leftSide);
+            var points = bones
+                .Select(animator.GetBoneTransform)
+                .Where(bone => bone != null)
+                .Select(bone => bone.position)
+                .ToArray();
+            if (points.Length == 0)
+            {
+                points = GetFocusBones(part, !leftSide)
+                    .Select(animator.GetBoneTransform)
+                    .Where(bone => bone != null)
+                    .Select(bone => bone.position)
+                    .ToArray();
+            }
+            if (points.Length == 0)
+            {
+                return false;
+            }
+
+            bounds = new Bounds(points[0], Vector3.zero);
+            foreach (var point in points)
+            {
+                bounds.Encapsulate(point);
+            }
+
+            if (part == BodyPartCategory.Head)
+            {
+                bounds.Encapsulate(points[0] +
+                    _instance.transform.up * avatarHeight * 0.1f);
+            }
+            bounds.Expand(avatarHeight * 0.06f);
+            return true;
+        }
+
+        private static HumanBodyBones[] GetFocusBones(
+            BodyPartCategory part,
+            bool leftSide)
+        {
+            switch (part)
+            {
+                case BodyPartCategory.Head:
+                    return new[] { HumanBodyBones.Head,
+                        HumanBodyBones.Neck };
+                case BodyPartCategory.Chest:
+                    return new[] { HumanBodyBones.Spine,
+                        HumanBodyBones.Chest,
+                        HumanBodyBones.UpperChest };
+                case BodyPartCategory.Waist:
+                    return new[] { HumanBodyBones.Hips,
+                        HumanBodyBones.Spine };
+                case BodyPartCategory.Shoulders:
+                    return leftSide
+                        ? new[] { HumanBodyBones.LeftShoulder,
+                            HumanBodyBones.LeftUpperArm }
+                        : new[] { HumanBodyBones.RightShoulder,
+                            HumanBodyBones.RightUpperArm };
+                case BodyPartCategory.Arms:
+                    return leftSide
+                        ? new[] { HumanBodyBones.LeftUpperArm,
+                            HumanBodyBones.LeftLowerArm,
+                            HumanBodyBones.LeftHand }
+                        : new[] { HumanBodyBones.RightUpperArm,
+                            HumanBodyBones.RightLowerArm,
+                            HumanBodyBones.RightHand };
+                case BodyPartCategory.Hands:
+                    return leftSide
+                        ? new[] { HumanBodyBones.LeftHand,
+                            HumanBodyBones.LeftMiddleProximal,
+                            HumanBodyBones.LeftMiddleDistal }
+                        : new[] { HumanBodyBones.RightHand,
+                            HumanBodyBones.RightMiddleProximal,
+                            HumanBodyBones.RightMiddleDistal };
+                case BodyPartCategory.Legs:
+                    return leftSide
+                        ? new[] { HumanBodyBones.LeftUpperLeg,
+                            HumanBodyBones.LeftLowerLeg,
+                            HumanBodyBones.LeftFoot }
+                        : new[] { HumanBodyBones.RightUpperLeg,
+                            HumanBodyBones.RightLowerLeg,
+                            HumanBodyBones.RightFoot };
+                case BodyPartCategory.Feet:
+                    return leftSide
+                        ? new[] { HumanBodyBones.LeftFoot,
+                            HumanBodyBones.LeftToes }
+                        : new[] { HumanBodyBones.RightFoot,
+                            HumanBodyBones.RightToes };
+                default:
+                    return Array.Empty<HumanBodyBones>();
+            }
+        }
+
+        private Bounds GetEstimatedFocusBounds(
+            BodyPartCategory part,
+            float avatarHeight,
+            bool leftSide)
+        {
+            var offset = Vector3.zero;
+            var right = _instance.transform.right *
+                (leftSide ? -1f : 1f);
+            var up = _instance.transform.up;
+            switch (part)
+            {
+                case BodyPartCategory.Head:
+                    offset = up * avatarHeight * 0.38f;
+                    break;
+                case BodyPartCategory.Chest:
+                    offset = up * avatarHeight * 0.18f;
+                    break;
+                case BodyPartCategory.Shoulders:
+                    offset = up * avatarHeight * 0.25f +
+                        right * _bounds.extents.x * 0.5f;
+                    break;
+                case BodyPartCategory.Arms:
+                    offset = up * avatarHeight * 0.14f +
+                        right * _bounds.extents.x * 0.7f;
+                    break;
+                case BodyPartCategory.Hands:
+                    offset = up * avatarHeight * 0.08f +
+                        right * _bounds.extents.x * 0.9f;
+                    break;
+                case BodyPartCategory.Legs:
+                    offset = -up * avatarHeight * 0.25f +
+                        right * _bounds.extents.x * 0.25f;
+                    break;
+                case BodyPartCategory.Feet:
+                    offset = -up * avatarHeight * 0.43f +
+                        right * _bounds.extents.x * 0.25f;
+                    break;
+            }
+
+            return new Bounds(
+                _bounds.center + offset,
+                Vector3.one * avatarHeight * 0.06f);
+        }
+
+        private static float GetMinimumHalfView(BodyPartCategory part)
+        {
+            switch (part)
+            {
+                case BodyPartCategory.Head:
+                    return 0.145f;
+                case BodyPartCategory.Chest:
+                    return 0.30f;
+                case BodyPartCategory.Waist:
+                    return 0.21f;
+                case BodyPartCategory.Shoulders:
+                    return 0.21f;
+                case BodyPartCategory.Arms:
+                    return 0.21f;
+                case BodyPartCategory.Legs:
+                    return 0.28f;
+                case BodyPartCategory.Hands:
+                case BodyPartCategory.Feet:
+                    return 0.15f;
+                default:
+                    return 0.5f;
+            }
+        }
+
+        private static float GetDistanceScale(BodyPartCategory part)
+        {
+            switch (part)
+            {
+                case BodyPartCategory.Waist:
+                case BodyPartCategory.Shoulders:
+                case BodyPartCategory.Arms:
+                case BodyPartCategory.Hands:
+                case BodyPartCategory.Feet:
+                    return 1.045f;
+                default:
+                    return 1f;
+            }
+        }
+
+        private static Vector2 GetViewAngles(
+            BodyPartCategory part,
+            bool leftSide)
+        {
+            switch (part)
+            {
+                case BodyPartCategory.Head:
+                    return new Vector2(-12f, 3f);
+                case BodyPartCategory.Chest:
+                    return new Vector2(-34f, 9f);
+                case BodyPartCategory.Waist:
+                    return new Vector2(38f, 18f);
+                case BodyPartCategory.Shoulders:
+                case BodyPartCategory.Arms:
+                    return new Vector2(leftSide ? -38f : 38f, -18f);
+                case BodyPartCategory.Hands:
+                    return new Vector2(leftSide ? -38f : 38f, -18f);
+                case BodyPartCategory.Legs:
+                    return new Vector2(-13f, 4f);
+                case BodyPartCategory.Feet:
+                    return new Vector2(-38f, 18f);
+                default:
+                    return Vector2.zero;
+            }
         }
 
         private void ConfigureCamera()
@@ -813,7 +1260,11 @@ namespace Ee4v.AssetManager.UI
         {
             if (_flexibleLayout)
             {
-                ResetView();
+                if (Mathf.Abs(evt.newRect.width - evt.oldRect.width) >= 0.5f ||
+                    Mathf.Abs(evt.newRect.height - evt.oldRect.height) >= 0.5f)
+                {
+                    FrameCurrentSelection(_orbit.IsTransitioning);
+                }
                 return;
             }
 
@@ -931,10 +1382,13 @@ namespace Ee4v.AssetManager.UI
         private void SetPreviewAvailable(bool available)
         {
             _viewport.SetPreviewAvailable(available);
+            RefreshSideToggle();
         }
 
         private void CleanupPreview()
         {
+            _cameraAnimationTask.Pause();
+            _orbit.CancelTransition();
             DestroyBakedMeshes();
             _pendingTransformScales.Clear();
             _pendingBlendShapeWeights.Clear();

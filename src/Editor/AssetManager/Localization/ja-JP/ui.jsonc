@@ -42,7 +42,9 @@
     "preview": {
       "appearanceTitle": "プレビュー",
       "sizeTitle": "プレビュー",
-      "todoTitle": "プレビュー"
+      "todoTitle": "プレビュー",
+      "sideLeft": "左",
+      "sideRight": "右"
     },
     "appearance": {
       "bodyPart": {
@@ -67,7 +69,7 @@
         "head": "頭・首",
         "chest": "胸",
         "waist": "腰・胴",
-        "shoulders": "肩",
+        "shoulders": "肩・腕",
         "arms": "腕",
         "hands": "手",
         "legs": "脚",
@@ -105,7 +107,7 @@
       "editorUnavailable": "Material Inspectorを作成できませんでした。",
       "protected": "このMaterialは派生アセット外にあります。元素材を守るため、この画面では編集できません。",
       "emptyTitle": "Materialが見つかりません",
-      "emptyPartDescription": "この部位に分類されたMaterialはありません。「全身」または「その他」も確認してください。",
+      "emptyPartDescription": "この部位に分類されたMaterialはありません。「全身」も確認してください。",
       "emptyDescription": "選択した派生アセットにMaterialが設定されているか確認してください。"
     },
     "todo": {

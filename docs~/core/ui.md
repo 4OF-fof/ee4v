@@ -39,7 +39,7 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 - `SectionHeader`はセクション名、説明、右側操作を置く見出しです。
 - `InfoCard`は見出しと本文を外枠付きでまとめる情報パネルです。
 - `PreviewContainer`はPreview本体、未表示時のPlaceholder、重ねる操作を置く3層コンテナです。描画処理と一覧は含みません。
-- `ScenePreviewViewport`は3D Preview向けにグリッド背景、IMGUI描画領域、背景の明暗切り替え、表示リセット、未表示時のPlaceholderをまとめます。機能固有のColliderやBone表示操作は`FeatureOverlay`へ重ね、3D描画自体とCamera制御は利用側が扱います。
+- `ScenePreviewViewport`は3D Preview向けにグリッド背景、IMGUI描画領域、背景の明暗切り替え、表示リセット、未表示時のPlaceholderをまとめます。機能固有のColliderやBone表示操作は`FeatureOverlay`へ重ね、3D描画自体とCamera制御は利用側が扱います。`PreviewOrbitController`はtarget・距離・yaw・pitchの即時設定と時間補間を提供し、アニメーション中の再描画スケジュールは利用側が管理します。右ドラッグ、中央ドラッグ、ホイール操作を始めた場合は補間を中断します。
 - `CustomPopup`は細い外枠と面の濃度差でHeader、本文、任意Footerを分けるポップアップです。`CustomPopupWindow`が移動、リサイズ、focus離脱時のCloseを担当します。
 
 `PreviewContainer` Storyはコンテナの範囲を枠で示し、中央のContent、空表示のPlaceholder、右上のOverlay操作を重ねて確認できる構成にします。
