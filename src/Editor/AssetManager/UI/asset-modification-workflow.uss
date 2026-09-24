@@ -679,6 +679,10 @@
     background-color: var(--ee4v-color-surface-hover);
 }
 
+.ee4v-modification-workflow__size-control--detailed {
+    height: 44px;
+}
+
 .ee4v-modification-workflow__size-control--child {
     padding-left: var(--ee4v-space-3xl);
 }
@@ -709,6 +713,23 @@
     width: 112px;
     min-width: 64px;
     flex-shrink: 1;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.ee4v-modification-workflow__size-control-labels {
+    width: 112px;
+    min-width: 64px;
+    flex-shrink: 1;
+    overflow: hidden;
+}
+
+.ee4v-modification-workflow__size-control-labels > .ee4v-modification-workflow__size-control-name {
+    width: 100%;
+    min-width: 0;
+}
+
+.ee4v-modification-workflow__size-control-detail {
     overflow: hidden;
     white-space: nowrap;
 }

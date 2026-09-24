@@ -62,6 +62,16 @@ namespace Ee4v.AssetManager.UI
         };
         private static readonly string[] FootBlendShapeTerms =
             { "foot", "feet", "toe", "ankle", "足", "つま先", "足首" };
+        private static readonly BodyPartCategory[] BodyPartSelectorOrder =
+        {
+            BodyPartCategory.Head,
+            BodyPartCategory.Shoulders,
+            BodyPartCategory.Hands,
+            BodyPartCategory.Chest,
+            BodyPartCategory.Waist,
+            BodyPartCategory.Legs,
+            BodyPartCategory.Feet
+        };
 
         private enum WorkflowCategory
         {
@@ -127,8 +137,11 @@ namespace Ee4v.AssetManager.UI
         private sealed class BodyBlendShapeDefinition
         {
             internal string RendererPath { get; set; }
+            internal string RendererDisplayPath { get; set; }
+            internal string RendererName { get; set; }
             internal string ShapeName { get; set; }
             internal string DisplayName { get; set; }
+            internal int DuplicateIndex { get; set; }
             internal BodyPartCategory Category { get; set; }
             internal string Group { get; set; }
             internal float Value { get; set; }
@@ -359,6 +372,402 @@ namespace Ee4v.AssetManager.UI
             internal bool IsVisible { get; set; }
             internal bool IsVisibleInHierarchy { get; set; }
             internal string Path { get; set; }
+            internal IReadOnlyCollection<BodyPartCategory> Categories { get; set; }
+        }
+
+        private sealed class PrefabPartClassifier
+        {
+            private const float MinimumClassifiedWeightRatio = 0.65f;
+            private const float MinimumPartWeightRatio = 0.1f;
+            private static readonly IReadOnlyCollection<BodyPartCategory> Empty =
+                Array.Empty<BodyPartCategory>();
+            private readonly Dictionary<Transform, BodyPartCategory>
+                _humanoidBones = new Dictionary<Transform, BodyPartCategory>();
+            private readonly Dictionary<Transform,
+                    IReadOnlyCollection<BodyPartCategory>>
+                _objects = new Dictionary<Transform,
+                    IReadOnlyCollection<BodyPartCategory>>();
+            private readonly Dictionary<Transform, HashSet<BodyPartCategory>>
+                _anchors = new Dictionary<Transform,
+                    HashSet<BodyPartCategory>>();
+
+            internal PrefabPartClassifier(GameObject root)
+            {
+                foreach (var animator in root.GetComponentsInChildren<Animator>(true))
+                {
+                    if (animator.avatar == null ||
+                        !animator.avatar.isValid || !animator.isHuman)
+                    {
+                        continue;
+                    }
+                    foreach (var pair in GetHumanoidMaterialBoneCategories(animator))
+                    {
+                        _humanoidBones[pair.Key] = pair.Value;
+                    }
+                }
+            }
+
+            internal IReadOnlyCollection<BodyPartCategory> Classify(Transform target)
+            {
+                if (_objects.TryGetValue(target, out var cached))
+                {
+                    return cached;
+                }
+
+                var skinned = target.GetComponent<SkinnedMeshRenderer>();
+                if (skinned != null && TryClassifySkin(skinned, out var skinParts))
+                {
+                    return _objects[target] = skinParts;
+                }
+
+                var anchors = GetAnchorCategories(target);
+                if (anchors.Count > 0)
+                {
+                    if (anchors.Count == 1 &&
+                        !anchors.Contains(BodyPartCategory.Other))
+                    {
+                        return _objects[target] = anchors.ToArray();
+                    }
+                    return _objects[target] = Empty;
+                }
+
+                var children = new HashSet<BodyPartCategory>();
+                var hasRenderableChild = false;
+                for (var index = 0; index < target.childCount; index++)
+                {
+                    var child = target.GetChild(index);
+                    if (child.GetComponentInChildren<Renderer>(true) == null)
+                    {
+                        continue;
+                    }
+                    hasRenderableChild = true;
+                    var childParts = Classify(child);
+                    if (childParts.Count == 0)
+                    {
+                        return _objects[target] = Empty;
+                    }
+                    children.UnionWith(childParts);
+                    if (children.Count > 2)
+                    {
+                        return _objects[target] = Empty;
+                    }
+                }
+                if (hasRenderableChild)
+                {
+                    return _objects[target] = children.ToArray();
+                }
+
+                var named = ClassifyStructuralName(target.name);
+                return _objects[target] = named == BodyPartCategory.Other
+                    ? Empty
+                    : (IReadOnlyCollection<BodyPartCategory>)new[] { named };
+            }
+
+            private bool TryClassifySkin(
+                SkinnedMeshRenderer renderer,
+                out IReadOnlyCollection<BodyPartCategory> categories)
+            {
+                categories = Empty;
+                var mesh = renderer.sharedMesh;
+                var bones = renderer.bones;
+                if (mesh == null || bones == null || bones.Length == 0)
+                {
+                    return false;
+                }
+
+                BoneWeight[] weights;
+                try
+                {
+                    weights = mesh.boneWeights;
+                }
+                catch (UnityException)
+                {
+                    return false;
+                }
+                if (weights == null || weights.Length != mesh.vertexCount)
+                {
+                    return false;
+                }
+
+                var boneParts = bones.Select(GetAnchorCategories)
+                    .ToArray();
+                var scores = new Dictionary<BodyPartCategory, float>();
+                var totalWeight = 0f;
+                var classifiedWeight = 0f;
+                foreach (var weight in weights)
+                {
+                    Add(weight.boneIndex0, weight.weight0);
+                    Add(weight.boneIndex1, weight.weight1);
+                    Add(weight.boneIndex2, weight.weight2);
+                    Add(weight.boneIndex3, weight.weight3);
+                }
+
+                if (totalWeight <= 0f ||
+                    classifiedWeight < totalWeight *
+                    MinimumClassifiedWeightRatio)
+                {
+                    return true;
+                }
+
+                var significant = scores
+                    .Where(pair => pair.Value >= classifiedWeight *
+                        MinimumPartWeightRatio)
+                    .Select(pair => pair.Key)
+                    .ToArray();
+                if (significant.Length >= 1 && significant.Length <= 2)
+                {
+                    categories = significant;
+                }
+                return true;
+
+                void Add(int boneIndex, float value)
+                {
+                    if (value <= 0f || boneIndex < 0 ||
+                        boneIndex >= boneParts.Length)
+                    {
+                        return;
+                    }
+                    totalWeight += value;
+                    var parts = boneParts[boneIndex];
+                    if (parts.Count != 1 ||
+                        parts.Contains(BodyPartCategory.Other))
+                    {
+                        return;
+                    }
+                    var part = parts.First();
+                    scores.TryGetValue(part, out var score);
+                    scores[part] = score + value;
+                    classifiedWeight += value;
+                }
+            }
+
+            private HashSet<BodyPartCategory> GetAnchorCategories(
+                Transform target)
+            {
+                if (target == null)
+                {
+                    return new HashSet<BodyPartCategory>();
+                }
+                if (!_anchors.TryGetValue(target, out var categories))
+                {
+                    categories = ResolveAnchor(target,
+                        new HashSet<Transform>());
+                    _anchors.Add(target, categories);
+                }
+                return categories;
+            }
+
+            private HashSet<BodyPartCategory> ResolveAnchor(
+                Transform target,
+                HashSet<Transform> visiting)
+            {
+                var result = new HashSet<BodyPartCategory>();
+                if (target == null || !visiting.Add(target))
+                {
+                    return result;
+                }
+                try
+                {
+                    if (_humanoidBones.TryGetValue(target, out var humanoid))
+                    {
+                        result.Add(NormalizePart(humanoid));
+                        return result;
+                    }
+
+                    var hasConstraintSource = false;
+                    foreach (var component in target.GetComponents<Component>())
+                    {
+                        if (component == null)
+                        {
+                            continue;
+                        }
+                        var typeName = component.GetType().Name;
+                        if (typeName == "ModularAvatarBoneProxy")
+                        {
+                            var property = new SerializedObject(component)
+                                .FindProperty("boneReference");
+                            if (property != null)
+                            {
+                                var name = ((HumanBodyBones)property.intValue)
+                                    .ToString();
+                                var part = ClassifyStructuralName(name);
+                                if (part != BodyPartCategory.Other)
+                                {
+                                    result.Add(part);
+                                    return result;
+                                }
+                            }
+                        }
+                        if (typeName.IndexOf("Constraint",
+                                StringComparison.Ordinal) < 0)
+                        {
+                            continue;
+                        }
+                        var properties = new SerializedObject(component)
+                            .GetIterator();
+                        while (properties.NextVisible(true))
+                        {
+                            if (properties.propertyType !=
+                                    SerializedPropertyType.ObjectReference ||
+                                properties.propertyPath.IndexOf("source",
+                                    StringComparison.OrdinalIgnoreCase) < 0)
+                            {
+                                continue;
+                            }
+                            var source = properties.objectReferenceValue as Transform;
+                            if (source == null &&
+                                properties.objectReferenceValue is GameObject gameObject)
+                            {
+                                source = gameObject.transform;
+                            }
+                            if (source != null)
+                            {
+                                hasConstraintSource = true;
+                                // Animation can activate a source whose current weight is zero.
+                                var sourceParts = ResolveAnchor(source, visiting);
+                                if (sourceParts.Count == 0)
+                                {
+                                    result.Add(BodyPartCategory.Other);
+                                }
+                                else
+                                {
+                                    result.UnionWith(sourceParts);
+                                }
+                            }
+                        }
+                    }
+                    if (hasConstraintSource)
+                    {
+                        return result;
+                    }
+                    if (result.Count > 0)
+                    {
+                        return result;
+                    }
+
+                    var named = ClassifyStructuralName(target.name);
+                    if (named != BodyPartCategory.Other)
+                    {
+                        result.Add(named);
+                        return result;
+                    }
+                    return ResolveAnchor(target.parent, visiting);
+                }
+                finally
+                {
+                    visiting.Remove(target);
+                }
+            }
+
+            private static BodyPartCategory NormalizePart(
+                BodyPartCategory part)
+            {
+                return part == BodyPartCategory.Arms
+                    ? BodyPartCategory.Shoulders
+                    : part;
+            }
+
+            private static BodyPartCategory ClassifyStructuralName(string name)
+            {
+                if (string.IsNullOrEmpty(name) ||
+                    name.Equals("Armature", StringComparison.OrdinalIgnoreCase) ||
+                    name.StartsWith("Armature.",
+                        StringComparison.OrdinalIgnoreCase) ||
+                    name.Equals("Root", StringComparison.OrdinalIgnoreCase) ||
+                    name.Equals("Body", StringComparison.OrdinalIgnoreCase) ||
+                    name.StartsWith("Body_", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BodyPartCategory.Other;
+                }
+                var words = SplitStructuralName(name);
+                if (ContainsWord(words, "head", "neck", "face", "facial",
+                        "hair", "ear", "eye", "brow", "goggle", "goggles",
+                        "visor") || ContainsJapanese(name, "頭", "首", "顔", "髪", "耳"))
+                {
+                    return BodyPartCategory.Head;
+                }
+                if (ContainsWord(words, "chest", "breast", "bust", "bra",
+                        "ribcage") ||
+                    ContainsJapanese(name, "胸", "バスト", "乳"))
+                {
+                    return BodyPartCategory.Chest;
+                }
+                if (ContainsWord(words, "hand", "hands", "wrist", "finger",
+                        "thumb", "index", "middle", "ring", "little",
+                        "bracelet", "bracelets", "watch", "glove", "gloves") ||
+                    ContainsJapanese(name, "手", "指"))
+                {
+                    return BodyPartCategory.Hands;
+                }
+                if (ContainsWord(words, "shoulder", "shoulders", "arm",
+                        "arms", "forearm", "elbow") ||
+                    ContainsJapanese(name, "肩", "腕", "肘"))
+                {
+                    return BodyPartCategory.Shoulders;
+                }
+                if (ContainsWord(words, "foot", "feet", "toe", "toes",
+                        "ankle", "anklet", "boot", "boots", "sandal",
+                        "sandals") ||
+                    ContainsJapanese(name, "足", "つま先", "足首"))
+                {
+                    return BodyPartCategory.Feet;
+                }
+                if (ContainsWord(words, "leg", "legs", "thigh", "calf",
+                        "knee", "shin", "tights") ||
+                    ContainsJapanese(name, "脚", "腿", "膝"))
+                {
+                    return BodyPartCategory.Legs;
+                }
+                if (ContainsWord(words, "waist", "hip", "hips", "pelvis",
+                        "spine", "belly", "abdomen", "skirt", "shorts",
+                        "belt", "tail") ||
+                    ContainsJapanese(name, "腰", "尻", "腹", "胴"))
+                {
+                    return BodyPartCategory.Waist;
+                }
+                return BodyPartCategory.Other;
+            }
+
+            private static IReadOnlyCollection<string> SplitStructuralName(
+                string name)
+            {
+                var words = new List<string>();
+                var start = -1;
+                for (var index = 0; index <= name.Length; index++)
+                {
+                    var end = index == name.Length ||
+                        !char.IsLetterOrDigit(name[index]);
+                    var camelBreak = !end && start >= 0 &&
+                        char.IsUpper(name[index]) &&
+                        char.IsLower(name[index - 1]);
+                    if ((end || camelBreak) && start >= 0)
+                    {
+                        words.Add(name.Substring(start, index - start)
+                            .ToLowerInvariant());
+                        start = -1;
+                    }
+                    if (!end && start < 0)
+                    {
+                        start = index;
+                    }
+                }
+                return words;
+            }
+
+            private static bool ContainsWord(
+                IReadOnlyCollection<string> words,
+                params string[] terms)
+            {
+                return words.Any(word => terms.Contains(word));
+            }
+
+            private static bool ContainsJapanese(
+                string name,
+                params string[] terms)
+            {
+                return terms.Any(term => name.IndexOf(
+                    term, StringComparison.Ordinal) >= 0);
+            }
         }
 
         private readonly Dictionary<WorkflowCategory, UiButton>
@@ -391,7 +800,7 @@ namespace Ee4v.AssetManager.UI
         private WorkflowCategory _currentCategory =
             WorkflowCategory.ShapeParts;
         private ShapePartsSection _shapePartsSection =
-            ShapePartsSection.Shape;
+            ShapePartsSection.Parts;
         private BodyPartCategory? _selectedBodyPart;
         private bool _creatingDerivedAsset;
         private string _creationItemId = string.Empty;
@@ -1334,7 +1743,14 @@ namespace Ee4v.AssetManager.UI
                 return panel;
             }
 
-            if (entries.Count == 0)
+            IReadOnlyList<PrefabObjectEntry> displayed = entries;
+            if (_selectedBodyPart.HasValue)
+            {
+                displayed = entries.Where(entry =>
+                    entry.Categories.Any(category => MatchesBodyPartGroup(
+                        _selectedBodyPart.Value, category))).ToArray();
+            }
+            if (displayed.Count == 0)
             {
                 panel.Add(UiTextFactory.CreateHelpBox(
                     I18N.Get("workflow.objects.empty"),
@@ -1346,7 +1762,7 @@ namespace Ee4v.AssetManager.UI
             list.AddToClassList(
                 "ee4v-modification-workflow__objects-list");
             panel.Add(list);
-            foreach (var entry in entries)
+            foreach (var entry in displayed)
             {
                 list.Add(BuildObjectRow(entry));
             }
@@ -1404,6 +1820,7 @@ namespace Ee4v.AssetManager.UI
             try
             {
                 var result = new List<PrefabObjectEntry>();
+                var classifier = new PrefabPartClassifier(root);
                 var excludedPrefixes =
                     AssetManagerSettings.ExcludedPartPrefixes;
                 var scopes = _selectedPrefabSiblingIndex.HasValue
@@ -1468,7 +1885,8 @@ namespace Ee4v.AssetManager.UI
                                     (child.gameObject.hideFlags &
                                         HideFlags.HideInHierarchy) == 0,
                                 IsVisibleInHierarchy =
-                                    child.gameObject.activeInHierarchy
+                                    child.gameObject.activeInHierarchy,
+                                Categories = classifier.Classify(child)
                             });
                             Visit(child, indices, objectPath);
                         }
@@ -1580,7 +1998,7 @@ namespace Ee4v.AssetManager.UI
                         PrefabUtility.RecordPrefabInstancePropertyModifications(
                             current.gameObject);
                     }
-                });
+                }, preservePreviewView: true);
                 if (visible)
                 {
                     EditorPrefs.DeleteKey(restoreKey);
@@ -1805,7 +2223,9 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private void EditAssetChildren(Action<GameObject> edit)
+        private void EditAssetChildren(
+            Action<GameObject> edit,
+            bool preservePreviewView = false)
         {
             if (!IsEditableWorkflowPrefab())
             {
@@ -1847,7 +2267,16 @@ namespace Ee4v.AssetManager.UI
             _hiddenMaterials.Clear();
             _feedback = string.Empty;
             _assetFeedback = string.Empty;
-            BuildWindow();
+            if (preservePreviewView)
+            {
+                _objectEntriesCache = null;
+                _scenePreview?.ReloadPrefabPreservingView(_workingObject);
+                ShowCategory(_currentCategory, false);
+            }
+            else
+            {
+                BuildWindow();
+            }
         }
 
         private void ShowAssetError(string key)
@@ -1986,14 +2415,8 @@ namespace Ee4v.AssetManager.UI
                 selector,
                 null,
                 "workflow.appearance.bodyPart.wholeBody");
-            foreach (BodyPartCategory part in Enum.GetValues(
-                         typeof(BodyPartCategory)))
+            foreach (var part in BodyPartSelectorOrder)
             {
-                if (part == BodyPartCategory.Arms ||
-                    part == BodyPartCategory.Other)
-                {
-                    continue;
-                }
                 AddBodyPartButton(
                     selector,
                     part,
@@ -2583,9 +3006,19 @@ namespace Ee4v.AssetManager.UI
         private VisualElement BuildBodyBlendShapeControl(
             BodyBlendShapeDefinition definition)
         {
+            var label = definition.DuplicateIndex > 0
+                ? $"[{definition.DuplicateIndex}] {definition.DisplayName}"
+                : definition.DisplayName;
+            var tooltip = definition.DuplicateIndex > 0
+                ? $"{definition.RendererDisplayPath}\n{definition.ShapeName}"
+                : label;
             var row = CreateSizeControlRow(
-                definition.DisplayName,
-                out var controls);
+                label,
+                out var controls,
+                tooltip: tooltip,
+                detail: definition.DuplicateIndex > 0
+                    ? definition.RendererName
+                    : null);
             var slider = new Slider(
                 MinimumBodyBlendShapeWeight,
                 MaximumBodyBlendShapeWeight);
@@ -2593,7 +3026,9 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-modification-workflow__size-slider");
             slider.tooltip = I18N.Get(
                 "workflow.appearance.bodyShapeSliderTooltip",
-                definition.DisplayName);
+                label) + (definition.DuplicateIndex > 0
+                    ? $"\n{definition.RendererDisplayPath}\n{definition.ShapeName}"
+                    : string.Empty);
             controls.Add(slider);
             var value = UiTextFactory.CreateFloatField();
             value.AddToClassList(
@@ -2658,7 +3093,9 @@ namespace Ee4v.AssetManager.UI
             out VisualElement controls,
             bool isChild = false,
             VisualElement leading = null,
-            Action labelClicked = null)
+            Action labelClicked = null,
+            string tooltip = null,
+            string detail = null)
         {
             var row = new VisualElement();
             row.AddToClassList(
@@ -2680,7 +3117,7 @@ namespace Ee4v.AssetManager.UI
             var name = UiTextFactory.Create(
                 label,
                 "ee4v-modification-workflow__size-control-name");
-            name.tooltip = label ?? string.Empty;
+            name.tooltip = tooltip ?? label ?? string.Empty;
             if (labelClicked != null)
             {
                 name.RegisterCallback<ClickEvent>(evt =>
@@ -2689,7 +3126,26 @@ namespace Ee4v.AssetManager.UI
                     evt.StopPropagation();
                 });
             }
-            row.Add(name);
+            if (detail == null)
+            {
+                row.Add(name);
+            }
+            else
+            {
+                row.AddToClassList(
+                    "ee4v-modification-workflow__size-control--detailed");
+                var labels = new VisualElement();
+                labels.AddToClassList(
+                    "ee4v-modification-workflow__size-control-labels");
+                labels.Add(name);
+                var detailLabel = UiTextFactory.Create(
+                    detail,
+                    UiClassNames.SecondaryText,
+                    "ee4v-modification-workflow__size-control-detail");
+                detailLabel.tooltip = tooltip ?? detail;
+                labels.Add(detailLabel);
+                row.Add(labels);
+            }
             controls = new VisualElement();
             controls.AddToClassList(
                 "ee4v-modification-workflow__size-control-row");
@@ -2802,6 +3258,10 @@ namespace Ee4v.AssetManager.UI
                     result.Add(new BodyBlendShapeDefinition
                     {
                         RendererPath = rendererPath,
+                        RendererDisplayPath = string.IsNullOrEmpty(rendererPath)
+                            ? renderer.name
+                            : rendererPath,
+                        RendererName = renderer.name,
                         ShapeName = shapeName,
                         DisplayName = GetBodyBlendShapeDisplayName(shapeName),
                         Category = category,
@@ -2817,6 +3277,17 @@ namespace Ee4v.AssetManager.UI
                             renderer,
                             shapeName)
                     });
+                }
+            }
+            foreach (var duplicates in result
+                         .GroupBy(shape => shape.DisplayName,
+                             StringComparer.Ordinal)
+                         .Where(group => group.Count() > 1))
+            {
+                var index = 1;
+                foreach (var shape in duplicates)
+                {
+                    shape.DuplicateIndex = index++;
                 }
             }
             return result;
@@ -3933,7 +4404,7 @@ namespace Ee4v.AssetManager.UI
             _selectedPrefabName = string.Empty;
             _creatingDerivedAsset = false;
             _currentCategory = WorkflowCategory.ShapeParts;
-            _shapePartsSection = ShapePartsSection.Shape;
+            _shapePartsSection = ShapePartsSection.Parts;
             _selectedBodyPart = null;
             _selectedMaterial = null;
             _hiddenMaterials.Clear();

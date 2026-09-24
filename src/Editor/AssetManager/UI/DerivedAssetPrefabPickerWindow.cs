@@ -440,6 +440,13 @@ namespace Ee4v.AssetManager.UI
             RebuildPreview();
         }
 
+        internal void ReloadPrefabPreservingView(GameObject prefab)
+        {
+            _orbit.UpdateTransition(EditorApplication.timeSinceStartup);
+            _prefab = prefab;
+            RebuildPreview(true);
+        }
+
         internal void FocusBodyPart(BodyPartCategory? part)
         {
             _focusedBodyPart = part;
@@ -643,7 +650,7 @@ namespace Ee4v.AssetManager.UI
             _viewport.Dispose();
         }
 
-        private void RebuildPreview()
+        private void RebuildPreview(bool preserveView = false)
         {
             CleanupPreview();
             if (_prefab == null || panel == null)
@@ -687,7 +694,14 @@ namespace Ee4v.AssetManager.UI
                 RefreshBounds();
                 RebuildMaterialTargets();
                 SetPreviewAvailable(true);
-                FrameCurrentSelection();
+                if (!preserveView)
+                {
+                    FrameCurrentSelection();
+                }
+                else
+                {
+                    RequestPreviewRepaint();
+                }
             }
             catch (Exception exception)
             {
@@ -857,7 +871,7 @@ namespace Ee4v.AssetManager.UI
                     ? new Vector2(180f, 0f)
                     : Vector2.zero,
                 animate,
-                _flexibleLayout && !_scopeSiblingIndex.HasValue
+                _flexibleLayout
                     ? AppearanceFullBodyDistanceScale
                     : 1f);
         }
