@@ -136,7 +136,7 @@
 .ee4v-modification-workflow__header {
     min-width: 0;
     flex-shrink: 0;
-    padding: 3px var(--ee4v-space-md);
+    padding: var(--ee4v-space-xs) var(--ee4v-space-md);
     border-bottom-width: var(--ee4v-border-hairline);
     border-bottom-color: var(--ee4v-color-border-default);
     background-color: var(--ee4v-color-surface-subtle);
@@ -154,6 +154,8 @@
     flex-grow: 1;
     height: 34px;
     margin-left: var(--ee4v-space-xxs);
+    position: relative;
+    top: var(--ee4v-space-xxs);
 }
 
 .ee4v-modification-workflow__header-strip > .unity-scroll-view__content-and-vertical-scroll-container {
@@ -169,18 +171,15 @@
 .ee4v-modification-workflow__header-card {
     min-width: var(--ee4v-size-24);
     max-width: 160px;
-    height: 34px;
-    min-height: 34px;
+    height: 30px;
+    min-height: 30px;
     flex-shrink: 0;
     flex-direction: row;
     align-items: center;
-    margin-right: var(--ee4v-space-xxs);
+    margin-right: var(--ee4v-space-sm);
     padding-left: var(--ee4v-space-sm);
     padding-right: var(--ee4v-space-xxs);
-    border-top-width: var(--ee4v-border-hairline);
-    border-right-width: var(--ee4v-border-hairline);
-    border-bottom-width: var(--ee4v-border-emphasis);
-    border-left-width: var(--ee4v-border-hairline);
+    border-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-border-active);
     border-radius: var(--ee4v-radius-lg);
     background-color: var(--ee4v-color-surface-soft);
@@ -197,33 +196,17 @@
 
 .ee4v-modification-workflow__header-card--combined {
     min-width: 56px;
-    max-width: 220px;
-    height: 30px;
-    min-height: 30px;
+    max-width: 260px;
     margin-right: var(--ee4v-space-sm);
     padding-left: var(--ee4v-space-md);
     padding-right: var(--ee4v-space-md);
-    border-width: var(--ee4v-border-hairline);
-    border-color: var(--ee4v-color-border-active);
     border-radius: var(--ee4v-radius-pill);
-    background-color: var(--ee4v-color-info-surface-soft);
-}
-
-.ee4v-modification-workflow__header-card--combined:hover {
-    border-color: var(--ee4v-color-focus);
-    background-color: var(--ee4v-color-info-surface-strong);
 }
 
 .ee4v-modification-workflow__header-card--selected,
 .ee4v-modification-workflow__header-card--selected:hover {
     border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-selection-soft);
-}
-
-.ee4v-modification-workflow__header-card--combined.ee4v-modification-workflow__header-card--selected,
-.ee4v-modification-workflow__header-card--combined.ee4v-modification-workflow__header-card--selected:hover {
-    background-color: var(--ee4v-color-info-surface-strong);
-    border-color: var(--ee4v-color-focus);
 }
 
 .ee4v-modification-workflow__header-card--hidden {
@@ -265,32 +248,53 @@
 }
 
 .ee4v-modification-workflow__header-add.ee4v-ui-button {
-    width: 34px;
-    min-width: 34px;
-    height: 34px;
-    min-height: 34px;
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
     flex-shrink: 0;
     padding: var(--ee4v-space-none);
     margin-left: var(--ee4v-space-xxs);
-    border-width: var(--ee4v-border-hairline);
-    border-color: var(--ee4v-color-border-active);
+    border-width: var(--ee4v-space-none);
     border-radius: var(--ee4v-radius-lg);
-    background-color: var(--ee4v-color-surface-soft);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-modification-workflow__header-add.ee4v-ui-button:hover {
-    border-color: var(--ee4v-color-focus);
-    background-color: var(--ee4v-color-surface-hover-strong);
+    background-color: var(--ee4v-color-surface-hover);
 }
 
 .ee4v-modification-workflow__header-add.ee4v-ui-button:active {
     background-color: var(--ee4v-color-surface-pressed);
 }
 
-.ee4v-modification-workflow__header-change.ee4v-ui-button {
-    min-height: 30px;
+.ee4v-modification-workflow__header-change-separator {
+    width: var(--ee4v-border-hairline);
+    min-width: var(--ee4v-border-hairline);
+    height: var(--ee4v-size-16);
     flex-shrink: 0;
-    margin-left: var(--ee4v-space-sm);
+    margin-left: var(--ee4v-space-xs);
+    margin-right: var(--ee4v-space-xxs);
+    background-color: var(--ee4v-color-border-active);
+}
+
+.ee4v-modification-workflow__header-change.ee4v-ui-button {
+    min-height: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    padding: var(--ee4v-space-none) var(--ee4v-space-md);
+    border-width: var(--ee4v-space-none);
+    border-radius: var(--ee4v-radius-pill);
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-modification-workflow__header-change.ee4v-ui-button:hover,
+.ee4v-modification-workflow__header-change.ee4v-ui-button:focus {
+    background-color: var(--ee4v-color-surface-hover-strong);
+}
+
+.ee4v-modification-workflow__header-change.ee4v-ui-button:active {
+    background-color: var(--ee4v-color-surface-pressed);
 }
 
 .ee4v-modification-workflow__objects-content {
@@ -417,8 +421,8 @@
 }
 
 .ee4v-modification-workflow__category-rail {
-    width: 148px;
-    min-width: 148px;
+    width: 176px;
+    min-width: 176px;
     flex-shrink: 0;
     padding: var(--ee4v-space-xl) var(--ee4v-space-md);
     border-right-width: var(--ee4v-border-hairline);
@@ -426,16 +430,12 @@
     background-color: var(--ee4v-color-surface-subtle);
 }
 
-.ee4v-modification-workflow__category-heading {
-    margin: var(--ee4v-space-xs) var(--ee4v-space-md) var(--ee4v-space-lg);
-}
-
 .ee4v-modification-workflow__category-button.ee4v-ui-button {
     width: 100%;
-    min-height: 40px;
+    min-height: 34px;
     flex-shrink: 0;
     justify-content: flex-start;
-    margin-bottom: var(--ee4v-space-sm);
+    margin-bottom: var(--ee4v-space-xxs);
     padding-left: var(--ee4v-space-md);
     padding-right: var(--ee4v-space-md);
     border-color: var(--ee4v-color-transparent);
@@ -443,7 +443,7 @@
 }
 
 .ee4v-modification-workflow__category-button.ee4v-ui-button:hover {
-    background-color: var(--ee4v-color-surface-hover-strong);
+    background-color: var(--ee4v-color-surface-hover);
 }
 
 .ee4v-modification-workflow__category-button--active.ee4v-ui-button,

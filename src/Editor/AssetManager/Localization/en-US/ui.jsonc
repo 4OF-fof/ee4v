@@ -7,7 +7,6 @@
   },
   "workflow": {
     "windowTitle": "Modification Workflow",
-    "categories": "CUSTOMIZE",
     "category": {
       "shapeParts": "Shape & parts",
       "material": "Material",

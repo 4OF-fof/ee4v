@@ -1296,6 +1296,21 @@ namespace Ee4v.AssetManager.UI
             combined.EnableInClassList(
                 "ee4v-modification-workflow__header-card--selected",
                 !_selectedPrefabSiblingIndex.HasValue);
+            var changeLabel = I18N.Get("workflow.asset.change");
+            var change = new UiButton(
+                changeLabel,
+                ClearDerivedAsset,
+                changeLabel,
+                variant: UiButtonVariant.Ghost);
+            change.AddToClassList(
+                "ee4v-modification-workflow__header-change");
+            change.RegisterCallback<ClickEvent>(
+                evt => evt.StopPropagation());
+            var changeSeparator = new VisualElement();
+            changeSeparator.AddToClassList(
+                "ee4v-modification-workflow__header-change-separator");
+            combined.Add(changeSeparator);
+            combined.Add(change);
             cards.Add(combined);
 
             var strip = new ScrollView(ScrollViewMode.Horizontal);
@@ -1399,13 +1414,6 @@ namespace Ee4v.AssetManager.UI
                 strip.schedule.Execute(() => strip.ScrollTo(cardToReveal));
             }
             cards.Add(strip);
-            var change = new UiButton(
-                I18N.Get("workflow.asset.change"),
-                ClearDerivedAsset,
-                variant: UiButtonVariant.Ghost);
-            change.AddToClassList(
-                "ee4v-modification-workflow__header-change");
-            cards.Add(change);
             header.Add(cards);
             if (!string.IsNullOrEmpty(_assetFeedback))
             {
@@ -1460,10 +1468,6 @@ namespace Ee4v.AssetManager.UI
             var rail = new VisualElement();
             rail.AddToClassList(
                 "ee4v-modification-workflow__category-rail");
-            rail.Add(UiTextFactory.Create(
-                I18N.Get("workflow.categories"),
-                UiClassNames.SecondaryText,
-                "ee4v-modification-workflow__category-heading"));
             AddCategoryButton(
                 rail,
                 WorkflowCategory.ShapeParts,

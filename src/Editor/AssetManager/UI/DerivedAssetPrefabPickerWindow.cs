@@ -277,6 +277,8 @@ namespace Ee4v.AssetManager.UI
         private const float CameraTransitionDuration = 0.45f;
         private const float MinimumPreviewSize = 320f;
         private const float MaximumPreviewSize = 560f;
+        private const string ShapeChangerTypeName =
+            "nadena.dev.modular_avatar.core.ModularAvatarShapeChanger";
 
         private readonly ScenePreviewViewport _viewport;
         private readonly PreviewOrbitController _orbit;
@@ -734,6 +736,7 @@ namespace Ee4v.AssetManager.UI
                     }
                 }
                 SetHideFlags(_instance.transform);
+                ApplyInitialShapeChanges();
                 _renderers = _instance
                     .GetComponentsInChildren<Renderer>(true);
                 _skinnedRenderers = _renderers
@@ -1539,6 +1542,81 @@ namespace Ee4v.AssetManager.UI
                 if (renderer != null)
                 {
                     renderer.forceMatrixRecalculationPerRender = enabled;
+                }
+            }
+        }
+
+        private void ApplyInitialShapeChanges()
+        {
+            foreach (var changer in _instance
+                         .GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                if (changer == null ||
+                    changer.GetType().FullName != ShapeChangerTypeName ||
+                    !changer.isActiveAndEnabled)
+                {
+                    continue;
+                }
+
+                var changerType = changer.GetType();
+                var inverted = changerType.BaseType?
+                    .GetProperty("Inverted")?.GetValue(changer);
+                if (inverted is bool value && value)
+                {
+                    continue;
+                }
+
+                var shapes = changerType.GetProperty("Shapes")?
+                    .GetValue(changer) as System.Collections.IEnumerable;
+                if (shapes == null)
+                {
+                    continue;
+                }
+
+                foreach (var shape in shapes)
+                {
+                    if (shape == null)
+                    {
+                        continue;
+                    }
+                    var shapeType = shape.GetType();
+                    var changeType = shapeType.GetField("ChangeType")?
+                        .GetValue(shape);
+                    if (!string.Equals(changeType?.ToString(), "Set",
+                            StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    var reference = shapeType.GetField("Object")?
+                        .GetValue(shape);
+                    var getTarget = reference?.GetType().GetMethod(
+                        "Get", new[] { typeof(Component) });
+                    var target = getTarget?.Invoke(
+                        reference, new object[] { changer }) as GameObject;
+                    var renderer = target != null
+                        ? target.GetComponent<SkinnedMeshRenderer>()
+                        : null;
+                    var shapeName = shapeType.GetField("ShapeName")?
+                        .GetValue(shape) as string;
+                    if (renderer?.sharedMesh == null ||
+                        string.IsNullOrEmpty(shapeName))
+                    {
+                        continue;
+                    }
+                    var index = renderer.sharedMesh
+                        .GetBlendShapeIndex(shapeName);
+                    if (index < 0)
+                    {
+                        continue;
+                    }
+                    var weight = shapeType.GetField("Value")?
+                        .GetValue(shape);
+                    if (weight is float blendShapeWeight)
+                    {
+                        renderer.SetBlendShapeWeight(index,
+                            Mathf.Clamp(blendShapeWeight, 0f, 100f));
+                    }
                 }
             }
         }
