@@ -324,10 +324,58 @@
     min-width: 0;
 }
 
+.ee4v-asset-manager__prefab-picker-options--grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
 .ee4v-asset-manager__prefab-picker-option {
     flex-shrink: 0;
     width: 100%;
     margin-bottom: var(--ee4v-space-xxs);
+}
+
+.ee4v-asset-manager__prefab-picker-option--grid.ee4v-ui-navigation-item {
+    width: 46%;
+    min-width: 190px;
+    min-height: 154px;
+    flex-grow: 1;
+    margin-right: var(--ee4v-space-sm);
+    margin-bottom: var(--ee4v-space-sm);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-xl);
+    background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-asset-manager__prefab-picker-option--grid.ee4v-ui-navigation-item:hover {
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-surface-hover);
+}
+
+.ee4v-asset-manager__prefab-picker-option--grid > .ee4v-ui-navigation-item__row {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.ee4v-asset-manager__prefab-picker-option--grid .ee4v-ui-item-row__leading {
+    width: 100%;
+}
+
+.ee4v-asset-manager__prefab-picker-preview--grid.ee4v-asset-manager__prefab-preview {
+    width: 100%;
+    min-width: 0;
+    height: 104px;
+    min-height: 104px;
+    margin-right: var(--ee4v-space-none);
+    margin-bottom: var(--ee4v-space-xs);
+}
+
+.ee4v-asset-manager__prefab-picker-option--grid .ee4v-ui-item-row__title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    -unity-text-align: middle-center;
 }
 
 .ee4v-asset-manager__prefab-picker-empty {

@@ -7,13 +7,37 @@
   },
   "workflow": {
     "windowTitle": "改変ワークフロー",
-    "title": "改変ワークフロー",
-    "subtitle": "見た目、表情・アニメーション、PhysBone Colliderを1つのワークフローで調整できます。",
     "categories": "カスタマイズ",
     "category": {
+      "objects": "オブジェクト",
       "appearance": "見た目",
       "expressionAnimation": "表情・アニメーション",
       "physBone": "PhysBone"
+    },
+    "assets": {
+      "add": "アセットを追加",
+      "base": "ベース",
+      "clickToShow": "プレビューに一時表示",
+      "clickToHide": "プレビューから一時的に隠す",
+      "remove": "削除",
+      "removeConfirmTitle": "アセットを削除",
+      "removeConfirmMessage": "「{0}」を派生Prefabから削除しますか？",
+      "noSourceDescription": "追加できるPrefabがありません。AssetManagerで素材をImportしてください。",
+      "protected": "派生Prefabの外にあるため、このアイテムは編集できません。",
+      "invalidPrefab": "追加できないPrefabです。派生Prefab自身や、それを参照するPrefabは選べません。",
+      "readFailed": "アセットを読み込めませんでした。Consoleを確認してください。",
+      "saveFailed": "派生Prefabを更新できませんでした。Consoleを確認してください。"
+    },
+    "objects": {
+      "description": "チェックを外すとEditorOnlyとして非表示にし、派生Prefabへ保存します。",
+      "search": "オブジェクトを検索",
+      "count": "{0} / {1} 件を表示",
+      "countMore": "{0} / {1} 件を表示。検索で絞り込めます。",
+      "empty": "このPrefab内に切り替え可能なオブジェクトはありません。",
+      "noMatch": "一致するオブジェクトはありません。",
+      "turnOn": "このオブジェクトを表示",
+      "turnOff": "このオブジェクトをEditorOnlyとして非表示",
+      "parentHidden": "親オブジェクトが非表示です。"
     },
     "selection": {
       "title": "派生アセットを選ぶ",

@@ -306,6 +306,13 @@ namespace Ee4v.AssetManager.UI
                 new Dictionary<SkinnedMeshRenderer, Mesh>();
         private readonly List<Renderer> _temporarilyHiddenRenderers =
             new List<Renderer>();
+        private readonly List<Renderer> _temporarilyScopedRenderers =
+            new List<Renderer>();
+        private readonly HashSet<int> _prefabSiblingIndices =
+            new HashSet<int>();
+        private readonly HashSet<int> _hiddenPrefabSiblingIndices =
+            new HashSet<int>();
+        private bool _basePrefabHidden;
         private PreviewRenderUtility _utility;
         private GameObject _prefab;
         private GameObject _instance;
@@ -329,6 +336,7 @@ namespace Ee4v.AssetManager.UI
         private bool _wholeBackView;
         private bool _headBackView;
         private bool _waistBackView;
+        private int? _scopeSiblingIndex;
 
         internal DerivedAssetPrefabScenePreview()
         {
@@ -386,6 +394,40 @@ namespace Ee4v.AssetManager.UI
 
             _prefab = prefab;
             RebuildPreview();
+        }
+
+        internal void SetScope(
+            int? siblingIndex,
+            IEnumerable<int> prefabSiblingIndices)
+        {
+            _scopeSiblingIndex = siblingIndex;
+            _prefabSiblingIndices.Clear();
+            if (prefabSiblingIndices != null)
+            {
+                _prefabSiblingIndices.UnionWith(prefabSiblingIndices);
+            }
+            if (_instance != null)
+            {
+                RebuildPreview();
+            }
+        }
+
+        internal void SetHiddenPrefabs(
+            bool baseHidden,
+            IEnumerable<int> hiddenSiblingIndices)
+        {
+            var next = hiddenSiblingIndices == null
+                ? new HashSet<int>()
+                : new HashSet<int>(hiddenSiblingIndices);
+            if (_basePrefabHidden == baseHidden &&
+                _hiddenPrefabSiblingIndices.SetEquals(next))
+            {
+                return;
+            }
+            _basePrefabHidden = baseHidden;
+            _hiddenPrefabSiblingIndices.Clear();
+            _hiddenPrefabSiblingIndices.UnionWith(next);
+            RequestPreviewRepaint();
         }
 
         internal void RefreshPreview()
@@ -614,6 +656,15 @@ namespace Ee4v.AssetManager.UI
                 _instance = UnityEngine.Object.Instantiate(_prefab);
                 _instance.name =
                     _prefab.name + " (Derived Asset Preview)";
+                _instance.SetActive(true);
+                foreach (var index in _prefabSiblingIndices)
+                {
+                    if (index >= 0 && index < _instance.transform.childCount)
+                    {
+                        _instance.transform.GetChild(index).gameObject
+                            .SetActive(true);
+                    }
+                }
                 SetHideFlags(_instance.transform);
                 _renderers = _instance
                     .GetComponentsInChildren<Renderer>(true);
@@ -633,7 +684,7 @@ namespace Ee4v.AssetManager.UI
                     Quaternion.Euler(35f, 35f, 0f);
                 _utility.lights[1].intensity = 0.7f;
                 _utility.AddSingleGO(_instance);
-                _bounds = CalculateBounds(_instance);
+                RefreshBounds();
                 RebuildMaterialTargets();
                 SetPreviewAvailable(true);
                 FrameCurrentSelection();
@@ -699,6 +750,7 @@ namespace Ee4v.AssetManager.UI
             ConfigureCamera();
             var forceSkinning = _forceSkinningRecalculation;
             _utility.BeginPreview(rect, GUIStyle.none);
+            HideOutOfScopeRenderers();
             try
             {
                 if (_hiddenMaterials.Count == 0)
@@ -712,6 +764,7 @@ namespace Ee4v.AssetManager.UI
             }
             finally
             {
+                RestoreOutOfScopeRenderers();
                 if (forceSkinning)
                 {
                     SetSkinningRecalculation(false);
@@ -792,7 +845,7 @@ namespace Ee4v.AssetManager.UI
         private void FrameWholeAvatar(bool animate)
         {
             var bounds = _bounds;
-            if (_flexibleLayout)
+            if (_flexibleLayout && !_scopeSiblingIndex.HasValue)
             {
                 bounds.center -= _instance.transform.up *
                     bounds.size.y * AppearanceFullBodyVerticalOffsetScale;
@@ -804,7 +857,9 @@ namespace Ee4v.AssetManager.UI
                     ? new Vector2(180f, 0f)
                     : Vector2.zero,
                 animate,
-                _flexibleLayout ? AppearanceFullBodyDistanceScale : 1f);
+                _flexibleLayout && !_scopeSiblingIndex.HasValue
+                    ? AppearanceFullBodyDistanceScale
+                    : 1f);
         }
 
         private float GetAvatarReferenceHeight()
@@ -1146,6 +1201,73 @@ namespace Ee4v.AssetManager.UI
                 _instance.transform.rotation);
         }
 
+        private bool IsInScope(Renderer renderer)
+        {
+            if (renderer == null || _instance == null)
+            {
+                return true;
+            }
+            if (_scopeSiblingIndex >= 0)
+            {
+                var index = _scopeSiblingIndex.Value;
+                return !_hiddenPrefabSiblingIndices.Contains(index) &&
+                    index < _instance.transform.childCount &&
+                    renderer.transform.IsChildOf(
+                        _instance.transform.GetChild(index));
+            }
+
+            var current = renderer.transform;
+            while (current.parent != null &&
+                   current.parent != _instance.transform)
+            {
+                current = current.parent;
+            }
+            var isChildPrefab = current.parent == _instance.transform &&
+                                _prefabSiblingIndices.Contains(
+                                    current.GetSiblingIndex());
+            if (_scopeSiblingIndex == -1)
+            {
+                return !_basePrefabHidden && !isChildPrefab;
+            }
+            return isChildPrefab
+                ? !_hiddenPrefabSiblingIndices.Contains(
+                    current.GetSiblingIndex())
+                : !_basePrefabHidden;
+        }
+
+        private void HideOutOfScopeRenderers()
+        {
+            _temporarilyScopedRenderers.Clear();
+            if (!_scopeSiblingIndex.HasValue &&
+                !_basePrefabHidden &&
+                _hiddenPrefabSiblingIndices.Count == 0)
+            {
+                return;
+            }
+            foreach (var renderer in _renderers)
+            {
+                if (renderer == null || !renderer.enabled ||
+                    IsInScope(renderer))
+                {
+                    continue;
+                }
+                renderer.enabled = false;
+                _temporarilyScopedRenderers.Add(renderer);
+            }
+        }
+
+        private void RestoreOutOfScopeRenderers()
+        {
+            foreach (var renderer in _temporarilyScopedRenderers)
+            {
+                if (renderer != null)
+                {
+                    renderer.enabled = true;
+                }
+            }
+            _temporarilyScopedRenderers.Clear();
+        }
+
         private void RebuildMaterialTargets()
         {
             DestroyBakedMeshes();
@@ -1425,8 +1547,13 @@ namespace Ee4v.AssetManager.UI
             if (_instance != null)
             {
                 _bounds = CalculateBounds(
-                    _instance.transform.position,
-                    _renderers);
+                    _scopeSiblingIndex >= 0 &&
+                    _scopeSiblingIndex.Value <
+                    _instance.transform.childCount
+                        ? _instance.transform.GetChild(
+                            _scopeSiblingIndex.Value).position
+                        : _instance.transform.position,
+                    _renderers.Where(IsInScope).ToArray());
             }
         }
 
@@ -1533,6 +1660,7 @@ namespace Ee4v.AssetManager.UI
         private IReadOnlyList<GameObject> _candidates;
         private GameObject _selected;
         private Action<GameObject> _select;
+        private bool _showAsGrid;
         private SearchField _search;
         private VisualElement _options;
         private IReadOnlyList<GameObject> _filtered =
@@ -1542,7 +1670,8 @@ namespace Ee4v.AssetManager.UI
             VisualElement anchor,
             IReadOnlyList<GameObject> candidates,
             GameObject selected,
-            Action<GameObject> select)
+            Action<GameObject> select,
+            bool showAsGrid = false)
         {
             if (anchor == null ||
                 candidates == null ||
@@ -1564,6 +1693,7 @@ namespace Ee4v.AssetManager.UI
             window._candidates = candidates;
             window._selected = selected;
             window._select = select;
+            window._showAsGrid = showAsGrid;
             window.ShowAsPopup(anchor, PopupSize);
         }
 
@@ -1608,6 +1738,9 @@ namespace Ee4v.AssetManager.UI
             _options = scroll.contentContainer;
             _options.AddToClassList(
                 "ee4v-asset-manager__prefab-picker-options");
+            _options.EnableInClassList(
+                "ee4v-asset-manager__prefab-picker-options--grid",
+                _showAsGrid);
             body.Add(scroll);
             popup.Content.Add(body);
             SetPopup(popup);
@@ -1636,14 +1769,20 @@ namespace Ee4v.AssetManager.UI
                 var option = new NavigationItem(
                     new NavigationItemState(
                         prefab.name,
-                        path,
+                        _showAsGrid ? string.Empty : path,
                         selected: prefab == _selected),
                     () => Select(selectedPrefab));
                 option.tooltip = path;
                 option.AddToClassList(
                     "ee4v-asset-manager__prefab-picker-option");
-                option.Leading.Add(
-                    new DerivedAssetPrefabPreview(prefab));
+                option.EnableInClassList(
+                    "ee4v-asset-manager__prefab-picker-option--grid",
+                    _showAsGrid);
+                var preview = new DerivedAssetPrefabPreview(prefab);
+                preview.EnableInClassList(
+                    "ee4v-asset-manager__prefab-picker-preview--grid",
+                    _showAsGrid);
+                option.Leading.Add(preview);
                 _options.Add(option);
             }
 

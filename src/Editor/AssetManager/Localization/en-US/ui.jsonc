@@ -7,13 +7,37 @@
   },
   "workflow": {
     "windowTitle": "Modification Workflow",
-    "title": "Modification Workflow",
-    "subtitle": "Adjust appearance, expressions and animation, and PhysBone Colliders in one workflow.",
     "categories": "CUSTOMIZE",
     "category": {
+      "objects": "Objects",
       "appearance": "Appearance",
       "expressionAnimation": "Expressions & animation",
       "physBone": "PhysBone"
+    },
+    "assets": {
+      "add": "Add asset",
+      "base": "Base",
+      "clickToShow": "Show temporarily in the preview",
+      "clickToHide": "Hide temporarily from the preview",
+      "remove": "Remove",
+      "removeConfirmTitle": "Remove asset",
+      "removeConfirmMessage": "Remove {0} from the derived Prefab?",
+      "noSourceDescription": "No Prefabs are available. Import an asset with AssetManager first.",
+      "protected": "This item is outside the derived Prefab and cannot be edited here.",
+      "invalidPrefab": "This Prefab cannot be added. The derived Prefab itself and Prefabs that reference it are not allowed.",
+      "readFailed": "Child assets could not be loaded. Check the Console.",
+      "saveFailed": "The derived Prefab could not be updated. Check the Console."
+    },
+    "objects": {
+      "description": "Uncheck an object to hide it as EditorOnly and save it to the derived Prefab.",
+      "search": "Search objects",
+      "count": "Showing {0} of {1}",
+      "countMore": "Showing {0} of {1}. Search to narrow the list.",
+      "empty": "This Prefab has no objects to switch.",
+      "noMatch": "No matching objects.",
+      "turnOn": "Show this object",
+      "turnOff": "Hide this object as EditorOnly",
+      "parentHidden": "A parent object is hidden."
     },
     "selection": {
       "title": "Choose a derived asset",
